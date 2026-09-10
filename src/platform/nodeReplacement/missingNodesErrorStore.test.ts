@@ -1,38 +1,27 @@
+import type * as DistributionModule from '@/platform/distribution/types'
+import type * as I18nModule from '@/i18n'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { MissingNodeType } from '@/types/comfy'
 
-vi.mock(import('@/i18n'), () => ({
+vi.mock(import('@/i18n'), async (importOriginal) => ({
+  ...(await importOriginal<typeof I18nModule>()),
   st: vi.fn((_key: string, fallback: string) => fallback)
 }))
 
-vi.mock(import('@/platform/distribution/types'), () => ({
+vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
+  ...(await importOriginal<typeof DistributionModule>()),
   isCloud: false
 }))
-
-const mockSettings = vi.hoisted(() => ({
-  values: {
-    'Comfy.RightSidePanel.ShowErrorsTab': true,
-    'Comfy.Workflow.ShowMissingNodesWarning': true
-  } as Record<string, boolean>
-}))
-
-vi.mock<unknown>(import('@/platform/settings/settingStore'), async () => {
-  const { reactive } = await import('vue')
-  mockSettings.values = reactive(mockSettings.values)
-  return {
-    useSettingStore: vi.fn(() => ({
-      get: vi.fn((key: string) => mockSettings.values[key])
-    }))
-  }
-})
 
 import { useMissingNodesErrorStore } from './missingNodesErrorStore'
 
 describe('missingNodesErrorStore', () => {
   beforeEach(() => {
-    mockSettings.values['Comfy.RightSidePanel.ShowErrorsTab'] = true
-    mockSettings.values['Comfy.Workflow.ShowMissingNodesWarning'] = true
+    useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = true
+    useSettingStore().settingValues['Comfy.Workflow.ShowMissingNodesWarning'] =
+      true
   })
 
   describe('setMissingNodeTypes', () => {
@@ -55,7 +44,9 @@ describe('missingNodesErrorStore', () => {
       ]
       expect(store.surfaceMissingNodes(types)).toBe(true)
 
-      mockSettings.values['Comfy.Workflow.ShowMissingNodesWarning'] = false
+      useSettingStore().settingValues[
+        'Comfy.Workflow.ShowMissingNodesWarning'
+      ] = false
 
       expect(store.surfaceMissingNodes(types)).toBe(false)
       expect(store.missingNodesError?.nodeTypes).toHaveLength(1)
@@ -63,7 +54,9 @@ describe('missingNodesErrorStore', () => {
       expect(store.hasMissingNodes).toBe(false)
       expect(store.missingNodeCount).toBe(0)
 
-      mockSettings.values['Comfy.Workflow.ShowMissingNodesWarning'] = true
+      useSettingStore().settingValues[
+        'Comfy.Workflow.ShowMissingNodesWarning'
+      ] = true
 
       expect(store.hasMissingNodes).toBe(true)
     })
@@ -126,7 +119,8 @@ describe('missingNodesErrorStore', () => {
 
   describe('surfaceMissingNodes', () => {
     beforeEach(() => {
-      mockSettings.values['Comfy.RightSidePanel.ShowErrorsTab'] = false
+      useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] =
+        false
     })
 
     it('stores missing node types and returns false when setting disabled', () => {
@@ -143,7 +137,8 @@ describe('missingNodesErrorStore', () => {
     })
 
     it('returns true when ShowErrorsTab setting is enabled', () => {
-      mockSettings.values['Comfy.RightSidePanel.ShowErrorsTab'] = true
+      useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] =
+        true
       const store = useMissingNodesErrorStore()
       const shouldShowOverlay = store.surfaceMissingNodes([
         { type: 'NodeA', nodeId: '1', isReplaceable: false }
@@ -153,7 +148,8 @@ describe('missingNodesErrorStore', () => {
     })
 
     it('returns false when ShowErrorsTab setting is disabled', () => {
-      mockSettings.values['Comfy.RightSidePanel.ShowErrorsTab'] = false
+      useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] =
+        false
       const store = useMissingNodesErrorStore()
       const shouldShowOverlay = store.surfaceMissingNodes([
         { type: 'NodeA', nodeId: '1', isReplaceable: false }
@@ -163,7 +159,8 @@ describe('missingNodesErrorStore', () => {
     })
 
     it('returns false for empty types even when setting is enabled', () => {
-      mockSettings.values['Comfy.RightSidePanel.ShowErrorsTab'] = true
+      useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] =
+        true
       const store = useMissingNodesErrorStore()
       const shouldShowOverlay = store.surfaceMissingNodes([])
 

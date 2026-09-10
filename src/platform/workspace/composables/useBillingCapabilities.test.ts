@@ -1,8 +1,10 @@
+import { useAuthStore } from '@/stores/authStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import type { BillingCapabilitiesResponse } from '@comfyorg/ingest-types'
 import type { AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 import axios, { AxiosError, AxiosHeaders } from 'axios'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { effectScope } from 'vue'
+import { effectScope, nextTick } from 'vue'
 import type { EffectScope } from 'vue'
 
 import { attachCapabilityRevisionInterceptor } from '@/platform/workspace/api/capabilityRevision'
@@ -12,11 +14,6 @@ import { useBillingCapabilities } from './useBillingCapabilities'
 const mockGetBillingCapabilities = vi.hoisted(() => vi.fn())
 const mockReportError = vi.hoisted(() => vi.fn())
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
-const mockScope = vi.hoisted(() => ({
-  workspaceId: 'workspace-1' as string | null,
-  authUid: 'firebase-user-1' as string | null,
-  role: 'owner' as 'owner' | 'member'
-}))
 
 vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
   WorkspaceApiError: class WorkspaceApiError extends Error {
@@ -39,30 +36,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }
-}))
-
-vi.mock<unknown>(
-  import('@/platform/workspace/stores/teamWorkspaceStore'),
-  () => ({
-    useTeamWorkspaceStore: () => ({
-      get activeWorkspaceId() {
-        return mockScope.workspaceId
-      },
-      get activeWorkspace() {
-        return mockScope.workspaceId
-          ? { id: mockScope.workspaceId, role: mockScope.role }
-          : null
-      }
-    })
-  })
-)
-
-vi.mock<unknown>(import('@/stores/authStore'), () => ({
-  useAuthStore: () => ({
-    get currentUser() {
-      return mockScope.authUid ? { uid: mockScope.authUid } : null
-    }
-  })
 }))
 
 function capabilitiesResponse(
@@ -175,15 +148,23 @@ function capabilityReadsThroughInterceptor() {
   }
 }
 
+beforeEach(() => {
+  Object.assign(useTeamWorkspaceStore(), {
+    activeWorkspaceId: 'workspace-1',
+    activeWorkspace: { id: 'workspace-1', role: 'owner' }
+  })
+  Object.assign(useAuthStore(), {
+    userId: 'firebase-user-1',
+    currentUser: { uid: 'firebase-user-1' }
+  })
+})
+
 describe('useBillingCapabilities', () => {
   let scope: EffectScope
   let billingCapabilities: ReturnType<typeof useBillingCapabilities>
 
   beforeEach(() => {
     mockIsCloud.value = true
-    mockScope.workspaceId = 'workspace-1'
-    mockScope.authUid = 'firebase-user-1'
-    mockScope.role = 'owner'
     scope = effectScope()
     billingCapabilities = scope.run(() => useBillingCapabilities())!
   })
@@ -293,7 +274,9 @@ describe('useBillingCapabilities', () => {
   })
 
   it('withholds top-up from members when the endpoint is unavailable', async () => {
-    mockScope.role = 'member'
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspace: { id: 'workspace-1', role: 'member' }
+    })
     mockGetBillingCapabilities.mockRejectedValueOnce(new Error('unavailable'))
 
     await billingCapabilities.initialize()
@@ -369,8 +352,11 @@ describe('useBillingCapabilities', () => {
       .mockResolvedValueOnce(capabilitiesResponse(false, 'workspace-2', false))
 
     const firstInitialization = billingCapabilities.initialize()
-    mockScope.workspaceId = 'workspace-2'
-    await billingCapabilities.initialize()
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-2' })
+    await nextTick()
+    await vi.waitFor(() =>
+      expect(billingCapabilities.snapshotAuthoritative.value).toBe(true)
+    )
 
     resolveFirstRequest(capabilitiesResponse(true, 'workspace-1', true))
     await firstInitialization
@@ -392,7 +378,9 @@ describe('useBillingCapabilities', () => {
 
   it('preserves the local role gate for workspace members', async () => {
     mockIsCloud.value = false
-    mockScope.role = 'member'
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspace: { id: 'workspace-1', role: 'member' }
+    })
 
     await billingCapabilities.initialize()
 
@@ -402,7 +390,7 @@ describe('useBillingCapabilities', () => {
   })
 
   it('does not enter pending state without an authenticated scope', async () => {
-    mockScope.workspaceId = null
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: null })
 
     await billingCapabilities.initialize()
 
@@ -514,8 +502,11 @@ describe('useBillingCapabilities', () => {
       )
 
     await billingCapabilities.initialize()
-    mockScope.workspaceId = 'workspace-2'
-    await billingCapabilities.initialize()
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-2' })
+    await nextTick()
+    await vi.waitFor(() =>
+      expect(billingCapabilities.snapshotAuthoritative.value).toBe(true)
+    )
     expect(mockGetBillingCapabilities).toHaveBeenCalledTimes(2)
 
     await vi.advanceTimersByTimeAsync(60_000)
@@ -984,3 +975,10 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canTopUp.value).toBe(false)
   })
 })
+
+vi.mock(import('firebase/auth'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  setPersistence: vi.fn().mockResolvedValue(undefined),
+  onAuthStateChanged: vi.fn(() => vi.fn()),
+  onIdTokenChanged: vi.fn(() => vi.fn())
+}))

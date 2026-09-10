@@ -17,12 +17,6 @@ vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/platform/keybindings/keybindingStore'), () => ({
-  useKeybindingStore: () => ({
-    getKeybindingByCommandId: () => null
-  })
-}))
-
 describe('commandStore', () => {
   describe('registerCommand', () => {
     it('registers a command by id', () => {

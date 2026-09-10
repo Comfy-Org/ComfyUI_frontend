@@ -1,6 +1,5 @@
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { fromAny } from '@total-typescript/shoehorn'
-import { createTestingPinia } from '@pinia/testing'
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
@@ -17,6 +16,14 @@ import {
   createNodeLocatorId
 } from '@/types/nodeIdentification'
 
+beforeEach(() => {
+  const settings = useSettingStore().settingValues
+  settings['Comfy.RightSidePanel.ShowErrorsTab'] = false
+  settings['Comfy.Workflow.ShowMissingNodesWarning'] = true
+  settings['Comfy.Workflow.ShowMissingModelsWarning'] = true
+  settings['Comfy.Workflow.ShowMissingMediaWarning'] = true
+})
+
 // Mock dependencies
 vi.mock(import('@/i18n'), () => ({
   st: vi.fn((_key: string, fallback: string) => fallback)
@@ -24,29 +31,6 @@ vi.mock(import('@/i18n'), () => ({
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
-}))
-
-const mockSettings = vi.hoisted(() => ({
-  values: {} as Record<string, boolean>,
-  reset() {
-    this.values = {
-      'Comfy.RightSidePanel.ShowErrorsTab': false,
-      'Comfy.Workflow.ShowMissingNodesWarning': true,
-      'Comfy.Workflow.ShowMissingModelsWarning': true,
-      'Comfy.Workflow.ShowMissingMediaWarning': true
-    }
-  }
-}))
-mockSettings.reset()
-
-beforeEach(() => {
-  mockSettings.reset()
-})
-
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: vi.fn(() => ({
-    get: vi.fn((key: string) => mockSettings.values[key])
-  }))
 }))
 
 vi.mock<unknown>(
@@ -639,7 +623,7 @@ describe('executionErrorStore — node error operations', () => {
 
 describe('surfaceMissingModels — silent option', () => {
   beforeEach(() => {
-    mockSettings.values['Comfy.RightSidePanel.ShowErrorsTab'] = true
+    useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = true
   })
 
   it('opens error overlay when silent is not specified and setting is enabled', () => {
@@ -708,7 +692,7 @@ describe('per-kind visibility', () => {
   it.for([
     {
       kind: 'models',
-      settingId: 'Comfy.Workflow.ShowMissingModelsWarning',
+      settingId: 'Comfy.Workflow.ShowMissingModelsWarning' as const,
       surface: (store: ReturnType<typeof useExecutionErrorStore>) =>
         store.surfaceMissingModels([
           fromAny({
@@ -724,7 +708,7 @@ describe('per-kind visibility', () => {
     },
     {
       kind: 'media',
-      settingId: 'Comfy.Workflow.ShowMissingMediaWarning',
+      settingId: 'Comfy.Workflow.ShowMissingMediaWarning' as const,
       surface: (store: ReturnType<typeof useExecutionErrorStore>) =>
         store.surfaceMissingMedia([
           fromAny({
@@ -741,8 +725,9 @@ describe('per-kind visibility', () => {
   ])(
     'stores missing $kind but keeps the overlay closed while its warning is off',
     ({ settingId, surface, rawCount }) => {
-      mockSettings.values['Comfy.RightSidePanel.ShowErrorsTab'] = true
-      mockSettings.values[settingId] = false
+      useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] =
+        true
+      useSettingStore().settingValues[settingId] = false
       const store = useExecutionErrorStore()
 
       surface(store)
@@ -756,7 +741,7 @@ describe('per-kind visibility', () => {
 
 describe('surfaceMissingMedia — silent option', () => {
   beforeEach(() => {
-    mockSettings.values['Comfy.RightSidePanel.ShowErrorsTab'] = true
+    useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = true
   })
 
   it('opens error overlay when silent is not specified and setting is enabled', () => {
@@ -886,8 +871,6 @@ describe('clearRunErrors', () => {
   let missingNodesStore: ReturnType<typeof useMissingNodesErrorStore>
 
   beforeEach(() => {
-    const pinia = createPinia()
-    setActivePinia(pinia)
     executionErrorStore = useExecutionErrorStore()
     missingNodesStore = useMissingNodesErrorStore()
   })
@@ -939,10 +922,6 @@ describe('clearRunErrors', () => {
 })
 
 describe('added-node error scan coordination', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
   it('keeps overlapping scans isolated by graph until every scan finishes', () => {
     const store = useExecutionErrorStore()
     const graphA = createTestRootGraph()
@@ -979,10 +958,6 @@ describe('setActiveGraph', () => {
       'KSampler'
     )
   }
-
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
 
   it('keeps each graph run errors separate and restores them on return', () => {
     const store = useExecutionErrorStore()
