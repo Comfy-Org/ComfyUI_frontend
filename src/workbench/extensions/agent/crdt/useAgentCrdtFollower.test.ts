@@ -260,6 +260,7 @@ describe('useAgentCrdtFollower', () => {
 
     dispatchFrame('doc_subscribed', {
       ok: false,
+      workflowId: 'wf-1',
       code: 'schema_version_mismatch',
       message:
         'doc schema v1 does not match v2 [meta.schema_version: expected 2, actual 1] (request ID: req-123)'
@@ -277,6 +278,7 @@ describe('useAgentCrdtFollower', () => {
 
     dispatchFrame('doc_subscribed', {
       ok: false,
+      workflowId: 'wf-1',
       code: 'schema_version_mismatch',
       message: 'doc schema v1 does not match v2'
     })
@@ -293,6 +295,7 @@ describe('useAgentCrdtFollower', () => {
 
     dispatchFrame('doc_subscribed', {
       ok: false,
+      workflowId: 'wf-1',
       code: 'schema_version_mismatch',
       message: 'doc schema v1 does not match v2'
     })
@@ -325,6 +328,7 @@ describe('useAgentCrdtFollower', () => {
 
     dispatchFrame('doc_subscribed', {
       ok: false,
+      workflowId: 'wf-1',
       code: 'schema_version_mismatch',
       message: 'doc schema v1 does not match v2'
     })
@@ -430,11 +434,88 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('ignores a schema_error naming a workflow this follower has left', () => {
+    vi.useFakeTimers()
+    const { unmount, status } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: false })
+    expect(status().connected).toBe(false)
+
+    dispatchFrame('schema_error', {
+      workflowId: 'wf-stale',
+      message: 'meta.schema_version=3 is not schema v2'
+    })
+
+    expect(status().schemaError).toBeNull()
+    expect(adapterState.discardPending).not.toHaveBeenCalled()
+    // The late frame must not cancel the healthy binding's subscribe retry.
+    vi.advanceTimersByTime(500)
+    expect(bridge().resubscribe).toHaveBeenCalled()
+    unmount()
+  })
+
+  it('ignores a schema_error for an inactive target', () => {
+    const { unmount, status, isTargetActive } = mountFollower('wf-1')
+    isTargetActive.value = false
+
+    dispatchFrame('schema_error', {
+      workflowId: 'wf-1',
+      message: 'meta.schema_version=3 is not schema v2'
+    })
+
+    expect(status().schemaError).toBeNull()
+    unmount()
+  })
+
+  it('does not gate the current binding on a refusal naming a superseded workflow', () => {
+    const { unmount, status } = mountFollower('wf-1')
+
+    dispatchFrame('doc_subscribed', {
+      ok: false,
+      workflowId: 'wf-superseded',
+      code: 'schema_version_mismatch',
+      message: 'doc schema v1 does not match v2'
+    })
+    bridge().reconcile.mockClear()
+    apiState.target.dispatchEvent(new Event('status'))
+
+    expect(status().workflowId).toBe('wf-1')
+    expect(bridge().reconcile).toHaveBeenCalled()
+    unmount()
+  })
+
+  it('lifts a permanent mismatch gate once a readable update is applied', () => {
+    const { unmount, status } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', {
+      ok: false,
+      workflowId: 'wf-1',
+      code: 'schema_version_mismatch',
+      message: 'doc schema v1 does not match v2'
+    })
+    expect(status().schemaError).not.toBeNull()
+
+    // Only the bridge's KA-11 read gate can produce this frame, so its arrival
+    // is proof the document is projectable after all.
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-1',
+      seq: 1,
+      actor: 'agent',
+      update: new Uint8Array()
+    })
+
+    expect(status().schemaError).toBeNull()
+    expect(status().connected).toBe(true)
+    bridge().reconcile.mockClear()
+    apiState.target.dispatchEvent(new Event('status'))
+    expect(bridge().reconcile).toHaveBeenCalled()
+    unmount()
+  })
+
   it('falls back to a default message when a schema_version_mismatch detail has no string message', () => {
     const { unmount, status } = mountFollower('wf-1')
 
     dispatchFrame('doc_subscribed', {
       ok: false,
+      workflowId: 'wf-1',
       code: 'schema_version_mismatch',
       message: 12345
     })
