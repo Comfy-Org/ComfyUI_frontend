@@ -251,7 +251,7 @@ function onComposerKeydown(event: KeyboardEvent): void {
     }
   }
   if (event.key === 'Enter') onEnter(event)
-  if (event.key === 'Escape' && running.value) {
+  if (event.key === 'Escape' && running.value && !event.isComposing) {
     event.preventDefault()
     event.stopPropagation()
     emit('stop')

@@ -175,6 +175,38 @@ describe('Composer', () => {
     expect(emitted().stop).toHaveLength(1)
   })
 
+  it('shows the Stop tooltip while submitting and stops on Escape while streaming', async () => {
+    const submitting = mount({ submitting: true })
+    await userEvent.hover(screen.getByRole('button', { name: 'Stop' }))
+    expect(
+      await screen.findByRole('tooltip', { hidden: true })
+    ).toHaveTextContent('Stop Esc')
+    submitting.unmount()
+
+    const { emitted } = mount({ streaming: true })
+    const box = screen.getByRole('textbox')
+    await userEvent.type(box, 'hello{Enter}')
+    expect(emitted().send).toBeUndefined()
+    expect(emitted().stop).toBeUndefined()
+    await userEvent.type(box, '{Escape}')
+    expect(emitted().stop).toHaveLength(1)
+  })
+
+  it('does not stop the run on Escape during IME composition', async () => {
+    const { emitted } = mount({ streaming: true })
+    const box = screen.getByRole('textbox')
+    box.focus()
+    box.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Escape',
+        isComposing: true,
+        bubbles: true,
+        cancelable: true
+      })
+    )
+    expect(emitted().stop).toBeUndefined()
+  })
+
   it('lets Escape close the mention list before it stops a run', async () => {
     const { emitted } = mount({
       streaming: true,
