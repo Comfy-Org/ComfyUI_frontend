@@ -95,7 +95,7 @@ describe('WidgetSelect asset mode', () => {
     render(WidgetSelect, {
       props: {
         widget,
-        modelValue: null,
+        modelValue: null!,
         nodeType: 'ImageLoader'
       },
       global: {
