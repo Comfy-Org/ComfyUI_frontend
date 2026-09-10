@@ -51,9 +51,6 @@ const COMPOSER_LABEL = createI18n({
 }).global.t('agent.placeholder')
 const GROUP_LABEL = /^Ran (\d+) tool calls?/
 const FAILED_GLYPH = /lucide--circle-x/
-// How far a sampled channel may sit from the link colour: the stroke is
-// antialiased against the grid, and the midpoint marker is solid.
-const COLOR_TOLERANCE = 48
 
 interface RecordedLink {
   fromNode: string
@@ -297,7 +294,7 @@ class AgentConversationHarness {
     for (const entry of this.entries(throughTurn)) {
       if (entry.kind !== 'graph_ops') continue
       for (const op of entry.ops) {
-        if (op.op !== 'set_widget') continue
+        if (op.op !== 'set_widget' || typeof op.widget !== 'string') continue
         const nodeId = String(op.node_id)
         const widget = op.widget
         const widgets = graph.nodes[nodeId]?.widgets as
@@ -334,8 +331,8 @@ class AgentConversationHarness {
     return new RegExp(`^(?:${escape(name)}|${escape(node.type)})$`)
   }
 
-  // The renderer's link map coordinates the wire checks: it names the
-  // endpoints no DOM surface does, and unpaintedLinks below reads the pixels.
+  // The renderer's link map names the endpoints no DOM surface does; the
+  // painted result is a screenshot expectation in the replay spec.
   private async renderedLinks(): Promise<RecordedLink[]> {
     const links = await this.page.evaluate(() =>
       [...window.app!.graph.links.values()].map((link) => ({
@@ -346,60 +343,6 @@ class AgentConversationHarness {
       }))
     )
     return links.sort(byLinkKey)
-  }
-
-  // Samples the background canvas around each link's painted midpoint for the
-  // colour the renderer paints that link's type in, as the app's own render
-  // loop left it: nothing here asks the canvas to repaint. A link whose
-  // endpoints the map holds but whose midpoint carries no such pixel is
-  // returned; this is a colour-proximity sample, not a trace of the wire.
-  unpaintedLinks(): Promise<string[]> {
-    return this.page.evaluate((tolerance: number) => {
-      const app = window.app!
-      const canvas = app.canvas
-      const context = canvas.bgcanvas.getContext('2d')!
-      const scale = canvas.bgcanvas.width / canvas.canvas.clientWidth
-      // The static palette the renderer resolves a link's type through.
-      const { link_type_colors: colors } = canvas.constructor as unknown as {
-        link_type_colors: Partial<Record<string, string>>
-      }
-      const channels = (color: string): number[] => {
-        const hex = color.replace('#', '')
-        const wide =
-          hex.length === 3
-            ? hex
-                .split('')
-                .map((digit) => digit + digit)
-                .join('')
-            : hex
-        return [0, 2, 4].map((at) => parseInt(wide.slice(at, at + 2), 16))
-      }
-      return [...app.graph.links.values()].flatMap((link) => {
-        // The palette seeds every data type with '' before it colours the
-        // ones it names, and the painter treats that as the default colour.
-        const expected = channels(
-          colors[String(link.type)] || canvas.default_link_color
-        )
-        const [x, y] = canvas.ds.convertOffsetToCanvas(link._pos)
-        const { data } = context.getImageData(
-          Math.round(x * scale) - 3,
-          Math.round(y * scale) - 3,
-          7,
-          7
-        )
-        for (let at = 0; at < data.length; at += 4) {
-          const off = Math.max(
-            Math.abs(data[at] - expected[0]),
-            Math.abs(data[at + 1] - expected[1]),
-            Math.abs(data[at + 2] - expected[2])
-          )
-          if (data[at + 3] > 0 && off <= tolerance) return []
-        }
-        return [
-          `${link.origin_id}:${link.origin_slot}->${link.target_id}:${link.target_slot}`
-        ]
-      })
-    }, COLOR_TOLERANCE)
   }
 
   // What this turn put on the panel, against the recording's explicit
@@ -495,11 +438,6 @@ class AgentConversationHarness {
       })
       .sort(byLinkKey)
     await expect.poll(() => this.renderedLinks()).toEqual(links)
-    await expect
-      .poll(() => this.unpaintedLinks(), {
-        message: 'every wire is painted at its midpoint'
-      })
-      .toEqual([])
     // A widget-backed input renders no slot row on an uncollapsed node
     // (NodeSlots.vue); the wire above already covers that end.
     for (const link of links) {

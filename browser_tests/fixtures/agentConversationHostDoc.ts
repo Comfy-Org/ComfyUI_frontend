@@ -14,6 +14,8 @@ import * as Y from 'yjs'
 import type { ServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import { DOC_PROTOCOL_VERSION } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
+
+import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
 import { mintWireOps } from '@/workbench/extensions/agent/crdt/opEnvelope'
 
 const HOST_ACTOR = 'agent:comfy:host'
@@ -73,9 +75,11 @@ export class HostDoc {
     return this.updateFrame(update, HOST_ACTOR, [])
   }
 
-  apply(operations: GraphOperation[]): HostFrame {
+  // The applier below is the only judge of a recorded op; the cast hands it
+  // the structural record and nothing reads the ops as typed before it runs.
+  apply(operations: RecordedGraphOperation[]): HostFrame {
     const before = Y.encodeStateVector(this.doc)
-    const ops = mintWireOps(operations, {
+    const ops = mintWireOps(operations as GraphOperation[], {
       actor: HOST_ACTOR,
       baseVersion: this.seq
     })

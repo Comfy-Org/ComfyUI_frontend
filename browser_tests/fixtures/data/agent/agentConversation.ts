@@ -53,9 +53,10 @@ const OP_ENVELOPE: Record<keyof OpBase, true> = {
 }
 const OP_ENVELOPE_KEYS = Object.keys(OP_ENVELOPE)
 
-// Only the vocabulary and the absence of the envelope are checked here, so
-// the parsed op stays structural; assertOpsApply is where the production
-// applier proves the payload and the op becomes a GraphOperation.
+// Only the vocabulary and the absence of the envelope are checked here; a
+// recorded op stays structural. Nothing in this fixture parses the semantic
+// operation contract, which the package owns; assertOpsApply below applies
+// the ops to a document and reports what that application shows.
 const zGraphOperation = z
   .object({ op: z.enum(FROZEN_OPS) })
   .passthrough()
@@ -63,6 +64,7 @@ const zGraphOperation = z
     (op) => OP_ENVELOPE_KEYS.every((key) => !(key in op)),
     'a recorded op carries the semantic operation only; the wire envelope is minted at replay'
   )
+export type RecordedGraphOperation = z.infer<typeof zGraphOperation>
 
 // WorkflowJSON and WorkflowNode declare an index signature, so the schema
 // validates the guaranteed fields and keeps the rest.
@@ -157,7 +159,7 @@ const zTurn = z
           'cancel_after must precede the final agent_message_done entry; the replay stops a turn that is still running'
       })
   })
-type RecordedTurn = z.infer<typeof zTurn>
+export type AgentConversationTurn = z.infer<typeof zTurn>
 
 export const zAgentConversation = z
   .object({
@@ -196,19 +198,7 @@ export const zAgentConversation = z
           message: 'recorded turns carry the message id they were captured from'
         })
   })
-export type RecordedConversation = z.infer<typeof zAgentConversation>
-
-// The applier-proven form of a recording: the same bytes, with every op typed
-// by the library's own union. Only assertOpsApply produces it.
-type AgentConversationEntry =
-  | Extract<z.infer<typeof zResponseEntry>, { kind: 'event' }>
-  | { kind: 'graph_ops'; ops: GraphOperation[]; at_ms?: number }
-export type AgentConversationTurn = Omit<RecordedTurn, 'response'> & {
-  response: AgentConversationEntry[]
-}
-export type AgentConversation = Omit<RecordedConversation, 'turns'> & {
-  turns: AgentConversationTurn[]
-}
+export type AgentConversation = z.infer<typeof zAgentConversation>
 
 export function listRecordedConversations(): string[] {
   const dir = fileURLToPath(new URL('./conversations/', import.meta.url))
@@ -246,16 +236,15 @@ function missingValue(value: unknown, path: string): string | null {
   return null
 }
 
-// The production applier is the parser for the recorded operations: a
-// recording it would reject during replay is refused before one starts, and
-// the ops carry the library's type only once it has accepted every one.
-export function assertOpsApply(
-  recorded: RecordedConversation
-): AgentConversation {
-  const { seed, catalog } = recorded.workflow
+// Applies every recorded op to a document minted from the recording's seed
+// and catalog. This is application, not parsing: it shows the applier accepts
+// each op against that document and that the projection it leaves carries a
+// value everywhere, which is what the replay needs and all it proves.
+export function assertOpsApply(conversation: AgentConversation): void {
+  const { seed, catalog } = conversation.workflow
   const doc = mint(seed, catalog)
   let version = 1
-  for (const [turnIndex, turn] of recorded.turns.entries())
+  for (const [turnIndex, turn] of conversation.turns.entries())
     for (const [entryIndex, entry] of turn.response.entries()) {
       if (entry.kind !== 'graph_ops') continue
       const label = `turn ${turnIndex} entry ${entryIndex}`
@@ -275,14 +264,15 @@ export function assertOpsApply(
       if (hole !== null)
         throw new Error(`${label}: the projection carries no value at ${hole}`)
     }
-  return recorded as AgentConversation
 }
 
 export function loadAgentConversation(caseId: string): AgentConversation {
   const file = fileURLToPath(
     new URL(`./conversations/${caseId}.json`, import.meta.url)
   )
-  return assertOpsApply(
-    zAgentConversation.parse(JSON.parse(readFileSync(file, 'utf-8')))
+  const conversation = zAgentConversation.parse(
+    JSON.parse(readFileSync(file, 'utf-8'))
   )
+  assertOpsApply(conversation)
+  return conversation
 }
