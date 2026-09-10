@@ -159,13 +159,13 @@
 <script setup lang="ts">
 import { onClickOutside } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import Skeleton from 'primevue/skeleton'
 import { computed, onMounted, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'

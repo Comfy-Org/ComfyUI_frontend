@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import Button from 'primevue/button'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
+import Button from '@/components/ui/button/Button.vue'
 import ProgressSpinner from '@/components/ui/spinner/Spinner.vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -184,13 +184,9 @@ onMounted(() => {
         }}
       </p>
       <ProgressSpinner v-if="planLabel" class="size-8" />
-      <Button
-        v-if="planLabel"
-        as="a"
-        href="/"
-        link
-        :label="t('cloudOnboarding.skipToCloudApp')"
-      />
+      <Button v-if="planLabel" as="a" href="/" variant="link">
+        {{ t('cloudOnboarding.skipToCloudApp') }}
+      </Button>
     </div>
   </div>
 </template>
