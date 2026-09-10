@@ -2214,7 +2214,8 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(toast.messagesToAdd).toEqual([
       expect.objectContaining({
         summary: 'Workflow version mismatch',
-        detail: 'Document schema version mismatch'
+        detail: 'Document schema version mismatch',
+        life: 5000
       })
     ])
 

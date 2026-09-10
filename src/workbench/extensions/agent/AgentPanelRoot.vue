@@ -501,15 +501,16 @@ const {
   computed(() => t('agent.schemaMismatchDetail'))
 )
 watch(schemaErrorState, (error) => {
-  if (error !== null)
-    toast.add({
-      severity: 'warn',
-      summary: t('agent.schemaMismatch'),
-      detail:
-        error.kind === 'message'
-          ? error.message
-          : t('agent.schemaMismatchDetail')
-    })
+  if (error === null) return
+  toast.add({
+    severity: 'warn',
+    summary: t('agent.schemaMismatch'),
+    detail:
+      error.kind === 'message'
+        ? error.message
+        : t('agent.schemaMismatchDetail'),
+    life: 5000
+  })
 })
 const mintPortWiring = attachMintPortWiring({
   isEnabled: () => agentPanelStore.enabled,
