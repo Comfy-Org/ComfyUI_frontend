@@ -17,8 +17,8 @@ import type {
   MintHandle,
   RefreshSchedulerOptions,
   SessionFailure
-} from './session.js'
-import { isPermanentSessionError } from './session.js'
+} from './sessionContracts.js'
+import { isPermanentSessionError } from './sessionContracts.js'
 
 const DEFAULT_BUFFER_MS = 5 * 60 * 1000
 
