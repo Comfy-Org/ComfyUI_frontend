@@ -1,4 +1,7 @@
-import type { SubscriptionTier } from '@comfyorg/ingest-types'
+import type {
+  ScheduledPlanChange,
+  SubscriptionTier
+} from '@comfyorg/ingest-types'
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -39,7 +42,7 @@ interface MockSubscription {
   tier: SubscriptionTier | null
   isCancelled?: boolean
   duration?: string
-  scheduledChange?: { plan_slug: string; effective_at: string }
+  scheduledChange?: ScheduledPlanChange
 }
 
 interface MockTeamStop {
@@ -265,7 +268,8 @@ describe('UnifiedPricingTable scheduled plan change', () => {
       duration: 'ANNUAL',
       scheduledChange: {
         plan_slug: 'standard-monthly',
-        effective_at: '2026-10-01T00:00:00Z'
+        effective_at: '2026-10-01T00:00:00Z',
+        team_credit_stop: null
       }
     }
     mockSubscriptionStatus.value = null
@@ -332,7 +336,8 @@ describe('UnifiedPricingTable scheduled plan change', () => {
       duration: 'MONTHLY',
       scheduledChange: {
         plan_slug: 'creator-annual',
-        effective_at: '2026-10-01T00:00:00Z'
+        effective_at: '2026-10-01T00:00:00Z',
+        team_credit_stop: null
       }
     }
     mockCurrentPlanSlug.value = 'creator-monthly'
@@ -343,7 +348,7 @@ describe('UnifiedPricingTable scheduled plan change', () => {
       screen.getByRole('button', { name: 'Scheduled for Oct 1, 2026' })
     ).toBeDisabled()
 
-    await user.click(screen.getByTestId('cycle-monthly'))
+    await user.click(screen.getByRole('button', { name: 'Monthly' }))
     await nextTick()
 
     expect(screen.getByRole('button', { name: 'Current Plan' })).toBeDisabled()
@@ -366,7 +371,8 @@ describe('UnifiedPricingTable scheduled plan change', () => {
       duration: 'ANNUAL',
       scheduledChange: {
         plan_slug: 'standard-monthly',
-        effective_at: '2026-10-01T00:00:00Z'
+        effective_at: '2026-10-01T00:00:00Z',
+        team_credit_stop: null
       },
       isCancelled: true
     }
@@ -770,7 +776,7 @@ describe('UnifiedPricingTable credit allotment copy', () => {
     const user = userEvent.setup()
     renderWithCycleToggle()
 
-    await user.click(screen.getByTestId('cycle-monthly'))
+    await user.click(screen.getByRole('button', { name: 'Monthly' }))
     await nextTick()
 
     expect(screen.getAllByText('monthly credits')).toHaveLength(3)
@@ -788,7 +794,7 @@ describe('UnifiedPricingTable credit allotment copy', () => {
     expect(screen.getByText('1,772,400')).toBeTruthy()
     expect(screen.getByText('Generates ~160,860 5s videos*')).toBeTruthy()
 
-    await user.click(screen.getByTestId('cycle-monthly'))
+    await user.click(screen.getByRole('button', { name: 'Monthly' }))
     await nextTick()
 
     expect(screen.getByText('monthly credits')).toBeTruthy()
