@@ -1,6 +1,6 @@
 import { getActivePinia } from 'pinia'
 import { render, screen, within } from '@testing-library/vue'
-import { nextTick } from 'vue'
+import { computed, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -33,8 +33,10 @@ const overlayMock = vi.hoisted(() => ({
 
 vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
-    canRunWorkflows: billingMock.canRunWorkflows,
-    showsSubscribeToRunPrompt: billingMock.showsSubscribeToRunPrompt
+    canRunWorkflows: computed(() => billingMock.canRunWorkflows),
+    showsSubscribeToRunPrompt: computed(
+      () => billingMock.showsSubscribeToRunPrompt
+    )
   })
 }))
 
@@ -158,9 +160,7 @@ function renderControls({
           template: '<div><slot name="button" /><slot /></div>'
         },
         ScrubableNumberInput: true,
-        FreeTierQuota: {
-          template: '<div data-testid="free-tier-quota" />'
-        },
+        FreeTierQuota: true,
         SubscribeToRunButton: {
           template: '<button data-testid="subscribe-to-run-button" />'
         }
@@ -192,16 +192,37 @@ describe('LinearControls', () => {
     overlayMock.overlayTitle = 'Required input missing'
   })
 
-  it('keeps Cloud-only quota and subscription controls hidden off Cloud', () => {
-    distributionMock.isCloud = false
+  it.for([
+    { label: 'desktop', mobile: false },
+    { label: 'mobile', mobile: true }
+  ])(
+    'replaces the run button with the subscribe prompt in $label controls on Cloud',
+    ({ mobile }) => {
+      renderControls({ showsSubscribeToRunPrompt: true, mobile })
 
-    renderControls({ showsSubscribeToRunPrompt: true })
+      expect(screen.getByTestId('subscribe-to-run-button')).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Run' })
+      ).not.toBeInTheDocument()
+    }
+  )
 
-    expect(
-      screen.queryByTestId('subscribe-to-run-button')
-    ).not.toBeInTheDocument()
-    expect(screen.queryByTestId('free-tier-quota')).not.toBeInTheDocument()
-  })
+  it.for([
+    { label: 'desktop', mobile: false },
+    { label: 'mobile', mobile: true }
+  ])(
+    'keeps the run button instead of the subscribe prompt in $label controls off Cloud',
+    ({ mobile }) => {
+      distributionMock.isCloud = false
+
+      renderControls({ showsSubscribeToRunPrompt: true, mobile })
+
+      expect(screen.getByRole('button', { name: 'Run' })).toBeInTheDocument()
+      expect(
+        screen.queryByTestId('subscribe-to-run-button')
+      ).not.toBeInTheDocument()
+    }
+  )
 
   it.for([
     { label: 'desktop', mobile: false },
