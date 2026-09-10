@@ -104,6 +104,18 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
   const inAppBrowser = ref(false)
   const hostname = typeof window === 'undefined' ? '' : window.location.hostname
 
+  // Any rollout-flag transition invalidates an in-flight attempt, so a disable
+  // (or an off->on flicker) mid-popup cannot still provision, publish, or mint.
+  // Sync so even a same-tick flicker is counted, not collapsed to no-change.
+  let signInGeneration = 0
+  watch(
+    enabled,
+    () => {
+      signInGeneration += 1
+    },
+    { flush: 'sync' }
+  )
+
   function dispatch(event: AuthSignInEvent) {
     const before = state.value
     state.value = authSignInTransition(before, event)
@@ -191,14 +203,23 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
   ) {
     if (state.value.step === 'pending' || state.value.step === 'minting') return
     dispatch({ type: 'signInStarted', provider })
+    const attempt = signInGeneration
+    const live = () => attempt === signInGeneration && enabled.value
     let firebase: Awaited<ReturnType<typeof loadWorkshopFirebase>> | undefined
     try {
       firebase = await loadWorkshopFirebase()
-      // The rollout flag turning off mid-flight must halt the in-flight auth,
-      // not merely hide the UI: no sign-in, provisioning, telemetry, or session.
-      if (!enabled.value) return
+      // The rollout flag turning off (or flickering) mid-flight must halt the
+      // in-flight auth, not merely hide the UI: no sign-in, provisioning,
+      // telemetry, or session.
+      if (!live()) return
       const credential = await authenticate(firebase)
-      if (!enabled.value) return
+      if (!live()) return
+      // Email sign-up provisions atomically inside (its rollback needs it);
+      // every other path provisions here so a disable during the popup stops it.
+      if (!(provider === 'email' && mode === 'signUp')) {
+        await firebase.provisionWorkshopCustomer(credential)
+        if (!live()) return
+      }
       captureAuthCompleted({
         method: provider,
         is_new_user:
