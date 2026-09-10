@@ -260,8 +260,7 @@ export function captureFromObservations(
       accepted: {
         status: 202,
         body: { thread_id: options.threadId, message_id: turnId }
-      },
-      saw_done: true
+      }
     })
     frames.push(...turnFrames(turn, options.threadId, turnId))
   }

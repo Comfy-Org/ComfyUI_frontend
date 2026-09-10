@@ -133,8 +133,7 @@ describe('captureFromObservations', () => {
         accepted: {
           status: 202,
           body: { thread_id: THREAD, message_id: 'message-1' }
-        },
-        saw_done: true
+        }
       }
     ])
     expect(
