@@ -274,7 +274,19 @@ async function submit() {
   configurationError.value = ''
   emitPaymentJourneyPhase({ phase: 'payment_submit_attempted' })
   try {
-    const submitResult = await stripeElements.value.submit()
+    // Validation boundary: submit() normally resolves with an error field, but
+    // an unexpected rejection here is still a pre-token validation failure.
+    let submitResult
+    try {
+      submitResult = await stripeElements.value.submit()
+    } catch {
+      configurationError.value = t('g.error')
+      emitPaymentJourneyPhase({
+        phase: 'payment_submit_failed',
+        submit_phase: 'validation'
+      })
+      return
+    }
     if (submitResult.error) {
       configurationError.value = submitResult.error.message ?? t('g.error')
       emitPaymentJourneyPhase({

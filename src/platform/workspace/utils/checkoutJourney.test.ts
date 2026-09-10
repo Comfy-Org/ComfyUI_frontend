@@ -23,6 +23,7 @@ const baseInput: StartCheckoutJourneyInput = {
 
 beforeEach(() => {
   sessionStorage.clear()
+  clearCheckoutJourney()
 })
 
 describe('resolveCheckoutAssignment', () => {
@@ -143,6 +144,77 @@ describe('toCheckoutJourneyContext', () => {
     })
     expect('assigned_arm' in context).toBe(false)
     expect('billing_op_id' in context).toBe(false)
+  })
+})
+
+describe('purchase intent boundary', () => {
+  it('starts a new journey when the intent key changes', () => {
+    const first = resolveCheckoutJourney({
+      ...baseInput,
+      intent: 'standard:monthly'
+    })
+    const second = resolveCheckoutJourney({
+      ...baseInput,
+      intent: 'pro:monthly'
+    })
+    expect(second.resumed).toBe(false)
+    expect(second.record.journey_id).not.toBe(first.record.journey_id)
+  })
+
+  it('resumes when the intent key is unchanged', () => {
+    const first = resolveCheckoutJourney({
+      ...baseInput,
+      intent: 'standard:monthly'
+    })
+    const second = resolveCheckoutJourney({
+      ...baseInput,
+      intent: 'standard:monthly'
+    })
+    expect(second.resumed).toBe(true)
+    expect(second.record.journey_id).toBe(first.record.journey_id)
+  })
+})
+
+describe('assignment invariant on persisted records', () => {
+  it('discards a resolved record with no arm', () => {
+    const record = createCheckoutJourneyRecord(baseInput, Date.now())
+    sessionStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ ...record, assigned_arm: undefined })
+    )
+    expect(getActiveCheckoutJourney()).toBeNull()
+  })
+
+  it('discards an unavailable record that carries an arm', () => {
+    const record = createCheckoutJourneyRecord(
+      { ...baseInput, assignment: { status: 'unavailable' } },
+      Date.now()
+    )
+    sessionStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ ...record, assigned_arm: 'control' })
+    )
+    expect(getActiveCheckoutJourney()).toBeNull()
+  })
+})
+
+describe('resilience', () => {
+  it('expires a persisted record on read', () => {
+    const stale = createCheckoutJourneyRecord(baseInput, Date.now())
+    sessionStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        ...stale,
+        started_at_ms: Date.now() - 25 * 60 * 60 * 1000
+      })
+    )
+    expect(getActiveCheckoutJourney()).toBeNull()
+  })
+
+  it('keeps the active journey when session storage is wiped mid-session', () => {
+    const { record } = resolveCheckoutJourney(baseInput)
+    sessionStorage.removeItem(STORAGE_KEY)
+    expect(getActiveCheckoutJourney()?.journey_id).toBe(record.journey_id)
   })
 })
 

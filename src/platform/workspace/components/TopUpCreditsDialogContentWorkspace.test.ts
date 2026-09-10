@@ -1,4 +1,7 @@
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { clearCheckoutJourney } from '@/platform/workspace/utils/checkoutJourney'
+import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -91,16 +94,12 @@ vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/stores/authStore'), () => ({
-  useAuthStore: () => ({ userId: 'user-1' })
+vi.mock(import('firebase/auth'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  setPersistence: vi.fn().mockResolvedValue(undefined),
+  onAuthStateChanged: vi.fn(() => vi.fn()),
+  onIdTokenChanged: vi.fn(() => vi.fn())
 }))
-
-vi.mock<unknown>(
-  import('@/platform/workspace/stores/teamWorkspaceStore'),
-  () => ({
-    useTeamWorkspaceStore: () => ({ activeWorkspaceId: 'workspace-1' })
-  })
-)
 
 const mockClearPendingTopup = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
@@ -191,8 +190,11 @@ async function clickAddCredits() {
 
 beforeEach(() => {
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
+  Object.assign(useAuthStore(), { userId: 'user-1' })
+  Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-1' })
   mockCaptureCheckoutJourneyEvent.mockClear()
   sessionStorage.clear()
+  clearCheckoutJourney()
 })
 
 beforeEach(() => {
@@ -281,6 +283,36 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       phases.indexOf('operation_linked')
     )
     expect(phases.filter((phase) => phase === 'entered')).toHaveLength(1)
+  })
+
+  it('does not correlate the operation to a journey replaced mid-request', async () => {
+    let resolveTopup: (value: CreateTopupResponse) => void = () => {}
+    mockTopup.mockReturnValue(
+      new Promise<CreateTopupResponse>((resolve) => {
+        resolveTopup = resolve
+      })
+    )
+
+    renderDialog()
+    await clickAddCredits()
+    await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+    await waitFor(() =>
+      expect(mockCaptureCheckoutJourneyEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ phase: 'submitted' })
+      )
+    )
+
+    // The user closes this dialog while the request is pending; the active
+    // journey is gone by the time the response lands.
+    clearCheckoutJourney()
+    resolveTopup(topupResponse('completed'))
+    await waitFor(() => expect(mockFetchBalance).toHaveBeenCalled())
+
+    const phases = mockCaptureCheckoutJourneyEvent.mock.calls.map(
+      ([event]) => event.phase
+    )
+    expect(phases).toContain('submitted')
+    expect(phases).not.toContain('operation_linked')
   })
 
   it('reports failure telemetry when topup resolves with no response', async () => {

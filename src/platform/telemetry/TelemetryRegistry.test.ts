@@ -224,12 +224,25 @@ describe('TelemetryRegistry', () => {
     expect(b.trackBillingEvent).toHaveBeenCalledExactlyOnceWith(event)
   })
 
+  function recordingJourneyProvider() {
+    const records: Array<{
+      event: CheckoutJourneyTelemetryEvent
+      eventId: string
+    }> = []
+    const provider: TelemetryProvider = {
+      trackCheckoutJourneyEvent(event, eventId) {
+        records.push({ event, eventId })
+      }
+    }
+    return { provider, records }
+  }
+
   it('gives every provider the same event identity for one journey emission', () => {
-    const a: TelemetryProvider = { trackCheckoutJourneyEvent: vi.fn() }
-    const b: TelemetryProvider = { trackCheckoutJourneyEvent: vi.fn() }
+    const a = recordingJourneyProvider()
+    const b = recordingJourneyProvider()
     const registry = new TelemetryRegistry()
-    registry.registerProvider(a)
-    registry.registerProvider(b)
+    registry.registerProvider(a.provider)
+    registry.registerProvider(b.provider)
 
     const event: CheckoutJourneyTelemetryEvent = {
       phase: 'entered',
@@ -242,16 +255,14 @@ describe('TelemetryRegistry', () => {
     }
     registry.captureCheckoutJourneyEvent(event)
 
-    const aCall = vi.mocked(a.trackCheckoutJourneyEvent!).mock.calls[0]
-    const bCall = vi.mocked(b.trackCheckoutJourneyEvent!).mock.calls[0]
-    expect(aCall[0]).toBe(event)
-    expect(bCall[0]).toBe(event)
-    expect(aCall[1]).toBe(bCall[1])
-    expect(aCall[1]).toEqual(expect.any(String))
+    expect(a.records[0].event).toBe(event)
+    expect(b.records[0].event).toBe(event)
+    expect(a.records[0].eventId).toBe(b.records[0].eventId)
+    expect(a.records[0].eventId).toEqual(expect.any(String))
   })
 
   it('mints a distinct event identity per journey emission', () => {
-    const provider: TelemetryProvider = { trackCheckoutJourneyEvent: vi.fn() }
+    const { provider, records } = recordingJourneyProvider()
     const registry = new TelemetryRegistry()
     registry.registerProvider(provider)
 
@@ -266,8 +277,7 @@ describe('TelemetryRegistry', () => {
     registry.captureCheckoutJourneyEvent(event)
     registry.captureCheckoutJourneyEvent(event)
 
-    const calls = vi.mocked(provider.trackCheckoutJourneyEvent!).mock.calls
-    expect(calls[0][1]).not.toBe(calls[1][1])
+    expect(records[0].eventId).not.toBe(records[1].eventId)
   })
 
   it('dispatches trackWidgetFavoriteToggled to every registered provider', () => {
