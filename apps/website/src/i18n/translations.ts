@@ -6598,6 +6598,9 @@ Enterprise`
   'events.directory.pastBadge': { en: 'Past', 'zh-CN': '已结束' },
   'events.directory.readMore': { en: 'Read more', 'zh-CN': '展开' },
   'events.directory.readLess': { en: 'Read less', 'zh-CN': '收起' },
+  'events.directory.sortLabel': { en: 'Sort events', 'zh-CN': '活动排序' },
+  'events.directory.sortLatest': { en: 'Latest', 'zh-CN': '最新' },
+  'events.directory.sortOldest': { en: 'Oldest', 'zh-CN': '最早' },
   'events.directory.virtual': { en: 'Virtual event', 'zh-CN': '线上活动' },
   'events.directory.empty': {
     en: 'No events match those filters yet. Try a broader search.',

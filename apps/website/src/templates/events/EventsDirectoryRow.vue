@@ -65,29 +65,29 @@ useResizeObserver(descEl, ([entry]) => {
     />
 
     <div class="flex min-w-0 flex-1 flex-col gap-0.5">
-      <Badge variant="category" size="xs" class="self-start">
-        {{ row.category }}
-      </Badge>
-
-      <div class="flex min-w-0 items-start gap-2">
-        <h3 class="text-sm font-light text-primary-warm-white">
-          {{ row.title }}
-        </h3>
+      <div class="flex items-center gap-2 self-start">
+        <Badge variant="category" size="xs">
+          {{ row.category }}
+        </Badge>
         <Badge
           v-if="!row.upcoming"
           variant="subtle"
           size="xxs"
-          class="mt-0.5 shrink-0 uppercase"
+          class="uppercase"
         >
           {{ t('events.directory.pastBadge', locale) }}
         </Badge>
       </div>
 
+      <h3 class="text-sm font-light text-primary-warm-white">
+        {{ row.title }}
+      </h3>
+
       <p
         ref="descEl"
         :class="
           cn(
-            'text-xs text-primary-comfy-canvas/50',
+            'text-xs text-primary-comfy-canvas/85',
             !expanded && 'line-clamp-2'
           )
         "

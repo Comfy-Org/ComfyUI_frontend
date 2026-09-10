@@ -30,9 +30,19 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 // else, the visible events and the live count, is derived.
 const filters = reactive(defaultDirectoryFilters())
 const view = ref<EventsDirectoryView>('map')
+const sort = ref<'latest' | 'oldest'>('latest')
 
 const visibleEvents = computed(() =>
   filterDirectoryEvents(directoryEvents, filters, locale)
+)
+
+// `directoryEvents` is latest-first, so Oldest is a plain reversal of the
+// filtered slice rather than a second date sort. The agenda view re-groups
+// rows by month with its own chronology either way.
+const sortedEvents = computed(() =>
+  sort.value === 'latest'
+    ? visibleEvents.value
+    : [...visibleEvents.value].reverse()
 )
 
 // Derived once and handed to whichever view is showing, so the list and the
@@ -40,7 +50,7 @@ const visibleEvents = computed(() =>
 // clock that ordered `directoryEvents`, so a row's position and its CTA can
 // never straddle the upcoming/past boundary.
 const rows = computed(() =>
-  directoryRows(visibleEvents.value, locale, eventsDerivedAt)
+  directoryRows(sortedEvents.value, locale, eventsDerivedAt)
 )
 
 // Pins are the filtered events that have coordinates; virtual events stay in
@@ -204,6 +214,21 @@ const caretClass =
             :value="organizer"
           >
             {{ t(`events.organizer.${organizer}`, locale) }}
+          </option>
+        </select>
+        <ChevronDown :class="caretClass" aria-hidden="true" />
+      </div>
+
+      <label for="events-directory-sort" class="sr-only">
+        {{ t('events.directory.sortLabel', locale) }}
+      </label>
+      <div class="relative">
+        <select id="events-directory-sort" v-model="sort" :class="selectClass">
+          <option value="latest">
+            {{ t('events.directory.sortLatest', locale) }}
+          </option>
+          <option value="oldest">
+            {{ t('events.directory.sortOldest', locale) }}
           </option>
         </select>
         <ChevronDown :class="caretClass" aria-hidden="true" />
