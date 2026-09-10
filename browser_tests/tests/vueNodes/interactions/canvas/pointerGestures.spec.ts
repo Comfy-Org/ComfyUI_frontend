@@ -50,7 +50,9 @@ test.describe(
         true,
         'FE-2040 / time-based promotion moves the group after 150 ms and 1 px of drift'
       )
-      await expect.poll(() => groupBounds(comfyPage, 'Pair')).toEqual(before)
+      await expect
+        .poll(() => groupBounds(comfyPage, 'Pair'), { timeout: 1500 })
+        .toEqual(before)
     })
 
     test('slow empty-canvas click clears selection without panning', async ({
@@ -60,6 +62,7 @@ test.describe(
       await a.title.click()
       await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(1)
       const before = await a.boundingBox()
+      if (!before) throw new Error('Node A must be rendered')
       const empty = await comfyPage.canvasOps.toAbsolute({ x: 100, y: 100 })
 
       await pressMoveRelease(comfyPage, empty, { x: 1, y: 0 }, 150)
@@ -86,12 +89,16 @@ test.describe(
         true,
         'FE-2040 / Vue nodes drag at 3 px instead of the configured 6 px ClickDrift'
       )
-      await expect.poll(() => a.boundingBox()).toEqual(before)
+      await expect
+        .poll(() => a.boundingBox(), { timeout: 1500 })
+        .toEqual(before)
     })
 
     test('group-title movement below ClickDrift is a click', async ({
       comfyPage
     }) => {
+      const isSlowMotion = Number(process.env.SLOW_MO) > 32
+      test.slow(isSlowMotion, 'Video recording runs pointer actions slowly')
       const title = await getGroupTitlePosition(comfyPage, 'Pair')
       const before = await groupBounds(comfyPage, 'Pair')
 
@@ -99,7 +106,13 @@ test.describe(
 
       await expect(comfyPage.selectionToolbox).toBeVisible()
       await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(0)
-      await expect.poll(() => groupBounds(comfyPage, 'Pair')).toEqual(before)
+      test.fail(
+        isSlowMotion,
+        'FE-2040 / time-based promotion moves the group when slow motion exceeds ClickBufferTime'
+      )
+      await expect
+        .poll(() => groupBounds(comfyPage, 'Pair'), { timeout: 1500 })
+        .toEqual(before)
     })
 
     test('node-title movement above ClickDrift drags the node', async ({
@@ -160,7 +173,9 @@ test.describe(
         true,
         'FE-2040 / Vue nodes are brought to front on release, not on press'
       )
-      await expect.poll(() => nodeZIndex(a.root)).toBeGreaterThan(front)
+      await expect
+        .poll(() => nodeZIndex(a.root), { timeout: 1500 })
+        .toBeGreaterThan(front)
       await press.disposeAsync()
     })
 
@@ -206,10 +221,6 @@ test.describe(
       await comfyPage.page.keyboard.press('Space')
       await comfyMouse.dragElementBy(a.title, { x: 80, y: 0 })
 
-      test.fail(
-        true,
-        'FE-2040 / Space keyup clears the pre-existing read-only state'
-      )
       await expect
         .poll(async () => {
           const aAfter = await a.boundingBox()
