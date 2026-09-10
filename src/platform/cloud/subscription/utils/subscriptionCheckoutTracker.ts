@@ -45,6 +45,12 @@ export const PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY =
   'comfy.subscription.pending_checkout_attempt'
 export const PENDING_SUBSCRIPTION_CHECKOUT_EVENT =
   'comfy:subscription-checkout-attempt-changed'
+/**
+ * Holds the `attempt_id` whose missing completion has already been reported, so
+ * a reload or a second tab does not re-report the same abandoned checkout.
+ */
+const REPORTED_MISSING_COMPLETION_STORAGE_KEY =
+  'comfy.subscription.missing_completion_reported'
 
 interface SubscriptionStatusSnapshot {
   is_active?: boolean
@@ -239,6 +245,7 @@ export const clearPendingSubscriptionCheckoutAttempt = (): void => {
 
   try {
     storage.removeItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
+    storage.removeItem(REPORTED_MISSING_COMPLETION_STORAGE_KEY)
   } catch {
     return
   }
@@ -279,6 +286,38 @@ export const getPendingSubscriptionCheckoutAttempt =
       return null
     }
   }
+
+export const hasReportedMissingCheckoutCompletion = (
+  attemptId: string
+): boolean => {
+  const storage = getStorage()
+  if (!storage) {
+    return false
+  }
+
+  try {
+    return (
+      storage.getItem(REPORTED_MISSING_COMPLETION_STORAGE_KEY) === attemptId
+    )
+  } catch {
+    return false
+  }
+}
+
+export const markMissingCheckoutCompletionReported = (
+  attemptId: string
+): void => {
+  const storage = getStorage()
+  if (!storage) {
+    return
+  }
+
+  try {
+    storage.setItem(REPORTED_MISSING_COMPLETION_STORAGE_KEY, attemptId)
+  } catch {
+    return
+  }
+}
 
 export const hasPendingSubscriptionCheckoutAttempt = (): boolean =>
   getPendingSubscriptionCheckoutAttempt() !== null
