@@ -1166,116 +1166,89 @@ describe('reconcileAgentAdapters', () => {
       expect(minted).toEqual([])
     })
 
-    it('restores the authoritative record and retries after rollback cleanup throws', async () => {
-      const scope = graphScopeOf(graph)
-      const payload = {
-        ...nodePayload(1, 'throws-on-added'),
-        properties: { remoteValue: 7 }
-      }
-      remoteMutations(scope).addNode(payload, REMOTE)
-      const nodeStore = useNodeDataStore()
-      const state = nodeStore.getNode(scope.rootGraphId, toNodeId(1))
-      expect(state).toBeDefined()
-      const onRemoved = vi
-        .spyOn(ThrowsOnAddedNode.prototype, 'onRemoved')
-        .mockImplementation(() => {
-          throw new Error('extension code blew up in onRemoved')
-        })
+    it.for([false, true])(
+      'restores authority and retries after repeated cleanup failures (replacement: %s)',
+      async (replacement) => {
+        let fails = true
+        class ReplacementNode extends WidgetNode {
+          override onAdded() {
+            if (fails) throw new Error('replacement add failed')
+          }
 
-      expect(() => reconcileAgentAdapters(graph)).not.toThrow()
-      expect(onRemoved).toHaveBeenCalled()
-      const partial = graph.getNodeById(toNodeId(1))!
-      expect.soft(nodeStore.getNode(scope.rootGraphId, partial.id)).toBe(state)
-      expect.soft(nodeStore.ownsNode(scope, partial._state)).toBe(false)
-      expect(reportError).toHaveBeenCalledWith(
-        expect.anything(),
-        expect.objectContaining({
-          errorType: 'agent_node_materialize_add_failed'
-        })
-      )
-      expect(reportError).toHaveBeenCalledWith(
-        expect.anything(),
-        expect.objectContaining({
-          errorType: 'agent_node_materialize_rollback_failed'
-        })
-      )
+          override onRemoved() {
+            if (fails) throw new Error('replacement cleanup failed')
+          }
+        }
+        LiteGraph.registerNodeType('replacement-node', ReplacementNode)
+        const scope = graphScopeOf(graph)
+        if (replacement) {
+          seedAgentAddedNode(graph, 1, 'widget-node')
+          reconcileAgentAdapters(graph)
+        }
+        const original = graph.getNodeById(toNodeId(1))
+        const payload = {
+          ...nodePayload(1, 'replacement-node'),
+          properties: { remoteValue: 7 },
+          widgets_values: { value: 7 }
+        }
+        const mutations = remoteMutations(scope)
+        if (replacement) {
+          mutations.batch(REMOTE, (batch) => batch.reconcileNode(payload))
+        } else {
+          mutations.addNode(payload, REMOTE)
+        }
+        const nodeStore = useNodeDataStore()
+        const authoritative = nodeStore.getNode(scope.rootGraphId, toNodeId(1))
+        expect(authoritative).toBeDefined()
 
-      vi.spyOn(ThrowsOnAddedNode.prototype, 'onAdded').mockImplementation(
-        () => {}
-      )
-      onRemoved.mockImplementation(() => {})
-      expect.soft(reconcileAgentAdapters(graph)).toEqual([toNodeId(1)])
-      const restored = graph.getNodeById(toNodeId(1))!
-      expect.soft(restored).not.toBe(partial)
-      expect.soft(restored.properties).toEqual(payload.properties)
-      expect.soft(partial.graph).toBeNull()
-      expect(graph._nodes).toEqual([restored])
-      expect(nodeStore.ownsNode(scope, restored._state)).toBe(true)
-      expect(
-        layoutStore.getNodeLayout(scope.rootGraphId, restored.id)
-      ).toBeDefined()
-      await settle()
-      expect(minted).toEqual([])
-    })
-
-    it('keeps a replacement pending across repeated cleanup failures, then restores its values', async () => {
-      let fails = true
-      class ReplacementNode extends WidgetNode {
-        override onAdded() {
-          if (fails) throw new Error('replacement add failed')
+        expect(reconcileAgentAdapters(graph)).toEqual([])
+        const partial = graph.getNodeById(toNodeId(1))!
+        if (replacement) expect(original?.graph).toBeNull()
+        expect(partial).not.toBe(original)
+        expect(nodeStore.getNode(scope.rootGraphId, partial.id)).toBe(
+          authoritative
+        )
+        expect(nodeStore.ownsNode(scope, partial._state)).toBe(false)
+        for (const errorType of [
+          'agent_node_materialize_add_failed',
+          'agent_node_materialize_rollback_failed'
+        ]) {
+          expect(reportError).toHaveBeenCalledWith(
+            expect.anything(),
+            expect.objectContaining({ errorType })
+          )
         }
 
-        override onRemoved() {
-          if (fails) throw new Error('replacement cleanup failed')
-        }
+        expect(reconcileAgentAdapters(graph)).toEqual([])
+        expect(nodeStore.getNode(scope.rootGraphId, partial.id)).toBe(
+          authoritative
+        )
+        expect(nodeStore.ownsNode(scope, partial._state)).toBe(false)
+        expect(graph._nodes).toEqual([partial])
+        expect(
+          useWidgetValueStore().getWidget(
+            widgetId(scope.rootGraphId, partial.id, 'value')
+          )?.value
+        ).toBe(7)
+
+        fails = false
+        expect(reconcileAgentAdapters(graph)).toEqual([partial.id])
+        const restored = graph.getNodeById(partial.id)!
+        expect(partial.graph).toBeNull()
+        expect(graph._nodes).toEqual([restored])
+        expect(restored).not.toBe(partial)
+        expect(restored.properties).toEqual(payload.properties)
+        expect(restored.widgets?.[0].value).toBe(7)
+        expect(nodeStore.ownsNode(scope, restored._state)).toBe(true)
+        expect(
+          layoutStore.getNodeLayout(scope.rootGraphId, restored.id)
+        ).toBeDefined()
+        expect(reconcileAgentAdapters(graph)).toEqual([])
+        expect(graph.getNodeById(restored.id)).toBe(restored)
+        await settle()
+        expect(minted).toEqual([])
       }
-      LiteGraph.registerNodeType('replacement-node', ReplacementNode)
-      const scope = seedAgentAddedNode(graph, 1, 'widget-node')
-      reconcileAgentAdapters(graph)
-      const original = graph.getNodeById(toNodeId(1))!
-      const payload = {
-        ...nodePayload(1, 'replacement-node'),
-        properties: { remoteValue: 7 },
-        widgets_values: { value: 7 }
-      }
-      remoteMutations(scope).batch(REMOTE, (batch) =>
-        batch.reconcileNode(payload)
-      )
-      const nodeStore = useNodeDataStore()
-      const authoritative = nodeStore.getNode(scope.rootGraphId, original.id)
-      expect(authoritative).toBeDefined()
-
-      expect(reconcileAgentAdapters(graph)).toEqual([])
-      const partial = graph.getNodeById(original.id)!
-      expect(original.graph).toBeNull()
-      expect(partial).not.toBe(original)
-
-      expect(reconcileAgentAdapters(graph)).toEqual([])
-      expect(nodeStore.getNode(scope.rootGraphId, original.id)).toBe(
-        authoritative
-      )
-      expect(nodeStore.ownsNode(scope, partial._state)).toBe(false)
-      expect(graph._nodes).toEqual([partial])
-      expect(
-        useWidgetValueStore().getWidget(
-          widgetId(scope.rootGraphId, original.id, 'value')
-        )?.value
-      ).toBe(7)
-
-      fails = false
-      expect(reconcileAgentAdapters(graph)).toEqual([original.id])
-      const restored = graph.getNodeById(original.id)!
-      expect(partial.graph).toBeNull()
-      expect(graph._nodes).toEqual([restored])
-      expect(restored).not.toBe(partial)
-      expect(restored.properties).toEqual(payload.properties)
-      expect(restored.widgets?.[0].value).toBe(7)
-      expect(nodeStore.ownsNode(scope, restored._state)).toBe(true)
-      expect(reconcileAgentAdapters(graph)).toEqual([])
-      expect(graph.getNodeById(original.id)).toBe(restored)
-      await settle()
-      expect(minted).toEqual([])
-    })
+    )
 
     it('still mints a later local widget edit on the materialized node', async () => {
       const scope = graphScopeOf(graph)
