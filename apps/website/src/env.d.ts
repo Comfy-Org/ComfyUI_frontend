@@ -8,7 +8,10 @@ interface ViteTypeOptions {
 }
 
 interface ImportMetaEnv {
-  /** 'staging' points every Workshop backend at the staging family. */
+  /**
+   * Which Cloud family Workshop talks to: 'prod', 'staging' or 'test'. Unset
+   * means staging. See config/workshop-env.ts and workshop-release.ts.
+   */
   readonly PUBLIC_WORKSHOP_CLOUD_ENV?: string
   /** '1' forces the Workshop auth flag on — PostHog only runs in PROD builds. */
   readonly PUBLIC_WORKSHOP_AUTH_FLAG?: string
