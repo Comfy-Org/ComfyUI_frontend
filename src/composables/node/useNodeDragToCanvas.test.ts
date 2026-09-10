@@ -291,7 +291,7 @@ describe('useNodeDragToCanvas', () => {
         bottom: 500
       })
       mockConvertEventToCanvasOffset.mockReturnValue([150, 150])
-      const placedNode = { id: 1, widgets: [] }
+      const placedNode = { id: 1, type: 'CheckpointLoaderSimple', widgets: [] }
       mockAddNodeOnGraph.mockReturnValue(placedNode)
 
       const { startDrag } = useNodeDragToCanvas()
@@ -316,7 +316,8 @@ describe('useNodeDragToCanvas', () => {
       )
       expect(mockReportError).toHaveBeenCalledWith(
         expect.objectContaining({
-          message: 'Requested widget is missing from the added node'
+          message:
+            'Widget "ckpt_name" is missing from added node CheckpointLoaderSimple'
         }),
         {
           errorType: 'nodes_drag_widget_missing',
@@ -326,7 +327,11 @@ describe('useNodeDragToCanvas', () => {
             operation: 'render',
             outcome: 'failed'
           },
-          context: { drag_mode: 'click' },
+          context: {
+            drag_mode: 'click',
+            node_type: 'CheckpointLoaderSimple',
+            widget_name: 'ckpt_name'
+          },
           level: 'error'
         }
       )

@@ -42,7 +42,7 @@ function applyWidgetValues(node: LGraphNode, values: WidgetValues) {
     const widget = node.widgets?.find((w) => w.name === name)
     if (!widget) {
       reportError(
-        new Error('Requested widget is missing from the added node'),
+        new Error(`Widget "${name}" is missing from added node ${node.type}`),
         {
           errorType: 'nodes_drag_widget_missing',
           tags: {
@@ -51,7 +51,11 @@ function applyWidgetValues(node: LGraphNode, values: WidgetValues) {
             operation: 'render',
             outcome: 'failed'
           },
-          context: { drag_mode: dragMode.value },
+          context: {
+            drag_mode: dragMode.value,
+            node_type: node.type,
+            widget_name: name
+          },
           level: 'error'
         }
       )
