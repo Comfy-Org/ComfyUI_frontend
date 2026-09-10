@@ -324,6 +324,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
     ]
   })
 
+  //FIXME should be |PagedList<FormDropdownItem>
   const dropdownItems = computed<FormDropdownItem[]>(() => {
     if (toValue(options.isAssetMode)) {
       return allItems.value

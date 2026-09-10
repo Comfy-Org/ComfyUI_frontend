@@ -2,6 +2,7 @@ import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
+import { mockPagedList } from '@/utils/__tests__/pagedListUtils'
 import FormDropdownMenu from './FormDropdownMenu.vue'
 import type { FormDropdownItem, LayoutMode } from './types'
 
@@ -104,9 +105,13 @@ describe('FormDropdownMenu', () => {
 
   it('forwards onLoadMore and canLoadMore to the virtual grid', async () => {
     const user = userEvent.setup()
-    const onLoadMore = vi.fn()
+    const pagedItems = mockPagedList({
+      loadMore: vi.fn(),
+      hasMore: true,
+      items: defaultProps.items
+    })
     render(FormDropdownMenu, {
-      props: { ...defaultProps, onLoadMore, canLoadMore: true },
+      props: { ...defaultProps, items: pagedItems },
       global: globalConfig
     })
 
@@ -114,12 +119,13 @@ describe('FormDropdownMenu', () => {
     expect(grid.getAttribute('data-can-load-more')).toBe('true')
 
     await user.click(grid)
-    expect(onLoadMore).toHaveBeenCalledTimes(1)
+    expect(pagedItems.loadMore).toHaveBeenCalledTimes(1)
   })
 
   it('shows the loading-more row only while loadingMore is set', async () => {
+    const items = mockPagedList<FormDropdownItem>({ isLoading: true })
     const { rerender } = render(FormDropdownMenu, {
-      props: { ...defaultProps, loadingMore: true },
+      props: { ...defaultProps, items },
       global: globalConfig
     })
 
