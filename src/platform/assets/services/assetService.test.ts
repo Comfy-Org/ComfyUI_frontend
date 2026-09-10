@@ -1,5 +1,6 @@
 import type * as DistributionModule from '@/platform/distribution/types'
 import type * as I18nModule from '@/i18n'
+import type * as ReportErrorModule from '@/platform/telemetry/reportError'
 import type { ComfyApp } from '@/scripts/app'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -19,7 +20,8 @@ const mockReportError = vi.hoisted(() => vi.fn())
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
 const mockSupportsModelTypeTags = vi.hoisted(() => ({ value: true }))
 
-vi.mock<unknown>(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@/platform/telemetry/reportError'), async (importOriginal) => ({
+  ...(await importOriginal<typeof ReportErrorModule>()),
   reportError: mockReportError
 }))
 

@@ -1,4 +1,5 @@
 import type * as I18nModule from '@/i18n'
+import type * as ReportErrorModule from '@/platform/telemetry/reportError'
 import type { ComfyApp } from '@/scripts/app'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -58,7 +59,8 @@ vi.mock<unknown>(import('@/services/dialogService'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@/platform/telemetry/reportError'), async (importOriginal) => ({
+  ...(await importOriginal<typeof ReportErrorModule>()),
   reportError: mockReportError
 }))
 

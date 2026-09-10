@@ -7,6 +7,7 @@ import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useNodeHelpContent as useNodeHelpContentComposable } from '@/composables/useNodeHelpContent'
+import type * as ReportErrorModule from '@/platform/telemetry/reportError'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { getNodeSource } from '@/types/nodeSource'
@@ -50,7 +51,7 @@ function createMockNode(
     display_name: 'Test Node',
     description: 'A test node',
     category: 'test',
-    python_module: 'comfy.test_node',
+    python_module: 'nodes',
     inputs: {},
     outputs: [],
     deprecated: false,
@@ -71,28 +72,8 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/types/nodeSource'), () => ({
-  NodeSourceType: {
-    Blueprint: 'blueprint',
-    Core: 'core',
-    CustomNodes: 'custom_nodes',
-    Essentials: 'essentials'
-  },
-  getNodeSource: vi.fn((pythonModule, essentialsCategory) => {
-    if (essentialsCategory) {
-      return { type: 'essentials' }
-    }
-    if (pythonModule?.startsWith('blueprint')) {
-      return { type: 'blueprint' }
-    }
-    if (pythonModule?.startsWith('custom_nodes.')) {
-      return { type: 'custom_nodes' }
-    }
-    return { type: 'core' }
-  })
-}))
-
-vi.mock<unknown>(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@/platform/telemetry/reportError'), async (importOriginal) => ({
+  ...(await importOriginal<typeof ReportErrorModule>()),
   reportError: vi.fn()
 }))
 
@@ -101,7 +82,7 @@ describe('useNodeHelpContent', () => {
     name: 'TestNode',
     display_name: 'Test Node',
     description: 'A test node',
-    python_module: 'comfy.test_node'
+    python_module: 'nodes'
   })
 
   const mockCustomNode = createMockNode({
@@ -192,6 +173,37 @@ describe('useNodeHelpContent', () => {
     expect(renderedHelpHtml.value).toContain('Essentials help')
   })
 
+  it('should use the core base URL for relative Essentials images', async () => {
+    const node = createMockNode({
+      name: 'EssentialsNode',
+      essentials_category: 'image',
+      python_module: 'custom_nodes.ComfyUI-Essentials'
+    })
+    mockFetch.mockResolvedValueOnce(markdownResponse('![preview](preview.png)'))
+
+    const { renderedHelpHtml } = useNodeHelpContent(ref(node))
+    await flushPromises()
+
+    expect(renderedHelpHtml.value).toContain(
+      'src="/docs/EssentialsNode/preview.png"'
+    )
+  })
+
+  it('uses a blueprint description even when it has an Essentials category', async () => {
+    const node = createMockNode({
+      description: 'Blueprint help',
+      essentials_category: 'image',
+      python_module: 'blueprint'
+    })
+
+    const { error, renderedHelpHtml } = useNodeHelpContent(ref(node))
+    await flushPromises()
+
+    expect(error.value).toBeNull()
+    expect(renderedHelpHtml.value).toContain('Blueprint help')
+    expect(mockFetch).not.toHaveBeenCalled()
+  })
+
   it('should show the unavailable state for a blueprint without a description', async () => {
     const nodeRef = ref(
       createMockNode({ description: '', python_module: 'blueprint' })
@@ -205,25 +217,22 @@ describe('useNodeHelpContent', () => {
     expect(mockFetch).not.toHaveBeenCalled()
   })
 
-  it('should show the unavailable state for an invalid custom module', async () => {
+  it('should use core help routing for an unrecognized module', async () => {
     const nodeRef = ref(
       createMockNode({
-        description: 'Malformed custom node',
+        name: 'UnknownNode',
+        description: 'Unknown node',
         python_module: 'custom_nodes.'
       })
     )
-    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    mockFetch.mockResolvedValueOnce(markdownResponse('# Unknown help'))
 
     const { error, renderedHelpHtml } = useNodeHelpContent(nodeRef)
     await flushPromises()
 
-    expect(error.value).toBe('Help not found')
-    expect(renderedHelpHtml.value).toContain('Malformed custom node')
-    expect(warning).toHaveBeenCalledWith(
-      'Invalid custom node module:',
-      'custom_nodes.'
-    )
-    expect(mockFetch).not.toHaveBeenCalled()
+    expect(error.value).toBeNull()
+    expect(renderedHelpHtml.value).toContain('Unknown help')
+    expect(mockFetch).toHaveBeenCalledWith('/docs/UnknownNode/en.md')
   })
 
   it('should show the unavailable state for HTML fallback responses', async () => {
@@ -256,9 +265,14 @@ describe('useNodeHelpContent', () => {
       new Error(
         'Failed to fetch node help (500 Internal Server Error) at /docs/TestNode/en.md'
       ),
-      { errorType: 'node_help_fetch_failure' }
+      {
+        errorType: 'node_help_fetch_failure',
+        context: { path: '/docs/TestNode/en.md' }
+      }
     )
-    expect(error.value).toBe('Help not found')
+    expect(error.value).toBe(
+      'Failed to fetch node help (500 Internal Server Error) at /docs/TestNode/en.md'
+    )
     expect(renderedHelpHtml.value).toContain(mockCoreNode.description)
   })
 

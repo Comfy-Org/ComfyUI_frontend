@@ -655,7 +655,7 @@ export class SubgraphHelper {
       const result = canvas.graph!.convertToSubgraph(canvas.selectedItems)
       return result.kind
     })
-    if (conversionKind === 'empty-selection') return
+    expect(conversionKind).not.toBe('empty-selection')
     await this.comfyPage.nextFrame()
     await this.exitViaBreadcrumb()
     await this.comfyPage.canvas.dispatchEvent('pointerdown', {
