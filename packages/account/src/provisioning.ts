@@ -92,14 +92,3 @@ export function customerProvisioningRequest(options: {
     ...(signal ? { signal } : {})
   }
 }
-
-/**
- * The backend answers `POST /customers` with 201 for a new record and 200
- * when one already exists, so only an ok response means provisioned. A 409
- * is never "already there": on this endpoint it is a business conflict or
- * the auth middleware's missing-customer rejection, and treating it as
- * success would sign a user in without a customer record.
- */
-export function isCustomerProvisioned(response: { ok: boolean }): boolean {
-  return response.ok
-}
