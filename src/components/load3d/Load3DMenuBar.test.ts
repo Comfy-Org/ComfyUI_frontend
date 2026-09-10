@@ -17,9 +17,8 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 let mockedTopBarWidth: Ref<number>
 
-vi.mock(import('@/components/ui/slider/Slider.vue'))
-
-vi.mock<unknown>(import('@vueuse/core'), () => ({
+vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => ({
+  ...(await importOriginal()),
   createSharedComposable: (composable: () => unknown) => composable,
   useDocumentVisibility: () => ref('visible'),
   useElementSize: () => ({ width: mockedTopBarWidth, height: ref(40) }),

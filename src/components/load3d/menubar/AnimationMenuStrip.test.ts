@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import type { ComponentProps } from 'vue-component-type-helpers'
@@ -6,8 +6,6 @@ import { createI18n } from 'vue-i18n'
 
 import AnimationMenuStrip from '@/components/load3d/menubar/AnimationMenuStrip.vue'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
-vi.mock(import('@/components/ui/slider/Slider.vue'))
 
 const i18n = createI18n({
   legacy: false,
@@ -68,15 +66,18 @@ describe('AnimationMenuStrip', () => {
   it('emits seek and updates progress when the slider moves', async () => {
     const onSeek = vi.fn()
     const onUpdateProgress = vi.fn()
-    renderStrip({
+    const { user } = renderStrip({
+      animationProgress: 20,
       onSeek,
       'onUpdate:animationProgress': onUpdateProgress
     })
 
-    await fireEvent.update(screen.getByRole('slider'), '37.5')
+    const thumb = await screen.findByRole('slider')
+    thumb.focus()
+    await user.keyboard('{ArrowRight}')
 
-    expect(onSeek).toHaveBeenCalledWith(37.5)
-    expect(onUpdateProgress).toHaveBeenCalledWith(37.5)
+    expect(onSeek).toHaveBeenCalledWith(20.1)
+    expect(onUpdateProgress).toHaveBeenCalledWith(20.1)
   })
 
   it('selects a playback speed from the speed menu', async () => {

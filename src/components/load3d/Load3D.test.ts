@@ -74,6 +74,7 @@ const i18n = createI18n({
   locale: 'en',
   messages: {
     en: {
+      g: { play: 'Play' },
       load3d: { fitToViewer: 'Fit to viewer' }
     }
   }
@@ -116,10 +117,6 @@ function renderLoad3D(options: RenderOptions = {}) {
           Load3DScene: {
             name: 'Load3DScene',
             template: '<div data-testid="load3d-scene" />'
-          },
-          AnimationMenuStrip: {
-            name: 'AnimationMenuStrip',
-            template: '<div data-testid="animation-menu-strip" />'
           },
           RecordMenuControl: {
             name: 'RecordMenuControl',
@@ -244,7 +241,7 @@ describe('Load3D', () => {
           animations: ref([{ name: 'idle', index: 0 }])
         }
       })
-      expect(screen.getByTestId('animation-menu-strip')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Play' })).toBeInTheDocument()
     })
 
     it('hides the animation strip when the animation list is empty', () => {
