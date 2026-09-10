@@ -117,9 +117,9 @@ function renderLoad3D(options: RenderOptions = {}) {
             name: 'Load3DScene',
             template: '<div data-testid="load3d-scene" />'
           },
-          AnimationControls: {
-            name: 'AnimationControls',
-            template: '<div data-testid="animation-controls" />'
+          AnimationMenuStrip: {
+            name: 'AnimationMenuStrip',
+            template: '<div data-testid="animation-menu-strip" />'
           },
           RecordMenuControl: {
             name: 'RecordMenuControl',
@@ -238,18 +238,20 @@ describe('Load3D', () => {
   })
 
   describe('animation controls', () => {
-    it('renders AnimationControls when animations are present', () => {
+    it('renders the animation strip when animations are present', () => {
       renderLoad3D({
         stateOverrides: {
           animations: ref([{ name: 'idle', index: 0 }])
         }
       })
-      expect(screen.getByTestId('animation-controls')).toBeInTheDocument()
+      expect(screen.getByTestId('animation-menu-strip')).toBeInTheDocument()
     })
 
-    it('hides AnimationControls when the animation list is empty', () => {
+    it('hides the animation strip when the animation list is empty', () => {
       renderLoad3D()
-      expect(screen.queryByTestId('animation-controls')).not.toBeInTheDocument()
+      expect(
+        screen.queryByTestId('animation-menu-strip')
+      ).not.toBeInTheDocument()
     })
   })
 })

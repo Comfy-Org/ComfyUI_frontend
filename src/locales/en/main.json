@@ -2249,7 +2249,9 @@
       "switchProjection": "Switch projection",
       "originalMaterialOnly": "Original material only",
       "customUp": "Custom up",
-      "naturalUp": "Natural up"
+      "naturalUp": "Natural up",
+      "playbackSpeed": "Playback speed",
+      "animationClip": "Animation clip"
     },
     "materialModes": {
       "normal": "Normal",
