@@ -296,6 +296,40 @@ describe('AuthSignIn', () => {
     expect(handles.captureAuthCompleted).not.toHaveBeenCalled()
   })
 
+  it('skips telemetry and session publication when the flag turns off while sign-in is pending', async () => {
+    let resolvePopup: ((value: unknown) => void) | undefined
+    handles.google.mockReturnValue(
+      new Promise((resolve) => {
+        resolvePopup = resolve
+      })
+    )
+    render(AuthSignIn)
+    await waitFor(() => expect(handles.onUserChanged).toHaveBeenCalledOnce())
+
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: /continue with google/i }))
+    await waitFor(() => expect(handles.google).toHaveBeenCalledOnce())
+
+    handles.flag!.value = false
+    resolvePopup!({
+      user: { uid: 'uid-1', email: 'user@example.com', displayName: null }
+    })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(
+      handles.captureAuthCompleted,
+      'a flag disabled mid-flight must stop post-auth telemetry'
+    ).not.toHaveBeenCalled()
+
+    handles.flag!.value = true
+    await waitFor(() => expect(handles.onUserChanged).toHaveBeenCalledTimes(2))
+    expect(
+      screen.queryByText(/user@example\.com/),
+      'and must not publish the signed-in session'
+    ).toBeNull()
+  })
+
   it('shows the signup-blocked copy when the popup reports the blocked token', async () => {
     handles.google.mockRejectedValue({
       code: 'auth/internal-error',

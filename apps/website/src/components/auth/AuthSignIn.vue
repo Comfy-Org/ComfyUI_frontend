@@ -55,10 +55,14 @@ async function signInWith(provider: AuthSignInProvider) {
   let firebase: Awaited<ReturnType<typeof loadWorkshopFirebase>> | undefined
   try {
     firebase = await loadWorkshopFirebase()
+    // The rollout flag turning off mid-flight must halt the in-flight auth,
+    // not merely hide the UI: no sign-in, provisioning, telemetry, or session.
+    if (!enabled.value) return
     const credential =
       provider === 'google'
         ? await firebase.signInWorkshopWithGoogle()
         : await firebase.signInWorkshopWithGitHub()
+    if (!enabled.value) return
     captureAuthCompleted({
       method: provider,
       is_new_user: mode === 'signUp' || firebase.isNewWorkshopUser(credential),
