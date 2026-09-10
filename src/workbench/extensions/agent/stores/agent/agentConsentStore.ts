@@ -20,6 +20,10 @@ export const useAgentConsentStore = defineStore('agentConsent', () => {
   const { resolvedUserInfo } = useCurrentUser()
   const loadedIdentity = ref<string | null>(null)
   const acceptedIdentity = ref<string | null>(null)
+  const checkSettled = ref(false)
+  const isChecking = computed(
+    () => Boolean(currentUserId()) && !checkSettled.value
+  )
   let session = 0
   let pendingLoad: { identity: string; result: Promise<boolean> } | null = null
 
@@ -50,6 +54,7 @@ export const useAgentConsentStore = defineStore('agentConsent', () => {
       pendingLoad = null
       loadedIdentity.value = null
       acceptedIdentity.value = null
+      checkSettled.value = false
     },
     { flush: 'sync' }
   )
@@ -115,11 +120,20 @@ export const useAgentConsentStore = defineStore('agentConsent', () => {
     } catch (error) {
       if (!stillOwns(sessionId, identity)) return false
       throw error
+    } finally {
+      if (stillOwns(sessionId, identity)) checkSettled.value = true
     }
   }
 
   async function load(): Promise<boolean> {
-    const identity = await ensureScope()
+    const initialSession = session
+    let identity: string | null
+    try {
+      identity = await ensureScope()
+    } catch (error) {
+      if (session === initialSession) checkSettled.value = true
+      throw error
+    }
     if (!identity) return false
     if (loadedIdentity.value === identity) return accepted.value
     if (pendingLoad?.identity === identity) return pendingLoad.result
@@ -151,6 +165,7 @@ export const useAgentConsentStore = defineStore('agentConsent', () => {
 
       loadedIdentity.value = identity
       acceptedIdentity.value = identity
+      checkSettled.value = true
       return true
     } catch (error) {
       if (!stillOwns(sessionId, identity)) return false
@@ -158,5 +173,5 @@ export const useAgentConsentStore = defineStore('agentConsent', () => {
     }
   }
 
-  return { accepted, identity, ensureScope, load, accept }
+  return { accepted, identity, isChecking, ensureScope, load, accept }
 })

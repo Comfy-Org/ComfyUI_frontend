@@ -90,7 +90,11 @@
       class="ml-auto flex shrink-0 items-center gap-2 px-2"
     >
       <Button
-        v-if="agentPanelStore.enabled && !agentPanelStore.isVisible"
+        v-if="
+          agentPanelStore.enabled &&
+          !agentPanelStore.isVisible &&
+          !(agentPanelStore.isOpen && isChecking)
+        "
         variant="link"
         size="sm"
         class="no-drag shrink-0 border border-solid border-plum-600 bg-ink-700 text-base-foreground hover:border-plum-500"
@@ -162,7 +166,7 @@ const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const commandStore = useCommandStore()
 const agentPanelStore = useAgentPanelStore()
-const { withConsent } = useAgentConsent()
+const { withConsent, isChecking } = useAgentConsent()
 const tabActivity = useWorkflowTabActivityStore()
 const isOpeningAgent = ref(false)
 const { isLoggedIn } = useCurrentUser()

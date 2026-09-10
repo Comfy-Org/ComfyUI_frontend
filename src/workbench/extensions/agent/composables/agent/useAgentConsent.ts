@@ -24,7 +24,7 @@ export function useAgentConsent() {
   const consentStore = useAgentConsentStore()
   const toastStore = useToastStore()
   const { isLoggedIn } = useCurrentUser()
-  const { accepted, identity } = storeToRefs(consentStore)
+  const { accepted, identity, isChecking } = storeToRefs(consentStore)
   const { t } = i18n.global
 
   function showConsentDialog(
@@ -161,5 +161,5 @@ export function useAgentConsent() {
     onAccept()
   }
 
-  return { accepted, withConsent }
+  return { accepted, isChecking, withConsent }
 }
