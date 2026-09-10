@@ -161,7 +161,11 @@ function project(
   if (!isRecord(value)) return value
   return {
     id: modelId,
-    displayName: value.displayName ?? value._displayName,
+    displayName:
+      value.displayName ??
+      (value._displayName === catalogModel.displayName
+        ? undefined
+        : value._displayName),
     media: value.media ?? {},
     // Delivered as `null` rather than omitted when a model has no example.
     examples: value.examples ?? [],

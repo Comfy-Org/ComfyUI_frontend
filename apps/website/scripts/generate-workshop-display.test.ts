@@ -51,6 +51,50 @@ describe('Workshop display names', () => {
     expect(entry.displayName).toBeUndefined()
   })
 
+  it('does not turn copied catalog names into editorial overrides', () => {
+    const [entry] = buildWorkshopDisplay(
+      {
+        [model.id]: { ...drop, _displayName: model.displayName }
+      },
+      catalog
+    )
+    expect(entry.displayName).toBeUndefined()
+  })
+
+  it('preserves nested input media and typed preset values with their output', () => {
+    const example = {
+      title: 'Two image references',
+      description: 'Keep both source images in their original order.',
+      values: {
+        prompt: 'Combine these references',
+        count: 2,
+        enhance: false,
+        medias: [
+          { role: 'image', value: 'https://example.com/first.png' },
+          { role: 'image', value: 'https://example.com/second.png' }
+        ]
+      }
+    }
+    const sample = {
+      url: 'https://example.com/output.png',
+      kind: 'image'
+    }
+    const [entry] = buildWorkshopDisplay(
+      {
+        [model.id]: {
+          ...drop,
+          examples: [example],
+          media: { samples: [sample] },
+          advancedFields: ['seed', 'resolution']
+        }
+      },
+      catalog
+    )
+    expect(entry.examples).toEqual([example])
+    expect(entry.media.samples).toEqual([sample])
+    expect(entry.advancedFields).toEqual(['seed', 'resolution'])
+  })
+
   it.for(['', '   ', 42])(
     'rejects an invalid editorial name: %s',
     (displayName) => {
