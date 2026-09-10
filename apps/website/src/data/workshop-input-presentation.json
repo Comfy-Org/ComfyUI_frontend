@@ -57,15 +57,15 @@
       "control": "text-area"
     },
     {
-      "names": ["n", "count", "num_images", "series_amount"],
+      "names": ["n", "count", "num_images", "sampleCount"],
       "label": "Output count",
       "help": "",
       "advanced": false,
-      "defaultCandidates": [1]
+      "fixed": 1
     },
     {
       "names": ["size", "canvas_size"],
-      "label": "Size",
+      "label": "Resolution",
       "help": "",
       "advanced": false,
       "defaultCandidates": ["1024x1024", "1024*1024", "1024", "auto", 1024]
@@ -129,6 +129,7 @@
       "help": "Reuse a seed with the same inputs to make results more repeatable.",
       "advanced": true,
       "control": "number",
+      "defaultPolicy": "required-only",
       "defaultCandidates": [42]
     },
     {
@@ -1396,6 +1397,13 @@
       },
       "image": {
         "hidden": true
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": ["1024x1024", "1536x1024", "1024x1536", "2048x2048"],
+        "default": "1024x1024"
       }
     },
     "byteplus/seedream-4-0-250828": {
@@ -1415,18 +1423,17 @@
         "control": "text-area"
       },
       "size": {
-        "help": "Choose 1K, 2K, 4K, or custom dimensions as width x height.",
-        "default": "2048x2048"
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": ["1K", "2K", "4K"],
+        "default": "2K"
       },
       "sequential_image_generation": {
-        "label": "Image series",
-        "help": "Choose auto to let the prompt produce several images, or disabled for one."
+        "fixed": "disabled"
       },
       "sequential_image_generation_options": {
-        "label": "Series settings",
-        "help": "Set max_images when image-series mode is auto.",
-        "advanced": true,
-        "control": "text-area"
+        "hidden": true
       }
     },
     "byteplus/seedream-4-5-251128": {
@@ -1446,18 +1453,17 @@
         "control": "text-area"
       },
       "sequential_image_generation": {
-        "label": "Image series",
-        "help": "Choose auto to let the prompt produce several images, or disabled for one."
+        "fixed": "disabled"
       },
       "sequential_image_generation_options": {
-        "label": "Series settings",
-        "help": "Set max_images when image-series mode is auto.",
-        "advanced": true,
-        "control": "text-area"
+        "hidden": true
       },
       "size": {
-        "help": "Choose 2K, 4K, or custom dimensions as width x height.",
-        "default": "2048x2048"
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": ["2K", "4K"],
+        "default": "2K"
       }
     },
     "byteplus/seedream-5-0-260128": {
@@ -1474,18 +1480,17 @@
         "control": "text-area"
       },
       "sequential_image_generation": {
-        "label": "Image series",
-        "help": "Choose auto to let the prompt produce several images, or disabled for one."
+        "fixed": "disabled"
       },
       "sequential_image_generation_options": {
-        "label": "Series settings",
-        "help": "Set max_images when image-series mode is auto.",
-        "advanced": true,
-        "control": "text-area"
+        "hidden": true
       },
       "size": {
-        "help": "Choose 2K, 3K, or custom dimensions as width x height.",
-        "default": "2048x2048"
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": ["2K", "3K"],
+        "default": "2K"
       }
     },
     "byteplus/seedream-5-0-pro-260628": {
@@ -1508,7 +1513,10 @@
         "control": "toggle"
       },
       "size": {
-        "help": "Choose 1K or 2K; layer separation also accepts 1.5K or auto.",
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": ["1K", "2K"],
         "default": "1K"
       }
     },
@@ -1737,15 +1745,10 @@
     },
     "kling/kling-image-o1": {
       "result_type": {
-        "label": "Image output",
-        "help": "Generate individual images or an image series.",
-        "advanced": false,
-        "control": "dropdown"
+        "fixed": "single"
       },
       "series_amount": {
-        "label": "Series length",
-        "help": "Set how many images to include when Image output is series.",
-        "advanced": true
+        "hidden": true
       }
     },
     "kling/kling-v1": {
@@ -2209,26 +2212,61 @@
     "openai/gpt-image-1": {
       "style": {
         "hidden": true
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": ["1024x1024", "1536x1024", "1024x1536", "auto"],
+        "default": "1024x1024"
       }
     },
     "openai/gpt-image-1.5": {
       "style": {
         "hidden": true
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": ["1024x1024", "1536x1024", "1024x1536", "auto"],
+        "default": "1024x1024"
       }
     },
     "openai/gpt-image-2": {
       "style": {
         "hidden": true
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": ["1024x1024", "1536x1024", "1024x1536", "auto"],
+        "default": "1024x1024"
       }
     },
     "openai/gpt-image-2.5-flare": {
       "style": {
         "hidden": true
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": ["1024x1024", "1536x1024", "1024x1536", "auto"],
+        "default": "1024x1024"
       }
     },
     "openai/gpt-image-2.5-sunburst": {
       "style": {
         "hidden": true
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": ["1024x1024", "1536x1024", "1024x1536", "auto"],
+        "default": "1024x1024"
       }
     },
     "openai/o1": {
@@ -2324,6 +2362,19 @@
         "help": "Use an existing Recraft style ID instead of Style name.",
         "advanced": true,
         "control": "text-box"
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": [
+          "1024x1024",
+          "1820x1024",
+          "1024x1820",
+          "1536x1024",
+          "1024x1536"
+        ],
+        "default": "1024x1024"
       }
     },
     "recraft/recraftv3": {
@@ -2343,6 +2394,19 @@
         "help": "Use an existing Recraft style ID instead of Style name.",
         "advanced": true,
         "control": "text-box"
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": [
+          "1024x1024",
+          "1820x1024",
+          "1024x1820",
+          "1536x1024",
+          "1024x1536"
+        ],
+        "default": "1024x1024"
       }
     },
     "recraft/recraftv4": {
@@ -2362,6 +2426,19 @@
         "help": "Use an existing Recraft style ID instead of Style name.",
         "advanced": true,
         "control": "text-box"
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": [
+          "1024x1024",
+          "1344x768",
+          "768x1344",
+          "1280x832",
+          "832x1280"
+        ],
+        "default": "1024x1024"
       }
     },
     "recraft/recraftv4_1": {
@@ -2381,6 +2458,19 @@
         "help": "Use an existing Recraft style ID instead of Style name.",
         "advanced": true,
         "control": "text-box"
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": [
+          "1024x1024",
+          "1344x768",
+          "768x1344",
+          "1280x832",
+          "832x1280"
+        ],
+        "default": "1024x1024"
       }
     },
     "recraft/recraftv4_1_pro": {
@@ -2400,6 +2490,19 @@
         "help": "Use an existing Recraft style ID instead of Style name.",
         "advanced": true,
         "control": "text-box"
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": [
+          "2048x2048",
+          "2688x1536",
+          "1536x2688",
+          "2560x1664",
+          "1664x2560"
+        ],
+        "default": "2048x2048"
       }
     },
     "recraft/recraftv4_1_pro_vector": {
@@ -2419,6 +2522,13 @@
         "help": "Use an existing Recraft style ID instead of Style name.",
         "advanced": true,
         "control": "text-box"
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": ["1:1", "16:9", "9:16", "3:2", "2:3", "4:3", "3:4"],
+        "default": "1:1"
       }
     },
     "recraft/recraftv4_1_utility": {
@@ -2438,6 +2548,19 @@
         "help": "Use an existing Recraft style ID instead of Style name.",
         "advanced": true,
         "control": "text-box"
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": [
+          "1024x1024",
+          "1344x768",
+          "768x1344",
+          "1280x832",
+          "832x1280"
+        ],
+        "default": "1024x1024"
       }
     },
     "recraft/recraftv4_1_utility_pro": {
@@ -2457,6 +2580,19 @@
         "help": "Use an existing Recraft style ID instead of Style name.",
         "advanced": true,
         "control": "text-box"
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": [
+          "2048x2048",
+          "2688x1536",
+          "1536x2688",
+          "2560x1664",
+          "1664x2560"
+        ],
+        "default": "2048x2048"
       }
     },
     "recraft/recraftv4_1_utility_pro_vector": {
@@ -2476,6 +2612,13 @@
         "help": "Use an existing Recraft style ID instead of Style name.",
         "advanced": true,
         "control": "text-box"
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": ["1:1", "16:9", "9:16", "3:2", "2:3", "4:3", "3:4"],
+        "default": "1:1"
       }
     },
     "recraft/recraftv4_1_utility_vector": {
@@ -2495,6 +2638,13 @@
         "help": "Use an existing Recraft style ID instead of Style name.",
         "advanced": true,
         "control": "text-box"
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": ["1:1", "16:9", "9:16", "3:2", "2:3", "4:3", "3:4"],
+        "default": "1:1"
       }
     },
     "recraft/recraftv4_1_vector": {
@@ -2514,6 +2664,13 @@
         "help": "Use an existing Recraft style ID instead of Style name.",
         "advanced": true,
         "control": "text-box"
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": ["1:1", "16:9", "9:16", "3:2", "2:3", "4:3", "3:4"],
+        "default": "1:1"
       }
     },
     "recraft/recraftv4_pro": {
@@ -2533,6 +2690,19 @@
         "help": "Use an existing Recraft style ID instead of Style name.",
         "advanced": true,
         "control": "text-box"
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": [
+          "2048x2048",
+          "2688x1536",
+          "1536x2688",
+          "2560x1664",
+          "1664x2560"
+        ],
+        "default": "2048x2048"
       }
     },
     "recraft/recraftv4_styles": {
@@ -2550,6 +2720,19 @@
         "help": "Provide an existing Recraft style ID; this model requires one.",
         "advanced": false,
         "control": "text-box"
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": [
+          "1024x1024",
+          "1344x768",
+          "768x1344",
+          "1280x832",
+          "832x1280"
+        ],
+        "default": "1024x1024"
       }
     },
     "recraft/recraftv4_styles_pro": {
@@ -2567,6 +2750,19 @@
         "help": "Provide an existing Recraft style ID; this model requires one.",
         "advanced": false,
         "control": "text-box"
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": [
+          "2048x2048",
+          "2688x1536",
+          "1536x2688",
+          "2560x1664",
+          "1664x2560"
+        ],
+        "default": "2048x2048"
       }
     },
     "recraft/recraftv4_styles_pro_vector": {
@@ -2584,6 +2780,13 @@
         "help": "Provide an existing Recraft style ID; this model requires one.",
         "advanced": false,
         "control": "text-box"
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": ["1:1", "16:9", "9:16", "3:2", "2:3", "4:3", "3:4"],
+        "default": "1:1"
       }
     },
     "recraft/recraftv4_styles_vector": {
@@ -2601,6 +2804,13 @@
         "help": "Provide an existing Recraft style ID; this model requires one.",
         "advanced": false,
         "control": "text-box"
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": ["1:1", "16:9", "9:16", "3:2", "2:3", "4:3", "3:4"],
+        "default": "1:1"
       }
     },
     "runway/aleph2": {
@@ -3033,10 +3243,14 @@
         "help": "Provide image URL objects to guide the video; omit Image input."
       },
       "resolution": {
-        "defaultCandidates": []
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": ["480p", "720p"],
+        "default": "720p"
       },
       "size": {
-        "defaultCandidates": []
+        "hidden": true
       }
     },
     "xai/grok-imagine-video-1.5": {
@@ -3052,10 +3266,14 @@
         "help": "Provide image URL objects to guide the video; omit Image input."
       },
       "resolution": {
-        "defaultCandidates": []
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": ["480p", "720p", "1080p"],
+        "default": "720p"
       },
       "size": {
-        "defaultCandidates": []
+        "hidden": true
       }
     },
     "xai/grok-imagine-video-1.5-preview": {
@@ -3071,10 +3289,14 @@
         "help": "Provide image URL objects to guide the video; omit Image input."
       },
       "resolution": {
-        "defaultCandidates": []
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": ["480p", "720p"],
+        "default": "720p"
       },
       "size": {
-        "defaultCandidates": []
+        "hidden": true
       }
     }
   }

@@ -71,7 +71,7 @@ function deriveFieldsForDefinition(
     { ...parameters, properties },
     roles,
     definition.source === 'router' ? [] : undefined
-  )
+  ).filter((field) => !definition.inputs?.[field.name]?.hidden)
   const bodyEditor = usesRequestBodyEditor(definition)
   const names = new Set([
     ...fields.map((field) => field.name),

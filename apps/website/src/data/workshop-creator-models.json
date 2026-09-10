@@ -1,7 +1,4 @@
 {
-  "templates": {
-    "dialogue": "{\"inputs\":[{\"text\":$repl_string(\"text\"),\"voice_id\":$repl_string(\"voice_id\")}],\"seed\":$repl_number(\"seed\")}"
-  },
   "models": {
     "bfl/flux-3-video": {
       "family": "bfl-video"

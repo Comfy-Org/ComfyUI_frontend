@@ -38,7 +38,9 @@ export async function prepareWorkshopCreatorRequest(
   encodeFile = workshopFileBase64
 ): Promise<Record<string, unknown>> {
   const fileNames = new Set(definition.files.map((field) => field.name))
-  const plain: Record<string, string | number | boolean> = {}
+  const plain: Record<string, string | number | boolean> = {
+    ...definition.fixedValues
+  }
   for (const [name, value] of Object.entries(values)) {
     if (value === undefined || fileNames.has(name)) continue
     if (value === '' && definition.request.kind === 'callback') continue

@@ -16,6 +16,8 @@ const ruleSchema = workshopInputDefinitionSchema
   .extend({
     options: z.array(scalar).min(1).optional(),
     default: z.json().optional(),
+    fixed: scalar.optional(),
+    defaultPolicy: z.literal('required-only').optional(),
     defaultCandidates: z.array(scalar).optional()
   })
   .strict()
@@ -124,6 +126,7 @@ export function curateWorkshopInputs(
     if (!Object.hasOwn(properties, name))
       throw new Error(`Unknown curated input ${id}:${name}`)
   const hidden = new Set(omitted)
+  const unsetDefaults = new Set<string>()
   const inputs: Record<string, WorkshopInputDefinition> = {}
   const defaultInput: JsonSchema = {}
   const curated = Object.entries(properties).map(([name, raw]) => {
@@ -131,6 +134,28 @@ export function curateWorkshopInputs(
     const common = commonRules.get(name)
     const override = overrides.get(name)
     const rule = { ...common, ...override }
+    if (rule.fixed !== undefined) {
+      if (
+        !validateWorkshopInput(rule.fixed, {
+          ...schema,
+          ...(source.components ? { components: source.components } : {})
+        })
+      )
+        throw new Error(`Invalid fixed input ${id}:${name}`)
+      defaultInput[name] = rule.fixed
+      inputs[name] = {
+        label: rule.label ?? friendlyLabel(name),
+        help: '',
+        hidden: true,
+        advanced: false,
+        control: controlFor(name, schema),
+        defaultSource: 'curated'
+      }
+      return [
+        name,
+        { ...schema, const: rule.fixed, default: rule.fixed }
+      ] as const
+    }
     if (!common && !override && !required.has(name) && !hidden.has(name)) {
       if (Object.hasOwn(schema, 'default')) {
         const validation = {
@@ -175,7 +200,10 @@ export function curateWorkshopInputs(
     }
     let defaultSource: WorkshopInputDefinition['defaultSource']
     if (!hidden.has(name)) {
-      if (Object.hasOwn(schema, 'default')) {
+      if (rule.defaultPolicy === 'required-only' && !required.has(name)) {
+        delete effective.default
+        unsetDefaults.add(name)
+      } else if (Object.hasOwn(schema, 'default')) {
         if (!validateWorkshopInput(schema.default, validation))
           throw new Error(`Invalid Router default ${id}:${name}`)
         defaultSource = 'router'
@@ -236,11 +264,19 @@ export function curateWorkshopInputs(
   for (const key of ['example', 'default']) {
     const parsed = jsonObject.safeParse(source[key])
     if (parsed.success && source.properties)
-      inputSchema[key] = Object.fromEntries(
-        Object.entries(parsed.data).filter(
-          ([name]) => Object.hasOwn(inputs, name) && !hidden.has(name)
+      inputSchema[key] = {
+        ...Object.fromEntries(
+          Object.entries(parsed.data).filter(
+            ([name]) =>
+              Object.hasOwn(inputs, name) &&
+              !hidden.has(name) &&
+              (key !== 'default' || !unsetDefaults.has(name))
+          )
+        ),
+        ...Object.fromEntries(
+          Object.entries(defaultInput).filter(([name]) => inputs[name]?.hidden)
         )
-      )
+      }
   }
   return { inputSchema, inputs, defaultInput }
 }

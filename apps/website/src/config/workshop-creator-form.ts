@@ -17,6 +17,9 @@ export const workshopCreatorFormSchema = z
   .object({
     parameters: jsonObject,
     inputs: z.record(z.string(), workshopInputDefinitionSchema),
+    fixedValues: z
+      .record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
+      .optional(),
     files: z.array(workshopCreatorFileSchema).default([]),
     request: z.discriminatedUnion('kind', [
       z.object({ kind: z.literal('template'), template: z.string().min(1) }),
@@ -24,6 +27,7 @@ export const workshopCreatorFormSchema = z
         kind: z.literal('callback'),
         callback: z.enum([
           'flat',
+          'dialogue',
           'bfl-video',
           'nested-settings',
           'grok-video',
@@ -55,6 +59,17 @@ export const workshopCreatorFormSchema = z
       )
     )
   }, 'File widgets must have unique names separate from scalar inputs')
+  .refine((form) => {
+    const properties = jsonObject.parse(form.parameters.properties ?? {})
+    return Object.entries(form.fixedValues ?? {}).every(([name, value]) => {
+      const schema = jsonObject.safeParse(properties[name])
+      return (
+        form.inputs[name]?.hidden &&
+        schema.success &&
+        schema.data.const === value
+      )
+    })
+  }, 'Fixed values must have hidden widgets and matching schema constants')
 
 export type WorkshopCreatorForm = z.infer<typeof workshopCreatorFormSchema>
 export type WorkshopCreatorFile = z.infer<typeof workshopCreatorFileSchema>

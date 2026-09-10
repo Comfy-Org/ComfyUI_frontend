@@ -9,7 +9,6 @@ import { wanCreatorRequest } from './workshop-creator-wan'
 const object = z.record(z.string(), z.json())
 const definitions = z
   .object({
-    templates: z.record(z.string(), z.string()),
     models: z.record(
       z.string(),
       z.object({
@@ -47,7 +46,7 @@ export function creatorFormFor(
         required: true
       })
       add('seed', schemaAt(source, 'seed'), { advanced: true })
-      request = { kind: 'template', template: definitions.templates.dialogue }
+      request = { kind: 'callback', callback: 'dialogue', options: {} }
       break
     case 'seedance':
       addRoot()
@@ -120,7 +119,13 @@ export function creatorFormFor(
       settings(
         'parameters',
         ['n', 'negative_prompt', 'prompt_extend', 'seed', 'size', 'watermark'],
-        'param_'
+        'param_',
+        {
+          size: {
+            options: ['1024*1024', '1536*1024', '1024*1536', '2048*2048'],
+            default: '1024*1024'
+          }
+        }
       )
       request = { kind: 'callback', callback: 'qwen-image', options: {} }
       break
@@ -285,9 +290,7 @@ export function creatorFormFor(
         advanced: false
       }
       rules.param_sampleCount = {
-        label: 'Number of videos',
-        help: '',
-        advanced: false
+        fixed: 1
       }
       request = { kind: 'callback', callback: 'veo', options: {} }
       break

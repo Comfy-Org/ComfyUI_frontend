@@ -25,7 +25,7 @@ function upload(type = 'image/png'): FileValue {
 
 function modelFor(id: string) {
   const model = getRouterWorkshopModelDetail(id.replace('/', '--'))
-  if (!model?.execution?.creator) throw new Error(`Missing creator form: ${id}`)
+  if (!model?.execution) throw new Error(`Missing Router contract: ${id}`)
   return { ...model, execution: model.execution }
 }
 
@@ -59,7 +59,10 @@ function valuesFor(id: string): FormValues {
         break
     }
   }
-  if (id === 'meshy/remesh' || id === 'meshy/rigging')
+  if (
+    model.execution.id === 'meshy/remesh' ||
+    model.execution.id === 'meshy/rigging'
+  )
     values.model_url = 'https://example.invalid/model.glb'
   return values
 }
@@ -77,15 +80,87 @@ const models = routerWorkshopModels.filter(
 )
 
 describe('creator widgets to native Router requests', () => {
+  it.for([
+    ...new Map(
+      routerWorkshopModels.map((model) => [model.routerId, model])
+    ).values()
+  ])(
+    'initializes valid defaults and leaves optional seeds unset: $slug',
+    async (model) => {
+      const detail = getRouterWorkshopModelDetail(model.slug)
+      if (!detail) throw new Error(`Missing model page: ${model.slug}`)
+      const fields = schemaForModel(detail)
+      const values = defaultValues(fields, detail.defaults)
+      for (const field of fields) {
+        if (/(?:^|_)seed$/.test(field.name) && !field.required) {
+          expect(values[field.name]).toBeUndefined()
+          const path =
+            field.name === 'param_seed' ? 'parameters.seed' : field.name
+          expect(await prepare(model.slug)).not.toHaveProperty(path)
+        }
+        if (values[field.name] !== undefined && values[field.name] !== '')
+          expect(validateForm([field], values)).toEqual({})
+      }
+    }
+  )
+
+  it.for([
+    {
+      id: 'byteplus/dreamina-seedance-2-0-fast-260128',
+      widget: 'seed',
+      path: 'seed'
+    },
+    { id: 'byteplus/seedream-4-0-250828', widget: 'seed', path: 'seed' },
+    { id: 'bfl/flux-2-pro', widget: 'seed', path: 'seed' },
+    { id: 'elevenlabs/eleven_v3', widget: 'seed', path: 'seed' },
+    {
+      id: 'wan/wan2.5-t2i-preview',
+      widget: 'param_seed',
+      path: 'parameters.seed'
+    },
+    {
+      id: 'veo/veo-3.1-generate-001',
+      widget: 'param_seed',
+      path: 'parameters.seed'
+    }
+  ])(
+    'omits an unset seed, sends explicit zero, and omits it again after clearing: $id',
+    async ({ id, widget, path }) => {
+      expect(await prepare(id)).not.toHaveProperty(path)
+      expect(await prepare(id, { [widget]: 0 })).toHaveProperty(path, 0)
+      expect(await prepare(id, { [widget]: undefined })).not.toHaveProperty(
+        path
+      )
+      await expect(prepare(id, { [widget]: 0.5 })).rejects.toMatchObject({
+        reason: 'validation'
+      })
+    }
+  )
+
+  it('keeps the required Runway seed valid and rejects a missing or negative seed', async () => {
+    const id = 'runway/gen4_turbo'
+    const body = await prepare(id)
+    expect(body).toHaveProperty('seed', 42)
+    expect(
+      validateWorkshopInput(body, modelFor(id).execution.inputSchema)
+    ).toBe(true)
+    await expect(prepare(id, { seed: undefined })).rejects.toMatchObject({
+      fieldErrors: { seed: 'required' }
+    })
+    await expect(prepare(id, { seed: -1 })).rejects.toMatchObject({
+      reason: 'validation'
+    })
+  })
+
   it('uses every authored model definition on a visible schema-backed page', () => {
-    expect(models.map((model) => model.routerId).sort()).toEqual(
+    expect([...new Set(models.map((model) => model.routerId))].sort()).toEqual(
       Object.keys(creatorModels.models).sort()
     )
   })
   it.for(models)(
-    '$routerId has usable widgets and a schema-valid prepared body',
+    '$slug has usable widgets and a schema-valid prepared body',
     async (model) => {
-      const detail = modelFor(model.routerId)
+      const detail = modelFor(model.slug)
       const fields = schemaForModel(detail)
       expect(
         fields.some(
@@ -95,8 +170,8 @@ describe('creator widgets to native Router requests', () => {
       expect(new Set(fields.map((field) => field.name)).size).toBe(
         fields.length
       )
-      expect(validateForm(fields, valuesFor(model.routerId))).toEqual({})
-      const body = await prepare(model.routerId)
+      expect(validateForm(fields, valuesFor(model.slug))).toEqual({})
+      const body = await prepare(model.slug)
       expect(validateWorkshopInput(body, detail.execution.inputSchema)).toBe(
         true
       )
@@ -104,7 +179,7 @@ describe('creator widgets to native Router requests', () => {
     }
   )
 
-  it('substitutes dialogue widgets once, preserving escaping and numeric types', async () => {
+  it('composes dialogue widgets literally, preserving escaping and numeric types', async () => {
     expect(
       await prepare('elevenlabs/eleven_v3', {
         text: hostilePrompt,
@@ -116,6 +191,87 @@ describe('creator widgets to native Router requests', () => {
       seed: 0
     })
   })
+
+  it.for([
+    {
+      id: 'openai/gpt-image-1',
+      widget: 'size',
+      value: '1536x1024',
+      expected: { size: '1536x1024', n: 1 }
+    },
+    {
+      id: 'byteplus/seedream-4-0-250828',
+      widget: 'size',
+      value: '4K',
+      expected: { size: '4K', sequential_image_generation: 'disabled' }
+    },
+    {
+      id: 'recraft/recraftv4_pro',
+      widget: 'size',
+      value: '2688x1536',
+      expected: { size: '2688x1536', n: 1 }
+    },
+    {
+      id: 'qwen/qwen-image-3.0',
+      widget: 'param_size',
+      value: '1536*1024',
+      expected: { parameters: { size: '1536*1024', n: 1 } }
+    },
+    {
+      id: 'wan/wan2.5-t2i-preview',
+      widget: 'param_size',
+      value: '1920*1080',
+      expected: { parameters: { size: '1920*1080', n: 1 } }
+    },
+    {
+      id: 'veo/veo-3.1-generate-001',
+      widget: 'param_resolution',
+      value: '1080p',
+      expected: { parameters: { resolution: '1080p', sampleCount: 1 } }
+    },
+    {
+      id: 'xai/grok-imagine-video-1.5',
+      widget: 'resolution',
+      value: '1080p',
+      expected: { resolution: '1080p' }
+    }
+  ])(
+    'sends the selected Resolution as a native value for $id',
+    async ({ id, widget, value, expected }) => {
+      const fields = schemaForModel(modelFor(id))
+      const field = fields.find((entry) => entry.name === widget)
+      if (field?.kind !== 'select')
+        throw new Error(`Missing resolution dropdown: ${id}`)
+      expect(field.label).toBe('Resolution')
+      expect(field.options).toContain(value)
+      expect(await prepare(id, { [widget]: value })).toMatchObject(expected)
+      await expect(
+        prepare(id, { [widget]: 'not-a-resolution' })
+      ).rejects.toMatchObject({ reason: 'validation' })
+    }
+  )
+
+  it.for([
+    { id: 'qwen/qwen-image-3.0', widget: 'param_n', key: 'n' },
+    { id: 'wan/wan2.5-t2i-preview', widget: 'param_n', key: 'n' },
+    { id: 'wan/wan2.5-i2i-preview', widget: 'param_n', key: 'n' },
+    {
+      id: 'veo/veo-3.1-generate-001',
+      widget: 'param_sampleCount',
+      key: 'sampleCount'
+    }
+  ])(
+    'keeps the nested output count at one without accepting a hidden widget: $id',
+    async ({ id, widget, key }) => {
+      expect(
+        schemaForModel(modelFor(id)).some((field) => field.name === widget)
+      ).toBe(false)
+      expect(await prepare(id)).toMatchObject({ parameters: { [key]: 1 } })
+      await expect(prepare(id, { [widget]: 4 })).rejects.toMatchObject({
+        reason: 'validation'
+      })
+    }
+  )
 
   it('encodes Seedance frames as ordered data URLs and keeps advanced values', async () => {
     const body = await prepare('byteplus/dreamina-seedance-2-0-fast-260128', {

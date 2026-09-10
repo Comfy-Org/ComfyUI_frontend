@@ -15,6 +15,7 @@ import {
   defaultValues,
   schemaForModel
 } from '../src/config/workshop-playground'
+import type { FormValues } from '../src/config/workshop-playground'
 import { prepareWorkshopRouterInput } from '../src/config/workshop-request'
 import {
   parseRouterOpenApiSnapshot,
@@ -35,6 +36,164 @@ const sources = new Map(
 )
 
 describe('curated model inputs', () => {
+  it.for([-1, 0, undefined])(
+    'leaves an optional seed unset instead of applying the Router default %s',
+    async (seedDefault) => {
+      const source = {
+        type: 'object',
+        properties: {
+          prompt: { type: 'string' },
+          seed: {
+            type: 'integer',
+            minimum: -1,
+            maximum: 100,
+            ...(seedDefault === undefined ? {} : { default: seedDefault })
+          }
+        },
+        required: ['prompt'],
+        default: { prompt: 'A cube', seed: seedDefault ?? 42 }
+      }
+      const original = structuredClone(source)
+      const contract = workshopContractSchema.parse({
+        id: 'fixture/optional-seed',
+        sourceCommit: 'a'.repeat(40),
+        ...curateWorkshopInputs('fixture/optional-seed', source),
+        output: { format: 'auto', contentTypes: ['application/json'] }
+      })
+      const schema = schemaForModel({
+        fields: [],
+        form: formForContract(contract)
+      })
+      const values: FormValues = { ...defaultValues(schema), prompt: 'A cube' }
+      const prepare = (seedValues = values) =>
+        prepareWorkshopRouterInput(
+          contract,
+          seedValues,
+          new AbortController().signal
+        )
+      expect(await prepare()).toEqual({ prompt: 'A cube' })
+      expect(contract.inputSchema.default).toEqual({ prompt: 'A cube' })
+      for (const seed of [-1, 0, 100])
+        expect(await prepare({ ...values, seed })).toEqual({
+          prompt: 'A cube',
+          seed
+        })
+      for (const seed of [-2, 0.5, 101])
+        await expect(prepare({ ...values, seed })).rejects.toMatchObject({
+          reason: 'validation'
+        })
+      expect(await prepare({ ...values, seed: undefined })).not.toHaveProperty(
+        'seed'
+      )
+      expect(source).toEqual(original)
+    }
+  )
+
+  it.for([0, undefined])(
+    'keeps a valid required seed and rejects clearing it (Router default %s)',
+    async (seedDefault) => {
+      const contract = workshopContractSchema.parse({
+        id: 'fixture/required-seed',
+        sourceCommit: 'a'.repeat(40),
+        ...curateWorkshopInputs('fixture/required-seed', {
+          type: 'object',
+          properties: {
+            seed: {
+              type: 'integer',
+              minimum: 0,
+              maximum: 100,
+              ...(seedDefault === undefined ? {} : { default: seedDefault })
+            }
+          },
+          required: ['seed']
+        }),
+        output: { format: 'auto', contentTypes: ['application/json'] }
+      })
+      const schema = schemaForModel({
+        fields: [],
+        form: formForContract(contract)
+      })
+      const values = defaultValues(schema)
+      expect(
+        await prepareWorkshopRouterInput(
+          contract,
+          values,
+          new AbortController().signal
+        )
+      ).toEqual({ seed: seedDefault ?? 42 })
+      await expect(
+        prepareWorkshopRouterInput(
+          contract,
+          { seed: undefined },
+          new AbortController().signal
+        )
+      ).rejects.toMatchObject({ fieldErrors: { seed: 'rejected' } })
+    }
+  )
+
+  it('sends one output without a widget, even when the provider defaults to four', async () => {
+    const source = {
+      type: 'object',
+      properties: {
+        prompt: { type: 'string' },
+        n: { type: 'integer', minimum: 1, maximum: 4, default: 4 }
+      },
+      required: ['prompt', 'n'],
+      example: { prompt: 'A cube', n: 4 },
+      additionalProperties: false
+    }
+    const original = structuredClone(source)
+    const curated = curateWorkshopInputs('fixture/output-count', source)
+    const contract = workshopContractSchema.parse({
+      id: 'fixture/output-count',
+      sourceCommit: 'a'.repeat(40),
+      ...curated,
+      output: { format: 'auto', contentTypes: ['application/json'] }
+    })
+    expect(
+      fieldsForDefinition(formForContract(contract)).map((field) => field.name)
+    ).toEqual(['prompt'])
+    expect(
+      await prepareWorkshopRouterInput(
+        contract,
+        { prompt: 'A cube' },
+        new AbortController().signal
+      )
+    ).toEqual({ prompt: 'A cube', n: 1 })
+    expect(curated.inputSchema.example).toEqual({ prompt: 'A cube', n: 1 })
+    expect(source).toEqual(original)
+    await expect(
+      prepareWorkshopRouterInput(
+        contract,
+        { prompt: 'A cube', n: 4 },
+        new AbortController().signal
+      )
+    ).rejects.toMatchObject({ reason: 'validation' })
+    await expect(
+      prepareWorkshopRouterInput(
+        contract,
+        { request_body: JSON.stringify({ prompt: 'A cube', n: 4 }) },
+        new AbortController().signal
+      )
+    ).rejects.toMatchObject({ reason: 'validation' })
+    expect(() =>
+      curateWorkshopInputs('fixture/invalid-count', {
+        properties: { n: { type: 'integer', minimum: 2, maximum: 4 } }
+      })
+    ).toThrow('Invalid fixed input')
+  })
+
+  it('offers no output-count controls across the generated Router contracts', () => {
+    const outputCountNames =
+      /^(?:param_)?(?:n|count|num_images|sampleCount|series_amount)$/
+    const controls = contracts.flatMap((contract) =>
+      fieldsForDefinition(formForContract(contract))
+        .filter((field) => outputCountNames.test(field.name))
+        .map((field) => `${contract.id}:${field.name}`)
+    )
+    expect(controls).toEqual([])
+  })
+
   it('applies every model-specific widget to an authored Router schema', () => {
     for (const [id, rules] of Object.entries(rawPresentation.models)) {
       const snapshot = sources.get(id)
@@ -172,7 +331,7 @@ describe('curated model inputs', () => {
     expect(values.style_id).toBeUndefined()
     const body = await prepareWorkshopRouterInput(
       contract,
-      { ...values, text_prompt: 'A red cube', creativity: 0.333 },
+      { ...values, text_prompt: 'A red cube', creativity: 0.333, seed: 0 },
       new AbortController().signal
     )
     expect(body).toEqual({
@@ -334,8 +493,8 @@ describe('curated model inputs', () => {
     {
       id: 'kling/kling-v3',
       values: { prompt: 'A slow camera pan' },
-      expected: { multi_shot: false },
-      absent: ['shot_type', 'multi_prompt']
+      expected: { prompt: 'A slow camera pan' },
+      absent: ['multi_shot', 'shot_type', 'multi_prompt']
     },
     {
       id: 'recraft/recraftv4',
@@ -353,10 +512,9 @@ describe('curated model inputs', () => {
       expected: {
         canny_high_threshold: 250,
         guidance: 30.125,
-        prompt_upsampling: false,
-        seed: 42
+        prompt_upsampling: false
       },
-      absent: []
+      absent: ['seed']
     }
   ])(
     'prepares meaningful defaults and native widget values for $id',
@@ -401,7 +559,11 @@ describe('curated model inputs', () => {
         })
         if (input.hidden) {
           expect(fields.has(name)).toBe(false)
-          expect(effectiveProperties).not.toHaveProperty(name)
+          if (Object.hasOwn(contract.defaultInput ?? {}, name)) {
+            const fixed = contract.defaultInput?.[name]
+            expect(effectiveProperties[name]).toMatchObject({ const: fixed })
+            expect(validateWorkshopInput(fixed, schema)).toBe(true)
+          } else expect(effectiveProperties).not.toHaveProperty(name)
           await expect(
             prepareWorkshopRouterInput(
               contract,

@@ -61,7 +61,11 @@ export function createCreatorFields(
       )
       if (field.kind === 'text' && field.valueType === 'json') continue
       const { defaultSource, ...rule } = input
-      add(name, schema, { ...rule, required: sourceRequired.has(name) })
+      add(name, schema, {
+        ...rule,
+        defaultCandidates: [],
+        required: sourceRequired.has(name)
+      })
     }
   }
 
@@ -113,7 +117,12 @@ export function createCreatorFields(
     })
   }
 
-  function settings(path: string, names: readonly string[], prefix: string) {
+  function settings(
+    path: string,
+    names: readonly string[],
+    prefix: string,
+    overrides: Rules = {}
+  ) {
     const group = schemaAt(source, path)
     const root = {
       ...group,
@@ -123,7 +132,7 @@ export function createCreatorFields(
       'creator/settings',
       root,
       [],
-      Object.fromEntries(names.map((name) => [name, {}]))
+      Object.fromEntries(names.map((name) => [name, overrides[name] ?? {}]))
     )
     for (const name of names) {
       const input = projected.inputs[name]
@@ -131,7 +140,16 @@ export function createCreatorFields(
       add(
         prefix + name,
         object.parse(object.parse(projected.inputSchema.properties)[name]),
-        rule
+        {
+          ...rule,
+          ...(Object.hasOwn(projected.defaultInput, name)
+            ? {
+                fixed: z
+                  .union([z.string(), z.number(), z.boolean()])
+                  .parse(projected.defaultInput[name])
+              }
+            : {})
+        }
       )
     }
   }
@@ -163,6 +181,9 @@ export function createCreatorFields(
     return workshopCreatorFormSchema.parse({
       parameters: form.inputSchema,
       inputs,
+      ...(Object.keys(form.defaultInput).length
+        ? { fixedValues: form.defaultInput }
+        : {}),
       files,
       request
     })

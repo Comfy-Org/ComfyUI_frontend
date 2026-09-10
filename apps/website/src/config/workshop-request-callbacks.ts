@@ -159,6 +159,16 @@ export function prepareWorkshopRequestCallback(
   switch (request.callback) {
     case 'flat':
       return { ...values }
+    case 'dialogue':
+      return {
+        inputs: [
+          {
+            text: requireInput(values, 'text'),
+            voice_id: requireInput(values, 'voice_id')
+          }
+        ],
+        ...(values.seed !== undefined ? { seed: values.seed } : {})
+      }
     case 'seedance':
       return seedance(context)
     case 'gemini-image':

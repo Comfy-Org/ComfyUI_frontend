@@ -26,7 +26,9 @@ Router request schema, not a replacement for the authoritative snapshot.
 - Hide integration-only inputs such as callbacks, webhook secrets, task tracking,
   response delivery and routing selectors. Hidden is not another Advanced group.
 - Never hide a required user input without an explicit, valid system-owned value.
-- Native schema defaults take precedence. Otherwise use an explicitly curated,
+- Native schema defaults take precedence except for an explicit system-owned
+  fixed value (such as one output) or a curated default policy (such as optional
+  seeds remaining unset). Otherwise use an explicitly curated,
   validated default, chosen during curation and saved in data, never by a live
   model call when rendering a page. Zero and false are real defaults.
 - Show the default beside the input and initialize the actual control to it.
@@ -59,6 +61,38 @@ by a watcher. Negative prompts and non-prompt inputs are not given generic text.
 Media, voice IDs and task IDs must still come from the creator. The structured
 widgets below do not fabricate them, and prompt starters alone do not make
 every request valid.
+
+## Seed defaults: September 10 correction
+
+- Optional Seed controls start blank and are omitted from the prepared Router
+  request until explicitly entered. Do not prefill `-1`, `42`, or even `0` simply
+  because a provider or shared rule supplies a default. Omission delegates seed
+  selection to the endpoint.
+- The common Seed rule uses `defaultPolicy: "required-only"`. Required seeds
+  retain a validated native or curated default; clearing them blocks submission.
+  Explicit values, including zero, retain their numeric type and native limits.
+  This is not a blanket ban on `-1`: the pinned BytePlus schemas allow it.
+- Apply this during contract generation, including nested `parameters.seed`
+  projections. Do not strip explicit seed values in the request serializer.
+- ElevenLabs dialogue uses a callback so its optional seed can be omitted.
+  Replacement templates remain replacement-only; missing tokens are still errors.
+- The visible-model audit found 48 Router models with seed controls: 47 optional
+  and one required (`runway/gen4_turbo`). Previously 10 optional seeds started at
+  `-1` and 37 at `42`. All 47 now start unset. All 436 populated initial values
+  (including the required seed) across the 114 visible Router models pass their
+  current field schemas.
+  Schema validity is not proof of live provider acceptance or conditional modes.
+- Previously saved draft values remain user state; clearing a saved seed removes
+  it from the next request. Do not erase intentional seeds during restoration.
+
+Regression coverage exercises initial omission, explicit zero, clearing,
+required-seed enforcement, native bounds/integers, and the actual Advanced input.
+Tests prepare requests locally; no paid generations are involved.
+
+Verification: five focused files passed (1,191 data-driven tests in 3.84 seconds),
+website typecheck passed, and type-aware lint passed on the changed TypeScript.
+Regenerating the 198 packed contracts twice produced identical bytes (200 lines).
+The raw Router snapshot and Rob's display content were unchanged by this fix.
 
 ## Controls
 
@@ -128,8 +162,8 @@ raw JSON controls. The four missing-schema Incomplete models are unchanged.
 
 Source and runtime responsibilities:
 
-- `src/data/workshop-creator-models.json`: explicit model/family selection and
-  template text. `workshop-input-presentation.json` remains the shared vocabulary.
+- `src/data/workshop-creator-models.json`: explicit model/family selection.
+  `workshop-input-presentation.json` remains the shared vocabulary.
 - `scripts/workshop-creator-fields.ts`: build-time widget projection and schema
   resolution. `workshop-creator-forms.ts` and `workshop-creator-wan.ts` supply
   family-specific definitions. No family detection runs in Vue components.
@@ -147,8 +181,10 @@ Source and runtime responsibilities:
   Both API snippets and Run already use this same preparation path.
 
 The 78 updated pages consist of 47 structured-request adapters and 31 simplified
-scalar forms. ElevenLabs dialogue uses a literal replacement template. Variable
-media arrays and optional settings use callbacks; the scalar-only callback keeps
+scalar forms. ElevenLabs dialogue initially used a literal replacement template;
+the September 10 seed correction moved it to a callback for optional seed
+omission. Variable media arrays and optional settings use callbacks; the
+scalar-only callback keeps
 the useful basic mode without offering unsupported optional JSON structures.
 Those omitted structures are not claimed as completed capabilities (for example,
 multi-shot/storyboard, specialist reference arrays or free-form style objects).
@@ -289,8 +325,9 @@ the PR #17263 preview, and `http://localhost:4321`. HTTP 200 alone is not a
 successful CORS preflight. A storage owner must configure allowed browser
 origins/methods (`PUT`, plus `GET`/`HEAD` for previews) and `Content-Type`, then
 verify a real signed upload and download in a browser. No bucket configuration
-was changed. The browser connection and `COMFY_KEY` were unavailable in this
-session, so neither real storage uploads nor paid provider calls were exercised.
+was changed. Local-only draft Playwright tests exercise the UI with mocked
+responses; they are not part of this preview update. Neither real storage
+uploads nor paid provider calls have been certified by this pass.
 
 Focused regression coverage lives in `workshop-url-upload.test.ts`,
 `workshop-url-input.test.ts`, `PlaygroundField.test.ts`, `ModelDetail.test.ts`,
@@ -299,10 +336,39 @@ examples are executed with real local fixture bytes against stubbed endpoints,
 including distinct ordered uploads, no auth forwarding, mixed URL/Base64 bodies,
 and upload failure preventing generation. This does not replace live CORS tests.
 
+### Paused local-only API-key generation and browser tests (September 10)
+
+This separate draft remains uncommitted and is not included in the preview.
+Its local `e2e-models/README.md` contains the repeatable commands.
+`test:e2e:models` runs isolated browser regressions; `test:e2e:models:live`
+explicitly opts into up to two paid requests using `COMFY_KEY`, with the real
+Router and real storage CORS. It requires a generated output that actually
+decodes, not just HTTP 200 or the example already on the page. Normal website
+CI remains network-isolated and never runs these paid tests.
+
+The **Development API key** control is intended for dev mode on exact loopback
+hosts. Its release boundary is NOT yet verified: the compiled-preview test
+failed with inherited `NODE_ENV=development`, which made `import.meta.env.DEV`
+true in the build. Replace this boundary with an actual dev-server signal and
+rerun the release check before pushing that separate, paused slice.
+It keeps a manually applied key in component memory, never in storage or
+a public env variable, and clears the password input immediately. Clearing it
+cancels pending work. An opaque key-activation ID scopes cached uploads/retries;
+the key is never part of a request fingerprint. Signed-in flows still use the
+account package and `ensureFresh`; there is no fabricated Firebase identity or
+automatic fallback from failed sign-in. Router, not the website balance, checks
+the explicit key's credits. The compiled-preview test must prove that this
+control is absent even on localhost; it is currently a known failing check.
+
+Browser tests also exposed a pre-existing fullscreen-output Teleport hydrating
+against Astro's body-level style element. Mounting the Teleport only when its
+dialog opens avoids touching that SSR node. Generation tests assert no hydration
+errors and exercise fullscreen open/close.
+
 ## Shared placement
 
-Standard: prompt, main input text/media, output count, size, width/height,
-resolution, aspect ratio, duration, voice and language.
+Standard: prompt, main input text/media, resolution, width/height,
+aspect ratio, duration, voice and language. Output count is not a user control.
 
 Advanced: negative prompt, random seed, guidance/creativity/steps, sampling,
 quality/encoding, camera/motion refinements and optional specialist controls.
@@ -312,6 +378,49 @@ Operational controls are hidden. Media definitions remain in the schema even
 if some upload UI is deferred for V1; required unsupported media must not be
 silently omitted. Native JSON is the wire representation, not a creator-facing
 fallback for missing controls. Public URLs are usable inputs where verified.
+
+## September 10 input pass
+
+All supported Size/Resolution presets use the label **Resolution**, a dropdown,
+and a selected valid default. Native values stay unchanged on the wire: Qwen
+and Wan use `width*height`, OpenAI and raster Recraft use `widthxheight`, and
+other models accept their documented `1K`/`720p`-style choices. Vector Recraft
+uses aspect ratios. Separate width/height controls remain where no verified
+resolution preset exists; do not invent a closed list from arbitrary bounds.
+
+The generated audit finds no output-count controls across 198 contracts. All
+60 Resolution/Size controls across the current visible Router models are
+dropdowns. These are local generation/component/request checks, not paid
+provider acceptance tests.
+
+The `fixed` presentation rule validates an explicit system-owned scalar against
+the native property, hides its widget, and constrains its schema with `const`.
+Top-level values travel through `defaultInput`; flattened callback inputs use
+`creator.fixedValues` before native request composition. Neither path accepts a
+user override through a hidden widget. This keeps `n`/`count`/`num_images` and
+Veo's nested `sampleCount` at one, including Wan's native four-output default.
+Seedream's supported image-series control is fixed to `disabled`; Kling O1 uses
+`result_type=single` without a series-length control. This is the creator UI's
+single-output policy, not a limitation imposed on Router's public API.
+
+Choices are narrowed from the pinned Router snapshot and provider documentation:
+
+- [Recraft size appendix](https://www.recraft.ai/docs/api-reference/appendix):
+  model-specific raster sizes and vector aspect ratios, including Pro sizes.
+- [BytePlus image API](https://docs.byteplus.com/api/docs/ModelArk/1824121):
+  Seedream generation-specific sizes. The pinned 5.0 Lite snapshot is narrower
+  than the current provider page; keep the supported intersection (2K/3K).
+- [xAI video generation](https://docs.x.ai/developers/model-capabilities/video/generation):
+  480p/720p; 1.5's current text/first-frame path also supports 1080p. Do not
+  apply that choice to a future reference-video adapter without its own check.
+- [Qwen image API](https://www.alibabacloud.com/help/en/model-studio/qwen-image-generation-and-editing-api-reference)
+  and [Wan image editing](https://www.alibabacloud.com/help/en/model-studio/wan2-5-image-edit-api-reference):
+  preserve the `*` separator and each model's bounds. Wan T2I starts at its
+  declared 1280×1280 default, not the old undersized 1024×1024 override.
+
+Content identity and unfinished per-use-case widget customization are documented
+in [Models content format](MODELS_CONTENT_FORMAT.md). Live render tests remain
+paused while these input definitions are tuned.
 
 ## Verification boundaries
 

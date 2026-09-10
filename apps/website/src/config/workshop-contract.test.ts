@@ -37,16 +37,18 @@ function exampleValues(contract: (typeof contracts)[number]): FormValues {
     fieldsForDefinition(definition).map((field) => [field.name, field])
   )
   return Object.fromEntries(
-    Object.entries(example).map(([name, value]) => {
-      const field = fields.get(name)
-      if (!field)
-        throw new Error(`Example has no form field: ${contract.id}:${name}`)
-      if (field.kind === 'text' && field.valueType === 'json')
-        return [name, JSON.stringify(value)]
-      if (value === null || typeof value === 'object')
-        throw new Error(`Example needs JSON control: ${contract.id}:${name}`)
-      return [name, value]
-    })
+    Object.entries(example)
+      .filter(([name]) => !contract.inputs?.[name]?.hidden)
+      .map(([name, value]) => {
+        const field = fields.get(name)
+        if (!field)
+          throw new Error(`Example has no form field: ${contract.id}:${name}`)
+        if (field.kind === 'text' && field.valueType === 'json')
+          return [name, JSON.stringify(value)]
+        if (value === null || typeof value === 'object')
+          throw new Error(`Example needs JSON control: ${contract.id}:${name}`)
+        return [name, value]
+      })
   )
 }
 
@@ -68,9 +70,9 @@ describe('schema-driven Router coverage', () => {
                   'application/json': {
                     schema: {
                       type: 'object',
-                      required: ['count', 'content'],
+                      required: ['value', 'content'],
                       properties: {
-                        count: { type: 'integer', nullable: true },
+                        value: { type: 'integer', nullable: true },
                         content: { type: 'string' }
                       },
                       additionalProperties: { type: 'boolean' }
@@ -89,7 +91,7 @@ describe('schema-driven Router coverage', () => {
     const [contract] = z
       .array(workshopContractRecordSchema)
       .parse(JSON.parse(compileWorkshopContracts([snapshot])))
-    const body = { count: null, content: '', custom: false }
+    const body = { value: null, content: '', custom: false }
     expect(
       await prepareWorkshopRouterInput(
         contract,
@@ -100,7 +102,7 @@ describe('schema-driven Router coverage', () => {
     await expect(
       prepareWorkshopRouterInput(
         contract,
-        { request_body: JSON.stringify({ ...body, count: 'no' }) },
+        { request_body: JSON.stringify({ ...body, value: 'no' }) },
         new AbortController().signal
       )
     ).rejects.toMatchObject({ fieldErrors: { request_body: 'rejected' } })

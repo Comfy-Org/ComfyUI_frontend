@@ -34,12 +34,38 @@ export function wanCreatorRequest(
             : ['resolution'])
         ])
   ].filter((name) => Object.hasOwn(params, name))
-  settings('parameters', names, 'param_')
-  if (Object.hasOwn(properties, 'param_size'))
-    properties.param_size = {
-      ...object.parse(properties.param_size),
-      default: id.includes('2.5-') ? '1024*1024' : '1280*720'
+  const sizes = id.includes('2.5-t2i')
+    ? [
+        '1280*1280',
+        '1440*1440',
+        '1536*1152',
+        '1152*1536',
+        '1920*1080',
+        '1080*1920'
+      ]
+    : id.includes('2.5-i2i')
+      ? [
+          '1280*1280',
+          '1024*1024',
+          '1280*960',
+          '960*1280',
+          '1280*720',
+          '720*1280'
+        ]
+      : [
+          '1280*720',
+          '720*1280',
+          '960*960',
+          '1920*1080',
+          '1080*1920',
+          '1440*1440'
+        ]
+  settings('parameters', names, 'param_', {
+    size: {
+      options: sizes,
+      default: sizes[0]
     }
+  })
   if (Object.hasOwn(properties, 'param_resolution'))
     properties.param_resolution = {
       ...object.parse(properties.param_resolution),
@@ -85,8 +111,6 @@ export function wanCreatorRequest(
       help: '',
       advanced: false
     }
-  if (Object.hasOwn(properties, 'param_size'))
-    rules.param_size = { label: 'Size', help: '', advanced: false }
   if (['image', 'image-edit', 'reference'].includes(String(options.mode)))
     url(
       'image_url',
