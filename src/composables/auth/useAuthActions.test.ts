@@ -1,5 +1,5 @@
-import { useAuthStore } from '@/stores/authStore'
 import { useToast } from '@/components/ui/toast'
+import { useAuthStore } from '@/stores/authStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { FirebaseError } from 'firebase/app'
 import {

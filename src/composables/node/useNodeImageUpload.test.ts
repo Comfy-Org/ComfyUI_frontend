@@ -1,9 +1,9 @@
+import { useToast } from '@/components/ui/toast'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ResultItem } from '@/schemas/apiSchema'
-import { useToast } from '@/components/ui/toast'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useNodeImageUpload } from './useNodeImageUpload'
 import type { Mock } from 'vitest'

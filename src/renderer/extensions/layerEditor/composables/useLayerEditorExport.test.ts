@@ -1,4 +1,4 @@
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { App } from 'vue'
 import { createApp, defineComponent, ref } from 'vue'
@@ -18,23 +18,34 @@ import type {
 import { useLayerEditorExport } from './useLayerEditorExport'
 import type { LayerEditorSession } from './useLayerEditorSession'
 
-const { writePsd, downloadBlob } = vi.hoisted(() => ({
+const { writePsd, downloadBlob, toastAdd } = vi.hoisted(() => ({
+  toastAdd: vi.fn(),
   writePsd: vi.fn((_psd: unknown) => new ArrayBuffer(4)),
   downloadBlob: vi.fn()
 }))
 
 vi.mock(import('ag-psd'), () => ({ writePsd }))
 vi.mock(import('@/base/common/downloadUtil'), () => ({ downloadBlob }))
-vi.mock<unknown>(import('@/components/ui/toast'), () => ({
-  useToast: () => ({
-    success: (...args: unknown[]) => toastAdd('success', ...args),
-    error: (...args: unknown[]) => toastAdd('error', ...args),
-    info: (...args: unknown[]) => toastAdd('info', ...args),
-    warning: (...args: unknown[]) => toastAdd('warning', ...args),
-    loading: (...args: unknown[]) => toastAdd('loading', ...args),
-    custom: (...args: unknown[]) => toastAdd('custom', ...args)
-  })
-}))
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation((...args: unknown[]) =>
+    toastAdd('success', ...args)
+  )
+  vi.mocked(useToast().error).mockImplementation((...args: unknown[]) =>
+    toastAdd('error', ...args)
+  )
+  vi.mocked(useToast().info).mockImplementation((...args: unknown[]) =>
+    toastAdd('info', ...args)
+  )
+  vi.mocked(useToast().warning).mockImplementation((...args: unknown[]) =>
+    toastAdd('warning', ...args)
+  )
+  vi.mocked(useToast().loading).mockImplementation((...args: unknown[]) =>
+    toastAdd('loading', ...args)
+  )
+  vi.mocked(useToast().custom).mockImplementation((...args: unknown[]) =>
+    toastAdd('custom', ...args)
+  )
+})
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -180,10 +191,6 @@ function makeSession(nodes: RasterData[], glOk = true): LayerEditorSession {
   } as unknown as LayerEditorSession
 }
 
-beforeEach(() => {
-  vi.mocked(useToastStore().add).mockImplementation(() => undefined)
-})
-
 describe('useLayerEditorExport', () => {
   it('writes a psd matching the layer tree and triggers a download', async () => {
     const session = makeSession([
@@ -217,7 +224,7 @@ describe('useLayerEditorExport', () => {
     expect(blob).toBeInstanceOf(Blob)
     expect(exporting.value).toBe(false)
     expect(session.requestRender).toHaveBeenCalled()
-    expect(vi.mocked(useToastStore().add)).not.toHaveBeenCalled()
+    expect(vi.mocked(toastAdd)).not.toHaveBeenCalled()
   })
 
   it('shows an error toast when writing fails', async () => {

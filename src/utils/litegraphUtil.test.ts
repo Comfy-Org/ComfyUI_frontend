@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useToast } from '@/components/ui/toast'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
@@ -28,9 +29,9 @@ vi.mock(
   })
 )
 
-vi.mock<unknown>(import('@/components/ui/toast'), () => ({
-  useToast: () => ({ warning: vi.fn() })
-}))
+beforeEach(() => {
+  vi.mocked(useToast().warning).mockImplementation(vi.fn())
+})
 
 describe('resolveNode', () => {
   it('returns undefined when graph is null', () => {
