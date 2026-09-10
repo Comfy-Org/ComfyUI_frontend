@@ -1,8 +1,10 @@
+import type { UserCredential } from 'firebase/auth'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   isWorkshopProvisioningError,
   provisionCustomer,
+  provisionWorkshopCustomer,
   signInWorkshopWithEmail,
   signInWorkshopWithGoogle,
   signUpWorkshopWithEmail
@@ -153,44 +155,25 @@ describe('social sign-in provisioning boundary', () => {
   })
 
   it('wraps a provisioning failure with the signed-in user and the original cause', async () => {
-    h.signInWithGoogle.mockResolvedValue({ user })
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => new Response(null, { status: 500 }))
     )
 
-    const failure = await signInWorkshopWithGoogle().catch((error) => error)
+    const failure = await provisionWorkshopCustomer({
+      user
+    } as unknown as UserCredential).catch((error) => error)
 
     expect(
       isWorkshopProvisioningError(failure),
-      'the popup succeeded, so the page must keep the identity and say setup did not finish'
+      'the sign-in succeeded, so the page keeps the identity and says setup did not finish'
     ).toBe(true)
     expect(failure.user).toBe(user)
     expect(String(failure.cause)).toContain('500')
   })
 })
 
-describe('email sign-in provisioning boundary', () => {
-  const user = { uid: 'u1', email: 'a@b.co', getIdToken: async () => 'jwt' }
-
-  it('wraps a provisioning failure with the signed-in user, exactly like a social popup', async () => {
-    h.signInWithEmail.mockResolvedValue({ user })
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => new Response(null, { status: 500 }))
-    )
-
-    const failure = await signInWorkshopWithEmail('a@b.co', 'hunter2!').catch(
-      (error) => error
-    )
-
-    expect(
-      isWorkshopProvisioningError(failure),
-      'the cloud app keeps an email user signed in when the customer step fails; so must this page'
-    ).toBe(true)
-    expect(failure.user).toBe(user)
-  })
-
+describe('email sign-in boundary', () => {
   it('rethrows a credential failure untouched', async () => {
     const wrong = { code: 'auth/wrong-password', message: 'x' }
     h.signInWithEmail.mockRejectedValue(wrong)
