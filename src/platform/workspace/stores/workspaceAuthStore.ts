@@ -1,7 +1,7 @@
 import { zWorkspaceWithRole } from '@comfyorg/ingest-types/zod'
 import type { User } from 'firebase/auth'
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 import { z } from 'zod'
 
 import type {
@@ -862,6 +862,19 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       { autoMint: false }
     )
   }
+
+  // The flag owns both ends: a rollback to the legacy rail must also stop
+  // the unified scheduler and cross-tab lease, or they keep rotating the
+  // cookie and refilling the slot the API callers no longer read.
+  watch(
+    () => flags.unifiedCloudAuthEnabled,
+    (enabled) => {
+      if (enabled || !detachUnifiedIdentity) return
+      detachUnifiedIdentity()
+      detachUnifiedIdentity = undefined
+      clearUnifiedContext()
+    }
+  )
 
   /**
    * The user the port has delivered, once it is the app's current user
