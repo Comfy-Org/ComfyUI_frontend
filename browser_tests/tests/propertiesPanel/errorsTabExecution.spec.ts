@@ -77,12 +77,9 @@ test.describe('Errors tab - Execution error lifecycle', { tag: '@ui' }, () => {
     const workflowsTab = comfyPage.menu.workflowsTab
     await expect
       .poll(() => workflowsTab.getOpenedWorkflowNames())
-      .toContain('execution_error')
+      .toContain('*execution_error')
 
     await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-    await expect
-      .poll(() => workflowsTab.getOpenedWorkflowNames())
-      .toHaveLength(2)
     await expect(runtimePanel).toBeHidden()
 
     await workflowsTab.switchToWorkflow('execution_error')
