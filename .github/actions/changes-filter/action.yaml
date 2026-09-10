@@ -8,7 +8,7 @@
 # required check is emitted whatever the verdict; a check GitHub never creates
 # leaves the queue waiting.
 #
-# Shared dependency files (root package.json, pnpm-lock.yaml,
+# Shared dependency files (.nvmrc, root package.json, pnpm-lock.yaml,
 # pnpm-workspace.yaml) are folded into every app-* and packages-changes
 # output so a lockfile bump correctly invalidates each granular gate. They
 # are NOT folded into docs-changes.
@@ -56,7 +56,7 @@ outputs:
     description: '`docs/**` or any `**/*.md` changed (deps NOT folded in).'
     value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.docs == 'true' }}
   dependency-changes:
-    description: 'Root `package.json`, `pnpm-lock.yaml`, or `pnpm-workspace.yaml` changed.'
+    description: 'Root `.nvmrc`, `package.json`, `pnpm-lock.yaml`, or `pnpm-workspace.yaml` changed.'
     value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.deps == 'true' }}
 
 runs:
@@ -82,6 +82,7 @@ runs:
             - 'docs/**'
             - '**/*.md'
           deps:
+            - '.nvmrc'
             - 'package.json'
             - 'pnpm-lock.yaml'
             - 'pnpm-workspace.yaml'
