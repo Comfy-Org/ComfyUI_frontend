@@ -65,6 +65,25 @@ export function createNodeShellState(
   }
 }
 
+/**
+ * Carries the canonical identity a committed {@link NodeState} holds onto the
+ * fresh shell state that will replace it, for callers that rebuild a live node
+ * from a record the stores already own. `nodeIncarnation` names the node's
+ * semantic lifetime, so rebuilding its shell must continue that lifetime
+ * rather than start an unnamed one. Absence stays absence — a record with no
+ * incarnation does not acquire one here.
+ *
+ * Call before {@link registerNodeState}, while `shell` is still the node's own
+ * unregistered state.
+ */
+export function adoptCanonicalNodeIdentity(
+  shell: NodeState,
+  committed: Pick<NodeState, 'nodeIncarnation'>
+): void {
+  if (committed.nodeIncarnation === undefined) delete shell.nodeIncarnation
+  else shell.nodeIncarnation = committed.nodeIncarnation
+}
+
 /** Writes a shell-state field, emitting `node:property:changed` on change. */
 export function setTrackedNodeState<K extends keyof NodeState>(
   node: LGraphNode,

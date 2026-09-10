@@ -1,3 +1,4 @@
+import { adoptCanonicalNodeIdentity } from '@/core/graph/nodeShell/nodeShellState'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { materializeLinkAdapter } from '@/lib/litegraph/src/LLink'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -97,6 +98,7 @@ function materialize(
   const node =
     LiteGraph.createNode(state.type, state.title) ?? missingNode(state)
   node.id = state.id
+  adoptCanonicalNodeIdentity(node._state, state)
 
   const widgets = widgetStore.getNodeWidgets(scope.rootGraphId, state.id).map(
     (widget): WidgetStateInit => ({

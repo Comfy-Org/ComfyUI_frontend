@@ -223,6 +223,22 @@ function widgetEntries(payload: SemanticNodePayload): PreparedNode['widgets'] {
   }))
 }
 
+/**
+ * Command payloads name a node's lifetime `nodeIncarnation`; serialized
+ * workflow JSON names it `node_incarnation`, and `LGraphNode.configure()`
+ * reads only the latter. Every other field already shares a key space, so
+ * that one rename is the whole conversion.
+ */
+function toSerialisedNode(payload: SemanticNodePayload): ISerialisedNode {
+  const { nodeIncarnation, ...serialisable } = structuredClone(payload)
+  return {
+    ...(serialisable as unknown as ISerialisedNode),
+    ...(typeof nodeIncarnation === 'string' && {
+      node_incarnation: nodeIncarnation
+    })
+  }
+}
+
 function prepareNode(
   payload: SemanticNodePayload,
   scope: GraphScope
@@ -247,7 +263,7 @@ function prepareNode(
       nodeIncarnation: payload.nodeIncarnation
     }),
     properties: cloneRecord(payload.properties) as NodeState['properties'],
-    lastSerialization: structuredClone(payload) as unknown as ISerialisedNode,
+    lastSerialization: toSerialisedNode(payload),
     ...(typeof payload.bgcolor === 'string' && { bgcolor: payload.bgcolor }),
     ...(typeof payload.boxcolor === 'string' && { boxcolor: payload.boxcolor }),
     ...(typeof payload.color === 'string' && { color: payload.color }),
