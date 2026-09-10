@@ -94,7 +94,7 @@ export const SESSION_ERROR_MESSAGES: Readonly<
   INVALID_FIREBASE_TOKEN: 'Authentication failed. Please try logging in again.',
   ACCESS_DENIED: 'You do not have access to this workspace',
   WORKSPACE_NOT_FOUND: 'Workspace not found',
-  TOKEN_EXCHANGE_FAILED: 'Failed to authenticate with workspace'
+  TOKEN_EXCHANGE_FAILED: 'Failed to authenticate with workspace: {error}'
 }
 
 export { SESSION_TELEMETRY_EVENT } from '../telemetry.js'
