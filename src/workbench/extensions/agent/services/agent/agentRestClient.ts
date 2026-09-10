@@ -164,6 +164,7 @@ export function createAgentRestClient() {
 
   async function listThreads(): Promise<AgentThreadSummary[]> {
     const threads: AgentThreadSummary[] = []
+    const seenCursors = new Set<string>()
     let cursor: string | undefined
     do {
       const after = cursor ? `?after=${encodeURIComponent(cursor)}` : ''
@@ -175,12 +176,13 @@ export function createAgentRestClient() {
       threads.push(...page.threads)
       if (!page.pagination.has_more) break
       const nextCursor = page.pagination.next_cursor
-      if (!nextCursor || nextCursor === cursor)
+      if (!nextCursor || seenCursors.has(nextCursor))
         throw new AgentApiError(
           'Agent thread pagination did not advance',
           502,
           page.pagination
         )
+      seenCursors.add(nextCursor)
       cursor = nextCursor
     } while (cursor)
     return threads

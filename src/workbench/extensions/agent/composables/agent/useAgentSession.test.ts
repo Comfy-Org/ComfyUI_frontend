@@ -5,6 +5,8 @@ import { nextTick } from 'vue'
 import { reportError } from '@/platform/telemetry/reportError'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
+import type * as CurrentUserModule from '@/composables/auth/useCurrentUser'
+import type * as TeamWorkspaceModule from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import type {
   AgentAnswerAccepted,
@@ -31,6 +33,39 @@ import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflo
 import type { SelectedNode } from './useCanvasSelection'
 import type { AgentEventSource, TurnOrigin } from './useAgentSession'
 import { useAgentSession } from './useAgentSession'
+
+const THREAD_KEY = 'Comfy.Agent.ThreadId'
+
+const identity = vi.hoisted(() => ({
+  user: { __v_isRef: true, value: { id: 'user-1' } },
+  workspaceId: { __v_isRef: true, value: 'workspace-1' }
+}))
+
+vi.mock(import('@/composables/auth/useCurrentUser'), async () => {
+  const actual = await vi.importActual<typeof CurrentUserModule>(
+    '@/composables/auth/useCurrentUser'
+  )
+  return {
+    ...actual,
+    useCurrentUser: () =>
+      ({ resolvedUserInfo: identity.user }) as unknown as ReturnType<
+        typeof actual.useCurrentUser
+      >
+  }
+})
+
+vi.mock(import('@/platform/workspace/stores/teamWorkspaceStore'), async () => {
+  const actual = await vi.importActual<typeof TeamWorkspaceModule>(
+    '@/platform/workspace/stores/teamWorkspaceStore'
+  )
+  return {
+    ...actual,
+    useTeamWorkspaceStore: Object.assign(
+      () => ({ activeWorkspaceId: identity.workspaceId }),
+      { $id: 'teamWorkspace' }
+    ) as unknown as typeof actual.useTeamWorkspaceStore
+  }
+})
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
@@ -204,6 +239,8 @@ function admissionError(
 describe('useAgentSession (v1 composition root)', () => {
   beforeEach(() => {
     localStorage.clear()
+    identity.user.value = { id: 'user-1' }
+    identity.workspaceId.value = 'workspace-1'
     vi.mocked(reportError).mockClear()
   })
 
@@ -339,10 +376,9 @@ describe('useAgentSession (v1 composition root)', () => {
     const first = useAgentSession({ rest, events: fakeEvents().source })
     first.start()
     first.stop()
+    identity.workspaceId.value = 'workspace-2'
     const second = useAgentSession({ rest, events: fakeEvents().source })
     second.start()
-
-    identity.workspace.activeWorkspaceId.value = 'workspace-2'
 
     await vi.waitFor(() =>
       expect(getMessages).toHaveBeenCalledWith('thread-workspace-2')
@@ -2050,10 +2086,12 @@ describe('thread resume (B17)', () => {
           rejectHistory = reject
         })
     )
-    const postMessage = vi.fn(async (): Promise<AgentTurnAccepted> => ({
-      thread_id: 'th-new',
-      message_id: 'msg-new'
-    }))
+    const postMessage = vi.fn(
+      async (): Promise<AgentTurnAccepted> => ({
+        thread_id: 'th-new',
+        message_id: 'msg-new'
+      })
+    )
     const session = useAgentSession({
       rest: fakeRest({ getMessages, postMessage }),
       events: fakeEvents().source

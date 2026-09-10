@@ -1,7 +1,9 @@
-import { computed, ref } from 'vue'
+import { computed, ref, toValue, watch } from 'vue'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { createUuidv4 } from '@/utils/uuid'
 import type { AgentActiveTabData, TurnId } from '../../schemas/agentApiSchema'
 import {
@@ -88,6 +90,7 @@ const THREAD_STORAGE_KEY = 'Comfy.Agent.ThreadId'
 const PREPARE_TIMEOUT_MS = 3000
 
 let sessionGeneration = 0
+let rememberedStorageScope: string | null = null
 
 /**
  * Page-lifetime binding memory: the workflow a resumed turn belongs to must
@@ -139,6 +142,41 @@ export function useAgentSession(deps: AgentSessionDeps) {
   // an initial `false` (still connecting, not yet dropped) doesn't abort a
   // turn that survived a remount.
   let everLive = false
+  let loadGeneration = 0
+
+  const currentUser = useCurrentUser()
+  const workspaceStore = useTeamWorkspaceStore()
+  const storageScope = computed(() => {
+    const userId = toValue(currentUser.resolvedUserInfo)?.id ?? 'signed-out'
+    const workspaceId = toValue(workspaceStore.activeWorkspaceId) ?? 'personal'
+    return `${encodeURIComponent(userId)}.${encodeURIComponent(workspaceId)}`
+  })
+  const storageKey = () => `${THREAD_STORAGE_KEY}.${storageScope.value}`
+  const storageGet = () =>
+    localStorage.getItem(storageKey()) ??
+    localStorage.getItem(THREAD_STORAGE_KEY)
+  const storageSet = (threadId: string) => {
+    localStorage.setItem(storageKey(), threadId)
+    localStorage.setItem(THREAD_STORAGE_KEY, threadId)
+  }
+  const storageRemove = () => {
+    localStorage.removeItem(storageKey())
+    localStorage.removeItem(THREAD_STORAGE_KEY)
+  }
+
+  function clearConversation(): void {
+    loadGeneration++
+    conversationStore.dropBackgroundTurns()
+    conversationStore.reset()
+    boundWorkflowId.value = null
+    rememberedWorkflowId = null
+  }
+
+  const stopScopeWatch = watch(storageScope, (scope) => {
+    if (ownedGeneration !== sessionGeneration) return
+    clearConversation()
+    rememberedStorageScope = scope
+  })
 
   function pushError(text: string): void {
     notices.value.push({ level: 'error', text })
@@ -147,12 +185,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function start(): void {
     ownedGeneration = ++sessionGeneration
     everLive = false
+    if (rememberedStorageScope !== storageScope.value) clearConversation()
+    rememberedStorageScope = storageScope.value
     // The binding only outlives a remount together with its thread: a page
     // with no surviving thread has no resumed turn the binding could serve.
-    if (
-      conversationStore.threadId === null &&
-      localStorage.getItem(THREAD_STORAGE_KEY) === null
-    ) {
+    if (conversationStore.threadId === null && storageGet() === null) {
       rememberedWorkflowId = null
       boundWorkflowId.value = null
     }
@@ -171,7 +208,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return
     }
     if (conversationStore.messages.length === 0) {
-      const stored = localStorage.getItem(THREAD_STORAGE_KEY)
+      const stored = storageGet()
       if (stored !== null) {
         const generation = ++loadGeneration
         conversationStore.setThreadId(stored)
@@ -197,9 +234,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     } catch (error) {
       if (!isCurrent()) return false
       if (error instanceof AgentApiError && error.status === 404) {
-        if (conversationStore.threadId === threadId)
+        if (conversationStore.threadId === threadId) {
           conversationStore.setThreadId(null)
-        localStorage.removeItem(THREAD_STORAGE_KEY)
+          storageRemove()
+        }
         return false
       }
       pushError(error instanceof Error ? error.message : String(error))
@@ -208,13 +246,20 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function stop(): void {
+    loadGeneration++
+    stopScopeWatch()
     unsubscribe?.()
     unsubscribeStatus?.()
     unsubscribe = null
     unsubscribeStatus = null
     const stoppedGeneration = ownedGeneration
+    const stoppedScope = storageScope.value
     queueMicrotask(() => {
-      if (stoppedGeneration !== sessionGeneration) return
+      if (
+        stoppedGeneration !== sessionGeneration &&
+        stoppedScope === rememberedStorageScope
+      )
+        return
       conversationStore.abortActiveTurn()
       conversationStore.dropBackgroundTurns()
     })
@@ -236,6 +281,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
     promptEditState.value = { phase: 'idle' }
     sending.value = true
     stopRequestedWhileSending.value = false
+    const initiatingScope = storageScope.value
+    const initiatingGeneration = loadGeneration
+    const destinationThread = conversationStore.threadId ?? 'new'
     // Capture the originating tab identity before the first await: prepare()
     // can take up to PREPARE_TIMEOUT_MS, and a tab switch while it is
     // pending must not reattribute this send to the newly active tab. The id
@@ -254,6 +302,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
       ])
     const wfContext = workflow?.current(origin)
     const tabs = workflow?.tabs?.(origin)
+    if (
+      initiatingScope !== storageScope.value ||
+      initiatingGeneration !== loadGeneration ||
+      (conversationStore.threadId ?? 'new') !== destinationThread
+    ) {
+      sending.value = false
+      return false
+    }
     async function postTurn(threadId: string) {
       const draft = workflow?.draft?.(origin)
       // An unsaved tab now yields a context carrying only its tabPath, so a
@@ -282,9 +338,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
       )
     }
     try {
-      const ack = await postTurn(conversationStore.threadId ?? 'new')
+      const ack = await postTurn(destinationThread)
+      if (
+        initiatingScope !== storageScope.value ||
+        initiatingGeneration !== loadGeneration
+      )
+        return false
       conversationStore.setThreadId(ack.thread_id)
-      localStorage.setItem(THREAD_STORAGE_KEY, ack.thread_id)
+      storageSet(ack.thread_id)
       if (ack.workflow_id !== undefined) {
         // The ack does not say whether the server minted a workflow or echoed
         // the thread's existing one. The persisted binding store preserves
@@ -316,6 +377,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
       }
       return true
     } catch (error) {
+      if (
+        initiatingScope !== storageScope.value ||
+        initiatingGeneration !== loadGeneration
+      )
+        return false
       const admission = parseAdmissionError(error)
       if (admission?.reason === 'no_funds') {
         conversationStore.recordPaywall(nextLocalErrorId(), text)
@@ -408,8 +474,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
-  let loadGeneration = 0
-
   function newChat(): void {
     loadGeneration++
     promptEditState.value = { phase: 'idle' }
@@ -417,7 +481,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.reset()
     boundWorkflowId.value = null
     rememberedWorkflowId = null
-    localStorage.removeItem(THREAD_STORAGE_KEY)
+    storageRemove()
   }
 
   function listThreads() {
@@ -433,7 +497,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     boundWorkflowId.value = null
     rememberedWorkflowId = null
     conversationStore.setThreadId(threadId)
-    localStorage.setItem(THREAD_STORAGE_KEY, threadId)
+    storageSet(threadId)
     const hydrated = await hydrateFromServer(threadId, isCurrent)
     if (hydrated && isCurrent()) conversationStore.resumeBackgroundTurn()
   }
