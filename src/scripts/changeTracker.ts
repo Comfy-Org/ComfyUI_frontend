@@ -29,6 +29,15 @@ function isActiveTracker(tracker: ChangeTracker): boolean {
   return useWorkflowStore().activeWorkflow?.changeTracker === tracker
 }
 
+/**
+ * Whether `tracker` owns the graph currently on the canvas. `null` (nothing
+ * bound yet, e.g. before the first load or in unit tests) is permissive.
+ */
+function isCanvasTracker(tracker: ChangeTracker): boolean {
+  const canvasTracker = ChangeTracker.canvasTracker
+  return canvasTracker === null || canvasTracker === tracker
+}
+
 function isAutoQueueOnChange(): boolean {
   return (
     useQueueSettingsStore().mode === 'change' ||
@@ -238,8 +247,35 @@ function reportInactiveTrackerCall(method: string, workflowPath: string) {
   assert(false, `ChangeTracker.${method}() called on inactive tracker`)
 }
 
+const reportedCanvasMismatchCalls = new Set<string>()
+
+function reportCanvasMismatchCall(method: string, workflowPath: string) {
+  const key = `${method}:${workflowPath}`
+  if (reportedCanvasMismatchCalls.has(key)) return
+  reportedCanvasMismatchCalls.add(key)
+  assert(
+    false,
+    `ChangeTracker.${method}() called while another workflow's graph is on the canvas`
+  )
+}
+
 export class ChangeTracker {
   static MAX_HISTORY = 50
+  /**
+   * The tracker whose workflow graph is currently loaded on the canvas.
+   * Bound by `afterLoadNewGraph()` after `loadGraphData()` has configured
+   * the root graph. `activeWorkflow` can be moved without a graph load
+   * (e.g. an extension calling `useWorkflowStore().openWorkflow()` directly);
+   * in that state the active tracker must not serialize the canvas, or the
+   * previous workflow's graph would be written into the new workflow's
+   * activeState and persisted as its draft.
+   */
+  static canvasTracker: ChangeTracker | null = null
+
+  static resetCanvasTrackerForTest() {
+    ChangeTracker.canvasTracker = null
+    reportedCanvasMismatchCalls.clear()
+  }
   /**
    * Guard flag to prevent captureCanvasState from running during loadGraphData.
    * Between rootGraph.configure() and afterLoadNewGraph(), the rootGraph
@@ -409,6 +445,10 @@ export class ChangeTracker {
       reportInactiveTrackerCall('captureCanvasState', this.workflow.path)
       return
     }
+    if (!isCanvasTracker(this)) {
+      reportCanvasMismatchCall('captureCanvasState', this.workflow.path)
+      return
+    }
 
     const currentState = clone(app.rootGraph.serialize()) as ComfyWorkflowJSON
     if (!this.activeState) {
@@ -431,7 +471,8 @@ export class ChangeTracker {
   squashState = useDebounceFn(() => {
     if (
       this !== useWorkflowStore().activeWorkflow?.changeTracker ||
-      ChangeTracker.isLoadingGraph
+      ChangeTracker.isLoadingGraph ||
+      !isCanvasTracker(this)
     )
       return
 
