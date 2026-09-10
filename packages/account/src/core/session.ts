@@ -387,19 +387,18 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     options: SessionRequestOptions
   ): MintHandle {
     const now = options.now?.() ?? clientOptions.now?.() ?? Date.now()
-    // Newest fresh credential wins: a remint whose storage write failed must
-    // not be shadowed by the older stored record it replaced.
+    // The live credential is authoritative; storage is recovery state, not a
+    // competing source. Prefer a fresh in-memory credential for this uid and
+    // consult storage only when memory has none — expiry must not override
+    // this, since a rejected token can outlive its shorter-lived replacement.
     const fresh = [
       credential?.uid === user.uid ? credential : undefined,
       readCached(user.uid)
-    ]
-      .filter(
-        (candidate): candidate is AccountCredential =>
-          candidate !== undefined &&
-          isCredentialFresh(candidate, now, freshMarginMs)
-      )
-      .sort((a, b) => b.expiresAt - a.expiresAt)
-      .at(0)
+    ].find(
+      (candidate): candidate is AccountCredential =>
+        candidate !== undefined &&
+        isCredentialFresh(candidate, now, freshMarginMs)
+    )
     if (fresh) {
       return {
         mintId: mintSequence,

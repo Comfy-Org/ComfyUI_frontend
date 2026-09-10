@@ -131,19 +131,31 @@ async function signInWith(provider: AuthSignInProvider) {
   dispatch({ type: 'signInStarted', provider })
   const attempt = signInGeneration
   const live = () => attempt === signInGeneration && enabled.value
+  // A flag-off (or flicker) mid-attempt must drop the attempt, not just return:
+  // a bare return strands the reducer in `pending`, freezing the page.
+  const abandon = () => dispatch({ type: 'signInAbandoned' })
   let firebase: Awaited<ReturnType<typeof loadWorkshopFirebase>> | undefined
   try {
     firebase = await loadWorkshopFirebase()
-    if (!live()) return
+    if (!live()) {
+      abandon()
+      return
+    }
     const credential =
       provider === 'google'
         ? await firebase.signInWorkshopWithGoogle()
         : await firebase.signInWorkshopWithGitHub()
     // Provisioning is a separate step precisely so a disable during the popup
     // stops it here rather than firing inside the sign-in call.
-    if (!live()) return
+    if (!live()) {
+      abandon()
+      return
+    }
     await firebase.provisionWorkshopCustomer(credential)
-    if (!live()) return
+    if (!live()) {
+      abandon()
+      return
+    }
     captureAuthCompleted({
       method: provider,
       is_new_user: mode === 'signUp' || firebase.isNewWorkshopUser(credential),
@@ -156,6 +168,12 @@ async function signInWith(provider: AuthSignInProvider) {
     })
     await runMint(credential.user)
   } catch (error) {
+    // A rejection after the attempt was invalidated is not this attempt's
+    // failure: don't report it or publish error state over the abandoned one.
+    if (!live()) {
+      abandon()
+      return
+    }
     captureAuthFailed({
       error_code: isFirebaseAuthErrorLike(error) ? error.code : 'unknown',
       auth_action: `${provider}_${mode === 'signUp' ? 'sign_up' : 'sign_in'}`
