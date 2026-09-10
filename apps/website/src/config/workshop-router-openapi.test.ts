@@ -26,6 +26,56 @@ const referenced = parseRouterOpenApiSnapshot(
 )
 
 describe('Router OpenAPI snapshots', () => {
+  it('projects composed object controls without dropping the original restrictions', () => {
+    const snapshot = parseRouterOpenApiSnapshot(
+      snapshots.find((entry) => entry.id === 'ideogram/ideogram-v3')
+    )
+    const native =
+      snapshot.document.paths['/v2/models/ideogram/ideogram-v3'].post
+        .requestBody.content['application/json'].schema
+    const schema = routerInputSchema(snapshot)
+    expect(schema.allOf).toEqual(native.allOf)
+    expect(schema.required).toEqual(['prompt', 'rendering_speed'])
+    expect(schema.properties).toHaveProperty('prompt')
+    const request = { prompt: 'A red teapot', rendering_speed: 'DEFAULT' }
+    expect(validateWorkshopInput(request, schema)).toBe(true)
+    expect(validateWorkshopInput({ prompt: request.prompt }, schema)).toBe(
+      false
+    )
+    expect(
+      validateWorkshopInput({ ...request, rendering_speed: 'invented' }, schema)
+    ).toBe(false)
+    expect(
+      validateWorkshopInput(
+        { ...request, character_reference_images: [] },
+        schema
+      )
+    ).toBe(false)
+  })
+
+  it('intersects repeated composed properties rather than overwriting their constraints', () => {
+    const snapshot = parseRouterOpenApiSnapshot(structuredClone(first))
+    snapshot.document.paths[
+      `/v2/models/${snapshot.id}`
+    ].post.requestBody.content['application/json'].schema = {
+      allOf: [
+        {
+          type: 'object',
+          properties: { count: { type: 'integer', minimum: 1 } },
+          required: ['count']
+        },
+        { type: 'object', properties: { count: { maximum: 3 } } }
+      ]
+    }
+    const schema = routerInputSchema(snapshot)
+    expect(schema.properties).toEqual({
+      count: { allOf: [{ type: 'integer', minimum: 1 }, { maximum: 3 }] }
+    })
+    expect(validateWorkshopInput({ count: 2 }, schema)).toBe(true)
+    for (const body of [{}, { count: 0 }, { count: 4 }, { count: 1.5 }])
+      expect(validateWorkshopInput(body, schema)).toBe(false)
+  })
+
   it.for(snapshots)(
     'preserves and compiles the complete input contract: $id',
     (raw) => {

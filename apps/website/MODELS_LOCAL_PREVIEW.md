@@ -40,6 +40,37 @@ zero errors/warnings and seven existing hints. The shared account package and
 upstream identity test fixture match the auth base exactly. This is not a fresh
 full-suite, browser-generation or deployment result.
 
+## Schema refresh and insufficient-credit recovery
+
+Router source is now pinned to `9064b7d8748b2e5833be9a102f3ca36185137d86`:
+207 documents, 206 authored inputs, 157 published use-case pages for 113 Router
+IDs, and no published Incomplete entries. MiniMax H3 is withheld, not deleted
+from Rob's packed content. See `MODELS_ROUTER_COVERAGE.md` for the new contracts,
+form projection and identity evidence.
+
+A Router `noCredits` result now offers **Buy credits**, not **Try again**.
+It opens the real Cloud `/?settings=plan-credits` page in a new tab, retaining
+the model form/uploads. It uses `WORKSHOP_CLOUD_BASE_URL` so staging stays with
+staging and production stays with production. This does not use the old mock
+Stripe dialog. The existing balance refresher retries on focus after returning.
+The localized explanation no longer merely says payment happens on Stripe.
+
+Focused verification: 1,261 tests across 13 schema, identity, creator, request,
+Router, environment, balance and component files pass. This includes normal
+controls and schema-valid request preparation for all eight newly authored
+inputs, withholding every MiniMax URL, both CTA locales and the integrated
+model error-to-credits-link path. Website typecheck has zero errors/warnings
+and seven existing hints. No full-suite or paid-generation claim.
+
+The enabled preview build passes (2,001 HTML outputs including legacy routes).
+Installed Playwright checks against that build verified both Gemini Omni pages
+and Ideogram V3: hydrated, editable seeded prompts; no JSON editor or Incomplete
+state; Ideogram's aspect-ratio and Advanced speed selectors retain typed values,
+and optional seed starts empty. Both missing MiniMax model/use-case URLs return
+404, and the catalog has no link to them. External requests were blocked: the
+four resulting footer-logo load errors are expected, with no other page errors
+and zero generation requests. This is not a media-download or signed-in run test.
+
 ## Run locally
 
 Use the repository's Node 26 runtime (at least 26.8.2). From `apps/website`:
@@ -59,7 +90,7 @@ working directory before testing; do not assume any server on that port is ours.
 - [Krea 2 Large](http://localhost:4321/models/krea--krea-2-large/)
 - [Native Gemini image](http://localhost:4321/models/vertexai--gemini-3-pro-image/)
 - [Native ElevenLabs](http://localhost:4321/models/elevenlabs--eleven_v3/)
-- [Incomplete MiniMax H3](http://localhost:4321/models/minimax--minimax-h3/)
+- [Ideogram V3](http://localhost:4321/models/ideogram--ideogram-v3/)
 - [Local sign-in](http://localhost:4321/login/?returnTo=%2Fmodels%2Fbfl--flux-2-pro%2F)
 
 The command above explicitly selects production Cloud, Router and Firebase so
@@ -97,8 +128,8 @@ No controllable browser was connected in the verification session; Ben performed
 the real sign-in, and the local dev server forwarded the diagnostic observations.
 This is not an automated browser-suite or paid-generation result. The temporary
 phase/balance logging was removed before publishing; no token or account
-identifier was logged. Payment CTA improvements and the model button's
-pending/error-state distinction remain deferred, not part of the balance fix.
+identifier was logged. The payment CTA fix described above is separate from
+that balance diagnostic; broader pending/error-state lifecycle QA remains open.
 
 The four `workshop-account.test.ts` failures at auth-base head `5cfd7b8765`
 were fixed directly on #17283 in `248a308d00`. Its pre-reset fake identity had a
@@ -137,7 +168,8 @@ or the running local auth check. Restore it deliberately when that work resumes.
 
 The counts and one-page-per-model policy below describe the earlier identity
 audit. The later model/use-case split supersedes that page policy: 288 content
-records now produce 158 visible pages mapped to 114 Router identities. See
+records now produce 157 visible pages mapped to 113 Router identities after
+withholding the missing-input model. See
 [MODELS_CONTENT_FORMAT.md](MODELS_CONTENT_FORMAT.md) for the current content
 ownership, counts and remaining per-case parameter work.
 

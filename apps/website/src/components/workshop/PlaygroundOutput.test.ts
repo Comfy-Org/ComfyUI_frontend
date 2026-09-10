@@ -4,6 +4,7 @@ import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
 import type { RunOutput, RunState } from '../../config/workshop-run'
+import { WORKSHOP_CLOUD_BASE_URL } from '../../config/workshop-env'
 import PlaygroundOutput from './PlaygroundOutput.vue'
 
 const output = (name: string): RunOutput => ({
@@ -21,6 +22,28 @@ const succeeded = (out: RunOutput, nsfw = false): RunState => ({
 })
 
 describe('PlaygroundOutput', () => {
+  it.for([
+    { locale: 'en' as const, label: 'Buy credits' },
+    { locale: 'zh-CN' as const, label: '购买积分' }
+  ])(
+    'takes an insufficient-credit failure to billing in $locale',
+    ({ locale, label }) => {
+      render(PlaygroundOutput, {
+        props: {
+          state: { status: 'failed', reason: 'noCredits', fieldErrors: {} },
+          now: 0,
+          locale
+        }
+      })
+      const link = screen.getByRole('link', { name: label })
+      expect(link.getAttribute('href')).toBe(
+        `${WORKSHOP_CLOUD_BASE_URL}/?settings=plan-credits`
+      )
+      expect(link.getAttribute('target')).toBe('_blank')
+      expect(screen.queryByRole('button')).toBeNull()
+    }
+  )
+
   it('uses a real video element for typed video outputs without filename extensions', () => {
     const video: RunOutput = {
       kind: 'video',

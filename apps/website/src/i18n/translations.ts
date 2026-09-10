@@ -9519,8 +9519,8 @@ Enterprise`
     'zh-CN': '内容或工作区策略阻止了此请求。'
   },
   'workshop.error.noCredits': {
-    en: 'Not enough credits. Payment happens on Stripe.',
-    'zh-CN': '积分不足。支付在 Stripe 完成。'
+    en: 'Not enough credits. Buy credits to continue.',
+    'zh-CN': '积分不足。请购买积分后继续。'
   },
   'workshop.error.unavailable': {
     en: 'This model is temporarily unavailable.',

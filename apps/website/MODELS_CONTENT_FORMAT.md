@@ -19,8 +19,9 @@ The reviewed alias file maps `modelId` to a real Router model. Multiple content
 records may share one Router endpoint/schema. Content ID is never sent as the
 Router model ID. Editorial display-name changes do not change identity.
 
-The catalogue still uses the intersection of reviewed content and Router IDs;
-unmatched source content is preserved in the packed file, not added to the UI.
+The catalogue uses the intersection of reviewed content, verified Router IDs
+and authored input schemas. Unmatched or missing-schema source content is
+preserved in the packed file, not added to the UI.
 Old model-only URLs redirect to a deterministic current record. Detail lookup,
 sample ownership and saved drafts use the content slug, not only the Router ID.
 
@@ -49,8 +50,9 @@ still require editorial review; URL uniqueness is not visual-uniqueness proof.
 
 - Source: `workshop-content-pack-2026-09-10.zip` from Downloads.
 - 288 content/use-case records in 290 lines, preserving all 268 source models.
-- 158 visible records map to 114 distinct Router models.
-- 234 records retain an active thumbnail; 32 visible records use placeholders.
+- 157 visible records map to 113 distinct Router models after the schema refresh.
+- 234 source records retain an active thumbnail; 31 visible records use placeholders.
+- MiniMax H3's one record is withheld until Router authors its input schema.
 - 29 records retain withheld content: 27 thumbnail occurrences and 18 paired
   sample/example occurrences. Nothing was deleted from the source archive.
 - Source thumbnail/sample/example values were compared with the previous packed
@@ -74,8 +76,8 @@ replacement material is reviewed; it is not published. Missing media uses the
 neutral placeholder, never a borrowed asset from a different use-case row.
 
 Return the updated array in the same one-object-per-line format. All 268 source
-model identities are retained in its 288 records, but only the 158 records with
-reviewed Router mappings currently appear in the catalogue. This content handoff
+model identities are retained in its 288 records, but only the 157 records with
+reviewed Router mappings and authored inputs appear in the catalogue. This content handoff
 does not claim that per-case parameter overrides are implemented; see below.
 
 ### Importing an updated file
@@ -94,11 +96,11 @@ case-specific edits: reimporting a legacy pack is a wholesale regeneration, not
 a merge of those edits.
 
 Wire schemas remain separately packed in
-`src/content/workshop-router-contracts.json` (198 records/200 lines), generated
+`src/content/workshop-router-contracts.json` (206 records/208 lines), generated
 from `src/data/workshop-router-openapi.snapshot.json` plus input curation.
 Do not edit generated native contracts to repair content identity.
 
-## Verified locally
+## Earlier content-import verification (before the schema refresh)
 
 - 1,583 focused tests across 15 content, identity, contract, request and form
   files pass. The actual Wan form dropdown is exercised through request

@@ -1,9 +1,54 @@
-# Models / Router coverage — 2026-09-09
+# Models / Router coverage — 2026-09-10
+
+## September 10 schema refresh and publication policy
+
+Backend source: `9064b7d8748b2e5833be9a102f3ca36185137d86`,
+`services/comfy-api/docs/router-schemas`. The full documents are retained in the
+packed snapshot; the generated contracts keep native whole-request validation.
+
+| Current population                 | Count |
+| ---------------------------------- | ----: |
+| Router schema documents            |   207 |
+| Authored input contracts           |   206 |
+| Preserved content/use-case records |   288 |
+| Published content/use-case pages   |   157 |
+| Distinct published Router models   |   113 |
+| Published Incomplete pages         |     0 |
+
+Eight inputs are newly authored: BytePlus Seed 2.0 Lite/Mini/Pro, both Gemini
+Omni Interactions models, Ideogram V3, and LTX 2.5 Fast/Pro. Both Gemini Omni
+models and Ideogram V3 now have executable forms in the content intersection.
+The other newly described models remain schema-supported without inventing
+content joins. A missing authored input now withholds the card, detail page and
+legacy URLs. MiniMax H3 is the only remaining case: its content record
+`minimax--hailuo-03--generate-videos` remains intact for future re-enablement.
+
+The 207 IDs and identity-evidence backend files are unchanged from the previous
+pin (`411500bd8c93a97328cf1a927b40ad5b24c60026`): checked the serving catalog,
+middleware and all 15 paths cited by the identity audit. The 142 reviewed alias
+mappings are preserved, with the new verified source pin; 141 have input schemas.
+
+Composed object schemas expose ordinary controls while retaining their original
+`allOf` constraints. Gemini/Seed use a Prompt textarea mapped to native `input`.
+Ideogram V3 uses its native rendering-speed enum/default and aspect-ratio picker;
+resolution is withheld because the provider forbids combining it with aspect
+ratio ([provider reference](https://developer.ideogram.ai/api-reference/generate-images/generate-v3)).
+LTX Pro's resolution picker is restricted to its model-specific matrix, not the
+shared Fast/Pro union. Optional seed remains omitted; output count stays fixed.
+
+Schema presence and offline validation do not prove deployed model availability
+or successful paid generation. No paid requests or purchases were made for this
+refresh. See `MODELS_LOCAL_PREVIEW.md` for focused verification and credit recovery.
+
+## Historical September 9 report
+
+Everything below records the earlier model-only catalog and its measurements,
+not the current use-case catalog or publication policy above.
 
 Local implementation on disposable preview #17263, not a deployment or paid
 generation report. No push, commit, merge, deployment or paid sweep this turn.
 
-## Current catalog: verified intersection
+### September 9 catalog: verified intersection
 
 Ben's explicit decision: **intersection, not union**. The earlier 453-record
 union is removed. Rob's 268 entries corresponded to the partner-client

@@ -11,6 +11,7 @@ import type { FileValue, FormValues } from './workshop-playground'
 import { prepareWorkshopRouterInput } from './workshop-request'
 import { validateWorkshopInput } from './workshop-json-schema'
 import creatorModels from '../data/workshop-creator-models.json'
+import { workshopContract } from './workshop-contract-catalog'
 
 const imageUrl = 'https://example.invalid/source.png'
 const videoUrl = 'https://example.invalid/source.mp4'
@@ -152,9 +153,15 @@ describe('creator widgets to native Router requests', () => {
     })
   })
 
-  it('uses every authored model definition on a visible schema-backed page', () => {
+  it('compiles every authored widget definition, including contracts awaiting content joins', () => {
+    for (const id of Object.keys(creatorModels.models))
+      expect(workshopContract(id)?.creator).toBeDefined()
     expect([...new Set(models.map((model) => model.routerId))].sort()).toEqual(
-      Object.keys(creatorModels.models).sort()
+      Object.keys(creatorModels.models)
+        .filter((id) =>
+          routerWorkshopModels.some((model) => model.routerId === id)
+        )
+        .sort()
     )
   })
   it.for(models)(

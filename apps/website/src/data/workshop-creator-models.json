@@ -30,6 +30,15 @@
     "byteplus/seed-audio-1.0": {
       "family": "flat"
     },
+    "byteplus/seed-2-0-lite-260228": {
+      "family": "text-input"
+    },
+    "byteplus/seed-2-0-mini-260215": {
+      "family": "text-input"
+    },
+    "byteplus/seed-2-0-pro-260328": {
+      "family": "text-input"
+    },
     "byteplus/seed-audio-1.0-multilingual": {
       "family": "flat"
     },
@@ -62,6 +71,15 @@
     },
     "elevenlabs/eleven_v3": {
       "family": "dialogue"
+    },
+    "gemini-interactions/gemini-omni-1.1-flash": {
+      "family": "text-input"
+    },
+    "gemini-interactions/gemini-omni-flash-preview": {
+      "family": "text-input"
+    },
+    "ideogram/ideogram-v3": {
+      "family": "flat"
     },
     "ideogram/ideogram-v4": {
       "family": "flat"

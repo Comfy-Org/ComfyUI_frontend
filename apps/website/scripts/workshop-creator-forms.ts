@@ -40,6 +40,22 @@ export function creatorFormFor(
   } = fields
   let request: WorkshopCreatorForm['request']
   switch (model.family) {
+    case 'text-input':
+      addRoot(['input'])
+      // Use the supported text variant; the complete native schema still validates the body.
+      add(
+        'input',
+        { type: 'string' },
+        {
+          label: 'Prompt',
+          help: '',
+          advanced: false,
+          control: 'text-area',
+          required: true
+        }
+      )
+      request = { kind: 'callback', callback: 'flat', options: {} }
+      break
     case 'dialogue':
       prompt('inputs/[]/text', 'text')
       add('voice_id', schemaAt(source, 'inputs/[]/voice_id'), {

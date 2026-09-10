@@ -85,33 +85,37 @@ describe('legacy content identity repairs', () => {
       }
       const match = record.matches[0]
       expect(alias?.routerId).toBe(match.routerId)
+      const contract = workshopContract(match.routerId)
+      if (!contract) {
+        expect(detail).toBeUndefined()
+        expect(routerWorkshopModelPaths).not.toContain(old.slug)
+        return
+      }
       expect(detail?.routerId).toBe(match.routerId)
       expect(detail?.slug.startsWith(`${old.slug}--`)).toBe(true)
       expect(detail?.href).toBe(`/models/${detail?.slug}/`)
       expect(routerWorkshopModelPaths).toContain(old.slug)
-      const contract = workshopContract(match.routerId)
-      if (!contract) {
-        expect(detail?.incompleteReason).toBe('missing-input-schema')
-        expect(detail?.execution).toBeUndefined()
-      } else {
-        expect(detail?.incompleteReason).toBeUndefined()
-        expect(detail?.execution).toEqual(contract)
-        expect(detail?.form?.source).toBe('router')
-        for (const example of detail?.examples ?? []) {
-          expect(example.values).toEqual({})
-          expect(example.sampleOnly).toBe(true)
-        }
+      expect(detail?.incompleteReason).toBeUndefined()
+      expect(detail?.execution).toEqual(contract)
+      expect(detail?.form?.source).toBe('router')
+      for (const example of detail?.examples ?? []) {
+        expect(example.values).toEqual({})
+        expect(example.sampleOnly).toBe(true)
       }
     }
   )
 
   it('publishes only verified Router joins with one distinct card per content record', () => {
     const nativeIds = new Set(rawSnapshots.map((entry) => entry.id))
-    const joinedIds = new Set(aliases.map((alias) => alias.routerId))
+    const publishedAliases = aliases.filter((alias) =>
+      workshopContract(alias.routerId)
+    )
+    const joinedIds = new Set(publishedAliases.map((alias) => alias.routerId))
     expect(new Set(workshopModels.map((model) => model.routerId))).toEqual(
       joinedIds
     )
-    const content = display.filter((entry) => aliasesById.has(entry.modelId))
+    const publishedIds = new Set(publishedAliases.map((alias) => alias.id))
+    const content = display.filter((entry) => publishedIds.has(entry.modelId))
     expect(workshopModels.map((model) => model.slug).sort()).toEqual(
       content.map((entry) => entry.slug).sort()
     )
@@ -138,6 +142,35 @@ describe('legacy content identity repairs', () => {
     expect(
       getRouterWorkshopModelDetail('bria--image-edit-erase')?.execution?.id
     ).toBe('bria/image-edit-erase')
+  })
+
+  it('withholds missing input contracts and every associated URL without deleting content', () => {
+    const missing = rawSnapshots.filter(
+      (entry) => !entry.document['x-comfy-input-schema-authored']
+    )
+    expect(missing.map((entry) => entry.id)).toEqual(['minimax/minimax-h3'])
+    for (const snapshot of missing) {
+      const legacy = aliases.filter((alias) => alias.routerId === snapshot.id)
+      expect(legacy.length).toBeGreaterThan(0)
+      const ids = new Set(legacy.map((alias) => alias.id))
+      const content = display.filter((entry) => ids.has(entry.modelId))
+      expect(content.length).toBeGreaterThan(0)
+      const slugs = [
+        snapshot.id.replace('/', '--'),
+        ...catalog
+          .filter((entry) => ids.has(entry.id))
+          .map((entry) => entry.slug),
+        ...content.map((entry) => entry.slug)
+      ]
+      for (const slug of slugs) {
+        expect(getRouterWorkshopModelDetail(slug)).toBeUndefined()
+        expect(routerWorkshopModelPaths).not.toContain(slug)
+      }
+      expect(
+        workshopModels.some((model) => model.routerId === snapshot.id)
+      ).toBe(false)
+    }
+    expect(workshopModels.every((model) => !model.incompleteReason)).toBe(true)
   })
 
   it('keeps both real output categories when two tasks share one Router model', () => {

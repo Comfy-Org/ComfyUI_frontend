@@ -10,7 +10,8 @@ const PROMPT_NAMES = new Set([
   'text_prompt',
   'prompt_text',
   'promptText',
-  'text'
+  'text',
+  'input'
 ])
 const CONTAINERS = new Set([
   'input',

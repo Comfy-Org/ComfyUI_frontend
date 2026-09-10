@@ -18,6 +18,7 @@ import OutputTransport from './OutputTransport.vue'
 import type { Modality } from '../../config/models-catalogue'
 import type { RunFailure, RunOutput, RunState } from '../../config/workshop-run'
 import { formatElapsed, isExpired } from '../../config/workshop-run'
+import { WORKSHOP_CLOUD_BASE_URL } from '../../config/workshop-env'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
@@ -61,6 +62,11 @@ const failureKey: Record<RunFailure, TranslationKey> = {
   unavailable: 'workshop.error.unavailable',
   timeout: 'workshop.error.timeout'
 }
+
+const buyCreditsHref = new URL(
+  '/?settings=plan-credits',
+  WORKSHOP_CLOUD_BASE_URL
+).href
 
 const selected = ref(0)
 // Earlier outputs from this visit stay reachable; the latest is the default.
@@ -209,7 +215,18 @@ const earlierClass = (active: boolean) =>
         {{ t(failureKey[state.reason], locale) }}
       </p>
       <Button
-        v-if="state.reason !== 'validation'"
+        v-if="state.reason === 'noCredits'"
+        as="a"
+        :href="buyCreditsHref"
+        target="_blank"
+        rel="noopener noreferrer"
+        variant="outline"
+        size="sm"
+      >
+        {{ t('nav.buyCredits', locale) }}
+      </Button>
+      <Button
+        v-else-if="state.reason !== 'validation'"
         variant="outline"
         size="sm"
         @click="emit('retry')"

@@ -119,10 +119,47 @@ export function routerInputSchema(
       'application/json'
     ].schema
   return {
-    ...jsonObject.parse(resolveSchemaReference(schema, document)),
+    ...objectInputProjection(schema, document),
     ...(document.components?.schemas
       ? { components: { schemas: document.components.schemas } }
       : {})
+  }
+}
+
+function objectInputProjection(
+  schema: Readonly<Record<string, unknown>>,
+  root: Readonly<Record<string, unknown>>,
+  ancestors: ReadonlySet<string> = new Set()
+): z.infer<typeof jsonObject> {
+  if (typeof schema.$ref === 'string' && ancestors.has(schema.$ref))
+    throw new Error('Circular input composition')
+  const seen = new Set(ancestors)
+  if (typeof schema.$ref === 'string') seen.add(schema.$ref)
+  const resolved = resolveSchemaReference(schema, root)
+  if (!Array.isArray(resolved.allOf)) return resolved
+  // Expose controls without replacing the original whole-request constraints.
+  const parts = [
+    resolved,
+    ...resolved.allOf.map((part) =>
+      objectInputProjection(jsonObject.parse(part), root, seen)
+    )
+  ]
+  const properties: z.infer<typeof jsonObject> = {}
+  const required = new Set<string>()
+  for (const part of parts) {
+    for (const [name, property] of Object.entries(
+      jsonObject.parse(part.properties ?? {})
+    ))
+      properties[name] = Object.hasOwn(properties, name)
+        ? { allOf: [properties[name], property] }
+        : property
+    for (const name of z.array(z.string()).parse(part.required ?? []))
+      required.add(name)
+  }
+  return {
+    ...resolved,
+    ...(Object.keys(properties).length ? { properties } : {}),
+    ...(required.size ? { required: [...required] } : {})
   }
 }
 

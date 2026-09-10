@@ -15,6 +15,7 @@ import { WorkshopRouterError } from '../../config/workshop-router-errors'
 import { workshopContract } from '../../config/workshop-contract-catalog'
 import { getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
 import { refreshWorkshopCredits } from '../../config/workshop-credits'
+import { WORKSHOP_CLOUD_BASE_URL } from '../../config/workshop-env'
 import ModelDetail from './ModelDetail.vue'
 
 const auth = vi.hoisted(() => ({
@@ -333,6 +334,30 @@ describe('ModelDetail', () => {
       'request-123'
     )
     expect(refreshWorkshopCredits).toHaveBeenCalledWith({ force: true })
+  })
+
+  it('offers the real credits page after insufficient balance without losing the prompt', async () => {
+    auth.session.value = credential
+    vi.mocked(runWorkshopRouter).mockRejectedValue(
+      new WorkshopRouterError('noCredits')
+    )
+    mountDetail({ model: runnable })
+    await user().type(screen.getByTestId('field-prompt'), 'A red teapot')
+    await user().click(screen.getByTestId('run-button'))
+    await vi.waitFor(() =>
+      expect(screen.getByRole('link', { name: 'Buy credits' })).toBeDefined()
+    )
+    const link = screen.getByRole('link', { name: 'Buy credits' })
+    expect(link.getAttribute('href')).toBe(
+      new URL('/?settings=plan-credits', WORKSHOP_CLOUD_BASE_URL).href
+    )
+    expect(link.getAttribute('target')).toBe('_blank')
+    expect(screen.getByTestId('field-prompt')).toHaveProperty(
+      'value',
+      'A red teapot'
+    )
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
+    expect(runWorkshopRouter).toHaveBeenCalledTimes(1)
   })
 
   it('retries an unchanged failed request with its original key, but a deliberate new run gets a new key', async () => {

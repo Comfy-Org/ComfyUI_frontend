@@ -91,6 +91,7 @@ const contentSources = display.flatMap((overlay) => {
   const record = routerIndex.find((record) => record.id === alias.routerId)
   if (!entry || !record)
     throw new Error(`Invalid Router content join: ${overlay.id}`)
+  if (record.incompleteReason) return []
   return [{ alias, entry, overlay, record }]
 })
 export const routerContentBySlug = new Map(

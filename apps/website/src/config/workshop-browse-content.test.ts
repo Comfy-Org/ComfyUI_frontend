@@ -9,7 +9,7 @@ describe('canonical model display names', () => {
       expect(model.name.trim()).not.toBe('')
       expect(model.name).not.toBe(model.routerId.split('/')[1])
       expect(getRouterWorkshopModelDetail(model.slug)?.name).toBe(model.name)
-      expect(model.href).toBe(`/models/${model.routerId.replace('/', '--')}/`)
+      expect(model.href).toBe(`/models/${model.slug}/`)
     }
   })
 
@@ -17,9 +17,6 @@ describe('canonical model display names', () => {
     expect(
       getRouterWorkshopModelDetail('vertexai--gemini-3-pro-image')?.name
     ).toBe('Nano Banana Pro')
-    expect(getRouterWorkshopModelDetail('minimax--minimax-h3')?.name).toBe(
-      'MiniMax H3'
-    )
     expect(
       getRouterWorkshopModelDetail(
         'byteplus--dreamina-seedance-2-0-fast-260128'

@@ -12,7 +12,6 @@ import {
   routerWorkshopModelPaths,
   routerContentById
 } from './workshop-browse-content'
-import { schemaForModel } from './workshop-playground'
 import { getRouterWorkshopModelDetail } from './workshop-router-content'
 import { parseRouterOpenApiSnapshot } from './workshop-router-openapi'
 import { workshopRouterIndexSchema } from './workshop-router-index'
@@ -45,43 +44,29 @@ describe('Router catalog completeness', () => {
     expect(packed.trimEnd().split('\n')).toHaveLength(snapshots.length + 2)
   })
 
-  it.for(missing.filter((snapshot) => routerContentById.has(snapshot.id)))(
-    'keeps $id browsable without inventing an executable form',
+  it.for(missing)(
+    'withholds $id until it has an authored input contract',
     (snapshot) => {
       const card = workshopModels.find(
         (model) => model.routerId === snapshot.id
       )
-      expect(card?.incompleteReason).toBe('missing-input-schema')
-      if (!card) throw new Error('Missing incomplete card')
+      expect(card).toBeUndefined()
+      expect(routerContentById.has(snapshot.id)).toBe(false)
       const nativeSlug = snapshot.id.replace('/', '--')
-      expect(routerWorkshopModelPaths).toContain(nativeSlug)
+      expect(routerWorkshopModelPaths).not.toContain(nativeSlug)
       const detail = getRouterWorkshopModelDetail(nativeSlug)
-      expect(detail).toMatchObject({
-        routerId: snapshot.id,
-        incompleteReason: 'missing-input-schema',
-        fields: []
-      })
-      expect(detail?.form).toBeUndefined()
-      expect(detail?.execution).toBeUndefined()
-      if (!detail) throw new Error('Missing model detail')
-      expect(schemaForModel(detail)).toEqual([])
+      expect(detail).toBeUndefined()
     }
   )
 
-  it('keeps known descriptive metadata on incomplete pages', () => {
-    const detail = getRouterWorkshopModelDetail('minimax--minimax-h3')
-    expect(detail?.name).toBe('MiniMax H3')
-    expect(detail?.summary).toContain('video')
-  })
-
-  it('uses Incomplete only for known Router models with missing input schemas', () => {
+  it('publishes only complete Router contracts', () => {
     const executable = new Set(packedContracts.map((record) => record.id))
     const native = new Set(snapshots.map((snapshot) => snapshot.id))
     for (const card of workshopModels) {
       const detail = getRouterWorkshopModelDetail(card.slug)
-      expect(Boolean(card.incompleteReason)).toBe(
-        !executable.has(card.routerId)
-      )
+      expect(card.incompleteReason).toBeUndefined()
+      expect(executable.has(card.routerId)).toBe(true)
+      expect(detail?.execution).toBeDefined()
       expect(native.has(card.routerId)).toBe(true)
       expect(detail?.summary).toBe(card.summary)
       expect(detail?.thumbnail).toEqual(card.thumbnail)

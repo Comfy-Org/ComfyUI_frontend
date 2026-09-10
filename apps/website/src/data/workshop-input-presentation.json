@@ -1652,6 +1652,37 @@
         "help": "Enter a voice ID that supports the Starfish speech engine."
       }
     },
+    "ideogram/ideogram-v3": {
+      "aspect_ratio": {
+        "options": [
+          "1x3",
+          "3x1",
+          "1x2",
+          "2x1",
+          "9x16",
+          "16x9",
+          "10x16",
+          "16x10",
+          "2x3",
+          "3x2",
+          "3x4",
+          "4x3",
+          "4x5",
+          "5x4",
+          "1x1"
+        ],
+        "default": "1x1"
+      },
+      "resolution": {
+        "hidden": true
+      },
+      "rendering_speed": {
+        "label": "Rendering speed",
+        "help": "Balance rendering speed and image quality.",
+        "advanced": true,
+        "control": "dropdown"
+      }
+    },
     "ideogram/ideogram-v4": {
       "json_prompt": {
         "label": "Structured prompt",
@@ -1953,6 +1984,17 @@
       },
       "prompt": {
         "help": "Describe what happens next in the extended video."
+      }
+    },
+    "ltx/ltx-2-5-fast": {
+      "resolution": {
+        "default": "1280x720"
+      }
+    },
+    "ltx/ltx-2-5-pro": {
+      "resolution": {
+        "options": ["1280x720", "720x1280", "1920x1080", "1080x1920"],
+        "default": "1280x720"
       }
     },
     "luma/photon-1": {
