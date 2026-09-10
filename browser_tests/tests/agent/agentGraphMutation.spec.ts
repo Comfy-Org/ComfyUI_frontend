@@ -88,6 +88,7 @@ test.describe(
 
       ws.send(JSON.stringify(GRAPH_SUBSCRIBED_EVENT))
       ws.send(JSON.stringify(GRAPH_UPDATE_EVENT))
+      await comfyPage.vueNodes.waitForNodes()
       await expect(
         comfyPage.vueNodes.getNodeByTitle('Agent-created node')
       ).toBeVisible()
