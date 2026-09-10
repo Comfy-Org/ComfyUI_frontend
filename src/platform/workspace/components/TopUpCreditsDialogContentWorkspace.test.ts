@@ -31,6 +31,7 @@ const mockToastAdd = vi.fn()
 
 const mockTrackTopUpPurchase = vi.fn()
 const mockTrackBillingEvent = vi.fn()
+const mockCaptureCheckoutJourneyEvent = vi.hoisted(() => vi.fn())
 const mockCanTopUp = vi.hoisted(() => ({
   ref: undefined as { value: boolean } | undefined
 }))
@@ -85,9 +86,21 @@ vi.mock<unknown>(
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackApiCreditTopupButtonPurchaseClicked: mockTrackTopUpPurchase,
-    trackBillingEvent: mockTrackBillingEvent
+    trackBillingEvent: mockTrackBillingEvent,
+    captureCheckoutJourneyEvent: mockCaptureCheckoutJourneyEvent
   })
 }))
+
+vi.mock<unknown>(import('@/stores/authStore'), () => ({
+  useAuthStore: () => ({ userId: 'user-1' })
+}))
+
+vi.mock<unknown>(
+  import('@/platform/workspace/stores/teamWorkspaceStore'),
+  () => ({
+    useTeamWorkspaceStore: () => ({ activeWorkspaceId: 'workspace-1' })
+  })
+)
 
 const mockClearPendingTopup = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
@@ -178,6 +191,8 @@ async function clickAddCredits() {
 
 beforeEach(() => {
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
+  mockCaptureCheckoutJourneyEvent.mockClear()
+  sessionStorage.clear()
 })
 
 beforeEach(() => {
@@ -236,6 +251,36 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       outcome: 'pending',
       operation_type: 'topup'
     })
+  })
+
+  it('enters a topup journey on mount and correlates the purchase', async () => {
+    mockTopup.mockResolvedValue(topupResponse('pending'))
+
+    renderDialog()
+    await waitFor(() =>
+      expect(mockCaptureCheckoutJourneyEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ phase: 'entered', entry_flow: 'topup' })
+      )
+    )
+
+    await clickAddCredits()
+    await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+
+    await waitFor(() =>
+      expect(mockCaptureCheckoutJourneyEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          phase: 'operation_linked',
+          billing_op_id: 'op-1'
+        })
+      )
+    )
+    const phases = mockCaptureCheckoutJourneyEvent.mock.calls.map(
+      ([event]) => event.phase
+    )
+    expect(phases.indexOf('submitted')).toBeLessThan(
+      phases.indexOf('operation_linked')
+    )
+    expect(phases.filter((phase) => phase === 'entered')).toHaveLength(1)
   })
 
   it('reports failure telemetry when topup resolves with no response', async () => {
