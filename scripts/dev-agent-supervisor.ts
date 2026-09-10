@@ -3,6 +3,19 @@ import type { ChildProcess } from 'node:child_process'
 import { rm } from 'node:fs/promises'
 import { createServer } from 'node:net'
 
+/** The slice of ChildProcess the supervisor consumes. */
+export interface SupervisedChild {
+  readonly pid?: number | undefined
+  readonly exitCode: number | null
+  readonly signalCode: NodeJS.Signals | null
+  kill(signal?: NodeJS.Signals): boolean
+  once(
+    event: 'exit',
+    listener: (code: number | null, signal: NodeJS.Signals | null) => void
+  ): unknown
+  once(event: 'error', listener: (error: Error) => void): unknown
+}
+
 export async function assertReachable(url: string): Promise<void> {
   const response = await fetch(url, { signal: AbortSignal.timeout(5000) })
   if (!response.ok) throw new Error(`${url} returned HTTP ${response.status}`)
@@ -39,13 +52,13 @@ function spawnGroup(
   })
 }
 
-function hasExited(child: ChildProcess): boolean {
+function hasExited(child: SupervisedChild): boolean {
   return child.exitCode !== null || child.signalCode !== null
 }
 
 // A start.sh can exit while a descendant it backgrounded still holds the port,
 // so the group is signalled whether or not its leader is still running.
-function stopGroup(child: ChildProcess, signal: NodeJS.Signals): void {
+function stopGroup(child: SupervisedChild, signal: NodeJS.Signals): void {
   if (child.pid === undefined) return
   if (process.platform === 'win32') {
     if (!hasExited(child)) child.kill(signal)
@@ -63,7 +76,7 @@ export function wait(ms: number): Promise<void> {
 }
 
 async function waitForExit(
-  child: ChildProcess,
+  child: SupervisedChild,
   timeoutMs: number
 ): Promise<void> {
   if (hasExited(child)) return
@@ -74,7 +87,7 @@ async function waitForExit(
 }
 
 export async function waitForHttp(
-  child: ChildProcess,
+  child: SupervisedChild,
   url: string,
   stopped: () => boolean,
   label: string
@@ -96,7 +109,7 @@ export async function waitForHttp(
 }
 
 export function supervise(dataDir: string) {
-  const children: ChildProcess[] = []
+  const children: SupervisedChild[] = []
   let stopping = false
   let stopPromise: Promise<void> | null = null
   let requestedExitCode: number | null = null
@@ -119,7 +132,7 @@ export function supervise(dataDir: string) {
   process.on('SIGINT', onSigint)
   process.on('SIGTERM', onSigterm)
   process.on('SIGHUP', onSighup)
-  function watch(child: ChildProcess): void {
+  function watch(child: SupervisedChild): void {
     children.push(child)
     child.once('exit', (code) => requestExit(code || 1))
     child.once('error', () => requestExit(1))

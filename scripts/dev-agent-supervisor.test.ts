@@ -4,6 +4,7 @@ import type { ChildProcess } from 'node:child_process'
 import { rm } from 'node:fs/promises'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { SupervisedChild } from './dev-agent-supervisor'
 import { supervise, waitForHttp } from './dev-agent-supervisor'
 
 vi.mock('node:child_process', () => {
@@ -15,10 +16,10 @@ vi.mock('node:fs/promises', () => {
   return { ...mocked, default: mocked }
 })
 
-class FakeChild extends EventEmitter {
+class FakeChild extends EventEmitter implements SupervisedChild {
   exitCode: number | null = null
   signalCode: NodeJS.Signals | null = null
-  kill = vi.fn()
+  kill = vi.fn(() => true)
   constructor(readonly pid: number | undefined) {
     super()
   }
@@ -29,7 +30,9 @@ class FakeChild extends EventEmitter {
   }
 }
 
-function asChild(fake: FakeChild): ChildProcess {
+// spawn() is mocked at the node:child_process boundary, so its declared
+// ChildProcess return type is the one thing FakeChild cannot satisfy.
+function asSpawnResult(fake: FakeChild): ChildProcess {
   return fake as unknown as ChildProcess
 }
 
@@ -44,7 +47,7 @@ describe('supervise', () => {
     vi.mocked(spawn).mockImplementation(() => {
       const child = new FakeChild(nextPid++)
       children.push(child)
-      return asChild(child)
+      return asSpawnResult(child)
     })
     vi.mocked(rm).mockResolvedValue(undefined)
     vi.spyOn(process, 'kill').mockImplementation((pid, signal) => {
@@ -88,7 +91,7 @@ describe('supervise', () => {
 
     const child = supervisor.spawn('cmd', ['--flag'], '/cwd', env)
 
-    expect(child).toBe(asChild(children[0]))
+    expect(child).toBe(children[0])
     expect(spawn).toHaveBeenCalledWith(
       'cmd',
       ['--flag'],
@@ -125,7 +128,7 @@ describe('supervise', () => {
     const child = new FakeChild(100)
 
     await expect(
-      waitForHttp(asChild(child), 'http://127.0.0.1:1', () => true, 'Vite')
+      waitForHttp(child, 'http://127.0.0.1:1', () => true, 'Vite')
     ).rejects.toThrow('Vite stopped before becoming ready')
   })
 
@@ -186,7 +189,9 @@ describe('supervise', () => {
     const sigintBefore = process.listenerCount('SIGINT')
     const sigtermBefore = process.listenerCount('SIGTERM')
     const sighupBefore = process.listenerCount('SIGHUP')
-    vi.mocked(spawn).mockImplementation(() => asChild(new FakeChild(undefined)))
+    vi.mocked(spawn).mockImplementation(() =>
+      asSpawnResult(new FakeChild(undefined))
+    )
     const supervisor = supervise('/tmp/data')
     supervisor.spawn('a', [], '/cwd', {})
     expect(process.listenerCount('SIGINT')).toBe(sigintBefore + 1)
