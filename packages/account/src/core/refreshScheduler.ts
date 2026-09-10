@@ -22,7 +22,7 @@ import { isPermanentSessionError } from './session.js'
 const DEFAULT_BUFFER_MS = 5 * 60 * 1000
 
 /** Guards captured before a scheduled mint, re-checked before its commit. */
-export interface RefreshGuards {
+interface RefreshGuards {
   readonly epoch: number
   readonly invalidation: number
 }
