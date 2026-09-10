@@ -6995,32 +6995,32 @@ Enterprise`
   },
   'wan3.reviews.highlightCta': { en: 'GET STARTED', 'zh-CN': '开始使用' },
   'footer.wan3': { en: 'Wan 3.0', 'zh-CN': 'Wan 3.0' },
-  // ChatGPT Image 2.5 model page (/chatgpt-image-2.5)
+  // ChatGPT Images 2.5 model page (/chatgpt-image-2.5)
   'chatgptImage25.meta.title': {
-    en: 'ChatGPT Image 2.5 on Comfy: Generate and Edit Images',
-    'zh-CN': 'Comfy 上的 ChatGPT Image 2.5：生成与编辑图像'
+    en: 'ChatGPT Images 2.5 on Comfy: Generate and Edit Images',
+    'zh-CN': 'Comfy 上的 ChatGPT Images 2.5：生成与编辑图像'
   },
   'chatgptImage25.meta.description': {
-    en: 'Run ChatGPT Image 2.5 in ComfyUI. Generate detailed images from text, edit existing visuals, and direct results with reference images in a repeatable workflow.',
+    en: 'Run ChatGPT Images 2.5 in ComfyUI. Generate detailed images from text, edit existing visuals, and direct results with reference images in a repeatable workflow.',
     'zh-CN':
-      '在 ComfyUI 中运行 ChatGPT Image 2.5。通过文字生成精细图像、编辑现有视觉内容，并使用参考图像在可复用工作流中引导结果。'
+      '在 ComfyUI 中运行 ChatGPT Images 2.5。通过文字生成精细图像、编辑现有视觉内容，并使用参考图像在可复用工作流中引导结果。'
   },
   'chatgptImage25.breadcrumb.model': {
-    en: 'ChatGPT Image 2.5',
-    'zh-CN': 'ChatGPT Image 2.5'
+    en: 'ChatGPT Images 2.5',
+    'zh-CN': 'ChatGPT Images 2.5'
   },
   'chatgptImage25.breadcrumb.updated': {
     en: 'Updated September 2026',
     'zh-CN': '更新于 2026 年 9 月'
   },
   'chatgptImage25.hero.title': {
-    en: 'ChatGPT Image 2.5\nis here',
-    'zh-CN': 'ChatGPT Image 2.5 已上线'
+    en: 'ChatGPT Images 2.5\nis here',
+    'zh-CN': 'ChatGPT Images 2.5 已上线'
   },
   'chatgptImage25.hero.description': {
-    en: 'Turn a plain language brief into a finished image, or revise an existing visual without rebuilding it from scratch. ChatGPT Image 2.5 brings generation, reference guided creation, and precise editing into ComfyUI workflows through Partner Nodes.',
+    en: 'Turn a plain language brief into a finished image, or revise an existing visual without rebuilding it from scratch. ChatGPT Images 2.5 brings generation, reference guided creation, and precise editing into ComfyUI workflows through Partner Nodes.',
     'zh-CN':
-      '用自然语言简报生成完整图像，或在无需从头制作的情况下修改现有视觉内容。ChatGPT Image 2.5 通过合作伙伴节点，将图像生成、参考图引导创作与精确编辑带入 ComfyUI 工作流。'
+      '用自然语言简报生成完整图像，或在无需从头制作的情况下修改现有视觉内容。ChatGPT Images 2.5 通过合作伙伴节点，将图像生成、参考图引导创作与精确编辑带入 ComfyUI 工作流。'
   },
   'chatgptImage25.hero.tagTextToImage': {
     en: 'Text to Image',
@@ -7035,16 +7035,16 @@ Enterprise`
     'zh-CN': '参考图像'
   },
   'chatgptImage25.hero.primaryCta': {
-    en: 'RUN CHATGPT IMAGE 2.5',
-    'zh-CN': '运行 ChatGPT Image 2.5'
+    en: 'RUN CHATGPT IMAGES 2.5',
+    'zh-CN': '运行 ChatGPT Images 2.5'
   },
   'chatgptImage25.hero.secondaryCta': {
     en: 'READ THE GUIDE',
     'zh-CN': '查看教程'
   },
   'chatgptImage25.gallery.heading': {
-    en: 'Made with ChatGPT Image 2.5',
-    'zh-CN': '由 ChatGPT Image 2.5 创作'
+    en: 'Made with ChatGPT Images 2.5',
+    'zh-CN': '由 ChatGPT Images 2.5 创作'
   },
   'chatgptImage25.pricing.banner.title': {
     en: "Start Comfy Cloud for free. Upgrade when you're ready.",
@@ -7090,8 +7090,8 @@ Enterprise`
     'zh-CN': '开始使用'
   },
   'footer.chatgptImage25': {
-    en: 'ChatGPT Image 2.5',
-    'zh-CN': 'ChatGPT Image 2.5'
+    en: 'ChatGPT Images 2.5',
+    'zh-CN': 'ChatGPT Images 2.5'
   },
   'minimax.meta.title': {
     en: 'MiniMax H3 on Comfy: Open-Weight Video Model',

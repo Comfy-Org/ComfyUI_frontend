@@ -2,7 +2,7 @@ import { expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
 
-test.describe('ChatGPT Image 2.5 launch page @smoke', () => {
+test.describe('ChatGPT Images 2.5 launch page @smoke', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/chatgpt-image-2.5')
   })
@@ -10,12 +10,12 @@ test.describe('ChatGPT Image 2.5 launch page @smoke', () => {
   test('introduces the model with the supplied hero reel', async ({ page }) => {
     const heading = page.getByRole('heading', {
       level: 1,
-      name: 'ChatGPT Image 2.5 is here'
+      name: 'ChatGPT Images 2.5 is here'
     })
 
     await expect(heading).toBeVisible()
     await expect(
-      page.getByRole('link', { name: 'RUN CHATGPT IMAGE 2.5' })
+      page.getByRole('link', { name: 'RUN CHATGPT IMAGES 2.5' })
     ).toBeVisible()
     await expect(page.locator('video')).toHaveAttribute(
       'src',
@@ -26,7 +26,7 @@ test.describe('ChatGPT Image 2.5 launch page @smoke', () => {
   test('shows every supplied image in the model gallery', async ({ page }) => {
     const galleryHeading = page.getByRole('heading', {
       level: 2,
-      name: 'Made with ChatGPT Image 2.5'
+      name: 'Made with ChatGPT Images 2.5'
     })
     await galleryHeading.scrollIntoViewIfNeeded()
 
@@ -52,12 +52,12 @@ test.describe('ChatGPT Image 2.5 launch page @smoke', () => {
   })
 })
 
-test.describe('ChatGPT Image 2.5 launch page — zh-CN', () => {
+test.describe('ChatGPT Images 2.5 launch page — zh-CN', () => {
   test('renders the localized launch page', async ({ page }) => {
     await page.goto('/zh-CN/chatgpt-image-2.5')
 
     await expect(
-      page.getByRole('heading', { level: 1, name: 'ChatGPT Image 2.5 已上线' })
+      page.getByRole('heading', { level: 1, name: 'ChatGPT Images 2.5 已上线' })
     ).toBeVisible()
   })
 })

@@ -68,8 +68,8 @@ export const chatgptImage25Page: ModelLaunchPage = {
       {
         id: 'vaporwave-atmosphere',
         name: {
-          en: 'Vaporwave architecture generated with ChatGPT Image 2.5',
-          'zh-CN': '使用 ChatGPT Image 2.5 生成的蒸汽波建筑场景'
+          en: 'Vaporwave architecture generated with ChatGPT Images 2.5',
+          'zh-CN': '使用 ChatGPT Images 2.5 生成的蒸汽波建筑场景'
         },
         tier: 'premium',
         note: premiumNote,
@@ -83,8 +83,8 @@ export const chatgptImage25Page: ModelLaunchPage = {
       {
         id: 'alien-convenience-store',
         name: {
-          en: 'Aliens in a convenience store generated with ChatGPT Image 2.5',
-          'zh-CN': '使用 ChatGPT Image 2.5 生成的便利店外星人场景'
+          en: 'Aliens in a convenience store generated with ChatGPT Images 2.5',
+          'zh-CN': '使用 ChatGPT Images 2.5 生成的便利店外星人场景'
         },
         tier: 'premium',
         note: premiumNote,
@@ -98,8 +98,8 @@ export const chatgptImage25Page: ModelLaunchPage = {
       {
         id: 'goldfish-fisheye',
         name: {
-          en: 'Goldfish in a glass bowl generated with ChatGPT Image 2.5',
-          'zh-CN': '使用 ChatGPT Image 2.5 生成的玻璃鱼缸金鱼场景'
+          en: 'Goldfish in a glass bowl generated with ChatGPT Images 2.5',
+          'zh-CN': '使用 ChatGPT Images 2.5 生成的玻璃鱼缸金鱼场景'
         },
         tier: 'premium',
         note: premiumNote,
@@ -113,8 +113,8 @@ export const chatgptImage25Page: ModelLaunchPage = {
       {
         id: 'flame-engine',
         name: {
-          en: 'Flaming engine watercolor generated with ChatGPT Image 2.5',
-          'zh-CN': '使用 ChatGPT Image 2.5 生成的火焰引擎水彩画'
+          en: 'Flaming engine watercolor generated with ChatGPT Images 2.5',
+          'zh-CN': '使用 ChatGPT Images 2.5 生成的火焰引擎水彩画'
         },
         tier: 'premium',
         note: premiumNote,
@@ -128,8 +128,8 @@ export const chatgptImage25Page: ModelLaunchPage = {
       {
         id: 'canyon-chase',
         name: {
-          en: 'Canyon car chase generated with ChatGPT Image 2.5',
-          'zh-CN': '使用 ChatGPT Image 2.5 生成的峡谷飞车追逐场景'
+          en: 'Canyon car chase generated with ChatGPT Images 2.5',
+          'zh-CN': '使用 ChatGPT Images 2.5 生成的峡谷飞车追逐场景'
         },
         tier: 'premium',
         note: premiumNote,
@@ -143,8 +143,8 @@ export const chatgptImage25Page: ModelLaunchPage = {
       {
         id: 'anime-horizon',
         name: {
-          en: 'Anime hero at a red horizon generated with ChatGPT Image 2.5',
-          'zh-CN': '使用 ChatGPT Image 2.5 生成的红日地平线动画场景'
+          en: 'Anime hero at a red horizon generated with ChatGPT Images 2.5',
+          'zh-CN': '使用 ChatGPT Images 2.5 生成的红日地平线动画场景'
         },
         tier: 'premium',
         note: premiumNote,
@@ -175,20 +175,20 @@ export const chatgptImage25Page: ModelLaunchPage = {
       {
         id: 'what-is-chatgpt-image-2-5',
         question: {
-          en: 'What is ChatGPT Image 2.5?',
-          'zh-CN': 'ChatGPT Image 2.5 是什么？'
+          en: 'What is ChatGPT Images 2.5?',
+          'zh-CN': 'ChatGPT Images 2.5 是什么？'
         },
         answer: {
-          en: 'ChatGPT Image 2.5 is an OpenAI image model for generating new visuals and editing existing images from natural-language instructions. In ComfyUI, it runs through Partner Nodes and can be combined with the rest of your workflow.',
+          en: 'ChatGPT Images 2.5 is an OpenAI image model for generating new visuals and editing existing images from natural-language instructions. In ComfyUI, it runs through Partner Nodes and can be combined with the rest of your workflow.',
           'zh-CN':
-            'ChatGPT Image 2.5 是 OpenAI 的图像模型，可通过自然语言指令生成新视觉内容或编辑现有图像。在 ComfyUI 中，它通过合作伙伴节点运行，并可与工作流中的其他步骤组合。'
+            'ChatGPT Images 2.5 是 OpenAI 的图像模型，可通过自然语言指令生成新视觉内容或编辑现有图像。在 ComfyUI 中，它通过合作伙伴节点运行，并可与工作流中的其他步骤组合。'
         }
       },
       {
         id: 'how-to-run',
         question: {
-          en: 'How do I run ChatGPT Image 2.5 in ComfyUI?',
-          'zh-CN': '如何在 ComfyUI 中运行 ChatGPT Image 2.5？'
+          en: 'How do I run ChatGPT Images 2.5 in ComfyUI?',
+          'zh-CN': '如何在 ComfyUI 中运行 ChatGPT Images 2.5？'
         },
         answer: {
           en: `Open [Comfy Cloud](${chatgptImage25Links.cloud}), add the OpenAI image Partner Node to a workflow, enter a prompt, and connect any reference images you want to use.`,
@@ -198,8 +198,8 @@ export const chatgptImage25Page: ModelLaunchPage = {
       {
         id: 'image-editing',
         question: {
-          en: 'Can ChatGPT Image 2.5 edit an existing image?',
-          'zh-CN': 'ChatGPT Image 2.5 可以编辑现有图像吗？'
+          en: 'Can ChatGPT Images 2.5 edit an existing image?',
+          'zh-CN': 'ChatGPT Images 2.5 可以编辑现有图像吗？'
         },
         answer: {
           en: 'Yes. Supply an image and describe the change you want, from replacing objects and restyling a scene to focused masked edits. You can keep the result in the same graph for further processing.',
@@ -222,8 +222,8 @@ export const chatgptImage25Page: ModelLaunchPage = {
       {
         id: 'prompting',
         question: {
-          en: 'How should I prompt ChatGPT Image 2.5?',
-          'zh-CN': '如何为 ChatGPT Image 2.5 编写提示词？'
+          en: 'How should I prompt ChatGPT Images 2.5?',
+          'zh-CN': '如何为 ChatGPT Images 2.5 编写提示词？'
         },
         answer: {
           en: 'Write a clear creative brief: name the subject, setting, composition, lighting, medium, and any text that must appear. For edits, state what should change and what must stay untouched.',
@@ -234,8 +234,8 @@ export const chatgptImage25Page: ModelLaunchPage = {
       {
         id: 'comfy-workflows',
         question: {
-          en: 'Why use ChatGPT Image 2.5 in a ComfyUI workflow?',
-          'zh-CN': '为什么要在 ComfyUI 工作流中使用 ChatGPT Image 2.5？'
+          en: 'Why use ChatGPT Images 2.5 in a ComfyUI workflow?',
+          'zh-CN': '为什么要在 ComfyUI 工作流中使用 ChatGPT Images 2.5？'
         },
         answer: {
           en: 'The generated image becomes one step in a larger, repeatable pipeline. Route it into masking, compositing, upscaling, animation, or another model while keeping every step visible and adjustable.',
