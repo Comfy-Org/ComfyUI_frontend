@@ -241,14 +241,7 @@
 </template>
 
 <script setup lang="ts">
-import {
-  computed,
-  nextTick,
-  onMounted,
-  useId,
-  useTemplateRef,
-  watch
-} from 'vue'
+import { computed, nextTick, useId, useTemplateRef, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -336,7 +329,6 @@ const modelLabelControl = useTemplateRef<HTMLButtonElement>('modelLabelControl')
 const {
   fileSizeFor,
   gatedRepoUrlFor,
-  prefetchModelMetadata,
   downloadMissingModel,
   openModelAccessPage
 } = useMissingModelDownload()
@@ -428,15 +420,6 @@ const { showUploadDialog } = useModelUpload(
   },
   () => missingModelUploadContext.value
 )
-
-onMounted(() => {
-  if (isCloud) return
-
-  const url = model.representative.url
-  if (url && downloadable.value) {
-    void prefetchModelMetadata(url)
-  }
-})
 
 function handleDownload() {
   const rep = model.representative
