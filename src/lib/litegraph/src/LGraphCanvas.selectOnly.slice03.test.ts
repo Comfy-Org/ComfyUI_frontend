@@ -203,44 +203,71 @@ describe('LGraphCanvas selectOnly', () => {
     expect(resizeSpy).not.toHaveBeenCalled()
   })
 
-  // INV-CANVAS-01/03: remove .fails when this select-only gesture invariant passes.
-  it.fails('keeps left-drag panning on empty canvas under the panning setting', () => {
+  function pickingClickOnEmptyCanvas() {
     const { canvas, firstNode } = createHarness()
     canvas.select(firstNode)
     canvas.selectOnly = true
     const event = { canvasX: 700, canvasY: 500 } as CanvasPointerEvent
 
     canvas['_processPrimaryButton'](event, undefined)
+    return { canvas, firstNode, event }
+  }
+
+  it('keeps left-drag panning on empty canvas under the panning setting', () => {
+    const { canvas } = pickingClickOnEmptyCanvas()
 
     expect(canvas.dragging_canvas).toBe(true)
     expect(canvas.pointer.onDragStart).toBeUndefined()
-    expect(canvas.pointer.onDoubleClick).toBeUndefined()
+  })
 
-    // The pan-click selects nothing and picking preserves the selection.
+  it('a pan-armed click on empty canvas preserves the picks', () => {
+    const { canvas, firstNode, event } = pickingClickOnEmptyCanvas()
+
     canvas.pointer.onClick?.(event)
-    expect(canvas.selectedItems).toEqual(new Set([firstNode]))
 
-    // Releasing the pan clears the drag flag.
+    expect(canvas.selectedItems).toEqual(new Set([firstNode]))
+  })
+
+  it('releasing a pan on empty canvas clears the drag flag', () => {
+    const { canvas } = pickingClickOnEmptyCanvas()
+
     canvas.pointer.finally?.()
+
     expect(canvas.dragging_canvas).toBe(false)
   })
 
   // INV-CANVAS-01/03: remove .fails when this select-only gesture invariant passes.
-  it.fails('arms the marquee under the select setting while picking', () => {
+  it.fails('does not arm double-click handling for a pan on empty canvas while picking', () => {
+    const { canvas } = pickingClickOnEmptyCanvas()
+
+    expect(canvas.pointer.onDoubleClick).toBeUndefined()
+  })
+
+  function pickingClickUnderSelectSetting() {
     const { canvas } = createHarness()
     LiteGraph.leftMouseClickBehavior = 'select'
     canvas.selectOnly = true
     const event = { canvasX: 700, canvasY: 500 } as CanvasPointerEvent
 
     canvas['_processPrimaryButton'](event, undefined)
+    return { canvas }
+  }
 
-    // The select setting arms a selection drag, not a pan.
+  it('arms the marquee under the select setting while picking', () => {
+    const { canvas } = pickingClickUnderSelectSetting()
+
     expect(canvas.dragging_canvas).toBe(false)
     expect(canvas.pointer.onDragStart).toBeDefined()
-    expect(canvas.pointer.onDoubleClick).toBeUndefined()
 
     canvas.pointer.onDragStart?.(canvas.pointer)
     expect(canvas.dragging_rectangle).not.toBeNull()
+  })
+
+  // INV-CANVAS-01/03: remove .fails when this select-only gesture invariant passes.
+  it.fails('does not arm double-click handling for a marquee while picking', () => {
+    const { canvas } = pickingClickUnderSelectSetting()
+
+    expect(canvas.pointer.onDoubleClick).toBeUndefined()
   })
 
   it('retains the replacing live-select when disabled', () => {
