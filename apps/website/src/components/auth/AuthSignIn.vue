@@ -45,6 +45,18 @@ const loadWorkshopFirebase = () => import('../../config/workshop-firebase')
 // would break hydration.
 const inAppBrowser = ref(false)
 
+// Any rollout-flag transition invalidates an in-flight attempt, so a disable
+// (or an off->on flicker) mid-popup cannot still provision, publish, or mint.
+// Sync so even a same-tick flicker is counted, not collapsed to no-change.
+let signInGeneration = 0
+watch(
+  enabled,
+  () => {
+    signInGeneration += 1
+  },
+  { flush: 'sync' }
+)
+
 function dispatch(event: AuthSignInEvent) {
   state.value = authSignInTransition(state.value, event)
 }
@@ -52,17 +64,21 @@ function dispatch(event: AuthSignInEvent) {
 async function signInWith(provider: AuthSignInProvider) {
   if (state.value.step === 'pending') return
   dispatch({ type: 'signInStarted', provider })
+  const attempt = signInGeneration
+  const live = () => attempt === signInGeneration && enabled.value
   let firebase: Awaited<ReturnType<typeof loadWorkshopFirebase>> | undefined
   try {
     firebase = await loadWorkshopFirebase()
-    // The rollout flag turning off mid-flight must halt the in-flight auth,
-    // not merely hide the UI: no sign-in, provisioning, telemetry, or session.
-    if (!enabled.value) return
+    if (!live()) return
     const credential =
       provider === 'google'
         ? await firebase.signInWorkshopWithGoogle()
         : await firebase.signInWorkshopWithGitHub()
-    if (!enabled.value) return
+    // Provisioning is a separate step precisely so a disable during the popup
+    // stops it here rather than firing inside the sign-in call.
+    if (!live()) return
+    await firebase.provisionWorkshopCustomer(credential)
+    if (!live()) return
     captureAuthCompleted({
       method: provider,
       is_new_user: mode === 'signUp' || firebase.isNewWorkshopUser(credential),
