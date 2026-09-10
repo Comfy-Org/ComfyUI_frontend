@@ -30,6 +30,36 @@ test.describe('Group node migration', { tag: '@node' }, () => {
     expect(state.hasGroupNodesExtra).toBe(false)
   })
 
+  test('Preserves group node widget values through subgraph conversion', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow('groupnodes/group_node_v1.3.3')
+
+    const interiorValues = await comfyPage.page.evaluate(() =>
+      [...window.app!.graph.subgraphs.values()].flatMap((subgraph) =>
+        subgraph.nodes.flatMap(
+          (node) => node.widgets?.map((widget) => widget.value) ?? []
+        )
+      )
+    )
+
+    expect(
+      interiorValues.length,
+      'converted subgraph should expose interior widgets'
+    ).toBeGreaterThan(0)
+
+    expect(interiorValues).toContain(156680208700286)
+    expect(interiorValues).toContain('euler')
+    expect(interiorValues).toContain('v1-5-pruned-emaonly.ckpt')
+    expect(
+      interiorValues.some(
+        (value) =>
+          typeof value === 'string' && value.includes('purple galaxy bottle')
+      ),
+      'the positive prompt text should survive conversion'
+    ).toBe(true)
+  })
+
   test(
     'Loads a legacy ("/") separator group node without error and converts it',
     { tag: ['@vue-nodes'] },
