@@ -1,6 +1,6 @@
 import type { PagedList } from '@/utils/pagedList'
 
-export function mockPagedList<T>(base: Partial<PagedList<T>>): PagedList<T> {
+export function mockPagedList<T>(overlay: Partial<PagedList<T>>): PagedList<T> {
   return {
     hasMore: false,
     invalidate: async () => undefined,
@@ -8,6 +8,6 @@ export function mockPagedList<T>(base: Partial<PagedList<T>>): PagedList<T> {
     items: [],
     loadMore: async () => undefined,
     loadNew: async () => undefined,
-    ...base
+    ...overlay
   }
 }
