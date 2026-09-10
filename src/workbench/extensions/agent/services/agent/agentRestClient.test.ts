@@ -195,6 +195,17 @@ describe('agentRestClient route + method', () => {
     )
   })
 
+  it('rejects a pagination cursor cycle instead of requesting a page twice', async () => {
+    respond(threadPage([thread('page-a', 'active')], true, 'A'))
+    respond(threadPage([thread('page-b', 'active')], true, 'B'))
+    respond(threadPage([thread('page-c', 'active')], true, 'A'))
+
+    await expect(createAgentRestClient().listThreads()).rejects.toThrow(
+      'Agent thread pagination did not advance'
+    )
+    expect(fetchApi).toHaveBeenCalledTimes(3)
+  })
+
   it('listCloudWorkflows GETs the paginated workflows path until has_more is false', async () => {
     const page = (
       offset: number,
