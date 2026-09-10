@@ -4,7 +4,6 @@ import { toValue } from 'vue'
 
 import { isMiddleButtonEvent } from '@/base/pointerUtils'
 import { transferLinkPresentation } from '@/core/graph/transferLinkPresentation'
-import { st } from '@/i18n'
 import { MovingInputLink } from '@/lib/litegraph/src/canvas/MovingInputLink'
 import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
 import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
@@ -56,22 +55,27 @@ import type { LinkId } from './LLink'
 import { Reroute } from './Reroute'
 import type { RerouteId } from './Reroute'
 import { LinkConnector } from './canvas/LinkConnector'
-import { findRerouteAtPoint } from './canvas/findRerouteAtPoint'
+import {
+  findRerouteAtPoint,
+  queryRenderedLinkSegmentsAtPoint
+} from './canvas/hitTesting'
 import { getCanvasContextMenuTarget } from './canvas/getCanvasContextMenuTarget'
 import {
   clearLinkBadgeHitAreas,
   drawHiddenLinkBadges,
-  layoutHiddenLinkBadges,
   queryLinkBadgeAtPoint
 } from './canvas/linkBadges'
-import type { HiddenLinkBadge } from './canvas/linkBadges'
 import {
+  layoutGraphLinkBadges,
+  queryHiddenLinkBadgeAtPoint
+} from './canvas/linkBadgeRenderer'
+import {
+  getLinkMenuOptions,
   hideLink,
   promptRenameLinkBadge,
   showLink
 } from './canvas/linkVisibility'
 import { isOverNodeInput, isOverNodeOutput } from './canvas/measureSlots'
-import { queryRenderedLinkSegmentsAtPoint } from './canvas/queryRenderedLinkSegmentsAtPoint'
 import { strokeShape } from './draw'
 import { defineDeprecatedProperty } from './utils/feedback'
 import {
@@ -308,53 +312,6 @@ const tmp_area = new Rectangle()
 const margin_area = new Rectangle()
 const link_bounding = new Rectangle()
 
-function getLinkEndpointPositions(
-  graph: LGraph,
-  link: LLink
-): [Point, Point] | undefined {
-  const resolved = link.resolve(graph)
-  const { subgraphInput, inputNode, input } = resolved
-  if (subgraphInput) {
-    if (!inputNode || !input || !subgraphInput.linkIds.includes(link.id)) {
-      return
-    }
-
-    const endPos = LiteGraph.vueNodesMode
-      ? getSlotPosition(inputNode, link.target_slot, true)
-      : inputNode.getInputPos(link.target_slot)
-    return [subgraphInput.pos, endPos]
-  }
-
-  const { subgraphOutput, outputNode, output } = resolved
-  if (subgraphOutput) {
-    if (!outputNode || !output || subgraphOutput.linkIds[0] !== link.id) {
-      return
-    }
-
-    const startPos = LiteGraph.vueNodesMode
-      ? getSlotPosition(outputNode, link.origin_slot, false)
-      : outputNode.getOutputPos(link.origin_slot)
-    return [startPos, subgraphOutput.pos]
-  }
-
-  if (
-    !inputNode ||
-    !input ||
-    inputLinkId(graph, inputNode.id, link.target_slot) !== link.id
-  )
-    return
-  if (!outputNode || !output) return
-
-  const endPos: Point = LiteGraph.vueNodesMode
-    ? getSlotPosition(inputNode, link.target_slot, true)
-    : inputNode.getInputPos(link.target_slot)
-  const startPos: Point = LiteGraph.vueNodesMode
-    ? getSlotPosition(outputNode, link.origin_slot, false)
-    : outputNode.getOutputPos(link.origin_slot)
-
-  return [startPos, endPos]
-}
-
 /**
  * This class is in charge of rendering one graph inside a canvas. And provides all the interaction required.
  * Valid callbacks are: onNodeSelected, onNodeDeselected, onShowNodePanel, onNodeDblClicked
@@ -484,9 +441,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this._setCursor(cursor)
   }
 
-  // Whether the canvas was previously being dragged prior to pressing space key.
-  // null if space key is not pressed.
-  private _previously_dragging_canvas: boolean | null = null
+  private _spaceKeyHeld: { draggingCanvas: boolean; readOnly: boolean } | null =
+    null
 
   // #region Legacy accessors
   /** @deprecated @inheritdoc {@link LGraphCanvasState.readOnly} */
@@ -663,7 +619,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   pause_rendering: boolean
   clear_background: boolean
   clear_background_color: string
-  render_only_selected: boolean
   show_info: boolean
   /** Additional text appended to the canvas info overlay (rendered by {@link renderInfo}). */
   info_text: string | undefined
@@ -1046,7 +1001,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.clear_background = true
     this.clear_background_color = '#222'
 
-    this.render_only_selected = true
     this.show_info = true
     this.allow_dragcanvas = true
     this.allow_dragnodes = true
@@ -2532,18 +2486,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (node && (this.allow_interaction || node.flags.allow_interaction)) {
       this._processNodeClick(e, ctrlOrMeta, node)
     } else {
-      const badgeLinkId = queryLinkBadgeAtPoint(this, x, y)
-      const badgeLink =
-        badgeLinkId === undefined ? undefined : graph.getLink(badgeLinkId)
-      if (
-        badgeLink &&
-        useLinkPresentationStore().getPresentation(
-          graphScopeOf(graph),
-          badgeLink.id
-        )?.hidden
-      ) {
-        pointer.onDoubleClick = () =>
-          promptRenameLinkBadge(this, graphScopeOf(graph), badgeLink.id, e)
+      const badgeLink = queryHiddenLinkBadgeAtPoint(this, graph, x, y)
+      if (badgeLink) {
+        if (!this.selectOnly) {
+          pointer.onDoubleClick = () =>
+            promptRenameLinkBadge(this, graphScopeOf(graph), badgeLink.id, e)
+        }
         pointer.onDragStart = () => (this.dragging_canvas = true)
         pointer.finally = () => (this.dragging_canvas = false)
         return
@@ -4009,6 +3957,22 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   processKey(e: KeyboardEvent): void {
     this._shiftDown = e.shiftKey
 
+    if (e.type == 'keyup' && e.key === ' ') {
+      const held = this._spaceKeyHeld
+      this._spaceKeyHeld = null
+      if (held) {
+        this.read_only = held.readOnly
+        this.dragging_canvas = held.draggingCanvas && this.pointer.isDown
+        if (
+          this.pointer.isDown &&
+          (this.isDragging || this.linkConnector.isConnecting)
+        ) {
+          this._autoPan?.updatePointer(this.mouse[0], this.mouse[1])
+          this._autoPan?.start()
+        }
+      }
+    }
+
     const { graph } = this
     if (!graph) return
 
@@ -4020,11 +3984,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       // TODO: Switch
       if (e.key === ' ') {
         // space
+        this._spaceKeyHeld ??= {
+          draggingCanvas: this.dragging_canvas,
+          readOnly: this.read_only
+        }
         this.read_only = true
         this._autoPan?.stop()
-        if (this._previously_dragging_canvas === null) {
-          this._previously_dragging_canvas = this.dragging_canvas
-        }
         this.dragging_canvas =
           this.pointer.isDown || !!this.linkConnector.renderLinks.length
         block_default = true
@@ -4045,21 +4010,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         node.onKeyDown?.(e)
       }
     } else if (e.type == 'keyup') {
-      if (e.key === ' ') {
-        // space
-        this.read_only = false
-        this.dragging_canvas =
-          (this._previously_dragging_canvas ?? false) && this.pointer.isDown
-        this._previously_dragging_canvas = null
-        if (
-          this.pointer.isDown &&
-          (this.isDragging || this.linkConnector.isConnecting)
-        ) {
-          this._autoPan?.updatePointer(this.mouse[0], this.mouse[1])
-          this._autoPan?.start()
-        }
-      }
-
       for (const node of Object.values(this.selected_nodes)) {
         node.onKeyUp?.(e)
       }
@@ -6154,7 +6104,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         : nodesInRenderOrder(graph)
     const linkStore = useLinkStore()
     const graphScope = graphScopeOf(graph)
-    const presentationStore = useLinkPresentationStore()
 
     // Ensure widget-input slot positions are computed before rendering links.
     // arrange() sets input.pos for widget-backed slots, but is normally called
@@ -6168,30 +6117,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       node.arrange()
     }
 
-    const hiddenLinkIds = presentationStore.graphHiddenLinkIds(graphScope)
-    const hiddenLinks: HiddenLinkBadge[] = []
-    for (const linkId of hiddenLinkIds) {
-      const link = graph.getLink(linkId)
-      if (!link) continue
-      const endpoints = getLinkEndpointPositions(graph, link)
-      const presentation = presentationStore.getPresentation(
-        graphScope,
-        link.id
-      )
-      if (!endpoints || !presentation) continue
-
-      hiddenLinks.push({
-        link,
-        presentation,
-        startPos: endpoints[0],
-        endPos: endpoints[1],
-        color:
-          (typeof link.color === 'string' && link.color) ||
-          LGraphCanvas.link_type_colors[link.type] ||
-          this.default_link_color
-      })
-    }
-    const hiddenLinkLayouts = layoutHiddenLinkBadges(this, ctx, hiddenLinks)
+    const hiddenLinkLayouts = layoutGraphLinkBadges(
+      this,
+      ctx,
+      graph,
+      LGraphCanvas.link_type_colors,
+      this.default_link_color
+    )
 
     const renderConnection = (
       link: LLink,
@@ -6803,27 +6735,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         ? segment
         : presentationLink
     const graphScope = graphScopeOf(graph)
-    const hidden = link
-      ? useLinkPresentationStore().getPresentation(graphScope, link.id)?.hidden
-      : false
-    const menuItem = (value: string): IContextMenuValue<string> => ({
-      content: st(`contextMenu.${value}`, value),
-      value
-    })
-    const visibilityOptions: (IContextMenuValue<string> | string | null)[] =
-      !link
-        ? []
-        : hidden
-          ? [menuItem('Rename'), menuItem('Show Link'), null]
-          : [menuItem('Hide Link'), null]
-    const options: (IContextMenuValue<string> | string | null)[] = [
-      ...visibilityOptions,
-      'Add Node',
-      ...(hidden ? [] : ['Add Reroute']),
-      null,
-      'Delete',
-      null
-    ]
+    const options = getLinkMenuOptions(graphScope, link?.id)
     const menu = new LiteGraph.ContextMenu<string>(options, {
       event: e,
       title,
@@ -6882,11 +6794,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         case 'Delete': {
           // segment can be a Reroute object, in which case segment.id is the reroute id
           const linkId =
-            segment instanceof Reroute
+            link?.id ??
+            (segment instanceof Reroute
               ? segment.linkIds.values().next().value
               : segment instanceof LLink
                 ? segment.id
-                : undefined
+                : undefined)
           if (linkId !== undefined) {
             graph.removeLink(linkId)
             // Clean up layout store

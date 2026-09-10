@@ -1,9 +1,6 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
-import { LGraph } from '@/lib/litegraph/src/LGraph'
-import { LLink } from '@/lib/litegraph/src/LLink'
+import { LGraph, LLink } from '@/lib/litegraph/src/litegraph'
 import { setRevealedLinks } from '@/lib/litegraph/src/canvas/linkRevealState'
 import {
   isRerouteVisibleForLinkDrag,
@@ -12,10 +9,6 @@ import {
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
-
-beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
-})
 
 describe('isRerouteVisibleForLinkDrag', () => {
   it('rejects only reroutes whose links are all hidden and unrevealed', () => {

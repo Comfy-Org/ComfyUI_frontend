@@ -1,7 +1,5 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { i18n, loadLocale } from '@/i18n'
 import { LGraph } from '@/lib/litegraph/src/LGraph'
@@ -10,6 +8,7 @@ import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
+import { createMockLLink } from '@/utils/__tests__/litegraphTestUtils'
 
 import {
   hideLink,
@@ -17,10 +16,6 @@ import {
   renameLink,
   showLink
 } from './linkVisibility'
-
-function createLink(): LLink {
-  return new LLink(toLinkId(1), 'MODEL', 4, 0, 5, 0)
-}
 
 function createHost(events: string[] = []) {
   return {
@@ -34,12 +29,8 @@ function createHost(events: string[] = []) {
 }
 
 describe('link visibility mutations', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('brackets hide and show mutations and redraws the background', () => {
-    const link = createLink()
+    const link = createMockLLink({ type: 'MODEL' })
     const scope = graphScopeOf(new LGraph())
     const hideEvents: string[] = []
     const hideHost = createHost(hideEvents)
@@ -63,7 +54,7 @@ describe('link visibility mutations', () => {
   })
 
   it('trims a renamed label and clears it when blank', () => {
-    const link = createLink()
+    const link = createMockLLink({ type: 'MODEL' })
     const scope = graphScopeOf(new LGraph())
     const host = createHost()
 
@@ -79,7 +70,7 @@ describe('link visibility mutations', () => {
   })
 
   it('localizes and seeds the rename prompt', async () => {
-    const link = createLink()
+    const link = createMockLLink({ type: 'MODEL' })
     const scope = graphScopeOf(new LGraph())
     const host = createHost()
     const event = fromPartial<CanvasPointerEvent>({})
@@ -124,7 +115,7 @@ describe('link visibility mutations', () => {
 
   it('produces a reversible graph serialization change', () => {
     const graph = new LGraph()
-    const link = createLink()
+    const link = new LLink(toLinkId(1), 'MODEL', 4, 0, 5, 0)
     graph.links.set(link.id, link)
     const scope = graphScopeOf(graph)
     const host = createHost()

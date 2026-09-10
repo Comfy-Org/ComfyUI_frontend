@@ -1,4 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -100,7 +100,7 @@ describe('NodeLibrarySidebarTabV2', () => {
   function renderComponent() {
     return render(NodeLibrarySidebarTabV2, {
       global: {
-        plugins: [createTestingPinia({ stubActions: false }), i18n],
+        plugins: [getActivePinia()!, i18n],
         stubs: {
           teleport: true
         }

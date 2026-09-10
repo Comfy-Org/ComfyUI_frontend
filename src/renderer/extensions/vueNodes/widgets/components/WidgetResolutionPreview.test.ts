@@ -1,6 +1,5 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
-import { setActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -35,8 +34,7 @@ const i18n = createI18n({
 let pinia: Pinia
 
 beforeEach(() => {
-  pinia = createTestingPinia({ stubActions: false })
-  setActivePinia(pinia)
+  pinia = getActivePinia()!
   resolveNodeMock.mockReturnValue({
     id: NODE_ID,
     graph: { rootGraph: { id: GRAPH_ID } }
