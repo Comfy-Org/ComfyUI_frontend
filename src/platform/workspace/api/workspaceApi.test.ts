@@ -1,3 +1,4 @@
+import { useAuthStore } from '@/stores/authStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -5,20 +6,14 @@ import type {
   SavedPaymentMethod
 } from './workspaceApi'
 
-const {
-  mockAxiosInstance,
-  mockGetWorkspaceAuthHeaderOrThrow,
-  mockGetFirebaseAuthHeaderOrThrow
-} = vi.hoisted(() => ({
+const { mockAxiosInstance } = vi.hoisted(() => ({
   mockAxiosInstance: {
     get: vi.fn(),
     post: vi.fn(),
     patch: vi.fn(),
     delete: vi.fn(),
     interceptors: { response: { use: vi.fn() } }
-  },
-  mockGetWorkspaceAuthHeaderOrThrow: vi.fn(),
-  mockGetFirebaseAuthHeaderOrThrow: vi.fn()
+  }
 }))
 
 vi.mock<unknown>(import('axios'), () => ({
@@ -39,44 +34,45 @@ vi.mock(import('@/i18n'), () => ({
   t: vi.fn((key: string) => key)
 }))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
+vi.mock(import('@/scripts/api'), async (importOriginal) => ({
+  api: Object.assign((await importOriginal()).api, {
     apiURL: vi.fn((path: string) => `/api${path}`)
-  }
+  })
 }))
 
 vi.mock(import('./workspaceApiUrl'), () => ({
   workspaceApiUrl: (path: string) => `/api${path}`
 }))
 
-vi.mock<unknown>(import('@/stores/authStore'), () => ({
-  useAuthStore: () => ({
-    getWorkspaceAuthHeaderOrThrow: mockGetWorkspaceAuthHeaderOrThrow,
-    getFirebaseAuthHeaderOrThrow: mockGetFirebaseAuthHeaderOrThrow
-  })
-}))
-
 import { workspaceApi } from './workspaceApi'
 
-const AUTH_HEADER = { Authorization: 'Bearer test-token' }
+const AUTH_HEADER = { Authorization: 'Bearer test-token' } as const
 
 describe('workspaceApi', () => {
   beforeEach(() => {
-    mockGetWorkspaceAuthHeaderOrThrow.mockResolvedValue(AUTH_HEADER)
-    mockGetFirebaseAuthHeaderOrThrow.mockResolvedValue(AUTH_HEADER)
+    vi.mocked(useAuthStore().getWorkspaceAuthHeaderOrThrow).mockResolvedValue(
+      AUTH_HEADER
+    )
+    vi.mocked(useAuthStore().getFirebaseAuthHeaderOrThrow).mockResolvedValue(
+      AUTH_HEADER
+    )
   })
 
   describe('authentication', () => {
     it('propagates error when workspace authentication rejects', async () => {
       const authError = new Error('toastMessages.userNotAuthenticated')
-      mockGetWorkspaceAuthHeaderOrThrow.mockRejectedValue(authError)
+      vi.mocked(useAuthStore().getWorkspaceAuthHeaderOrThrow).mockRejectedValue(
+        authError
+      )
 
       await expect(workspaceApi.list()).rejects.toBe(authError)
     })
 
     it('propagates error when getFirebaseAuthHeaderOrThrow rejects', async () => {
       const authError = new Error('toastMessages.userNotAuthenticated')
-      mockGetFirebaseAuthHeaderOrThrow.mockRejectedValue(authError)
+      vi.mocked(useAuthStore().getFirebaseAuthHeaderOrThrow).mockRejectedValue(
+        authError
+      )
 
       await expect(workspaceApi.acceptInvite('token')).rejects.toBe(authError)
     })
@@ -340,8 +336,10 @@ describe('workspaceApi', () => {
 
       const result = await workspaceApi.acceptInvite('abc-token')
 
-      expect(mockGetFirebaseAuthHeaderOrThrow).toHaveBeenCalled()
-      expect(mockGetWorkspaceAuthHeaderOrThrow).not.toHaveBeenCalled()
+      expect(useAuthStore().getFirebaseAuthHeaderOrThrow).toHaveBeenCalled()
+      expect(
+        useAuthStore().getWorkspaceAuthHeaderOrThrow
+      ).not.toHaveBeenCalled()
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
         '/api/invites/abc-token/accept',
         null,
@@ -789,3 +787,10 @@ describe('workspaceApi', () => {
     })
   })
 })
+
+vi.mock(import('firebase/auth'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  setPersistence: vi.fn().mockResolvedValue(undefined),
+  onAuthStateChanged: vi.fn(() => vi.fn()),
+  onIdTokenChanged: vi.fn(() => vi.fn())
+}))

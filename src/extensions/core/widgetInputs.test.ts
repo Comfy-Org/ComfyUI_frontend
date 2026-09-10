@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -99,7 +97,6 @@ function widgetSlot(
 
 describe('PrimitiveNode', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     LiteGraph.namedValuesRestore = false
   })
 
@@ -220,7 +217,7 @@ describe('PrimitiveNode', () => {
   })
 
   it('keeps its serialized value for an asset browser widget', () => {
-    vi.spyOn(assetService, 'shouldUseAssetBrowser').mockReturnValue(true)
+    vi.spyOn(assetService, 'shouldUseWidgetAssetPicker').mockReturnValue(true)
     const graph = new LGraph()
     const target = new LGraphNode('Target')
     target.comfyClass = 'CheckpointLoaderSimple'
@@ -504,7 +501,6 @@ describe('convertToInput', () => {
 
 describe('setWidgetConfig', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     widgetInputsExtension.registerCustomNodes?.(app)
   })
 
@@ -574,10 +570,6 @@ describe('setWidgetConfig', () => {
 })
 
 describe('Comfy.WidgetInputs node-def hooks', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   describe('onGraphConfigured', () => {
     it('resolves GET_CONFIG from the node definition, chaining the original hook', async () => {
       const original = vi.fn()

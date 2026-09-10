@@ -1,4 +1,5 @@
-import { markRaw, reactive } from 'vue'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { markRaw } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
@@ -21,24 +22,15 @@ function createTestDialogInstance(
   }
 }
 
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: vi.fn(() => ({
-    get: vi.fn(() => [])
-  }))
-}))
-
-vi.mock<unknown>(import('@/stores/dialogStore'), () => {
-  const dialogStack = reactive<DialogInstance[]>([])
-  return {
-    useDialogStore: () => ({ dialogStack })
-  }
-})
-
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     canvas: null
   }
 }))
+
+beforeEach(() => {
+  vi.mocked(useSettingStore().get).mockImplementation(() => [])
+})
 
 describe('keybindingService - dialog gate', () => {
   let keybindingService: ReturnType<typeof useKeybindingService>
@@ -46,8 +38,8 @@ describe('keybindingService - dialog gate', () => {
 
   beforeEach(() => {
     const commandStore = useCommandStore()
-    mockCommandExecute = vi.fn()
-    commandStore.execute = mockCommandExecute
+    mockCommandExecute = commandStore.execute
+    vi.mocked(mockCommandExecute).mockResolvedValue(undefined)
 
     const dialogStore = useDialogStore()
     dialogStore.dialogStack.length = 0

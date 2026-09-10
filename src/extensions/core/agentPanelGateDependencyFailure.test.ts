@@ -1,18 +1,13 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { registerAgentPanelExtension } from './agentPanel'
 
 const registered = vi.hoisted(() => ({
   setup: null as (() => Promise<void> | void) | null
 }))
 
 const reportErrorMock = vi.hoisted(() => vi.fn())
-const agentStore = vi.hoisted(() => ({
-  enabled: false,
-  gateSettled: false,
-  isOpen: false
-}))
 
 vi.mock('@/platform/telemetry/reportError', () => ({
   reportError: reportErrorMock
@@ -23,26 +18,6 @@ vi.mock('@/platform/telemetry/reportError', () => ({
 vi.mock('@/workbench/extensions/agent/utils/postHogFlagSource', () => {
   throw new Error('flag source chunk failed to load')
 })
-
-vi.mock('@/workbench/extensions/agent/stores/agent/agentPanelStore', () => ({
-  useAgentPanelStore: () => agentStore
-}))
-
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({ activeWorkflow: null })
-}))
-
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({ updateSelectedItems: vi.fn() })
-}))
-
-vi.mock('@/stores/agentNodeSelectionStore', () => ({
-  useAgentNodeSelectionStore: () => ({
-    isLoadingWorkflow: false,
-    beginWorkflowLoad: vi.fn(),
-    finishWorkflowLoad: vi.fn()
-  })
-}))
 
 vi.mock('@/utils/graphTraversalUtil', () => ({
   getNodeByLocatorId: vi.fn()
@@ -67,17 +42,14 @@ vi.mock('@/services/extensionService', () => ({
 
 describe('the agent panel gate under a dependency-chunk failure', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     reportErrorMock.mockClear()
-    agentStore.enabled = false
-    agentStore.gateSettled = false
+    useAgentPanelStore().enabled = false
+    useAgentPanelStore().gateSettled = false
   })
 
   it('settles fail-closed, reports, and resolves the setup promise', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.stubGlobal('__DISTRIBUTION__', 'cloud')
-    vi.resetModules()
-    const { registerAgentPanelExtension } = await import('./agentPanel')
     registerAgentPanelExtension()
 
     // The gate promise is HANDED BACK to the extension service - a

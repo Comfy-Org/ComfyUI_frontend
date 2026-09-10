@@ -11011,7 +11011,8 @@
     "display_name": "Charger 3D (Avancé)",
     "inputs": {
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "Hauteur de rendu de la fenêtre d’affichage en pixels."
       },
       "model_file": {
         "name": "model_file"
@@ -11020,29 +11021,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "Largeur de rendu de la fenêtre d’affichage en pixels."
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "Fichier de modèle 3D chargé (glb/obj/stl/etc.)."
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "Placement de chaque modèle dans la scène : position, rotation et échelle (espace monde avec Y vers le haut)."
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "Informations sur la caméra de la fenêtre d’affichage : position, cible, zoom et type."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "Largeur de rendu de la fenêtre d’affichage en pixels."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "Hauteur de rendu de la fenêtre d’affichage en pixels."
       }
     }
   },
@@ -16384,7 +16386,7 @@
   },
   "OpenAIGPTImageNodeV2": {
     "description": "Génère des images via l’API GPT Image d’OpenAI.",
-    "display_name": "OpenAI GPT Image 2",
+    "display_name": "OpenAI GPT Image 2.5",
     "inputs": {
       "control_after_generate": {
         "name": "contrôle après génération"
@@ -16471,6 +16473,36 @@
       },
       "size": {
         "name": "taille"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenRouterImageNode": {
+    "description": "Générez ou modifiez des images via OpenRouter avec les modèles MAI-Image-2.6 de Microsoft : texte vers image ou modification guidée par image avec jusqu’à cinq images de référence, dans sept rapports d’aspect en 1K ou 1.5K.",
+    "display_name": "Image OpenRouter",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Le modèle d’image OpenRouter utilisé pour générer l’image."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
       }
     },
     "outputs": {
@@ -17388,10 +17420,12 @@
     "display_name": "Aperçu 3D (Avancé)",
     "inputs": {
       "camera_info": {
-        "name": "infos_caméra"
+        "name": "infos_caméra",
+        "tooltip": "Informations sur la caméra de la fenêtre d’affichage : position, cible, zoom et type."
       },
       "height": {
-        "name": "hauteur"
+        "name": "hauteur",
+        "tooltip": "Hauteur de rendu de la fenêtre d’affichage en pixels."
       },
       "model_3d": {
         "name": "modèle 3D",
@@ -17404,29 +17438,30 @@
         "name": "état de la vue"
       },
       "width": {
-        "name": "largeur"
+        "name": "largeur",
+        "tooltip": "Largeur de rendu de la fenêtre d’affichage en pixels."
       }
     },
     "outputs": {
       "0": {
         "name": "fichier_modèle",
-        "tooltip": null
+        "tooltip": "Fichier de modèle 3D (glb/obj/stl/etc.) provenant d’un nœud 3D en amont."
       },
       "1": {
         "name": "infos_caméra",
-        "tooltip": null
+        "tooltip": "Placement de chaque modèle dans la scène : position, rotation et échelle (espace monde avec Y vers le haut)."
       },
       "2": {
         "name": "infos_modèle_3d",
-        "tooltip": null
+        "tooltip": "Informations sur la caméra de la fenêtre d’affichage : position, cible, zoom et type."
       },
       "3": {
         "name": "largeur",
-        "tooltip": null
+        "tooltip": "Largeur de rendu de la fenêtre d’affichage en pixels."
       },
       "4": {
         "name": "hauteur",
-        "tooltip": null
+        "tooltip": "Hauteur de rendu de la fenêtre d’affichage en pixels."
       }
     }
   },
@@ -20765,48 +20800,52 @@
     "display_name": "Enregistrer 3D (Avancé)",
     "inputs": {
       "camera_info": {
-        "name": "camera_info"
+        "name": "camera_info",
+        "tooltip": "Informations sur la caméra de la fenêtre d’affichage : position, cible, zoom et type."
       },
       "filename_prefix": {
         "name": "filename_prefix"
       },
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "Hauteur de rendu de la fenêtre d’affichage en pixels."
       },
       "model_3d": {
         "name": "model_3d",
         "tooltip": "Fichier de modèle 3D provenant d'un nœud 3D en amont."
       },
       "model_3d_info": {
-        "name": "model_3d_info"
+        "name": "model_3d_info",
+        "tooltip": "Placement de chaque modèle dans la scène : position, rotation et échelle (espace monde avec Y vers le haut)."
       },
       "viewport_state": {
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "Largeur de rendu de la fenêtre d’affichage en pixels."
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "Fichier de modèle 3D (glb/obj/stl/etc.) provenant d’un nœud 3D en amont."
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "Placement de chaque modèle dans la scène : position, rotation et échelle (espace monde avec Y vers le haut)."
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "Informations sur la caméra de la fenêtre d’affichage : position, cible, zoom et type."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "Largeur de rendu de la fenêtre d’affichage en pixels."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "Hauteur de rendu de la fenêtre d’affichage en pixels."
       }
     }
   },

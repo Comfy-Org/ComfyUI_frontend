@@ -11011,7 +11011,8 @@
     "display_name": "載入 3D（進階）",
     "inputs": {
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "視窗的渲染高度（像素）。"
       },
       "model_file": {
         "name": "model_file"
@@ -11020,29 +11021,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "視窗的渲染寬度（像素）。"
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "已載入的 3D 模型檔案（glb/obj/stl 等）。"
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "場景中各模型的擺放資訊：位置、旋轉與縮放（Y 軸朝上的世界空間）。"
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "視窗攝影機資訊：位置、注視目標、縮放及類型。"
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "視窗的渲染寬度（像素）。"
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "視窗的渲染高度（像素）。"
       }
     }
   },
@@ -16384,7 +16386,7 @@
   },
   "OpenAIGPTImageNodeV2": {
     "description": "透過 OpenAI 的 GPT Image 端點生成圖像。",
-    "display_name": "OpenAI GPT 圖像 2",
+    "display_name": "OpenAI GPT Image 2.5",
     "inputs": {
       "control_after_generate": {
         "name": "生成後控制"
@@ -16471,6 +16473,36 @@
       },
       "size": {
         "name": "size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenRouterImageNode": {
+    "description": "透過 OpenRouter 使用 Microsoft 的 MAI-Image-2.6 模型生成或編輯圖像：文字轉圖像，或使用最多五張參考圖像進行圖像引導編輯，支援七種長寬比與 1K 或 1.5K 解析度。",
+    "display_name": "OpenRouter 圖像",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於生成圖像的 OpenRouter 圖像模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "長寬比"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_seed": {
+        "name": "種子"
       }
     },
     "outputs": {
@@ -17388,10 +17420,12 @@
     "display_name": "3D 預覽（進階）",
     "inputs": {
       "camera_info": {
-        "name": "camera_info"
+        "name": "camera_info",
+        "tooltip": "視窗攝影機資訊：位置、注視目標、縮放及類型。"
       },
       "height": {
-        "name": "高度"
+        "name": "高度",
+        "tooltip": "視窗的渲染高度（像素）。"
       },
       "model_3d": {
         "name": "model_3d",
@@ -17404,29 +17438,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "寬度"
+        "name": "寬度",
+        "tooltip": "視窗的渲染寬度（像素）。"
       }
     },
     "outputs": {
       "0": {
         "name": "model_file",
-        "tooltip": null
+        "tooltip": "來自上游 3D 節點的 3D 模型檔案（glb/obj/stl 等）。"
       },
       "1": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "場景中各模型的擺放資訊：位置、旋轉與縮放（Y 軸朝上的世界空間）。"
       },
       "2": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "視窗攝影機資訊：位置、注視目標、縮放及類型。"
       },
       "3": {
         "name": "寬度",
-        "tooltip": null
+        "tooltip": "視窗的渲染寬度（像素）。"
       },
       "4": {
         "name": "高度",
-        "tooltip": null
+        "tooltip": "視窗的渲染高度（像素）。"
       }
     }
   },
@@ -20765,48 +20800,52 @@
     "display_name": "儲存 3D（進階）",
     "inputs": {
       "camera_info": {
-        "name": "camera_info"
+        "name": "camera_info",
+        "tooltip": "視窗攝影機資訊：位置、注視目標、縮放及類型。"
       },
       "filename_prefix": {
         "name": "filename_prefix"
       },
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "視窗的渲染高度（像素）。"
       },
       "model_3d": {
         "name": "model_3d",
         "tooltip": "來自上游 3D 節點的 3D 模型檔案。"
       },
       "model_3d_info": {
-        "name": "model_3d_info"
+        "name": "model_3d_info",
+        "tooltip": "場景中各模型的擺放資訊：位置、旋轉與縮放（Y 軸朝上的世界空間）。"
       },
       "viewport_state": {
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "視窗的渲染寬度（像素）。"
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "來自上游 3D 節點的 3D 模型檔案（glb/obj/stl 等）。"
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "場景中各模型的擺放資訊：位置、旋轉與縮放（Y 軸朝上的世界空間）。"
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "視窗攝影機資訊：位置、注視目標、縮放及類型。"
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "視窗的渲染寬度（像素）。"
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "視窗的渲染高度（像素）。"
       }
     }
   },
