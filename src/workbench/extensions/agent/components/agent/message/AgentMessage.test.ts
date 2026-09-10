@@ -142,6 +142,67 @@ describe('AgentMessage thinking narration', () => {
     expect(screen.getByText('Thinking...')).toBeInTheDocument()
   })
 
+  it('retains a thinking-only trace after the reply finishes', async () => {
+    let message = createAssistantMessage('msg-0' as TurnId)
+    const transport = createAgentEventTransport(message, (next) => {
+      message = next
+    })
+    transport.ingest({
+      type: 'agent_thinking',
+      data: {
+        delta: 'Considering the request',
+        message_id: 'msg-0',
+        thread_id: 'thread-0'
+      }
+    })
+
+    const { rerender } = render(AgentMessage, {
+      props: { message },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByRole('listitem')).toHaveTextContent(
+      'Considering the request'
+    )
+    expect(screen.getAllByText('Considering the request')).toHaveLength(1)
+
+    transport.ingest({
+      type: 'agent_message_delta',
+      data: {
+        delta: 'No graph edits are needed.',
+        message_id: 'msg-0',
+        thread_id: 'thread-0'
+      }
+    })
+    await rerender({ message })
+
+    expect(screen.getByText('No graph edits are needed.')).toBeInTheDocument()
+    expect(screen.getByRole('listitem')).toHaveTextContent(
+      'Considering the request'
+    )
+    expect(
+      screen.queryByRole('button', { name: /^worked/i })
+    ).not.toBeInTheDocument()
+
+    transport.ingest({
+      type: 'agent_message_done',
+      data: { message_id: 'msg-0', thread_id: 'thread-0' }
+    })
+    await rerender({ message })
+
+    const summary = screen.getByRole('button', { name: /^worked/i })
+    expect(summary).toHaveAttribute('aria-expanded', 'false')
+    expect(
+      screen.queryByText('Considering the request')
+    ).not.toBeInTheDocument()
+    expect(screen.getByText('No graph edits are needed.')).toBeInTheDocument()
+
+    await userEvent.click(summary)
+    expect(screen.getByRole('listitem')).toHaveTextContent(
+      'Considering the request'
+    )
+  })
+
   it('streams every step flat, then folds the finished turn into one summary', async () => {
     const clock = vi.spyOn(Date, 'now').mockReturnValue(1000)
     let message = createAssistantMessage('msg-0' as TurnId)

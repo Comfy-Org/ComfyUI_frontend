@@ -56,15 +56,12 @@ type Group =
 
 // Every thinking and tool part of the turn reads as one trace, wherever they fall
 // between the reply's text parts, so the completed turn folds into a single summary.
-const NO_ACTIVITY: readonly ActivityPart[] = Object.freeze([])
-
-const activityParts = computed<readonly ActivityPart[]>(() => {
-  const activity = message.parts.filter(
+const activityParts = computed<readonly ActivityPart[]>(() =>
+  message.parts.filter(
     (part): part is ActivityPart =>
       part.type === 'tool' || part.type === 'thinking'
   )
-  return activity.some((part) => part.type === 'tool') ? activity : NO_ACTIVITY
-})
+)
 
 const groups = computed<Group[]>(() => {
   const out: Group[] = []
