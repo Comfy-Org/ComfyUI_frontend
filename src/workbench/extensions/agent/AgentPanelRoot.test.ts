@@ -5082,7 +5082,7 @@ describe('AgentPanelRoot workflow binding', () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentPanelStore().isOpen = true
     const action = screen.getByRole('button', {
-      name: 'mention nodes from graph,'
+      name: 'mention nodes'
     })
     expect(action).toHaveAttribute('aria-disabled', 'true')
     expect(action).toHaveAccessibleDescription('Please select a workflow first')

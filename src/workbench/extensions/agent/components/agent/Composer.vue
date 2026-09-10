@@ -393,13 +393,8 @@ watch(mentionActive, async () => {
 })
 
 const placeholderHint = computed(() => {
-  const [firstLine = '', secondLine = ''] = t('agent.placeholder').split('\n')
-  const addNodes = t('agent.addNodesFromGraph').toLocaleLowerCase()
-  return {
-    firstLine,
-    addNodes,
-    dragAssets: secondLine.slice(addNodes.length).trim()
-  }
+  const [text = '', mentionNodes = ''] = t('agent.placeholder').split('\n')
+  return { text, mentionNodes }
 })
 
 const composer = useComposer({
@@ -675,7 +670,7 @@ defineExpose({
             v-if="!composer.draft.value && !workflowReferences.length"
             class="text-agent-fg-muted pointer-events-none absolute inset-x-0 top-0 z-10 font-inter text-[14px]/[20px] font-normal"
           >
-            <span>{{ placeholderHint.firstLine }}</span>
+            <span>{{ placeholderHint.text }} </span>
             <AgentTooltip
               :label="nodeReferenceDisabledReason ?? ''"
               :disabled="!nodeReferenceDisabledReason"
@@ -684,18 +679,17 @@ defineExpose({
                 type="button"
                 :aria-disabled="!!nodeReferenceDisabledReason || undefined"
                 :aria-description="nodeReferenceDisabledReason"
-                class="text-agent-fg-muted hover:text-agent-fg focus-visible:text-agent-fg focus-visible:outline-agent-fg pointer-events-auto mr-[4px] ml-[-5px] inline-flex h-[20px] shrink-0 cursor-pointer items-center gap-[4px] rounded-[8px] px-[4px] align-top text-[14px]/[20px] transition-colors focus-visible:outline-1 aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+                class="text-agent-fg-muted hover:text-agent-fg focus-visible:text-agent-fg focus-visible:outline-agent-fg pointer-events-auto -ml-1 inline-flex h-[20px] shrink-0 cursor-pointer items-center gap-[4px] rounded-[8px] px-[4px] align-top text-[14px]/[20px] transition-colors focus-visible:outline-1 aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
                 @click="onSelectNodes"
               >
                 <span
                   class="icon-[lucide--mouse-pointer-click] size-[14px] shrink-0"
                 />
-                <span class="underline decoration-dashed underline-offset-2"
-                  >{{ placeholderHint.addNodes }},</span
-                >
+                <span class="underline decoration-dashed underline-offset-2">{{
+                  placeholderHint.mentionNodes
+                }}</span>
               </button>
             </AgentTooltip>
-            <span>{{ placeholderHint.dragAssets }}</span>
           </div>
         </div>
       </div>

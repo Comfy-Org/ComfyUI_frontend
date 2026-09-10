@@ -170,7 +170,7 @@ test.describe(
       const panel = page.locator('#agent-panel-root')
       const reason = enMessages.agent.selectWorkflowForNodes
       const inline = panel.getByRole('button', {
-        name: 'mention nodes from graph,'
+        name: 'mention nodes'
       })
       await expect(inline).toHaveAttribute('aria-disabled', 'true')
       await expect(inline).toHaveAccessibleDescription(reason)

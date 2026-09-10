@@ -75,6 +75,19 @@
     },
     "notHelpful": "غیرمفید",
     "openWorkflowTab": "باز کردن {name}",
+    "paywall": {
+      "addCredits": "افزودن اعتبار",
+      "body": {
+        "local": "موجودی اعتبار خود را مصرف کرده‌اید. برای ادامه اجرای agent، اعتبار اضافه کنید.",
+        "member": "این فضای کاری تمام اعتبارهای خود را استفاده کرده است. از مالک فضای کاری خود بخواهید اعتبار بیشتری اضافه کند.",
+        "salesManaged": "صورتحساب این فضای کاری از طریق تیم حساب Comfy شما انجام می‌شود. برای افزودن اعتبار با آن‌ها تماس بگیرید.",
+        "subscribed": "این فضای کاری اعتبارهای ماهانه و موجودی شارژ خود را مصرف کرده است. برای ادامه اجرای agent، اعتبار اضافه کنید.",
+        "subscriptionRequired": "اعتبارهای موجود شما تمام شده‌اند."
+      },
+      "subscribe": "اشتراک شوید",
+      "title": "اعتبار کافی ندارید",
+      "upgradePlan": "ارتقای طرح"
+    },
     "placeholder": "ایده‌ها را توضیح دهید، {'@'} برای ارجاع،\nبه nodeهای نمودار اشاره کنید یا assetها را بکشید و رها کنید",
     "ranToolCalls": "{count} فراخوانی ابزار اجرا شد | {count} فراخوانی ابزار اجرا شد",
     "ranToolCallsTimed": "{count} فراخوانی ابزار به‌مدت {seconds} ثانیه اجرا شد | {count} فراخوانی ابزار به‌مدت {seconds} ثانیه اجرا شد",
@@ -2944,7 +2957,6 @@
     "Edit Subgraph Widgets": "ویرایش ابزارک‌های Subgraph",
     "Exit Subgraph": "خروج از Subgraph",
     "Experimental: Browse Model Assets": "آزمایشی: مرور دارایی‌های مدل",
-    "Experimental: Enable AssetAPI": "آزمایشی: فعال‌سازی AssetAPI",
     "Experimental: Enable Nodes 2_0": "آزمایشی: فعال‌سازی Nodes 2.0",
     "Export": "خروجی گرفتن",
     "Export (API)": "خروجی گرفتن (API)",
@@ -4278,7 +4290,7 @@
     "additionalCredits": "اعتبارهای اضافی",
     "additionalCreditsInUse": "در حال استفاده",
     "additionalCreditsInfo": "درباره اعتبارهای اضافی",
-    "additionalCreditsTooltip": "اعتبارهایی که علاوه بر طرح خود اضافه می‌کنید. پس از اتمام اعتبار ماهانه مصرف می‌شوند. هر یک تا یک سال پس از خرید منقضی می‌شود.",
+    "additionalCreditsTooltip": "اعتبارهایی که علاوه بر طرح خود اضافه می‌کنید. پس از تمام شدن اعتبارهای طرح شما استفاده می‌شوند. هرکدام یک سال پس از خرید منقضی می‌شوند.",
     "benefits": {
       "benefit1": "۱۰ دلار اعتبار ماهانه برای Partner Nodes — در صورت نیاز شارژ کنید",
       "benefit1FreeTier": "اعتبار ماهانه بیشتر، شارژ مجدد در هر زمان",
@@ -4454,6 +4466,7 @@
       "billedEachMonth": "{amount} هر ماه صورتحساب می‌شود. در هر زمان قابل لغو است.",
       "changePaymentMethod": "تغییر",
       "commitment": "تعهد",
+      "completePayment": "پرداخت خود را تکمیل کنید",
       "completeVerification": "تکمیل احراز هویت",
       "confirm": "تأیید",
       "confirmChange": "تأیید تغییر",
@@ -4479,6 +4492,7 @@
       "hideFeatures": "مخفی کردن امکانات",
       "newMonthlySubscription": "اشتراک ماهانه جدید",
       "nextPaymentDue": "پرداخت بعدی در {date}. هر زمان می‌توانید لغو کنید.",
+      "parkedCheckoutDetail": "پرداخت قبلی شما همچنان منتظر روش پرداخت است. برای فعال‌سازی این طرح، پرداخت خود را تکمیل کنید.",
       "payAndSubscribe": "پرداخت و اشتراک",
       "paymentMethod": "روش پرداخت",
       "paymentPopupBlocked": "امکان باز کردن صفحه پرداخت وجود ندارد — لطفاً پاپ‌آپ‌ها را فعال کنید و دوباره تلاش کنید.",
@@ -4595,7 +4609,7 @@
       "perkProjectAssets": "مدیریت پروژه و دارایی‌ها",
       "perkRolePermissions": "دسترسی مبتنی بر نقش",
       "perkSharedPool": "استخر اعتبار مشترک برای همه اعضا",
-      "tagline": "اشتراک اعتباری ماهانه دلخواه خود را انتخاب کنید. با اعتبار بیشتر، تخفیف بیشتری دریافت کنید.",
+      "tagline": "اشتراک اعتباری دلخواه خود را انتخاب کنید. با اشتراک اعتباری بزرگ‌تر، تخفیف بیشتری دریافت کنید.",
       "unavailable": "این طرح تیمی در حال حاضر در دسترس نیست."
     },
     "teamPlanIncludes": "پلن شما شامل همه امکانات {plan} و همچنین:",
@@ -4638,6 +4652,7 @@
     "usdPerMonthPerMember": "دلار آمریکا / ماه / هر عضو",
     "usdPerYear": "دلار آمریکا / سال",
     "usedAfterMonthly": "پس از اتمام اعتبار ماهانه مصرف می‌شود",
+    "usedAfterYearly": "پس از تمام شدن اعتبار سالانه استفاده می‌شود",
     "videoEstimate": "تولید حدود ~{count} ویدیو ۵ ثانیه‌ای*",
     "videoEstimateExplanation": "این تخمین‌ها بر اساس قالب Wan 2.2 Image-to-Video با تنظیمات پیش‌فرض (۵ ثانیه، ۶۴۰×۶۴۰، ۱۶ فریم بر ثانیه، ۴ مرحله نمونه‌گیری) است.",
     "videoEstimateHelp": "جزئیات بیشتر درباره این قالب",
@@ -4650,7 +4665,12 @@
     "whatsIncluded": "شامل موارد زیر:",
     "workspaceNotSubscribed": "این محیط کاری اشتراک فعال ندارد",
     "yearly": "سالانه",
+    "yearlyCredits": "اعتبار در سال",
     "yearlyCreditsLabel": "کل اعتبار سالانه",
+    "yearlyCreditsPerMemberLabel": "اعتبار سالانه / عضو",
+    "yearlyCreditsUsedUpTitle": "اعتبارهای سالانه تمام شده‌اند. در {date} شارژ می‌شوند",
+    "yearlyCreditsUsedUpTitleNoDate": "اعتبارهای سالانه تمام شده‌اند",
+    "yearlyUsageProgress": "از {total} اعتبار سالانه، {used} اعتبار استفاده شده",
     "yourPlanIncludes": "طرح شما شامل:"
   },
   "tabMenu": {
