@@ -26,6 +26,8 @@ import {
   abortable,
   exchangeToken
 } from './exchange.js'
+import type { RefreshHost } from './refreshScheduler.js'
+import { createRefreshScheduler } from './refreshScheduler.js'
 
 export type { AccountIdentity } from './identity.js'
 
@@ -115,6 +117,17 @@ export type SessionResult =
     }
 
 export type SessionFailure = Extract<SessionResult, { status: 'error' }>
+
+/**
+ * A started mint and the monotonic id it took. Later callers for the same
+ * uid reuse one in-flight mint; a forced mint reuses an in-flight one only
+ * when that one is also forced, so a 401 retry never resolves to a
+ * non-forced mint still holding the stale token.
+ */
+export interface MintHandle {
+  readonly mintId: number
+  readonly response: Promise<SessionResult>
+}
 
 /**
  * The identity boundary. An internal port, not a host adapter: real hosts
@@ -489,16 +502,6 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
   }
 
   /**
-   * Later callers for the same uid reuse one in-flight mint. A forced mint
-   * reuses an in-flight mint only when that one is also forced, so a 401
-   * retry never resolves to a non-forced mint still holding the stale token.
-   */
-  interface MintHandle {
-    readonly mintId: number
-    readonly response: Promise<SessionResult>
-  }
-
-  /**
    * A sign-out or a different user makes the running mint unjoinable: it
    * was started with the previous identity's token, and a caller arriving
    * after the event must mint for itself.
@@ -583,273 +586,72 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     return sharedMint(user, options, true)
   }
 
-  const schedulerBufferMs =
-    clientOptions.refreshScheduler?.bufferMs ?? DEFAULT_FRESH_MARGIN_MS
-  const schedulerRetryBaseMs =
-    clientOptions.refreshScheduler?.retryBaseMs ?? 5000
-  const schedulerMaxRetries = clientOptions.refreshScheduler?.maxRetries ?? 3
-  const crossTab = clientOptions.refreshScheduler?.crossTab
-  const followerJitterMs = crossTab?.followerJitterMs ?? 15_000
-  let scheduledTimer: ReturnType<typeof setTimeout> | undefined
-  /**
-   * The hard fail-close for a credential whose refresh chain died. Its own
-   * timer on purpose: re-arming the refresh (a retry, a promotion) must not
-   * cancel it; only a committed credential or a teardown does.
-   */
-  let expiryTimer: ReturnType<typeof setTimeout> | undefined
-  let scheduledRetryCount = 0
-  /** Without coordination every tab is its own leader. */
-  let isRefreshLeader = crossTab === undefined
-  let coordinationKey: string | undefined
-  /**
-   * Bumped on every coordination teardown. A leadership grant landing on an
-   * abandoned request carries the generation it was issued under — the key
-   * string alone cannot distinguish an abandoned request from its same-key
-   * successor after a sign-out/sign-in round trip.
-   */
-  let coordinationGeneration = 0
-  let armingScheduledRefresh = false
-  let releaseLeadership: (() => void) | undefined
-  let stopCredentialFeed: (() => void) | undefined
-
-  function stopScheduledRefresh(): void {
-    if (scheduledTimer !== undefined) {
-      clearTimeout(scheduledTimer)
-      scheduledTimer = undefined
-    }
-  }
-
-  function clearExpiry(): void {
-    if (expiryTimer !== undefined) {
-      clearTimeout(expiryTimer)
-      expiryTimer = undefined
-    }
-  }
-
-  function teardownCoordination(): void {
-    coordinationGeneration += 1
-    releaseLeadership?.()
-    releaseLeadership = undefined
-    stopCredentialFeed?.()
-    stopCredentialFeed = undefined
-    coordinationKey = undefined
-    isRefreshLeader = crossTab === undefined
-  }
-
-  function ensureCoordination(): void {
-    if (crossTab === undefined || credential === undefined) return
-    // Keyed by the SERVER-RESOLVED workspace, never the requested target: a
-    // personal {} mint resolves to a concrete workspace the target string
-    // cannot name, and tabs on one workspace must share one lease however
-    // they reached it.
-    const key = `comfy-account-refresh:${credential.uid}:${credential.workspace.id}`
-    if (key === coordinationKey) return
-    teardownCoordination()
-    coordinationKey = key
-    const generationAtRequest = coordinationGeneration
-    stopCredentialFeed = crossTab.port.onCredential(
-      key,
-      adoptPublishedCredential
-    )
-    releaseLeadership = crossTab.port.requestLeadership(key, () => {
-      // A grant is honored only for the coordination generation that issued
-      // the request: abandoned requests can still win the grant race in the
-      // lock manager, and after a same-user round trip their key is
-      // byte-identical to the live request's.
-      if (generationAtRequest !== coordinationGeneration) return
-      isRefreshLeader = true
-      // Promotion retakes the schedule unconditionally — the follower timer
-      // may be jittered, mid-retry, or already dead from exhausted retries.
-      // The latch skips the redundant re-arm when the grant fires
-      // synchronously inside armScheduledRefresh itself.
-      if (credential !== undefined && !armingScheduledRefresh) {
-        armScheduledRefresh(
-          credential.expiresAt,
-          clientOptions.now?.() ?? Date.now()
-        )
-      }
-    })
-  }
-
-  /**
-   * Every committed mint is published once a coordination key exists —
-   * leadership gates adoption, never publication — so the reactive 401
-   * re-mint and a leaderless follower's fallback reach siblings too: those
-   * are exactly the rotations they must not miss. Adoption itself never
-   * republishes, and the monotonic-expiry guard makes redelivery a no-op,
-   * so the channel cannot loop.
-   */
-  function publishToSiblings(session: AccountCredential): void {
-    if (coordinationKey === undefined) return
-    crossTab?.port.publishCredential(coordinationKey, session)
-  }
-
-  function adoptPublishedCredential(message: unknown): void {
-    // Any tab adopts a strictly newer credential, the leader included: a
-    // leader whose own chain died recovers from a sibling's fallback mint,
-    // and the monotonic-expiry check keeps the channel from looping.
-    const parsed = CachedCredentialSchema.safeParse(message)
-    if (!parsed.success) return
-    if (currentUser?.uid !== parsed.data.uid) return
-    // Scope check: the channel key cannot fully encode the workspace (the
-    // personal target is server-resolved), so a same-user credential minted
-    // for a DIFFERENT workspace must never switch this tab.
-    if (credential === undefined) return
-    if (parsed.data.workspace.id !== credential.workspace.id) return
-    if (parsed.data.expiresAt <= credential.expiresAt) return
-    const next: AccountCredential = {
-      token: parsed.data.token,
-      expiresAt: parsed.data.expiresAt,
-      uid: parsed.data.uid,
-      workspace: parsed.data.workspace,
-      role: parsed.data.role,
-      permissions: parsed.data.permissions
-    }
-    // Adoption is a commit: it supersedes any in-flight mint of this tab's
-    // own, exactly like a newer mint would.
-    mintSequence += 1
-    clearExpiry()
-    credential = next
-    failure = undefined
-    safeWrite(JSON.stringify({ ...next, target: credentialTarget }))
-    publish()
-    armScheduledRefresh(next.expiresAt, clientOptions.now?.() ?? Date.now())
-    crossTab?.onCredentialAdopted?.(next)
-  }
-
-  function armScheduledRefresh(expiresAt: number, now: number): void {
-    if (!clientOptions.refreshScheduler) return
-    stopScheduledRefresh()
-    scheduledRetryCount = 0
-    armingScheduledRefresh = true
-    try {
-      ensureCoordination()
-    } finally {
-      armingScheduledRefresh = false
-    }
-    // A follower holds past the leader's refresh point by bounded random
-    // jitter; when no published credential has arrived by then, the leader
-    // is gone and this tab refreshes for itself. Never tighter than one
-    // retry interval: a token already inside the buffer (a host buffer at
-    // or above the TTL, a skewed clock) would otherwise re-mint in a loop.
-    const jitter = isRefreshLeader ? 0 : Math.random() * followerJitterMs
-    scheduledTimer = setTimeout(
-      () => {
-        scheduledTimer = undefined
-        void runScheduledRefresh()
-      },
-      Math.max(schedulerRetryBaseMs, expiresAt - schedulerBufferMs - now) +
-        jitter
-    )
-  }
-
-  /**
-   * Retries are spent and the credential still has time on it: keep serving
-   * it until its expiry instant, then fail closed and tell the host, as the
-   * cloud store's clear-at-expiry does. A dead scheduler must never leave an
-   * expired token in circulation.
-   */
-  function armClearAtExpiry(expiring: AccountCredential): void {
-    const reportOutcome = clientOptions.refreshScheduler?.onScheduledOutcome
-    const now = clientOptions.now?.() ?? Date.now()
-    clearExpiry()
-    expiryTimer = setTimeout(
-      () => {
-        expiryTimer = undefined
-        if (credential !== expiring) return
-        stopScheduledRefresh()
-        credential = undefined
-        credentialTarget = undefined
-        const expired: SessionFailure = {
-          status: 'error',
-          code: 'TOKEN_EXCHANGE_FAILED'
-        }
-        failure = expired
-        safeClear()
-        publish()
-        reportOutcome?.('expired', expired)
-      },
-      Math.max(0, expiring.expiresAt - now)
-    )
-  }
-
-  /**
-   * The scheduled re-mint mirrors the cloud store's refresh semantics: a
-   * transient failure keeps the still-valid credential and retries with
-   * doubling backoff; a permanent failure commits the error; exhausted
-   * retries keep the credential until it expires, then fail closed. Every
-   * commit runs publish() before reporting its outcome — host outcome
-   * handlers read state the publish just wrote.
-   */
-  async function runScheduledRefresh(): Promise<void> {
-    const user = currentUser
-    if (!user) return
-    const reportOutcome = clientOptions.refreshScheduler?.onScheduledOutcome
-    const startEpoch = identityEpoch
-    const startInvalidation = invalidationEpoch
-    // Refresh with the target that produced the live credential, so a
-    // scheduled refresh reproduces the same session AND coalesces with any
-    // concurrent reactive re-mint for it.
-    const { mintId, response } = sharedMint(
-      user,
-      { workspaceId: credentialTarget },
-      true
-    )
-    let result: SessionResult
-    try {
-      result = await response
-    } catch {
-      result = { status: 'error', code: 'TOKEN_EXCHANGE_FAILED' }
-    }
-    if (
-      mintId !== mintSequence ||
-      currentUser?.uid !== user.uid ||
-      identityEpoch !== startEpoch ||
-      invalidationEpoch !== startInvalidation
-    )
-      return
-    if (result.status === 'ok') {
-      clearExpiry()
-      credential = result.session
-      failure = undefined
-      persistCredential(result.session, credentialTarget)
-      publish()
-      armScheduledRefresh(
-        result.session.expiresAt,
-        clientOptions.now?.() ?? Date.now()
-      )
-      publishToSiblings(result.session)
-      reportOutcome?.('succeeded')
-      return
-    }
-    if (isPermanentSessionError(result.code)) {
-      credential = undefined
-      credentialTarget = undefined
-      failure = result
-      safeClear()
-      publish()
-      reportOutcome?.('permanent_failure', result)
-      return
-    }
-    if (scheduledRetryCount >= schedulerMaxRetries) {
-      if (credential !== undefined) armClearAtExpiry(credential)
-      // A leader with a dead chain must not sit on the lease: release it so
-      // a sibling can lead, and queue again as a follower so this tab can
-      // adopt what that sibling mints or be promoted back if nobody does.
-      teardownCoordination()
-      ensureCoordination()
-      reportOutcome?.('retries_exhausted')
-      return
-    }
-    const delay = schedulerRetryBaseMs * 2 ** scheduledRetryCount
-    scheduledRetryCount += 1
-    stopScheduledRefresh()
-    scheduledTimer = setTimeout(() => {
-      scheduledTimer = undefined
-      void runScheduledRefresh()
-    }, delay)
-    reportOutcome?.('retry_scheduled')
-  }
+  const scheduler: ReturnType<typeof createRefreshScheduler> | undefined =
+    clientOptions.refreshScheduler
+      ? createRefreshScheduler(clientOptions.refreshScheduler, {
+          now: () => clientOptions.now?.() ?? Date.now(),
+          getCurrentUser: () => currentUser,
+          getCredential: () => credential,
+          captureGuards: () => ({
+            epoch: identityEpoch,
+            invalidation: invalidationEpoch
+          }),
+          guardsHold: (guards, user, mintId) =>
+            mintId === mintSequence &&
+            currentUser?.uid === user.uid &&
+            identityEpoch === guards.epoch &&
+            invalidationEpoch === guards.invalidation,
+          mint: (user) =>
+            sharedMint(user, { workspaceId: credentialTarget }, true),
+          commitRefreshed: (session) => {
+            credential = session
+            failure = undefined
+            persistCredential(session, credentialTarget)
+            publish()
+          },
+          commitPermanentFailure: (permanent) => {
+            credential = undefined
+            credentialTarget = undefined
+            failure = permanent
+            safeClear()
+            publish()
+          },
+          commitExpired: (expiring) => {
+            if (credential !== expiring) return undefined
+            credential = undefined
+            credentialTarget = undefined
+            const expired: SessionFailure = {
+              status: 'error',
+              code: 'TOKEN_EXCHANGE_FAILED'
+            }
+            failure = expired
+            safeClear()
+            publish()
+            return expired
+          },
+          parseAdopted: (message) => {
+            const parsed = CachedCredentialSchema.safeParse(message)
+            if (!parsed.success) return undefined
+            return {
+              token: parsed.data.token,
+              expiresAt: parsed.data.expiresAt,
+              uid: parsed.data.uid,
+              workspace: parsed.data.workspace,
+              role: parsed.data.role,
+              permissions: parsed.data.permissions
+            }
+          },
+          commitAdopted: (next) => {
+            // Adoption is a commit: it supersedes any in-flight mint of this
+            // tab's own, exactly like a newer mint would.
+            mintSequence += 1
+            credential = next
+            failure = undefined
+            persistCredential(next, credentialTarget)
+            publish()
+          }
+        } satisfies RefreshHost)
+      : undefined
 
   async function refreshWith(
     core: (user: AccountUser, options: SessionRequestOptions) => MintHandle,
@@ -908,16 +710,14 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       return undefined
     }
     if (result.status === 'ok') {
-      clearExpiry()
       credential = result.session
       credentialTarget = options.workspaceId ?? clientOptions.workspaceId
       failure = undefined
       persistCredential(result.session, credentialTarget)
-      armScheduledRefresh(
-        result.session.expiresAt,
+      scheduler?.armAfterCommit(
+        result.session,
         options.now?.() ?? clientOptions.now?.() ?? Date.now()
       )
-      publishToSiblings(result.session)
     } else if (
       options.preserveCredentialOnTransientFailure === true &&
       credential !== undefined &&
@@ -944,9 +744,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       const unsubscribe = identity.onUserChanged((next) => {
         if (!active) return
         identityEpoch += 1
-        stopScheduledRefresh()
-        teardownCoordination()
-        clearExpiry()
+        scheduler?.stop()
         identitySettled = true
         if (!next || next.uid !== currentUser?.uid) abandonInFlight()
         currentUser = next
@@ -969,9 +767,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
         identityEpoch += 1
         detachCurrent = undefined
         unsubscribe()
-        stopScheduledRefresh()
-        teardownCoordination()
-        clearExpiry()
+        scheduler?.stop()
         currentUser = null
         identitySettled = false
         credential = undefined
@@ -999,9 +795,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       refreshWith(remintCore, requestedUser, options),
     invalidate() {
       invalidationEpoch += 1
-      stopScheduledRefresh()
-      teardownCoordination()
-      clearExpiry()
+      scheduler?.stop()
       // A mint still running belongs to the scope being discarded; a caller
       // arriving after this must start its own rather than join it.
       inFlight = undefined
