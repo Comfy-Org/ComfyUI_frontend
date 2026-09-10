@@ -781,25 +781,16 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
     bridge.subscribe(WORKFLOW_ID)
     expect(bridge.subscribedWorkflowId).toBe(WORKFLOW_ID)
 
-    // The parser strips an invalid seq rather than reject the whole frame, so
-    // this is exactly what reaches the bridge for a malformed ack: `ok: true`
-    // with no `seq` at all.
     transport.deliver('doc_subscribed', {
       v: 1,
       workflow_id: WORKFLOW_ID,
       ok: true
     })
 
-    // Treated as a failure: REALITY is cleared, and the composition root's
-    // next reconcile() retries — never left as an `ok: true` with both
-    // ackSeq and lastSeq null, which would zero out lastSequence and disarm
-    // the gap detector for the very first frame.
     expect(bridge.subscribedWorkflowId).toBeNull()
     expect(bridge.hasPendingSubscribe).toBe(true)
     expect(bridge.lastSequence).toBe(0)
 
-    // A frame that arrives before the retry lands must not be accepted as an
-    // implicit baseline: the bridge only follows its own sentWorkflowId.
     transport.deliver(
       'doc_update',
       docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 99)
@@ -811,7 +802,6 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
     expect(bridge.subscribedWorkflowId).toBe(WORKFLOW_ID)
     expect(transport.framesOfType('doc_subscribe')).toHaveLength(2)
 
-    // The retried subscribe's own ack now arms the gap detector normally.
     transport.deliver('doc_subscribed', {
       v: 1,
       workflow_id: WORKFLOW_ID,
@@ -823,8 +813,6 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
       'doc_update',
       docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 3)
     )
-    // A jump beyond ack+1 is still caught as a gap, proving the detector is
-    // live rather than permanently disarmed by the earlier malformed ack.
     expect(projected).toHaveLength(0)
     expect(transport.framesOfType('doc_subscribe')).toHaveLength(3)
   })
@@ -834,10 +822,6 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
     transport.open = true
     bridge.subscribe(WORKFLOW_ID)
 
-    // Cloud never sends seq=0 for a successful subscription (docstore seq is
-    // always >=1), so this wire frame is malformed. The parser strips it to
-    // the same shape as a missing seq, and the bridge must treat it the same
-    // way: a failed ack that gets retried, not an ackSeq of 0.
     transport.deliver('doc_subscribed', {
       v: 1,
       workflow_id: WORKFLOW_ID,
