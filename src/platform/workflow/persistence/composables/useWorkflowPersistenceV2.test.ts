@@ -1068,6 +1068,11 @@ describe('useWorkflowPersistenceV2', () => {
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-a' })
     Object.assign(useTeamWorkspaceStore(), { initState: 'ready' })
     await nextTick()
+
+    expect(
+      JSON.parse(JSON.parse(localStorage.getItem(payloadKey)!).data)
+    ).toEqual({ marker: 'before-workspace-ready' })
+
     mocks.state.currentGraph = { marker: 'after-workspace-ready' }
     mocks.state.graphChangedHandler?.()
     await vi.runAllTimersAsync()
