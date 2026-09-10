@@ -737,6 +737,7 @@ describe('useAgentSession (v1 composition root)', () => {
     emit(done('msg-1'))
     expect(session.entries.value.at(-1)).toMatchObject({
       role: 'assistant',
+      streaming: false,
       parts: [{ type: 'text', text: 'working!', state: 'done' }]
     })
   })
@@ -1711,7 +1712,14 @@ describe('08-fix1 receipts and pins', () => {
     const { session, emit } = await sendUnderLocalStorageQuotaFailure()
     emit(delta('msg-1', 'reply landed'))
     emit(done('msg-1'))
-    expect(JSON.stringify(session.entries.value)).toContain('reply landed')
+    expect(session.entries.value).toMatchObject([
+      { role: 'user', text: 'accepted' },
+      {
+        role: 'assistant',
+        streaming: false,
+        parts: [{ type: 'text', text: 'reply landed', state: 'done' }]
+      }
+    ])
   })
 
   // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
@@ -1758,7 +1766,14 @@ describe('08-fix1 receipts and pins', () => {
     const { session, emit } = await sendWithThrowingAdoptedConsumer()
     emit(delta('msg-1', 'reply landed'))
     emit(done('msg-1'))
-    expect(JSON.stringify(session.entries.value)).toContain('reply landed')
+    expect(session.entries.value).toMatchObject([
+      { role: 'user', text: 'accepted' },
+      {
+        role: 'assistant',
+        streaming: false,
+        parts: [{ type: 'text', text: 'reply landed', state: 'done' }]
+      }
+    ])
   })
 
   // INV-SESSION-01..05 / REG-SESSION-01..03: remove .fails when this slice-08 session invariant passes.
