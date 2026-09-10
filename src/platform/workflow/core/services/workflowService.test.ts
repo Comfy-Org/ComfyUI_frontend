@@ -2455,15 +2455,20 @@ describe('useWorkflowService', () => {
       expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(workflow)
     })
 
-    it('does not save when renaming a temporary workflow fails', async () => {
+    it('shows an error and does not save when renaming fails', async () => {
       const workflow = createTemporaryWorkflow()
       vi.mocked(workflowStore.renameWorkflow).mockResolvedValueOnce(false)
+      const addToastSpy = vi.spyOn(useToastStore(), 'add')
 
       await expect(
         service.saveWorkflowAs(workflow, { filename: 'my-workflow' })
       ).resolves.toBe(false)
 
       expect(workflowStore.saveWorkflow).not.toHaveBeenCalled()
+      expect(addToastSpy).toHaveBeenCalledWith({
+        severity: 'error',
+        summary: 'Failed to rename workflow. Please try again.'
+      })
     })
 
     it('should return false when no filename is provided', async () => {
@@ -2798,7 +2803,7 @@ describe('useWorkflowService', () => {
       expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(workflow)
     })
 
-    it('does not save or show success when an extension rename fails', async () => {
+    it('does not save and shows an error when an extension rename fails', async () => {
       const workflow = createSaveableWorkflow('workflows/test.json')
       workflow.initialMode = 'app'
       vi.mocked(workflowStore.renameWorkflow).mockResolvedValueOnce(false)
@@ -2807,7 +2812,10 @@ describe('useWorkflowService', () => {
       await expect(service.saveWorkflow(workflow)).resolves.toBe(false)
 
       expect(workflowStore.saveWorkflow).not.toHaveBeenCalled()
-      expect(addSpy).not.toHaveBeenCalled()
+      expect(addSpy).toHaveBeenCalledWith({
+        severity: 'error',
+        summary: 'Failed to rename workflow. Please try again.'
+      })
     })
 
     it('renames .app.json to .json when initialMode is graph', async () => {
