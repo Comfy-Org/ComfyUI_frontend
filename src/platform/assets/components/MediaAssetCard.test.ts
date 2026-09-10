@@ -1,7 +1,8 @@
+import { useAssetsStore } from '@/stores/assetsStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
@@ -13,26 +14,25 @@ const { downloadAssets } = vi.hoisted(() => ({
   downloadAssets: vi.fn()
 }))
 
-vi.mock('@/stores/assetsStore', () => ({
-  useAssetsStore: () => ({ isAssetDeleting: () => false })
-}))
-
-vi.mock('../composables/useMediaAssetActions', () => ({
+vi.mock<unknown>(import('../composables/useMediaAssetActions'), () => ({
   useMediaAssetActions: () => ({ downloadAssets })
 }))
 
-vi.mock('@/platform/assets/schemas/assetMetadataSchema', () => ({
-  getOutputAssetMetadata: () => ({
-    allOutputs: [
-      {
-        filename: 'a.png',
-        subfolder: '',
-        type: 'output',
-        display_name: 'Display A'
-      }
-    ]
+vi.mock<unknown>(
+  import('@/platform/assets/schemas/assetMetadataSchema'),
+  () => ({
+    getOutputAssetMetadata: () => ({
+      allOutputs: [
+        {
+          filename: 'a.png',
+          subfolder: '',
+          type: 'output',
+          display_name: 'Display A'
+        }
+      ]
+    })
   })
-}))
+)
 
 const asset: AssetItem = fromPartial({
   id: 'a',
@@ -81,6 +81,10 @@ function dispatchDragStart(
   container.querySelector('[data-asset-id="a"]')!.dispatchEvent(event)
   return { event, add }
 }
+
+beforeEach(() => {
+  vi.mocked(useAssetsStore().isAssetDeleting).mockImplementation(() => false)
+})
 
 describe('MediaAssetCard', () => {
   describe('dragStart', () => {

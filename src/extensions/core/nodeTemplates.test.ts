@@ -14,10 +14,6 @@ vi.mock('@/platform/telemetry/reportError', () => ({
   reportError: reportErrorMock
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({ addAlert: vi.fn() })
-}))
-
 vi.mock('@/services/dialogService', () => ({
   useDialogService: () => ({ prompt: vi.fn() })
 }))

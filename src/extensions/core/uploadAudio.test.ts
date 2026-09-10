@@ -2,10 +2,10 @@ import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ComfyExtension } from '@/types/comfy'
 
 const {
-  mockAddAlert,
   mockApiURL,
   mockFetchApi,
   mockMediaRecorderStart,
@@ -14,7 +14,6 @@ const {
   mockReportError,
   mockStopAllTracks
 } = vi.hoisted(() => ({
-  mockAddAlert: vi.fn(),
   mockApiURL: vi.fn((url: string) => `api:${url}`),
   mockFetchApi: vi.fn(),
   mockMediaRecorderStart: vi.fn(),
@@ -75,9 +74,10 @@ vi.mock('@/i18n', () => ({
   t: (key: string) => key
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({ addAlert: mockAddAlert })
-}))
+let mockAddAlert: ReturnType<typeof useToastStore>['addAlert']
+beforeEach(() => {
+  mockAddAlert = useToastStore().addAlert
+})
 
 vi.mock('@/renderer/extensions/vueNodes/widgets/utils/audioUtils', () => ({
   getResourceURL: (subfolder = '', filename = '', type = 'input') =>
@@ -97,12 +97,6 @@ vi.mock('@/scripts/app', () => ({
     registerExtension: mockRegisterExtension,
     rootGraph: { id: 'root' }
   }
-}))
-
-vi.mock('@/stores/widgetValueStore', () => ({
-  useWidgetValueStore: () => ({
-    getWidget: vi.fn()
-  })
 }))
 
 vi.mock('@/utils/graphTraversalUtil', () => ({

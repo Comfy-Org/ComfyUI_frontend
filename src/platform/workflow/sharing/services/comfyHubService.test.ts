@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const mockFetchApi = vi.hoisted(() => vi.fn())
 const mockGlobalFetch = vi.hoisted(() => vi.fn())
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     fetchApi: (...args: unknown[]) => mockFetchApi(...args)
   }
