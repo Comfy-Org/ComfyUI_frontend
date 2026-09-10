@@ -26,6 +26,8 @@ import {
   abortable,
   exchangeToken
 } from './exchange.js'
+import type { RefreshHost } from './refreshScheduler.js'
+import { createRefreshScheduler } from './refreshScheduler.js'
 
 export type { AccountIdentity } from './identity.js'
 
@@ -115,6 +117,17 @@ export type SessionResult =
     }
 
 export type SessionFailure = Extract<SessionResult, { status: 'error' }>
+
+/**
+ * A started mint and the monotonic id it took. Later callers for the same
+ * uid reuse one in-flight mint; a forced mint reuses an in-flight one only
+ * when that one is also forced, so a 401 retry never resolves to a
+ * non-forced mint still holding the stale token.
+ */
+export interface MintHandle {
+  readonly mintId: number
+  readonly response: Promise<SessionResult>
+}
 
 /**
  * The identity boundary. An internal port, not a host adapter: real hosts
@@ -450,16 +463,6 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
   }
 
   /**
-   * Later callers for the same uid reuse one in-flight mint. A forced mint
-   * reuses an in-flight mint only when that one is also forced, so a 401
-   * retry never resolves to a non-forced mint still holding the stale token.
-   */
-  interface MintHandle {
-    readonly mintId: number
-    readonly response: Promise<SessionResult>
-  }
-
-  /**
    * A sign-out or a different user makes the running mint unjoinable: it
    * was started with the previous identity's token, and a caller arriving
    * after the event must mint for itself.
@@ -544,151 +547,51 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     return sharedMint(user, options, true)
   }
 
-  const schedulerBufferMs =
-    clientOptions.refreshScheduler?.bufferMs ?? DEFAULT_FRESH_MARGIN_MS
-  const schedulerRetryBaseMs =
-    clientOptions.refreshScheduler?.retryBaseMs ?? 5000
-  const schedulerMaxRetries = clientOptions.refreshScheduler?.maxRetries ?? 3
-  let scheduledTimer: ReturnType<typeof setTimeout> | undefined
-  /**
-   * The hard fail-close for a credential whose refresh chain died. Its own
-   * timer on purpose: re-arming the refresh (a retry, a promotion) must not
-   * cancel it; only a committed credential or a teardown does.
-   */
-  let expiryTimer: ReturnType<typeof setTimeout> | undefined
-  let scheduledRetryCount = 0
-
-  function stopScheduledRefresh(): void {
-    if (scheduledTimer !== undefined) {
-      clearTimeout(scheduledTimer)
-      scheduledTimer = undefined
-    }
-  }
-
-  function clearExpiry(): void {
-    if (expiryTimer !== undefined) {
-      clearTimeout(expiryTimer)
-      expiryTimer = undefined
-    }
-  }
-
-  function armScheduledRefresh(expiresAt: number, now: number): void {
-    if (!clientOptions.refreshScheduler) return
-    stopScheduledRefresh()
-    scheduledRetryCount = 0
-    // Never tighter than one retry interval: a token already inside the
-    // buffer (a host buffer at or above the TTL, a skewed clock) would
-    // otherwise re-mint in a loop with no backoff.
-    scheduledTimer = setTimeout(
-      () => {
-        scheduledTimer = undefined
-        void runScheduledRefresh()
-      },
-      Math.max(schedulerRetryBaseMs, expiresAt - schedulerBufferMs - now)
-    )
-  }
-
-  /**
-   * Retries are spent and the credential still has time on it: keep serving
-   * it until its expiry instant, then fail closed and tell the host, as the
-   * cloud store's clear-at-expiry does. A dead scheduler must never leave an
-   * expired token in circulation.
-   */
-  function armClearAtExpiry(expiring: AccountCredential): void {
-    const reportOutcome = clientOptions.refreshScheduler?.onScheduledOutcome
-    const now = clientOptions.now?.() ?? Date.now()
-    clearExpiry()
-    expiryTimer = setTimeout(
-      () => {
-        expiryTimer = undefined
-        if (credential !== expiring) return
-        stopScheduledRefresh()
-        credential = undefined
-        credentialTarget = undefined
-        const expired: SessionFailure = {
-          status: 'error',
-          code: 'TOKEN_EXCHANGE_FAILED'
-        }
-        failure = expired
-        safeClear()
-        publish()
-        reportOutcome?.('expired', expired)
-      },
-      Math.max(0, expiring.expiresAt - now)
-    )
-  }
-
-  /**
-   * The scheduled re-mint mirrors the cloud store's refresh semantics: a
-   * transient failure keeps the still-valid credential and retries with
-   * doubling backoff; a permanent failure commits the error; exhausted
-   * retries keep the credential until it expires, then fail closed. Every
-   * commit runs publish() before reporting its outcome — host outcome
-   * handlers read state the publish just wrote.
-   */
-  async function runScheduledRefresh(): Promise<void> {
-    const user = currentUser
-    if (!user) return
-    const reportOutcome = clientOptions.refreshScheduler?.onScheduledOutcome
-    const startEpoch = identityEpoch
-    const startInvalidation = invalidationEpoch
-    // Refresh with the target that produced the live credential, so a
-    // scheduled refresh reproduces the same session AND coalesces with any
-    // concurrent reactive re-mint for it.
-    const { mintId, response } = sharedMint(
-      user,
-      { workspaceId: credentialTarget },
-      true
-    )
-    let result: SessionResult
-    try {
-      result = await response
-    } catch {
-      result = { status: 'error', code: 'TOKEN_EXCHANGE_FAILED' }
-    }
-    if (
-      mintId !== mintSequence ||
-      currentUser?.uid !== user.uid ||
-      identityEpoch !== startEpoch ||
-      invalidationEpoch !== startInvalidation
-    )
-      return
-    if (result.status === 'ok') {
-      clearExpiry()
-      credential = result.session
-      failure = undefined
-      persistCredential(result.session, credentialTarget)
-      publish()
-      armScheduledRefresh(
-        result.session.expiresAt,
-        clientOptions.now?.() ?? Date.now()
-      )
-      reportOutcome?.('succeeded')
-      return
-    }
-    if (isPermanentSessionError(result.code)) {
-      credential = undefined
-      credentialTarget = undefined
-      failure = result
-      safeClear()
-      publish()
-      reportOutcome?.('permanent_failure', result)
-      return
-    }
-    if (scheduledRetryCount >= schedulerMaxRetries) {
-      if (credential !== undefined) armClearAtExpiry(credential)
-      reportOutcome?.('retries_exhausted')
-      return
-    }
-    const delay = schedulerRetryBaseMs * 2 ** scheduledRetryCount
-    scheduledRetryCount += 1
-    stopScheduledRefresh()
-    scheduledTimer = setTimeout(() => {
-      scheduledTimer = undefined
-      void runScheduledRefresh()
-    }, delay)
-    reportOutcome?.('retry_scheduled')
-  }
+  const scheduler: ReturnType<typeof createRefreshScheduler> | undefined =
+    clientOptions.refreshScheduler
+      ? createRefreshScheduler(clientOptions.refreshScheduler, {
+          now: () => clientOptions.now?.() ?? Date.now(),
+          getCurrentUser: () => currentUser,
+          getCredential: () => credential,
+          captureGuards: () => ({
+            epoch: identityEpoch,
+            invalidation: invalidationEpoch
+          }),
+          guardsHold: (guards, user, mintId) =>
+            mintId === mintSequence &&
+            currentUser?.uid === user.uid &&
+            identityEpoch === guards.epoch &&
+            invalidationEpoch === guards.invalidation,
+          mint: (user) =>
+            sharedMint(user, { workspaceId: credentialTarget }, true),
+          commitRefreshed: (session) => {
+            credential = session
+            failure = undefined
+            persistCredential(session, credentialTarget)
+            publish()
+          },
+          commitPermanentFailure: (permanent) => {
+            credential = undefined
+            credentialTarget = undefined
+            failure = permanent
+            safeClear()
+            publish()
+          },
+          commitExpired: (expiring) => {
+            if (credential !== expiring) return undefined
+            credential = undefined
+            credentialTarget = undefined
+            const expired: SessionFailure = {
+              status: 'error',
+              code: 'TOKEN_EXCHANGE_FAILED'
+            }
+            failure = expired
+            safeClear()
+            publish()
+            return expired
+          }
+        } satisfies RefreshHost)
+      : undefined
 
   async function refreshWith(
     core: (user: AccountUser, options: SessionRequestOptions) => MintHandle,
@@ -747,13 +650,12 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       return undefined
     }
     if (result.status === 'ok') {
-      clearExpiry()
       credential = result.session
       credentialTarget = options.workspaceId ?? clientOptions.workspaceId
       failure = undefined
       persistCredential(result.session, credentialTarget)
-      armScheduledRefresh(
-        result.session.expiresAt,
+      scheduler?.armAfterCommit(
+        result.session,
         options.now?.() ?? clientOptions.now?.() ?? Date.now()
       )
     } else if (
@@ -782,8 +684,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       const unsubscribe = identity.onUserChanged((next) => {
         if (!active) return
         identityEpoch += 1
-        stopScheduledRefresh()
-        clearExpiry()
+        scheduler?.stop()
         identitySettled = true
         if (!next || next.uid !== currentUser?.uid) abandonInFlight()
         currentUser = next
@@ -806,8 +707,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
         identityEpoch += 1
         detachCurrent = undefined
         unsubscribe()
-        stopScheduledRefresh()
-        clearExpiry()
+        scheduler?.stop()
         currentUser = null
         identitySettled = false
         credential = undefined
@@ -835,8 +735,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       refreshWith(remintCore, requestedUser, options),
     invalidate() {
       invalidationEpoch += 1
-      stopScheduledRefresh()
-      clearExpiry()
+      scheduler?.stop()
       // A mint still running belongs to the scope being discarded; a caller
       // arriving after this must start its own rather than join it.
       inFlight = undefined
