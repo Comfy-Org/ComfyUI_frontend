@@ -3738,20 +3738,20 @@ Enterprise`
   // Featured dropdown cards — keys are keyed by parent nav item, not card content,
   // so the copy can be swapped without renaming the key.
   'nav.featuredProductsTitle': {
-    en: 'NEW RELEASE: LTX 2.5',
-    'zh-CN': '全新发布：LTX 2.5'
+    en: 'NEW RELEASE: MINIMAX H3',
+    'zh-CN': '全新发布：MiniMax H3'
   },
   'nav.featuredProductsAlt': {
-    en: 'LTX 2.5 feature image',
-    'zh-CN': 'LTX 2.5 精选图片'
+    en: 'MiniMax H3 feature image',
+    'zh-CN': 'MiniMax H3 精选图片'
   },
   'nav.featuredProductsCta': {
     en: 'EXPLORE NOW',
     'zh-CN': '立即探索'
   },
   'nav.featuredProductsCtaAria': {
-    en: 'Explore the LTX 2.5 release',
-    'zh-CN': '探索 LTX 2.5 版本'
+    en: 'Explore the MiniMax H3 release',
+    'zh-CN': '探索 MiniMax H3 版本'
   },
   'nav.featuredCommunityTitle': {
     en: 'Sky Replacement',
