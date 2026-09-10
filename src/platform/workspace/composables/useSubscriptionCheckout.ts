@@ -66,6 +66,10 @@ interface SelectedTeamCheckout {
 interface SubscriptionCheckoutOptions {
   tierPlanType?: 'personal' | 'team'
   embeddedCheckoutEnabled?: boolean
+  /** The host renders the inline settling notice (UnifiedPricingTable's
+   *  subtitle swap). Hosts that don't opt in get a toast instead, so the
+   *  settling refusal is never silent. */
+  rendersSettlingNotice?: boolean
 }
 
 type SubscriptionPaymentOptions = Pick<
@@ -125,7 +129,8 @@ export function useSubscriptionCheckout(
   paymentIntentSource?: PaymentIntentSource,
   {
     tierPlanType = 'personal',
-    embeddedCheckoutEnabled = false
+    embeddedCheckoutEnabled = false,
+    rendersSettlingNotice = false
   }: SubscriptionCheckoutOptions = {}
 ) {
   const { t } = useI18n()
@@ -480,12 +485,22 @@ export function useSubscriptionCheckout(
   }
 
   /** The refusal preview-subscribe returns while a previous payment attempt
-   *  is still settling server-side. The BE reports it only through its
-   *  message (no dedicated error code yet; the operation-aware endpoint is
-   *  BE-11559), so it is recognised by message fragment. */
-  function isSettlingRefusalMessage(message: string | null | undefined) {
+   *  is still settling server-side. The thrown shape carries the server code
+   *  TRANSITION_NOT_ALLOWED; callers run recoverOutstandingPayment first, so
+   *  by the time this branch is reached the billing-status probe has already
+   *  ruled out payment_failed and the settling read is what remains. States
+   *  that block a transition for other reasons carry their own codes
+   *  (SUBSCRIPTION_CHANGE_IN_PROGRESS, SUBSCRIPTION_PAYMENT_REQUIRED). */
+  function isSettlingTransitionRefusal(error: unknown): boolean {
+    return hasErrorCode(error, 'TRANSITION_NOT_ALLOWED')
+  }
+
+  /** The 200 allowed:false shape has no code field — reason text only
+   *  (structured refusals arrive with BE-11559) — so that shape is still
+   *  recognised by message fragment. */
+  function isSettlingRefusalReason(reason: string | null | undefined) {
     return (
-      message?.includes('not in a state that allows a plan-change preview') ??
+      reason?.includes('not in a state that allows a plan-change preview') ??
       false
     )
   }
@@ -510,9 +525,22 @@ export function useSubscriptionCheckout(
 
   function isSettlingRefusal(error: unknown): boolean {
     return (
-      isChangeInProgressRefusal(error) ||
-      (error instanceof Error && isSettlingRefusalMessage(error.message))
+      isChangeInProgressRefusal(error) || isSettlingTransitionRefusal(error)
     )
+  }
+
+  /** Settling has a designed response only where the host renders the inline
+   *  notice; every other host falls back to a calm toast so the refusal is
+   *  never silent. */
+  function presentSettlingRefusal() {
+    isPaymentSettling.value = true
+    if (!rendersSettlingNotice) {
+      toast.add({
+        severity: 'info',
+        summary: t('subscription.settlingToastSummary'),
+        detail: t('subscription.settlingNotice')
+      })
+    }
   }
 
   async function recoverOutstandingPayment(
@@ -769,8 +797,8 @@ export function useSubscriptionCheckout(
         : await previewSubscribe(planSlug)
 
       if (!response || !response.allowed) {
-        if (isSettlingRefusalMessage(response?.reason)) {
-          isPaymentSettling.value = true
+        if (isSettlingRefusalReason(response?.reason)) {
+          presentSettlingRefusal()
           return
         }
         isPaymentSettling.value = false
@@ -788,14 +816,18 @@ export function useSubscriptionCheckout(
       installPreview(response)
       checkoutStep.value = 'preview'
     } catch (error) {
-      // Recognised before the outstanding-payment recovery: the settling
-      // refusal already has a designed response (the inline notice), so it
-      // must not fall into the generic open-the-billing-portal path.
-      if (isSettlingRefusal(error)) {
-        isPaymentSettling.value = true
+      // Recovery runs first: TRANSITION_NOT_ALLOWED is ambiguous on its own,
+      // and recoverOutstandingPayment holds the server-authoritative probe
+      // (billing_status === 'payment_failed' → portal). Only when the probe
+      // rules that out does the refusal read as settling.
+      if (await recoverOutstandingPayment(error)) {
+        isPaymentSettling.value = false
         return
       }
-      if (await recoverOutstandingPayment(error)) return
+      if (isSettlingTransitionRefusal(error)) {
+        presentSettlingRefusal()
+        return
+      }
       isPaymentSettling.value = false
       const message =
         error instanceof Error
@@ -861,16 +893,17 @@ export function useSubscriptionCheckout(
         )
       } catch (error) {
         previewError = error
-        if (!isSettlingRefusal(error)) {
-          const recovery = await recoverOutstandingPayment(
-            error,
-            () => previewRequestId === teamPreviewRequestId
-          )
-          if (recovery === 'failed') {
-            resetToPricing()
-            return
-          }
-          if (recovery) return
+        const recovery = await recoverOutstandingPayment(
+          error,
+          () => previewRequestId === teamPreviewRequestId
+        )
+        if (recovery === 'failed') {
+          resetToPricing()
+          return
+        }
+        if (recovery) {
+          isPaymentSettling.value = false
+          return
         }
       } finally {
         if (previewRequestId === teamPreviewRequestId) {
@@ -885,10 +918,10 @@ export function useSubscriptionCheckout(
         return
       }
       if (
-        isSettlingRefusal(previewError) ||
-        isSettlingRefusalMessage(response?.reason)
+        isSettlingTransitionRefusal(previewError) ||
+        isSettlingRefusalReason(response?.reason)
       ) {
-        isPaymentSettling.value = true
+        presentSettlingRefusal()
         checkoutStep.value = 'pricing'
         selectedTeamCheckout.value = null
         return
@@ -922,16 +955,17 @@ export function useSubscriptionCheckout(
       ])
     } catch (error) {
       previewError = error
-      if (!isSettlingRefusal(error)) {
-        const recovery = await recoverOutstandingPayment(
-          error,
-          () => previewRequestId === teamPreviewRequestId
-        )
-        if (recovery === 'failed') {
-          resetToPricing()
-          return
-        }
-        if (recovery) return
+      const recovery = await recoverOutstandingPayment(
+        error,
+        () => previewRequestId === teamPreviewRequestId
+      )
+      if (recovery === 'failed') {
+        resetToPricing()
+        return
+      }
+      if (recovery) {
+        isPaymentSettling.value = false
+        return
       }
     } finally {
       if (previewRequestId === teamPreviewRequestId) {
@@ -951,10 +985,10 @@ export function useSubscriptionCheckout(
       return
     }
     if (
-      isSettlingRefusal(previewError) ||
-      isSettlingRefusalMessage(response?.reason)
+      isSettlingTransitionRefusal(previewError) ||
+      isSettlingRefusalReason(response?.reason)
     ) {
-      isPaymentSettling.value = true
+      presentSettlingRefusal()
       checkoutStep.value = 'pricing'
       selectedTeamCheckout.value = null
       return
@@ -1091,12 +1125,20 @@ export function useSubscriptionCheckout(
       // The write hit the reservation gate: same designed response as the
       // preview-path settling refusal - back to the pricing step with the
       // inline notice, CTAs stay enabled, no generic error surface.
-      if (isSettlingRefusal(error)) {
-        isPaymentSettling.value = true
+      if (isChangeInProgressRefusal(error)) {
+        presentSettlingRefusal()
         resetToPricing()
         return
       }
-      if (await recoverOutstandingPayment(error)) return
+      if (await recoverOutstandingPayment(error)) {
+        isPaymentSettling.value = false
+        return
+      }
+      if (isSettlingTransitionRefusal(error)) {
+        presentSettlingRefusal()
+        resetToPricing()
+        return
+      }
       if (await refreshExpiredProrationQuote(error, planSlug)) return
       if (embeddedCheckoutEnabled && (await recoverStaleQuote(error))) return
       showSubscribeError(error)
@@ -1539,12 +1581,20 @@ export function useSubscriptionCheckout(
       )
       activeCheckoutAttemptStartedAt = undefined
       // Same reservation-gate interception as handleSubscription above.
-      if (isSettlingRefusal(error)) {
-        isPaymentSettling.value = true
+      if (isChangeInProgressRefusal(error)) {
+        presentSettlingRefusal()
         resetToPricing()
         return
       }
-      if (await recoverOutstandingPayment(error)) return
+      if (await recoverOutstandingPayment(error)) {
+        isPaymentSettling.value = false
+        return
+      }
+      if (isSettlingTransitionRefusal(error)) {
+        presentSettlingRefusal()
+        resetToPricing()
+        return
+      }
       if (
         await refreshExpiredProrationQuote(error, planSlug, {
           teamCreditStopId: stop.id
@@ -1614,7 +1664,7 @@ export function useSubscriptionCheckout(
       })
       // Reservation-gate refusal: the designed settling notice, not a toast.
       if (isSettlingRefusal(error)) {
-        isPaymentSettling.value = true
+        presentSettlingRefusal()
         return
       }
       toast.add({
