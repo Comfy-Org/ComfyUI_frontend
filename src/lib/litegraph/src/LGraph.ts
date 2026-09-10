@@ -2489,8 +2489,10 @@ export class LGraph
     const toSelect: Positionable[] = []
     const offsetX = subgraphNode.pos[0] - center[0] + subgraphNode.size[0] / 2
     const offsetY = subgraphNode.pos[1] - center[1] + subgraphNode.size[1] / 2
-    const movedNodes = multiClone(subgraphNode.subgraph.nodes)
+    const inputSlotMarker = `__unpackInputSlot_${createUuidv4()}`
+    const movedNodes = multiClone(subgraphNode.subgraph.nodes, inputSlotMarker)
     const nodeIdMap = new Map<NodeId, NodeId>()
+    const configuredInputSlots = new Map<NodeId, Map<number, INodeInputSlot>>()
     for (const n_info of movedNodes) {
       let node = LiteGraph.createNode(n_info.type, n_info.title)
       if (!node) {
@@ -2529,6 +2531,16 @@ export class LGraph
 
       this.add(node, true)
       node.configure(n_info)
+      const configuredSlots = new Map<number, INodeInputSlot>()
+      for (const input of node.inputs) {
+        const marker: unknown = Object.getOwnPropertyDescriptor(
+          input,
+          inputSlotMarker
+        )?.value
+        Reflect.deleteProperty(input, inputSlotMarker)
+        if (typeof marker === 'number') configuredSlots.set(marker, input)
+      }
+      configuredInputSlots.set(newNodeId, configuredSlots)
       node.setPos(node.pos[0] + offsetX, node.pos[1] + offsetY)
       toSelect.push(node)
     }
@@ -2541,7 +2553,7 @@ export class LGraph
     type TargetSlotReference = (
       | { id: UUID }
       | { name: string; occurrence: number }
-    ) & { input?: INodeInputSlot }
+    ) & { input?: INodeInputSlot | null }
     const newLinks: (LinkPresentation & {
       oid: NodeId
       oslot: number
@@ -2562,6 +2574,7 @@ export class LGraph
         if (index !== -1) return index
         if ('name' in targetSlot) return -1
       }
+      if (targetSlot.input === null) return -1
       if ('id' in targetSlot) {
         return targetNode.isSubgraphNode()
           ? targetNode.inputs.findIndex(
@@ -2578,7 +2591,7 @@ export class LGraph
     function getTargetSlotReference(
       targetNode: LGraphNode | null | undefined,
       targetSlotIndex: number,
-      liveTargetNode = targetNode
+      liveTargetInput?: INodeInputSlot | null
     ) {
       const targetSlot = targetNode?.inputs[targetSlotIndex]
       if (!targetNode || !targetSlot) return
@@ -2593,12 +2606,9 @@ export class LGraph
               .slice(0, targetSlotIndex)
               .filter((input) => input.name === targetSlot.name).length
           }
-      const liveTargetSlotIndex = liveTargetNode
-        ? findTargetSlotIndex(liveTargetNode, reference)
-        : -1
       return {
         ...reference,
-        input: liveTargetNode?.inputs[liveTargetSlotIndex]
+        input: liveTargetInput === undefined ? targetSlot : liveTargetInput
       }
     }
     for (const [, link] of subgraphNode.subgraph.links) {
@@ -2697,7 +2707,7 @@ export class LGraph
         targetSlot: getTargetSlotReference(
           subgraphNode.subgraph.getNodeById(link.target_id),
           link.target_slot,
-          this.getNodeById(targetId)
+          configuredInputSlots.get(targetId)?.get(link.target_slot) ?? null
         ),
         ...restoredPresentation
       })
