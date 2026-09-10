@@ -186,7 +186,6 @@ describe('performSubscriptionCheckout', () => {
       })
     )
     expect(openSpy).toHaveBeenCalledWith(checkoutUrl, '_blank')
-    expect(mockReportError).not.toHaveBeenCalled()
   })
 
   it('continues checkout when attribution collection fails', async () => {
@@ -313,27 +312,18 @@ describe('performSubscriptionCheckout', () => {
         checkout_attempt_id: expect.any(String)
       })
     )
-    expect(mockReportError).toHaveBeenCalledTimes(1)
-    expect(mockReportError).toHaveBeenCalledWith(
+    expect(mockTelemetry.trackBillingEvent).toHaveBeenCalledWith(
       expect.objectContaining({
-        message: 'Subscription checkout popup was blocked'
-      }),
-      {
-        errorType: 'cloud_checkout_popup_blocked',
-        tags: {
-          failure_kind: 'bad_state',
-          feature_area: 'cloud',
-          operation: 'navigate',
-          outcome: 'aborted',
-          assert_mode: 'soft'
-        },
-        context: {
-          checkout_type: 'new',
-          open_in_new_tab: true
-        },
-        level: 'error'
-      }
+        operation: 'subscription_checkout',
+        stage: 'failed',
+        outcome: 'failure',
+        tier: 'pro',
+        cycle: 'monthly',
+        failure_category: 'redirect',
+        error_code: 'payment_popup_blocked'
+      })
     )
+    expect(mockReportError).not.toHaveBeenCalled()
   })
 
   it('reports checkout-initiation failure via trackBillingEvent, so the marketing deep link inherits it too', async () => {
