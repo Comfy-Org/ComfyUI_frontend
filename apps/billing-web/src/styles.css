@@ -1,0 +1,4 @@
+@import 'tailwindcss';
+@import '@comfyorg/design-system/css/_palette.css';
+
+@source './**/*.{ts,vue}';

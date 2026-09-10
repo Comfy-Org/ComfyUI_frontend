@@ -240,7 +240,10 @@ export default defineConfig([
   {
     settings: {
       'better-tailwindcss': {
-        entryPoint: 'packages/design-system/src/css/style.css'
+        entryPoint: path.resolve(
+          import.meta.dirname,
+          'packages/design-system/src/css/style.css'
+        )
       }
     },
     rules: {
@@ -252,6 +255,17 @@ export default defineConfig([
       'better-tailwindcss/enforce-consistent-class-order': 'error',
       'better-tailwindcss/enforce-canonical-classes': 'error',
       'better-tailwindcss/no-deprecated-classes': 'error'
+    }
+  },
+  {
+    files: ['apps/billing-web/**/*.{ts,vue}'],
+    settings: {
+      'better-tailwindcss': {
+        entryPoint: path.resolve(
+          import.meta.dirname,
+          'apps/billing-web/src/styles.css'
+        )
+      }
     }
   },
   // Disables ESLint rules that conflict with formatters
