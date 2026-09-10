@@ -130,7 +130,7 @@ test.describe('Agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
         name: enMessages.agent.consent.title
       })
       const video = dialog.locator('video')
-      const docs = dialog.getByRole('button', {
+      const docs = dialog.getByRole('link', {
         name: enMessages.agent.consent.readDocs
       })
       const accept = dialog.getByRole('button', {
@@ -156,7 +156,7 @@ test.describe('Agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
         })
         .toBe(true)
 
-      await page.keyboard.press('Tab')
+      await docs.focus()
       await expect(docs).toBeFocused()
       await page.keyboard.press('Tab')
       await expect(accept).toBeFocused()
