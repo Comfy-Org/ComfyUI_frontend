@@ -116,9 +116,7 @@ export function authSignInTransition(
         ? state
         : { step: 'idle' }
     case 'signInAbandoned':
-      // The rollout flag turned off (or flickered) mid-attempt: drop the
-      // in-flight attempt so a later restore or mint is no longer ignored.
-      // Settled states are left alone.
+      // Drop an attempt a flag flip invalidated; leave settled states alone.
       return state.step === 'pending' || state.step === 'minting'
         ? { step: 'idle' }
         : state
