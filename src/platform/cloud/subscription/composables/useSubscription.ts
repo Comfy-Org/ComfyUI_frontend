@@ -153,6 +153,22 @@ function useSubscriptionInternal() {
     didLastRecoveryAttemptThrow = false
   }
 
+  /**
+   * The retry ladder is exhausted by the time the deadline matters, so without
+   * this the report would wait on the next `pageshow`/`visibilitychange` and
+   * never fire for a user who simply leaves the tab open.
+   */
+  const armMissingCheckoutCompletionWakeUp = (remainingMs: number) => {
+    if (!defaultWindow || pendingCheckoutRecoveryTimeout !== null) {
+      return
+    }
+
+    pendingCheckoutRecoveryTimeout = defaultWindow.setTimeout(() => {
+      pendingCheckoutRecoveryTimeout = null
+      reportMissingCheckoutCompletion()
+    }, remainingMs)
+  }
+
   const reportMissingCheckoutCompletion = () => {
     if (hasReportedPendingCheckoutRecoveryExhaustion) {
       return
@@ -165,6 +181,9 @@ function useSubscriptionInternal() {
 
     const attemptAgeMs = Date.now() - attempt.started_at_ms
     if (attemptAgeMs < PENDING_CHECKOUT_COMPLETION_DEADLINE_MS) {
+      armMissingCheckoutCompletionWakeUp(
+        PENDING_CHECKOUT_COMPLETION_DEADLINE_MS - attemptAgeMs
+      )
       return
     }
 
