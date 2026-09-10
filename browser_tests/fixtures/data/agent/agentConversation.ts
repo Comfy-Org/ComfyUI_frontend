@@ -153,7 +153,7 @@ const zTurn = z
           'cancel_after must precede the final agent_message_done entry; the replay stops a turn that is still running'
       })
   })
-export type RecordedTurn = z.infer<typeof zTurn>
+type RecordedTurn = z.infer<typeof zTurn>
 
 export const zAgentConversation = z
   .object({
@@ -196,7 +196,7 @@ export type RecordedConversation = z.infer<typeof zAgentConversation>
 
 // The applier-proven form of a recording: the same bytes, with every op typed
 // by the library's own union. Only assertOpsApply produces it.
-export type AgentConversationEntry =
+type AgentConversationEntry =
   | Extract<z.infer<typeof zResponseEntry>, { kind: 'event' }>
   | { kind: 'graph_ops'; ops: GraphOperation[]; at_ms?: number }
 export type AgentConversationTurn = Omit<RecordedTurn, 'response'> & {
