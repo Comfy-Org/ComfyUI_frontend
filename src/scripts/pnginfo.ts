@@ -1,4 +1,5 @@
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 import { api } from './api'
@@ -29,7 +30,7 @@ function parseExifData(exifData: Uint8Array) {
     isLittleEndian: boolean,
     length: 2 | 4
   ): number {
-    let arr = exifData.slice(offset, offset + length)
+    const arr = exifData.slice(offset, offset + length)
     if (length === 2) {
       return new DataView(arr.buffer, arr.byteOffset, arr.byteLength).getUint16(
         0,

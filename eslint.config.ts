@@ -177,7 +177,6 @@ export default defineConfig([
       'scripts/registry-census/detection-proof/**',
       'src/__ecs_matrix__/**',
       'src/extensions/core/*',
-      'src/scripts/*',
       'src/types/generatedManagerTypes.ts',
       'src/types/vue-shim.d.ts',
       'packages/design-system/src/css/lucideStrokePlugin.js',
