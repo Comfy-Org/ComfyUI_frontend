@@ -8,7 +8,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import UpdatePasswordContent from './UpdatePasswordContent.vue'
 
 const updatePassword = vi.fn()
-vi.mock('@/composables/auth/useAuthActions', () => ({
+vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
   useAuthActions: () => ({ updatePassword })
 }))
 
