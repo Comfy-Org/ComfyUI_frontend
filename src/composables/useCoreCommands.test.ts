@@ -146,6 +146,17 @@ vi.mock<unknown>(
 
 let mockToastAdd: ReturnType<typeof useToastStore>['add']
 
+const mockFeatureFlagState = vi.hoisted(() => ({ assetsEnabled: false }))
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
+  useFeatureFlags: () => ({
+    flags: {
+      get assetsEnabled() {
+        return mockFeatureFlagState.assetsEnabled
+      }
+    }
+  })
+}))
+
 const mockAssetBrowse = vi.hoisted(() =>
   vi.fn<(options: { onAssetSelected?: (asset: AssetItem) => void }) => void>()
 )
@@ -267,6 +278,7 @@ describe('useCoreCommands', () => {
     )
     mockToastAdd = useToastStore().add
     mockDistributionState.isCloud = false
+    mockFeatureFlagState.assetsEnabled = false
     mockBillingState.canAccessSubscriptionFeatures = true
     mockBillingState.subscriptionTier = null
     vi.mocked(app.refreshComboInNodes).mockResolvedValue(undefined)
@@ -767,17 +779,25 @@ describe('useCoreCommands', () => {
   describe('BrowseModelAssets command', () => {
     const asset = fromPartial<AssetItem>({ id: 'asset-1' })
 
-    async function selectAssetFromBrowser() {
-      useSettingStore().settingValues['Comfy.Assets.UseAssetAPI'] = true
+    const browseModelAssets = () =>
+      useCoreCommands().find((cmd) => cmd.id === 'Comfy.BrowseModelAssets')!
 
-      const command = useCoreCommands().find(
-        (cmd) => cmd.id === 'Comfy.BrowseModelAssets'
-      )!
-      await command.function()
+    async function selectAssetFromBrowser() {
+      mockFeatureFlagState.assetsEnabled = true
+
+      await browseModelAssets().function()
 
       const { onAssetSelected } = mockAssetBrowse.mock.calls[0][0]
       onAssetSelected?.(asset)
     }
+
+    it('does not open the browser when the assets capability is missing', async () => {
+      mockFeatureFlagState.assetsEnabled = false
+
+      await expect(browseModelAssets().function()).resolves.toBeUndefined()
+
+      expect(mockAssetBrowse).not.toHaveBeenCalled()
+    })
 
     it('starts a model node drag for the selected asset', async () => {
       mockStartModelNodeDrag.mockReturnValue(undefined)
