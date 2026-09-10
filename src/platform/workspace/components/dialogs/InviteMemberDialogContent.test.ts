@@ -332,10 +332,10 @@ describe('InviteMemberDialogContent', () => {
 
       expect(await navigator.clipboard.readText()).toBe(inviteLinkFor('tok-a'))
       expect(
-          await screen.findByRole('button', {
-            name: 'workspacePanel.inviteLinks.copied'
-          })
-        ).toBeInTheDocument()
+        await screen.findByRole('button', {
+          name: 'workspacePanel.inviteLinks.copied'
+        })
+      ).toBeInTheDocument()
       // The other row keeps its Copy link label.
       expect(copyLinkButtons()).toHaveLength(1)
     })
