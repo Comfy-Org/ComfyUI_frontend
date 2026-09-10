@@ -101,6 +101,9 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
     )
     expect(selectorInstances).toBe(1)
 
+    // A refreshed quote (promo applied, price changed) must NOT remount the
+    // element — remounting wipes whatever the customer already typed. The
+    // mounted element takes the new amount through its own update watcher.
     await rerender({
       previewData: {
         ...previewFixture('MONTHLY', 50_000),
@@ -112,6 +115,19 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
     expect(screen.getByTestId('payment-selector')).toHaveTextContent(
       '50000/usd'
     )
+    expect(selectorInstances).toBe(1)
+
+    // A different payment-method configuration is a genuine re-init: the
+    // available method set changed, so a fresh element is correct.
+    await rerender({
+      previewData: {
+        ...previewFixture('MONTHLY', 50_000),
+        quote_id: 'quote_456',
+        quote_version: 3,
+        payment_method_configuration_id: 'pmc_other'
+      }
+    })
+
     expect(selectorInstances).toBe(2)
   })
 
