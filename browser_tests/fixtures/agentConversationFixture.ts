@@ -349,14 +349,14 @@ class AgentConversationHarness {
   }
 
   // Samples the background canvas around each link's painted midpoint for the
-  // colour the renderer paints that link's type in. A link whose endpoints the
-  // map holds but whose midpoint carries no such pixel is returned; this is a
-  // colour-proximity sample, not a trace of the whole wire.
-  private unpaintedLinks(): Promise<string[]> {
+  // colour the renderer paints that link's type in, as the app's own render
+  // loop left it: nothing here asks the canvas to repaint. A link whose
+  // endpoints the map holds but whose midpoint carries no such pixel is
+  // returned; this is a colour-proximity sample, not a trace of the wire.
+  unpaintedLinks(): Promise<string[]> {
     return this.page.evaluate((tolerance: number) => {
       const app = window.app!
       const canvas = app.canvas
-      canvas.draw(true, true)
       const context = canvas.bgcanvas.getContext('2d')!
       const scale = canvas.bgcanvas.width / canvas.canvas.clientWidth
       // The static palette the renderer resolves a link's type through.

@@ -2,6 +2,7 @@
 // recording must clear. Nothing here touches the network, a socket or disk.
 import { basename } from 'node:path'
 
+import { isEqual } from 'es-toolkit'
 import { z } from 'zod'
 
 import type {
@@ -472,7 +473,7 @@ function replayHost(conversation: RecordedConversation): HostDoc {
 interface ProjectedNode {
   id: string
   type: string
-  widgets_values: string
+  widgets_values: unknown
 }
 
 // The projection reduced to what a replay must reproduce: each node's class
@@ -485,7 +486,7 @@ function projectedState(workflow: {
     nodes: workflow.nodes.map((node) => ({
       id: String(node.id),
       type: node.type,
-      widgets_values: JSON.stringify(node.widgets_values ?? null)
+      widgets_values: node.widgets_values ?? null
     })),
     links: workflow.links.map((link) => JSON.stringify(link)).sort()
   }
@@ -516,11 +517,16 @@ function checkDraft(
     refuse(
       `draft for ${workflowId} holds node ids ${list(stored.keys()) || '(none)'} but the replayed ops leave ${list(outcome) || '(none)'}`
     )
+  // Structural equality: a draft that crossed a JSON column may order object
+  // keys differently, and that is not a different value.
   for (const node of replayed.nodes) {
     const kept = stored.get(node.id)!
-    if (kept.type !== node.type || kept.widgets_values !== node.widgets_values)
+    if (
+      kept.type !== node.type ||
+      !isEqual(kept.widgets_values, node.widgets_values)
+    )
       refuse(
-        `draft for ${workflowId} stores node ${node.id} as ${kept.type} ${kept.widgets_values} but the replayed ops leave ${node.type} ${node.widgets_values}`
+        `draft for ${workflowId} stores node ${node.id} as ${kept.type} ${JSON.stringify(kept.widgets_values)} but the replayed ops leave ${node.type} ${JSON.stringify(node.widgets_values)}`
       )
   }
   if (persisted.links.join('\n') !== replayed.links.join('\n'))
