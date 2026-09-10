@@ -38,6 +38,7 @@ export type AuthSignInEvent =
   | { readonly type: 'provisioningFailed'; readonly email: string }
   | { readonly type: 'userRestored'; readonly email: string }
   | { readonly type: 'signedOut' }
+  | { readonly type: 'signInAbandoned' }
 
 const SUPPORT_EMAIL = 'support@comfy.org'
 
@@ -87,5 +88,10 @@ export function authSignInTransition(
         : { step: 'signedIn', email: event.email }
     case 'signedOut':
       return state.step === 'pending' ? state : { step: 'idle' }
+    case 'signInAbandoned':
+      // The rollout flag turned off (or flickered) mid-attempt: drop the
+      // in-flight attempt so the page leaves `pending` and a later restore or
+      // mint is no longer ignored.
+      return { step: 'idle' }
   }
 }

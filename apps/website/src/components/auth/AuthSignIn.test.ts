@@ -394,6 +394,76 @@ describe('AuthSignIn', () => {
     expect(handles.captureAuthCompleted).not.toHaveBeenCalled()
   })
 
+  it('leaves pending and honors a later restore when the flag turns off during provisioning', async () => {
+    let resolveProvision: (() => void) | undefined
+    handles.google.mockResolvedValue({
+      user: { uid: 'uid-1', email: 'user@example.com', displayName: null }
+    })
+    handles.provision.mockReturnValue(
+      new Promise<void>((resolve) => {
+        resolveProvision = resolve
+      })
+    )
+    render(AuthSignIn)
+    await waitFor(() => expect(handles.onUserChanged).toHaveBeenCalledOnce())
+
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: /continue with google/i }))
+    await waitFor(() => expect(handles.provision).toHaveBeenCalledOnce())
+
+    handles.flag!.value = false
+    resolveProvision!()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(
+      handles.captureAuthCompleted,
+      'a disable during provisioning must stop the completion'
+    ).not.toHaveBeenCalled()
+
+    // The attempt must have left `pending`, so a later restore is not ignored.
+    handles.flag!.value = true
+    await waitFor(() => expect(handles.onUserChanged).toHaveBeenCalledTimes(2))
+    handles.emitUser?.({ email: 'user@example.com', displayName: null })
+    expect(await screen.findByText(/user@example\.com/)).toBeTruthy()
+  })
+
+  it('reports no failure and publishes no error when provisioning rejects after the flag turned off', async () => {
+    let rejectProvision: ((reason: unknown) => void) | undefined
+    const failure = {
+      user: { uid: 'uid-1', email: 'a@b.co', displayName: null }
+    }
+    handles.isProvisioningError.mockImplementation((error) => error === failure)
+    handles.google.mockResolvedValue({
+      user: { uid: 'uid-1', email: 'a@b.co', displayName: null }
+    })
+    handles.provision.mockReturnValue(
+      new Promise<void>((_resolve, reject) => {
+        rejectProvision = reject
+      })
+    )
+    render(AuthSignIn)
+    await waitFor(() => expect(handles.onUserChanged).toHaveBeenCalledOnce())
+
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: /continue with google/i }))
+    await waitFor(() => expect(handles.provision).toHaveBeenCalledOnce())
+
+    handles.flag!.value = false
+    rejectProvision!(failure)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(
+      handles.captureAuthFailed,
+      'an invalidated attempt must not report its rejection as this attempt failing'
+    ).not.toHaveBeenCalled()
+    expect(
+      screen.queryByRole('alert'),
+      'nor publish error state over the abandoned attempt'
+    ).toBeNull()
+  })
+
   it('shows the signup-blocked copy when the popup reports the blocked token', async () => {
     handles.google.mockRejectedValue({
       code: 'auth/internal-error',
