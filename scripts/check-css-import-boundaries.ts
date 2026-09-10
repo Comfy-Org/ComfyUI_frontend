@@ -21,13 +21,14 @@ export const findCrossBoundaryCssReferences = (
     comment.replace(/[^\n]/g, ' ')
   )
   const directivePattern =
-    /^[\t ]*@(import|source)[\t ]+(?:not[\t ]+)?(?:url\([\t ]*)?(['"])([^'"]+)\2/gm
+    /^[\t ]*@(import|source)[\t ]+(?:not[\t ]+)?(?:url\([\t ]*(?:(['"])([^'"]+)\2|([^\s)]+))[\t ]*\)|(['"])([^'"]+)\5)/gm
 
   return [...uncommented.matchAll(directivePattern)].flatMap((match) => {
     const directive = match[1]
-    const reference = match[3]
+    const reference = [match[3], match[4], match[6]].find(Boolean)
     if (
       (directive !== 'import' && directive !== 'source') ||
+      !reference ||
       !reference.startsWith('.')
     ) {
       return []

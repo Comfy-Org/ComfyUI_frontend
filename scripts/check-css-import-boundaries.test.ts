@@ -12,21 +12,25 @@ describe('findCrossBoundaryCssReferences', () => {
     ).toEqual([])
   })
 
-  test('rejects a relative import into another source feature', () => {
-    expect(
-      findCrossBoundaryCssReferences(
-        'src/assets/css/style.css',
-        "@import '../../workbench/extensions/agent/agentTheme.css';"
-      )
-    ).toEqual([
-      {
-        directive: 'import',
-        filename: 'src/assets/css/style.css',
-        lineNumber: 1,
-        reference: '../../workbench/extensions/agent/agentTheme.css'
-      }
-    ])
-  })
+  test.for([
+    "@import '../../workbench/extensions/agent/agentTheme.css';",
+    "@import url('../../workbench/extensions/agent/agentTheme.css');",
+    '@import url(../../workbench/extensions/agent/agentTheme.css);'
+  ])(
+    'rejects a relative import into another source feature: %s',
+    (contents) => {
+      expect(
+        findCrossBoundaryCssReferences('src/assets/css/style.css', contents)
+      ).toEqual([
+        {
+          directive: 'import',
+          filename: 'src/assets/css/style.css',
+          lineNumber: 1,
+          reference: '../../workbench/extensions/agent/agentTheme.css'
+        }
+      ])
+    }
+  )
 
   test('rejects relative node_modules sources inside an app boundary', () => {
     expect(
