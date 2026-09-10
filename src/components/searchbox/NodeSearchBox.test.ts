@@ -1,4 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
 import { ZIndex } from '@primeuix/utils/zindex'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -50,7 +49,7 @@ describe('NodeSearchBox dialog stacking', () => {
     })
     render(Harness, {
       global: {
-        plugins: [createTestingPinia(), i18n],
+        plugins: [i18n],
         stubs: {
           NodePreview: true,
           NodeSearchFilter: true,
