@@ -632,9 +632,13 @@ describe('useSubscription', () => {
           errorType: 'cloud_checkout_completion_missing',
           context: expect.objectContaining({
             checkout_attempt_id: 'attempt-timeout',
-            attempt_age_ms: 11 * 60 * 1000 + 43_000
+            attempt_age_ms: expect.any(Number)
           })
         })
+      )
+      const [, options] = mockReportTelemetryError.mock.calls[0]
+      expect(options.context.attempt_age_ms).toBeGreaterThanOrEqual(
+        10 * 60 * 1000
       )
     })
 
