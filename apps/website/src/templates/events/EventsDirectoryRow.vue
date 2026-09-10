@@ -27,6 +27,7 @@ const metaClass = 'flex items-center gap-1 text-primary-comfy-canvas/70'
 <template>
   <li
     :data-event-id="row.event.id"
+    :aria-current="selected ? 'true' : undefined"
     :class="
       cn(
         'flex gap-3 px-6 py-4 transition-colors',

@@ -20,6 +20,11 @@ const mediaStandIn = (root: Element) =>
   // eslint-disable-next-line testing-library/no-node-access
   root.querySelector('.aspect-video > div[aria-hidden="true"]')
 
+// CardArrow is decorative (aria-hidden), so it has no accessible query.
+const cardArrow = (root: Element) =>
+  // eslint-disable-next-line testing-library/no-node-access
+  root.querySelector('[data-slot="card-footer"] [aria-hidden="true"]')
+
 describe('CardArticle01', () => {
   it('renders image media as an img', () => {
     render(CardArticle01, {
@@ -68,6 +73,21 @@ describe('CardArticle01', () => {
     expect(screen.queryByRole('img')).toBeNull()
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelector('video')).toBeNull()
+  })
+
+  it('drops the arrow affordance from an author card that has no CTA', async () => {
+    const author = { name: 'Ada Lovelace', avatarSrc: '/ada.jpg' }
+    const { container, rerender } = render(CardArticle01, {
+      props: { item: makeItem({ author }) }
+    })
+
+    expect(cardArrow(container)).toBeTruthy()
+
+    await rerender({ item: makeItem({ author, cta: undefined }) })
+
+    expect(screen.queryByRole('link')).toBeNull()
+    expect(screen.getByText('Ada Lovelace')).toBeTruthy()
+    expect(cardArrow(container)).toBeNull()
   })
 
   it('opens the card link in a new tab when the CTA asks for one', () => {

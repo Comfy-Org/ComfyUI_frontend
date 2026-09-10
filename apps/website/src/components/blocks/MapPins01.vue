@@ -4,7 +4,7 @@ import type * as Leaflet from 'leaflet'
 import type { HTMLAttributes } from 'vue'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
-import 'leaflet/dist/leaflet.css'
+import leafletStylesUrl from 'leaflet/dist/leaflet.css?url'
 import worldCountriesUrl from '../../assets/world-countries.json?url'
 
 export type MapPinMarker = {
@@ -135,7 +135,29 @@ function addSpiderfiedGroup(L: typeof Leaflet, group: PixelGroup) {
   })
 }
 
-/** Flies to the cluster's bounds, then checks whether its members are still
+// Astro hoists every CSS import reachable from an island — a dynamic
+// `import('leaflet/dist/leaflet.css')` included — into the page head as a
+// render-blocking <link>. Only injecting the sheet by URL at mount time keeps
+// Leaflet's ~15KB off /events' critical path for visitors who never scroll to
+// the map.
+function loadStyles(): Promise<void> {
+  if (document.querySelector(`link[href="${leafletStylesUrl}"]`))
+    return Promise.resolve()
+  return new Promise((resolve) => {
+    const link = document.createElement('link')
+    link.rel = 'stylesheet'
+    link.href = leafletStylesUrl
+    // Resolving on error too: an unstyled map still beats no map at all.
+    link.addEventListener('load', () => resolve())
+    link.addEventListener('error', () => resolve())
+    document.head.append(link)
+  })
+}
+
+const prefersReducedMotion = () =>
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+/** Moves to the cluster's bounds, then checks whether its members are still
  * pixel-coincident at the landed zoom (capped by `maxZoom`) — if so, flying
  * in further can never separate them, so spiderfy instead. */
 function onClusterClick(items: MapPinMarker[]) {
@@ -144,7 +166,8 @@ function onClusterClick(items: MapPinMarker[]) {
   const bounds = L.latLngBounds(
     items.map((item) => [item.coords.lat, item.coords.lng])
   )
-  map.flyToBounds(bounds, { padding: [60, 60], maxZoom: 7 })
+  // Registered before the move: a non-animated `fitBounds` finishes — and
+  // fires `moveend` — synchronously, so a listener added afterwards is late.
   map.once('moveend', () => {
     if (!map) return
     const anchor = map.latLngToContainerPoint([
@@ -161,6 +184,10 @@ function onClusterClick(items: MapPinMarker[]) {
     for (const item of items) spiderfiedIds.value.add(item.id)
     rebuildPins()
   })
+  const framing: Leaflet.FitBoundsOptions = { padding: [60, 60], maxZoom: 7 }
+  if (prefersReducedMotion())
+    map.fitBounds(bounds, { ...framing, animate: false })
+  else map.flyToBounds(bounds, framing)
 }
 
 /** Cluster by on-screen pixel distance at the current zoom. */
@@ -194,7 +221,8 @@ onMounted(async () => {
 
 async function mountMap() {
   if (!container.value) return
-  const [imported, geoJson] = await Promise.all([
+  const [, imported, geoJson] = await Promise.all([
+    loadStyles(),
     import('leaflet') as Promise<LeafletModule>,
     fetch(worldCountriesUrl, { signal: disposal.signal }).then(
       (res) => res.json() as Promise<WorldGeoJson>
@@ -255,7 +283,12 @@ onBeforeUnmount(() => {
   <div
     role="region"
     :aria-label="regionLabel"
-    :class="cn('relative isolate h-140 overflow-hidden rounded-3xl', className)"
+    :class="
+      cn(
+        'map-pins relative isolate h-140 overflow-hidden rounded-3xl',
+        className
+      )
+    "
     :style="{ background: OCEAN }"
   >
     <div
@@ -265,28 +298,3 @@ onBeforeUnmount(() => {
     />
   </div>
 </template>
-
-<!-- Leaflet renders its own DOM, unreachable by Tailwind classes on our
-template — the scoped block reskins its zoom control to the site palette. -->
-<style scoped>
-:deep(.leaflet-bar) {
-  border: none;
-}
-
-:deep(.leaflet-bar a) {
-  border-color: rgb(255 255 255 / 0.1);
-  background-color: #2a2330;
-  color: #f0efed;
-}
-
-:deep(.leaflet-bar a:hover),
-:deep(.leaflet-bar a:focus) {
-  background-color: #3b3242;
-  color: #f2ff59;
-}
-
-:deep(.leaflet-bar a.leaflet-disabled) {
-  background-color: #2a2330;
-  color: rgb(240 239 237 / 0.3);
-}
-</style>

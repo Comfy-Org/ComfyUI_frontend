@@ -139,6 +139,7 @@ function fallbackGradient(id: string): string {
         </span>
       </span>
       <CardArrow
+        v-if="item.cta"
         hover="group"
         class="size-8 shrink-0 rounded-xl bg-primary-warm-gray text-primary-warm-white"
       />

@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
@@ -39,11 +40,18 @@ const calendar = {
 }
 
 describe('EventsDirectoryCta', () => {
-  it('offers the save-the-date menu on an upcoming row', () => {
+  it('opens the save-the-date menu from the chip on an upcoming row', async () => {
     render(EventsDirectoryCta, { props: { row: makeRow({ calendar }) } })
 
-    expect(screen.getByRole('button', { name: 'Save the date?' })).toBeTruthy()
     expect(screen.queryByRole('link')).toBeNull()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Save the date?' })
+    )
+
+    expect(
+      screen.getByRole('menuitem', { name: 'Google Calendar' })
+    ).toBeTruthy()
   })
 
   it('adds the registration link beside the calendar menu', () => {

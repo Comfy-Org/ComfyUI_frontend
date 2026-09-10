@@ -9,9 +9,11 @@ import type * as eventsModule from '../../data/events'
 
 import PastEventsSection from './PastEventsSection.vue'
 
-// Three past fixtures: a recorded livestream with image art, a recorded
-// meetup with video art, and an unrecorded workshop with no art whose only
-// destination is its external page.
+// Five past fixtures — one more than PAGE_SIZE, so the gallery has to
+// paginate: a recorded livestream with image art, a recorded meetup with video
+// art, an unrecorded workshop with no art whose only destination is its
+// external page, an untranslated conference, and a destinationless meetup with
+// neither a recording nor a link.
 const { fixturePastEvents } = vi.hoisted(() => {
   const localized = (en: string) => ({ en, 'zh-CN': en })
   const recorded: ComfyEvent = {
@@ -65,7 +67,16 @@ const { fixturePastEvents } = vi.hoisted(() => {
       alt: { en: 'Conference art', 'zh-CN': '' }
     }
   }
-  return { fixturePastEvents: [recorded, clip, artless, untranslated] }
+  const destinationless: ComfyEvent = {
+    id: 'destinationless-meetup',
+    category: 'meetup',
+    title: localized('Destinationless Meetup'),
+    description: localized('Neither a recording nor a link.'),
+    startDateTime: '2026-05-01T18:00:00Z'
+  }
+  return {
+    fixturePastEvents: [recorded, clip, artless, untranslated, destinationless]
+  }
 })
 
 vi.mock(import('../../data/events'), async (importOriginal) => {
@@ -140,6 +151,23 @@ describe('PastEventsSection', () => {
     expect(screen.getByText('Recorded Livestream')).toBeTruthy()
     expect(screen.getByText('Clip Meetup')).toBeTruthy()
     expect(screen.getByText('English-Only Conference')).toBeTruthy()
+  })
+
+  it('holds the overflowing card behind LOAD MORE and gives it no CTA', async () => {
+    render(PastEventsSection)
+
+    // PAGE_SIZE is 4, so the fifth fixture waits behind the button.
+    expect(screen.queryByText('Destinationless Meetup')).toBeNull()
+
+    await userEvent.click(screen.getByRole('button', { name: 'LOAD MORE' }))
+    await nextTick()
+
+    expect(screen.getByText('Destinationless Meetup')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'LOAD MORE' })).toBeNull()
+    // Neither a recording nor a link, so the card must not link anywhere.
+    expect(
+      screen.queryByRole('link', { name: /Destinationless Meetup/ })
+    ).toBeNull()
   })
 
   it('passes each card its own art, poster included for clips', () => {

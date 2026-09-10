@@ -138,18 +138,20 @@ describe('EventsDirectorySection', () => {
       within(map).getByRole('button', { name: 'Paris Hack Night' })
     )
     await nextTick()
-    expect(rowFor('Paris Hack Night')?.className).toContain('ring-1')
+    expect(rowFor('Paris Hack Night')?.getAttribute('aria-current')).toBe(
+      'true'
+    )
 
     await userEvent.type(screen.getByRole('searchbox'), 'tokyo')
     await nextTick()
 
     expect(rowFor('Paris Hack Night')).toBeUndefined()
-    expect(rowFor('Tokyo Meetup')?.className).not.toContain('ring-1')
+    expect(rowFor('Tokyo Meetup')?.getAttribute('aria-current')).toBeNull()
 
     // Restoring the filter must not resurrect the old pin selection.
     await userEvent.clear(screen.getByRole('searchbox'))
     await nextTick()
 
-    expect(rowFor('Paris Hack Night')?.className).not.toContain('ring-1')
+    expect(rowFor('Paris Hack Night')?.getAttribute('aria-current')).toBeNull()
   })
 })

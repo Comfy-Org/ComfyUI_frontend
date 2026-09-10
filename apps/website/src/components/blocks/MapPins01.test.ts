@@ -31,16 +31,28 @@ const leafletState = vi.hoisted(() => {
     click: (() => void) | undefined
   }> = []
   const flyToBoundsCalls: unknown[] = []
+  const fitBoundsCalls: unknown[] = []
   const moveendCallbacks: Array<() => void> = []
-  return { FakePoint, markers, flyToBoundsCalls, moveendCallbacks }
+  return {
+    FakePoint,
+    markers,
+    flyToBoundsCalls,
+    fitBoundsCalls,
+    moveendCallbacks
+  }
 })
 
 // The component's dynamic `import('leaflet')` resolves to this fake; the map
 // projects one degree of longitude/latitude to one container pixel so the
 // 48px cluster threshold is easy to reason about in test coordinates.
 vi.mock(import('leaflet'), () => {
-  const { FakePoint, markers, flyToBoundsCalls, moveendCallbacks } =
-    leafletState
+  const {
+    FakePoint,
+    markers,
+    flyToBoundsCalls,
+    fitBoundsCalls,
+    moveendCallbacks
+  } = leafletState
   const fakeMap = {
     latLngToContainerPoint: ([lat, lng]: [number, number]) =>
       new FakePoint(lng, lat),
@@ -55,6 +67,10 @@ vi.mock(import('leaflet'), () => {
     },
     flyToBounds: (...args: unknown[]) => {
       flyToBoundsCalls.push(args)
+      return fakeMap
+    },
+    fitBounds: (...args: unknown[]) => {
+      fitBoundsCalls.push(args)
       return fakeMap
     },
     remove: () => undefined
@@ -116,6 +132,7 @@ describe('MapPins01', () => {
   beforeEach(() => {
     leafletState.markers.splice(0)
     leafletState.flyToBoundsCalls.splice(0)
+    leafletState.fitBoundsCalls.splice(0)
     leafletState.moveendCallbacks.splice(0)
     fetchSignal = undefined
     vi.stubGlobal(
@@ -192,6 +209,35 @@ describe('MapPins01', () => {
     const lyon = leafletState.markers.find((marker) => marker.title === 'Lyon')
     lyon?.click?.()
     expect(emitted('select')).toEqual([['lyon']])
+  })
+
+  it('jumps to the cluster instead of flying when reduced motion is preferred', async () => {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query.includes('prefers-reduced-motion'),
+      media: query,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined
+    }))
+    render(MapPins01, { props: { markers, regionLabel: 'Event map' } })
+    await waitForPins(2)
+
+    leafletState.markers
+      .find((marker) => marker.title === 'Paris, Lyon')
+      ?.click?.()
+
+    expect(leafletState.flyToBoundsCalls).toHaveLength(0)
+    expect(leafletState.fitBoundsCalls).toHaveLength(1)
+    expect(leafletState.fitBoundsCalls[0]).toMatchObject([
+      expect.anything(),
+      { animate: false, maxZoom: 7 }
+    ])
+    // The listener is in place before the synchronous jump, so the spiderfy
+    // still runs.
+    expect(leafletState.moveendCallbacks).toHaveLength(1)
+    leafletState.moveendCallbacks[0]()
+    expect(
+      leafletState.markers.map((marker) => marker.title).toSorted()
+    ).toEqual(['Lyon', 'Paris', 'Tokyo'])
   })
 
   it('aborts the world-shape fetch when unmounted mid-setup', () => {
