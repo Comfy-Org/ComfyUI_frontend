@@ -203,7 +203,15 @@ export function useAgentCrdtFollower(
    * reads inside the getter are tracked, so a `null` → graph flip triggers a
    * reconcile without waiting for the next remote frame.
    */
-  getGraph: () => MaterializableGraph | null = () => null
+  getGraph: () => MaterializableGraph | null = () => null,
+  /**
+   * Where document frames travel. Defaults to ComfyUI's same-origin socket,
+   * which carries them only because ingest relays the agent's frames onto it.
+   * A STANDALONE agent has no ingest, and ComfyUI's socket carries nothing from
+   * it, so this default can never see an update there — pass the standalone
+   * transport instead (see standaloneDocFrameTransport).
+   */
+  baseTransport: DocFrameTransport = apiTransport
 ) {
   const connected = ref(false)
   const updatesApplied = ref(0)
@@ -224,7 +232,7 @@ export function useAgentCrdtFollower(
   // never-throw contract is covered by tests.
   const transport: DocFrameTransport = {
     send(frame) {
-      const delivered = apiTransport.send(frame)
+      const delivered = baseTransport.send(frame)
       let parsed: unknown = frame
       try {
         parsed = JSON.parse(frame)
@@ -235,10 +243,10 @@ export function useAgentCrdtFollower(
       return delivered
     },
     addEventListener(type, listener) {
-      apiTransport.addEventListener(type, listener)
+      baseTransport.addEventListener(type, listener)
     },
     removeEventListener(type, listener) {
-      apiTransport.removeEventListener(type, listener)
+      baseTransport.removeEventListener(type, listener)
     }
   }
   const client = new DocFrameClient(transport)

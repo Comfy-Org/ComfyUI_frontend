@@ -102,6 +102,7 @@ import {
 } from './crdt/crdtDebugGate'
 import { attachMintPortWiring } from './crdt/mintPortWiring'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
+import { createStandaloneDocFrameTransport } from './crdt/standaloneDocFrameTransport'
 
 const CrdtDevPanel = defineAsyncComponent(
   () => import('./crdt/CrdtDevPanel.vue')
@@ -141,10 +142,38 @@ const userName = computed(
 
 const rest = createAgentRestClient()
 
-const events =
-  import.meta.env.VITE_AGENT_STANDALONE === 'true'
-    ? createStandaloneAgentEventSource()
-    : createAgentEventSource(api)
+const isStandaloneAgent = import.meta.env.VITE_AGENT_STANDALONE === 'true'
+
+const standaloneEvents = isStandaloneAgent
+  ? createStandaloneAgentEventSource()
+  : null
+
+const events = standaloneEvents ?? createAgentEventSource(api)
+
+/**
+ * Standalone document transport. The cloud path relies on ingest relaying the
+ * agent's document frames onto ComfyUI's socket; a local agent has no ingest,
+ * so the follower must read them off the agent's own stream and push edits to
+ * its HTTP routes.
+ *
+ * It owns a SEPARATE socket from the chat stream above, deliberately. The agent
+ * fixes a connection's workflow subscription at connect time, so following a
+ * workflow means reconnecting — and the workflow binds partway through the
+ * first turn. Reconnecting the CHAT stream at that moment drops every progress
+ * frame published while it re-establishes, leaving the panel silent for the
+ * rest of the turn. Reconnecting this one costs nothing: the follower
+ * resubscribes and catches up through resync.
+ */
+const standaloneDocTransport = isStandaloneAgent
+  ? createStandaloneDocFrameTransport({
+      onError: (error, context) =>
+        reportError(error, {
+          errorType: 'agent_standalone_doc_transport',
+          tags: { context },
+          level: 'warning'
+        })
+    })
+  : null
 
 function onPaywallAction(action: AgentPaywallAction): void {
   openAccountPrecondition(action === 'addCredits' ? 'credits' : 'subscription')
@@ -368,6 +397,20 @@ function activeWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
   if (workflowDetached.value) return undefined
   const active = originWorkflow(origin)
   if (!active) return undefined
+  // A live document is the source of truth for this workflow; the draft is only
+  // its projection. Seeding it from the canvas is not just redundant there, it
+  // is destructive: this snapshot carries no version, which the backend treats
+  // as authoritative and applies unconditionally, so a canvas that has not yet
+  // caught up silently overwrites whatever the agent just built. Stay out of
+  // the way and let the document carry the state.
+  const documentId = cloudIdFor(active)
+  if (
+    documentId !== undefined &&
+    crdtStatus.value.connected &&
+    crdtStatus.value.workflowId === documentId
+  ) {
+    return undefined
+  }
   if (active.path === workflowStore.activeWorkflow?.path)
     active.changeTracker?.prepareForSave()
   const content = active.activeState
@@ -500,8 +543,25 @@ const {
   // `app.isGraphReady` is a plain getter; reading `canvasStore.canvas` (set
   // right after `app.setup()`) makes the follower's graph watch fire once the
   // root graph exists.
-  () => (canvasStore.canvas && app.isGraphReady ? app.rootGraph : null)
+  () => (canvasStore.canvas && app.isGraphReady ? app.rootGraph : null),
+  // Standalone has no ingest relaying agent frames onto ComfyUI's socket, so
+  // the default transport would listen forever to a socket that never carries
+  // them. Talk to the agent directly instead.
+  standaloneDocTransport ?? undefined
 )
+
+// Standalone only: the agent sends a workflow's document frames ONLY to
+// connections that named it, so the bound workflow has to reach the document
+// socket's query string. Without this the canvas never moves. This follows on
+// the DOCUMENT socket, never the chat one — see the transport's comment for why
+// reconnecting the chat stream here would silence the panel mid-turn.
+if (standaloneDocTransport) {
+  watch(boundWorkflowId, (id) => standaloneDocTransport.follow(id ?? null), {
+    immediate: true
+  })
+  onBeforeUnmount(() => standaloneDocTransport.destroy())
+}
+
 const mintPortWiring = attachMintPortWiring({
   isEnabled: () => agentPanelStore.enabled,
   isDocBound: () => isBoundWorkflowActive.value,
