@@ -1,35 +1,23 @@
+import { render } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { render } from '@testing-library/vue'
-
 import type { TurnstileRenderOptions } from '@/composables/auth/turnstileScript'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 import TurnstileWidget from './TurnstileWidget.vue'
 
-const { mockLoadTurnstile, mockGetSiteKey, mockLightTheme } = vi.hoisted(
-  () => ({
-    mockLoadTurnstile: vi.fn(),
-    mockGetSiteKey: vi.fn(() => 'site-key'),
-    mockLightTheme: { value: true }
-  })
-)
+const { mockLoadTurnstile, mockGetSiteKey } = vi.hoisted(() => ({
+  mockLoadTurnstile: vi.fn(),
+  mockGetSiteKey: vi.fn(() => 'site-key')
+}))
 
-vi.mock('@/composables/auth/turnstileScript', () => ({
+vi.mock(import('@/composables/auth/turnstileScript'), () => ({
   loadTurnstile: mockLoadTurnstile
 }))
-vi.mock('@/config/turnstile', () => ({
+vi.mock(import('@/config/turnstile'), () => ({
   getTurnstileSiteKey: mockGetSiteKey
-}))
-vi.mock('@/stores/workspace/colorPaletteStore', () => ({
-  useColorPaletteStore: () => ({
-    completedActivePalette: {
-      get light_theme() {
-        return mockLightTheme.value
-      }
-    }
-  })
 }))
 
 const i18n = createI18n({
@@ -98,7 +86,7 @@ const renderWidgetWithExpose = () => {
 describe('TurnstileWidget', () => {
   beforeEach(() => {
     mockGetSiteKey.mockReturnValue('site-key')
-    mockLightTheme.value = true
+    useColorPaletteStore().activePaletteId = 'light'
     delete window.turnstile
   })
 
@@ -120,7 +108,7 @@ describe('TurnstileWidget', () => {
   })
 
   it('uses the dark theme when the active palette is not light', async () => {
-    mockLightTheme.value = false
+    useColorPaletteStore().activePaletteId = 'dark'
     const { api, options } = fakeTurnstile()
     mockLoadTurnstile.mockResolvedValue(api)
 
@@ -178,7 +166,7 @@ describe('TurnstileWidget', () => {
   it('resets the widget on a challenge error to fetch a fresh challenge', async () => {
     const { api, options } = fakeTurnstile()
     mockLoadTurnstile.mockResolvedValue(api)
-    window.turnstile = api as unknown as NonNullable<Window['turnstile']>
+    window.turnstile = api
 
     renderWidget()
     await flush()
@@ -201,7 +189,7 @@ describe('TurnstileWidget', () => {
   it('reset() clears the token model and resets the rendered widget', async () => {
     const { api, options } = fakeTurnstile()
     mockLoadTurnstile.mockResolvedValue(api)
-    window.turnstile = api as unknown as NonNullable<Window['turnstile']>
+    window.turnstile = api
 
     const { emitted, getCurrentInstance } = renderWidgetWithExpose()
     await flush()
@@ -220,7 +208,7 @@ describe('TurnstileWidget', () => {
   it('reset() clears a stale error so it does not linger over a fresh challenge', async () => {
     const { api, options } = fakeTurnstile()
     mockLoadTurnstile.mockResolvedValue(api)
-    window.turnstile = api as unknown as NonNullable<Window['turnstile']>
+    window.turnstile = api
 
     const { container, getCurrentInstance } = renderWidgetWithExpose()
     await flush()
@@ -251,7 +239,7 @@ describe('TurnstileWidget', () => {
   it('removes the widget on unmount when one was rendered', async () => {
     const { api } = fakeTurnstile()
     mockLoadTurnstile.mockResolvedValue(api)
-    window.turnstile = api as unknown as NonNullable<Window['turnstile']>
+    window.turnstile = api
 
     const { unmount } = renderWidget()
     await flush()
@@ -337,7 +325,7 @@ describe('TurnstileWidget', () => {
     it('resets the widget to fetch a fresh challenge on token expiry', async () => {
       const { api, options } = fakeTurnstile()
       mockLoadTurnstile.mockResolvedValue(api)
-      window.turnstile = api as unknown as NonNullable<Window['turnstile']>
+      window.turnstile = api
 
       renderWidget()
       await flush()
@@ -352,7 +340,7 @@ describe('TurnstileWidget', () => {
     it('falls back if a post-solve expiry is not followed by a fresh token within the load timeout', async () => {
       const { api, options } = fakeTurnstile()
       mockLoadTurnstile.mockResolvedValue(api)
-      window.turnstile = api as unknown as NonNullable<Window['turnstile']>
+      window.turnstile = api
 
       const { emitted } = renderWidget()
       await vi.advanceTimersByTimeAsync(0)

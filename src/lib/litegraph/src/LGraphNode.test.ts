@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, vi } from 'vitest'
 
 import type {
@@ -122,12 +120,12 @@ describe('LGraphNode', () => {
       flags: {},
       order: node.order,
       mode: node.mode,
-      inputs: node.inputs?.map((i) => ({
+      inputs: node.inputs.map((i) => ({
         name: i.name,
         type: i.type,
         link: i.link
       })),
-      outputs: node.outputs?.map((o) => ({
+      outputs: node.outputs.map((o) => ({
         name: o.name,
         type: o.type,
         links: o.links ? [...o.links] : o.links,
@@ -796,6 +794,32 @@ describe('LGraphNode', () => {
       ])
       delete (node.constructor as NodeConstructorWithSlotOffset).slot_start_y
     })
+    test('should resolve an assigned input through its stable installed view', () => {
+      node.flags.collapsed = false
+      const firstInput = { ...inputSlot }
+      const secondInput: INodeInputSlot = {
+        name: 'test_in_2',
+        type: 'number',
+        link: null,
+        boundingRect: [0, 0, 0, 0]
+      }
+      node.inputs = [firstInput, secondInput]
+
+      const installedFirst = node.inputs[0]
+      expect(installedFirst).not.toBe(firstInput)
+      expect(node.getInputSlotPos(firstInput)).toEqual(
+        node.getInputSlotPos(installedFirst)
+      )
+
+      node.inputs.reverse()
+      expect(node.getInputSlotPos(firstInput)).toEqual(
+        node.getInputSlotPos(installedFirst)
+      )
+      expect(node.getInputSlotPos(firstInput)).toEqual([
+        100 + LiteGraph.NODE_SLOT_HEIGHT * 0.5,
+        200 + 1.7 * LiteGraph.NODE_SLOT_HEIGHT
+      ])
+    })
     test('should not overwrite onMouseDown prototype', () => {
       expect(Object.prototype.hasOwnProperty.call(node, 'onMouseDown')).toEqual(
         false
@@ -854,10 +878,6 @@ describe('LGraphNode', () => {
 })
 
 describe('snapToGrid', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   function addedNode(graph: LGraph) {
     const node = new LGraphNode('test')
     node.pos = [103, 97]

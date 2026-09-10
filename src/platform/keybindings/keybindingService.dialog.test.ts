@@ -1,4 +1,5 @@
-import { markRaw, reactive } from 'vue'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { markRaw } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
@@ -21,24 +22,15 @@ function createTestDialogInstance(
   }
 }
 
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: vi.fn(() => ({
-    get: vi.fn(() => [])
-  }))
-}))
-
-vi.mock('@/stores/dialogStore', () => {
-  const dialogStack = reactive<DialogInstance[]>([])
-  return {
-    useDialogStore: () => ({ dialogStack })
-  }
-})
-
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     canvas: null
   }
 }))
+
+beforeEach(() => {
+  vi.mocked(useSettingStore().get).mockImplementation(() => [])
+})
 
 describe('keybindingService - dialog gate', () => {
   let keybindingService: ReturnType<typeof useKeybindingService>
@@ -46,8 +38,8 @@ describe('keybindingService - dialog gate', () => {
 
   beforeEach(() => {
     const commandStore = useCommandStore()
-    mockCommandExecute = vi.fn()
-    commandStore.execute = mockCommandExecute
+    mockCommandExecute = commandStore.execute
+    vi.mocked(mockCommandExecute).mockResolvedValue(undefined)
 
     const dialogStore = useDialogStore()
     dialogStore.dialogStack.length = 0
@@ -192,10 +184,7 @@ describe('keybindingService - dialog gate', () => {
   it.for([
     { label: 'Ctrl+S', modifiers: { ctrlKey: true } },
     { label: 'Meta+S', modifiers: { metaKey: true } }
-  ] as {
-    label: string
-    modifiers: { ctrlKey?: boolean; metaKey?: boolean }
-  }[])(
+  ])(
     'still suppresses the browser default for $label while a dialog is open',
     async ({ modifiers }) => {
       const dialogStore = useDialogStore()

@@ -1,24 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCoordinateTransform } from '@/composables/maskeditor/useCoordinateTransform'
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
-type MockStore = {
-  pointerZone: HTMLElement | null
-  canvasContainer: HTMLElement | null
-  maskCanvas: HTMLCanvasElement | null
-}
+let mockStore: ReturnType<typeof useMaskEditorStore>
 
-const mockStore: MockStore = {
-  pointerZone: null,
-  canvasContainer: null,
-  maskCanvas: null
-}
-
-vi.mock('@/stores/maskEditorStore', () => ({
-  useMaskEditorStore: vi.fn(() => mockStore)
-}))
-
-vi.mock('@vueuse/core', () => ({
+vi.mock(import('@vueuse/core'), () => ({
   createSharedComposable: <T extends (...args: unknown[]) => unknown>(fn: T) =>
     fn
 }))
@@ -36,7 +23,7 @@ const createElementWithRect = (rect: Partial<DOMRect>): HTMLElement => {
     y: 0,
     toJSON: () => ({}),
     ...rect
-  } as DOMRect)
+  })
   return el
 }
 
@@ -59,15 +46,13 @@ const createCanvasWithRect = (
     y: 0,
     toJSON: () => ({}),
     ...rect
-  } as DOMRect)
+  })
   return canvas
 }
 
 describe('useCoordinateTransform', () => {
   beforeEach(() => {
-    mockStore.pointerZone = null
-    mockStore.canvasContainer = null
-    mockStore.maskCanvas = null
+    mockStore = useMaskEditorStore()
   })
 
   describe('screenToCanvas', () => {
