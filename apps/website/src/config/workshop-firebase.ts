@@ -13,7 +13,6 @@ import { createFirebaseIdentity } from '@comfyorg/account/firebase'
 import {
   CUSTOMER_PROVISIONING_PATH,
   customerProvisioningRequest,
-  isCustomerProvisioned,
   socialSignInWithProvisioning
 } from '@comfyorg/account/provisioning'
 
@@ -66,7 +65,7 @@ export async function provisionCustomer(
       signal: AbortSignal.timeout(PROVISIONING_TIMEOUT_MS)
     })
   )
-  if (!isCustomerProvisioned(response)) {
+  if (!response.ok) {
     throw new Error(`Customer provisioning failed: ${response.status}`)
   }
 }
