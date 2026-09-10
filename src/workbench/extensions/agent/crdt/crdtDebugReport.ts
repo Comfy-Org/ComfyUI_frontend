@@ -56,7 +56,28 @@ const REDACTED = '[redacted by the debug report]'
 const SHARING_WARNING =
   'Review before sharing: this section can contain values you did not choose to publish.'
 
-const EVENT_LOG_WARNING = `${SHARING_WARNING} Operation payload values are redacted; op ids and workflow ids appear verbatim.`
+/**
+ * Every wire-op field that carries user workflow content: `set_widget.value`
+ * and its informational `old` (the value before the write), the verbatim node
+ * snapshot on `add_node`, `widgets_values` inside any snapshot, and the full
+ * `reset_doc.workflow`. Events record whole ops (`ws_out` frames,
+ * `human_ops_settled` outcomes), so masking `value` alone still leaks the
+ * previous prompt through `old`.
+ *
+ * A denylist, not an allow-list, and {@link EVENT_LOG_WARNING} names it as one
+ * rather than promising that payload values in general are redacted: an op
+ * kind added to the pinned union, or relay text echoed back under
+ * `doc_ops_result`, reaches the clipboard whole until listed here.
+ */
+const CONTENT_KEYS: ReadonlySet<string> = new Set([
+  'value',
+  'old',
+  'widgets_values',
+  'node',
+  'workflow'
+])
+
+const EVENT_LOG_WARNING = `${SHARING_WARNING} Values under \`${[...CONTENT_KEYS].join('`, `')}\` are masked; every other field — op ids, workflow ids, error text echoed back by the relay — appears verbatim.`
 const EVENT_LOG_TRUNCATED = '[CRDT event log truncated]'
 const EVENT_DETAIL_TRUNCATED = '…[CRDT event detail truncated]'
 
@@ -248,22 +269,6 @@ function json(value: unknown): string {
 export function redactEventPayloads(value: unknown): unknown {
   return redactPayloadTree(value, 0, [])
 }
-
-/**
- * Every wire-op field that carries user workflow content: `set_widget.value`
- * and its informational `old` (the value before the write), the verbatim node
- * snapshot on `add_node`, `widgets_values` inside any snapshot, and the full
- * `reset_doc.workflow`. Events record whole ops (`ws_out` frames,
- * `human_ops_settled` outcomes), so masking `value` alone still leaks the
- * previous prompt through `old`.
- */
-const CONTENT_KEYS: ReadonlySet<string> = new Set([
-  'value',
-  'old',
-  'widgets_values',
-  'node',
-  'workflow'
-])
 
 /**
  * Runs before `devEventReplacer`, so anything it rebuilds is what the

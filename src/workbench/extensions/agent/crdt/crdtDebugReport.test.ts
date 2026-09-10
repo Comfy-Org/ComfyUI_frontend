@@ -661,4 +661,24 @@ describe('formatCrdtEventLog', () => {
       MAX_CRDT_EVENT_LOG_EXPORT_BYTES
     )
   })
+
+  it('names the masked keys instead of promising blanket payload redaction', () => {
+    const output = formatCrdtEventLog([
+      {
+        seq: 1,
+        at: 1,
+        kind: 'doc_ops_result',
+        scope: 'doc',
+        level: 'warn',
+        detail: {
+          value: 'masked prompt',
+          failed: { message: 'relay echoed this prompt' }
+        }
+      }
+    ])
+
+    expect(output).not.toContain('masked prompt')
+    expect(output).toContain('relay echoed this prompt')
+    expect(output).toMatch(/Values under `value`[^\n]*are masked/)
+  })
 })
