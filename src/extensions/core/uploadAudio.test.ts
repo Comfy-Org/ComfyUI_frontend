@@ -372,7 +372,7 @@ describe('Comfy.RecordAudio AUDIO_RECORD widget', () => {
     expect(mockMediaRecorderStart).toHaveBeenCalledTimes(1)
     expect(recordWidget.label).toBe('g.stopRecording')
     expect(mockReportError).not.toHaveBeenCalled()
-    expect(mockAddAlert).not.toHaveBeenCalledWith('g.recordingFailedToStart')
+    expect(mockAddAlert).not.toHaveBeenCalled()
   })
 
   it('reports a recorder start failure after the microphone was granted', async () => {
@@ -421,9 +421,13 @@ describe('Comfy.RecordAudio AUDIO_RECORD widget', () => {
   })
 
   it('treats a rejected getUserMedia as a permission denial rather than a fault', async () => {
+    const permissionError = new DOMException(
+      'Permission denied',
+      'NotAllowedError'
+    )
     vi.stubGlobal('navigator', {
       mediaDevices: {
-        getUserMedia: vi.fn().mockRejectedValue(new Error('NotAllowedError'))
+        getUserMedia: vi.fn().mockRejectedValue(permissionError)
       }
     })
 
@@ -431,6 +435,23 @@ describe('Comfy.RecordAudio AUDIO_RECORD widget', () => {
 
     expect(mockAddAlert).toHaveBeenCalledWith('g.micPermissionDenied')
     expect(mockReportError).not.toHaveBeenCalled()
+    expect(mockMediaRecorderConstruct).not.toHaveBeenCalled()
+  })
+
+  it('reports a non-permission getUserMedia failure', async () => {
+    const accessError = new DOMException('No microphone found', 'NotFoundError')
+    vi.stubGlobal('navigator', {
+      mediaDevices: { getUserMedia: vi.fn().mockRejectedValue(accessError) }
+    })
+
+    await pressRecord()
+
+    expect(mockReportError).toHaveBeenCalledWith(
+      accessError,
+      RECORDER_FAILURE_REPORT
+    )
+    expect(mockAddAlert).toHaveBeenCalledWith('g.recordingFailedToStart')
+    expect(mockAddAlert).not.toHaveBeenCalledWith('g.micPermissionDenied')
     expect(mockMediaRecorderConstruct).not.toHaveBeenCalled()
   })
 })

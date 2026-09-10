@@ -331,6 +331,33 @@ app.registerExtension({
         let stopPromise: Promise<void> | null = null
         let stopResolve: (() => void) | null = null
 
+        const handleRecordingStartFailure = (error: unknown) => {
+          reportError(error, {
+            errorType: 'failure_starting_audio_recorder',
+            tags: {
+              failure_kind: 'caught_unexpected',
+              feature_area: 'assets',
+              operation: 'execute',
+              outcome: 'recovered'
+            },
+            level: 'error'
+          })
+          useToastStore().addAlert(t('g.recordingFailedToStart'))
+
+          if (mediaRecorder) {
+            try {
+              mediaRecorder.stop()
+            } catch {}
+          }
+          mediaRecorder = null
+          useAudioService().stopAllTracks(currentStream)
+          currentStream = null
+          isRecording = false
+          if (recordWidget) {
+            recordWidget.label = t('g.startRecording')
+          }
+        }
+
         audioUIWidget.serializeValue = async () => {
           if (isRecording && mediaRecorder) {
             stopPromise = new Promise((resolve) => {
@@ -369,10 +396,17 @@ app.registerExtension({
                 audio: true
               })
             } catch (err) {
-              console.error('Error accessing microphone:', err)
-              useToastStore().addAlert(t('g.micPermissionDenied'))
-              useAudioService().stopAllTracks(currentStream)
-              currentStream = null
+              if (
+                err instanceof DOMException &&
+                err.name === 'NotAllowedError'
+              ) {
+                console.error('Error accessing microphone:', err)
+                useToastStore().addAlert(t('g.micPermissionDenied'))
+                useAudioService().stopAllTracks(currentStream)
+                currentStream = null
+              } else {
+                handleRecordingStartFailure(err)
+              }
               return
             }
 
@@ -436,30 +470,7 @@ app.registerExtension({
                 recordWidget.label = t('g.stopRecording')
               }
             } catch (err) {
-              reportError(err, {
-                errorType: 'failure_starting_audio_recorder',
-                tags: {
-                  failure_kind: 'caught_unexpected',
-                  feature_area: 'assets',
-                  operation: 'execute',
-                  outcome: 'recovered'
-                },
-                level: 'error'
-              })
-              useToastStore().addAlert(t('g.recordingFailedToStart'))
-
-              if (mediaRecorder) {
-                try {
-                  mediaRecorder.stop()
-                } catch {}
-              }
-              mediaRecorder = null
-              useAudioService().stopAllTracks(currentStream)
-              currentStream = null
-              isRecording = false
-              if (recordWidget) {
-                recordWidget.label = t('g.startRecording')
-              }
+              handleRecordingStartFailure(err)
             }
           },
           { serialize: false, canvasOnly: false }
