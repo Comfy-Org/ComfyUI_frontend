@@ -799,6 +799,24 @@ describe('assembleConversation', () => {
     ).toThrow('stores links (none) but the replayed ops leave')
   })
 
+  it('refuses a draft that holds one node id twice', () => {
+    const twice = projected([addNodeOpSemantic as GraphOperation])
+    const [first] = twice.nodes
+    expect(() =>
+      assembleConversation(
+        input({
+          rows: rows({ draft: { ...twice, nodes: [...twice.nodes, first] } })
+        })
+      )
+    ).toThrow(`holds node ids ${first.id} more than once`)
+  })
+
+  it('refuses a driver that seeded one node id twice', () => {
+    expect(() =>
+      assembleConversation(input({ raw: raw({ seed_node_ids: [3, 4, 4] }) }))
+    ).toThrow('seeded node ids 4 more than once')
+  })
+
   it('refuses a draft that lost a seed node nothing deleted', () => {
     expect(() =>
       assembleConversation(

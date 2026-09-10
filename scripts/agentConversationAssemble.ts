@@ -211,7 +211,11 @@ function checkRecording(
 ): void {
   if (!/^[A-Za-z0-9_-]+$/.test(raw.attempt))
     refuse(`attempt label ${JSON.stringify(raw.attempt)} is not [A-Za-z0-9_-]+`)
-  const driverIds = new Set(raw.seed_node_ids.map(String))
+  const seeded = raw.seed_node_ids.map(String)
+  const seededTwice = repeated(seeded)
+  if (seededTwice.length > 0)
+    refuse(`the driver seeded node ids ${list(seededTwice)} more than once`)
+  const driverIds = new Set(seeded)
   if (!sameSet(driverIds, seedIds))
     refuse(
       `the driver seeded ${list(driverIds)} but the seed fixture given here has ${list(seedIds)}`
@@ -465,38 +469,32 @@ function replayHost(conversation: RecordedConversation): HostDoc {
   }
 }
 
-interface ProjectedState {
-  nodes: Array<{ id: string; type: string; widgets_values: string }>
-  links: string[]
+interface ProjectedNode {
+  id: string
+  type: string
+  widgets_values: string
 }
 
-// The projection reduced to what a replay must reproduce, in a fixed order:
-// each node's class and widget values, and each link tuple.
+// The projection reduced to what a replay must reproduce: each node's class
+// and widget values by id, and the link tuples as a sorted multiset.
 function projectedState(workflow: {
   nodes: Array<{ id: string | number; type: string; widgets_values?: unknown }>
   links: unknown[]
-}): ProjectedState {
-  const digits = (value: unknown): unknown =>
-    typeof value === 'number' ? String(value) : value
+}): { nodes: ProjectedNode[]; links: string[] } {
   return {
-    nodes: workflow.nodes
-      .map((node) => ({
-        id: String(node.id),
-        type: node.type,
-        widgets_values: JSON.stringify(node.widgets_values ?? null)
-      }))
-      .sort((a, b) => a.id.localeCompare(b.id)),
-    links: workflow.links
-      .map((link) =>
-        JSON.stringify(Array.isArray(link) ? link.map(digits) : link)
-      )
-      .sort()
+    nodes: workflow.nodes.map((node) => ({
+      id: String(node.id),
+      type: node.type,
+      widgets_values: JSON.stringify(node.widgets_values ?? null)
+    })),
+    links: workflow.links.map((link) => JSON.stringify(link)).sort()
   }
 }
 
 // The draft is the only witness that the applied ops reached the document,
 // so it must agree with the replay's own projection on every node's class and
-// widget values and on every link, not only on which nodes exist.
+// widget values and on every link, not only on which nodes exist. Interior
+// subgraph state and node layout stay outside this guarantee.
 function checkDraft(
   draft: NormalizedRows['draft'],
   seedIds: Set<string>,
@@ -507,20 +505,22 @@ function checkDraft(
     refuse(`no workflow_drafts row for ${workflowId}: the seed did not bind`)
   const persisted = projectedState(draft)
   const replayed = projectedState(host.projection())
-  const draftIds = new Set(persisted.nodes.map((node) => node.id))
-  const outcome = new Set(replayed.nodes.map((node) => node.id))
-  if (!sameSet(draftIds, outcome))
+  const storedTwice = repeated(persisted.nodes.map((node) => node.id))
+  if (storedTwice.length > 0)
     refuse(
-      `draft for ${workflowId} holds node ids ${list(draftIds) || '(none)'} but the replayed ops leave ${list(outcome) || '(none)'}`
+      `draft for ${workflowId} holds node ids ${list(storedTwice)} more than once`
     )
-  for (const [index, node] of replayed.nodes.entries()) {
-    const stored = persisted.nodes[index]
-    if (
-      stored.type !== node.type ||
-      stored.widgets_values !== node.widgets_values
+  const stored = new Map(persisted.nodes.map((node) => [node.id, node]))
+  const outcome = new Set(replayed.nodes.map((node) => node.id))
+  if (!sameSet(new Set(stored.keys()), outcome))
+    refuse(
+      `draft for ${workflowId} holds node ids ${list(stored.keys()) || '(none)'} but the replayed ops leave ${list(outcome) || '(none)'}`
     )
+  for (const node of replayed.nodes) {
+    const kept = stored.get(node.id)!
+    if (kept.type !== node.type || kept.widgets_values !== node.widgets_values)
       refuse(
-        `draft for ${workflowId} stores node ${node.id} as ${stored.type} ${stored.widgets_values} but the replayed ops leave ${node.type} ${node.widgets_values}`
+        `draft for ${workflowId} stores node ${node.id} as ${kept.type} ${kept.widgets_values} but the replayed ops leave ${node.type} ${node.widgets_values}`
       )
   }
   if (persisted.links.join('\n') !== replayed.links.join('\n'))
@@ -528,7 +528,7 @@ function checkDraft(
       `draft for ${workflowId} stores links ${persisted.links.join(', ') || '(none)'} but the replayed ops leave ${replayed.links.join(', ') || '(none)'}`
     )
   return {
-    draft_nodes: draftIds.size,
+    draft_nodes: stored.size,
     added_nodes: [...outcome].filter((id) => !seedIds.has(id)).length,
     deleted_nodes: [...seedIds].filter((id) => !outcome.has(id)).length
   }
