@@ -36,6 +36,9 @@ if [ -n "$shape" ]; then
   exit 1
 fi
 
+# glob2re, matches and rank are copied verbatim from the same upstream pin. An
+# unrecognised tier ranks as the RISKIEST (3), never the safest: defaulting it
+# low would let a typo silently downgrade a grade.
 jq -e --slurpfile map "$map" '
   def glob2re:
     gsub("(?<c>[.+?^$(){}|\\[\\]\\\\])"; "\\\(.c)")
@@ -47,7 +50,7 @@ jq -e --slurpfile map "$map" '
     | "^" + . + "$";
   def matches($path; $globs):
     any($globs[]?; . as $glob | $path | test($glob | glob2re));
-  def rank: {R0: 0, R1: 1, R2: 2, R3: 3}[.] // -1;
+  def rank: {R0: 0, R1: 1, R2: 2, R3: 3}[.] // 3;
 
   $map[0] as $risk_map
   | if .map_version != $risk_map.map_version then
