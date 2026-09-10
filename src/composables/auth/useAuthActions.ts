@@ -10,7 +10,7 @@ import { st, t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { AuthFlowAction } from '@/platform/telemetry/types'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import {
   clearAllWorkflowStorage,
   prepareWorkflowLogoutTransition
@@ -37,7 +37,7 @@ const POPUP_PERMISSION_ERROR_CODES: readonly string[] = [
  */
 export const useAuthActions = () => {
   const authStore = useAuthStore()
-  const toastStore = useToastStore()
+  const toastStore = useToast()
   const { wrapWithErrorHandlingAsync, toastErrorHandler } = useErrorHandling()
 
   const accessError = ref(false)
@@ -62,10 +62,8 @@ export const useAuthActions = () => {
       ].includes(error.code)
     ) {
       accessError.value = true
-      toastStore.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('toastMessages.unauthorizedDomain', {
+      toastStore.error(t('g.error'), {
+        description: t('toastMessages.unauthorizedDomain', {
           domain: window.location.hostname,
           email: 'support@comfy.org'
         })
@@ -78,25 +76,19 @@ export const useAuthActions = () => {
       // rejections collapse the thrown code into a generic `auth/internal-error`,
       // so the message is the only reliable channel. `signup_blocked` is a
       // cross-repo contract token; matched case-insensitively.
-      toastStore.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('auth.errors.signupBlocked')
+      toastStore.error(t('g.error'), {
+        description: t('auth.errors.signupBlocked')
       })
     } else if (
       error instanceof FirebaseError &&
       POPUP_PERMISSION_ERROR_CODES.includes(error.code)
     ) {
-      toastStore.add({
-        severity: 'warn',
-        summary: t('g.warning'),
-        detail: st(`auth.errors.${error.code}`, t('auth.errors.generic'))
+      toastStore.warning(t('g.warning'), {
+        description: st(`auth.errors.${error.code}`, t('auth.errors.generic'))
       })
     } else if (error instanceof FirebaseError) {
-      toastStore.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: st(`auth.errors.${error.code}`, t('auth.errors.generic'))
+      toastStore.error(t('g.error'), {
+        description: st(`auth.errors.${error.code}`, t('auth.errors.generic'))
       })
     } else {
       toastErrorHandler(error)
@@ -139,11 +131,9 @@ export const useAuthActions = () => {
       clearAllWorkflowStorage()
     }
 
-    toastStore.add({
-      severity: 'success',
-      summary: t('auth.signOut.success'),
-      detail: t('auth.signOut.successDetail'),
-      life: 5000
+    toastStore.success(t('auth.signOut.success'), {
+      description: t('auth.signOut.successDetail'),
+      duration: 5000
     })
 
     if (isCloud) {
@@ -159,11 +149,9 @@ export const useAuthActions = () => {
   const sendPasswordReset = wrapWithErrorHandlingAsync(
     async (email: string) => {
       await authStore.sendPasswordReset(email)
-      toastStore.add({
-        severity: 'success',
-        summary: t('auth.login.passwordResetSent'),
-        detail: t('auth.login.passwordResetSentDetail'),
-        life: 5000
+      toastStore.success(t('auth.login.passwordResetSent'), {
+        description: t('auth.login.passwordResetSentDetail'),
+        duration: 5000
       })
     },
     reportAuthFlowError('password_reset')
@@ -304,11 +292,9 @@ export const useAuthActions = () => {
   const updatePassword = wrapWithErrorHandlingAsync(
     async (newPassword: string) => {
       await authStore.updatePassword(newPassword)
-      toastStore.add({
-        severity: 'success',
-        summary: t('auth.passwordUpdate.success'),
-        detail: t('auth.passwordUpdate.successDetail'),
-        life: 5000
+      toastStore.success(t('auth.passwordUpdate.success'), {
+        description: t('auth.passwordUpdate.successDetail'),
+        duration: 5000
       })
     },
     reportError,

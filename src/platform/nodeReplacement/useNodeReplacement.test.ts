@@ -1,7 +1,8 @@
+import { useToast } from '@/components/ui/toast'
 import { fromPartial, fromAny } from '@total-typescript/shoehorn'
 import type * as I18nModule from '@/i18n'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
@@ -56,6 +57,27 @@ vi.mock(import('@/utils/graphTraversalUtil'), () => ({
 }))
 
 const { mockToastAdd } = vi.hoisted(() => ({ mockToastAdd: vi.fn() }))
+
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('success', ...args)
+  )
+  vi.mocked(useToast().error).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('error', ...args)
+  )
+  vi.mocked(useToast().info).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('info', ...args)
+  )
+  vi.mocked(useToast().warning).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('warning', ...args)
+  )
+  vi.mocked(useToast().loading).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('loading', ...args)
+  )
+  vi.mocked(useToast().custom).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('custom', ...args)
+  )
+})
 
 vi.mock<unknown>(import('@/i18n'), async (importOriginal) => ({
   ...(await importOriginal<typeof I18nModule>()),
@@ -242,10 +264,6 @@ function seedMissingNodeTypes(types: MissingNodeType[]): void {
   getActiveWorkflowMock().pendingWarnings = { missingNodeTypes: types }
   useMissingNodesErrorStore().setMissingNodeTypes(types)
 }
-
-beforeEach(() => {
-  vi.mocked(useToastStore().add).mockImplementation(mockToastAdd)
-})
 
 describe('useNodeReplacement', () => {
   describe('replaceNodesInPlace', () => {
@@ -804,8 +822,8 @@ describe('useNodeReplacement', () => {
         expect(result).toEqual([])
         expect(graph._nodes[0]).toBe(placeholder)
         expect(placeholder.onRemoved).not.toHaveBeenCalled()
-        expect(mockToastAdd).toHaveBeenCalledWith(
-          expect.objectContaining({ severity: 'error' })
+        expect(mockToastAdd.mock.calls.map(([method]) => method)).toContain(
+          'error'
         )
       }
     )

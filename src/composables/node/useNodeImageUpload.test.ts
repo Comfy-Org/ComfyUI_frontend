@@ -1,15 +1,16 @@
+import { useToast } from '@/components/ui/toast'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ResultItem } from '@/schemas/apiSchema'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useNodeImageUpload } from './useNodeImageUpload'
 import type { Mock } from 'vitest'
 
 const mockFetchApi = vi.hoisted(() => vi.fn())
-let mockAddAlert: ReturnType<typeof useToastStore>['addAlert']
+const mockWarning = vi.hoisted(() => vi.fn())
 let mockInvalidateInputs: Mock<
   ReturnType<typeof useAssetsStore>['inputAssets']['invalidate']
 >
@@ -36,6 +37,10 @@ vi.mock(import('@/composables/node/useNodePaste'), () => ({
 vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
+
+beforeEach(() => {
+  vi.mocked(useToast().warning).mockImplementation(mockWarning)
+})
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
@@ -80,7 +85,6 @@ describe('useNodeImageUpload', () => {
   let onUploadError: () => void
 
   beforeEach(() => {
-    mockAddAlert = useToastStore().addAlert
     mockInvalidateInputs = vi
       .spyOn(useAssetsStore().inputAssets, 'invalidate')
       .mockResolvedValue(undefined)
@@ -189,7 +193,9 @@ describe('useNodeImageUpload', () => {
     const second = await capturedDragOnDrop([createFile('b.png')])
 
     expect(second).toEqual([])
-    expect(mockAddAlert).toHaveBeenCalledWith('g.uploadAlreadyInProgress')
+    expect(mockWarning).toHaveBeenCalledWith('Alert', {
+      description: 'g.uploadAlreadyInProgress'
+    })
 
     await first
   })

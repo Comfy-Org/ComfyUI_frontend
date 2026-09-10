@@ -1,5 +1,6 @@
+import { useToast } from '@/components/ui/toast'
 import { useDialogStore } from '@/stores/dialogStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { App } from 'vue'
 import { createApp, defineComponent } from 'vue'
@@ -14,6 +15,28 @@ import {
   setCompositorLayers
 } from './useCompositorLayers'
 
+const { toastAdd } = vi.hoisted(() => ({ toastAdd: vi.fn() }))
+
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation((...args: unknown[]) =>
+    toastAdd('success', ...args)
+  )
+  vi.mocked(useToast().error).mockImplementation((...args: unknown[]) =>
+    toastAdd('error', ...args)
+  )
+  vi.mocked(useToast().info).mockImplementation((...args: unknown[]) =>
+    toastAdd('info', ...args)
+  )
+  vi.mocked(useToast().warning).mockImplementation((...args: unknown[]) =>
+    toastAdd('warning', ...args)
+  )
+  vi.mocked(useToast().loading).mockImplementation((...args: unknown[]) =>
+    toastAdd('loading', ...args)
+  )
+  vi.mocked(useToast().custom).mockImplementation((...args: unknown[]) =>
+    toastAdd('custom', ...args)
+  )
+})
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -44,10 +67,6 @@ afterEach(() => {
   for (const app of apps.splice(0)) app.unmount()
 })
 
-beforeEach(() => {
-  vi.mocked(useToastStore().add).mockImplementation(() => undefined)
-})
-
 describe('useCompositorEditor', () => {
   const node = { id: toNodeId(1) } as unknown as LGraphNode
 
@@ -58,11 +77,10 @@ describe('useCompositorEditor', () => {
   it('shows a toast and keeps the dialog closed without cached layers', () => {
     renderCompositorEditor().openCompositorEditor(node)
 
-    expect(vi.mocked(useToastStore().add)).toHaveBeenCalledWith(
-      expect.objectContaining({
-        severity: 'info',
-        detail: 'compositor.runWorkflowFirst'
-      })
+    expect(toastAdd).toHaveBeenCalledWith(
+      'info',
+      expect.any(String),
+      expect.objectContaining({ description: 'compositor.runWorkflowFirst' })
     )
     expect(vi.mocked(useDialogStore().showDialog)).not.toHaveBeenCalled()
   })
@@ -74,11 +92,10 @@ describe('useCompositorEditor', () => {
 
     renderCompositorEditor().openCompositorEditor(node)
 
-    expect(vi.mocked(useToastStore().add)).toHaveBeenCalledWith(
-      expect.objectContaining({
-        severity: 'info',
-        detail: 'compositor.runWorkflowFirst'
-      })
+    expect(toastAdd).toHaveBeenCalledWith(
+      'info',
+      expect.any(String),
+      expect.objectContaining({ description: 'compositor.runWorkflowFirst' })
     )
     expect(vi.mocked(useDialogStore().showDialog)).not.toHaveBeenCalled()
   })
@@ -92,7 +109,7 @@ describe('useCompositorEditor', () => {
 
     renderCompositorEditor().openCompositorEditor(node)
 
-    expect(vi.mocked(useToastStore().add)).not.toHaveBeenCalled()
+    expect(vi.mocked(toastAdd)).not.toHaveBeenCalled()
     expect(vi.mocked(useDialogStore().showDialog)).toHaveBeenCalledWith(
       expect.objectContaining({
         key: 'global-layer-editor',

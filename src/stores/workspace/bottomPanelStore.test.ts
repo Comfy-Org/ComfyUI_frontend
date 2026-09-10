@@ -42,7 +42,8 @@ vi.mock(import('@/composables/bottomPanelTabs/useTerminalTabs'), () => ({
 
 const mockData = vi.hoisted(() => ({ isDesktop: false }))
 
-vi.mock(import('@/platform/distribution/types'), () => ({
+vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
+  ...(await importOriginal()),
   get isDesktop() {
     return mockData.isDesktop
   }

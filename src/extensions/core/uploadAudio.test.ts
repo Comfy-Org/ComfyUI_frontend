@@ -1,15 +1,18 @@
+import { useToast } from '@/components/ui/toast'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+
 import type { ComfyExtension } from '@/types/comfy'
 
-const { mockApiURL, mockFetchApi, mockRegisterExtension } = vi.hoisted(() => ({
-  mockApiURL: vi.fn((url: string) => `api:${url}`),
-  mockFetchApi: vi.fn(),
-  mockRegisterExtension: vi.fn()
-}))
+const { mockWarning, mockApiURL, mockFetchApi, mockRegisterExtension } =
+  vi.hoisted(() => ({
+    mockWarning: vi.fn(),
+    mockApiURL: vi.fn((url: string) => `api:${url}`),
+    mockFetchApi: vi.fn(),
+    mockRegisterExtension: vi.fn()
+  }))
 
 let capturedDragDrop: ((files: File[]) => Promise<File[] | never[]>) | undefined
 let capturedFileSelect:
@@ -55,9 +58,8 @@ vi.mock('@/i18n', () => ({
   t: (key: string) => key
 }))
 
-let mockAddAlert: ReturnType<typeof useToastStore>['addAlert']
 beforeEach(() => {
-  mockAddAlert = useToastStore().addAlert
+  vi.mocked(useToast().warning).mockImplementation(mockWarning)
 })
 
 vi.mock('@/renderer/extensions/vueNodes/widgets/utils/audioUtils', () => ({
@@ -215,7 +217,9 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
     const result = await capturedDragDrop!([createFile()])
 
     expect(result).toEqual([])
-    expect(mockAddAlert).toHaveBeenCalledWith('g.uploadAlreadyInProgress')
+    expect(mockWarning).toHaveBeenCalledWith('Alert', {
+      description: 'g.uploadAlreadyInProgress'
+    })
     expect(mockFetchApi).not.toHaveBeenCalled()
   })
 
@@ -229,7 +233,9 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
 
     expect(node.isUploading).toBe(false)
     expect(audioWidget.value).toBe('previous.mp3')
-    expect(mockAddAlert).toHaveBeenCalledWith('500 - Server Error')
+    expect(mockWarning).toHaveBeenCalledWith('Alert', {
+      description: '500 - Server Error'
+    })
     expect(node.graph?.setDirtyCanvas).toHaveBeenCalledWith(true)
   })
 
@@ -246,7 +252,7 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
 
     expect(node.isUploading).toBe(false)
     expect(audioWidget.value).toBe('previous.mp3')
-    expect(mockAddAlert).toHaveBeenCalledWith(error)
+    expect(mockWarning).toHaveBeenCalledWith('Alert', { description: error })
     expect(node.graph?.setDirtyCanvas).toHaveBeenCalledWith(true)
   })
 

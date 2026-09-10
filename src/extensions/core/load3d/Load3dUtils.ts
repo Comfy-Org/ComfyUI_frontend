@@ -1,5 +1,5 @@
 import { t } from '@/i18n'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 
@@ -27,7 +27,7 @@ class Load3dUtils {
 
     if (resp.status !== 200) {
       const err = `Error uploading temp file: ${resp.status} - ${resp.statusText}`
-      useToastStore().addAlert(err)
+      useToast().warning('Alert', { description: err })
       throw new Error(err)
     }
 
@@ -50,7 +50,7 @@ class Load3dUtils {
         fileSizeMB.toFixed(2),
         'MB'
       )
-      useToastStore().addAlert(message)
+      useToast().warning('Alert', { description: message })
       return undefined
     }
 
@@ -75,15 +75,18 @@ class Load3dUtils {
 
         uploadPath = path
       } else {
-        useToastStore().addAlert(resp.status + ' - ' + resp.statusText)
+        useToast().warning('Alert', {
+          description: resp.status + ' - ' + resp.statusText
+        })
       }
     } catch (error) {
       console.error('[Load3D] uploadFile: exception', error)
-      useToastStore().addAlert(
-        error instanceof Error
-          ? error.message
-          : t('toastMessages.fileUploadFailed')
-      )
+      useToast().warning('Alert', {
+        description:
+          error instanceof Error
+            ? error.message
+            : t('toastMessages.fileUploadFailed')
+      })
     }
 
     return uploadPath

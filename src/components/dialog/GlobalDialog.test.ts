@@ -639,7 +639,7 @@ describe('shouldPreventRekaDismiss', () => {
     expect(event.defaultPrevented).toBe(true)
   })
 
-  it.for(['p-dialog', 'p-select-overlay', 'p-toast'])(
+  it.for(['p-dialog', 'p-select-overlay'])(
     'focus-outside on a sibling %s portal does not dismiss the parent',
     (className) => {
       const overlay = document.createElement('div')
@@ -655,6 +655,20 @@ describe('shouldPreventRekaDismiss', () => {
       overlay.remove()
     }
   )
+
+  it('focus-outside on a toast does not dismiss the parent', () => {
+    const toast = document.createElement('div')
+    toast.dataset.testid = 'toast'
+    const closeButton = document.createElement('button')
+    toast.appendChild(closeButton)
+    document.body.appendChild(toast)
+
+    const event = makeEvent(closeButton)
+    onRekaFocusOutside(event)
+
+    expect(event.defaultPrevented).toBe(true)
+    toast.remove()
+  })
 
   it('focus-outside still dismisses when focus moves to a non-portal element', () => {
     const event = makeEvent(document.body)

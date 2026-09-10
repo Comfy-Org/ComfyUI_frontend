@@ -139,7 +139,7 @@ vi.mock<unknown>(import('@/utils/envUtil'), () => ({
 }))
 
 // Module-mock heavy child components so we don't pay their import cost.
-const stubModule = { default: { template: '<div />' } }
+const stubModule = vi.hoisted(() => ({ default: { template: '<div />' } }))
 vi.mock<unknown>(
   import('@/components/actionbar/PartnerNodesEducationCard.vue'),
   () => ({
@@ -181,7 +181,7 @@ vi.mock<unknown>(
   import('@/platform/workspace/components/toasts/InviteAcceptedToast.vue'),
   () => stubModule
 )
-vi.mock<unknown>(import('@/components/toast/GlobalToast.vue'), () => stubModule)
+vi.mock<unknown>(import('@/components/ui/toast/Toaster.vue'), () => stubModule)
 vi.mock<unknown>(
   import('@/components/toast/RerouteMigrationToast.vue'),
   () => stubModule

@@ -61,7 +61,9 @@ test.describe('Version Mismatch Warnings', { tag: '@slow' }, () => {
 
     // Expect a warning toast to be shown
     await expect(
-      comfyPage.page.getByText('Version Compatibility Warning')
+      comfyPage.page
+        .getByTestId('toast')
+        .getByText('Version Compatibility Warning')
     ).toBeVisible()
   })
 
@@ -83,7 +85,9 @@ test.describe('Version Mismatch Warnings', { tag: '@slow' }, () => {
 
     // Expect no warning toast to be shown
     await expect(
-      comfyPage.page.getByText('Version Compatibility Warning')
+      comfyPage.page
+        .getByTestId('toast')
+        .getByText('Version Compatibility Warning')
     ).toBeHidden()
   })
 
@@ -105,7 +109,7 @@ test.describe('Version Mismatch Warnings', { tag: '@slow' }, () => {
     await comfyPage.setup()
 
     // Locate the warning toast and dismiss it
-    const warningToast = comfyPage.page.locator('.p-toast-message').filter({
+    const warningToast = comfyPage.page.getByTestId('toast').filter({
       hasText: 'Version Compatibility'
     })
     await warningToast.waitFor({ state: 'visible' })
@@ -123,7 +127,9 @@ test.describe('Version Mismatch Warnings', { tag: '@slow' }, () => {
 
     // The same warning from same versions should not be shown to the user again
     await expect(
-      comfyPage.page.getByText('Version Compatibility Warning')
+      comfyPage.page
+        .getByTestId('toast')
+        .getByText('Version Compatibility Warning')
     ).toBeHidden()
   })
 })

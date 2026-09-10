@@ -303,7 +303,7 @@ window['app'].extensionManager.dialog
 
 ```js
 // window.alert
-window['app'].extensionManager.toast.addAlert('Test Alert')
+window['app'].extensionManager.toast.info('Test Alert')
 ```
 
 ![image](https://github.com/user-attachments/assets/9b18bdca-76ef-4432-95de-5cd2369684f2)
@@ -464,15 +464,19 @@ app.registerExtension({
 Extensions can call the following API to add toast messages.
 
 ```js
-app.extensionManager.toast.add({
-  severity: 'info',
-  summary: 'Loaded!',
-  detail: 'Extension loaded!',
-  life: 3000
+const toastId = app.extensionManager.toast.info('Loaded!', {
+  description: 'Extension loaded!',
+  duration: 3000,
+  closable: true
 })
+
+app.extensionManager.toast.dismiss(toastId)
 ```
 
-Documentation of all supported options can be found here: <https://primevue.org/toast/#api.toast.interfaces.ToastMessageOptions>
+The toast manager provides `success`, `error`, `info`, `warning`, and `loading`
+methods with the same `(title, options?)` signature. Toasts persist when
+`duration` is omitted. Use `dismiss(id)` to remove one toast or `dismissAll()`
+to remove every toast.
 
 ![image](https://github.com/user-attachments/assets/de02cd7e-cd81-43d1-a0b0-bccef92ff487)
 

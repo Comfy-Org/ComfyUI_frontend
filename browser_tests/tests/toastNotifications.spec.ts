@@ -9,11 +9,9 @@ test.describe('Toast Notifications', { tag: '@ui' }, () => {
     nextFrame: () => Promise<void>
   }) {
     await comfyPage.page.evaluate(() => {
-      window.app!.extensionManager.toast.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Test execution error',
-        life: 30000
+      window.app!.extensionManager.toast.error('Error', {
+        description: 'Test execution error',
+        duration: 30000
       })
     })
     await comfyPage.nextFrame()
@@ -28,9 +26,9 @@ test.describe('Toast Notifications', { tag: '@ui' }, () => {
   test('Toast shows correct error severity class', async ({ comfyPage }) => {
     await triggerErrorToast(comfyPage)
 
-    const errorToast = comfyPage.page.locator(
-      '.p-toast-message.p-toast-message-error'
-    )
+    const errorToast = comfyPage.page
+      .getByTestId('toast')
+      .and(comfyPage.page.locator('[data-toast-kind="error"]'))
     await expect(errorToast.first()).toBeVisible()
   })
 
@@ -39,7 +37,7 @@ test.describe('Toast Notifications', { tag: '@ui' }, () => {
 
     await expect(comfyPage.toast.visibleToasts.first()).toBeVisible()
 
-    const closeButton = comfyPage.page.locator('.p-toast-close-button').first()
+    const closeButton = comfyPage.page.getByTestId('toast-close').first()
     await closeButton.click()
 
     await expect(comfyPage.toast.visibleToasts).toHaveCount(0)
@@ -59,7 +57,10 @@ test.describe('Toast Notifications', { tag: '@ui' }, () => {
     await triggerErrorToast(comfyPage)
 
     await expect(
-      comfyPage.page.locator('.p-toast-message.p-toast-message-error').first()
+      comfyPage.page
+        .getByTestId('toast')
+        .and(comfyPage.page.locator('[data-toast-kind="error"]'))
+        .first()
     ).toBeVisible()
 
     await expect(comfyPage.toast.toastErrors).not.toHaveCount(0)

@@ -1,6 +1,6 @@
+import { useToast } from '@/components/ui/toast'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { api } from '@/scripts/api'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
@@ -12,6 +12,10 @@ import {
 
 // Mock dependencies that are not stores
 vi.mock(import('@/i18n'), () => ({ t: (key: string) => key }))
+
+vi.mock<unknown>(import('@/scripts/app'), () => ({
+  app: { canvas: {}, rootGraph: {} }
+}))
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
@@ -39,7 +43,30 @@ vi.mock(import('@/platform/settings/composables/useSettingsDialog'), () => ({
   }))
 }))
 
-let toastAddMock: ReturnType<typeof useToastStore>['add']
+const { toastAddMock } = vi.hoisted(() => ({
+  toastAddMock: vi.fn()
+}))
+
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation((...args: unknown[]) =>
+    toastAddMock('success', ...args)
+  )
+  vi.mocked(useToast().error).mockImplementation((...args: unknown[]) =>
+    toastAddMock('error', ...args)
+  )
+  vi.mocked(useToast().info).mockImplementation((...args: unknown[]) =>
+    toastAddMock('info', ...args)
+  )
+  vi.mocked(useToast().warning).mockImplementation((...args: unknown[]) =>
+    toastAddMock('warning', ...args)
+  )
+  vi.mocked(useToast().loading).mockImplementation((...args: unknown[]) =>
+    toastAddMock('loading', ...args)
+  )
+  vi.mocked(useToast().custom).mockImplementation((...args: unknown[]) =>
+    toastAddMock('custom', ...args)
+  )
+})
 
 vi.mock(
   import('@/workbench/extensions/manager/composables/useManagerDialog'),
@@ -95,7 +122,6 @@ describe('useManagerState', () => {
   let systemStatsStore: ReturnType<typeof useSystemStatsStore>
 
   beforeEach(() => {
-    toastAddMock = useToastStore().add
     vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
     systemStatsStore = useSystemStatsStore()
 
@@ -303,12 +329,11 @@ describe('useManagerState', () => {
       useManagerState()
 
       expect(toastAddMock).toHaveBeenCalledTimes(1)
-      expect(toastAddMock).toHaveBeenCalledWith({
-        severity: 'warn',
-        summary: 'manager.incompatibleVersion.title',
-        detail: 'manager.incompatibleVersion.message',
-        life: 15000
-      })
+      expect(toastAddMock).toHaveBeenCalledWith(
+        'warning',
+        'manager.incompatibleVersion.title',
+        { description: 'manager.incompatibleVersion.message', duration: 15000 }
+      )
     })
 
     it('openManager on INCOMPATIBLE re-emits the upgrade toast without settings redirect', async () => {
@@ -327,12 +352,11 @@ describe('useManagerState', () => {
       await managerState.openManager()
       expect(toastAddMock).toHaveBeenCalledTimes(2)
       // second call must still be the upgrade toast, not an error toast
-      expect(toastAddMock).toHaveBeenLastCalledWith({
-        severity: 'warn',
-        summary: 'manager.incompatibleVersion.title',
-        detail: 'manager.incompatibleVersion.message',
-        life: 15000
-      })
+      expect(toastAddMock).toHaveBeenLastCalledWith(
+        'warning',
+        'manager.incompatibleVersion.title',
+        { description: 'manager.incompatibleVersion.message', duration: 15000 }
+      )
     })
 
     it('does not fire upgrade toast when state is NEW_UI', () => {

@@ -1,13 +1,10 @@
 // PrimeVue overlays (Select, ColorPicker, Popover, Autocomplete, stacked
-// PrimeVue Dialogs, Toasts) teleport to body. Reka treats clicks on
+// PrimeVue Dialogs) teleport to body. Reka treats clicks on
 // body-portaled elements as outside its dialog and would auto-dismiss on the
 // first interaction, tearing the overlay down mid-interaction. Treat any
-// PrimeVue overlay click as inside. Toasts matter for focus-outside: when a
-// button disables itself mid-action (e.g. a confirm entering its loading
-// state), the browser drops focus and recovery can land on the toast's close
-// button, which must not dismiss the dialog underneath.
+// PrimeVue overlay click as inside.
 const PRIMEVUE_OVERLAY_SELECTORS =
-  '.p-select-overlay, .p-colorpicker-panel, .p-popover, .p-autocomplete-overlay, .p-overlay, .p-overlay-mask, .p-dialog, .p-toast'
+  '.p-select-overlay, .p-colorpicker-panel, .p-popover, .p-autocomplete-overlay, .p-overlay, .p-overlay-mask, .p-dialog'
 
 // Reka portals its own dialogs / popovers / menus into the body too. When a
 // nested Reka layer opens on top of a non-modal parent, the parent's
@@ -15,7 +12,7 @@ const PRIMEVUE_OVERLAY_SELECTORS =
 // dismiss itself. These selectors cover the portaled roots so we can treat
 // interactions on them as inside.
 const REKA_PORTAL_SELECTORS =
-  '[data-reka-popper-content-wrapper], [data-reka-dialog-content], [data-reka-menu-content], [data-reka-context-menu-content], [data-reka-nested-dialog-overlay], [role="dialog"], [role="menu"], [role="listbox"], [role="tooltip"]'
+  '[data-reka-popper-content-wrapper], [data-reka-dialog-content], [data-reka-menu-content], [data-reka-context-menu-content], [data-reka-nested-dialog-overlay], [data-testid="toast"], [role="dialog"], [role="menu"], [role="listbox"], [role="tooltip"]'
 
 const OUTSIDE_LAYER_SELECTORS = `${PRIMEVUE_OVERLAY_SELECTORS}, ${REKA_PORTAL_SELECTORS}`
 

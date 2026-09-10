@@ -1,3 +1,4 @@
+import { useToast } from '@/components/ui/toast'
 import { fromPartial } from '@total-typescript/shoehorn'
 import type * as DistributionModule from '@/platform/distribution/types'
 import type { ComfyApp } from '@/scripts/app'
@@ -5,7 +6,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useMissingModelStore } from './missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
@@ -56,6 +57,14 @@ const { mockHandles } = vi.hoisted(() => {
           _signal: AbortSignal
         ) => undefined
       ),
+      toastStore: {
+        success: vi.fn(),
+        error: vi.fn(),
+        info: vi.fn(),
+        warning: vi.fn(),
+        loading: vi.fn(),
+        custom: vi.fn()
+      },
       assetService: {
         shouldUseAssetBrowser: vi.fn()
       },
@@ -88,7 +97,6 @@ beforeEach(() => {
   vi.mocked(useExecutionErrorStore().surfaceMissingModels).mockImplementation(
     () => undefined
   )
-  vi.mocked(useToastStore().add).mockImplementation(() => undefined)
 })
 
 vi.mock<unknown>(import('@/platform/missingModel/missingModelScan'), () => ({
@@ -107,6 +115,21 @@ vi.mock<unknown>(import('@/platform/missingModel/missingModelScan'), () => ({
     signal: AbortSignal
   ) => mockHandles.verifyAssetSupportedCandidates(candidates, signal)
 }))
+
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation(
+    mockHandles.toastStore.success
+  )
+  vi.mocked(useToast().error).mockImplementation(mockHandles.toastStore.error)
+  vi.mocked(useToast().info).mockImplementation(mockHandles.toastStore.info)
+  vi.mocked(useToast().warning).mockImplementation(
+    mockHandles.toastStore.warning
+  )
+  vi.mocked(useToast().loading).mockImplementation(
+    mockHandles.toastStore.loading
+  )
+  vi.mocked(useToast().custom).mockImplementation(mockHandles.toastStore.custom)
+})
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {

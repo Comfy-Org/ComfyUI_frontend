@@ -1,7 +1,6 @@
+import { useToast } from '@/components/ui/toast'
 import * as THREE from 'three'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import type {
   EventManagerInterface,
@@ -58,13 +57,15 @@ const {
   splatLoad,
   pointCloudLoad,
   fetchModelDataMock,
-  isGaussianSplatPLYMock
+  isGaussianSplatPLYMock,
+  warning
 } = vi.hoisted(() => ({
   meshLoad: vi.fn(),
   splatLoad: vi.fn(),
   pointCloudLoad: vi.fn(),
   fetchModelDataMock: vi.fn<() => Promise<ArrayBuffer>>(),
-  isGaussianSplatPLYMock: vi.fn<(b: ArrayBuffer) => Promise<boolean>>()
+  isGaussianSplatPLYMock: vi.fn<(b: ArrayBuffer) => Promise<boolean>>(),
+  warning: vi.fn()
 }))
 
 vi.mock('./MeshModelAdapter', () => ({
@@ -115,9 +116,8 @@ vi.mock('@/i18n', () => ({
   t: (key: string) => key
 }))
 
-let addAlert: ReturnType<typeof useToastStore>['addAlert']
 beforeEach(() => {
-  addAlert = useToastStore().addAlert
+  vi.mocked(useToast().warning).mockImplementation(warning)
 })
 
 type LoaderManagerInternals = {
@@ -371,9 +371,9 @@ describe('LoaderManager', () => {
 
       await lm.loadModel('api/view?other=1')
 
-      expect(addAlert).toHaveBeenCalledWith(
-        'toastMessages.couldNotDetermineFileType'
-      )
+      expect(warning).toHaveBeenCalledWith('Alert', {
+        description: 'toastMessages.couldNotDetermineFileType'
+      })
       expect(modelManager.setupModel).not.toHaveBeenCalled()
       expect(meshLoad).not.toHaveBeenCalled()
     })
@@ -538,7 +538,9 @@ describe('LoaderManager', () => {
         'modelLoadingEnd',
         null
       )
-      expect(addAlert).toHaveBeenCalledWith('toastMessages.errorLoadingModel')
+      expect(warning).toHaveBeenCalledWith('Alert', {
+        description: 'toastMessages.errorLoadingModel'
+      })
       expect(consoleError).toHaveBeenCalled()
     })
 
@@ -557,7 +559,7 @@ describe('LoaderManager', () => {
       })
 
       expect(consoleError).toHaveBeenCalled()
-      expect(addAlert).not.toHaveBeenCalledWith(
+      expect(warning).not.toHaveBeenCalledWith(
         'toastMessages.errorLoadingModel'
       )
     })
@@ -574,7 +576,7 @@ describe('LoaderManager', () => {
         silentOnNotFound: true
       })
 
-      expect(addAlert).not.toHaveBeenCalledWith(
+      expect(warning).not.toHaveBeenCalledWith(
         'toastMessages.errorLoadingModel'
       )
     })
@@ -588,7 +590,9 @@ describe('LoaderManager', () => {
         silentOnNotFound: true
       })
 
-      expect(addAlert).toHaveBeenCalledWith('toastMessages.errorLoadingModel')
+      expect(warning).toHaveBeenCalledWith('Alert', {
+        description: 'toastMessages.errorLoadingModel'
+      })
     })
 
     it('discards the result of a stale load when a newer one has started', async () => {
@@ -699,7 +703,7 @@ describe('LoaderManager', () => {
 
       await Promise.all([firstPromise, secondPromise])
 
-      expect(addAlert).not.toHaveBeenCalled()
+      expect(warning).not.toHaveBeenCalled()
       const endEmits = eventManager.emitEvent.mock.calls.filter(
         (call: unknown[]) => call[0] === 'modelLoadingEnd'
       )

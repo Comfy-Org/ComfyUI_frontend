@@ -70,7 +70,7 @@ import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
 import { downloadFile } from '@/base/common/downloadUtil'
@@ -158,11 +158,7 @@ function handleDownload() {
   try {
     downloadFile(downloadUrl.value, savedFile.value?.filename)
   } catch {
-    useToastStore().add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: t('g.failedToDownloadFile')
-    })
+    useToast().error(t('g.error'), { description: t('g.failedToDownloadFile') })
   }
 }
 </script>

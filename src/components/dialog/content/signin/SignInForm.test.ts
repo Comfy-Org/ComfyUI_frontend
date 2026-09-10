@@ -1,8 +1,8 @@
+import { useToast } from '@/components/ui/toast'
 import { Form } from '@primevue/forms'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
-import ToastService from 'primevue/toastservice'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -26,11 +26,26 @@ vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
 
 // Mock toast
 const mockToastAdd = vi.fn()
-vi.mock<unknown>(import('primevue/usetoast'), () => ({
-  useToast: vi.fn(() => ({
-    add: mockToastAdd
-  }))
-}))
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('success', ...args)
+  )
+  vi.mocked(useToast().error).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('error', ...args)
+  )
+  vi.mocked(useToast().info).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('info', ...args)
+  )
+  vi.mocked(useToast().warning).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('warning', ...args)
+  )
+  vi.mocked(useToast().loading).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('loading', ...args)
+  )
+  vi.mocked(useToast().custom).mockImplementation((...args: unknown[]) =>
+    mockToastAdd('custom', ...args)
+  )
+})
 
 const forgotPasswordText = enMessages.auth.login.forgotPassword
 const loginButtonText = enMessages.auth.login.loginButton
@@ -49,7 +64,7 @@ describe('SignInForm', () => {
     const user = userEvent.setup()
     const result = render(SignInForm, {
       global: {
-        plugins: [PrimeVue, i18n, ToastService],
+        plugins: [PrimeVue, i18n],
         components: { Form, Button, Input, ProgressSpinner }
       },
       props
@@ -76,11 +91,11 @@ describe('SignInForm', () => {
 
       await user.click(screen.getByText(forgotPasswordText))
 
-      expect(mockToastAdd).toHaveBeenCalledWith({
-        severity: 'warn',
-        summary: enMessages.auth.login.emailPlaceholder,
-        life: 5000
-      })
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        'warning',
+        enMessages.auth.login.emailPlaceholder,
+        { duration: 5000 }
+      )
 
       expect(focusSpy).toHaveBeenCalled()
 

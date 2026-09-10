@@ -25,7 +25,10 @@ const visibleErrorSurfaceSelectors = [
     selector: `[data-testid="${TestIds.dialogs.errorDialog}"]`
   },
   { surface: 'nodeRenderErrors', selector: '.node-error' },
-  { surface: 'errorToasts', selector: '.p-toast-message-error' }
+  {
+    surface: 'errorToasts',
+    selector: '[data-testid="toast"][data-toast-kind="error"]'
+  }
 ]
 
 const visibleErrorSampleIntervalMs = 100
@@ -92,7 +95,9 @@ export function errorSurfaces(page: Page): Record<string, Locator> {
     errorOverlay: page.getByTestId(TestIds.dialogs.errorOverlay),
     errorDialog: page.getByTestId(TestIds.dialogs.errorDialog),
     nodeRenderErrors: page.locator('.node-error'),
-    errorToasts: page.locator('.p-toast-message-error')
+    errorToasts: page
+      .getByTestId('toast')
+      .and(page.locator('[data-toast-kind="error"]'))
   }
 }
 

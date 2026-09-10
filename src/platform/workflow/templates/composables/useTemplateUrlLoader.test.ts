@@ -1,3 +1,4 @@
+import { useToast } from '@/components/ui/toast'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore' // eslint-disable-line import-x/no-restricted-paths
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { App } from 'vue'
@@ -55,15 +56,14 @@ vi.mock<unknown>(
 
 // Mock toast
 const mockToastAdd = vi.fn()
-vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
-
-  () => ({
-    useToast: () => ({
-      add: mockToastAdd
-    })
-  })
-)
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation(mockToastAdd)
+  vi.mocked(useToast().error).mockImplementation(mockToastAdd)
+  vi.mocked(useToast().info).mockImplementation(mockToastAdd)
+  vi.mocked(useToast().warning).mockImplementation(mockToastAdd)
+  vi.mocked(useToast().loading).mockImplementation(mockToastAdd)
+  vi.mocked(useToast().custom).mockImplementation(mockToastAdd)
+})
 
 const apps: App<Element>[] = []
 
@@ -151,10 +151,8 @@ describe('useTemplateUrlLoader', () => {
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
     await loadTemplateFromUrl()
 
-    expect(mockToastAdd).toHaveBeenCalledWith({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Template "invalid-template" not found'
+    expect(mockToastAdd).toHaveBeenCalledWith('Error', {
+      description: 'Template "invalid-template" not found'
     })
   })
 
@@ -244,10 +242,8 @@ describe('useTemplateUrlLoader', () => {
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
     await loadTemplateFromUrl()
 
-    expect(mockToastAdd).toHaveBeenCalledWith({
-      severity: 'error',
-      summary: 'Error',
-      detail: i18n.global.t('g.errorLoadingTemplate')
+    expect(mockToastAdd).toHaveBeenCalledWith('Error', {
+      description: i18n.global.t('g.errorLoadingTemplate')
     })
   })
 

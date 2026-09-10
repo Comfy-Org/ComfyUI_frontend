@@ -1,8 +1,9 @@
+import { useToast } from '@/components/ui/toast'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { CameraState } from '@/extensions/core/load3d/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { ComfyExtension } from '@/types/comfy'
 
@@ -13,6 +14,7 @@ const {
   configureMock,
   configureForSaveMeshMock,
   getLoad3dMock,
+  toastWarningMock,
   getNodeByLocatorIdMock,
   nodeToLoad3dMap
 } = vi.hoisted(() => ({
@@ -22,6 +24,7 @@ const {
   configureMock: vi.fn(),
   configureForSaveMeshMock: vi.fn(),
   getLoad3dMock: vi.fn(),
+  toastWarningMock: vi.fn(),
   getNodeByLocatorIdMock: vi.fn(),
   nodeToLoad3dMap: new Map<object, unknown>()
 }))
@@ -109,17 +112,12 @@ vi.mock('@/i18n', () => ({
   t: (key: string) => key
 }))
 
-let toastAddAlertMock: ReturnType<typeof useToastStore>['addAlert']
 beforeEach(() => {
-  toastAddAlertMock = useToastStore().addAlert
+  vi.mocked(useToast().warning).mockImplementation(toastWarningMock)
 })
 
 vi.mock('@/utils/litegraphUtil', () => ({
   isLoad3dNode: vi.fn(() => true)
-}))
-
-vi.mock('@/lib/litegraph/src/litegraph', () => ({
-  LiteGraph: { ContextMenu: vi.fn() }
 }))
 
 type ExtCreated = ComfyExtension & {
@@ -472,9 +470,9 @@ describe('Comfy.Preview3D.nodeCreated', () => {
     await preview3DExt.nodeCreated(node)
     node.onExecuted!({ result: [] })
 
-    expect(toastAddAlertMock).toHaveBeenCalledWith(
-      'toastMessages.unableToGetModelFilePath'
-    )
+    expect(toastWarningMock).toHaveBeenCalledWith('Alert', {
+      description: 'toastMessages.unableToGetModelFilePath'
+    })
   })
 })
 
@@ -1019,9 +1017,9 @@ describe('Comfy.Preview3DAdvanced.nodeCreated', () => {
     await preview3DAdvancedExt.nodeCreated(node)
     node.onExecuted!({ result: [] })
 
-    expect(toastAddAlertMock).toHaveBeenCalledWith(
-      'toastMessages.unableToGetModelFilePath'
-    )
+    expect(toastWarningMock).toHaveBeenCalledWith('Alert', {
+      description: 'toastMessages.unableToGetModelFilePath'
+    })
     expect(configureForSaveMeshMock).not.toHaveBeenCalled()
   })
 })

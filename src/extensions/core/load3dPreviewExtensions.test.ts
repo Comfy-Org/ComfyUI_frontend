@@ -1,7 +1,8 @@
+import { useToast } from '@/components/ui/toast'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+
 import type { ComfyExtension } from '@/types/comfy'
 
 const {
@@ -10,6 +11,7 @@ const {
   onLoad3dReadyMock,
   configureForSaveMeshMock,
   getLoad3dMock,
+  toastWarningMock,
   getNodeByLocatorIdMock,
   nodeToLoad3dMapMock
 } = vi.hoisted(() => ({
@@ -18,6 +20,7 @@ const {
   onLoad3dReadyMock: vi.fn(),
   configureForSaveMeshMock: vi.fn(),
   getLoad3dMock: vi.fn(),
+  toastWarningMock: vi.fn(),
   getNodeByLocatorIdMock: vi.fn(),
   nodeToLoad3dMapMock: new Map()
 }))
@@ -60,9 +63,8 @@ vi.mock('@/i18n', () => ({
   t: (key: string) => key
 }))
 
-let toastAddAlertMock: ReturnType<typeof useToastStore>['addAlert']
 beforeEach(() => {
-  toastAddAlertMock = useToastStore().addAlert
+  vi.mocked(useToast().warning).mockImplementation(toastWarningMock)
 })
 
 type ExtCreated = ComfyExtension & {
@@ -383,9 +385,9 @@ describe('Comfy.PreviewGaussianSplat.nodeCreated', () => {
     await splatExt.nodeCreated(node)
     node.onExecuted!({ result: [] })
 
-    expect(toastAddAlertMock).toHaveBeenCalledWith(
-      'toastMessages.unableToGetModelFilePath'
-    )
+    expect(toastWarningMock).toHaveBeenCalledWith('Alert', {
+      description: 'toastMessages.unableToGetModelFilePath'
+    })
   })
 })
 

@@ -50,7 +50,7 @@ describe('useWorkspaceInsetRight', () => {
     expect(readInset()).toBe('0px')
   })
 
-  it('stops publishing once the owning scope is torn down', async () => {
+  it('clears the inset once the owning scope is torn down', async () => {
     const width = ref(420)
     const scope = effectScope()
     scope.run(() => useWorkspaceInsetRight(() => width.value))
@@ -59,6 +59,6 @@ describe('useWorkspaceInsetRight', () => {
     width.value = 960
     await nextTick()
 
-    expect(readInset()).toBe('420px')
+    expect(readInset()).toBe('0px')
   })
 })

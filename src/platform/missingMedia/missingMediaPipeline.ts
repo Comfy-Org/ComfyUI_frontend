@@ -9,7 +9,7 @@ import {
 } from '@/platform/missingMedia/missingMediaScan'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -67,14 +67,13 @@ export async function runMissingMediaPipeline({
       })
       .catch((err) => {
         console.warn('[Missing Media Pipeline] Asset verification failed:', err)
-        useToastStore().add({
-          severity: 'warn',
-          summary: st(
+        useToast().warning(
+          st(
             'toastMessages.missingMediaVerificationFailed',
             'Failed to verify missing media. Some inputs may not be shown in the Issues tab.'
           ),
-          life: 5000
-        })
+          { duration: 5000 }
+        )
       })
   } else {
     const confirmed = candidates.filter((c) => c.isMissing === true)

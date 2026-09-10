@@ -142,7 +142,7 @@ import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { whenever } from '@vueuse/core'
 
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import Button from '@/components/ui/button/Button.vue'
@@ -198,11 +198,7 @@ const handleDownload = () => {
   try {
     downloadFile(modelValue.value)
   } catch {
-    toast.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: t('g.failedToDownloadFile')
-    })
+    toast.error(t('g.error'), { description: t('g.failedToDownloadFile') })
   }
 }
 
