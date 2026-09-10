@@ -4,12 +4,15 @@ import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 import { z } from 'zod'
 
-import type { SessionErrorCode, SessionFailure } from '@comfyorg/account/core'
+import type {
+  SessionErrorCode,
+  SessionFailure
+} from '@comfyorg/account/session'
 import {
   SESSION_ERROR_MESSAGES,
   createSessionClient,
   isPermanentSessionError
-} from '@comfyorg/account/core'
+} from '@comfyorg/account/session'
 
 import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
