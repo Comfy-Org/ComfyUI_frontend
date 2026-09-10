@@ -89,19 +89,24 @@ describe('useAgentCrdtFollower graph catch-up', () => {
     vi.spyOn(apiTransport, 'send').mockReturnValue(true)
   })
 
-  it.for(['same', 'different', 'empty'] as const)(
+  it.for(['same', 'different', 'empty', 'new-type'] as const)(
     'preserves the loaded graph until the first %s document arrives',
     async (content) => {
       const { graph, workflowId } = mountFollower()
+      const widgetConstructor = graph.value._nodes[0].constructor
       workflowId.value = null
       await nextTick()
 
       const target = new LGraph()
-      const retained = createTestWidgetNode(target)
+      const retained =
+        content === 'new-type'
+          ? createTestNode(target, ['number'], ['number'])
+          : createTestWidgetNode(target)
       const removed = createTestWidgetNode(target)
       retained.title = 'Loaded workflow'
       retained.pos = [123, 456]
-      retained.widgets![0].value = 'local value'
+      retained.onRemoved = vi.fn()
+      if (content !== 'new-type') retained.widgets![0].value = 'local value'
       retained.connect(0, removed, 0)
       const loaded = pick(target.serialize(), ['nodes', 'links'])
       graph.value = target
@@ -132,14 +137,16 @@ describe('useAgentCrdtFollower graph catch-up', () => {
       deliver(docSubscribedFrame({ workflow_id: 'wf-b' }))
       expect(target.serialize()).toMatchObject(loaded)
 
+      const changed = { ...loaded.nodes[0], title: 'Host workflow' }
+      if (content === 'new-type') {
+        changed.type = removed.type
+        changed.widgets_values = ['host value']
+      }
       const authoritative =
         content === 'same'
           ? loaded
           : {
-              nodes:
-                content === 'empty'
-                  ? []
-                  : [{ ...loaded.nodes[0], title: 'Host workflow' }],
+              nodes: content === 'empty' ? [] : [changed],
               links: []
             }
       const host = snapshot('wf-b', authoritative)
@@ -150,9 +157,20 @@ describe('useAgentCrdtFollower graph catch-up', () => {
       expect(target.serialize().links).toEqual(authoritative.links)
       if (content === 'empty') return
       const live = target._nodes[0]
-      expect(live).toBe(retained)
+      if (content === 'new-type') {
+        expect(live).not.toBe(retained)
+        expect(live.constructor).toBe(widgetConstructor)
+        expect(retained.graph).toBeNull()
+        expect(retained.onRemoved).toHaveBeenCalledOnce()
+      } else {
+        expect(live).toBe(retained)
+      }
       expect(live.title).toBe(authoritative.nodes[0].title)
-      expect(live.widgets![0].value).toBe('local value')
+      expect(live.widgets![0]).toMatchObject({
+        name: 'text_widget',
+        type: 'text',
+        value: content === 'new-type' ? 'host value' : 'local value'
+      })
 
       const widgets = nodesMap(host).get(String(live.id))?.get('widgets')
       if (!(widgets instanceof Y.Map)) throw new Error('missing widgets')
@@ -166,53 +184,6 @@ describe('useAgentCrdtFollower graph catch-up', () => {
       expect(live.widgets![0].value).toBe('remote value')
     }
   )
-
-  it('replaces the live class when the first document changes a node type', async () => {
-    const { graph, workflowId } = mountFollower()
-    const widgetConstructor = graph.value._nodes[0].constructor
-    workflowId.value = null
-    await nextTick()
-
-    const target = new LGraph()
-    const stale = createTestNode(target, ['number'], ['number'], 'Old type')
-    stale.onRemoved = vi.fn()
-    graph.value = target
-    await nextTick()
-    workflowId.value = 'wf-b'
-    await nextTick()
-    expect(target._nodes).toEqual([stale])
-
-    const host = snapshot('wf-b', {
-      nodes: [
-        {
-          ...stale.serialize(),
-          type: 'test/widgetNode',
-          title: 'Replacement widget',
-          widgets_values: ['host value']
-        }
-      ],
-      links: []
-    })
-
-    const live = target.getNodeById(stale.id)!
-    expect(live).not.toBe(stale)
-    expect(live.constructor).toBe(widgetConstructor)
-    expect(live.title).toBe('Replacement widget')
-    expect(live.widgets![0]).toMatchObject({
-      name: 'text_widget',
-      type: 'text',
-      value: 'host value'
-    })
-    expect(target._nodes).toEqual([live])
-    expect(stale.graph).toBeNull()
-    expect(stale.onRemoved).toHaveBeenCalledOnce()
-
-    const widgets = nodesMap(host).get(String(live.id))?.get('widgets')
-    if (!(widgets instanceof Y.Map)) throw new Error('missing widgets')
-    widgets.set('text_widget', 'later value')
-    deliverUpdate(host, 'wf-b', 2)
-    expect(live.widgets![0].value).toBe('later value')
-  })
 
   it('clears live nodes immediately on an explicit document reset', () => {
     const { graph } = mountFollower()
