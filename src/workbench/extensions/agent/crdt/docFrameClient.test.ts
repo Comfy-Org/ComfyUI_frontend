@@ -65,7 +65,7 @@ describe('doc frame client', () => {
     )
   })
 
-  it('throws on malformed base64 without dispatching a doc_update', () => {
+  it('rejects malformed base64 without dispatching a doc_update', () => {
     const data = {
       v: 1,
       workflow_id: 'wf-1',
@@ -73,14 +73,14 @@ describe('doc frame client', () => {
       update_b64: 'not base64!'
     }
 
-    expect(() => parseServerDocFrame({ type: 'doc_update', data })).toThrow()
+    expect(parseServerDocFrame({ type: 'doc_update', data })).toBeNull()
 
     const transport = new TestTransport()
     const client = new DocFrameClient(transport)
     let updatesDispatched = 0
     client.addEventListener('doc_update', () => updatesDispatched++)
 
-    expect(() => transport.receive('doc_update', data)).toThrow()
+    expect(() => transport.receive('doc_update', data)).not.toThrow()
     expect(updatesDispatched).toBe(0)
   })
 
