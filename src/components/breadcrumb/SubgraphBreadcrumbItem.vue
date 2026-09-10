@@ -1,38 +1,42 @@
 <template>
-  <div
-    ref="wrapperRef"
-    v-tooltip.bottom="{
+  <Tooltip
+    :config="{
       value: tooltipText,
       showDelay: 512
     }"
-    :data-testid="`subgraph-breadcrumb-item-${item.key}`"
-    :data-active="isActive ? '' : undefined"
-    draggable="false"
-    class="p-breadcrumb-item-link flex h-8 cursor-pointer items-center overflow-hidden px-2 select-none"
-    :class="{
-      'gap-1': isActive,
-      'p-breadcrumb-item-link-menu-visible': menu?.overlayVisible,
-      'p-breadcrumb-item-link-icon-visible': isActive,
-      'text-text-primary': isActive
-    }"
-    @click="handleClick"
+    side="bottom"
   >
-    <i
-      v-if="hasMissingNodes && isRoot"
-      data-testid="subgraph-breadcrumb-missing-nodes-icon"
-      class="icon-[lucide--triangle-alert] text-warning-background"
-    />
-    <span class="p-breadcrumb-item-label max-w-72 truncate px-2">
-      {{ item.label }}
-    </span>
-    <Tag
-      v-if="item.isBlueprint"
-      data-testid="subgraph-breadcrumb-blueprint-tag"
-      :value="t('breadcrumbsMenu.blueprint')"
-      severity="primary"
-    />
-    <i v-if="isActive" class="pi pi-angle-down text-2xs"></i>
-  </div>
+    <div
+      ref="wrapperRef"
+      :data-testid="`subgraph-breadcrumb-item-${item.key}`"
+      :data-active="isActive ? '' : undefined"
+      draggable="false"
+      class="p-breadcrumb-item-link flex h-8 cursor-pointer items-center overflow-hidden px-2 select-none"
+      :class="{
+        'gap-1': isActive,
+        'p-breadcrumb-item-link-menu-visible': menu?.overlayVisible,
+        'p-breadcrumb-item-link-icon-visible': isActive,
+        'text-text-primary': isActive
+      }"
+      @click="handleClick"
+    >
+      <i
+        v-if="hasMissingNodes && isRoot"
+        data-testid="subgraph-breadcrumb-missing-nodes-icon"
+        class="icon-[lucide--triangle-alert] text-warning-background"
+      />
+      <span class="p-breadcrumb-item-label max-w-72 truncate px-2">
+        {{ item.label }}
+      </span>
+      <Tag
+        v-if="item.isBlueprint"
+        data-testid="subgraph-breadcrumb-blueprint-tag"
+        :value="t('breadcrumbsMenu.blueprint')"
+        severity="primary"
+      />
+      <i v-if="isActive" class="pi pi-angle-down text-2xs"></i>
+    </div>
+  </Tooltip>
   <Menu
     v-if="isActive || isRoot"
     ref="menu"
@@ -54,7 +58,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
+import { computed, nextTick, ref, toValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
@@ -135,7 +141,7 @@ const tooltipText = computed(() => {
   if (hasMissingNodes.value && isRoot) {
     return t('breadcrumbsMenu.missingNodesWarning')
   }
-  return item.label
+  return toValue(item.label)
 })
 
 const startRename = async () => {

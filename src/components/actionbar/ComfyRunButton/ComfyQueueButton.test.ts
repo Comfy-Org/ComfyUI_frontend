@@ -1,8 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { getActivePinia } from 'pinia'
-import PrimeVue from 'primevue/config'
-import Tooltip from 'primevue/tooltip'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -154,10 +152,7 @@ function renderQueueButton(
   const result = render(ComfyQueueButton, {
     props,
     global: {
-      plugins: [PrimeVue, pinia, i18n],
-      directives: {
-        tooltip: Tooltip
-      },
+      plugins: [pinia, i18n],
       stubs
     }
   })

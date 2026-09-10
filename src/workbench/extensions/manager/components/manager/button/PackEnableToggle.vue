@@ -1,18 +1,22 @@
 <template>
   <div class="flex items-center gap-2">
-    <div
+    <Tooltip
       v-if="packageConflict?.has_conflict"
-      v-tooltip="{
+      :config="{
         value: $t('manager.conflicts.warningTooltip'),
         showDelay: 300
       }"
-      class="flex size-6 cursor-pointer items-center justify-center"
-      @click="showConflictModal(true)"
+      side="right"
     >
-      <i
-        class="icon-[lucide--triangle-alert] text-xl text-warning-background"
-      />
-    </div>
+      <div
+        class="flex size-6 cursor-pointer items-center justify-center"
+        @click="showConflictModal(true)"
+      >
+        <i
+          class="icon-[lucide--triangle-alert] text-xl text-warning-background"
+        />
+      </div>
+    </Tooltip>
     <Switch
       v-if="!canToggleDirectly"
       :model-value="isEnabled"
@@ -31,6 +35,8 @@
   </div>
 </template>
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { debounce } from 'es-toolkit/compat'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'

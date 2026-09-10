@@ -1,19 +1,25 @@
 <template>
-  <Button
-    v-show="isSingleImageNode"
-    v-tooltip.top="{
+  <Tooltip
+    :config="{
       value: $t('commands.Comfy_MaskEditor_OpenMaskEditor.label'),
       showDelay: 1000
     }"
-    variant="muted-textonly"
-    :aria-label="$t('commands.Comfy_MaskEditor_OpenMaskEditor.label')"
-    @click="openMaskEditor"
+    side="top"
   >
-    <i class="icon-[comfy--mask]" />
-  </Button>
+    <Button
+      v-show="isSingleImageNode"
+      variant="muted-textonly"
+      :aria-label="$t('commands.Comfy_MaskEditor_OpenMaskEditor.label')"
+      @click="openMaskEditor"
+    >
+      <i class="icon-[comfy--mask]" />
+    </Button>
+  </Tooltip>
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import Button from '@/components/ui/button/Button.vue'
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { useCommandStore } from '@/stores/commandStore'

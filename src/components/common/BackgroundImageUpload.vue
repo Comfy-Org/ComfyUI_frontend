@@ -5,26 +5,28 @@
       class="flex-1"
       :placeholder="$t('g.imageUrl')"
     />
-    <Button
-      v-tooltip="$t('g.upload')"
-      variant="secondary"
-      size="sm"
-      :aria-label="$t('g.upload')"
-      :disabled="isUploading"
-      @click="triggerFileInput"
-    >
-      <i :class="isUploading ? 'pi pi-spin pi-spinner' : 'pi pi-upload'" />
-    </Button>
-    <Button
-      v-tooltip="$t('g.clear')"
-      variant="destructive"
-      size="sm"
-      :aria-label="$t('g.clear')"
-      :disabled="!modelValue"
-      @click="clearImage"
-    >
-      <i class="pi pi-trash" />
-    </Button>
+    <Tooltip :config="$t('g.upload')" side="right">
+      <Button
+        variant="secondary"
+        size="sm"
+        :aria-label="$t('g.upload')"
+        :disabled="isUploading"
+        @click="triggerFileInput"
+      >
+        <i :class="isUploading ? 'pi pi-spin pi-spinner' : 'pi pi-upload'" />
+      </Button>
+    </Tooltip>
+    <Tooltip :config="$t('g.clear')" side="right">
+      <Button
+        variant="destructive"
+        size="sm"
+        :aria-label="$t('g.clear')"
+        :disabled="!modelValue"
+        @click="clearImage"
+      >
+        <i class="pi pi-trash" />
+      </Button>
+    </Tooltip>
     <input
       ref="fileInput"
       type="file"
@@ -36,6 +38,8 @@
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'

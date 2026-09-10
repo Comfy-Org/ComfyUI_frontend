@@ -42,40 +42,50 @@
             dot-only
           />
         </div>
-        <AppInput
+        <Tooltip
           v-if="row.showsControl"
-          :widget-id="row.widget.widgetId"
-          :name="row.widget.simplified.name"
-          :enable="canSelectInputs && !row.widget.simplified.options?.disabled"
+          :config="row.widget.tooltipConfig ?? EMPTY_TOOLTIP"
+          side="left"
         >
-          <component
-            :is="row.widget.vueComponent"
-            v-tooltip.left="row.widget.tooltipConfig ?? EMPTY_TOOLTIP"
-            :model-value="row.widget.simplified.value"
-            :widget="row.widget.simplified"
-            :node-id
-            :node-type
-            :invalid="row.widget.hasError"
-            :aria-invalid="row.widget.hasError || undefined"
-            :class="
-              cn(
-                'col-span-2',
-                row.widget.hasError && 'font-bold text-node-stroke-error'
-              )
-            "
-            @update:model-value="row.widget.updateHandler"
-            @contextmenu="row.widget.handleContextMenu"
-          />
-        </AppInput>
+          <div class="contents">
+            <AppInput
+              :widget-id="row.widget.widgetId"
+              :name="row.widget.simplified.name"
+              :enable="
+                canSelectInputs && !row.widget.simplified.options?.disabled
+              "
+            >
+              <component
+                :is="row.widget.vueComponent"
+                :model-value="row.widget.simplified.value"
+                :widget="row.widget.simplified"
+                :node-id
+                :node-type
+                :invalid="row.widget.hasError"
+                :aria-invalid="row.widget.hasError || undefined"
+                :class="
+                  cn(
+                    'col-span-2',
+                    row.widget.hasError && 'font-bold text-node-stroke-error'
+                  )
+                "
+                @update:model-value="row.widget.updateHandler"
+                @contextmenu="row.widget.handleContextMenu"
+              />
+            </AppInput>
+          </div>
+        </Tooltip>
       </div>
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { TooltipOptions } from 'primevue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { computed, useTemplateRef, watch } from 'vue'
 
+import type { TooltipConfig } from '@/components/ui/tooltip'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
 import AppInput from '@/renderer/extensions/linearMode/AppInput.vue'
@@ -87,7 +97,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import InputSlot from './InputSlot.vue'
 
-const EMPTY_TOOLTIP: TooltipOptions = {}
+const EMPTY_TOOLTIP: TooltipConfig = {}
 const grid = useTemplateRef<HTMLElement>('grid')
 
 const isConvertedWidgetType = (type: string) =>

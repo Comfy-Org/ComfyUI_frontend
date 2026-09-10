@@ -237,15 +237,15 @@ describe('CurrentUserPopoverLegacy', () => {
   })
 
   describe('credits help icon (FE-617)', () => {
-    it('renders the credits help icon as an interactive button with the unified-credits tooltip as its accessible name', () => {
-      renderComponent()
+    it('shows unified-credits help on hover', async () => {
+      const { user } = renderComponent()
 
-      const helpButton = screen.getByTestId('credits-info-button')
-      expect(helpButton).toBeInTheDocument()
-      expect(helpButton.tagName).toBe('BUTTON')
-      expect(helpButton).toHaveAttribute(
-        'aria-label',
-        enMessages.credits.unified.tooltip
+      const helpButton = screen.getByRole('button', {
+        name: /We've unified payments across Comfy/
+      })
+      await user.hover(helpButton)
+      expect(await screen.findByRole('tooltip')).toHaveTextContent(
+        enMessages.credits.unified.tooltip.replace(/\s+/g, ' ')
       )
     })
   })

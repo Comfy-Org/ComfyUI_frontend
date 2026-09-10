@@ -2,25 +2,13 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
-import type { DirectiveBinding } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { useToast } from '@/components/ui/toast'
-import * as tooltipConfig from '@/composables/useTooltipConfig'
 import { i18n } from '@/i18n'
 
 import { useAgentRunModeStore } from '../../stores/agent/agentRunModeStore'
 import Composer from './Composer.vue'
-
-const tooltipBindings = new WeakMap<Element, unknown>()
-const tooltipDirectiveStub = {
-  mounted(element: Element, binding: DirectiveBinding<unknown>) {
-    tooltipBindings.set(element, binding.value)
-  },
-  updated(element: Element, binding: DirectiveBinding<unknown>) {
-    tooltipBindings.set(element, binding.value)
-  }
-}
 
 const fetchApi = vi.hoisted(() =>
   vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()
@@ -40,8 +28,7 @@ function mount(props: ComponentProps<typeof Composer> = {}) {
   return render(Composer, {
     props,
     global: {
-      plugins: [i18n],
-      directives: { tooltip: tooltipDirectiveStub }
+      plugins: [i18n]
     }
   })
 }
@@ -266,10 +253,12 @@ describe('Composer', () => {
         )
         mount()
 
-        const trigger = screen.getByRole('button', { name: triggerName })
-        expect(tooltipBindings.get(trigger)).toEqual(
-          tooltipConfig.buildAgentTooltipConfig(tooltipCopy)
-        )
+        await userEvent.hover(screen.getByRole('button', { name: triggerName }))
+        expect(
+          await screen.findByText(tooltipCopy, {
+            selector: '[data-slot="tooltip-content"]'
+          })
+        ).toBeVisible()
       }
     )
 
@@ -575,15 +564,19 @@ describe('Composer', () => {
     expect(screen.queryByText('#5')).not.toBeInTheDocument()
   })
 
-  it('passes the full tooltip config to selection chip directives', () => {
+  it('shows the selection chip tooltip', async () => {
     mount({ selectionTags: [{ id: '5', title: 'KSampler' }] })
 
-    const button = screen.getByRole('button', {
-      name: 'Show KSampler #5 on canvas'
-    })
-    expect(tooltipBindings.get(button)).toEqual(
-      tooltipConfig.buildAgentTooltipConfig('Show on canvas')
+    await userEvent.hover(
+      screen.getByRole('button', {
+        name: 'Show KSampler #5 on canvas'
+      })
     )
+    expect(
+      await screen.findByText('Show on canvas', {
+        selector: '[data-slot="tooltip-content"]'
+      })
+    ).toBeVisible()
   })
 
   it('emits removeTag when a selection chip is removed', async () => {
@@ -598,15 +591,19 @@ describe('Composer', () => {
     expect(emitted().removeTag).toEqual([['5']])
   })
 
-  it('builds the remove tooltip for a selection chip', () => {
+  it('shows the remove tooltip for a selection chip', async () => {
     mount({ selectionTags: [{ id: '5', title: 'KSampler' }] })
 
-    const removeButton = screen.getByRole('button', {
-      name: 'Remove KSampler #5 reference'
-    })
-    expect(tooltipBindings.get(removeButton)).toEqual(
-      tooltipConfig.buildAgentTooltipConfig('Remove')
+    await userEvent.hover(
+      screen.getByRole('button', {
+        name: 'Remove KSampler #5 reference'
+      })
     )
+    expect(
+      await screen.findByText('Remove', {
+        selector: '[data-slot="tooltip-content"]'
+      })
+    ).toBeVisible()
   })
 
   it('emits focusTag when a selection chip is activated', async () => {

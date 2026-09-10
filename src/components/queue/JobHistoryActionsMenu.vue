@@ -2,16 +2,17 @@
   <div class="flex items-center gap-1">
     <Popover :show-arrow="false">
       <template #button>
-        <Button
-          v-tooltip.top="moreTooltipConfig"
-          variant="textonly"
-          size="icon"
-          :aria-label="t('sideToolbar.queueProgressOverlay.moreOptions')"
-        >
-          <i
-            class="icon-[lucide--more-horizontal] block size-4 leading-none text-text-secondary"
-          />
-        </Button>
+        <Tooltip :config="moreTooltipConfig" side="top">
+          <Button
+            variant="textonly"
+            size="icon"
+            :aria-label="t('sideToolbar.queueProgressOverlay.moreOptions')"
+          >
+            <i
+              class="icon-[lucide--more-horizontal] block size-4 leading-none text-text-secondary"
+            />
+          </Button>
+        </Tooltip>
       </template>
       <template #default="{ close }">
         <div class="flex min-w-56 flex-col items-stretch font-inter">
@@ -89,6 +90,8 @@
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 

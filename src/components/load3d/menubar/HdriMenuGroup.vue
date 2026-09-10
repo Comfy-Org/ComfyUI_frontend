@@ -1,27 +1,31 @@
 <template>
   <template v-if="!sceneHasImage || hdriPath">
-    <button
-      v-tooltip.bottom="
+    <Tooltip
+      :config="
         tip(
           hdriPath ? t('load3d.hdri.changeFile') : t('load3d.hdri.uploadFile')
         )
       "
-      :class="actionClass(false)"
-      type="button"
-      :aria-label="
-        compact
-          ? hdriPath
-            ? t('load3d.hdri.changeFile')
-            : t('load3d.hdri.uploadFile')
-          : undefined
-      "
-      @click="hdriFileRef?.click()"
+      side="bottom"
     >
-      <i class="icon-[lucide--upload] size-4" />
-      <span v-if="!compact">{{
-        hdriPath ? t('load3d.hdri.changeFile') : t('load3d.hdri.uploadFile')
-      }}</span>
-    </button>
+      <button
+        :class="actionClass(false)"
+        type="button"
+        :aria-label="
+          compact
+            ? hdriPath
+              ? t('load3d.hdri.changeFile')
+              : t('load3d.hdri.uploadFile')
+            : undefined
+        "
+        @click="hdriFileRef?.click()"
+      >
+        <i class="icon-[lucide--upload] size-4" />
+        <span v-if="!compact">{{
+          hdriPath ? t('load3d.hdri.changeFile') : t('load3d.hdri.uploadFile')
+        }}</span>
+      </button>
+    </Tooltip>
     <input
       ref="hdriFileRef"
       type="file"
@@ -32,42 +36,47 @@
   </template>
 
   <template v-if="hdriPath">
-    <button
-      v-tooltip.bottom="tip(t('load3d.hdri.label'))"
-      :class="actionClass(hdriEnabled)"
-      :aria-pressed="hdriEnabled"
-      type="button"
-      :aria-label="compact ? t('load3d.hdri.label') : undefined"
-      @click="toggleHdriEnabled"
-    >
-      <i class="icon-[lucide--globe] size-4" />
-      <span v-if="!compact">{{ t('load3d.hdri.label') }}</span>
-    </button>
-    <button
-      v-tooltip.bottom="tip(t('load3d.hdri.showAsBackground'))"
-      :class="actionClass(hdriShowAsBackground)"
-      :aria-pressed="hdriShowAsBackground"
-      type="button"
-      :aria-label="compact ? t('load3d.hdri.showAsBackground') : undefined"
-      @click="toggleHdriShowAsBackground"
-    >
-      <i class="icon-[lucide--image] size-4" />
-      <span v-if="!compact">{{ t('load3d.hdri.showAsBackground') }}</span>
-    </button>
-    <button
-      v-tooltip.bottom="tip(t('load3d.hdri.removeFile'))"
-      :class="actionClass(false)"
-      type="button"
-      :aria-label="compact ? t('load3d.hdri.removeFile') : undefined"
-      @click="removeHdri"
-    >
-      <i class="icon-[lucide--x] size-4" />
-      <span v-if="!compact">{{ t('load3d.hdri.removeFile') }}</span>
-    </button>
+    <Tooltip :config="tip(t('load3d.hdri.label'))" side="bottom">
+      <button
+        :class="actionClass(hdriEnabled)"
+        :aria-pressed="hdriEnabled"
+        type="button"
+        :aria-label="compact ? t('load3d.hdri.label') : undefined"
+        @click="toggleHdriEnabled"
+      >
+        <i class="icon-[lucide--globe] size-4" />
+        <span v-if="!compact">{{ t('load3d.hdri.label') }}</span>
+      </button>
+    </Tooltip>
+    <Tooltip :config="tip(t('load3d.hdri.showAsBackground'))" side="bottom">
+      <button
+        :class="actionClass(hdriShowAsBackground)"
+        :aria-pressed="hdriShowAsBackground"
+        type="button"
+        :aria-label="compact ? t('load3d.hdri.showAsBackground') : undefined"
+        @click="toggleHdriShowAsBackground"
+      >
+        <i class="icon-[lucide--image] size-4" />
+        <span v-if="!compact">{{ t('load3d.hdri.showAsBackground') }}</span>
+      </button>
+    </Tooltip>
+    <Tooltip :config="tip(t('load3d.hdri.removeFile'))" side="bottom">
+      <button
+        :class="actionClass(false)"
+        type="button"
+        :aria-label="compact ? t('load3d.hdri.removeFile') : undefined"
+        @click="removeHdri"
+      >
+        <i class="icon-[lucide--x] size-4" />
+        <span v-if="!compact">{{ t('load3d.hdri.removeFile') }}</span>
+      </button>
+    </Tooltip>
   </template>
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 

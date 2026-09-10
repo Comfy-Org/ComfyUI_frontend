@@ -1,30 +1,34 @@
 <template>
   <div v-if="renderError" class="node-error p-1 text-xs text-red-500">⚠️</div>
-  <div v-else v-tooltip.right="tooltipConfig" :class="slotWrapperClass">
-    <div class="relative flex h-full min-w-0 items-center">
-      <!-- Slot Name -->
-      <span
-        v-if="!props.dotOnly && !hasNoLabel"
-        class="truncate text-node-component-slot-text"
-      >
-        {{
-          slotData.label ||
-          slotData.localized_name ||
-          (slotData.name ?? `Output ${index}`)
-        }}
-      </span>
+  <Tooltip v-else :config="tooltipConfig" side="right">
+    <div :class="slotWrapperClass">
+      <div class="relative flex h-full min-w-0 items-center">
+        <!-- Slot Name -->
+        <span
+          v-if="!props.dotOnly && !hasNoLabel"
+          class="truncate text-node-component-slot-text"
+        >
+          {{
+            slotData.label ||
+            slotData.localized_name ||
+            (slotData.name ?? `Output ${index}`)
+          }}
+        </span>
+      </div>
+      <!-- Connection Dot -->
+      <SlotConnectionDot
+        :slot-key
+        class="w-3 translate-x-1/2"
+        :slot-data
+        @pointerdown="onPointerDown"
+      />
     </div>
-    <!-- Connection Dot -->
-    <SlotConnectionDot
-      :slot-key
-      class="w-3 translate-x-1/2"
-      :slot-data
-      @pointerdown="onPointerDown"
-    />
-  </div>
+  </Tooltip>
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { computed, onErrorCaptured, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 

@@ -53,16 +53,17 @@
             "
           />
         </Button>
-        <Button
-          v-tooltip.bottom="$t('g.learnMore')"
-          class="help-button"
-          variant="muted-textonly"
-          size="icon-sm"
-          :aria-label="$t('g.learnMore')"
-          @click.stop="onHelpClick"
-        >
-          <i class="pi pi-question size-3.5" />
-        </Button>
+        <Tooltip :config="$t('g.learnMore')" side="bottom">
+          <Button
+            class="help-button"
+            variant="muted-textonly"
+            size="icon-sm"
+            :aria-label="$t('g.learnMore')"
+            @click.stop="onHelpClick"
+          >
+            <i class="pi pi-question size-3.5" />
+          </Button>
+        </Tooltip>
       </template>
     </TreeExplorerTreeNode>
 
@@ -76,6 +77,8 @@
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import type { CSSProperties } from 'vue'
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'

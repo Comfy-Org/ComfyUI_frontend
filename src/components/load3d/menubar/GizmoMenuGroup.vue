@@ -1,52 +1,59 @@
 <template>
-  <button
-    v-tooltip.bottom="tip(t('load3d.gizmo.toggle'))"
-    :class="actionClass(gizmoEnabled)"
-    :aria-pressed="gizmoEnabled"
-    type="button"
-    :aria-label="compact ? t('load3d.gizmo.toggle') : undefined"
-    @click="toggleGizmo"
-  >
-    <i class="icon-[lucide--axis-3d] size-4" />
-    <span v-if="!compact">{{ t('load3d.gizmo.toggle') }}</span>
-  </button>
+  <Tooltip :config="tip(t('load3d.gizmo.toggle'))" side="bottom">
+    <button
+      :class="actionClass(gizmoEnabled)"
+      :aria-pressed="gizmoEnabled"
+      type="button"
+      :aria-label="compact ? t('load3d.gizmo.toggle') : undefined"
+      @click="toggleGizmo"
+    >
+      <i class="icon-[lucide--axis-3d] size-4" />
+      <span v-if="!compact">{{ t('load3d.gizmo.toggle') }}</span>
+    </button>
+  </Tooltip>
 
   <template v-if="gizmoEnabled">
     <template v-if="!compact">
-      <button
+      <Tooltip
         v-for="m in modeDefs"
         :key="m.mode"
-        v-tooltip.bottom="tip(t(m.labelKey))"
-        :class="actionClass(gizmoMode === m.mode)"
-        :aria-pressed="gizmoMode === m.mode"
-        type="button"
-        @click="setGizmoMode(m.mode)"
+        :config="tip(t(m.labelKey))"
+        side="bottom"
       >
-        <i :class="cn(m.icon, 'size-4')" />
-        <span>{{ t(m.labelKey) }}</span>
-      </button>
-      <button
-        v-tooltip.bottom="tip(t('load3d.gizmo.reset'))"
-        :class="actionClass(false)"
-        type="button"
-        @click="resetGizmoTransform"
-      >
-        <i class="icon-[lucide--rotate-ccw] size-4" />
-        <span>{{ t('load3d.gizmo.reset') }}</span>
-      </button>
+        <button
+          :class="actionClass(gizmoMode === m.mode)"
+          :aria-pressed="gizmoMode === m.mode"
+          type="button"
+          @click="setGizmoMode(m.mode)"
+        >
+          <i :class="cn(m.icon, 'size-4')" />
+          <span>{{ t(m.labelKey) }}</span>
+        </button>
+      </Tooltip>
+      <Tooltip :config="tip(t('load3d.gizmo.reset'))" side="bottom">
+        <button
+          :class="actionClass(false)"
+          type="button"
+          @click="resetGizmoTransform"
+        >
+          <i class="icon-[lucide--rotate-ccw] size-4" />
+          <span>{{ t('load3d.gizmo.reset') }}</span>
+        </button>
+      </Tooltip>
     </template>
     <Popover v-else v-model:open="modeMenuOpen">
       <PopoverTrigger as-child>
-        <button
-          v-tooltip.bottom="tip(activeModeLabel)"
-          :class="actionClass(false)"
-          type="button"
-          :aria-label="activeModeLabel"
-          data-testid="gizmo-mode-menu"
-        >
-          <i :class="cn(activeModeDef.icon, 'size-4')" />
-          <i class="icon-[lucide--chevron-down] size-4 opacity-70" />
-        </button>
+        <Tooltip :config="tip(activeModeLabel)" side="bottom">
+          <button
+            :class="actionClass(false)"
+            type="button"
+            :aria-label="activeModeLabel"
+            data-testid="gizmo-mode-menu"
+          >
+            <i :class="cn(activeModeDef.icon, 'size-4')" />
+            <i class="icon-[lucide--chevron-down] size-4 opacity-70" />
+          </button>
+        </Tooltip>
       </PopoverTrigger>
       <PopoverContent
         side="bottom"
@@ -85,6 +92,8 @@
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 

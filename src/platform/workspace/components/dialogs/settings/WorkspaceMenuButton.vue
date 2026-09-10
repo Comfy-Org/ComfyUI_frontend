@@ -1,19 +1,25 @@
 <template>
   <DropdownMenu :entries="menuItems">
     <template #button>
-      <Button
-        v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
-        variant="muted-textonly"
-        size="icon-lg"
-        :aria-label="$t('g.moreOptions')"
+      <Tooltip
+        :config="{ value: $t('g.moreOptions'), showDelay: 300 }"
+        side="right"
       >
-        <i class="pi pi-ellipsis-h" />
-      </Button>
+        <Button
+          variant="muted-textonly"
+          size="icon-lg"
+          :aria-label="$t('g.moreOptions')"
+        >
+          <i class="pi pi-ellipsis-h" />
+        </Button>
+      </Tooltip>
     </template>
   </DropdownMenu>
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import type { MenuItem } from '@/components/ui/menu/types'
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'

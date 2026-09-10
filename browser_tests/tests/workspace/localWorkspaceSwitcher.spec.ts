@@ -65,7 +65,7 @@ test.describe('Local workspace switcher', { tag: '@auth' }, () => {
     )
     await expect(scopeCaption).toBeVisible()
     await scopeCaption.locator('..').locator('.pi-info-circle').hover()
-    await expect(page.getByRole('tooltip')).toHaveText(
+    await expect(page.getByRole('tooltip')).toContainText(
       'Runs that use partner nodes spend credits from this workspace. Unlike on Cloud, every workspace saves to your usual output folder.'
     )
 

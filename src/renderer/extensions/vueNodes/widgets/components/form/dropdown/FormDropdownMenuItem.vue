@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { useIntersectionObserver } from '@vueuse/core'
 import { computed, inject, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -184,19 +186,23 @@ function handleVideoLoad(event: Event) {
         })
       "
     >
-      <span
-        v-tooltip="layout === 'grid' ? (label ?? name) : undefined"
-        :class="
-          cn(
-            'line-clamp-2 block overflow-hidden text-xs wrap-break-word',
-            'transition-colors duration-150',
-            // selection
-            !!selected && 'text-base-foreground'
-          )
-        "
+      <Tooltip
+        :config="layout === 'grid' ? (label ?? name) : undefined"
+        side="right"
       >
-        {{ label ?? name }}
-      </span>
+        <span
+          :class="
+            cn(
+              'line-clamp-2 block overflow-hidden text-xs wrap-break-word',
+              'transition-colors duration-150',
+              // selection
+              !!selected && 'text-base-foreground'
+            )
+          "
+        >
+          {{ label ?? name }}
+        </span>
+      </Tooltip>
       <!-- Meta Data -->
       <span v-if="actualDimensions" class="text-secondary block text-xs">
         {{ actualDimensions }}

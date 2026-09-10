@@ -5,52 +5,66 @@
       :title="$t('sideToolbar.nodeLibrary')"
     >
       <template #tool-buttons>
-        <Button
-          v-tooltip.bottom="$t('g.newFolder')"
-          class="new-folder-button"
-          variant="muted-textonly"
-          size="icon"
-          :aria-label="$t('g.newFolder')"
-          @click="nodeBookmarkTreeExplorerRef?.addNewBookmarkFolder()"
+        <Tooltip :config="$t('g.newFolder')" side="bottom">
+          <Button
+            class="new-folder-button"
+            variant="muted-textonly"
+            size="icon"
+            :aria-label="$t('g.newFolder')"
+            @click="nodeBookmarkTreeExplorerRef?.addNewBookmarkFolder()"
+          >
+            <i class="icon-[lucide--folder-plus] size-4" />
+          </Button>
+        </Tooltip>
+        <Tooltip
+          :config="$t('sideToolbar.nodeLibraryTab.groupBy')"
+          side="bottom"
         >
-          <i class="icon-[lucide--folder-plus] size-4" />
-        </Button>
-        <Button
-          v-tooltip.bottom="$t('sideToolbar.nodeLibraryTab.groupBy')"
-          variant="muted-textonly"
-          size="icon"
-          :aria-label="$t('sideToolbar.nodeLibraryTab.groupBy')"
-          @click="groupingPopover?.toggle($event)"
+          <Button
+            variant="muted-textonly"
+            size="icon"
+            :aria-label="$t('sideToolbar.nodeLibraryTab.groupBy')"
+            @click="groupingPopover?.toggle($event)"
+          >
+            <i :class="[selectedGroupingIcon, 'size-4']" />
+          </Button>
+        </Tooltip>
+        <Tooltip
+          :config="$t('sideToolbar.nodeLibraryTab.sortMode')"
+          side="bottom"
         >
-          <i :class="[selectedGroupingIcon, 'size-4']" />
-        </Button>
-        <Button
-          v-tooltip.bottom="$t('sideToolbar.nodeLibraryTab.sortMode')"
-          variant="muted-textonly"
-          size="icon"
-          :aria-label="$t('sideToolbar.nodeLibraryTab.sortMode')"
-          @click="sortingPopover?.toggle($event)"
+          <Button
+            variant="muted-textonly"
+            size="icon"
+            :aria-label="$t('sideToolbar.nodeLibraryTab.sortMode')"
+            @click="sortingPopover?.toggle($event)"
+          >
+            <i :class="[selectedSortingIcon, 'size-4']" />
+          </Button>
+        </Tooltip>
+        <Tooltip
+          :config="$t('sideToolbar.nodeLibraryTab.resetView')"
+          side="bottom"
         >
-          <i :class="[selectedSortingIcon, 'size-4']" />
-        </Button>
-        <Button
-          v-tooltip.bottom="$t('sideToolbar.nodeLibraryTab.resetView')"
-          variant="muted-textonly"
-          size="icon"
-          :aria-label="$t('sideToolbar.nodeLibraryTab.resetView')"
-          @click="resetOrganization"
-        >
-          <i class="icon-[lucide--filter-x] size-4" />
-        </Button>
-        <Button
-          v-tooltip.bottom="$t('menu.refresh')"
-          variant="muted-textonly"
-          size="icon"
-          :aria-label="$t('menu.refresh')"
-          @click="() => commandStore.execute('Comfy.RefreshNodeDefinitions')"
-        >
-          <i class="icon-[lucide--refresh-cw] size-4" />
-        </Button>
+          <Button
+            variant="muted-textonly"
+            size="icon"
+            :aria-label="$t('sideToolbar.nodeLibraryTab.resetView')"
+            @click="resetOrganization"
+          >
+            <i class="icon-[lucide--filter-x] size-4" />
+          </Button>
+        </Tooltip>
+        <Tooltip :config="$t('menu.refresh')" side="bottom">
+          <Button
+            variant="muted-textonly"
+            size="icon"
+            :aria-label="$t('menu.refresh')"
+            @click="() => commandStore.execute('Comfy.RefreshNodeDefinitions')"
+          >
+            <i class="icon-[lucide--refresh-cw] size-4" />
+          </Button>
+        </Tooltip>
         <Popover ref="groupingPopover">
           <div class="flex flex-col gap-1 p-2">
             <Button
@@ -160,6 +174,8 @@
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { useLocalStorage } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import Popover from '@/components/ui/popover/PopoverOverlay.vue'

@@ -301,17 +301,21 @@
                   v-if="template.isPartnerNode || template.tutorialUrl"
                   #top-right
                 >
-                  <Button
+                  <Tooltip
                     v-if="template.tutorialUrl"
-                    v-tooltip.bottom="$t('g.seeTutorial')"
-                    :aria-label="$t('g.seeTutorial')"
-                    variant="inverted"
-                    size="icon"
-                    class="not-group-hover/card:opacity-0"
-                    @click.stop="openTutorial(template)"
+                    :config="$t('g.seeTutorial')"
+                    side="bottom"
                   >
-                    <i class="icon-[lucide--info] size-4" />
-                  </Button>
+                    <Button
+                      :aria-label="$t('g.seeTutorial')"
+                      variant="inverted"
+                      size="icon"
+                      class="not-group-hover/card:opacity-0"
+                      @click.stop="openTutorial(template)"
+                    >
+                      <i class="icon-[lucide--info] size-4" />
+                    </Button>
+                  </Tooltip>
                   <PaidTemplateBadge v-if="template.isPartnerNode" />
                 </template>
               </CardTop>
@@ -346,17 +350,24 @@
                       shape="square"
                       class="bg-charcoal-500/50 opacity-80"
                     />
-                    <AccessibleTooltip
+                    <Tooltip
                       v-if="tags.hidden.length"
-                      :label="tags.hidden"
-                      trigger-class="rounded-sm"
+                      :config="tags.hidden"
+                      open-on-click
+                      suppress-description
                     >
-                      <Tag
-                        :label="`+${tags.hidden.length}`"
-                        shape="square"
-                        class="bg-charcoal-500/50 opacity-80"
-                      />
-                    </AccessibleTooltip>
+                      <button
+                        type="button"
+                        :aria-label="tags.hidden.join(', ')"
+                        class="cursor-pointer rounded-sm border-none bg-transparent p-0 focus-visible:ring-1 focus-visible:ring-base-foreground focus-visible:outline-none"
+                      >
+                        <Tag
+                          :label="`+${tags.hidden.length}`"
+                          shape="square"
+                          class="bg-charcoal-500/50 opacity-80"
+                        />
+                      </button>
+                    </Tooltip>
                   </div>
                 </div>
               </CardBottom>
@@ -438,8 +449,8 @@ import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail
 import HoverDissolveThumbnail from '@/components/templates/thumbnails/HoverDissolveThumbnail.vue'
 import LogoOverlay from '@/components/templates/thumbnails/LogoOverlay.vue'
 import Button from '@/components/ui/button/Button.vue'
-import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { selectCountBadgeClass } from '@/components/ui/select/select.variants'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import type { SelectOption } from '@/components/ui/select/types'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { useTimeout } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, ref, toValue, useTemplateRef } from 'vue'
@@ -118,20 +120,24 @@ function replayAppModeTour() {
         class="min-w-0 flex-1 truncate font-bold"
         v-text="workflowStore.activeWorkflow?.filename"
       />
-      <Button
-        v-tooltip.bottom="{
+      <Tooltip
+        :config="{
           value: t('onboardingCoachmarks.appMode.replay'),
           showDelay: 300,
           hideDelay: 300
         }"
-        variant="textonly"
-        size="icon"
-        :aria-label="t('onboardingCoachmarks.appMode.replay')"
-        class="rounded-lg border border-solid border-border-default text-muted-foreground hover:border-interface-stroke hover:text-base-foreground"
-        @click="replayAppModeTour"
+        side="bottom"
       >
-        <i class="icon-[lucide--circle-question-mark] size-4" />
-      </Button>
+        <Button
+          variant="textonly"
+          size="icon"
+          :aria-label="t('onboardingCoachmarks.appMode.replay')"
+          class="rounded-lg border border-solid border-border-default text-muted-foreground hover:border-interface-stroke hover:text-base-foreground"
+          @click="replayAppModeTour"
+        >
+          <i class="icon-[lucide--circle-question-mark] size-4" />
+        </Button>
+      </Tooltip>
     </section>
     <div
       class="flex h-full flex-col gap-2 border-x border-(--interface-stroke) bg-comfy-menu-bg px-2 md:border-y"

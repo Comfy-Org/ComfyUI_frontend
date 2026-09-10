@@ -1,7 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import userEvent from '@testing-library/user-event'
-import Tooltip from 'primevue/tooltip'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MockInstance } from 'vitest'
 import { nextTick } from 'vue'
@@ -121,8 +120,7 @@ describe('PackVersionSelectorPopover', () => {
       },
       global: {
         plugins: [i18n],
-        components: { VerifiedIcon },
-        directives: { tooltip: Tooltip }
+        components: { VerifiedIcon }
       }
     })
     return { ...result, user }

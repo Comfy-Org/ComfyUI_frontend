@@ -11,22 +11,25 @@
       <span :class="{ 'opacity-50': queuedCount === 0 }">{{
         t('sideToolbar.queueProgressOverlay.clearQueueTooltip')
       }}</span>
-      <Button
-        v-tooltip.top="clearAllJobsTooltip"
-        variant="destructive"
-        size="icon"
-        :aria-label="t('sideToolbar.queueProgressOverlay.clearQueued')"
-        :disabled="queuedCount === 0"
-        @click="$emit('clearQueued')"
-      >
-        <i class="icon-[lucide--list-x] size-4" />
-      </Button>
+      <Tooltip :config="clearAllJobsTooltip" side="top">
+        <Button
+          variant="destructive"
+          size="icon"
+          :aria-label="t('sideToolbar.queueProgressOverlay.clearQueued')"
+          :disabled="queuedCount === 0"
+          @click="$emit('clearQueued')"
+        >
+          <i class="icon-[lucide--list-x] size-4" />
+        </Button>
+      </Tooltip>
     </div>
     <JobHistoryActionsMenu @clear-history="$emit('clearHistory')" />
   </div>
 </template>
 
 <script setup lang="ts">
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
