@@ -240,7 +240,7 @@ describe('TelemetryRegistry', () => {
       entry_flow: 'initial_subscription',
       entry_source: 'pricing'
     }
-    registry.trackCheckoutJourneyEvent(event)
+    registry.captureCheckoutJourneyEvent(event)
 
     const aCall = vi.mocked(a.trackCheckoutJourneyEvent!).mock.calls[0]
     const bCall = vi.mocked(b.trackCheckoutJourneyEvent!).mock.calls[0]
@@ -263,8 +263,8 @@ describe('TelemetryRegistry', () => {
       entry_flow: 'topup',
       entry_source: 'pricing'
     }
-    registry.trackCheckoutJourneyEvent(event)
-    registry.trackCheckoutJourneyEvent(event)
+    registry.captureCheckoutJourneyEvent(event)
+    registry.captureCheckoutJourneyEvent(event)
 
     const calls = vi.mocked(provider.trackCheckoutJourneyEvent!).mock.calls
     expect(calls[0][1]).not.toBe(calls[1][1])

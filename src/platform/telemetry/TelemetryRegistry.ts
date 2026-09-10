@@ -202,11 +202,17 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackBillingEvent?.(event))
   }
 
-  trackCheckoutJourneyEvent(event: CheckoutJourneyTelemetryEvent): void {
-    const eventId = createTelemetryEventId()
+  trackCheckoutJourneyEvent(
+    event: CheckoutJourneyTelemetryEvent,
+    eventId: string
+  ): void {
     this.dispatch((provider) =>
       provider.trackCheckoutJourneyEvent?.(event, eventId)
     )
+  }
+
+  captureCheckoutJourneyEvent(event: CheckoutJourneyTelemetryEvent): void {
+    this.trackCheckoutJourneyEvent(event, createTelemetryEventId())
   }
 
   trackRunButton(properties: RunButtonProperties): void {

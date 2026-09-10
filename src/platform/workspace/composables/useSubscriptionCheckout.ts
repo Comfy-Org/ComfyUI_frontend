@@ -15,10 +15,13 @@ import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type {
+  CheckoutEntryFlow,
+  CheckoutJourneyPhaseEvent,
   PaymentIntentSource,
   SubscriptionCheckoutType
 } from '@/platform/telemetry/types'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
+import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import type {
   Plan,
@@ -33,6 +36,14 @@ import { useBillingCapabilities } from '@/platform/workspace/composables/useBill
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import {
+  bindOperationToCheckoutJourney,
+  getActiveCheckoutJourney,
+  resolveCheckoutAssignment,
+  resolveCheckoutJourney,
+  toCheckoutJourneyContext
+} from '@/platform/workspace/utils/checkoutJourney'
+import type { CheckoutJourneyRecord } from '@/platform/workspace/utils/checkoutJourney'
 import {
   clearPendingSubscriptionCheckoutIfTerminal,
   savePendingSubscriptionCheckout
@@ -267,6 +278,16 @@ export function useSubscriptionCheckout(
         preview.requires_reactivation_confirmation ?? true
     }
     quoteIsCurrent.value = true
+
+    const journey = getActiveCheckoutJourney()
+    if (journey) {
+      emitCheckoutJourneyPhase(journey, {
+        phase: 'preview_ready',
+        ...(hasQuoteIdentity(preview) && {
+          preview_revision: `${preview.quote_id}:${preview.quote_version}`
+        })
+      })
+    }
     return true
   }
 
@@ -714,6 +735,7 @@ export function useSubscriptionCheckout(
     loadingTier.value = tierKey
     selectedTierKey.value = tierKey
     selectedBillingCycle.value = billingCycle
+    enterCheckoutJourney()
 
     try {
       let planSlug = getApiPlanSlug(tierKey, billingCycle)
@@ -740,6 +762,13 @@ export function useSubscriptionCheckout(
         : await previewSubscribe(planSlug)
 
       if (!response || !response.allowed) {
+        const journey = getActiveCheckoutJourney()
+        if (journey) {
+          emitCheckoutJourneyPhase(journey, {
+            phase: 'preview_failed',
+            failure_category: 'unknown'
+          })
+        }
         toast.add({
           severity: 'error',
           summary: 'Unable to subscribe',
@@ -755,6 +784,13 @@ export function useSubscriptionCheckout(
       checkoutStep.value = 'preview'
     } catch (error) {
       if (await recoverOutstandingPayment(error)) return
+      const journey = getActiveCheckoutJourney()
+      if (journey) {
+        emitCheckoutJourneyPhase(journey, {
+          phase: 'preview_failed',
+          failure_category: categorizeBillingApiError(error)
+        })
+      }
       const message =
         error instanceof Error
           ? error.message
@@ -979,6 +1015,10 @@ export function useSubscriptionCheckout(
       if (embeddedCheckoutEnabled && quote && !quoteIsCurrent.value) {
         throw new Error(t('subscription.preview.applyQuoteBeforeContinuing'))
       }
+      const submittingJourney = getActiveCheckoutJourney()
+      if (submittingJourney) {
+        emitCheckoutJourneyPhase(submittingJourney, { phase: 'submitted' })
+      }
       const response = await subscribe(planSlug, {
         ...(embeddedCheckoutEnabled &&
           buildPaymentOptions(quote, confirmationToken, promotionCode)),
@@ -993,6 +1033,13 @@ export function useSubscriptionCheckout(
       })
 
       if (response) {
+        const linked = bindOperationToCheckoutJourney(response.billing_op_id)
+        if (linked) {
+          emitCheckoutJourneyPhase(linked, {
+            phase: 'operation_linked',
+            billing_op_id: response.billing_op_id
+          })
+        }
         trackWorkspaceCheckoutStarted({
           tier: tierKey,
           cycle: billingCycle,
@@ -1141,6 +1188,40 @@ export function useSubscriptionCheckout(
      * subscribe call), not just the poll-observation window.
      */
     attemptStartedAt?: number
+  }
+
+  function currentSubscriptionEntryFlow(): CheckoutEntryFlow {
+    return subscription.value?.isActive && subscription.value.tier !== 'FREE'
+      ? 'paid_upgrade'
+      : 'initial_subscription'
+  }
+
+  function emitCheckoutJourneyPhase(
+    record: CheckoutJourneyRecord,
+    phase: CheckoutJourneyPhaseEvent
+  ): void {
+    telemetry?.captureCheckoutJourneyEvent({
+      ...toCheckoutJourneyContext(record),
+      ...phase
+    })
+  }
+
+  function enterCheckoutJourney(): CheckoutJourneyRecord | null {
+    const workspaceId = workspaceStore.activeWorkspaceId
+    const ownerUid = useAuthStore().userId
+    if (!workspaceId || !ownerUid) return null
+
+    const { record, resumed } = resolveCheckoutJourney({
+      actorUid: ownerUid,
+      workspaceId,
+      entryFlow: currentSubscriptionEntryFlow(),
+      entrySource: 'pricing',
+      assignment: resolveCheckoutAssignment(api.getServerFeatures())
+    })
+    if (!resumed) {
+      emitCheckoutJourneyPhase(record, { phase: 'entered' })
+    }
+    return record
   }
 
   function trackSubscriptionStarted(
