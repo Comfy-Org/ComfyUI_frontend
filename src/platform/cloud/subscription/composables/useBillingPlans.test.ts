@@ -13,7 +13,7 @@ vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
   }
 }))
 
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
