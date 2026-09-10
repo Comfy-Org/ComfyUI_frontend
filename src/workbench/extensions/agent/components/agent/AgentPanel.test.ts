@@ -361,6 +361,7 @@ describe('AgentPanel', () => {
     await user.click(screen.getByRole('button', { name: 'Copy saved chat' }))
     await user.click(screen.getByRole('button', { name: 'Rename saved chat' }))
     await user.click(screen.getByRole('button', { name: 'Open saved chat' }))
+    await nextTick()
 
     expect(emitted().deleteHistory[0]).toEqual(['history-1'])
     expect(emitted().copyHistory[0]).toEqual(['history-1'])
