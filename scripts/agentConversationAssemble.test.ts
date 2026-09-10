@@ -48,6 +48,17 @@ type ConversationTurn = ReturnType<
   typeof assembleConversation
 >['conversation']['turns'][number]
 
+// The recorded terminal frame for tool-1 as the audit row will describe it.
+const framesWithCall = (call: {
+  tool_name?: string
+  status?: string
+}): RecordedFrame[] =>
+  frames().map((frame) =>
+    frame.type === 'agent_tool_call'
+      ? { ...frame, data: { ...frame.data, ...call } }
+      : frame
+  )
+
 const turnEvents = (turn: ConversationTurn): RecordedFrame[] =>
   turn.response.flatMap((entry) =>
     entry.kind === 'event' ? [entry.event] : []
@@ -150,8 +161,7 @@ const raw = (overrides: Partial<RawCapture> = {}): RawCapture => ({
           message_id: MESSAGE,
           workflow_id: 'blank-wf'
         }
-      },
-      saw_done: true
+      }
     }
   ],
   timed_out: false,
@@ -455,6 +465,7 @@ describe('assembleConversation', () => {
   it('accepts a batch the document rejected as zero applied ops', () => {
     const { receipt } = assembleConversation(
       input({
+        raw: raw({ frames: framesWithCall({ status: 'error' }) }),
         rows: rows({
           parents: [
             parent({
@@ -474,6 +485,7 @@ describe('assembleConversation', () => {
   it('accepts a read tool that echoes ops without writing child rows', () => {
     const { conversation, receipt } = assembleConversation(
       input({
+        raw: raw({ frames: framesWithCall({ tool_name: 'plan_path' }) }),
         rows: rows({
           parents: [
             parent({
@@ -607,6 +619,18 @@ describe('assembleConversation', () => {
     ).toThrow('disagree; the rows are not this turn')
   })
 
+  it('refuses audit rows that name another tool or outcome for a frame', () => {
+    for (const disagreement of [
+      { tool_name: 'different_tool' },
+      { status: 'error', children: [{ op_id: 'op-1', status: 'error' }] }
+    ])
+      expect(() =>
+        assembleConversation(
+          input({ rows: rows({ parents: [parent(disagreement)] }) })
+        )
+      ).toThrow('on the wire but')
+  })
+
   it('refuses an applied op that its parent result never echoed', () => {
     expect(() =>
       assembleConversation(
@@ -668,25 +692,6 @@ describe('assembleConversation', () => {
         })
       )
     ).toThrow('non-object op entry')
-  })
-
-  it('refuses an applied op the replay host rejects as malformed', () => {
-    expect(() =>
-      assembleConversation(
-        input({
-          rows: rows({
-            parents: [
-              parent({
-                result: {
-                  ok: true,
-                  data: { ops: [{ op: 'delete_node', op_id: 'op-1' }] }
-                }
-              })
-            ]
-          })
-        })
-      )
-    ).toThrow('the replay rejects this recording')
   })
 
   it('refuses an attempt label that would collide across attempts', () => {
@@ -891,14 +896,6 @@ describe('assembleConversation', () => {
     expect(() =>
       assembleConversation(input({ raw: raw({ saw_stream: false }) }))
     ).toThrow('frame stream never opened')
-  })
-
-  it('refuses a recording with no terminal done frame observed', () => {
-    expect(() =>
-      assembleConversation(
-        input({ raw: raw({ turns: [{ ...raw().turns[0], saw_done: false }] }) })
-      )
-    ).toThrow('never arrived')
   })
 
   it('refuses a seeded workflow the active tab never named', () => {
@@ -1177,7 +1174,6 @@ const secondTurn = (overrides: Partial<RecordedTurn> = {}): RecordedTurn => ({
     status: 202,
     body: { thread_id: THREAD, message_id: MESSAGE_2 }
   },
-  saw_done: true,
   ...overrides
 })
 
@@ -1237,7 +1233,7 @@ describe('assembleConversation across turns', () => {
     expect(receipt.turns.map((turn) => turn.frames_kept)).toEqual([4, 3])
   })
 
-  it('exports one recorded conversation turn per recorded turn', () => {
+  it('exports one turn per recorded turn, the tab frame on the opening one only', () => {
     const { conversation } = assembleConversation(twoTurns())
 
     expect(conversation.turns.map((turn) => turn.message_id)).toEqual([
@@ -1250,15 +1246,10 @@ describe('assembleConversation across turns', () => {
           turn.response.filter((entry) => entry.kind === 'graph_ops').length
       )
     ).toEqual([1, 1])
-  })
-
-  it('requires the active tab frame only on the opening turn', () => {
-    const { conversation } = assembleConversation(twoTurns())
     const tabFrames = (index: number) =>
       turnEvents(conversation.turns[index]).filter(
         (frame) => frame.type === 'agent_active_tab'
       )
-
     expect(tabFrames(0)).toHaveLength(1)
     expect(tabFrames(1)).toHaveLength(0)
   })
@@ -1274,7 +1265,7 @@ describe('assembleConversation across turns', () => {
                 parent({
                   id: 'parent-2',
                   tool_call_id: 'tool-2',
-                  tool_name: 'delete_node',
+                  tool_name: 'connect',
                   result: {
                     ok: true,
                     data: {

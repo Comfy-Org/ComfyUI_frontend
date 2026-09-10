@@ -5,7 +5,6 @@ import { FROZEN_OPS } from '@comfyorg/comfy-multi-player'
 import type { OpBase } from '@comfyorg/comfy-multi-player'
 import { z } from 'zod'
 
-import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
 import { zAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
@@ -49,9 +48,10 @@ const OP_ENVELOPE: Record<keyof OpBase, true> = {
 }
 export const OP_ENVELOPE_KEYS = Object.keys(OP_ENVELOPE)
 
-// Only the vocabulary and the absence of the envelope are checked here, so
-// the parsed op stays structural; assertOpsApply is where the production
-// applier proves the payload and the op becomes a GraphOperation.
+// Only the vocabulary and the absence of the envelope are checked here; a
+// recorded op stays structural. Nothing in this fixture parses the semantic
+// operation contract, which the package owns; assertOpsApply below applies
+// the ops to a document and reports what that application shows.
 const zGraphOperation = z
   .object({ op: z.enum(FROZEN_OPS) })
   .passthrough()
@@ -59,6 +59,7 @@ const zGraphOperation = z
     (op) => OP_ENVELOPE_KEYS.every((key) => !(key in op)),
     'a recorded op carries the semantic operation only; the wire envelope is minted at replay'
   )
+export type RecordedGraphOperation = z.infer<typeof zGraphOperation>
 
 // WorkflowJSON and WorkflowNode declare an index signature, so the schema
 // validates the guaranteed fields and keeps the rest.
@@ -153,7 +154,7 @@ const zTurn = z
           'cancel_after must precede the final agent_message_done entry; the replay stops a turn that is still running'
       })
   })
-type RecordedTurn = z.infer<typeof zTurn>
+export type AgentConversationTurn = z.infer<typeof zTurn>
 
 export const zAgentConversation = z
   .object({
@@ -192,19 +193,7 @@ export const zAgentConversation = z
           message: 'recorded turns carry the message id they were captured from'
         })
   })
-export type RecordedConversation = z.infer<typeof zAgentConversation>
-
-// The applier-proven form of a recording: the same bytes, with every op typed
-// by the library's own union. Only assertOpsApply produces it.
-type AgentConversationEntry =
-  | Extract<z.infer<typeof zResponseEntry>, { kind: 'event' }>
-  | { kind: 'graph_ops'; ops: GraphOperation[]; at_ms?: number }
-export type AgentConversationTurn = Omit<RecordedTurn, 'response'> & {
-  response: AgentConversationEntry[]
-}
-export type AgentConversation = Omit<RecordedConversation, 'turns'> & {
-  turns: AgentConversationTurn[]
-}
+export type AgentConversation = z.infer<typeof zAgentConversation>
 
 export function listRecordedConversations(): string[] {
   const dir = fileURLToPath(new URL('./conversations/', import.meta.url))
@@ -242,24 +231,21 @@ function missingValue(value: unknown, path: string): string | null {
   return null
 }
 
-// The replay's own host is the parser for the recorded operations: a
-// recording it would reject, fail to project, or leave a value-less document
-// for is refused before a replay starts. The ops carry the library's type
-// only once the host has applied every one; the returned host holds the
-// applied document.
-export function assertOpsApply(recorded: RecordedConversation): {
-  conversation: AgentConversation
-  host: HostDoc
-} {
-  const { workflow } = recorded
+// Applies every recorded op through the fixture's own host, minted from the
+// recording's seed and catalog. This is application, not parsing: it shows
+// the applier accepts each op against that document and that the projection
+// it leaves carries a value everywhere. The returned host holds the applied
+// document for whoever needs to compare against it.
+export function assertOpsApply(conversation: AgentConversation): HostDoc {
+  const { workflow } = conversation
   const host = new HostDoc(workflow.id, workflow.seed, workflow.catalog)
-  for (const [turnIndex, turn] of recorded.turns.entries())
+  for (const [turnIndex, turn] of conversation.turns.entries())
     for (const [entryIndex, entry] of turn.response.entries()) {
       if (entry.kind !== 'graph_ops') continue
       const label = `turn ${turnIndex} entry ${entryIndex}`
       let projection: unknown
       try {
-        host.apply(entry.ops as GraphOperation[])
+        host.apply(entry.ops)
         projection = host.projection()
       } catch (error) {
         throw new Error(
@@ -271,14 +257,16 @@ export function assertOpsApply(recorded: RecordedConversation): {
       if (hole !== null)
         throw new Error(`${label}: the projection carries no value at ${hole}`)
     }
-  return { conversation: recorded as AgentConversation, host }
+  return host
 }
 
 export function loadAgentConversation(caseId: string): AgentConversation {
   const file = fileURLToPath(
     new URL(`./conversations/${caseId}.json`, import.meta.url)
   )
-  return assertOpsApply(
-    zAgentConversation.parse(JSON.parse(readFileSync(file, 'utf-8')))
-  ).conversation
+  const conversation = zAgentConversation.parse(
+    JSON.parse(readFileSync(file, 'utf-8'))
+  )
+  assertOpsApply(conversation)
+  return conversation
 }

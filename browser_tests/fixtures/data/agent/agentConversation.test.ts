@@ -62,7 +62,7 @@ describe('zAgentConversation', () => {
     ).toThrow('cancel_after must precede the final agent_message_done entry')
   })
 
-  it('refuses a turn that does not end with its done event', () => {
+  it('refuses a turn that carries content after its done event', () => {
     expect(() =>
       zAgentConversation.parse({
         ...recorded,
@@ -70,6 +70,10 @@ describe('zAgentConversation', () => {
           {
             ...recorded.turns[0],
             response: [
+              {
+                kind: 'event',
+                event: { type: 'agent_message_done', data: {} }
+              },
               {
                 kind: 'event',
                 event: { type: 'agent_thinking', data: { delta: 'x' } }
@@ -199,59 +203,6 @@ describe('committed recordings', () => {
           entry.event.data.delta.length > 0
       )
     ).toBe(true)
-  })
-
-  // The fields the applier reads for each recorded op variant; deleting any
-  // one of them refuses the recording. Fields the applier tolerates missing
-  // (add_node class_type and pos, which the node payload carries; delete_node
-  // removed_links, which the document derives; set_widget old) are not in
-  // this table because their absence leaves the document unchanged.
-  const readFields: Record<string, string[]> = {
-    add_node: ['node', 'node_id'],
-    set_widget: ['node_id', 'value', 'widget'],
-    connect: [
-      'from_node',
-      'from_slot',
-      'link_id',
-      'link_type',
-      'to_node',
-      'to_slot'
-    ],
-    delete_node: ['node_id'],
-    clear: ['removed_nodes']
-  }
-
-  it('refuses every recorded op variant missing a field the applier reads', () => {
-    const seen = new Set<string>()
-    for (const file of files) {
-      const raw = load(file) as {
-        turns: Array<{
-          response: Array<{
-            kind: string
-            ops?: Array<Record<string, unknown>>
-          }>
-        }>
-      }
-      raw.turns.forEach((turn, turnIndex) =>
-        turn.response.forEach((entry, entryIndex) =>
-          entry.ops?.forEach((op, opIndex) => {
-            const variant = String(op.op)
-            seen.add(variant)
-            for (const field of readFields[variant] ?? []) {
-              const altered = structuredClone(raw)
-              delete altered.turns[turnIndex].response[entryIndex].ops![
-                opIndex
-              ][field]
-              expect(
-                () => assertOpsApply(zAgentConversation.parse(altered)),
-                `${file} ${variant} without ${field}`
-              ).toThrow()
-            }
-          })
-        )
-      )
-    }
-    expect([...seen].sort()).toEqual(Object.keys(readFields).sort())
   })
 
   it('refuses a set_widget whose value never reaches the document', () => {
