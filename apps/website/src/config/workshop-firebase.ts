@@ -1,10 +1,9 @@
 /**
  * The Workshop's Firebase surface: the package-owned identity entry bound
- * to the env-selected project, plus the sign-in actions composed with
- * customer provisioning. The sequencing rules (social always provisions a
- * customer; a failed provision during sign-up rolls the user back) live
- * tested in @comfyorg/account — this module only supplies the network
- * effects and wires them to the package identity.
+ * to the env-selected project, plus sign-in and customer provisioning as
+ * separate steps so the consumer can gate provisioning on the rollout flag.
+ * This module only supplies the network effects and wires them to the
+ * package identity.
  */
 import type { User, UserCredential } from 'firebase/auth'
 import { getAdditionalUserInfo } from 'firebase/auth'
@@ -12,8 +11,7 @@ import { getAdditionalUserInfo } from 'firebase/auth'
 import { createFirebaseIdentity } from '@comfyorg/account/firebase'
 import {
   CUSTOMER_PROVISIONING_PATH,
-  customerProvisioningRequest,
-  socialSignInWithProvisioning
+  customerProvisioningRequest
 } from '@comfyorg/account/provisioning'
 
 import {
@@ -70,32 +68,24 @@ export async function provisionCustomer(
   }
 }
 
-async function socialSignIn(
-  signIn: () => Promise<UserCredential>
-): Promise<UserCredential> {
-  let credential: UserCredential | undefined
-  try {
-    return await socialSignInWithProvisioning({
-      signIn: async () => {
-        credential = await signIn()
-        return credential
-      },
-      provisionCustomer: (result) => provisionCustomer(result.user)
-    })
-  } catch (cause) {
-    if (credential) {
-      throw new WorkshopProvisioningError(credential.user, { cause })
-    }
-    throw cause
-  }
-}
-
 export function signInWorkshopWithGoogle(): Promise<UserCredential> {
-  return socialSignIn(identity.signInWithGoogle)
+  return identity.signInWithGoogle()
 }
 
 export function signInWorkshopWithGitHub(): Promise<UserCredential> {
-  return socialSignIn(identity.signInWithGitHub)
+  return identity.signInWithGitHub()
+}
+
+// Split from sign-in so the consumer can gate it: disabling the rollout during
+// the popup must be able to stop provisioning before it fires.
+export async function provisionWorkshopCustomer(
+  credential: UserCredential
+): Promise<void> {
+  try {
+    await provisionCustomer(credential.user)
+  } catch (cause) {
+    throw new WorkshopProvisioningError(credential.user, { cause })
+  }
 }
 
 /** Whether the popup created the account, the way the cloud app reports it. */
