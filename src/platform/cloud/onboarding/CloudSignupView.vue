@@ -91,7 +91,7 @@ import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink, useRoute } from 'vue-router'
 
-import { useRegionGate } from '@comfyorg/account/regionGate'
+import { useRegionGate } from '@comfyorg/account/vue'
 
 import SignUpForm from '@/components/dialog/content/signin/SignUpForm.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'

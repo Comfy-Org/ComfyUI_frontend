@@ -390,7 +390,7 @@ describe('useAuthActions auth flow error telemetry', () => {
     expect(mockToastStore.add).toHaveBeenCalledWith({
       severity: 'error',
       summary: 'g.error',
-      detail: 'auth.errors.auth/user-not-found'
+      detail: 'auth.errors.auth/invalid-credential'
     })
   })
 
