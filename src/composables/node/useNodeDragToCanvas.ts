@@ -97,20 +97,24 @@ function addNodeAtPosition(clientX: number, clientY: number): boolean {
     useLitegraphService().addNodeOnGraph(nodeDef, { pos })
   )
   if (!node) {
-    reportError(new Error('Failed to add dragged node to the graph'), {
-      errorType: 'nodes_drag_add_failed',
-      tags: {
-        failure_kind: 'bad_state',
-        feature_area: 'nodes',
-        operation: 'render',
-        outcome: 'failed'
-      },
-      context: {
-        drag_mode: dragMode.value,
-        has_widget_values: pendingWidgetValues.value !== undefined
-      },
-      level: 'error'
-    })
+    reportError(
+      new Error(`Failed to add dragged node ${nodeDef.name} to the graph`),
+      {
+        errorType: 'nodes_drag_add_failed',
+        tags: {
+          failure_kind: 'bad_state',
+          feature_area: 'nodes',
+          operation: 'render',
+          outcome: 'failed'
+        },
+        context: {
+          drag_mode: dragMode.value,
+          node_type: nodeDef.name,
+          has_widget_values: pendingWidgetValues.value !== undefined
+        },
+        level: 'error'
+      }
+    )
     useToastStore().add({
       severity: 'error',
       summary: t('g.error'),

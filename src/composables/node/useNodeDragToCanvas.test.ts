@@ -366,7 +366,7 @@ describe('useNodeDragToCanvas', () => {
       )
       expect(mockReportError).toHaveBeenCalledWith(
         expect.objectContaining({
-          message: 'Failed to add dragged node to the graph'
+          message: 'Failed to add dragged node TestNode to the graph'
         }),
         {
           errorType: 'nodes_drag_add_failed',
@@ -378,6 +378,7 @@ describe('useNodeDragToCanvas', () => {
           },
           context: {
             drag_mode: 'click',
+            node_type: 'TestNode',
             has_widget_values: false
           },
           level: 'error'
