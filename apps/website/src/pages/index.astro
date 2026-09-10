@@ -63,7 +63,6 @@ const workshopModels = await resolveHomepageWorkshopModels(
   <SocialProofBarSection />
   <DeveloperPlatformSection client:visible />
   <MinimaxLicenseHeroSection client:visible />
-  <ModelReleaseSection client:visible />
   <FeaturedWorkflowsSection client:load />
   {workshopModels.length > 0 && <WorkshopSection models={workshopModels} />}
   <ProductShowcaseSection client:load />
@@ -71,4 +70,5 @@ const workshopModels = await resolveHomepageWorkshopModels(
   <GetStartedSection />
   <ProductCardsSection />
   <CaseStudySpotlightSection client:load />
+  <ModelReleaseSection client:visible />
 </BaseLayout>
