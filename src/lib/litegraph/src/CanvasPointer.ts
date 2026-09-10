@@ -33,6 +33,9 @@ function positionOf(e: PointerEvent): GesturePoint {
  * - {@link LGraphCanvas.processMouseUp}
  */
 export class CanvasPointer {
+  /** Maximum press duration before pointer movement starts a drag. */
+  static bufferTime = 32
+
   /** Maximum gap between pointerup and pointerdown events to be considered as a double click */
   static doubleClickTime = 300
 
@@ -203,7 +206,10 @@ export class CanvasPointer {
       return
     }
     this.eMove = e
-    this.#dispatch({ type: 'move', position: positionOf(e) }, e)
+    this.#dispatch(
+      { type: 'move', position: positionOf(e), timeStamp: e.timeStamp },
+      e
+    )
   }
 
   /**
@@ -222,6 +228,7 @@ export class CanvasPointer {
 
   #dispatch(event: GestureEvent, e: CanvasPointerEvent): GestureEffect[] {
     const { state, effects } = reduceGesture(this.#state, event, {
+      clickBufferTime: CanvasPointer.bufferTime,
       clickDrift: CanvasPointer.maxClickDrift,
       doubleClickTime: CanvasPointer.doubleClickTime
     })

@@ -10,7 +10,11 @@ import {
   reduceGesture
 } from '@/lib/litegraph/src/canvas/reduceGesture'
 
-const policy: GesturePolicy = { clickDrift: 6, doubleClickTime: 300 }
+const policy: GesturePolicy = {
+  clickBufferTime: 32,
+  clickDrift: 6,
+  doubleClickTime: 300
+}
 
 const origin = { x: 100, y: 100 }
 const nearby = { x: 104, y: 103 }
@@ -33,7 +37,7 @@ function run(events: GestureEvent[], from: GestureState = idleGesture) {
 describe('reduceGesture', () => {
   it('ignores events other than down while idle', () => {
     const events: GestureEvent[] = [
-      { type: 'move', position: far },
+      { type: 'move', position: far, timeStamp: 0 },
       { type: 'up', position: far },
       { type: 'cancel' }
     ]
@@ -44,7 +48,7 @@ describe('reduceGesture', () => {
   it('release within the drift threshold is a click and is remembered', () => {
     const { state, effects } = run([
       down(10),
-      { type: 'move', position: nearby },
+      { type: 'move', position: nearby, timeStamp: 20 },
       { type: 'up', position: nearby }
     ])
 
@@ -58,11 +62,21 @@ describe('reduceGesture', () => {
   it('movement past the drift threshold starts and moves a drag, however slow', () => {
     const { state, effects } = run([
       down(0),
-      { type: 'move', position: nearby },
-      { type: 'move', position: far }
+      { type: 'move', position: nearby, timeStamp: 10 },
+      { type: 'move', position: far, timeStamp: 20 }
     ])
 
-    expect(effects).toEqual(['startDrag', 'moveDrag'])
+    expect(effects).toEqual(['moveDrag', 'startDrag'])
+    expect(state.phase).toBe('dragging')
+  })
+
+  it('movement after the click buffer starts a drag within the drift threshold', () => {
+    const { state, effects } = run([
+      down(0),
+      { type: 'move', position: nearby, timeStamp: 33 }
+    ])
+
+    expect(effects).toEqual(['moveDrag', 'startDrag'])
     expect(state.phase).toBe('dragging')
   })
 
@@ -72,13 +86,13 @@ describe('reduceGesture', () => {
     const { state, effects } = run(
       [
         down(1000),
-        { type: 'move', position: far },
+        { type: 'move', position: far, timeStamp: 1010 },
         { type: 'up', position: far }
       ],
       remembered
     )
 
-    expect(effects).toEqual(['startDrag', 'moveDrag', 'endDrag'])
+    expect(effects).toEqual(['moveDrag', 'startDrag', 'endDrag'])
     expect(state).toEqual(remembered)
   })
 
@@ -121,11 +135,15 @@ describe('reduceGesture', () => {
     const remembered = run([down(0), { type: 'up', position: origin }]).state
 
     const { state, effects } = run(
-      [down(50), { type: 'move', position: far }, { type: 'cancel' }],
+      [
+        down(50),
+        { type: 'move', position: far, timeStamp: 60 },
+        { type: 'cancel' }
+      ],
       remembered
     )
 
-    expect(effects).toEqual(['startDrag', 'moveDrag', 'cancelDrag'])
+    expect(effects).toEqual(['moveDrag', 'startDrag', 'cancelDrag'])
     expect(state).toEqual(idleGesture)
   })
 })
