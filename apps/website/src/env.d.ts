@@ -13,3 +13,15 @@ interface ImportMetaEnv {
   readonly PUBLIC_POSTHOG_UI_HOST?: string
   readonly PUBLIC_CUSTOMERIO_WRITE_KEY?: string
 }
+
+// `astro check` resolves `.astro` imports through its own language server, but
+// `vue-tsc` (plain tsc plus the Vue plugin) has no resolver for the extension
+// at all, so a `.ts` file that imports an `.astro` component -- e.g.
+// src/components/engineering-blog/diagrams/registry.ts -- fails with
+// TS2307 under `pnpm typecheck` even though the app builds fine.
+declare module '*.astro' {
+  import type { AstroComponentFactory } from 'astro/runtime/server/index.js'
+
+  const Component: AstroComponentFactory
+  export default Component
+}

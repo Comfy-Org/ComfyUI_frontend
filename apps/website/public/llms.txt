@@ -259,6 +259,7 @@ Languages: comfy.org is published in English and Simplified Chinese, with a Japa
 
 - [Blog](https://blog.comfy.org/): Product announcements, technical deep-dives, and customer stories.
 - [Blog RSS feed](https://blog.comfy.org/feed): Machine-readable feed of every post.
+- [Engineering Blog](https://comfy.org/engineering-blog/): Stories from the team building Comfy's agent platform — the problems that forced a real design decision, and how we got there.
 - [Gemini Omni 1.1 Flash in ComfyUI](https://blog.comfy.org/p/gemini-omni-11-flash-in-comfyui-faster): 4K output, keyframe interpolation, and conversational video editing in your workflow.
 - [Comfy is now an official reseller of MiniMax H3 commercial licenses](https://blog.comfy.org/p/comfy-is-now-the-only-official-reseller): How to license MiniMax H3 and MiniMax Audio & Music for commercial use through Comfy.
 - [Wan 3.0 in ComfyUI](https://blog.comfy.org/p/wan-30-in-comfyui-native-30-second): Native 30-second video with up to 20 reference assets and instruction-driven editing.

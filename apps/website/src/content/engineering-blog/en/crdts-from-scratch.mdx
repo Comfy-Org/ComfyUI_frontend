@@ -1,0 +1,76 @@
+---
+title: "The Stamp That Replaced the Clock"
+description: "The moment a wall-clock timestamp almost got to decide whose edit won, and the small, self-contained idea that replaced it — so any two copies of a Comfy workflow always agree, without ever asking each other."
+author: Kishore
+date: 2026-08-22
+heroDiagram: stamp
+sourceSection: "Understand This System — 7 · CRDTs from scratch"
+---
+
+Here's a bug that never shipped, but very nearly did: two edits land on the same document at the same instant, and the system decides who wins by asking each machine what time it is. That works fine right up until someone's laptop clock is five minutes fast — and then that laptop wins every argument it will ever have, forever, whether or not its edit actually happened last.
+
+The fix says something true of most good distributed-systems engineering: the interesting part usually isn't the algorithm. It's deciding what information the system is actually allowed to trust.
+
+## Two editors, one document, no referee
+
+Ann sets a node's image prompt to "a dog." At the same instant, the agent sets it to "a fox." Both copies of the workflow have to end up showing the same thing — nobody's going to interrupt either of them to ask "wait, which one do you want?"
+
+That's the whole job of the technology Comfy uses here, a CRDT (conflict-free replicated data type). Strip away the acronym and it promises one thing: **if two copies have seen the same set of changes, they show the same thing** — no matter what order the changes arrived in, and without either copy ever asking anyone what to do.
+
+## Why "whoever wrote it later wins" quietly lies to you
+
+The obvious rule is last-write-wins: compare timestamps, the bigger one wins. It's also quietly broken, for a reason worth internalizing — **clocks on different machines disagree.** Not by a little. By seconds or minutes, and sometimes they jump backwards. If "later" means "the bigger clock reading," a laptop whose clock runs five minutes fast wins every argument it will ever have, whether it actually edited last or not. This is one of the most common sources of real-world data-loss bugs in sync systems, and it's exactly the trap Comfy's merge engine was built to avoid.
+
+## The fix: a stamp, not a clock
+
+Instead of a wall-clock reading, every operation carries a **stamp** — a small bundle of information, compared field by field until a difference appears. It has three parts:
+
+| Part | What it is | Why it's there |
+|---|---|---|
+| `base_version` | Which version of the document the change was written against | The main ordering signal — a change written against a newer document generally wins |
+| `actor` | Who made it — an agent, a human, or the system | Second tie-breaker, and it makes attribution possible |
+| `op_id` | A random unique ID minted by whoever created the change | Final tie-breaker, and — separately — the duplicate detector |
+
+Compare `base_version`. If tied, compare `actor`. If still tied, compare `op_id`. Since `op_id` is unique, there's always a winner — and every copy computes the *same* winner, because all three values travel inside the change itself. No copy has to ask a server who won. The answer is in the data.
+
+Back to Ann and the agent, made concrete:
+
+```json
+// Ann's operation
+{ "op_id": "a1b2c3", "actor": "human:ann", "base_version": 4,
+  "op": { "type": "set_widget", "node": 7, "widget": "width", "value": 1024 } }
+
+// The agent's operation
+{ "op_id": "d4e5f6", "actor": "agent:turn-99", "base_version": 4,
+  "op": { "type": "set_widget", "node": 7, "widget": "width", "value": 768 } }
+```
+
+Same field, same base version — a genuine conflict. `base_version` is tied. Suppose `actor` is tied too. Compare `op_id`: `d4e5f6` beats `a1b2c3`, so the agent's `768` wins.
+
+<StampDiagram />
+
+Now the part that actually matters: a replica in Sydney that receives Ann's operation first and the agent's second gets `768`. A replica in Berlin that receives them in the opposite order also gets `768`. Neither asked anyone — both ran the same three-step comparison on information that was already sitting inside the operations. And if the network happens to deliver Ann's operation twice, the second arrival is recognized by its `op_id`, already in the applied list, and does nothing at all.
+
+That's a CRDT working. Not "no conflict occurred" — there was a real conflict over a real field. What happened is that the conflict resolved *identically everywhere*, without coordination.
+
+## The same idea, applied to deletion
+
+Deletion gets the same treatment for the same reason. If Ann deletes a node while the agent, working from a slightly stale copy, is unaware and reconnects a wire to it, a naive "just remove the entry" would let that stale add resurrect a node a person deliberately deleted — a bug engineers call **zombie data**. Comfy's operation log avoids it by never actually erasing a delete: it marks the entry dead instead, and a dead marker beats a live one, no matter which one a given replica saw first. Deleting stays final, the way people expect it to.
+
+## Why operations, not bytes
+
+Comfy's CRDT is **operation-based**: what travels between copies is a small message like "set widget width on node 7 to 1024," with its stamp attached — not a diff of raw bytes. And those operations are **semantic**: they speak the vocabulary of workflows (`add_node`, `connect`, `set_widget`, `remove_node`), not the vocabulary of an underlying data structure.
+
+That distinction earns its keep three ways. The operation log is a genuine audit trail — it shows that the agent added an upscaler at a specific time, where a list of byte-level edits would tell you nothing. Rules become enforceable — "reject a widget write to a node type that isn't in the catalog" is expressible against `set_widget`, but not against an opaque binary edit. And it keeps the door open for the future: two copies that edited independently for a long time can exchange semantic operations and merge sensibly, where exchanging raw structural diffs between independently-edited documents is the kind of thing that actually corrupts data.
+
+## What a stamp can't buy you
+
+This part matters, because over-claiming here causes bad decisions downstream. A stamp guarantees *agreement* — every replica converges on the same answer. It does not guarantee that answer is what anyone *wanted*. In the worked example above, Ann wanted `1024` and the document now says `768`. Consistent, not correct-in-spirit.
+
+It also doesn't enforce rules that span multiple parts of a document on its own. "Every wire must point at a node that exists" isn't something the stamp checks for free — if Ann deletes a node while the agent simultaneously wires something to it, both changes are individually valid, and the merged result has a wire pointing at nothing. Catching that is a job for how operations are defined and what the rendering layer does with orphaned references, not something the stamp buys automatically.
+
+And for two edits made far apart in time against the same base — long enough that neither side had any way to know about the other — the stamp still produces an answer. Just not necessarily the most thoughtful one a person would have picked by hand. Every replica agrees on it, which is the actual guarantee being sold here: agreement, not editorial judgment.
+
+## The takeaway
+
+A clock trusts the network to be honest about time it has no way to verify. A stamp doesn't have to trust anything — it just carries enough information for any computer to compute the same answer alone. That's the whole idea, and it's why "CRDT" is better read as a design habit than a scary acronym: attribute every change, make merge rules that don't care about arrival order, and never let two implementations of the rule exist to disagree with each other.
