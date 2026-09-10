@@ -6553,9 +6553,9 @@ Enterprise`
     'zh-CN': '世界各地的活动'
   },
   'events.directory.lead': {
-    en: "Every event looks different, but they share the same energy: a room full of people building with ComfyUI. If you've got an audience and a vision, we want to hear from you.",
+    en: "Every event shares the same energy: people building with ComfyUI. If you've got an audience and a vision, we want to hear from you.",
     'zh-CN':
-      '每场活动都各不相同，但都洋溢着同样的能量：一屋子用 ComfyUI 创作的人。如果你有观众、有想法，我们期待听到你的声音。'
+      '每场活动都洋溢着同样的能量：一群用 ComfyUI 创作的人。如果你有观众、有想法，我们期待听到你的声音。'
   },
   'events.directory.count': { en: '{count} events', 'zh-CN': '{count} 场活动' },
   // zh-CN has no plural form; the key exists so English can say "1 event".
