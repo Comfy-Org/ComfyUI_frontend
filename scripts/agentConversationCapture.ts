@@ -85,6 +85,13 @@ function operationsFromResult(toolCall: z.infer<typeof zToolCall>) {
   })
 }
 
+// `zAgentToolCallData.status` is `running | success | error`; anything else
+// is an unrecognized frame, not a licence to close the call out.
+const TERMINAL_TOOL_CALL_STATUSES: ReadonlySet<unknown> = new Set([
+  'success',
+  'error'
+])
+
 // Frames such as `agent_active_tab` carry the turn identity optionally
 // (`zAgentActiveTabData`); only a present, mismatched field is foreign.
 function belongsToTurn(field: unknown, expected: string): boolean {
@@ -130,8 +137,9 @@ export function exportAgentConversation(input: unknown) {
       const status = event.data.status
       if (
         typeof toolCallId === 'string' &&
-        status !== 'running' &&
-        toolCalls.has(toolCallId)
+        TERMINAL_TOOL_CALL_STATUSES.has(status) &&
+        toolCalls.has(toolCallId) &&
+        !emittedToolCalls.has(toolCallId)
       ) {
         const operations = operationsFromResult(toolCalls.get(toolCallId)!)
         if (operations.length > 0) {

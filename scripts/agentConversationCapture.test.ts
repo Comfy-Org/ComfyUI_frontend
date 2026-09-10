@@ -133,6 +133,39 @@ describe('exportAgentConversation', () => {
     ).toThrow('does not belong to capture thread-1/message-1')
   })
 
+  it('inserts the accepted batch once when a call reports two terminal frames', () => {
+    const conversation = exportAgentConversation({
+      ...capture,
+      frames: [
+        capture.frames[0],
+        {
+          ...capture.frames[1],
+          data: { ...capture.frames[1].data, status: 'error' }
+        },
+        capture.frames[1]
+      ]
+    })
+
+    expect(
+      conversation.response.filter((entry) => entry.kind === 'graph_ops')
+    ).toHaveLength(1)
+  })
+
+  it('does not treat an unrecognized tool-call status as terminal', () => {
+    expect(() =>
+      exportAgentConversation({
+        ...capture,
+        frames: [
+          capture.frames[0],
+          {
+            ...capture.frames[1],
+            data: { ...capture.frames[1].data, status: 'queued' }
+          }
+        ]
+      })
+    ).toThrow('no terminal websocket frame for tool call(s): tool-1')
+  })
+
   it('refuses accepted ops whose recorded result carries no operation payload', () => {
     expect(() =>
       exportAgentConversation({
