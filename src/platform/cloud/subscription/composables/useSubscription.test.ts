@@ -708,6 +708,41 @@ describe('useSubscription', () => {
       )
     })
 
+    it('does not carry a past network failure into a reachable-billing report', async () => {
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-recovered-reachable',
+          started_at_ms: Date.now() - 11 * 60 * 1000,
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+      // Fail every attempt up to the last rung, so the flag is set, then let the
+      // call that exhausts the ladder reach billing successfully.
+      mockGetBillingStatus.mockRejectedValue(new Error('offline'))
+      mockIsLoggedIn.value = true
+
+      useSubscriptionWithScope()
+      await vi.advanceTimersByTimeAsync(13_000)
+
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: false,
+        has_funds: false,
+        renewal_date: ''
+      })
+      await vi.advanceTimersByTimeAsync(30_000)
+
+      expect(mockReportTelemetryError).toHaveBeenCalledOnce()
+      expect(mockReportTelemetryError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'cloud_checkout_completion_missing'
+        })
+      )
+    })
+
     it('separates an unreachable billing API from a missing completion', async () => {
       localStorage.setItem(
         PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
