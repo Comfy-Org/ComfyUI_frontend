@@ -111,16 +111,6 @@ export type SessionResult =
 export type SessionFailure = Extract<SessionResult, { status: 'error' }>
 
 /**
- * The identity boundary. An internal port, not a host adapter: real hosts
- * get their implementation from `@comfyorg/account/firebase`; tests brand a
- * fake through `@comfyorg/account/testing`. `attachIdentity` accepts only
- * the branded form.
- */
-export interface IdentityPort<TUser extends AccountUser = AccountUser> {
-  onUserChanged: (callback: (user: TUser | null) => void) => () => void
-}
-
-/**
  * Raw string storage for the credential cache. Hosts wrap their medium —
  * per-tab browser storage today, a cookie-backed session tomorrow. Each client
  * instance sees only its own storage: signing out in one tab leaves another
