@@ -153,7 +153,7 @@ const i18n = createI18n({
           },
           ending: {
             title: 'Your team plan ends on {date}',
-            body: 'Members keep full access until then. Reactivate to keep your shared credits and seats.',
+            body: 'Members keep full access until then. Resume your subscription to keep your shared credits and seats.',
             reactivate: 'Resume subscription'
           },
           planChange: {
