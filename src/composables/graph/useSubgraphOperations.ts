@@ -38,11 +38,16 @@ export function useSubgraphOperations() {
     const graph = canvas.subgraph ?? canvas.graph
     if (!graph) return
 
+    let unpackedCount = 0
     for (const subgraphNode of subgraphNodes) {
+      if (!graph.unpackSubgraph(subgraphNode, { skipMissingNodes })) continue
       nodeOutputStore.revokeSubgraphPreviews(subgraphNode)
-      graph.unpackSubgraph(subgraphNode, { skipMissingNodes })
+      unpackedCount++
     }
-    workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
+    // Nothing changed if every unpack was refused; skip the undo checkpoint.
+    if (unpackedCount > 0) {
+      workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
+    }
   }
 
   const unpackSubgraph = () => {

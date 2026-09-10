@@ -2434,10 +2434,13 @@ export class LGraph
   /**
    * Unpacks a subgraph node, replacing it with its contents.
    *
-   * Validates every inner link before mutating the graph. If any link
-   * references a node that is not part of the subgraph, nothing is changed.
+   * Before mutating the graph, checks that every inner link's endpoints
+   * resolve to a node and slot the unpack implementation can rewire
+   * (an inner node slot, or a subgraph IO boundary slot on this node).
+   * If a link fails that check, the graph is left untouched. Other
+   * failure modes during unpacking are not covered by this preflight.
    * @returns `true` if the subgraph was unpacked, `false` if it was left
-   * untouched because its links were malformed.
+   * untouched because a link could not be resolved.
    */
   unpackSubgraph(
     subgraphNode: SubgraphNode,
@@ -2448,8 +2451,19 @@ export class LGraph
 
     const malformedLink = this._findMalformedSubgraphLink(subgraphNode)
     if (malformedLink) {
-      console.error(
-        `Cannot unpack subgraph: link ${malformedLink.id} references a node that is not in the subgraph (origin ${malformedLink.origin_id}, target ${malformedLink.target_id})`
+      reportError(
+        new Error('Cannot unpack subgraph: unresolvable inner link'),
+        {
+          errorType: 'error_unpacking_subgraph_link',
+          context: {
+            subgraphNodeId: subgraphNode.id,
+            linkId: malformedLink.id,
+            originId: malformedLink.origin_id,
+            originSlot: malformedLink.origin_slot,
+            targetId: malformedLink.target_id,
+            targetSlot: malformedLink.target_slot
+          }
+        }
       )
       return false
     }
@@ -2467,27 +2481,41 @@ export class LGraph
   }
 
   /**
-   * Finds the first inner link whose endpoints are not resolvable during
-   * unpacking. Endpoints on the subgraph IO boundary and unassigned
-   * endpoints are legitimately skipped by the unpack implementation and are
-   * not considered malformed.
+   * Finds the first inner link that the unpack implementation could not
+   * reconnect: an endpoint node that is not in the subgraph, or an
+   * `origin_slot` / `target_slot` that does not exist on its node. Boundary
+   * endpoints are checked against the slot they remap to on the subgraph node
+   * (`subgraphNode.inputs` / `subgraphNode.outputs`). Unassigned endpoints are
+   * legitimately skipped by the unpack implementation and are not considered
+   * malformed.
    */
   private _findMalformedSubgraphLink(
     subgraphNode: SubgraphNode
   ): LLink | undefined {
     const { subgraph } = subgraphNode
-    const innerNodeIds = new Set<NodeId>(subgraph.nodes.map((n) => n.id))
+
+    const originOk = (link: LLink): boolean => {
+      if (link.origin_id === UNASSIGNED_NODE_ID) return true
+      if (link.origin_id === SUBGRAPH_INPUT_ID)
+        return (
+          link.origin_slot >= 0 && link.origin_slot < subgraphNode.inputs.length
+        )
+      const origin = subgraph.getNodeById(link.origin_id)
+      return origin?.outputs[link.origin_slot] !== undefined
+    }
+    const targetOk = (link: LLink): boolean => {
+      if (link.target_id === UNASSIGNED_NODE_ID) return true
+      if (link.target_id === SUBGRAPH_OUTPUT_ID)
+        return (
+          link.target_slot >= 0 &&
+          link.target_slot < subgraphNode.outputs.length
+        )
+      const target = subgraph.getNodeById(link.target_id)
+      return target?.inputs[link.target_slot] !== undefined
+    }
 
     for (const link of subgraph.links.values()) {
-      const originOk =
-        link.origin_id === SUBGRAPH_INPUT_ID ||
-        link.origin_id === UNASSIGNED_NODE_ID ||
-        innerNodeIds.has(link.origin_id)
-      const targetOk =
-        link.target_id === SUBGRAPH_OUTPUT_ID ||
-        link.target_id === UNASSIGNED_NODE_ID ||
-        innerNodeIds.has(link.target_id)
-      if (!originOk || !targetOk) return link
+      if (!originOk(link) || !targetOk(link)) return link
     }
     return undefined
   }

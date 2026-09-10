@@ -260,6 +260,52 @@ describe('SubgraphConversion', () => {
       expect(graph.nodes.length).toBe(nodeCount)
       expect(JSON.stringify(graph.serialize())).toBe(before)
     })
+    it('Should leave the graph untouched when a subgraph link has an invalid origin slot', () => {
+      const subgraph = createTestSubgraph()
+      const subgraphNode = createTestSubgraphNode(subgraph)
+      const graph = subgraphNode.graph!
+      graph.add(subgraphNode)
+
+      const innerNode1 = createTestNode(subgraph, [], ['number'])
+      const innerNode2 = createTestNode(subgraph, ['number'], [])
+      const innerLink = innerNode1.connect(0, innerNode2, 0)
+      assert(innerLink)
+
+      // Node IDs are valid, but the slot index does not exist on the origin node.
+      innerLink.origin_slot = 9999
+
+      const before = JSON.stringify(graph.serialize())
+      const nodeCount = graph.nodes.length
+
+      expect(graph.unpackSubgraph(subgraphNode)).toBe(false)
+
+      expect(graph.getNodeById(subgraphNode.id)).toBeDefined()
+      expect(graph.nodes.length).toBe(nodeCount)
+      expect(JSON.stringify(graph.serialize())).toBe(before)
+    })
+    it('Should leave the graph untouched when a subgraph link has an invalid target slot', () => {
+      const subgraph = createTestSubgraph()
+      const subgraphNode = createTestSubgraphNode(subgraph)
+      const graph = subgraphNode.graph!
+      graph.add(subgraphNode)
+
+      const innerNode1 = createTestNode(subgraph, [], ['number'])
+      const innerNode2 = createTestNode(subgraph, ['number'], [])
+      const innerLink = innerNode1.connect(0, innerNode2, 0)
+      assert(innerLink)
+
+      // Node IDs are valid, but the slot index does not exist on the target node.
+      innerLink.target_slot = 9999
+
+      const before = JSON.stringify(graph.serialize())
+      const nodeCount = graph.nodes.length
+
+      expect(graph.unpackSubgraph(subgraphNode)).toBe(false)
+
+      expect(graph.getNodeById(subgraphNode.id)).toBeDefined()
+      expect(graph.nodes.length).toBe(nodeCount)
+      expect(JSON.stringify(graph.serialize())).toBe(before)
+    })
     it('Should report success when unpacking an intact subgraph', () => {
       const subgraph = createTestSubgraph()
       const subgraphNode = createTestSubgraphNode(subgraph)
