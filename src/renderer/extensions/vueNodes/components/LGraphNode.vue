@@ -351,8 +351,7 @@ const isSelected = computed(() => {
 const nodeLocatorId = computed(
   () => locatorIdFromState(nodeData, canvasStore.rootGraphId) ?? undefined
 )
-const { executing, progress, activity } =
-  useNodeExecutionState(nodeLocatorId)
+const { executing, progress, activity } = useNodeExecutionState(nodeLocatorId)
 const hasAnyError = computed(() =>
   nodeHasError(nodeData, canvasStore.rootGraphId, lgraphNode.value)
 )
