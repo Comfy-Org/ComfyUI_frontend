@@ -181,6 +181,9 @@ const graphMutations = (workflowId: string) => {
   const existing = graphMutationsByWorkflow.get(workflowId)
   if (existing && existing.documentId === documentId) return existing.mutations
   const mutations = createGraphMutations({
+    onCommitted() {
+      if (documentId) graphDocumentStore.markMutated(documentId)
+    },
     getScope() {
       const registered = documentId
         ? (graphDocumentStore.getDocument(documentId)?.scope ?? null)
