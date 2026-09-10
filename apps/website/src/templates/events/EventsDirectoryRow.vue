@@ -76,7 +76,7 @@ useResizeObserver(descEl, ([entry]) => {
       :alt="row.media.alt"
       loading="lazy"
       decoding="async"
-      class="aspect-16/10 w-28 shrink-0 rounded-xl object-cover sm:w-36"
+      class="aspect-16/10 w-28 shrink-0 self-start rounded-xl object-cover sm:w-36"
     />
 
     <div class="flex min-w-0 flex-1 flex-col gap-0.5">
