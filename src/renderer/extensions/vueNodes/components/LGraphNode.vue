@@ -417,7 +417,7 @@ async function nodeOnPointerdown(event: PointerEvent) {
   const node = resolveLGraphNode()
   if (event.altKey && node) {
     const result = LGraphCanvas.cloneNodes([node])
-    if (result?.created?.length) {
+    if (result?.created.length) {
       const [newNode] = result.created
       const newNodeId =
         typeof newNode.id === 'number' ? toNodeId(newNode.id) : newNode.id
@@ -440,7 +440,7 @@ const handleContextMenu = (event: MouseEvent) => {
   handleNodeRightClick(event as PointerEvent, nodeData.id)
 
   // Show the node options menu at the cursor position
-  showNodeOptions(event, undefined, nodeData.id)
+  showNodeOptions(event, { nodeId: nodeData.id })
 }
 
 const baseResizeHandleClasses =
@@ -664,9 +664,9 @@ const showAdvancedInputsButton = computed(() => {
   }
 
   const hasAdvancedWidgets = widgetIds.value.some((id) => {
-    const renderState = widgetValueStore.getWidgetRenderState(id)
-    const widgetState = widgetValueStore.getWidget(id)
-    return renderState?.advanced ?? widgetState?.options?.advanced
+    const visibility = widgetValueStore.getWidgetVisibility(id)
+    if (visibility) return visibility.surfaces.vueNode === 'advanced'
+    return widgetValueStore.getWidget(id)?.options?.advanced
   })
   const alwaysShowAdvanced = settingStore.get(
     'Comfy.Node.AlwaysShowAdvancedWidgets'

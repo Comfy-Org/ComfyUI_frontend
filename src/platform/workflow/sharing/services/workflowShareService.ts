@@ -10,7 +10,7 @@ import type {
   WorkflowPublishResult,
   WorkflowPublishStatus
 } from '@/platform/workflow/sharing/types/shareTypes'
-import { assetService } from '@/platform/assets/services/assetService'
+import { useAssetsStore } from '@/stores/assetsStore'
 import type { ThumbnailType } from '@/platform/workflow/sharing/types/comfyHubTypes'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { AssetInfo } from '@/schemas/apiSchema'
@@ -105,7 +105,7 @@ function parsePublishedAt(value: string | null | undefined): Date | null {
 
 function normalizeShareUrl(shareId: string): string {
   const queryString = `share=${encodeURIComponent(shareId)}`
-  if (typeof window === 'undefined' || !window.location?.origin) {
+  if (typeof window === 'undefined' || !window.location.origin) {
     return `/?${queryString}`
   }
 
@@ -205,7 +205,7 @@ export function useWorkflowShareService() {
     if (!record || !record.shareId || !record.publishedAt) return UNPUBLISHED
 
     let prefill: PublishPrefill | null = record.prefill
-    if (!prefill && record.listed) {
+    if (shouldFetchPrefill(record.listed, prefill)) {
       try {
         prefill = await fetchHubWorkflowPrefill(record.shareId)
       } catch {
@@ -225,9 +225,9 @@ export function useWorkflowShareService() {
   async function getShareableAssets(
     includingPublic = false
   ): Promise<AssetInfo[]> {
-    const graph = app.rootGraph
-    if (!graph) return []
+    if (!app.isGraphReady) return []
 
+    const graph = app.rootGraph
     const { output } = await app.graphToPrompt(graph)
     const { assets } = await api.getShareableAssets(output)
 
@@ -280,7 +280,7 @@ export function useWorkflowShareService() {
       throw new Error(`Failed to import assets: ${response.status}`)
     }
 
-    assetService.invalidateInputAssetsIncludingPublic()
+    await useAssetsStore().inputAssets.invalidate()
   }
 
   return {
@@ -290,4 +290,8 @@ export function useWorkflowShareService() {
     getSharedWorkflow,
     importPublishedAssets
   }
+}
+
+function shouldFetchPrefill(listed: boolean, prefill: PublishPrefill | null) {
+  return listed && !prefill
 }

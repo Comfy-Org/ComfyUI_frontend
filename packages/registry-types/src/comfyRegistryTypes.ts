@@ -2952,7 +2952,6 @@ export interface paths {
         /**
          * Create a Multi-Image to 3D Task
          * @description Create a new Multi-Image to 3D task. This task generates a 3D model from 1 to 4 images of the same object from different angles.
-         *     Mesh generation uses Meshy-5 model, while texture generation supports Meshy-6-preview model.
          */
         post: operations["meshyMultiImageTo3DCreate"];
         delete?: never;
@@ -3112,7 +3111,7 @@ export interface paths {
         put?: never;
         /**
          * Create a Text to 3D Preview Task
-         * @description Create a new Text to 3D Preview task. This task costs 20 credits for Meshy-6 models and 5 credits for other models.
+         * @description Create a new Text to 3D Preview task.
          */
         post: operations["meshyTextTo3DCreate"];
         delete?: never;
@@ -3369,7 +3368,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Edit an image using OpenAI's DALL-E model */
+        /** Edit an image using OpenAI's image models */
         post: operations["openAIEditImage"];
         delete?: never;
         options?: never;
@@ -5323,7 +5322,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Retrieve all nodes */
+        /**
+         * Retrieve all nodes
+         * @description Returns at most the first 10 nodes for the publisher. This operation takes no pagination parameters and its response carries no total or page metadata, so a truncated result is indistinguishable from a complete one — including when include_banned=false filters the list. Use listNodesForPublisherV2 for a complete, paginated listing.
+         */
         get: operations["listNodesForPublisher"];
         put?: never;
         /** Create a new custom node */
@@ -5706,21 +5708,38 @@ export interface components {
             ephemeral_1h_input_tokens?: number;
             ephemeral_5m_input_tokens?: number;
         };
-        /** @description Request body for Anthropic Messages API (`/v1/messages`). Mirrors the upstream schema with strict typing only on fields the proxy reads (model, prompt extraction, streaming, billing). Other top-level fields (`tools`, `temperature`, `top_p`, `thinking`, `metadata`, etc.) pass through unchanged via `additionalProperties`. */
-        AnthropicCreateMessageRequest: {
+        /**
+         * @description Request body for Anthropic Messages API (`/v1/messages`). Mirrors the upstream schema with strict typing only on fields the proxy reads (model, prompt extraction, streaming, billing). Other top-level fields (`tools`, `temperature`, `top_p`, `thinking`, `metadata`, etc.) pass through unchanged via `additionalProperties`.
+         * @example {
+         *       "max_tokens": 16,
+         *       "messages": [
+         *         {
+         *           "content": "Reply with the single word: ok",
+         *           "role": "user"
+         *         }
+         *       ]
+         *     }
+         */
+        AnthropicCreateMessageInputs: {
             /** @description Maximum number of tokens to generate before stopping. */
             max_tokens: number;
             /** @description Conversation turns. See Anthropic Messages API docs for the full content-block taxonomy. */
             messages: components["schemas"]["AnthropicMessageParam"][];
             /** @description Anthropic model identifier (e.g. `claude-sonnet-4-5`, `claude-opus-4-7`). */
-            model: string;
+            model?: string;
             /** @description When true, the response is a `text/event-stream` of Anthropic message events instead of a single JSON body. */
             stream?: boolean;
-            /** @description Top-level system prompt. Anthropic also accepts an array form via passthrough. */
-            system?: string;
+            /** @description Top-level system prompt. Either a string or an array of content blocks; both reach Anthropic unchanged. */
+            system?: unknown;
         } & {
             [key: string]: unknown;
         };
+        /**
+         * @description Request body for the v1 `POST /proxy/anthropic/v1/messages` operation.
+         *     It composes `AnthropicCreateMessageInputs` rather than restating its fields, and adds back the one field only the v1 surface can demand. `model` is load-bearing: this route carries no path segment supplying it, so a caller must send it, whereas the Comfy Router route `POST /v2/models/anthropic/{model}` supplies it from the path and its input schema must NOT require it.
+         *     Read the note above `AnthropicCreateMessageInputs` for the full rule and the guard that enforces it.
+         */
+        AnthropicCreateMessageRequest: components["schemas"]["AnthropicCreateMessageInputs"] & Record<string, never>;
         /** @description JSON shape of a non-streaming Messages API response. Most fields pass through; the proxy reads `usage` for billing. */
         AnthropicCreateMessageResponse: {
             id?: string;
@@ -5781,7 +5800,13 @@ export interface components {
             /** Webhook Url */
             webhook_url: string;
         };
-        /** CannyInputs */
+        /**
+         * CannyInputs
+         * @example {
+         *       "control_image": "iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAIAAADTED8xAAAC2klEQVR42u3TQQ0AQAgEMeTgX8W5gi8OjoROVgGhUdLhwgkEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAAkACQAJAAkACQAJAAkACQAJAAkACQAFjSy7SPAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8IIAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASABIAEgASABIAEgASABIAEgASABIAEgASABIAAgACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkAadSRm+WukYdfewAAAABJRU5ErkJggg==",
+         *       "prompt": "A single red maple leaf on a plain white background."
+         *     }
+         */
         BFLCannyInputs: {
             /**
              * Canny High Threshold
@@ -5857,7 +5882,13 @@ export interface components {
              */
             webhook_url?: string;
         };
-        /** DepthInputs */
+        /**
+         * DepthInputs
+         * @example {
+         *       "control_image": "iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAIAAADTED8xAAAC2klEQVR42u3TQQ0AQAgEMeTgX8W5gi8OjoROVgGhUdLhwgkEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAAkACQAJAAkACQAJAAkACQAJAAkACQAFjSy7SPAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8IIAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASABIAEgASABIAEgASABIAEgASABIAEgASABIAAgACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkAadSRm+WukYdfewAAAABJRU5ErkJggg==",
+         *       "prompt": "A single red maple leaf on a plain white background."
+         *     }
+         */
         BFLDepthInputs: {
             /**
              * Control Image
@@ -5921,7 +5952,13 @@ export interface components {
              */
             webhook_url?: string;
         };
-        /** @description Request body for the BFL Flux Tools Erase v1 object removal API. */
+        /**
+         * @description Request body for the BFL Flux Tools Erase v1 object removal API.
+         * @example {
+         *       "image": "iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAIAAADTED8xAAAC2klEQVR42u3TQQ0AQAgEMeTgX8W5gi8OjoROVgGhUdLhwgkEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAAkACQAJAAkACQAJAAkACQAJAAkACQAFjSy7SPAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8IIAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASABIAEgASABIAEgASABIAEgASABIAEgASABIAAgACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkAadSRm+WukYdfewAAAABJRU5ErkJggg==",
+         *       "mask": "iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAIAAADTED8xAAAB+UlEQVR42u3TMQ0AAAzDsPIn3d7DMBtCpKTwWCTAAGAAMAAYAAwABgADgAHAAGAAMAAYAAwABgADgAHAAGAAMAAYAAwABgADgAHAAGAAMAAYAAwABgADgAHAAGAAMAAYAAwABgADgAHAAGAAMAAYAAwABgADgAHAAGAAMAAGAAOAAcAAYAAwABgADAAGAAOAAcAAYAAwABgADAAGAAOAAcAAYAAwABgADAAGAAOAAcAAYAAwABgADAAGAAOAAcAAYAAwABgADAAGAAOAAcAAYAAwABgADAAGAAOAAcAAGAAMAAYAA4ABwABgADAAGAAMAAYAA4ABwABgADAAGAAMAAYAA4ABwABgADAAGAAMAAYAA4ABwABgADAAGAAMAAYAA4ABwABgADAAGAAMAAYAA4ABwABgADAAGAAMAAbAAGAAMAAYAAwABgADgAHAAGAAMAAYAAwABgADgAHAAGAAMAAYAAwABgADgAHAAGAAMAAYAAwABgADgAHAAGAAMAAYAAwABgADgAHAAGAAMAAYAAwABgADgAHAAGAAMAAYAAOAAcAAYAAwABgADAAGAAOAAcAAYAAwABgADAAGAAOAAcAAYAAwABgADAAGAAOAAcAAYAAwABgADAAGAAOAAcAAYAAwABgADAAGAAOAAcAAYAAwABgADAAGgGvctyzUB/Dz3wAAAABJRU5ErkJggg=="
+         *     }
+         */
         BFLEraseV1Request: {
             /**
              * @description Number of pixels to dilate the mask by before removal. Dilation helps cover object edges. Maximum is 25 pixels.
@@ -5951,7 +5988,12 @@ export interface components {
              */
             webhook_url?: string;
         };
-        /** @description Request body for the BFL Flux 2 Pro image generation API. */
+        /**
+         * @description Request body for the BFL Flux 2 image generation API.
+         * @example {
+         *       "prompt": "A single red maple leaf on a plain white background."
+         *     }
+         */
         BFLFlux2ProGenerateRequest: {
             /**
              * @description Height of the image.
@@ -6002,21 +6044,56 @@ export interface components {
              */
             width: number;
         };
+        /**
+         * @description Request body for the BFL FLUX.1 Kontext [max] API. Edits input_image when one is supplied; generates from the prompt alone when it is not.
+         * @example {
+         *       "prompt": "A watercolor painting of a lighthouse at dawn, soft light on the water"
+         *     }
+         */
         BFLFluxKontextMaxGenerateRequest: {
             /**
-             * @description The guidance scale for generation
-             * @default 3
+             * @description Aspect ratio of the output between 21:9 and 9:21, e.g. 16:9. Defaults to the input image's aspect ratio when one is given, otherwise 1:1.
+             * @example 16:9
              */
-            guidance: number;
-            /** @description Base64 encoded image to be edited */
-            input_image: string;
-            /** @description The text prompt describing what to edit on the image */
+            aspect_ratio?: string;
+            /** @description Image to edit, as a base64-encoded image or an http(s) URL. Optional; without it the model generates from the prompt alone. */
+            input_image?: string;
+            /** @description Additional reference image, base64-encoded or an http(s) URL (experimental multi-reference). */
+            input_image_2?: string;
+            /** @description Additional reference image, base64-encoded or an http(s) URL (experimental multi-reference). */
+            input_image_3?: string;
+            /** @description Additional reference image, base64-encoded or an http(s) URL (experimental multi-reference). */
+            input_image_4?: string;
+            /**
+             * @description Output image format.
+             * @default png
+             * @enum {string}
+             */
+            output_format: "jpeg" | "png" | "webp";
+            /** @description Text prompt describing the edit to apply to input_image, or the image to generate when no input_image is given. */
             prompt: string;
             /**
-             * @description Number of inference steps
-             * @default 50
+             * @description Whether to upsample the prompt. If active, the prompt is automatically modified for more creative generation.
+             * @default false
              */
-            steps: number;
+            prompt_upsampling: boolean;
+            /**
+             * @description Tolerance level for input and output moderation, between 0 (most strict) and 6 (least strict).
+             * @default 2
+             */
+            safety_tolerance: number;
+            /**
+             * @description Optional seed for reproducibility. A random seed is used when omitted.
+             * @example 42
+             */
+            seed?: number;
+            /** @description Optional secret for webhook signature verification. */
+            webhook_secret?: string;
+            /**
+             * Format: uri
+             * @description URL to receive webhook notifications.
+             */
+            webhook_url?: string;
         };
         BFLFluxKontextMaxGenerateResponse: {
             /** @description Job ID for tracking */
@@ -6024,21 +6101,56 @@ export interface components {
             /** @description URL to poll for results */
             polling_url: string;
         };
+        /**
+         * @description Request body for the BFL FLUX.1 Kontext [pro] API. Edits input_image when one is supplied; generates from the prompt alone when it is not.
+         * @example {
+         *       "prompt": "A watercolor painting of a lighthouse at dawn, soft light on the water"
+         *     }
+         */
         BFLFluxKontextProGenerateRequest: {
             /**
-             * @description The guidance scale for generation
-             * @default 3
+             * @description Aspect ratio of the output between 21:9 and 9:21, e.g. 16:9. Defaults to the input image's aspect ratio when one is given, otherwise 1:1.
+             * @example 16:9
              */
-            guidance: number;
-            /** @description Base64 encoded image to be edited */
-            input_image: string;
-            /** @description The text prompt describing what to edit on the image */
+            aspect_ratio?: string;
+            /** @description Image to edit, as a base64-encoded image or an http(s) URL. Optional; without it the model generates from the prompt alone. */
+            input_image?: string;
+            /** @description Additional reference image, base64-encoded or an http(s) URL (experimental multi-reference). */
+            input_image_2?: string;
+            /** @description Additional reference image, base64-encoded or an http(s) URL (experimental multi-reference). */
+            input_image_3?: string;
+            /** @description Additional reference image, base64-encoded or an http(s) URL (experimental multi-reference). */
+            input_image_4?: string;
+            /**
+             * @description Output image format.
+             * @default png
+             * @enum {string}
+             */
+            output_format: "jpeg" | "png" | "webp";
+            /** @description Text prompt describing the edit to apply to input_image, or the image to generate when no input_image is given. */
             prompt: string;
             /**
-             * @description Number of inference steps
-             * @default 50
+             * @description Whether to upsample the prompt. If active, the prompt is automatically modified for more creative generation.
+             * @default false
              */
-            steps: number;
+            prompt_upsampling: boolean;
+            /**
+             * @description Tolerance level for input and output moderation, between 0 (most strict) and 6 (least strict).
+             * @default 2
+             */
+            safety_tolerance: number;
+            /**
+             * @description Optional seed for reproducibility. A random seed is used when omitted.
+             * @example 42
+             */
+            seed?: number;
+            /** @description Optional secret for webhook signature verification. */
+            webhook_secret?: string;
+            /**
+             * Format: uri
+             * @description URL to receive webhook notifications.
+             */
+            webhook_url?: string;
         };
         BFLFluxKontextProGenerateResponse: {
             /** @description Job ID for tracking */
@@ -6046,29 +6158,56 @@ export interface components {
             /** @description URL to poll for results */
             polling_url: string;
         };
+        /**
+         * @description Request body for the BFL FLUX 1.1 [pro] image generation API.
+         * @example {
+         *       "height": 768,
+         *       "prompt": "An impressionist landscape of rolling hills under a summer sky",
+         *       "width": 1024
+         *     }
+         */
         BFLFluxPro1_1GenerateRequest: {
-            /** @description Height of the generated image */
+            /**
+             * @description Height of the generated image in pixels. Must be a multiple of 32.
+             * @default 768
+             */
             height: number;
-            /** @description Optional image prompt */
+            /** @description Optional base64-encoded image to use with FLUX Redux. */
             image_prompt?: string;
             /**
-             * @description Output image format
+             * @description Output image format.
+             * @default jpeg
              * @enum {string}
              */
-            output_format?: "jpeg" | "png";
-            /** @description The main text prompt for image generation */
+            output_format: "jpeg" | "png" | "webp";
+            /** @description Text prompt for image generation. */
             prompt: string;
-            /** @description Whether to use prompt upsampling */
-            prompt_upsampling?: boolean;
-            /** @description Safety tolerance level */
-            safety_tolerance?: number;
-            /** @description Random seed for reproducibility */
+            /**
+             * @description Whether to upsample the prompt. If active, the prompt is automatically modified for more creative generation.
+             * @default false
+             */
+            prompt_upsampling: boolean;
+            /**
+             * @description Tolerance level for input and output moderation, between 0 (most strict) and 6 (least strict).
+             * @default 2
+             */
+            safety_tolerance: number;
+            /**
+             * @description Optional seed for reproducibility. A random seed is used when omitted.
+             * @example 42
+             */
             seed?: number;
-            /** @description Optional webhook secret for async processing */
+            /** @description Optional secret for webhook signature verification. */
             webhook_secret?: string;
-            /** @description Optional webhook URL for async processing */
+            /**
+             * Format: uri
+             * @description URL to receive webhook notifications.
+             */
             webhook_url?: string;
-            /** @description Width of the generated image */
+            /**
+             * @description Width of the generated image in pixels. Must be a multiple of 32.
+             * @default 1024
+             */
             width: number;
         };
         BFLFluxPro1_1GenerateResponse: {
@@ -6077,7 +6216,14 @@ export interface components {
             /** @description URL to poll for results */
             polling_url: string;
         };
-        /** FluxProExpandInputs */
+        /**
+         * FluxProExpandInputs
+         * @example {
+         *       "image": "iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAIAAADTED8xAAAC2klEQVR42u3TQQ0AQAgEMeTgX8W5gi8OjoROVgGhUdLhwgkEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAAkACQAJAAkACQAJAAkACQAJAAkACQAFjSy7SPAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8IIAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASABIAEgASABIAEgASABIAEgASABIAEgASABIAAgACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkAadSRm+WukYdfewAAAABJRU5ErkJggg==",
+         *       "prompt": "extend the plain white background upward",
+         *       "top": 64
+         *     }
+         */
         BFLFluxProExpandInputs: {
             /**
              * Bottom
@@ -6162,7 +6308,14 @@ export interface components {
              */
             webhook_url?: string;
         };
-        /** FluxProFillInputs */
+        /**
+         * FluxProFillInputs
+         * @example {
+         *       "image": "iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAIAAADTED8xAAAC2klEQVR42u3TQQ0AQAgEMeTgX8W5gi8OjoROVgGhUdLhwgkEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAAkACQAJAAkACQAJAAkACQAJAAkACQAFjSy7SPAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8IIAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASABIAEgASABIAEgASABIAEgASABIAEgASABIAAgACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkAadSRm+WukYdfewAAAABJRU5ErkJggg==",
+         *       "mask": "iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAIAAADTED8xAAAB+UlEQVR42u3TMQ0AAAzDsPIn3d7DMBtCpKTwWCTAAGAAMAAYAAwABgADgAHAAGAAMAAYAAwABgADgAHAAGAAMAAYAAwABgADgAHAAGAAMAAYAAwABgADgAHAAGAAMAAYAAwABgADgAHAAGAAMAAYAAwABgADgAHAAGAAMAAGAAOAAcAAYAAwABgADAAGAAOAAcAAYAAwABgADAAGAAOAAcAAYAAwABgADAAGAAOAAcAAYAAwABgADAAGAAOAAcAAYAAwABgADAAGAAOAAcAAYAAwABgADAAGAAOAAcAAGAAMAAYAA4ABwABgADAAGAAMAAYAA4ABwABgADAAGAAMAAYAA4ABwABgADAAGAAMAAYAA4ABwABgADAAGAAMAAYAA4ABwABgADAAGAAMAAYAA4ABwABgADAAGAAMAAbAAGAAMAAYAAwABgADgAHAAGAAMAAYAAwABgADgAHAAGAAMAAYAAwABgADgAHAAGAAMAAYAAwABgADgAHAAGAAMAAYAAwABgADgAHAAGAAMAAYAAwABgADgAHAAGAAMAAYAAOAAcAAYAAwABgADAAGAAOAAcAAYAAwABgADAAGAAOAAcAAYAAwABgADAAGAAOAAcAAYAAwABgADAAGAAOAAcAAYAAwABgADAAGAAOAAcAAYAAwABgADAAGgGvctyzUB/Dz3wAAAABJRU5ErkJggg==",
+         *       "prompt": "plain white background"
+         *     }
+         */
         BFLFluxProFillInputs: {
             /**
              * Guidance
@@ -6228,24 +6381,61 @@ export interface components {
              */
             webhook_url?: string;
         };
-        /** @description Request body for the BFL Flux Pro 1.1 Ultra image generation API. */
+        /**
+         * @description Request body for the BFL FLUX 1.1 [pro] Ultra image generation API. Ultra selects the output size from aspect_ratio rather than explicit pixel dimensions.
+         * @example {
+         *       "aspect_ratio": "16:9",
+         *       "prompt": "A lighthouse on a rocky coast at golden hour, cinematic"
+         *     }
+         */
         BFLFluxProGenerateRequest: {
-            /** @description The guidance scale for generation. */
-            guidance_scale?: number;
-            /** @description The height of the image to generate. */
-            height: number;
-            /** @description The negative prompt for image generation. */
-            negative_prompt?: string;
-            /** @description The number of images to generate. */
-            num_images?: number;
-            /** @description The number of inference steps. */
-            num_inference_steps?: number;
-            /** @description The text prompt for image generation. */
+            /**
+             * @description Aspect ratio of the image between 21:9 and 9:21, e.g. 16:9.
+             * @default 16:9
+             */
+            aspect_ratio: string;
+            /** @description Optional base64-encoded image to remix. */
+            image_prompt?: string;
+            /**
+             * @description Blend between the prompt and the image prompt, from 0 (prompt only) to 1 (image prompt only).
+             * @default 0.1
+             */
+            image_prompt_strength: number;
+            /**
+             * @description Output image format.
+             * @default jpeg
+             * @enum {string}
+             */
+            output_format: "jpeg" | "png" | "webp";
+            /** @description Text prompt for image generation. */
             prompt: string;
-            /** @description The seed value for reproducibility. */
+            /**
+             * @description Whether to upsample the prompt. If active, the prompt is automatically modified for more creative generation.
+             * @default false
+             */
+            prompt_upsampling: boolean;
+            /**
+             * @description Generate less processed, more natural-looking images.
+             * @default false
+             */
+            raw: boolean;
+            /**
+             * @description Tolerance level for input and output moderation, between 0 (most strict) and 6 (least strict).
+             * @default 2
+             */
+            safety_tolerance: number;
+            /**
+             * @description Optional seed for reproducibility. A random seed is used when omitted.
+             * @example 42
+             */
             seed?: number;
-            /** @description The width of the image to generate. */
-            width: number;
+            /** @description Optional secret for webhook signature verification. */
+            webhook_secret?: string;
+            /**
+             * Format: uri
+             * @description URL to receive webhook notifications.
+             */
+            webhook_url?: string;
         };
         /** @description Response from the BFL Flux Pro 1.1 Ultra image generation API. */
         BFLFluxProGenerateResponse: {
@@ -6288,7 +6478,14 @@ export interface components {
             /** Error Type */
             type: string;
         };
-        /** @description Request body for the BFL Flux Tools VTO v1 virtual try-on API. */
+        /**
+         * @description Request body for the BFL Flux Tools VTO v1 virtual try-on API.
+         * @example {
+         *       "garment": "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",
+         *       "person": "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",
+         *       "prompt": "TRY-ON: The person of image 1 wearing the garments of image 2."
+         *     }
+         */
         BFLVtoV1Request: {
             /** @description Image of one or more garments (maps internally to input_image_2). */
             garment: string;
@@ -6323,7 +6520,16 @@ export interface components {
          * @enum {string}
          */
         BeebleAlphaMode: "auto" | "fill" | "custom" | "select";
-        /** @description Request to create and start a SwitchX generation job. */
+        /**
+         * @description Request to create and start a SwitchX generation job.
+         * @example {
+         *       "alpha_mode": "auto",
+         *       "generation_type": "image",
+         *       "max_resolution": 720,
+         *       "prompt": "A cinematic product photo of a glass lamp on a marble table",
+         *       "source_uri": "https://img.freepik.com/free-photo/portrait-woman_395237-33.jpg?w=740&q=80"
+         *     }
+         */
         BeebleCreateSwitchXRequest: {
             alpha_mode: components["schemas"]["BeebleAlphaMode"];
             /** @description URI of a custom alpha matte. Required when alpha_mode is custom or select. Ignored for auto or fill. */
@@ -6432,8 +6638,16 @@ export interface components {
             /** @description Unique identifier for the request. */
             request_id?: string;
         };
-        /** @description Request body for Bria FIBO Edit API */
-        BriaFiboEditRequest: {
+        /**
+         * @description The Bria FIBO edit fields, shared by the v1 `POST /proxy/bria/v2/image/edit` request body and the Comfy Router input schema for `bria/fibo`. See the note above this component for why the two surfaces share properties but not `model_version`'s constraints.
+         * @example {
+         *       "images": [
+         *         "iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAIAAADTED8xAAAC2klEQVR42u3TQQ0AQAgEMeTgX8W5gi8OjoROVgGhUdLhwgkEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAAkACQAJAAkACQAJAAkACQAJAAkACQAFjSy7SPAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8IIAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASABIAEgASABIAEgASABIAEgASABIAEgASABIAAgACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkAadSRm+WukYdfewAAAABJRU5ErkJggg=="
+         *       ],
+         *       "instruction": "make the background light blue"
+         *     }
+         */
+        BriaFiboEditInputs: {
             /**
              * Format: float
              * @description Determines how closely the generated image should adhere to the instruction.
@@ -6451,12 +6665,8 @@ export interface components {
             ip_signal: boolean;
             /** @description Optional mask image URL or Base64-encoded. Black areas will be preserved, white areas will be edited. */
             mask?: string;
-            /**
-             * @description The version of the model to use.
-             * @default FIBO
-             * @enum {string}
-             */
-            model_version: "FIBO";
+            /** @description The version of the model to use. Comfy Router supplies this from the `{model}` path segment, so omit it there; the value Bria runs is `FIBO`, which the v1 route also defaults to when the field is absent. Not constrained to an enum on this half: Router writes the value in after the caller's body has been validated. */
+            model_version?: string | null;
             /** @description A text prompt specifying concepts, styles, or objects to exclude from the edited image. */
             negative_prompt?: string;
             /**
@@ -6483,15 +6693,33 @@ export interface components {
              * @default true
              */
             visual_output_content_moderation: boolean;
+        } | unknown | unknown;
+        /**
+         * @description Request body for the v1 `POST /proxy/bria/v2/image/edit` operation.
+         *     It composes `BriaFiboEditInputs` rather than restating its fields, and restores the one constraint only the v1 surface can carry. `model_version` is that constraint: this route has no path segment supplying the model, so a direct caller names it here and `FIBO` is the only value Bria's edit route runs, whereas the Comfy Router route `POST /v2/models/bria/fibo` supplies it from the path and its input schema must neither require nor enum-constrain it.
+         *     Read the note above `BriaFiboEditInputs` for the full rule and the guards that enforce it.
+         */
+        BriaFiboEditRequest: components["schemas"]["BriaFiboEditInputs"] & {
+            /**
+             * @description The version of the model to use.
+             * @default FIBO
+             * @enum {string}
+             */
+            model_version: "FIBO";
         };
-        /** @description Request body for Bria Image Remove Background API */
+        /**
+         * @description Request body for Bria Image Remove Background API
+         * @example {
+         *       "image": "iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAIAAADTED8xAAAC2klEQVR42u3TQQ0AQAgEMeTgX8W5gi8OjoROVgGhUdLhwgkEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAAkACQAJAAkACQAJAAkACQAJAAkACQAFjSy7SPAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8IIAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASABIAEgASABIAEgASABIAEgASABIAEgASABIAAgACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkAadSRm+WukYdfewAAAABJRU5ErkJggg=="
+         *     }
+         */
         BriaImageRemoveBackgroundRequest: {
             /** @description The image to remove background from. Supported input types are Base64-encoded string or URL pointing to a publicly accessible image file. Accepted formats JPEG, JPG, PNG, WEBP. */
             image: string;
             /** @description Controls whether partially transparent areas from the input image are retained in the output after background removal. */
             preserve_alpha?: boolean;
             /** @description When false (default), the request is processed asynchronously. When true, the API holds the connection open until complete. */
-            sync?: boolean;
+            sync?: boolean | null;
             /** @description When enabled, applies content moderation to input visual. Returns 422 if the image fails moderation. */
             visual_input_content_moderation?: boolean;
             /** @description When enabled, applies content moderation to result visual. Returns 422 if the output fails moderation. */
@@ -6536,7 +6764,15 @@ export interface components {
              */
             status?: "IN_PROGRESS" | "COMPLETED" | "ERROR" | "UNKNOWN";
         };
-        /** @description Request body for Bria Structured Instruction Generate API */
+        /**
+         * @description Request body for Bria Structured Instruction Generate API
+         * @example {
+         *       "images": [
+         *         "iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAIAAADTED8xAAAC2klEQVR42u3TQQ0AQAgEMeTgX8W5gi8OjoROVgGhUdLhwgkEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAAkACQAJAAkACQAJAAkACQAJAAkACQAFjSy7SPAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8IIAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASABIAEgASABIAEgASABIAEgASABIAEgASABIAAgACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkAadSRm+WukYdfewAAAABJRU5ErkJggg=="
+         *       ],
+         *       "instruction": "make the background light blue"
+         *     }
+         */
         BriaStructuredInstructionRequest: {
             /** @description The source image to be edited. Publicly available URL or Base64-encoded. Must contain exactly one item. */
             images: string[];
@@ -6562,7 +6798,13 @@ export interface components {
              */
             visual_input_content_moderation: boolean;
         };
-        /** @description Request body for Bria Video Green Screen API */
+        /**
+         * @description Request body for Bria Video Green Screen API
+         * @example {
+         *       "green_shade": "broadcast_green",
+         *       "video": "https://example.com/input.mp4"
+         *     }
+         */
         BriaVideoGreenScreenRequest: {
             /**
              * @description The solid background shade applied behind the foreground for chroma keying. Defaults to broadcast_green.
@@ -6579,7 +6821,14 @@ export interface components {
             /** @description Publicly accessible URL of the input video. Input resolution supported up to 16000x16000 (16K). Max duration 60 seconds. */
             video: string;
         };
-        /** @description Request body for Bria Video Remove Background API */
+        /**
+         * @description Request body for Bria Video Remove Background API
+         * @example {
+         *       "background_color": "Transparent",
+         *       "output_container_and_codec": "webm_vp9",
+         *       "video": "https://example.com/input.mp4"
+         *     }
+         */
         BriaVideoRemoveBackgroundRequest: {
             /**
              * @description Background color for the output video. If Transparent, the output codec must support alpha.
@@ -6596,7 +6845,13 @@ export interface components {
             /** @description Publicly accessible URL of the input video. Input resolution supported up to 16000x16000 (16K). Max duration 60 seconds. */
             video: string;
         };
-        /** @description Request body for Bria Video Replace Background API */
+        /**
+         * @description Request body for Bria Video Replace Background API
+         * @example {
+         *       "background_url": "https://example.com/background.mp4",
+         *       "video": "https://example.com/input.mp4"
+         *     }
+         */
         BriaVideoReplaceBackgroundRequest: {
             /** @description Publicly accessible URL of the background asset (image or video) to composite behind the foreground. Must match the foreground aspect ratio. */
             background_url: string;
@@ -6699,7 +6954,15 @@ export interface components {
              */
             purpose: string;
         };
-        BytePlusImageGenerationRequest: {
+        /**
+         * @description Request body for a BytePlus Seedream / Seededit image generation. The `example` below is the COMFY ROUTER form and deliberately omits `model`, which Router fills from the `{model}` path segment; a direct v1 call to POST /proxy/byteplus/api/v3/images/generations must add `model` to it. The example illustrates text-to-image calls. For seededit-3-0-i2i-250628, also supply the single `image` URL or base64 image to edit; omit `size` to retain that model's adaptive sizing. Layer decomposition accepts `image` without `prompt`. At least one of `prompt` or `image` is required; BytePlus validates the model-specific combination. The v1 wrapper separately requires `model`.
+         * @example {
+         *       "prompt": "A red fox trotting through a snowy pine forest, cinematic lighting",
+         *       "response_format": "url",
+         *       "watermark": false
+         *     }
+         */
+        BytePlusImageGenerationInputs: {
             /**
              * Format: float
              * @description Controls how closely the output image aligns with the input prompt. Range [1, 10]. Higher values result in stronger prompt adherence. Default 2.5 for seedream-3-0-t2i-250415 and 5.5 for seededit-3-0-i2i-250628. Not supported by seedream-5.0-pro, 5.0-lite, 4.5 and 4.0.
@@ -6712,6 +6975,8 @@ export interface components {
              *
              *     • Image URL: Make sure that the image URL is accessible.
              *     • Base64 encoding: The format must be data:image/<image format>;base64,<Base64 encoding>. Note: <image format> must be in lowercase, e.g., data:image/png;base64,<base64_image>.
+             *
+             *     Comfy Router limits the entire JSON request to 10 MiB, including base64 expansion and all reference images. Use URLs for inputs that would exceed this transport limit.
              *
              *     An input image must meet the following requirements:
              *     • Image format: jpeg, png (seedream-5.0-pro, 5.0-lite, 4.5 and 4.0 also support webp, bmp, tiff and gif; seedream-5.0-pro also supports heic and heif)
@@ -6732,8 +6997,8 @@ export interface components {
              * @default false
              */
             layer_decomposition: boolean;
-            /** @enum {string} */
-            model: "seedream-3-0-t2i-250415" | "seededit-3-0-i2i-250628" | "seedream-4-0-250828" | "seedream-4-5-251128" | "seedream-5-0-260128" | "seedream-5-0-pro-260628";
+            /** @description Model identifier. Supported models: seedream-3-0-t2i-250415, seededit-3-0-i2i-250628, seedream-4-0-250828, seedream-4-5-251128, seedream-5-0-260128 and seedream-5-0-pro-260628. A direct v1 call to POST /proxy/byteplus/api/v3/images/generations MUST supply it — the proxy refuses any other value, and an omitted one, with a 400. It is NOT in this schema's `required` list because Comfy Router fills it from the `{model}` path segment of /v2/models/byteplus/{model}, so a Router caller omits it. */
+            model?: string | null;
             /** @description Configuration for prompt optimization feature. Only seedream-5.0-pro/5.0-lite/4.5 (only support standard mode) and seedream-4.0 support this parameter. */
             optimize_prompt_options?: {
                 /**
@@ -6769,8 +7034,9 @@ export interface components {
              * @description Controls whether to disable the batch generation feature. This parameter is only supported on seedream-5.0-lite, 4.5 and 4.0 (not supported by seedream-5.0-pro). Valid values:
              *     auto: In automatic mode, the model automatically determines whether to return multiple images and how many images it will contain based on the user's prompt.
              *     disabled: Disables batch generation feature. The model will only generate one image.
+             * @enum {string}
              */
-            sequential_image_generation?: string;
+            sequential_image_generation?: "auto" | "disabled";
             /**
              * @description Only seedream-5.0-lite, 4.5 and 4.0 support this parameter (not supported by seedream-5.0-pro).
              *     Configuration for the batch image generation feature. This parameter is only effective when sequential_image_generation is set to auto.
@@ -6803,7 +7069,7 @@ export interface components {
              */
             size?: string;
             /**
-             * @description Whether to enable streaming output mode. Only seedream-5.0-lite, 4.5 and 4.0 support this parameter (not supported by seedream-5.0-pro). false = All output images are returned at once. true = Each output image is returned immediately after generated.
+             * @description Comfy Router settles an explicitly supplied stream flag to false because it captures a complete JSON result. On the v1 proxy, this field controls whether to enable streaming output mode. Only seedream-5.0-lite, 4.5 and 4.0 support this parameter (not supported by seedream-5.0-pro). false = All output images are returned at once. true = Each output image is returned immediately after generated.
              * @default false
              */
             stream: boolean;
@@ -6812,6 +7078,18 @@ export interface components {
              * @default true
              */
             watermark: boolean;
+        } | unknown | unknown;
+        /**
+         * @description Request body for the v1 `POST /proxy/byteplus/api/v3/images/generations` proxy.
+         *     It composes `BytePlusImageGenerationInputs` rather than restating its fields, and adds back the two things only the v1 surface can demand. `model` is both of them: this route carries no path segment supplying it, so a direct caller must send it and must send one of the six allowlisted spellings, whereas the Comfy Router route `POST /v2/models/byteplus/{model}` supplies it from the path and its input schema must therefore neither require nor enum it (RouterBodyForTarget writes it in after routervalidate.Guard has validated the caller's bytes, so either constraint would refuse every Router call that exercises the documented contract — BE-11167).
+         *     The component has required `model` since the provider was added on 2025-08-21 (#634) and has carried the enum since the same commit, so this wrapper RESTORES a published requirement rather than inventing one. (`prompt` was required alongside it until #6331 on 2026-08-06 dropped it for the seedream-5.0-pro layer-separation path; that relaxation is not this change's and is not re-imposed here.) Read the note above `BytePlusImageGenerationInputs` for the full rule and the guard that enforces it.
+         */
+        BytePlusImageGenerationRequest: components["schemas"]["BytePlusImageGenerationInputs"] & {
+            /**
+             * @description The ID of the model to call. Required on this route, which has no path segment supplying it.
+             * @enum {string}
+             */
+            model: "seedream-3-0-t2i-250415" | "seededit-3-0-i2i-250628" | "seedream-4-0-250828" | "seedream-4-5-251128" | "seedream-5-0-260128" | "seedream-5-0-pro-260628";
         };
         BytePlusImageGenerationResponse: {
             /** @description Unix timestamp (in seconds) indicating the time when the request was created */
@@ -6973,84 +7251,14 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
-        BytePlusResponseCreateRequest: {
-            /** @description Context-cache configuration. */
-            caching?: {
-                /**
-                 * @description When true, only create the public prefix cache; the model does not respond.
-                 * @default false
-                 */
-                prefix: boolean;
-                /** @enum {string} */
-                type?: "enabled" | "disabled";
-            } & {
-                [key: string]: unknown;
-            };
-            context_management?: components["schemas"]["BytePlusResponseContextManagement"];
-            /** @description Unix timestamp (seconds, UTC) at which the stored response and cache expire. Range (creation_time, creation_time + 604800]. Default: creation_time + 259200 (3 days). */
-            expire_at?: number;
-            /** @description Additional output fields to include. Currently supported: `reasoning.encrypted_content` (encrypted+compressed reasoning for manual multi-turn reuse). */
-            include?: string[];
-            /** @description Text content or list of input items provided to the model. */
-            input: string | components["schemas"]["BytePlusResponseInputItem"][];
-            /** @description System/developer message prepended as the first instruction. Not compatible with `caching` — if `caching.type` is `enabled`, setting `instructions` returns an error. */
-            instructions?: string | null;
-            /** @description Maximum output tokens (response + chain-of-thought). */
-            max_output_tokens?: number | null;
-            max_tool_calls?: number;
+        /**
+         * @description Request body for the v1 `POST /proxy/byteplus/api/v3/responses` proxy.
+         *     It composes `BytePlusResponseInputs` rather than restating its fields, and adds back the two things only the v1 surface can demand: `model` as a NON-NULLABLE string, and the `required: [model, input]` pair this operation has published since it was added on 2026-05-18 (#3711). The Comfy Router route `POST /v2/models/byteplus/{model}` supplies the model from the path and its input schemas must NOT require it (RouterBodyForTarget writes it in after routervalidate.Guard has validated the caller's bytes, so a required entry would 422 every Router call -- BE-11167), so this wrapper RESTORES a published requirement rather than inventing one.
+         *     `model` is restated as a non-nullable string one level deeper for the same reason BytePlusTTSCreateRequest restates it: the base marks it nullable because the ROUTER route accepts an explicit `"model": null` and fills it from the path, while this route has no path segment, so a null is not a value it can resolve -- and leaving the base's nullability in force would also regenerate v1's `Model` as a pointer. `allOf` is a conjunction, so narrowing here binds v1 alone and leaves the Router half untouched.
+         */
+        BytePlusResponseCreateRequest: components["schemas"]["BytePlusResponseInputs"] & {
             /** @description Model ID or Endpoint ID. See https://docs.byteplus.com/en/docs/ModelArk/1330310 for the model list and https://docs.byteplus.com/en/docs/ModelArk/1099522 for Endpoint IDs. */
             model: string;
-            /** @description ID of the previous response, used to continue a multi-turn conversation. Insert ~100ms between requests to avoid failures. */
-            previous_response_id?: string | null;
-            /** @description Limits the workload of deep thinking. */
-            reasoning?: {
-                /**
-                 * @description `minimal` disables thinking entirely. With `thinking.type =
-                 *     disabled`, only `minimal` is allowed.
-                 * @enum {string}
-                 */
-                effort?: "minimal" | "low" | "medium" | "high";
-            } & {
-                [key: string]: unknown;
-            };
-            /**
-             * @description When true, the response is persisted and retrievable by ID for multi-turn use.
-             * @default true
-             */
-            store: boolean | null;
-            /**
-             * Format: float
-             * @default 1
-             */
-            temperature: number | null;
-            /** @description Output-format configuration. */
-            text?: {
-                format?: components["schemas"]["BytePlusResponseTextFormat"];
-            } & {
-                [key: string]: unknown;
-            };
-            /** @description Controls deep-thinking mode. */
-            thinking?: {
-                /**
-                 * @description `enabled`: always reason before responding.
-                 *     `disabled`: respond without additional reasoning.
-                 *     `auto`: model decides per-query.
-                 * @enum {string}
-                 */
-                type?: "enabled" | "disabled" | "auto";
-            } & {
-                [key: string]: unknown;
-            };
-            /** @description Tool-selection mode. Only seed-1-6 models support this field. */
-            tool_choice?: ("none" | "auto" | "required") | components["schemas"]["BytePlusResponseToolChoiceObject"];
-            tools?: components["schemas"]["BytePlusResponseTool"][];
-            /**
-             * Format: float
-             * @default 0.7
-             */
-            top_p: number | null;
-        } & {
-            [key: string]: unknown;
         };
         /** @description Error details. Null when the response succeeded. */
         BytePlusResponseError: {
@@ -7219,6 +7427,85 @@ export interface components {
             type: "input_video";
             /** @description Video URL or `data:video/...;base64,...` payload. */
             video_url?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        BytePlusResponseInputs: {
+            /** @description Context-cache configuration. */
+            caching?: {
+                /**
+                 * @description When true, only create the public prefix cache; the model does not respond.
+                 * @default false
+                 */
+                prefix: boolean;
+                /** @enum {string} */
+                type?: "enabled" | "disabled";
+            } & {
+                [key: string]: unknown;
+            };
+            context_management?: components["schemas"]["BytePlusResponseContextManagement"];
+            /** @description Unix timestamp (seconds, UTC) at which the stored response and cache expire. Range (creation_time, creation_time + 604800]. Default: creation_time + 259200 (3 days). */
+            expire_at?: number;
+            /** @description Additional output fields to include. Currently supported: `reasoning.encrypted_content` (encrypted+compressed reasoning for manual multi-turn reuse). */
+            include?: string[];
+            /** @description Text content or list of input items provided to the model. */
+            input?: string | components["schemas"]["BytePlusResponseInputItem"][];
+            /** @description System/developer message prepended as the first instruction. Not compatible with `caching` — if `caching.type` is `enabled`, setting `instructions` returns an error. */
+            instructions?: string | null;
+            /** @description Maximum output tokens (response + chain-of-thought). */
+            max_output_tokens?: number | null;
+            max_tool_calls?: number;
+            /** @description Model ID or Endpoint ID. See https://docs.byteplus.com/en/docs/ModelArk/1330310 for the model list and https://docs.byteplus.com/en/docs/ModelArk/1099522 for Endpoint IDs. A direct v1 call to POST /proxy/byteplus/api/v3/responses MUST supply it -- the proxy refuses any value outside its own allowlist, and an omitted one, with a 400. It is NOT in the Comfy Router input schemas' `required` lists because Router fills it from the `{model}` path segment of /v2/models/byteplus/{model}, so a Router caller omits it. */
+            model?: string | null;
+            /** @description ID of the previous response, used to continue a multi-turn conversation. Insert ~100ms between requests to avoid failures. */
+            previous_response_id?: string | null;
+            /** @description Limits the workload of deep thinking. */
+            reasoning?: {
+                /**
+                 * @description `minimal` disables thinking entirely. With `thinking.type =
+                 *     disabled`, only `minimal` is allowed.
+                 * @enum {string}
+                 */
+                effort?: "minimal" | "low" | "medium" | "high";
+            } & {
+                [key: string]: unknown;
+            };
+            /**
+             * @description When true, the response is persisted and retrievable by ID for multi-turn use.
+             * @default true
+             */
+            store: boolean | null;
+            /**
+             * Format: float
+             * @default 1
+             */
+            temperature: number | null;
+            /** @description Output-format configuration. */
+            text?: {
+                format?: components["schemas"]["BytePlusResponseTextFormat"];
+            } & {
+                [key: string]: unknown;
+            };
+            /** @description Controls deep-thinking mode. */
+            thinking?: {
+                /**
+                 * @description `enabled`: always reason before responding.
+                 *     `disabled`: respond without additional reasoning.
+                 *     `auto`: model decides per-query.
+                 * @enum {string}
+                 */
+                type?: "enabled" | "disabled" | "auto";
+            } & {
+                [key: string]: unknown;
+            };
+            /** @description Tool-selection mode. Only seed-1-6 models support this field. */
+            tool_choice?: ("none" | "auto" | "required") | components["schemas"]["BytePlusResponseToolChoiceObject"];
+            tools?: components["schemas"]["BytePlusResponseTool"][];
+            /**
+             * Format: float
+             * @default 0.7
+             */
+            top_p: number | null;
         } & {
             [key: string]: unknown;
         };
@@ -7466,27 +7753,50 @@ export interface components {
         BytePlusTTSAudioConfig: {
             /** @description Whether to enable the subtitle service. When enabled, the response includes utterance- and word-level timestamps (default: false). */
             enable_subtitle?: boolean;
-            /** @description Output audio format: wav (default), mp3, pcm or ogg_opus. */
-            format?: string;
+            /**
+             * @description Output audio format: wav (default), mp3, pcm or ogg_opus.
+             * @enum {string}
+             */
+            format?: "wav" | "mp3" | "pcm" | "ogg_opus";
             /** @description -50 to 100; 100 means 2.0x volume, -50 means 0.5x volume (default: 0). */
             loudness_rate?: number;
             /** @description -12 to 12 (default: 0). */
             pitch_rate?: number;
-            /** @description Output sample rate: 8000, 16000, 24000 (default), 32000, 44100 or 48000. */
-            sample_rate?: number;
+            /**
+             * @description Output sample rate: 8000, 16000, 24000 (default), 32000, 44100 or 48000.
+             * @enum {integer}
+             */
+            sample_rate?: 8000 | 16000 | 24000 | 32000 | 44100 | 48000;
             /** @description -50 to 100; 100 means 2.0x speed, -50 means 0.5x speed (default: 0). */
             speech_rate?: number;
         };
-        /** @description Request body for a BytePlus Seed Audio 1.0 generation. */
-        BytePlusTTSCreateRequest: {
+        /**
+         * @description Request body for a BytePlus Seed Audio 1.0 generation. The `example` below is the COMFY ROUTER form and deliberately omits `model`, which Router fills from the `{model}` path segment; a direct v1 call to POST /proxy/byteplus/api/v3/tts/create must add `model` to it. One example cannot serve both surfaces — this component is the Router input schema for BOTH seed-audio-1.0 spellings, so an example naming either one is refused by the other model's route for naming a different model, while the omitting form is valid on both.
+         * @example {
+         *       "audio_config": {
+         *         "format": "wav",
+         *         "sample_rate": 24000
+         *       },
+         *       "text_prompt": "Hello from Comfy Router."
+         *     }
+         */
+        BytePlusTTSCreateInputs: {
             audio_config?: components["schemas"]["BytePlusTTSAudioConfig"];
-            /** @description Model identifier. Supported models: seed-audio-1.0 and seed-audio-1.0-multilingual. */
-            model: string;
-            /** @description Reference resources. Omit for text-only generation. Up to 3 audio references (each up to 30 seconds and 10 MB; wav, mp3, pcm or ogg_opus) or exactly 1 image reference (up to 10 MB; jpeg, png or webp). Image references cannot be mixed with audio references. */
+            /** @description Model identifier. Supported models: seed-audio-1.0 and seed-audio-1.0-multilingual. A direct v1 call to POST /proxy/byteplus/api/v3/tts/create MUST supply it — the proxy refuses any other value, and an omitted one, with a 400. It is NOT in this schema's `required` list because Comfy Router fills it from the `{model}` path segment of /v2/models/byteplus/{model}, so a Router caller omits it. */
+            model?: string | null;
+            /** @description Reference resources. Omit for text-only generation. Up to 3 audio references (each up to 30 seconds and 10 MB decoded; wav, mp3, pcm or ogg_opus) or exactly 1 image reference (up to 10 MB decoded; jpeg, png or webp). Image references cannot be mixed with audio references. Those ceilings are BytePlus's and are stated in DECODED bytes: base64 inflates an asset by about 4/3, and a Comfy Router call is capped at 10 MiB for the whole JSON document, so an inline `audio_data`/`image_data` reference sent to /v2/models/byteplus/{model} has to stay under roughly 7.5 MB decoded. Use `audio_url`/`image_url` for anything larger — a reference at BytePlus's own 10 MB maximum is refused 413 before validation runs if it is inlined. */
             references?: components["schemas"]["BytePlusTTSReference"][];
-            /** @description Prompt or text to synthesize (max 3,000 characters). When audio references are provided, reference them by order using @Audio1, @Audio2 and @Audio3. */
+            /** @description Prompt or text to synthesize (1 to 3,000 characters; an empty string is refused). When audio references are provided, reference them by order using @Audio1, @Audio2 and @Audio3. */
             text_prompt: string;
             watermark?: components["schemas"]["BytePlusTTSWatermark"];
+        };
+        /**
+         * @description Request body for the v1 `POST /proxy/byteplus/api/v3/tts/create` proxy.
+         *     It composes `BytePlusTTSCreateInputs` rather than restating its fields, and adds back the one field only the v1 surface can demand. `model` is that field: this route carries no path segment supplying it, so a direct caller must send it, whereas the Comfy Router route `POST /v2/models/byteplus/{model}` supplies it from the path and its input schema must NOT require it (RouterBodyForTarget writes it in after routervalidate.Guard has validated the caller's bytes, so a required entry would 422 every Router call — BE-11167).
+         *     The component required `model` and `text_prompt` from the day the proxy was added (#4724, 2026-07-02) until this family was Router-authored, so this wrapper RESTORES a published requirement rather than inventing one. Read the note above `BytePlusTTSCreateInputs` for the full rule and the guard that enforces it.
+         */
+        BytePlusTTSCreateRequest: components["schemas"]["BytePlusTTSCreateInputs"] & {
+            model: string;
         };
         /** @description Response body for a BytePlus Seed Audio 1.0 generation. */
         BytePlusTTSCreateResponse: {
@@ -7568,7 +7878,7 @@ export interface components {
                  *     Base64: Format data:audio/<format>;base64,<content>
                  *     Asset ID: Format asset://<ASSET_ID>
                  */
-                url?: string;
+                url: string;
             };
             image_url?: {
                 /**
@@ -7577,7 +7887,7 @@ export interface components {
                  *     Base64-encoded content: Format must be data:image/<format>;base64,<content>
                  *     Asset ID: Format asset://<ASSET_ID>
                  */
-                url?: string;
+                url: string;
             };
             /**
              * @description The role/position of the content item.
@@ -7616,46 +7926,37 @@ export interface components {
                  *     Video URL: Public URL of the video (mp4, mov).
                  *     Asset ID: Format asset://<ASSET_ID>
                  */
-                url?: string;
+                url: string;
             };
-        };
-        BytePlusVideoGenerationQueryResponse: {
-            /** @description The output after the video generation task is completed, which contains the download URL of the output video. */
-            content?: {
-                /** @description Container format of the generated video (mp4 or mov). Returned only by Seedance 2.5. */
-                output_format?: string;
-                /** @description The URL of the output video. For security purposes, the output video is cleared after 24 hours. */
-                video_url?: string;
-            };
-            /** @description The time when the task was created. The value is a UNIX timestamp in seconds. */
-            created_at?: number;
-            /** @description The error information. If the task succeeds, null is returned. If the task fails, the error information is returned. */
-            error?: {
-                /** @description The error code */
-                code?: string;
-                /** @description The error message */
-                message?: string;
-            } | null;
-            /** @description The ID of the video generation task */
-            id?: string;
-            /** @description The name and version of the model used by the task */
-            model?: string;
-            /**
-             * @description The state of the task
-             * @enum {string}
-             */
-            status?: "queued" | "running" | "cancelled" | "succeeded" | "failed" | "expired";
-            /** @description The time when the task was last updated. The value is a UNIX timestamp in seconds. */
-            updated_at?: number;
-            /** @description The token usage for the request */
-            usage?: {
-                /** @description The number of tokens generated by the model */
-                completion_tokens?: number;
-                /** @description For the video generation model, the number of input tokens is not calculated and defaults to 0. Therefore, total_tokens = completion_tokens. */
-                total_tokens?: number;
-            };
-        };
-        BytePlusVideoGenerationRequest: {
+        } & ({
+            /** @enum {unknown} */
+            type?: "text";
+        } | {
+            /** @enum {unknown} */
+            type?: "image_url";
+        } | {
+            /** @enum {unknown} */
+            type?: "video_url";
+        } | {
+            /** @enum {unknown} */
+            type?: "audio_url";
+        });
+        /**
+         * @description Request body for a BytePlus Seedance / Dreamina video generation task. The `example` below is the COMFY ROUTER form and deliberately omits `model`, which Router fills from the `{model}` path segment; a direct v1 call to POST /proxy/byteplus/api/v3/contents/generations/tasks must add `model` to it. This text-to-video example requires an additional `content` item with `type: image_url` and an `image_url.url` for seedance-1-0-lite-i2v-250428. Text-only models must omit that image item.
+         *     `content` is the whole `required` floor, and it is the floor the v1 surface already published and videoGenerationProxy's Rewrite already refuses an empty value for. Everything else BytePlus accepts varies by model — the per-model resolutions, durations, ratios and input kinds are documented on the individual fields — so the enums and bounds below are the union BytePlus admits across the family and BytePlus stays the authority on which member accepts which value.
+         * @example {
+         *       "content": [
+         *         {
+         *           "text": "A red fox trotting through a snowy pine forest",
+         *           "type": "text"
+         *         }
+         *       ],
+         *       "duration": 5,
+         *       "ratio": "16:9",
+         *       "resolution": "720p"
+         *     }
+         */
+        BytePlusVideoGenerationInputs: {
             /**
              * Format: uri
              * @description Callback notification address for the result of this generation task
@@ -7664,7 +7965,7 @@ export interface components {
             /** @description The input content for the model to generate a video */
             content: components["schemas"]["BytePlusVideoGenerationContent"][];
             /** @description Video duration in seconds. Seedance 2.5: [4,30] or -1 (auto; video editing tasks support only -1). Seedance 2.0 & 2.0 fast: [4,15] or -1 (auto). Seedance 1.5 pro: [4,12] or -1. Seedance 1.0: [2,12]. */
-            duration?: number;
+            duration?: number | -1 | unknown;
             /** @description Task timeout threshold in seconds. Default 172800 (48h). Range: [3600, 259200]. */
             execution_expires_after?: number;
             /**
@@ -7674,26 +7975,24 @@ export interface components {
              * @default true
              */
             generate_audio: boolean;
-            /**
-             * @description The ID of the model to call. Available models include seedance-1-5-pro-251215, seedance-1-0-pro-250528, seedance-1-0-pro-fast-251015, seedance-1-0-lite-t2v-250428, seedance-1-0-lite-i2v-250428
-             * @enum {string}
-             */
-            model: "seedance-1-5-pro-251215" | "seedance-1-0-pro-250528" | "seedance-1-0-lite-t2v-250428" | "seedance-1-0-lite-i2v-250428" | "seedance-1-0-pro-fast-251015" | "dreamina-seedance-2-0-260128" | "dreamina-seedance-2-0-fast-260128" | "dreamina-seedance-2-0-mini" | "dreamina-seedance-2-5-260628";
+            /** @description The ID of the model to call. Supported models: seedance-1-5-pro-251215, seedance-1-0-pro-250528, seedance-1-0-pro-fast-251015, seedance-1-0-lite-t2v-250428, seedance-1-0-lite-i2v-250428, dreamina-seedance-2-0-260128, dreamina-seedance-2-0-fast-260128, dreamina-seedance-2-0-mini and dreamina-seedance-2-5-260628. A direct v1 call to POST /proxy/byteplus/api/v3/contents/generations/tasks MUST supply it — the proxy refuses any other value, and an omitted one, with a 400. It is NOT in this schema's `required` list because Comfy Router fills it from the `{model}` path segment of /v2/models/byteplus/{model}, so a Router caller omits it. */
+            model?: string | null;
             /**
              * @description Seedance 2.5 only. Container format of the output video.
              *     mp4: General-purpose container (H.264/AAC, yuv420p) with broad compatibility and smaller file size.
              *     mov: Professional container (H.264 High 4:4:4 Predictive/PCM, yuv444p) with high color precision, suited for post-production; larger file size.
              * @default mp4
+             * @enum {string}
              */
-            output_format: string;
+            output_format: "mp4" | "mov";
             /**
              * @description Aspect ratio of the generated video. Seedance 2.0 & 2.0 fast, 1.5 pro default: adaptive.
              * @enum {string}
              */
-            ratio?: "16:9" | "4:3" | "1:1" | "3:4" | "9:16" | "21:9" | "adaptive";
+            ratio?: "16:9" | "4:3" | "1:1" | "3:4" | "9:16" | "21:9" | "9:21" | "adaptive";
             /**
              * @description Video resolution. Seedance 2.5, 2.0 & 2.0 fast, 1.5 pro, 1.0 lite default: 720p. Seedance 1.0 pro & pro-fast default: 1080p.
-             *     Note: Seedance 2.0 & 2.0 fast do not support 1080p. Seedance 2.5 supports 480p and 720p only.
+             *     Note: Seedance 2.0 & 2.0 fast do not support 1080p. Seedance 2.5 supports 480p, 720p, and 1080p.
              * @enum {string}
              */
             resolution?: "480p" | "720p" | "1080p" | "4k";
@@ -7716,6 +8015,67 @@ export interface components {
              * @default false
              */
             watermark: boolean;
+        };
+        BytePlusVideoGenerationQueryResponse: {
+            /** @description The output after the video generation task is completed, which contains the download URL of the output video and, when BytePlus returns one, the download URL of its last frame. Both `video_url` and `last_frame_url` are RE-HOSTED onto Comfy storage; every other field here is BytePlus's own. Nullable - BytePlus clears the URLs 24 hours after the task, and a succeeded document polled after that can carry `content` absent or null. */
+            content?: {
+                /** @description Download URL for the last frame of the generated video, returned when the request set `return_last_frame`. Do not infer the image format from this URL: BytePlus documents the last frame as PNG on the request side, Router re-hosts whatever bytes it is served and types them from the upstream Content-Type or a content sniff, and `image/jpeg` is only the last-resort fallback when both fail. Router re-hosts the last frame onto Comfy storage and rewrites this field, so it is normally a Comfy-signed URL valid for up to 24 hours - signed for 24 hours when minted and replayed from a 23-hour memo, so a later poll can hand back one with as little as an hour left. When the re-host could not be performed the field keeps BytePlus's own URL instead, which BytePlus clears 24 hours after the task. Either way the link expires, so download the frame rather than storing the URL. */
+                last_frame_url?: string;
+                /** @description Container format of the generated video (mp4 or mov), when BytePlus nests it inside `content`. Seedance models more commonly return it as a TOP-LEVEL sibling of `content` - see the top-level `output_format` field - and Router reads whichever of the two is present. */
+                output_format?: string;
+                /** @description Download URL for the output video. Router re-hosts the video onto Comfy storage and rewrites this field, so it is normally a Comfy-signed URL valid for up to 24 hours - signed for 24 hours when minted and replayed from a 23-hour memo, so a later poll can hand back one with as little as an hour left. When the re-host could not be performed the field keeps BytePlus's own URL instead, which BytePlus clears 24 hours after the task and caps at 100 downloads on some models. Either way the link expires, so download the video rather than storing the URL. */
+                video_url?: string;
+            } | null;
+            /** @description The time when the task was created. The value is a UNIX timestamp in seconds. */
+            created_at?: number;
+            /** @description The duration of the generated video in seconds. Declared as a number rather than an integer because BytePlus is not consistent about it - video tasks have been observed returning whole seconds and sibling BytePlus surfaces report fractional durations - so a client must not assume an integral value. BytePlus's own field, returned on succeeded video tasks and forwarded unchanged. */
+            duration?: number;
+            /** @description The error information. If the task succeeds, null is returned. If the task fails, the error information is returned. */
+            error?: {
+                /** @description The error code */
+                code?: string;
+                /** @description The error message */
+                message?: string;
+            } | null;
+            /** @description The ID of the video generation task */
+            id?: string;
+            /** @description The name and version of the model used by the task */
+            model?: string;
+            /** @description Container format of the generated video (mp4 or mov), returned at the TOP LEVEL as a sibling of `content` - this is where the Seedance video task query returns it. BytePlus's own field, forwarded unchanged. */
+            output_format?: string;
+            /** @description The resolution of the generated video, for example `1080p`. BytePlus's own field, returned on succeeded video tasks and forwarded unchanged. */
+            resolution?: string;
+            /**
+             * Format: int64
+             * @description The generation seed actually used for the task. BytePlus's own field, returned on succeeded video tasks and forwarded unchanged.
+             */
+            seed?: number;
+            /**
+             * @description The state of the task
+             * @enum {string}
+             */
+            status?: "queued" | "running" | "cancelled" | "succeeded" | "failed" | "expired";
+            /** @description The time when the task was last updated. The value is a UNIX timestamp in seconds. */
+            updated_at?: number;
+            /** @description The token usage for the request */
+            usage?: {
+                /** @description The number of tokens generated by the model */
+                completion_tokens?: number;
+                /** @description For the video generation model, the number of input tokens is not calculated and defaults to 0. Therefore, total_tokens = completion_tokens. */
+                total_tokens?: number;
+            };
+        };
+        /**
+         * @description Request body for the v1 `POST /proxy/byteplus/api/v3/contents/generations/tasks` proxy.
+         *     It composes `BytePlusVideoGenerationInputs` rather than restating its fields, and adds back the two things only the v1 surface can demand. `model` is both of them: this route carries no path segment supplying it, so a direct caller must send it and must send one of the nine allowlisted spellings, whereas the Comfy Router route `POST /v2/models/byteplus/{model}` supplies it from the path and its input schema must therefore neither require nor enum it (BE-11167). `content` is required on both surfaces and stays in the shared floor.
+         *     The component has required `model` and `content`, and carried the enum, since the family was added on 2025-08-27 (#637), so this wrapper RESTORES a published requirement rather than inventing one and v1's generated `Model` stays the named enum type callers were compiled against. Read the note above `BytePlusVideoGenerationInputs` for the full rule and the guard that enforces it.
+         */
+        BytePlusVideoGenerationRequest: components["schemas"]["BytePlusVideoGenerationInputs"] & {
+            /**
+             * @description The ID of the model to call. Available models include seedance-1-5-pro-251215, seedance-1-0-pro-250528, seedance-1-0-pro-fast-251015, seedance-1-0-lite-t2v-250428, seedance-1-0-lite-i2v-250428
+             * @enum {string}
+             */
+            model: "seedance-1-5-pro-251215" | "seedance-1-0-pro-250528" | "seedance-1-0-lite-t2v-250428" | "seedance-1-0-lite-i2v-250428" | "seedance-1-0-pro-fast-251015" | "dreamina-seedance-2-0-260128" | "dreamina-seedance-2-0-fast-260128" | "dreamina-seedance-2-0-mini" | "dreamina-seedance-2-5-260628";
         };
         BytePlusVideoGenerationResponse: {
             /** @description The ID of the video generation task */
@@ -7761,6 +8121,10 @@ export interface components {
             call_id: string;
             /** @description The unique ID of the computer call. */
             id: string;
+            /** @description The pending safety checks for the computer call. */
+            pending_safety_checks: {
+                [key: string]: unknown;
+            }[];
             /**
              * @description The status of the item. One of `in_progress`, `completed`, or
              *     `incomplete`. Populated when items are returned via API.
@@ -7792,7 +8156,7 @@ export interface components {
              * @description The type of the computer use tool. Always `computer_use_preview`. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
-            type: "ComputerUsePreviewTool";
+            type: "computer_use_preview";
         };
         CreateAPIKeyRequest: {
             description?: string;
@@ -7805,7 +8169,9 @@ export interface components {
             /** @description The Cloudflare Turnstile token (cf-turnstile-response) produced by the frontend widget. Verified server-side against Cloudflare siteverify. Omit or leave empty for clients without Turnstile (e.g. local OSS), which are exempt from the verification requirement. */
             turnstile_token?: string;
         };
-        CreateModelResponseProperties: components["schemas"]["ModelResponseProperties"];
+        CreateModelResponseProperties: components["schemas"]["ModelResponseProperties"] & {
+            model?: components["schemas"]["OpenAIModels"];
+        };
         Customer: {
             /**
              * Format: date-time
@@ -8275,26 +8641,43 @@ export interface components {
             /** @description The list of shared voices on this page. */
             items: components["schemas"]["ElevenLabsSharedVoice"][];
         };
-        /** @description Request body for generating sound effects from text */
-        ElevenLabsSoundGenerationRequest: {
+        /**
+         * @description Request body for generating sound effects from text. The `example` below is the COMFY ROUTER form and omits `model_id`, which Router fills from the `{model}` path segment; a direct v1 call to POST /proxy/elevenlabs/v1/sound-generation may send it, and the route admits `eleven_sfx_v2` alone.
+         * @example {
+         *       "duration_seconds": 5,
+         *       "text": "A distant rumble of thunder rolling across a valley."
+         *     }
+         */
+        ElevenLabsSoundGenerationInputs: {
             /**
              * Format: double
              * @description The duration of the sound which will be generated in seconds.
-             *     Must be at least 0.5 and at most 30. If set to null, the optimal
-             *     duration will be guessed using the prompt. Defaults to null.
+             *     Must be at least 0.5 and at most 30.
+             *     REQUIRED on this route: unlike the upstream ElevenLabs API, which
+             *     guesses an optimal duration when the field is null, this route
+             *     rejects a request that omits it with 400 "Duration is required".
+             *     The field stays nullable only so an explicit null is a well-formed
+             *     document; it is still refused.
+             *     This value is the quantity the request is metered on.
              */
-            duration_seconds?: number | null;
+            duration_seconds: number | null;
             /**
              * @description Whether to create a sound effect that loops smoothly.
-             *     Only available for the 'eleven_text_to_sound_v2' model.
+             *     ElevenLabs documents this as available only for the
+             *     'eleven_text_to_sound_v2' model, which this route does NOT admit
+             *     (see model_id), so it may have no effect here.
              * @default false
              */
             loop: boolean;
             /**
-             * @description The model ID to use for the sound generation.
-             * @default eleven_text_to_sound_v2
+             * @description The model ID to use for the sound generation. This route admits
+             *     'eleven_sfx_v2' and nothing else; any other value is rejected with
+             *     400 before the request reaches ElevenLabs. It is NOT in this
+             *     schema's `required` list because Comfy Router fills it from the
+             *     `{model}` path segment of /v2/models/elevenlabs/{model}, so a Router
+             *     caller omits it.
              */
-            model_id: string;
+            model_id?: string | null;
             /**
              * Format: double
              * @description A higher prompt influence makes your generation follow the prompt
@@ -8304,6 +8687,14 @@ export interface components {
             prompt_influence?: number;
             /** @description The text that will get converted into a sound effect. */
             text: string;
+        };
+        /** @description Request body for the v1 `POST /proxy/elevenlabs/v1/sound-generation` proxy. It composes `ElevenLabsSoundGenerationInputs` and RESTORES the `model_id` enum and default the Router-safe base cannot carry (BE-11167, BE-12265). `required` is unchanged in both directions: `model_id` was never required on this route, so nothing is tightened here either. */
+        ElevenLabsSoundGenerationRequest: components["schemas"]["ElevenLabsSoundGenerationInputs"] & {
+            /**
+             * @default eleven_sfx_v2
+             * @enum {string}
+             */
+            model_id: "eleven_sfx_v2";
         };
         /** @description Request body for ElevenLabs Speech-to-Speech (Voice Changer) */
         ElevenLabsSpeechToSpeechRequest: {
@@ -8385,8 +8776,18 @@ export interface components {
             use_pvc_as_ivc: boolean;
             voice_settings?: components["schemas"]["ElevenLabsVoiceSettings"];
         };
-        /** @description Request body for ElevenLabs Text-to-Dialogue (multi-voice TTS) */
-        ElevenLabsTextToDialogueRequest: {
+        /**
+         * @description Request body for ElevenLabs Text-to-Dialogue (multi-voice TTS). The `example` below is the COMFY ROUTER form and omits `model_id`, which Router fills from the `{model}` path segment; a direct v1 call to POST /proxy/elevenlabs/v1/text-to-dialogue may send it, and the route admits `eleven_v3` alone.
+         * @example {
+         *       "inputs": [
+         *         {
+         *           "text": "Hello from Comfy Router.",
+         *           "voice_id": "21m00Tcm4TlvDq8ikWAM"
+         *         }
+         *       ]
+         *     }
+         */
+        ElevenLabsTextToDialogueInputs: {
             /**
              * @description Controls text normalization with three modes:
              *     'auto' - system automatically decides whether to apply text normalization
@@ -8407,11 +8808,16 @@ export interface components {
              */
             language_code?: string | null;
             /**
-             * @description Identifier of the model that will be used. Query GET /v1/models to list available models.
-             *     The model needs to have support for text to speech (can_do_text_to_speech property).
-             * @default eleven_v3
+             * @description Identifier of the model that will be used. This route admits
+             *     'eleven_v3' and nothing else; any other value is rejected with 400
+             *     before the request reaches ElevenLabs.
+             *     The upstream ElevenLabs advice to query GET /v1/models for the
+             *     available set does NOT describe this route, which serves one model.
+             *     It is NOT in this schema's `required` list because Comfy Router
+             *     fills it from the `{model}` path segment of
+             *     /v2/models/elevenlabs/{model}, so a Router caller omits it.
              */
-            model_id: string;
+            model_id?: string | null;
             /**
              * @description A list of pronunciation dictionary locators (id, version_id) to be applied to the text.
              *     They will be applied in order. You may have up to 3 locators per request.
@@ -8424,6 +8830,14 @@ export interface components {
              */
             seed?: number | null;
             settings?: components["schemas"]["ElevenLabsDialogueSettings"];
+        };
+        /** @description Request body for the v1 `POST /proxy/elevenlabs/v1/text-to-dialogue` proxy. It composes `ElevenLabsTextToDialogueInputs` and RESTORES the `model_id` enum and default the Router-safe base cannot carry (BE-11167, BE-12265). `required` is unchanged in both directions: `model_id` was never required on this route, so nothing is tightened here either. */
+        ElevenLabsTextToDialogueRequest: components["schemas"]["ElevenLabsTextToDialogueInputs"] & {
+            /**
+             * @default eleven_v3
+             * @enum {string}
+             */
+            model_id: "eleven_v3";
         };
         /** @description Validation error response from ElevenLabs */
         ElevenLabsValidationError: {
@@ -8683,7 +9097,12 @@ export interface components {
                 [key: string]: unknown;
             };
         };
-        /** @description Request body for the fal PATINA image-to-image model (fal-ai/patina): predict PBR maps from a single input image. */
+        /**
+         * @description Request body for the fal PATINA image-to-image model (fal-ai/patina): predict PBR maps from a single input image.
+         * @example {
+         *       "image_url": "https://storage.googleapis.com/falserverless/gallery/patina-blog-hero-render.png"
+         *     }
+         */
         FalPatinaRequest: {
             /**
              * @description Enable the safety checker for images.
@@ -8722,8 +9141,12 @@ export interface components {
             queue_position?: number;
             /** @description The fal queue request id. */
             request_id: string;
+            /** @description fal's queue result URL for this request. */
+            response_url?: string;
             /** @description Queue status: IN_QUEUE, IN_PROGRESS, or COMPLETED. */
             status: string;
+            /** @description fal's queue status URL for this request. */
+            status_url?: string;
         };
         FeaturesResponse: {
             /**
@@ -8737,7 +9160,7 @@ export interface components {
              * @description The type of tool (enum property replaced by openapi-typescript)
              * @enum {string}
              */
-            type: "FileSearchTool";
+            type: "file_search";
             /** @description IDs of vector stores to search in */
             vector_store_ids: string[];
         };
@@ -8996,6 +9419,12 @@ export interface components {
              */
             webhook_url?: string;
         };
+        /**
+         * @example {
+         *       "image": "https://img.magnific.com/free-photo/light-through-mountains_395237-33.jpg?semt=ais_hybrid&w=740&q=80",
+         *       "scale_factor": 8
+         *     }
+         */
         FreepikMagnificUpscalerPrecisionV2Request: {
             /**
              * @description Image processing flavor:
@@ -9034,6 +9463,11 @@ export interface components {
              */
             webhook_url?: string;
         };
+        /**
+         * @example {
+         *       "image": "https://img.magnific.com/free-photo/portrait-woman_395237-33.jpg?w=740&q=80"
+         *     }
+         */
         FreepikSkinEnhancerCreativeRequest: {
             /**
              * @description Input image. Supports Base64 encoding or HTTPS URL (must be publicly accessible).
@@ -9057,6 +9491,11 @@ export interface components {
              */
             webhook_url?: string;
         };
+        /**
+         * @example {
+         *       "image": "https://img.magnific.com/free-photo/portrait-woman_395237-33.jpg?w=740&q=80"
+         *     }
+         */
         FreepikSkinEnhancerFaithfulRequest: {
             /**
              * @description Input image. Supports Base64 encoding or HTTPS URL (must be publicly accessible).
@@ -9085,6 +9524,11 @@ export interface components {
              */
             webhook_url?: string;
         };
+        /**
+         * @example {
+         *       "image": "https://img.magnific.com/free-photo/portrait-woman_395237-33.jpg?w=740&q=80"
+         *     }
+         */
         FreepikSkinEnhancerFlexibleRequest: {
             /**
              * @description Input image. Supports Base64 encoding or HTTPS URL (must be publicly accessible).
@@ -9139,7 +9583,7 @@ export interface components {
              * @description The type of tool (enum property replaced by openapi-typescript)
              * @enum {string}
              */
-            type: "FunctionTool";
+            type: "function";
         };
         /**
          * Function tool call
@@ -9193,7 +9637,7 @@ export interface components {
              * @example user
              * @enum {string}
              */
-            role: "user" | "model";
+            role?: "user" | "model";
         };
         /** @description URI based data. */
         GeminiFileData: {
@@ -9205,8 +9649,22 @@ export interface components {
             description?: string;
             name: string;
             /** @description JSON schema for the function parameters */
-            parameters: Record<string, never>;
+            parameters?: Record<string, never>;
         };
+        /**
+         * @example {
+         *       "contents": [
+         *         {
+         *           "parts": [
+         *             {
+         *               "text": "Describe a robot learning to paint, in two sentences."
+         *             }
+         *           ],
+         *           "role": "user"
+         *         }
+         *       ]
+         *     }
+         */
         GeminiGenerateContentRequest: {
             contents: components["schemas"]["GeminiContent"][];
             generationConfig?: components["schemas"]["GeminiGenerationConfig"];
@@ -9228,6 +9686,7 @@ export interface components {
             responseId?: string;
             usageMetadata?: components["schemas"]["GeminiUsageMetadata"];
         };
+        /** @description Sampling, length and output settings for the generation. Every field is optional: the fields below that declare a `default` apply it when omitted, and the rest fall back to the model's own behaviour. */
         GeminiGenerationConfig: {
             /** @description Configuration for image generation */
             imageConfig?: {
@@ -9316,7 +9775,7 @@ export interface components {
             modality?: string;
             tokens?: number;
         };
-        /** @description Request body for the Gemini Interactions API (`/v1beta/interactions`). Mirrors the upstream schema with strict typing only on the fields the proxy reads (model, `input` for prompt extraction); all other fields (`response_format`, `generation_config`, `store`, `safety_settings`, ...) pass through unchanged via `additionalProperties`. */
+        /** @description Request body for the Gemini Interactions API (`/v1beta/interactions`). Mirrors the upstream schema with strict typing only on the fields the proxy reads (model, `input` for prompt extraction); all other fields (`response_format`, `generation_config`, `store`, `safety_settings`, ...) pass through unchanged via `additionalProperties`. TWO EXCEPTIONS, refused rather than forwarded: `background` and `stream`. Both are honoured by Google and both produce a 2xx this proxy cannot meter — `background: true` answers a queued `in_progress` document carrying no `usage`, whose finished generation is only ever reachable through `GET /proxy/gemini-interactions/{id}`, which meters nothing; `stream: true` answers a `text/event-stream` the billing path cannot decode. Naming either with a value other than `false` or `null` is a 400; omitting them, or sending them false/null, is the synchronous request this surface serves. */
         GeminiInteractionRequest: {
             /** @description Either a prompt string or an array of typed content parts (text, image, audio, video, document). */
             input: unknown;
@@ -9343,7 +9802,7 @@ export interface components {
          * @description The media type of the file specified in the data or fileUri fields. Acceptable values include the following. For gemini-2.0-flash-lite and gemini-2.0-flash, the maximum length of an audio file is 8.4 hours and the maximum length of a video file (without audio) is one hour. For more information, see Gemini audio and video requirements. Text files must be UTF-8 encoded. The contents of the text file count toward the token limit. There is no limit on image resolution.
          * @enum {string}
          */
-        GeminiMimeType: "application/pdf" | "audio/mpeg" | "audio/mp3" | "audio/wav" | "image/png" | "image/jpeg" | "image/webp" | "text/plain" | "video/mov" | "video/mpeg" | "video/mp4" | "video/mpg" | "video/avi" | "video/wmv" | "video/mpegps" | "video/flv";
+        GeminiMimeType: "application/pdf" | "audio/mpeg" | "audio/mp3" | "audio/wav" | "image/png" | "image/jpeg" | "image/webp" | "text/plain" | "video/mov" | "video/mpeg" | "video/mp4" | "video/mpg" | "video/avi" | "video/wmv" | "video/mpegps" | "video/flv" | "image/heic" | "image/heif" | "audio/flac" | "video/webm";
         /** @description Represents a duration offset for video timeline positions. */
         GeminiOffset: {
             /**
@@ -9390,7 +9849,7 @@ export interface components {
         };
         /** @enum {string} */
         GeminiSafetyThreshold: "OFF" | "BLOCK_NONE" | "BLOCK_LOW_AND_ABOVE" | "BLOCK_MEDIUM_AND_ABOVE" | "BLOCK_ONLY_HIGH";
-        /** @description Available for gemini-2.0-flash and gemini-2.0-flash-lite. Instructions for the model to steer it toward better performance. For example, "Answer as concisely as possible" or "Don't use technical terms in your response". The text strings count toward the token limit. The role field of systemInstruction is ignored and doesn't affect the performance of the model. Note: Only text should be used in parts and content in each part should be in a separate paragraph. */
+        /** @description Instructions for the model to steer it toward better performance. For example, "Answer as concisely as possible" or "Don't use technical terms in your response". The text strings count toward the token limit. The role field of systemInstruction is ignored and doesn't affect the performance of the model. Note: Only text should be used in parts and content in each part should be in a separate paragraph. */
         GeminiSystemInstructionContent: {
             /** @description A list of ordered parts that make up a single message. Different parts may have different IANA MIME types. For limits on the inputs, such as the maximum number of tokens or the number of images, see the model specifications on the Google models page. */
             parts: components["schemas"]["GeminiTextPart"][];
@@ -9399,7 +9858,7 @@ export interface components {
              * @example user
              * @enum {string}
              */
-            role: "user" | "model";
+            role?: "user" | "model";
         };
         GeminiTextPart: {
             /**
@@ -9713,7 +10172,13 @@ export interface components {
             /** @description Word-level timing data */
             word_timestamps?: components["schemas"]["HeyGenWordTimestamp"][];
         };
-        /** @description Request body for HeyGen v3 text-to-speech generation */
+        /**
+         * @description Request body for HeyGen v3 text-to-speech generation
+         * @example {
+         *       "text": "This is a billing verification test for HeyGen speech generation.",
+         *       "voice_id": "d2f4f24783d04e22ab49ee8fdc3715e0"
+         *     }
+         */
         HeyGenSpeechRequest: {
             /** @description Type of the input: 'text' for plain text, 'ssml' for SSML markup. Defaults to 'text' */
             input_type?: string;
@@ -10128,7 +10593,12 @@ export interface components {
                 url?: string;
             }[];
         };
-        /** @description Parameters for the P-Image-Ideogram text-to-image generation proxy request. */
+        /**
+         * @description Parameters for the P-Image-Ideogram text-to-image generation proxy request. The v1 `/proxy/` route reads these as multipart/form-data, which is also why Comfy Router cannot invoke this model yet: Router dispatches application/json only and refuses the call 403 not_enabled before validation. Use the v1 route until that changes.
+         * @example {
+         *       "prompt": "A beautiful mountain landscape"
+         *     }
+         */
         IdeogramPImageRequest: {
             /**
              * @description Aspect ratio in format WxH. Supported values: 1x3, 3x1, 1x2, 2x1, 9x16, 16x9, 10x16, 16x10, 2x3, 3x2, 3x4, 4x3, 4x5, 5x4, 1x1. Defaults to 1x1.
@@ -10294,7 +10764,13 @@ export interface components {
             style_reference_images?: string[];
             style_type?: components["schemas"]["IdeogramStyleType"];
         };
-        /** @description Parameters for the Ideogram 4.0 (V4) text-to-image generation proxy request. Supply exactly one of text_prompt or json_prompt. */
+        /**
+         * @description Parameters for the Ideogram 4.0 (V4) text-to-image generation proxy request. Supply exactly one of text_prompt or json_prompt.
+         * @example {
+         *       "rendering_speed": "DEFAULT",
+         *       "text_prompt": "A poster for a jazz festival, bold typography, warm colours"
+         *     }
+         */
         IdeogramV4Request: {
             /** @description Opt into post-generation copyright detection (Hive likeness and logo checks). */
             enable_copyright_detection?: boolean;
@@ -10312,6 +10788,26 @@ export interface components {
             text_prompt?: string;
         };
         /**
+         * Image generation call
+         * @description An image generation tool call. `result` carries the generated image as base64 bytes on a completed call and is null while the call is still running or if it produced nothing.
+         */
+        ImageGenerationCall: {
+            /** @description The unique ID of the image generation call. */
+            id?: string;
+            /** @description The generated image, base64-encoded. */
+            result?: string | null;
+            /**
+             * @description The status of the item. One of `in_progress`, `completed`,
+             *     `generating` or `failed`.
+             */
+            status?: string;
+            /**
+             * @description The type of the item. Always `image_generation_call`.
+             * @enum {string}
+             */
+            type: "image_generation_call";
+        };
+        /**
          * ImageGenerationServerTool_OpenRouter
          * @description OpenRouter built-in server tool: generates images from text prompts using an image generation model
          */
@@ -10319,9 +10815,21 @@ export interface components {
             parameters?: components["schemas"]["OpenRouterImageGenerationServerToolConfig"];
             type: components["schemas"]["OpenRouterImageGenerationServerToolOpenRouterType"];
         };
+        /**
+         * @example {
+         *       "instances": [
+         *         {
+         *           "prompt": "A single red maple leaf on a plain white background."
+         *         }
+         *       ],
+         *       "parameters": {
+         *         "sampleCount": 1
+         *       }
+         *     }
+         */
         ImagenGenerateImageRequest: {
             instances: components["schemas"]["ImagenImageGenerationInstance"][];
-            parameters: components["schemas"]["ImagenImageGenerationParameters"];
+            parameters?: components["schemas"]["ImagenImageGenerationParameters"];
         };
         ImagenGenerateImageResponse: {
             predictions?: components["schemas"]["ImagenImagePrediction"][];
@@ -10345,7 +10853,6 @@ export interface components {
             sampleCount?: number;
             /** Format: uint32 */
             seed?: number;
-            /** Format: uri */
             storageUri?: string;
         };
         ImagenImagePrediction: {
@@ -10457,6 +10964,15 @@ export interface components {
          * @enum {string}
          */
         KlingAvatarMode: "std" | "pro";
+        /**
+         * @description Generate an avatar video from an image and exactly one audio source: audio_id or sound_file.
+         * @example {
+         *       "image": "https://example.invalid/kling/avatar.png",
+         *       "mode": "std",
+         *       "prompt": "The presenter smiles and gestures towards the camera.",
+         *       "sound_file": "https://example.invalid/kling/voice.mp3"
+         *     }
+         */
         KlingAvatarRequest: {
             /** @description Audio ID Generated via TTS API. Only supports 2-300 second audio generated within the last 30 days. Either audio_id or sound_file must be provided (mutually exclusive). */
             audio_id?: string;
@@ -10478,7 +10994,7 @@ export interface components {
                 /** @description Whether to generate watermarked results simultaneously. */
                 enabled?: boolean;
             };
-        };
+        } & (unknown | unknown);
         KlingAvatarResponse: {
             /** @description Error code */
             code?: number;
@@ -10580,7 +11096,16 @@ export interface components {
             /** @description Request ID for tracking and troubleshooting */
             request_id: string;
         };
-        KlingImage2VideoRequest: {
+        /**
+         * @description Request body for a Kling image-to-video generation. The `example` below is the COMFY ROUTER form and deliberately omits `model_name`, which Router fills from the `{model}` path segment; a direct v1 call to POST /proxy/kling/v1/videos/image2video may add it (the proxy defaults an absent one to kling-v1). One example cannot serve both spellings, so the omitting form is the only one valid on both Router routes.
+         * @example {
+         *       "duration": "5",
+         *       "image": "https://example.invalid/kling/reference.png",
+         *       "mode": "std",
+         *       "prompt": "The fox turns its head towards the camera."
+         *     }
+         */
+        KlingImage2VideoInputs: {
             /**
              * Format: uri
              * @description The callback notification address. Server will notify when the task status changes.
@@ -10609,7 +11134,7 @@ export interface components {
                  * Format: int64
                  * @description Element ID
                  */
-                element_id?: number;
+                element_id: number;
             }[];
             /** @description Customized Task ID. Must be unique within a single user account. */
             external_task_id?: string;
@@ -10618,7 +11143,8 @@ export interface components {
             /** @description Reference Image - End frame control. URL or Base64 encoded string, cannot exceed 10MB, resolution not less than 300*300px. Base64 should not include data:image prefix. Cannot be used simultaneously with dynamic_masks/static_mask or camera_control. */
             image_tail?: string;
             mode?: components["schemas"]["KlingVideoGenMode"];
-            model_name?: components["schemas"]["KlingVideoGenModelName"];
+            /** @description Model name. Omit it or send null when using Comfy Router; the model is selected by the request path. A supplied name must match that path. */
+            model_name?: string | null;
             /** @description Information about each storyboard, such as prompts and duration. Supports up to 6 storyboards, with a minimum of 1. Required when multi_shot is true and shot_type is customize. */
             multi_prompt?: {
                 /** @description Duration of this storyboard in seconds. Must not exceed total task duration and must not be less than 1. Sum of all storyboard durations equals total task duration. */
@@ -10653,13 +11179,21 @@ export interface components {
             /** @description List of voices referenced when generating videos. Supports up to 2 voices. The element_list and voice_list parameters are mutually exclusive. */
             voice_list?: {
                 /** @description Voice ID returned through the voice customization API or a system preset voice ID. */
-                voice_id?: string;
+                voice_id: string;
             }[];
             /** @description Whether to generate watermarked results simultaneously. Custom watermark is not supported at this time. */
             watermark_info?: {
                 /** @description true means generate watermark, false means do not generate. */
                 enabled?: boolean;
             };
+        };
+        /**
+         * @description Request body for the v1 `POST /proxy/kling/v1/videos/image2video` proxy.
+         *     It composes `KlingImage2VideoInputs` rather than restating its fields, and adds back the one narrowing only the v1 surface can carry. `model_name` is that field: this route has no path segment supplying it, so the published enum (`KlingVideoGenModelName`, which legitimately keeps kling-v1-5) still describes what the proxy accepts, whereas the Comfy Router route supplies it from the path and its input schema must neither require nor enum-constrain it (BE-11167).
+         *     The component has NEVER required `model_name` -- it carried no `required` list at all before this split -- so nothing here restores or invents a requirement; routerV1ProxyModelRequirement pins that answer.
+         */
+        KlingImage2VideoRequest: components["schemas"]["KlingImage2VideoInputs"] & {
+            model_name?: components["schemas"]["KlingVideoGenModelName"];
         };
         /**
          * @description Aspect ratio of the generated images
@@ -10783,12 +11317,43 @@ export interface components {
              * @default 1
              */
             voice_speed: number;
+        } | {
+            /** @enum {unknown} */
+            mode?: "text2video";
+        } | {
+            /** @enum {unknown} */
+            mode?: "audio2video";
+        } | {
+            /** @enum {unknown} */
+            mode?: "audio2video";
+        } | {
+            /** @enum {unknown} */
+            mode?: "text2video";
+        } | {
+            /** @enum {unknown} */
+            mode?: "audio2video";
+        } | {
+            /** @enum {unknown} */
+            mode?: "audio2video";
         };
         /**
          * @description Video Generation Mode. text2video: Text-to-video generation mode; audio2video: Audio-to-video generation mode
          * @enum {string}
          */
         KlingLipSyncMode: "text2video" | "audio2video";
+        /**
+         * @description Generate lip-sync for a video_id or video_url. Use text2video with text and voice_id, or audio2video with an audio_file or audio_url.
+         * @example {
+         *       "input": {
+         *         "mode": "text2video",
+         *         "text": "Welcome to Comfy Cloud.",
+         *         "video_id": "kling-video-6f5e4d3c2b1a",
+         *         "voice_id": "genshin_vindi2",
+         *         "voice_language": "en",
+         *         "voice_speed": 1
+         *       }
+         *     }
+         */
         KlingLipSyncRequest: {
             /**
              * Format: uri
@@ -10917,7 +11482,16 @@ export interface components {
             /** @description URL for generating videos with watermark, hotlink protection format */
             watermark_url?: string;
         };
-        KlingOmniImageRequest: {
+        /**
+         * @description Request body for a Kling omni-image generation. `prompt` is the one field Kling requires and it stays on this Router-safe floor -- the v1 component has required it since the operation was added, and `prompt` is not a field Router fills, so requiring it costs a Router caller nothing. The `example` below is the COMFY ROUTER form and omits `model_name`, which Router fills from the `{model}` path segment.
+         * @example {
+         *       "aspect_ratio": "1:1",
+         *       "n": 1,
+         *       "prompt": "A watercolour koi pond at dawn, soft light.",
+         *       "resolution": "1k"
+         *     }
+         */
+        KlingOmniImageInputs: {
             /**
              * @description Aspect ratio of the generated images (width:height). auto is to intelligently generate images based on incoming content.
              * @default auto
@@ -10935,21 +11509,17 @@ export interface components {
                  * Format: int64
                  * @description Element ID
                  */
-                element_id?: number;
+                element_id: number;
             }[];
             /** @description Customized Task ID. Must be unique within a single user account. */
             external_task_id?: string;
             /** @description Reference Image List. Supports inputting image Base64 encoding or image URL (ensure accessibility). Supported formats include .jpg/.jpeg/.png. File size cannot exceed 10MB. Width and height dimensions shall not be less than 300px, aspect ratio between 1:2.5 ~ 2.5:1. The sum of reference elements and reference images shall not exceed 10. */
             image_list?: {
                 /** @description Image Base64 encoding or image URL (ensure accessibility) */
-                image?: string;
+                image: string;
             }[];
-            /**
-             * @description Model Name
-             * @default kling-image-o1
-             * @enum {string}
-             */
-            model_name: "kling-image-o1" | "kling-v3-omni";
+            /** @description Model name. Omit it or send null when using Comfy Router; the model is selected by the request path. A supplied name must match that path. */
+            model_name?: string | null;
             /**
              * @description Number of generated images. Value range [1,9].
              * @default 1
@@ -10974,6 +11544,19 @@ export interface components {
              * @default 4
              */
             series_amount: number;
+        };
+        /**
+         * @description Request body for the v1 `POST /proxy/kling/v1/images/omni-image` proxy.
+         *     It composes `KlingOmniImageInputs` rather than restating its fields, and adds back the one narrowing only the v1 surface can carry: `model_name` keeps its published enum and default here, because this route has no path segment supplying the model, whereas the Comfy Router route supplies it from the path and its input schema must neither require nor enum-constrain it (BE-11167).
+         *     `required: [prompt]` is NOT restated here: it lives on the shared base, is unchanged by this split, and is the Router-safe floor's own field rather than one this wrapper re-adds. The component has never required `model_name`; routerV1ProxyModelRequirement pins that answer.
+         */
+        KlingOmniImageRequest: components["schemas"]["KlingOmniImageInputs"] & {
+            /**
+             * @description Model Name
+             * @default kling-image-o1
+             * @enum {string}
+             */
+            model_name: "kling-image-o1" | "kling-v3-omni";
         };
         KlingOmniImageResponse: {
             /** @description Error code */
@@ -11018,7 +11601,16 @@ export interface components {
             /** @description Request ID */
             request_id?: string;
         };
-        KlingOmniVideoRequest: {
+        /**
+         * @description Request body for a Kling omni-video generation. The `example` below is the COMFY ROUTER form and deliberately omits `model_name`, which Router fills from the `{model}` path segment; a direct v1 call to POST /proxy/kling/v1/videos/omni-video may add it (the proxy defaults an absent one to kling-video-o1). One example cannot serve both spellings, so the omitting form is the only one valid on both Router routes.
+         * @example {
+         *       "aspect_ratio": "16:9",
+         *       "duration": "5",
+         *       "mode": "pro",
+         *       "prompt": "A paper boat drifting down a rain-soaked street at dusk."
+         *     }
+         */
+        KlingOmniVideoInputs: {
             /**
              * @description The aspect ratio of the generated video frame (width:height). Required when first-frame reference or video editing features are not used.
              * @enum {string}
@@ -11041,7 +11633,7 @@ export interface components {
                  * Format: int64
                  * @description Element ID
                  */
-                element_id?: number;
+                element_id: number;
             }[];
             /** @description Customized Task ID. Must be unique within a single user account. */
             external_task_id?: string;
@@ -11061,12 +11653,8 @@ export interface components {
              * @enum {string}
              */
             mode: "pro" | "std";
-            /**
-             * @description Model Name
-             * @default kling-video-o1
-             * @enum {string}
-             */
-            model_name: "kling-video-o1" | "kling-v3-omni";
+            /** @description Model name. Omit it or send null when using Comfy Router; the model is selected by the request path. A supplied name must match that path. */
+            model_name?: string | null;
             /** @description Information about each storyboard, such as prompts and duration. Supports up to 6 storyboards, with a minimum of 1. Required when multi_shot is true and shot_type is customize. */
             multi_prompt?: {
                 /** @description Duration of this storyboard in seconds. Must not exceed total task duration and must not be less than 1. Sum of all storyboard durations equals total task duration. */
@@ -11107,13 +11695,26 @@ export interface components {
                  */
                 refer_type?: "feature" | "base";
                 /** @description URL of uploaded video. Only .mp4/.mov formats are supported. Duration between 3-10 seconds. Resolution must be between 720px and 2160px. Frame rates of 24-60 fps supported. Only 1 video can be uploaded, with size not exceeding 200MB. */
-                video_url?: string;
+                video_url: string;
             }[];
             /** @description Whether to generate watermarked results simultaneously. Custom watermark is not supported at this time. */
             watermark_info?: {
                 /** @description true means generate watermark, false means do not generate. */
                 enabled?: boolean;
             };
+        };
+        /**
+         * @description Request body for the v1 `POST /proxy/kling/v1/videos/omni-video` proxy.
+         *     It composes `KlingOmniVideoInputs` rather than restating its fields, and adds back the one narrowing only the v1 surface can carry: `model_name` keeps its published enum and default here, because this route has no path segment supplying the model, whereas the Comfy Router route supplies it from the path and its input schema must neither require nor enum-constrain it (BE-11167).
+         *     The component has NEVER required `model_name` -- it carried no `required` list at all before this split -- so nothing here restores or invents a requirement; routerV1ProxyModelRequirement pins that answer.
+         */
+        KlingOmniVideoRequest: components["schemas"]["KlingOmniVideoInputs"] & {
+            /**
+             * @description Model Name
+             * @default kling-video-o1
+             * @enum {string}
+             */
+            model_name: "kling-video-o1" | "kling-v3-omni";
         };
         KlingPresetsElement: {
             element_description?: string;
@@ -11280,7 +11881,16 @@ export interface components {
          * @enum {string}
          */
         KlingTaskStatus: "submitted" | "processing" | "succeed" | "failed";
-        KlingText2VideoRequest: {
+        /**
+         * @description Request body for a Kling text-to-video generation. The `example` below is the COMFY ROUTER form and deliberately omits `model_name`, which Router fills from the `{model}` path segment; a direct v1 call to POST /proxy/kling/v1/videos/text2video may add it (the proxy defaults an absent one to kling-v1). One example cannot serve both surfaces -- this component is the Router input schema for all seven spellings, so an example naming one of them is refused by the other six routes for naming a different model, while the omitting form is valid on all seven.
+         * @example {
+         *       "aspect_ratio": "16:9",
+         *       "duration": "5",
+         *       "mode": "std",
+         *       "prompt": "A red fox trotting through falling snow, cinematic lighting."
+         *     }
+         */
+        KlingText2VideoInputs: {
             aspect_ratio?: components["schemas"]["KlingVideoGenAspectRatio"];
             /**
              * Format: uri
@@ -11293,7 +11903,8 @@ export interface components {
             /** @description Customized Task ID */
             external_task_id?: string;
             mode?: components["schemas"]["KlingVideoGenMode"];
-            model_name?: components["schemas"]["KlingTextToVideoModelName"];
+            /** @description Model name. Omit it or send null when using Comfy Router; the model is selected by the request path. A supplied name must match that path. */
+            model_name?: string | null;
             /** @description Information about each storyboard, such as prompts and duration. Supports up to 6 storyboards, with a minimum of 1. Required when multi_shot is true and shot_type is customize. */
             multi_prompt?: {
                 /** @description Duration of this storyboard in seconds. Must not exceed total task duration and must not be less than 1. Sum of all storyboard durations equals total task duration. */
@@ -11330,11 +11941,19 @@ export interface components {
             };
         };
         /**
+         * @description Request body for the v1 `POST /proxy/kling/v1/videos/text2video` proxy.
+         *     It composes `KlingText2VideoInputs` rather than restating its fields, and adds back the one narrowing only the v1 surface can carry. `model_name` is that field: this route has no path segment supplying it, so the published enum (`KlingTextToVideoModelName`) still describes what the proxy accepts, whereas the Comfy Router route POST /v2/models/kling/{model} supplies it from the path and its input schema must neither require nor enum-constrain it (RouterBodyForTarget writes it in after routervalidate.Guard has validated the caller's bytes -- BE-11167).
+         *     The component has NEVER required `model_name` -- it carried no `required` list at all before this split -- so nothing here restores or invents a requirement; routerV1ProxyModelRequirement pins that answer. Read the note above `KlingText2VideoInputs` for the full rule and the guards that enforce it.
+         */
+        KlingText2VideoRequest: components["schemas"]["KlingText2VideoInputs"] & {
+            model_name?: components["schemas"]["KlingTextToVideoModelName"];
+        };
+        /**
          * @description Model Name
          * @default kling-v1
          * @enum {string}
          */
-        KlingTextToVideoModelName: "kling-v1" | "kling-v1-5" | "kling-v1-6" | "kling-v2-master" | "kling-v2-1-master" | "kling-v2-5-turbo" | "kling-v2-6" | "kling-v3";
+        KlingTextToVideoModelName: "kling-v1" | "kling-v1-6" | "kling-v2-master" | "kling-v2-1-master" | "kling-v2-5-turbo" | "kling-v2-6" | "kling-v3";
         /** @description Response returned when a Kling 3.0 Turbo task is created. */
         KlingV2CreateTaskResponse: {
             /** @description Error code. 0 indicates success. */
@@ -11465,18 +12084,35 @@ export interface components {
              */
             update_time?: number;
         };
+        /**
+         * @description Request body for a Kling 3.0 Turbo text-to-video generation. `prompt` is the one field Kling requires. The model is named by the route on both surfaces -- the v1 path ends in the model spelling and the Comfy Router path is /v2/models/kling/kling-3.0-turbo -- so the body carries no model field at all and the same `required` list serves both.
+         * @example {
+         *       "prompt": "A neon-lit alley in the rain, slow dolly forward.",
+         *       "settings": {
+         *         "aspect_ratio": "16:9",
+         *         "duration": 5,
+         *         "resolution": "1080p"
+         *       }
+         *     }
+         */
         KlingV2Text2VideoRequest: {
             options?: components["schemas"]["KlingV2Options"];
             /** @description Prompt that may include both positive and negative descriptions. Recommended length under 2500 characters. Multi-shot videos use the format "shot n, m, words; shot n, m, words;". */
             prompt: string;
             /** @description Output configuration such as resolution, aspect ratio and duration. */
             settings?: {
-                /** @description Aspect ratio (width:height) of the generated frames. One of "16:9", "9:16" or "1:1". Default "16:9". */
-                aspect_ratio?: string;
+                /**
+                 * @description Aspect ratio (width:height) of the generated frames. One of "16:9", "9:16" or "1:1". Default "16:9".
+                 * @enum {string}
+                 */
+                aspect_ratio?: "16:9" | "9:16" | "1:1";
                 /** @description Video length in seconds. Supported values 3 through 15. Default 5. */
                 duration?: number;
-                /** @description Clarity of the generated video. One of "720p" or "1080p". Default "720p". */
-                resolution?: string;
+                /**
+                 * @description Clarity of the generated video. One of "720p" or "1080p". Default "720p".
+                 * @enum {string}
+                 */
+                resolution?: "720p" | "1080p";
             };
         };
         KlingVideoEffectsInput: components["schemas"]["KlingSingleImageEffectInput"] | components["schemas"]["KlingDualCharacterEffectInput"];
@@ -11514,6 +12150,14 @@ export interface components {
             /** @description Request ID */
             request_id?: string;
         };
+        /**
+         * @description Extend the video identified by video_id. An explicit video is required; the shared provider account cannot select a caller-specific recent video.
+         * @example {
+         *       "cfg_scale": 0.5,
+         *       "prompt": "The camera keeps drifting forward down the alley.",
+         *       "video_id": "kling-video-6f5e4d3c2b1a"
+         *     }
+         */
         KlingVideoExtendRequest: {
             /**
              * Format: uri
@@ -11526,7 +12170,7 @@ export interface components {
             /** @description Positive text prompt for guiding the video extension */
             prompt?: string;
             /** @description The ID of the video to be extended. Supports videos generated by text-to-video, image-to-video, and previous video extension operations. Cannot exceed 3 minutes total duration after extension. */
-            video_id?: string;
+            video_id: string;
         };
         KlingVideoExtendResponse: {
             /** @description Error code */
@@ -11662,6 +12306,13 @@ export interface components {
              */
             file: string;
         };
+        /**
+         * @example {
+         *       "aspect_ratio": "1:1",
+         *       "prompt": "a red circle",
+         *       "resolution": "1K"
+         *     }
+         */
         KreaGenerateImageRequest: {
             /**
              * @description Aspect ratio. One of: 1:1, 4:3, 3:2, 16:9, 2.35:1, 4:5, 2:3, 9:16.
@@ -11751,11 +12402,11 @@ export interface components {
              * @description Model to use for generation
              * @enum {string}
              */
-            model: "ltx-2-fast" | "ltx-2-pro" | "ltx-2-5-fast" | "ltx-2-5-pro";
+            model: "ltx-2-5-fast" | "ltx-2-5-pro";
             /** @description Text description of how the image should be animated */
             prompt: string;
             /**
-             * @description Output video resolution
+             * @description Output video resolution. The enum is the union over all models; the supported set is per model. Supported pairs: ltx-2-5-fast: 1280x720, 720x1280, 1920x1080, 1080x1920, 2560x1440, 1440x2560, 3840x2160, 2160x3840; ltx-2-5-pro: 1280x720, 720x1280, 1920x1080, 1080x1920. Other (model, resolution) pairs are not supported; the v2 routes reject them with 400. The same matrix is published machine-readably in this property's x-comfy-model-resolutions extension.
              * @enum {string}
              */
             resolution: "1280x720" | "720x1280" | "1920x1080" | "1080x1920" | "2560x1440" | "1440x2560" | "3840x2160" | "2160x3840";
@@ -11781,11 +12432,11 @@ export interface components {
              * @description Model to use for generation
              * @enum {string}
              */
-            model: "ltx-2-fast" | "ltx-2-pro" | "ltx-2-5-fast" | "ltx-2-5-pro";
+            model: "ltx-2-5-fast" | "ltx-2-5-pro";
             /** @description Text prompt describing the desired video content */
             prompt: string;
             /**
-             * @description Output video resolution
+             * @description Output video resolution. The enum is the union over all models; the supported set is per model. Supported pairs: ltx-2-5-fast: 1280x720, 720x1280, 1920x1080, 1080x1920, 2560x1440, 1440x2560, 3840x2160, 2160x3840; ltx-2-5-pro: 1280x720, 720x1280, 1920x1080, 1080x1920. Other (model, resolution) pairs are not supported; the v2 routes reject them with 400. The same matrix is published machine-readably in this property's x-comfy-model-resolutions extension.
              * @enum {string}
              */
             resolution: "1280x720" | "720x1280" | "1920x1080" | "1080x1920" | "2560x1440" | "1440x2560" | "3840x2160" | "2160x3840";
@@ -11809,9 +12460,10 @@ export interface components {
         LumaAgentsGeneration: {
             /** @description Creation timestamp */
             created_at?: string;
-            failure_code?: components["schemas"]["LumaAgentsFailureCode"];
-            /** @description Human-readable failure description */
-            failure_reason?: string;
+            /** @description Machine-readable failure code, populated only on a FAILED generation. `null` on a successful one. */
+            failure_code?: components["schemas"]["LumaAgentsFailureCode"] | null;
+            /** @description Human-readable failure description, populated only on a FAILED generation. `null` on a successful one. */
+            failure_reason?: string | null;
             /** @description Generation identifier */
             id?: string;
             /** @description Model used */
@@ -11827,7 +12479,13 @@ export interface components {
             /** @description Presigned URL (1hr expiry) */
             url?: string;
         };
-        /** @description The Luma Agents generation request object */
+        /**
+         * @description The Luma Agents generation request object
+         * @example {
+         *       "prompt": "a red circle on a plain white background",
+         *       "type": "image"
+         *     }
+         */
         LumaAgentsGenerationRequest: {
             aspect_ratio?: components["schemas"]["LumaAgentsAspectRatio"];
             /** @description Reference images for style/content guidance. Up to 9 for type 'image', up to 8 for type 'image_edit'. */
@@ -11917,7 +12575,7 @@ export interface components {
              * Format: uri
              * @description The URL of the progress video
              */
-            progress_video?: string;
+            progress_video?: string | null;
             /**
              * Format: uri
              * @description The URL of the video
@@ -11959,22 +12617,27 @@ export interface components {
          *       },
          *       "created_at": "2023-06-01T12:00:00Z",
          *       "failure_reason": null,
+         *       "generation_type": "video",
          *       "id": "123e4567-e89b-12d3-a456-426614174000",
          *       "model": "ray-2",
          *       "request": {
          *         "aspect_ratio": "16:9",
+         *         "duration": "5s",
+         *         "generation_type": "video",
          *         "keyframes": {
          *           "frame0": {
          *             "type": "image",
          *             "url": "https://example.com/image.jpg"
          *           },
          *           "frame1": {
-         *             "id": "123e4567-e89b-12d3-a456-426614174000",
+         *             "id": "123e4567-e89b-12d3-a456-426614174002",
          *             "type": "generation"
          *           }
          *         },
          *         "loop": true,
-         *         "prompt": "A serene lake surrounded by mountains at sunset"
+         *         "model": "ray-2",
+         *         "prompt": "A serene lake surrounded by mountains at sunset",
+         *         "resolution": "720p"
          *       },
          *       "state": "completed"
          *     }
@@ -11987,7 +12650,7 @@ export interface components {
              */
             created_at?: string;
             /** @description The reason for the state of the generation */
-            failure_reason?: string;
+            failure_reason?: string | null;
             generation_type?: components["schemas"]["LumaGenerationType"];
             /**
              * Format: uuid
@@ -11997,8 +12660,39 @@ export interface components {
             /** @description The model used for the generation */
             model?: string;
             /** @description The request of the generation */
-            request?: components["schemas"]["LumaGenerationRequest"] | components["schemas"]["LumaImageGenerationRequest"] | components["schemas"]["LumaUpscaleVideoGenerationRequest"] | components["schemas"]["LumaAudioGenerationRequest"];
+            request?: components["schemas"]["LumaGenerationRequestEcho"] | components["schemas"]["LumaImageGenerationRequestEcho"] | components["schemas"]["LumaUpscaleVideoGenerationRequest"] | components["schemas"]["LumaAudioGenerationRequest"];
             state?: components["schemas"]["LumaState"];
+        };
+        /**
+         * @description The generation request object
+         * @example {
+         *       "aspect_ratio": "16:9",
+         *       "duration": "5s",
+         *       "prompt": "a single red maple leaf resting on a plain white background",
+         *       "resolution": "540p"
+         *     }
+         */
+        LumaGenerationInputs: {
+            aspect_ratio: components["schemas"]["LumaAspectRatio"];
+            /**
+             * Format: uri
+             * @description The callback URL of the generation, a POST request with Generation object will be sent to the callback URL when the generation is dreaming, completed, or failed
+             */
+            callback_url?: string;
+            duration: components["schemas"]["LumaVideoModelOutputDuration"];
+            /**
+             * @default video
+             * @enum {string}
+             */
+            generation_type: "video";
+            keyframes?: components["schemas"]["LumaKeyframes"];
+            /** @description Whether to loop the video */
+            loop?: boolean;
+            /** @description The video model used for the generation. On the Comfy Router route `POST /v2/models/luma/{model}` this field is supplied from the path and MUST NOT be sent; on the v1 `POST /proxy/luma/generations` route it is required and constrained to the LumaVideoModel enum (`ray-2`, `ray-flash-2`). */
+            model?: string | null;
+            /** @description The prompt of the generation */
+            prompt: string;
+            resolution: components["schemas"]["LumaVideoModelOutputResolution"];
         };
         /**
          * @description The generation reference object
@@ -12019,32 +12713,47 @@ export interface components {
              */
             type: "generation";
         };
-        /** @description The generation request object */
-        LumaGenerationRequest: {
-            aspect_ratio: components["schemas"]["LumaAspectRatio"];
+        /**
+         * @description The v1 `POST /proxy/luma/generations` request body.
+         *     It composes `LumaGenerationInputs` rather than restating its fields, and adds back the one field only the v1 surface can demand. `model` is the load-bearing one: this route carries no path segment supplying it, so a caller must send it and it must be one of the LumaVideoModel spellings, whereas the Comfy Router route `POST /v2/models/luma/{model}` supplies it from the path and its input schema must NOT require or enum-constrain it.
+         *     Read the note above `RecraftImageGenerationInputs` for the full rule and the guards that enforce it.
+         */
+        LumaGenerationRequest: components["schemas"]["LumaGenerationInputs"] & {
+            model: components["schemas"]["LumaVideoModel"];
+        };
+        /** @description The video generation request, echoed back inside the terminal document. Luma serialises every field of its request model, writing an explicit `null` into each one the caller did not set, so read a field's presence from its VALUE rather than from the key. */
+        LumaGenerationRequestEcho: {
+            aspect_ratio?: components["schemas"]["LumaAspectRatio"] | null;
             /**
              * Format: uri
-             * @description The callback URL of the generation, a POST request with Generation object will be sent to the callback URL when the generation is dreaming, completed, or failed
+             * @description The callback URL of the generation
              */
-            callback_url?: string;
-            duration: components["schemas"]["LumaVideoModelOutputDuration"];
-            /**
-             * @default video
-             * @enum {string}
-             */
-            generation_type: "video";
-            keyframes?: components["schemas"]["LumaKeyframes"];
+            callback_url?: string | null;
+            duration?: components["schemas"]["LumaVideoModelOutputDuration"] | null;
+            /** @description Always `video` when set, echoing the operation. Null when the caller did not send one, for the reason this whole echo object exists. */
+            generation_type?: string | null;
+            /** @description The keyframes of the generation */
+            keyframes?: {
+                frame0?: Omit<components["schemas"]["LumaKeyframe"], "type"> | null;
+                frame1?: Omit<components["schemas"]["LumaKeyframe"], "type"> | null;
+            } | null;
             /** @description Whether to loop the video */
-            loop?: boolean;
-            model: components["schemas"]["LumaVideoModel"];
+            loop?: boolean | null;
+            model?: components["schemas"]["LumaVideoModel"] | null;
             /** @description The prompt of the generation */
-            prompt: string;
-            resolution: components["schemas"]["LumaVideoModelOutputResolution"];
+            prompt?: string | null;
+            resolution?: components["schemas"]["LumaVideoModelOutputResolution"] | null;
         };
         /** @enum {string} */
         LumaGenerationType: "video" | "image";
-        /** @description The image generation request object */
-        LumaImageGenerationRequest: {
+        /**
+         * @description The image generation request object
+         * @example {
+         *       "aspect_ratio": "1:1",
+         *       "prompt": "a red circle on a plain white background"
+         *     }
+         */
+        LumaImageGenerationInputs: {
             aspect_ratio?: components["schemas"]["LumaAspectRatio"];
             /**
              * Format: uri
@@ -12060,16 +12769,50 @@ export interface components {
              */
             generation_type: "image";
             image_ref?: components["schemas"]["LumaImageRef"][];
-            model?: components["schemas"]["LumaImageModel"];
+            /** @description The image model used for the generation. On the Comfy Router route `POST /v2/models/luma/{model}` this field is supplied from the path and MUST NOT be sent; on the v1 `POST /proxy/luma/generations/image` route it is constrained to the LumaImageModel enum (`photon-1`, `photon-flash-1`), which the Rewrite enforces by refusing an omitted or unknown model. */
+            model?: string | null;
             modify_image_ref?: components["schemas"]["LumaModifyImageRef"];
             /** @description The prompt of the generation */
             prompt?: string;
             style_ref?: components["schemas"]["LumaImageRef"][];
         };
+        /**
+         * @description The v1 `POST /proxy/luma/generations/image` request body.
+         *     It composes `LumaImageGenerationInputs` and re-adds the LumaImageModel enum on `model`, which only the v1 surface can demand: this route carries no path segment supplying the model, whereas the Comfy Router route `POST /v2/models/luma/{model}` supplies it from the path and its input schema must not enum-constrain it (BE-11167/BE-12265). `required` stays empty on both surfaces, which is what this operation has always published.
+         */
+        LumaImageGenerationRequest: components["schemas"]["LumaImageGenerationInputs"] & {
+            model?: components["schemas"]["LumaImageModel"];
+        };
+        /** @description The image generation request, echoed back inside the terminal document. Luma serialises every field of its request model, writing an explicit `null` into each one the caller did not set, so read a field's presence from its VALUE rather than from the key. */
+        LumaImageGenerationRequestEcho: {
+            aspect_ratio?: components["schemas"]["LumaAspectRatio"] | null;
+            /**
+             * Format: uri
+             * @description The callback URL for the generation
+             */
+            callback_url?: string | null;
+            character_ref?: {
+                /** @description The image identity, echoed back — null when the caller sent none */
+                identity0?: components["schemas"]["LumaImageIdentityEcho"] | null;
+            } | null;
+            /** @description Always `image` when set, echoing the operation. Null when the caller did not send one, for the reason this whole echo object exists. */
+            generation_type?: string | null;
+            image_ref?: components["schemas"]["LumaImageRefEcho"][] | null;
+            model?: components["schemas"]["LumaImageModel"] | null;
+            modify_image_ref?: components["schemas"]["LumaModifyImageRefEcho"] | null;
+            /** @description The prompt of the generation */
+            prompt?: string | null;
+            style_ref?: components["schemas"]["LumaImageRefEcho"][] | null;
+        };
         /** @description The image identity object */
         LumaImageIdentity: {
             /** @description The URLs of the image identity */
             images?: string[];
+        };
+        /** @description An image identity as it comes BACK inside the terminal document. Same shape as `LumaImageIdentity`, with its members nullable for the reason `LumaImageRefEcho` gives. */
+        LumaImageIdentityEcho: {
+            /** @description The URLs of the image identity */
+            images?: string[] | null;
         };
         /**
          * @description The image model used for the generation
@@ -12086,6 +12829,16 @@ export interface components {
             url?: string;
             /** @description The weight of the image reference */
             weight?: number;
+        };
+        /** @description An image reference as it comes BACK inside the terminal document. Same shape as `LumaImageRef`, with each member nullable because Luma echoes an unset one as an explicit `null` rather than omitting it. */
+        LumaImageRefEcho: {
+            /**
+             * Format: uri
+             * @description The URL of the image reference
+             */
+            url?: string | null;
+            /** @description The weight of the image reference */
+            weight?: number | null;
         };
         /**
          * @description The image object
@@ -12116,7 +12869,7 @@ export interface components {
          *         "url": "https://example.com/image.jpg"
          *       },
          *       "frame1": {
-         *         "id": "123e4567-e89b-12d3-a456-426614174000",
+         *         "id": "123e4567-e89b-12d3-a456-426614174001",
          *         "type": "generation"
          *       }
          *     }
@@ -12134,6 +12887,16 @@ export interface components {
             url?: string;
             /** @description The weight of the modify image reference */
             weight?: number;
+        };
+        /** @description A modify-image reference as it comes BACK inside the terminal document. Same shape as `LumaModifyImageRef`, with its members nullable for the reason `LumaImageRefEcho` gives. */
+        LumaModifyImageRefEcho: {
+            /**
+             * Format: uri
+             * @description The URL of the image reference
+             */
+            url?: string | null;
+            /** @description The weight of the modify image reference */
+            weight?: number | null;
         };
         /**
          * @description The state of the generation
@@ -12161,7 +12924,7 @@ export interface components {
          * @example ray-2
          * @enum {string}
          */
-        LumaVideoModel: "ray-2" | "ray-flash-2" | "ray-1-6";
+        LumaVideoModel: "ray-2" | "ray-flash-2";
         LumaVideoModelOutputDuration: ("5s" | "9s") | string;
         LumaVideoModelOutputResolution: ("540p" | "720p" | "1080p" | "4k") | string;
         MachineStats: {
@@ -12193,7 +12956,7 @@ export interface components {
          * @default latest
          * @enum {string}
          */
-        MeshyAiModel: "meshy-5" | "latest";
+        MeshyAiModel: "meshy-5" | "meshy-6" | "meshy-7" | "latest";
         MeshyAnimationCreateResponse: {
             /** @description The task id of the newly created animation task. */
             result: string;
@@ -12212,6 +12975,17 @@ export interface components {
              */
             operation_type: "change_fps" | "fbx2usdz" | "extract_armature";
         };
+        /**
+         * @description Request body for Meshy's animation operation (docs.meshy.ai/en/api/animation): apply an animation action to the character produced by a completed rigging task.
+         * @example {
+         *       "action_id": 92,
+         *       "post_process": {
+         *         "fps": 60,
+         *         "operation_type": "change_fps"
+         *       },
+         *       "rig_task_id": "0193abcd-0000-0000-0000-000000000000"
+         *     }
+         */
         MeshyAnimationRequest: {
             /** @description The identifier of the animation action to apply. */
             action_id: number;
@@ -12233,11 +13007,20 @@ export interface components {
             processed_usdz_url?: string;
         };
         MeshyAnimationTask: {
-            /** @description Timestamp of when the task was created, in milliseconds. */
+            /**
+             * Format: int64
+             * @description Timestamp of when the task was created, in milliseconds.
+             */
             created_at?: number;
-            /** @description Timestamp of when the task result expires, in milliseconds. */
+            /**
+             * Format: int64
+             * @description Timestamp of when the task result expires, in milliseconds.
+             */
             expires_at?: number;
-            /** @description Timestamp of when the task was finished, in milliseconds. 0 if not finished. */
+            /**
+             * Format: int64
+             * @description Timestamp of when the task was finished, in milliseconds. 0 if not finished.
+             */
             finished_at?: number;
             /** @description Unique identifier for the task. */
             id: string;
@@ -12246,7 +13029,10 @@ export interface components {
             /** @description Progress of the task (0-100). */
             progress?: number;
             result?: components["schemas"]["MeshyAnimationResult"];
-            /** @description Timestamp of when the task was started, in milliseconds. 0 if not started. */
+            /**
+             * Format: int64
+             * @description Timestamp of when the task was started, in milliseconds. 0 if not started.
+             */
             started_at?: number;
             status: components["schemas"]["MeshyTaskStatus"];
             task_error?: components["schemas"]["MeshyTaskError"];
@@ -12335,7 +13121,17 @@ export interface components {
             texture_image_url?: string;
             /** @description Provide a text prompt to guide the texturing process. Maximum 600 characters. */
             texture_prompt?: string;
+            /**
+             * @description Texture resolution of the generated textures. One of 2k, 4k or 8k. 4k and 8k require ai_model meshy-6, meshy-7 or latest. Only applies when should_texture is true.
+             * @default 2k
+             */
+            texture_resolution: string;
             topology?: components["schemas"]["MeshyTopology"];
+            /**
+             * @description Enables Ultra generation for higher-fidelity geometry with finer surface detail. Only supported when ai_model is meshy-7 or latest and model_type is standard.
+             * @default false
+             */
+            ultra_mode: boolean;
         };
         MeshyImageTo3DTask: {
             /** @description Timestamp of when the task was created, in milliseconds. */
@@ -12387,12 +13183,7 @@ export interface components {
             result: string;
         };
         MeshyMultiImageTo3DRequest: {
-            /**
-             * @description ID of the model to use.
-             * @default latest
-             * @enum {string}
-             */
-            ai_model: "meshy-5" | "latest";
+            ai_model?: components["schemas"]["MeshyAiModel"];
             /**
              * @description Generate PBR Maps (metallic, roughness, normal) in addition to the base color.
              * @default false
@@ -12422,7 +13213,7 @@ export interface components {
              */
             should_remesh: boolean;
             /**
-             * @description Determines if textures are generated. When false, provides a mesh without textures for 5 credits.
+             * @description Determines if textures are generated. When false, provides a mesh without textures.
              * @default true
              */
             should_texture: boolean;
@@ -12436,6 +13227,11 @@ export interface components {
             texture_image_url?: string;
             /** @description Provide a text prompt to guide the texturing process. Maximum 600 characters. */
             texture_prompt?: string;
+            /**
+             * @description Texture resolution of the generated textures. One of 2k, 4k or 8k. 4k and 8k require ai_model meshy-6, meshy-7 or latest. Only applies when should_texture is true.
+             * @default 2k
+             */
+            texture_resolution: string;
             topology?: components["schemas"]["MeshyTopology"];
         };
         MeshyMultiImageTo3DTask: {
@@ -12492,6 +13288,20 @@ export interface components {
             /** @description Downloadable URL to the USDZ file. */
             usdz?: string;
         };
+        /**
+         * @description Request body for Meshy's remesh operation (docs.meshy.ai/en/api/remesh): re-topologise or re-format an existing mesh. Supply exactly one of input_task_id or model_url; Meshy requires no single field, so the only structural narrowing is that an empty body is refused.
+         * @example {
+         *       "input_task_id": "0193abcd-0000-0000-0000-000000000000",
+         *       "origin_at": "bottom",
+         *       "resize_height": 1,
+         *       "target_formats": [
+         *         "glb",
+         *         "fbx"
+         *       ],
+         *       "target_polycount": 50000,
+         *       "topology": "quad"
+         *     }
+         */
         MeshyRemeshRequest: {
             /**
              * @description If true, only changes the format of the input model file, ignoring other inputs like topology, resize_height, and target_polycount.
@@ -12525,11 +13335,17 @@ export interface components {
              */
             target_polycount: number;
             topology?: components["schemas"]["MeshyTopology"];
-        };
+        } & (unknown | unknown);
         MeshyRemeshTask: {
-            /** @description Timestamp of when the task was created, in milliseconds. */
+            /**
+             * Format: int64
+             * @description Timestamp of when the task was created, in milliseconds.
+             */
             created_at?: number;
-            /** @description Timestamp of when the task was finished, in milliseconds. 0 if not finished. */
+            /**
+             * Format: int64
+             * @description Timestamp of when the task was finished, in milliseconds. 0 if not finished.
+             */
             finished_at?: number;
             /** @description Unique identifier for the task. */
             id: string;
@@ -12538,7 +13354,10 @@ export interface components {
             preceding_tasks?: number;
             /** @description Progress of the task. 0 if not started, 100 when succeeded. */
             progress?: number;
-            /** @description Timestamp of when the task was started, in milliseconds. 0 if not started. */
+            /**
+             * Format: int64
+             * @description Timestamp of when the task was started, in milliseconds. 0 if not started.
+             */
             started_at?: number;
             status: components["schemas"]["MeshyRemeshTaskStatus"];
             task_error?: components["schemas"]["MeshyTaskError"];
@@ -12586,6 +13405,11 @@ export interface components {
             model_url?: string;
             /** @description Describe your desired texture style of the object using text. Maximum 600 characters. Required if image_style_url is not provided. */
             text_style_prompt?: string;
+            /**
+             * @description Texture resolution of the generated textures. One of 2k, 4k or 8k. 4k and 8k require ai_model meshy-6, meshy-7 or latest.
+             * @default 2k
+             */
+            texture_resolution: string;
         };
         MeshyRetextureTask: {
             /** @description Timestamp of when the task was created, in milliseconds. */
@@ -12638,6 +13462,13 @@ export interface components {
             /** @description The task id of the newly created rigging task. */
             result: string;
         };
+        /**
+         * @description Request body for Meshy's rigging operation (docs.meshy.ai/en/api/rigging): fit a skeleton to an existing humanoid mesh. Supply exactly one of input_task_id or model_url; Meshy requires no single field, so the only structural narrowing is that an empty body is refused.
+         * @example {
+         *       "height_meters": 1.8,
+         *       "input_task_id": "0193abcd-0000-0000-0000-000000000000"
+         *     }
+         */
         MeshyRiggingRequest: {
             /**
              * @description The approximate height of the character model in meters. Must be a positive number.
@@ -12650,7 +13481,7 @@ export interface components {
             model_url?: string;
             /** @description The model's UV-unwrapped base color texture image. Publicly accessible URL or Data URI. Supports .png format. */
             texture_image_url?: string;
-        };
+        } & (unknown | unknown);
         /** @description Contains the output asset URLs if the task SUCCEEDED. */
         MeshyRiggingResult: {
             basic_animations?: components["schemas"]["MeshyRiggingBasicAnimations"];
@@ -12660,11 +13491,20 @@ export interface components {
             rigged_character_glb_url?: string;
         };
         MeshyRiggingTask: {
-            /** @description Timestamp of when the task was created, in milliseconds. */
+            /**
+             * Format: int64
+             * @description Timestamp of when the task was created, in milliseconds.
+             */
             created_at?: number;
-            /** @description Timestamp of when the task result expires, in milliseconds. */
+            /**
+             * Format: int64
+             * @description Timestamp of when the task result expires, in milliseconds.
+             */
             expires_at?: number;
-            /** @description Timestamp of when the task was finished, in milliseconds. 0 if not finished. */
+            /**
+             * Format: int64
+             * @description Timestamp of when the task was finished, in milliseconds. 0 if not finished.
+             */
             finished_at?: number;
             /** @description Unique identifier for the task. */
             id: string;
@@ -12673,7 +13513,10 @@ export interface components {
             /** @description Progress of the task (0-100). 0 if not started, 100 if succeeded. */
             progress?: number;
             result?: components["schemas"]["MeshyRiggingResult"];
-            /** @description Timestamp of when the task was started, in milliseconds. 0 if not started. */
+            /**
+             * Format: int64
+             * @description Timestamp of when the task was started, in milliseconds. 0 if not started.
+             */
             started_at?: number;
             status: components["schemas"]["MeshyTaskStatus"];
             task_error?: components["schemas"]["MeshyTaskError"];
@@ -12703,8 +13546,13 @@ export interface components {
             /** @description The task id of the newly created Text to 3D task. */
             result: string;
         };
-        MeshyTextTo3DPreviewRequest: {
-            ai_model?: components["schemas"]["MeshyAiModel"];
+        /**
+         * @description The meshy text-to-3d PREVIEW fields, shared by the `preview` branch of the v1 `POST /proxy/meshy/openapi/v2/text-to-3d` body and the `preview` branch of the Comfy Router input schema for the `meshy/*` models.
+         *     The two surfaces share every property and both `required` entries. They differ only in `ai_model`: the v1 body restates it as a fixed enum, because that route carries no path segment to supply the model from, while on the Comfy Router route the path supplies it.
+         */
+        MeshyTextTo3DPreviewInputs: {
+            /** @description The Meshy model to run. On the Comfy Router route this is supplied by the path (`/v2/models/meshy/{model}`) and may be omitted or sent as null; Router writes the path's model here after validation. On the v1 /proxy route see MeshyTextTo3DPreviewRequest, which constrains it to MeshyAiModel. */
+            ai_model?: string | null;
             art_style?: components["schemas"]["MeshyArtStyle"];
             /**
              * @description Deprecated. Use pose_mode instead. Whether to generate the model in an A/T pose.
@@ -12712,7 +13560,7 @@ export interface components {
              */
             is_a_t_pose: boolean;
             /**
-             * @description This field should be set to "preview" when creating a preview task. (enum property replaced by openapi-typescript)
+             * @description This field should be set to "preview" when creating a preview task.
              * @enum {string}
              */
             mode: "preview";
@@ -12736,16 +13584,39 @@ export interface components {
              */
             target_polycount: number;
             topology?: components["schemas"]["MeshyTopology"];
+            /**
+             * @description Enables Ultra generation for higher-fidelity geometry with finer surface detail. Only supported when ai_model is meshy-7 or latest.
+             * @default false
+             */
+            ultra_mode: boolean;
         };
-        MeshyTextTo3DRefineRequest: {
+        /**
+         * @description The v1 `POST /proxy/meshy/openapi/v2/text-to-3d` PREVIEW body.
+         *     It composes `MeshyTextTo3DPreviewInputs` rather than restating its fields, and restates `ai_model` as `MeshyAiModel` -- the enum this route has published since before the family was addressable through Comfy Router, and which stays on this surface because it carries no path segment the model could come from instead.
+         */
+        MeshyTextTo3DPreviewRequest: components["schemas"]["MeshyTextTo3DPreviewInputs"] & {
             ai_model?: components["schemas"]["MeshyAiModel"];
+        } & {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            mode: "preview";
+        };
+        /**
+         * @description The meshy text-to-3d REFINE fields, shared by the `refine` branch of the v1 `POST /proxy/meshy/openapi/v2/text-to-3d` body and the `refine` branch of the Comfy Router input schema for the `meshy/*` models.
+         *     The two surfaces share every property and both `required` entries. They differ only in `ai_model`: the v1 body restates it as a fixed enum, because that route carries no path segment to supply the model from, while on the Comfy Router route the path supplies it.
+         */
+        MeshyTextTo3DRefineInputs: {
+            /** @description The Meshy model to run. On the Comfy Router route this is supplied by the path (`/v2/models/meshy/{model}`) and may be omitted or sent as null; Router writes the path's model here after validation. On the v1 /proxy route see MeshyTextTo3DRefineRequest, which constrains it to MeshyAiModel. */
+            ai_model?: string | null;
             /**
              * @description Generate PBR Maps (metallic, roughness, normal) in addition to the base color. Note that enable_pbr should be set to false when using Sculpture style.
              * @default false
              */
             enable_pbr: boolean;
             /**
-             * @description This field should be set to "refine" when creating a refine task. (enum property replaced by openapi-typescript)
+             * @description This field should be set to "refine" when creating a refine task.
              * @enum {string}
              */
             mode: "refine";
@@ -12760,14 +13631,43 @@ export interface components {
             texture_image_url?: string;
             /** @description Provide an additional text prompt to guide the texturing process. Maximum 600 characters. */
             texture_prompt?: string;
+            /**
+             * @description Texture resolution of the generated textures. One of 2k, 4k or 8k. 4k and 8k require ai_model meshy-6, meshy-7 or latest.
+             * @default 2k
+             * @enum {string}
+             */
+            texture_resolution: "2k" | "4k" | "8k";
         };
+        /**
+         * @description The v1 `POST /proxy/meshy/openapi/v2/text-to-3d` REFINE body.
+         *     It composes `MeshyTextTo3DRefineInputs` rather than restating its fields, and restates `ai_model` as `MeshyAiModel` -- the enum this route has published since before the family was addressable through Comfy Router, and which stays on this surface because it carries no path segment the model could come from instead.
+         */
+        MeshyTextTo3DRefineRequest: components["schemas"]["MeshyTextTo3DRefineInputs"] & {
+            ai_model?: components["schemas"]["MeshyAiModel"];
+        } & {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            mode: "refine";
+        };
+        /**
+         * @description The v1 `POST /proxy/meshy/openapi/v2/text-to-3d` body: the same `mode`-discriminated `oneOf` it has always been, over the two WRAPPER branches that restate `ai_model` as the published MeshyAiModel enum.
+         *     `x-comfy-router-model-id` and the runnable `example` live on MeshyTextTo3DInputs above, which is the Router half. The operation itself (`x-excluded: true`) is untouched.
+         */
         MeshyTextTo3DRequest: components["schemas"]["MeshyTextTo3DPreviewRequest"] | components["schemas"]["MeshyTextTo3DRefineRequest"];
         MeshyTextTo3DTask: {
             /** @description The unmodified art_style that was used to create the preview task. */
             art_style?: string;
-            /** @description Timestamp of when the task was created, in milliseconds. */
+            /**
+             * Format: int64
+             * @description Timestamp of when the task was created, in milliseconds.
+             */
             created_at?: number;
-            /** @description Timestamp of when the task was finished, in milliseconds. 0 if not finished. */
+            /**
+             * Format: int64
+             * @description Timestamp of when the task was finished, in milliseconds. 0 if not finished.
+             */
             finished_at?: number;
             /** @description Unique identifier for the task. */
             id: string;
@@ -12780,10 +13680,13 @@ export interface components {
             progress?: number;
             /** @description The unmodified prompt that was used to create the task. */
             prompt?: string;
-            /** @description Timestamp of when the task was started, in milliseconds. 0 if not started. */
+            /**
+             * Format: int64
+             * @description Timestamp of when the task was started, in milliseconds. 0 if not started.
+             */
             started_at?: number;
             status: components["schemas"]["MeshyTaskStatus"];
-            task_error?: components["schemas"]["MeshyTaskError"];
+            task_error?: components["schemas"]["MeshyTaskError"] | null;
             /** @description Downloadable URL to the texture image that was used to guide the texturing process. */
             texture_image_url?: string;
             /** @description Additional text prompt provided to guide the texturing process during the refine stage. */
@@ -13007,7 +13910,7 @@ export interface components {
         /** @description Common properties for model responses */
         ModelResponseProperties: {
             /** @description Instructions for the model on how to generate the response */
-            instructions?: string;
+            instructions?: string | null;
             /** @description Maximum number of tokens to generate */
             max_output_tokens?: number;
             /** @description The model used to generate the response */
@@ -13029,6 +13932,13 @@ export interface components {
              */
             truncation: "disabled" | "auto";
         };
+        /**
+         * @description Request body for Moonvalley's image-to-video prompt route: the text-to-video body plus optional per-timestamp keyframe images.
+         * @example {
+         *       "image_url": "https://yavuzceliker.github.io/sample-images/image-1021.jpg",
+         *       "prompt_text": "a single red maple leaf falling onto still water"
+         *     }
+         */
         MoonvalleyImageToVideoRequest: components["schemas"]["MoonvalleyTextToVideoRequest"] & {
             keyframes?: {
                 [key: string]: {
@@ -13047,11 +13957,25 @@ export interface components {
             prompt_text?: string;
             status?: string;
         };
+        /**
+         * @description Request body for Moonvalley's video-to-video resize route: the video-to-video body plus optional frame position, frame resolution and scale 2-tuples.
+         * @example {
+         *       "control_type": "motion_control",
+         *       "prompt_text": "Apply motion control to enhance this video",
+         *       "video_url": "https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_1MB.mp4"
+         *     }
+         */
         MoonvalleyResizeVideoRequest: components["schemas"]["MoonvalleyVideoToVideoRequest"] & {
             frame_position?: number[];
             frame_resolution?: number[];
             scale?: number[];
         };
+        /**
+         * @description Request body for Moonvalley's text-to-image prompt route. Moonvalley declares no single required field here, so the only structural narrowing is that an empty body is refused.
+         * @example {
+         *       "prompt_text": "a single red maple leaf resting on still water"
+         *     }
+         */
         MoonvalleyTextToImageRequest: {
             image_url?: string;
             inference_params?: components["schemas"]["MoonvalleyTextToVideoInferenceParams"];
@@ -13093,6 +14017,12 @@ export interface components {
              */
             width: number;
         };
+        /**
+         * @description Request body for Moonvalley's text-to-video prompt route. Moonvalley declares no single required field here, so the only structural narrowing is that an empty body is refused.
+         * @example {
+         *       "prompt_text": "a single red maple leaf"
+         *     }
+         */
         MoonvalleyTextToVideoRequest: {
             image_url?: string;
             inference_params?: components["schemas"]["MoonvalleyTextToVideoInferenceParams"];
@@ -13139,6 +14069,14 @@ export interface components {
              */
             use_negative_prompts: boolean;
         };
+        /**
+         * @description Request body for Moonvalley's video-to-video prompt route. A control video and a control type are what distinguish this route from text-to-video, and Moonvalley requires both alongside the prompt.
+         * @example {
+         *       "control_type": "motion_control",
+         *       "prompt_text": "Apply motion control to enhance this video",
+         *       "video_url": "https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_1MB.mp4"
+         *     }
+         */
         MoonvalleyVideoToVideoRequest: {
             /**
              * @description Supported types for video control
@@ -13313,8 +14251,8 @@ export interface components {
              */
             background?: string;
             /**
-             * @description The model to use for image editing (e.g., dall-e-2, gpt-image-1, gpt-image-1.5, gpt-image-2)
-             * @example gpt-image-2
+             * @description The model to use for image editing (e.g., gpt-image-1, gpt-image-1.5, gpt-image-2, gpt-image-2.5-flare, gpt-image-2.5-sunburst)
+             * @example gpt-image-2.5-flare
              */
             model: string;
             /**
@@ -13360,6 +14298,14 @@ export interface components {
              */
             user?: string;
         };
+        /**
+         * @example {
+         *       "n": 1,
+         *       "prompt": "a red circle",
+         *       "quality": "low",
+         *       "size": "1024x1024"
+         *     }
+         */
         OpenAIImageGenerationRequest: {
             /**
              * @description Background transparency
@@ -13368,8 +14314,8 @@ export interface components {
              */
             background?: "transparent" | "opaque";
             /**
-             * @description The model to use for image generation (e.g., dall-e-2, dall-e-3, gpt-image-1, gpt-image-1.5, gpt-image-2)
-             * @example gpt-image-2
+             * @description The model to use for image generation (e.g., gpt-image-1, gpt-image-1.5, gpt-image-2, gpt-image-2.5-flare, gpt-image-2.5-sunburst)
+             * @example gpt-image-2.5-flare
              */
             model?: string;
             /**
@@ -13379,7 +14325,7 @@ export interface components {
              */
             moderation?: "low" | "auto";
             /**
-             * @description The number of images to generate (1-10). Only 1 supported for dall-e-3.
+             * @description The number of images to generate (1-10).
              * @example 1
              */
             n?: number;
@@ -13417,7 +14363,8 @@ export interface components {
              */
             size?: string;
             /**
-             * @description Style of the image (only for dall-e-3)
+             * @deprecated
+             * @description Style of the image. Unused by the gpt-image models this operation admits; it was a dall-e-3-only parameter and those ids were retired when OpenAI shut them down on 2026-05-12.
              * @example vivid
              * @enum {string}
              */
@@ -13452,7 +14399,7 @@ export interface components {
             };
         };
         /** @enum {string} */
-        OpenAIModels: "gpt-4" | "gpt-4-0314" | "gpt-4-0613" | "gpt-4-32k" | "gpt-4-32k-0314" | "gpt-4-32k-0613" | "gpt-4-0125-preview" | "gpt-4-turbo" | "gpt-4-turbo-2024-04-09" | "gpt-4-turbo-preview" | "gpt-4-1106-preview" | "gpt-4-vision-preview" | "gpt-3.5-turbo" | "gpt-3.5-turbo-16k" | "gpt-3.5-turbo-0301" | "gpt-3.5-turbo-0613" | "gpt-3.5-turbo-1106" | "gpt-3.5-turbo-0125" | "gpt-3.5-turbo-16k-0613" | "gpt-4.1" | "gpt-4.1-mini" | "gpt-4.1-nano" | "gpt-4.1-2025-04-14" | "gpt-4.1-mini-2025-04-14" | "gpt-4.1-nano-2025-04-14" | "o1" | "o1-mini" | "o1-preview" | "o1-pro" | "o1-2024-12-17" | "o1-preview-2024-09-12" | "o1-mini-2024-09-12" | "o1-pro-2025-03-19" | "o3" | "o3-mini" | "o3-2025-04-16" | "o3-mini-2025-01-31" | "o4-mini" | "o4-mini-2025-04-16" | "gpt-4o" | "gpt-4o-mini" | "gpt-4o-2024-11-20" | "gpt-4o-2024-08-06" | "gpt-4o-2024-05-13" | "gpt-4o-mini-2024-07-18" | "gpt-4o-audio-preview" | "gpt-4o-audio-preview-2024-10-01" | "gpt-4o-audio-preview-2024-12-17" | "gpt-4o-mini-audio-preview" | "gpt-4o-mini-audio-preview-2024-12-17" | "gpt-4o-search-preview" | "gpt-4o-mini-search-preview" | "gpt-4o-search-preview-2025-03-11" | "gpt-4o-mini-search-preview-2025-03-11" | "computer-use-preview" | "computer-use-preview-2025-03-11" | "gpt-5" | "gpt-5-mini" | "gpt-5-nano" | "gpt-5.5" | "gpt-5.5-pro" | "gpt-5.6" | "gpt-5.6-sol" | "gpt-5.6-terra" | "gpt-5.6-luna" | "chatgpt-4o-latest";
+        OpenAIModels: "gpt-4" | "gpt-4-0314" | "gpt-4-0613" | "gpt-4-32k" | "gpt-4-32k-0314" | "gpt-4-32k-0613" | "gpt-4-0125-preview" | "gpt-4-turbo" | "gpt-4-turbo-2024-04-09" | "gpt-4-turbo-preview" | "gpt-4-1106-preview" | "gpt-4-vision-preview" | "gpt-3.5-turbo" | "gpt-3.5-turbo-16k" | "gpt-3.5-turbo-0301" | "gpt-3.5-turbo-0613" | "gpt-3.5-turbo-1106" | "gpt-3.5-turbo-0125" | "gpt-3.5-turbo-16k-0613" | "gpt-4.1" | "gpt-4.1-mini" | "gpt-4.1-nano" | "gpt-4.1-2025-04-14" | "gpt-4.1-mini-2025-04-14" | "gpt-4.1-nano-2025-04-14" | "o1" | "o1-mini" | "o1-preview" | "o1-pro" | "o1-2024-12-17" | "o1-preview-2024-09-12" | "o1-mini-2024-09-12" | "o1-pro-2025-03-19" | "o3" | "o3-mini" | "o3-2025-04-16" | "o3-mini-2025-01-31" | "o4-mini" | "o4-mini-2025-04-16" | "gpt-4o" | "gpt-4o-mini" | "gpt-4o-2024-11-20" | "gpt-4o-2024-08-06" | "gpt-4o-2024-05-13" | "gpt-4o-mini-2024-07-18" | "gpt-4o-audio-preview" | "gpt-4o-audio-preview-2024-10-01" | "gpt-4o-audio-preview-2024-12-17" | "gpt-4o-mini-audio-preview" | "gpt-4o-mini-audio-preview-2024-12-17" | "gpt-4o-search-preview" | "gpt-4o-mini-search-preview" | "gpt-4o-search-preview-2025-03-11" | "gpt-4o-mini-search-preview-2025-03-11" | "computer-use-preview" | "computer-use-preview-2025-03-11" | "gpt-5" | "gpt-5-mini" | "gpt-5-nano" | "gpt-5.5" | "gpt-5.5-pro" | "gpt-5.6" | "gpt-5.6-sol" | "gpt-5.6-terra" | "gpt-5.6-luna" | "gpt-6-astra" | "chatgpt-4o-latest";
         /** @description A response from the model */
         OpenAIResponse: components["schemas"]["ModelResponseProperties"] & components["schemas"]["ResponseProperties"] & {
             /** @description Whether the model response runs in the background. */
@@ -13466,7 +14413,7 @@ export interface components {
             completed_at?: number | null;
             /** @description Unix timestamp (in seconds) of when this Response was created. */
             created_at?: number;
-            error?: components["schemas"]["ResponseError"];
+            error?: components["schemas"]["ResponseError"] | null;
             /** @description Penalizes new tokens based on their existing frequency in the text so far. */
             frequency_penalty?: number;
             /** @description Unique identifier for this Response. */
@@ -15032,8 +15979,8 @@ export interface components {
              */
             type: "output_audio";
         };
-        OutputContent: components["schemas"]["OutputTextContent"] | components["schemas"]["OutputAudioContent"];
-        OutputItem: components["schemas"]["OutputMessage"] | components["schemas"]["FileSearchToolCall"] | components["schemas"]["FunctionToolCall"] | components["schemas"]["WebSearchToolCall"] | components["schemas"]["ComputerToolCall"] | components["schemas"]["ReasoningItem"];
+        OutputContent: components["schemas"]["OutputTextContent"] | components["schemas"]["OutputAudioContent"] | components["schemas"]["RefusalContent"];
+        OutputItem: components["schemas"]["OutputMessage"] | components["schemas"]["FileSearchToolCall"] | components["schemas"]["FunctionToolCall"] | components["schemas"]["WebSearchToolCall"] | components["schemas"]["ComputerToolCall"] | components["schemas"]["ReasoningItem"] | components["schemas"]["ImageGenerationCall"];
         OutputMessage: {
             /** @description The content of the message */
             content: components["schemas"]["OutputContent"][];
@@ -15282,11 +16229,12 @@ export interface components {
             };
         };
         PixverseImageVideoRequest: {
-            /** @enum {integer} */
-            duration: 5 | 8;
+            duration: number;
+            /** @default false */
+            generate_audio_switch: boolean;
             img_id: number;
             /** @enum {string} */
-            model: "v3.5";
+            model: "v3.5" | "v6";
             /** @enum {string} */
             motion_mode?: "normal" | "fast";
             prompt: string;
@@ -15300,11 +16248,12 @@ export interface components {
         };
         PixverseTextVideoRequest: {
             /** @enum {string} */
-            aspect_ratio: "16:9" | "4:3" | "1:1" | "3:4" | "9:16";
-            /** @enum {integer} */
-            duration: 5 | 8;
+            aspect_ratio: "16:9" | "4:3" | "1:1" | "3:4" | "9:16" | "2:3" | "3:2" | "21:9";
+            duration: number;
+            /** @default false */
+            generate_audio_switch: boolean;
             /** @enum {string} */
-            model: "v3.5";
+            model: "v3.5" | "v6";
             /** @enum {string} */
             motion_mode?: "normal" | "fast";
             negative_prompt?: string;
@@ -15318,18 +16267,19 @@ export interface components {
             water_mark?: boolean;
         };
         PixverseTransitionVideoRequest: {
-            /** @enum {integer} */
-            duration: 5 | 8;
+            duration: number;
             first_frame_img: number;
+            /** @default false */
+            generate_audio_switch: boolean;
             last_frame_img: number;
             /** @enum {string} */
-            model: "v3.5";
+            model: "v3.5" | "v6";
             /** @enum {string} */
-            motion_mode: "normal" | "fast";
+            motion_mode?: "normal" | "fast";
             prompt: string;
             /** @enum {string} */
             quality: "360p" | "540p" | "720p" | "1080p";
-            seed: number;
+            seed?: number;
             /** @enum {string} */
             style?: "anime" | "3d_animation" | "clay" | "comic" | "cyberpunk";
             template_id?: number;
@@ -15347,6 +16297,7 @@ export interface components {
             ErrMsg?: string;
             Resp?: {
                 create_time?: string;
+                credits?: number;
                 id?: number;
                 modify_time?: string;
                 negative_prompt?: string;
@@ -15551,8 +16502,8 @@ export interface components {
          */
         Reasoning: {
             /** @description Controls which reasoning items are rendered back to the model on later turns, e.g. `auto`, `current_turn`, or `all_turns`. */
-            context?: string;
-            effort?: components["schemas"]["ReasoningEffort"];
+            context?: string | null;
+            effort?: components["schemas"]["ReasoningEffort"] | null;
             /**
              * @deprecated
              * @description **Deprecated:** use `summary` instead.
@@ -15569,9 +16520,9 @@ export interface components {
              * @description A summary of the reasoning performed by the model. This can be
              *     useful for debugging and understanding the model's reasoning process.
              *     One of `auto`, `concise`, or `detailed`.
-             * @enum {string}
+             * @enum {string|null}
              */
-            summary?: "auto" | "concise" | "detailed";
+            summary?: "auto" | "concise" | "detailed" | null;
         };
         /**
          * @description **o-series models only**
@@ -15682,8 +16633,15 @@ export interface components {
         };
         /** @enum {string} */
         RecraftImageFormat: "webp" | "png";
-        /** @description Parameters for the Recraft image generation proxy request. */
-        RecraftImageGenerationRequest: {
+        /**
+         * @description The Recraft image-generation fields, shared by the v1 `POST /proxy/recraft/image_generation` request body and the Comfy Router input schema for the `recraft/*` models. See the note above this component for why the two surfaces share properties but not `required`.
+         *     `required` here is the ROUTER-SAFE floor: `model` is absent from it because Router writes the path's model into the body after routervalidate.Guard has already validated the caller's bytes. The v1 wrapper `RecraftImageGenerationRequest` re-adds it.
+         * @example {
+         *       "n": 1,
+         *       "prompt": "A single red maple leaf on a plain white background."
+         *     }
+         */
+        RecraftImageGenerationInputs: {
             /** @description The controls for the generated image */
             controls?: {
                 /** @description Defines artistic tone of your image. At a simple level, the person looks straight at the camera in a static and clean style. Dynamic and eccentric levels introduce movement and creativity. */
@@ -15694,18 +16652,26 @@ export interface components {
                 /** @description Do not embed text layouts */
                 no_text?: boolean;
             };
-            /** @description The model to use for generation (e.g., "recraftv3") */
-            model: string;
+            /** @description The model to use for generation (e.g., "recraftv3"). This field is NOT constrained to an enum: the proxy forwards whatever the caller sends. The spellings Comfy ships — the set Comfy Router addresses as `recraft/<model>` — are recraftv2, recraftv3, recraftv4, recraftv4_pro, recraftv4_1, recraftv4_1_utility, recraftv4_1_pro, recraftv4_1_utility_pro, recraftv4_styles, recraftv4_styles_pro, recraftv4_1_vector, recraftv4_1_utility_vector, recraftv4_1_pro_vector, recraftv4_1_utility_pro_vector, recraftv4_styles_vector and recraftv4_styles_pro_vector. They are written out here rather than named by reference because the RecraftGenerationModel component that declares them is `$ref`-ed by nothing and is therefore pruned from the spec served at GET /openapi, so a pointer to it would dangle in the served document. The four `recraftv4_styles*` spellings additionally require `style_id` — see that field. */
+            model?: string | null;
             /** @description The number of images to generate */
-            n: number;
+            n?: number;
             /** @description The text prompt describing the image to generate */
             prompt: string;
             /** @description The size of the generated image (e.g., "1024x1024") */
-            size: string;
+            size?: string;
             /** @description The style to apply to the generated image (e.g., "digital_illustration") */
             style?: string;
-            /** @description The style ID to apply to the generated image (e.g., "123e4567-e89b-12d3-a456-426614174000"). If style_id is provided, style should not be provided. */
+            /** @description The style ID to apply to the generated image (e.g., "123e4567-e89b-12d3-a456-426614174000"). If style_id is provided, style should not be provided. REQUIRED by the four `recraftv4_styles*` models: Recraft rejects those without a style_id or style reference. Mint one with `POST /proxy/recraft/styles`, which this same proxy serves under the same credentials. Nothing on this route enforces the pairing — the body is forwarded to Recraft unchanged, so a `recraftv4_styles*` call without it reaches the partner and comes back 4xx. */
             style_id?: string;
+        };
+        /**
+         * @description Parameters for the Recraft image generation proxy request — the v1 `POST /proxy/recraft/image_generation` body.
+         *     It composes `RecraftImageGenerationInputs` rather than restating its fields, and adds back the three fields only the v1 surface can demand. `model` is the load-bearing one: this route carries no path segment supplying it, so a caller must send it, whereas the Comfy Router route `POST /v2/models/recraft/{model}` supplies it from the path and its input schema must NOT require it. `size` and `n` are re-added because this component has always required them and nothing here is a deliberate loosening of the published v1 contract; Recraft itself defaults both, so a Router input schema authored from the base may omit them from its own floor.
+         *     Read the note above `RecraftImageGenerationInputs` for the full rule and the guard that enforces it.
+         */
+        RecraftImageGenerationRequest: components["schemas"]["RecraftImageGenerationInputs"] & {
+            model: string;
         };
         /** @description Response from the Recraft image generation API. */
         RecraftImageGenerationResponse: {
@@ -15788,6 +16754,19 @@ export interface components {
             background_color?: components["schemas"]["RecraftImageColor"];
             colors?: components["schemas"]["RecraftImageColor"][];
             no_text?: boolean;
+        };
+        /**
+         * Refusal
+         * @description A refusal emitted by the model in place of generated content. It arrives inside an `OutputMessage`, exactly where an `output_text` part would, and the response's `status` is still `completed`.
+         */
+        RefusalContent: {
+            /** @description The refusal explanation from the model. */
+            refusal: string;
+            /**
+             * @description The type of output content. Always `refusal`.
+             * @enum {string}
+             */
+            type: "refusal";
         };
         ReleaseNote: {
             /**
@@ -15981,16 +16960,15 @@ export interface components {
              *     response will not be carried over to the next response. This makes it simple
              *     to swap out system (or developer) messages in new responses.
              */
-            instructions?: string;
+            instructions?: string | null;
             /** @description An upper bound for the number of tokens that can be generated for a response, including visible output tokens and [reasoning tokens](/docs/guides/reasoning). */
             max_output_tokens?: number;
-            model?: components["schemas"]["OpenAIModels"];
             /**
              * @description The unique ID of the previous response to the model. Use this to
              *     create multi-turn conversations. Learn more about
              *     [conversation state](/docs/guides/conversation-state).
              */
-            previous_response_id?: string;
+            previous_response_id?: string | null;
             reasoning?: components["schemas"]["Reasoning"];
             text?: {
                 format?: components["schemas"]["TextResponseFormatConfiguration"];
@@ -16285,9 +17263,18 @@ export interface components {
         };
         /** @enum {integer} */
         RunwayDurationEnum: 5 | 10;
-        RunwayImageToVideoRequest: {
+        /**
+         * @example {
+         *       "duration": 5,
+         *       "promptImage": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAIAAADTED8xAAAC2klEQVR42u3TQQ0AQAgEMeTgX8W5gi8OjoROVgGhUdLhwgkEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAEgASABIAAkACQAJAAkACQAJAAkACQAJAAkACQAFjSy7SPAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAADAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8IIAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASABIAEgASABIAEgASABIAEgASABIAEgASABIAAgACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkACQAJAAkAadSRm+WukYdfewAAAABJRU5ErkJggg==",
+         *       "ratio": "1280:720",
+         *       "seed": 42
+         *     }
+         */
+        RunwayImageToVideoInputs: {
             duration: components["schemas"]["RunwayDurationEnum"];
-            model: components["schemas"]["RunwayModelEnum"];
+            /** @description Model to use for generation. On the Comfy Router route `POST /v2/models/runway/{model}` this field is supplied from the path and MUST NOT be sent; on the v1 `POST /proxy/runway/image_to_video` route it is required and constrained to the RunwayModelEnum (`gen4_turbo`). */
+            model?: string | null;
             promptImage: components["schemas"]["RunwayPromptImageObject"];
             /** @description Text prompt for the generation */
             promptText?: string;
@@ -16298,6 +17285,13 @@ export interface components {
              */
             seed: number;
         };
+        /**
+         * @description The v1 `POST /proxy/runway/image_to_video` request body.
+         *     It composes `RunwayImageToVideoInputs` and adds back `model`, the one field only the v1 surface can demand: this route carries no path segment supplying it, whereas `POST /v2/models/runway/{model}` does and its input schema must neither require nor enum-constrain it.
+         */
+        RunwayImageToVideoRequest: components["schemas"]["RunwayImageToVideoInputs"] & {
+            model: components["schemas"]["RunwayModelEnum"];
+        };
         RunwayImageToVideoResponse: {
             /** @description Task ID */
             id?: string;
@@ -16306,11 +17300,11 @@ export interface components {
          * @description Available Runway models for generation.
          * @enum {string}
          */
-        RunwayModelEnum: "gen4_turbo" | "gen3a_turbo";
+        RunwayModelEnum: "gen4_turbo";
         /** @description Represents an image with its position in the video sequence. */
         RunwayPromptImageDetailedObject: {
             /**
-             * @description The position of the image in the output video. 'last' is currently supported for gen3a_turbo only.
+             * @description The position of the image in the output video. Runway documented 'last' as supported by the gen3a_turbo model only, and that model reached its sunset date on 2026-07-30; no model this operation still admits is documented to accept it. Consult Runway's own documentation before relying on it.
              * @enum {string}
              */
             position: "first" | "last";
@@ -16332,7 +17326,7 @@ export interface components {
             createdAt: string;
             /** @description Task ID */
             id: string;
-            /** @description Array of output video URLs */
+            /** @description Array of the finished task's output asset URLs. This route is shared by every Runway model, so the medium follows the model that was submitted - a video URL for the image_to_video and video_to_video models, an image URL for the text_to_image model. */
             output?: string[];
             /**
              * Format: float
@@ -16343,24 +17337,63 @@ export interface components {
         };
         /** @enum {string} */
         RunwayTextToImageAspectRatioEnum: "1920:1080" | "1080:1920" | "1024:1024" | "1360:768" | "1080:1080" | "1168:880" | "1440:1080" | "1080:1440" | "1808:768" | "2112:912";
-        RunwayTextToImageRequest: {
-            /**
-             * @description Model to use for generation
-             * @enum {string}
-             */
-            model: "gen4_image";
+        /**
+         * @example {
+         *       "promptText": "a red circle",
+         *       "ratio": "1024:1024"
+         *     }
+         */
+        RunwayTextToImageInputs: {
+            /** @description Model to use for generation. On the Comfy Router route `POST /v2/models/runway/{model}` this field is supplied from the path and MUST NOT be sent; on the v1 `POST /proxy/runway/text_to_image` route it is required and constrained to `gen4_image`. */
+            model?: string | null;
             /** @description Text prompt for the image generation */
             promptText: string;
             ratio: components["schemas"]["RunwayTextToImageAspectRatioEnum"];
             /** @description Array of reference images to guide the generation */
             referenceImages?: {
                 /** @description A HTTPS URL or data URI containing an encoded image */
-                uri?: string;
+                uri: string;
             }[];
+        };
+        /**
+         * @description The v1 `POST /proxy/runway/text_to_image` request body.
+         *     It composes `RunwayTextToImageInputs` and adds back the one field only the v1 surface can demand: this route carries no path segment supplying `model`, so a caller must send it and it must be `gen4_image`, whereas the Comfy Router route `POST /v2/models/runway/{model}` supplies it from the path and its input schema must neither require nor enum-constrain it.
+         */
+        RunwayTextToImageRequest: components["schemas"]["RunwayTextToImageInputs"] & {
+            /**
+             * @description Model to use for generation
+             * @enum {string}
+             */
+            model: "gen4_image";
         };
         RunwayTextToImageResponse: {
             /** @description Task ID */
             id?: string;
+        };
+        /**
+         * @description Request to edit an input video into a new video using Runway's API.
+         * @example {
+         *       "promptText": "recolor the scene in cool blue tones",
+         *       "videoUri": "https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_1MB.mp4"
+         *     }
+         */
+        RunwayVideoToVideoInputs: {
+            contentModeration?: components["schemas"]["RunwayContentModeration"];
+            /** @description Timed guidance images placed at specific points in the input video. Up to 5 keyframes. */
+            keyframes?: components["schemas"]["RunwayVideoToVideoKeyframe"][];
+            /** @description Model to use for generation. On the Comfy Router route `POST /v2/models/runway/{model}` this field is supplied from the path and MUST NOT be sent; on the v1 `POST /proxy/runway/video_to_video` route it is required and constrained to the RunwayVideoToVideoModelEnum (`aleph2`). */
+            model?: string | null;
+            /** @description A list of up to 5 image keyframes for guiding the edit at specific points in the video. */
+            promptImage?: components["schemas"]["RunwayVideoToVideoPromptImage"][];
+            /** @description A non-empty string up to 1000 characters describing what should appear in the output. */
+            promptText: string;
+            /**
+             * Format: int64
+             * @description Random seed for generation.
+             */
+            seed?: number;
+            /** @description The input video to edit (HTTPS URL, Runway upload URI, or data URI). Must be 30 seconds or shorter. */
+            videoUri: string;
         };
         /** @description Timed guidance image placed at a specific point in the input video. */
         RunwayVideoToVideoKeyframe: {
@@ -16397,23 +17430,12 @@ export interface components {
             /** @enum {string} */
             type: "position";
         };
-        /** @description Request to edit an input video into a new video using Runway's API. */
-        RunwayVideoToVideoRequest: {
-            contentModeration?: components["schemas"]["RunwayContentModeration"];
-            /** @description Timed guidance images placed at specific points in the input video. Up to 5 keyframes. */
-            keyframes?: components["schemas"]["RunwayVideoToVideoKeyframe"][];
+        /**
+         * @description The v1 `POST /proxy/runway/video_to_video` request body.
+         *     It composes `RunwayVideoToVideoInputs` and adds back `model`, the one field only the v1 surface can demand: this route carries no path segment supplying it, whereas `POST /v2/models/runway/{model}` does and its input schema must neither require nor enum-constrain it.
+         */
+        RunwayVideoToVideoRequest: components["schemas"]["RunwayVideoToVideoInputs"] & {
             model: components["schemas"]["RunwayVideoToVideoModelEnum"];
-            /** @description A list of up to 5 image keyframes for guiding the edit at specific points in the video. */
-            promptImage?: components["schemas"]["RunwayVideoToVideoPromptImage"][];
-            /** @description A non-empty string up to 1000 characters describing what should appear in the output. */
-            promptText: string;
-            /**
-             * Format: int64
-             * @description Random seed for generation.
-             */
-            seed?: number;
-            /** @description The input video to edit (HTTPS URL, Runway upload URI, or data URI). Must be 30 seconds or shorter. */
-            videoUri: string;
         };
         RunwayVideoToVideoResponse: {
             /** @description Task ID */
@@ -16827,6 +17849,18 @@ export interface components {
              */
             Url?: string;
         };
+        /**
+         * @description Request body for Tencent Hunyuan 3D component generation (part splitting).
+         * @example {
+         *       "File": {
+         *         "Type": "FBX",
+         *         "Url": "https://vcg-test-1258344699.cos.ap-guangzhou.myqcloud.com/test/3d/test.fbx"
+         *       }
+         *     }
+         */
+        TencentHunyuan3DPartRequest: {
+            File?: components["schemas"]["TencentPartInputFile3D"];
+        };
         /** @description Request body for Tencent Hunyuan 3D Pro generation */
         TencentHunyuan3DProRequest: {
             /**
@@ -16950,7 +17984,15 @@ export interface components {
                 Status?: "WAIT" | "RUN" | "FAIL" | "DONE";
             };
         };
-        /** @description Request body for Tencent Hunyuan 3D Smart Topology (retopology/polygon reduction) */
+        /**
+         * @description Request body for Tencent Hunyuan 3D Smart Topology (retopology/polygon reduction)
+         * @example {
+         *       "File3D": {
+         *         "Type": "GLB",
+         *         "Url": "https://vcg-test-1258344699.cos.ap-guangzhou.myqcloud.com/test/3d/test.glb"
+         *       }
+         *     }
+         */
         TencentHunyuan3DSmartTopologyRequest: {
             /**
              * @description Polygon reduction level.
@@ -16958,7 +18000,7 @@ export interface components {
              * @enum {string}
              */
             FaceLevel?: "high" | "medium" | "low";
-            File3D: components["schemas"]["TencentInputFile3D"];
+            File3D: components["schemas"]["TencentSmartTopologyInputFile3D"];
             /**
              * @description Polygon type for the output mesh. Defaults to triangle.
              * @example triangle
@@ -16966,14 +18008,23 @@ export interface components {
              */
             PolygonType?: "triangle" | "quadrilateral";
         };
-        /** @description Request body for Tencent Hunyuan 3D texture edit */
+        /**
+         * @description Request body for Tencent Hunyuan 3D texture edit
+         * @example {
+         *       "File3D": {
+         *         "Type": "FBX",
+         *         "Url": "https://vcg-test-1258344699.cos.ap-guangzhou.myqcloud.com/test/3d/test.fbx"
+         *       },
+         *       "Prompt": "a kitten"
+         *     }
+         */
         TencentHunyuan3DTextureEditRequest: {
             /**
              * @description Whether to enable the PBR texture parameter; only supported when using Prompt.
              * @example true
              */
             EnablePBR?: boolean;
-            File3D: components["schemas"]["TencentInputFile3D"];
+            File3D: components["schemas"]["TencentTextureEditInputFile3D"];
             Image?: components["schemas"]["TencentImageInfo"];
             /**
              * @description Describes texture editing. Either Image or Prompt is required; they cannot coexist.
@@ -16981,7 +18032,15 @@ export interface components {
              */
             Prompt?: string;
         };
-        /** @description Request body for Tencent Hunyuan 3D UV unfolding */
+        /**
+         * @description Request body for Tencent Hunyuan 3D UV unfolding.
+         * @example {
+         *       "File": {
+         *         "Type": "GLB",
+         *         "Url": "https://vcg-test-1258344699.cos.ap-guangzhou.myqcloud.com/test/3d/test.glb"
+         *       }
+         *     }
+         */
         TencentHunyuan3DUVRequest: {
             File?: components["schemas"]["TencentInputFile3D"];
         };
@@ -17010,12 +18069,12 @@ export interface components {
         /** @description Reference image - Base64 data or image URL */
         TencentImageInfo: {
             /** @description Base64 encoded image. Resolution 128-4096 per side, converted Base64 less than 10MB. Formats jpg, jpeg, png. */
-            ImageBase64?: string;
+            Base64?: string;
             /**
              * Format: uri
-             * @description Image URL. If both Base64 and Url provided, Url prevails.
+             * @description Image URL. If both Base64 and Url are provided, Url prevails.
              */
-            ImageUrl?: string;
+            Url?: string;
         };
         /** @description 3D file input for UV unwrapping */
         TencentInputFile3D: {
@@ -17029,6 +18088,51 @@ export interface components {
              * Format: uri
              * @description URL of the 3D file that needs UV unwrapping
              * @example https://example.com/model.glb
+             */
+            Url: string;
+        };
+        /** @description 3D file input for component generation */
+        TencentPartInputFile3D: {
+            /**
+             * @description 3D file format type
+             * @example FBX
+             * @enum {string}
+             */
+            Type: "FBX";
+            /**
+             * Format: uri
+             * @description URL of the 3D file to split into components
+             * @example https://example.com/model.fbx
+             */
+            Url: string;
+        };
+        /** @description 3D file input for smart topology */
+        TencentSmartTopologyInputFile3D: {
+            /**
+             * @description 3D file format type
+             * @example GLB
+             * @enum {string}
+             */
+            Type: "OBJ" | "GLB";
+            /**
+             * Format: uri
+             * @description URL of the 3D file to retopologise
+             * @example https://example.com/model.glb
+             */
+            Url: string;
+        };
+        /** @description 3D file input for texture editing */
+        TencentTextureEditInputFile3D: {
+            /**
+             * @description 3D file format type
+             * @example FBX
+             * @enum {string}
+             */
+            Type: "FBX";
+            /**
+             * Format: uri
+             * @description URL of the 3D file whose texture is edited
+             * @example https://example.com/model.fbx
              */
             Url: string;
         };
@@ -18106,6 +19210,20 @@ export interface components {
                 }[];
             };
         };
+        /**
+         * @description Request body for the deprecated `POST /proxy/veo/generate` operation, which runs veo-2.0-generate-001. The Veo 2 tier is 720p only, duration 5-8 whole seconds, and silent: it supports neither audio generation nor lastFrame nor referenceImages.
+         * @example {
+         *       "instances": [
+         *         {
+         *           "prompt": "a single red maple leaf falling onto still water, slow motion"
+         *         }
+         *       ],
+         *       "parameters": {
+         *         "durationSeconds": 6,
+         *         "sampleCount": 1
+         *       }
+         *     }
+         */
         Veo2GenVidRequest: {
             instances?: {
                 /** @description Optional image to guide video generation */
@@ -18124,8 +19242,11 @@ export interface components {
                 durationSeconds?: number;
                 enhancePrompt?: boolean;
                 negativePrompt?: string;
-                /** @enum {string} */
-                personGeneration?: "ALLOW" | "BLOCK";
+                /**
+                 * @description Controls people in generated videos. `dont_allow`, `allow_adult` and `allowAll` are Vertex AI's own spellings and are the ones VeoGenVidRequest publishes for the same field. `ALLOW` and `BLOCK` are kept for compatibility with clients generated from this component before it was Router-authored -- see the note at the top of Veo2GenVidRequest.
+                 * @enum {string}
+                 */
+                personGeneration?: "ALLOW" | "BLOCK" | "dont_allow" | "allow_adult" | "allowAll";
                 sampleCount?: number;
                 /** Format: uint32 */
                 seed?: number;
@@ -18178,6 +19299,20 @@ export interface components {
                 }[];
             };
         };
+        /**
+         * @example {
+         *       "instances": [
+         *         {
+         *           "prompt": "a single red maple leaf falling onto still water, slow motion"
+         *         }
+         *       ],
+         *       "parameters": {
+         *         "durationSeconds": 4,
+         *         "generateAudio": false,
+         *         "sampleCount": 1
+         *       }
+         *     }
+         */
         VeoGenVidRequest: {
             instances?: {
                 /**
@@ -18520,7 +19655,23 @@ export interface components {
             /** @description Watermark image URL (uses default watermark if not provided) */
             wm_url?: string;
         };
-        WanImage2ImageGenerationRequest: {
+        /**
+         * @description The Wan image-to-image fields, shared by the v1 `POST /proxy/wan/api/v1/services/aigc/image2image/image-synthesis` request body and the Comfy Router input schema for `wan/wan2.5-i2i-preview`.
+         *     `required` here is the ROUTER-SAFE floor; the v1 wrapper `WanImage2ImageGenerationRequest` re-adds `model` for direct v1 calls.
+         * @example {
+         *       "input": {
+         *         "images": [
+         *           "https://example.invalid/red-maple-leaf.png"
+         *         ],
+         *         "prompt": "Make the leaf golden."
+         *       },
+         *       "parameters": {
+         *         "n": 1,
+         *         "size": "768*768"
+         *       }
+         *     }
+         */
+        WanImage2ImageGenerationInputs: {
             /** @description Enter basic information, such as prompt words, images, etc. */
             input: {
                 /** @description Array of image URLs for image-to-image generation */
@@ -18530,11 +19681,8 @@ export interface components {
                 /** @description Positive prompt words to describe expected image elements and visual features. Support Chinese and English, length not exceeding 2000 characters */
                 prompt: string;
             };
-            /**
-             * @description The ID of the model to call for image-to-image generation
-             * @enum {string}
-             */
-            model: "wan2.5-i2i-preview";
+            /** @description The ID of the model to call for image-to-image generation. NOT constrained on this component: Comfy Router fills it from the `{model}` path segment of `POST /v2/models/wan/{model}`. A direct v1 call to `POST /proxy/wan/api/v1/services/aigc/image2image/image-synthesis` MUST supply it, and the enum of accepted spellings lives on that operation's own component, `WanImage2ImageGenerationRequest`. */
+            model?: string | null;
             /** @description Image processing parameters */
             parameters?: {
                 /**
@@ -18545,7 +19693,7 @@ export interface components {
                 /** @description Random number seed to control randomness. Range [0, 2147483647] */
                 seed?: number;
                 /**
-                 * @description Output image resolution. Default is 1280*1280. Width and height must be between 384 and 5000 pixels.
+                 * @description The output image resolution in the format width*height. Default is 1280*1280. The API accepts a pixel area between 589824 (768*768) and 1638400 (1280*1280) with an aspect ratio between 1:4 and 4:1
                  * @default 1280*1280
                  */
                 size?: string;
@@ -18555,6 +19703,17 @@ export interface components {
                  */
                 watermark?: boolean;
             };
+        };
+        /**
+         * @description Parameters for the Wan image-to-image proxy request -- the v1 `POST /proxy/wan/api/v1/services/aigc/image2image/image-synthesis` body.
+         *     It composes `WanImage2ImageGenerationInputs` and re-adds `model`, which only the v1 surface can demand: this route carries no path segment supplying it. The component has required `model` since the operation was added on 2025-09-26 (comfy-api #668), so this RESTORES a published requirement rather than inventing one. See the note above `WanVideoGenerationInputs`.
+         */
+        WanImage2ImageGenerationRequest: components["schemas"]["WanImage2ImageGenerationInputs"] & {
+            /**
+             * @description The ID of the model to call for image-to-image generation
+             * @enum {string}
+             */
+            model: "wan2.5-i2i-preview";
         };
         WanImage2ImageGenerationResponse: {
             /** @description The error code for the failed request (not returned if request is successful) */
@@ -18573,7 +19732,20 @@ export interface components {
             /** @description Unique request identifier */
             request_id: string;
         };
-        WanImageGenerationRequest: {
+        /**
+         * @description The Wan text-to-image fields, shared by the v1 `POST /proxy/wan/api/v1/services/aigc/text2image/image-synthesis` request body and the Comfy Router input schema for `wan/wan2.5-t2i-preview`.
+         *     `required` here is the ROUTER-SAFE floor; the v1 wrapper `WanImageGenerationRequest` re-adds `model` for direct v1 calls.
+         * @example {
+         *       "input": {
+         *         "prompt": "A single red maple leaf on a plain white background."
+         *       },
+         *       "parameters": {
+         *         "n": 1,
+         *         "size": "1280*1280"
+         *       }
+         *     }
+         */
+        WanImageGenerationInputs: {
             /** @description Enter basic information, such as prompt words, etc. */
             input: {
                 /** @description Reverse prompt words to describe content that you do not want to see in the image */
@@ -18581,11 +19753,8 @@ export interface components {
                 /** @description Positive prompt words to describe expected image elements and visual features. Support Chinese and English, length not exceeding 800 characters */
                 prompt: string;
             };
-            /**
-             * @description The ID of the model to call for text-to-image generation
-             * @enum {string}
-             */
-            model: "wan2.5-t2i-preview";
+            /** @description The ID of the model to call for text-to-image generation. NOT constrained on this component: Comfy Router fills it from the `{model}` path segment of `POST /v2/models/wan/{model}`. A direct v1 call to `POST /proxy/wan/api/v1/services/aigc/text2image/image-synthesis` MUST supply it, and the enum of accepted spellings lives on that operation's own component, `WanImageGenerationRequest`. */
+            model?: string | null;
             /** @description Image processing parameters */
             parameters?: {
                 /**
@@ -18601,8 +19770,8 @@ export interface components {
                 /** @description Random number seed to control randomness. Range [0, 2147483647] */
                 seed?: number;
                 /**
-                 * @description Output image resolution. Default is 1024*1024. Pixel range [512, 1440], up to 200 megapixels
-                 * @default 1024*1024
+                 * @description The output image resolution in the format width*height. Default is 1280*1280. The API accepts a pixel area between 1638400 (1280*1280) and 2073600 (1440*1440) with an aspect ratio between 1:4 and 4:1, so 768*2700 is valid
+                 * @default 1280*1280
                  */
                 size?: string;
                 /**
@@ -18611,6 +19780,17 @@ export interface components {
                  */
                 watermark?: boolean;
             };
+        };
+        /**
+         * @description Parameters for the Wan text-to-image proxy request -- the v1 `POST /proxy/wan/api/v1/services/aigc/text2image/image-synthesis` body.
+         *     It composes `WanImageGenerationInputs` and re-adds `model`, which only the v1 surface can demand: this route carries no path segment supplying it. The component has required `model` since the family was added on 2025-09-22 (comfy-api #664), so this RESTORES a published requirement rather than inventing one. See the note above `WanVideoGenerationInputs`.
+         */
+        WanImageGenerationRequest: components["schemas"]["WanImageGenerationInputs"] & {
+            /**
+             * @description The ID of the model to call for text-to-image generation
+             * @enum {string}
+             */
+            model: "wan2.5-t2i-preview";
         };
         WanImageGenerationResponse: {
             /** @description The error code for the failed request (not returned if request is successful) */
@@ -18683,12 +19863,20 @@ export interface components {
             request_id: string;
             /** @description Output information statistics. Only successful results are counted */
             usage?: {
-                /** @description Video resolution level (I2V tasks) */
+                /** @description Video resolution level (I2V and wan3.0-video tasks) */
                 SR?: number;
-                /** @description Duration of generated video in seconds (I2V tasks) */
+                /** @description Duration of generated video in seconds (I2V and wan3.0-video tasks) */
                 duration?: number;
+                /** @description Frame rate of the generated video (wan3.0-video tasks) */
+                fps?: number;
                 /** @description Number of generated images (T2I tasks) */
                 image_count?: number;
+                /** @description Duration of the input video in seconds, 0.0 when no video input (wan3.0-video tasks) */
+                input_video_duration?: number;
+                /** @description Duration of the output video in seconds (wan3.0-video tasks) */
+                output_video_duration?: number;
+                /** @description Aspect ratio of the generated video, e.g. 16:9 (wan3.0-video tasks) */
+                ratio?: string;
                 /** @description Image resolution (T2I tasks) */
                 size?: string;
                 /** @description Number of generated videos (T2V tasks) */
@@ -18699,7 +19887,11 @@ export interface components {
                 video_ratio?: string;
             };
         };
-        WanVideoGenerationRequest: {
+        /**
+         * @description The Wan / HappyHorse video-generation fields, shared by the v1 `POST /proxy/wan/api/v1/services/aigc/video-generation/video-synthesis` request body and the Comfy Router input schema. This is a shared validation floor, not the complete contract of each provider model. Image-to-video, reference-to-video and editing models need model-specific reference inputs; supported resolutions and duration ranges also vary by model. The proxy additionally requires parameters with a recognized size or resolution for billing. Schema acceptance alone does not imply provider acceptance.
+         *     `required` here is the ROUTER-SAFE floor: `model` is absent from it because Router writes the path's model into the body after routervalidate.Guard has already validated the caller's bytes. The v1 wrapper `WanVideoGenerationRequest` re-adds it.
+         */
+        WanVideoGenerationInputs: {
             /** @description Enter basic information, such as prompt words, etc. */
             input: {
                 /** @description Audio file download URL. Supported formats: mp3 and wav. Cannot be used with reference_video_urls. */
@@ -18707,28 +19899,37 @@ export interface components {
                 /** @description First frame image URL or Base64 encoded data. Required for I2V models. Image formats: JPEG, JPG, PNG, BMP, WEBP. Resolution: 360-2000 pixels. File size: max 10MB. */
                 img_url?: string;
                 /**
-                 * @description Media asset list for wan2.7 models. Specifies reference materials (image, audio, video)
+                 * @description Media asset list for wan2.7 and wan3.0 models. Specifies reference materials (image, audio, video)
                  *     for video generation. Each element contains a type and url field.
                  *     Supported type values vary by model:
                  *     - wan2.7-i2v: first_frame, last_frame, driving_audio, first_clip
                  *     - wan2.7-r2v: reference_image, reference_video
                  *     - wan2.7-videoedit: video, reference_image
+                 *     - wan3.0-video: first_frame (max 1), last_frame (max 1), reference_image (max 10),
+                 *       reference_video (max 5 clips, total duration <= 15s), reference_audio (max 5 clips,
+                 *       total duration <= 15s), file (max 1, cannot be used with link), link (max 1, cannot
+                 *       be used with file). The reference_*\/file/link types and first_frame/last_frame types
+                 *       are mutually exclusive within the same request. The array order defines the reference
+                 *       order of assets in the prompt (Image 1, Video 1, Audio 1, ...).
                  */
                 media?: {
                     /**
                      * @description Media asset type
                      * @enum {string}
                      */
-                    type: "first_frame" | "last_frame" | "driving_audio" | "first_clip" | "reference_image" | "reference_video" | "video";
+                    type: "first_frame" | "last_frame" | "driving_audio" | "first_clip" | "reference_image" | "reference_video" | "reference_audio" | "video" | "file" | "link";
                     /** @description URL of the media file (public HTTP/HTTPS URL or OSS temporary URL) */
                     url: string;
                 }[];
                 /** @description Reverse prompt words are used to describe content that you do not want to see in the video screen */
                 negative_prompt?: string;
                 /**
-                 * @description Text prompt words. Support Chinese and English, length not exceeding 800 characters.
+                 * @description Text prompt words. Support Chinese and English, length not exceeding 800 characters
+                 *     (up to 20,000 characters for wan3.0-video; content exceeding the limit is truncated).
                  *     For wan2.6-r2v with multiple reference videos, use 'character1', 'character2', etc. to refer to subjects
                  *     in the order of reference videos. Example: "Character1 sings on the roadside, Character2 dances beside it"
+                 *     For wan3.0-video reference mode, use 'Image 1', 'Video 1', 'Audio 1', etc. to refer to media assets
+                 *     in the corresponding order within the media array.
                  */
                 prompt?: string;
                 /**
@@ -18746,11 +19947,8 @@ export interface components {
                 /** @description Video effect template name. Optional. Currently supported: squish, flying, carousel. When used, prompt parameter is ignored. */
                 template?: string;
             };
-            /**
-             * @description The ID of the model to call
-             * @enum {string}
-             */
-            model: "wan2.5-t2v-preview" | "wan2.5-i2v-preview" | "wan2.6-t2v" | "wan2.6-i2v" | "wan2.6-r2v" | "wan2.7-i2v" | "wan2.7-t2v" | "wan2.7-r2v" | "wan2.7-videoedit" | "happyhorse-1.0-t2v" | "happyhorse-1.0-i2v" | "happyhorse-1.0-r2v" | "happyhorse-1.0-video-edit" | "happyhorse-1.1-t2v" | "happyhorse-1.1-i2v" | "happyhorse-1.1-r2v";
+            /** @description The ID of the model to call. NOT constrained on this component: Comfy Router fills it from the `{model}` path segment of `POST /v2/models/wan/{model}`, so a Router caller omits it. A direct v1 call to `POST /proxy/wan/api/v1/services/aigc/video-generation/video-synthesis` MUST supply it, and the enum of accepted spellings lives on that operation's own component, `WanVideoGenerationRequest`. */
+            model?: string | null;
             /** @description Video processing parameters */
             parameters?: {
                 /**
@@ -18773,6 +19971,9 @@ export interface components {
                  *     - wan2.6-r2v: 5 or 10 seconds only (no 15s support)
                  *     - wan2.7-i2v, wan2.7-t2v: integer in [2, 15]
                  *     - wan2.7-r2v, wan2.7-videoedit: integer in [2, 10]
+                 *     - wan3.0-video: integer in [2, 30] without video input; with video input the total
+                 *       input video duration + output video duration must not exceed 30 seconds; -1 enables
+                 *       smart duration mode where the model picks a suitable duration
                  * @default 5
                  */
                 duration?: number;
@@ -18782,16 +19983,21 @@ export interface components {
                  */
                 prompt_extend?: boolean;
                 /**
-                 * @description Aspect ratio of the generated video. For wan2.7 models only.
-                 *     If not provided, defaults based on the resolution tier.
+                 * @description Aspect ratio of the generated video. For wan2.7 and wan3.0 models only.
+                 *     For wan2.7 models, defaults based on the resolution tier if not provided.
+                 *     For wan3.0-video, adaptive (the default) automatically recommends a suitable
+                 *     aspect ratio based on the input media proportions and intent.
                  * @enum {string}
                  */
-                ratio?: "16:9" | "9:16" | "1:1" | "4:3" | "3:4";
+                ratio?: "adaptive" | "16:9" | "9:16" | "1:1" | "4:3" | "3:4";
                 /**
                  * @description Resolution level. Supported values vary by model:
                  *     - wan2.5-i2v-preview: 480P, 720P, 1080P
                  *     - wan2.6-i2v: 720P, 1080P only (no 480P support)
                  *     - wan2.7 models (i2v, t2v, r2v, videoedit): 720P, 1080P (default 1080P)
+                 *     - wan3.0-video, wan3.0-video-prime: 480P, 720P, 1080P (upstream default 1080P)
+                 *     This proxy rejects video generation requests that provide neither resolution
+                 *     nor size, because the resolution tier selects the billing rate.
                  * @enum {string}
                  */
                 resolution?: "480P" | "720P" | "1080P";
@@ -18821,6 +20027,18 @@ export interface components {
                 watermark?: boolean;
             };
         };
+        /**
+         * @description Parameters for the Wan / HappyHorse video-generation proxy request -- the v1 `POST /proxy/wan/api/v1/services/aigc/video-generation/video-synthesis` body.
+         *     It composes `WanVideoGenerationInputs` rather than restating its fields, and re-adds the one field only the v1 surface can demand. `model` is that field: this route carries no path segment supplying it, so a direct caller must send it, whereas the Comfy Router route `POST /v2/models/wan/{model}` supplies it from the path and its input schema must NOT require it.
+         *     This component has required `model` since the family was added on 2025-09-22 (comfy-api #664), so the wrapper RESTORES a published requirement rather than inventing one and the generated `Model` keeps the shape v1 callers were compiled against. Read the note above `RecraftImageGenerationInputs` for the full rule and the guard that enforces it.
+         */
+        WanVideoGenerationRequest: components["schemas"]["WanVideoGenerationInputs"] & {
+            /**
+             * @description The ID of the model to call
+             * @enum {string}
+             */
+            model: "wan2.5-t2v-preview" | "wan2.5-i2v-preview" | "wan2.6-t2v" | "wan2.6-i2v" | "wan2.6-r2v" | "wan2.7-i2v" | "wan2.7-t2v" | "wan2.7-r2v" | "wan2.7-videoedit" | "wan3.0-video" | "wan3.0-video-prime" | "happyhorse-1.0-t2v" | "happyhorse-1.0-i2v" | "happyhorse-1.0-r2v" | "happyhorse-1.0-video-edit" | "happyhorse-1.1-t2v" | "happyhorse-1.1-i2v" | "happyhorse-1.1-r2v";
+        };
         WanVideoGenerationResponse: {
             /** @description The error code for the failed request (not returned if request is successful) */
             code?: string;
@@ -18838,7 +20056,14 @@ export interface components {
             /** @description Unique request identifier */
             request_id: string;
         };
-        /** @description Request body for WavespeedAI FlashVSR video upscaling */
+        /**
+         * @description Request body for WavespeedAI FlashVSR video upscaling
+         * @example {
+         *       "duration": 4,
+         *       "target_resolution": "1080p",
+         *       "video": "https://samplelib.com/mp4/sample-30s.mp4"
+         *     }
+         */
         WavespeedFlashVSRRequest: {
             /** @description Duration of the video in seconds */
             duration: number;
@@ -18851,7 +20076,13 @@ export interface components {
             /** @description The video to upscale. Can be a URL to the video file or a base64-encoded video. */
             video: string;
         };
-        /** @description Request body for WavespeedAI SeedVR2 image upscaling */
+        /**
+         * @description Request body for WavespeedAI image upscaling. One component serves both wavespeed/seedvr2 and wavespeed/ultimate-image-upscaler, which take the same request shape.
+         * @example {
+         *       "image": "https://images.pexels.com/photos/346529/pexels-photo-346529.jpeg",
+         *       "target_resolution": "4k"
+         *     }
+         */
         WavespeedSeedVR2ImageRequest: {
             /**
              * @description If enabled, the output will be encoded into a BASE64 string instead of a URL.
@@ -18953,7 +20184,7 @@ export interface components {
              * @description The type of the web search tool. One of `web_search_preview` or `web_search_preview_2025_03_11`. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
-            type: "WebSearchPreviewTool";
+            type: "web_search_preview" | "web_search_preview_2025_03_11";
         };
         /**
          * Web search tool call
@@ -18991,7 +20222,7 @@ export interface components {
             duration?: number;
             /** @description Whether the video generated by the model respects moderation rules */
             respect_moderation?: boolean;
-            /** @description A url to the generated video */
+            /** @description Download URL for the generated video. Router re-hosts the video onto Comfy storage and rewrites this field, so it is normally a Comfy-signed URL valid for up to 24 hours - signed for 24 hours when minted and replayed from a 23-hour memo, so a later poll can hand back one with as little as an hour left. When the re-host could not be performed the field keeps xAI's own short-lived URL instead. NULLABLE: a success whose `url` is empty is not a completed generation. Either way the link expires, so download the video rather than storing the URL. */
             url?: string | null;
         };
         /** @description Request body for xAI Grok Imagine image editing */
@@ -19006,7 +20237,7 @@ export interface components {
             images?: components["schemas"]["XAIImageObject"][];
             mask?: components["schemas"]["XAIImageObject"];
             /**
-             * @description Model to be used
+             * @description Model to be used. Supported: grok-imagine-image (default), grok-imagine-image-pro, grok-imagine-image-quality, grok-imagine-image-2.0. Deprecated -beta ids are aliased to their GA model.
              * @default grok-imagine-image
              */
             model: string;
@@ -19015,7 +20246,7 @@ export interface components {
             /** @description Prompt for image editing */
             prompt: string;
             /**
-             * @description Quality of the output image. Currently a no-op, reserved for future use.
+             * @description Quality of the output image. For grok-imagine-image-2.0 this selects the price tier (low/medium; medium is the default); other models currently ignore it.
              * @enum {string}
              */
             quality?: "low" | "medium" | "high";
@@ -19038,7 +20269,13 @@ export interface components {
             /** @description A unique identifier representing your end-user, which can help xAI to monitor and detect abuse */
             user?: string;
         };
-        /** @description Request body for xAI Grok Imagine image generation */
+        /**
+         * @description Request body for xAI Grok Imagine image generation
+         * @example {
+         *       "n": 1,
+         *       "prompt": "A single red maple leaf on a plain white background."
+         *     }
+         */
         XAIImageGenerationRequest: {
             /**
              * @description Aspect ratio of the generated image. Defaults to auto for automatically selecting the best ratio for the prompt.
@@ -19047,10 +20284,10 @@ export interface components {
              */
             aspect_ratio: "1:1" | "3:4" | "4:3" | "9:16" | "16:9" | "2:3" | "3:2" | "9:19.5" | "19.5:9" | "9:20" | "20:9" | "1:2" | "2:1" | "auto";
             /**
-             * @description Model to be used
+             * @description Model to be used. Supported: grok-imagine-image (default), grok-imagine-image-pro, grok-imagine-image-quality, grok-imagine-image-2.0. Deprecated -beta ids are aliased to their GA model.
              * @default grok-imagine-image
              */
-            model: string;
+            model: string | null;
             /**
              * @description Number of images to be generated
              * @default 1
@@ -19059,7 +20296,7 @@ export interface components {
             /** @description Prompt for image generation */
             prompt: string;
             /**
-             * @description Quality of the output image. Currently a no-op, reserved for future use.
+             * @description Quality of the output image. For grok-imagine-image-2.0 this selects the price tier (low/medium; medium is the default); other models currently ignore it.
              * @enum {string}
              */
             quality?: "low" | "medium" | "high";
@@ -19070,7 +20307,7 @@ export interface components {
              */
             resolution: "1k" | "2k";
             /**
-             * @description Response format to return the image in. Can be url or b64_json.
+             * @description Response format to return the image in. Can be url or b64_json. Comfy Router (`POST /v2/models/xai/{model}`) coerces this to `url` on the outbound request because it serves image results as re-hosted URLs either way; this `/proxy/` route honours it as written.
              * @default url
              * @enum {string}
              */
@@ -19145,6 +20382,10 @@ export interface components {
          *     Supports three modes: text-to-video (prompt only), image-to-video (prompt + image),
          *     and reference-to-video (prompt + reference_images).
          *     The fields image, reference_images, and video are mutually exclusive.
+         * @example {
+         *       "duration": 4,
+         *       "prompt": "a single red maple leaf falling onto still water, slow motion"
+         *     }
          */
         XAIVideoGenerationRequest: {
             /**
@@ -19160,12 +20401,12 @@ export interface components {
             duration: number | null;
             image?: components["schemas"]["XAIImageObject"];
             /** @description Model to be used */
-            model?: string;
+            model?: string | null;
             /** @description Optional output destination for generated video */
             output?: Record<string, never> | null;
             /** @description Prompt for video generation. Maximum 4,096 characters. */
             prompt: string;
-            /** @description One or more reference images to guide the video generation (reference-to-video mode). Mutually exclusive with image and video. */
+            /** @description One or more reference images to guide the video generation (reference-to-video mode). Mutually exclusive with image. Router forwards application/json only and neither this object nor XAIImageObject accepts a file_id, so file-backed image inputs are not supported on this route. */
             reference_images?: components["schemas"]["XAIReferenceImageObject"][];
             /** @description Resolution of the output video */
             resolution?: string | null;
@@ -19255,6 +20496,7 @@ export interface operations {
     ListAllComfyNodes: {
         parameters: {
             query?: {
+                /** @description The number of items to include per page. A value above the maximum is clamped down to it; 0 and negative values are accepted and select the default. (That is why no minimum is declared — sub-1 is meaningful here, not invalid.) The page size actually served is echoed back as page_size, so a clamp is always detectable. */
                 pageSize?: number;
                 /** @description Page number (1-based indexing) */
                 page?: number;
@@ -19279,6 +20521,8 @@ export interface operations {
                 content: {
                     "application/json": {
                         comfy_nodes?: components["schemas"]["ComfyNode"][];
+                        /** @description The page size actually served. The server clamps pageSize to the documented maximum, so this can be smaller than the requested value; paginate with this number rather than the one you asked for, or you will skip rows. */
+                        page_size?: number;
                         /** @description Total number of comfy nodes */
                         total?: number;
                     };
@@ -19539,6 +20783,15 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Invalid api_key_id (must be a UUID) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
             };
             /** @description Unauthorized */
             401: {
@@ -20286,13 +21539,13 @@ export interface operations {
             query?: {
                 /** @description Page number of the nodes list */
                 page?: number;
-                /** @description Number of nodes to return per page */
+                /** @description Number of nodes to return per page. Values above the declared maximum are outside the contract, but this service does not reject them: it serves the maximum instead, and the page size actually served is echoed back as limit (and drives totalPages), so a clamp is always detectable by the caller. Treat the maximum as the real page stride — a client that asks for more and assumes it received more will miss rows. 0 and negative values are also accepted and select the default, which is why no minimum is declared: sub-1 is meaningful here, not invalid. */
                 limit?: number;
                 /** @description Filter nodes by supported operating systems */
                 supported_os?: string;
                 /** @description Filter nodes by supported accelerator */
                 supported_accelerator?: string;
-                /** @description Number of nodes to return per page */
+                /** @description Whether to include banned nodes in the results. Defaults to including them; pass false to exclude. */
                 include_banned?: boolean;
                 /** @description Retrieve nodes created or updated after this timestamp (ISO 8601 format) */
                 timestamp?: string;
@@ -20587,7 +21840,7 @@ export interface operations {
             query?: {
                 /** @description The page number to retrieve. */
                 page?: number;
-                /** @description The number of items to include per page. */
+                /** @description The number of items to include per page. A value above the maximum is clamped down to it; 0 and negative values are accepted and select the default. (That is why no minimum is declared — sub-1 is meaningful here, not invalid.) totalNumberOfPages is computed from the page size actually served, so a clamp is always detectable. */
                 limit?: number;
             };
             header?: never;
@@ -20752,7 +22005,7 @@ export interface operations {
             query?: {
                 /** @description Page number of the nodes list */
                 page?: number;
-                /** @description Number of nodes to return per page */
+                /** @description Number of nodes to return per page. Values above the declared maximum are outside the contract, but this service does not reject them: it serves the maximum instead, and the page size actually served is echoed back as limit (and drives totalPages), so a clamp is always detectable by the caller. Treat the maximum as the real page stride — a client that asks for more and assumes it received more will miss rows. 0 and negative values are also accepted and select the default, which is why no minimum is declared: sub-1 is meaningful here, not invalid. */
                 limit?: number;
                 /** @description Keyword to search the nodes */
                 search?: string;
@@ -20764,7 +22017,7 @@ export interface operations {
                 supported_os?: string;
                 /** @description Filter nodes by supported accelerator */
                 supported_accelerator?: string;
-                /** @description Number of nodes to return per page */
+                /** @description Whether to include banned nodes in the results. Defaults to including them; pass false to exclude. */
                 include_banned?: boolean;
             };
             header?: never;
@@ -20863,7 +22116,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Too Many Requests - Rate limit exceeded */
+            /** @description Too Many Requests - Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -20926,7 +22179,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Too Many Requests - Rate limit exceeded */
+            /** @description Too Many Requests - Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -21084,7 +22337,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Rate limit exceeded (either from proxy or BFL) */
+            /** @description Rate limit exceeded (either from proxy or BFL). Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -21167,7 +22420,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Rate limit exceeded (either from proxy or BFL) */
+            /** @description Rate limit exceeded (either from proxy or BFL). Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -21250,7 +22503,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Rate limit exceeded (either from proxy or BFL) */
+            /** @description Rate limit exceeded (either from proxy or BFL). Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -21333,7 +22586,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Rate limit exceeded (either from proxy or BFL) */
+            /** @description Rate limit exceeded (either from proxy or BFL). Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -21548,7 +22801,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Rate limit exceeded (either from proxy or BFL) */
+            /** @description Rate limit exceeded (either from proxy or BFL). Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -21631,7 +22884,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Rate limit exceeded (either from proxy or BFL) */
+            /** @description Rate limit exceeded (either from proxy or BFL). Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -21714,7 +22967,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Rate limit exceeded (either from proxy or BFL) */
+            /** @description Rate limit exceeded (either from proxy or BFL). Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -21797,7 +23050,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Rate limit exceeded (either from proxy or BFL) */
+            /** @description Rate limit exceeded (either from proxy or BFL). Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -23126,7 +24379,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Rate limit exceeded */
+            /** @description Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -23191,7 +24444,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Rate limit exceeded */
+            /** @description Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -23256,7 +24509,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Rate limit exceeded */
+            /** @description Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -23902,7 +25155,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Too Many Requests - Rate limit exceeded */
+            /** @description Too Many Requests - Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -24011,7 +25264,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Too Many Requests - rate limit exceeded */
+            /** @description Too Many Requests - rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -24127,7 +25380,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Too Many Requests - rate limit exceeded */
+            /** @description Too Many Requests - rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -24243,7 +25496,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Too Many Requests - rate limit exceeded */
+            /** @description Too Many Requests - rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -24359,7 +25612,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Too Many Requests - rate limit exceeded */
+            /** @description Too Many Requests - rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -24587,7 +25840,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Rate limit exceeded (either from proxy or Ideogram) */
+            /** @description Rate limit exceeded (either from proxy or Ideogram). Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -24673,7 +25926,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Rate limit exceeded (either from proxy or Ideogram) */
+            /** @description Rate limit exceeded (either from proxy or Ideogram). Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -24768,7 +26021,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Too Many Requests */
+            /** @description Too Many Requests. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -24820,7 +26073,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Too Many Requests */
+            /** @description Too Many Requests. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -24872,7 +26125,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Too Many Requests */
+            /** @description Too Many Requests. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -24927,7 +26180,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Rate limit exceeded (either from proxy or Ideogram) */
+            /** @description Rate limit exceeded (either from proxy or Ideogram). Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -25020,7 +26273,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Rate limit exceeded (either from proxy or Ideogram) */
+            /** @description Rate limit exceeded (either from proxy or Ideogram). Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -25108,7 +26361,7 @@ export interface operations {
                     "application/json": components["schemas"]["KlingErrorResponse"];
                 };
             };
-            /** @description Account exception or Rate limit exceeded */
+            /** @description Account exception or Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -25178,7 +26431,7 @@ export interface operations {
                     "application/json": components["schemas"]["KlingErrorResponse"];
                 };
             };
-            /** @description Account exception or Rate limit exceeded */
+            /** @description Account exception or Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -25248,7 +26501,7 @@ export interface operations {
                     "application/json": components["schemas"]["KlingErrorResponse"];
                 };
             };
-            /** @description Account exception or Rate limit exceeded */
+            /** @description Account exception or Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -25326,7 +26579,7 @@ export interface operations {
                     "application/json": components["schemas"]["KlingErrorResponse"];
                 };
             };
-            /** @description Account exception or Rate limit exceeded */
+            /** @description Account exception or Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -25405,7 +26658,7 @@ export interface operations {
                     "application/json": components["schemas"]["KlingErrorResponse"];
                 };
             };
-            /** @description Rate limit exceeded */
+            /** @description Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -25484,7 +26737,7 @@ export interface operations {
                     "application/json": components["schemas"]["KlingErrorResponse"];
                 };
             };
-            /** @description Account exception or Rate limit exceeded */
+            /** @description Account exception or Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -25581,7 +26834,7 @@ export interface operations {
                     "application/json": components["schemas"]["KlingErrorResponse"];
                 };
             };
-            /** @description Account exception or Rate limit exceeded */
+            /** @description Account exception or Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -25676,7 +26929,7 @@ export interface operations {
                     "application/json": components["schemas"]["KlingErrorResponse"];
                 };
             };
-            /** @description Account exception or Rate limit exceeded */
+            /** @description Account exception or Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -25773,7 +27026,7 @@ export interface operations {
                     "application/json": components["schemas"]["KlingErrorResponse"];
                 };
             };
-            /** @description Account exception or Rate limit exceeded */
+            /** @description Account exception or Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -25870,7 +27123,7 @@ export interface operations {
                     "application/json": components["schemas"]["KlingErrorResponse"];
                 };
             };
-            /** @description Account exception or Rate limit exceeded */
+            /** @description Account exception or Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -25965,7 +27218,7 @@ export interface operations {
                     "application/json": components["schemas"]["KlingErrorResponse"];
                 };
             };
-            /** @description Account exception or Rate limit exceeded */
+            /** @description Account exception or Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -26062,7 +27315,7 @@ export interface operations {
                     "application/json": components["schemas"]["KlingErrorResponse"];
                 };
             };
-            /** @description Account exception or Rate limit exceeded */
+            /** @description Account exception or Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -26157,7 +27410,7 @@ export interface operations {
                     "application/json": components["schemas"]["KlingErrorResponse"];
                 };
             };
-            /** @description Account exception or Rate limit exceeded */
+            /** @description Account exception or Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -26254,7 +27507,7 @@ export interface operations {
                     "application/json": components["schemas"]["KlingErrorResponse"];
                 };
             };
-            /** @description Account exception or Rate limit exceeded */
+            /** @description Account exception or Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -26349,7 +27602,7 @@ export interface operations {
                     "application/json": components["schemas"]["KlingErrorResponse"];
                 };
             };
-            /** @description Account exception or Rate limit exceeded */
+            /** @description Account exception or Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -26446,7 +27699,7 @@ export interface operations {
                     "application/json": components["schemas"]["KlingErrorResponse"];
                 };
             };
-            /** @description Account exception or Rate limit exceeded */
+            /** @description Account exception or Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -26543,7 +27796,7 @@ export interface operations {
                     "application/json": components["schemas"]["KlingErrorResponse"];
                 };
             };
-            /** @description Account exception or Rate limit exceeded */
+            /** @description Account exception or Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -26638,7 +27891,7 @@ export interface operations {
                     "application/json": components["schemas"]["KlingErrorResponse"];
                 };
             };
-            /** @description Account exception or Rate limit exceeded */
+            /** @description Account exception or Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -26735,7 +27988,7 @@ export interface operations {
                     "application/json": components["schemas"]["KlingErrorResponse"];
                 };
             };
-            /** @description Account exception or Rate limit exceeded */
+            /** @description Account exception or Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -26830,7 +28083,7 @@ export interface operations {
                     "application/json": components["schemas"]["KlingErrorResponse"];
                 };
             };
-            /** @description Account exception or Rate limit exceeded */
+            /** @description Account exception or Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -26927,7 +28180,7 @@ export interface operations {
                     "application/json": components["schemas"]["KlingErrorResponse"];
                 };
             };
-            /** @description Account exception or Rate limit exceeded */
+            /** @description Account exception or Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -27024,7 +28277,7 @@ export interface operations {
                     "application/json": components["schemas"]["KlingErrorResponse"];
                 };
             };
-            /** @description Account exception or Rate limit exceeded */
+            /** @description Account exception or Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -27119,7 +28372,7 @@ export interface operations {
                     "application/json": components["schemas"]["KlingErrorResponse"];
                 };
             };
-            /** @description Account exception or Rate limit exceeded */
+            /** @description Account exception or Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -27216,7 +28469,7 @@ export interface operations {
                     "application/json": components["schemas"]["KlingErrorResponse"];
                 };
             };
-            /** @description Account exception or Rate limit exceeded */
+            /** @description Account exception or Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -27311,7 +28564,7 @@ export interface operations {
                     "application/json": components["schemas"]["KlingErrorResponse"];
                 };
             };
-            /** @description Account exception or Rate limit exceeded */
+            /** @description Account exception or Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -27408,7 +28661,7 @@ export interface operations {
                     "application/json": components["schemas"]["KlingErrorResponse"];
                 };
             };
-            /** @description Account exception or Rate limit exceeded */
+            /** @description Account exception or Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -27503,7 +28756,7 @@ export interface operations {
                     "application/json": components["schemas"]["KlingErrorResponse"];
                 };
             };
-            /** @description Account exception or Rate limit exceeded */
+            /** @description Account exception or Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -27600,7 +28853,7 @@ export interface operations {
                     "application/json": components["schemas"]["KlingErrorResponse"];
                 };
             };
-            /** @description Account exception or Rate limit exceeded */
+            /** @description Account exception or Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -27695,7 +28948,7 @@ export interface operations {
                     "application/json": components["schemas"]["KlingErrorResponse"];
                 };
             };
-            /** @description Account exception or Rate limit exceeded */
+            /** @description Account exception or Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -27792,7 +29045,7 @@ export interface operations {
                     "application/json": components["schemas"]["KlingErrorResponse"];
                 };
             };
-            /** @description Account exception or Rate limit exceeded */
+            /** @description Account exception or Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -27889,7 +29142,7 @@ export interface operations {
                     "application/json": components["schemas"]["KlingErrorResponse"];
                 };
             };
-            /** @description Account exception or Rate limit exceeded */
+            /** @description Account exception or Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -27984,7 +29237,7 @@ export interface operations {
                     "application/json": components["schemas"]["KlingErrorResponse"];
                 };
             };
-            /** @description Account exception or Rate limit exceeded */
+            /** @description Account exception or Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -28116,7 +29369,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Too Many Requests - Rate limit exceeded */
+            /** @description Too Many Requests - Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -28179,7 +29432,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Too Many Requests - Rate limit exceeded */
+            /** @description Too Many Requests - Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -28242,7 +29495,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Too Many Requests - Rate limit exceeded */
+            /** @description Too Many Requests - Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -29228,7 +30481,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Rate limit exceeded (either from proxy or Minimax) */
+            /** @description Rate limit exceeded (either from proxy or Minimax). Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -29310,7 +30563,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Rate limit exceeded (either from proxy or Minimax) */
+            /** @description Rate limit exceeded (either from proxy or Minimax). Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -29392,7 +30645,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Rate limit exceeded (either from proxy or Minimax) */
+            /** @description Rate limit exceeded (either from proxy or Minimax). Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -29475,7 +30728,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Rate limit exceeded (either from proxy or Minimax) */
+            /** @description Rate limit exceeded (either from proxy or Minimax). Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -29558,7 +30811,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Rate limit exceeded (either from proxy or Minimax) */
+            /** @description Rate limit exceeded (either from proxy or Minimax). Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -30142,7 +31395,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Too Many Requests - Rate limit exceeded */
+            /** @description Too Many Requests - Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -30473,7 +31726,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Rate limit exceeded */
+            /** @description Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -30541,7 +31794,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Rate limit exceeded */
+            /** @description Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -30634,7 +31887,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Rate limit exceeded */
+            /** @description Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -30702,7 +31955,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Rate limit exceeded */
+            /** @description Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -30767,7 +32020,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Too Many Requests - Rate limit exceeded */
+            /** @description Too Many Requests - Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -30830,7 +32083,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Too Many Requests - Rate limit exceeded */
+            /** @description Too Many Requests - Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -30893,7 +32146,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Rate limit exceeded */
+            /** @description Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -31236,7 +32489,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Rate limit exceeded */
+            /** @description Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -31301,7 +32554,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Rate limit exceeded */
+            /** @description Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -31366,7 +32619,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Rate limit exceeded */
+            /** @description Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -32087,7 +33340,7 @@ export interface operations {
                     "application/json": components["schemas"]["SoniloErrorResponse"];
                 };
             };
-            /** @description Too Many Requests - Rate limited */
+            /** @description Too Many Requests - Rate limited. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -32165,7 +33418,7 @@ export interface operations {
                     "application/json": components["schemas"]["SoniloErrorResponse"];
                 };
             };
-            /** @description Too Many Requests - Rate limited */
+            /** @description Too Many Requests - Rate limited. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -32237,7 +33490,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Too Many Requests - generation concurrency limit reached */
+            /** @description Too Many Requests - generation concurrency limit reached. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -32317,7 +33570,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["TencentHunyuan3DUVRequest"];
+                "application/json": components["schemas"]["TencentHunyuan3DPartRequest"];
             };
         };
         responses: {
@@ -33136,7 +34389,7 @@ export interface operations {
                     "application/json": components["schemas"]["TripoErrorResponse"];
                 };
             };
-            /** @description Account exception or Rate limit exceeded */
+            /** @description Account exception or Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -33364,7 +34617,7 @@ export interface operations {
                     "application/json": components["schemas"]["TripoErrorResponse"];
                 };
             };
-            /** @description Account exception or Rate limit exceeded */
+            /** @description Account exception or Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -33461,7 +34714,7 @@ export interface operations {
                     "application/json": components["schemas"]["TripoErrorResponse"];
                 };
             };
-            /** @description Account exception or Rate limit exceeded */
+            /** @description Account exception or Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -33565,7 +34818,7 @@ export interface operations {
                     "application/json": components["schemas"]["TripoErrorResponse"];
                 };
             };
-            /** @description Account exception or Rate limit exceeded */
+            /** @description Account exception or Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -33660,7 +34913,7 @@ export interface operations {
                     "application/json": components["schemas"]["TripoErrorResponse"];
                 };
             };
-            /** @description Account exception or Rate limit exceeded */
+            /** @description Account exception or Rate limit exceeded. Also answered when the caller's in-flight committed partner spend has reached its ceiling; that refusal says so in its message and carries the `X-Committed-Spend-Limit`, `X-Committed-Spend-Current` and `X-Committed-Spend-Remaining` headers (USD cents). */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -33918,7 +35171,7 @@ export interface operations {
             header?: never;
             path: {
                 /** @description Full resource name of the model. */
-                model: string;
+                model: "gemini-2.5-pro-preview-05-06" | "gemini-2.5-flash-preview-04-17" | "gemini-2.5-flash-image-preview" | "gemini-2.5-flash-image" | "gemini-2.5-flash" | "gemini-2.5-pro" | "gemini-3-pro-preview" | "gemini-3-pro-image-preview" | "gemini-3-pro-image" | "gemini-3.1-flash-image-preview" | "gemini-3.1-flash-image" | "gemini-3.1-pro-preview" | "gemini-3.1-flash-lite-preview" | "gemini-3.1-flash-lite" | "gemini-3.1-flash-lite-image" | "gemini-3.5-flash" | "gemini-3.7-flash" | "gemini-3.8-flash";
             };
             cookie?: never;
         };
@@ -35248,7 +36501,7 @@ export interface operations {
     listNodesForPublisher: {
         parameters: {
             query?: {
-                /** @description Number of nodes to return per page */
+                /** @description Whether to include banned nodes in the results. Defaults to including them; pass false to exclude. */
                 include_banned?: boolean;
             };
             header?: never;
@@ -35769,11 +37022,11 @@ export interface operations {
     listNodesForPublisherV2: {
         parameters: {
             query?: {
-                /** @description Number of nodes to return per page */
+                /** @description Whether to include banned nodes in the results. Defaults to including them; pass false to exclude. */
                 include_banned?: boolean;
                 /** @description Page number of the nodes list */
                 page?: number;
-                /** @description Number of nodes to return per page */
+                /** @description Number of nodes to return per page. Values above the declared maximum are outside the contract, but this service does not reject them: it serves the maximum instead, and the page size actually served is echoed back as limit (and drives totalPages), so a clamp is always detectable by the caller. Treat the maximum as the real page stride — a client that asks for more and assumes it received more will miss rows. 0 and negative values are also accepted and select the default, which is why no minimum is declared: sub-1 is meaningful here, not invalid. */
                 limit?: number;
             };
             header?: never;

@@ -124,7 +124,7 @@ test.describe('Seedance 2.5 page — link targets', () => {
     ).toHaveAttribute('href', SEEDANCE_HUB_PAGE)
     await expect(
       hero.getByRole('link', { name: t('seedance.hero.secondaryCta', 'en') })
-    ).toHaveAttribute('href', /\/workflows\/model\/seedance$/)
+    ).toHaveAttribute('href', /\/workflows\/model\/seedance\/$/)
   })
 
   test('renders one step card per configured step', async ({ page }) => {

@@ -126,7 +126,7 @@ describe('LGraphNode widget ordering', () => {
       ])
     })
 
-    it('restores positional values for widgets created after configure', () => {
+    it('does not retain positional restoration after configure', () => {
       node.configure({
         id: 1,
         type: 'TestNode',
@@ -141,9 +141,7 @@ describe('LGraphNode widget ordering', () => {
       node.addWidget('number', 'steps', 0, null, {})
       node.addWidget('number', 'seed', 0, null, {})
 
-      expect(node.widgets!.map((widget) => widget.value)).toStrictEqual([
-        30, 12345
-      ])
+      expect(node.widgets!.map((widget) => widget.value)).toStrictEqual([0, 0])
     })
   })
 
@@ -206,20 +204,47 @@ describe('LGraphNode widget ordering', () => {
       expect(node.widgets!.map((w) => w.value)).toStrictEqual([1, 5, 'test'])
     })
 
-    it('restores delayed widgets by name and preserves the wire roundtrip', () => {
+    it('does not restore delayed widgets by name', () => {
       node.configure(mockNode([30, 12345], { steps: 30, seed: 12345 }))
 
       node.addWidget('number', 'seed', 0, null, {})
       node.addWidget('number', 'steps', 0, null, {})
       node.serialize_widgets = true
 
-      expect(node.widgets!.map((widget) => widget.value)).toStrictEqual([
-        12345, 30
-      ])
+      expect(node.widgets!.map((widget) => widget.value)).toStrictEqual([0, 0])
       expect(node.serialize()).toMatchObject({
-        widgets_values: [12345, 30],
-        widgets_values_named: { seed: 12345, steps: 30 }
+        widgets_values: [0, 0],
+        widgets_values_named: { seed: 0, steps: 0 }
       })
+    })
+
+    it('clears restoration when onConfigure throws', () => {
+      node.onConfigure = () => {
+        throw new Error('configure failed')
+      }
+
+      expect(() =>
+        node.configure(mockNode(undefined, { seed: 12345 }))
+      ).toThrow('configure failed')
+      node.addWidget('number', 'seed', 0, null, {})
+
+      expect(node.widgets![0].value).toBe(0)
+    })
+
+    it('clears restoration when widget assignment throws', () => {
+      const widget = node.addWidget('number', 'seed', 0, null, {})
+      Object.defineProperty(widget, 'value', {
+        configurable: true,
+        set() {
+          throw new Error('restore failed')
+        }
+      })
+
+      expect(() => node.configure(mockNode([12345]))).toThrow('restore failed')
+      node.widgets = []
+      node.addWidget('number', 'seed', 0, null, {})
+
+      expect(node.widgets[0].value).toBe(0)
     })
 
     it('should support restoration even when order has changed', () => {

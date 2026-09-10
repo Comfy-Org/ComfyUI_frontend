@@ -1,16 +1,11 @@
 import type { Locator } from '@playwright/test'
 
-import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 
-/**
- * Click a menu item by exact label and wait for the menu to close.
- */
-export async function clickExactMenuItem(comfyPage: ComfyPage, name: string) {
-  await comfyPage.contextMenu.clickMenuItemExact(name)
-  await expect(comfyPage.contextMenu.primeVueMenu).toBeHidden()
+export function clickExactMenuItem(comfyPage: ComfyPage, name: string) {
+  return comfyPage.contextMenu.clickMenuItemExact(name)
 }
 
 /**
@@ -21,6 +16,7 @@ export async function openContextMenu(
   comfyPage: ComfyPage,
   nodeTitle: string
 ): Promise<Locator> {
+  await (await comfyPage.nodeOps.getNodeRefByTitle(nodeTitle)).centerOnNode()
   const fixture = await comfyPage.vueNodes.getFixtureByTitle(nodeTitle)
   await comfyPage.contextMenu.openForVueNode(fixture.header)
   return comfyPage.contextMenu.primeVueMenu
@@ -44,29 +40,20 @@ export async function openMultiNodeContextMenu(
   await comfyPage.nextFrame()
 
   for (const title of titles) {
+    await (await comfyPage.nodeOps.getNodeRefByTitle(title)).centerOnNode()
     const fixture = await comfyPage.vueNodes.getFixtureByTitle(title)
     await fixture.header.click({ modifiers: ['ControlOrMeta'] })
   }
   await comfyPage.nextFrame()
 
+  await (await comfyPage.nodeOps.getNodeRefByTitle(contextTitle)).centerOnNode()
   const contextFixture =
     await comfyPage.vueNodes.getFixtureByTitle(contextTitle)
-  const box = await contextFixture.header.boundingBox()
-  if (!box) throw new Error(`Header for "${contextTitle}" not found`)
-  await comfyPage.page.mouse.click(
-    box.x + box.width / 2,
-    box.y + box.height / 2,
-    { button: 'right' }
-  )
+  await comfyPage.contextMenu.openFor(contextFixture.header)
 
-  const menu = comfyPage.contextMenu.primeVueMenu
-  await menu.waitFor({ state: 'visible' })
-  return menu
+  return comfyPage.contextMenu.primeVueMenu
 }
 
-/**
- * Get the inner wrapper locator for a Vue node by title.
- */
 export function getNodeWrapper(
   comfyPage: ComfyPage,
   nodeTitle: string
@@ -76,17 +63,9 @@ export function getNodeWrapper(
     .getByTestId(TestIds.node.innerWrapper)
 }
 
-/**
- * Get the first NodeReference matching the given title.
- */
-export async function getNodeRef(
+export function getNodeRef(
   comfyPage: ComfyPage,
   nodeTitle: string
 ): Promise<NodeReference> {
-  const refs = await comfyPage.nodeOps.getNodeRefsByTitle(nodeTitle)
-  const firstRef = refs[0]
-  if (!firstRef) {
-    throw new Error(`No node found with title "${nodeTitle}"`)
-  }
-  return firstRef
+  return comfyPage.nodeOps.getNodeRefByTitle(nodeTitle)
 }

@@ -8,11 +8,16 @@ import {
   openContextMenu,
   openMultiNodeContextMenu
 } from '@e2e/fixtures/utils/contextMenuTestHelpers'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe(
   'Vue Node Context Menu — Extended Coverage',
   { tag: '@vue-nodes' },
   () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('default')
+    })
+
     test.describe('Single Node Actions', () => {
       test('should change node color via Color submenu', async ({
         comfyPage
@@ -70,7 +75,6 @@ test.describe(
       test('should not show Run Branch for non-output nodes', async ({
         comfyPage
       }) => {
-        await comfyPage.workflow.loadWorkflow('default')
         const menu = await openContextMenu(comfyPage, 'Load Checkpoint')
         await expect(menu).toBeVisible()
         await expect(
@@ -82,7 +86,6 @@ test.describe(
       })
 
       test('should show Run Branch for output nodes', async ({ comfyPage }) => {
-        await comfyPage.workflow.loadWorkflow('default')
         const nodeRef = await getNodeRef(comfyPage, 'Save Image')
         await comfyPage.nodeOps.panToNode(nodeRef)
 
@@ -101,13 +104,12 @@ test.describe(
         await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
         await comfyPage.vueNodes.waitForNodes(1)
         await comfyPage.page
-          .locator('[data-node-id] img')
+          .getByTestId(TestIds.node.mainImage)
           .first()
           .waitFor({ state: 'visible' })
 
-        const [loadImageNode] =
-          await comfyPage.nodeOps.getNodeRefsByTitle('Load Image')
-        if (!loadImageNode) throw new Error('Load Image node not found')
+        const loadImageNode =
+          await comfyPage.nodeOps.getNodeRefByTitle('Load Image')
         await comfyPage.nodeOps.panToNode(loadImageNode)
 
         await expect
@@ -127,27 +129,28 @@ test.describe(
         await openContextMenu(comfyPage, 'Load Image')
         await clickExactMenuItem(comfyPage, 'Open in Mask Editor')
 
-        const maskEditorDialog = comfyPage.page.locator('.mask-editor-dialog')
-        await expect(maskEditorDialog).toBeVisible()
+        await expect(
+          comfyPage.page.getByRole('heading', { name: 'Mask Editor' })
+        ).toBeVisible()
       })
     })
 
     test.describe('Multi-Node Actions', () => {
-      const nodeTitles = ['KSampler', 'Load Checkpoint', 'Empty Latent Image']
-
       test('should align selected nodes to the context node', async ({
         comfyPage
       }) => {
-        await comfyPage.workflow.loadWorkflow('default')
+        const nodeTitles = ['KSampler', 'Load Checkpoint', 'Empty Latent Image']
         const nodeRefs = await Promise.all(
           nodeTitles.map((title) => getNodeRef(comfyPage, title))
         )
         const contextNode = nodeRefs[1]
-        const contextNodeInitialY = (await contextNode.getPosition()).y
+        const contextNodeInitialY = (
+          await contextNode.getProperty<[number, number]>('pos')
+        )[1]
 
-        expect((await nodeRefs[0].getPosition()).y).not.toBe(
-          contextNodeInitialY
-        )
+        expect(
+          (await nodeRefs[0].getProperty<[number, number]>('pos'))[1]
+        ).not.toBe(contextNodeInitialY)
 
         await openMultiNodeContextMenu(comfyPage, nodeTitles, nodeTitles[1])
         const menu = comfyPage.contextMenu.primeVueMenu
@@ -167,9 +170,9 @@ test.describe(
         await expect
           .poll(async () => {
             const positions = await Promise.all(
-              nodeRefs.map((node) => node.getPosition())
+              nodeRefs.map((node) => node.getProperty<[number, number]>('pos'))
             )
-            return positions.map(({ y }) => y)
+            return positions.map((position) => position[1])
           })
           .toEqual(nodeRefs.map(() => contextNodeInitialY))
       })
@@ -177,7 +180,6 @@ test.describe(
       test('should distribute selected nodes via Distribute Nodes submenu', async ({
         comfyPage
       }) => {
-        await comfyPage.workflow.loadWorkflow('default')
         const threeNodes = ['Load Checkpoint', 'KSampler', 'Empty Latent Image']
 
         await openMultiNodeContextMenu(comfyPage, threeNodes)
@@ -216,6 +218,41 @@ test.describe(
           })
           .toBeLessThanOrEqual(1)
       })
+
+      test('should hide node-specific LiteGraph options for multiple nodes', async ({
+        comfyPage
+      }) => {
+        const nodeTitle = 'KSampler'
+        const node = await getNodeRef(comfyPage, nodeTitle)
+        await comfyPage.page.evaluate((nodeId) => {
+          const graphNode = window.app!.graph.getNodeById(nodeId)
+          if (!graphNode) throw new Error(`Node ${nodeId} not found`)
+          graphNode.getExtraMenuOptions = (_canvas, options) => [
+            ...options,
+            { content: 'Node-only action', callback: () => {} }
+          ]
+        }, node.id)
+
+        const singleNodeMenu = await openContextMenu(comfyPage, nodeTitle)
+        await expect(
+          singleNodeMenu.getByRole('menuitem', {
+            name: 'Node-only action',
+            exact: true
+          })
+        ).toBeVisible()
+        await singleNodeMenu.press('Escape')
+
+        const multiNodeMenu = await openMultiNodeContextMenu(comfyPage, [
+          nodeTitle,
+          'Load Checkpoint'
+        ])
+        await expect(
+          multiNodeMenu.getByRole('menuitem', {
+            name: 'Node-only action',
+            exact: true
+          })
+        ).toBeHidden()
+      })
     })
 
     test.describe('Menu Visibility Invariants', () => {
@@ -235,6 +272,26 @@ test.describe(
             name: 'Delete',
             exact: true
           })
+        ).toBeDisabled()
+      })
+
+      test('should disable Delete when another selected node blocks deletion', async ({
+        comfyPage
+      }) => {
+        const protectedNode = await getNodeRef(comfyPage, 'KSampler')
+        await comfyPage.page.evaluate((nodeId) => {
+          const graphNode = window.app!.graph.getNodeById(nodeId)
+          if (!graphNode) throw new Error(`Node ${nodeId} not found`)
+          graphNode.block_delete = true
+        }, protectedNode.id)
+
+        const menu = await openMultiNodeContextMenu(
+          comfyPage,
+          ['KSampler', 'Load Checkpoint'],
+          'Load Checkpoint'
+        )
+        await expect(
+          menu.getByRole('menuitem', { name: 'Delete', exact: true })
         ).toBeDisabled()
       })
     })

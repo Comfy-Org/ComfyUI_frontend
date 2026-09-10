@@ -1,8 +1,6 @@
 import { toGroupId } from '@/types/groupId'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
@@ -20,11 +18,12 @@ import type {
   NodeLayout
 } from '@/renderer/core/layout/types'
 
-const GRAPH = createUuidv4()
+const mockReportError = vi.hoisted(() => vi.fn())
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: mockReportError
+}))
 
-beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
-})
+const GRAPH = createUuidv4()
 
 describe('layoutStore CRDT operations', () => {
   beforeEach(() => {
@@ -299,6 +298,130 @@ describe('layoutStore CRDT operations', () => {
 
     unsubscribeNode()
     unsubscribeGlobal()
+  })
+
+  it('reports listener failures by scope and continues fan-out', async () => {
+    const nodeId = toNodeId('failing-listener-node')
+    const layout = createTestNode(nodeId)
+
+    layoutStore.applyOperation({
+      type: 'createNode',
+      graphId: GRAPH,
+      nodeId,
+      layout,
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas,
+      actor: 'test'
+    })
+
+    const errors = {
+      geometry: new Error('geometry listener failed'),
+      global: new Error('global listener failed'),
+      node: new Error('node listener failed')
+    }
+    const listenersBefore = {
+      geometry: vi.fn(),
+      global: vi.fn(),
+      node: vi.fn()
+    }
+    const listenersAfter = {
+      geometry: vi.fn(),
+      global: vi.fn(),
+      node: vi.fn()
+    }
+    const stopBeforeGeometry = layoutStore.onGeometryChange(
+      listenersBefore.geometry
+    )
+    const stopFailingGeometry = layoutStore.onGeometryChange(() => {
+      throw errors.geometry
+    })
+    const stopAfterGeometry = layoutStore.onGeometryChange(
+      listenersAfter.geometry
+    )
+    const stopBeforeGlobal = layoutStore.onChange(listenersBefore.global)
+    const stopFailingGlobal = layoutStore.onChange(() => {
+      throw errors.global
+    })
+    const stopAfterGlobal = layoutStore.onChange(listenersAfter.global)
+    const stopBeforeNode = layoutStore.onNodeChange(
+      GRAPH,
+      nodeId,
+      listenersBefore.node
+    )
+    const stopFailingNode = layoutStore.onNodeChange(GRAPH, nodeId, () => {
+      throw errors.node
+    })
+    const stopAfterNode = layoutStore.onNodeChange(
+      GRAPH,
+      nodeId,
+      listenersAfter.node
+    )
+    onTestFinished(() => {
+      stopBeforeGeometry()
+      stopFailingGeometry()
+      stopAfterGeometry()
+      stopBeforeGlobal()
+      stopFailingGlobal()
+      stopAfterGlobal()
+      stopBeforeNode()
+      stopFailingNode()
+      stopAfterNode()
+    })
+
+    layoutStore.applyOperation({
+      type: 'moveNode',
+      graphId: GRAPH,
+      nodeId,
+      position: { x: 300, y: 200 },
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas,
+      actor: 'test'
+    })
+
+    await vi.waitFor(() => {
+      expect(mockReportError).toHaveBeenCalledTimes(3)
+    })
+
+    for (const listener of Object.values(listenersBefore)) {
+      expect(listener).toHaveBeenCalledOnce()
+    }
+    for (const listener of Object.values(listenersAfter)) {
+      expect(listener).toHaveBeenCalledOnce()
+    }
+    for (const scope of ['geometry', 'global', 'node'] as const) {
+      expect(mockReportError).toHaveBeenCalledWith(errors[scope], {
+        errorType: 'canvas_layout_listener_failed',
+        tags: {
+          failure_kind: 'caught_unexpected',
+          feature_area: 'canvas',
+          operation: 'sync',
+          outcome: 'failed',
+          listener_scope: scope
+        },
+        level: 'error'
+      })
+    }
+
+    layoutStore.applyOperation({
+      type: 'moveNode',
+      graphId: GRAPH,
+      nodeId,
+      position: { x: 400, y: 300 },
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas,
+      actor: 'test'
+    })
+
+    await vi.waitFor(() => {
+      expect(listenersAfter.geometry).toHaveBeenCalledTimes(2)
+    })
+    expect(mockReportError).toHaveBeenCalledTimes(3)
+    for (const listener of Object.values(listenersBefore)) {
+      expect(listener).toHaveBeenCalledTimes(2)
+    }
+    for (const listener of Object.values(listenersAfter)) {
+      expect(listener).toHaveBeenCalledTimes(2)
+    }
   })
 
   it('clears node-scoped listeners when the viewed graph changes', () => {
@@ -896,4 +1019,47 @@ describe('layoutStore link layout updates', () => {
     expect(layoutStore.getLinkLayout(toLinkId(1))).toBeNull()
     expect(layoutStore.queryLinkSegmentAtPoint({ x: 1, y: 1 })).toBeNull()
   })
+})
+
+describe('layoutStore content-size performance contract', () => {
+  beforeEach(() => {
+    layoutStore.resetForTests()
+  })
+
+  it.for([1, 100, 500])(
+    'keeps unchanged and changed reports geometry-neutral at %i nodes',
+    (count) => {
+      const geometryChanged = vi.fn()
+      const stop = layoutStore.onGeometryChange(geometryChanged)
+      const geometryVersion = layoutStore.geometryVersion
+      const nodeGeometryVersion = layoutStore.nodeGeometryVersion
+
+      for (let index = 0; index < count; index++) {
+        const nodeId = toNodeId(`content-size-${count}-${index}`)
+        layoutStore.reportContentSize(GRAPH, nodeId, {
+          width: 240,
+          height: 150
+        })
+        layoutStore.reportContentSize(GRAPH, nodeId, {
+          width: 240,
+          height: 150
+        })
+        layoutStore.reportContentSize(GRAPH, nodeId, {
+          width: 241,
+          height: 151
+        })
+      }
+
+      expect(layoutStore.geometryVersion).toBe(geometryVersion)
+      expect(layoutStore.nodeGeometryVersion).toBe(nodeGeometryVersion)
+      expect(geometryChanged).not.toHaveBeenCalled()
+      expect(
+        layoutStore.contentSizeOf(
+          GRAPH,
+          toNodeId(`content-size-${count}-${count - 1}`)
+        )
+      ).toEqual({ width: 241, height: 151 })
+      stop()
+    }
+  )
 })

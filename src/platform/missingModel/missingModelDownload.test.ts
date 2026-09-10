@@ -1,3 +1,6 @@
+import type * as DistributionModule from '@/platform/distribution/types'
+import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -10,40 +13,37 @@ import {
   toBrowsableUrl
 } from './missingModelDownload'
 
-const { fetchMock, mockIsDesktop, mockSidebarTabStore, mockStartDownload } =
-  vi.hoisted(() => ({
-    fetchMock: vi.fn(),
-    mockIsDesktop: { value: false },
-    mockSidebarTabStore: { activeSidebarTabId: null as string | null },
-    mockStartDownload: vi.fn()
-  }))
+const { fetchMock, mockIsDesktop, mockStartDownload } = vi.hoisted(() => ({
+  fetchMock: vi.fn(),
+  mockIsDesktop: { value: false },
+  mockStartDownload: vi.fn()
+}))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
+  ...(await importOriginal<typeof DistributionModule>()),
   get isDesktop() {
     return mockIsDesktop.value
   }
 }))
 
-vi.mock('@/stores/electronDownloadStore', () => ({
-  useElectronDownloadStore: () => ({
-    start: mockStartDownload
-  })
-}))
-
-vi.mock('@/stores/workspace/sidebarTabStore', () => ({
-  useSidebarTabStore: () => mockSidebarTabStore
-}))
-
 beforeEach(() => {
+  mockIsDesktop.value = false
   vi.stubGlobal('fetch', fetchMock)
   clearMetadataCache()
+  delete window.__comfyDesktop2Remote
   delete window.__comfyDesktop2
+})
+
+beforeEach(() => {
+  vi.mocked(useElectronDownloadStore().start).mockImplementation(
+    mockStartDownload
+  )
 })
 
 describe('fetchModelMetadata', () => {
   beforeEach(() => {
     mockIsDesktop.value = false
-    mockSidebarTabStore.activeSidebarTabId = null
+    useSidebarTabStore().activeSidebarTabId = null
   })
 
   it('fetches file size via HEAD for non-Civitai URLs', async () => {
@@ -468,7 +468,7 @@ describe('isModelDownloadable', () => {
 describe('downloadModel', () => {
   beforeEach(() => {
     mockIsDesktop.value = false
-    mockSidebarTabStore.activeSidebarTabId = null
+    useSidebarTabStore().activeSidebarTabId = null
   })
 
   it.for([
@@ -549,7 +549,7 @@ describe('downloadModel', () => {
 
   it('does not dispatch blocked localhost URLs through Electron', () => {
     mockIsDesktop.value = true
-    mockSidebarTabStore.activeSidebarTabId = 'node-library'
+    useSidebarTabStore().activeSidebarTabId = 'node-library'
 
     downloadModel(
       {
@@ -561,7 +561,7 @@ describe('downloadModel', () => {
     )
 
     expect(mockStartDownload).not.toHaveBeenCalled()
-    expect(mockSidebarTabStore.activeSidebarTabId).toBe('node-library')
+    expect(useSidebarTabStore().activeSidebarTabId).toBe('node-library')
   })
 
   it('uses the Desktop2 bridge directly instead of the browser fallback', () => {
@@ -595,6 +595,48 @@ describe('downloadModel', () => {
     expect(anchorClick).not.toHaveBeenCalled()
     expect(mockStartDownload).not.toHaveBeenCalled()
   })
+
+  it.for([
+    {
+      install: 'local',
+      remoteFlag: undefined,
+      expectedDesktopCalls: 1,
+      expectedBrowserCalls: 0
+    },
+    {
+      install: 'remote',
+      remoteFlag: true,
+      expectedDesktopCalls: 0,
+      expectedBrowserCalls: 1
+    }
+  ])(
+    'routes a $install install on Desktop builds without isRemote',
+    ({ remoteFlag, expectedDesktopCalls, expectedBrowserCalls }) => {
+      const anchorClick = vi
+        .spyOn(HTMLAnchorElement.prototype, 'click')
+        .mockImplementation(() => {})
+      const desktopDownloadModel = vi
+        .fn<
+          (url: string, filename: string, directory: string) => Promise<boolean>
+        >()
+        .mockResolvedValue(true)
+      if (remoteFlag !== undefined) window.__comfyDesktop2Remote = remoteFlag
+      window.__comfyDesktop2 = { downloadModel: desktopDownloadModel }
+
+      downloadModel(
+        {
+          name: 'model.safetensors',
+          url: 'https://huggingface.co/org/model/resolve/main/model.safetensors',
+          directory: 'checkpoints'
+        },
+        { checkpoints: ['/models/checkpoints'] }
+      )
+
+      expect(desktopDownloadModel).toHaveBeenCalledTimes(expectedDesktopCalls)
+      expect(anchorClick).toHaveBeenCalledTimes(expectedBrowserCalls)
+      expect(mockStartDownload).not.toHaveBeenCalled()
+    }
+  )
 
   it('logs Desktop2 bridge failures without falling back to browser download', async () => {
     const anchorClick = vi
@@ -707,7 +749,7 @@ describe('downloadModel', () => {
       { checkpoints: ['/models/checkpoints'] }
     )
 
-    expect(mockSidebarTabStore.activeSidebarTabId).toBe('model-library')
+    expect(useSidebarTabStore().activeSidebarTabId).toBe('model-library')
     expect(mockStartDownload).toHaveBeenCalledWith({
       url: 'https://huggingface.co/org/model/resolve/main/model.safetensors',
       savePath: '/models/checkpoints',

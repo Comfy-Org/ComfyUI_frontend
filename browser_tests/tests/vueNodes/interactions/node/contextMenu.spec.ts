@@ -14,6 +14,10 @@ import {
 const BYPASS_CLASS = /before:bg-bypass\/60/
 
 test.describe('Vue Node Context Menu', { tag: '@vue-nodes' }, () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.workflow.loadWorkflow('default')
+  })
+
   test.describe('Single Node Actions', () => {
     test('should rename node via context menu', async ({ comfyPage }) => {
       await openContextMenu(comfyPage, 'KSampler')
@@ -191,13 +195,12 @@ test.describe('Vue Node Context Menu', { tag: '@vue-nodes' }, () => {
       await comfyPage.searchBoxV2.addNode('Load Image')
       await comfyPage.vueNodes.waitForNodes(1)
       await comfyPage.page
-        .locator('[data-node-id] img')
+        .getByTestId(TestIds.node.mainImage)
         .first()
         .waitFor({ state: 'visible' })
 
-      const [loadImageNode] =
-        await comfyPage.nodeOps.getNodeRefsByTitle('Load Image')
-      if (!loadImageNode) throw new Error('Load Image node not found')
+      const loadImageNode =
+        await comfyPage.nodeOps.getNodeRefByTitle('Load Image')
 
       await expect
         .poll(() =>
@@ -324,6 +327,8 @@ test.describe('Vue Node Context Menu', { tag: '@vue-nodes' }, () => {
     test('should add subgraph to library and find in node library', async ({
       comfyPage
     }) => {
+      const blueprintName = `TestBlueprint-${Date.now()}`
+
       // Convert to subgraph first
       await openContextMenu(comfyPage, 'KSampler')
       await clickExactMenuItem(comfyPage, 'Convert to Subgraph')
@@ -337,7 +342,7 @@ test.describe('Vue Node Context Menu', { tag: '@vue-nodes' }, () => {
 
       // Fill the blueprint name
       await comfyPage.nodeOps.promptDialogInput.waitFor({ state: 'visible' })
-      await comfyPage.nodeOps.fillPromptDialog('TestBlueprint')
+      await comfyPage.nodeOps.fillPromptDialog(blueprintName)
 
       // Open node library sidebar and search for the blueprint
       await comfyPage.menu.nodeLibraryTab.tabButton.click()
@@ -345,9 +350,9 @@ test.describe('Vue Node Context Menu', { tag: '@vue-nodes' }, () => {
         name: 'Search'
       })
       await searchBox.waitFor({ state: 'visible' })
-      await searchBox.fill('TestBlueprint')
+      await searchBox.fill(blueprintName)
 
-      await expect(comfyPage.page.getByText('TestBlueprint')).toBeVisible()
+      await expect(comfyPage.page.getByText(blueprintName)).toBeVisible()
     })
   })
 

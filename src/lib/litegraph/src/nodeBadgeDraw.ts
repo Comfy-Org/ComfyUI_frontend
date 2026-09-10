@@ -1,6 +1,5 @@
 import { truncate } from 'es-toolkit/compat'
 
-import { CORE_JOIN_ORDER } from '@/types/badgeData'
 import type { BadgeData, CoreBadgeData } from '@/types/badgeData'
 
 import { LGraphBadge } from './LGraphBadge'
@@ -22,9 +21,9 @@ function getCreditsIconOptions(): LGraphIconOptions {
 }
 
 function joinedCoreText(coreRows: readonly CoreBadgeData[]): string {
-  const byPart = new Map(coreRows.map((row) => [row.part, row.text]))
   return truncate(
-    CORE_JOIN_ORDER.map((part) => byPart.get(part) ?? '')
+    coreRows
+      .map((row) => row.text)
       .filter((text) => text.length > 0)
       .join(' '),
     { length: CORE_TEXT_LIMIT }
@@ -36,17 +35,15 @@ function buildDrawObjects(rows: readonly BadgeData[]): LGraphBadge[] {
 
   const coreRows = rows.filter((row) => row.kind === 'core')
   const [firstCore] = coreRows
-  if (firstCore) {
-    const coreText = joinedCoreText(coreRows)
-    if (coreText) {
-      badges.push(
-        new LGraphBadge({
-          text: coreText,
-          fgColor: firstCore.fgColor,
-          bgColor: firstCore.bgColor
-        })
-      )
-    }
+  const coreText = joinedCoreText(coreRows)
+  if (coreText) {
+    badges.push(
+      new LGraphBadge({
+        text: coreText,
+        fgColor: firstCore.fgColor,
+        bgColor: firstCore.bgColor
+      })
+    )
   }
 
   for (const row of rows) {

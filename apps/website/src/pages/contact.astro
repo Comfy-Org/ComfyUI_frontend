@@ -1,7 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro'
 import FormSection from '../components/contact/FormSection.vue'
-import SocialProofBarSection from '../components/common/SocialProofBarSection.vue'
 import FAQSplit01 from '../components/blocks/FAQSplit01.vue'
 import { contactFaqs } from '../data/contactFaq'
 import { t } from '../i18n/translations'
@@ -31,6 +30,7 @@ const faqPage = faqPageNode(
 
 <BaseLayout
   title="Contact - Comfy"
+  description="Reach Comfy about Enterprise, Forward Deployed Creatives, MiniMax commercial licenses, or partnerships. Common questions answered, including SOC 2 status."
   pageType="ContactPage"
   mainEntityId={organizationId(siteUrl)}
   breadcrumbs={[
@@ -45,5 +45,4 @@ const faqPage = faqPageNode(
     heading={t('contact.faq.heading', locale)}
     faqs={faqs}
   />
-  <SocialProofBarSection />
 </BaseLayout>

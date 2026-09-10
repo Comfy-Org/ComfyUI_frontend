@@ -9,7 +9,7 @@ import {
 } from '@/renderer/extensions/vueNodes/utils/linkedCoreMediaUtils'
 import { getExtraOptionsForWidget } from '@/services/litegraphService'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import { filterUnavailableCoreMediaMenuActions } from '@/utils/coreMediaMenuActionUtils'
 import type { CoreMediaMenuActionKind } from '@/utils/coreMediaMenuActionUtils'
 import { isLGraphGroup } from '@/utils/litegraphUtil'
@@ -54,16 +54,14 @@ export enum BadgeVariant {
 // Global singleton for NodeOptions component reference
 let nodeOptionsInstance: null | NodeOptionsInstance = null
 
-const hoveredWidget = ref<[string, SerializedNodeId | undefined]>()
-const contextNodeId = ref<NodeId>()
+const invocationContext = ref<{ nodeId: NodeId; widgetName?: string }>()
 
 /**
  * Toggle the node options popover
  * @param event - The trigger event
  */
 export function toggleNodeOptions(event: Event) {
-  hoveredWidget.value = undefined
-  contextNodeId.value = undefined
+  invocationContext.value = undefined
   if (nodeOptionsInstance?.toggle) {
     nodeOptionsInstance.toggle(event)
   }
@@ -76,11 +74,9 @@ export function toggleNodeOptions(event: Event) {
  */
 export function showNodeOptions(
   event: MouseEvent,
-  widgetName?: string,
-  nodeId?: NodeId
+  context?: { nodeId: NodeId; widgetName?: string }
 ) {
-  hoveredWidget.value = widgetName ? [widgetName, nodeId] : undefined
-  contextNodeId.value = nodeId
+  invocationContext.value = context
   if (nodeOptionsInstance?.show) {
     nodeOptionsInstance.show(event)
   }
@@ -179,22 +175,21 @@ export function useMoreOptionsMenu() {
     const states = computeSelectionFlags()
 
     // Detect single group selection context (and no nodes explicitly selected)
-    const selectedGroups = selectedItems.value.filter(
-      isLGraphGroup
-    ) as LGraphGroup[]
+    const selectedGroups = selectedItems.value.filter(isLGraphGroup)
     const groupContext: LGraphGroup | null =
       selectedGroups.length === 1 && selectedNodes.value.length === 0
         ? selectedGroups[0]
         : null
     const hasSubgraphsSelected = hasSubgraphs.value
 
-    // For node selection, also get LiteGraph menu items to merge
+    // For single node selection, also get LiteGraph menu items to merge
     const litegraphOptions: MenuOption[] = []
     const node: LGraphNode | undefined =
-      (contextNodeId.value === undefined
+      (invocationContext.value === undefined
         ? undefined
-        : canvasStore.currentGraph?.getNodeById(contextNodeId.value)) ??
-      selectedNodes.value[0]
+        : canvasStore.currentGraph?.getNodeById(
+            invocationContext.value.nodeId
+          )) ?? selectedNodes.value.at(0)
     const hideLinkedInputActions = node
       ? shouldHideLinkedCoreMediaInputActions(node)
       : false
@@ -207,7 +202,12 @@ export function useMoreOptionsMenu() {
     const unavailableCoreMediaActionKinds = new Set<CoreMediaMenuActionKind>()
     if (hideLinkedInputActions) unavailableCoreMediaActionKinds.add('input')
     if (hideLinkedInputPreview) unavailableCoreMediaActionKinds.add('preview')
-    if (selectedNodes.value.length > 0 && !groupContext && canvasStore.canvas) {
+    if (
+      selectedNodes.value.length === 1 &&
+      node &&
+      !groupContext &&
+      canvasStore.canvas
+    ) {
       try {
         const rawItems = canvasStore.canvas.getNodeMenuOptions(node)
         // Don't apply structuring yet - we'll do it after merging with Vue options
@@ -300,13 +300,13 @@ export function useMoreOptionsMenu() {
       )
       options.push({ type: 'divider' })
     }
-    const [widgetName] = hoveredWidget.value ?? []
+    const widgetName = invocationContext.value?.widgetName
     const widget = node?.widgets?.find((w) => w.name === widgetName)
-    if (widget) {
+    if (node && widget) {
       const widgetOptions = convertContextMenuToOptions(
         getExtraOptionsForWidget(node, widget)
       )
-      if (widgetOptions) {
+      if (widgetOptions.length > 0) {
         options.push(...widgetOptions)
         options.push({ type: 'divider' })
       }
