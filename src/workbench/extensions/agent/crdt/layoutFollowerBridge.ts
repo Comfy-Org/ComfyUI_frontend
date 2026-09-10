@@ -347,26 +347,29 @@ export class LayoutFollowerBridge extends EventTarget {
    * frame) retries, instead of the bridge holding a subscription that does not
    * exist server-side and going silently deaf.
    *
-   * `ok: true` with no valid `seq` is a malformed ack, not a usable one: the
-   * parser (`parseServerDocFrame`) strips an invalid `seq` rather than reject
-   * the whole frame, so this arrives as `ok: true` with `subscribed.seq`
-   * `undefined`. Treating that as a real ack would leave both {@link ackSeq}
-   * and {@link lastSeq} `null`, so {@link lastSequence} falls back to `0` and
-   * the gap-detector baseline in `onDocUpdate` is `null` too — the very first
-   * frame, whatever its seq, would be accepted unconditionally instead of
-   * being checked for a gap. Routed through the same failure/retry path as
-   * `ok: false` instead: REALITY is cleared so the next `reconcile()` retries
-   * the subscribe.
+   * A malformed ack is `ok: true` with no usable `seq` — the parser strips an
+   * invalid `seq` rather than rejecting the frame. It is re-dispatched as
+   * `ok: false` so consumers branching on `ok` take the retry path the bridge
+   * itself took, and the subscription the server did accept is released first.
    */
   private readonly onDocSubscribed: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     const subscribed = event.detail as DocSubscribed
     if (subscribed.workflowId !== this.sentWorkflowId) return
-    if (subscribed.ok && subscribed.seq !== undefined) {
-      this.ackSeq = subscribed.seq
+    const ackedSeq = subscribed.ok ? (subscribed.seq ?? null) : null
+    if (ackedSeq !== null) {
+      this.ackSeq = ackedSeq
       this.catchUpPending = true
-    } else this.sentWorkflowId = null
-    this.dispatchEvent(new CustomEvent(event.type, { detail: event.detail }))
+      this.dispatchEvent(new CustomEvent(event.type, { detail: subscribed }))
+      return
+    }
+    if (subscribed.ok)
+      trySend(() => this.client.unsubscribe(subscribed.workflowId))
+    this.sentWorkflowId = null
+    const detail: DocSubscribed = subscribed.ok
+      ? { ...subscribed, ok: false, code: subscribed.code ?? 'malformed_ack' }
+      : subscribed
+    this.dispatchEvent(new CustomEvent(event.type, { detail }))
   }
 
   private readonly forwardFrame: EventListener = (event) => {
