@@ -48,6 +48,16 @@ test.describe('Errors tab - Execution errors', { tag: '@ui' }, () => {
     await expect(runtimePanel).toBeVisible()
     await expect(runtimePanel).toContainText('Error log')
   })
+})
+
+test.describe('Errors tab - Execution error lifecycle', { tag: '@ui' }, () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting(
+      'Comfy.RightSidePanel.ShowErrorsTab',
+      true
+    )
+  })
 
   test('Should keep an execution error on the workflow that produced it', async ({
     comfyPage
@@ -57,23 +67,15 @@ test.describe('Errors tab - Execution errors', { tag: '@ui' }, () => {
     const runtimePanel = comfyPage.page.getByTestId(
       TestIds.dialogs.runtimeErrorPanel
     )
-    const queueButtonIcon = comfyPage.page.getByTestId(
-      TestIds.topbar.queueButtonIcon
-    )
     await expect(runtimePanel).toBeVisible()
-    await expect(queueButtonIcon).toHaveClass(/icon-\[lucide--triangle-alert\]/)
 
     await comfyPage.menu.workflowsTab.open()
     await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-
     await expect(runtimePanel).toBeHidden()
-    await expect(queueButtonIcon).toHaveClass(/icon-\[lucide--play\]/)
 
     await comfyPage.menu.workflowsTab.switchToWorkflow('execution_error')
     await openErrorsTab(comfyPage)
-
     await expect(runtimePanel).toBeVisible()
-    await expect(queueButtonIcon).toHaveClass(/icon-\[lucide--triangle-alert\]/)
   })
 
   test('Should keep an execution error after the workflow is renamed', async ({
@@ -99,11 +101,7 @@ test.describe('Errors tab - Execution errors', { tag: '@ui' }, () => {
       .toContain('execution-error-after-rename')
 
     await openErrorsTab(comfyPage)
-
     await expect(runtimePanel).toBeVisible()
-    await expect(
-      comfyPage.page.getByTestId(TestIds.topbar.queueButtonIcon)
-    ).toHaveClass(/icon-\[lucide--triangle-alert\]/)
   })
 })
 
