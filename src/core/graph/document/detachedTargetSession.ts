@@ -63,7 +63,8 @@ const DEFAULT_MAX_QUEUED_FRAMES = 64
 
 /**
  * Staged frame queue for a target document that is not attached to a live
- * follower (ADR-0024's unloaded-target path). Frames enqueue in wire order
+ * follower (ADR-GRAPH-DOCUMENT-0024's unloaded-target path). Frames enqueue
+ * in wire order
  * and commit one at a time: each commit folds the head frame into a clone of
  * the last committed Yjs state, offers it to the projection port, and only
  * on success publishes the new committed tuple

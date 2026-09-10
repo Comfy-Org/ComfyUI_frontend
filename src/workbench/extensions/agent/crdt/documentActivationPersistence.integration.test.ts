@@ -127,7 +127,7 @@ function loadedCoordinator() {
   })
 }
 
-describe('document activation persistence (ADR-0024 seam)', () => {
+describe('document activation persistence (ADR-GRAPH-DOCUMENT-0024 seam)', () => {
   // Projection determinism over retained session state: the reload here
   // replays the session's committed Yjs update, so both sides of the equality
   // are projections of the same CRDT. It cannot see a loss that happens
