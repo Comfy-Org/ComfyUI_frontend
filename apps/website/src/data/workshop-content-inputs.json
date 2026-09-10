@@ -79,6 +79,22 @@
     "routerId": "luma/ray-2",
     "options": { "mode": "image" }
   },
+  "luma--photon-1-image-modify--edit-images": {
+    "routerId": "luma/photon-1",
+    "options": { "mode": "edit" }
+  },
+  "luma--photon-flash-1-image-modify--edit-images": {
+    "routerId": "luma/photon-flash-1",
+    "options": { "mode": "edit" }
+  },
+  "luma_2--uni-1-image-edit--edit-images": {
+    "routerId": "luma_2/uni-1",
+    "options": { "mode": "edit" }
+  },
+  "luma_2--uni-1-max-image-edit--edit-images": {
+    "routerId": "luma_2/uni-1-max",
+    "options": { "mode": "edit" }
+  },
   "luma--ray-flash-2-image-to-video--animate-images": {
     "routerId": "luma/ray-flash-2",
     "options": { "mode": "image" }

@@ -20,6 +20,7 @@ import { workshopFileBase64 } from './workshop-file-encoding'
 import { prepareWorkshopCreatorRequest } from './workshop-creator-request'
 import type { WorkshopUrlEncoder } from './workshop-url-input'
 import { resolveWorkshopUrlInputs } from './workshop-url-input'
+import { loadWorkshopExampleFile } from './workshop-example-file'
 
 const MAX_REQUEST_BYTES = 10 * 1024 * 1024
 const ACCEPT: Record<WorkshopMediaBinding['accept'], readonly string[]> = {
@@ -186,6 +187,18 @@ export async function prepareWorkshopRouterInput(
     }
   }
   let estimatedBytes = new TextEncoder().encode(JSON.stringify(body)).byteLength
+  function reserve(
+    file: { size: number; type: string },
+    name: string,
+    target: string
+  ) {
+    estimatedBytes +=
+      4 * Math.ceil(file.size / 3) + file.type.length + target.length + 128
+    if (estimatedBytes > MAX_REQUEST_BYTES)
+      throw new WorkshopRouterError('validation', null, {
+        [name]: 'requestTooLarge'
+      })
+  }
   const uploads = contract.media.flatMap((media) => {
     const value = values[media.name]
     const files =
@@ -199,11 +212,14 @@ export async function prepareWorkshopRouterInput(
       })
     return files.map((upload, index) => {
       signal.throwIfAborted()
-      if (typeof upload !== 'object' || !(upload.file instanceof File))
+      if (
+        typeof upload !== 'object' ||
+        (!(upload.file instanceof File) && !upload.sourceUrl)
+      )
         throw new WorkshopRouterError('validation', null, {
           [media.name]: 'required'
         })
-      const file = upload.file
+      const file = upload.file ?? upload
       if (
         ACCEPT[media.accept].length &&
         !ACCEPT[media.accept].includes(file.type)
@@ -215,19 +231,33 @@ export async function prepareWorkshopRouterInput(
         throw new WorkshopRouterError('validation', null, {
           [media.name]: 'tooLarge'
         })
-      estimatedBytes +=
-        4 * Math.ceil(file.size / 3) +
-        file.type.length +
-        media.targets[index].length +
-        128
-      if (estimatedBytes > MAX_REQUEST_BYTES)
-        throw new WorkshopRouterError('validation', null, {
-          [media.name]: 'requestTooLarge'
-        })
-      return { media, index, file }
+      if (upload.file instanceof File)
+        reserve(upload.file, media.name, media.targets[index])
+      return { media, index, upload }
     })
   })
-  for (const { media, index, file } of uploads) {
+  for (const { media, index, upload } of uploads) {
+    let file: File
+    try {
+      file =
+        upload.file instanceof File
+          ? upload.file
+          : await loadWorkshopExampleFile(upload, signal)
+    } catch {
+      signal.throwIfAborted()
+      throw new WorkshopRouterError('validation', null, {
+        [media.name]: 'uploadFailed'
+      })
+    }
+    if (
+      ACCEPT[media.accept].length &&
+      !ACCEPT[media.accept].includes(file.type)
+    )
+      throw new WorkshopRouterError('validation', null, {
+        [media.name]: 'badType'
+      })
+    if (!(upload.file instanceof File))
+      reserve(file, media.name, media.targets[index])
     const encoded = await encodeFile(file, signal)
     try {
       setAtPointer(

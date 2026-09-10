@@ -36,6 +36,7 @@ export const workshopCreatorFormSchema = z
           'gemini-image',
           'gemini-video',
           'luma-video',
+          'luma-image',
           'qwen-image',
           'wan-media',
           'bria-edit',

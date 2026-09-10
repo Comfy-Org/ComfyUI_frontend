@@ -1116,8 +1116,20 @@
       }
     },
     "bria/image-edit-increase-resolution": {
+      "image": {
+        "label": "Source image",
+        "help": "",
+        "urlUpload": "image"
+      },
       "desired_increase": {
         "options": [2, 4]
+      }
+    },
+    "bria/image-edit-remove-background": {
+      "image": {
+        "label": "Source image",
+        "help": "",
+        "urlUpload": "image"
       }
     },
     "bria/structured-instruction": {

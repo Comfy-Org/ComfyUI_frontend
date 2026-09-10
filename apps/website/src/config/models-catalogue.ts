@@ -90,6 +90,10 @@ export type GeneratedField = GeneratedFieldControl & {
   readonly presentation?: WorkshopInputDefinition
 }
 
+export type WorkshopExampleValues = Readonly<
+  Partial<Record<string, string | number | boolean | readonly string[]>>
+>
+
 export interface GeneratedExample {
   readonly name: string
   readonly title: string
@@ -100,7 +104,7 @@ export interface GeneratedExample {
   readonly sampleOnly?: boolean
   readonly node?: { readonly id: string; readonly displayName: string }
   readonly fields?: readonly GeneratedField[]
-  readonly values: Readonly<Record<string, string | number | boolean>>
+  readonly values: WorkshopExampleValues
 }
 
 interface GeneratedModel {
@@ -110,7 +114,7 @@ interface GeneratedModel {
   readonly priceUsdFrom?: number
   readonly node?: { id: string; displayName: string; template: string }
   readonly fields: readonly GeneratedField[]
-  readonly defaults: Readonly<Record<string, string | number | boolean>>
+  readonly defaults: WorkshopExampleValues
   readonly examples: readonly GeneratedExample[]
 }
 
@@ -146,7 +150,7 @@ export interface WorkshopModelDetail extends WorkshopModel {
   readonly form?: WorkshopFormDefinition
   readonly execution?: WorkshopContract
   readonly fields: readonly GeneratedField[]
-  readonly defaults: Readonly<Record<string, string | number | boolean>>
+  readonly defaults: WorkshopExampleValues
   readonly examples: readonly GeneratedExample[]
 }
 
@@ -170,10 +174,14 @@ function isFormValue(value: unknown): value is string | number | boolean {
   return isString(value) || isFiniteNumber(value) || isBoolean(value)
 }
 
-function isFormValues(
-  value: unknown
-): value is Record<string, string | number | boolean> {
-  return isRecord(value) && Object.values(value).every(isFormValue)
+function isFormValues(value: unknown): value is WorkshopExampleValues {
+  return (
+    isRecord(value) &&
+    Object.values(value).every(
+      (item) =>
+        isFormValue(item) || (Array.isArray(item) && item.every(isString))
+    )
+  )
 }
 
 const UPLOAD_ACCEPTS: ReadonlySet<unknown> = new Set([

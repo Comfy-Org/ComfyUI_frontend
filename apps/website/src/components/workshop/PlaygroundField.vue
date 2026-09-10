@@ -13,11 +13,11 @@ import type {
 } from '../../config/workshop-playground'
 import { urlUploadField, validateForm } from '../../config/workshop-playground'
 import { isHttpImageSource } from '../../config/workshop-image-source'
+import { workshopExampleFile } from '../../config/workshop-example-file'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import FileSourceInput from './FileSourceInput.vue'
 import ImageSourcePreview from './ImageSourcePreview.vue'
-import MediaSourcePreview from './MediaSourcePreview.vue'
 
 const {
   field,
@@ -107,6 +107,18 @@ const isSlider = computed(
 const selectedFiles = computed({
   get() {
     const value = values.value[field.name]
+    const upload = urlUploadField(field)
+    if (typeof value === 'string' && upload && isHttpImageSource(value)) {
+      return (
+        workshopExampleFile(value) ?? {
+          name: new URL(value).pathname.split('/').at(-1) || field.label,
+          type: upload.accept[0] ?? 'application/octet-stream',
+          size: 0,
+          previewUrl: value,
+          sourceUrl: value
+        }
+      )
+    }
     return typeof value === 'object' ? value : undefined
   },
   set
@@ -116,13 +128,6 @@ const imageUrl = computed(() => {
   const value = stringValue()
   if (!isHttpImageSource(value)) return undefined
   return value
-})
-const mediaUrl = computed(() => {
-  const kind = field.presentation?.urlUpload
-  const src = stringValue()
-  return (kind === 'video' || kind === 'audio') && isHttpImageSource(src)
-    ? { kind, src }
-    : undefined
 })
 const uploadField = computed(() => {
   const upload = urlUploadField(field)
@@ -432,17 +437,11 @@ function booleanValue(fallback = false): boolean {
       :described-by="describedBy"
     />
     <ImageSourcePreview
-      v-if="imageUrl"
+      v-if="imageUrl && !uploadField"
       :key="imageUrl"
       :src="imageUrl"
       :name="field.label"
       :locale
-    />
-    <MediaSourcePreview
-      v-if="mediaUrl"
-      :src="mediaUrl.src"
-      :kind="mediaUrl.kind"
-      :name="field.label"
     />
     <FileSourceInput
       v-if="uploadField"

@@ -119,10 +119,10 @@
       "family": "flat"
     },
     "luma/photon-1": {
-      "family": "flat"
+      "family": "luma-image"
     },
     "luma/photon-flash-1": {
-      "family": "flat"
+      "family": "luma-image"
     },
     "luma/ray-2": {
       "family": "luma-video"
@@ -131,10 +131,12 @@
       "family": "luma-video"
     },
     "luma_2/uni-1": {
-      "family": "flat"
+      "family": "luma-image",
+      "options": { "agents": true }
     },
     "luma_2/uni-1-max": {
-      "family": "flat"
+      "family": "luma-image",
+      "options": { "agents": true }
     },
     "meshy/animations": {
       "family": "flat"

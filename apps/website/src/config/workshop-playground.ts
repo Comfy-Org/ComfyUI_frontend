@@ -1,6 +1,6 @@
 import { t } from '../i18n/translations'
 import { fieldsForDefinition } from './workshop-form-definition'
-import { workshopExampleFile } from './workshop-example-file'
+import { workshopExampleFiles } from './workshop-example-file'
 import type { WorkshopInputDefinition } from './workshop-input-definition'
 import {
   parseWorkshopJsonInput,
@@ -10,6 +10,7 @@ import type {
   GeneratedExample,
   GeneratedField,
   Modality,
+  WorkshopExampleValues,
   WorkshopModelDetail
 } from './models-catalogue'
 
@@ -363,21 +364,30 @@ export function schemaForModel(
 
 export function defaultValues(
   schema: readonly FieldSchema[],
-  overrides: Readonly<Record<string, string | number | boolean>> = {}
+  overrides: WorkshopExampleValues = {}
 ): FormValues {
   return Object.fromEntries(
-    schema.map((field) => [
-      field.name,
-      (field.kind === 'file' && typeof overrides[field.name] === 'string'
-        ? workshopExampleFile(String(overrides[field.name]))
-        : overrides[field.name]) ??
-        (field.kind === 'text' ||
-        field.kind === 'select' ||
-        field.kind === 'number' ||
-        field.kind === 'toggle'
-          ? field.defaultValue
-          : undefined)
-    ])
+    schema.map((field) => {
+      const override = overrides[field.name]
+      const value =
+        field.kind === 'file'
+          ? typeof override === 'string' || typeof override === 'object'
+            ? workshopExampleFiles(override, field.multiple)
+            : undefined
+          : typeof override === 'object'
+            ? undefined
+            : override
+      return [
+        field.name,
+        value ??
+          (field.kind === 'text' ||
+          field.kind === 'select' ||
+          field.kind === 'number' ||
+          field.kind === 'toggle'
+            ? field.defaultValue
+            : undefined)
+      ]
+    })
   )
 }
 
@@ -505,7 +515,7 @@ export interface PlaygroundExample {
   readonly title: string
   /** The few settings worth reading back: size, then length. */
   readonly specs: readonly string[]
-  readonly values: Readonly<Record<string, string | number | boolean>>
+  readonly values: WorkshopExampleValues
   readonly outputUrl: string
   readonly mediaKind?: 'image' | 'video' | 'audio'
   readonly sampleOnly?: boolean
@@ -515,9 +525,7 @@ export interface PlaygroundExample {
 
 const SIZE_KEYS = ['resolution', 'size', 'aspect_ratio', 'ratio'] as const
 
-function specsOf(
-  values: Readonly<Record<string, string | number | boolean>>
-): string[] {
+function specsOf(values: WorkshopExampleValues): string[] {
   // 'auto' and the like name no size, so only a value carrying a number reads
   // as one.
   const size = SIZE_KEYS.map((key) => values[key]).find(

@@ -138,7 +138,9 @@ function wan(
       },
       ...(mode === 'edit' && values.image_url
         ? [{ type: 'reference_image', url: values.image_url }]
-        : [])
+        : mode === 'reference' && values.image_url_2
+          ? [{ type: 'reference_image', url: values.image_url_2 }]
+          : [])
     ]
   return { input, parameters: prefixed(values, 'param_') }
 }
@@ -345,6 +347,30 @@ export function prepareWorkshopRequestCallback(
         ...(image_url ? { image: { url: image_url } } : {}),
         ...(references.length
           ? { reference_images: references.map((url) => ({ url })) }
+          : {})
+      }
+    }
+    case 'luma-image': {
+      const { image_url, ...body } = values
+      const edit = request.options.mode === 'edit'
+      const source = edit ? requireInput(values, 'image_url') : image_url
+      if (request.options.agents)
+        return {
+          ...body,
+          type: edit ? 'image_edit' : 'image',
+          ...(source
+            ? edit
+              ? { source: { url: source } }
+              : { image_ref: [{ url: source }] }
+            : {})
+        }
+      return {
+        ...body,
+        generation_type: 'image',
+        ...(source
+          ? edit
+            ? { modify_image_ref: { url: source } }
+            : { image_ref: [{ url: source }] }
           : {})
       }
     }

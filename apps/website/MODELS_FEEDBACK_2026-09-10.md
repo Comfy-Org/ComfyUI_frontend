@@ -56,3 +56,52 @@ disposable `workshop`-labeled preview. Maanil's auth PR #17283 merged as
 `6f22e4bbbefb41f331aee90163933b9b0b82db74`; this pass does not modify the account
 package. Release-boundary/prototype-cleanup work in `MODELS_INTEGRATION_PLAN.md`
 still prevents treating the integration as production-ready.
+
+## Follow-up: example media must occupy the upload slots on first open
+
+The earlier browser pass checked that video upload controls existed, not that
+their source examples were populated. That was insufficient. This pass fixes:
+
+- URL examples now occupy the upload slot, with replace/remove controls, instead
+  of rendering beside an apparently empty drop zone. Video previews load a frame
+  without needing a Play click. URL-native requests remain URLs until replaced.
+- Example projection preserves ordered image arrays, typed media roles and
+  numbered reference fields. Native Base64 bindings download and validate actual
+  example bytes only when composing a request, retaining size/cancellation checks.
+- Wan 2.7/3.0 reference examples retain their second image in both the UI and
+  native `input.media` array. Luma Photon/Uni image references now have widgets
+  and map to the native image-reference/source objects; Edit pages require one.
+- Bria image upscale/background-removal values now populate image upload slots;
+  retaining those URLs only in plain text fields was not sufficient either.
+- Four empty video example prefills were recovered from their actual workflow
+  sources and saved in the packed content file. Output samples were not reused
+  as inputs, and withheld cross-use-case content remains withheld.
+
+Source workflow revision: `Comfy-Org/workflow_templates` at
+`f331af10934fdf0d773d5f26c1d00f33559ae09d`, under `templates/`:
+
+| Workflow                                   | Verified source inputs                                                       |
+| ------------------------------------------ | ---------------------------------------------------------------------------- |
+| `api_bria_video_green_screen.json`         | `input/investigator.mp4`                                                     |
+| `api_bria_video_replace_background.json`   | `input/stained_window_vintage_woman.mp4`, `input/gothic_hall_light_rays.png` |
+| `api_runway_aleph2_video_edit.json`        | `input/sunset_city_skateboarder.mp4`; connected edit prompt preserved        |
+| `api_wavespeed_flshvsr_video_upscale.json` | `input/lighter.mp4`                                                          |
+
+All five input asset URLs return 200 with the correct image/video MIME types.
+The full published-example audit covers 42 media-bearing examples and 52 source
+asset occurrences: none are discarded by form projection. The permanent
+`workshop-example-values.test.ts` checks every supplied media URL reaches a media
+widget, not merely any string in the form.
+
+Focused verification: 1,333 tests across 10 affected files pass. Initial-load
+browser checks verify decoded frames/images inside the upload groups, with
+generation POSTs blocked. No account/auth implementation is changed.
+
+Do not interpret this as invented content for empty records: pages without
+authored example inputs still need content. Optional last/reference slots stay
+empty when that specific example has no corresponding input.
+
+CI at the preceding integration head `4c9fdeb9b5` passed website units but failed
+23 website E2E/visual checks (438 passed). The route/form failures and
+site screenshot differences remain a separate integration follow-up; this media
+fix does not waive them or claim the entire PR is merge-ready.
