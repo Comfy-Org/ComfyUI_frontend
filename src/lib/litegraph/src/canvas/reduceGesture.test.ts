@@ -66,7 +66,7 @@ describe('reduceGesture', () => {
       { type: 'move', position: far, timeStamp: 20 }
     ])
 
-    expect(effects).toEqual(['movePress', 'moveDrag', 'startDrag'])
+    expect(effects).toEqual(['movePress', 'startDrag', 'moveDrag'])
     expect(state.phase).toBe('dragging')
   })
 
@@ -76,7 +76,7 @@ describe('reduceGesture', () => {
       { type: 'move', position: nearby, timeStamp: 33 }
     ])
 
-    expect(effects).toEqual(['moveDrag', 'startDrag'])
+    expect(effects).toEqual(['startDrag', 'moveDrag'])
     expect(state.phase).toBe('dragging')
   })
 
@@ -92,7 +92,7 @@ describe('reduceGesture', () => {
       remembered
     )
 
-    expect(effects).toEqual(['moveDrag', 'startDrag', 'endDrag'])
+    expect(effects).toEqual(['startDrag', 'moveDrag', 'endDrag'])
     expect(state).toEqual(remembered)
   })
 
@@ -143,7 +143,7 @@ describe('reduceGesture', () => {
       remembered
     )
 
-    expect(effects).toEqual(['moveDrag', 'startDrag', 'cancelDrag'])
+    expect(effects).toEqual(['startDrag', 'moveDrag', 'cancelDrag'])
     expect(state).toEqual(idleGesture)
   })
 })
