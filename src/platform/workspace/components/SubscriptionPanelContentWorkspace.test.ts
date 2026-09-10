@@ -845,7 +845,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.queryByRole('button', { name: 'Change plan' })
     ).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Reactivate plan' }))
+    await user.click(
+      screen.getByRole('button', { name: 'Resume subscription' })
+    )
     expect(mockResubscribe).toHaveBeenCalledOnce()
     expect(mockShowSubscriptionDialog).not.toHaveBeenCalled()
   })
@@ -905,7 +907,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.getByRole('button', { name: 'Billing & invoices' })
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: 'Reactivate plan' })
+      screen.getByRole('button', { name: 'Resume subscription' })
     ).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: 'More Options' })
@@ -930,7 +932,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
     ).toBeInTheDocument()
     expect(screen.getByText('Role-based permissions')).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Reactivate plan' }))
+    await user.click(
+      screen.getByRole('button', { name: 'Resume subscription' })
+    )
 
     expect(mockShowSubscriptionDialog).toHaveBeenCalledWith({
       reason: 'settings_billing_panel'
@@ -988,14 +992,14 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.getByText(`Ends on ${formatPanelDate(END_DATE_ISO)}`)
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: 'Reactivate plan' })
+      screen.getByRole('button', { name: 'Resume subscription' })
     ).toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: 'Subscribe Now' })
     ).not.toBeInTheDocument()
   })
 
-  it('hides Reactivate plan when the server denies reactivation to a client-side owner', () => {
+  it('hides Resume subscription when the server denies reactivation to a client-side owner', () => {
     mockSubscriptionStatus.value = 'canceled'
     mockHasTeamPlan.value = false
     Object.assign(useTeamWorkspaceStore(), { isWorkspaceSubscribed: false })
@@ -1007,7 +1011,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.getByText(`Ends on ${formatPanelDate(END_DATE_ISO)}`)
     ).toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: 'Reactivate plan' })
+      screen.queryByRole('button', { name: 'Resume subscription' })
     ).not.toBeInTheDocument()
   })
 
