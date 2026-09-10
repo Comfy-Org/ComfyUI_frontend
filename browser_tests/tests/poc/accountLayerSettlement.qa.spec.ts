@@ -563,6 +563,65 @@ test('resumes declined checkout and completes it with a new card', async () => {
       path: `${evidenceDir}/frontend-after-sign-in.png`,
       fullPage: true
     })
+    if (process.env.RUN21B_DECLINE === 'true') {
+      const startedAt = Date.now()
+      const states: Array<{ captured_at: string; state: unknown }> = []
+      states.push({
+        captured_at: new Date().toISOString(),
+        state: await paymentState(page)
+      })
+      const pagesBefore = context.pages().length
+      await page.evaluate(async () => {
+        const seam = Reflect.get(window, '__accountLayerPoc') as {
+          subscribe(planId?: string): Promise<void>
+        }
+        await seam.subscribe('pro-monthly')
+      })
+      await expect
+        .poll(() => context.pages().length, { timeout: 30_000 })
+        .toBe(pagesBefore + 1)
+      const checkoutPage = context.pages().at(-1)!
+      states.push({
+        captured_at: new Date().toISOString(),
+        state: await paymentState(page)
+      })
+      await fillCheckout(checkoutPage, '4000000000000002')
+      await expect(
+        checkoutPage.getByText(/your card was declined.*try a different card/i)
+      ).toBeVisible({ timeout: 60_000 })
+      const declineAt = Date.now()
+      await checkoutPage.screenshot({
+        path: `${evidenceDir}/decline-failed-ui.png`,
+        fullPage: true
+      })
+      for (const delay of [0, 3_000, 10_000, 30_000]) {
+        if (delay) await new Promise((resolve) => setTimeout(resolve, delay))
+        states.push({
+          captured_at: new Date().toISOString(),
+          state: await paymentState(page)
+        })
+      }
+      writeFileSync(
+        `${evidenceDir}/decline-state-sequence.json`,
+        `${JSON.stringify({ started_at: new Date(startedAt).toISOString(), decline_at: new Date(declineAt).toISOString(), elapsed_ms: Date.now() - startedAt, states }, null, 2)}\n`
+      )
+      writeFileSync(
+        `${evidenceDir}/decline-response.json`,
+        `${JSON.stringify({ provider: 'Stripe test mode', card: '4000 0000 0000 0002', message: await checkoutPage.getByText(/your card was declined.*try a different card/i).innerText(), secrets: '[REDACTED]' }, null, 2)}\n`
+      )
+      await checkoutPage.close()
+      await page.evaluate(() => {
+        const seam = Reflect.get(window, '__accountLayerPoc') as {
+          resetBilling(): void
+        }
+        seam.resetBilling()
+      })
+      states.push({
+        captured_at: new Date().toISOString(),
+        state: await paymentState(page)
+      })
+      return
+    }
     if (process.env.RUN20P_INVOICE === 'true') {
       const operationId = '7ad89a4b-0da6-4b8c-a10a-15e56f4da607'
       await expect

@@ -72,6 +72,7 @@ export interface AccountLayerPocDebug extends Partial<AccountLayerPocSeam> {
   recoverSubscription(planId: string, intent: string): Promise<void>
   showBillingModal(): void
   refreshCredits(): Promise<void>
+  resetBilling(): void
   runScheduledRefresh(): void
   signOut(): Promise<void>
 }
@@ -108,6 +109,7 @@ const debug: AccountLayerPocDebug = {
   recoverSubscription: async () => undefined,
   showBillingModal: () => undefined,
   refreshCredits: async () => undefined,
+  resetBilling: () => undefined,
   runScheduledRefresh: () => undefined,
   signOut: async () => undefined
 }
@@ -388,6 +390,7 @@ export function createFrontendAccountClients(
     await billingCommands?.start()
   }
   debug.refreshCredits = () => billing.refreshCredits()
+  debug.resetBilling = () => billingCommands?.reset()
   debug.runScheduledRefresh = () => scheduledRefresh?.()
   debug.signOut = () => signOut(auth)
   async function readyMutation(
