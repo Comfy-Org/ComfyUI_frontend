@@ -18,12 +18,12 @@
       :aria-label="`${$t('g.edit')} ${widget.name || $t('g.markdown')} ${$t('g.content')}`"
       class="absolute inset-0 min-h-[60px] w-full resize-none text-(length:--comfy-textarea-font-size)"
       data-capture-wheel="true"
+      data-comfy-keybinding-ignore
       @blur="handleBlur"
       @pointerdown.capture.stop
       @pointermove.capture.stop
       @pointerup.capture.stop
       @click.stop
-      data-comfy-keybinding-ignore
     />
   </div>
 </template>
