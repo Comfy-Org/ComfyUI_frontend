@@ -2,7 +2,7 @@ import type { Op } from '@comfyorg/comfy-multi-player'
 
 import { reportError } from '@/platform/telemetry/reportError'
 
-const DOC_PROTOCOL_VERSION = 1
+export const DOC_PROTOCOL_VERSION = 1
 /** Keep this encoded-field cap aligned with cloud's `MaxDocFrameB64Len`. */
 const MAX_DOC_UPDATE_B64_LENGTH = 8 << 20
 const MAX_WORKFLOW_ID_LENGTH = 128
@@ -85,6 +85,7 @@ export type ServerDocFrame =
   | { type: 'doc_reset'; data: DocReset }
   | { type: 'awareness'; data: DocAwareness }
 
+/** A frame as it travels the wire, before {@link parseServerDocFrame} reads it. */
 export interface DocFrameTransport {
   /**
    * Best-effort send. Returns `true` when the frame left the transport and

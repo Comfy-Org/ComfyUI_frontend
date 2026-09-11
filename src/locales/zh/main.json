@@ -88,9 +88,7 @@
       "title": "额度不足",
       "upgradePlan": "升级套餐"
     },
-    "placeholder": "描述想法，使用 {'@'} 引用，\n提及画布中的节点或拖入资源",
-    "ranToolCalls": "已运行 {count} 次工具调用 | 已运行 {count} 次工具调用",
-    "ranToolCallsTimed": "已运行 {count} 次工具调用，耗时 {seconds} 秒 | 已运行 {count} 次工具调用，耗时 {seconds} 秒",
+    "placeholder": "描述想法，使用 {'@'} 引用工作流，拖入媒体资源和文件，或\n提及节点",
     "remove": "移除",
     "removeNodeLabel": "移除 {node} 引用",
     "runApproval": {
@@ -138,15 +136,21 @@
     "switchWorkflow": "切换工作流",
     "targetNavigationUnavailable": "此工作流目标已不可用。",
     "thinking": "思考中...",
-    "thought": "思考",
-    "thoughtTimed": "思考了 {seconds} 秒",
     "title": "Comfy Agent",
+    "toolForgettingPreference": "正在删除偏好设置",
     "toolForgotPreference": "已忘记偏好设置",
     "toolOpenedNewTab": "已打开新标签页",
+    "toolOpeningNewTab": "正在打开新标签页",
     "toolSavedPreference": "已保存偏好设置",
+    "toolSavingPreference": "正在保存偏好设置",
     "toolSwitchedTabs": "已切换标签页",
+    "toolSwitchingTabs": "正在切换标签页",
     "untitledChat": "未命名",
-    "uploading": "正在上传"
+    "uploading": "正在上传",
+    "worked": "已完成",
+    "workedForMinutes": "已用时 {minutes} 分 {seconds} 秒",
+    "workedForSeconds": "已用时 {seconds} 秒",
+    "working": "正在处理..."
   },
   "apiNodesSignInDialog": {
     "message": "合作伙伴节点在第三方服务上运行，并使用您账户中的积分。请登录以连接您的账户。",
@@ -385,9 +389,9 @@
       "auth/popup-closed-by-user": "登录完成前登录窗口已关闭。请重试。",
       "auth/too-many-requests": "登录尝试次数过多。请稍等片刻再试。",
       "auth/user-disabled": "此账户已被禁用。请联系客服。",
-      "auth/user-not-found": "未找到使用此电子邮件的账户。您想要创建一个新账户吗？",
+      "auth/user-not-found": "登录凭据无效。请检查您的电子邮箱和密码。",
       "auth/weak-password": "密码强度太弱。请使用至少6个字符的更强密码。",
-      "auth/wrong-password": "您输入的密码不正确，请重试。",
+      "auth/wrong-password": "登录凭据无效。请检查您的电子邮箱和密码。",
       "generic": "登录时出现问题，请重试。",
       "signupBlocked": "我们目前无法创建您的账户。请稍后再试。如果问题持续，请发送邮件至 support@comfy.org。"
     },
@@ -1938,6 +1942,7 @@
     "recents": "最近使用",
     "reconnected": "已重新连接",
     "reconnecting": "重新连接中",
+    "recordingFailedToStart": "无法开始录制",
     "refresh": "刷新",
     "refreshNode": "刷新节点",
     "relativeTime": {
@@ -2508,6 +2513,7 @@
       "wireframe": "线框"
     },
     "menuBar": {
+      "animationClip": "动画片段",
       "bgColor": "背景颜色",
       "bgImage": "背景图片",
       "customUp": "自定义向上",
@@ -2519,6 +2525,7 @@
       "naturalUp": "自然向上",
       "originalMaterialOnly": "仅原始材质",
       "panorama": "全景",
+      "playbackSpeed": "播放速度",
       "record": "录制",
       "recording": "正在录制",
       "removeBackground": "移除背景",
@@ -2846,6 +2853,7 @@
     "deleteHistoryOnly": "仅影响历史记录，文件将保留在磁盘上",
     "deleteItems": "删除这些项目",
     "deletePermanent": "它们将被永久移除。",
+    "deleteTombstone": "它们将不再显示在 ComfyUI 中，但仍会保留在磁盘上",
     "deletingImportedFilesCloudOnly": "删除导入文件仅支持云版本",
     "deletionUnsupported": "资源已启用，但服务器不支持删除",
     "failedToCreateNode": "创建节点失败",
@@ -4543,7 +4551,7 @@
     "pricingBlurbEnterprise": "企业合作",
     "pricingBlurbQuestions": "问题咨询",
     "pricingBlurbSeeDetails": "查看详情",
-    "reactivatePlan": "重新激活套餐",
+    "reactivatePlan": "恢复订阅",
     "reactivateToUseCredits": "请重新激活您的套餐以使用这些积分",
     "refillsDate": "补充 {date}",
     "refillsNextCycle": "下个周期补充",
@@ -4562,7 +4570,7 @@
     "resubscribe": "重新订阅",
     "resubscribeFailed": "重新激活订阅失败",
     "resubscribeSuccess": "订阅已成功重新激活",
-    "resubscribeTo": "重新订阅 {plan}",
+    "resubscribeTo": "恢复 {plan}",
     "salesManagedRunBlockedDetail": "此工作区的套餐已不再有效。请联系您的 Comfy 客户经理以恢复访问权限。",
     "salesManagedRunBlockedTitle": "套餐未激活",
     "saveYearly": "立省 20%",
@@ -5042,8 +5050,8 @@
     },
     "billingStatus": {
       "ending": {
-        "body": "在此之前成员可保持全部访问权限。重新激活以保留共享积分和席位。",
-        "reactivate": "重新激活套餐",
+        "body": "成员在此之前可保持完整访问权限。恢复订阅以保留共享额度和席位。",
+        "reactivate": "恢复订阅",
         "title": "您的团队套餐将于 {date} 结束"
       },
       "outOfCredits": {

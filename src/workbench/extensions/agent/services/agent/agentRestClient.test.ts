@@ -56,6 +56,26 @@ describe('agentRestClient route + method', () => {
     expect(init.method).toBe('POST')
   })
 
+  it.for([undefined, [], [{ workflow_id: 'ref', name: 'Reference' }]])(
+    'serializes explicit workflow references independently of open tabs: %j',
+    async (workflowReferences) => {
+      respond(jsonResponse(202, turnAccepted))
+      const input = {
+        content: 'compare',
+        workflowId: 'target',
+        tabs: { open_tabs: [{ workflow_id: 'ordinary', name: 'Ordinary' }] },
+        workflowReferences
+      }
+      await makeClient().postMessage('new', input)
+      const body = JSON.parse(lastCall().init.body as string)
+      expect(body.open_tabs).toEqual(input.tabs.open_tabs)
+      expect(body.workflow_id).toBe('target')
+      if (workflowReferences === undefined)
+        expect(body).not.toHaveProperty('workflow_references')
+      else expect(body.workflow_references).toEqual(workflowReferences)
+    }
+  )
+
   it('getMessages GETs the thread messages path', async () => {
     respond(jsonResponse(200, []))
     await makeClient().getMessages('t7')
@@ -159,6 +179,45 @@ describe('agentRestClient route + method', () => {
     await makeClient().listCloudWorkflows()
 
     expect(fetchApi).toHaveBeenCalledTimes(1)
+  })
+
+  it('stops when pagination cycles through previously seen cursors', async () => {
+    for (const cursor of ['a', 'b', 'a']) {
+      respond(
+        jsonResponse(200, {
+          data: [],
+          pagination: {
+            offset: 0,
+            limit: 100,
+            total: 0,
+            has_more: true,
+            next_cursor: cursor
+          }
+        })
+      )
+    }
+    await makeClient().listCloudWorkflows()
+    expect(fetchApi).toHaveBeenCalledTimes(3)
+  })
+
+  it('includes saved workflows beyond the fifth page', async () => {
+    for (let page = 0; page < 6; page++) {
+      respond(
+        jsonResponse(200, {
+          data: [{ id: `wf-${page}`, name: `Workflow ${page}` }],
+          pagination: {
+            offset: page,
+            limit: 100,
+            total: 6,
+            has_more: page < 5,
+            next_cursor: `page-${page + 1}`
+          }
+        })
+      )
+    }
+    expect(
+      (await makeClient().listCloudWorkflows()).map(({ id }) => id)
+    ).toEqual(['wf-0', 'wf-1', 'wf-2', 'wf-3', 'wf-4', 'wf-5'])
   })
 })
 

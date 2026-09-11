@@ -88,9 +88,7 @@
       "title": "Sem créditos",
       "upgradePlan": "Fazer upgrade do plano"
     },
-    "placeholder": "Descreva ideias, {'@'} para referenciar,\nmencione nós do grafo ou arraste ativos",
-    "ranToolCalls": "Executou {count} chamada de ferramenta | Executou {count} chamadas de ferramenta",
-    "ranToolCallsTimed": "Executou {count} chamada de ferramenta por {seconds} segundos | Executou {count} chamadas de ferramenta por {seconds} segundos",
+    "placeholder": "Descreva ideias, {'@'} para referenciar fluxos de trabalho, arraste recursos de mídia e arquivos ou\nmencione nós",
     "remove": "Remover",
     "removeNodeLabel": "Remover referência a {node}",
     "runApproval": {
@@ -138,15 +136,21 @@
     "switchWorkflow": "Alternar fluxo de trabalho",
     "targetNavigationUnavailable": "Este destino do fluxo de trabalho não está mais disponível.",
     "thinking": "Pensando...",
-    "thought": "Pensamento",
-    "thoughtTimed": "Pensou por {seconds} segundos",
     "title": "Comfy Agent",
+    "toolForgettingPreference": "Esquecendo uma preferência",
     "toolForgotPreference": "Esqueceu uma preferência",
     "toolOpenedNewTab": "Abriu uma nova aba",
+    "toolOpeningNewTab": "Abrindo uma nova aba",
     "toolSavedPreference": "Salvou uma preferência",
+    "toolSavingPreference": "Salvando uma preferência",
     "toolSwitchedTabs": "Alternou entre abas",
+    "toolSwitchingTabs": "Alternando entre abas",
     "untitledChat": "Sem título",
-    "uploading": "Enviando"
+    "uploading": "Enviando",
+    "worked": "Concluído",
+    "workedForMinutes": "Concluído em {minutes}m {seconds}s",
+    "workedForSeconds": "Concluído em {seconds} segundos",
+    "working": "Trabalhando..."
   },
   "apiNodesSignInDialog": {
     "message": "Os nós parceiros são executados em serviços de terceiros e usam créditos da sua conta. Entre para conectar sua conta.",
@@ -385,9 +389,9 @@
       "auth/popup-closed-by-user": "A janela de login foi fechada antes da conclusão do login. Tente novamente.",
       "auth/too-many-requests": "Muitas tentativas de login. Aguarde um momento e tente novamente.",
       "auth/user-disabled": "Esta conta foi desativada. Por favor, entre em contato com o suporte.",
-      "auth/user-not-found": "Nenhuma conta encontrada com este e-mail. Gostaria de criar uma nova conta?",
+      "auth/user-not-found": "Credenciais de login inválidas. Verifique seu e-mail e senha.",
       "auth/weak-password": "A senha é muito fraca. Use uma senha mais forte com pelo menos 6 caracteres.",
-      "auth/wrong-password": "A senha que você digitou está incorreta. Por favor, tente novamente.",
+      "auth/wrong-password": "Credenciais de login inválidas. Verifique seu e-mail e senha.",
       "generic": "Algo deu errado ao fazer login. Por favor, tente novamente.",
       "signupBlocked": "Não foi possível criar sua conta agora. Por favor, tente novamente mais tarde. Se o problema persistir, envie um e-mail para support@comfy.org."
     },
@@ -1938,6 +1942,7 @@
     "recents": "Recentes",
     "reconnected": "Reconectado",
     "reconnecting": "Reconectando",
+    "recordingFailedToStart": "Não foi possível iniciar a gravação",
     "refresh": "Atualizar",
     "refreshNode": "Atualizar nó",
     "relativeTime": {
@@ -2508,6 +2513,7 @@
       "wireframe": "Wireframe"
     },
     "menuBar": {
+      "animationClip": "clip de animação",
       "bgColor": "Cor de fundo",
       "bgImage": "Imagem de fundo",
       "customUp": "Vertical personalizada",
@@ -2519,6 +2525,7 @@
       "naturalUp": "Vertical natural",
       "originalMaterialOnly": "Apenas material original",
       "panorama": "Panorama",
+      "playbackSpeed": "Velocidade de reprodução",
       "record": "Gravar",
       "recording": "Gravando",
       "removeBackground": "Remover fundo",
@@ -2846,6 +2853,7 @@
     "deleteHistoryOnly": "Apenas o histórico será afetado; os arquivos permanecerão no disco",
     "deleteItems": "Excluir estes itens",
     "deletePermanent": "Eles serão removidos permanentemente.",
+    "deleteTombstone": "Eles não serão mais exibidos no ComfyUI, mas permanecerão no disco",
     "deletingImportedFilesCloudOnly": "A exclusão de arquivos importados é suportada apenas na versão em nuvem",
     "deletionUnsupported": "Os ativos estão ativados, mas o servidor não oferece suporte à exclusão",
     "failedToCreateNode": "Falha ao criar nó",
@@ -4543,7 +4551,7 @@
     "pricingBlurbEnterprise": "discussões enterprise",
     "pricingBlurbQuestions": "dúvidas",
     "pricingBlurbSeeDetails": "ver detalhes",
-    "reactivatePlan": "Reativar plano",
+    "reactivatePlan": "Retomar assinatura",
     "reactivateToUseCredits": "Reative seu plano para usar esses créditos",
     "refillsDate": "Recargas em {date}",
     "refillsNextCycle": "Recargas no próximo ciclo",
@@ -4562,7 +4570,7 @@
     "resubscribe": "Reassinar",
     "resubscribeFailed": "Falha ao reativar a assinatura",
     "resubscribeSuccess": "Assinatura reativada com sucesso",
-    "resubscribeTo": "Reassinar {plan}",
+    "resubscribeTo": "Retomar {plan}",
     "salesManagedRunBlockedDetail": "O plano deste espaço de trabalho აღარ está ativo. Entre em contato com seu gerente de conta da Comfy para restaurar o acesso.",
     "salesManagedRunBlockedTitle": "Plano inativo",
     "saveYearly": "Economize 20%",
@@ -5042,8 +5050,8 @@
     },
     "billingStatus": {
       "ending": {
-        "body": "Os membros mantêm acesso total até lá. Reative para manter seus créditos e vagas compartilhados.",
-        "reactivate": "Reativar plano",
+        "body": "Os membros mantêm acesso total até lá. Retome sua assinatura para manter seus créditos e assentos compartilhados.",
+        "reactivate": "Retomar assinatura",
         "title": "O plano da sua equipe termina em {date}"
       },
       "outOfCredits": {
