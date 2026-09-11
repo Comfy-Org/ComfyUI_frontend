@@ -15,7 +15,7 @@ const hoisted = vi.hoisted(() => ({
   submit: vi.fn().mockResolvedValue(undefined)
 }))
 
-vi.mock('../../scripts/customerio', () => ({
+vi.mock(import('../../scripts/customerio'), () => ({
   get isDownloadLinkRequestEnabled() {
     return hoisted.isEnabled
   },
@@ -84,6 +84,23 @@ describe('HeroWaitlist01', () => {
     expect(screen.queryByText("We'll email you when it's ready.")).toBeNull()
     // The heading still renders, so the hero is not blank.
     expect(screen.getByRole('heading', { level: 1 })).toBeTruthy()
+  })
+
+  // The hero owns the only path that reaches the form's locale, so a dropped
+  // prop would leave an English form under Chinese hero copy.
+  it('leaves the embedded form in English by default', () => {
+    renderHero()
+
+    expect(
+      screen.getByRole('button', { name: 'Join the waitlist' })
+    ).toBeTruthy()
+  })
+
+  it('passes its locale down to the form', () => {
+    renderHero({ locale: 'zh-CN' })
+
+    expect(screen.getByRole('button', { name: '加入候补名单' })).toBeTruthy()
+    expect(screen.getByPlaceholderText('输入你的邮箱')).toBeTruthy()
   })
 
   it('passes its signupEvent down to the form', async () => {

@@ -11,7 +11,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
 export function useLayerEditor() {
-  const openLayerEditor = (node: LGraphNode) => {
+  const openLayerEditor = (node: LGraphNode | null | undefined) => {
     if (!node) {
       console.error('[LayerEditor] No node provided')
       return

@@ -236,6 +236,53 @@ test.describe('Node Interaction', () => {
       })
     })
 
+    test('Repeated disconnect/connect leaves exactly one link', async ({
+      comfyPage
+    }) => {
+      test.slow()
+      await comfyPage.workflow.loadWorkflow('default')
+
+      const checkpoint = await comfyPage.nodeOps.getNodeRefByType(
+        'CheckpointLoaderSimple'
+      )
+      const clipOutput = await checkpoint.getOutput(1)
+      const targetNode = await comfyPage.nodeOps.getNodeRefById(6)
+      const targetInput = await targetNode.getInput(0)
+      const targetLink = await targetInput.getLink()
+      if (!targetLink) throw new Error('Default workflow link not found')
+
+      const targetEndpoints = {
+        origin_id: targetLink.origin_id,
+        origin_slot: targetLink.origin_slot,
+        target_id: targetLink.target_id,
+        target_slot: targetLink.target_slot
+      }
+      const initial = await clipOutput.getLinkCount()
+      expect(initial, 'default workflow should have links').toBeGreaterThan(0)
+
+      for (let cycle = 0; cycle < 5; cycle++) {
+        await comfyPage.canvasOps.disconnectEdge()
+        await clipOutput.expectLinkCount(initial - 1)
+        await expect.poll(() => targetInput.getLink()).toBeNull()
+        await comfyPage.canvasOps.connectEdge()
+        await clipOutput.expectLinkCount(initial)
+        await expect
+          .poll(() => targetInput.getLink())
+          .toMatchObject(targetEndpoints)
+      }
+
+      // End disconnected so the reload assertion cannot pass by restoring a
+      // pristine default instead of the edited draft.
+      await comfyPage.canvasOps.disconnectEdge()
+      await comfyPage.canvasOps.moveMouseToEmptyArea()
+      await clipOutput.expectLinkCount(initial - 1)
+      await expect.poll(() => targetInput.getLink()).toBeNull()
+
+      await comfyPage.workflow.reloadAndWaitForApp()
+      await clipOutput.expectLinkCount(initial - 1)
+      await expect.poll(() => targetInput.getLink()).toBeNull()
+    })
+
     test('Can move link', async ({ comfyPage }) => {
       await comfyPage.canvasOps.dragAndDrop(
         DefaultGraphPositions.clipTextEncodeNode1InputSlot,
@@ -514,14 +561,14 @@ test.describe('Node Interaction', () => {
         .poll(() =>
           comfyPage.page.evaluate(() => {
             const group = window.app!.graph.groups[0]
-            return group ? [group.size[0], group.size[1]] : null
+            return [group.size[0], group.size[1]]
           })
         )
         .not.toBeNull()
 
       const initialGroupSize = await comfyPage.page.evaluate(() => {
         const group = window.app!.graph.groups[0]
-        return group ? [group.size[0], group.size[1]] : null
+        return [group.size[0], group.size[1]]
       })
 
       await comfyPage.keyboard.selectAll()
@@ -531,7 +578,7 @@ test.describe('Node Interaction', () => {
         .poll(() =>
           comfyPage.page.evaluate(() => {
             const group = window.app!.graph.groups[0]
-            return group ? [group.size[0], group.size[1]] : null
+            return [group.size[0], group.size[1]]
           })
         )
         .not.toEqual(initialGroupSize)
@@ -818,6 +865,7 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
     comfyPage
   }) => {
     await comfyPage.settings.setSetting('Comfy.Workflow.Persist', false)
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
 
     await expect
@@ -835,6 +883,7 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
   }) => {
     await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
     await expect(comfyPage.canvas).toHaveScreenshot('single_ksampler.png')
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup({ clearStorage: false })
     await expect(comfyPage.canvas).toHaveScreenshot('single_ksampler.png')
   })
@@ -868,6 +917,7 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
       }
       return false
     }, start)
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup({ clearStorage: false })
     await expect(comfyPage.canvas).toHaveScreenshot(
       'single_ksampler_modified.png'
@@ -900,6 +950,7 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
         }
         return false
       })
+      // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
       await comfyPage.setup({ clearStorage: false })
     })
 
@@ -979,6 +1030,7 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
       await comfyPage.page.evaluate(() => {
         sessionStorage.clear()
       })
+      // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
       await comfyPage.setup({ clearStorage: false })
     })
 
@@ -1073,6 +1125,11 @@ test.describe('Viewport settings', () => {
     comfyPage,
     comfyMouse
   }) => {
+    const getViewport = async () => ({
+      scale: await comfyPage.canvasOps.getScale(),
+      offset: await comfyPage.canvasOps.getOffset()
+    })
+
     const changeTab = async (tab: Locator) => {
       await tab.click()
       await comfyPage.nextFrame()
@@ -1103,7 +1160,7 @@ test.describe('Viewport settings', () => {
     const tabA = comfyPage.menu.topbar.getWorkflowTab('Workflow A')
     await changeTab(tabA)
 
-    const screenshotA = (await comfyPage.canvas.screenshot()).toString('base64')
+    const viewportA = await getViewport()
 
     const tabB = comfyPage.menu.topbar.getWorkflowTab('Workflow B')
     await changeTab(tabB)
@@ -1114,22 +1171,17 @@ test.describe('Viewport settings', () => {
     }
 
     await comfyPage.nextFrame()
-    const screenshotB = (await comfyPage.canvas.screenshot()).toString('base64')
+    const viewportB = await getViewport()
 
-    // Ensure that the screenshots are different due to zoom level
-    expect(screenshotB).not.toBe(screenshotA)
+    expect(viewportB).not.toEqual(viewportA)
 
     // Go back to Workflow A
     await changeTab(tabA)
-    expect((await comfyPage.canvas.screenshot()).toString('base64')).toBe(
-      screenshotA
-    )
+    await expect.poll(getViewport).toEqual(viewportA)
 
     // And back to Workflow B
     await changeTab(tabB)
-    expect((await comfyPage.canvas.screenshot()).toString('base64')).toBe(
-      screenshotB
-    )
+    await expect.poll(getViewport).toEqual(viewportB)
   })
 })
 

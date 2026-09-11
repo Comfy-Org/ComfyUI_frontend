@@ -8,12 +8,14 @@ const {
   locale = 'en',
   label,
   centerText = false,
-  large = false
+  large = false,
+  statusLabel
 } = defineProps<{
   centerText?: boolean
   large?: boolean
   locale?: Locale
   label?: string
+  statusLabel?: string
 }>()
 </script>
 
@@ -40,8 +42,17 @@ const {
         )
       "
     >
-      <span :class="centerText ? 'translate-y-1' : 'translate-y-0.5'">
-        {{ label ?? t('platform.hero.badge', locale) }}
+      <span
+        :class="
+          cn(
+            'flex items-center gap-2',
+            centerText ? 'translate-y-1' : 'translate-y-0.5'
+          )
+        "
+      >
+        <slot name="label">
+          {{ label ?? t('platform.hero.badge', locale) }}
+        </slot>
       </span>
     </span>
     <img
@@ -59,7 +70,7 @@ const {
       "
     >
       <span class="translate-y-0.5">
-        {{ t('nav.badgeBeta', locale) }}
+        {{ statusLabel ?? t('nav.badgeBeta', locale) }}
       </span>
     </span>
     <img

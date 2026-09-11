@@ -27,8 +27,11 @@ export const useColorPaletteService = () => {
   const colorPaletteStore = useColorPaletteStore()
   const settingStore = useSettingStore()
   const nodeDefStore = useNodeDefStore()
-  const { wrapWithErrorHandling, wrapWithErrorHandlingAsync } =
-    useErrorHandling()
+  const {
+    toastErrorHandler,
+    wrapWithErrorHandling,
+    wrapWithErrorHandlingAsync
+  } = useErrorHandling()
 
   /**
    * Validates the palette against the zod schema.
@@ -40,8 +43,7 @@ export const useColorPaletteService = () => {
     const result = paletteSchema.safeParse(data)
     if (result.success) return result.data
 
-    const error = fromZodError(result.error)
-    throw new Error(`Invalid color palette against zod schema:\n${error}`)
+    throw fromZodError(result.error)
   }
 
   const persistCustomColorPalettes = async () => {
@@ -100,9 +102,7 @@ export const useColorPaletteService = () => {
   function loadLinkColorPaletteForVueNodes(
     linkColorPalette: Colors['node_slot']
   ) {
-    if (!linkColorPalette) return
-    const rootStyle = document.documentElement?.style
-    if (!rootStyle) return
+    const rootStyle = document.documentElement.style
 
     for (const dataType of nodeDefStore.nodeDataTypes) {
       const cssVar = `color-datatype-${dataType}`
@@ -120,9 +120,7 @@ export const useColorPaletteService = () => {
     palette: Colors['litegraph_base'],
     colorPaletteId: string
   ) {
-    if (!palette) return
-    const rootStyle = document.documentElement?.style
-    if (!rootStyle) return
+    const rootStyle = document.documentElement.style
 
     for (const themeVar of Object.keys(THEME_PROPERTY_MAP)) {
       if (!validThemeProp(themeVar)) {
@@ -210,7 +208,6 @@ export const useColorPaletteService = () => {
     comfyColorPalette: Colors['comfy_base'],
     isLightTheme: boolean
   ) => {
-    if (!comfyColorPalette) return
     const rootStyle = document.documentElement.style
     for (const [key, value] of Object.entries(comfyColorPalette)) {
       rootStyle.setProperty('--' + key, value)
@@ -249,7 +246,8 @@ export const useColorPaletteService = () => {
   const loadColorPalette = async (colorPaletteId: string) => {
     const colorPalette = colorPaletteStore.palettesLookup[colorPaletteId]
     if (!colorPalette) {
-      throw new Error(`Color palette ${colorPaletteId} not found`)
+      toastErrorHandler(new Error(`Color palette ${colorPaletteId} not found`))
+      return
     }
 
     const completedPalette = colorPaletteStore.completePalette(colorPalette)
@@ -277,7 +275,8 @@ export const useColorPaletteService = () => {
   const exportColorPalette = (colorPaletteId: string) => {
     const colorPalette = colorPaletteStore.palettesLookup[colorPaletteId]
     if (!colorPalette) {
-      throw new Error(`Color palette ${colorPaletteId} not found`)
+      toastErrorHandler(new Error(`Color palette ${colorPaletteId} not found`))
+      return
     }
     downloadBlob(
       colorPalette.id + '.json',
