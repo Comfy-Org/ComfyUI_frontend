@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { reportError } from '@/platform/telemetry/reportError'
 import './agentPanel.css'
 
 import { useClipboard } from '@vueuse/core'
@@ -154,15 +155,16 @@ const { resolvedUserInfo, userDisplayName } = useCurrentUser()
  * Asking the agent avoids hardcoding its bootstrap constant here. Null until it
  * answers; the follower simply attributes nothing until then.
  */
+const rest = createAgentRestClient()
+
 const standaloneUserId = ref<string | null>(null)
 if (isStandaloneAgent) {
   void (async () => {
     try {
-      const response = await fetch('/api/agent/identity')
-      if (!response.ok) return
-      const identity = (await response.json()) as { user_id?: string }
-      standaloneUserId.value = identity.user_id ?? null
+      standaloneUserId.value = (await rest.getIdentity()).userId
     } catch (error) {
+      // Surfaced, not swallowed: until this resolves the follower below stays
+      // inactive, so a broken identity route reads as "canvas never syncs".
       reportError(error, {
         errorType: 'agent_standalone_identity_failed',
         level: 'warning'
@@ -170,11 +172,10 @@ if (isStandaloneAgent) {
     }
   })()
 }
+
 const userName = computed(
   () => userDisplayName.value?.trim().split(/\s+/)[0] || undefined
 )
-
-const rest = createAgentRestClient()
 
 const standaloneEvents = isStandaloneAgent
   ? createStandaloneAgentEventSource()
@@ -550,6 +551,15 @@ const isBoundWorkflowActive = computed(() => {
 // session's bound workflow while its tab is active. Suspending the background
 // subscription makes reopening pull state-vector catch-up only after the
 // workflow's serialized activeState has hydrated the transient stores.
+// Standalone only: the follower stamps every canvas op with the actor the
+// agent reported; an op sent before that answer arrives would be attributed
+// "anonymous", which the writer refuses. So the follower waits for identity.
+const isFollowerActive = computed(
+  () =>
+    isBoundWorkflowActive.value &&
+    (!isStandaloneAgent || standaloneUserId.value !== null)
+)
+
 const {
   status: crdtStatus,
   debugSnapshot: crdtDebugSnapshot,
@@ -560,7 +570,7 @@ const {
   // Standalone: the agent's own identity, so canvas edits are stamped with the
   // actor the server derives rather than "anonymous", which it refuses.
   () => standaloneUserId.value ?? resolvedUserInfo.value?.id ?? null,
-  isBoundWorkflowActive,
+  isFollowerActive,
   // `app.isGraphReady` is a plain getter; reading `canvasStore.canvas` (set
   // right after `app.setup()`) makes the follower's graph watch fire once the
   // root graph exists.

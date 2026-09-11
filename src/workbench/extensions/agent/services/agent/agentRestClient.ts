@@ -12,7 +12,8 @@ import {
   zAgentThreads,
   zAgentTurnAccepted,
   zCloudWorkflowIndex,
-  zUploadImageResult
+  zUploadImageResult,
+  zAgentIdentityWire
 } from '../../schemas/agentApiSchema'
 import type {
   AgentAnswerAccepted,
@@ -55,6 +56,11 @@ export type OpenTabsSnapshot = Pick<
 export interface DraftSnapshot {
   content: Record<string, unknown>
   version?: number
+}
+
+export interface AgentIdentity {
+  workspaceId: string
+  userId: string
 }
 
 export interface PostMessageInput {
@@ -176,6 +182,20 @@ export function createAgentRestClient() {
     return page.threads
   }
 
+  /**
+   * The identity the agent authenticated this client as. Standalone bootstraps
+   * a fixed local user the panel cannot otherwise see, and every canvas op
+   * must carry that actor or the writer refuses it.
+   */
+  async function getIdentity(): Promise<AgentIdentity> {
+    const wire = await request(
+      '/agent/identity',
+      { method: 'GET' },
+      zAgentIdentityWire
+    )
+    return { workspaceId: wire.workspace_id, userId: wire.user_id }
+  }
+
   async function getRunMode(): Promise<AgentRunModePreference> {
     return request('/agent/run-mode', { method: 'GET' }, zAgentRunMode)
   }
@@ -258,6 +278,7 @@ export function createAgentRestClient() {
     postMessage,
     getMessages,
     listThreads,
+    getIdentity,
     getRunMode,
     putRunMode,
     listCloudWorkflows,

@@ -65,9 +65,6 @@ vi.mock('posthog-js', () => ({
   }
 }))
 
-const flush = (): Promise<void> =>
-  new Promise((resolve) => setTimeout(resolve, 0))
-
 async function loadEntryAndSetup(): Promise<void> {
   const { registerAgentPanelExtension } = await import('./agentPanel')
   registerAgentPanelExtension()
@@ -75,8 +72,9 @@ async function loadEntryAndSetup(): Promise<void> {
     (e) => e.name === 'Comfy.AgentPanel'
   )
   expect(ext).toBeDefined()
-  ext!.setup!({} as Parameters<NonNullable<ComfyExtension['setup']>>[0])
-  for (let i = 0; i < 2000 && mocks.flagListener === null; i++) await flush()
+  // setup() returns the flag gate's promise; awaiting it is the completion
+  // signal, so no polling is needed.
+  await ext!.setup!({} as Parameters<NonNullable<ComfyExtension['setup']>>[0])
   expect(mocks.flagListener).toBeTypeOf('function')
 }
 
