@@ -108,6 +108,10 @@ describe('migrateWorkspaceToScope', () => {
       StorageKeys.draftIndex(destinationScope),
       JSON.stringify(destinationIndex)
     )
+    localStorage.setItem(
+      StorageKeys.migrationClaim(sourceWorkspaceId),
+      JSON.stringify({ scope: destinationScope, sourceUpdatedAt: 10 })
+    )
 
     migrateWorkspaceToScope(sourceWorkspaceId, destinationScope)
 
@@ -132,6 +136,9 @@ describe('migrateWorkspaceToScope', () => {
     ).toBe(null)
     expect(
       localStorage.getItem(StorageKeys.lastOpenPaths(sourceWorkspaceId))
+    ).toBe(null)
+    expect(
+      localStorage.getItem(StorageKeys.migrationClaim(sourceWorkspaceId))
     ).toBe(null)
   })
 
@@ -330,5 +337,67 @@ describe('migrateWorkspaceToScope', () => {
       paths: [draftPath],
       activeIndex: 0
     })
+  })
+
+  it('preserves the workspace when another scope holds the migration claim', () => {
+    seedSourceWorkspace()
+    localStorage.setItem(
+      StorageKeys.migrationClaim(sourceWorkspaceId),
+      JSON.stringify({
+        scope: 'user-b:workspace-a',
+        sourceUpdatedAt: 10
+      })
+    )
+
+    migrateWorkspaceToScope(sourceWorkspaceId, destinationScope)
+
+    expect(localStorage.getItem(StorageKeys.draftIndex(destinationScope))).toBe(
+      null
+    )
+    expect(readJson(StorageKeys.draftIndex(sourceWorkspaceId))).toEqual(
+      buildIndex()
+    )
+  })
+
+  it('preserves a newer workspace when the committed destination claim is stale', () => {
+    seedSourceWorkspace()
+    localStorage.setItem(
+      StorageKeys.draftIndex(destinationScope),
+      JSON.stringify(buildIndex())
+    )
+    localStorage.setItem(
+      StorageKeys.migrationClaim(sourceWorkspaceId),
+      JSON.stringify({ scope: destinationScope, sourceUpdatedAt: 5 })
+    )
+
+    migrateWorkspaceToScope(sourceWorkspaceId, destinationScope)
+
+    expect(readJson(StorageKeys.draftIndex(sourceWorkspaceId))).toEqual(
+      buildIndex()
+    )
+  })
+
+  it('preserves the workspace when the destination has no migration claim', () => {
+    seedSourceWorkspace()
+    localStorage.setItem(
+      StorageKeys.draftIndex(destinationScope),
+      JSON.stringify(buildIndex())
+    )
+
+    migrateWorkspaceToScope(sourceWorkspaceId, destinationScope)
+
+    expect(readJson(StorageKeys.draftIndex(sourceWorkspaceId))).toEqual(
+      buildIndex()
+    )
+  })
+
+  it('removes the migration claim after a successful migration', () => {
+    seedSourceWorkspace()
+
+    migrateWorkspaceToScope(sourceWorkspaceId, destinationScope)
+
+    expect(
+      localStorage.getItem(StorageKeys.migrationClaim(sourceWorkspaceId))
+    ).toBe(null)
   })
 })

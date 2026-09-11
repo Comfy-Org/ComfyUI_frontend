@@ -438,7 +438,7 @@ function isValidOpenPathsPointer(value: unknown): value is OpenPathsPointer {
   )
 }
 
-function readLocalPointer<T>(
+export function readLocalPointer<T>(
   key: string,
   validate: (value: unknown) => value is T
 ): T | null {
@@ -452,13 +452,19 @@ function readLocalPointer<T>(
   }
 }
 
-function writeStorage(storage: Storage, key: string, value: string): void {
-  if (!isStorageAvailable()) return
+export function writeStorage(
+  storage: Storage,
+  key: string,
+  value: string
+): boolean {
+  if (!isStorageAvailable()) return false
 
   try {
     storage.setItem(key, value)
+    return true
   } catch {
     // Best effort — silently degrade when storage is full or unavailable
+    return false
   }
 }
 
@@ -486,7 +492,7 @@ const sessionRestoreKeys = [
   'Comfy.ActiveWorkflowIndex'
 ]
 
-function removeStorageKeys(
+export function removeStorageKeys(
   storage: Storage,
   keys: string[],
   prefixes: string[] = []
