@@ -33,6 +33,7 @@ const STATUS: AgentCrdtStatus = {
   workflowId: 'doc-1',
   updatesApplied: 4,
   lastFrameType: 'doc_update',
+  schemaError: null,
   outcomes: {
     received: 5,
     applied: 4,
@@ -78,7 +79,7 @@ describe('CrdtDevPanel', () => {
           status: STATUS,
           tabId: 'tab-1',
           lastSeq: 7,
-          schemaError: null,
+          lastBridgeSchemaError: null,
           meta: { schema_version: 2 },
           nodeIds: ['node-1'],
           linkIds: ['link-1'],

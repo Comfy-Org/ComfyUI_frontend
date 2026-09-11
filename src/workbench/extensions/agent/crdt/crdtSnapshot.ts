@@ -21,7 +21,7 @@ export interface CrdtDebugSnapshot {
   status: AgentCrdtStatus
   tabId: string | null
   lastSeq: number | null
-  schemaError: string | null
+  lastBridgeSchemaError: string | null
   meta: Readonly<Record<string, unknown>>
   nodeIds: readonly string[]
   linkIds: readonly string[]
@@ -69,7 +69,7 @@ export function readCrdtSnapshot(
     // that failure IS the bug being reported.
     return {
       ...base,
-      schemaError: base.schemaError ?? String(error),
+      lastBridgeSchemaError: base.lastBridgeSchemaError ?? String(error),
       meta: {},
       nodeIds: [],
       linkIds: [],

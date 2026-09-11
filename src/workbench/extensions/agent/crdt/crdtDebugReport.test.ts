@@ -45,6 +45,7 @@ const SNAPSHOT: CrdtDebugSnapshot = {
     workflowId: 'doc-1',
     updatesApplied: 3,
     lastFrameType: 'doc_update',
+    schemaError: null,
     outcomes: {
       received: 3,
       applied: 3,
@@ -57,7 +58,7 @@ const SNAPSHOT: CrdtDebugSnapshot = {
   },
   tabId: 'tab-1',
   lastSeq: 7,
-  schemaError: null,
+  lastBridgeSchemaError: null,
   meta: { schema_version: 1 },
   nodeIds: ['A', 'B'],
   linkIds: ['1'],

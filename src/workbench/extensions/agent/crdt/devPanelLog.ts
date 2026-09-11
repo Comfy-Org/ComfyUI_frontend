@@ -29,6 +29,7 @@ export type DevEventKind =
   | 'human_ops_settled'
   | 'doc_reset'
   | 'schema_error'
+  | 'schema_gate_lifted'
   | 'reconnected'
   | 'subscribe_retry'
   | 'doc_nodes_changed'

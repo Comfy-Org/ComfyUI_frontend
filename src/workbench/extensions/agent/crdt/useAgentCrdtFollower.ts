@@ -65,6 +65,25 @@ interface PersistedDocIdRecord {
   expiresAt: number
 }
 
+type SchemaErrorState =
+  | { kind: 'fallback' }
+  | { kind: 'message'; message: string }
+
+// A blank server message is absent, not an explanation: `parseBoundedString`
+// accepts `''`, and forwarding it verbatim renders an empty toast body while
+// any truthiness-based consumer of the same value reads "no error at all".
+function readSchemaError(detail: unknown): SchemaErrorState {
+  if (
+    detail !== null &&
+    typeof detail === 'object' &&
+    'message' in detail &&
+    typeof detail.message === 'string' &&
+    detail.message.trim() !== ''
+  )
+    return { kind: 'message', message: detail.message }
+  return { kind: 'fallback' }
+}
+
 function safeSessionStorage(): Storage | null {
   try {
     return window.sessionStorage
@@ -173,6 +192,7 @@ export interface AgentCrdtStatus {
    */
   updatesApplied: number
   lastFrameType: string | null
+  schemaError: string | null
   outcomes: AgentCrdtOutcomeCounters
 }
 
@@ -203,12 +223,27 @@ export function useAgentCrdtFollower(
    * reads inside the getter are tracked, so a `null` → graph flip triggers a
    * reconcile without waiting for the next remote frame.
    */
-  getGraph: () => MaterializableGraph | null = () => null
+  getGraph: () => MaterializableGraph | null = () => null,
+  schemaErrorFallback: Readonly<Ref<string>> = ref('')
 ) {
   const connected = ref(false)
   const updatesApplied = ref(0)
   const lastFrameType = ref<string | null>(null)
+  const schemaError = ref<SchemaErrorState | null>(null)
+  const schemaErrorMessage = computed(() => {
+    const error = schemaError.value
+    if (error === null) return null
+    if (error.kind === 'message') return error.message
+    const fallback = schemaErrorFallback.value.trim()
+    return fallback === '' ? null : fallback
+  })
   const subscribedWorkflowId = ref<string | null>(null)
+  // Set to the workflow id a `schema_version_mismatch` refusal was reported
+  // for; cleared only when the watch rebinds to a different workflow (or the
+  // target goes inactive). While set for the CURRENT workflow, no retry path
+  // — ack-driven clear, reconcile(), or resubscribe() — may re-arm a
+  // subscribe attempt or wipe the displayed error for that same mismatch.
+  let permanentSchemaMismatchWorkflowId: string | null = null
   const outcomes = ref<AgentCrdtOutcomeCounters>({
     received: 0,
     applied: 0,
@@ -266,7 +301,11 @@ export function useAgentCrdtFollower(
     },
     // Send REALITY, not this composable's intent: the sender re-reads it before
     // every send and resend, so ops never reach a doc we are not subscribed to.
-    workflowId: () => bridge.subscribedWorkflowId,
+    // Reporting unbound while a schema error stands makes the mismatch fail
+    // closed on write as well as on read — a build that refuses to project a
+    // document must not keep minting operations into it.
+    workflowId: () =>
+      schemaError.value === null ? bridge.subscribedWorkflowId : null,
     tab: tabId,
     actor: () => `human:${userId() ?? 'anonymous'}:${tabId}`,
     baseVersion: () => bridge.lastSequence,
@@ -371,19 +410,61 @@ export function useAgentCrdtFollower(
     if (!(event instanceof CustomEvent)) return
     if (!isTargetActive.value) return
     const ok = event.detail?.ok === true
-    connected.value = ok
     lastFrameType.value = event.type
     recordDevEvent('doc_subscribed', event.detail ?? null)
     if (ok) {
+      // A successful ack confirms the SUBSCRIPTION, not that the merged doc
+      // is readable — the ack always precedes its catch-up `doc_update` (see
+      // LayoutFollowerBridge.onDocSubscribed), and a reconnect can ack a
+      // lineage whose FollowerDoc is still the one `bridge.lastSchemaError`
+      // latched. Clearing the public error here would report "connected"
+      // while projection stays blocked. Only clear once the bridge itself
+      // holds no schema error (a fresh document passed the read-time guard)
+      // and this same workflow was not permanently gated below.
       clearSubscribeRetry()
+      const latched = bridge.lastSchemaError
+      if (latched !== null || isPermanentlyMismatched()) {
+        connected.value = false
+        clearStaleProbe()
+        // Deactivating and re-binding the SAME workflow re-subscribes and lands
+        // here, but `bridge.unsubscribe()` kept the latched error for that
+        // lineage and the binding watch cleared the public one. Without this
+        // restore the panel settles at "disconnected, no reason" — the exact
+        // state this change exists to eliminate — and no further `schema_error`
+        // is coming, because #16925 latches the read gate until a `doc_reset`.
+        if (schemaError.value === null && latched !== null)
+          schemaError.value = readSchemaError(latched)
+        return
+      }
+      connected.value = true
+      schemaError.value = null
       armStaleProbe()
       // FE-1902 (poc-3): only a CONFIRMED binding is worth rebinding to after
       // a remount — persist on ok, not on intent.
       if (subscribedWorkflowId.value !== null)
         persistConfirmedDocId(subscribedWorkflowId.value)
     } else {
+      connected.value = false
       clearStaleProbe()
-      scheduleSubscribeRetry()
+      if (event.detail?.code === 'schema_version_mismatch') {
+        clearSubscribeRetry()
+        // Gate the workflow the refusal NAMES, and only while that is still
+        // the one this follower intends. A delayed refusal answering a
+        // superseded attempt (an A->B->A retarget) would otherwise install a
+        // retry-free gate against a healthy current binding, and an ack that
+        // arrives with no intent at all would store `null` — which
+        // `isPermanentlyMismatched()` reads back as "no gate" while the error
+        // stays on screen.
+        const refused =
+          typeof event.detail.workflowId === 'string'
+            ? event.detail.workflowId
+            : null
+        if (refused !== null && refused === subscribedWorkflowId.value)
+          permanentSchemaMismatchWorkflowId = refused
+        schemaError.value = readSchemaError(event.detail)
+      } else {
+        scheduleSubscribeRetry()
+      }
       // FE #16637 residual: a refusal is the earliest signal the sender can
       // get that its in-flight batch's doc is gone — don't make it wait out
       // the 10 s result-silence window to notice on its own.
@@ -416,6 +497,19 @@ export function useAgentCrdtFollower(
       ? { ...outcomes.value, applied: outcomes.value.applied + 1 }
       : { ...outcomes.value, skipped: outcomes.value.skipped + 1 }
     if (applied) reconcileLiveGraph(update.workflowId)
+    // A frame only reaches this listener after the bridge's KA-11 read gate
+    // passed for the current lineage, so an applied frame is positive proof
+    // this build CAN project this document. That outranks a gate installed
+    // from an ack, which carries no attempt identity and can therefore answer
+    // a superseded subscribe. Without this the mis-correlated gate would
+    // disable `reconcile()` and `resubscribe()` for the rest of the session
+    // while updates were landing normally.
+    if (applied && isPermanentlyMismatched()) {
+      permanentSchemaMismatchWorkflowId = null
+      schemaError.value = null
+      connected.value = true
+      recordDevEvent('schema_gate_lifted', { workflowId: update.workflowId })
+    }
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
       seq: update.seq,
@@ -495,6 +589,8 @@ export function useAgentCrdtFollower(
       workflowId === subscribedWorkflowId.value
     ) {
       updatesApplied.value = 0
+      permanentSchemaMismatchWorkflowId = null
+      schemaError.value = null
       adapter.clearForReset(workflowId, {
         source: 'agent-remote',
         actor: 'agent-lineage',
@@ -508,24 +604,46 @@ export function useAgentCrdtFollower(
     }
   }
   const onSchemaError: EventListener = (event) => {
+    const detail =
+      event instanceof CustomEvent
+        ? (event.detail as { workflowId?: unknown } | null)
+        : null
+    const workflowId =
+      typeof detail?.workflowId === 'string' ? detail.workflowId : null
+    outcomes.value = { ...outcomes.value, errored: outcomes.value.errored + 1 }
+    recordDevEvent(
+      'schema_error',
+      event instanceof CustomEvent ? (event.detail ?? null) : null
+    )
+    // Correlate before mutating anything shared, exactly as `onUpdate`,
+    // `onOpsResult`, `onDocReset` and `onFollowerReplaced` do. A late frame for
+    // a workflow this follower has already left would otherwise cancel the
+    // current binding's subscribe retry, discard its adapter work and raise a
+    // toast against a healthy document.
+    if (
+      !isTargetActive.value ||
+      workflowId === null ||
+      workflowId !== subscribedWorkflowId.value
+    )
+      return
     // KA-11 fail-closed: the bridge refused to propagate an unreadable doc, so
     // nothing was projected. Surface it as its own status rather than as a
     // generic "disconnected", which is indistinguishable from "never connected".
     connected.value = false
     lastFrameType.value = event.type
     clearStaleProbe()
-    const detail =
-      event instanceof CustomEvent
-        ? (event.detail as { workflowId?: string } | null)
-        : null
-    if (detail?.workflowId !== undefined)
-      adapter.discardPending(detail.workflowId)
-    outcomes.value = { ...outcomes.value, errored: outcomes.value.errored + 1 }
-    recordDevEvent(
-      'schema_error',
-      event instanceof CustomEvent ? (event.detail ?? null) : null
-    )
+    clearSubscribeRetry()
+    schemaError.value = readSchemaError(detail)
+    adapter.discardPending(workflowId)
+    // A document this build refuses to READ must not keep receiving writes:
+    // `createOpSender` re-reads its target before every send, and that target
+    // now reports unbound while `schemaError` is set.
+    sender.abortIfUnbound()
   }
+  const isPermanentlyMismatched = (): boolean =>
+    subscribedWorkflowId.value !== null &&
+    subscribedWorkflowId.value === permanentSchemaMismatchWorkflowId
+
   const onGap: EventListener = (event) => {
     outcomes.value = { ...outcomes.value, gap: outcomes.value.gap + 1 }
     recordDevEvent(
@@ -544,6 +662,7 @@ export function useAgentCrdtFollower(
     connected.value = false
     clearStaleProbe()
     recordDevEvent('reconnected', null)
+    if (isPermanentlyMismatched()) return
     bridge.resubscribe()
   }
   /**
@@ -557,11 +676,15 @@ export function useAgentCrdtFollower(
    * on every accepted connection, first one included, so it is the earliest
    * signal available that the socket can now carry a frame. `reconcile()` is a
    * no-op once intent and reality agree, so the extra `status` traffic costs
-   * nothing unless a refused subscribe has a scheduled retry. In that case,
-   * the retry timer owns the next attempt and its backoff.
+   * nothing unless a refused subscribe has a scheduled retry (the retry timer
+   * owns the next attempt and its backoff), or the workflow is permanently
+   * mismatched, where intent and reality deliberately disagree (the ack
+   * refusal cleared `sentWorkflowId`) so that a later, unrelated retry path
+   * cannot mistake the gap for one still owed a retry.
    */
   const onSocketActivity: EventListener = () => {
     if (subscribeRetryTimer !== null) return
+    if (isPermanentlyMismatched()) return
     bridge.reconcile()
   }
 
@@ -637,6 +760,13 @@ export function useAgentCrdtFollower(
       clearSubscribeRetry()
       clearStaleProbe()
       connected.value = false
+      schemaError.value = null
+      // The workflow or active state changed — the one condition that is
+      // allowed to lift a permanent-mismatch gate (see
+      // `isPermanentlyMismatched`). Reset unconditionally, even back to the
+      // same workflow id after a detach, so a fresh subscribe attempt is not
+      // silently swallowed by a gate left over from the previous binding.
+      permanentSchemaMismatchWorkflowId = null
       knownDocNodeIds = new Set()
       if (!active) {
         if (next !== null) initialBind = false
@@ -715,6 +845,7 @@ export function useAgentCrdtFollower(
     workflowId: subscribedWorkflowId.value,
     updatesApplied: updatesApplied.value,
     lastFrameType: lastFrameType.value,
+    schemaError: schemaErrorMessage.value,
     outcomes: outcomes.value
   }))
 
@@ -723,11 +854,12 @@ export function useAgentCrdtFollower(
       status: status.value,
       tabId,
       lastSeq: bridge.lastSequence,
-      schemaError: bridge.lastSchemaError?.message ?? null
+      lastBridgeSchemaError: bridge.lastSchemaError?.message ?? null
     })
 
   return {
     status: readonly(status),
+    schemaErrorState: readonly(schemaError),
     debugSnapshot,
     enqueueHumanOperations: (operations: GraphOperation[]) =>
       sender.enqueue(operations)

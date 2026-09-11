@@ -387,7 +387,7 @@ function crdtSection(crdt: CrdtDebugSnapshot): string {
     `- **Last frame:** ${crdt.status.lastFrameType ?? 'none'}`,
     `- **Tab id:** ${crdt.tabId ?? 'unknown'}`,
     `- **Last seq:** ${crdt.lastSeq ?? 'none'}`,
-    `- **Schema error:** ${crdt.schemaError ?? 'none'}`,
+    `- **Schema error:** ${crdt.lastBridgeSchemaError ?? 'none'}`,
     `- **Doc nodes (${crdt.nodeIds.length}):** ${crdt.nodeIds.join(', ') || 'none'}`,
     `- **Doc links (${crdt.linkIds.length}):** ${crdt.linkIds.join(', ') || 'none'}`,
     `- **Applied op ids:** ${crdt.appliedOpIds.length}`
