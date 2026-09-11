@@ -56,10 +56,22 @@ const previousCredits = computed(() =>
   topUp.value.status === 'idle' ? 0 : topUp.value.previousCredits
 )
 
+// A receipt nobody acknowledged within a minute was read off the chip
+// instead; greeting the next visit with it would look like a fresh grant.
+const STALE_RECEIPT_MS = 60_000
+
 watch(open, (value) => {
-  if (value) return
-  usd.value = 25
-  state.value = 'amount'
+  if (!value) {
+    usd.value = 25
+    state.value = 'amount'
+    return
+  }
+  if (
+    topUp.value.status === 'landed' &&
+    Date.now() - topUp.value.landedAt > STALE_RECEIPT_MS
+  ) {
+    clearTopUpWatch()
+  }
 })
 
 function finish() {
