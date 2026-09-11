@@ -1,8 +1,7 @@
 name: 'Disposable: Feature Flag Policy Premerge'
 
 on:
-  push:
-    branches: ['codex/flag-policy-premerge-proof']
+  workflow_dispatch:
 
 permissions:
   actions: read
