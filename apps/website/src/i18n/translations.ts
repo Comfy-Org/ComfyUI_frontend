@@ -9362,19 +9362,21 @@ Enterprise`
     'zh-CN': '浏览全部'
   },
   'workshop.credits.title': {
-    en: 'Payment happens on Stripe',
-    'zh-CN': '支付在 Stripe 完成'
+    en: 'Add credits',
+    'zh-CN': '添加积分'
   },
   'workshop.credits.body': {
-    en: 'Pick a top-up here and finish the purchase on Stripe Checkout. We send the page you are on as the return address, so you land back here with your inputs as you left them:',
-    'zh-CN':
-      '在此选择充值额度，然后在 Stripe Checkout 完成支付。我们会带上当前页面作为返回地址，付款后你会回到这里，输入内容保持原样：'
+    en: 'Pick a bundle, or choose a custom amount.',
+    'zh-CN': '选择一个额度，或自定义金额。'
   },
-  'workshop.credits.continue': {
-    en: 'Continue to Stripe',
-    'zh-CN': '前往 Stripe'
+  'workshop.credits.continue': { en: 'Continue', 'zh-CN': '继续' },
+  'workshop.credits.custom': {
+    en: 'Custom · $5 – $10,000',
+    'zh-CN': '自定义 · $5 – $10,000'
   },
-  'workshop.credits.cancel': { en: 'Stay here', 'zh-CN': '留在此页' },
+  'workshop.credits.less': { en: 'Less', 'zh-CN': '减少' },
+  'workshop.credits.more': { en: 'More', 'zh-CN': '增加' },
+  'workshop.credits.cancel': { en: 'Cancel', 'zh-CN': '取消' },
   'workshop.credits.checkout': {
     en: 'Checkout',
     'zh-CN': '结账'
@@ -9929,10 +9931,6 @@ Enterprise`
   'workshop.error.checkoutFailed': {
     en: 'Checkout could not start. Try again.',
     'zh-CN': '无法启动结账，请重试。'
-  },
-  'workshop.error.noCreditsCheckout': {
-    en: 'Add credits to {workspace} through Stripe checkout.',
-    'zh-CN': '通过 Stripe 结账为 {workspace} 添加积分。'
   },
   'workshop.error.noCreditsCloud': {
     en: 'Add credits to {workspace} to keep running models.',

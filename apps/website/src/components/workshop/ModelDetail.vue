@@ -36,12 +36,6 @@ import { createWorkshopUrlUploader } from '../../config/workshop-url-upload'
 import { WorkshopRouterError } from '../../config/workshop-router-errors'
 import { releaseRouterOutputs } from '../../config/workshop-response'
 import { retainRunHistory } from '../../config/workshop-run-history'
-import {
-  TOP_UP_AMOUNT_CENTS,
-  TopUpCheckoutError,
-  createTopUpCheckout,
-  platformTopUpHref
-} from '../../lib/workshop/buy-credits'
 import { modelDocsHref } from '../../lib/workshop/model-docs'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import { workshopIdempotencyKey } from '../../config/workshop-snippets'
@@ -52,6 +46,7 @@ import {
   useWorkshopAuthFlagSettled
 } from '../../scripts/posthog'
 import ApiTab from './ApiTab.vue'
+import BuyCreditsDialog from './BuyCreditsDialog.vue'
 import ExamplesTab from './ExamplesTab.vue'
 import PlaygroundForm from './PlaygroundForm.vue'
 import PlaygroundOutput from './PlaygroundOutput.vue'
@@ -176,34 +171,7 @@ const authFlagSettled = useWorkshopAuthFlagSettled()
 const mounted = useMounted()
 const signInHref = useSignInHref(locale)
 const docsHref = modelDocsHref(model)
-const checkout = ref<'idle' | 'pending' | 'failed'>('idle')
-// The tab opens empty inside the click, before the awaited create - a window
-// opened after the await would meet the popup blocker.
-async function startTopUpCheckout() {
-  if (checkout.value === 'pending' || !session.value) return
-  const forWorkspace = session.value
-  checkout.value = 'pending'
-  const tab = window.open('about:blank', '_blank')
-  try {
-    const url = await createTopUpCheckout(
-      forWorkspace.token,
-      TOP_UP_AMOUNT_CENTS
-    )
-    checkout.value = 'idle'
-    if (tab) tab.location.assign(url)
-    else window.location.assign(url)
-  } catch (error) {
-    if (error instanceof TopUpCheckoutError && error.status === 404) {
-      checkout.value = 'idle'
-      const fallback = platformTopUpHref(forWorkspace.workspace.id)
-      if (tab) tab.location.assign(fallback)
-      else window.location.assign(fallback)
-      return
-    }
-    tab?.close()
-    checkout.value = 'failed'
-  }
-}
+const buyCreditsOpen = ref(false)
 
 const gate = computed(() => {
   if (
@@ -574,7 +542,7 @@ function useInCode() {
               </p>
               <p class="text-xs text-primary-warm-gray">
                 {{
-                  t('workshop.error.noCreditsCheckout', locale).replace(
+                  t('workshop.error.noCreditsCloud', locale).replace(
                     '{workspace}',
                     () => session?.workspace.name ?? ''
                   )
@@ -584,24 +552,12 @@ function useInCode() {
             <Button
               size="lg"
               class="w-full px-5"
-              :disabled="checkout === 'pending'"
               data-testid="run-button"
               data-gate="noCredits"
-              @click="startTopUpCheckout"
+              @click="buyCreditsOpen = true"
             >
               {{ t('workshop.run.buyCredits', locale) }}
-              <template #append>
-                <ExternalLink class="size-5" aria-hidden="true" />
-              </template>
             </Button>
-            <p
-              v-if="checkout === 'failed'"
-              role="status"
-              class="text-center text-xs text-red-400"
-              data-testid="checkout-error"
-            >
-              {{ t('workshop.error.checkoutFailed', locale) }}
-            </p>
           </template>
           <template v-else-if="gate === 'memberNoCredits'">
             <div class="mb-2 flex flex-col gap-1" data-testid="gate-note">
@@ -749,4 +705,5 @@ function useInCode() {
       <ApiTab :contract="model.execution" :values :locale />
     </section>
   </div>
+  <BuyCreditsDialog v-model:open="buyCreditsOpen" :locale />
 </template>
