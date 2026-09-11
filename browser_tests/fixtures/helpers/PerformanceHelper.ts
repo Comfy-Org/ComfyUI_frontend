@@ -254,8 +254,8 @@ export class PerformanceHelper {
       state.observer.takeRecords()
     })
     try {
-      await this.startRafCollector()
       const snapshot = await this.getSnapshot()
+      await this.startRafCollector()
       this.measurementState = { kind: 'measuring', snapshot }
     } catch (error) {
       await Promise.allSettled([this.stopRafCollectorIfRunning()])
@@ -270,13 +270,8 @@ export class PerformanceHelper {
 
     const before = this.measurementState.snapshot
     this.measurementState = { kind: 'idle' }
-    let after: PerfSnapshot
-    let rafCollection: RafCollection | null
-    try {
-      after = await this.getSnapshot()
-    } finally {
-      rafCollection = await this.stopRafCollectorIfRunning()
-    }
+    const rafCollection = await this.stopRafCollectorIfRunning()
+    const after = await this.getSnapshot()
 
     function delta(key: Exclude<keyof PerfSnapshot, 'cdpMetrics'>): number {
       return after[key] - before[key]
