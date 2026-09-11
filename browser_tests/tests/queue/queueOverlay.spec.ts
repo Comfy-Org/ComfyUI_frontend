@@ -1,15 +1,19 @@
 import { expect, mergeTests } from '@playwright/test'
+import type { ListAssetsResponse } from '@comfyorg/ingest-types'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import {
   createRouteMockJob,
   jobsRouteFixture
 } from '@e2e/fixtures/jobsRouteFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { webSocketFixture } from '@e2e/fixtures/ws'
 import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 
-const test = mergeTests(comfyPageFixture, jobsRouteFixture)
+const test = mergeTests(comfyPageFixture, jobsRouteFixture, webSocketFixture)
 const mockJobTimestamp = Date.UTC(2026, 0, 1, 12)
+const targetJobId = '00000000-0000-4000-8000-000000000002'
 
 const MOCK_JOBS: RawJobListItem[] = [
   createRouteMockJob({
@@ -21,11 +25,18 @@ const MOCK_JOBS: RawJobListItem[] = [
     outputs_count: 2
   }),
   createRouteMockJob({
-    id: 'job-completed-2',
+    id: targetJobId,
     status: 'completed',
     create_time: mockJobTimestamp - 120_000,
     execution_start_time: mockJobTimestamp - 120_000,
     execution_end_time: mockJobTimestamp - 115_000,
+    preview_output: {
+      filename: 'workflow-output.png',
+      subfolder: '',
+      type: 'output',
+      nodeId: '1',
+      mediaType: 'images'
+    },
     outputs_count: 1
   }),
   createRouteMockJob({
@@ -49,6 +60,25 @@ const MOCK_JOBS: RawJobListItem[] = [
 test.describe('Queue overlay', () => {
   test.beforeEach(async ({ comfyPage, jobsRoutes }) => {
     await jobsRoutes.mockJobsScenario({ history: MOCK_JOBS, queue: [] })
+    await comfyPage.page.route(/\/api\/assets(?:\?.*)?$/, async (route) => {
+      await route.fulfill({
+        json: {
+          assets: [
+            {
+              id: '10000000-0000-4000-8000-000000000002',
+              name: 'workflow-output.png',
+              mime_type: 'image/png',
+              tags: ['output'],
+              job_id: MOCK_JOBS[1].id,
+              created_at: '2026-08-30T00:00:00Z',
+              updated_at: '2026-08-30T00:00:00Z'
+            }
+          ],
+          total: 1,
+          has_more: false
+        } satisfies ListAssetsResponse
+      })
+    })
     await comfyPage.settings.setSetting('Comfy.Minimap.Visible', false)
     await comfyPage.settings.setSetting('Comfy.Queue.QPOV2', false)
     // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
@@ -115,6 +145,102 @@ test.describe('Queue overlay', () => {
     await toggle.click()
 
     await expect(comfyPage.page.locator('[data-job-id]').first()).toBeHidden()
+  })
+
+  test.describe('workflow output focus', () => {
+    test.use({
+      initialFeatureFlags: { assets: true },
+      initialSettings: { 'Comfy.Assets.UseAssetAPI': true }
+    })
+
+    test.afterEach(async ({ comfyPage }) => {
+      await comfyPage.workflow.setupWorkflowsDirectory({})
+    })
+
+    test('focuses the restored workflow output in Assets', async ({
+      comfyPage,
+      getWebSocket
+    }) => {
+      const workflowName = `assets-output-focus-${Date.now().toString(36)}`
+      const job = MOCK_JOBS[1]
+      const nodeId = '1'
+      const output = {
+        images: [
+          {
+            filename: 'workflow-output.png',
+            subfolder: '',
+            type: 'output'
+          }
+        ]
+      }
+      const ws = await getWebSocket()
+      const execution = new ExecutionHelper(comfyPage, ws)
+
+      await comfyPage.featureFlags.setServerFlagsPersistent({ assets: true })
+      await comfyPage.settings.setSetting(
+        'Comfy.Workflow.WorkflowTabsPosition',
+        'Sidebar'
+      )
+      await comfyPage.menu.workflowsTab.open()
+      await comfyPage.menu.topbar.saveWorkflow(workflowName)
+      execution.executed(job.id, nodeId, output)
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(
+            ([id]) => window.app!.nodeOutputs[id],
+            [nodeId]
+          )
+        )
+        .toEqual(output)
+
+      await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
+      await comfyPage.workflow.waitForWorkflowIdle()
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(
+            ([id]) => window.app!.nodeOutputs[id],
+            [nodeId]
+          )
+        )
+        .toBeUndefined()
+
+      await comfyPage.menu.workflowsTab.getPersistedItem(workflowName).click()
+      await comfyPage.workflow.waitForWorkflowIdle()
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(
+            ([id]) => window.app!.nodeOutputs[id],
+            [nodeId]
+          )
+        )
+        .toEqual(output)
+
+      await comfyPage.menu.assetsTab.open({ waitForAssets: false })
+      await expect(
+        comfyPage.menu.assetsTab.getAssetCardByName('workflow-output')
+      ).toBeVisible()
+      await comfyPage.menu.workflowsTab.open()
+
+      await comfyPage.page.getByTestId(TestIds.queue.overlayToggle).click()
+      const jobRow = comfyPage.page.locator(`[data-job-id="${job.id}"]`)
+      await jobRow.hover()
+      await jobRow.getByRole('button', { name: 'View' }).click()
+
+      await expect(comfyPage.menu.assetsTab.generatedTab).toBeVisible()
+      await expect(comfyPage.menu.assetsTab.selectedCards).toHaveCount(1)
+      await expect(comfyPage.menu.assetsTab.selectedCards).toHaveAttribute(
+        'data-asset-id',
+        job.id
+      )
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(
+            ([id]) => window.app!.nodeOutputs[id],
+            [nodeId]
+          )
+        )
+        .toEqual(output)
+    })
   })
 
   test('Job details popover stays inside the viewport for bottom rows', async ({
