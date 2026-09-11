@@ -78,6 +78,13 @@ export function migrateWorkspaceToScope(
     draftKeys,
     missingPointerKeys
   )
+  const migrationArtifacts = snapshotMigrationArtifacts(
+    workspaceId,
+    scope,
+    index,
+    sourcePayloads,
+    missingPointerKeys
+  )
 
   const artifactsCopied =
     draftKeys.every((draftKey) =>
@@ -106,7 +113,7 @@ export function migrateWorkspaceToScope(
         ? currentClaim.nonce !== claim.nonce
         : completion?.scope === scope && completion.nonce !== claim.nonce
     if (!sameScopePeer) {
-      restoreStorageSnapshot(destinationSnapshot)
+      restoreStorageSnapshot(destinationSnapshot, migrationArtifacts)
     }
     releaseClaimIfOwned(claimKey, claim)
   }
@@ -177,12 +184,48 @@ function snapshotPayloads(
   )
 }
 
+function snapshotMigrationArtifacts(
+  workspaceId: string,
+  scope: string,
+  index: object,
+  sourcePayloads: Map<string, string | null>,
+  pointerKeys: ((scope: string) => string)[]
+): Map<string, string | null> {
+  const artifacts = new Map<string, string | null>([
+    [StorageKeys.draftIndex(scope), JSON.stringify(index)]
+  ])
+  for (const [draftKey, raw] of sourcePayloads) {
+    artifacts.set(payloadKey(scope, draftKey), raw)
+  }
+  for (const keyFor of pointerKeys) {
+    const raw = localStorage.getItem(keyFor(workspaceId))
+    if (raw === null) continue
+    try {
+      const pointer: unknown = JSON.parse(raw)
+      if (typeof pointer === 'object' && pointer !== null) {
+        artifacts.set(
+          keyFor(scope),
+          JSON.stringify({ ...pointer, workspaceId: scope })
+        )
+      }
+    } catch {
+      continue
+    }
+  }
+  return artifacts
+}
+
 function payloadKey(scope: string, draftKey: string): string {
   return `${StorageKeys.prefixes.draftPayload}${scope}:${draftKey}`
 }
 
-function restoreStorageSnapshot(snapshot: Map<string, string | null>): void {
+function restoreStorageSnapshot(
+  snapshot: Map<string, string | null>,
+  migrationArtifacts: Map<string, string | null>
+): void {
   for (const [key, value] of snapshot) {
+    const current = localStorage.getItem(key)
+    if (current !== value && current !== migrationArtifacts.get(key)) continue
     if (value === null) localStorage.removeItem(key)
     else localStorage.setItem(key, value)
   }

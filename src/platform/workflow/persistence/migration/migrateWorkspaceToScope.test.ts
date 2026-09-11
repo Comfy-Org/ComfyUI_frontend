@@ -429,6 +429,43 @@ describe('migrateWorkspaceToScope', () => {
     expect(readJson(StorageKeys.draftIndex(sourceWorkspaceId))).toBe(null)
   })
 
+  it('preserves a newer destination generation when another identity takes the claim', () => {
+    seedSourceWorkspace()
+    const claimKey = StorageKeys.migrationClaim(sourceWorkspaceId)
+    const destinationPayloadKey = StorageKeys.draftPayload(
+      draftPath,
+      destinationScope
+    )
+    const destinationIndexKey = StorageKeys.draftIndex(destinationScope)
+    const newerPayload = { data: '{"nodes":[20]}', updatedAt: 20 }
+    const newerIndex = { ...buildIndex(), updatedAt: 20 }
+    const realSetItem = localStorage.setItem.bind(localStorage)
+    let claimTaken = false
+    vi.spyOn(localStorage, 'setItem').mockImplementation(
+      (key: string, value: string) => {
+        realSetItem(key, value)
+        if (key === destinationPayloadKey && !claimTaken) {
+          claimTaken = true
+          realSetItem(destinationPayloadKey, JSON.stringify(newerPayload))
+          realSetItem(destinationIndexKey, JSON.stringify(newerIndex))
+          realSetItem(
+            claimKey,
+            JSON.stringify({
+              scope: competingScope,
+              sourceUpdatedAt: 10,
+              nonce: 'competing-tab'
+            })
+          )
+        }
+      }
+    )
+
+    migrateWorkspaceToScope(sourceWorkspaceId, destinationScope)
+
+    expect(readJson(destinationPayloadKey)).toEqual(newerPayload)
+    expect(readJson(destinationIndexKey)).toEqual(newerIndex)
+  })
+
   it('keeps artifacts committed by a same-scope migration winner', () => {
     seedSourceWorkspace()
     const claimKey = StorageKeys.migrationClaim(sourceWorkspaceId)
