@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { onBeforeSignInLeave } from '../../config/workshop-return'
-import { WORKSHOP_CLOUD_BASE_URL } from '../../config/workshop-env'
+import { platformTopUpHref } from '../../lib/workshop/buy-credits'
 import HeaderAccount from './HeaderAccount.vue'
 
 const h = vi.hoisted(() => ({
@@ -137,10 +137,8 @@ describe('HeaderAccount', () => {
       await userEvent
         .setup()
         .click(screen.getByRole('button', { name: /account/i }))
-      const buy = screen.getByRole('menuitem', { name: 'Buy credits' })
-      expect(buy.getAttribute('href')).toBe(
-        `${WORKSHOP_CLOUD_BASE_URL}/?settings=plan-credits`
-      )
+      const buy = screen.getByRole('menuitem', { name: /add credits/i })
+      expect(buy.getAttribute('href')).toBe(platformTopUpHref(workspace.id))
       expect(buy.getAttribute('target')).toBe('_blank')
       expect(screen.getByRole('menuitem', { name: /sign out/i })).toBeTruthy()
     }
