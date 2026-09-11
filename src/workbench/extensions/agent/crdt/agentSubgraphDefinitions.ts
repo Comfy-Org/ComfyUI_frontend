@@ -21,8 +21,10 @@ const LINK_ORDER = 'link_order'
  */
 const NODE_INCARNATION = '__incarnation'
 
-/** Private replay-conflict stamp written by the `define_subgraph` applier. */
-const DEFINITION_DIGEST = '__definition_digest'
+/** The op layer reserves double-underscore definition keys for bookkeeping. */
+function isDefinitionBookkeeping(key: string): boolean {
+  return key.startsWith('__')
+}
 
 /**
  * Own-key filter shared by both record readers. Assigning through
@@ -53,7 +55,7 @@ function withoutDefinitionBookkeeping(source: unknown): unknown {
   }
   return Object.fromEntries(
     Object.entries(source).flatMap(([key, value]) => {
-      if (key === DEFINITION_DIGEST) return []
+      if (isDefinitionBookkeeping(key)) return []
       if (key !== 'definitions') return [[key, value]]
       return [[key, withoutNestedDefinitionBookkeeping(value)]]
     })
@@ -117,7 +119,7 @@ function readDefinition(source: Y.Map<unknown>): ExportedSubgraph {
     if (
       key === NODE_ORDER ||
       key === LINK_ORDER ||
-      key === DEFINITION_DIGEST ||
+      isDefinitionBookkeeping(key) ||
       !isReadableKey(key)
     )
       return

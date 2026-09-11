@@ -181,6 +181,28 @@ describe('readSubgraphDefinitions', () => {
     ).not.toHaveProperty('__definition_digest')
   })
 
+  it('drops unknown private bookkeeping from every definition depth', () => {
+    const inner = createTestSubgraphData({ nodes: [interiorNode(1)] as never })
+    const outer = createTestSubgraphData({
+      nodes: [interiorNode(2, inner.id)] as never,
+      definitions: { subgraphs: [inner] }
+    })
+    const doc = seed(outer)
+    const stored = doc.getMap<Y.Map<unknown>>('definitions').get(outer.id)
+    expect(stored).toBeDefined()
+    stored!.set('__future_cmp_register', 'outer-private')
+    stored!.set('definitions', {
+      subgraphs: [{ ...inner, __future_cmp_register: 'inner-private' }]
+    })
+
+    const [projected] = readSubgraphDefinitions(doc)
+
+    expect(projected).not.toHaveProperty('__future_cmp_register')
+    expect(projected.definitions?.subgraphs?.[0]).not.toHaveProperty(
+      '__future_cmp_register'
+    )
+  })
+
   it('passes nested definitions through untouched', () => {
     const inner = createTestSubgraphData({ nodes: [interiorNode(1)] as never })
     const outer = createTestSubgraphData({
