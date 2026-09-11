@@ -1,0 +1,241 @@
+{
+  "id": "f1e2d3c4-0000-4000-8000-fe25800258ff",
+  "revision": 0,
+  "last_node_id": 67,
+  "last_link_id": 2,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "LoadImage",
+      "pos": [80, 120],
+      "size": [274, 314],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "localized_name": "IMAGE",
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [1]
+        },
+        {
+          "localized_name": "MASK",
+          "name": "MASK",
+          "type": "MASK",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.27.0",
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": ["watch_macro_shot.png", "image"]
+    },
+    {
+      "id": 66,
+      "type": "7c0d9e16-1d55-4f2e-9a61-fe2580258001",
+      "pos": [460, 120],
+      "size": [280, 120],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "image",
+          "name": "image",
+          "type": "IMAGE",
+          "link": 1
+        },
+        {
+          "localized_name": "resize_type.multiplier",
+          "name": "resize_type.multiplier",
+          "type": "FLOAT",
+          "label": "scale_multiplier",
+          "widget": {
+            "name": "resize_type.multiplier"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "resized",
+          "name": "resized",
+          "type": "IMAGE",
+          "links": [2]
+        }
+      ],
+      "properties": {},
+      "widgets_values": [4]
+    },
+    {
+      "id": 67,
+      "type": "PreviewImage",
+      "pos": [820, 120],
+      "size": [210, 246],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "images",
+          "name": "images",
+          "type": "IMAGE",
+          "link": 2
+        }
+      ],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": []
+    }
+  ],
+  "links": [
+    {
+      "id": 1,
+      "origin_id": 1,
+      "origin_slot": 0,
+      "target_id": 66,
+      "target_slot": 0,
+      "type": "IMAGE"
+    },
+    {
+      "id": 2,
+      "origin_id": 66,
+      "origin_slot": 0,
+      "target_id": 67,
+      "target_slot": 0,
+      "type": "IMAGE"
+    }
+  ],
+  "groups": [],
+  "definitions": {
+    "subgraphs": [
+      {
+        "id": "7c0d9e16-1d55-4f2e-9a61-fe2580258001",
+        "version": 1,
+        "state": {
+          "lastGroupId": 0,
+          "lastNodeId": 57,
+          "lastLinkId": 50,
+          "lastRerouteId": 0
+        },
+        "revision": 0,
+        "config": {},
+        "name": "Resize Image Subgraph",
+        "inputNode": {
+          "id": -10,
+          "bounding": [420, 60, 190, 80]
+        },
+        "outputNode": {
+          "id": -20,
+          "bounding": [980, 100, 128, 68]
+        },
+        "inputs": [
+          {
+            "id": "e981cdcd-e740-4932-91e0-06392d5ac526",
+            "name": "image",
+            "type": "IMAGE",
+            "linkIds": [45],
+            "localized_name": "image",
+            "pos": [587, 85]
+          },
+          {
+            "id": "df3b8dbd-5649-4dbd-8551-c5cb254eafc5",
+            "name": "resize_type.multiplier",
+            "type": "FLOAT",
+            "linkIds": [50],
+            "label": "scale_multiplier",
+            "pos": [587, 105]
+          }
+        ],
+        "outputs": [
+          {
+            "id": "517ebe35-9129-4f66-a88e-2fdca4c417cf",
+            "name": "resized",
+            "type": "IMAGE",
+            "linkIds": [24],
+            "localized_name": "resized",
+            "pos": [1000, 130]
+          }
+        ],
+        "widgets": [],
+        "nodes": [
+          {
+            "id": 57,
+            "type": "ResizeImageMaskNode",
+            "pos": [700, 120],
+            "size": [270, 106],
+            "flags": {},
+            "order": 0,
+            "mode": 0,
+            "inputs": [
+              {
+                "localized_name": "input",
+                "name": "input",
+                "type": "IMAGE,MASK",
+                "link": 45
+              },
+              {
+                "localized_name": "resize_type.multiplier",
+                "name": "resize_type.multiplier",
+                "type": "FLOAT",
+                "widget": {
+                  "name": "resize_type.multiplier"
+                },
+                "link": 50
+              }
+            ],
+            "outputs": [
+              {
+                "localized_name": "resized",
+                "name": "resized",
+                "type": "IMAGE",
+                "links": [24]
+              }
+            ],
+            "properties": {
+              "cnr_id": "comfy-core",
+              "ver": "0.27.0",
+              "Node name for S&R": "ResizeImageMaskNode"
+            },
+            "widgets_values": ["scale by multiplier", 4, "lanczos"]
+          }
+        ],
+        "groups": [],
+        "links": [
+          {
+            "id": 45,
+            "origin_id": -10,
+            "origin_slot": 0,
+            "target_id": 57,
+            "target_slot": 0,
+            "type": "IMAGE"
+          },
+          {
+            "id": 50,
+            "origin_id": -10,
+            "origin_slot": 1,
+            "target_id": 57,
+            "target_slot": 1,
+            "type": "FLOAT"
+          },
+          {
+            "id": 24,
+            "origin_id": 57,
+            "origin_slot": 0,
+            "target_id": -20,
+            "target_slot": 0,
+            "type": "IMAGE"
+          }
+        ],
+        "extra": {}
+      }
+    ]
+  },
+  "config": {},
+  "extra": {},
+  "version": 0.4
+}

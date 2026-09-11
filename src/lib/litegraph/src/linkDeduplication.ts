@@ -7,6 +7,7 @@ import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import cloneDeep from 'es-toolkit/compat/cloneDeep'
 import type { LGraph } from './LGraph'
+import type { LGraphNode } from './LGraphNode'
 import type { LinkId, LLink, SerialisedLLinkArray } from './LLink'
 import type {
   ExportedSubgraph,
@@ -174,6 +175,55 @@ export function detachSerialisedLinks(
   }
   for (const output of nodeData.outputs ?? []) output.links = []
   return linkByInputName
+}
+
+/**
+ * Whether `inputName` is a child input of a group widget on `node`.
+ *
+ * Group widgets (dynamic combos) name their child inputs
+ * `<group widget name>.<key>` and replace the whole set whenever their own
+ * value changes. The group is the segment before the *last* dot, so inputs of
+ * a nested dynamic group — autogrow names its children
+ * `<group>.<nested>.<ordinal>` — resolve to their own group and are excluded.
+ */
+function isGroupWidgetChildInput(node: LGraphNode, inputName: string): boolean {
+  if (!inputName) return false
+
+  const separator = inputName.lastIndexOf('.')
+  if (separator < 1) return false
+
+  const groupName = inputName.slice(0, separator)
+  return node.widgets?.some((widget) => widget.name === groupName) ?? false
+}
+
+/**
+ * Realigns the links of a node's group widget child inputs, before the group
+ * widget's serialized value is applied.
+ *
+ * Applying that value rebuilds every child input of the group and hands each
+ * surviving link to the new input of the same name. A link sitting on the
+ * wrong slot — the node definition lays out the default option's children,
+ * while `target_slot` counts the serialized layout — is handed to an input
+ * that the selected option does not define, and is dropped.
+ *
+ * Only group widget children are realigned: {@link LGraph.configure} runs the
+ * full pass once every node is configured, which is what lets it resolve
+ * contention for a slot between nodes. Realigning a node's other inputs here
+ * would claim slots from nodes that have not configured yet.
+ */
+export function realignGroupWidgetChildLinks(
+  node: LGraphNode,
+  nodeData: Pick<ISerialisedNode, 'id' | 'inputs'>
+): void {
+  const { graph } = node
+  if (!graph) return
+
+  const inputs = nodeData.inputs?.filter((input) =>
+    isGroupWidgetChildInput(node, input.name)
+  )
+  if (!inputs?.length) return
+
+  realignInputLinkSlots(graph, [[node.id, { id: nodeData.id, inputs }]])
 }
 
 /**

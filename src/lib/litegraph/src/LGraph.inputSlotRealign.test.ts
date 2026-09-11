@@ -8,6 +8,7 @@ import {
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import {
   normalizeConfiguredTopology,
+  realignGroupWidgetChildLinks,
   realignInputLinkSlots
 } from '@/lib/litegraph/src/linkDeduplication'
 import type {
@@ -782,5 +783,86 @@ describe('realignInputLinkSlots', () => {
     realignInputLinkSlots(graph, [[target.id, nodeData]])
 
     expect(movable.target_slot).toBe(4)
+  })
+})
+
+describe('realignGroupWidgetChildLinks (FE-258)', () => {
+  function groupWidgetSetup(inputNames: string[], groupWidgetName: string) {
+    const graph = new LGraph()
+    const source = new LGraphNode('Source')
+    source.addOutput('out', 'number')
+    const target = new LGraphNode('Target')
+    for (const name of inputNames) target.addInput(name, 'number')
+    target.addWidget('combo', groupWidgetName, 'scale dimensions', () => {}, {
+      values: ['scale dimensions', 'scale by multiplier']
+    })
+    graph.add(source)
+    graph.add(target)
+    return { graph, source, target }
+  }
+
+  function serializedInputs(
+    target: LGraphNode,
+    links: Record<string, number | null>
+  ) {
+    return target.inputs.map((input) => ({
+      name: input.name,
+      type: 'number',
+      link: links[input.name] ?? null
+    }))
+  }
+
+  it('moves a child link off the slot the default option laid out', () => {
+    const { graph, source, target } = groupWidgetSetup(
+      ['input', 'resize_type.width', 'resize_type', 'resize_type.multiplier'],
+      'resize_type'
+    )
+    const link = source.connect(0, target, 1)!
+
+    realignGroupWidgetChildLinks(target, {
+      id: target.id,
+      inputs: serializedInputs(target, { 'resize_type.multiplier': link.id })
+    })
+
+    expect(link.target_slot).toBe(3)
+    expect(
+      useLinkStore().getInputSlotLink(graphScopeOf(graph), target.id, 3)?.id
+    ).toBe(link.id)
+  })
+
+  it('leaves inputs that no group widget owns', () => {
+    const { source, target } = groupWidgetSetup(
+      ['first', 'second', 'resize_type'],
+      'resize_type'
+    )
+    const link = source.connect(0, target, 0)!
+
+    realignGroupWidgetChildLinks(target, {
+      id: target.id,
+      inputs: serializedInputs(target, { second: link.id })
+    })
+
+    expect(link.target_slot).toBe(0)
+  })
+
+  it('leaves the children of a group nested inside a group widget', () => {
+    const { source, target } = groupWidgetSetup(
+      [
+        'model.reference_images.image_1',
+        'other',
+        'model.reference_images.mask'
+      ],
+      'model'
+    )
+    const link = source.connect(0, target, 1)!
+
+    realignGroupWidgetChildLinks(target, {
+      id: target.id,
+      inputs: serializedInputs(target, {
+        'model.reference_images.image_1': link.id
+      })
+    })
+
+    expect(link.target_slot).toBe(1)
   })
 })
