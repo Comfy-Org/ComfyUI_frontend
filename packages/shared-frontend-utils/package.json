@@ -8,14 +8,19 @@
   "exports": {
     "./creditsUtil": "./src/creditsUtil.ts",
     "./formatUtil": "./src/formatUtil.ts",
+    "./loadExternalScript": "./src/loadExternalScript.ts",
     "./networkUtil": "./src/networkUtil.ts",
+    "./nodePricing": "./src/nodePricing.ts",
     "./piiUtil": "./src/piiUtil.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "axios": "catalog:"
+    "@comfyorg/object-info-parser": "workspace:*",
+    "axios": "catalog:",
+    "es-toolkit": "^1.39.9",
+    "jsonata": "catalog:"
   },
   "devDependencies": {
     "typescript": "catalog:"

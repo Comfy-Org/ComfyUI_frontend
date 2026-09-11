@@ -75,6 +75,19 @@
     },
     "notHelpful": "役に立たなかった",
     "openWorkflowTab": "{name} を開く",
+    "paywall": {
+      "addCredits": "クレジットを追加",
+      "body": {
+        "local": "クレジット残高を使い切りました。エージェントを継続して実行するにはクレジットを追加してください。",
+        "member": "このワークスペースではすべてのクレジットを使い切りました。ワークスペースの所有者に追加を依頼してください。",
+        "salesManaged": "このワークスペースの請求はComfyアカウントチームを通じて行われます。クレジットを追加するには、チームにお問い合わせください。",
+        "subscribed": "このワークスペースでは月間クレジットと追加クレジット残高を使い切りました。エージェントを継続して実行するにはクレジットを追加してください。",
+        "subscriptionRequired": "利用可能なクレジットを使い切りました。"
+      },
+      "subscribe": "サブスクライブ",
+      "title": "クレジット不足",
+      "upgradePlan": "プランをアップグレード"
+    },
     "placeholder": "アイデアを説明し、{'@'} で参照、\nグラフのノードに言及するか、アセットをドラッグ",
     "ranToolCalls": "{count} 回のツール呼び出しを実行 | {count} 回のツール呼び出しを実行",
     "ranToolCallsTimed": "{count} 回のツール呼び出しを {seconds} 秒間実行 | {count} 回のツール呼び出しを {seconds} 秒間実行",
@@ -2944,7 +2957,6 @@
     "Edit Subgraph Widgets": "サブグラフウィジェットを編集",
     "Exit Subgraph": "サブグラフを終了",
     "Experimental: Browse Model Assets": "実験的: モデルアセットを閲覧",
-    "Experimental: Enable AssetAPI": "実験的: AssetAPIを有効化",
     "Experimental: Enable Nodes 2_0": "実験的: Nodes 2.0を有効化",
     "Export": "エクスポート",
     "Export (API)": "エクスポート (API)",
@@ -4278,7 +4290,7 @@
     "additionalCredits": "追加クレジット",
     "additionalCreditsInUse": "使用中",
     "additionalCreditsInfo": "追加クレジットについて",
-    "additionalCreditsTooltip": "プランに追加して購入したクレジット。月間クレジットがなくなった後に使用されます。購入から1年後に有効期限が切れます。",
+    "additionalCreditsTooltip": "プランに追加するクレジットです。プランのクレジットを使い切った後に使用されます。各クレジットは購入から1年後に失効します。",
     "benefits": {
       "benefit1": "パートナーノード用月間クレジット — 必要に応じて追加購入可能",
       "benefit1FreeTier": "毎月のクレジット増加、いつでもチャージ可能",
@@ -4454,6 +4466,7 @@
       "billedEachMonth": "毎月{amount}請求されます。いつでもキャンセル可能です。",
       "changePaymentMethod": "変更",
       "commitment": "契約期間",
+      "completePayment": "支払いを完了",
       "completeVerification": "認証を完了する",
       "confirm": "確認",
       "confirmChange": "変更を確認",
@@ -4479,6 +4492,7 @@
       "hideFeatures": "機能を隠す",
       "newMonthlySubscription": "新しい月間サブスクリプション",
       "nextPaymentDue": "次回のお支払いは{date}です。いつでもキャンセルできます。",
+      "parkedCheckoutDetail": "以前のチェックアウトはまだ支払い方法の入力待ちです。支払いを完了してこのプランを有効化してください。",
       "payAndSubscribe": "支払って購読する",
       "paymentMethod": "お支払い方法",
       "paymentPopupBlocked": "支払いページを開けませんでした。ポップアップを許可して再試行してください。",
@@ -4595,7 +4609,7 @@
       "perkProjectAssets": "プロジェクト・アセット管理",
       "perkRolePermissions": "ロールベースの権限管理",
       "perkSharedPool": "全メンバーで共有するクレジットプール",
-      "tagline": "月間クレジット数を自由に選択。多くのクレジットでさらに割引。",
+      "tagline": "ご希望のクレジットサブスクリプションを選択してください。クレジットサブスクリプションが大きいほど、割引も大きくなります。",
       "unavailable": "このチームプランは現在ご利用いただけません。"
     },
     "teamPlanIncludes": "{plan}のすべてに加えて、以下が含まれます：",
@@ -4638,6 +4652,7 @@
     "usdPerMonthPerMember": "USD / 月 / メンバー",
     "usdPerYear": "USD／年",
     "usedAfterMonthly": "月間クレジットがなくなった後に使用",
+    "usedAfterYearly": "年間クレジットを使い切った後に使用",
     "videoEstimate": "約{count}本の5秒動画を生成*",
     "videoEstimateExplanation": "これらの見積もりは、Wan 2.2 画像から動画テンプレートのデフォルト設定（5秒、640x640、16fps、4ステップサンプリング）に基づいています。",
     "videoEstimateHelp": "このテンプレートの詳細",
@@ -4650,7 +4665,12 @@
     "whatsIncluded": "含まれる内容：",
     "workspaceNotSubscribed": "このワークスペースはサブスクリプションに加入していません",
     "yearly": "年額",
+    "yearlyCredits": "年間クレジット",
     "yearlyCreditsLabel": "年間合計クレジット",
+    "yearlyCreditsPerMemberLabel": "メンバーあたりの年間クレジット",
+    "yearlyCreditsUsedUpTitle": "年間クレジットを使い切りました。{date}に補充されます",
+    "yearlyCreditsUsedUpTitleNoDate": "年間クレジットを使い切りました",
+    "yearlyUsageProgress": "年間クレジット {total} のうち {used} を使用済み",
     "yourPlanIncludes": "ご利用プランに含まれるもの:"
   },
   "tabMenu": {

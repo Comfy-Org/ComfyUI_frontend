@@ -17,7 +17,8 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 let mockedTopBarWidth: Ref<number>
 
-vi.mock<unknown>(import('@vueuse/core'), () => ({
+vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => ({
+  ...(await importOriginal()),
   createSharedComposable: (composable: () => unknown) => composable,
   useDocumentVisibility: () => ref('visible'),
   useElementSize: () => ({ width: mockedTopBarWidth, height: ref(40) }),
@@ -280,5 +281,29 @@ describe('Load3DMenuBar', () => {
     expect(
       screen.queryByRole('button', { name: 'Show grid' })
     ).not.toBeInTheDocument()
+  })
+
+  it('shows the animation strip only when the model has animations', async () => {
+    const { rerender } = renderMenuBar()
+    expect(
+      screen.queryByTestId('load3d-animation-strip')
+    ).not.toBeInTheDocument()
+
+    await rerender({ animations: [{ name: 'idle', index: 0 }] })
+
+    expect(screen.getByTestId('load3d-animation-strip')).toBeInTheDocument()
+  })
+
+  it('forwards play toggles from the animation strip', async () => {
+    const onUpdatePlaying = vi.fn()
+    const { user } = renderMenuBar({
+      animations: [{ name: 'idle', index: 0 }],
+      playing: false,
+      'onUpdate:playing': onUpdatePlaying
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Play' }))
+
+    expect(onUpdatePlaying).toHaveBeenCalledWith(true)
   })
 })
