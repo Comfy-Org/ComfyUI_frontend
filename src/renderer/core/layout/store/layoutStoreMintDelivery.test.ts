@@ -10,7 +10,6 @@
  * workbench must not import renderer, so the wiring takes the store's seams
  * injected - exactly as the composition root will inject them.
  */
-import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -96,7 +95,6 @@ describe('mint ports against the real layout store delivery', () => {
   }
 
   beforeEach(() => {
-    setActivePinia(createPinia())
     minted = []
     graphId = createUuidv4()
     scope = {
@@ -119,9 +117,6 @@ describe('mint ports against the real layout store delivery', () => {
       isDocBound: () => true,
       enqueue: (operations) => minted.push(...operations),
       layoutChanges: (listener) => layoutStore.onChange(listener),
-      withLayoutActor: (actor, fn) => {
-        layoutStore.withActor(actor, fn)
-      },
       localActorPrefix: 'user-',
       getGraph: () => graph
     })
@@ -216,14 +211,15 @@ describe('mint ports against the real layout store delivery', () => {
     expect(minted).toEqual([])
   })
 
-  it('the remote scope suppresses a real layout apply end to end', async () => {
+  it('remote provenance suppresses a real layout apply end to end', async () => {
     graphNodes.set('5', {
       id: toNodeId('5'),
       serialize: () => ({ id: 5, type: 'TestNode' })
     })
 
-    wiring.runRemoteScope(() => {
-      layoutStore.applyOperation(createNodeOp(graphId, '5'))
+    layoutStore.applyOperation({
+      ...createNodeOp(graphId, '5'),
+      source: LayoutSource.AgentRemote
     })
     await realDelivery()
 

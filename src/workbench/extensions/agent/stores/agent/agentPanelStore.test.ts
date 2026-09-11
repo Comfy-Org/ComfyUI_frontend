@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { api } from '@/scripts/api'
@@ -9,7 +7,7 @@ const telemetry = vi.hoisted(() => ({
   trackAgentPanelOpened: vi.fn(),
   trackAgentPanelClosed: vi.fn()
 }))
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => telemetry
 }))
 
@@ -20,20 +18,10 @@ const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
 describe('agentPanelStore engagement telemetry', () => {
   beforeEach(() => {
     localStorage.clear()
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.useFakeTimers()
-  })
-
-  afterEach(() => {
-    useAgentPanelStore().$dispose()
-    // agentPanelStore reads this shared API ref directly; teardown above
-    // only disposes the store, so leaving it true here would leak into
-    // later tests in this file.
     api.serverFeatureFlagsReceived.value = false
   })
 
   it('derives flag delivery directly from the API state', async () => {
-    api.serverFeatureFlagsReceived.value = false
     const store = useAgentPanelStore()
 
     expect(store.flagDelivered).toBe(false)
@@ -139,11 +127,6 @@ describe('agentPanelStore engagement telemetry', () => {
 describe('agentPanelStore open-state persistence', () => {
   beforeEach(() => {
     localStorage.clear()
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
-  afterEach(() => {
-    useAgentPanelStore().$dispose()
   })
 
   it('persists the open state when the panel is toggled open', async () => {

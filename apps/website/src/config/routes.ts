@@ -13,6 +13,8 @@ const baseRoutes = {
   about: '/about',
   careers: '/careers',
   customers: '/customers',
+  customerVideoBlackMath: '/customers/videos/black-math',
+  customerVideoSilversideAi: '/customers/videos/silverside-ai',
   demos: '/demos',
   learning: '/learning',
   termsOfService: '/terms-of-service',
@@ -24,9 +26,10 @@ const baseRoutes = {
   models: '/p/supported-models',
   modelsShowcase: '/models',
   mcp: '/mcp',
+  agent: '/agent',
   platform: '/platform',
   platformComfyApi: '/platform/comfy-api',
-  platformModels: '/platform/models',
+  platformRouter: '/platform/router',
   platformBuilder: '/platform/builder',
   cli: '/cli',
   minimax: '/minimax-h3',
@@ -39,11 +42,14 @@ const baseRoutes = {
   ltx: '/ltx-2.5',
   geminiOmni: '/gemini-omni',
   wanAnimate2: '/wan-animate-2',
+  cloudNodes: '/cloud-nodes',
   wan3: '/wan-3.0',
   brand: '/brand'
 } as const
 
-type Routes = typeof baseRoutes
+type RouteKey = keyof typeof baseRoutes
+
+type Routes = Readonly<Record<RouteKey, string>>
 
 // Routes that are served only at their canonical path regardless of the
 // active locale. Localized variants of these routes intentionally do not
@@ -66,6 +72,11 @@ type Routes = typeof baseRoutes
 // minimaxLicenseProfessionalRequest: embeds an English-only HubSpot intake
 // form, so no localized variant exists. See the comment header in
 // src/pages/minimax/license/professional-request.astro.
+//
+// customerVideoBlackMath / customerVideoSilversideAi: dedicated watch pages
+// built from a single English-language caption track — a "translated" watch
+// page would either duplicate the English video under a Chinese path or lie
+// about having Chinese captions, so these are intentionally English-only.
 const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'affiliates',
   'affiliateTerms',
@@ -74,12 +85,36 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'enterprise',
   'managedBuilds',
   'models',
-  'minimaxLicenseProfessionalRequest'
+  'minimaxLicenseProfessionalRequest',
+  'customerVideoBlackMath',
+  'customerVideoSilversideAi'
 ])
 
-const LOCALE_INVARIANT_PATHS = new Set<string>(
-  [...LOCALE_INVARIANT_ROUTE_KEYS].map((key) => baseRoutes[key])
-)
+// pixal3d-trellis2: a bespoke English launch page with no Chinese version,
+// unlike the model-launch pages, which are data-driven and localized. It has no
+// `routes` entry, so it is listed by path.
+//
+// platform/serverless-animation: English-only. Its three siblings under
+// /platform/ each have a zh-CN twin and it does not, so without this the
+// emitter advertises a Chinese page that 404s.
+//
+// workshop: the catalog is English-only. It is also build-gated until launch,
+// but enabled previews must not advertise a localized page that does not exist.
+const LOCALE_INVARIANT_EXTRA_PATHS = [
+  // Auth surfaces render one page for every locale (copy localizes in the
+  // island); a /zh-CN twin does not exist and must not be advertised.
+  '/forgot-password',
+  '/login',
+  '/pixal3d-trellis2',
+  '/platform/serverless-animation',
+  '/signup',
+  '/workshop'
+]
+
+const LOCALE_INVARIANT_PATHS = new Set<string>([
+  ...[...LOCALE_INVARIANT_ROUTE_KEYS].map((key) => baseRoutes[key]),
+  ...LOCALE_INVARIANT_EXTRA_PATHS
+])
 
 /**
  * Prefix an internal path with the locale (`/mcp` → `/zh-CN/mcp`). External
@@ -106,7 +141,7 @@ export function getRoutes(locale: Locale = 'en'): Routes {
       key,
       localizeHref(path, locale)
     ])
-  ) as unknown as Routes
+  ) as Routes
 }
 
 export const externalLinks = {
@@ -135,6 +170,8 @@ export const externalLinks = {
   docsMcpMd: 'https://docs.comfy.org/agent-tools/mcp.md',
   docsMcpLocalMd:
     'https://docs.comfy.org/agent-tools/mcp.md#local-comfy-mcp-connection',
+  docsCloudNodes: 'https://docs.comfy.org/cloud-nodes/overview',
+  docsUpdateComfyUI: 'https://docs.comfy.org/installation/update_comfyui',
   docsComfyRouter:
     'https://docs.comfy.org/development/comfy-router/quickstart#comfy-router-quickstart',
   docsPlatform: 'https://docs.comfy.org/development/overview',
@@ -151,8 +188,9 @@ export const externalLinks = {
   mcpEndpoint: 'https://cloud.comfy.org/mcp',
   mcpSkills: 'https://github.com/Comfy-Org/comfy-skills',
   platform: 'https://platform.comfy.org',
-  platformBuilds: 'https://platform.comfy.org/builds',
+  platformBuilds: 'https://platform.comfy.org/profile/builds',
   platformUsage: 'https://platform.comfy.org/profile/usage',
+  pricing: 'https://comfy.org/pricing',
   reddit: 'https://www.reddit.com/r/comfyui/',
   support: 'https://support.comfy.org/hc/en-us',
   trustCenter: 'https://app.vanta.com/comfy.org/trust/o6nu46b16iu3e7fhc41hnz',

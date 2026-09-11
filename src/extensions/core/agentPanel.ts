@@ -1,4 +1,5 @@
 import { storeToRefs } from 'pinia'
+
 import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -78,7 +79,6 @@ async function setupFlagGate(): Promise<void> {
   const settle = (): void => {
     agentPanelStore.gateSettled = true
   }
-
   try {
     const [
       { createPostHogFlagSource, FLAG_SETTLE_TIMEOUT_MS },
@@ -105,7 +105,6 @@ async function setupFlagGate(): Promise<void> {
     if (import.meta.env.MODE === 'development') settle()
     else setTimeout(settle, FLAG_SETTLE_TIMEOUT_MS)
   } catch (error) {
-    console.error('[Comfy.AgentPanel] feature-flag gate failed to load', error)
     settle()
     reportError(error, { errorType: 'agent_flag_gate_load_failure' })
   }

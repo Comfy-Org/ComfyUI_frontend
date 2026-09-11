@@ -137,7 +137,7 @@ onUnmounted(() => {
                   class="flex flex-col gap-y-3"
                 >
                   <p
-                    class="text-primary-warm-gray text-base font-bold tracking-wider uppercase"
+                    class="text-base font-bold tracking-wider text-primary-warm-gray uppercase"
                   >
                     {{ column.header }}
                   </p>
