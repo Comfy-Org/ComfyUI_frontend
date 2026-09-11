@@ -23,7 +23,7 @@ const { modelName, capability, href, providerName, providerLogoSrc, media } =
     <img
       v-if="media.type === 'image'"
       :src="media.src"
-      alt=""
+      :alt="`${modelName} preview`"
       loading="lazy"
       decoding="async"
       class="size-full object-cover transition-transform duration-300 group-hover:scale-105 group-focus-visible:scale-105"
@@ -33,9 +33,7 @@ const { modelName, capability, href, providerName, providerLogoSrc, media } =
       :src="media.src"
       :poster="media.poster"
       :aria-label="`${modelName} preview`"
-      preload="metadata"
-      autoplay
-      loop
+      preload="none"
       muted
       playsinline
       class="size-full object-cover transition-transform duration-300 group-hover:scale-105 group-focus-visible:scale-105"

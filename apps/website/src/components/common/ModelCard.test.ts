@@ -35,9 +35,14 @@ describe('ModelCard', () => {
         .getByRole('img', { name: 'Black Forest Labs' })
         .getAttribute('aria-label')
     ).toBe('Black Forest Labs')
+    expect(
+      screen
+        .getByRole('img', { name: 'Flux 1.1 Pro preview' })
+        .getAttribute('src')
+    ).toBe('/models/flux-1-1-pro.webp')
   })
 
-  it('renders video media with its playback attributes and source', () => {
+  it('renders a static video preview without loading it eagerly', () => {
     render(ModelCard, {
       props: {
         ...imageCardProps,
@@ -51,11 +56,11 @@ describe('ModelCard', () => {
 
     const video = screen.getByLabelText('Flux 1.1 Pro preview')
 
-    expect(video.hasAttribute('autoplay')).toBe(true)
-    expect(video.hasAttribute('loop')).toBe(true)
+    expect(video.hasAttribute('autoplay')).toBe(false)
+    expect(video.hasAttribute('loop')).toBe(false)
     expect(video.hasAttribute('muted')).toBe(true)
     expect(video.hasAttribute('playsinline')).toBe(true)
-    expect(video.getAttribute('preload')).toBe('metadata')
+    expect(video.getAttribute('preload')).toBe('none')
     expect(video.getAttribute('poster')).toBe(
       '/models/flux-1-1-pro-poster.webp'
     )

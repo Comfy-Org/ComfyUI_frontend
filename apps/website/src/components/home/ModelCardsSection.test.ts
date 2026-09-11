@@ -55,7 +55,9 @@ describe('ModelCardsSection', () => {
     expect(flux3.getAttribute('src')).toBe(
       'https://media.comfy.org/website/flux-3/card-2.webm'
     )
-    expect(flux3.getAttribute('poster')).toBeNull()
+    expect(flux3.getAttribute('poster')).toBe(
+      '/images/flux-3-card-2-poster.webp'
+    )
   })
 
   it('updates the section, cards, and catalog CTA routes when locale changes', async () => {
@@ -74,5 +76,21 @@ describe('ModelCardsSection', () => {
     expect(
       screen.getByRole('link', { name: '探索更多模型' }).getAttribute('href')
     ).toBe('/zh-CN/models')
+
+    await rerender({ locale: 'ja' })
+
+    expect(screen.getByRole('region', { name: '注目のモデル' })).toBeTruthy()
+    expect(
+      screen
+        .getByRole('link', {
+          name: 'MiniMax MiniMax H3 Max テキストから動画'
+        })
+        .getAttribute('href')
+    ).toBe('/minimax-h3')
+    expect(
+      screen
+        .getByRole('link', { name: 'その他のモデルを見る' })
+        .getAttribute('href')
+    ).toBe('/models')
   })
 })

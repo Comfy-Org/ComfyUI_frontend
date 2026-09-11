@@ -42,7 +42,8 @@ const models = computed<readonly FeaturedModel[]>(() => [
     providerLogoSrc: '/icons/ai-models/black-forest-labs.svg',
     media: {
       type: 'video',
-      src: 'https://media.comfy.org/website/flux-3/card-2.webm'
+      src: 'https://media.comfy.org/website/flux-3/card-2.webm',
+      poster: '/images/flux-3-card-2-poster.webp'
     }
   },
   {
