@@ -40,7 +40,6 @@ describe('LinkConnector.dropOnNothing event dispatch', () => {
 
   beforeEach(() => {
     connector = new LinkConnector(mockSetConnectingLinks)
-    vi.clearAllMocks()
   })
 
   test('dispatches before-drop-on-canvas before dropped-on-canvas', () => {
