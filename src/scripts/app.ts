@@ -92,6 +92,7 @@ import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useExecutionLifecycleStore } from '@/platform/execution/executionLifecycleStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -1686,6 +1687,11 @@ export class ComfyApp {
       return false
     }
     const requestId = this.nextQueueRequestId++
+    const executionLifecycle = useExecutionLifecycleStore()
+    executionLifecycle.beginSubmission(
+      requestId,
+      useWorkspaceStore().workflow.activeWorkflow?.instanceId
+    )
     this.queueItems.push({
       number,
       batchCount,
@@ -1719,6 +1725,8 @@ export class ComfyApp {
         title: t('errorDialog.promptExecutionError'),
         reportType: 'promptExecutionError'
       })
+      for (const item of this.queueItems)
+        executionLifecycle.rejectSubmission(item.requestId, 'submission_failed')
       this.queueItems.length = 0
       this.processingQueue = false
       return false
@@ -1726,7 +1734,18 @@ export class ComfyApp {
     const workspaceIdBeforeAuthentication = teamWorkspaceStore.activeWorkspaceId
     const workspaceGenerationBeforeAuthentication =
       teamWorkspaceStore.workspaceTransitionGeneration
-    const comfyOrgAuthToken = await useAuthStore().getWorkspaceAuthToken()
+    const comfyOrgAuthToken = await useAuthStore()
+      .getWorkspaceAuthToken()
+      .catch((error) => {
+        for (const item of this.queueItems)
+          executionLifecycle.rejectSubmission(
+            item.requestId,
+            'submission_failed'
+          )
+        this.queueItems.length = 0
+        this.processingQueue = false
+        throw error
+      })
     const executionWorkspaceId = teamWorkspaceStore.activeWorkspaceId
     const executionWorkspaceGeneration =
       teamWorkspaceStore.workspaceTransitionGeneration
@@ -1755,11 +1774,17 @@ export class ComfyApp {
           reportType: 'promptExecutionError'
         }
       )
+      for (const item of this.queueItems)
+        executionLifecycle.rejectSubmission(
+          item.requestId,
+          'submission_rejected'
+        )
       this.queueItems.length = 0
       this.processingQueue = false
       return false
     }
 
+    let processingRequestId: number | undefined
     try {
       while (this.queueItems.length) {
         const {
@@ -1769,6 +1794,7 @@ export class ComfyApp {
           requestId,
           workflowQueueIntent
         } = this.queueItems.pop()!
+        processingRequestId = requestId
         let queuedCount = 0
         const workflowExecutionIntent: WorkflowExecutionIntent = {
           trigger_source: normalizeExecutionTriggerSource(
@@ -1823,6 +1849,12 @@ export class ComfyApp {
             }
           )
           const queuedNodes = collectAllNodes(this.rootGraph)
+          if (i === 0)
+            executionLifecycle.prepareSubmission(
+              requestId,
+              queuedWorkflow?.instanceId,
+              p.output
+            )
           let workflowContext: WorkflowExecutionContext | undefined
           if (executionContext) {
             workflowContext = toWorkflowExecutionContext(executionContext, {
@@ -1858,6 +1890,10 @@ export class ComfyApp {
             delete api.authToken
             delete api.apiKey
             if (!res.prompt_id) {
+              executionLifecycle.rejectSubmission(
+                requestId,
+                'submission_rejected'
+              )
               telemetry?.trackExecutionOutcome({
                 startTime,
                 endTime: responseReceivedAt,
@@ -1874,6 +1910,7 @@ export class ComfyApp {
             queueResultOverride = null
             try {
               if (res.prompt_id) {
+                executionLifecycle.acceptSubmission(requestId, res.prompt_id)
                 executionStore.storeJob({
                   id: res.prompt_id,
                   nodes: Object.keys(p.output),
@@ -1899,6 +1936,12 @@ export class ComfyApp {
               this.canvas.draw(true, true)
             }
           } catch (error: unknown) {
+            executionLifecycle.rejectSubmission(
+              requestId,
+              error instanceof PromptExecutionError
+                ? 'submission_rejected'
+                : 'submission_failed'
+            )
             telemetry?.trackExecutionOutcome({
               startTime,
               endTime: performance.now(),
@@ -2030,8 +2073,15 @@ export class ComfyApp {
             requestId
           })
         }
+        executionLifecycle.rejectSubmission(requestId, 'submission_failed')
+        processingRequestId = undefined
       }
     } finally {
+      if (processingRequestId !== undefined)
+        executionLifecycle.rejectSubmission(
+          processingRequestId,
+          'submission_failed'
+        )
       this.processingQueue = false
     }
     return queueResultOverride ?? !executionErrorStore.lastNodeErrors

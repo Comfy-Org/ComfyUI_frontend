@@ -6,6 +6,7 @@ import { useAppMode } from '@/composables/useAppMode'
 import { isCloud } from '@/platform/distribution/types'
 import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreconditionRouting'
 import { useTelemetry } from '@/platform/telemetry'
+import { useExecutionLifecycleStore } from '@/platform/execution/executionLifecycleStore'
 import type {
   WorkflowExecutionContext,
   WorkflowExecutionFailureReason,
@@ -143,6 +144,7 @@ export const WORKFLOW_STATUS_I18N_KEYS: Record<
 }
 
 export const useExecutionStore = defineStore('execution', () => {
+  const executionLifecycle = useExecutionLifecycleStore()
   const workflowStore = useWorkflowStore()
   const canvasStore = useCanvasStore()
   const executionErrorStore = useExecutionErrorStore()
@@ -442,7 +444,14 @@ export const useExecutionStore = defineStore('execution', () => {
     return total > 0 ? done / total : 0
   })
 
+  function handleJobsCancelled(event: CustomEvent<{ jobIds: string[] }>) {
+    for (const jobId of event.detail.jobIds) executionLifecycle.cancelJob(jobId)
+  }
+
   function bindExecutionEvents() {
+    api.addEventListener('reconnecting', executionLifecycle.connectionLost)
+    api.addEventListener('reconnected', executionLifecycle.connectionRestored)
+    api.addEventListener('jobsCancelled', handleJobsCancelled)
     api.addEventListener('notification', handleNotification)
     api.addEventListener('execution_start', handleExecutionStart)
     api.addEventListener('execution_cached', handleExecutionCached)
@@ -458,6 +467,12 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function unbindExecutionEvents() {
+    api.removeEventListener('reconnecting', executionLifecycle.connectionLost)
+    api.removeEventListener(
+      'reconnected',
+      executionLifecycle.connectionRestored
+    )
+    api.removeEventListener('jobsCancelled', handleJobsCancelled)
     api.removeEventListener('notification', handleNotification)
     api.removeEventListener('execution_start', handleExecutionStart)
     api.removeEventListener('execution_cached', handleExecutionCached)
@@ -475,6 +490,7 @@ export const useExecutionStore = defineStore('execution', () => {
     pendingWorkflowStatusByJobId.clear()
     pendingExecutionErrorsByJobId.clear()
     jobIdToWorkflow.clear()
+    executionLifecycle.clear()
 
     cancelPendingProgressUpdates()
   }
@@ -518,6 +534,7 @@ export const useExecutionStore = defineStore('execution', () => {
     e: CustomEvent<ExecutionInterruptedWsMessage>
   ) {
     const jobId = e.detail.prompt_id
+    executionLifecycle.cancelJob(jobId)
     pendingExecutionErrorsByJobId.delete(jobId)
     setWorkflowStatus(jobId, {
       status: 'failed',
@@ -532,12 +549,14 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecuted(e: CustomEvent<ExecutedWsMessage>) {
+    executionLifecycle.receiveOutput(e.detail)
     if (!activeJob.value) return
     activeJob.value.nodes[e.detail.node] = true
   }
 
   function handleExecutionSuccess(e: CustomEvent<ExecutionSuccessWsMessage>) {
     const jobId = e.detail.prompt_id
+    executionLifecycle.succeedJob(jobId)
     pendingExecutionErrorsByJobId.delete(jobId)
     setWorkflowStatus(jobId, {
       status: 'completed',
@@ -723,6 +742,7 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecutionError(e: CustomEvent<ExecutionErrorWsMessage>) {
+    executionLifecycle.failJob(e.detail.prompt_id)
     const endTime = performance.now()
     // Resolved up front: resetExecutionState() drops the job's workflow entry
     // before the handlers below record anything.

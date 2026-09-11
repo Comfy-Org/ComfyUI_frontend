@@ -1,3 +1,4 @@
+import { useExecutionLifecycleStore } from '@/platform/execution/executionLifecycleStore'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, toRaw, toValue } from 'vue'
 
@@ -395,7 +396,15 @@ export const useQueueStore = defineStore('queue', () => {
     if (targets.length === 0) {
       return
     }
-    await Promise.all(targets.map((type) => api.clearItems(type)))
+    const pendingJobIds = pendingTasks.value.map(({ jobId }) => jobId)
+    await Promise.all(
+      targets.map(async (type) => {
+        const cleared = await api.clearItems(type)
+        if (cleared && type === 'queue')
+          for (const jobId of pendingJobIds)
+            useExecutionLifecycleStore().cancelJob(jobId)
+      })
+    )
     await update()
   }
 

@@ -8,6 +8,14 @@ import { delay } from 'es-toolkit'
 import { computed, onScopeDispose, readonly, ref, shallowRef, watch } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { getExecutionImage } from '@/platform/execution/executionLifecycle'
+import type { ExecutionOutputSelector } from '@/platform/execution/executionLifecycle'
+import {
+  EXECUTION_ACCEPTANCE_TIMEOUT_MS,
+  EXECUTION_CONNECTION_TIMEOUT_MS,
+  useExecutionLifecycleStore
+} from '@/platform/execution/executionLifecycleStore'
+import type { ExecutionHandle } from '@/platform/execution/executionLifecycleStore'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { registerTour } from '@/platform/onboarding/onboardingTours'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -15,25 +23,9 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { resultItemType } from '@/schemas/apiSchema'
-import type {
-  ExecutedWsMessage,
-  ExecutionSuccessWsMessage,
-  ResultItem
-} from '@/schemas/apiSchema'
-import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useExecutionStore } from '@/stores/executionStore'
-import { parseNodeOutput } from '@/stores/resultItemParsing'
-import { isImageResult } from '@/utils/resultItem'
 
 import { resolvePinnedImageOutput } from '../roles/resolvePinnedImageOutput'
-import { transitionFirstRunCorrelation } from './firstRunCorrelation'
-import type {
-  FirstRunCorrelationEvent,
-  FirstRunCorrelationState
-} from './firstRunCorrelation'
 import {
   firstRunTourSteps,
   releaseFirstRunTargets
@@ -42,20 +34,18 @@ import type { RunState } from './firstRunTourDefinition'
 
 const RUN_BUTTON_SELECTOR =
   '[data-testid="queue-button"], [data-testid="subscribe-to-run-button"]'
-
-/** An undimmed look at the workflow the user chose, before the tour dims it. */
 const INTRO_PREVIEW_MS = 500
 
-const OFFLINE_GRACE_MS = 20_000
-
-/** How long a submitted run has to be accepted before the card stops promising. */
-const ACCEPT_DEADLINE_MS = 15_000
+interface TourExecution {
+  handle: ExecutionHandle
+  output: ExecutionOutputSelector | null
+  templateId: string | undefined
+}
 
 function useFirstRunTourControllerInternal() {
   const engine = useOnboardingTourStore()
   const billing = useBillingContext()
-  const executionStore = useExecutionStore()
-  const executionErrorStore = useExecutionErrorStore()
+  const executions = useExecutionLifecycleStore()
   const workflowStore = useWorkflowStore()
   const canvasStore = useCanvasStore()
   const settingStore = useSettingStore()
@@ -63,29 +53,28 @@ function useFirstRunTourControllerInternal() {
   const tourWorkflow = shallowRef<ComfyWorkflow | null>(null)
   let tourTemplateId: string | undefined
   const nudgeArmed = ref(false)
-  const runCorrelation = shallowRef<FirstRunCorrelationState>({
-    phase: 'idle',
-    output: null
-  })
-  const firstRunOutput = computed(() => runCorrelation.value.output)
-  const nudgeCompletedAt = computed(() =>
-    runCorrelation.value.phase === 'succeeded'
-      ? runCorrelation.value.completedAt
+  const tourExecution = shallowRef<TourExecution | null>(null)
+  const executionState = computed(() => tourExecution.value?.handle.state.value)
+  const firstRunOutput = computed(() => {
+    const execution = tourExecution.value
+    return execution
+      ? getExecutionImage(execution.handle.state.value, execution.output)
       : null
-  )
-
-  function dispatchRunCorrelation(event: FirstRunCorrelationEvent) {
-    runCorrelation.value = transitionFirstRunCorrelation(
-      runCorrelation.value,
-      event
-    )
-    if (runCorrelation.value.phase !== 'pending') stopAcceptDeadline()
-    if (
-      runCorrelation.value.phase === 'idle' ||
-      runCorrelation.value.phase === 'succeeded'
-    )
-      stopOfflineGrace()
-  }
+  })
+  const nudgeCompletedAt = computed(() => {
+    const state = executionState.value
+    return state?.phase === 'accepted' && state.job.phase === 'succeeded'
+      ? state.job.completedAt
+      : null
+  })
+  const runState = computed<RunState>(() => {
+    const state = executionState.value
+    if (!state) return 'idle'
+    if (state.phase === 'pending') return 'generating'
+    if (state.phase !== 'accepted') return 'failed'
+    if (state.job.phase === 'running') return 'generating'
+    return state.job.phase === 'succeeded' ? 'succeeded' : 'failed'
+  })
 
   /**
    * The half of the tour's context that exists before the tour does: a canvas
@@ -112,242 +101,50 @@ function useFirstRunTourControllerInternal() {
       engine.step.selfAdvancing === true
   )
 
-  /** Recorded, not derived: the queue clears a status as soon as it turns terminal. */
-  const runState = ref<RunState>('idle')
-  watch(
-    () => [
-      executionStore.getWorkflowStatus(tourWorkflow.value),
-      executionErrorStore.hasNodeError || executionErrorStore.hasPromptError
-    ],
-    ([status, refused], previous) => {
-      if (status !== undefined) stopAcceptDeadline()
-      // Only an actual transition into `running` starts the wait. This source
-      // re-evaluates whenever the `workflowStatus` map is replaced — which
-      // `mutateStatus` does for *any* workflow — or whenever an error flag
-      // flips. Paths that drop a job without clearing its status leave
-      // `running` behind forever (`handleServiceLevelError` is the live one),
-      // so an unconditional branch here would re-read that stale value and put
-      // the card back on "your result lands right here" after the watcher
-      // below has already failed the run.
-      if (status === 'running' && previous[0] !== 'running')
-        runState.value = 'generating'
-      else if (status === 'completed') runState.value = 'succeeded'
-      else if (status === 'failed') runState.value = 'failed'
-      // A refused run never queues; a stopped one drops its status rather than
-      // reporting an outcome. Both end the run, and neither says so.
-      else if (refused && runState.value === 'generating')
-        runState.value = 'failed'
-      else if (status === undefined && previous[0] === 'running')
-        runState.value = 'failed'
-    }
-  )
-
-  /**
-   * The queue stores a job the moment it accepts a submission, so a job
-   * carrying this tour's workflow is proof of acceptance. A refused submission
-   * never gets one.
-   *
-   * Deliberately *not* the workflow status: that is only written by
-   * `handleExecutionStart`, and a cloud job sits accepted in
-   * `initializingJobIds` — "Waiting for a machine" — with no status at all
-   * while a worker is allocated. Allocation routinely outlasts any deadline
-   * short enough to be useful, so keying on status would fail healthy runs.
-   */
-  const acceptedTourJobId = computed(() => {
-    const correlation = runCorrelation.value
-    if (correlation.phase !== 'pending') return null
-    return (
-      Object.entries(executionStore.queuedJobs).find(
-        ([jobId, job]) =>
-          !correlation.previousJobIds.has(jobId) &&
-          job.workflow === correlation.workflow
-      )?.[0] ?? null
-    )
-  })
-  const tourRunPresent = computed(() => {
-    const correlation = runCorrelation.value
-    return (
-      correlation.phase === 'accepted' &&
-      executionStore.queuedJobs[correlation.jobId]?.workflow ===
-        correlation.workflow
-    )
-  })
-
-  watch(
-    acceptedTourJobId,
-    (jobId) => {
-      if (jobId) dispatchRunCorrelation({ type: 'accepted', jobId })
-    },
-    { flush: 'sync' }
-  )
-
-  /**
-   * A submission the backend refuses never gets a prompt_id, so no status ever
-   * appears and none of the branches above can fire. Account preconditions —
-   * sign-in, subscription, credits — are deliberately kept out of the error
-   * stores by `ComfyApp.queuePrompt`, so the refusal is invisible there too.
-   *
-   * Give *acceptance* a deadline, not the run. Acceptance arrives on the
-   * queuePrompt response rather than the socket, so this cannot pre-empt the
-   * longer offline grace: a run accepted at all disarms this immediately and
-   * leaves the connection question to `OFFLINE_GRACE_MS`.
-   *
-   * Acceptance is not the only disarm. `resetExecutionState` drops a job from
-   * `queuedJobs` without clearing its status, so a run can report a status
-   * while this reads false. A refusal produces neither signal.
-   *
-   * Losing acceptance is itself a signal, not a re-armed deadline. Two paths
-   * drop the job without ever writing an outcome:
-   *
-   * - an accepted job that disappears with **no status written at all** — the
-   *   cloud "waiting for a machine" job that is cancelled or reconciled away
-   * - `handleServiceLevelError` ("Job has stagnated"), which drops the job and
-   *   records a prompt error but never touches `workflowStatus`, so the
-   *   `running` written by `handleExecutionStart` outlives the run
-   *
-   * Not the mid-run credits path: #15161 made
-   * `handleAccountPreconditionError` clear the status, so that one already
-   * ends via the `undefined`-after-`running` branch above.
-   *
-   * A finished run leaves the queue too, but reports a terminal status in the
-   * same flush, and the terminal branches above overwrite unconditionally — so
-   * the outcome wins whichever watcher runs first.
-   */
-  watch(
-    tourRunPresent,
-    (present, wasPresent) => {
-      if (present) stopAcceptDeadline()
-      else if (wasPresent && runCorrelation.value.phase === 'accepted') {
-        dispatchRunCorrelation({ type: 'released' })
-        if (runState.value === 'generating') runState.value = 'failed'
-      }
-    },
-    { flush: 'sync' }
-  )
-
-  let acceptTimer: ReturnType<typeof setTimeout> | undefined
-  function reportCorrelationTimeout(
-    reason: 'acceptance_timeout' | 'connection_timeout',
-    timeoutMs: number
-  ) {
-    const correlation = runCorrelation.value
-    if (correlation.phase !== 'pending' && correlation.phase !== 'accepted')
-      return
-    reportError(new Error('First-run execution correlation timed out'), {
-      errorType: 'error_correlating_first_run_execution',
-      level: 'warning',
-      tags: {
-        failure_category: 'execution_correlation',
-        failure_reason: reason
-      },
-      context: {
-        templateId: correlation.templateId,
-        phase: correlation.phase,
-        jobId: correlation.phase === 'accepted' ? correlation.jobId : undefined,
-        outputNodeId: correlation.outputNodeId,
-        hasOutput: correlation.output !== null,
-        pendingOutputCount:
-          correlation.phase === 'pending' ? correlation.pendingOutputs.size : 0,
-        pendingCompletionCount:
-          correlation.phase === 'pending'
-            ? correlation.pendingCompletions.size
-            : 0,
-        timeoutMs
-      }
-    })
-  }
-
-  function stopAcceptDeadline() {
-    clearTimeout(acceptTimer)
-    acceptTimer = undefined
-  }
-  function startAcceptDeadline() {
-    stopAcceptDeadline()
-    acceptTimer = setTimeout(() => {
-      stopAcceptDeadline()
-      reportCorrelationTimeout('acceptance_timeout', ACCEPT_DEADLINE_MS)
-      dispatchRunCorrelation({ type: 'released' })
-      if (runState.value === 'generating') runState.value = 'failed'
-    }, ACCEPT_DEADLINE_MS)
-  }
-
-  let offlineTimer: ReturnType<typeof setTimeout> | undefined
-  function stopOfflineGrace() {
-    clearTimeout(offlineTimer)
-    offlineTimer = undefined
-  }
-  useEventListener(api, 'reconnecting', () => {
+  const submissionListener = executions.onSubmitted((handle) => {
     if (
-      (runState.value !== 'generating' &&
-        (runCorrelation.value.phase === 'idle' ||
-          runCorrelation.value.phase === 'succeeded')) ||
-      offlineTimer
+      tourExecution.value ||
+      !onRunStep.value ||
+      handle.workflowInstanceId !== tourWorkflow.value?.instanceId
     )
       return
-    offlineTimer = setTimeout(() => {
-      stopOfflineGrace()
-      reportCorrelationTimeout('connection_timeout', OFFLINE_GRACE_MS)
-      dispatchRunCorrelation({ type: 'released' })
-      if (runState.value === 'generating') runState.value = 'failed'
-    }, OFFLINE_GRACE_MS)
+    tourExecution.value = {
+      handle,
+      templateId: tourTemplateId,
+      output: resolvePinnedImageOutput(app.rootGraphOrUndefined, tourTemplateId)
+    }
+    engine.next()
   })
-  useEventListener(api, 'reconnected', stopOfflineGrace)
+  onScopeDispose(submissionListener.off)
 
-  onScopeDispose(() => {
-    stopAcceptDeadline()
-    stopOfflineGrace()
-  })
-
-  useEventListener(
-    api,
-    'execution_success',
-    (event) => {
-      const { detail } = event as CustomEvent<ExecutionSuccessWsMessage>
-      dispatchRunCorrelation({
-        type: 'succeeded',
-        jobId: detail.prompt_id,
-        completedAt: Date.now()
+  watch(
+    executionState,
+    (state) => {
+      if (state?.phase !== 'abandoned') return
+      const execution = tourExecution.value
+      reportError(new Error('First-run execution correlation timed out'), {
+        errorType: 'error_correlating_first_run_execution',
+        level: 'warning',
+        tags: {
+          failure_category: 'execution_correlation',
+          failure_reason: state.reason
+        },
+        context: {
+          templateId: execution?.templateId,
+          requestId: execution?.handle.requestId,
+          phase: state.previousPhase,
+          jobId: state.jobId,
+          outputNodeId: execution?.output?.nodeId,
+          timeoutMs:
+            state.reason === 'acceptance_timeout'
+              ? EXECUTION_ACCEPTANCE_TIMEOUT_MS
+              : EXECUTION_CONNECTION_TIMEOUT_MS
+        }
       })
     },
-    { capture: true }
+    { flush: 'sync' }
   )
 
-  /** A preview's temp file still seeds; the saved result behind it is better. */
-  const awaitingSavedOutput = computed(
-    () => firstRunOutput.value === null || firstRunOutput.value.type === 'temp'
-  )
-
-  useEventListener(api, 'executed', (event) => {
-    const { detail } = event as CustomEvent<ExecutedWsMessage>
-    if (runCorrelation.value.phase === 'idle' || !awaitingSavedOutput.value)
-      return
-    // Every media key, not just `images`: a template can save under `video` or
-    // under a key only its custom node knows, and only the item itself says
-    // whether what came back is an image the continuations can be seeded with.
-    const images = parseNodeOutput(detail.node, detail.output).filter(
-      isImageResult
-    )
-    const image = images.find(({ type }) => type !== 'temp') ?? images.at(0)
-    if (!image) return
-    const parsedType = resultItemType.safeParse(image.type)
-    const output: ResultItem = {
-      filename: image.filename,
-      subfolder: image.subfolder,
-      type: parsedType.success ? parsedType.data : 'output'
-    }
-    dispatchRunCorrelation({
-      type: 'output-received',
-      jobId: detail.prompt_id,
-      nodeId: String(detail.display_node || detail.node),
-      output
-    })
-  })
-
-  /**
-   * A run outlives the step that starts it, so the click moves the tour on. One
-   * the paywall will refuse never queues, so the tour parks and leaves the
-   * subscribe button to open its own dialog.
-   */
   useEventListener(
     document,
     'click',
@@ -355,27 +152,7 @@ function useFirstRunTourControllerInternal() {
       if (!onRunStep.value) return
       if (!(event.target instanceof Element)) return
       if (!event.target.closest(RUN_BUTTON_SELECTOR)) return
-
-      if (!billing.canRunWorkflows.value) {
-        engine.postpone()
-        return
-      }
-
-      if (tourWorkflow.value) {
-        dispatchRunCorrelation({
-          type: 'submitted',
-          templateId: tourTemplateId,
-          outputNodeId: resolvePinnedImageOutput(
-            app.rootGraphOrUndefined,
-            tourTemplateId
-          ),
-          workflow: tourWorkflow.value,
-          previousJobIds: new Set(Object.keys(executionStore.queuedJobs))
-        })
-      }
-      runState.value = 'generating'
-      startAcceptDeadline()
-      engine.next()
+      if (!billing.canRunWorkflows.value) engine.postpone()
     },
     { capture: true }
   )
@@ -386,7 +163,6 @@ function useFirstRunTourControllerInternal() {
       if (active) return
       nudgeArmed.value = true
       releaseFirstRunTargets()
-      runState.value = 'idle'
       tourWorkflow.value = null
       tourTemplateId = undefined
     }
@@ -394,7 +170,7 @@ function useFirstRunTourControllerInternal() {
 
   function dismissNudge() {
     nudgeArmed.value = false
-    dispatchRunCorrelation({ type: 'released' })
+    tourExecution.value = null
   }
 
   /** False when there is no tour to give; any renderer switch is undone. */
@@ -411,9 +187,8 @@ function useFirstRunTourControllerInternal() {
 
     tourWorkflow.value = workflowStore.activeWorkflow ?? null
     tourTemplateId = templateId
-    runState.value = 'idle'
     nudgeArmed.value = false
-    dispatchRunCorrelation({ type: 'reset' })
+    tourExecution.value = null
     registerTour(
       'firstRun',
       () => firstRunTourSteps(templateId, runState),

@@ -1,3 +1,4 @@
+import { useExecutionLifecycleStore } from '@/platform/execution/executionLifecycleStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
@@ -911,8 +912,31 @@ describe('useQueueStore', () => {
       await store.update()
     })
 
+    it.for([false, true])(
+      'cancels only acknowledged pending jobs when clearing the queue: %s',
+      async (cleared) => {
+        const executions = useExecutionLifecycleStore()
+        const pending = executions.beginSubmission(1, 'workflow')
+        const running = executions.beginSubmission(2, 'workflow')
+        executions.prepareSubmission(1, 'workflow', {})
+        executions.prepareSubmission(2, 'workflow', {})
+        executions.acceptSubmission(1, 'pend-1')
+        executions.acceptSubmission(2, 'run-1')
+        mockClearItems.mockResolvedValue(cleared)
+        await store.clear(['queue'])
+        expect(pending.state.value).toMatchObject({
+          phase: 'accepted',
+          job: { phase: cleared ? 'cancelled' : 'running' }
+        })
+        expect(running.state.value).toMatchObject({
+          phase: 'accepted',
+          job: { phase: 'running' }
+        })
+      }
+    )
+
     it('should clear both queue and history by default', async () => {
-      mockClearItems.mockResolvedValue(undefined)
+      mockClearItems.mockResolvedValue(true)
       mockGetQueue.mockResolvedValue({ Running: [], Pending: [] })
       mockGetHistory.mockResolvedValue([])
 
@@ -927,7 +951,7 @@ describe('useQueueStore', () => {
     })
 
     it('should clear only queue when specified', async () => {
-      mockClearItems.mockResolvedValue(undefined)
+      mockClearItems.mockResolvedValue(true)
       mockGetQueue.mockResolvedValue({ Running: [], Pending: [] })
       mockGetHistory.mockResolvedValue([createHistoryJob(3, 'hist-1')])
 
@@ -939,7 +963,7 @@ describe('useQueueStore', () => {
     })
 
     it('should clear only history when specified', async () => {
-      mockClearItems.mockResolvedValue(undefined)
+      mockClearItems.mockResolvedValue(true)
       mockGetQueue.mockResolvedValue({
         Running: [createRunningJob(1, 'run-1')],
         Pending: [createPendingJob(2, 'pend-1')]

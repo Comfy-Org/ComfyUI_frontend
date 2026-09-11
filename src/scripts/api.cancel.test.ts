@@ -18,6 +18,29 @@ describe('api jobs-namespace cancel', () => {
     fetchApiSpy = vi.spyOn(api, 'fetchApi').mockResolvedValue(okResponse())
   })
 
+  it.for([false, true])(
+    'emits cancellation only after a successful acknowledgement: %s',
+    async (accepted) => {
+      const dispatch = vi.spyOn(api, 'dispatchCustomEvent')
+      fetchApiSpy.mockResolvedValue(
+        accepted ? okResponse() : errorResponse(500)
+      )
+      await api.cancelJob('single').catch(() => {})
+      await api.cancelJobs(['batch-1', 'batch-2']).catch(() => {})
+      await api.deleteItem('queue', 'legacy')
+      await api.deleteItem('history', 'history-only')
+      if (accepted) {
+        expect(
+          dispatch.mock.calls.filter(([type]) => type === 'jobsCancelled')
+        ).toEqual([
+          ['jobsCancelled', { jobIds: ['single'] }],
+          ['jobsCancelled', { jobIds: ['batch-1', 'batch-2'] }],
+          ['jobsCancelled', { jobIds: ['legacy'] }]
+        ])
+      } else expect(dispatch).not.toHaveBeenCalled()
+    }
+  )
+
   describe('cancelJob (single)', () => {
     it('POSTs to the single-job cancel endpoint', async () => {
       await api.cancelJob('abc-123')

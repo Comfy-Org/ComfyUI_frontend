@@ -1,3 +1,4 @@
+import { useExecutionLifecycleStore } from '@/platform/execution/executionLifecycleStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -2821,5 +2822,48 @@ describe('useExecutionStore - storeJob and workflow path tracking', () => {
     store.ensureSessionWorkflowPath('job-1', '/b.json')
 
     expect(store.jobIdToSessionWorkflowPath.get('job-1')).toBe('/b.json')
+  })
+})
+
+describe('execution lifecycle event integration', () => {
+  beforeEach(() => {
+    apiEventHandlers.clear()
+    useExecutionStore().bindExecutionEvents()
+  })
+
+  it('retains output and success received before HTTP acceptance and after legacy cleanup', () => {
+    const executions = useExecutionLifecycleStore()
+    const handle = executions.beginSubmission(1, 'workflow')
+    executions.prepareSubmission(1, 'workflow', {
+      '9': { class_type: 'SaveImage', inputs: {}, _meta: { title: 'Result' } }
+    })
+    api.dispatchCustomEvent('executed', {
+      prompt_id: 'job',
+      node: '9',
+      display_node: '9',
+      output: { images: [{ filename: 'result.png', type: 'output' }] }
+    })
+    api.dispatchCustomEvent('execution_success', {
+      prompt_id: 'job',
+      timestamp: 1
+    })
+    expect(useExecutionStore().queuedJobs.job).toBeUndefined()
+    executions.acceptSubmission(1, 'job')
+    expect(handle.state.value).toMatchObject({
+      phase: 'accepted',
+      job: { phase: 'succeeded', images: { '9': { filename: 'result.png' } } }
+    })
+  })
+
+  it('records acknowledged cancellation without requiring a running node', () => {
+    const executions = useExecutionLifecycleStore()
+    const handle = executions.beginSubmission(1, 'workflow')
+    executions.prepareSubmission(1, 'workflow', {})
+    executions.acceptSubmission(1, 'job')
+    api.dispatchCustomEvent('jobsCancelled', { jobIds: ['job'] })
+    expect(handle.state.value).toMatchObject({
+      phase: 'accepted',
+      job: { phase: 'cancelled' }
+    })
   })
 })

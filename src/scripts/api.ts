@@ -163,6 +163,7 @@ interface FrontendApiCalls {
   autoQueueGraphChanged: never
   promptQueueing: { requestId: number; batchCount: number; number?: number }
   promptQueued: { number: number; batchCount: number; requestId?: number }
+  jobsCancelled: { jobIds: string[] }
   graphCleared: never
   reconnecting: never
   reconnected: never
@@ -1270,15 +1271,17 @@ export class ComfyApi extends EventTarget {
    */
   private async _postItem(type: string, body?: Record<string, unknown>) {
     try {
-      await this.fetchApi('/' + type, {
+      const response = await this.fetchApi('/' + type, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: body ? JSON.stringify(body) : undefined
       })
+      return response.ok
     } catch (error) {
       console.error(error)
+      return false
     }
   }
 
@@ -1288,7 +1291,9 @@ export class ComfyApi extends EventTarget {
    * @param {number} id The id of the item to delete
    */
   async deleteItem(type: string, id: string) {
-    await this._postItem(type, { delete: [id] })
+    const deleted = await this._postItem(type, { delete: [id] })
+    if (deleted && type === 'queue')
+      this.dispatchCustomEvent('jobsCancelled', { jobIds: [id] })
   }
 
   /**
@@ -1296,7 +1301,7 @@ export class ComfyApi extends EventTarget {
    * @param {string} type The type of list to clear, queue or history
    */
   async clearItems(type: string) {
-    await this._postItem(type, { clear: true })
+    return await this._postItem(type, { clear: true })
   }
 
   /**
@@ -1331,6 +1336,7 @@ export class ComfyApi extends EventTarget {
         `Failed to cancel job ${jobId}: ${res.status}${body ? ` — ${body}` : ''}`
       )
     }
+    this.dispatchCustomEvent('jobsCancelled', { jobIds: [jobId] })
   }
 
   /**
@@ -1355,6 +1361,7 @@ export class ComfyApi extends EventTarget {
         `Failed to cancel jobs: ${res.status}${body ? ` — ${body}` : ''}`
       )
     }
+    this.dispatchCustomEvent('jobsCancelled', { jobIds })
   }
 
   /**

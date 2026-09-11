@@ -1,3 +1,5 @@
+import { useExecutionLifecycleStore } from '@/platform/execution/executionLifecycleStore'
+import type { ExecutionHandle } from '@/platform/execution/executionLifecycleStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { CurveData } from '@/components/curve/types'
@@ -573,6 +575,64 @@ describe('ComfyApp', () => {
       })
       vi.spyOn(api, 'dispatchCustomEvent').mockImplementation(() => true)
     }
+
+    it('publishes a submission handle before HTTP and binds the exact accepted job', async () => {
+      prepareEmptyPromptQueue()
+      const executions = useExecutionLifecycleStore()
+      const handles: ExecutionHandle[] = []
+      const listener = executions.onSubmitted((handle) => {
+        handles.push(handle)
+      })
+      vi.spyOn(api, 'queuePrompt').mockImplementation(async () => {
+        expect(handles).toHaveLength(1)
+        expect(handles[0].state.value.phase).toBe('pending')
+        executions.succeedJob('accepted-job', 123)
+        return { prompt_id: 'accepted-job', error: '' }
+      })
+      try {
+        await app.queuePrompt(0)
+        expect(handles[0].workflowInstanceId).toBe(
+          mockWorkspaceWorkflow.activeWorkflow?.instanceId
+        )
+        expect(handles[0].state.value).toMatchObject({
+          phase: 'accepted',
+          jobId: 'accepted-job',
+          job: { phase: 'succeeded', completedAt: 123 }
+        })
+      } finally {
+        listener.off()
+      }
+    })
+
+    it.for(['validation', 'construction', 'authentication'])(
+      'rejects the execution handle after a %s failure',
+      async (failure) => {
+        prepareEmptyPromptQueue()
+        const handles: ExecutionHandle[] = []
+        const listener = useExecutionLifecycleStore().onSubmitted((handle) => {
+          handles.push(handle)
+        })
+        vi.spyOn(api, 'queuePrompt').mockResolvedValue({
+          error: 'invalid prompt'
+        })
+        if (failure === 'construction')
+          vi.mocked(app.graphToPrompt).mockRejectedValue(
+            new Error('invalid graph')
+          )
+        if (failure === 'authentication')
+          mockAuthStore.getWorkspaceAuthToken.mockRejectedValue(
+            new Error('no session')
+          )
+        try {
+          if (failure === 'validation') await app.queuePrompt(0)
+          else await expect(app.queuePrompt(0)).rejects.toThrow()
+          expect(handles).toHaveLength(1)
+          expect(handles[0].state.value.phase).toBe('rejected')
+        } finally {
+          listener.off()
+        }
+      }
+    )
 
     it('waits for workspace authentication before submitting the prompt', async () => {
       prepareEmptyPromptQueue()

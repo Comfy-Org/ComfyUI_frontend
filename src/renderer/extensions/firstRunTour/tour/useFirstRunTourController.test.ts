@@ -9,32 +9,30 @@ import type {
   CoachStep,
   SpotlightStep
 } from '@/platform/onboarding/onboardingTours'
-import type { OnboardingTourSkipReason } from '@/platform/telemetry/types'
+import { useExecutionLifecycleStore } from '@/platform/execution/executionLifecycleStore'
+import { useFirstRunTourController } from './useFirstRunTourController'
+import * as tours from '@/platform/onboarding/onboardingTours'
 import { toNodeId } from '@/types/nodeId'
 
 import { TOUR_ROLE_PINS } from '../roles/tourRolePins'
 
-const TOUR_WORKFLOW = { path: 'tour.json' }
-const OTHER_WORKFLOW = { path: 'other.json' }
+const TOUR_WORKFLOW = { path: 'tour.json', instanceId: 'tour-instance' }
+const OTHER_WORKFLOW = { path: 'other.json', instanceId: 'other-instance' }
 const INTRO_PREVIEW_MS = 500
 const OFFLINE_GRACE_MS = 20_000
 const ACCEPT_DEADLINE_MS = 15_000
 const IMAGE_SINK = TOUR_ROLE_PINS.image_z_image_turbo.sink
 
 const mocks = vi.hoisted(() => {
-  const queuedJobs: { value: Record<string, { workflow?: unknown }> } = {
-    value: {}
-  }
   return {
     captureException: vi.fn(),
     addError: vi.fn(),
     graph: undefined as LGraph | undefined,
     canRunWorkflows: { value: true },
     showSubscriptionDialog: vi.fn(),
-    workflowStatus: { value: new Map<unknown, string>() },
-    executionErrors: { hasNodeError: false, hasPromptError: false },
-    activeWorkflow: { value: null as { path: string } | null },
-    queuedJobs,
+    activeWorkflow: {
+      value: null as { path: string; instanceId: string } | null
+    },
     linearMode: { value: false },
     vueNodesEnabled: true,
     setSetting: vi.fn(),
@@ -80,30 +78,6 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     showSubscriptionDialog: mocks.showSubscriptionDialog
   })
 }))
-
-// Each factory runs on the first dynamic import, which lands mid-test for
-// whichever test runs first. Seed the new ref from the holder so that test's
-// setup survives instead of being discarded.
-vi.mock('@/stores/executionStore', async () => {
-  const { shallowRef } = await import('vue')
-  mocks.workflowStatus = shallowRef(new Map(mocks.workflowStatus.value))
-  mocks.queuedJobs = shallowRef(mocks.queuedJobs.value)
-  return {
-    useExecutionStore: () => ({
-      getWorkflowStatus: (workflow: unknown) =>
-        mocks.workflowStatus.value.get(workflow),
-      get queuedJobs() {
-        return mocks.queuedJobs.value
-      }
-    })
-  }
-})
-
-vi.mock('@/stores/executionErrorStore', async () => {
-  const { reactive } = await import('vue')
-  mocks.executionErrors = reactive({ ...mocks.executionErrors })
-  return { useExecutionErrorStore: () => mocks.executionErrors }
-})
 
 vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
   const { shallowRef } = await import('vue')
@@ -168,16 +142,12 @@ let registeredTourHolds: () => boolean
 /** Scoped so each controller's document listener dies with its test. */
 async function freshController(beforeStart?: () => Promise<void>) {
   controllerScope?.stop()
-  vi.resetModules()
   controllerScope = effectScope()
-  const tours = await import('@/platform/onboarding/onboardingTours')
   resolveRegisteredTour = async () => {
     const definition = tours.tourDefinition('firstRun')
     return Array.isArray(definition) ? definition : definition?.()
   }
   registeredTourHolds = () => tours.tourHolds('firstRun')
-  const { useFirstRunTourController } =
-    await import('./useFirstRunTourController')
   await beforeStart?.()
   return controllerScope.run(() => useFirstRunTourController())!
 }
@@ -213,83 +183,26 @@ function endTour(ending: TourEnding) {
 
 const COMPLETED: TourEnding = { tour: 'firstRun', outcome: 'completed' }
 
-function skippedBecause(skipReason: OnboardingTourSkipReason): TourEnding {
-  return { tour: 'firstRun', outcome: 'skipped', skipReason }
-}
-
-/** Every ending short of walking the tour to the end. */
-const UNFINISHED_ENDINGS: { named: string; ending: TourEnding }[] = [
-  { named: 'the user waved away on step 1', ending: skippedBecause('user') },
-  {
-    named: 'a missing target tore down',
-    ending: skippedBecause('target_timeout')
-  },
-  { named: 'the paywall parked', ending: skippedBecause('postponed') },
-  { named: 'a lost context ended', ending: skippedBecause('trigger_lost') }
-]
-
-/** The queue storing a job, which is what acceptance actually looks like. */
-function acceptRun(workflow: unknown, jobId = 'job-1') {
-  mocks.queuedJobs.value = {
-    ...mocks.queuedJobs.value,
-    [jobId]: { workflow }
-  }
-  return nextTick()
-}
-
-/** The queue letting a job go, which `resetExecutionState` does silently. */
-function removeRun() {
-  mocks.queuedJobs.value = {}
-  return nextTick()
-}
-
-function acceptThenRemoveRun(workflow: unknown, jobId = 'job-1') {
-  mocks.queuedJobs.value = {
-    ...mocks.queuedJobs.value,
-    [jobId]: { workflow }
-  }
-  mocks.queuedJobs.value = {}
-  return nextTick()
-}
-
-function finishRun(workflow: unknown, status: string) {
-  mocks.workflowStatus.value = new Map(mocks.workflowStatus.value).set(
-    workflow,
-    status
-  )
-  return nextTick()
-}
-
-async function captureFirstImage(promptId = 'tour-job') {
-  await acceptRun(TOUR_WORKFLOW, promptId)
-  const { api } = await import('@/scripts/api')
-  api.dispatchCustomEvent('execution_start', {
-    prompt_id: promptId,
-    timestamp: 1
-  })
-  api.dispatchCustomEvent('executed', {
-    prompt_id: promptId,
-    node: IMAGE_SINK.id,
-    display_node: IMAGE_SINK.id,
-    output: {
-      images: [
-        {
-          filename: 'first-output.png',
-          subfolder: 'tour',
-          type: 'output'
-        }
-      ]
+function submit(requestId = 1, workflow = TOUR_WORKFLOW) {
+  const executions = useExecutionLifecycleStore()
+  const handle = executions.beginSubmission(requestId, workflow.instanceId)
+  executions.prepareSubmission(requestId, workflow.instanceId, {
+    [IMAGE_SINK.id]: {
+      class_type: IMAGE_SINK.type,
+      inputs: {},
+      _meta: { title: 'Result' }
     }
   })
-  await nextTick()
+  return handle
 }
 
-/** A user stop, which drops the status instead of reporting an outcome. */
-function dropRun(workflow: unknown) {
-  const next = new Map(mocks.workflowStatus.value)
-  next.delete(workflow)
-  mocks.workflowStatus.value = next
-  return nextTick()
+function output(jobId = 'tour-job', filename = 'first-output.png') {
+  useExecutionLifecycleStore().receiveOutput({
+    prompt_id: jobId,
+    node: IMAGE_SINK.id,
+    display_node: IMAGE_SINK.id,
+    output: { images: [{ filename, subfolder: 'tour', type: 'output' }] }
+  })
 }
 
 function setViewportWidth(width: number) {
@@ -319,10 +232,6 @@ describe('useFirstRunTourController', () => {
     output.id = toNodeId(IMAGE_SINK.id)
     mocks.graph.add(output)
     mocks.canRunWorkflows = ref(true)
-    mocks.workflowStatus.value = new Map()
-    mocks.queuedJobs.value = {}
-    mocks.executionErrors.hasNodeError = false
-    mocks.executionErrors.hasPromptError = false
     mocks.activeWorkflow.value = null
     mocks.linearMode.value = false
     mocks.vueNodesEnabled = true
@@ -335,11 +244,20 @@ describe('useFirstRunTourController', () => {
     mocks.engine.lastEnding = null
     mocks.engine.step = null
     mocks.engine.isLast = false
+    mocks.engine.next.mockImplementation(() => {
+      mocks.engine.step = {
+        kind: 'spotlight',
+        name: 'result.image',
+        placement: 'auto'
+      }
+    })
   })
 
   afterEach(() => {
     controllerScope?.stop()
     controllerScope = undefined
+    useExecutionLifecycleStore().$dispose()
+    document.body.replaceChildren()
     setViewportWidth(1280)
   })
 
@@ -513,1196 +431,209 @@ describe('useFirstRunTourController', () => {
     })
   })
 
-  describe('a run behind a dropped socket', () => {
-    /**
-     * A run the queue accepted: the click reports `generating`, then the
-     * backend answers with a status. The acknowledgement matters — an
-     * unacknowledged submission is a refusal, and is covered separately below.
-     */
-    async function generatingRun() {
+  describe('execution handle consumption', () => {
+    it('advances only when a matching workflow is submitted on the Run step', async () => {
       await tourOnRunStep()
       mountRunButton('queue-button', () => {}).click()
+      expect(mocks.engine.next).not.toHaveBeenCalled()
+      submit(10, OTHER_WORKFLOW)
+      expect(mocks.engine.next).not.toHaveBeenCalled()
+      submit(1)
+      expect(mocks.engine.next).toHaveBeenCalledOnce()
       expect(mocks.runState.value).toBe('generating')
-      await finishRun(TOUR_WORKFLOW, 'running')
-      const { api } = await import('@/scripts/api')
-      return api
-    }
-
-    it('stops promising a result the queue never accepted', async () => {
-      await tourOnRunStep()
-      mountRunButton('queue-button', () => {}).click()
-      expect(mocks.runState.value).toBe('generating')
-
-      // No status ever arrives. A refused submission gets no prompt_id, and
-      // account preconditions - sign-in, subscription, credits - are kept out
-      // of the error stores on purpose, so nothing else can report this.
-      await vi.advanceTimersByTimeAsync(ACCEPT_DEADLINE_MS)
-
-      expect(
-        mocks.runState.value,
-        'a paid user out of credits is refused silently; the card must not promise a result forever'
-      ).toBe('failed')
+      submit(2)
+      expect(mocks.engine.next).toHaveBeenCalledOnce()
     })
 
-    it('leaves a run accepted but still waiting for a machine alone', async () => {
-      // Cloud accepts the job and reports "Waiting for a machine" — it is in
-      // `initializingJobIds` with NO workflow status until a worker picks it
-      // up, which routinely outlasts the deadline. Keying on status instead of
-      // acceptance would fail this healthy run and tell the user to run again,
-      // prompting a duplicate paid submission.
-      await tourOnRunStep()
-      mountRunButton('queue-button', () => {}).click()
-      await acceptRun(TOUR_WORKFLOW)
-
-      await vi.advanceTimersByTimeAsync(ACCEPT_DEADLINE_MS * 4)
-
-      expect(
-        mocks.runState.value,
-        'an accepted job with no status yet is queued, not refused'
-      ).toBe('generating')
-    })
-
-    it('lets the offline grace outlive the acceptance deadline', async () => {
-      // The grace is 20s and the acceptance deadline 15s. A drop before the
-      // first status must still get the full grace: acceptance arrives on the
-      // queuePrompt response, not the socket, so it disarms this deadline even
-      // while the connection is down.
-      const { api } = await import('@/scripts/api')
-      await tourOnRunStep()
-      mountRunButton('queue-button', () => {}).click()
-      await acceptRun(TOUR_WORKFLOW)
-
-      api.dispatchCustomEvent('reconnecting')
-      await vi.advanceTimersByTimeAsync(OFFLINE_GRACE_MS - 1)
-
-      expect(
-        mocks.runState.value,
-        'the 15s acceptance deadline must not cut the 20s grace short'
-      ).toBe('generating')
-    })
-
-    it('leaves an accepted run past the acceptance deadline alone', async () => {
-      await generatingRun()
-
-      await vi.advanceTimersByTimeAsync(ACCEPT_DEADLINE_MS * 4)
-
-      expect(
-        mocks.runState.value,
-        'the deadline is on acceptance, not on the run: a job that answered must never be cut short'
-      ).toBe('generating')
-    })
-
-    it('stops promising a result once the socket stays gone', async () => {
-      const api = await generatingRun()
-
-      api.dispatchCustomEvent('reconnecting')
-      await vi.advanceTimersByTimeAsync(OFFLINE_GRACE_MS)
-
-      expect(
-        mocks.runState.value,
-        'nothing reports a run whose socket never came back, so the card waits forever'
-      ).toBe('failed')
-    })
-
-    it('keeps waiting when the socket comes back', async () => {
-      const api = await generatingRun()
-
-      api.dispatchCustomEvent('reconnecting')
-      await vi.advanceTimersByTimeAsync(OFFLINE_GRACE_MS / 2)
-      api.dispatchCustomEvent('reconnected')
-      await vi.advanceTimersByTimeAsync(OFFLINE_GRACE_MS)
-
-      expect(
-        mocks.runState.value,
-        'a blink of connection loss must not fail a run that is still going'
-      ).toBe('generating')
-      expect(mocks.captureException).not.toHaveBeenCalled()
-      expect(mocks.addError).not.toHaveBeenCalled()
-    })
-
-    it('leaves a run that is still reporting alone', async () => {
-      await generatingRun()
-
-      await vi.advanceTimersByTimeAsync(OFFLINE_GRACE_MS * 3)
-
-      expect(
-        mocks.runState.value,
-        'video takes minutes; a timer that does not need the socket to drop fails healthy runs'
-      ).toBe('generating')
-    })
-
-    it('lets a recovered socket cancel every retry that preceded it', async () => {
-      const api = await generatingRun()
-
-      // Only the first retry may own the deadline, or reconnecting leaves
-      // timers behind that no single `reconnected` can clear.
-      for (let attempt = 0; attempt < 3; attempt++) {
-        api.dispatchCustomEvent('reconnecting')
-        await vi.advanceTimersByTimeAsync(OFFLINE_GRACE_MS / 4)
-      }
-      api.dispatchCustomEvent('reconnected')
-      await vi.advanceTimersByTimeAsync(OFFLINE_GRACE_MS * 2)
-
-      expect(
-        mocks.runState.value,
-        'a run that came back must not be failed by a timer an earlier retry armed'
-      ).toBe('generating')
-    })
-
-    it('keeps a run that landed while the socket was gone', async () => {
-      const api = await generatingRun()
-
-      api.dispatchCustomEvent('reconnecting')
-      await finishRun(TOUR_WORKFLOW, 'completed')
-      await vi.advanceTimersByTimeAsync(OFFLINE_GRACE_MS)
-
-      expect(
-        mocks.runState.value,
-        'the grace timer must not clobber an outcome that arrived before it fired'
-      ).toBe('succeeded')
-    })
-
-    it('stops promising a result once the queue lets go of its job', async () => {
-      await tourOnRunStep()
-      mountRunButton('queue-button', () => {}).click()
-      await acceptRun(TOUR_WORKFLOW)
-
-      await removeRun()
-
-      expect(
-        mocks.runState.value,
-        'an accepted job that leaves without an outcome leaves the card waiting on a result nobody will send'
-      ).toBe('failed')
-    })
-
-    it('stops when accepted job metadata is removed in the same tick', async () => {
-      await tourOnRunStep()
-      mountRunButton('queue-button', () => {}).click()
-
-      await acceptThenRemoveRun(TOUR_WORKFLOW)
-
-      expect(mocks.runState.value).toBe('failed')
-    })
-
-    it('stops promising a result when a running job is dropped mid-run', async () => {
-      // `handleServiceLevelError` ("Job has stagnated") is the live path: it
-      // drops the job and records a prompt error but never touches
-      // `workflowStatus`, so the `running` from `handleExecutionStart`
-      // outlives the run and no status change reports the end.
-      //
-      // Deliberately not the mid-run credits path — #15161 made
-      // `handleAccountPreconditionError` clear the status, so that one ends
-      // via the `undefined`-after-`running` branch without this watcher.
-      await tourOnRunStep()
-      mountRunButton('queue-button', () => {}).click()
-      await acceptRun(TOUR_WORKFLOW)
-      await finishRun(TOUR_WORKFLOW, 'running')
-
-      await removeRun()
-
-      expect(
-        mocks.runState.value,
-        'a stagnated run keeps its running status, so losing the job is the only signal left'
-      ).toBe('failed')
-    })
-
-    it('keeps a completed run that drops out of the queue as it finishes', async () => {
-      await tourOnRunStep()
-      mountRunButton('queue-button', () => {}).click()
-      await acceptRun(TOUR_WORKFLOW)
-
-      // `handleExecutionSuccess` reports the outcome and drops the job in one
-      // tick, so both land before either watcher runs.
-      void finishRun(TOUR_WORKFLOW, 'completed')
-      await removeRun()
-
-      expect(
-        mocks.runState.value,
-        'every healthy run leaves the queue when it finishes; failing those would fail every run'
-      ).toBe('succeeded')
-    })
-
-    it('keeps a failed run that leaves the queue after reporting', async () => {
-      await tourOnRunStep()
-      mountRunButton('queue-button', () => {}).click()
-      await acceptRun(TOUR_WORKFLOW)
-      await finishRun(TOUR_WORKFLOW, 'failed')
-
-      await removeRun()
-
-      expect(
-        mocks.runState.value,
-        'a reported outcome is the last word; losing the job afterwards says nothing new'
-      ).toBe('failed')
-    })
-
-    // Pins the transition gate on the status watcher. The stagnation path
-    // leaves `running` in `workflowStatus` forever, and that source
-    // re-evaluates whenever the map is replaced for *any* workflow. Without
-    // the gate the stale `running` is re-read and the card goes back to
-    // promising a result it has already given up on.
-    it('stays failed when an unrelated workflow churns the status map', async () => {
-      await tourOnRunStep()
-      mountRunButton('queue-button', () => {}).click()
-      await acceptRun(TOUR_WORKFLOW)
-      await finishRun(TOUR_WORKFLOW, 'running')
-
-      await removeRun()
-      expect(mocks.runState.value).toBe('failed')
-
-      await finishRun(OTHER_WORKFLOW, 'running')
-
-      expect(
-        mocks.runState.value,
-        'another workflow starting is not this run coming back from the dead'
-      ).toBe('failed')
-    })
-
-    // The other half of the stagnation path: the prompt error it records must
-    // still be able to end the run while the stale `running` sits there.
-    it('gives up on a stagnated job that leaves an error and a stale status', async () => {
-      await tourOnRunStep()
-      mountRunButton('queue-button', () => {}).click()
-      await acceptRun(TOUR_WORKFLOW)
-      await finishRun(TOUR_WORKFLOW, 'running')
-
-      mocks.executionErrors.hasPromptError = true
-      await removeRun()
-
-      expect(
-        mocks.runState.value,
-        'a stagnated run reports an error and abandons the job; the status it leaves behind is not news'
-      ).toBe('failed')
-    })
-  })
-
-  describe('run outcome', () => {
-    it('moves on with the Run click rather than waiting out the run', async () => {
-      await tourOnRunStep()
-
-      mountRunButton('queue-button', () => {}).click()
-
-      expect(
-        mocks.engine.next,
-        'a run takes minutes; a tour parked on a button the user already pressed reads as broken'
-      ).toHaveBeenCalled()
-      expect(mocks.runState.value).toBe('generating')
-    })
-
-    it('hands the last step to the engine like any other', async () => {
-      await tourOnRunStep()
-      mocks.engine.isLast = true
-
-      mountRunButton('queue-button', () => {}).click()
-
-      expect(
-        mocks.engine.next,
-        'ending a tour is the engine’s call; the button only reports the click'
-      ).toHaveBeenCalled()
-    })
-
-    it('ends the tour when the user swaps to a workflow its ids do not describe', async () => {
-      await tourOnRunStep()
-      expect(registeredTourHolds()).toBe(true)
-
-      mocks.activeWorkflow.value = OTHER_WORKFLOW
-      await nextTick()
-
-      expect(
-        registeredTourHolds(),
-        'node ids are graph-local, so the tour points at strangers now'
-      ).toBe(false)
-    })
-
-    it('keeps the tour running while its own workflow stays active', async () => {
-      await tourOnRunStep()
-
-      await finishRun(TOUR_WORKFLOW, 'running')
-
-      expect(
-        registeredTourHolds(),
-        'a tour must not end just because its run progressed'
-      ).toBe(true)
-    })
-
-    it('ends the tour when the user switches into the linear view mid-walk', async () => {
-      await tourOnRunStep()
-      expect(registeredTourHolds()).toBe(true)
-
-      mocks.linearMode.value = true
-      await nextTick()
-
-      expect(
-        registeredTourHolds(),
-        'the canvas the tour is pointing at goes away the moment linear mode takes over'
-      ).toBe(false)
-    })
-
-    it('ignores a run that finished for another workflow', async () => {
-      await tourOnRunStep()
-      mocks.activeWorkflow.value = OTHER_WORKFLOW
-
-      await finishRun(OTHER_WORKFLOW, 'failed')
-
-      expect(
-        mocks.runState.value,
-        'a job the tour did not start must not speak for the tour'
-      ).toBe('idle')
-    })
-
-    it('stops promising a result once the user stops the run', async () => {
-      await tourOnRunStep()
-      await finishRun(TOUR_WORKFLOW, 'running')
-
-      await dropRun(TOUR_WORKFLOW)
-
-      expect(
-        mocks.runState.value,
-        'a stop drops the status, so the card would promise a result forever'
-      ).toBe('failed')
-    })
-
-    it('leaves a run it never saw start alone', async () => {
-      await tourOnRunStep()
-
-      await dropRun(TOUR_WORKFLOW)
-
-      expect(
-        mocks.runState.value,
-        'a status that was never running has no outcome to report'
-      ).toBe('idle')
-    })
-
-    it('says so when the run produced nothing', async () => {
-      await tourOnRunStep()
-
-      await finishRun(TOUR_WORKFLOW, 'failed')
-
-      expect(
-        mocks.runState.value,
-        'announcing a result that does not exist is the bug D2 filed'
-      ).toBe('failed')
-    })
-
-    it('reports a run still in flight', async () => {
-      await tourOnRunStep()
-
-      await finishRun(TOUR_WORKFLOW, 'running')
-
-      expect(mocks.runState.value).toBe('generating')
-    })
-
-    it('hands the next tour a run state of its own', async () => {
-      await tourOnRunStep()
-      await finishRun(TOUR_WORKFLOW, 'completed')
-      expect(mocks.runState.value).toBe('succeeded')
-
-      mocks.engine.activeTour = null
-      await nextTick()
-
-      expect(
-        mocks.runState.value,
-        'inheriting the last outcome opens the next Result step already reporting'
-      ).toBe('idle')
-    })
-
-    it('remembers a run that landed after the queue drops its status', async () => {
-      await tourOnRunStep()
-      await finishRun(TOUR_WORKFLOW, 'running')
-      await finishRun(TOUR_WORKFLOW, 'completed')
-
-      mocks.workflowStatus.value = new Map()
-      await nextTick()
-
-      expect(
-        mocks.runState.value,
-        'the tab clears a terminal status, and the Result step still has to report it'
-      ).toBe('succeeded')
-    })
-
-    it('tells a run that landed apart from one that never started', async () => {
-      await tourOnRunStep()
-      await finishRun(TOUR_WORKFLOW, 'running')
-
-      await finishRun(TOUR_WORKFLOW, 'completed')
-
-      expect(
-        mocks.runState.value,
-        'sharing a state with never-ran leaves the Result step unable to tell them apart'
-      ).toBe('succeeded')
-    })
-
-    it('gives up on a run the queue refused', async () => {
-      await tourOnRunStep()
-      mountRunButton('queue-button', () => {}).click()
-
-      mocks.executionErrors.hasNodeError = true
-      await nextTick()
-
-      expect(
-        mocks.runState.value,
-        'a refused prompt never executes, so no status will ever end the wait'
-      ).toBe('failed')
-    })
-
-    it('gives up on a run the validator refused before it reached a node', async () => {
-      await tourOnRunStep()
-      mountRunButton('queue-button', () => {}).click()
-
-      mocks.executionErrors.hasPromptError = true
-      await nextTick()
-
-      expect(
-        mocks.runState.value,
-        'a prompt refused whole never reaches a node, so no node error and no status will ever end the wait'
-      ).toBe('failed')
-    })
-
-    it('leaves errors alone until the tour has run something', async () => {
-      await tourOnRunStep()
-
-      mocks.executionErrors.hasPromptError = true
-      await nextTick()
-
-      expect(
-        mocks.runState.value,
-        'errors already on screen when the tour reaches Run are not its run'
-      ).toBe('idle')
-    })
-  })
-
-  describe('the nudge', () => {
-    it.for([true, false])(
-      'uses the configured result when intermediate output arrives first: %s',
-      async (intermediateFirst) => {
+    it.for(['before acceptance', 'before success', 'after success'])(
+      'retains the exact result when the tour ends %s',
+      async (ending) => {
         const { controller } = await tourOnRunStep()
-        mountRunButton('queue-button', () => {}).click()
-        await endTour(COMPLETED)
-        const { api } = await import('@/scripts/api')
-        const outputs = [
-          { node: 1, filename: 'intermediate.png' },
-          { node: IMAGE_SINK.id, filename: 'final.png' }
-        ]
-        for (const output of intermediateFirst
-          ? outputs
-          : outputs.toReversed()) {
-          api.dispatchCustomEvent('executed', {
-            prompt_id: 'tour-job',
-            node: output.node,
-            display_node: output.node,
-            output: { images: [{ filename: output.filename, type: 'output' }] }
-          })
-        }
-        await acceptRun(TOUR_WORKFLOW, 'tour-job')
-        api.dispatchCustomEvent('execution_success', {
-          prompt_id: 'tour-job',
-          timestamp: 1
-        })
-
-        expect(controller.nudgeOutput.value?.filename).toBe('final.png')
+        submit()
+        const executions = useExecutionLifecycleStore()
+        if (ending === 'before acceptance') await endTour(COMPLETED)
+        executions.acceptSubmission(1, 'tour-job')
+        if (ending === 'before success') await endTour(COMPLETED)
+        output()
+        executions.succeedJob('tour-job', 123)
+        if (ending === 'after success') await endTour(COMPLETED)
+        expect(controller.nudgeArmed.value).toBe(true)
+        expect(controller.nudgeCompletedAt.value).toBe(123)
+        expect(controller.nudgeOutput.value?.filename).toBe('first-output.png')
       }
     )
 
+    it('keeps the first handle while the next tour target is still pending', async () => {
+      const { controller } = await tourOnRunStep()
+      mocks.engine.next.mockImplementation(() => {})
+      submit(1)
+      submit(2)
+      expect(mocks.engine.next).toHaveBeenCalledOnce()
+      const executions = useExecutionLifecycleStore()
+      executions.acceptSubmission(2, 'other-job')
+      executions.succeedJob('other-job', 123)
+      expect(controller.nudgeCompletedAt.value).toBeNull()
+      executions.acceptSubmission(1, 'tour-job')
+      executions.succeedJob('tour-job', 456)
+      expect(controller.nudgeCompletedAt.value).toBe(456)
+    })
+
+    it('ignores a concurrent submission from the same workflow', async () => {
+      const { controller } = await tourOnRunStep()
+      submit(1)
+      submit(2)
+      const executions = useExecutionLifecycleStore()
+      executions.acceptSubmission(2, 'other-job')
+      output('other-job', 'wrong.png')
+      executions.succeedJob('other-job')
+      await endTour(COMPLETED)
+      expect(controller.nudgeCompletedAt.value).toBeNull()
+      expect(controller.nudgeOutput.value).toBeNull()
+      output()
+      executions.succeedJob('tour-job', 456)
+      executions.acceptSubmission(1, 'tour-job')
+      expect(controller.nudgeCompletedAt.value).toBe(456)
+      expect(controller.nudgeOutput.value?.filename).toBe('first-output.png')
+    })
+
+    it('retains the submitted output selector after a canvas swap', async () => {
+      const { controller } = await tourOnRunStep()
+      submit()
+      mocks.activeWorkflow.value = OTHER_WORKFLOW
+      mocks.graph = new LGraph()
+      await endTour(COMPLETED)
+      output()
+      useExecutionLifecycleStore().acceptSubmission(1, 'tour-job')
+      useExecutionLifecycleStore().succeedJob('tour-job')
+      expect(controller.nudgeOutput.value?.filename).toBe('first-output.png')
+    })
+
     it.for(['shared-workflow', 'video_wan2_2_14B_i2v'])(
-      'leaves image continuations unavailable for %s',
+      'offers the browser after a successful %s run',
       async (templateId) => {
         const { controller } = await tourOnRunStep(undefined, templateId)
-        mountRunButton('queue-button', () => {}).click()
-        await captureFirstImage()
-        const { api } = await import('@/scripts/api')
-        api.dispatchCustomEvent('execution_success', {
-          prompt_id: 'tour-job',
-          timestamp: 1
-        })
+        submit()
+        output()
+        useExecutionLifecycleStore().succeedJob('tour-job')
+        useExecutionLifecycleStore().acceptSubmission(1, 'tour-job')
         await endTour(COMPLETED)
-
-        expect(controller.nudgeArmed.value).toBe(true)
         expect(controller.nudgeCompletedAt.value).not.toBeNull()
         expect(controller.nudgeOutput.value).toBeNull()
       }
     )
 
     it.for(['missing', 'different type'])(
-      'rejects a declared node that is %s when Run is clicked',
+      'rejects a declared output node that is %s at submission',
       async (change) => {
         const { controller } = await tourOnRunStep()
         const node = mocks.graph?.getNodeById(toNodeId(IMAGE_SINK.id))
         assert(node)
         if (change === 'missing') mocks.graph?.remove(node)
         else node.type = 'LoadImage'
-
-        mountRunButton('queue-button', () => {}).click()
-        await captureFirstImage()
-        await endTour(COMPLETED)
-
+        submit()
+        output()
+        useExecutionLifecycleStore().acceptSubmission(1, 'tour-job')
         expect(controller.nudgeOutput.value).toBeNull()
       }
     )
 
-    it('keeps the submitted result identity after the canvas changes', async () => {
-      const { controller } = await tourOnRunStep()
-      mountRunButton('queue-button', () => {}).click()
-      await endTour(COMPLETED)
-      mocks.activeWorkflow.value = OTHER_WORKFLOW
-      mocks.graph = new LGraph()
-
-      await captureFirstImage()
-
-      expect(controller.nudgeOutput.value?.filename).toBe('first-output.png')
-    })
-
-    it('records success before an earlier store listener removes the job', async () => {
-      const { controller } = await tourOnRunStep(async () => {
-        const { api } = await import('@/scripts/api')
-        api.addEventListener(
-          'execution_success',
-          () => {
-            mocks.queuedJobs.value = {}
-          },
-          { once: true }
-        )
-      })
-      mountRunButton('queue-button', () => {}).click()
-      await captureFirstImage()
-      await endTour(COMPLETED)
-      const { api } = await import('@/scripts/api')
-
-      const completedAt = Date.now()
-      api.dispatchCustomEvent('execution_success', {
-        prompt_id: 'tour-job',
-        timestamp: 1
-      })
-      await nextTick()
-
-      expect(mocks.queuedJobs.value).toEqual({})
-      expect(controller.nudgeCompletedAt.value).toBe(completedAt)
-      expect(controller.nudgeOutput.value?.filename).toBe('first-output.png')
-
-      const starting = controller.beginTour('image_z_image_turbo')
-      await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS)
-      await starting
-      expect(controller.nudgeCompletedAt.value).toBeNull()
-    })
-
-    it('requires success from the tracked job after the tour ends', async () => {
-      const { controller } = await tourOnRunStep()
-      mountRunButton('queue-button', () => {}).click()
-      await captureFirstImage()
-      await endTour(COMPLETED)
-      const { api } = await import('@/scripts/api')
-
-      expect(controller.nudgeCompletedAt.value).toBeNull()
-      api.dispatchCustomEvent('execution_success', {
-        prompt_id: 'another-job',
-        timestamp: 1
-      })
-      await finishRun(TOUR_WORKFLOW, 'completed')
-      expect(controller.nudgeCompletedAt.value).toBeNull()
-
-      const completedAt = Date.now()
-      api.dispatchCustomEvent('execution_success', {
-        prompt_id: 'tour-job',
-        timestamp: 1
-      })
-      await removeRun()
-      expect(controller.nudgeCompletedAt.value).toBe(completedAt)
-
-      await vi.advanceTimersByTimeAsync(1000)
-      api.dispatchCustomEvent('execution_success', {
-        prompt_id: 'tour-job',
-        timestamp: 2
-      })
-      expect(controller.nudgeCompletedAt.value).toBe(completedAt)
-      controller.dismissNudge()
-      expect(controller.nudgeCompletedAt.value).toBeNull()
-    })
-
-    it.for([
-      { order: ['success', 'accept', 'end'] },
-      { order: ['end', 'success', 'accept'] },
-      { order: ['accept', 'success', 'end'] }
-    ])('retains the completion time across $order', async ({ order }) => {
-      const { controller } = await tourOnRunStep()
-      mountRunButton('queue-button', () => {}).click()
-      const { api } = await import('@/scripts/api')
-      const completedAt = Date.now()
-      for (const event of order) {
-        if (event === 'end') await endTour(COMPLETED)
-        if (event === 'accept') await acceptRun(TOUR_WORKFLOW, 'tour-job')
-        if (event === 'success') {
-          api.dispatchCustomEvent('execution_success', {
-            prompt_id: 'tour-job',
-            timestamp: 1
-          })
-          await vi.advanceTimersByTimeAsync(1000)
-        }
-      }
-      await removeRun()
-      expect(controller.nudgeCompletedAt.value).toBe(completedAt)
-      expect(controller.nudgeOutput.value).toBeNull()
-    })
-
-    it.for(['execution_error', 'execution_interrupted'] as const)(
-      'does not enable a recommendation after %s',
-      async (event) => {
+    it.for(['rejected', 'failed', 'cancelled'])(
+      'ends the result promise without a nudge or timeout after %s',
+      async (outcome) => {
         const { controller } = await tourOnRunStep()
-        mountRunButton('queue-button', () => {}).click()
-        await captureFirstImage()
+        submit()
+        const executions = useExecutionLifecycleStore()
+        if (outcome === 'rejected')
+          executions.rejectSubmission(1, 'submission_rejected')
+        else {
+          executions.acceptSubmission(1, 'tour-job')
+          if (outcome === 'failed') executions.failJob('tour-job')
+          else executions.cancelJob('tour-job')
+        }
         await endTour(COMPLETED)
-        const { api } = await import('@/scripts/api')
-        api.dispatchCustomEvent(event, {
-          prompt_id: 'tour-job',
-          timestamp: 1,
-          node_id: '1',
-          node_type: 'SaveImage',
-          executed: [],
-          exception_message: 'Generation failed',
-          exception_type: 'RuntimeError',
-          traceback: [],
-          current_inputs: {},
-          current_outputs: {}
-        })
-        await removeRun()
-        api.dispatchCustomEvent('execution_success', {
-          prompt_id: 'tour-job',
-          timestamp: 1
-        })
+        await vi.advanceTimersByTimeAsync(OFFLINE_GRACE_MS)
+        expect(mocks.runState.value).toBe('failed')
         expect(controller.nudgeCompletedAt.value).toBeNull()
+        expect(mocks.captureException).not.toHaveBeenCalled()
+        expect(mocks.addError).not.toHaveBeenCalled()
       }
     )
 
-    it('arms after a completed tour produced an image', async () => {
-      const { controller } = await tourOnRunStep()
-      mountRunButton('queue-button', () => {}).click()
-      await captureFirstImage()
-
-      expect(
-        controller.nudgeArmed.value,
-        'a nudge fighting a live tour for the screen helps nobody'
-      ).toBe(false)
-
-      await endTour(COMPLETED)
-
-      expect(controller.nudgeArmed.value).toBe(true)
-      expect(controller.nudgeOutput.value).toEqual({
-        filename: 'first-output.png',
-        subfolder: 'tour',
-        type: 'output'
-      })
-    })
-
-    it('arms with nothing to continue when the tour produced no image', async () => {
-      const { controller } = await tourOnRunStep()
-
-      await endTour(COMPLETED)
-
-      expect(
-        controller.nudgeArmed.value,
-        'suppressing the nudge takes the way forward from the user who most needs it (#14144)'
-      ).toBe(true)
-      expect(controller.nudgeOutput.value).toBeNull()
-      expect(controller.nudgeCompletedAt.value).toBeNull()
-    })
-
-    it.for(UNFINISHED_ENDINGS)(
-      'offers the image to continue after a tour $named',
-      async ({ ending }) => {
+    it.for(['acceptance_timeout', 'connection_timeout'])(
+      'reports %s once to both telemetry providers after the tour ends',
+      async (reason) => {
         const { controller } = await tourOnRunStep()
-        mountRunButton('queue-button', () => {}).click()
-        await captureFirstImage()
-
-        await endTour(ending)
-
-        expect(controller.nudgeArmed.value).toBe(true)
-        expect(controller.nudgeOutput.value?.filename).toBe('first-output.png')
+        submit()
+        await endTour(COMPLETED)
+        const executions = useExecutionLifecycleStore()
+        if (reason === 'connection_timeout') {
+          executions.acceptSubmission(1, 'tour-job')
+          executions.connectionLost()
+        }
+        await vi.advanceTimersByTimeAsync(OFFLINE_GRACE_MS * 2)
+        expect(controller.nudgeCompletedAt.value).toBeNull()
+        expect(mocks.captureException).toHaveBeenCalledOnce()
+        expect(mocks.addError).toHaveBeenCalledOnce()
+        expect(mocks.captureException).toHaveBeenCalledWith(
+          expect.any(Error),
+          expect.objectContaining({
+            tags: expect.objectContaining({ failure_reason: reason })
+          })
+        )
       }
     )
 
-    it('keeps correlating a run the user walked past', async () => {
+    it('keeps an accepted job awaiting a machine beyond the acceptance deadline', async () => {
       const { controller } = await tourOnRunStep()
-      mountRunButton('queue-button', () => {}).click()
-      await acceptRun(TOUR_WORKFLOW, 'tour-job')
-
+      submit()
+      useExecutionLifecycleStore().acceptSubmission(1, 'tour-job')
       await endTour(COMPLETED)
-      expect(controller.nudgeOutput.value).toBeNull()
+      await vi.advanceTimersByTimeAsync(ACCEPT_DEADLINE_MS * 2)
+      expect(mocks.captureException).not.toHaveBeenCalled()
+      useExecutionLifecycleStore().succeedJob('tour-job')
+      expect(controller.nudgeCompletedAt.value).not.toBeNull()
+    })
 
-      const { api } = await import('@/scripts/api')
-      api.dispatchCustomEvent('executed', {
-        prompt_id: 'tour-job',
-        node: IMAGE_SINK.id,
-        display_node: IMAGE_SINK.id,
-        output: { images: [{ filename: 'late.png', type: 'output' }] }
+    it('releases the observer on dismissal without cancelling the execution', async () => {
+      const { controller } = await tourOnRunStep()
+      const handle = submit()
+      await endTour(COMPLETED)
+      controller.dismissNudge()
+      useExecutionLifecycleStore().acceptSubmission(1, 'tour-job')
+      output()
+      useExecutionLifecycleStore().succeedJob('tour-job')
+      expect(handle.state.value).toMatchObject({
+        phase: 'accepted',
+        job: { phase: 'succeeded' }
       })
-      await nextTick()
-
-      expect(
-        controller.nudgeOutput.value?.filename,
-        'clicking Done during a long generation must not throw the result away'
-      ).toBe('late.png')
+      expect(controller.nudgeArmed.value).toBe(false)
+      expect(controller.nudgeCompletedAt.value).toBeNull()
+      expect(controller.nudgeOutput.value).toBeNull()
     })
 
-    it.for([
-      { order: ['end', 'output', 'accept'] },
-      { order: ['end', 'accept', 'output'] },
-      { order: ['output', 'end', 'accept'] }
-    ])('keeps pending correlation across $order', async ({ order }) => {
+    it('starts the next tour without the previous execution', async () => {
       const { controller } = await tourOnRunStep()
-      mountRunButton('queue-button', () => {}).click()
-      const { api } = await import('@/scripts/api')
-
-      for (const event of order) {
-        if (event === 'end') await endTour(COMPLETED)
-        if (event === 'accept') await acceptRun(TOUR_WORKFLOW, 'tour-job')
-        if (event === 'output') {
-          api.dispatchCustomEvent('executed', {
-            prompt_id: 'tour-job',
-            node: IMAGE_SINK.id,
-            display_node: IMAGE_SINK.id,
-            output: { images: [{ filename: 'late.png', type: 'output' }] }
-          })
-          await nextTick()
-        }
-      }
-
-      expect(controller.nudgeArmed.value).toBe(true)
-      expect(controller.nudgeOutput.value?.filename).toBe('late.png')
+      submit()
+      await endTour(COMPLETED)
+      const starting = controller.beginTour('image_z_image_turbo')
+      await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS)
+      await starting
+      output()
+      useExecutionLifecycleStore().acceptSubmission(1, 'tour-job')
+      useExecutionLifecycleStore().succeedJob('tour-job')
+      expect(mocks.runState.value).toBe('idle')
+      expect(controller.nudgeArmed.value).toBe(false)
+      expect(controller.nudgeOutput.value).toBeNull()
     })
 
-    it('matches the original workflow after dismissal and rejects other jobs', async () => {
-      const { controller } = await tourOnRunStep()
-      await acceptRun(TOUR_WORKFLOW, 'old-job')
-      mountRunButton('queue-button', () => {}).click()
-      await endTour(skippedBecause('user'))
+    it('invalidates tour holds when its workflow or canvas disappears', async () => {
+      await tourOnRunStep()
+      expect(registeredTourHolds()).toBe(true)
       mocks.activeWorkflow.value = OTHER_WORKFLOW
-      const { api } = await import('@/scripts/api')
-
-      for (const jobId of ['old-job', 'other-job', 'tour-job']) {
-        api.dispatchCustomEvent('executed', {
-          prompt_id: jobId,
-          node: IMAGE_SINK.id,
-          display_node: IMAGE_SINK.id,
-          output: { images: [{ filename: `${jobId}.png`, type: 'output' }] }
-        })
-      }
-      await acceptRun(OTHER_WORKFLOW, 'other-job')
-      expect(controller.nudgeOutput.value).toBeNull()
-      await acceptThenRemoveRun(TOUR_WORKFLOW, 'tour-job')
-
-      expect(controller.nudgeOutput.value?.filename).toBe('tour-job.png')
-    })
-
-    it('reports uncorrelated output once when acceptance expires after tour end', async () => {
-      const { controller } = await tourOnRunStep()
-      mountRunButton('queue-button', () => {}).click()
-      await endTour(COMPLETED)
-      const { api } = await import('@/scripts/api')
-      api.dispatchCustomEvent('executed', {
-        prompt_id: 'tour-job',
-        node: IMAGE_SINK.id,
-        display_node: IMAGE_SINK.id,
-        output: {
-          images: [{ filename: 'must-not-report.png', type: 'output' }]
-        }
-      })
-      api.dispatchCustomEvent('execution_success', {
-        prompt_id: 'tour-job',
-        timestamp: 1
-      })
-      await vi.advanceTimersByTimeAsync(ACCEPT_DEADLINE_MS)
-
-      const context = {
-        templateId: 'image_z_image_turbo',
-        phase: 'pending',
-        jobId: undefined,
-        outputNodeId: String(IMAGE_SINK.id),
-        hasOutput: false,
-        pendingOutputCount: 1,
-        pendingCompletionCount: 1,
-        timeoutMs: ACCEPT_DEADLINE_MS
-      }
-      expect(mocks.captureException).toHaveBeenCalledExactlyOnceWith(
-        new Error('First-run execution correlation timed out'),
-        {
-          tags: {
-            error_type: 'error_correlating_first_run_execution',
-            failure_category: 'execution_correlation',
-            failure_reason: 'acceptance_timeout'
-          },
-          level: 'warning',
-          extra: context
-        }
-      )
-      expect(mocks.addError).toHaveBeenCalledExactlyOnceWith(
-        expect.objectContaining({
-          name: 'error_correlating_first_run_execution'
-        }),
-        {
-          error_type: 'error_correlating_first_run_execution',
-          failure_category: 'execution_correlation',
-          failure_reason: 'acceptance_timeout',
-          level: 'warning',
-          ...context
-        }
-      )
-
-      await captureFirstImage()
-      await vi.advanceTimersByTimeAsync(ACCEPT_DEADLINE_MS)
-
-      expect(controller.nudgeOutput.value).toBeNull()
-      expect(mocks.captureException).toHaveBeenCalledOnce()
-      expect(mocks.addError).toHaveBeenCalledOnce()
-    })
-
-    it('expires a refused submission with no acceptance after tour end', async () => {
-      const { controller } = await tourOnRunStep()
-      mountRunButton('queue-button', () => {}).click()
-      await endTour(COMPLETED)
-      mocks.executionErrors.hasPromptError = true
-      await vi.advanceTimersByTimeAsync(ACCEPT_DEADLINE_MS)
-
-      await captureFirstImage()
-
-      expect(controller.nudgeOutput.value).toBeNull()
-    })
-
-    it('keeps pending correlation when an unrelated run reports an error', async () => {
-      const { controller } = await tourOnRunStep()
-      mountRunButton('queue-button', () => {}).click()
-      await endTour(COMPLETED)
-      await finishRun(OTHER_WORKFLOW, 'failed')
-      mocks.executionErrors.hasPromptError = true
-      await nextTick()
-
-      await captureFirstImage()
-
-      expect(controller.nudgeOutput.value?.filename).toBe('first-output.png')
-    })
-
-    it('waits past the acceptance deadline once metadata arrives after tour end', async () => {
-      const { controller } = await tourOnRunStep()
-      mountRunButton('queue-button', () => {}).click()
-      await endTour(COMPLETED)
-      await vi.advanceTimersByTimeAsync(ACCEPT_DEADLINE_MS - 1)
-      await acceptRun(TOUR_WORKFLOW, 'tour-job')
-      await vi.advanceTimersByTimeAsync(ACCEPT_DEADLINE_MS * 4)
-
-      await captureFirstImage()
-
-      expect(controller.nudgeOutput.value?.filename).toBe('first-output.png')
-      expect(mocks.captureException).not.toHaveBeenCalled()
-      expect(mocks.addError).not.toHaveBeenCalled()
-    })
-
-    it('stops correlating a cancelled job after the tour ends', async () => {
-      const { controller } = await tourOnRunStep()
-      mountRunButton('queue-button', () => {}).click()
-      await acceptRun(TOUR_WORKFLOW, 'tour-job')
-      await endTour(COMPLETED)
-      await removeRun()
-
-      await captureFirstImage()
-
-      expect(controller.nudgeOutput.value).toBeNull()
-      expect(mocks.captureException).not.toHaveBeenCalled()
-      expect(mocks.addError).not.toHaveBeenCalled()
-    })
-
-    it('releases pending correlation when the nudge is dismissed', async () => {
-      const { controller } = await tourOnRunStep()
-      mountRunButton('queue-button', () => {}).click()
-      await endTour(COMPLETED)
-      controller.dismissNudge()
-
-      await captureFirstImage()
-
-      expect(controller.nudgeOutput.value).toBeNull()
-    })
-
-    it('releases accepted correlation when the connection stays offline after tour end', async () => {
-      const { controller } = await tourOnRunStep()
-      mountRunButton('queue-button', () => {}).click()
-      await acceptRun(TOUR_WORKFLOW, 'tour-job')
-      const { api } = await import('@/scripts/api')
-      api.dispatchCustomEvent('reconnecting')
-      await endTour(COMPLETED)
-      await vi.advanceTimersByTimeAsync(OFFLINE_GRACE_MS)
-
-      expect(mocks.captureException).toHaveBeenCalledExactlyOnceWith(
-        new Error('First-run execution correlation timed out'),
-        expect.objectContaining({
-          tags: {
-            error_type: 'error_correlating_first_run_execution',
-            failure_category: 'execution_correlation',
-            failure_reason: 'connection_timeout'
-          },
-          extra: expect.objectContaining({
-            templateId: 'image_z_image_turbo',
-            phase: 'accepted',
-            jobId: 'tour-job',
-            timeoutMs: OFFLINE_GRACE_MS
-          })
-        })
-      )
-      expect(mocks.addError).toHaveBeenCalledExactlyOnceWith(
-        expect.objectContaining({
-          name: 'error_correlating_first_run_execution'
-        }),
-        expect.objectContaining({
-          failure_category: 'execution_correlation',
-          failure_reason: 'connection_timeout',
-          templateId: 'image_z_image_turbo',
-          phase: 'accepted',
-          jobId: 'tour-job',
-          timeoutMs: OFFLINE_GRACE_MS
-        })
-      )
-
-      await captureFirstImage()
-
-      expect(controller.nudgeOutput.value).toBeNull()
-    })
-
-    it('discards pending output when a new tour starts', async () => {
-      const { controller } = await tourOnRunStep()
-      mountRunButton('queue-button', () => {}).click()
-      const { api } = await import('@/scripts/api')
-      api.dispatchCustomEvent('executed', {
-        prompt_id: 'tour-job',
-        node: IMAGE_SINK.id,
-        display_node: IMAGE_SINK.id,
-        output: { images: [{ filename: 'old.png', type: 'output' }] }
-      })
-      await endTour(COMPLETED)
-
-      const starting = controller.beginTour('image_z_image_turbo')
-      await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS)
-      await starting
-      await acceptRun(TOUR_WORKFLOW, 'tour-job')
-
-      expect(controller.nudgeOutput.value).toBeNull()
-    })
-
-    it('continues from a video run through the template browser only', async () => {
-      const { controller } = await tourOnRunStep()
-      mountRunButton('queue-button', () => {}).click()
-      await acceptRun(TOUR_WORKFLOW, 'tour-job')
-      const { api } = await import('@/scripts/api')
-      api.dispatchCustomEvent('executed', {
-        prompt_id: 'tour-job',
-        node: IMAGE_SINK.id,
-        display_node: IMAGE_SINK.id,
-        output: { video: [{ filename: 'result.mp4', type: 'output' }] }
-      })
-
-      await endTour(COMPLETED)
-
-      expect(controller.nudgeArmed.value).toBe(true)
-      expect(
-        controller.nudgeOutput.value,
-        'no image-input continuation can be seeded from a video'
-      ).toBeNull()
-    })
-
-    it('takes a preview temp file when nothing saved one', async () => {
-      const { controller } = await tourOnRunStep()
-      mountRunButton('queue-button', () => {}).click()
-      await acceptRun(TOUR_WORKFLOW, 'tour-job')
-      const { api } = await import('@/scripts/api')
-      api.dispatchCustomEvent('executed', {
-        prompt_id: 'tour-job',
-        node: IMAGE_SINK.id,
-        display_node: IMAGE_SINK.id,
-        output: { images: [{ filename: 'preview.png', type: 'temp' }] }
-      })
-
-      await endTour(COMPLETED)
-
-      expect(
-        controller.nudgeOutput.value,
-        'temporary output from the configured result node can still seed a continuation'
-      ).toEqual({ filename: 'preview.png', subfolder: '', type: 'temp' })
-    })
-
-    it('replaces a buffered preview when the saved result also beats the queue', async () => {
-      const { controller } = await tourOnRunStep()
-      mountRunButton('queue-button', () => {}).click()
-      const { api } = await import('@/scripts/api')
-      api.dispatchCustomEvent('executed', {
-        prompt_id: 'tour-job',
-        node: IMAGE_SINK.id,
-        display_node: IMAGE_SINK.id,
-        output: { images: [{ filename: 'preview.png', type: 'temp' }] }
-      })
-      api.dispatchCustomEvent('executed', {
-        prompt_id: 'tour-job',
-        node: IMAGE_SINK.id,
-        display_node: IMAGE_SINK.id,
-        output: { images: [{ filename: 'saved.png', type: 'output' }] }
-      })
-
-      await acceptRun(TOUR_WORKFLOW, 'tour-job')
-      await endTour(COMPLETED)
-
-      expect(
-        controller.nudgeOutput.value?.filename,
-        'a preview that beat the queue metadata must not lock out the saved result'
-      ).toBe('saved.png')
-    })
-
-    it('replaces a preview output with the saved result', async () => {
-      const { controller } = await tourOnRunStep()
-      mountRunButton('queue-button', () => {}).click()
-      await acceptRun(TOUR_WORKFLOW, 'tour-job')
-      const { api } = await import('@/scripts/api')
-      api.dispatchCustomEvent('execution_start', {
-        prompt_id: 'tour-job',
-        timestamp: 1
-      })
-      api.dispatchCustomEvent('executed', {
-        prompt_id: 'tour-job',
-        node: IMAGE_SINK.id,
-        display_node: IMAGE_SINK.id,
-        output: { images: [{ filename: 'preview.png', type: 'temp' }] }
-      })
-      api.dispatchCustomEvent('executed', {
-        prompt_id: 'tour-job',
-        node: IMAGE_SINK.id,
-        display_node: IMAGE_SINK.id,
-        output: { images: [{ filename: 'saved.png', type: 'output' }] }
-      })
-
-      await endTour(COMPLETED)
-
-      expect(
-        controller.nudgeOutput.value?.filename,
-        'the saved result is the one the user was shown, so it wins the seed'
-      ).toBe('saved.png')
-    })
-
-    it('ignores image output from a different job', async () => {
-      const { controller } = await tourOnRunStep()
-      mountRunButton('queue-button', () => {}).click()
-      await acceptRun(TOUR_WORKFLOW, 'tour-job')
-      const { api } = await import('@/scripts/api')
-      api.dispatchCustomEvent('execution_start', {
-        prompt_id: 'tour-job',
-        timestamp: 1
-      })
-      api.dispatchCustomEvent('executed', {
-        prompt_id: 'other-job',
-        node: IMAGE_SINK.id,
-        display_node: IMAGE_SINK.id,
-        output: {
-          images: [{ filename: 'other.png', type: 'output' }]
-        }
-      })
-
-      await endTour(COMPLETED)
-
-      expect(controller.nudgeOutput.value).toBeNull()
-    })
-
-    it('correlates output after an unrelated execution starts first', async () => {
-      const { controller } = await tourOnRunStep()
-      mountRunButton('queue-button', () => {}).click()
-      const { api } = await import('@/scripts/api')
-      api.dispatchCustomEvent('execution_start', {
-        prompt_id: 'other-job',
-        timestamp: 1
-      })
-      api.dispatchCustomEvent('executed', {
-        prompt_id: 'other-job',
-        node: IMAGE_SINK.id,
-        display_node: IMAGE_SINK.id,
-        output: {
-          images: [{ filename: 'other.png', type: 'output' }]
-        }
-      })
-      await nextTick()
-
-      await captureFirstImage()
-      await endTour(COMPLETED)
-
-      expect(controller.nudgeOutput.value?.filename).toBe('first-output.png')
-    })
-
-    it('captures output that arrives before accepted job metadata', async () => {
-      const { controller } = await tourOnRunStep()
-      mountRunButton('queue-button', () => {}).click()
-      const { api } = await import('@/scripts/api')
-      api.dispatchCustomEvent('executed', {
-        prompt_id: 'tour-job',
-        node: IMAGE_SINK.id,
-        display_node: IMAGE_SINK.id,
-        output: {
-          images: [{ filename: 'early.png', type: 'output' }]
-        }
-      })
-
-      await acceptRun(TOUR_WORKFLOW, 'tour-job')
-      await endTour(COMPLETED)
-
-      expect(controller.nudgeOutput.value?.filename).toBe('early.png')
-    })
-
-    it('takes an armed nudge off the screen when a second tour starts', async () => {
-      const { controller } = await tourOnRunStep()
-      mountRunButton('queue-button', () => {}).click()
-      await captureFirstImage()
-      await endTour(COMPLETED)
-      expect(controller.nudgeArmed.value).toBe(true)
-
-      const starting = controller.beginTour('image_z_image_turbo')
-      await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS)
-      await starting
-
-      expect(
-        controller.nudgeArmed.value,
-        'a nudge left over from the last tour would sit on top of this one'
-      ).toBe(false)
-    })
-
-    it('offers no continuation when the tour never appeared', async () => {
-      mocks.steps = []
+      expect(registeredTourHolds()).toBe(false)
       mocks.activeWorkflow.value = TOUR_WORKFLOW
-      mocks.engine.startTour.mockImplementation(async () => {
-        await resolveRegisteredTour()
-        // The store requests the run, resolves no steps and returns to idle, so
-        // nothing ever calls `finish()` and no ending is recorded.
-        mocks.engine.activeTour = 'firstRun'
-        await nextTick()
-        mocks.engine.activeTour = null
-        return false
-      })
-      const controller = await freshController()
-
-      const starting = controller.beginTour('image_z_image_turbo')
-      await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS)
-      await starting
-      await nextTick()
-
-      expect(
-        controller.nudgeArmed.value,
-        'a user who saw no tour is the one who most needs somewhere to go next'
-      ).toBe(true)
-      expect(
-        controller.nudgeOutput.value,
-        'there is no first output to seed into any suggestion'
-      ).toBeNull()
-    })
-
-    it('stops offering the nudge once it is waved away', async () => {
-      const { controller } = await tourOnRunStep()
-      mountRunButton('queue-button', () => {}).click()
-      await captureFirstImage()
-      await endTour(COMPLETED)
-
-      controller.dismissNudge()
-
-      expect(
-        controller.nudgeArmed.value,
-        'nothing re-arms it, so dismissal has to be the end of it'
-      ).toBe(false)
+      mocks.linearMode.value = true
+      expect(registeredTourHolds()).toBe(false)
     })
   })
 
