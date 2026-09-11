@@ -229,11 +229,17 @@ const graphMutations = (workflowId: string) => {
 }
 const { focusNodeInstance } = useFocusNode()
 
+let cloudIdsByName = new Map<string, string>()
+
 function toSelectedNode(node: LGraphNode): SelectedNode {
+  const activeWorkflow = workflowStore.activeWorkflow
   return {
     id: String(node.id),
     locatorId: workflowStore.nodeToNodeLocatorId(node),
-    title: node.title || node.type
+    title: node.title || node.type,
+    get workflowId() {
+      return activeWorkflow ? cloudIdFor(activeWorkflow) : undefined
+    }
   }
 }
 
@@ -297,8 +303,6 @@ watch(
 function mentionableAssets() {
   return assetService.getInputAssetsIncludingPublic()
 }
-
-let cloudIdsByName = new Map<string, string>()
 
 async function refreshCloudWorkflowIds(): Promise<void> {
   try {
