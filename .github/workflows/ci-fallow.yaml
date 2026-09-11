@@ -22,6 +22,14 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Resolve audit base
+        id: audit-base
+        env:
+          BASE_REF: ${{ github.event_name == 'pull_request' && 'HEAD^1' || github.event.merge_group.base_sha }}
+        run: |
+          base_sha=$(git rev-parse "$BASE_REF")
+          echo "sha=$base_sha" >> "$GITHUB_OUTPUT"
+
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
 
@@ -32,4 +40,4 @@ jobs:
           version: '3.24.1'
           format: json
           branded-token: false
-          changed-since: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+          changed-since: ${{ steps.audit-base.outputs.sha }}
