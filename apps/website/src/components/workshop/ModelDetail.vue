@@ -596,26 +596,20 @@ function useInCode() {
           <Button
             v-else-if="gate === 'ready'"
             size="lg"
-            :class="
-              cn(
-                'w-full px-5',
-                !isRunning && priceEstimate && 'justify-between'
-              )
-            "
+            class="w-full px-5"
             data-testid="run-button"
             data-gate="ready"
             @click="isRunning ? cancelRun() : run()"
           >
-            <span v-if="!isRunning" class="flex items-center gap-2.5">
+            <template v-if="!isRunning" #prepend>
               <Play class="size-5 fill-current" aria-hidden="true" />
-              {{ t('workshop.run.run', locale) }}
-            </span>
-            <template v-else>
-              {{ t('workshop.run.cancel', locale) }}
             </template>
+            {{
+              t(isRunning ? 'workshop.run.cancel' : 'workshop.run.run', locale)
+            }}
             <template v-if="!isRunning && priceEstimate" #append>
               <span
-                class="flex items-center gap-1.5 rounded-full bg-primary-comfy-ink/10 px-2.5 py-1 text-xs font-bold normal-case tabular-nums"
+                class="ml-auto flex items-center gap-1.5 rounded-full bg-primary-comfy-ink/10 px-2.5 py-1 text-xs font-bold normal-case tabular-nums"
                 data-testid="run-price"
               >
                 <Coins class="size-3.5" aria-hidden="true" />
