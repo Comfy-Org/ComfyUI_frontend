@@ -546,6 +546,47 @@ describe('migrateWorkspaceToScope', () => {
     expect(readJson(StorageKeys.draftIndex(sourceWorkspaceId))).toBe(null)
   })
 
+  it('keeps both copies when a winner cannot record completion', () => {
+    seedSourceWorkspace()
+    const claimKey = StorageKeys.migrationClaim(sourceWorkspaceId)
+    const completionKey = StorageKeys.migrationCompletion(sourceWorkspaceId)
+    const destinationPayloadKey = StorageKeys.draftPayload(
+      draftPath,
+      destinationScope
+    )
+    const realSetItem = localStorage.setItem.bind(localStorage)
+    let claimTaken = false
+    vi.spyOn(localStorage, 'setItem').mockImplementation(
+      (key: string, value: string) => {
+        if (key === completionKey) {
+          throw new DOMException('Quota exceeded', 'QuotaExceededError')
+        }
+        realSetItem(key, value)
+        if (key === destinationPayloadKey && !claimTaken) {
+          claimTaken = true
+          realSetItem(
+            claimKey,
+            JSON.stringify({
+              scope: destinationScope,
+              sourceUpdatedAt: 10,
+              nonce: 'same-scope-tab'
+            })
+          )
+          migrateWorkspaceToScope(sourceWorkspaceId, destinationScope)
+        }
+      }
+    )
+
+    migrateWorkspaceToScope(sourceWorkspaceId, destinationScope)
+
+    expect(readJson(StorageKeys.draftIndex(sourceWorkspaceId))).toEqual(
+      buildIndex()
+    )
+    expect(readJson(StorageKeys.draftIndex(destinationScope))).toEqual(
+      buildIndex()
+    )
+  })
+
   it('preserves a newer source generation written while committing the destination index', () => {
     seedSourceWorkspace()
     const sourceIndexKey = StorageKeys.draftIndex(sourceWorkspaceId)

@@ -127,11 +127,12 @@ export function migrateWorkspaceToScope(
   const copied = published && ownsClaim(claimKey, claim)
 
   if (copied) {
-    writeStorage(
+    const completionRecorded = writeStorage(
       localStorage,
       completionKey,
       JSON.stringify({ ...claim, completedAt: Date.now() })
     )
+    if (!completionRecorded) return
     cleanupSourceIfCurrent(
       workspaceId,
       sourcePayloads,
