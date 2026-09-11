@@ -8,6 +8,7 @@ import { getRouterWorkshopModelDetail } from './workshop-router-content'
 import { defaultValues, schemaForModel } from './workshop-playground'
 import { prepareWorkshopRouterInput } from './workshop-request'
 import { workshopExampleValues } from './workshop-example-values'
+import { createWorkshopUrlUploader } from './workshop-url-upload'
 
 describe('example source images', () => {
   it.for([
@@ -54,27 +55,76 @@ describe('example source images', () => {
   it.for([
     'wan--reference-to-video-3.0--animate-images',
     'wan--reference-video-2.7--animate-images'
-  ])('preserves both authored reference URLs in order for %s', async (slug) => {
-    const page = getRouterWorkshopModelDetail(slug)
-    if (!page?.execution) throw new Error('Missing Wan page')
-    const values = defaultValues(schemaForModel(page), page.defaults)
-    expect(values.image_url).toMatch(/^https:\/\//)
-    expect(values.image_url_2).toMatch(/^https:\/\//)
-    expect(values.image_url).not.toBe(values.image_url_2)
-    const body = await prepareWorkshopRouterInput(
-      page.execution,
-      values,
-      new AbortController().signal
-    )
-    expect(body).toMatchObject({
-      input: {
-        media: [
-          { type: 'reference_image', url: values.image_url },
-          { type: 'reference_image', url: values.image_url_2 }
-        ]
+  ])(
+    'preserves both authored reference assets in order for %s',
+    async (slug) => {
+      const page = getRouterWorkshopModelDetail(slug)
+      if (!page?.execution) throw new Error('Missing Wan page')
+      const values = defaultValues(schemaForModel(page), page.defaults)
+      expect(values.image_url).toMatch(/^https:\/\//)
+      expect(values.image_url_2).toMatch(/^https:\/\//)
+      expect(values.image_url).not.toBe(values.image_url_2)
+      const sources = [values.image_url, values.image_url_2]
+      const uploaded: string[] = []
+      const downloads: string[] = []
+      let grants = 0
+      const transport = vi.fn<typeof fetch>(async (url, init) => {
+        if (init?.method === 'POST') {
+          grants += 1
+          return Response.json({
+            upload_url: `https://storage.example/upload-${grants}`,
+            download_url: `https://storage.example/reference-${grants}.png`
+          })
+        }
+        if (init?.method === 'PUT') {
+          if (!(init.body instanceof File)) throw new Error('Missing upload')
+          uploaded.push(await init.body.text())
+          return new Response(null)
+        }
+        downloads.push(String(url))
+        return new Response(String(url), {
+          headers: { 'Content-Type': 'image/png' }
+        })
+      })
+      vi.stubGlobal('fetch', transport)
+      const uploader = createWorkshopUrlUploader()
+      const body = await prepareWorkshopRouterInput(
+        page.execution,
+        values,
+        new AbortController().signal,
+        undefined,
+        (file, signal) => uploader(file, 'token', 'owner:workspace', signal)
+      )
+      const rehosted = slug === 'wan--reference-to-video-3.0--animate-images'
+      expect(body).toMatchObject({
+        input: {
+          media: sources.map((source, index) => ({
+            type: 'reference_image',
+            url: rehosted
+              ? `https://storage.example/reference-${index + 1}.png`
+              : source
+          }))
+        }
+      })
+      expect(downloads).toEqual(rehosted ? sources : [])
+      expect(uploaded).toEqual(rehosted ? sources : [])
+      expect(transport).toHaveBeenCalledTimes(rehosted ? 6 : 0)
+      let uploadIndex = 0
+      for (const [url, init] of transport.mock.calls) {
+        if (init?.method === 'POST')
+          expect(String(url)).toMatch(/\/customers\/storage$/)
+        else if (init?.method === 'PUT') {
+          expect(String(url)).toBe(
+            `https://storage.example/upload-${++uploadIndex}`
+          )
+          expect(init.body).toMatchObject({ type: 'image/png' })
+        } else {
+          expect(init?.credentials).toBe('omit')
+          expect(sources).toContain(String(url))
+        }
       }
-    })
-  })
+    }
+  )
   it('preserves all reference images in a native multi-image request, not filenames or URLs as Base64', async () => {
     const page = getRouterWorkshopModelDetail(
       'bfl--flux-2-max--generate-images'

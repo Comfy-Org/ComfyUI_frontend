@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
-import { routerWorkshopModels } from './workshop-browse-content'
+import {
+  routerModelSlugAliases,
+  routerWorkshopModelPaths,
+  routerWorkshopModels
+} from './workshop-browse-content'
+import {
+  isWorkshopModelDisabled,
+  workshopModelAvailability
+} from './workshop-model-availability'
 import { getRouterWorkshopModelDetail } from './workshop-router-content'
 
 describe('canonical model display names', () => {
@@ -32,5 +40,20 @@ describe('canonical model display names', () => {
         'byteplus--dreamina-seedance-2-0-fast-260128'
       )?.name
     ).toBe('Seedance 2.0 Fast Text-to-Video')
+  })
+})
+
+describe('model availability', () => {
+  it('withholds every disabled page from the catalogue, routes and redirects', () => {
+    for (const [slug, { disabled }] of workshopModelAvailability) {
+      if (!disabled) continue
+      expect(routerWorkshopModels.map((model) => model.slug)).not.toContain(
+        slug
+      )
+      expect(routerWorkshopModelPaths).not.toContain(slug)
+      expect(getRouterWorkshopModelDetail(slug)).toBeUndefined()
+    }
+    for (const target of routerModelSlugAliases.values())
+      expect(isWorkshopModelDisabled(target)).toBe(false)
   })
 })
