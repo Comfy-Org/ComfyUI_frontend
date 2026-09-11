@@ -2,6 +2,10 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import { WidgetSelectDropdownFixture } from '@e2e/fixtures/components/WidgetSelectDropdown'
+import { TestIds } from '@e2e/fixtures/selectors'
+import { assetPath } from '@e2e/fixtures/utils/paths'
+import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
 
 test.describe(
   'Widget value persistence',
@@ -43,6 +47,110 @@ test.describe(
           'string_input'
         )
       ).toHaveValue('')
+    })
+
+    test.describe('LoadImageOutput', { tag: '@oss' }, () => {
+      test.beforeEach(async ({ comfyPage }) => {
+        await comfyPage.page.route(
+          '**/internal/files/output**',
+          async (route) => {
+            if (route.request().method() !== 'GET') {
+              await route.fallback()
+              return
+            }
+            await route.fulfill({
+              json: [
+                'first-output.webp [output]',
+                'selected-output.webp [output]'
+              ]
+            })
+          }
+        )
+        const image = {
+          contentType: 'image/webp',
+          path: assetPath('image64x64.webp')
+        }
+        await mockViewFiles(comfyPage.page, {
+          'first-output.webp': image,
+          'first-output.webp [output]': image,
+          'selected-output.webp': image,
+          'selected-output.webp [output]': image
+        })
+        await comfyPage.menu.topbar.newWorkflowButton.click()
+        await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+        await comfyPage.searchBoxV2.addNode('Load Image (from Outputs)')
+        await comfyPage.vueNodes.waitForNodes()
+      })
+
+      test.afterEach(async ({ comfyPage }) => {
+        await comfyPage.canvasOps.resetView()
+      })
+
+      test('keeps a selected non-first output and its preview after save and reload', async ({
+        comfyPage
+      }) => {
+        const selectedValue = 'selected-output.webp [output]'
+        const node = comfyPage.vueNodes.getNodeByTitle(
+          'Load Image (from Outputs)'
+        )
+        await WidgetSelectDropdownFixture.fromTrigger(
+          node.getByRole('button', {
+            name: 'first-output.webp [output]',
+            exact: true
+          })
+        ).selectOption(selectedValue)
+        await expect(
+          node.getByRole('button', { name: selectedValue, exact: true })
+        ).toBeVisible()
+        const nodes =
+          await comfyPage.nodeOps.getNodeRefsByType('LoadImageOutput')
+        expect(nodes, 'Workflow has one output image loader').toHaveLength(1)
+        const imageWidget = await nodes[0].getWidgetByName('image')
+        await expect.poll(() => imageWidget.getValue()).toBe(selectedValue)
+
+        await comfyPage.menu.topbar.saveWorkflow('remote-output-selection')
+        await comfyPage.workflow.reloadAndWaitForApp()
+        await comfyPage.vueNodes.waitForNodes()
+
+        const restoredNode = comfyPage.vueNodes.getNodeByTitle(
+          'Load Image (from Outputs)'
+        )
+        await WidgetSelectDropdownFixture.fromTrigger(
+          restoredNode.getByRole('button', {
+            name: /^(first|selected)-output\.webp \[output\]$/
+          })
+        ).open()
+        const menu = comfyPage.page.getByTestId(
+          TestIds.widgets.formDropdownMenu
+        )
+        await expect(
+          menu.getByText('first-output.webp [output]', { exact: true })
+        ).toBeVisible()
+        await expect(
+          menu.getByText(selectedValue, { exact: true })
+        ).toBeVisible()
+        await comfyPage.page.keyboard.press('Escape')
+        await expect(menu).toBeHidden()
+
+        const restoredNodes =
+          await comfyPage.nodeOps.getNodeRefsByType('LoadImageOutput')
+        expect(
+          restoredNodes,
+          'Reload restores one output image loader'
+        ).toHaveLength(1)
+        const restoredWidget = await restoredNodes[0].getWidgetByName('image')
+        await expect.poll(() => restoredWidget.getValue()).toBe(selectedValue)
+        await expect(
+          restoredNode.getByRole('button', { name: selectedValue, exact: true })
+        ).toBeVisible()
+        const preview = restoredNode.getByTestId(TestIds.node.mainImage)
+        await expect(preview).toBeVisible()
+        await expect(preview).toHaveAttribute(
+          'src',
+          /[?&]filename=selected-output\.webp(?:&|$)/
+        )
+        await expect(preview).toHaveJSProperty('naturalWidth', 64)
+      })
     })
   }
 )
