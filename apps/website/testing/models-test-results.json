@@ -1,0 +1,4643 @@
+{
+  "version": 1,
+  "models": [
+    {
+      "slug": "beeble--switchx-image-edit--edit-images",
+      "routerId": "beeble/switchx",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.169Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "passed",
+        "at": "2026-09-11T06:20:27.027Z",
+        "requestId": "fb00f26d-c29d-437e-a3f7-940ae94d8b31",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "artifacts": [
+          {
+            "kind": "image",
+            "bytes": 1198940,
+            "sha256": "3a6d6fc9c230689e552ff80f7b21eb8e2e11a0718e01b6aac65e30d54845d9c9",
+            "width": 1024,
+            "height": 1024
+          },
+          {
+            "kind": "image",
+            "bytes": 1380960,
+            "sha256": "5faf3035702d269d4d1d3f7b9ec3ef298d136819855bcf4317a49dcec06666f2",
+            "width": 1024,
+            "height": 1024
+          },
+          {
+            "kind": "image",
+            "bytes": 23924,
+            "sha256": "62f0b362f5dadb6407f87b828ca43c73fd60f9ae91f5a1917bbab5cb4550ac2b",
+            "width": 1024,
+            "height": 1024
+          }
+        ]
+      },
+      "lastSuccess": {
+        "status": "passed",
+        "at": "2026-09-11T06:20:27.027Z",
+        "requestId": "fb00f26d-c29d-437e-a3f7-940ae94d8b31",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "artifacts": [
+          {
+            "kind": "image",
+            "bytes": 1198940,
+            "sha256": "3a6d6fc9c230689e552ff80f7b21eb8e2e11a0718e01b6aac65e30d54845d9c9",
+            "width": 1024,
+            "height": 1024
+          },
+          {
+            "kind": "image",
+            "bytes": 1380960,
+            "sha256": "5faf3035702d269d4d1d3f7b9ec3ef298d136819855bcf4317a49dcec06666f2",
+            "width": 1024,
+            "height": 1024
+          },
+          {
+            "kind": "image",
+            "bytes": 23924,
+            "sha256": "62f0b362f5dadb6407f87b828ca43c73fd60f9ae91f5a1917bbab5cb4550ac2b",
+            "width": 1024,
+            "height": 1024
+          }
+        ]
+      }
+    },
+    {
+      "slug": "beeble--switchx-video-edit--edit-videos",
+      "routerId": "beeble/switchx",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.173Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:19:54.383Z",
+        "requestId": "16404da5-497c-4778-a8b5-04277fa5ef81",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "bfl--flux-2-max--generate-images",
+      "routerId": "bfl/flux-2-max",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.176Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:19:55.456Z",
+        "requestId": "0936b203-a959-47e0-935d-086204b9d09b",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "bfl--flux-2-pro--generate-images",
+      "routerId": "bfl/flux-2-pro",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.179Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "passed",
+        "at": "2026-09-11T06:20:21.992Z",
+        "requestId": "78a0cc2e-4fa5-4377-9d27-689d8f4b6fea",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-smoke-recovery-20260910"
+        },
+        "artifacts": [
+          {
+            "kind": "image",
+            "bytes": 316482,
+            "sha256": "ee9d93aa16704db4fcf49f05af60119faebc851e85f14bede8fa590f1ca42d0f",
+            "width": 1024,
+            "height": 1024,
+            "durationSeconds": 0.04
+          }
+        ]
+      },
+      "lastSuccess": {
+        "status": "passed",
+        "at": "2026-09-11T06:20:21.992Z",
+        "requestId": "78a0cc2e-4fa5-4377-9d27-689d8f4b6fea",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-smoke-recovery-20260910"
+        },
+        "artifacts": [
+          {
+            "kind": "image",
+            "bytes": 316482,
+            "sha256": "ee9d93aa16704db4fcf49f05af60119faebc851e85f14bede8fa590f1ca42d0f",
+            "width": 1024,
+            "height": 1024,
+            "durationSeconds": 0.04
+          }
+        ]
+      }
+    },
+    {
+      "slug": "bfl--flux-3-image-to-video--animate-images",
+      "routerId": "bfl/flux-3-video",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.183Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:19:55.784Z",
+        "requestId": "cdb2e6a2-9ac0-45df-924d-7d3bd2a8c04f",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "bfl--flux-3-text-to-video--generate-videos",
+      "routerId": "bfl/flux-3-video",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.187Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:19:55.830Z",
+        "requestId": "5c3b5ad8-18ee-4f39-83ad-2975589ab19e",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "bfl--flux-3-video-continuation--edit-videos",
+      "routerId": "bfl/flux-3-video",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.190Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:19:56.300Z",
+        "requestId": "93c44053-77ba-429e-9023-1e2a6989ea7a",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "bfl--flux-erase--edit-images",
+      "routerId": "bfl/erase-v1",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.195Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:19:56.823Z",
+        "requestId": "2dbd4685-6157-4da5-9ef4-0d3378cde844",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "bfl--flux-kontext-max--edit-images",
+      "routerId": "bfl/flux-kontext-max",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.198Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:19:57.348Z",
+        "requestId": "f00418b1-4218-48b5-8f49-106b6b29cc18",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "bfl--flux-kontext-pro--edit-images",
+      "routerId": "bfl/flux-kontext-pro",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.202Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:19:58.804Z",
+        "requestId": "cc05e0e3-1f0e-4300-b9dd-a6f040e3d77c",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "bfl--flux-pro-1.1--generate-images",
+      "routerId": "bfl/flux-pro-1.1",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.205Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:19:58.265Z",
+        "requestId": "338c83c8-a289-440b-a57b-64e85d1216ba",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "bfl--flux-pro-1.1-ultra--generate-images",
+      "routerId": "bfl/flux-pro-1.1-ultra",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.211Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:19:58.718Z",
+        "requestId": "f4d94299-5194-4e6c-b18f-fce9dcbe4c6a",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "bfl--flux-pro-expand--edit-images",
+      "routerId": "bfl/flux-pro-1.0-expand",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.217Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:19:59.301Z",
+        "requestId": "5844d1f9-56a2-452b-89f2-fd3af7430f3d",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "bfl--flux-pro-fill--edit-images",
+      "routerId": "bfl/flux-pro-1.0-fill",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.221Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:19:59.735Z",
+        "requestId": "ee40946a-fe5e-4e4c-97f2-aef109f9334c",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "bfl--flux-video-upscale--edit-videos",
+      "routerId": "bfl/video-upscale-v1",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.226Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:00.231Z",
+        "requestId": "661280c5-9da6-4a09-8e62-2782112f8d05",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "bfl--flux-virtual-try-on--edit-images",
+      "routerId": "bfl/vto-v1",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.229Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:00.824Z",
+        "requestId": "f6a0b605-01d9-457a-90c4-5d12f309748a",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "bria--eraser--edit-images",
+      "routerId": "bria/image-edit-erase",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.233Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:01.394Z",
+        "requestId": "cb4f25dd-ef1a-4a19-9556-b100cdf09d2c",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "bria--expand-image--edit-images",
+      "routerId": "bria/image-edit-expand",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.238Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:01.713Z",
+        "requestId": "f9db46b3-cb96-4907-9d33-6773b8399a80",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "bria--fibo-image-edit--edit-images",
+      "routerId": "bria/fibo",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.242Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:02.296Z",
+        "requestId": "aca8fd35-1217-4177-8142-0935fcc51d42",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "bria--generative-fill--edit-images",
+      "routerId": "bria/image-edit-gen-fill",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.250Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:02.756Z",
+        "requestId": "b9ecd58b-24f1-4138-9e5b-14bc4eda2f12",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "bria--green-screen-video--edit-videos",
+      "routerId": "bria/video-edit-green-screen",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.257Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:03.226Z",
+        "requestId": "cba38624-6aac-4c2b-afb8-ed0b8e11865a",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "bria--increase-resolution--edit-images",
+      "routerId": "bria/image-edit-increase-resolution",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.260Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:03.852Z",
+        "requestId": "cf8fb275-60da-435a-889d-0b9af239c9b1",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "bria--remove-image-background--edit-images",
+      "routerId": "bria/image-edit-remove-background",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.263Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:04.243Z",
+        "requestId": "ac1576b6-79f2-4bf9-8933-4a4cbbdddd55",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "bria--remove-video-background--edit-videos",
+      "routerId": "bria/video-edit-remove-background",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.267Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:04.750Z",
+        "requestId": "0ccf0f7a-4391-469b-83cf-597fb4893f73",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "bria--replace-video-background--edit-videos",
+      "routerId": "bria/video-edit-replace-background",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.270Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:05.224Z",
+        "requestId": "28215302-4cab-4717-b706-11204d64c77b",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "byteplus--seed-audio-1.0--audio",
+      "routerId": "byteplus/seed-audio-1.0",
+      "modality": "audio",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.272Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "passed",
+        "at": "2026-09-11T06:30:16.225Z",
+        "requestId": "eaea38af-59c8-4612-b6c3-b14eb37a546a",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-smoke-recovery-20260910"
+        },
+        "artifacts": [
+          {
+            "kind": "audio",
+            "bytes": 512044,
+            "sha256": "f2b73168d1bcb3b06ec7dc6a54fd79579001ff22b1035ffea4169a9b12342467",
+            "durationSeconds": 3.2,
+            "channels": 2
+          }
+        ]
+      },
+      "lastSuccess": {
+        "status": "passed",
+        "at": "2026-09-11T06:30:16.225Z",
+        "requestId": "eaea38af-59c8-4612-b6c3-b14eb37a546a",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-smoke-recovery-20260910"
+        },
+        "artifacts": [
+          {
+            "kind": "audio",
+            "bytes": 512044,
+            "sha256": "f2b73168d1bcb3b06ec7dc6a54fd79579001ff22b1035ffea4169a9b12342467",
+            "durationSeconds": 3.2,
+            "channels": 2
+          }
+        ]
+      }
+    },
+    {
+      "slug": "byteplus--seed-audio-1.0-multilingual--audio",
+      "routerId": "byteplus/seed-audio-1.0-multilingual",
+      "modality": "audio",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.274Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:06.260Z",
+        "requestId": "644a47ee-ff8d-4f12-a209-9e304ec2e1a4",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "byteplus--seedance-1-0-lite-first-last-frame--animate-images",
+      "routerId": "byteplus/seedance-1-0-lite-i2v-250428",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.280Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:06.785Z",
+        "requestId": "e54c2352-8b80-44ed-bb21-5dc090849a2f",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "byteplus--seedance-1-0-lite-image-reference--animate-images",
+      "routerId": "byteplus/seedance-1-0-lite-i2v-250428",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.283Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:07.308Z",
+        "requestId": "3ae4c85d-c102-459b-8d9e-b541c18514a0",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "byteplus--seedance-1-0-lite-image-to-video--animate-images",
+      "routerId": "byteplus/seedance-1-0-lite-i2v-250428",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.287Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:07.753Z",
+        "requestId": "af1a086e-e380-4f4a-89f4-eefd71d24f0f",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "byteplus--seedance-1-0-lite-text-to-video--generate-videos",
+      "routerId": "byteplus/seedance-1-0-lite-t2v-250428",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.292Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:08.238Z",
+        "requestId": "36438f21-5301-431b-a986-b56feeb2ec89",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "byteplus--seedance-2-5-first-last-frame--animate-images",
+      "routerId": "byteplus/dreamina-seedance-2-5-260628",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.296Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:08.735Z",
+        "requestId": "fd29ae24-45a7-4af8-9cbd-34095a7e24e3",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "byteplus--seedance-2-5-reference--generate-videos",
+      "routerId": "byteplus/dreamina-seedance-2-5-260628",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.300Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:10.603Z",
+        "requestId": "b9050bc0-30b2-4f6c-81ca-c57788c6d717",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "byteplus--seedance-2-5-text-to-video--generate-videos",
+      "routerId": "byteplus/dreamina-seedance-2-5-260628",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.305Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:09.834Z",
+        "requestId": "be0bb935-8f08-4fff-97ef-fce0fd5a74c4",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "byteplus--seedance-2-fast-first-last-frame--animate-images",
+      "routerId": "byteplus/dreamina-seedance-2-0-fast-260128",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.308Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:10.304Z",
+        "requestId": "686440d8-e05e-4579-a904-09863c793655",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "byteplus--seedance-2-fast-reference--generate-videos",
+      "routerId": "byteplus/dreamina-seedance-2-0-fast-260128",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.313Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:10.788Z",
+        "requestId": "42a2f353-8093-4f24-ad3b-f9620fdbd989",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "byteplus--seedance-2-fast-text-to-video--generate-videos",
+      "routerId": "byteplus/dreamina-seedance-2-0-fast-260128",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.316Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:11.229Z",
+        "requestId": "ff6ee20c-7b9b-495e-8061-6ff1a6998c60",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "byteplus--seedance-2-mini-text-to-video--generate-videos",
+      "routerId": "byteplus/dreamina-seedance-2-0-mini",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.319Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:11.819Z",
+        "requestId": "6e288630-3f42-470a-85bb-c4cc24ce850c",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "byteplus--seedream-3--generate-images",
+      "routerId": "byteplus/seedream-3-0-t2i-250415",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.322Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:12.340Z",
+        "requestId": "e4c74e69-9e77-4cbe-b1ac-bf2070b706ab",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "byteplus--seedream-4--edit-images",
+      "routerId": "byteplus/seedream-4-0-250828",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.325Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:12.735Z",
+        "requestId": "5cce8846-f804-4f38-92f3-ebebcafd7440",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "byteplus--seedream-4--generate-images",
+      "routerId": "byteplus/seedream-4-0-250828",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.329Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:13.285Z",
+        "requestId": "c321cedb-8983-4b2d-8537-ecf48f3282a2",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "byteplus--seedream-4-5--edit-images",
+      "routerId": "byteplus/seedream-4-5-251128",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.333Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:13.766Z",
+        "requestId": "105d876d-d5ad-464e-bedf-556943355089",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "byteplus--seedream-4-5--generate-images",
+      "routerId": "byteplus/seedream-4-5-251128",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.336Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:14.225Z",
+        "requestId": "71aeb612-b494-49c5-96ba-6ece4f6916df",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "byteplus--seedream-5-lite--edit-images",
+      "routerId": "byteplus/seedream-5-0-260128",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.340Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:14.742Z",
+        "requestId": "7ece45fa-c204-4fc6-9938-eaa6abfbfb44",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "byteplus--seedream-5-lite--generate-images",
+      "routerId": "byteplus/seedream-5-0-260128",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.343Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:15.254Z",
+        "requestId": "d3dbee51-7155-42c9-a6ee-6ae3fb89fd09",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "byteplus--seedream-5-pro--edit-images",
+      "routerId": "byteplus/seedream-5-0-pro-260628",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.347Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:15.836Z",
+        "requestId": "f770c62e-01a8-4c4c-ab8b-3d95c12fac47",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "byteplus--seedream-5-pro--generate-images",
+      "routerId": "byteplus/seedream-5-0-pro-260628",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.351Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:16.418Z",
+        "requestId": "289bf4bc-5cd5-4e68-87e7-bed9e24b1ad4",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "byteplus--seedream-5-pro-layer-separation--edit-images",
+      "routerId": "byteplus/seedream-5-0-pro-260628",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.354Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:17.090Z",
+        "requestId": "b682718b-899d-41fb-90cb-3dfba432899a",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "elevenlabs--sound-effects--audio",
+      "routerId": "elevenlabs/eleven_sfx_v2",
+      "modality": "audio",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.358Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "failed",
+        "at": "2026-09-11T06:15:37.504Z",
+        "requestId": "d6333296-9f19-4d43-8e62-d70167cf6979",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-smoke-20260910"
+        },
+        "failure": "invalid-input",
+        "fields": []
+      }
+    },
+    {
+      "slug": "elevenlabs--text-to-dialogue--audio",
+      "routerId": "elevenlabs/eleven_v3",
+      "modality": "audio",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.360Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:17.287Z",
+        "requestId": "03dff0e0-e692-4094-a384-c9f614b8d856",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "freepik--magnific-skin-enhancer--edit-images",
+      "routerId": "freepik/ai-skin-enhancer-creative",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.364Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:17.794Z",
+        "requestId": "fe7df50a-1599-4273-a271-cbe1ae61157d",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "freepik--magnific-upscaler-precise-v2--edit-images",
+      "routerId": "freepik/ai-image-upscaler-precision-v2",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.370Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:18.234Z",
+        "requestId": "1fb5c6b1-244f-45a8-9e9e-7597e5a06c4b",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "gemini--omni-1.1-flash--animate-images",
+      "routerId": "gemini-interactions/gemini-omni-1.1-flash",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.373Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:18.770Z",
+        "requestId": "add4de38-0400-4805-80f0-74fb80b8d492",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "gemini--omni-1.1-flash--edit-videos",
+      "routerId": "gemini-interactions/gemini-omni-1.1-flash",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.376Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:19.235Z",
+        "requestId": "04ed97e4-2927-4a52-842b-8c03ca1c7044",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "gemini--omni-1.1-flash--generate-videos",
+      "routerId": "gemini-interactions/gemini-omni-1.1-flash",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.385Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:19.782Z",
+        "requestId": "a529b765-3c17-4cfa-8c67-4b8189730829",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "gemini--omni-flash-preview--animate-images",
+      "routerId": "gemini-interactions/gemini-omni-flash-preview",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.387Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:20.272Z",
+        "requestId": "4e13fd69-6f6e-4114-8f2b-d00217c730d8",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "gemini--omni-flash-preview--edit-videos",
+      "routerId": "gemini-interactions/gemini-omni-flash-preview",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.390Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:20.723Z",
+        "requestId": "0a2dc80b-5832-42f2-af49-c46fd7d5da93",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "gemini--omni-flash-preview--generate-videos",
+      "routerId": "gemini-interactions/gemini-omni-flash-preview",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.392Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:21.221Z",
+        "requestId": "b01ee827-3f8d-46bd-b762-f4f65988eb84",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "heygen--starfish-tts--audio",
+      "routerId": "heygen/starfish",
+      "modality": "audio",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.396Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:21.730Z",
+        "requestId": "dd8a277f-73c1-407d-a4c8-ae38b6ee5373",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "ideogram--v3--generate-images",
+      "routerId": "ideogram/ideogram-v3",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.399Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:22.242Z",
+        "requestId": "e54c4fbe-46c4-4036-be54-261836f7c9d6",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "ideogram--v4--generate-images",
+      "routerId": "ideogram/ideogram-v4",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.402Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:22.715Z",
+        "requestId": "d9bb31ae-7132-491a-8be4-10ff52e12ff2",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "kling--avatar--animate-images",
+      "routerId": "kling/videos-avatar-image2video",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.405Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:23.268Z",
+        "requestId": "d5d49448-1a4e-4dab-aa3b-92ee326eb824",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "kling--camera-control-image-to-video--animate-images",
+      "routerId": "kling/kling-v1-5",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.409Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:23.727Z",
+        "requestId": "2dcc73d0-2904-4433-aa50-a81847c1f8e3",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "kling--camera-control-text-to-video--generate-videos",
+      "routerId": "kling/kling-v1",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.413Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:24.209Z",
+        "requestId": "bc147606-bd8e-459e-a8c6-2310507e3afc",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "kling--kling-3.0-turbo-text-to-video--generate-videos",
+      "routerId": "kling/kling-3.0-turbo",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.416Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:24.746Z",
+        "requestId": "3821eba6-3a46-4cb9-904d-1bb485e9a140",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "kling--lip-sync-audio-to-video--edit-videos",
+      "routerId": "kling/videos-lip-sync",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.424Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:25.260Z",
+        "requestId": "97b77dff-a2ab-4c3e-9750-b9d87dd0c27d",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "kling--lip-sync-text-to-video--edit-videos",
+      "routerId": "kling/videos-lip-sync",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.426Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "not-run",
+        "at": "2026-09-11T06:27:59.540Z",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "defaults-repair"
+        },
+        "failure": "not-run-after-fix"
+      }
+    },
+    {
+      "slug": "kling--text-to-video--generate-videos",
+      "routerId": "kling/kling-v2-5-turbo",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.429Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:25.749Z",
+        "requestId": "08f1920a-2423-47f0-8105-3c15b5144d6c",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "kling--text-to-video-with-audio--generate-videos",
+      "routerId": "kling/kling-v2-6",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.432Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:26.290Z",
+        "requestId": "f89d5015-ec92-4fc0-8578-216f45206b2a",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "kling--v3--generate-videos",
+      "routerId": "kling/kling-v3",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.434Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:26.713Z",
+        "requestId": "df521796-2796-4e07-9f5a-6f4831141514",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "kling--video-extend--edit-videos",
+      "routerId": "kling/videos-video-extend",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "failed",
+        "at": "2026-09-11T06:53:38.437Z",
+        "fields": [
+          "video_id"
+        ],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      }
+    },
+    {
+      "slug": "krea--krea-2-large--generate-images",
+      "routerId": "krea/krea-2-large",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.439Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:27.246Z",
+        "requestId": "3808bbf2-bfc8-4c79-8bb3-201af5864299",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "krea--krea-2-medium--generate-images",
+      "routerId": "krea/krea-2-medium",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.441Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:27.756Z",
+        "requestId": "9fbb4ed0-f758-4b76-9f08-407559fc0a71",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "krea--krea-2-medium-turbo--generate-images",
+      "routerId": "krea/krea-2-medium-turbo",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.443Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:28.280Z",
+        "requestId": "987622af-bf12-4f2d-9589-9fef4720096c",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "luma_2--uni-1-image-edit--edit-images",
+      "routerId": "luma_2/uni-1",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.465Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:32.740Z",
+        "requestId": "ce41e8dc-ceaf-4d12-87a5-2e136b9825bb",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "luma_2--uni-1-image-generation--generate-images",
+      "routerId": "luma_2/uni-1",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.468Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:33.293Z",
+        "requestId": "b32b9d0b-68ed-49e3-a8e1-7689895402ca",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "luma_2--uni-1-max-image-edit--edit-images",
+      "routerId": "luma_2/uni-1-max",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.470Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:33.719Z",
+        "requestId": "f576b7e2-8e25-47bd-b5f7-fa30391f2f11",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "luma_2--uni-1-max-image-generation--generate-images",
+      "routerId": "luma_2/uni-1-max",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.473Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:34.289Z",
+        "requestId": "f22bc15c-3385-4bed-8053-139324475672",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "luma--photon-1-image-generation--generate-images",
+      "routerId": "luma/photon-1",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.445Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:28.805Z",
+        "requestId": "2b3af897-2f01-4bc2-bae5-d760274632ef",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "luma--photon-1-image-modify--edit-images",
+      "routerId": "luma/photon-1",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.447Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:29.225Z",
+        "requestId": "9019fd4b-41d0-4e57-9a63-b260112e6e72",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "luma--photon-flash-1-image-generation--generate-images",
+      "routerId": "luma/photon-flash-1",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.449Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:29.727Z",
+        "requestId": "707ca808-1c5c-4337-92af-ec185ec82bfe",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "luma--photon-flash-1-image-modify--edit-images",
+      "routerId": "luma/photon-flash-1",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.451Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:30.255Z",
+        "requestId": "02b2748a-f9b9-464f-9302-5438aec3d5de",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "luma--ray-2-image-to-video--animate-images",
+      "routerId": "luma/ray-2",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.454Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "passed",
+        "at": "2026-09-11T06:23:50.540Z",
+        "requestId": "b3a3e72a-e965-4d67-9e02-e9bf9f955d31",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "artifacts": [
+          {
+            "kind": "video",
+            "bytes": 1601314,
+            "sha256": "b2946e9c4e5e2e0169ab9e100e25c30432eabc7e44d33b3d7405aa7f786bd240",
+            "width": 1280,
+            "height": 720,
+            "durationSeconds": 9.041667
+          }
+        ]
+      },
+      "lastSuccess": {
+        "status": "passed",
+        "at": "2026-09-11T06:23:50.540Z",
+        "requestId": "b3a3e72a-e965-4d67-9e02-e9bf9f955d31",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "artifacts": [
+          {
+            "kind": "video",
+            "bytes": 1601314,
+            "sha256": "b2946e9c4e5e2e0169ab9e100e25c30432eabc7e44d33b3d7405aa7f786bd240",
+            "width": 1280,
+            "height": 720,
+            "durationSeconds": 9.041667
+          }
+        ]
+      }
+    },
+    {
+      "slug": "luma--ray-2-text-to-video--generate-videos",
+      "routerId": "luma/ray-2",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.457Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:31.284Z",
+        "requestId": "8364ff03-f012-4329-9b9b-a7128194d3c8",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "luma--ray-flash-2-image-to-video--animate-images",
+      "routerId": "luma/ray-flash-2",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.460Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:31.824Z",
+        "requestId": "13923754-b71c-4ecf-b3fe-0d439c05695e",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "luma--ray-flash-2-text-to-video--generate-videos",
+      "routerId": "luma/ray-flash-2",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.463Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:32.241Z",
+        "requestId": "cae9ae8b-aab2-46af-b982-a2dc34eccc76",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "openai--gpt-image-1--edit-images",
+      "routerId": "openai/gpt-image-1",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.476Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:34.727Z",
+        "requestId": "9f03a507-fb52-4faf-adb3-4f1d4772b846",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "openai--gpt-image-1.5--edit-images",
+      "routerId": "openai/gpt-image-1.5",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.479Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:35.312Z",
+        "requestId": "0300c526-b1bc-4827-9deb-70176a97af0c",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "openai--gpt-image-2--edit-images",
+      "routerId": "openai/gpt-image-2",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.482Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:35.709Z",
+        "requestId": "b3b7ec87-5247-4474-8d33-6c23ce4f988f",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "qwen--qwen-image-3.0-image-edit--edit-images",
+      "routerId": "qwen/qwen-image-3.0",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.484Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:36.278Z",
+        "requestId": "a812b656-08cd-4e40-9d8c-1b5f2ecb68f7",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "qwen--qwen-image-3.0-pro-image-edit--edit-images",
+      "routerId": "qwen/qwen-image-3.0-pro",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.486Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:36.784Z",
+        "requestId": "a6f9f118-a8df-4fed-aa7f-97f734c582f1",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "qwen--qwen-image-3.0-pro-text-to-image--generate-images",
+      "routerId": "qwen/qwen-image-3.0-pro",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.489Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:37.288Z",
+        "requestId": "d4509ea2-13db-4790-883c-95b42d8d308a",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "qwen--qwen-image-3.0-text-to-image--generate-images",
+      "routerId": "qwen/qwen-image-3.0",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.491Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:37.775Z",
+        "requestId": "5a53ddcf-2a48-46e2-95a6-bcff7bffec0f",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "recraft--v3-text-to-image--generate-images",
+      "routerId": "recraft/recraftv3",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.494Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:38.241Z",
+        "requestId": "4c3ab11f-4b41-40a2-b78d-03f3a9094818",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "recraft--v3-text-to-vector--generate-images",
+      "routerId": "recraft/recraftv3",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.496Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:38.768Z",
+        "requestId": "e0fff5b3-c56d-48ef-879c-03eb98799971",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "recraft--v4-pro-text-to-image--generate-images",
+      "routerId": "recraft/recraftv4_pro",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.498Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:39.292Z",
+        "requestId": "d23b565c-c605-4271-8fd9-5ac5b27989cc",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "recraft--v4-pro-text-to-vector--generate-images",
+      "routerId": "recraft/recraftv4_pro",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.500Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:39.814Z",
+        "requestId": "013c31e6-bc71-448f-9fee-59d9cd0e658c",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "recraft--v4-text-to-image--generate-images",
+      "routerId": "recraft/recraftv4",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.503Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:40.213Z",
+        "requestId": "954963cb-3144-4774-b0f8-109d1702d1be",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "recraft--v4-text-to-vector--generate-images",
+      "routerId": "recraft/recraftv4",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.505Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:40.730Z",
+        "requestId": "12a21f08-8704-4b91-b18d-ca2d7c07f122",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "recraft--v4.1-pro-text-to-image--generate-images",
+      "routerId": "recraft/recraftv4_1_pro",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.507Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:41.256Z",
+        "requestId": "85e52bef-cd05-4229-8701-ad210eb83136",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "recraft--v4.1-pro-text-to-vector--generate-images",
+      "routerId": "recraft/recraftv4_1_pro_vector",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.509Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:41.749Z",
+        "requestId": "3bc64d2c-3050-439b-87cb-41441eacfc75",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "recraft--v4.1-text-to-image--generate-images",
+      "routerId": "recraft/recraftv4_1",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.512Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:42.213Z",
+        "requestId": "9ac19868-9282-473f-af8f-f2d250b1b68f",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "recraft--v4.1-text-to-vector--generate-images",
+      "routerId": "recraft/recraftv4_1_vector",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.514Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:42.764Z",
+        "requestId": "7e663c44-af3d-4fac-a0f9-2cff87d15aa0",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "recraft--v4.1-utility-pro-text-to-image--generate-images",
+      "routerId": "recraft/recraftv4_1_utility_pro",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.516Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:43.215Z",
+        "requestId": "4921ef41-64f5-46c2-8474-d228a8214953",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "recraft--v4.1-utility-pro-text-to-vector--generate-images",
+      "routerId": "recraft/recraftv4_1_utility_pro_vector",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.518Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:43.776Z",
+        "requestId": "ceee2aed-c8a2-4eae-8726-5f4d8f248cfc",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "recraft--v4.1-utility-text-to-image--generate-images",
+      "routerId": "recraft/recraftv4_1_utility",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.520Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:44.247Z",
+        "requestId": "932c1e4e-3ec4-4257-ab4d-2e90d9068ace",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "recraft--v4.1-utility-text-to-vector--generate-images",
+      "routerId": "recraft/recraftv4_1_utility_vector",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.522Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:44.707Z",
+        "requestId": "69c89d64-9b1c-4932-8dd8-f6cb9b5645c2",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "runway--aleph2-video-to-video--edit-videos",
+      "routerId": "runway/aleph2",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.524Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:45.414Z",
+        "requestId": "1d94d8eb-5bbf-45d6-ac1b-2e0d13128599",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "runway--gen4-image--generate-images",
+      "routerId": "runway/gen4_image",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.527Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:46.365Z",
+        "requestId": "4f94201a-74a7-42fd-8c58-8b55778cc2cc",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "runway--gen4-turbo-image-to-video--animate-images",
+      "routerId": "runway/gen4_turbo",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.529Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:46.634Z",
+        "requestId": "6c03b72c-d8da-42d2-9c17-0cb48e6a25d4",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "vertexai--gemini-2.5-flash-image--edit-images",
+      "routerId": "vertexai/gemini-2.5-flash-image",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.532Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:47.353Z",
+        "requestId": "4c0c8804-4b1e-4070-87e4-b32c6b300ac6",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "vertexai--gemini-2.5-flash-image--generate-images",
+      "routerId": "vertexai/gemini-2.5-flash-image",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.536Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:47.402Z",
+        "requestId": "6f4c1929-c3a8-486d-b1a0-cc0adfc9927c",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "vertexai--gemini-3-pro-image--edit-images",
+      "routerId": "vertexai/gemini-3-pro-image",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.540Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:48.576Z",
+        "requestId": "9288991b-1f24-4d74-b615-8054871bd0b5",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "vertexai--gemini-3-pro-image--generate-images",
+      "routerId": "vertexai/gemini-3-pro-image",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.543Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:48.384Z",
+        "requestId": "9221affc-2bfa-4dc9-8569-dff206efef20",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "vertexai--gemini-nano-banana-2--edit-images",
+      "routerId": "vertexai/gemini-3.1-flash-image",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.547Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:50.361Z",
+        "requestId": "d5b0d05f-2893-45f8-9190-92eaeea6102d",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "vertexai--gemini-nano-banana-2--generate-images",
+      "routerId": "vertexai/gemini-3.1-flash-image",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.551Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:49.253Z",
+        "requestId": "303692f4-bdee-42ed-87c2-3a0c8700b109",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "vertexai--veo-3--animate-images",
+      "routerId": "veo/veo-3.1-generate-001",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.555Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:49.911Z",
+        "requestId": "a23b1303-e2cc-412f-918d-d15fd8010f88",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "vertexai--veo-3--generate-videos",
+      "routerId": "veo/veo-3.1-generate-001",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.557Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:50.301Z",
+        "requestId": "cc4274ee-8e4a-45fa-93b1-667522a60313",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "vertexai--veo-3-first-last-frame--animate-images",
+      "routerId": "veo/veo-3.1-generate-001",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.559Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:51.462Z",
+        "requestId": "cfeec2d9-5d4d-43c8-8b89-a4d960b921fc",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "wan--happyhorse-image-to-video--animate-images",
+      "routerId": "wan/happyhorse-1.1-i2v",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.562Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:51.247Z",
+        "requestId": "33df78e6-25b9-40fd-92ae-4e2ccfd13085",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "wan--happyhorse-reference-video--animate-images",
+      "routerId": "wan/happyhorse-1.1-r2v",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.565Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:51.757Z",
+        "requestId": "3afad61c-8781-43b0-952f-5ade9e70f966",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "wan--happyhorse-text-to-video--generate-videos",
+      "routerId": "wan/happyhorse-1.1-t2v",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.569Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:52.267Z",
+        "requestId": "1be21923-362c-4d83-b00b-bd5891b08bfd",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "wan--happyhorse-video-edit--edit-videos",
+      "routerId": "wan/happyhorse-1.0-video-edit",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.571Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:52.705Z",
+        "requestId": "f0fc9c77-cb98-4883-9c2f-7d997344c46f",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "wan--image-to-image--edit-images",
+      "routerId": "wan/wan2.5-i2i-preview",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.574Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:53.206Z",
+        "requestId": "18f5744f-037b-407c-bffd-d5118dc12ca6",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "wan--image-to-video--animate-images",
+      "routerId": "wan/wan2.6-i2v",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.577Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:53.753Z",
+        "requestId": "23df8f0f-b73a-46f5-a954-ac8a330f0adb",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "wan--image-to-video-2.7--animate-images",
+      "routerId": "wan/wan2.7-i2v",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.580Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:54.266Z",
+        "requestId": "5b362731-c19a-42a7-a100-269780830c55",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "wan--image-to-video-3.0--animate-images",
+      "routerId": "wan/wan3.0-video",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.582Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:54.705Z",
+        "requestId": "e8fad547-1ce0-4ca7-948b-2ca2d8e80d96",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "wan--image-to-video-3.0-prime--animate-images",
+      "routerId": "wan/wan3.0-video-prime",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.585Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:55.249Z",
+        "requestId": "0d886fd4-cd94-4006-aeb2-a428795962d0",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "wan--reference-to-video-3.0--animate-images",
+      "routerId": "wan/wan3.0-video",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.587Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:55.759Z",
+        "requestId": "83a8c0e0-4984-493b-9a86-ce60966229f4",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "wan--reference-to-video-3.0-prime--animate-images",
+      "routerId": "wan/wan3.0-video-prime",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.589Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:56.221Z",
+        "requestId": "0ff72cc4-52f2-4f75-b923-48188f4b9b73",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "wan--reference-video--edit-videos",
+      "routerId": "wan/wan2.6-r2v",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.593Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:56.733Z",
+        "requestId": "cf701057-49fd-4315-a7a8-d716a96878d0",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "wan--reference-video-2.7--animate-images",
+      "routerId": "wan/wan2.7-r2v",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.595Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:57.231Z",
+        "requestId": "4516c5e6-9faa-4d57-8e5c-01742626376d",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "wan--text-to-image--generate-images",
+      "routerId": "wan/wan2.5-t2i-preview",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.598Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:57.715Z",
+        "requestId": "3831a79e-2893-4ccf-bc3b-6cbfd38cb103",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "wan--text-to-video--generate-videos",
+      "routerId": "wan/wan2.6-t2v",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.602Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:58.260Z",
+        "requestId": "25172822-bc0f-4497-809d-cb94e3708313",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "wan--text-to-video-2.7--generate-videos",
+      "routerId": "wan/wan2.7-t2v",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.605Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:58.761Z",
+        "requestId": "ea614ace-f97b-4fbd-8beb-7e41e4b9fb59",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "wan--video-continuation-2.7--animate-images",
+      "routerId": "wan/wan2.7-i2v",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.608Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:59.221Z",
+        "requestId": "f27f1e62-277c-493d-bcf4-c9acf1814b41",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "wan--video-edit-2.7--edit-videos",
+      "routerId": "wan/wan2.7-videoedit",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.612Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:20:59.739Z",
+        "requestId": "a3b2295e-105f-48d1-bab3-a346feeb1727",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "wavespeed--flashvsr--edit-videos",
+      "routerId": "wavespeed/flashvsr",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.614Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:21:00.262Z",
+        "requestId": "5c3cd131-15f2-44d8-9f7f-82505a33d3a5",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "wavespeed--seedvr2-image--edit-images",
+      "routerId": "wavespeed/seedvr2",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.618Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:15:37.497Z",
+        "requestId": "0bf625de-2257-4db3-a2cd-b22fc8ba42cd",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-smoke-20260910"
+        },
+        "failure": "rate-limit",
+        "fields": []
+      }
+    },
+    {
+      "slug": "wavespeed--ultimate-image-upscaler--edit-images",
+      "routerId": "wavespeed/ultimate-image-upscaler",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.621Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:21:00.787Z",
+        "requestId": "a3d105e5-7d0f-4974-9be9-c5ee8c2af907",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "xai--grok-imagine-image--generate-images",
+      "routerId": "xai/grok-imagine-image",
+      "modality": "image",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.623Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:21:01.311Z",
+        "requestId": "299b5a31-ff03-4adc-a53b-3440cc7b0fa5",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "xai--grok-imagine-video--animate-images",
+      "routerId": "xai/grok-imagine-video",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.626Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:21:01.753Z",
+        "requestId": "183a05d6-c15a-4d1f-a883-e3c5d9e94162",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "xai--grok-imagine-video--generate-videos",
+      "routerId": "xai/grok-imagine-video",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.633Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:21:02.218Z",
+        "requestId": "f463f77f-a3f6-4d9c-b3e0-dd410bbb1e64",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "xai--grok-imagine-video-1.5--animate-images",
+      "routerId": "xai/grok-imagine-video-1.5",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.637Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:21:02.789Z",
+        "requestId": "f417f033-c55f-4923-b880-980d81efb9a8",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "xai--grok-imagine-video-1.5--generate-videos",
+      "routerId": "xai/grok-imagine-video-1.5",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.639Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:21:03.229Z",
+        "requestId": "b414d1cf-f70c-40c0-9f21-d35876ddcffc",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "xai--grok-imagine-video-1.5-reference--animate-images",
+      "routerId": "xai/grok-imagine-video-1.5",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.641Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:21:03.804Z",
+        "requestId": "9678b3c2-822a-4455-a669-026ec121a106",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "xai--grok-imagine-video-reference--animate-images",
+      "routerId": "xai/grok-imagine-video",
+      "modality": "video",
+      "environment": "prod",
+      "inputMode": "page-defaults",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T06:53:38.644Z",
+        "fields": [],
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "2026-09-11T06-53-37.455Z-cf27087b-f8d2-4291-bd4e-9470ebe0d974"
+        }
+      },
+      "live": {
+        "status": "blocked",
+        "at": "2026-09-11T06:21:04.270Z",
+        "requestId": "1cdc79f1-2b09-48ed-b7aa-9a0dbed790c2",
+        "source": {
+          "revision": "59678067546d02c6189e1736599befc7aca60ea4",
+          "dirty": true,
+          "runId": "live-all-20260910"
+        },
+        "failure": "concurrency-limit",
+        "fields": [],
+        "httpStatus": 429
+      }
+    },
+    {
+      "slug": "krea--krea-2-large--generate-images",
+      "routerId": "krea/krea-2-large",
+      "modality": "image",
+      "environment": "test",
+      "inputMode": "custom-inputs",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T05:35:51.967Z",
+        "source": {
+          "revision": "6b2f6054aa3f6e42319053859eecb373a8830c6a",
+          "dirty": false,
+          "runId": "krea-generation-2026-09-10"
+        }
+      },
+      "live": {
+        "status": "failed",
+        "at": "2026-09-11T05:35:51.967Z",
+        "requestId": "28df864c-2284-4f09-8334-91603a130069",
+        "source": {
+          "revision": "6b2f6054aa3f6e42319053859eecb373a8830c6a",
+          "dirty": false,
+          "runId": "krea-generation-2026-09-10"
+        },
+        "failure": "provider-error",
+        "httpStatus": 502
+      }
+    },
+    {
+      "slug": "krea--krea-2-medium--generate-images",
+      "routerId": "krea/krea-2-medium",
+      "modality": "image",
+      "environment": "test",
+      "inputMode": "custom-inputs",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T05:32:45.923Z",
+        "source": {
+          "revision": "6b2f6054aa3f6e42319053859eecb373a8830c6a",
+          "dirty": false,
+          "runId": "krea-generation-2026-09-10"
+        }
+      },
+      "live": {
+        "status": "failed",
+        "at": "2026-09-11T05:32:45.923Z",
+        "requestId": "bd325a3c-5bf9-4d86-a3d1-7770028b51d6",
+        "source": {
+          "revision": "6b2f6054aa3f6e42319053859eecb373a8830c6a",
+          "dirty": false,
+          "runId": "krea-generation-2026-09-10"
+        },
+        "failure": "provider-error",
+        "httpStatus": 502
+      }
+    },
+    {
+      "slug": "krea--krea-2-medium-turbo--generate-images",
+      "routerId": "krea/krea-2-medium-turbo",
+      "modality": "image",
+      "environment": "test",
+      "inputMode": "custom-inputs",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T05:31:59.753Z",
+        "source": {
+          "revision": "6b2f6054aa3f6e42319053859eecb373a8830c6a",
+          "dirty": false,
+          "runId": "krea-generation-2026-09-10"
+        }
+      },
+      "live": {
+        "status": "failed",
+        "at": "2026-09-11T05:31:59.753Z",
+        "requestId": "d6f8b90e-f916-499b-b2d3-6df082e0a7f2",
+        "source": {
+          "revision": "6b2f6054aa3f6e42319053859eecb373a8830c6a",
+          "dirty": false,
+          "runId": "krea-generation-2026-09-10"
+        },
+        "failure": "provider-error",
+        "httpStatus": 502
+      }
+    },
+    {
+      "slug": "recraft--v4-pro-text-to-image--generate-images",
+      "routerId": "recraft/recraftv4_pro",
+      "modality": "image",
+      "environment": "test",
+      "inputMode": "custom-inputs",
+      "preflight": {
+        "status": "ready",
+        "at": "2026-09-11T05:37:45.166Z",
+        "source": {
+          "revision": "6b2f6054aa3f6e42319053859eecb373a8830c6a",
+          "dirty": false,
+          "runId": "recraft-generation-2026-09-10"
+        }
+      },
+      "live": {
+        "status": "failed",
+        "at": "2026-09-11T05:37:45.166Z",
+        "requestId": "5b0df895-744e-46ed-b0d6-f7844d8dccca",
+        "source": {
+          "revision": "6b2f6054aa3f6e42319053859eecb373a8830c6a",
+          "dirty": false,
+          "runId": "recraft-generation-2026-09-10"
+        },
+        "failure": "output-kind",
+        "httpStatus": 200
+      }
+    }
+  ]
+}

@@ -10,6 +10,7 @@
     "preview": "astro preview",
     "typecheck": "astro check && vue-tsc --noEmit -p tsconfig.json",
     "test:unit": "vitest run",
+    "test:router-models": "tsx ./scripts/test-router-models.ts",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:e2e:local": "cross-env PLAYWRIGHT_LOCAL=1 playwright test",

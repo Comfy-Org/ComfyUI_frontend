@@ -42,6 +42,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | [TELEMETRY-ROUTING-0013](TELEMETRY-ROUTING-0013-telemetry-routing-across-consumers.md)                           | Telemetry Routing Across Consumers                                                 | Accepted | 2026-07-28 |
 | [TELEMETRY-STARTUP-0030](TELEMETRY-STARTUP-0030-production-startup-telemetry.md)                                 | Production Startup Telemetry                                                       | Proposed | 2026-09-08 |
 | [TESTING-E2E-0027](TESTING-E2E-0027-coverage-measurement-and-test-selection.md)                                  | E2E Coverage Measurement and Test Selection                                        | Proposed | 2026-09-01 |
+| [WEBSITE-RENDER-0031](WEBSITE-RENDER-0031-shared-model-rendering-and-live-verification.md)                       | Shared model rendering and live verification                                       | Proposed | 2026-09-10 |
 | [WEBSITE-REQUESTS-0030](WEBSITE-REQUESTS-0030-creator-widgets-and-router-request-composition.md)                 | Creator widgets and Router request composition                                     | Proposed | 2026-09-09 |
 | [WIDGET-SERIALIZATION-0006](WIDGET-SERIALIZATION-0006-preserve-primitive-widget-values-across-copy-and-paste.md) | PrimitiveNode Widget Restoration Lifecycle                                         | Accepted | 2026-02-22 |
 

@@ -8,6 +8,36 @@ import { validateWorkshopInput } from './workshop-json-schema'
 
 const RUN_TIMEOUT_MS = 660_000
 
+async function failureDetails(response: Response) {
+  const reader = response.body?.getReader()
+  let body = ''
+  if (reader) {
+    const decoder = new TextDecoder()
+    let remaining = 16_384
+    try {
+      while (remaining > 0) {
+        const { done, value } = await reader.read()
+        if (done) break
+        body += decoder.decode(value.subarray(0, remaining), { stream: true })
+        remaining -= value.byteLength
+      }
+      body += decoder.decode()
+    } finally {
+      await reader.cancel().catch(() => {})
+      reader.releaseLock()
+    }
+  }
+  return {
+    status: response.status,
+    errorType: response.headers.get('X-Comfy-Error-Type'),
+    retryAfter: response.headers.get('Retry-After'),
+    concurrencyLimit: response.headers.get('X-Concurrency-Limit'),
+    concurrencyCurrent: response.headers.get('X-Concurrency-Current'),
+    concurrencyRemaining: response.headers.get('X-Concurrency-Remaining'),
+    body
+  }
+}
+
 function failureFor(response: Response): RunFailure {
   const bucket = response.headers.get('X-Comfy-Error-Type')
   if (bucket === 'insufficient_credits') return 'noCredits'
@@ -27,6 +57,7 @@ export async function runWorkshopRouter(options: {
   readonly token: string
   readonly idempotencyKey: string
   readonly signal: AbortSignal
+  readonly onRequestId?: (requestId: string | null) => void
 }): Promise<{
   readonly outputs: RunOutput[]
   readonly requestId: string | null
@@ -65,8 +96,14 @@ export async function runWorkshopRouter(options: {
       }
     )
     requestId = response.headers.get('X-Comfy-Request-Id')
+    options.onRequestId?.(requestId)
     if (!response.ok)
-      throw new WorkshopRouterError(failureFor(response), requestId)
+      throw new WorkshopRouterError(
+        failureFor(response),
+        requestId,
+        {},
+        await failureDetails(response)
+      )
     const outputs = await parseRouterResponse(options.contract, response)
     if (signal.aborted) {
       releaseRouterOutputs(outputs)

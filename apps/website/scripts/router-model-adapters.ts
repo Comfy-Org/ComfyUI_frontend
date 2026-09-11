@@ -1,0 +1,86 @@
+import type {
+  WorkshopContract,
+  WorkshopMediaBinding
+} from '../src/config/workshop-contract'
+
+const mediaBindings: Readonly<
+  Partial<Record<string, readonly WorkshopMediaBinding[]>>
+> = {
+  'bfl/erase-v1': imageAndMask(),
+  'bria/image-edit-erase': imageAndMask(),
+  'bria/image-edit-gen-fill': imageAndMask()
+}
+
+function imageAndMask(): WorkshopMediaBinding[] {
+  return ['image', 'mask'].map((name) => ({
+    name,
+    label: name === 'image' ? 'Source image' : 'Mask',
+    accept: 'image',
+    encoding: 'base64',
+    targets: [`/${name}`],
+    required: true
+  }))
+}
+
+export function adaptRouterModel(contract: WorkshopContract): WorkshopContract {
+  if (contract.id === 'bfl/vto-v1' && contract.inputs) {
+    return {
+      ...contract,
+      inputs: {
+        ...contract.inputs,
+        person: { ...contract.inputs.person, urlUpload: 'image' },
+        garment: { ...contract.inputs.garment, urlUpload: 'image' }
+      }
+    }
+  }
+  if (contract.id === 'kling/videos-lip-sync' && contract.creator) {
+    return {
+      ...contract,
+      creatorVariants: {
+        ...contract.creatorVariants,
+        'kling--lip-sync-text-to-video--edit-videos': {
+          parameters: {
+            type: 'object',
+            properties: {
+              video_url: { type: 'string' },
+              text: {
+                type: 'string',
+                maxLength: 120,
+                default: 'Welcome to Comfy Cloud.'
+              },
+              voice_id: { type: 'string', default: 'genshin_vindi2' }
+            },
+            required: ['video_url', 'text', 'voice_id']
+          },
+          inputs: {
+            video_url: contract.creator.inputs.video_url,
+            text: {
+              label: 'Text',
+              help: '',
+              hidden: false,
+              advanced: false,
+              control: 'text-area'
+            },
+            voice_id: {
+              label: 'Voice ID',
+              help: '',
+              hidden: false,
+              advanced: true,
+              control: 'text-box'
+            }
+          },
+          files: [],
+          request: {
+            kind: 'template',
+            template:
+              '{"input":{"mode":"text2video","video_url":$repl_string("video_url"),"text":$repl_string("text"),"voice_id":$repl_string("voice_id"),"voice_language":"en","voice_speed":1}}'
+          }
+        }
+      }
+    }
+  }
+  const media = mediaBindings[contract.id]
+  return media
+    ? { ...contract, media: [...contract.media, ...media] }
+    : contract
+}

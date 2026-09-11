@@ -931,7 +931,9 @@ describe('ModelDetail', () => {
     )
     await visitor.click(screen.getByRole('button', { name: 'Run' }))
     expect(screen.queryByTestId('earlier-runs')).toBeNull()
-    await visitor.click(screen.getByRole('button', { name: 'response.json' }))
+    await visitor.click(
+      await screen.findByRole('button', { name: 'response.json' })
+    )
     expect(screen.getByText('{"id":"one"}')).toBeTruthy()
 
     vi.mocked(runWorkshopRouter).mockResolvedValue({
@@ -945,6 +947,7 @@ describe('ModelDetail', () => {
       ]
     })
     await visitor.click(screen.getByRole('button', { name: 'Run' }))
+    await screen.findByTestId('earlier-runs')
     expect(
       within(screen.getByTestId('earlier-runs')).getAllByRole('button')
     ).toHaveLength(2)
@@ -993,8 +996,10 @@ describe('ModelDetail', () => {
       'A mountain'
     )
     await visitor.click(screen.getByRole('button', { name: 'Run' }))
+    await screen.findByRole('button', { name: 'Run' })
     expect(revoke).not.toHaveBeenCalled()
     await visitor.click(screen.getByRole('button', { name: 'Run' }))
+    await screen.findByRole('button', { name: 'Run' })
     expect(screen.queryByTestId('earlier-runs')).toBeNull()
     for (const url of ['blob:first', 'blob:first-extra', 'blob:first-metadata'])
       expect(revoke).toHaveBeenCalledWith(url)
