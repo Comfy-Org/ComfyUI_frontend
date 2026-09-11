@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Download } from '@lucide/vue'
-import { useTimestamp } from '@vueuse/core'
+import { useMounted, useTimestamp } from '@vueuse/core'
 import { computed, onMounted, onUnmounted, ref, useSlots, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -165,6 +165,7 @@ const { user, session, sessionFailure, settled, ensureFresh, remint } =
 const { balance } = useWorkshopCredits()
 const authEnabled = useWorkshopAuthFlag()
 const authFlagSettled = useWorkshopAuthFlagSettled()
+const mounted = useMounted()
 const signInHref = useSignInHref(locale)
 const gate = computed(() => {
   if (
@@ -175,7 +176,7 @@ const gate = computed(() => {
     clone
   )
     return 'unavailable'
-  if (!authFlagSettled.value) return 'pending'
+  if (!mounted.value || !authFlagSettled.value) return 'pending'
   if (!authEnabled.value || sessionFailure.value) return 'unavailable'
   if (!settled.value || (user.value && !session.value)) return 'pending'
   if (!session.value) return 'signedOut'

@@ -199,7 +199,7 @@ test.describe('Model playground', () => {
     await expect(page.getByTestId('field-seed')).toBeVisible()
   })
 
-  test('uses the real sign-in UI with mocked services and restores the form', async ({
+  test('restores sign-in and keeps Run enabled after Models menu navigation', async ({
     page,
     modelsAccount
   }) => {
@@ -228,6 +228,21 @@ test.describe('Model playground', () => {
     await expect(
       page.getByRole('textbox', { name: 'Prompt', exact: true })
     ).toHaveValue(prompt)
+
+    await page
+      .getByRole('navigation', { name: 'Main navigation', exact: true })
+      .getByRole('link', { name: 'Models', exact: true })
+      .click()
+    await page
+      .getByTestId('section-generate-images')
+      .getByRole('link', { name: /Seedream 4\.5/ })
+      .click()
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+      'Seedream 4.5'
+    )
+    await expect(
+      page.getByRole('button', { name: 'Run', exact: true })
+    ).toBeEnabled()
   })
 
   test('API tab mirrors the form values', async ({ page }) => {

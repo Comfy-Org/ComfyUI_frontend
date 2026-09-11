@@ -484,10 +484,11 @@ describe('ModelDetail', () => {
 
   it.for(['unknown', 'error'] as const)(
     'does not mistake an %s balance for zero credits',
-    (status) => {
+    async (status) => {
       auth.session.value = credential
       credits.balance.value = { status }
       mountDetail({ model: runnable })
+      await nextTick()
       expect(screen.getByRole('button', { name: 'Run' })).toBeTruthy()
       expect(screen.queryByRole('link', { name: 'Buy credits' })).toBeNull()
     }
@@ -618,6 +619,7 @@ describe('ModelDetail', () => {
   it('does not submit with a missing required field', async () => {
     auth.session.value = credential
     mountDetail({ model: runnable })
+    await nextTick()
     await user().click(screen.getByTestId('run-button'))
     expect(runWorkshopRouter).not.toHaveBeenCalled()
     expect(
@@ -827,6 +829,7 @@ describe('ModelDetail', () => {
       }
       const visitor = user()
       const { unmount } = mountDetail({ model: mediaModel })
+      await nextTick()
       const file = new File(['pixels'], 'local.png', { type: 'image/png' })
       const input = screen.getByLabelText('Image', {
         selector: 'input[type="file"]'
@@ -867,11 +870,12 @@ describe('ModelDetail', () => {
 
   it.for(['run', 'auth', 'model'] as const)(
     'does not solicit sign-in when %s is unavailable',
-    (disabled) => {
+    async (disabled) => {
       if (disabled === 'run')
         vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', undefined)
       if (disabled === 'auth') auth.enabled.value = false
       mountDetail({ model: disabled === 'model' ? model : runnable })
+      await nextTick()
       expect(screen.queryByRole('link', { name: 'Sign in to run' })).toBeNull()
       expect(
         screen.getByRole('button', {

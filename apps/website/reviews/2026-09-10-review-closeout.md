@@ -15,8 +15,9 @@ pushed head; local results do not imply approval or a production release.
 - Parent integrates substantive fixes; three Sol High worktrees supplied isolated
   tests, accessibility fixes and generator/documentation cleanup.
 - Preserve the user's independent generation ledger/testing artifacts.
-- No paid generation, real account sign-in or payment was performed. Browser
-  authentication uses the real UI with mocked Firebase/session/balance services.
+- No paid generation or payment was performed. The initial review tests used
+  mocked Firebase/session/balance services; the navigation follow-up below was
+  also reproduced with the user's real signed-in preview session.
 - Human review threads remain for the reviewer. Verified automated threads can
   be resolved after the code and evidence are pushed.
 
@@ -123,7 +124,7 @@ reported 466 passing tests and two failures:
 - The homepage carousel test still expected `/models/seedance-2/` instead of
   the canonical Seedance 2.5 use-case URL. The expectation now pins the canonical
   page. Review thread `3985991659` records this correction.
-- The updated small pricing screenshot had captured a fallback font. All three
+- The updated small pricing screenshot differed in font rendering. All three
   CI actual images were byte-identical to the previous baseline, which is now
   restored. The other 16 updates retain the enabled header changes and existing
   pricing FAQ copy from `main`; the few remaining product-card pixels are
@@ -133,15 +134,41 @@ Visual tests now load the real PP Formula Light file under a test-only family
 with blocking display, await it explicitly, and apply it only to the existing
 Formula/light combination. Production CSS is unchanged. A delayed-response
 regression proves the face is applied; disabling its selector makes the test
-fail. The integrated desktop run passes all 35 tests with no retries. A fresh
-Linux run must confirm the full suite after these test-only corrections.
+fail. The integrated desktop run passed all 35 tests with no retries, but Linux
+run `34563718277` subsequently failed 16 visual snapshots after that helper was
+applied broadly. The earlier fallback-font classification was not established
+by the pixel comparison. That visual-test issue remains open and was paused for
+the Run-button regression below.
+
+## Signed-in Models navigation regression
+
+Reproduced on preview head `9ef6fffea6` with the user's real signed-in account:
+top-menu Models → image card opened Krea with the label `Run`, but its button
+still had the server-rendered `disabled` and `data-gate="pending"` attributes.
+Reloading the exact same URL produced an enabled button with `data-gate="ready"`.
+No generation was submitted.
+
+The shared session is already ready during soft navigation. Initial client
+hydration therefore chose a different conditional Button branch than SSR;
+Vue repaired its text, but not the stale attributes. `ModelDetail` now keeps
+the initial gate pending until `useMounted()` completes, then applies the
+existing auth/session/credits decision. No account state or credit guard was
+changed.
+
+The existing browser sign-in test now follows the top-menu Models link and
+opens Seedream 4.5. It failed on `toBeEnabled()` against the old build, then
+passed against the fix. All 14 Models browser tests and 51 ModelDetail unit
+tests pass. The enabled build passes, as do website typecheck (zero errors or
+warnings, seven existing hints), changed-file lint and formatting. The unit
+checks that inspect the gate immediately now await the mounted render tick.
+Deployment and live navigation must still be checked on the pushed head.
 
 ## Not claimed complete
 
 - Real production-origin authentication/deployment: the Cloud prerequisites in
   the PR ledger still need production rollout and a real sign-in/balance check.
-- The full Linux browser rerun after the two corrections above: the updater's
-  earlier pass is not proof that the follow-up run is green.
+- The full Linux browser run: 16 visual failures remain after the font helper;
+  the updater's earlier pass is not proof that the follow-up run is green.
 - HTTP 301 alias responses (3984457892): Astro static output serves an immediate
   meta-refresh document with HTTP 200. The call site states this and a browser
   test verifies the canonical destination. Hosting-level permanent redirects
