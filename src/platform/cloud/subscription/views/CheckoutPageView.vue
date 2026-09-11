@@ -1,33 +1,35 @@
 <template>
-  <div
-    class="flex min-h-screen w-screen items-center justify-center bg-base-background p-4 xl:p-10"
-  >
-    <div
-      class="relative flex max-h-[920px] min-h-0 w-full max-w-6xl flex-1 overflow-hidden rounded-2xl border border-interface-stroke bg-secondary-background shadow-xl"
-    >
-      <SubscriptionRequiredDialogContentUnified
-        :on-close="handleClose"
-        :embedded-checkout-enabled="flags.embeddedCheckoutEnabled"
-        :initial-plan-mode="initialPlanMode"
-      />
-    </div>
+  <div class="flex min-h-screen w-screen flex-col bg-secondary-background">
+    <SubscriptionRequiredDialogContentUnified
+      :on-close="handleClose"
+      :embedded-checkout-enabled="flags.embeddedCheckoutEnabled"
+      :initial-checkout="initialCheckout"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import SubscriptionRequiredDialogContentUnified from '@/platform/workspace/components/SubscriptionRequiredDialogContentUnified.vue'
+import type { SubscriptionCheckoutSelection } from '@/platform/workspace/composables/useSubscriptionCheckout'
 
 const { flags } = useFeatureFlags()
 const route = useRoute()
 const router = useRouter()
 
-const initialPlanMode = computed(() =>
-  route.query.plans === 'team' ? ('team' as const) : ('personal' as const)
-)
+// The plan arrives chosen (products deep-link it); this page is only the
+// checkout. Plan selection gets its own full-page treatment separately.
+const TIERS = ['standard', 'creator', 'pro'] as const
+const tier = TIERS.find((t) => t === route.query.tier) ?? 'creator'
+const billingCycle = route.query.cycle === 'yearly' ? 'yearly' : 'monthly'
+
+const initialCheckout: SubscriptionCheckoutSelection = {
+  planMode: 'personal',
+  tierKey: tier,
+  billingCycle
+}
 
 // Cross-product entry: /checkout?return=<url>. Only first-party origins may
 // pull the customer back out; anything else lands on the workspace.
