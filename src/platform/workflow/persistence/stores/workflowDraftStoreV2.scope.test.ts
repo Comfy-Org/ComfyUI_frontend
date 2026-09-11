@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
@@ -33,7 +31,6 @@ describe('workflowDraftStoreV2 storage scope', () => {
   beforeEach(() => {
     localStorage.clear()
     sessionStorage.clear()
-    setActivePinia(createTestingPinia({ stubActions: false }))
     setStorageIdentity(null)
   })
 
