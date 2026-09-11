@@ -94,8 +94,8 @@
 </template>
 
 <script setup lang="ts">
-import { useEventListener, useTimeoutFn } from '@vueuse/core'
-import { computed, ref, useId, watch } from 'vue'
+import { useEventListener } from '@vueuse/core'
+import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -108,55 +108,9 @@ import { acceptsTemplateImageInput } from '@/platform/workflow/templates/utils/t
 import { useDialogStore } from '@/stores/dialogStore'
 
 import { useFirstRunTourController } from '../tour/useFirstRunTourController'
-
-const APPEAR_DELAY_MS = 1500
-
-/**
- * How long the card waits on the catalog before showing what it already knows.
- * Capped, because a stalled fetch must not take the card away from the user it
- * is for (#14144).
- */
-const CATALOG_WAIT_MS = 3000
-
-type SuggestionId = 'animate' | 'upscale' | 'restyle'
-
-interface Suggestion {
-  id: SuggestionId
-  templateId: string
-  titleKey: string
-  detailKey: string
-  icon: string
-  /** A qualifier on the action itself, such as the upscale's multiplier. */
-  badgeKey?: string
-  /** Marks the action a paid plan is required to run, so the card says so. */
-  paid?: boolean
-}
-
-const SUGGESTIONS: Suggestion[] = [
-  {
-    id: 'animate',
-    templateId: 'video_minimax_h3_i2v_continuation',
-    titleKey: 'onboardingCoachmarks.firstRun.nudge.animate.title',
-    detailKey: 'onboardingCoachmarks.firstRun.nudge.animate.detail',
-    icon: 'icon-[lucide--film]'
-  },
-  {
-    id: 'upscale',
-    templateId: 'utility_seedvr2_7b_int8_upscale_image',
-    titleKey: 'onboardingCoachmarks.firstRun.nudge.upscale.title',
-    detailKey: 'onboardingCoachmarks.firstRun.nudge.upscale.detail',
-    icon: 'icon-[lucide--maximize-2]',
-    badgeKey: 'onboardingCoachmarks.firstRun.nudge.upscale.badge'
-  },
-  {
-    id: 'restyle',
-    templateId: 'api_google_nano_banana2_image_edit_continuation',
-    titleKey: 'onboardingCoachmarks.firstRun.nudge.restyle.title',
-    detailKey: 'onboardingCoachmarks.firstRun.nudge.restyle.detail',
-    icon: 'icon-[ph--swatches]',
-    paid: true
-  }
-]
+import { SUGGESTIONS } from './firstRunSuggestions'
+import type { Suggestion, SuggestionId } from './firstRunSuggestions'
+import { useFirstRunDiscovery } from './useFirstRunDiscovery'
 
 const { t } = useI18n()
 const toast = useToastStore()
@@ -169,17 +123,6 @@ const telemetry = useTelemetry()
 const titleId = useId()
 const subtitleId = useId()
 const loadingSuggestionId = ref<SuggestionId | null>(null)
-const delayElapsed = ref(false)
-const readyCatalogSuggestions = ref<Suggestion[] | null>(null)
-const decidedSuggestions = ref<Suggestion[] | null>(null)
-let reported = false
-
-/**
- * The template package is pinned by the install, not by this build, so an id
- * this card knows can be absent from the served catalog — or present without
- * the `io` metadata the continuation needs. Either way the button would be a
- * dead end found by clicking it, seconds after the user's first success.
- */
 const catalogSuggestions = computed(() =>
   SUGGESTIONS.filter(({ templateId }) => {
     const template = templatesStore.getTemplateByName(templateId)
@@ -189,52 +132,25 @@ const catalogSuggestions = computed(() =>
     )
   })
 )
-const availableSuggestions = computed(() => decidedSuggestions.value ?? [])
-
-function finishCatalogWait() {
-  if (readyCatalogSuggestions.value !== null) return
-  readyCatalogSuggestions.value = catalogSuggestions.value
-}
-
-// A run that produced no image, and an install serving none of the
-// continuations, both leave the card with nothing to continue from. Neither is
-// a reason to take away the way forward, so the card falls back to the browser.
+const { state, onScreen } = useFirstRunDiscovery({
+  armed: nudgeArmed,
+  completedAt: nudgeCompletedAt,
+  output: nudgeOutput,
+  screenClear: computed(() => dialogStore.dialogStack.length === 0),
+  catalogSuggestions,
+  loadCatalog: loadTemplates,
+  onShown: (suggestions) =>
+    telemetry?.trackOnboardingTour('nudge_shown', {
+      tour: 'firstRun',
+      suggestion_count: suggestions.length
+    })
+})
+const availableSuggestions = computed(() =>
+  state.value.phase === 'shown' ? state.value.suggestions : []
+)
 const copyKey = computed(
   () =>
     `onboardingCoachmarks.firstRun.nudge${availableSuggestions.value.length > 0 ? '' : '.fallback'}`
-)
-
-const screenIsClear = computed(
-  () => nudgeArmed.value && dialogStore.dialogStack.length === 0
-)
-/**
- * The catalog decides what the card can offer, so the card cannot render before
- * it. Without this the card paints the fallback, then rewrites itself into the
- * continuations under the user — and reports a count it never showed.
- */
-const onScreen = computed(
-  () =>
-    screenIsClear.value &&
-    delayElapsed.value &&
-    readyCatalogSuggestions.value !== null
-)
-
-const { start: scheduleAppearance, stop: cancelAppearance } = useTimeoutFn(
-  () => {
-    delayElapsed.value = true
-  },
-  () =>
-    Math.max(
-      0,
-      (nudgeCompletedAt.value ?? Date.now()) + APPEAR_DELAY_MS - Date.now()
-    ),
-  { immediate: false }
-)
-
-const { start: startCatalogWait, stop: stopCatalogWait } = useTimeoutFn(
-  finishCatalogWait,
-  CATALOG_WAIT_MS,
-  { immediate: false }
 )
 
 useEventListener(document, 'keydown', (event: KeyboardEvent) => {
@@ -242,55 +158,8 @@ useEventListener(document, 'keydown', (event: KeyboardEvent) => {
     dismissNudge()
 })
 
-// Each nudge is a fresh one: a second tour asks the catalog again and reports
-// its own impression, rather than inheriting the first tour's answers.
-watch(
-  nudgeArmed,
-  (armed, _previous, onCleanup) => {
-    stopCatalogWait()
-    readyCatalogSuggestions.value = null
-    decidedSuggestions.value = null
-    reported = false
-    if (!armed) return
-
-    let active = true
-    onCleanup(() => {
-      active = false
-    })
-    startCatalogWait()
-    void loadTemplates().finally(() => {
-      if (!active) return
-      stopCatalogWait()
-      finishCatalogWait()
-    })
-  },
-  { immediate: true }
-)
-
-watch(
-  nudgeCompletedAt,
-  (completedAt) => {
-    cancelAppearance()
-    delayElapsed.value = false
-    if (completedAt !== null) scheduleAppearance()
-  },
-  { immediate: true }
-)
-
-watch(onScreen, (visible) => {
-  if (!visible || reported) return
-  decidedSuggestions.value = nudgeOutput.value
-    ? readyCatalogSuggestions.value
-    : []
-  reported = true
-  telemetry?.trackOnboardingTour('nudge_shown', {
-    tour: 'firstRun',
-    suggestion_count: availableSuggestions.value.length
-  })
-})
-
 async function onSuggestion(suggestion: Suggestion) {
-  const input = nudgeOutput.value
+  const input = state.value.phase === 'shown' ? state.value.input : null
   if (!input || loadingSuggestionId.value) return
 
   loadingSuggestionId.value = suggestion.id

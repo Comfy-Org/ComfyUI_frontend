@@ -403,6 +403,32 @@ describe('FirstRunTourNudge', () => {
     expect(mocks.trackOnboardingTour).toHaveBeenCalledTimes(1)
   })
 
+  it('ignores the previous tour catalog response while the new catalog is pending', async () => {
+    const oldCatalog = createDeferred<boolean>()
+    const newCatalog = createDeferred<boolean>()
+    mocks.loadTemplates
+      .mockReturnValueOnce(oldCatalog.promise)
+      .mockReturnValueOnce(newCatalog.promise)
+    mocks.nudgeArmed.value = true
+    renderNudge()
+    mocks.nudgeArmed.value = false
+    await nextTick()
+    mocks.nudgeArmed.value = true
+    await nextTick()
+    oldCatalog.resolve(true)
+    await vi.advanceTimersByTimeAsync(APPEAR_DELAY_MS)
+    expect(nudge()).toBeNull()
+    expect(mocks.trackOnboardingTour).not.toHaveBeenCalled()
+    newCatalog.resolve(true)
+    await nextTick()
+    await nextTick()
+    expect(suggestionButton('animate')).toBeTruthy()
+    expect(mocks.trackOnboardingTour).toHaveBeenCalledExactlyOnceWith(
+      'nudge_shown',
+      { tour: 'firstRun', suggestion_count: 3 }
+    )
+  })
+
   it('reports one nudge per tour, however often it comes and goes', async () => {
     await showNudge()
 
