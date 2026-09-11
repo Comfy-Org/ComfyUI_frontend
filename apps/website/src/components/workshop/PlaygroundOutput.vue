@@ -24,6 +24,7 @@ import type {
 } from '../../config/workshop-run'
 import { formatElapsed, isExpired } from '../../config/workshop-run'
 import { WORKSHOP_CREDITS_URL } from '../../config/workshop-env'
+import { downloadOutput } from '../../config/workshop-output-download'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
@@ -125,6 +126,9 @@ const outputs = computed(() =>
     : []
 )
 const currentUrl = computed(() => outputs.value[selected.value] ?? '')
+function download() {
+  if (shown.value) void downloadOutput(currentUrl.value, shown.value.fileName)
+}
 watch(latest, () => {
   viewing.value = undefined
 })
@@ -529,6 +533,7 @@ const earlierClass = (active: boolean) =>
           size="sm"
           class="w-full sm:w-auto"
           data-testid="output-download"
+          @click.prevent="download"
         >
           {{ t('workshop.output.download', locale) }}
         </Button>
