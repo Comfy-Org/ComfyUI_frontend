@@ -34,10 +34,15 @@ export class AgentCrdtProjection {
     this.adapter.unbind(workflowId)
   }
 
+  /**
+   * Store-only, and deliberately so: `reconcileLiveGraph` can throw (its
+   * orphan sweep reaches extension `onRemoved` hooks), and the caller counts
+   * this frame's outcome from the return value. Folding the sweep in here
+   * would let a third-party hook leave a frame counted in `received` and in
+   * neither `applied` nor `skipped`.
+   */
   applyFrame(update: DocUpdate): boolean {
-    const applied = this.adapter.applyFrame(update)
-    if (applied) this.reconcileLiveGraph(update.workflowId)
-    return applied
+    return this.adapter.applyFrame(update)
   }
 
   /**

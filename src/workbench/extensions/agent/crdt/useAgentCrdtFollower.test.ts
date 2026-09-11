@@ -690,6 +690,26 @@ describe('useAgentCrdtFollower', () => {
       setDirtyCanvas: vi.fn()
     } as unknown as MaterializableGraph
 
+    it('counts the frame even when a removal hook throws out of the reconcile', () => {
+      // The orphan sweep inside `reconcileAgentAdapters` calls `graph.remove()`,
+      // which runs extension `onRemoved()` uncaught. `received === applied +
+      // skipped` has to survive that, so the outcome must be decided before the
+      // sweep runs.
+      materializerState.reconcileAgentAdapters.mockImplementationOnce(() => {
+        throw new Error('onRemoved threw')
+      })
+      const { unmount, status } = mountFollower('wf-1', true, () => fakeGraph)
+
+      expect(() =>
+        dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
+      ).toThrow('onRemoved threw')
+
+      const { received, applied, skipped } = status().outcomes
+      expect(received).toBe(1)
+      expect(applied + skipped).toBe(received)
+      unmount()
+    })
+
     it('reconciles the live graph after every applied frame', () => {
       const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
 
