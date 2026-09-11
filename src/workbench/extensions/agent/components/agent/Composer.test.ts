@@ -99,12 +99,6 @@ describe('Composer', () => {
     const send = screen.getByRole('button', { name: 'Send' })
     expect(send).toBeDisabled()
 
-    await userEvent.hover(send)
-    expect(
-      await screen.findByRole('tooltip', { hidden: true })
-    ).toHaveTextContent('Add a prompt to send')
-    await userEvent.unhover(send)
-
     await userEvent.type(screen.getByRole('textbox'), 'hello')
     expect(send).toBeEnabled()
 
@@ -163,6 +157,73 @@ describe('Composer', () => {
     await userEvent.click(stop)
     expect(emitted().stop).toHaveLength(1)
     expect(emitted().send).toBeUndefined()
+  })
+
+  it('shows the Stop tooltip with the Esc shortcut while running', async () => {
+    mount({ streaming: true })
+    const stop = screen.getByRole('button', { name: 'Stop' })
+    await userEvent.hover(stop)
+    expect(
+      await screen.findByRole('tooltip', { hidden: true })
+    ).toHaveTextContent('Stop Esc')
+  })
+
+  it('emits stop on Escape while running and ignores Enter', async () => {
+    const { emitted } = mount({ submitting: true })
+    const box = screen.getByRole('textbox')
+    await userEvent.type(box, 'hello{Enter}')
+    expect(emitted().stop).toBeUndefined()
+    expect(emitted().send).toBeUndefined()
+    await userEvent.type(box, '{Escape}')
+    expect(emitted().stop).toHaveLength(1)
+  })
+
+  it('shows the Stop tooltip while submitting and stops on Escape while streaming', async () => {
+    const submitting = mount({ submitting: true })
+    await userEvent.hover(screen.getByRole('button', { name: 'Stop' }))
+    expect(
+      await screen.findByRole('tooltip', { hidden: true })
+    ).toHaveTextContent('Stop Esc')
+    submitting.unmount()
+
+    const { emitted } = mount({ streaming: true })
+    const box = screen.getByRole('textbox')
+    await userEvent.type(box, 'hello{Enter}')
+    expect(emitted().send).toBeUndefined()
+    expect(emitted().stop).toBeUndefined()
+    await userEvent.type(box, '{Escape}')
+    expect(emitted().stop).toHaveLength(1)
+  })
+
+  it('does not stop the run on Escape during IME composition', async () => {
+    const { emitted } = mount({ streaming: true })
+    const box = screen.getByRole('textbox')
+    box.focus()
+    const notCanceled = box.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Escape',
+        isComposing: true,
+        bubbles: true,
+        cancelable: true
+      })
+    )
+    expect(notCanceled).toBe(true)
+    expect(emitted().stop).toBeUndefined()
+  })
+
+  it('lets Escape close the mention list before it stops a run', async () => {
+    const { emitted } = mount({
+      streaming: true,
+      getMentionNodes: () => [{ id: '2', title: 'KSampler' }]
+    })
+    const box = screen.getByRole('textbox')
+    await userEvent.type(box, '@k')
+    await screen.findByRole('option', { name: /KSampler/ })
+    await userEvent.keyboard('{Escape}')
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+    expect(emitted().stop).toBeUndefined()
+    await userEvent.keyboard('{Escape}')
+    expect(emitted().stop).toHaveLength(1)
   })
 
   describe('run permissions popover', () => {

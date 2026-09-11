@@ -14,11 +14,14 @@ import {
 
 const {
   label,
+  shortcut,
   disabled = false,
   side = 'top',
   sideOffset = 6
 } = defineProps<{
   label: string
+  /** Key hint rendered after the label in a muted tone, e.g. "Esc". */
+  shortcut?: string
   disabled?: boolean
   side?: 'top' | 'right' | 'bottom' | 'left'
   sideOffset?: number
@@ -39,6 +42,9 @@ const {
           :class="AGENT_REKA_TOOLTIP_CONTENT_CLASS"
         >
           {{ label }}
+          <span v-if="shortcut" class="text-agent-fg-muted ml-1">{{
+            shortcut
+          }}</span>
         </TooltipContent>
       </TooltipPortal>
     </TooltipRoot>
