@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { Coins, ExternalLink, LogOut, Settings } from '@lucide/vue'
 import { onClickOutside } from '@vueuse/core'
 import { computed, ref, useTemplateRef } from 'vue'
 
 import { useWorkshopCredits } from '../../config/workshop-credits'
+import { externalLinks } from '../../config/routes'
 import { platformTopUpHref } from '../../lib/workshop/buy-credits'
 import { runBeforeSignInLeave } from '../../config/workshop-return'
 import { useWorkshopSession } from '../../config/workshop-session-state'
@@ -164,39 +166,95 @@ async function signOutFromMenu() {
       <div
         v-if="menuOpen"
         role="menu"
-        class="absolute right-0 z-50 mt-2 w-56 rounded-2xl border border-primary-comfy-canvas/15 bg-primary-comfy-ink p-2 shadow-lg"
+        class="absolute right-0 z-50 mt-2 w-72 rounded-2xl border border-primary-comfy-canvas/15 bg-primary-comfy-ink p-2 shadow-lg"
       >
-        <p class="px-3 py-2 text-xs break-all text-primary-comfy-canvas/55">
-          {{ user?.email ?? user?.displayName }}
-        </p>
-        <p class="px-3 pb-2 text-xs text-primary-comfy-canvas/55">
-          {{ session.workspace.name }}
-        </p>
+        <!-- The DES-1015 menu: workspace leads, actions follow, the person
+             signs off in the footer. Plan and role wait on session data. -->
+        <div class="flex items-center gap-3 px-3 py-2">
+          <img
+            v-if="user?.photoURL"
+            :src="user.photoURL"
+            alt=""
+            referrerpolicy="no-referrer"
+            class="size-9 rounded-xl"
+          />
+          <span
+            v-else
+            aria-hidden="true"
+            class="bg-primary-comfy-yellow grid size-9 shrink-0 place-items-center rounded-xl text-sm font-bold text-primary-comfy-ink"
+          >
+            {{ initial }}
+          </span>
+          <span class="min-w-0">
+            <span
+              class="block truncate text-sm font-bold text-primary-warm-white"
+              data-testid="account-workspace"
+            >
+              {{ session.workspace.name }}
+            </span>
+          </span>
+        </div>
         <p
           v-if="balance.status === 'error'"
           class="px-3 pb-2 text-xs text-red-400"
         >
           {{ t('auth.header.balanceError', locale) }}
         </p>
+        <div class="m-1 h-px bg-transparency-white-t8" aria-hidden="true" />
         <a
           :href="platformTopUpHref(session.workspace.id)"
-          data-testid="account-add-credits"
           target="_blank"
           rel="noopener noreferrer"
           role="menuitem"
-          class="block rounded-xl px-3 py-2 text-sm text-primary-comfy-canvas transition-colors hover:bg-primary-comfy-canvas/10"
+          data-testid="account-add-credits"
+          class="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm text-primary-comfy-canvas transition-colors hover:bg-primary-comfy-canvas/10"
           @click="menuOpen = false"
         >
-          {{ t('nav.buyCredits', locale) }}
+          <Coins class="size-5 text-primary-warm-gray" aria-hidden="true" />
+          <span class="flex flex-1 items-center gap-3">
+            {{ t('workshop.run.buyCredits', locale) }}
+            <ExternalLink
+              class="size-5 text-primary-warm-gray"
+              aria-hidden="true"
+            />
+          </span>
+          <span
+            v-if="balance.status === 'ok'"
+            class="text-sm font-bold text-primary-warm-white tabular-nums"
+          >
+            {{ formatCredits(balance.credits) }}
+          </span>
         </a>
-        <button
-          type="button"
+        <a
+          :href="externalLinks.cloud"
+          target="_blank"
+          rel="noopener noreferrer"
           role="menuitem"
-          class="w-full rounded-xl px-3 py-2 text-left text-sm text-primary-comfy-canvas transition-colors hover:bg-primary-comfy-canvas/10"
-          @click="signOutFromMenu"
+          data-testid="account-workspace-settings"
+          class="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm text-primary-comfy-canvas transition-colors hover:bg-primary-comfy-canvas/10"
+          @click="menuOpen = false"
         >
-          {{ t('auth.signIn.signOut', locale) }}
-        </button>
+          <Settings class="size-5 text-primary-warm-gray" aria-hidden="true" />
+          {{ t('nav.workspaceSettings', locale) }}
+        </a>
+        <div class="m-1 h-px bg-transparency-white-t8" aria-hidden="true" />
+        <div role="none" class="flex items-center gap-3 px-3 py-1">
+          <span
+            class="min-w-0 flex-1 truncate text-xs text-primary-comfy-canvas/55"
+          >
+            {{ user?.email ?? user?.displayName }}
+          </span>
+          <button
+            type="button"
+            role="menuitem"
+            :aria-label="t('auth.signIn.signOut', locale)"
+            data-testid="account-sign-out"
+            class="grid size-8 shrink-0 cursor-pointer place-items-center rounded-lg text-primary-warm-gray transition-colors hover:bg-primary-comfy-canvas/10 hover:text-primary-warm-white"
+            @click="signOutFromMenu"
+          >
+            <LogOut class="size-4" aria-hidden="true" />
+          </button>
+        </div>
       </div>
     </div>
   </div>
