@@ -1422,6 +1422,41 @@ describe('reconcileAgentAdapters', () => {
       expect(nestedHost.widgets.map(({ name }) => name)).toEqual(['value'])
     })
 
+    it('S3 promotes an already-promoted widget through an outer host under its declared name', () => {
+      const inner = createTestSubgraphData({
+        nodes: [nodePayload(7, 'widget-node')] as never
+      })
+      const promotedInner = promotedDefinition(inner)
+      const outer = createTestSubgraphData({
+        nodes: [nodePayload(8, inner.id)] as never,
+        definitions: { subgraphs: [inner] }
+      })
+      const promotedOuter = promotedDefinition(outer, 8, 'outer-value')
+      const { follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, outer.id)],
+        links: [],
+        definitions: { subgraphs: [outer] }
+      })
+      reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+
+      expect(() =>
+        reconcileAgentAdapters(graph, [
+          {
+            ...promotedOuter,
+            definitions: { subgraphs: [promotedInner] }
+          }
+        ])
+      ).not.toThrow()
+
+      const innerHost = graph.subgraphs
+        .get(outer.id)
+        ?.getNodeById(toNodeId(8)) as SubgraphNode
+      const outerHost = graph.getNodeById(toNodeId(1)) as SubgraphNode
+      expect(innerHost.widgets.map(({ name }) => name)).toEqual(['value'])
+      expect(outerHost.widgets.map(({ name }) => name)).toEqual(['outer-value'])
+      expect(outerHost.widgets[0]?.label).toBe('outer-value')
+    })
+
     it('carries interior widget values into the instantiated subgraph', () => {
       const definition = createTestSubgraphData({
         nodes: [

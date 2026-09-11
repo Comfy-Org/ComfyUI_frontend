@@ -283,7 +283,8 @@ export interface WidgetPromotionFailure {
 export function promoteValueWidgetViaSubgraphInput(
   subgraphNode: SubgraphNode,
   sourceNode: LGraphNode,
-  sourceWidget: IBaseWidget
+  sourceWidget: IBaseWidget,
+  preferredInputName = sourceWidget.name
 ): CanonicalPromotionResult {
   const sourceWidgetName = sourceWidget.name
   if (isLinkedPromotion(subgraphNode, sourceNode.id, sourceWidgetName)) {
@@ -294,7 +295,7 @@ export function promoteValueWidgetViaSubgraphInput(
   if (!sourceSlot) return { ok: false, reason: 'missingSourceSlot' }
 
   const existingNames = subgraphNode.subgraph.inputs.map((input) => input.name)
-  const inputName = nextUniqueName(sourceWidgetName, existingNames)
+  const inputName = nextUniqueName(preferredInputName, existingNames)
   const subgraphInput = subgraphNode.subgraph.addInput(
     inputName,
     // oxlint-disable-next-line typescript/no-unnecessary-condition -- legacy extension slots may omit type at runtime
@@ -405,7 +406,8 @@ export function isPreviewPseudoWidget(widget: RuntimeWidget): boolean {
 export function promoteWidget(
   node: PartialNode,
   widget: IBaseWidget,
-  parents: SubgraphNode[]
+  parents: SubgraphNode[],
+  preferredInputName = widget.name
 ): WidgetPromotionFailure[] {
   const failures: WidgetPromotionFailure[] = []
   const source = toPromotionSource(node, widget)
@@ -415,7 +417,12 @@ export function promoteWidget(
       promotePreviewViaExposure(parent, node, source.sourceWidgetName)
       continue
     }
-    const result = promoteValueWidgetViaSubgraphInput(parent, node, widget)
+    const result = promoteValueWidgetViaSubgraphInput(
+      parent,
+      node,
+      widget,
+      preferredInputName
+    )
     if (!result.ok) {
       failures.push({ host: parent, reason: result.reason })
       addBreadcrumb({
