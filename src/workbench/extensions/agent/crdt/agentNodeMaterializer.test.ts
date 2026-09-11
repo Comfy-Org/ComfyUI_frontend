@@ -537,6 +537,50 @@ describe('reconcileAgentAdapters', () => {
       }
     )
 
+    it('keeps an incremental setWidget through an omitted-widget reconcile, save, reload and rematerialization', () => {
+      const graph = new LGraph()
+      const mutations = remoteMutations(graphScopeOf(graph))
+      const payload = nodePayload(1, 'late-widget-node')
+      graph.configure({
+        ...graph.asSerialisable(),
+        nodes: [
+          {
+            ...new LGraphNode('Missing').serialize(),
+            id: 1,
+            type: payload.type,
+            widgets_values: [4],
+            widgets_values_named: { value: 4 }
+          }
+        ]
+      })
+
+      expect(
+        mutations.batch(REMOTE, (batch) =>
+          batch.setWidget(toNodeId(1), 'value', 7)
+        )
+      ).toBe(true)
+      expect(
+        mutations.batch(REMOTE, (batch) =>
+          batch.reconcileNode({ ...payload, pos: [10, 20] })
+        )
+      ).toBe(true)
+
+      const saved = graph.serialize()
+      expect(saved.nodes[0]).toMatchObject({
+        widgets_values: [7],
+        widgets_values_named: { value: 7 }
+      })
+      graph.configure(saved)
+      expect(graph.serialize().nodes[0]).toMatchObject({
+        widgets_values: [7],
+        widgets_values_named: { value: 7 }
+      })
+
+      LiteGraph.registerNodeType('late-widget-node', WidgetNode)
+      graph.configure(graph.serialize())
+      expect(graph.getNodeById(toNodeId(1))?.widgets?.[0].value).toBe(7)
+    })
+
     it('is idempotent once the node is live', () => {
       const graph = new LGraph()
       const scope = seedAgentAddedNode(graph, 1)

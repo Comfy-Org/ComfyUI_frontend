@@ -226,6 +226,26 @@ function widgetEntries(payload: SemanticNodePayload): PreparedNode['widgets'] {
   }))
 }
 
+function syncSerializedWidgetValue(
+  state: NodeState,
+  name: string,
+  value: unknown,
+  index: number
+): void {
+  const serialised = state.lastSerialization
+  if (!serialised) return
+  const values: unknown = serialised.widgets_values
+  const named: unknown = serialised.widgets_values_named
+  const clone = structuredClone(value)
+  const position = isRecord(named) ? Object.keys(named).indexOf(name) : index
+  if (Array.isArray(values)) {
+    if (position >= 0 && position < values.length) values[position] = clone
+  } else if (isRecord(values)) {
+    values[name] = clone
+  }
+  if (isRecord(named)) named[name] = clone
+}
+
 function reconcileInputSlots(
   current: NodeState,
   next: Pick<NodeState, 'inputs' | 'properties'>
@@ -832,6 +852,22 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             )
           } else {
             widgetStore.setValue(id, mutation.value, context)
+          }
+          const node = nodeStore.getNode(scope.rootGraphId, mutation.nodeId)
+          if (node) {
+            const index = widgetStore
+              .getNodeWidgets(scope.rootGraphId, mutation.nodeId)
+              .filter(
+                (widget) =>
+                  widget.serialize !== false && widget.type !== 'button'
+              )
+              .findIndex((widget) => widget.name === mutation.name)
+            syncSerializedWidgetValue(
+              node,
+              mutation.name,
+              mutation.value,
+              index
+            )
           }
           break
         }
