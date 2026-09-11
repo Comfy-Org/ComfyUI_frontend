@@ -1,7 +1,17 @@
 import { expect } from '@playwright/test'
 
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { getPromotedWidgetNames } from '@e2e/fixtures/utils/promotedWidgets'
+import { toNodeId } from '@/types/nodeId'
+
+function getInputNames(comfyPage: ComfyPage, nodeId: string) {
+  return comfyPage.page.evaluate(
+    (id) =>
+      window.app!.graph.getNodeById(id)?.inputs.map((input) => input.name),
+    toNodeId(nodeId)
+  )
+}
 
 // Reduced from the `utility_seedvr2_3b_int8_upscale_image` template (FE-258):
 // a `ResizeImageMaskNode` whose `resize_type` dynamic combo is set to a
@@ -37,6 +47,10 @@ test.describe(
       await expect
         .poll(() => getPromotedWidgetNames(comfyPage, HOST_NODE_ID))
         .toEqual([PROMOTED_INPUT_NAME])
+
+      await expect
+        .poll(() => getInputNames(comfyPage, HOST_NODE_ID))
+        .toEqual(['image', PROMOTED_INPUT_NAME])
     })
 
     test('keeps the links of the nodes around it', async ({ comfyPage }) => {

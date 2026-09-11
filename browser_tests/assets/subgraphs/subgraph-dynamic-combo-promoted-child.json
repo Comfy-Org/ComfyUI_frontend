@@ -32,7 +32,7 @@
         "ver": "0.27.0",
         "Node name for S&R": "LoadImage"
       },
-      "widgets_values": ["watch_macro_shot.png", "image"]
+      "widgets_values": ["example.png", "image"]
     },
     {
       "id": 66,
@@ -68,7 +68,9 @@
           "links": [2]
         }
       ],
-      "properties": {},
+      "properties": {
+        "proxyWidgets": [["57", "resize_type.multiplier"]]
+      },
       "widgets_values": [4]
     },
     {
