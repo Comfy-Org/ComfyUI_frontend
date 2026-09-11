@@ -236,6 +236,53 @@ test.describe('Node Interaction', () => {
       })
     })
 
+    test('Repeated disconnect/connect leaves exactly one link', async ({
+      comfyPage
+    }) => {
+      test.slow()
+      await comfyPage.workflow.loadWorkflow('default')
+
+      const checkpoint = await comfyPage.nodeOps.getNodeRefByType(
+        'CheckpointLoaderSimple'
+      )
+      const clipOutput = await checkpoint.getOutput(1)
+      const targetNode = await comfyPage.nodeOps.getNodeRefById(6)
+      const targetInput = await targetNode.getInput(0)
+      const targetLink = await targetInput.getLink()
+      if (!targetLink) throw new Error('Default workflow link not found')
+
+      const targetEndpoints = {
+        origin_id: targetLink.origin_id,
+        origin_slot: targetLink.origin_slot,
+        target_id: targetLink.target_id,
+        target_slot: targetLink.target_slot
+      }
+      const initial = await clipOutput.getLinkCount()
+      expect(initial, 'default workflow should have links').toBeGreaterThan(0)
+
+      for (let cycle = 0; cycle < 5; cycle++) {
+        await comfyPage.canvasOps.disconnectEdge()
+        await clipOutput.expectLinkCount(initial - 1)
+        await expect.poll(() => targetInput.getLink()).toBeNull()
+        await comfyPage.canvasOps.connectEdge()
+        await clipOutput.expectLinkCount(initial)
+        await expect
+          .poll(() => targetInput.getLink())
+          .toMatchObject(targetEndpoints)
+      }
+
+      // End disconnected so the reload assertion cannot pass by restoring a
+      // pristine default instead of the edited draft.
+      await comfyPage.canvasOps.disconnectEdge()
+      await comfyPage.canvasOps.moveMouseToEmptyArea()
+      await clipOutput.expectLinkCount(initial - 1)
+      await expect.poll(() => targetInput.getLink()).toBeNull()
+
+      await comfyPage.workflow.reloadAndWaitForApp()
+      await clipOutput.expectLinkCount(initial - 1)
+      await expect.poll(() => targetInput.getLink()).toBeNull()
+    })
+
     test('Can move link', async ({ comfyPage }) => {
       await comfyPage.canvasOps.dragAndDrop(
         DefaultGraphPositions.clipTextEncodeNode1InputSlot,

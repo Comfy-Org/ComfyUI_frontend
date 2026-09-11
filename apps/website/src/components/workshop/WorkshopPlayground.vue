@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import { useClipboard } from '@vueuse/core'
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { externalLinks } from '../../config/routes'
 import type { WorkshopDetailModel } from '../../config/workshop-detail'
 import { defaultWorkshopValues } from '../../config/workshop-detail'
 import { parseWorkshopJsonInput } from '../../config/workshop-json-schema'
+import {
+  onBeforeSignInLeave,
+  popWorkshopForm,
+  stashWorkshopForm
+} from '../../config/workshop-return'
 import type { WorkshopSnippetLanguage } from '../../config/workshop-snippets'
 import {
   WORKSHOP_SNIPPET_LANGUAGES,
@@ -23,6 +28,17 @@ const { model, locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
 const values = ref(defaultWorkshopValues(model.fields))
+
+// A visitor coming back from sign-in or a purchase lands with the form they
+// left; the stash is one-shot, so a plain visit costs one storage read.
+onMounted(() => {
+  const restored = popWorkshopForm(model.slug, model.fields)
+  if (restored) values.value = { ...values.value, ...restored }
+})
+const stopStashing = onBeforeSignInLeave(() =>
+  stashWorkshopForm(model.slug, model.fields, values.value)
+)
+onUnmounted(stopStashing)
 const language = ref<WorkshopSnippetLanguage>('typescript')
 // `legacy: true` on purpose. Without it `isSupported` is just the Clipboard
 // API check, so on an insecure origin — a LAN-IP or staging preview, where

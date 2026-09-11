@@ -88,9 +88,7 @@
       "title": "Kredi tükendi",
       "upgradePlan": "Planı yükselt"
     },
-    "placeholder": "Fikirleri açıklayın, referans vermek için {'@'} kullanın,\ngraftaki düğümlerden bahsedin veya varlıkları sürükleyip bırakın",
-    "ranToolCalls": "{count} araç çağrısı çalıştırıldı | {count} araç çağrısı çalıştırıldı",
-    "ranToolCallsTimed": "{seconds} saniye boyunca {count} araç çağrısı çalıştırıldı | {seconds} saniye boyunca {count} araç çağrısı çalıştırıldı",
+    "placeholder": "Fikirlerinizi açıklayın, iş akışlarına başvurmak için {'@'} kullanın, medya varlıklarını ve dosyaları sürükleyin veya\ndüğümlerden bahsedin",
     "remove": "Kaldır",
     "removeNodeLabel": "{node} referansını kaldır",
     "runApproval": {
@@ -138,15 +136,21 @@
     "switchWorkflow": "İş akışını değiştir",
     "targetNavigationUnavailable": "Bu iş akışı hedefi artık kullanılamıyor.",
     "thinking": "Düşünüyor...",
-    "thought": "Düşünce",
-    "thoughtTimed": "{seconds} saniye düşünüldü",
     "title": "Comfy Agent",
+    "toolForgettingPreference": "Bir tercih unutuluyor",
     "toolForgotPreference": "Bir tercih unutuldu",
     "toolOpenedNewTab": "Yeni bir sekme açıldı",
+    "toolOpeningNewTab": "Yeni bir sekme açılıyor",
     "toolSavedPreference": "Bir tercih kaydedildi",
+    "toolSavingPreference": "Bir tercih kaydediliyor",
     "toolSwitchedTabs": "Sekmeler değiştirildi",
+    "toolSwitchingTabs": "Sekmeler arasında geçiş yapılıyor",
     "untitledChat": "Başlıksız",
-    "uploading": "Yükleniyor"
+    "uploading": "Yükleniyor",
+    "worked": "Çalıştı",
+    "workedForMinutes": "{minutes} dk. {seconds} sn. çalıştı",
+    "workedForSeconds": "{seconds} saniye çalıştı",
+    "working": "Çalışıyor..."
   },
   "apiNodesSignInDialog": {
     "message": "İş ortağı düğümleri üçüncü taraf hizmetlerde çalışır ve hesabınızdaki kredileri kullanır. Hesabınızı bağlamak için lütfen oturum açın.",
@@ -385,9 +389,9 @@
       "auth/popup-closed-by-user": "Oturum açma tamamlanmadan oturum açma penceresi kapatıldı. Lütfen tekrar deneyin.",
       "auth/too-many-requests": "Çok fazla giriş denemesi. Lütfen bir süre bekleyip tekrar deneyin.",
       "auth/user-disabled": "Bu hesap devre dışı bırakıldı. Lütfen destek ekibiyle iletişime geçin.",
-      "auth/user-not-found": "Bu e-posta ile ilişkili bir hesap bulunamadı. Yeni bir hesap oluşturmak ister misiniz?",
+      "auth/user-not-found": "Geçersiz giriş bilgileri. Lütfen e-postanızı ve parolanızı kontrol edin.",
       "auth/weak-password": "Parola çok zayıf. Lütfen en az 6 karakterden oluşan daha güçlü bir parola kullanın.",
-      "auth/wrong-password": "Girdiğiniz parola yanlış. Lütfen tekrar deneyin.",
+      "auth/wrong-password": "Geçersiz giriş bilgileri. Lütfen e-postanızı ve parolanızı kontrol edin.",
       "generic": "Oturum açarken bir hata oluştu. Lütfen tekrar deneyin.",
       "signupBlocked": "Şu anda hesabınızı oluşturamıyoruz. Lütfen daha sonra tekrar deneyin. Sorun devam ederse support@comfy.org adresine e-posta gönderin."
     },
@@ -1938,6 +1942,7 @@
     "recents": "Son Kullanılanlar",
     "reconnected": "Yeniden bağlandı",
     "reconnecting": "Yeniden bağlanılıyor",
+    "recordingFailedToStart": "Kayıt başlatılamadı",
     "refresh": "Yenile",
     "refreshNode": "Düğümü Yenile",
     "relativeTime": {
@@ -2508,6 +2513,7 @@
       "wireframe": "Tel Kafes"
     },
     "menuBar": {
+      "animationClip": "Animasyon klibi",
       "bgColor": "Arka Plan Rengi",
       "bgImage": "Arka Plan Görseli",
       "customUp": "Özel yukarı",
@@ -2519,6 +2525,7 @@
       "naturalUp": "Doğal yukarı",
       "originalMaterialOnly": "Sadece orijinal malzeme",
       "panorama": "Panorama",
+      "playbackSpeed": "Oynatma hızı",
       "record": "Kaydet",
       "recording": "Kayıt Yapılıyor",
       "removeBackground": "Arka Planı Kaldır",
@@ -2846,6 +2853,7 @@
     "deleteHistoryOnly": "Yalnızca geçmiş etkilenir, dosyalar diskte kalır",
     "deleteItems": "Bu öğeleri sil",
     "deletePermanent": "Kalıcı olarak kaldırılacaklar.",
+    "deleteTombstone": "Bunlar artık ComfyUI içinde görüntülenmeyecek, ancak diskte kalacak",
     "deletingImportedFilesCloudOnly": "İçe aktarılan dosyaların silinmesi yalnızca bulut sürümünde desteklenir",
     "deletionUnsupported": "Varlıklar etkin, ancak sunucu silmeyi desteklemiyor",
     "failedToCreateNode": "Düğüm oluşturulamadı",
@@ -4543,7 +4551,7 @@
     "pricingBlurbEnterprise": "kurumsal görüşmeler",
     "pricingBlurbQuestions": "sorular",
     "pricingBlurbSeeDetails": "detayları gör",
-    "reactivatePlan": "Planı yeniden etkinleştir",
+    "reactivatePlan": "Aboneliği sürdür",
     "reactivateToUseCredits": "Bu kredileri kullanmak için planınızı yeniden etkinleştirin",
     "refillsDate": "{date} tarihinde yenilenecek",
     "refillsNextCycle": "Sonraki döngüde yenilenecek",
@@ -4562,7 +4570,7 @@
     "resubscribe": "Yeniden abone ol",
     "resubscribeFailed": "Abonelik yeniden etkinleştirilemedi",
     "resubscribeSuccess": "Abonelik başarıyla yeniden etkinleştirildi",
-    "resubscribeTo": "{plan} planına yeniden abone ol",
+    "resubscribeTo": "{plan} planını sürdür",
     "salesManagedRunBlockedDetail": "Bu çalışma alanının planı artık etkin değil. Erişimi geri yüklemek için Comfy hesap yöneticinizle iletişime geçin.",
     "salesManagedRunBlockedTitle": "Plan etkin değil",
     "saveYearly": "%20 tasarruf",
@@ -5042,8 +5050,8 @@
     },
     "billingStatus": {
       "ending": {
-        "body": "O zamana kadar üyeler tam erişime sahip olacak. Paylaşılan kredilerinizi ve koltuklarınızı korumak için yeniden etkinleştirin.",
-        "reactivate": "Planı yeniden etkinleştir",
+        "body": "Üyeler o zamana kadar tam erişimi korur. Paylaşılan kredilerinizi ve koltuklarınızı korumak için aboneliğinizi sürdürün.",
+        "reactivate": "Aboneliği sürdür",
         "title": "Ekip planınız {date} tarihinde sona eriyor"
       },
       "outOfCredits": {

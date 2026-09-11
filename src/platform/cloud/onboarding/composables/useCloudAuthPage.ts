@@ -2,7 +2,8 @@ import type { UserCredential } from 'firebase/auth'
 import { ref } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
 
-import { isEmbeddedWebView } from '@/base/webviewDetection'
+import { isEmbeddedWebView } from '@comfyorg/account/webviewDetection'
+
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { usePostAuthRedirect } from '@/platform/cloud/onboarding/composables/usePostAuthRedirect'
 

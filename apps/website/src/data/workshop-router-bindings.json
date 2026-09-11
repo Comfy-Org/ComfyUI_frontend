@@ -1,0 +1,364 @@
+[
+  {
+    "id": "bfl/flux-pro-1.0-fill",
+    "routerId": "bfl/flux-pro-1.0-fill",
+    "omit": [],
+    "media": [
+      {
+        "name": "media_image",
+        "label": "Image",
+        "accept": "image",
+        "encoding": "base64",
+        "targets": ["/image"],
+        "required": true
+      },
+      {
+        "name": "media_mask",
+        "label": "Mask image (white edits, black keeps)",
+        "accept": "image",
+        "encoding": "base64",
+        "targets": ["/mask"],
+        "required": false
+      }
+    ],
+    "advancedFields": [],
+    "output": {
+      "format": "json",
+      "selectors": [
+        { "path": "/result/sample", "encoding": "url", "kind": "image" }
+      ],
+      "success": {
+        "path": "/status",
+        "values": ["ready"],
+        "caseInsensitive": true
+      }
+    }
+  },
+  {
+    "id": "bfl/flux-pro-1.0-expand",
+    "routerId": "bfl/flux-pro-1.0-expand",
+    "omit": [],
+    "media": [
+      {
+        "name": "media_image",
+        "label": "Image",
+        "accept": "image",
+        "encoding": "base64",
+        "targets": ["/image"],
+        "required": true
+      }
+    ],
+    "advancedFields": [],
+    "output": {
+      "format": "json",
+      "selectors": [
+        { "path": "/result/sample", "encoding": "url", "kind": "image" }
+      ],
+      "success": {
+        "path": "/status",
+        "values": ["ready"],
+        "caseInsensitive": true
+      }
+    }
+  },
+  {
+    "id": "bfl/flux-2-pro",
+    "routerId": "bfl/flux-2-pro",
+    "omit": ["safety_tolerance"],
+    "media": [
+      {
+        "name": "media_image",
+        "label": "Image",
+        "accept": "image",
+        "encoding": "base64",
+        "targets": [
+          "/input_image",
+          "/input_image_2",
+          "/input_image_3",
+          "/input_image_4",
+          "/input_image_5",
+          "/input_image_6",
+          "/input_image_7",
+          "/input_image_8",
+          "/input_image_9"
+        ],
+        "required": false
+      }
+    ],
+    "advancedFields": ["prompt_upsampling", "seed"],
+    "output": {
+      "format": "json",
+      "selectors": [
+        {
+          "path": "/result/sample",
+          "encoding": "url",
+          "kind": "image"
+        }
+      ],
+      "success": {
+        "path": "/status",
+        "values": ["ready"],
+        "caseInsensitive": true
+      }
+    }
+  },
+  {
+    "id": "bfl/flux-2-max",
+    "routerId": "bfl/flux-2-max",
+    "omit": [],
+    "media": [
+      {
+        "name": "media_image",
+        "label": "Image",
+        "accept": "image",
+        "encoding": "base64",
+        "targets": [
+          "/input_image",
+          "/input_image_2",
+          "/input_image_3",
+          "/input_image_4",
+          "/input_image_5",
+          "/input_image_6",
+          "/input_image_7",
+          "/input_image_8",
+          "/input_image_9"
+        ],
+        "required": false
+      }
+    ],
+    "advancedFields": ["safety_tolerance", "prompt_upsampling", "seed"],
+    "output": {
+      "format": "json",
+      "selectors": [
+        {
+          "path": "/result/sample",
+          "encoding": "url",
+          "kind": "image"
+        }
+      ],
+      "success": {
+        "path": "/status",
+        "values": ["ready"],
+        "caseInsensitive": true
+      }
+    }
+  },
+  {
+    "id": "bfl/flux-kontext-pro",
+    "routerId": "bfl/flux-kontext-pro",
+    "omit": ["webhook_url", "webhook_secret"],
+    "media": [
+      {
+        "name": "media_image",
+        "label": "Image",
+        "accept": "image",
+        "encoding": "base64",
+        "targets": [
+          "/input_image",
+          "/input_image_2",
+          "/input_image_3",
+          "/input_image_4"
+        ],
+        "required": false
+      }
+    ],
+    "advancedFields": ["prompt_upsampling", "seed"],
+    "output": {
+      "format": "json",
+      "selectors": [
+        {
+          "path": "/result/sample",
+          "encoding": "url",
+          "kind": "image"
+        }
+      ],
+      "success": {
+        "path": "/status",
+        "values": ["ready"],
+        "caseInsensitive": true
+      }
+    }
+  },
+  {
+    "id": "bfl/flux-kontext-max",
+    "routerId": "bfl/flux-kontext-max",
+    "omit": ["webhook_url", "webhook_secret"],
+    "media": [
+      {
+        "name": "media_image",
+        "label": "Image",
+        "accept": "image",
+        "encoding": "base64",
+        "targets": [
+          "/input_image",
+          "/input_image_2",
+          "/input_image_3",
+          "/input_image_4"
+        ],
+        "required": false
+      }
+    ],
+    "advancedFields": ["prompt_upsampling", "seed"],
+    "output": {
+      "format": "json",
+      "selectors": [
+        {
+          "path": "/result/sample",
+          "encoding": "url",
+          "kind": "image"
+        }
+      ],
+      "success": {
+        "path": "/status",
+        "values": ["ready"],
+        "caseInsensitive": true
+      }
+    }
+  },
+  {
+    "id": "bfl/flux-pro-1.1",
+    "routerId": "bfl/flux-pro-1.1",
+    "omit": ["webhook_url", "webhook_secret"],
+    "media": [
+      {
+        "name": "media_reference_image",
+        "label": "Reference Image",
+        "accept": "image",
+        "encoding": "base64",
+        "targets": ["/image_prompt"],
+        "required": false
+      }
+    ],
+    "advancedFields": ["safety_tolerance", "prompt_upsampling", "seed"],
+    "output": {
+      "format": "json",
+      "selectors": [
+        {
+          "path": "/result/sample",
+          "encoding": "url",
+          "kind": "image"
+        }
+      ],
+      "success": {
+        "path": "/status",
+        "values": ["ready"],
+        "caseInsensitive": true
+      }
+    }
+  },
+  {
+    "id": "bfl/flux-pro-1.1-ultra",
+    "routerId": "bfl/flux-pro-1.1-ultra",
+    "omit": ["webhook_url", "webhook_secret"],
+    "media": [
+      {
+        "name": "media_reference_image",
+        "label": "Reference Image",
+        "accept": "image",
+        "encoding": "base64",
+        "targets": ["/image_prompt"],
+        "required": false
+      }
+    ],
+    "advancedFields": ["prompt_upsampling", "raw", "seed"],
+    "output": {
+      "format": "json",
+      "selectors": [
+        {
+          "path": "/result/sample",
+          "encoding": "url",
+          "kind": "image"
+        }
+      ],
+      "success": {
+        "path": "/status",
+        "values": ["ready"],
+        "caseInsensitive": true
+      }
+    }
+  },
+  {
+    "id": "krea/krea-2-large",
+    "routerId": "krea/krea-2-large",
+    "omit": [],
+    "media": [],
+    "advancedFields": [
+      "creativity",
+      "seed",
+      "image_style_references",
+      "moodboards",
+      "styles"
+    ],
+    "output": {
+      "format": "json",
+      "selectors": [
+        {
+          "path": "/result/urls/*",
+          "encoding": "url",
+          "kind": "image"
+        }
+      ],
+      "success": {
+        "path": "/status",
+        "values": ["completed"],
+        "caseInsensitive": false
+      }
+    }
+  },
+  {
+    "id": "krea/krea-2-medium",
+    "routerId": "krea/krea-2-medium",
+    "omit": [],
+    "media": [],
+    "advancedFields": [
+      "creativity",
+      "seed",
+      "image_style_references",
+      "moodboards",
+      "styles"
+    ],
+    "output": {
+      "format": "json",
+      "selectors": [
+        {
+          "path": "/result/urls/*",
+          "encoding": "url",
+          "kind": "image"
+        }
+      ],
+      "success": {
+        "path": "/status",
+        "values": ["completed"],
+        "caseInsensitive": false
+      }
+    }
+  },
+  {
+    "id": "krea/krea-2-medium-turbo",
+    "routerId": "krea/krea-2-medium-turbo",
+    "omit": [],
+    "media": [],
+    "advancedFields": [
+      "creativity",
+      "seed",
+      "image_style_references",
+      "moodboards",
+      "styles"
+    ],
+    "output": {
+      "format": "json",
+      "selectors": [
+        {
+          "path": "/result/urls/*",
+          "encoding": "url",
+          "kind": "image"
+        }
+      ],
+      "success": {
+        "path": "/status",
+        "values": ["completed"],
+        "caseInsensitive": false
+      }
+    }
+  }
+]

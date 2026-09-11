@@ -2657,9 +2657,10 @@ export const zAgentRunMode = z.object({
  * A user turn posted to the agent.
  */
 export const zAgentPostMessageRequest = z.object({
-  attachments: z.array(z.string()).optional(),
   content: z.string(),
-  current_tab: z.string().optional(),
+  workflow_id: z.string().optional(),
+  selection: z.record(z.unknown()).optional(),
+  attachments: z.array(z.string()).optional(),
   draft: z
     .object({
       content: z.record(z.unknown()).optional(),
@@ -2669,13 +2670,20 @@ export const zAgentPostMessageRequest = z.object({
   open_tabs: z
     .array(
       z.object({
-        name: z.string().optional(),
-        workflow_id: z.string()
+        workflow_id: z.string(),
+        name: z.string().optional()
       })
     )
     .optional(),
-  selection: z.record(z.unknown()).optional(),
-  workflow_id: z.string().optional()
+  current_tab: z.string().optional(),
+  workflow_references: z
+    .array(
+      z.object({
+        workflow_id: z.string(),
+        name: z.string().optional()
+      })
+    )
+    .optional()
 })
 
 /**

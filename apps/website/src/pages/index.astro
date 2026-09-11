@@ -8,13 +8,16 @@ import MinimaxLicenseHeroSection from "../components/common/MinimaxLicenseHeroSe
 import DeveloperPlatformSection from "../components/home/DeveloperPlatformSection.vue";
 import IndustriesSection from "../components/home/IndustriesSection.vue";
 import ModelReleaseSection from "../components/home/ModelReleaseSection.vue";
+import ModelDiscoverySection from "../components/home/ModelDiscoverySection.vue";
 import ProductShowcaseSection from "../components/home/ProductShowcaseSection.vue";
 import FeaturedWorkflowsSection from "../components/home/FeaturedWorkflowsSection.vue";
 import CaseStudySpotlightSection from "../components/home/CaseStudySpotlightSection.vue";
 import GetStartedSection from "../components/home/GetStartedSection.vue";
 import { getCollection } from "astro:content";
 import { isWorkshopInBuild } from "../config/workshop-release";
+import { modelReleaseLinks } from "../config/model-release-links";
 import { resolveHomepageWorkshopModels } from "../config/workshop-homepage";
+import { resolveDiscoveryProviders } from "../components/home/modelDiscoveryProviders";
 import { t } from "../i18n/translations";
 import {
   comfyUiApplicationNode,
@@ -28,6 +31,8 @@ const { siteUrl } = pageContext(
   Astro.url.pathname,
   Astro.currentLocale,
 );
+
+const discoveryProviders = await resolveDiscoveryProviders(isWorkshopInBuild());
 
 // The same switch that decides whether Workshop is built at all. A release
 // build has no Workshop routes, so the homepage must not link to them; one
@@ -63,6 +68,7 @@ const workshopModels = await resolveHomepageWorkshopModels(
   <SocialProofBarSection />
   <DeveloperPlatformSection client:visible />
   <MinimaxLicenseHeroSection client:visible />
+  {isWorkshopInBuild() && <ModelDiscoverySection providers={discoveryProviders} client:visible />}
   <FeaturedWorkflowsSection client:load />
   {workshopModels.length > 0 && <WorkshopSection models={workshopModels} />}
   <ProductShowcaseSection client:load />
@@ -70,5 +76,5 @@ const workshopModels = await resolveHomepageWorkshopModels(
   <GetStartedSection />
   <ProductCardsSection />
   <CaseStudySpotlightSection client:load />
-  <ModelReleaseSection client:visible />
+  <ModelReleaseSection modelLinks={await modelReleaseLinks(isWorkshopInBuild())} client:visible />
 </BaseLayout>

@@ -16,7 +16,7 @@ import { i18n } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IWidget } from '@/lib/litegraph/src/types/widgets'
 import { MediaAssetKey } from '@/platform/assets/schemas/mediaAssetSchema'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetId, AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
 import { api } from '@/scripts/api'
 import { resolveOutputAssetItems } from '../utils/outputAssetUtil'
@@ -51,7 +51,9 @@ vi.mock<unknown>(
 const mockShowDialog = vi.hoisted(() => vi.fn())
 
 const mockInvalidateModelsForCategory = vi.hoisted(() => vi.fn())
-const mockSetAssetDeleting = vi.hoisted(() => vi.fn())
+const mockSetAssetDeleting = vi.hoisted(() =>
+  vi.fn<(assetId: AssetId, isDeleting: boolean) => void>()
+)
 const mockHasCategory = vi.hoisted(() => vi.fn())
 const mockInputAssets = vi.hoisted(() => ({ items: [] as AssetItem[] }))
 
@@ -116,7 +118,9 @@ vi.mock<unknown>(import('../schemas/assetMetadataSchema'), () => ({
 vi.mock(import('../utils/outputAssetUtil'))
 const mockResolveOutputAssetItems = vi.mocked(resolveOutputAssetItems)
 
-const mockDeleteAsset = vi.hoisted(() => vi.fn())
+const mockDeleteAsset = vi.hoisted(() =>
+  vi.fn<(id: AssetId) => Promise<void>>()
+)
 const mockCreateAssetExport = vi.hoisted(() =>
   vi.fn<
     (
@@ -1308,6 +1312,81 @@ describe('useMediaAssetActions', () => {
     })
   })
 
+  describe('deleteAssets - cancellation', () => {
+    beforeEach(() => {
+      mockIsCloud.value = true
+      mockShowDialog.mockImplementation(
+        ({ props }: { props: { onConfirm: (confirmed: boolean) => void } }) => {
+          props.onConfirm(false)
+        }
+      )
+    })
+
+    it('deletes nothing when the confirmation is declined', async () => {
+      const { actions, unmount } = mountMediaActions()
+
+      await expect(
+        actions.deleteAssets(createMockAsset({ id: 'asset-1' }))
+      ).resolves.toBe(false)
+
+      expect(mockShowDialog).toHaveBeenCalledTimes(1)
+      expect(mockDeleteAsset).not.toHaveBeenCalled()
+
+      unmount()
+    })
+
+    it('deletes nothing when the dialog is dismissed without an answer', async () => {
+      mockShowDialog.mockImplementation(
+        ({
+          dialogComponentProps
+        }: {
+          dialogComponentProps: { onClose: () => void }
+        }) => {
+          dialogComponentProps.onClose()
+        }
+      )
+      const { actions, unmount } = mountMediaActions()
+
+      await expect(
+        actions.deleteAssets(createMockAsset({ id: 'asset-1' }))
+      ).resolves.toBe(false)
+
+      expect(mockShowDialog).toHaveBeenCalledTimes(1)
+      expect(mockDeleteAsset).not.toHaveBeenCalled()
+
+      unmount()
+    })
+
+    it('names every grouped output in the dialog it then cancels', async () => {
+      mockGetOutputAssetMetadata.mockReturnValue({
+        allOutputs: [
+          {
+            assetId: 'output-1',
+            display_name: 'First output',
+            filename: 'first.png'
+          },
+          { assetId: 'output-2', filename: 'second.png' }
+        ]
+      })
+      const { actions, unmount } = mountMediaActions()
+
+      await expect(
+        actions.deleteAssets(createMockAsset({ id: 'job-cover' }))
+      ).resolves.toBe(false)
+
+      expect(mockShowDialog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          props: expect.objectContaining({
+            itemList: ['First output', 'second.png']
+          })
+        })
+      )
+      expect(mockDeleteAsset).not.toHaveBeenCalled()
+
+      unmount()
+    })
+  })
+
   describe('deleteAssets - confirmation dialog item names', () => {
     beforeEach(() => {
       mockIsCloud.value = true
@@ -1497,6 +1576,112 @@ describe('useMediaAssetActions', () => {
 
       expect(mockDeleteAsset).toHaveBeenCalledWith('target')
       expect(mockInputAssets.items.map((item) => item.id)).toEqual(['keep'])
+    })
+  })
+
+  describe('deleteAssets — failures', () => {
+    beforeEach(() => {
+      mockIsCloud.value = true
+      vi.mocked(api.getServerFeature).mockReturnValue(true)
+      mockGetAssetType.mockReturnValue('input')
+      mockShowDialog.mockImplementation(
+        ({ props }: { props: { onConfirm: (confirmed: boolean) => void } }) =>
+          props.onConfirm(true)
+      )
+      mockAppGraph.value = { _nodes: [] }
+    })
+
+    it('keeps a failed asset listed and removes it once a retry succeeds', async () => {
+      mockDeleteAsset
+        .mockRejectedValueOnce(new Error('503 Service Unavailable'))
+        .mockResolvedValueOnce(undefined)
+      const actions = useMediaAssetActions()
+      const asset = createMockAsset({ id: 'asset-503', name: 'retry.png' })
+      mockInputAssets.items = [asset]
+
+      await expect(actions.deleteAssets(asset)).resolves.toBe(true)
+
+      expect(mockInputAssets.items.map((item) => item.id)).toEqual([
+        'asset-503'
+      ])
+      expect(useToast().add).toHaveBeenCalledWith({
+        severity: 'error',
+        summary: i18n.global.t('mediaAsset.assetDelete.error'),
+        detail: i18n.global.t('mediaAsset.assetsDeleted', { total: 1 }, 0),
+        life: 5000
+      })
+      expect(mockMarkMissingMedia).not.toHaveBeenCalled()
+      expect(mockClearWidgetValues).not.toHaveBeenCalled()
+
+      await expect(actions.deleteAssets(asset)).resolves.toBe(true)
+
+      expect(mockDeleteAsset).toHaveBeenCalledTimes(2)
+      expect(mockInputAssets.items).toEqual([])
+      expect(useToast().add).toHaveBeenLastCalledWith({
+        severity: 'success',
+        summary: i18n.global.t('mediaAsset.assetDelete.success'),
+        detail: i18n.global.t('mediaAsset.assetsDeleted', { total: 1 }, 1),
+        life: 2000
+      })
+    })
+
+    it('cleans up only the succeeded assets and clears every overlay when part of a batch fails', async () => {
+      mockDeleteAsset.mockImplementation(async (id) => {
+        if (id === 'asset-failed') throw new Error('503 Service Unavailable')
+      })
+      const assets = [
+        createMockAsset({ id: 'asset-first', name: 'first.png' }),
+        createMockAsset({ id: 'asset-failed', name: 'failed.png' }),
+        createMockAsset({ id: 'asset-third', name: 'third.png' })
+      ]
+      mockInputAssets.items = [...assets]
+      const succeededVariants = new Set([
+        'first.png',
+        'first.png [input]',
+        'third.png',
+        'third.png [input]'
+      ])
+
+      await useMediaAssetActions().deleteAssets(assets)
+
+      const deletedIds = mockDeleteAsset.mock.calls.map(([id]) => id)
+      expect(deletedIds).toHaveLength(3)
+      expect(new Set(deletedIds)).toEqual(
+        new Set(['asset-first', 'asset-failed', 'asset-third'])
+      )
+      expect(mockInputAssets.items.map((item) => item.id)).toEqual([
+        'asset-failed'
+      ])
+      expect(mockMarkMissingMedia).toHaveBeenCalledWith(
+        mockAppGraph.value,
+        succeededVariants
+      )
+      expect(mockClearNodePreviewCache).toHaveBeenCalledWith(
+        mockAppGraph.value,
+        succeededVariants,
+        expect.any(Function)
+      )
+      expect(mockClearWidgetValues).toHaveBeenCalledWith(
+        mockAppGraph.value,
+        succeededVariants
+      )
+      expect(mockCaptureCanvasState).toHaveBeenCalledTimes(1)
+      expect(useToast().add).toHaveBeenCalledWith({
+        severity: 'warn',
+        summary: i18n.global.t('mediaAsset.assetDelete.warn'),
+        detail: i18n.global.t('mediaAsset.assetsDeleted', { total: 3 }, 2),
+        life: 5000
+      })
+
+      const flagsById: Record<string, boolean[]> = {}
+      for (const [id, flag] of mockSetAssetDeleting.mock.calls) {
+        flagsById[id] = [...(flagsById[id] ?? []), flag]
+      }
+      expect(flagsById).toEqual({
+        'asset-first': [true, false],
+        'asset-failed': [true, false],
+        'asset-third': [true, false]
+      })
     })
   })
 })

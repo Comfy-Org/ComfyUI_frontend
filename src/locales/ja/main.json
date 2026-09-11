@@ -88,9 +88,7 @@
       "title": "クレジット不足",
       "upgradePlan": "プランをアップグレード"
     },
-    "placeholder": "アイデアを説明し、{'@'} で参照、\nグラフのノードに言及するか、アセットをドラッグ",
-    "ranToolCalls": "{count} 回のツール呼び出しを実行 | {count} 回のツール呼び出しを実行",
-    "ranToolCallsTimed": "{count} 回のツール呼び出しを {seconds} 秒間実行 | {count} 回のツール呼び出しを {seconds} 秒間実行",
+    "placeholder": "アイデアを説明し、{'@'}でワークフローを参照、メディアアセットやファイルをドラッグ＆ドロップ、または\nノードに言及",
     "remove": "削除",
     "removeNodeLabel": "{node} の参照を削除",
     "runApproval": {
@@ -138,15 +136,21 @@
     "switchWorkflow": "ワークフローを切り替え",
     "targetNavigationUnavailable": "このワークフローのターゲットは利用できなくなりました。",
     "thinking": "考え中...",
-    "thought": "思考",
-    "thoughtTimed": "{seconds} 秒間思考",
     "title": "Comfy Agent",
+    "toolForgettingPreference": "設定を削除しています",
     "toolForgotPreference": "設定を削除しました",
     "toolOpenedNewTab": "新しいタブを開きました",
+    "toolOpeningNewTab": "新しいタブを開いています",
     "toolSavedPreference": "設定を保存しました",
+    "toolSavingPreference": "設定を保存しています",
     "toolSwitchedTabs": "タブを切り替えました",
+    "toolSwitchingTabs": "タブを切り替えています",
     "untitledChat": "無題",
-    "uploading": "アップロード中"
+    "uploading": "アップロード中",
+    "worked": "完了",
+    "workedForMinutes": "{minutes}分{seconds}秒間処理しました",
+    "workedForSeconds": "{seconds}秒間処理しました",
+    "working": "処理中..."
   },
   "apiNodesSignInDialog": {
     "message": "パートナーノードはサードパーティーのサービス上で実行され、アカウントのクレジットを使用します。アカウントを接続するにはサインインしてください。",
@@ -385,9 +389,9 @@
       "auth/popup-closed-by-user": "サインインが完了する前にサインインウィンドウが閉じられました。もう一度お試しください。",
       "auth/too-many-requests": "ログイン試行回数が多すぎます。しばらく待ってからもう一度お試しください。",
       "auth/user-disabled": "このアカウントは無効化されています。サポートまでご連絡ください。",
-      "auth/user-not-found": "このメールアドレスに紐づくアカウントが見つかりません。新しいアカウントを作成しますか？",
+      "auth/user-not-found": "ログイン認証情報が無効です。メールアドレスとパスワードを確認してください。",
       "auth/weak-password": "パスワードが弱すぎます。6文字以上のより強力なパスワードを使用してください。",
-      "auth/wrong-password": "入力されたパスワードが正しくありません。もう一度お試しください。",
+      "auth/wrong-password": "ログイン認証情報が無効です。メールアドレスとパスワードを確認してください。",
       "generic": "サインイン中に問題が発生しました。もう一度お試しください。",
       "signupBlocked": "現在アカウントを作成できません。しばらくしてから再度お試しください。繰り返し発生する場合は support@comfy.org までご連絡ください。"
     },
@@ -1938,6 +1942,7 @@
     "recents": "最近使用",
     "reconnected": "再接続されました",
     "reconnecting": "再接続中",
+    "recordingFailedToStart": "録画を開始できませんでした",
     "refresh": "更新",
     "refreshNode": "ノードを更新",
     "relativeTime": {
@@ -2508,6 +2513,7 @@
       "wireframe": "ワイヤーフレーム"
     },
     "menuBar": {
+      "animationClip": "アニメーションクリップ",
       "bgColor": "背景色",
       "bgImage": "背景画像",
       "customUp": "カスタム上方向",
@@ -2519,6 +2525,7 @@
       "naturalUp": "自然な上方向",
       "originalMaterialOnly": "オリジナルマテリアルのみ",
       "panorama": "パノラマ",
+      "playbackSpeed": "再生速度",
       "record": "録画",
       "recording": "録画中",
       "removeBackground": "背景を削除",
@@ -2846,6 +2853,7 @@
     "deleteHistoryOnly": "履歴のみが影響を受け、ファイルはディスクに残ります",
     "deleteItems": "これらの項目を削除",
     "deletePermanent": "完全に削除されます。",
+    "deleteTombstone": "ComfyUIには表示されなくなりますが、ディスク上には残ります",
     "deletingImportedFilesCloudOnly": "インポートしたファイルの削除はクラウド版でのみサポートされています",
     "deletionUnsupported": "アセットは有効ですが、サーバーは削除をサポートしていません",
     "failedToCreateNode": "ノードの作成に失敗しました",
@@ -4543,7 +4551,7 @@
     "pricingBlurbEnterprise": "エンタープライズのご相談",
     "pricingBlurbQuestions": "ご質問",
     "pricingBlurbSeeDetails": "詳細を見る",
-    "reactivatePlan": "プランを再開",
+    "reactivatePlan": "サブスクリプションを再開",
     "reactivateToUseCredits": "これらのクレジットを使用するにはプランを再有効化してください",
     "refillsDate": "{date}に補充",
     "refillsNextCycle": "次のサイクルで補充",
@@ -4562,7 +4570,7 @@
     "resubscribe": "再購読する",
     "resubscribeFailed": "サブスクリプションの再有効化に失敗しました",
     "resubscribeSuccess": "サブスクリプションが再開されました",
-    "resubscribeTo": "{plan}を再購読する",
+    "resubscribeTo": "{plan}を再開",
     "salesManagedRunBlockedDetail": "このワークスペースのプランは現在無効です。アクセスを復元するには、Comfyのアカウントマネージャーにお問い合わせください。",
     "salesManagedRunBlockedTitle": "プランが無効です",
     "saveYearly": "20%お得",
@@ -5042,8 +5050,8 @@
     },
     "billingStatus": {
       "ending": {
-        "body": "それまではメンバーはすべての機能にアクセスできます。共有クレジットとシートを維持するには再アクティベートしてください。",
-        "reactivate": "プランを再アクティベート",
+        "body": "それまでメンバーはすべての機能を利用できます。共有クレジットとシートを維持するには、サブスクリプションを再開してください。",
+        "reactivate": "サブスクリプションを再開",
         "title": "チームプランは{date}に終了します"
       },
       "outOfCredits": {

@@ -26,19 +26,27 @@ const EMBED_HOSTS = new Set([
   'www.youtube-nocookie.com',
   'demo.arcade.software'
 ])
-const MEDIA_PATTERN =
-  /^https:\/\/(media|comfy-hub-assets)\.comfy\.org\/.*\.(webp|webm|mp4|png|jpg|jpeg|gif|avif|vtt)(\?.*)?$/i
+const MEDIA_PATTERNS = [
+  /^https:\/\/(?:media|comfy-hub-assets)\.comfy\.org\/.*\.(?:webp|webm|mp4|png|jpg|jpeg|gif|avif|vtt)(?:\?.*)?$/i,
+  /^https:\/\/raw\.githubusercontent\.com\/Comfy-Org\/workflow_templates\/main\/templates\/.*\.(?:webp|webm|mp4|png|jpg|jpeg|gif|avif|vtt)(?:\?.*)?$/i,
+  /^https:\/\/cdn\.jsdelivr\.net\/gh\/Comfy-Org\/workflow_templates@(?:main|[0-9a-f]{40})\/(?:input|output|templates)\/.*\.(?:webp|webm|mp4|png|jpg|jpeg|gif|avif|vtt)(?:\?.*)?$/i,
+  /^https:\/\/assets\.sync\.so\/docs\/example-(?:audio\.wav|video\.mp4)$/i
+]
 const NODE_IMAGE_HOSTS = new Set([
   'avatars.githubusercontent.com',
   'raw.githubusercontent.com'
 ])
 const VIDEO_PATTERN = /\.(webm|mp4)(\?|$)/i
+const AUDIO_PATTERN = /\.wav(\?|$)/i
 const SUBTITLE_PATTERN = /\.vtt(\?|$)/i
 
 async function fulfillMedia(route: Route) {
   const url = route.request().url()
   if (VIDEO_PATTERN.test(url))
     return route.fulfill({ path: VIDEO_PLACEHOLDER, status: 200 })
+
+  if (AUDIO_PATTERN.test(url))
+    return route.fulfill({ status: 200, contentType: 'audio/wav', body: '' })
 
   if (SUBTITLE_PATTERN.test(url))
     return route.fulfill({
@@ -93,7 +101,8 @@ export const test = base.extend({
             src: url(data:font/woff2;base64,${INTER_FONT}) format('woff2');
           }`
         })
-      if (MEDIA_PATTERN.test(url.href)) return fulfillMedia(route)
+      if (MEDIA_PATTERNS.some((pattern) => pattern.test(url.href)))
+        return fulfillMedia(route)
       if (
         NODE_IMAGE_HOSTS.has(url.hostname) &&
         route.request().resourceType() === 'image'

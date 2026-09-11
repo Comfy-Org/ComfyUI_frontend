@@ -2,6 +2,7 @@ import { toString } from 'es-toolkit/compat'
 import { shallowRef, toRaw } from 'vue'
 
 import { assert } from '@/base/assert'
+import { adoptPromotedWidgetValue } from '@/core/graph/subgraph/adoptPromotedWidgetValue'
 import {
   getAgreedLinkPresentation,
   transferLinkPresentation
@@ -54,12 +55,7 @@ import {
   observeRerouteId
 } from './idAllocation'
 import type { LGraphState } from './idAllocation'
-import {
-  inputHasLink,
-  inputLink,
-  outputHasLinks,
-  outputLinks
-} from './node/slotLinks'
+import { inputHasLink, outputHasLinks, outputLinks } from './node/slotLinks'
 import { normalizeWidgetsView } from './node/widgetsView'
 import { clearNodeOwnedStoreState } from '@/stores/clearNodeOwnedStoreState'
 import { useEntityIdStore } from '@/stores/entityIdStore'
@@ -142,6 +138,7 @@ import { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import { SubgraphOutput } from './subgraph/SubgraphOutput'
 import { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
 import {
+  findUnresolvableSubgraphLink,
   findReleasableSubgraphs,
   findUsedSubgraphIds,
   getBoundaryLinks,
@@ -2434,9 +2431,28 @@ export class LGraph
   unpackSubgraph(
     subgraphNode: SubgraphNode,
     options?: { skipMissingNodes?: boolean }
-  ) {
+  ): boolean {
     if (!(subgraphNode instanceof SubgraphNode))
       throw new Error('Can only unpack Subgraph Nodes')
+
+    const malformedLink = findUnresolvableSubgraphLink(subgraphNode)
+    if (malformedLink) {
+      reportError(
+        new Error('Cannot unpack subgraph: unresolvable inner link'),
+        {
+          errorType: 'error_unpacking_subgraph_link',
+          context: {
+            subgraphNodeId: subgraphNode.id,
+            linkId: malformedLink.id,
+            originId: malformedLink.origin_id,
+            originSlot: malformedLink.origin_slot,
+            targetId: malformedLink.target_id,
+            targetSlot: malformedLink.target_slot
+          }
+        }
+      )
+      return false
+    }
 
     // Record state before unpacking for proper undo support
     this.beforeChange()
@@ -2447,6 +2463,7 @@ export class LGraph
       // Mark state change complete for proper undo support
       this.afterChange()
     }
+    return true
   }
 
   private _unpackSubgraphImpl(
@@ -2536,10 +2553,30 @@ export class LGraph
         subgraphScope,
         link.id
       )
+      const subgraphInput =
+        link.origin_id === SUBGRAPH_INPUT_ID
+          ? link.resolve(subgraphNode.subgraph).subgraphInput
+          : undefined
+      const hostInput = subgraphInput
+        ? subgraphNode.inputs.find(
+            (input) => input._subgraphSlot?.id === subgraphInput.id
+          )
+        : undefined
+      if (link.origin_id === SUBGRAPH_INPUT_ID && !hostInput) {
+        console.error('Missing host input when unpacking subgraph')
+        continue
+      }
       const outerLink =
         link.origin_id === SUBGRAPH_INPUT_ID
-          ? inputLink(this, subgraphNode.id, link.origin_slot)
+          ? this.getLink(hostInput?.link)
           : undefined
+      if (link.origin_id === SUBGRAPH_INPUT_ID && !outerLink) {
+        const interiorNode = this.getNodeById(nodeIdMap.get(link.target_id))
+        if (hostInput && interiorNode) {
+          adoptPromotedWidgetValue(hostInput, interiorNode, link.target_slot)
+        }
+        continue
+      }
       const originId =
         link.origin_id === SUBGRAPH_INPUT_ID
           ? outerLink?.origin_id

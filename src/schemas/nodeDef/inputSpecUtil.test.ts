@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { setAssertReporter } from '@/base/assert'
 import { flattenInputSpecs } from '@/schemas/nodeDef/inputSpecUtil'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
@@ -207,7 +208,14 @@ describe('flattenInputSpecs', () => {
     )
 
     vi.stubEnv('DEV', false)
+    const reporter = vi.fn()
+    setAssertReporter(reporter)
     const result = flattenInputSpecs(nodeDefImpl.inputs)
     expect(result.map((spec) => spec.name)).toEqual(['model'])
+    expect(reporter).toHaveBeenCalledWith(
+      expect.stringContaining('expected an options array'),
+      { specName: 'model' }
+    )
+    setAssertReporter(null)
   })
 })

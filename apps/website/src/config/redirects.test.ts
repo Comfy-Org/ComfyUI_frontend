@@ -82,7 +82,9 @@ describe('astro redirect destinations', () => {
 
   it('every destination ends with a trailing slash', () => {
     const slashless = destinations.filter(
-      (destination) => !destination.endsWith('/')
+      // A dynamic destination names a route rather than a URL, and Astro
+      // rejects it outright when it carries a trailing slash.
+      (destination) => !destination.includes('[') && !destination.endsWith('/')
     )
     expect(
       slashless,

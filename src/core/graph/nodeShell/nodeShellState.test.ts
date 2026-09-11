@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { toRaw } from 'vue'
 
+import { setAssertReporter } from '@/base/assert'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
@@ -122,6 +123,8 @@ describe('node registration invariants', () => {
 
   it('drops the previous root entry rather than stranding it', () => {
     vi.stubEnv('DEV', false)
+    const reporter = vi.fn()
+    setAssertReporter(reporter)
     const first = new LGraph()
     first.id = createUuidv4()
     const second = new LGraph()
@@ -135,6 +138,15 @@ describe('node registration invariants', () => {
     const owningGraphId = node._state.graphId
     expect(store.getGraphNodesFor(first.id, owningGraphId)).toEqual([])
     expect(store.getGraphNodesFor(second.id, owningGraphId)).toHaveLength(1)
+    expect(reporter).toHaveBeenCalledWith(
+      expect.stringContaining('different root graph'),
+      {
+        nodeId: node.id,
+        previousRootGraphId: first.id,
+        nextRootGraphId: second.id
+      }
+    )
+    setAssertReporter(null)
   })
 
   it('reports a state that drifted out of its bucket before unregistering', () => {
@@ -151,5 +163,29 @@ describe('node registration invariants', () => {
 
     expect(() => unregisterNodeState(node)).toThrow(/identity drift/)
     expect(node._graphScope).toBeUndefined()
+  })
+
+  it('reports the drifted node and graph as structured context', () => {
+    vi.stubEnv('DEV', false)
+    const reporter = vi.fn()
+    setAssertReporter(reporter)
+    const graph = new LGraph()
+    const node = new LGraphNode('Node')
+    graph.add(node)
+    node._state = createNodeShellState(
+      node,
+      createInputSlotView,
+      'Node',
+      'test',
+      undefined
+    )
+
+    unregisterNodeState(node)
+
+    expect(reporter).toHaveBeenCalledWith(
+      expect.stringContaining('identity drift'),
+      { nodeId: node.id, rootGraphId: graph.id }
+    )
+    setAssertReporter(null)
   })
 })

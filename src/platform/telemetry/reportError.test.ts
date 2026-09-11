@@ -4,6 +4,13 @@ const captureException = vi.fn()
 const isEnabled = vi.fn()
 const addError = vi.fn()
 const getInitConfiguration = vi.fn()
+const mockIsCloud = { value: false }
+
+vi.mock(import('@/platform/distribution/types'), () => ({
+  get isCloud() {
+    return mockIsCloud.value
+  }
+}))
 
 vi.mock(import('@sentry/vue'), () => ({
   captureException: (...args: unknown[]) => captureException(...args),
@@ -28,6 +35,7 @@ const datadogLive = (live: boolean) =>
 
 describe('reportError', () => {
   beforeEach(() => {
+    mockIsCloud.value = false
     sentryLive(true)
     datadogLive(true)
   })
@@ -133,6 +141,26 @@ describe('reportError', () => {
     expect(addError).toHaveBeenCalledOnce()
   })
 
+  it('retains the Datadog delivery when Sentry starts first on cloud', async () => {
+    mockIsCloud.value = true
+    datadogLive(false)
+    const { reportError, flushErrorReports } = await loadReportError()
+    const error = new Error('early assertion')
+
+    reportError(error, { errorType: 'invariant_assert' })
+    flushErrorReports()
+
+    expect(captureException).toHaveBeenCalledOnce()
+    expect(addError).not.toHaveBeenCalled()
+
+    datadogLive(true)
+    flushErrorReports()
+    flushErrorReports()
+
+    expect(captureException).toHaveBeenCalledOnce()
+    expect(addError).toHaveBeenCalledOnce()
+  })
+
   it('bounds the buffer so a boot-time error storm cannot grow without limit', async () => {
     sentryLive(false)
     datadogLive(false)
@@ -188,6 +216,40 @@ describe('reportError', () => {
     })
 
     expect(() => flushErrorReports()).not.toThrow()
+  })
+
+  it('does not resend to Sentry when a buffered Datadog delivery fails', async () => {
+    mockIsCloud.value = true
+    sentryLive(false)
+    datadogLive(false)
+    const { reportError, flushErrorReports } = await loadReportError()
+
+    reportError(new Error('cold boot'), { errorType: 'invariant_assert' })
+
+    sentryLive(true)
+    datadogLive(true)
+    addError.mockImplementationOnce(() => {
+      throw new Error('datadog exploded')
+    })
+    flushErrorReports()
+    flushErrorReports()
+
+    expect(captureException).toHaveBeenCalledOnce()
+    expect(addError).toHaveBeenCalledTimes(2)
+  })
+
+  it('retries only Sentry when its cloud delivery fails', async () => {
+    mockIsCloud.value = true
+    captureException.mockImplementationOnce(() => {
+      throw new Error('sentry exploded')
+    })
+    const { reportError, flushErrorReports } = await loadReportError()
+
+    reportError(new Error('boom'), { errorType: 'invariant_assert' })
+    flushErrorReports()
+
+    expect(captureException).toHaveBeenCalledTimes(2)
+    expect(addError).toHaveBeenCalledOnce()
   })
 
   it('writes the failure to the console so callers need no second sink', async () => {
@@ -246,7 +308,7 @@ describe('reportError', () => {
     expect(consoleError).toHaveBeenCalledOnce()
   })
 
-  it('does not throw when a sink throws', async () => {
+  it('still reports to Datadog when Sentry throws', async () => {
     captureException.mockImplementation(() => {
       throw new Error('sentry exploded')
     })
@@ -257,5 +319,6 @@ describe('reportError', () => {
         errorType: 'bootstrap_auth_wait_timeout'
       })
     ).not.toThrow()
+    expect(addError).toHaveBeenCalledOnce()
   })
 })

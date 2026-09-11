@@ -4455,17 +4455,23 @@ export type AgentRunMode = {
  */
 export type AgentPostMessageRequest = {
   /**
-   * Optional input filenames the client already uploaded to the ComfyUI input namespace (via /api/upload/image, which returns the {name, subfolder, type} reference). Images, video and audio are all accepted. The agent wires them into the workflow by filename — it never receives file bytes here, and reads an attachment's contents through its own asset tools when a request depends on them.
-   */
-  attachments?: Array<string>
-  /**
    * The user's message.
    */
   content: string
   /**
-   * Cloud workflow id of the client's active tab (should appear in open_tabs). When present and authorized it selects the workflow the turn starts focused on — explicit workflow_id > current_tab > the thread's remembered workflow.
+   * When present, the agent edits this workflow's draft. Ownership-checked (403 if not the caller's workflow).
    */
-  current_tab?: string
+  workflow_id?: string
+  /**
+   * Optional canvas selection context ("change these nodes").
+   */
+  selection?: {
+    [key: string]: unknown
+  }
+  /**
+   * Optional input filenames the client already uploaded to the ComfyUI input namespace (via /api/upload/image, which returns the {name, subfolder, type} reference). Images, video and audio are all accepted. The agent wires them into the workflow by filename — it never receives file bytes here, and reads an attachment's contents through its own asset tools when a request depends on them.
+   */
+  attachments?: Array<string>
   /**
    * The client's live canvas, sent so the agent operates on what the user currently sees instead of an empty or stale draft. Reuses the {content, version} shape returned by GET /api/agent/draft. Additive — older clients omit it and the agent falls back to the stored draft.
    */
@@ -4482,28 +4488,29 @@ export type AgentPostMessageRequest = {
     version?: number | null
   }
   /**
-   * Snapshot of the client's open workflow tabs that have cloud workflow ids (local-only/unsaved tabs are omitted), so the agent knows the user's real tab strip and can switch between tabs. Advisory context, not a grant — entries not in the caller's workspace are ignored. Additive — older clients omit it.
+   * Snapshot of the client's open editor tabs in editor order. Advisory context, not a grant — entries outside the caller's workspace are ignored. With workflow_references present, only the editable target and explicit references enter the model's workflow context.
    */
   open_tabs?: Array<{
-    /**
-     * Display name of the tab, shown to the agent so the user can reference tabs by name.
-     */
-    name?: string
     /**
      * Cloud workflow id of the open tab.
      */
     workflow_id: string
+    /**
+     * Display name of the tab, shown to the agent so the user can reference tabs by name.
+     */
+    name?: string
   }>
   /**
-   * Optional canvas selection context ("change these nodes").
+   * Cloud workflow id of the client's active editor tab; no ordering requirement. Modern clients use workflow_id for the editable target and omit this field. When present and authorized it selects the workflow the turn starts focused on — explicit workflow_id > current_tab > the thread's remembered workflow.
    */
-  selection?: {
-    [key: string]: unknown
-  }
+  current_tab?: string
   /**
-   * When present, the agent edits this workflow's draft. Ownership-checked (403 if not the caller's workflow).
+   * Explicit read-only workflow references for this turn, independent of open_tabs. Omitted preserves legacy open-tab context; an empty array means no additional workflow context. The editable target is selected by workflow_id and excluded from references. Entries are workspace-authorized, deduplicated, capped at 50, and names truncated to 120 characters. References need not be open in the editor. Unknown or inaccessible references, including authorization lookup failures, are retained as unavailable metadata so the agent can acknowledge missing context; no workflow content or access is granted.
    */
-  workflow_id?: string
+  workflow_references?: Array<{
+    workflow_id: string
+    name?: string
+  }>
 }
 
 /**
@@ -4541,21 +4548,14 @@ export type AgentPendingAsk = {
  * A persisted message in an agent thread.
  */
 export type AgentMessage = {
-  /**
-   * Message payload. User turns carry {text, attachments?} (attachments are the input-image filenames from the request); assistant turns carry {text} — the final answer text (or error copy on a failed turn). Omitted when empty (e.g. an assistant message still streaming). Per-turn token accounting is NOT included here; it is surfaced on the agent_message_done WebSocket broadcast.
-   */
-  content?: {
-    [key: string]: unknown
-  }
   id: string
-  pending_ask?: AgentPendingAsk
-  role: 'user' | 'assistant' | 'tool' | 'system'
+  thread_id: string
   /**
    * Monotonic ordering within the thread.
    */
   seq: number
+  role: 'user' | 'assistant' | 'tool' | 'system'
   status: 'streaming' | 'complete' | 'error' | 'interrupted'
-  thread_id: string
   /**
    * Groups the user message, assistant reply, and its tool calls.
    */
@@ -4564,6 +4564,13 @@ export type AgentMessage = {
    * The workflow/draft this turn operated on. Recorded per message so a thread can span or switch workflows over its lifetime; the thread's own workflow_id is only the active-workflow pointer. Empty for a workflow-less turn.
    */
   workflow_id?: string
+  /**
+   * Message payload. User turns carry {text, attachments?, workflow_references?}. Attachments are the input-image filenames from the request. workflow_references is an optional array of explicit non-target references, each with workflow_id and name (an empty string when no name was supplied). An optional unavailable: true records that the reference could not be authorized at turn start, without distinguishing unknown IDs, inaccessible workflows, or lookup failures. These entries preserve the user's reference intent without exposing workflow content; the frontend restores reference chips from this metadata. The field is omitted when there are no references. Assistant turns carry {text} — the final answer text (or error copy on a failed turn). Omitted when empty (e.g. an assistant message still streaming). Per-turn token accounting is NOT included here; it is surfaced on the agent_message_done WebSocket broadcast.
+   */
+  content?: {
+    [key: string]: unknown
+  }
+  pending_ask?: AgentPendingAsk
 }
 
 /**

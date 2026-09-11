@@ -88,9 +88,7 @@
       "title": "اعتبار کافی ندارید",
       "upgradePlan": "ارتقای طرح"
     },
-    "placeholder": "ایده‌ها را توضیح دهید، {'@'} برای ارجاع،\nبه nodeهای نمودار اشاره کنید یا assetها را بکشید و رها کنید",
-    "ranToolCalls": "{count} فراخوانی ابزار اجرا شد | {count} فراخوانی ابزار اجرا شد",
-    "ranToolCallsTimed": "{count} فراخوانی ابزار به‌مدت {seconds} ثانیه اجرا شد | {count} فراخوانی ابزار به‌مدت {seconds} ثانیه اجرا شد",
+    "placeholder": "ایده‌ها را شرح دهید، {'@'} برای ارجاع به workflowها، دارایی‌های رسانه‌ای و فایل‌ها را بکشید و رها کنید، یا\nnodeها را ذکر کنید",
     "remove": "حذف",
     "removeNodeLabel": "حذف ارجاع {node}",
     "runApproval": {
@@ -138,15 +136,21 @@
     "switchWorkflow": "تغییر workflow",
     "targetNavigationUnavailable": "این مقصد workflow دیگر در دسترس نیست.",
     "thinking": "در حال فکر کردن...",
-    "thought": "تفکر",
-    "thoughtTimed": "تفکر به‌مدت {seconds} ثانیه",
     "title": "Comfy Agent",
+    "toolForgettingPreference": "در حال فراموش کردن یک ترجیح",
     "toolForgotPreference": "یک ترجیح فراموش شد",
     "toolOpenedNewTab": "یک زبانهٔ جدید باز شد",
+    "toolOpeningNewTab": "در حال باز کردن یک زبانهٔ جدید",
     "toolSavedPreference": "یک ترجیح ذخیره شد",
+    "toolSavingPreference": "در حال ذخیرهٔ یک ترجیح",
     "toolSwitchedTabs": "زبانه‌ها جابه‌جا شدند",
+    "toolSwitchingTabs": "در حال جابه‌جایی بین زبانه‌ها",
     "untitledChat": "بدون عنوان",
-    "uploading": "در حال بارگذاری"
+    "uploading": "در حال بارگذاری",
+    "worked": "انجام شد",
+    "workedForMinutes": "به‌مدت {minutes}m {seconds}s انجام شد",
+    "workedForSeconds": "به‌مدت {seconds} ثانیه انجام شد",
+    "working": "در حال انجام..."
   },
   "apiNodesSignInDialog": {
     "message": "گره‌های شریک روی سرویس‌های شخص ثالث اجرا می‌شوند و از اعتبارهای حساب شما استفاده می‌کنند. لطفاً برای اتصال حساب خود وارد شوید.",
@@ -385,9 +389,9 @@
       "auth/popup-closed-by-user": "پنجره ورود پیش از تکمیل ورود بسته شد. لطفاً دوباره تلاش کنید.",
       "auth/too-many-requests": "تعداد دفعات تلاش برای ورود بیش از حد مجاز است. لطفاً کمی صبر کنید و دوباره تلاش کنید.",
       "auth/user-disabled": "این حساب غیرفعال شده است. لطفاً با پشتیبانی تماس بگیرید.",
-      "auth/user-not-found": "حسابی با این ایمیل یافت نشد. مایل به ایجاد حساب جدید هستید؟",
+      "auth/user-not-found": "اطلاعات ورود نامعتبر است. لطفاً ایمیل و گذرواژهٔ خود را بررسی کنید.",
       "auth/weak-password": "رمز عبور خیلی ضعیف است. لطفاً از رمز عبور قوی‌تر با حداقل ۶ کاراکتر استفاده کنید.",
-      "auth/wrong-password": "رمز عبور وارد شده نادرست است. لطفاً دوباره تلاش کنید.",
+      "auth/wrong-password": "اطلاعات ورود نامعتبر است. لطفاً ایمیل و گذرواژهٔ خود را بررسی کنید.",
       "generic": "در ورود شما مشکلی پیش آمد. لطفاً دوباره تلاش کنید.",
       "signupBlocked": "در حال حاضر امکان ایجاد حساب کاربری وجود ندارد. لطفاً بعداً دوباره تلاش کنید. اگر این مشکل ادامه داشت، با support@comfy.org تماس بگیرید."
     },
@@ -1938,6 +1942,7 @@
     "recents": "اخیراً",
     "reconnected": "اتصال مجدد برقرار شد",
     "reconnecting": "در حال اتصال مجدد",
+    "recordingFailedToStart": "شروع ضبط ممکن نشد",
     "refresh": "بازنشانی",
     "refreshNode": "بازنشانی node",
     "relativeTime": {
@@ -2508,6 +2513,7 @@
       "wireframe": "سیمی"
     },
     "menuBar": {
+      "animationClip": "کلیپ انیمیشن",
       "bgColor": "رنگ پس‌زمینه",
       "bgImage": "تصویر پس‌زمینه",
       "customUp": "بالای سفارشی",
@@ -2519,6 +2525,7 @@
       "naturalUp": "بالای طبیعی",
       "originalMaterialOnly": "فقط متریال اصلی",
       "panorama": "پانوراما",
+      "playbackSpeed": "سرعت پخش",
       "record": "ضبط",
       "recording": "در حال ضبط",
       "removeBackground": "حذف پس‌زمینه",
@@ -2846,6 +2853,7 @@
     "deleteHistoryOnly": "فقط تاریخچه تحت تأثیر قرار می‌گیرد؛ فایل‌ها روی دیسک باقی می‌مانند",
     "deleteItems": "حذف این موارد",
     "deletePermanent": "این موارد به‌طور دائمی حذف خواهند شد.",
+    "deleteTombstone": "دیگر در ComfyUI نمایش داده نخواهند شد، اما روی دیسک باقی می‌مانند",
     "deletingImportedFilesCloudOnly": "حذف فایل‌های واردشده فقط در نسخه ابری پشتیبانی می‌شود",
     "deletionUnsupported": "دارایی‌ها فعال‌اند، اما سرور از حذف پشتیبانی نمی‌کند",
     "failedToCreateNode": "ایجاد node ناموفق بود",
@@ -4543,7 +4551,7 @@
     "pricingBlurbEnterprise": "بحث‌های سازمانی",
     "pricingBlurbQuestions": "سؤالات",
     "pricingBlurbSeeDetails": "جزئیات را ببینید",
-    "reactivatePlan": "فعال‌سازی مجدد پلن",
+    "reactivatePlan": "ازسرگیری اشتراک",
     "reactivateToUseCredits": "برای استفاده از این اعتبارها، طرح خود را مجدداً فعال کنید.",
     "refillsDate": "شارژ مجدد در {date}",
     "refillsNextCycle": "شارژ مجدد در چرخه بعدی",
@@ -4562,7 +4570,7 @@
     "resubscribe": "تمدید اشتراک",
     "resubscribeFailed": "فعال‌سازی مجدد اشتراک ناموفق بود",
     "resubscribeSuccess": "اشتراک با موفقیت فعال شد",
-    "resubscribeTo": "تمدید اشتراک {plan}",
+    "resubscribeTo": "ازسرگیری {plan}",
     "salesManagedRunBlockedDetail": "طرح این فضای کاری دیگر فعال نیست. برای بازیابی دسترسی با مدیر حساب Comfy خود تماس بگیرید.",
     "salesManagedRunBlockedTitle": "طرح غیرفعال است",
     "saveYearly": "٪۲۰ صرفه‌جویی",
@@ -5042,8 +5050,8 @@
     },
     "billingStatus": {
       "ending": {
-        "body": "اعضا تا آن زمان دسترسی کامل خواهند داشت. برای حفظ اعتبار و ظرفیت اشتراکی، پلن را مجدداً فعال کنید.",
-        "reactivate": "فعال‌سازی مجدد پلن",
+        "body": "اعضا تا آن زمان دسترسی کامل خواهند داشت. برای حفظ اعتبارها و جایگاه‌های اشتراکی خود، اشتراکتان را از سر بگیرید.",
+        "reactivate": "ازسرگیری اشتراک",
         "title": "پلن تیم شما در تاریخ {date} به پایان می‌رسد"
       },
       "outOfCredits": {

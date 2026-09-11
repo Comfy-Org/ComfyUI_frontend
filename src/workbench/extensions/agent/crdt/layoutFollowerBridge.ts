@@ -1,3 +1,5 @@
+import { reportError } from '@/platform/telemetry/reportError'
+
 import type {
   DocFrameClient,
   DocOp,
@@ -5,6 +7,7 @@ import type {
   DocSubscribed,
   DocUpdate
 } from './docFrameClient'
+import { wireLog } from './crdtLog'
 import { FollowerDoc } from './followerDoc'
 import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
 
@@ -19,7 +22,18 @@ function trySend(send: () => boolean): boolean {
   try {
     return send()
   } catch (error) {
-    console.warn('[agent-crdt] outbound doc frame dropped', error)
+    reportError(error, {
+      errorType: 'failure_sending_agent_doc_frame',
+      logToConsole: false,
+      tags: {
+        failure_kind: 'caught_unexpected',
+        feature_area: 'agent',
+        operation: 'sync',
+        outcome: 'recovered'
+      },
+      level: 'error'
+    })
+    wireLog.warn('frame_send_failed', 'outbound doc frame dropped', error)
     return false
   }
 }

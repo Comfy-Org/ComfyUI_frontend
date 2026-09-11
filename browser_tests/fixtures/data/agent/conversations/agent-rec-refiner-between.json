@@ -1,0 +1,420 @@
+{
+  "schema_version": "agent-conversation.v2",
+  "source": {
+    "repo": "Comfy-Org/ComfyUI_frontend",
+    "suite": "agent",
+    "case_id": "agent-rec-refiner-between",
+    "response_side": "recorded",
+    "note": "RECORDED from Comfy-Org/cloud services/agent running NON-standalone local full stack (Postgres + doc host, M2M identity headers) at http://127.0.0.1:8086 (frames: redis SUBSCRIBE channel:ws:<workspace>:u:<user>); NOT a production capture. cloud commit 9dc1da7dae2a1d40a9ca1f2a1f91cd9fd9e10900; model claude-opus-5; thread 5208dc27-0c2c-4ff3-ad1d-bf7e9ad79e9a; message b363781f-6c9a-4087-9190-d478781bbcd2; workflow b7d1e09f-682a-48f5-a388-d74a33ad5184 (seeded by throwaway turn 52d56bcf-7eb0-4131-a287-223e0f15e2e9; the recorded turn opens on a fresh workflow and switches to it first because the replay subscribes only on an agent_active_tab frame, see plan Q4); agent_tool_calls parent rows ['2f4c246a-f0c7-4ca4-ad48-814bc2fe9ab6', '9727d8d7-19f4-48eb-98e6-5c054d3d6cf0', '22b43a2d-5fe8-49c0-8339-e2b3b52bf184', '33953182-42ff-46a6-a0d5-313c5a55d630', '349abb83-7fed-424e-8fb5-dc94e412aa90']; rows agent-rec-refiner-between.t-a1.rows.json; raw capture sha256 242b1c822b8b7697bdcdf1448030181ef0bb1049806870e9075077ca44897768",
+    "capture": {
+      "backend": "Comfy-Org/cloud",
+      "thread_id": "5208dc27-0c2c-4ff3-ad1d-bf7e9ad79e9a",
+      "exported_at": "2026-09-03T12:40:55Z"
+    }
+  },
+  "workflow": {
+    "id": "b7d1e09f-682a-48f5-a388-d74a33ad5184",
+    "name": "Text to image",
+    "catalog": {
+      "types": {
+        "CheckpointLoaderSimple": {
+          "widget_order": ["ckpt_name"]
+        },
+        "CLIPTextEncode": {
+          "widget_order": ["text"]
+        },
+        "KSampler": {
+          "widget_order": [
+            "seed",
+            "control_after_generate",
+            "steps",
+            "cfg",
+            "sampler_name",
+            "scheduler",
+            "denoise"
+          ]
+        },
+        "VAEDecode": {
+          "widget_order": []
+        },
+        "SaveImage": {
+          "widget_order": ["filename_prefix"]
+        },
+        "PrimitiveStringMultiline": {
+          "widget_order": ["value"]
+        },
+        "EmptyLatentImage": {
+          "widget_order": ["width", "height", "batch_size"]
+        }
+      }
+    },
+    "seed": {
+      "nodes": [
+        {
+          "id": 4,
+          "type": "CheckpointLoaderSimple",
+          "pos": [0, 0],
+          "size": [315, 98],
+          "inputs": [],
+          "outputs": [
+            {
+              "name": "MODEL",
+              "type": "MODEL",
+              "links": [3]
+            },
+            {
+              "name": "CLIP",
+              "type": "CLIP",
+              "links": [1]
+            },
+            {
+              "name": "VAE",
+              "type": "VAE",
+              "links": [5]
+            }
+          ],
+          "widgets_values": ["sd_xl_base_1.0.safetensors"]
+        },
+        {
+          "id": 6,
+          "type": "CLIPTextEncode",
+          "title": "Positive prompt",
+          "pos": [400, 0],
+          "size": [400, 200],
+          "inputs": [
+            {
+              "name": "clip",
+              "type": "CLIP",
+              "link": 1
+            },
+            {
+              "name": "text",
+              "type": "STRING",
+              "widget": {
+                "name": "text"
+              },
+              "link": null
+            }
+          ],
+          "outputs": [
+            {
+              "name": "CONDITIONING",
+              "type": "CONDITIONING",
+              "links": [2]
+            }
+          ],
+          "widgets_values": ["a photo of a pier"]
+        },
+        {
+          "id": 3,
+          "type": "KSampler",
+          "pos": [850, 0],
+          "size": [315, 262],
+          "inputs": [
+            {
+              "name": "model",
+              "type": "MODEL",
+              "link": 3
+            },
+            {
+              "name": "positive",
+              "type": "CONDITIONING",
+              "link": 2
+            },
+            {
+              "name": "negative",
+              "type": "CONDITIONING",
+              "link": null
+            },
+            {
+              "name": "latent_image",
+              "type": "LATENT",
+              "link": null
+            }
+          ],
+          "outputs": [
+            {
+              "name": "LATENT",
+              "type": "LATENT",
+              "links": [4]
+            }
+          ],
+          "widgets_values": [0, "randomize", 20, 7, "euler", "normal", 1]
+        },
+        {
+          "id": 8,
+          "type": "VAEDecode",
+          "pos": [1200, 0],
+          "size": [210, 46],
+          "inputs": [
+            {
+              "name": "samples",
+              "type": "LATENT",
+              "link": 4
+            },
+            {
+              "name": "vae",
+              "type": "VAE",
+              "link": 5
+            }
+          ],
+          "outputs": [
+            {
+              "name": "IMAGE",
+              "type": "IMAGE",
+              "links": [6]
+            }
+          ],
+          "widgets_values": []
+        },
+        {
+          "id": 9,
+          "type": "SaveImage",
+          "pos": [1450, 0],
+          "size": [315, 270],
+          "inputs": [
+            {
+              "name": "images",
+              "type": "IMAGE",
+              "link": 6
+            }
+          ],
+          "outputs": [],
+          "widgets_values": ["ComfyUI"]
+        }
+      ],
+      "links": [
+        [1, 4, 1, 6, 0, "CLIP"],
+        [2, 6, 0, 3, 1, "CONDITIONING"],
+        [3, 4, 0, 3, 0, "MODEL"],
+        [4, 3, 0, 8, 0, "LATENT"],
+        [5, 4, 2, 8, 1, "VAE"],
+        [6, 8, 0, 9, 0, "IMAGE"]
+      ]
+    }
+  },
+  "turns": [
+    {
+      "message_id": "b363781f-6c9a-4087-9190-d478781bbcd2",
+      "request": {
+        "content": "Switch to the tab 'Text to image', then add a second KSampler as a refiner: feed it the first sampler's LATENT output, and wire its own LATENT output into the VAE decoder's samples input."
+      },
+      "response": [
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_thinking",
+            "data": {
+              "delta": "I'll switch to that tab and read what's there."
+            }
+          },
+          "at_ms": 0
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_active_tab",
+            "data": {
+              "name": "Text to image",
+              "workflow_id": "b7d1e09f-682a-48f5-a388-d74a33ad5184"
+            }
+          },
+          "at_ms": 5
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 5,
+              "status": "success",
+              "tool_call_id": "toolu_01Bq7cRyMamrEnmo4yHuMphE",
+              "tool_name": "switch_tab"
+            }
+          },
+          "at_ms": 6
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 747,
+              "status": "success",
+              "tool_call_id": "toolu_01FEPdyTv3FtKtL8S6zTKj33",
+              "tool_name": "print_workflow"
+            }
+          },
+          "at_ms": 3053
+        },
+        {
+          "kind": "graph_ops",
+          "ops": [
+            {
+              "op": "add_node",
+              "pos": [1565, 280],
+              "node": {
+                "id": 2092962753103866,
+                "pos": [1565, 280],
+                "mode": 0,
+                "size": [240, 290],
+                "type": "KSampler",
+                "flags": {},
+                "order": 0,
+                "inputs": [
+                  {
+                    "link": null,
+                    "name": "model",
+                    "type": "MODEL"
+                  },
+                  {
+                    "link": null,
+                    "name": "positive",
+                    "type": "CONDITIONING"
+                  },
+                  {
+                    "link": null,
+                    "name": "negative",
+                    "type": "CONDITIONING"
+                  },
+                  {
+                    "link": null,
+                    "name": "latent_image",
+                    "type": "LATENT"
+                  }
+                ],
+                "outputs": [
+                  {
+                    "name": "LATENT",
+                    "type": "LATENT",
+                    "links": []
+                  }
+                ],
+                "properties": {},
+                "widgets_values": [0, "fixed", 20, 8, "euler", "simple", 1]
+              },
+              "node_id": 2092962753103866,
+              "class_type": "KSampler"
+            },
+            {
+              "op": "connect",
+              "link_id": 4414751122447181,
+              "to_node": 2092962753103866,
+              "to_slot": 3,
+              "from_node": 3,
+              "from_slot": 0,
+              "link_type": "LATENT"
+            },
+            {
+              "op": "connect",
+              "link_id": 863234800411381,
+              "to_node": 2092962753103866,
+              "to_slot": 0,
+              "from_node": 4,
+              "from_slot": 0,
+              "link_type": "MODEL"
+            },
+            {
+              "op": "connect",
+              "link_id": 3220756471207314,
+              "to_node": 2092962753103866,
+              "to_slot": 1,
+              "from_node": 6,
+              "from_slot": 0,
+              "link_type": "CONDITIONING"
+            },
+            {
+              "op": "connect",
+              "link_id": 619699595909791,
+              "to_node": 8,
+              "to_slot": 0,
+              "from_node": 2092962753103866,
+              "from_slot": 0,
+              "link_type": "LATENT"
+            },
+            {
+              "op": "set_widget",
+              "old": 1,
+              "value": 0.5,
+              "widget": "denoise",
+              "node_id": 2092962753103866
+            },
+            {
+              "op": "set_widget",
+              "old": 20,
+              "value": 20,
+              "widget": "steps",
+              "node_id": 2092962753103866
+            }
+          ],
+          "at_ms": 11793
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 198,
+              "status": "success",
+              "tool_call_id": "toolu_01LqYJ1bi41MTaeDXdzC9A9j",
+              "tool_name": "apply_ops"
+            }
+          },
+          "at_ms": 11793
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 379,
+              "status": "success",
+              "tool_call_id": "toolu_01DAfeiUo97WETr7TRCrv4Cp",
+              "tool_name": "print_workflow"
+            }
+          },
+          "at_ms": 14468
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_tool_call",
+            "data": {
+              "duration_ms": 199,
+              "status": "error",
+              "tool_call_id": "toolu_01G8xCCA9NuoEur1n8RySCWK",
+              "tool_name": "validate"
+            }
+          },
+          "at_ms": 19339
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_delta",
+            "data": {
+              "delta": "The refiner is in and wired: the first sampler's latent feeds it, and its own latent now drives the VAE decoder into your save node.\n\nTwo things were already unfinished in this graph before I touched it, and they'll block a run:\n\n- Neither sampler has a negative prompt connected, and there's no empty-latent node feeding the first sampler.\n- The checkpoint it points at isn't installed here, so no model file is actually available.\n\nI set the refiner to 20 steps at 0.5 denoise, which is a sensible second-pass default. Want me to add the missing negative prompt and latent-size nodes and pick an installed checkpoint so it can actually run?"
+            }
+          },
+          "at_ms": 29476
+        },
+        {
+          "kind": "event",
+          "event": {
+            "type": "agent_message_done",
+            "data": {
+              "usage": {
+                "cache_creation_input_tokens": 2906,
+                "cache_read_input_tokens": 232638,
+                "input_tokens": 12,
+                "output_tokens": 1422,
+                "total_tokens": 1434
+              }
+            }
+          },
+          "at_ms": 29482
+        }
+      ]
+    }
+  ]
+}

@@ -88,9 +88,7 @@
       "title": "Keine Credits mehr",
       "upgradePlan": "Plan upgraden"
     },
-    "placeholder": "Beschreiben Sie Ideen, {'@'} zum Referenzieren,\nerwähnen Sie Nodes aus dem Graphen oder ziehen Sie Assets hinein",
-    "ranToolCalls": "Hat {count} Tool-Aufruf ausgeführt | Hat {count} Tool-Aufrufe ausgeführt",
-    "ranToolCallsTimed": "Hat {count} Tool-Aufruf {seconds} Sekunden lang ausgeführt | Hat {count} Tool-Aufrufe {seconds} Sekunden lang ausgeführt",
+    "placeholder": "Beschreiben Sie Ideen, verwenden Sie {'@'} zum Referenzieren von Workflows, ziehen Sie Medien-Assets und Dateien hinein oder\nerwähnen Sie Nodes",
     "remove": "Entfernen",
     "removeNodeLabel": "Referenz zu {node} entfernen",
     "runApproval": {
@@ -138,15 +136,21 @@
     "switchWorkflow": "Workflow wechseln",
     "targetNavigationUnavailable": "Dieses Workflow-Ziel ist nicht mehr verfügbar.",
     "thinking": "Denkt nach...",
-    "thought": "Gedanke",
-    "thoughtTimed": "Dachte {seconds} Sekunden lang",
     "title": "Comfy Agent",
+    "toolForgettingPreference": "Vergisst eine Einstellung",
     "toolForgotPreference": "Eine Einstellung vergessen",
     "toolOpenedNewTab": "Einen neuen Tab geöffnet",
+    "toolOpeningNewTab": "Öffnet einen neuen Tab",
     "toolSavedPreference": "Eine Einstellung gespeichert",
+    "toolSavingPreference": "Speichert eine Einstellung",
     "toolSwitchedTabs": "Tabs gewechselt",
+    "toolSwitchingTabs": "Wechselt Tabs",
     "untitledChat": "Ohne Titel",
-    "uploading": "Wird hochgeladen"
+    "uploading": "Wird hochgeladen",
+    "worked": "Abgeschlossen",
+    "workedForMinutes": "Bearbeitungszeit: {minutes}m {seconds}s",
+    "workedForSeconds": "Bearbeitungszeit: {seconds} Sekunden",
+    "working": "Wird bearbeitet..."
   },
   "apiNodesSignInDialog": {
     "message": "Partner-Nodes werden auf Diensten von Drittanbietern ausgeführt und verwenden Credits aus Ihrem Konto. Melden Sie sich an, um Ihr Konto zu verbinden.",
@@ -385,9 +389,9 @@
       "auth/popup-closed-by-user": "Das Anmeldefenster wurde geschlossen, bevor die Anmeldung abgeschlossen war. Bitte versuchen Sie es erneut.",
       "auth/too-many-requests": "Zu viele Anmeldeversuche. Bitte warten Sie einen Moment und versuchen Sie es erneut.",
       "auth/user-disabled": "Dieses Konto wurde deaktiviert. Bitte kontaktieren Sie den Support.",
-      "auth/user-not-found": "Es wurde kein Konto mit dieser E-Mail-Adresse gefunden. Möchten Sie ein neues Konto erstellen?",
+      "auth/user-not-found": "Ungültige Anmeldedaten. Bitte überprüfen Sie Ihre E-Mail-Adresse und Ihr Passwort.",
       "auth/weak-password": "Das Passwort ist zu schwach. Bitte verwenden Sie ein stärkeres Passwort mit mindestens 6 Zeichen.",
-      "auth/wrong-password": "Das eingegebene Passwort ist falsch. Bitte versuchen Sie es erneut.",
+      "auth/wrong-password": "Ungültige Anmeldedaten. Bitte überprüfen Sie Ihre E-Mail-Adresse und Ihr Passwort.",
       "generic": "Bei der Anmeldung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.",
       "signupBlocked": "Ihr Konto konnte derzeit nicht erstellt werden. Bitte versuchen Sie es später erneut. Wenn dies weiterhin passiert, schreiben Sie an support@comfy.org."
     },
@@ -1938,6 +1942,7 @@
     "recents": "Zuletzt verwendet",
     "reconnected": "Wiederverbunden",
     "reconnecting": "Verbindung wird wiederhergestellt",
+    "recordingFailedToStart": "Aufnahme konnte nicht gestartet werden",
     "refresh": "Aktualisieren",
     "refreshNode": "Node aktualisieren",
     "relativeTime": {
@@ -2508,6 +2513,7 @@
       "wireframe": "Drahtgitter"
     },
     "menuBar": {
+      "animationClip": "Animationsclip",
       "bgColor": "Hintergrundfarbe",
       "bgImage": "Hintergrundbild",
       "customUp": "Benutzerdefiniert oben",
@@ -2519,6 +2525,7 @@
       "naturalUp": "Natürlich oben",
       "originalMaterialOnly": "Nur Originalmaterial",
       "panorama": "Panorama",
+      "playbackSpeed": "Wiedergabegeschwindigkeit",
       "record": "Aufzeichnen",
       "recording": "Aufzeichnung",
       "removeBackground": "Hintergrund entfernen",
@@ -2846,6 +2853,7 @@
     "deleteHistoryOnly": "Nur der Verlauf wird gelöscht, die Dateien bleiben auf dem Datenträger",
     "deleteItems": "Diese Elemente löschen",
     "deletePermanent": "Sie werden dauerhaft entfernt.",
+    "deleteTombstone": "Sie werden nicht mehr in ComfyUI angezeigt, bleiben jedoch auf der Festplatte",
     "deletingImportedFilesCloudOnly": "Das Löschen importierter Dateien wird nur in der Cloud-Version unterstützt",
     "deletionUnsupported": "Assets sind aktiviert, aber der Server unterstützt das Löschen nicht",
     "failedToCreateNode": "Node konnte nicht erstellt werden",
@@ -4543,7 +4551,7 @@
     "pricingBlurbEnterprise": "Enterprise-Gespräche",
     "pricingBlurbQuestions": "Fragen",
     "pricingBlurbSeeDetails": "Details ansehen",
-    "reactivatePlan": "Plan reaktivieren",
+    "reactivatePlan": "Abonnement fortsetzen",
     "reactivateToUseCredits": "Reaktivieren Sie Ihren Tarif, um diese Credits zu nutzen",
     "refillsDate": "Auffüllung {date}",
     "refillsNextCycle": "Auffüllung im nächsten Abrechnungszeitraum",
@@ -4562,7 +4570,7 @@
     "resubscribe": "Erneut abonnieren",
     "resubscribeFailed": "Abonnement konnte nicht reaktiviert werden",
     "resubscribeSuccess": "Abonnement erfolgreich reaktiviert",
-    "resubscribeTo": "{plan} erneut abonnieren",
+    "resubscribeTo": "{plan} fortsetzen",
     "salesManagedRunBlockedDetail": "Der Tarif dieses Workspace ist nicht mehr aktiv. Wenden Sie sich an Ihre Comfy-Kundenbetreuung, um den Zugriff wiederherzustellen.",
     "salesManagedRunBlockedTitle": "Tarif inaktiv",
     "saveYearly": "20 % sparen",
@@ -5042,8 +5050,8 @@
     },
     "billingStatus": {
       "ending": {
-        "body": "Mitglieder behalten bis dahin den vollständigen Zugriff. Reaktivieren Sie den Plan, um Ihre gemeinsamen Credits und Plätze zu behalten.",
-        "reactivate": "Plan reaktivieren",
+        "body": "Mitglieder behalten bis dahin vollen Zugriff. Setzen Sie Ihr Abonnement fort, um Ihre gemeinsamen Credits und Sitzplätze zu behalten.",
+        "reactivate": "Abonnement fortsetzen",
         "title": "Ihr Teamplan endet am {date}"
       },
       "outOfCredits": {

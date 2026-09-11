@@ -1,0 +1,141 @@
+---
+import Analytics from '@vercel/analytics/astro'
+import '../styles/global.css'
+import AuthHeroCarousel from '../components/auth/AuthHeroCarousel.vue'
+import AuthToast from '../components/auth/AuthToast.vue'
+import GoogleTagManager from '../components/common/GoogleTagManager.astro'
+import { t } from '../i18n/translations'
+import type { Locale } from '../i18n/translations'
+
+/**
+ * The bare onboarding shell, the website's counterpart of the cloud app's
+ * CloudLayoutView + CloudTemplate: no site header, footer or banner, no
+ * smooth scroll, no view transitions. Analytics stay because the Workshop
+ * auth flag is answered by PostHog.
+ */
+interface Props {
+  title: string
+  description: string
+  locale: Locale
+  /** Login and signup show the terms notice; every other auth page shows the footer. */
+  showTermsNotice?: boolean
+}
+
+const { title, description, locale, showTermsNotice = false } = Astro.props
+---
+
+<!doctype html>
+<html lang={locale}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{title}</title>
+
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#211927" />
+
+    <GoogleTagManager part="head" />
+  </head>
+  <body class="bg-primary-comfy-ink antialiased">
+    <GoogleTagManager part="noscript" />
+
+    <div
+      class="dark-theme flex h-svh w-screen items-center bg-primary-comfy-ink font-formula text-primary-comfy-canvas"
+    >
+      <div class="mx-auto flex size-full max-h-248 max-w-[100rem]">
+        <div
+          data-testid="auth-hero-column"
+          class="relative hidden min-h-0 flex-1 overflow-hidden xl:block"
+        >
+          <AuthHeroCarousel {locale} client:load />
+        </div>
+        <div class="flex min-h-0 flex-1 flex-col overflow-auto">
+          <main
+            class="mx-auto flex min-h-full w-full max-w-md flex-col px-6 py-8 lg:max-w-lg xl:py-10 2xl:max-w-xl"
+          >
+            <img
+              src="/icons/logo.svg"
+              alt={t('auth.shell.logoAlt', locale)}
+              class="h-9 w-auto shrink-0 self-start object-contain object-left lg:h-10 2xl:h-11"
+            />
+
+            <div class="my-auto w-full">
+              <slot />
+            </div>
+
+            {showTermsNotice ? (
+              <div class="mt-10 shrink-0 text-center text-sm/relaxed text-primary-warm-gray">
+                <p class="my-0">
+                  {t('auth.shell.termsText', locale)}
+                  <br />
+                  <a
+                    href="https://comfy.org/terms-of-service/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-primary-comfy-canvas underline"
+                  >{t('auth.shell.termsLink', locale)}</a>
+                  {' '}{t('auth.shell.andText', locale)}{' '}
+                  <a
+                    href="https://comfy.org/privacy-policy/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-primary-comfy-canvas underline"
+                  >{t('auth.shell.privacyLink', locale)}</a>.
+                </p>
+                <p class="my-4 text-xs/relaxed">
+                  {t('auth.shell.questionsText', locale)}{' '}
+                  <a
+                    href="https://support.comfy.org"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-primary-comfy-canvas underline"
+                  >{t('auth.shell.contactLink', locale)}</a>.
+                </p>
+              </div>
+            ) : (
+              <footer class="mt-10 flex w-full shrink-0 items-start justify-center gap-2.5">
+                <a
+                  href="https://comfy.org/terms-of-service/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="cursor-pointer text-sm text-primary-comfy-canvas/60 no-underline"
+                >{t('auth.shell.termsLink', locale)}</a>
+                <a
+                  href="https://comfy.org/privacy-policy/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="cursor-pointer text-sm text-primary-comfy-canvas/60 no-underline"
+                >{t('auth.shell.privacyLink', locale)}</a>
+                <a
+                  href="https://support.comfy.org"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="cursor-pointer text-sm text-primary-comfy-canvas/60 no-underline"
+                >{t('auth.shell.needHelp', locale)}</a>
+              </footer>
+            )}
+          </main>
+        </div>
+      </div>
+    </div>
+
+    <AuthToast {locale} client:load />
+
+    <Analytics />
+
+    <script>
+      import { capturePageview, initPostHog } from '../scripts/posthog'
+
+      if (import.meta.env.PROD) {
+        initPostHog()
+        capturePageview()
+      }
+    </script>
+  </body>
+</html>

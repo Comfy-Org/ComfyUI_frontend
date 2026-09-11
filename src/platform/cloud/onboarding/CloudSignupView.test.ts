@@ -20,7 +20,7 @@ vi.mock(
   })
 )
 
-vi.mock(import('@/base/webviewDetection'), () => ({
+vi.mock(import('@comfyorg/account/webviewDetection'), () => ({
   isEmbeddedWebView: () => false
 }))
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
@@ -46,7 +46,7 @@ const inChina = vi.hoisted(() => ({
     this.pending = Promise.reject(error)
   }
 }))
-vi.mock(import('@/utils/networkUtil'), () => ({
+vi.mock(import('@comfyorg/shared-frontend-utils/networkUtil'), () => ({
   isInChina: () => inChina.pending ?? Promise.resolve(inChina.value)
 }))
 

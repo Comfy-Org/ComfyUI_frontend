@@ -5,7 +5,6 @@ import { nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n, mergeCustomNodesI18n } from '@/i18n'
-import type * as LiteGraphModule from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Settings } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
@@ -61,15 +60,12 @@ const mockCanvas = vi.hoisted(
 )
 
 vi.mock<unknown>(
-  import('@/lib/litegraph/src/litegraph'),
-  async (importOriginal) => {
-    const actual = await importOriginal<typeof LiteGraphModule>()
-    return {
-      ...actual,
-      isOverNodeInput: mockIsOverNodeInput,
-      isOverNodeOutput: mockIsOverNodeOutput
-    }
-  }
+  import('@/lib/litegraph/src/canvas/measureSlots'),
+  async (importOriginal) => ({
+    ...(await importOriginal()),
+    isOverNodeInput: mockIsOverNodeInput,
+    isOverNodeOutput: mockIsOverNodeOutput
+  })
 )
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({

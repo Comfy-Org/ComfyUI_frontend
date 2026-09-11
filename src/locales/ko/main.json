@@ -88,9 +88,7 @@
       "title": "크레딧 소진",
       "upgradePlan": "플랜 업그레이드"
     },
-    "placeholder": "아이디어를 설명하고, {'@'}로 참조하며,\n그래프의 노드를 언급하거나 에셋을 드래그하세요",
-    "ranToolCalls": "{count}개 도구 호출 실행 | {count}개 도구 호출 실행",
-    "ranToolCallsTimed": "{seconds}초 동안 {count}개 도구 호출 실행 | {seconds}초 동안 {count}개 도구 호출 실행",
+    "placeholder": "아이디어를 설명하고, {'@'}로 워크플로를 참조하거나, 미디어 에셋과 파일을 드래그하거나\n노드를 언급하세요",
     "remove": "제거",
     "removeNodeLabel": "{node} 참조 제거",
     "runApproval": {
@@ -138,15 +136,21 @@
     "switchWorkflow": "워크플로 전환",
     "targetNavigationUnavailable": "이 워크플로 대상은 더 이상 사용할 수 없습니다.",
     "thinking": "생각 중...",
-    "thought": "생각",
-    "thoughtTimed": "{seconds}초 동안 생각함",
     "title": "Comfy Agent",
+    "toolForgettingPreference": "환경설정 삭제 중",
     "toolForgotPreference": "환경설정을 잊었습니다",
     "toolOpenedNewTab": "새 탭을 열었습니다",
+    "toolOpeningNewTab": "새 탭 여는 중",
     "toolSavedPreference": "환경설정을 저장했습니다",
+    "toolSavingPreference": "환경설정 저장 중",
     "toolSwitchedTabs": "탭을 전환했습니다",
+    "toolSwitchingTabs": "탭 전환 중",
     "untitledChat": "제목 없음",
-    "uploading": "업로드 중"
+    "uploading": "업로드 중",
+    "worked": "작업 완료",
+    "workedForMinutes": "{minutes}분 {seconds}초 동안 작업함",
+    "workedForSeconds": "{seconds}초 동안 작업함",
+    "working": "작업 중..."
   },
   "apiNodesSignInDialog": {
     "message": "파트너 노드는 타사 서비스에서 실행되며 계정의 크레딧을 사용합니다. 계정을 연결하려면 로그인하세요.",
@@ -385,9 +389,9 @@
       "auth/popup-closed-by-user": "로그인이 완료되기 전에 로그인 창이 닫혔습니다. 다시 시도하세요.",
       "auth/too-many-requests": "로그인 시도가 너무 많습니다. 잠시 후 다시 시도해 주세요.",
       "auth/user-disabled": "이 계정이 비활성화되었습니다. 지원팀에 문의해 주세요.",
-      "auth/user-not-found": "이 이메일로 등록된 계정이 없습니다. 새 계정을 생성하시겠습니까?",
+      "auth/user-not-found": "로그인 자격 증명이 올바르지 않습니다. 이메일과 비밀번호를 확인하세요.",
       "auth/weak-password": "비밀번호가 너무 약합니다. 최소 6자 이상의 강력한 비밀번호를 사용해 주세요.",
-      "auth/wrong-password": "입력하신 비밀번호가 올바르지 않습니다. 다시 시도해 주세요.",
+      "auth/wrong-password": "로그인 자격 증명이 올바르지 않습니다. 이메일과 비밀번호를 확인하세요.",
       "generic": "로그인 중 문제가 발생했습니다. 다시 시도해 주세요.",
       "signupBlocked": "현재 계정을 생성할 수 없습니다. 잠시 후 다시 시도해 주세요. 계속 문제가 발생하면 support@comfy.org로 문의해 주세요."
     },
@@ -1938,6 +1942,7 @@
     "recents": "최근 항목",
     "reconnected": "재연결됨",
     "reconnecting": "재연결 중",
+    "recordingFailedToStart": "녹화를 시작할 수 없습니다",
     "refresh": "새로 고침",
     "refreshNode": "노드 새로고침",
     "relativeTime": {
@@ -2508,6 +2513,7 @@
       "wireframe": "와이어프레임"
     },
     "menuBar": {
+      "animationClip": "애니메이션 클립",
       "bgColor": "배경색",
       "bgImage": "배경 이미지",
       "customUp": "사용자 지정 위쪽",
@@ -2519,6 +2525,7 @@
       "naturalUp": "자연스러운 위쪽",
       "originalMaterialOnly": "원본 재질만",
       "panorama": "파노라마",
+      "playbackSpeed": "재생 속도",
       "record": "녹화",
       "recording": "녹화 중",
       "removeBackground": "배경 제거",
@@ -2846,6 +2853,7 @@
     "deleteHistoryOnly": "기록에만 영향을 미치며, 파일은 디스크에 남아 있습니다",
     "deleteItems": "이 항목 삭제",
     "deletePermanent": "영구적으로 제거됩니다.",
+    "deleteTombstone": "더 이상 ComfyUI에 표시되지 않지만 디스크에는 남아 있습니다",
     "deletingImportedFilesCloudOnly": "가져온 파일 삭제는 클라우드 버전에서만 지원됩니다",
     "deletionUnsupported": "에셋이 활성화되어 있지만 서버가 삭제를 지원하지 않습니다",
     "failedToCreateNode": "노드 생성에 실패했습니다",
@@ -4543,7 +4551,7 @@
     "pricingBlurbEnterprise": "엔터프라이즈 상담",
     "pricingBlurbQuestions": "문의",
     "pricingBlurbSeeDetails": "자세히 보기",
-    "reactivatePlan": "요금제 재활성화",
+    "reactivatePlan": "구독 재개",
     "reactivateToUseCredits": "이 크레딧을 사용하려면 플랜을 다시 활성화하세요",
     "refillsDate": "{date}에 리필",
     "refillsNextCycle": "다음 주기에 리필",
@@ -4562,7 +4570,7 @@
     "resubscribe": "다시 구독하기",
     "resubscribeFailed": "구독을 다시 활성화하지 못했습니다",
     "resubscribeSuccess": "구독이 성공적으로 재활성화되었습니다",
-    "resubscribeTo": "{plan} 다시 구독하기",
+    "resubscribeTo": "{plan} 재개",
     "salesManagedRunBlockedDetail": "이 워크스페이스의 플랜이 더 이상 활성 상태가 아닙니다. 액세스를 복원하려면 Comfy 계정 관리자에게 문의하세요.",
     "salesManagedRunBlockedTitle": "플랜 비활성화",
     "saveYearly": "20% 절감",
@@ -5042,8 +5050,8 @@
     },
     "billingStatus": {
       "ending": {
-        "body": "그때까지 멤버들은 전체 접근 권한을 유지합니다. 공유 크레딧과 좌석을 유지하려면 플랜을 재활성화하세요.",
-        "reactivate": "플랜 재활성화",
+        "body": "그때까지 멤버는 모든 기능을 계속 이용할 수 있습니다. 공유 크레딧과 좌석을 유지하려면 구독을 재개하세요.",
+        "reactivate": "구독 재개",
         "title": "팀 플랜이 {date}에 종료됩니다"
       },
       "outOfCredits": {

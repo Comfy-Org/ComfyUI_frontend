@@ -2,11 +2,19 @@ import { FirebaseError } from 'firebase/app'
 import { AuthErrorCodes } from 'firebase/auth'
 import { ref } from 'vue'
 
+import {
+  authErrorMessage,
+  classifyAuthError,
+  severityForAuthError
+} from '@comfyorg/account/firebaseAuthError'
+import type { AuthErrorCopy } from '@comfyorg/account/firebaseAuthError'
+
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { watchForTopupBalanceUpdate } from '@/composables/billing/topupBalanceRefresh'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { ErrorRecoveryStrategy } from '@/composables/useErrorHandling'
 import { st, t } from '@/i18n'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { AuthFlowAction } from '@/platform/telemetry/types'
@@ -23,12 +31,21 @@ import { useAuthStore } from '@/stores/authStore'
 import type { BillingPortalTargetTier } from '@/stores/authStore'
 import { usdToMicros } from '@/utils/formatUtil'
 
-/** Popup outcomes the user or their browser caused, not app faults. */
-const POPUP_PERMISSION_ERROR_CODES: readonly string[] = [
-  AuthErrorCodes.POPUP_CLOSED_BY_USER,
-  AuthErrorCodes.EXPIRED_POPUP_REQUEST,
-  AuthErrorCodes.POPUP_BLOCKED
-]
+/**
+ * The app's own auth.errors table, read through vue-i18n at resolution time.
+ * The key set is the app's, so a code added to main.json renders without the
+ * package having to know it.
+ */
+const localizedAuthErrorCopy = (): AuthErrorCopy => ({
+  ...Object.fromEntries(
+    Object.keys(enMessages.auth.errors).map((key) => [
+      key,
+      st(`auth.errors.${key}`, t('auth.errors.generic'))
+    ])
+  ),
+  generic: t('auth.errors.generic'),
+  signupBlocked: st('auth.errors.signupBlocked', t('auth.errors.generic'))
+})
 
 /**
  * Service for Firebase Auth actions.
@@ -52,47 +69,29 @@ export const useAuthActions = () => {
     }
 
   const reportError = (error: unknown) => {
+    const classification = classifyAuthError(error)
     // Ref: https://firebase.google.com/docs/auth/admin/errors
-    if (
-      error instanceof FirebaseError &&
-      [
-        'auth/unauthorized-domain',
-        'auth/invalid-dynamic-link-domain',
-        'auth/unauthorized-continue-uri'
-      ].includes(error.code)
-    ) {
+    const severity = severityForAuthError(classification)
+    const summary = t(severity === 'warn' ? 'g.warning' : 'g.error')
+    if (classification.kind === 'unauthorized-domain') {
       accessError.value = true
       toastStore.add({
-        severity: 'error',
-        summary: t('g.error'),
+        severity,
+        summary,
         detail: t('toastMessages.unauthorizedDomain', {
           domain: window.location.hostname,
           email: 'support@comfy.org'
         })
       })
-    } else if (
-      error instanceof FirebaseError &&
-      error.message.toLowerCase().includes('signup_blocked')
-    ) {
-      // Match on `error.message`, not `error.code`: Firebase `beforeUserCreated`
-      // rejections collapse the thrown code into a generic `auth/internal-error`,
-      // so the message is the only reliable channel. `signup_blocked` is a
-      // cross-repo contract token; matched case-insensitively.
+    } else if (classification.kind !== 'unknown') {
       toastStore.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('auth.errors.signupBlocked')
-      })
-    } else if (
-      error instanceof FirebaseError &&
-      POPUP_PERMISSION_ERROR_CODES.includes(error.code)
-    ) {
-      toastStore.add({
-        severity: 'warn',
-        summary: t('g.warning'),
-        detail: st(`auth.errors.${error.code}`, t('auth.errors.generic'))
+        severity,
+        summary,
+        detail: authErrorMessage(classification, localizedAuthErrorCopy())
       })
     } else if (error instanceof FirebaseError) {
+      // classifyAuthError only knows auth/ codes; an app/ or installations/
+      // FirebaseError still gets the localized copy, never the raw SDK text.
       toastStore.add({
         severity: 'error',
         summary: t('g.error'),

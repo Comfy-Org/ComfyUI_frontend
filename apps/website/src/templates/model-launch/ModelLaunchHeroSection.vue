@@ -165,6 +165,7 @@ const isContentFirst = hero.layout === 'content-first'
   >
     <div
       v-if="hero.videoSrc"
+      data-testid="model-launch-hero-block"
       :class="cn('relative', isContentFirst ? 'order-3' : 'order-1')"
     >
       <VideoPlayer
@@ -212,6 +213,7 @@ const isContentFirst = hero.layout === 'content-first'
     </div>
 
     <div
+      data-testid="model-launch-hero-block"
       :class="
         cn(
           'mx-auto flex w-full max-w-2xl flex-col items-center text-center',

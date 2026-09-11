@@ -140,7 +140,7 @@ test.describe('Node search box V2 extended', { tag: '@node' }, () => {
       const newNode = refsAfter.find((n) => !idsBefore.has(n.id))
       expect(newNode, 'expected a new CLIPTextEncode node').toBeDefined()
       const clipInput = await newNode!.getInput(0)
-      await expect.poll(() => clipInput.getLinkCount()).toBe(1)
+      await clipInput.expectLinkCount(1)
     })
   })
 

@@ -372,14 +372,10 @@ export class SubgraphHelper {
     const slot = await interiorNode.getInput(slotIndex)
     await slot.removeLinks()
     await this.comfyPage.nextFrame()
-    await expect
-      .poll(() => slot.getLinkCount(), 'Interior link should be detached')
-      .toBe(0)
+    await slot.expectLinkCount(0, 'Interior link should be detached')
 
     await this.connectFromInput(interiorNode, slotIndex, inputName)
-    await expect
-      .poll(() => slot.getLinkCount(), 'Interior link should be restored')
-      .toBe(1)
+    await slot.expectLinkCount(1, 'Interior link should be restored')
   }
 
   async promoteWidget(nodeLocator: Locator, widgetName: string): Promise<void> {
@@ -419,6 +415,15 @@ export class SubgraphHelper {
     await expect.poll(findAddedIds).toHaveLength(1)
     const [addedId] = await findAddedIds()
     return addedId
+  }
+
+  async unpackViaContextMenu(nodeTitle: string): Promise<void> {
+    const node = this.comfyPage.vueNodes.getNodeByTitle(nodeTitle)
+    const fixture = await this.comfyPage.vueNodes.getFixtureByTitle(nodeTitle)
+    await this.comfyPage.contextMenu.openForVueNode(fixture.header)
+    await this.comfyPage.contextMenu.clickMenuItemExact('Unpack Subgraph')
+    await expect(node).toHaveCount(0)
+    await this.comfyPage.nextFrame()
   }
 
   async enterSubgraphWithFallback(nodeId: string): Promise<void> {
