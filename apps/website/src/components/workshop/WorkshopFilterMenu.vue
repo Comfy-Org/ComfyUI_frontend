@@ -154,7 +154,7 @@ const sheetLabels = computed(() => ({
       </span>
       <span
         v-if="selectedCount"
-        class="bg-primary-comfy-yellow inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold text-primary-comfy-ink tabular-nums max-sm:absolute max-sm:-top-1 max-sm:-right-1"
+        class="bg-primary-comfy-yellow inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] leading-none font-bold text-primary-comfy-ink max-sm:absolute max-sm:-top-1 max-sm:-right-1"
         data-testid="workshop-filter-count"
       >
         {{ selectedCount }}

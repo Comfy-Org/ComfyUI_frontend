@@ -108,7 +108,7 @@ const unplaced = computed(() =>
         <li
           v-for="family in section.shown"
           :key="family.key"
-          class="w-58 shrink-0 snap-start"
+          class="w-60 shrink-0 snap-start sm:w-[calc((100cqw-2*1.25rem)/2.5)] md:w-[calc((100cqw-3*1.25rem)/3.5)] lg:w-[calc((100cqw-4*1.25rem)/4.5)] xl:w-[calc((100cqw-5*1.25rem)/5.5)]"
         >
           <WorkshopModelCard :model="family.latest" :locale />
         </li>
@@ -144,7 +144,7 @@ const unplaced = computed(() =>
         <li
           v-for="family in otherFormats.slice(0, ROW_LIMIT)"
           :key="family.key"
-          class="w-58 shrink-0 snap-start"
+          class="w-60 shrink-0 snap-start sm:w-[calc((100cqw-2*1.25rem)/2.5)] md:w-[calc((100cqw-3*1.25rem)/3.5)] lg:w-[calc((100cqw-4*1.25rem)/4.5)] xl:w-[calc((100cqw-5*1.25rem)/5.5)]"
         >
           <WorkshopModelCard :model="family.latest" :locale />
         </li>

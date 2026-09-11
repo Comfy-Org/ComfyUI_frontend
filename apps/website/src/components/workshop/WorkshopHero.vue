@@ -37,7 +37,7 @@ const slots = useSlots()
     >
       <SplitReveal :text="t('workshop.hero.eyebrow', locale)" />
     </p>
-    <h1 class="text-4xl font-bold text-primary-comfy-canvas lg:text-6xl">
+    <h1 class="text-3xl font-light text-primary-comfy-canvas lg:text-5xl">
       <SplitReveal :text="t(headingKey, locale)" :delay="90" />
     </h1>
     <div

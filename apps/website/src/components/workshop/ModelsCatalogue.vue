@@ -22,13 +22,13 @@ const browseAll = ref(false)
     <template #aside>
       <button
         type="button"
-        class="group hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 -mx-1 inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-1 text-base font-medium text-primary-warm-white transition-colors outline-none focus-visible:ring-3"
+        class="group hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 -mx-1 inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-1 text-xl font-medium text-primary-warm-white transition-colors outline-none focus-visible:ring-3"
         data-testid="browse-all"
         @click="browseAll = true"
       >
         {{ t('workshop.sections.browseAll', locale) }}
         <ChevronRight
-          class="size-4 transition-transform group-hover:translate-x-0.5"
+          class="size-5 transition-transform group-hover:translate-x-0.5"
           aria-hidden="true"
         />
       </button>
