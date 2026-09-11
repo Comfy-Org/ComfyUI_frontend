@@ -206,11 +206,11 @@ async function mockPasswordReset(page: Page) {
     async (route: Route) => {
       const url = route.request().url()
       if (!url.includes('accounts:sendOobCode')) return route.fallback()
-      const body = route.request().postDataJSON() as { requestType?: string }
+      const body = route.request().postDataJSON() as { email?: string }
       return route.fulfill(
         jsonRoute({
           kind: 'identitytoolkit#GetOobConfirmationCodeResponse',
-          email: body.requestType
+          email: body.email
         })
       )
     }
@@ -268,7 +268,7 @@ test.describe('Live email sign-in', () => {
     await page.getByRole('button', { name: 'Sign in', exact: true }).click()
 
     await expect(page.getByRole('alert')).toBeVisible()
-    await expect(page).not.toHaveURL('/')
+    await expect(page).toHaveURL(/\/login\/(?:[?#].*)?$/)
   })
 
   test('keeps the user signed in with an inline message when provisioning fails', async ({
@@ -289,7 +289,7 @@ test.describe('Live email sign-in', () => {
       page.getByText('account setup did not finish'),
       'a provisioning failure keeps the user on the page with the inline banner, mirroring the social path'
     ).toBeVisible()
-    await expect(page).not.toHaveURL('/')
+    await expect(page).toHaveURL(/\/login\/(?:[?#].*)?$/)
 
     // The banner alone does not prove the session survived: a consumer that
     // signed the user out before throwing would render it identically. Reload
