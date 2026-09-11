@@ -12,6 +12,7 @@ import {
 } from '../lib/llms-txt'
 import { isNoindexPathname } from './indexing'
 import { getRoutes } from './routes'
+import { modelsBuildRoutes } from '../integrations/workshop-release-gate'
 
 const websiteRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const llmsTxt = readFileSync(join(websiteRoot, 'public', 'llms.txt'), 'utf8')
@@ -129,6 +130,7 @@ describe('llms.txt', () => {
   const links = parseLlmsTxtLinks(llmsTxt)
   const internalPaths = internalLinks(links).map(({ path }) => path)
   const { static: staticPages, dynamic } = pageMatchers(pagesDir)
+  for (const route of modelsBuildRoutes(false)) staticPages.add(route.pattern)
   const zhCN = pageMatchers(join(pagesDir, 'zh-CN'))
 
   it('follows the llms.txt shape: one H1, a summary blockquote, Optional last', () => {
