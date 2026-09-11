@@ -158,9 +158,7 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
     await expect(comfyPage.canvas).toHaveScreenshot('drag-copy-copied-node.png')
   })
 
-  test('Repeated pastes keep every node a distinct instance', async ({
-    comfyPage
-  }) => {
+  test('Repeated pastes never reuse node instances', async ({ comfyPage }) => {
     await expect
       .poll(() => comfyPage.nodeOps.getGraphNodesCount())
       .toBeGreaterThan(1)
