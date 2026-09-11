@@ -44,10 +44,13 @@ import { workshopIdempotencyKey } from '../../config/workshop-snippets'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import {
+  captureWorkshopEvent,
   useWorkshopEnabled,
   useWorkshopAuthFlag,
   useWorkshopAuthFlagSettled
 } from '../../scripts/posthog'
+import { workshopModelAnalytics } from '../../scripts/workshop-analytics'
+import type { WorkshopRunAnalytics } from '../../scripts/workshop-analytics'
 import ApiTab from './ApiTab.vue'
 import ExamplesTab from './ExamplesTab.vue'
 import PlaygroundForm from './PlaygroundForm.vue'
@@ -68,6 +71,7 @@ const {
 }>()
 
 const slots = useSlots()
+const modelAnalytics = workshopModelAnalytics(model)
 
 type Section = 'playground' | 'details' | 'api'
 const sections = computed<readonly Section[]>(() =>
@@ -172,6 +176,20 @@ const mounted = useMounted()
 const signInHref = useSignInHref(locale)
 const docsHref = modelDocsHref(model)
 
+watch(
+  () => mounted.value && workshopEnabled.value,
+  (visible) => {
+    if (visible) {
+      captureWorkshopEvent({ name: 'model_viewed', properties: modelAnalytics })
+    }
+  },
+  { once: true }
+)
+watch(activeSection, (section) => {
+  if (section === 'api') {
+    captureWorkshopEvent({ name: 'api_viewed', properties: modelAnalytics })
+  }
+})
 const gate = computed(() => {
   if (
     !workshopEnabled.value ||
@@ -280,15 +298,31 @@ useEventListener(
   }
 )
 const requestId = ref<string | null>(null)
-let controller: AbortController | undefined
+let activeRun:
+  | {
+      controller: AbortController
+      analytics: WorkshopRunAnalytics
+      startedAt: number
+    }
+  | undefined
 let pendingRequest: { fingerprint: string; key: string } | undefined
 const uploadUrl = createWorkshopUrlUploader()
 
 const now = useTimestamp({ interval: 1000 })
 
 function cancelRun() {
-  controller?.abort()
-  controller = undefined
+  if (activeRun) {
+    activeRun.controller.abort()
+    captureWorkshopEvent({
+      name: 'run_finished',
+      properties: {
+        ...activeRun.analytics,
+        status: 'cancelled',
+        duration_ms: Date.now() - activeRun.startedAt
+      }
+    })
+    activeRun = undefined
+  }
   runState.value = transition(runState.value, { type: 'cancel' })
 }
 
@@ -345,6 +379,10 @@ async function run() {
     return
   const fieldErrors = validateForm(schema.value, values.value)
   if (Object.keys(fieldErrors).length) {
+    captureWorkshopEvent({
+      name: 'run_validation_failed',
+      properties: modelAnalytics
+    })
     runState.value = transition(runState.value, {
       type: 'fail',
       reason: 'validation',
@@ -354,9 +392,17 @@ async function run() {
   }
   const startedFor = session.value
   const active = new AbortController()
-  controller = active
+  const startedAt = Date.now()
+  const analytics: WorkshopRunAnalytics = {
+    ...modelAnalytics,
+    user_id: startedFor.uid,
+    workspace_id: startedFor.workspace.id,
+    attempt_id: workshopIdempotencyKey()
+  }
+  activeRun = { controller: active, analytics, startedAt }
+  captureWorkshopEvent({ name: 'run_started', properties: analytics })
   requestId.value = null
-  runState.value = transition(runState.value, { type: 'start', at: Date.now() })
+  runState.value = transition(runState.value, { type: 'start', at: startedAt })
   async function freshCredential() {
     const credential = await ensureFresh(undefined, { signal: active.signal })
     active.signal.throwIfAborted()
@@ -400,7 +446,7 @@ async function run() {
         }
       }
     )
-    if (controller !== active || active.signal.aborted) {
+    if (activeRun?.controller !== active || active.signal.aborted) {
       releaseRouterOutputs(result.outputs)
       return
     }
@@ -422,8 +468,18 @@ async function run() {
       output,
       nsfw: output.nsfw === true
     })
+    captureWorkshopEvent({
+      name: 'run_finished',
+      properties: {
+        ...analytics,
+        status: 'succeeded',
+        duration_ms: Date.now() - startedAt,
+        request_id: result.requestId ?? undefined,
+        output_count: result.outputs.length
+      }
+    })
   } catch (error) {
-    if (controller !== active || active.signal.aborted) return
+    if (activeRun?.controller !== active || active.signal.aborted) return
     const failure =
       error instanceof WorkshopRouterError
         ? error
@@ -434,10 +490,27 @@ async function run() {
       reason: failure.reason,
       fieldErrors: failure.fieldErrors
     })
+    captureWorkshopEvent({
+      name: 'run_finished',
+      properties: {
+        ...analytics,
+        status: 'failed',
+        reason: failure.reason,
+        duration_ms: Date.now() - startedAt,
+        request_id: failure.requestId ?? undefined
+      }
+    })
   } finally {
-    if (controller === active) controller = undefined
+    if (activeRun?.controller === active) activeRun = undefined
     void refreshWorkshopCredits({ force: true })
   }
+}
+
+function captureOutputDownload(kind: RunOutput['kind']) {
+  captureWorkshopEvent({
+    name: 'output_download_clicked',
+    properties: { ...modelAnalytics, output_kind: kind }
+  })
 }
 
 function reset() {
@@ -711,6 +784,7 @@ function useInCode() {
           @buy-credits="requestWorkshopBuyCredits"
           @retry="gate === 'ready' ? run() : reset()"
           @use-in-code="useInCode"
+          @download="captureOutputDownload"
         />
         <p
           v-if="requestId"

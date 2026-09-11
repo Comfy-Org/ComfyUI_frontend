@@ -53,6 +53,7 @@ const emit = defineEmits<{
   useInCode: []
   switchPersonal: []
   buyCredits: []
+  download: [kind: RunOutput['kind']]
 }>()
 
 const elapsed = computed(() =>
@@ -132,9 +133,10 @@ const downloadNeedsLink = computed(
   () => failedDownloadUrl.value === currentUrl.value
 )
 async function download(event: MouseEvent) {
+  if (!shown.value) return
+  emit('download', shown.value.kind)
   if (downloadNeedsLink.value) return
   event.preventDefault()
-  if (!shown.value) return
   const url = currentUrl.value
   if (!(await downloadOutput(url, shown.value.fileName)))
     failedDownloadUrl.value = url
