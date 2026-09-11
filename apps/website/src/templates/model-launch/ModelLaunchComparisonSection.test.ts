@@ -56,7 +56,7 @@ describe('ModelLaunchComparisonSection', () => {
     const headers = screen.getAllByRole('columnheader')
     expect(headers).toHaveLength(comparison.columns.length + 1)
     expect(headers[0]?.textContent?.trim()).toBe('')
-    expect(headers.slice(1).map((h) => h.textContent?.trim())).toEqual([
+    expect(headers.slice(1).map((h) => h.textContent.trim())).toEqual([
       'Professional',
       'Enterprise'
     ])
@@ -70,12 +70,10 @@ describe('ModelLaunchComparisonSection', () => {
     const rows = bodyRows()
     expect(rows).toHaveLength(comparison.rows.length)
     for (const [index, row] of comparison.rows.entries()) {
-      const scope = within(rows[index]!)
-      expect(scope.getByRole('rowheader').textContent?.trim()).toBe(
-        row.label.en
-      )
+      const scope = within(rows[index])
+      expect(scope.getByRole('rowheader').textContent.trim()).toBe(row.label.en)
       expect(
-        scope.getAllByRole('cell').map((cell) => cell.textContent?.trim())
+        scope.getAllByRole('cell').map((cell) => cell.textContent.trim())
       ).toEqual(row.cells.map((cell) => cell.en))
     }
   })
@@ -90,12 +88,12 @@ describe('ModelLaunchComparisonSection', () => {
       screen
         .getAllByRole('columnheader')
         .slice(1)
-        .map((header) => header.textContent?.trim())
+        .map((header) => header.textContent.trim())
     ).toEqual(['专业版', '企业版'])
     expect(
-      within(bodyRows()[0]!)
+      within(bodyRows()[0])
         .getAllByRole('cell')
-        .map((cell) => cell.textContent?.trim())
+        .map((cell) => cell.textContent.trim())
     ).toEqual(['5,000 美元 / 月起', '联系销售'])
     expect(screen.queryByText('Professional')).toBeNull()
   })
@@ -146,7 +144,7 @@ describe('ModelLaunchComparisonSection', () => {
     // Two columns are declared but one cell is supplied, so the table renders a
     // ragged row rather than padding it out.
     expect(screen.getAllByRole('columnheader')).toHaveLength(3)
-    expect(within(bodyRows()[0]!).getAllByRole('cell')).toHaveLength(1)
+    expect(within(bodyRows()[0]).getAllByRole('cell')).toHaveLength(1)
   })
 
   it('renders the real /minimax/license comparison', () => {
