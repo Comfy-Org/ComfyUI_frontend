@@ -4,6 +4,8 @@ import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import type * as vueuseModule from '@vueuse/core'
+
 import type { ComfyEvent } from '../../data/events'
 
 import { directoryRows } from '../../utils/eventsDirectory'
@@ -17,7 +19,7 @@ const { resizeCallbacks } = vi.hoisted(() => ({
   resizeCallbacks: [] as Array<(entries: Array<{ target: Element }>) => void>
 }))
 vi.mock(import('@vueuse/core'), async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@vueuse/core')>()
+  const actual = await importOriginal<typeof vueuseModule>()
   return {
     ...actual,
     useResizeObserver: vi.fn((_el: unknown, cb: unknown) => {
