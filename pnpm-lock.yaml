@@ -610,9 +610,6 @@ importers:
       glob:
         specifier: 'catalog:'
         version: 13.0.6
-      jsonata:
-        specifier: 'catalog:'
-        version: 2.2.1
       loglevel:
         specifier: ^1.9.2
         version: 1.9.2
@@ -1164,9 +1161,18 @@ importers:
 
   packages/shared-frontend-utils:
     dependencies:
+      '@comfyorg/object-info-parser':
+        specifier: workspace:*
+        version: link:../object-info-parser
       axios:
         specifier: 'catalog:'
         version: 1.18.1(debug@4.4.3)
+      es-toolkit:
+        specifier: ^1.39.9
+        version: 1.49.0
+      jsonata:
+        specifier: 'catalog:'
+        version: 2.2.1
     devDependencies:
       typescript:
         specifier: 'catalog:'

@@ -6,9 +6,9 @@ import {
   formatCreditsListValue,
   formatCreditsRangeValue,
   formatCreditsValue,
-  formatPricingResult,
-  useNodePricing
-} from '@/composables/node/useNodePricing'
+  formatPricingResult
+} from '@comfyorg/shared-frontend-utils/nodePricing'
+import { useNodePricing } from '@/composables/node/useNodePricing'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDef, PriceBadge } from '@/schemas/nodeDefSchema'
