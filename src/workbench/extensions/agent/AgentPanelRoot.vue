@@ -103,6 +103,7 @@ import {
 import { attachMintPortWiring } from './crdt/mintPortWiring'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
 import { createStandaloneDocFrameTransport } from './crdt/standaloneDocFrameTransport'
+import { turnContextFor } from './turnContext'
 
 const CrdtDevPanel = defineAsyncComponent(
   () => import('./crdt/CrdtDevPanel.vue')
@@ -135,14 +136,46 @@ const paywallPresentation = computed(() =>
 const sidebarTabStore = useSidebarTabStore()
 const { isBuilderMode } = useAppMode()
 
+// Declared here, above its first use: a `const` read before initialisation
+// throws and takes the whole panel down at setup.
+const isStandaloneAgent = import.meta.env.VITE_AGENT_STANDALONE === 'true'
+
 const { resolvedUserInfo, userDisplayName } = useCurrentUser()
+
+/**
+ * Standalone only: the identity the AGENT authenticated this client as.
+ *
+ * Attribution on `POST /doc/ops` is server-derived, and a batch whose ops claim
+ * a different actor is refused with 403. In the cloud the panel's session user
+ * matches what ingest forwards, so the claim agrees. Standalone bootstraps a
+ * fixed local user that the panel cannot see, so it fell back to "anonymous"
+ * and EVERY canvas edit was rejected — silently, which is why the agent kept
+ * reporting an empty canvas no matter what was on screen.
+ *
+ * Asking the agent avoids hardcoding its bootstrap constant here. Null until it
+ * answers; the follower simply attributes nothing until then.
+ */
+const standaloneUserId = ref<string | null>(null)
+if (isStandaloneAgent) {
+  void (async () => {
+    try {
+      const response = await fetch('/api/agent/identity')
+      if (!response.ok) return
+      const identity = (await response.json()) as { user_id?: string }
+      standaloneUserId.value = identity.user_id ?? null
+    } catch (error) {
+      reportError(error, {
+        errorType: 'agent_standalone_identity_failed',
+        level: 'warning'
+      })
+    }
+  })()
+}
 const userName = computed(
   () => userDisplayName.value?.trim().split(/\s+/)[0] || undefined
 )
 
 const rest = createAgentRestClient()
-
-const isStandaloneAgent = import.meta.env.VITE_AGENT_STANDALONE === 'true'
 
 const standaloneEvents = isStandaloneAgent
   ? createStandaloneAgentEventSource()
@@ -151,28 +184,14 @@ const standaloneEvents = isStandaloneAgent
 const events = standaloneEvents ?? createAgentEventSource(api)
 
 /**
- * Standalone document transport. The cloud path relies on ingest relaying the
- * agent's document frames onto ComfyUI's socket; a local agent has no ingest,
- * so the follower must read them off the agent's own stream and push edits to
- * its HTTP routes.
- *
- * It owns a SEPARATE socket from the chat stream above, deliberately. The agent
- * fixes a connection's workflow subscription at connect time, so following a
- * workflow means reconnecting — and the workflow binds partway through the
- * first turn. Reconnecting the CHAT stream at that moment drops every progress
- * frame published while it re-establishes, leaving the panel silent for the
- * rest of the turn. Reconnecting this one costs nothing: the follower
- * resubscribes and catches up through resync.
+ * Standalone document transport. The cloud follower rides ComfyUI's one socket
+ * because ingest multiplexes the agent's document frames onto it. The
+ * standalone agent speaks that same document protocol on its own socket, so
+ * the follower rides the chat stream's socket here — one socket, exactly as in
+ * the cloud, and following a workflow is a frame rather than a reconnect.
  */
-const standaloneDocTransport = isStandaloneAgent
-  ? createStandaloneDocFrameTransport({
-      onError: (error, context) =>
-        reportError(error, {
-          errorType: 'agent_standalone_doc_transport',
-          tags: { context },
-          level: 'warning'
-        })
-    })
+const standaloneDocTransport = standaloneEvents
+  ? createStandaloneDocFrameTransport(standaloneEvents)
   : null
 
 function onPaywallAction(action: AgentPaywallAction): void {
@@ -385,12 +404,17 @@ function activeWorkflowTurnContext(
   if (workflowDetached.value) return undefined
   const active = originWorkflow(origin)
   if (!active) return undefined
-  const id = cloudIdFor(active)
-  if (id === undefined && !active.isTemporary && origin !== undefined)
-    return undefined
-  return id === undefined
-    ? { tabPath: active.path }
-    : { id, tabPath: active.path }
+  return turnContextFor({
+    id: cloudIdFor(active),
+    tabPath: active.path,
+    isTemporary: active.isTemporary,
+    hasOrigin: origin !== undefined,
+    // Standalone has no ingest workflow list: the tab binding is the only way
+    // a tab resolves, so an unbound saved tab must still be sent (tab-only)
+    // or it can never acquire the workflow adoption would give it — and the
+    // agent mints a fresh one on every message instead.
+    bindingIsAuthoritative: isStandaloneAgent
+  })
 }
 
 function activeWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
@@ -538,7 +562,9 @@ const {
 } = useAgentCrdtFollower(
   boundWorkflowId,
   graphMutations,
-  () => resolvedUserInfo.value?.id ?? null,
+  // Standalone: the agent's own identity, so canvas edits are stamped with the
+  // actor the server derives rather than "anonymous", which it refuses.
+  () => standaloneUserId.value ?? resolvedUserInfo.value?.id ?? null,
   isBoundWorkflowActive,
   // `app.isGraphReady` is a plain getter; reading `canvasStore.canvas` (set
   // right after `app.setup()`) makes the follower's graph watch fire once the
@@ -550,15 +576,7 @@ const {
   standaloneDocTransport ?? undefined
 )
 
-// Standalone only: the agent sends a workflow's document frames ONLY to
-// connections that named it, so the bound workflow has to reach the document
-// socket's query string. Without this the canvas never moves. This follows on
-// the DOCUMENT socket, never the chat one — see the transport's comment for why
-// reconnecting the chat stream here would silence the panel mid-turn.
 if (standaloneDocTransport) {
-  watch(boundWorkflowId, (id) => standaloneDocTransport.follow(id ?? null), {
-    immediate: true
-  })
   onBeforeUnmount(() => standaloneDocTransport.destroy())
 }
 
