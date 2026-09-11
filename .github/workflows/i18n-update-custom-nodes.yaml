@@ -30,9 +30,15 @@ jobs:
         run: |
           set -euo pipefail
           for OWNER in "$INPUT_OWNER" "$INPUT_FORK_OWNER"; do
-            [[ "$OWNER" =~ ^[A-Za-z0-9][A-Za-z0-9-]{0,38}$ ]] || exit 1
+            if [[ ! "$OWNER" =~ ^[A-Za-z0-9][A-Za-z0-9-]{0,38}$ ]]; then
+              echo "::error title=Invalid owner::Repository owners must be GitHub login names" >&2
+              exit 1
+            fi
           done
-          [[ "$INPUT_REPOSITORY" =~ ^[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}$ ]] || exit 1
+          if [[ ! "$INPUT_REPOSITORY" =~ ^[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}$ ]]; then
+            echo "::error title=Invalid repository::Repository names must be GitHub repository names" >&2
+            exit 1
+          fi
       - name: Checkout repository
         uses: actions/checkout@v7
         with:

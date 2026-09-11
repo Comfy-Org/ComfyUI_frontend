@@ -95,12 +95,13 @@ jobs:
       - name: Summary
         env:
           INPUT_BRANCH: ${{ inputs.branch }}
+          RECOVERED_VERSION: ${{ steps.version.outputs.version }}
         run: |
           {
             echo "## Recovered release"
             echo
             echo "- Branch: \`$INPUT_BRANCH\`"
-            echo "- Tag: \`v${{ steps.version.outputs.version }}\`"
+            echo "- Tag: \`v$RECOVERED_VERSION\`"
             echo
             echo "Re-run \`release-weekly-comfyui.yaml\` to publish it to PyPI and open the ComfyUI pin PR."
           } >> "$GITHUB_STEP_SUMMARY"
