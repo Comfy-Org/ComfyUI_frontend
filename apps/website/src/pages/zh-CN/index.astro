@@ -15,6 +15,7 @@ import GetStartedSection from '../../components/home/GetStartedSection.vue'
 import { t } from '../../i18n/translations'
 import { isWorkshopInBuild } from '../../config/workshop-release'
 import { modelReleaseLinks } from '../../config/model-release-links'
+import { resolveDiscoveryProviders } from '../../components/home/modelDiscoveryProviders'
 import {
   comfyUiApplicationNode,
   comfyUiSoftwareId,
@@ -27,6 +28,8 @@ const { siteUrl } = pageContext(
   Astro.url.pathname,
   Astro.currentLocale,
 )
+
+const discoveryProviders = await resolveDiscoveryProviders(isWorkshopInBuild())
 ---
 
 <BaseLayout
@@ -41,7 +44,7 @@ const { siteUrl } = pageContext(
   <DeveloperPlatformSection locale="zh-CN" client:visible />
   <MinimaxLicenseHeroSection locale="zh-CN" client:visible />
   <ModelReleaseSection locale="zh-CN" modelLinks={await modelReleaseLinks(isWorkshopInBuild())} client:visible />
-  {isWorkshopInBuild() && <ModelDiscoverySection locale="zh-CN" client:visible />}
+  {isWorkshopInBuild() && <ModelDiscoverySection locale="zh-CN" providers={discoveryProviders} client:visible />}
   <FeaturedWorkflowsSection locale="zh-CN" client:load />
   <ProductShowcaseSection locale="zh-CN" client:load />
   <IndustriesSection locale="zh-CN" client:load />
