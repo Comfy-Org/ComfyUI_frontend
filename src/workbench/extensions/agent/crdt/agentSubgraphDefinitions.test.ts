@@ -129,6 +129,20 @@ describe('readSubgraphDefinitions', () => {
     expect(projected.nodes?.[0]).not.toHaveProperty('__incarnation')
   })
 
+  it('drops define_subgraph bookkeeping from the projected definition', () => {
+    const definition = createTestSubgraphData({
+      nodes: [interiorNode(1)] as never
+    })
+    const doc = seed(definition)
+    const stored = doc.getMap<Y.Map<unknown>>('definitions').get(definition.id)
+    stored?.set('__definition_digest', 'cmp-owned-digest')
+
+    const [projected] = readSubgraphDefinitions(doc)
+
+    expect(projected).toEqual(definition)
+    expect(projected).not.toHaveProperty('__definition_digest')
+  })
+
   it('passes nested definitions through untouched', () => {
     const inner = createTestSubgraphData({ nodes: [interiorNode(1)] as never })
     const outer = createTestSubgraphData({
