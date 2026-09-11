@@ -19,6 +19,9 @@ import { i18n } from '@/i18n'
 import type { TurnId } from '../../schemas/agentApiSchema'
 
 import AgentPanel from './AgentPanel.vue'
+import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
+
+setupInlinePromptEditorDom()
 
 const historyGroups = {
   current: [],

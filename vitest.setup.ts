@@ -7,15 +7,6 @@ import DOMPurify from 'dompurify'
 
 import { clearRegisteredLiteGraphTypes } from '@/lib/litegraph/src/litegraphInstance'
 
-// DOM test environments have no layout; editor geometry is covered in browser tests.
-if (typeof Range !== 'undefined') {
-  Range.prototype.getClientRects ??= () =>
-    Object.assign([], { item: () => null })
-  Range.prototype.getBoundingClientRect ??= () => new DOMRect()
-}
-if (typeof Document !== 'undefined')
-  Document.prototype.elementFromPoint ??= () => null
-
 beforeEach(() => {
   vi.stubGlobal('__VUE_DEVTOOLS_GLOBAL_HOOK__', { emit: vi.fn() })
   setActivePinia(createTestingPinia({ stubActions: false }))

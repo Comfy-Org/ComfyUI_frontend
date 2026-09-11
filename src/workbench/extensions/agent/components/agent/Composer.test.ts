@@ -5,7 +5,7 @@ import type {
   WorkflowReferenceOption
 } from '../../types/workflowReference'
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
-import { render, screen, within } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
@@ -17,6 +17,9 @@ import { i18n } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAgentRunModeStore } from '../../stores/agent/agentRunModeStore'
 import Composer from './Composer.vue'
+import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
+
+setupInlinePromptEditorDom()
 
 const tooltipBindings = new WeakMap<Element, unknown>()
 const tooltipDirectiveStub = {
@@ -774,7 +777,7 @@ describe('Composer', () => {
       expect(screen.getByRole('menu')).toBeInTheDocument()
 
       await userEvent.keyboard('{Home}')
-      expect(screen.queryByRole('menu')).toBeNull()
+      await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
     })
   })
 

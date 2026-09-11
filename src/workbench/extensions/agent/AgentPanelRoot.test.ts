@@ -23,6 +23,9 @@ vi.hoisted(() => {
 })
 
 import { i18n } from '@/i18n'
+import { setupInlinePromptEditorDom } from './components/agent/composer/inlinePromptEditorTestSetup'
+
+setupInlinePromptEditorDom()
 
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
