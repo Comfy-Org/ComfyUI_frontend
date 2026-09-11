@@ -7456,6 +7456,104 @@ Enterprise`
   },
   'wan3.reviews.highlightCta': { en: 'GET STARTED', 'zh-CN': '开始使用' },
   'footer.wan3': { en: 'Wan 3.0', 'zh-CN': 'Wan 3.0' },
+  // ChatGPT Images 2.5 model page (/chatgpt-image-2.5)
+  'chatgptImage25.meta.title': {
+    en: 'ChatGPT Images 2.5 on Comfy: Generate and Edit Images',
+    'zh-CN': 'Comfy 上的 ChatGPT Images 2.5：生成与编辑图像'
+  },
+  'chatgptImage25.meta.description': {
+    en: 'Run ChatGPT Images 2.5 in ComfyUI. Generate detailed images from text, edit existing visuals, and direct results with reference images in a repeatable workflow.',
+    'zh-CN':
+      '在 ComfyUI 中运行 ChatGPT Images 2.5。通过文字生成精细图像、编辑现有视觉内容，并使用参考图像在可复用工作流中引导结果。'
+  },
+  'chatgptImage25.breadcrumb.model': {
+    en: 'ChatGPT Images 2.5',
+    'zh-CN': 'ChatGPT Images 2.5'
+  },
+  'chatgptImage25.breadcrumb.updated': {
+    en: 'Updated September 2026',
+    'zh-CN': '更新于 2026 年 9 月'
+  },
+  'chatgptImage25.hero.title': {
+    en: 'ChatGPT Images 2.5\nis here',
+    'zh-CN': 'ChatGPT Images 2.5 已上线'
+  },
+  'chatgptImage25.hero.description': {
+    en: 'Turn a plain language brief into a finished image, or revise an existing visual without rebuilding it from scratch. ChatGPT Images 2.5 brings generation, reference guided creation, and precise editing into ComfyUI workflows through Partner Nodes.',
+    'zh-CN':
+      '用自然语言简报生成完整图像，或在无需从头制作的情况下修改现有视觉内容。ChatGPT Images 2.5 通过合作伙伴节点，将图像生成、参考图引导创作与精确编辑带入 ComfyUI 工作流。'
+  },
+  'chatgptImage25.hero.tagTextToImage': {
+    en: 'Text to Image',
+    'zh-CN': '文生图'
+  },
+  'chatgptImage25.hero.tagImageEditing': {
+    en: 'Image Editing',
+    'zh-CN': '图像编辑'
+  },
+  'chatgptImage25.hero.tagReferenceImages': {
+    en: 'Reference Images',
+    'zh-CN': '参考图像'
+  },
+  'chatgptImage25.hero.primaryCta': {
+    en: 'RUN CHATGPT IMAGES 2.5',
+    'zh-CN': '运行 ChatGPT Images 2.5'
+  },
+  'chatgptImage25.hero.secondaryCta': {
+    en: 'READ THE GUIDE',
+    'zh-CN': '查看教程'
+  },
+  'chatgptImage25.gallery.heading': {
+    en: 'Made with ChatGPT Images 2.5',
+    'zh-CN': '由 ChatGPT Images 2.5 创作'
+  },
+  'chatgptImage25.pricing.banner.title': {
+    en: "Start Comfy Cloud for free. Upgrade when you're ready.",
+    'zh-CN': '免费开始使用 Comfy Cloud，准备好了再升级。'
+  },
+  'chatgptImage25.pricing.banner.subtitle': {
+    en: '5 free runs on real GPUs — no credit card required.',
+    'zh-CN': '在真实 GPU 上免费运行 5 次 — 无需信用卡。'
+  },
+  'chatgptImage25.pricing.banner.cta': {
+    en: 'TRY FREE',
+    'zh-CN': '免费试用'
+  },
+  'chatgptImage25.faq.heading': { en: 'Q&A', 'zh-CN': '问答' },
+  'chatgptImage25.runOptions.heading': {
+    en: 'One engine, every way to run it',
+    'zh-CN': '同一引擎，多种运行方式'
+  },
+  'chatgptImage25.runOptions.subtitle': {
+    en: 'Build workflows in the browser today. Batch campaigns with the API, or connect image generation to the rest of your creative pipeline.',
+    'zh-CN':
+      '今天就在浏览器中搭建工作流。用 API 批量制作，或将图像生成接入完整创意流程。'
+  },
+  'chatgptImage25.runOptions.cta': {
+    en: 'LEARN MORE',
+    'zh-CN': '了解更多'
+  },
+  'chatgptImage25.reviews.heading': {
+    en: '4+ million Comfy creators say',
+    'zh-CN': '超过 400 万 Comfy 创作者这样说'
+  },
+  'chatgptImage25.reviews.highlightTitle': {
+    en: 'Comfy MCP: now turn your agent into a creative technologist.',
+    'zh-CN': 'Comfy MCP：让你的智能体成为创意技术专家。'
+  },
+  'chatgptImage25.reviews.highlightDescription': {
+    en: 'Your AI assistant can access the ecosystem, build workflows, and generate images, video, audio, or 3D.',
+    'zh-CN':
+      '你的 AI 助手可以接入整个生态、构建工作流，并生成图像、视频、音频或 3D 内容。'
+  },
+  'chatgptImage25.reviews.highlightCta': {
+    en: 'GET STARTED',
+    'zh-CN': '开始使用'
+  },
+  'footer.chatgptImage25': {
+    en: 'ChatGPT Images 2.5',
+    'zh-CN': 'ChatGPT Images 2.5'
+  },
   'minimax.meta.title': {
     en: 'MiniMax H3 on Comfy: Open-Weight Video Model',
     'zh-CN': 'Comfy 上的 MiniMax H3：开源权重视频模型'
