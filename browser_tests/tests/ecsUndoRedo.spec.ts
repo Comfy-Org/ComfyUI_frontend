@@ -165,9 +165,23 @@ test.describe(
       const tabB = comfyPage.menu.topbar.getWorkflowTab(tabBName)
       await expect(tabB).toBeVisible()
 
+      // Undo in the fresh tab must be a no-op: its queue is empty and it must
+      // not reach back into Tab A's history.
+      await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(0)
+      await comfyPage.keyboard.undo()
+      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+
       await comfyPage.menu.topbar.getWorkflowTab('Undo Tab A').click()
       await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(7)
       await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(1)
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(
+            (nodeId) => [...window.app!.graph.getNodeById(nodeId)!.pos],
+            toNodeId('3')
+          )
+        )
+        .not.toEqual(initialPosition)
       await comfyPage.menu.topbar.triggerTopbarCommand(['Edit', 'Undo'])
       await expect
         .poll(() =>
