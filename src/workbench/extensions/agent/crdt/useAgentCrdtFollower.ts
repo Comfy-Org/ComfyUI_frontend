@@ -24,6 +24,8 @@ import type { GraphOperation } from './graphOperations'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import type { OpsResultView } from './opSender'
 import { createOpSender } from './opSender'
+import type { ReconnectEvent } from './reconnectReport'
+import { initialReconnectState, reduceReconnect } from './reconnectReport'
 
 // FE-1902: the doc id is otherwise held only in memory (set on turn ack), so a
 // panel remount loses the binding until the NEXT turn ack. Persist it per-tab
@@ -301,6 +303,17 @@ export function useAgentCrdtFollower(
   let subscribeRetryStartedAt: number | null = null
   let subscribeRetryFailureReported = false
 
+  // TEL-10: mirrors the retry-exhaustion bookkeeping above, but for the
+  // recovery path — armed by the SAME two disconnect signals
+  // (`onReconnected`'s socket drop and a server `doc_subscribed{ok:false}`
+  // refusal). See `reconnectReport.ts` for the phases and the transition.
+  let reconnect = initialReconnectState
+  // The seq this binding is known to have reached, and the proof that it was
+  // ever bound at all: `null` until a subscribe for it is CONFIRMED. A refusal
+  // before that is FE-1901's cold-start race, not a recovery, so nothing is
+  // armed and no "reconnect" is reported for a connection that never was.
+  let confirmedVersion: number | null = null
+
   // The recency heartbeat: armed only while a subscribe is CONFIRMED (bound +
   // healthy by definition), slid forward by every doc-scoped frame, cancelled
   // by the same lifecycle exits as the subscribe retry. The probe is
@@ -366,6 +379,50 @@ export function useAgentCrdtFollower(
     subscribeRetryFailureReported = false
   }
 
+  const dispatchReconnect = (event: ReconnectEvent): void => {
+    const { state, report } = reduceReconnect(reconnect, event)
+    reconnect = state
+    if (report !== null) useTelemetry()?.trackAgentReconnectSucceeded(report)
+  }
+
+  const clearReconnectTracking = (): void => {
+    dispatchReconnect({ type: 'abandoned' })
+  }
+  const flushPendingReconnectReport = (): void => {
+    dispatchReconnect({ type: 'flushed' })
+  }
+
+  const armReconnectTracking = (): void => {
+    if (confirmedVersion === null) return
+    dispatchReconnect({
+      type: 'disconnected',
+      at: performance.now(),
+      fromVersion: confirmedVersion
+    })
+  }
+
+  const onReconnectConfirmed = (ackSeq: number | null): void => {
+    dispatchReconnect({
+      type: 'confirmed',
+      at: performance.now(),
+      ackSeq,
+      // Both disconnect signals produce subscribe attempts and both counters
+      // reset on this same confirmed subscribe, so the recovery cost is their
+      // sum: `onReconnected`'s immediate resubscribe plus every refusal-driven
+      // retry. Floored at 1 because a socket-drop recovery that never retried
+      // still took one attempt.
+      attempt: Math.max(1, reconnectAttempt + subscribeRetryAttempt)
+    })
+  }
+
+  const trackReconnectUpdate = (update: DocUpdate): void => {
+    dispatchReconnect({
+      type: 'update',
+      seq: update.seq,
+      bytes: update.update instanceof Uint8Array ? update.update.length : 0
+    })
+  }
+
   const reportSubscribeRetryExhausted = (): void => {
     if (
       subscribeRetryFailureReported ||
@@ -402,6 +459,7 @@ export function useAgentCrdtFollower(
     const target = subscribedWorkflowId.value
     if (target === null) return
     subscribeRetryStartedAt ??= performance.now()
+    armReconnectTracking()
     const delay = SUBSCRIBE_RETRY_BASE_MS * 2 ** subscribeRetryAttempt
     subscribeRetryAttempt += 1
     subscribeRetryTimer = setTimeout(() => {
@@ -436,6 +494,15 @@ export function useAgentCrdtFollower(
     lastFrameType.value = event.type
     recordDevEvent('doc_subscribed', event.detail ?? null)
     if (ok) {
+      // Snapshot before clearSubscribeRetry() resets the attempt counter. The
+      // confirm is only a RECOVERY if a disconnect signal armed one; on the
+      // panel's first-ever bind it merely establishes the baseline below.
+      const seq = event.detail?.seq
+      onReconnectConfirmed(typeof seq === 'number' ? seq : null)
+      confirmedVersion =
+        typeof seq === 'number'
+          ? Math.max(confirmedVersion ?? 0, seq)
+          : (confirmedVersion ?? 0)
       clearSubscribeRetry()
       armStaleProbe()
       reconnectAttempt = 0
@@ -472,6 +539,9 @@ export function useAgentCrdtFollower(
       }
       return
     }
+    trackReconnectUpdate(update)
+    if (confirmedVersion !== null)
+      confirmedVersion = Math.max(confirmedVersion, update.seq)
     if (staleProbeTimer !== null) armStaleProbe()
     markActivity()
     refreshPersistedDocId()
@@ -541,6 +611,11 @@ export function useAgentCrdtFollower(
     updatesApplied.value = 0
     lastFrameType.value = event.type
     clearStaleProbe()
+    // The seq space restarts with the new lineage, so a recovery armed against
+    // the old one can never be confirmed against a comparable version. Neither
+    // is a doc_reset itself a reconnect success: drop it without a report.
+    clearReconnectTracking()
+    confirmedVersion = null
     knownDocNodeIds = new Set()
     recordDevEvent(
       'doc_reset',
@@ -581,6 +656,7 @@ export function useAgentCrdtFollower(
     connected.value = false
     lastFrameType.value = event.type
     clearStaleProbe()
+    clearReconnectTracking()
     const detail =
       event instanceof CustomEvent
         ? (event.detail as { workflowId?: string } | null)
@@ -625,6 +701,7 @@ export function useAgentCrdtFollower(
     }
     connected.value = false
     clearStaleProbe()
+    armReconnectTracking()
     recordDevEvent('reconnected', null)
     bridge.resubscribe()
   }
@@ -714,6 +791,16 @@ export function useAgentCrdtFollower(
       // existing "reconcile on frame or on graph readiness" behaviour.
       const justActivated = active && previous?.[1] === false
       clearSubscribeRetry()
+      // A reconnect that was confirmed but still waiting for its catch-up
+      // frame DID succeed: report it before the binding changes. One that was
+      // never confirmed is dropped without a report.
+      flushPendingReconnectReport()
+      clearReconnectTracking()
+      // The new binding has never been confirmed and has its own seq space, and
+      // TEL-9's live counter must not carry an abandoned recovery's attempts
+      // into the next workflow's first report.
+      confirmedVersion = null
+      reconnectAttempt = 0
       clearStaleProbe()
       connected.value = false
       confirmedWorkflowId = null
@@ -770,6 +857,8 @@ export function useAgentCrdtFollower(
     // update twice after a remount.
     try {
       clearSubscribeRetry()
+      flushPendingReconnectReport()
+      clearReconnectTracking()
       clearStaleProbe()
       api.removeEventListener('reconnected', onReconnected)
       api.removeEventListener('status', onSocketActivity)

@@ -21,9 +21,17 @@ import type { MaterializableGraph } from './agentNodeMaterializer'
 
 const bridgeState = vi.hoisted(() => {
   class FakeBridge extends EventTarget {
-    subscribe = vi.fn()
+    // Mirrors the real bridge: `reconcile()` nulls `lastSeq`/`ackSeq` as soon
+    // as a subscribe frame leaves, so `lastSequence` reads 0 from the moment a
+    // subscribe is attempted until the next ack. Anything deriving a
+    // reconnect's `from_version` from the bridge would therefore report 0.
+    subscribe = vi.fn((_workflowId: string): void => {
+      this.lastSequence = 0
+    })
     unsubscribe = vi.fn()
-    resubscribe = vi.fn()
+    resubscribe = vi.fn(() => {
+      this.lastSequence = 0
+    })
     reconcile = vi.fn()
     destroy = vi.fn()
     sendHumanOps = vi.fn()
@@ -55,7 +63,8 @@ const adapterState = vi.hoisted(() => ({
 
 const telemetryState = vi.hoisted(() => ({
   trackAgentReconnectFailed: vi.fn(),
-  trackAgentReconnectStarted: vi.fn()
+  trackAgentReconnectStarted: vi.fn(),
+  trackAgentReconnectSucceeded: vi.fn()
 }))
 
 const materializerState = vi.hoisted(() => ({
@@ -269,6 +278,405 @@ describe('useAgentCrdtFollower', () => {
 
     expect(bridge().resubscribe).not.toHaveBeenCalled()
     expect(status().connected).toBe(true)
+    unmount()
+  })
+
+  it('TEL-10: reports reconnect success once the catch-up frame lands', () => {
+    vi.useFakeTimers({ toFake: ['performance', 'setTimeout', 'clearTimeout'] })
+    vi.setSystemTime(1_000)
+    const { unmount } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true, seq: 41 })
+
+    dispatchFrame('doc_subscribed', { ok: false })
+    vi.advanceTimersByTime(500)
+    // A catch-up frame can overtake its own ack; it is still replay.
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-1',
+      seq: 42,
+      update: new Uint8Array(10)
+    })
+    dispatchFrame('doc_subscribed', { ok: true, seq: 43 })
+    // The relay sends the catch-up AFTER the ack, so the ack alone is not the
+    // restore point: nothing is reported yet.
+    expect(telemetryState.trackAgentReconnectSucceeded).not.toHaveBeenCalled()
+
+    // The wait for the catch-up must not stretch the duration.
+    vi.advanceTimersByTime(250)
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-1',
+      seq: 43,
+      update: new Uint8Array(20)
+    })
+    expect(telemetryState.trackAgentReconnectSucceeded).toHaveBeenCalledOnce()
+    expect(telemetryState.trackAgentReconnectSucceeded).toHaveBeenCalledWith({
+      attempt: 1,
+      reconnect_duration_ms: 500,
+      replayed_bytes: 30,
+      from_version: 41,
+      to_version: 43
+    })
+
+    // Ordinary live traffic after the report must not re-report.
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-1',
+      seq: 44,
+      update: new Uint8Array(5)
+    })
+    expect(telemetryState.trackAgentReconnectSucceeded).toHaveBeenCalledOnce()
+
+    // A second recovery is its own report, baselined on the live frame above.
+    dispatchFrame('doc_subscribed', { ok: false })
+    vi.advanceTimersByTime(500)
+    dispatchFrame('doc_subscribed', { ok: true, seq: 45 })
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-1',
+      seq: 45,
+      update: new Uint8Array(7)
+    })
+    expect(telemetryState.trackAgentReconnectSucceeded).toHaveBeenCalledTimes(2)
+    expect(
+      telemetryState.trackAgentReconnectSucceeded
+    ).toHaveBeenLastCalledWith({
+      attempt: 1,
+      reconnect_duration_ms: 500,
+      replayed_bytes: 7,
+      from_version: 44,
+      to_version: 45
+    })
+    unmount()
+  })
+
+  it('TEL-10: reports zero replayed bytes when the first post-ack frame is live', () => {
+    vi.useFakeTimers({ toFake: ['performance', 'setTimeout', 'clearTimeout'] })
+    vi.setSystemTime(1_000)
+    const { unmount } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true, seq: 41 })
+
+    dispatchFrame('doc_subscribed', { ok: false })
+    vi.advanceTimersByTime(500)
+    dispatchFrame('doc_subscribed', { ok: true, seq: 41 })
+    expect(telemetryState.trackAgentReconnectSucceeded).not.toHaveBeenCalled()
+
+    // No catch-up was needed (ack seq equals the follower's own seq); the
+    // first live frame above the ack seq proves that and is NOT counted.
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-1',
+      seq: 42,
+      update: new Uint8Array(99)
+    })
+    expect(telemetryState.trackAgentReconnectSucceeded).toHaveBeenCalledOnce()
+    expect(telemetryState.trackAgentReconnectSucceeded).toHaveBeenCalledWith({
+      attempt: 1,
+      reconnect_duration_ms: 500,
+      replayed_bytes: 0,
+      from_version: 41,
+      to_version: 41
+    })
+    unmount()
+  })
+
+  it('TEL-10: a quiet channel is reported by the stale probe re-ack', () => {
+    vi.useFakeTimers({ toFake: ['performance', 'setTimeout', 'clearTimeout'] })
+    vi.setSystemTime(1_000)
+    const { unmount } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true, seq: 41 })
+
+    dispatchFrame('doc_subscribed', { ok: false })
+    vi.advanceTimersByTime(500)
+    dispatchFrame('doc_subscribed', { ok: true, seq: 41 })
+    expect(telemetryState.trackAgentReconnectSucceeded).not.toHaveBeenCalled()
+
+    bridge().resubscribe.mockClear()
+    vi.advanceTimersByTime(STALE_AFTER_MS)
+    expect(bridge().resubscribe).toHaveBeenCalledOnce()
+    dispatchFrame('doc_subscribed', { ok: true, seq: 41 })
+    expect(telemetryState.trackAgentReconnectSucceeded).toHaveBeenCalledOnce()
+    expect(telemetryState.trackAgentReconnectSucceeded).toHaveBeenCalledWith({
+      attempt: 1,
+      reconnect_duration_ms: 500,
+      replayed_bytes: 0,
+      from_version: 41,
+      to_version: 41
+    })
+    unmount()
+  })
+
+  it('TEL-10: the socket-drop path reports from the pre-drop version', () => {
+    vi.useFakeTimers({ toFake: ['performance', 'setTimeout', 'clearTimeout'] })
+    vi.setSystemTime(1_000)
+    const { unmount } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true, seq: 7 })
+
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    vi.advanceTimersByTime(1_200)
+    dispatchFrame('doc_subscribed', { ok: true, seq: 9 })
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-1',
+      seq: 9,
+      update: new Uint8Array(12)
+    })
+
+    expect(telemetryState.trackAgentReconnectSucceeded).toHaveBeenCalledOnce()
+    expect(telemetryState.trackAgentReconnectSucceeded).toHaveBeenCalledWith({
+      attempt: 1,
+      reconnect_duration_ms: 1_200,
+      replayed_bytes: 12,
+      from_version: 7,
+      to_version: 9
+    })
+    unmount()
+  })
+
+  it('TEL-10/TEL-9: a socket drop followed by refusals reports every attempt', () => {
+    // Both disconnect signals can fire in one recovery: the socket drop
+    // resubscribes immediately, the server refuses it, and the refusal retry
+    // is what finally lands. The success report must count both legs, and
+    // TEL-9's live counter must survive the snapshot the report takes.
+    vi.useFakeTimers({ toFake: ['performance', 'setTimeout', 'clearTimeout'] })
+    vi.setSystemTime(1_000)
+    const { unmount } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true, seq: 7 })
+
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    expect(telemetryState.trackAgentReconnectStarted).toHaveBeenCalledWith(
+      expect.objectContaining({ attempt: 1 })
+    )
+
+    dispatchFrame('doc_subscribed', { ok: false })
+    vi.advanceTimersByTime(500)
+    expect(bridge().resubscribe).toHaveBeenCalled()
+    dispatchFrame('doc_subscribed', { ok: true, seq: 9 })
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-1',
+      seq: 9,
+      update: new Uint8Array(6)
+    })
+
+    expect(telemetryState.trackAgentReconnectSucceeded).toHaveBeenCalledOnce()
+    expect(telemetryState.trackAgentReconnectSucceeded).toHaveBeenCalledWith({
+      attempt: 2,
+      reconnect_duration_ms: 500,
+      replayed_bytes: 6,
+      from_version: 7,
+      to_version: 9
+    })
+
+    // The report snapshot must not have consumed TEL-9's counter: the next
+    // socket drop is attempt 1 again because the confirm above reset it.
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    expect(telemetryState.trackAgentReconnectStarted).toHaveBeenLastCalledWith(
+      expect.objectContaining({ attempt: 1 })
+    )
+    unmount()
+  })
+
+  it('TEL-10: a workflow switch mid-reconnect does not report on the next bind', async () => {
+    vi.useFakeTimers({ toFake: ['performance', 'setTimeout', 'clearTimeout'] })
+    vi.setSystemTime(1_000)
+    const { unmount, workflowId } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true, seq: 41 })
+
+    // Armed but never confirmed: the switch drops the bookkeeping silently.
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    workflowId.value = 'wf-2'
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(telemetryState.trackAgentReconnectSucceeded).not.toHaveBeenCalled()
+
+    dispatchFrame('doc_subscribed', { ok: true, seq: 1 })
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-2',
+      seq: 1,
+      update: new Uint8Array(3)
+    })
+    expect(telemetryState.trackAgentReconnectSucceeded).not.toHaveBeenCalled()
+    unmount()
+  })
+
+  it('TEL-10: a workflow switch while the report is pending flushes it', async () => {
+    vi.useFakeTimers({ toFake: ['performance', 'setTimeout', 'clearTimeout'] })
+    vi.setSystemTime(1_000)
+    const { unmount, workflowId } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true, seq: 41 })
+
+    // Confirmed, catch-up not yet delivered: the reconnect DID succeed.
+    dispatchFrame('doc_subscribed', { ok: false })
+    vi.advanceTimersByTime(500)
+    dispatchFrame('doc_subscribed', { ok: true, seq: 43 })
+    expect(telemetryState.trackAgentReconnectSucceeded).not.toHaveBeenCalled()
+
+    workflowId.value = 'wf-2'
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(telemetryState.trackAgentReconnectSucceeded).toHaveBeenCalledOnce()
+    expect(telemetryState.trackAgentReconnectSucceeded).toHaveBeenCalledWith({
+      attempt: 1,
+      reconnect_duration_ms: 500,
+      replayed_bytes: 0,
+      from_version: 41,
+      to_version: 43
+    })
+    unmount()
+  })
+
+  it('TEL-10: does not report reconnect success on the first-ever bind', () => {
+    vi.useFakeTimers()
+    mountFollower('wf-1')
+
+    dispatchFrame('doc_subscribed', { ok: true, seq: 1 })
+
+    expect(telemetryState.trackAgentReconnectSucceeded).not.toHaveBeenCalled()
+  })
+
+  it('TEL-10: does not report reconnect success on a first-ever bind that is refused first', () => {
+    // FE-1901's documented cold start: the subscribe races the doc-host, is
+    // refused, and the retry lands. Nothing was ever connected, so there is no
+    // recovery to report - counting it would inflate the very rate this metric
+    // exists to measure.
+    vi.useFakeTimers({ toFake: ['performance', 'setTimeout', 'clearTimeout'] })
+    const { unmount } = mountFollower('wf-1')
+
+    dispatchFrame('doc_subscribed', { ok: false })
+    vi.advanceTimersByTime(500)
+    dispatchFrame('doc_subscribed', { ok: true, seq: 1 })
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-1',
+      seq: 1,
+      update: new Uint8Array(4)
+    })
+
+    expect(telemetryState.trackAgentReconnectSucceeded).not.toHaveBeenCalled()
+    unmount()
+  })
+
+  it('TEL-10: does not report reconnect success when the socket reconnects before any binding was confirmed', () => {
+    vi.useFakeTimers({ toFake: ['performance', 'setTimeout', 'clearTimeout'] })
+    const { unmount } = mountFollower('wf-1')
+
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    dispatchFrame('doc_subscribed', { ok: true, seq: 3 })
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-1',
+      seq: 3,
+      update: new Uint8Array(4)
+    })
+
+    expect(telemetryState.trackAgentReconnectSucceeded).not.toHaveBeenCalled()
+    unmount()
+  })
+
+  it('TEL-10: an ack without a seq reports the baseline rather than a version that moved backwards', () => {
+    vi.useFakeTimers({ toFake: ['performance', 'setTimeout', 'clearTimeout'] })
+    vi.setSystemTime(1_000)
+    const { unmount } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true, seq: 41 })
+
+    dispatchFrame('doc_subscribed', { ok: false })
+    vi.advanceTimersByTime(500)
+    dispatchFrame('doc_subscribed', { ok: true })
+
+    expect(telemetryState.trackAgentReconnectSucceeded).toHaveBeenCalledWith({
+      attempt: 1,
+      reconnect_duration_ms: 500,
+      replayed_bytes: 0,
+      from_version: 41,
+      to_version: 41
+    })
+    unmount()
+  })
+
+  it('TEL-10: a pre-ack frame above the ack seq is live traffic, not replay', () => {
+    // The relay joins the fanout before it acks, so a frame can arrive ahead
+    // of the ack that says where the catch-up ends. Only frames the ack
+    // actually covers are replay.
+    vi.useFakeTimers({ toFake: ['performance', 'setTimeout', 'clearTimeout'] })
+    vi.setSystemTime(1_000)
+    const { unmount } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true, seq: 41 })
+
+    dispatchFrame('doc_subscribed', { ok: false })
+    vi.advanceTimersByTime(500)
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-1',
+      seq: 42,
+      update: new Uint8Array(10)
+    })
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-1',
+      seq: 43,
+      update: new Uint8Array(90)
+    })
+    dispatchFrame('doc_subscribed', { ok: true, seq: 42 })
+
+    // The catch-up (seq 42) already landed, so the report needs nothing more.
+    expect(telemetryState.trackAgentReconnectSucceeded).toHaveBeenCalledWith({
+      attempt: 1,
+      reconnect_duration_ms: 500,
+      replayed_bytes: 10,
+      from_version: 41,
+      to_version: 42
+    })
+    unmount()
+  })
+
+  it('TEL-10: a lineage break drops the reconnect bookkeeping instead of carrying it into the new doc', () => {
+    vi.useFakeTimers({ toFake: ['performance', 'setTimeout', 'clearTimeout'] })
+    vi.setSystemTime(1_000)
+    const { unmount } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true, seq: 41 })
+
+    dispatchFrame('doc_subscribed', { ok: false })
+    vi.advanceTimersByTime(500)
+    dispatchFrame('doc_subscribed', { ok: true, seq: 43 })
+    dispatchFrame('doc_reset', { workflowId: 'wf-1', seq: 0 })
+
+    // The new lineage restarts at seq 1; without dropping the bookkeeping its
+    // frames would be counted as the old doc's catch-up.
+    dispatchFrame('doc_subscribed', { ok: true, seq: 1 })
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-1',
+      seq: 1,
+      update: new Uint8Array(8)
+    })
+
+    expect(telemetryState.trackAgentReconnectSucceeded).not.toHaveBeenCalled()
+    unmount()
+  })
+
+  it('TEL-10: a schema error drops the pending report instead of leaving it to a later frame', () => {
+    vi.useFakeTimers({ toFake: ['performance', 'setTimeout', 'clearTimeout'] })
+    vi.setSystemTime(1_000)
+    const { unmount } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true, seq: 41 })
+
+    dispatchFrame('doc_subscribed', { ok: false })
+    vi.advanceTimersByTime(500)
+    dispatchFrame('doc_subscribed', { ok: true, seq: 43 })
+    dispatchFrame('schema_error', { workflowId: 'wf-1' })
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-1',
+      seq: 43,
+      update: new Uint8Array(8)
+    })
+
+    // Nothing was projected, so the recovery never completed.
+    expect(telemetryState.trackAgentReconnectSucceeded).not.toHaveBeenCalled()
+    unmount()
+  })
+
+  it('TEL-9/TEL-10: a workflow switch resets the reconnect attempt counter', async () => {
+    vi.useFakeTimers({ toFake: ['performance', 'setTimeout', 'clearTimeout'] })
+    const { unmount, workflowId } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true, seq: 41 })
+
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    workflowId.value = 'wf-2'
+    await nextTick()
+
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    expect(telemetryState.trackAgentReconnectStarted).toHaveBeenLastCalledWith(
+      expect.objectContaining({ attempt: 1 })
+    )
     unmount()
   })
 
@@ -553,6 +961,7 @@ describe('useAgentCrdtFollower', () => {
     vi.setSystemTime(1_000)
     const { unmount } = mountFollower('wf-1')
     dispatchFrame('doc_subscribed', { ok: true })
+    bridge().lastSequence = 41
 
     vi.advanceTimersByTime(5_000)
     apiState.target.dispatchEvent(new Event('reconnected'))
