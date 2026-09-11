@@ -126,7 +126,7 @@ describe("define_subgraph application", () => {
       return project(doc, catalog)
     })
     expect(projections[0]).toEqual(projections[1])
-    expect(projections[0].nodes.some((node) => node.id === 99)).toBe(true)
+    expect(projections[0]!.nodes.some((node) => node.id === 99)).toBe(true)
   })
 
   it.each([
