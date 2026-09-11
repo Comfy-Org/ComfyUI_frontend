@@ -1072,17 +1072,29 @@ describe('useWorkflowPersistenceV2', () => {
     Object.assign(useTeamWorkspaceStore(), { initState: 'ready' })
     await nextTick()
 
-    expect(
-      JSON.parse(JSON.parse(localStorage.getItem(payloadKey)!).data)
-    ).toEqual({ marker: 'before-workspace-ready' })
+    const readyPayload = storageIO.readPayload(
+      'user-a:workspace-a',
+      hashPath(workflow.path)
+    )
+    expect(readyPayload).not.toBeNull()
+    if (!readyPayload) return
+    expect(JSON.parse(readyPayload.data)).toEqual({
+      marker: 'before-workspace-ready'
+    })
 
     mocks.state.currentGraph = { marker: 'after-workspace-ready' }
     mocks.state.graphChangedHandler?.()
     await vi.runAllTimersAsync()
 
-    expect(
-      JSON.parse(JSON.parse(localStorage.getItem(payloadKey)!).data)
-    ).toEqual({ marker: 'after-workspace-ready' })
+    const updatedPayload = storageIO.readPayload(
+      'user-a:workspace-a',
+      hashPath(workflow.path)
+    )
+    expect(updatedPayload).not.toBeNull()
+    if (!updatedPayload) return
+    expect(JSON.parse(updatedPayload.data)).toEqual({
+      marker: 'after-workspace-ready'
+    })
   })
 
   it('stays silent while the write gate is deferred on an unresolved identity', async () => {
