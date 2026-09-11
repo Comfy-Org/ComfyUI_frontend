@@ -14,6 +14,7 @@ import { StorageKeys } from '../base/storageKeys'
 type MigrationClaim = {
   scope: string
   sourceUpdatedAt: number
+  nonce?: string
 }
 
 const restorePointerKeys = [
@@ -42,38 +43,83 @@ export function migrateWorkspaceToScope(
   if (existingClaim && existingClaim.scope !== scope) return
 
   const draftKeys = getPayloadKeys(workspaceId)
+  const destinationIndex = readIndex(scope)
 
-  if (readIndex(scope)) {
-    const ownsDestination =
+  if (destinationIndex) {
+    const canFinishCleanup =
       existingClaim !== null && index.updatedAt <= existingClaim.sourceUpdatedAt
-    if (!ownsDestination) return
-    removeScopeArtifacts(workspaceId, draftKeys, restorePointerKeys)
-    removeStorageKeys(localStorage, [claimKey])
-    return
+    const hasNewerSource = index.updatedAt > destinationIndex.updatedAt
+    if (!canFinishCleanup && !hasNewerSource) return
   }
 
-  const claim: MigrationClaim = { scope, sourceUpdatedAt: index.updatedAt }
+  const claim: MigrationClaim = {
+    scope,
+    sourceUpdatedAt: index.updatedAt,
+    nonce: crypto.randomUUID()
+  }
   if (!writeStorage(localStorage, claimKey, JSON.stringify(claim))) return
-  const committedClaim = readLocalPointer(claimKey, isValidClaim)
-  if (committedClaim?.scope !== scope) return
+  if (!ownsClaim(claimKey, claim)) return
+
+  if (
+    destinationIndex &&
+    existingClaim !== null &&
+    index.updatedAt <= existingClaim.sourceUpdatedAt
+  ) {
+    cleanupSourceIfCurrent(workspaceId, draftKeys, claimKey, claim)
+    return
+  }
 
   const missingPointerKeys = restorePointerKeys.filter(
     (keyFor) => localStorage.getItem(keyFor(scope)) === null
   )
 
-  const copied =
+  const artifactsCopied =
     draftKeys.every((draftKey) => copyPayload(draftKey, workspaceId, scope)) &&
     missingPointerKeys.every((keyFor) =>
       copyRestorePointer(keyFor, workspaceId, scope)
-    ) &&
-    writeIndex(scope, index)
+    )
+  const copied =
+    artifactsCopied && ownsClaim(claimKey, claim) && writeIndex(scope, index)
 
   if (copied) {
-    removeScopeArtifacts(workspaceId, draftKeys, restorePointerKeys)
+    cleanupSourceIfCurrent(workspaceId, draftKeys, claimKey, claim)
   } else {
     removeScopeArtifacts(scope, draftKeys, missingPointerKeys)
+    releaseClaimIfOwned(claimKey, claim)
   }
-  removeStorageKeys(localStorage, [claimKey])
+}
+
+function ownsClaim(claimKey: string, claim: MigrationClaim): boolean {
+  const committedClaim = readLocalPointer(claimKey, isValidClaim)
+  return (
+    committedClaim?.scope === claim.scope &&
+    committedClaim.sourceUpdatedAt === claim.sourceUpdatedAt &&
+    committedClaim.nonce === claim.nonce
+  )
+}
+
+function releaseClaimIfOwned(claimKey: string, claim: MigrationClaim): void {
+  if (ownsClaim(claimKey, claim)) {
+    removeStorageKeys(localStorage, [claimKey])
+  }
+}
+
+function cleanupSourceIfCurrent(
+  workspaceId: string,
+  draftKeys: string[],
+  claimKey: string,
+  claim: MigrationClaim
+): void {
+  if (!ownsClaim(claimKey, claim)) return
+  const currentSource = readIndex(workspaceId)
+  if (
+    currentSource &&
+    currentSource.updatedAt <= claim.sourceUpdatedAt &&
+    ownsClaim(claimKey, claim)
+  ) {
+    removeScopeArtifacts(workspaceId, draftKeys, restorePointerKeys)
+  }
+  releaseClaimIfOwned(claimKey, claim)
 }
 
 function removeScopeArtifacts(

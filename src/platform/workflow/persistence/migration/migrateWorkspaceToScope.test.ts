@@ -7,6 +7,7 @@ import { migrateWorkspaceToScope } from './migrateWorkspaceToScope'
 
 const sourceWorkspaceId = 'workspace-a'
 const destinationScope = 'user-a:workspace-a'
+const competingScope = 'user-b:workspace-a'
 const draftPath = 'workflows/one.json'
 const draftKey = hashPath(draftPath)
 
@@ -357,6 +358,72 @@ describe('migrateWorkspaceToScope', () => {
     expect(readJson(StorageKeys.draftIndex(sourceWorkspaceId))).toEqual(
       buildIndex()
     )
+  })
+
+  it('allows only the winning identity to commit when another tab overwrites the claim', () => {
+    seedSourceWorkspace()
+    const claimKey = StorageKeys.migrationClaim(sourceWorkspaceId)
+    const destinationPayloadKey = StorageKeys.draftPayload(
+      draftPath,
+      destinationScope
+    )
+    const realSetItem = localStorage.setItem.bind(localStorage)
+    let replacedClaim = false
+    vi.spyOn(localStorage, 'setItem').mockImplementation(
+      (key: string, value: string) => {
+        realSetItem(key, value)
+        if (key === destinationPayloadKey && !replacedClaim) {
+          replacedClaim = true
+          realSetItem(
+            claimKey,
+            JSON.stringify({
+              scope: competingScope,
+              sourceUpdatedAt: 10,
+              nonce: 'competing-tab'
+            })
+          )
+          migrateWorkspaceToScope(sourceWorkspaceId, competingScope)
+        }
+      }
+    )
+
+    migrateWorkspaceToScope(sourceWorkspaceId, destinationScope)
+
+    expect(readJson(StorageKeys.draftIndex(competingScope))).toEqual(
+      buildIndex()
+    )
+    expect(readJson(StorageKeys.draftIndex(destinationScope))).toBe(null)
+    expect(readJson(StorageKeys.draftIndex(sourceWorkspaceId))).toBe(null)
+  })
+
+  it('preserves a newer source generation written while committing the destination index', () => {
+    seedSourceWorkspace()
+    const sourceIndexKey = StorageKeys.draftIndex(sourceWorkspaceId)
+    const destinationIndexKey = StorageKeys.draftIndex(destinationScope)
+    const newerIndex = { ...buildIndex(), updatedAt: 20 }
+    const realSetItem = localStorage.setItem.bind(localStorage)
+    const setItemSpy = vi
+      .spyOn(localStorage, 'setItem')
+      .mockImplementation((key: string, value: string) => {
+        realSetItem(key, value)
+        if (key === destinationIndexKey) {
+          realSetItem(sourceIndexKey, JSON.stringify(newerIndex))
+        }
+      })
+
+    migrateWorkspaceToScope(sourceWorkspaceId, destinationScope)
+
+    expect(readJson(sourceIndexKey)).toEqual(newerIndex)
+    expect(readJson(destinationIndexKey)).toEqual(buildIndex())
+    expect(
+      readJson(StorageKeys.draftPayload(draftPath, sourceWorkspaceId))
+    ).toEqual({ data: '{"nodes":[]}', updatedAt: 10 })
+
+    setItemSpy.mockRestore()
+    migrateWorkspaceToScope(sourceWorkspaceId, destinationScope)
+
+    expect(readJson(sourceIndexKey)).toBe(null)
+    expect(readJson(destinationIndexKey)).toEqual(newerIndex)
   })
 
   it('preserves a newer workspace when the committed destination claim is stale', () => {
