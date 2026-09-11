@@ -16,26 +16,26 @@ function setup(streaming = false) {
 }
 
 describe('useComposer', () => {
-  it('submit trims the draft, sends it, and clears draft + attachments', () => {
+  it('requests submission with trimmed text while retaining the editable draft', () => {
     const { composer, onSend } = setup()
     const attachment: ComposerAttachment = {
       id: 'a1',
       name: 'cat.png',
       ref: 'uploaded_cat.png'
     }
-    composer.draft.value = '  make a cat  '
+    composer.setText('  make a cat  ')
     composer.addAttachment(attachment)
 
     composer.submit()
 
     expect(onSend).toHaveBeenCalledWith('make a cat', [attachment])
-    expect(composer.draft.value).toBe('')
-    expect(composer.attachments.value).toEqual([])
+    expect(composer.draft.value).toBe('  make a cat  ')
+    expect(composer.attachments.value).toEqual([attachment])
   })
 
   it('blocks send while any attachment is uploading, unblocks on settle', () => {
     const { composer, onSend } = setup()
-    composer.draft.value = 'wire it in'
+    composer.setText('wire it in')
     composer.addAttachment({
       id: 'u1',
       name: 'cat.png',
@@ -67,7 +67,7 @@ describe('useComposer', () => {
     expect(revoke).toHaveBeenCalledWith('blob:a')
 
     revoke.mockClear()
-    composer.draft.value = 'send it'
+    composer.setText('send it')
     composer.addAttachment({
       id: 'a2',
       name: 'b.png',
@@ -93,7 +93,7 @@ describe('useComposer', () => {
 
   it('does not send when there is neither text nor an attachment', () => {
     const { composer, onSend } = setup()
-    composer.draft.value = '   '
+    composer.setText('   ')
 
     expect(composer.canSend.value).toBe(false)
     composer.submit()
@@ -103,7 +103,7 @@ describe('useComposer', () => {
 
   it('routes submit to stop while streaming, without sending', () => {
     const { composer, onSend, onStop } = setup(true)
-    composer.draft.value = 'ignored while streaming'
+    composer.setText('ignored while streaming')
 
     composer.submit()
 
@@ -123,7 +123,7 @@ describe('useComposer', () => {
 
   it('a recreated composer rehydrates the pending draft and attachments', () => {
     const first = setup().composer
-    first.draft.value = 'still here'
+    first.setText('still here')
     first.addAttachment({ id: 'a1', name: 'cat.png', ref: 'r' })
 
     const { composer: second, onSend } = setup()
@@ -134,8 +134,10 @@ describe('useComposer', () => {
     expect(onSend).toHaveBeenCalledWith('still here', [
       { id: 'a1', name: 'cat.png', ref: 'r' }
     ])
-    expect(first.draft.value).toBe('')
-    expect(first.attachments.value).toEqual([])
+    expect(first.draft.value).toBe('still here')
+    expect(first.attachments.value.map((attachment) => attachment.id)).toEqual([
+      'a1'
+    ])
   })
 
   it('removeAttachment drops the matching staged attachment', () => {

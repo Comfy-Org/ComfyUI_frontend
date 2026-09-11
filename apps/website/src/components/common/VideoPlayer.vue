@@ -4,6 +4,7 @@ import {
   refAutoReset,
   useElementHover,
   useEventListener,
+  useFocusWithin,
   useFullscreen,
   useMediaControls,
   useMouseInElement,
@@ -38,6 +39,7 @@ const {
   muteOnly = false,
   hideControls = false,
   hideFullscreen = false,
+  controlsOnHover = false,
   playButtonVariant = 'solid',
   fit = 'cover',
   ariaLabel,
@@ -62,6 +64,10 @@ const {
   muteOnly?: boolean
   hideControls?: boolean
   hideFullscreen?: boolean
+  /** Where the video is the content rather than something to operate, a
+   * paused frame should not carry a bar across it: the controls wait for a
+   * pointer. */
+  controlsOnHover?: boolean
   /** Style of the centered play/pause button in `minimal` mode. */
   playButtonVariant?: 'solid' | 'overlay'
   fit?: 'cover' | 'contain'
@@ -103,10 +109,15 @@ watch(
 
 // Controls fade
 const hovering = useElementHover(playerEl)
+const { focused } = useFocusWithin(playerEl)
 const recentActivity = refAutoReset(false, 800)
 
 const controlsVisible = computed(
-  () => !playing.value || hovering.value || recentActivity.value
+  () =>
+    focused.value ||
+    (controlsOnHover
+      ? hovering.value || recentActivity.value
+      : !playing.value || hovering.value || recentActivity.value)
 )
 
 function showControls() {
