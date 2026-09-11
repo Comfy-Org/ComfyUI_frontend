@@ -452,23 +452,20 @@ export class CloudAuthHelper {
     )
   }
 
-  /** Forces the password-reset request to fail (e.g. a real transport error, not enumeration). */
-  async mockLivePasswordResetFailure({
-    code,
-    message
-  }: LiveAuthErrorCase): Promise<void> {
+  /**
+   * Aborts `accounts:sendOobCode` at the connection level, the way a dropped
+   * network actually fails: the Firebase SDK maps it to
+   * `auth/network-request-failed`, a real transport failure rather than a
+   * REST error body. Enumeration safety means the endpoint answers success
+   * either way, so only a transport failure exercises the reset error path.
+   */
+  async mockLivePasswordResetTransportFailure(): Promise<void> {
     await this.page.route(
       '**/identitytoolkit.googleapis.com/**',
       async (route) => {
         const url = route.request().url()
         if (!url.includes('accounts:sendOobCode')) return route.fallback()
-        await route.fulfill({
-          status: code,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            error: { code, message, errors: [{ message, reason: 'invalid' }] }
-          })
-        })
+        await route.abort('failed')
       }
     )
   }

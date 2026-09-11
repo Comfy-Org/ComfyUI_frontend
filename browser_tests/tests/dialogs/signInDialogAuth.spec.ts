@@ -178,21 +178,18 @@ test.describe('Sign In dialog — live auth', () => {
   test('reports a real transport failure on password reset without claiming success', async ({
     comfyPage
   }) => {
-    await comfyPage.cloudAuth.mockLivePasswordResetFailure({
-      code: 500,
-      message: 'INTERNAL_ERROR'
-    })
+    await comfyPage.cloudAuth.mockLivePasswordResetTransportFailure()
 
     const dialog = new SignInDialog(comfyPage.page)
     await dialog.open()
 
     await dialog.emailInput.fill(CLOUD_SELF_EMAIL)
-    // Settle the failed request first; the bug is a success toast shown before it returns.
-    const resetRequest = comfyPage.page.waitForResponse((response) =>
-      response.url().includes('accounts:sendOobCode')
-    )
+    // Let the aborted request fail first; the bug is a success toast shown before it returns.
+    const resetFailed = comfyPage.page.waitForEvent('requestfailed', {
+      predicate: (request) => request.url().includes('accounts:sendOobCode')
+    })
     await dialog.forgotPasswordLink.click()
-    await resetRequest
+    await resetFailed
 
     await expect(
       comfyPage.page.getByText('Password reset email sent'),

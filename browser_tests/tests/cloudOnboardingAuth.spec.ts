@@ -189,19 +189,16 @@ test.describe('Cloud onboarding — live auth', { tag: '@cloud' }, () => {
     page,
     cloudAuth
   }) => {
-    await cloudAuth.mockLivePasswordResetFailure({
-      code: 500,
-      message: 'INTERNAL_ERROR'
-    })
+    await cloudAuth.mockLivePasswordResetTransportFailure()
     await openForgotPasswordForm(page)
 
-    // Settle the failed request first; the bug is a success shown before it returns.
-    const resetRequest = page.waitForResponse((response) =>
-      response.url().includes('accounts:sendOobCode')
-    )
+    // Let the aborted request fail first; the bug is a success shown before it returns.
+    const resetFailed = page.waitForEvent('requestfailed', {
+      predicate: (request) => request.url().includes('accounts:sendOobCode')
+    })
     await page.locator('#reset-email').fill(CLOUD_SELF_EMAIL)
     await page.getByRole('button', { name: 'Send reset link' }).click()
-    await resetRequest
+    await resetFailed
 
     await expect(
       page.getByText('Failed to send password reset email'),
