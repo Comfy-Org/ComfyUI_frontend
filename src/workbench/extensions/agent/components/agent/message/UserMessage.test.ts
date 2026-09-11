@@ -202,6 +202,15 @@ describe('UserMessage', () => {
     expect(clipboard.copy).toHaveBeenCalledWith('make it cinematic')
   })
 
+  it('copies a reference-only message with readable workflow names', async () => {
+    renderMessage({
+      text: '',
+      workflowReferences: [{ id: 'wf', name: 'Portrait', textOffset: 0 }]
+    })
+    await userEvent.click(screen.getByRole('button', { name: t('agent.copy') }))
+    expect(clipboard.copy).toHaveBeenCalledWith('@[Workflow: Portrait]')
+  })
+
   it('reaches and triggers the copy action by keyboard alone', async () => {
     const user = userEvent.setup()
     renderMessage({ text: 'make it cinematic' })
@@ -236,9 +245,10 @@ describe('UserMessage', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('offers no copy action on an attachment-only message', () => {
+  it('copies the filename on an attachment-only message', async () => {
     renderMessage({ text: '', attachments: [{ name: 'clip.bin' }] })
 
-    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: t('agent.copy') }))
+    expect(clipboard.copy).toHaveBeenCalledWith('@[File: clip.bin]')
   })
 })

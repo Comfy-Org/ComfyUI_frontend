@@ -91,6 +91,7 @@ import { resolveAgentPaywallPresentation } from './services/agent/agentPaywallPr
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { createStandaloneAgentEventSource } from './services/agent/standaloneAgentEventSource'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
+import { agentMessageText } from './utils/agentMessageText'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import {
@@ -744,7 +745,7 @@ async function onSelectHistory(id: string): Promise<void> {
 function buildTranscriptMarkdown(entries: ConversationEntry[]): string {
   return entries
     .map((entry) => {
-      if (entry.role === 'user') return `**You:** ${entry.text}`
+      if (entry.role === 'user') return `**You:** ${agentMessageText(entry)}`
       const text = entry.parts
         .filter((part) => part.type === 'text')
         .map((part) => part.text)

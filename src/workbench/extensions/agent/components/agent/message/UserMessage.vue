@@ -14,6 +14,7 @@ import type {
   WorkflowReference
 } from '../../../types/workflowReference'
 import type { ReplyAsset } from '../../../utils/replyAssets'
+import { agentMessageText } from '../../../utils/agentMessageText'
 import { workflowReferenceParts } from '../../../utils/workflowReferenceParts'
 import AgentTooltip from '../AgentTooltip.vue'
 import ReplyAssetGroup from './ReplyAssetGroup.vue'
@@ -39,6 +40,9 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const promptParts = computed(() =>
   workflowReferenceParts(text, workflowReferences)
+)
+const readableText = computed(() =>
+  agentMessageText({ text, workflowReferences, tags, attachments })
 )
 const { copy, copied } = useClipboard({ copiedDuring: 2000, legacy: true })
 
@@ -167,10 +171,10 @@ const splitAttachments = computed(() => {
       </template>
     </div>
     <div
-      v-if="text"
+      v-if="readableText"
       class="text-agent-fg-subtle flex opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 touch:opacity-100"
     >
-      <AgentTooltip v-if="editable" :label="t('g.edit')">
+      <AgentTooltip v-if="editable && text" :label="t('g.edit')">
         <button
           type="button"
           :aria-label="t('g.edit')"
@@ -185,7 +189,7 @@ const splitAttachments = computed(() => {
           type="button"
           :aria-label="copied ? t('agent.copied') : t('agent.copy')"
           class="hover:bg-agent-surface-hover hover:text-agent-fg flex size-6 cursor-pointer items-center justify-center rounded-lg p-1 transition-colors"
-          @click="copy(text)"
+          @click="copy(readableText)"
         >
           <span
             :class="

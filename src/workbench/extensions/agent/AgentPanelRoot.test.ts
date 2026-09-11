@@ -2004,7 +2004,13 @@ describe('AgentPanelRoot transcript copy', () => {
     const convo = useAgentConversationStore()
     const turnId = 'turn-1' as TurnId
     convo.setThreadId('th-1')
-    convo.recordUser(turnId, 'make a cat')
+    convo.recordUser(
+      turnId,
+      'make a cat with ',
+      [{ name: 'brief.txt', ref: 'brief.txt' }],
+      ['KSampler #12'],
+      [{ id: 'reference', name: 'Portrait', textOffset: 16 }]
+    )
     convo.startTurn(turnId)
     convo.ingest(
       zAgentWsEventForTest({
@@ -2050,7 +2056,7 @@ describe('AgentPanelRoot transcript copy', () => {
     )
 
     expect(clipboard.copy).toHaveBeenCalledWith(
-      '**You:** make a cat\n\n**Agent:** Here is a cat.'
+      '**You:** make a cat with @[Workflow: Portrait]\n@[Node: KSampler #12]\n@[File: brief.txt]\n\n**Agent:** Here is a cat.'
     )
   })
 })
