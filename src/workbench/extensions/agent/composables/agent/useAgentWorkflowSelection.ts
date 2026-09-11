@@ -33,7 +33,8 @@ export function useAgentWorkflowSelection({
   const panelStore = useAgentPanelStore()
   const { selectedWorkflow: selectedTarget, canRestoreWorkflow } =
     storeToRefs(panelStore)
-  const { workflowReferences } = storeToRefs(useAgentComposerStore())
+  const composerStore = useAgentComposerStore()
+  const { workflowReferences } = storeToRefs(composerStore)
   const { t } = useI18n()
   const toast = useToastStore()
   const {
@@ -67,9 +68,7 @@ export function useAgentWorkflowSelection({
   ): void {
     bindingStore.bind(workflowId, workflow.path)
     panelStore.setWorkflowTarget(workflow)
-    workflowReferences.value = workflowReferences.value.filter(
-      ({ id }) => id !== workflowId
-    )
+    composerStore.removeWorkflowReference(workflowId)
   }
 
   async function prepareWorkflowSelection(

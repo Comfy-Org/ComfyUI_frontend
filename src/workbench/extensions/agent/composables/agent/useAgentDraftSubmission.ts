@@ -44,11 +44,13 @@ export function useAgentDraftSubmission(
     const snapshot = composer.takeFailedSubmission()
     if (!snapshot || selection.staged.value.length > 0) return
 
-    composer.draft = snapshot.draft
-    composer.attachments = snapshot.attachments
-    composer.workflowReferences = snapshot.references.filter(
-      ({ id }) => id !== options.editableWorkflowId()
-    )
+    composer.replaceDraft({
+      text: snapshot.draft,
+      attachments: snapshot.attachments,
+      workflowReferences: snapshot.references.filter(
+        ({ id }) => id !== options.editableWorkflowId()
+      )
+    })
     if (options.target() === snapshot.target) selection.replace(snapshot.nodes)
   }
 

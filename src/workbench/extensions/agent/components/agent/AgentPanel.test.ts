@@ -155,6 +155,9 @@ describe('AgentPanel', () => {
             { id: 'wf-a', name: 'Flow A', textOffset: 14 }
           ]
         : []
+      useAgentComposerStore().setWorkflowReferences([
+        { id: 'stale', name: 'Stale draft reference', textOffset: 0 }
+      ])
       const { emitted } = render(AgentPanel, {
         props: {
           editableTurnId: turnId,
@@ -166,9 +169,6 @@ describe('AgentPanel', () => {
               workflowReferences: references
             }
           ],
-          workflowReferences: [
-            { id: 'stale', name: 'Stale draft reference', textOffset: 0 }
-          ],
           historyGroups
         },
         global: {
@@ -178,7 +178,7 @@ describe('AgentPanel', () => {
         }
       })
       const textarea = screen.getByRole('textbox')
-      useAgentComposerStore().draft = 'unfinished draft'
+      useAgentComposerStore().setText('unfinished draft')
 
       await user.click(screen.getByRole('button', { name: 'Edit' }))
 

@@ -94,10 +94,6 @@ const {
   editableTurnId?: TurnId | null
   answeringAskIds?: ReadonlySet<string>
 }>()
-const workflowReferences = defineModel<WorkflowReference[]>(
-  'workflowReferences',
-  { default: () => [] }
-)
 const emit = defineEmits<{
   send: [
     text: string,
@@ -370,7 +366,6 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           />
           <Composer
             ref="composerRef"
-            v-model:workflow-references="workflowReferences"
             :streaming="streaming"
             :submitting="submitting"
             :can-attach="canAttach"

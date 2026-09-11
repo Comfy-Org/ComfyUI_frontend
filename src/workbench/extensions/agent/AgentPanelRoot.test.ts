@@ -5154,9 +5154,11 @@ describe('AgentPanelRoot workflow binding', () => {
         await screen.findByRole('menuitem', { name: 'reference' })
       )
       const composer = useAgentComposerStore()
-      composer.attachments = [
-        { id: 'upload-1', name: 'cat.png', ref: 'uploaded_cat.png' }
-      ]
+      composer.addAttachment({
+        id: 'upload-1',
+        name: 'cat.png',
+        ref: 'uploaded_cat.png'
+      })
       await userEvent.keyboard('  Keep this draft  ')
       const originalReferences = [...composer.workflowReferences]
       await userEvent.click(screen.getByRole('button', { name: 'Send' }))
@@ -5196,9 +5198,11 @@ describe('AgentPanelRoot workflow binding', () => {
         )
       }
       if (nextAction === 'removed-attachment') {
-        composer.attachments = [
-          { id: 'upload-2', name: 'new.png', ref: 'new.png' }
-        ]
+        composer.addAttachment({
+          id: 'upload-2',
+          name: 'new.png',
+          ref: 'new.png'
+        })
         await userEvent.click(
           await screen.findByRole('button', {
             name: i18n.global.t('agent.remove')

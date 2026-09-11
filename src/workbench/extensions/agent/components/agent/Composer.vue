@@ -80,10 +80,6 @@ const emit = defineEmits<{
   openReferenceWorkflow: [workflowId: string, workflowName: string]
   workflowTargetRequired: []
 }>()
-const workflowReferences = defineModel<WorkflowReference[]>(
-  'workflowReferences',
-  { default: () => [] }
-)
 const { t } = useI18n()
 
 const assetDragActive = inject<Readonly<Ref<boolean>>>(
@@ -131,6 +127,7 @@ const composer = useComposer({
 
 const editorRef =
   useTemplateRef<InstanceType<typeof InlinePromptEditor>>('editorRef')
+const { workflowReferences } = composer
 
 const workflowSubmenuOpen = ref(false)
 const addMenuOpen = ref(false)
@@ -215,12 +212,8 @@ function insert(text: string): void {
   editorRef.value?.focus()
 }
 
-function replaceDraft({
-  text,
-  workflowReferences: references
-}: PromptSnapshot): void {
-  composer.draft.value = text
-  workflowReferences.value = references.map((reference) => ({ ...reference }))
+function replaceDraft(prompt: PromptSnapshot): void {
+  composer.replacePrompt(prompt)
   editorRef.value?.focus()
 }
 
@@ -412,8 +405,7 @@ defineExpose({
         <div class="relative min-h-7">
           <InlinePromptEditor
             ref="editorRef"
-            v-model="composer.draft.value"
-            v-model:references="workflowReferences"
+            :model-value="composer.prompt.value"
             :label="t('agent.placeholder')"
             :expanded="mentionVisible"
             :active-descendant="
@@ -422,6 +414,7 @@ defineExpose({
                 : undefined
             "
             @keydown="onComposerKeydown"
+            @update:model-value="composer.replacePrompt"
             @keyup="onComposerKeyup"
             @input="syncMention"
             @selection-change="syncMention"

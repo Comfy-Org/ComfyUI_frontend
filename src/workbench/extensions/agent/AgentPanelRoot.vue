@@ -154,7 +154,6 @@ const workflowService = useWorkflowService()
 const bindingStore = useAgentWorkflowTabBindingStore()
 const agentPanelStore = useAgentPanelStore()
 const composerStore = useAgentComposerStore()
-const { workflowReferences } = storeToRefs(composerStore)
 const { selectedWorkflow: selectedTarget } = storeToRefs(agentPanelStore)
 const { dismissedSelectionSignature, enabled: agentEnabled } =
   storeToRefs(agentPanelStore)
@@ -397,12 +396,6 @@ const editableWorkflowId = computed(() => {
   const target = selectedTarget.value
   return target ? cloudIdFor(target) : undefined
 })
-
-function removeWorkflowReference(id: string): void {
-  workflowReferences.value = workflowReferences.value.filter(
-    (workflow) => workflow.id !== id
-  )
-}
 
 const workflowTabs = computed<ActiveTab[]>(() =>
   workflowStore.openWorkflows.map((tab) => ({
@@ -817,7 +810,7 @@ function onNewChat(): void {
   composerStore.invalidateSubmission()
   cancelWorkflowSelection()
   exitNodeSelectionMode()
-  workflowReferences.value = []
+  composerStore.setWorkflowReferences([])
   newChat()
 }
 
@@ -1092,7 +1085,6 @@ function onPanelDrop(event: DragEvent): void {
     />
     <AgentPanel
       ref="panelRef"
-      v-model:workflow-references="workflowReferences"
       :entries
       :editable-turn-id="editableTurnId"
       :answering-ask-ids="answeringAskIds"
@@ -1127,7 +1119,7 @@ function onPanelDrop(event: DragEvent): void {
       @remove-tag="onRemoveSelectionTag"
       @mention-pick="onMentionPick"
       @request-workflow-references="onRequestWorkflowReferences"
-      @remove-workflow-reference="removeWorkflowReference"
+      @remove-workflow-reference="composerStore.removeWorkflowReference"
       @feedback="onFeedback"
       @answer-ask="answerAsk"
       @open-workflow="onOpenApprovalWorkflow"

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import type {
+  WorkflowReference,
   WorkflowReferenceMetadata,
   WorkflowReferenceOption
 } from '../../types/workflowReference'
@@ -44,9 +45,16 @@ function jsonResponse(status: number, body: unknown): Response {
 }
 
 function mount(
-  props: ComponentProps<typeof Composer> = {},
+  {
+    workflowReferences,
+    ...props
+  }: ComponentProps<typeof Composer> & {
+    workflowReferences?: WorkflowReference[]
+  } = {},
   attrs: Record<string, unknown> = {}
 ) {
+  if (workflowReferences)
+    useAgentComposerStore().setWorkflowReferences(workflowReferences)
   const selectWorkflowReference = vi.fn(
     async (workflow: WorkflowReferenceOption) => ({
       id: workflow.id ?? 'saved-scratch',
@@ -684,7 +692,7 @@ describe('Composer', () => {
       const references = [
         { id: 'wf-water', name: 'Water world', textOffset: 0 }
       ]
-      useAgentComposerStore().draft = 'use this workflow'
+      useAgentComposerStore().setText('use this workflow')
       const { emitted } = mount({ workflowReferences: references })
 
       await userEvent.click(screen.getByRole('button', { name: 'Send' }))
@@ -693,7 +701,7 @@ describe('Composer', () => {
     })
 
     it('keeps spaces next to boundary chips when trimming a sent prompt', async () => {
-      useAgentComposerStore().draft = '  Copy  into  '
+      useAgentComposerStore().setText('  Copy  into  ')
       const { emitted } = mount({
         workflowReferences: [
           { id: 'a', name: 'A', textOffset: 7 },
@@ -938,7 +946,7 @@ describe('Composer', () => {
   )
 
   it('removes the workflow reference before the text caret with Backspace', async () => {
-    useAgentComposerStore().draft = 'keep me'
+    useAgentComposerStore().setText('keep me')
     const { emitted } = mount({
       workflowReferences: [
         { id: 'wf-1', name: 'Water world', textOffset: 0 },
@@ -1022,15 +1030,15 @@ describe('Composer', () => {
   })
 
   it('keeps uploaded attachments when navigating from a staged workflow', async () => {
+    useAgentComposerStore().setWorkflowReferences([
+      { id: 'wf-1', name: 'Water world', textOffset: 0 }
+    ])
     const composer = ref<InstanceType<typeof Composer> | null>(null)
     const onOpenReferenceWorkflow = vi.fn()
     const Host = defineComponent({
       setup: () => () =>
         h(Composer, {
           ref: composer,
-          workflowReferences: [
-            { id: 'wf-1', name: 'Water world', textOffset: 0 }
-          ],
           onOpenReferenceWorkflow
         })
     })

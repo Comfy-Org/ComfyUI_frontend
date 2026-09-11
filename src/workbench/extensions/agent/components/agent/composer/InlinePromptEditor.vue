@@ -9,7 +9,7 @@ import { useI18n } from 'vue-i18n'
 
 import type { PromptEditor } from '../../../types/promptEditor'
 import type {
-  WorkflowReference,
+  PromptSnapshot,
   WorkflowReferenceMetadata
 } from '../../../types/workflowReference'
 import {
@@ -30,9 +30,8 @@ const {
   expanded?: boolean
   activeDescendant?: string
 }>()
-const model = defineModel<string>({ default: '' })
-const references = defineModel<WorkflowReference[]>('references', {
-  default: () => []
+const model = defineModel<PromptSnapshot>({
+  default: () => ({ text: '', workflowReferences: [] })
 })
 const emit = defineEmits<{
   input: []
@@ -64,7 +63,7 @@ const plugins = [
 
 function createState(): EditorState {
   return EditorState.create({
-    doc: promptDocument(model.value, references.value),
+    doc: promptDocument(model.value.text, model.value.workflowReferences),
     plugins
   })
 }
@@ -107,8 +106,7 @@ onMounted(() => {
       view.updateState(view.state.apply(transaction))
       if (transaction.docChanged) {
         const draft = promptDraft(view.state.doc)
-        model.value = draft.text
-        references.value = draft.references
+        model.value = { text: draft.text, workflowReferences: draft.references }
         for (const previous of previousReferences)
           if (!draft.references.some(({ id }) => id === previous.id))
             emit('removeWorkflowReference', previous.id)
@@ -234,11 +232,13 @@ onMounted(() => {
 })
 
 watch(
-  [model, references],
+  model,
   () => {
     if (
       !view ||
-      view.state.doc.eq(promptDocument(model.value, references.value))
+      view.state.doc.eq(
+        promptDocument(model.value.text, model.value.workflowReferences)
+      )
     )
       return
     insertions.clear()

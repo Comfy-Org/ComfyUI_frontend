@@ -19,18 +19,20 @@ function setup() {
   scopes.push(scope)
   const fixture = scope.run(() => {
     const composer = useAgentComposerStore()
-    composer.draft = '  Compare these  '
-    composer.attachments = [
-      {
-        id: 'upload-1',
-        name: 'cat.png',
-        ref: 'uploaded-cat',
-        previewUrl: 'blob:cat'
-      }
-    ]
-    composer.workflowReferences = [
-      { id: 'wf-reference', name: 'Lighting', textOffset: 0 }
-    ]
+    composer.replaceDraft({
+      text: '  Compare these  ',
+      attachments: [
+        {
+          id: 'upload-1',
+          name: 'cat.png',
+          ref: 'uploaded-cat',
+          previewUrl: 'blob:cat'
+        }
+      ],
+      workflowReferences: [
+        { id: 'wf-reference', name: 'Lighting', textOffset: 0 }
+      ]
+    })
     const target = shallowRef<ComfyWorkflow | null>(
       createMockLoadedWorkflow({ path: 'workflows/target.json' })
     )
@@ -120,7 +122,7 @@ describe('Agent draft submission', () => {
       original.nodes,
       original.references
     )
-    composer.draft = 'Next prompt'
+    composer.setText('Next prompt')
     pending.resolve(true)
     await sending
     expect(composer.draft).toBe('Next prompt')
@@ -133,10 +135,14 @@ describe('Agent draft submission', () => {
       if (reason === 'blocked') canSubmit.value = false
       if (reason === 'no-target') target.value = null
       if (reason === 'empty') {
-        composer.draft = ' '
-        composer.attachments = []
+        composer.replaceDraft({
+          text: ' ',
+          attachments: [],
+          workflowReferences: composer.workflowReferences
+        })
       }
-      if (reason === 'uploading') composer.attachments[0].uploading = true
+      if (reason === 'uploading')
+        composer.updateAttachment('upload-1', { uploading: true })
       const draft = composer.draft
       const attachments = [...composer.attachments]
       const references = [...composer.workflowReferences]
@@ -169,8 +175,8 @@ describe('Agent draft submission', () => {
   it('does not recover over an edit that was subsequently cleared', async () => {
     const { composer, selection, submit, pending } = setup()
     const sending = submit()
-    composer.draft = 'Changed my mind'
-    composer.draft = ''
+    composer.setText('Changed my mind')
+    composer.setText('')
     pending.resolve(false)
     await sending
 
@@ -190,8 +196,8 @@ describe('Agent draft submission', () => {
         pending.resolve(false)
         await sending
       }
-      composer.draft = 'New input'
-      composer.draft = ''
+      composer.setText('New input')
+      composer.setText('')
       pending.resolve(false)
       await sending
       remount()
@@ -206,10 +212,10 @@ describe('Agent draft submission', () => {
     const { composer, submit, pending, remount } = setup()
     const sending = submit()
     remount()
-    composer.workflowReferences = [
+    composer.setWorkflowReferences([
       { id: 'wf-new', name: 'New reference', textOffset: 0 }
-    ]
-    composer.workflowReferences = []
+    ])
+    composer.setWorkflowReferences([])
     pending.resolve(false)
     await sending
 
@@ -221,7 +227,7 @@ describe('Agent draft submission', () => {
     const { composer, submit, send, pending, remount } = setup()
     const sending = submit()
     remount()
-    composer.draft = 'Next prompt'
+    composer.setText('Next prompt')
     await submit()
     expect(send).toHaveBeenCalledOnce()
     pending.resolve(true)
@@ -237,7 +243,7 @@ describe('Agent draft submission', () => {
     const first = submit()
     remount()
     composer.invalidateSubmission()
-    composer.draft = 'New chat draft'
+    composer.setText('New chat draft')
     let resolveNext: (sent: boolean) => void = () => {}
     const next = new Promise<boolean>((resolve) => {
       resolveNext = resolve
@@ -251,7 +257,7 @@ describe('Agent draft submission', () => {
     await second
 
     expect(composer.draft).toBe('New chat draft')
-    composer.draft = ''
+    composer.setText('')
     await nextTick()
     remount()
     expect(composer.draft).toBe('')
