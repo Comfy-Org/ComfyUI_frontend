@@ -45,14 +45,12 @@ function activeClientFor(connId: ConnectionId): McpClient {
   return conn.clients[activeClientIds.value[connId]]!
 }
 
-// `clients` is `Partial<Record<McpClientId, McpClient>>` (cloud and local
-// don't share the same client id space), but every entry a connection
-// actually enumerates its own keys with is present by construction. Narrow
-// away the `| undefined` here once instead of asserting at each template
-// read site.
 function clientEntriesFor(connId: ConnectionId): [McpClientId, McpClient][] {
-  return Object.entries(connections[connId].clients).filter(
-    (entry): entry is [McpClientId, McpClient] => entry[1] !== undefined
+  return Object.entries(connections[connId].clients).flatMap(
+    ([clientId, client]): [McpClientId, McpClient][] =>
+      client !== undefined && isMcpClientId(clientId, connections)
+        ? [[clientId, client]]
+        : []
   )
 }
 
