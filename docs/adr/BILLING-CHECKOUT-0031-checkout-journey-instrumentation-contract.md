@@ -53,15 +53,18 @@ must never be readable as a business success/failure/timeout. Phases:
 | `billing.checkout.payment_submit_attempted` | Submission passes local busy/eligibility guards, before Elements validation    |
 | `billing.checkout.payment_submit_failed`    | Elements validation or token-creation failure; phase-distinguished             |
 | `billing.checkout.submitted`                | Immediately before the checkout API request, after any token creation          |
-| `billing.checkout.operation_linked`         | Response or validated recovery binds journey/attempt to an operation ID        |
+| `billing.checkout.operation_linked`         | Response or validated recovery binds the journey to an operation ID            |
 
 Every event carries a frozen `CheckoutJourneyContext`: `checkout_journey_id`,
 `checkout_entered_at` (UTC), `assignment_status`, optional `assigned_arm`,
-`entry_flow`, `entry_source`, and optional `checkout_attempt_id`/`billing_op_id`
-/`ui_mode`. `schema_version` is stamped on every payload. Per-emission identity
-and cross-sink correlation rely on `checkout_journey_id`/`checkout_attempt_id`
-plus each provider's own native event id (PostHog event UUID, Datadog RUM
-`action.id`); the dispatcher does not mint a redundant shared id.
+`entry_flow`, `entry_source`, and optional `ui_mode`/`billing_op_id`.
+`ui_mode` records the checkout UI the user actually saw (`embedded`/`hosted`),
+so a frozen arm can be reconciled against real experience. `schema_version` is
+stamped on every payload. Correlation rides on `checkout_journey_id` (all
+events) and `billing_op_id` (from `operation_linked` onward, the join to the
+terminal `billing.*` taxonomy), plus each provider's own native event id
+(PostHog event UUID, Datadog RUM `action.id`); the dispatcher does not mint a
+redundant shared id.
 
 ### 2. Assignment is frozen from the server response, never fabricated
 
@@ -95,6 +98,14 @@ amount change) are enforced by the calling composable choosing to start a fresh
 journey; the owner enforces the actor/workspace/flow boundary. Stale or corrupt
 storage is discarded safely and legacy records without journey metadata are
 treated as unknown, never assigned retroactively.
+
+Storage is a single per-tab slot, so two rails cannot hold independent journeys
+at once. A journey already bound to an in-flight operation (`billing_op_id` set)
+takes precedence: a differing rail's entry will not overwrite it, and a journey
+binds to exactly one operation and is never rebound. The bound journey's poller
+owns the terminal clear (gated on `billing_op_id`) until it resolves. During
+such an overlap the second rail forgoes its own journey rather than corrupting
+the first; full per-rail isolation is deferred.
 
 ### 4. Privacy
 

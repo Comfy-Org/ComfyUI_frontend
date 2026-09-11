@@ -114,6 +114,23 @@ describe('resolveCheckoutJourney', () => {
     expect(second.resumed).toBe(false)
     expect(second.record.journey_id).not.toBe(first.record.journey_id)
   })
+
+  it('does not overwrite a different rail bound to an in-flight operation', () => {
+    const subscription = resolveCheckoutJourney(baseInput)
+    bindOperationToCheckoutJourney('op-1')
+
+    const topup = resolveCheckoutJourney({ ...baseInput, entryFlow: 'topup' })
+    expect(topup.resumed).toBe(true)
+    expect(topup.record.journey_id).toBe(subscription.record.journey_id)
+    expect(getActiveCheckoutJourney()?.billing_op_id).toBe('op-1')
+  })
+
+  it('still starts a fresh journey for a different rail when none is bound', () => {
+    const subscription = resolveCheckoutJourney(baseInput)
+    const topup = resolveCheckoutJourney({ ...baseInput, entryFlow: 'topup' })
+    expect(topup.resumed).toBe(false)
+    expect(topup.record.journey_id).not.toBe(subscription.record.journey_id)
+  })
 })
 
 describe('bindOperationToCheckoutJourney', () => {
@@ -126,6 +143,14 @@ describe('bindOperationToCheckoutJourney', () => {
 
   it('is a no-op when no journey is active', () => {
     expect(bindOperationToCheckoutJourney('op-1')).toBeNull()
+  })
+
+  it('refuses to rebind a journey already bound to another operation', () => {
+    resolveCheckoutJourney(baseInput)
+    bindOperationToCheckoutJourney('op-1')
+
+    expect(bindOperationToCheckoutJourney('op-2')).toBeNull()
+    expect(getActiveCheckoutJourney()?.billing_op_id).toBe('op-1')
   })
 })
 

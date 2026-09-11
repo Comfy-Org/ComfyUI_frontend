@@ -59,9 +59,20 @@ describe('getCheckoutJourneyTelemetryEventPayload', () => {
       assignment_status: 'unavailable'
     }
     const payload = getCheckoutJourneyTelemetryEventPayload(event)
-    expect('checkout_attempt_id' in payload).toBe(false)
     expect('billing_op_id' in payload).toBe(false)
     expect('ui_mode' in payload).toBe(false)
+  })
+
+  it('carries the ui_mode the user actually saw', () => {
+    const event: CheckoutJourneyTelemetryEvent = {
+      ...baseContext,
+      phase: 'entered',
+      assignment_status: 'resolved',
+      assigned_arm: 'treatment',
+      ui_mode: 'embedded'
+    }
+    const payload = getCheckoutJourneyTelemetryEventPayload(event)
+    expect(payload.ui_mode).toBe('embedded')
   })
 
   it('carries phase-specific fields for a failed preview', () => {

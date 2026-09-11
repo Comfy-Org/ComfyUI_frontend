@@ -1,3 +1,4 @@
+import type { ServerFeatureFlag } from '@/composables/useFeatureFlags'
 import type {
   CheckoutAssignmentStatus,
   CheckoutEntryFlow,
@@ -18,7 +19,11 @@ import type {
 
 const CHECKOUT_JOURNEY_MAX_AGE_MS = 24 * 60 * 60 * 1000
 const CHECKOUT_JOURNEY_STORAGE_KEY = 'comfy.checkout.journey'
-const EMBEDDED_CHECKOUT_FLAG_KEY = 'embedded_checked_enabled'
+// Typed to the enum member's value so a future correction of the flag key (or
+// its `checked`/`checkout` typo) fails to compile here instead of silently
+// reading a stale key. Type-only, so consumers' test mocks need no runtime enum.
+const EMBEDDED_CHECKOUT_FLAG_KEY: `${ServerFeatureFlag.EMBEDDED_CHECKOUT_ENABLED}` =
+  'embedded_checked_enabled'
 
 const ENTRY_FLOWS: ReadonlySet<CheckoutEntryFlow> = new Set([
   'initial_subscription',
@@ -62,7 +67,6 @@ export interface CheckoutJourneyRecord {
   assignment_status: CheckoutAssignmentStatus
   assigned_arm?: CheckoutJourneyArm
   ui_mode?: CheckoutUiMode
-  checkout_attempt_id?: string
   billing_op_id?: string
 }
 
@@ -81,7 +85,8 @@ export interface StartCheckoutJourneyInput extends CheckoutJourneyIdentity {
   assignment: CheckoutAssignment
   /** Stable key for the intended purchase (e.g. tier:cycle); a change starts a new journey. */
   intent?: string
-  checkoutAttemptId?: string
+  /** Checkout UI the user actually sees, so a frozen arm can be reconciled against real experience. */
+  uiMode?: CheckoutUiMode
 }
 
 export interface ResolveCheckoutJourneyResult {
@@ -128,9 +133,7 @@ export function createCheckoutJourneyRecord(
     ...(input.assignment.status === 'resolved' && {
       assigned_arm: input.assignment.arm
     }),
-    ...(input.checkoutAttemptId !== undefined && {
-      checkout_attempt_id: input.checkoutAttemptId
-    })
+    ...(input.uiMode !== undefined && { ui_mode: input.uiMode })
   }
 }
 
@@ -143,9 +146,6 @@ export function toCheckoutJourneyContext(
     entry_flow: record.entry_flow,
     entry_source: record.entry_source,
     ...(record.ui_mode !== undefined && { ui_mode: record.ui_mode }),
-    ...(record.checkout_attempt_id !== undefined && {
-      checkout_attempt_id: record.checkout_attempt_id
-    }),
     ...(record.billing_op_id !== undefined && {
       billing_op_id: record.billing_op_id
     })
@@ -200,6 +200,19 @@ export function resolveCheckoutJourney(
     return { record: existing, resumed: true }
   }
 
+  // A different rail's operation is in flight and still owns the single journey
+  // slot — its poller gates the terminal clear on this record's billing_op_id.
+  // A single storage slot can't isolate two concurrent rails, so the bound
+  // journey takes precedence until it resolves. See ADR-BILLING-CHECKOUT-0031.
+  if (
+    existing &&
+    !isCheckoutJourneyExpired(existing, now) &&
+    existing.billing_op_id !== undefined &&
+    existing.entry_flow !== input.entryFlow
+  ) {
+    return { record: existing, resumed: true }
+  }
+
   const record = createCheckoutJourneyRecord(input, now)
   saveCheckoutJourney(record)
   return { record, resumed: false }
@@ -215,6 +228,13 @@ export function bindOperationToCheckoutJourney(
   const existing = loadCheckoutJourney()
   if (!existing) {
     return null
+  }
+
+  // A journey binds to exactly one operation. If it is already bound (e.g. a
+  // concurrent rail's operation is in flight), refuse to rebind so the first
+  // operation keeps ownership of the terminal clear.
+  if (existing.billing_op_id !== undefined) {
+    return existing.billing_op_id === billingOpId ? existing : null
   }
 
   const updated: CheckoutJourneyRecord = {
@@ -395,9 +415,6 @@ function normalizeRecord(value: unknown): CheckoutJourneyRecord | null {
     candidate.ui_mode === 'unknown'
       ? { ui_mode: candidate.ui_mode }
       : {}),
-    ...(typeof candidate.checkout_attempt_id === 'string' && {
-      checkout_attempt_id: candidate.checkout_attempt_id
-    }),
     ...(typeof candidate.billing_op_id === 'string' && {
       billing_op_id: candidate.billing_op_id
     })
