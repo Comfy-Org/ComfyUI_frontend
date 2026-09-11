@@ -57,11 +57,20 @@ function scrollToLatest(): void {
   bottom.value?.scrollIntoView({ block: 'end' })
 }
 
+// Enough to answer "did the tail grow?" without serializing the transcript to
+// measure it. Serializing costs the whole message on every update, which grows
+// with the turn.
 const latestContentSignal = computed(() => {
   const last = entries.at(-1)
-  if (!last) return '0'
-  const size = 'parts' in last ? JSON.stringify(last.parts).length : 0
-  return `${entries.length}:${size}`
+  if (!last || !('parts' in last)) return `${entries.length}`
+  const tail = last.parts.at(-1)
+  const tailSize =
+    tail && 'text' in tail
+      ? tail.text.length
+      : tail && tail.type === 'tool'
+        ? `${tail.state}:${tail.ok}:${tail.durationMs}`
+        : ''
+  return `${entries.length}:${last.parts.length}:${tailSize}`
 })
 
 watch(

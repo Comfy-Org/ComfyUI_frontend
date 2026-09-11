@@ -110,6 +110,33 @@ describe('ConversationView', () => {
     })
   })
 
+  it('follows the reply as each kind of content lands', async () => {
+    const { store } = mountHarness()
+    store.recordUser(T, 'make a cat')
+    store.startTurn(T)
+    await nextTick()
+
+    const scrollIntoView = vi.fn()
+    Element.prototype.scrollIntoView = scrollIntoView
+
+    // a new part
+    store.ingest(thinking('msg-1', 'pondering'))
+    await nextTick()
+    expect(scrollIntoView).toHaveBeenCalled()
+
+    // the tail part growing
+    scrollIntoView.mockClear()
+    store.ingest(delta('msg-1', 'Here is a cat'))
+    await nextTick()
+    expect(scrollIntoView).toHaveBeenCalled()
+
+    // a tool call settling
+    scrollIntoView.mockClear()
+    store.ingest(toolCall('msg-1', 'add_node', 'success'))
+    await nextTick()
+    expect(scrollIntoView).toHaveBeenCalled()
+  })
+
   it('shows a scroll-to-latest button when scrolled up and returns to bottom on click', async () => {
     const assistant: AssistantMessage = {
       id: 'msg-1' as TurnId,
