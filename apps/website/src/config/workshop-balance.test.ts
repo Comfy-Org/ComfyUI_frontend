@@ -186,7 +186,8 @@ describe('createBalanceReader', () => {
     await refreshing
 
     expect(session.remint).toHaveBeenCalledWith(
-      expect.objectContaining({ uid: 'uid-1' })
+      expect.objectContaining({ uid: 'uid-1' }),
+      expect.objectContaining({ workspaceId: expect.any(String) })
     )
   })
 
