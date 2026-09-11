@@ -180,8 +180,6 @@ export default defineConfig([
       'src/__ecs_matrix__/**',
       'src/extensions/core/*',
       'src/scripts/*',
-      'src/types/generatedManagerTypes.ts',
-      'src/types/vue-shim.d.ts',
       'packages/design-system/src/css/lucideStrokePlugin.js',
       'test-results/*',
       'vitest.setup.ts'
@@ -533,9 +531,7 @@ export default defineConfig([
       'src/**/{generated,vendor}/**',
       'src/__ecs_matrix__/**',
       'src/extensions/core/**',
-      'src/scripts/**',
-      'src/types/generatedManagerTypes.ts',
-      'src/types/vue-shim.d.ts'
+      'src/scripts/**'
     ],
     plugins: {
       comfy: { rules: { 'no-new-error-throw': noNewErrorThrow } }
