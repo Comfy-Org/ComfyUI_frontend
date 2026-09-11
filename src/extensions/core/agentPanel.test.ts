@@ -127,6 +127,20 @@ describe('AgentPanel extension flag gate', () => {
     expect(agentStore.enabled).toBe(true)
   })
 
+  it('forces the panel on for the standalone agent harness even while the flag is false', async () => {
+    // A standalone panel has no cloud identity for PostHog to evaluate the
+    // flag against, so gating it on the flag leaves it permanently off in a
+    // production bundle. The harness itself is the opt-in (the panel is
+    // tree-shaken out of every other non-cloud build).
+    vi.stubEnv('VITE_AGENT_STANDALONE', 'true')
+    mocks.flagEnabled = false
+
+    await loadEntryAndSetup()
+
+    expect(agentStore.enabled).toBe(true)
+    expect(agentStore.gateSettled).toBe(true)
+  })
+
   it('leaves the panel disabled while the flag is undefined', async () => {
     await loadEntryAndSetup()
     expect(agentStore.enabled).toBe(false)
