@@ -11,11 +11,15 @@ import type { CameraState } from './types'
 // raycasting and drag math are the code under test. The fake renderer updates
 // world matrices the way WebGLRenderer.render does, so raycasts see current
 // object positions.
-vi.mock('three', async (importOriginal) => {
+vi.mock(import('three'), async (importOriginal) => {
   const three = await importOriginal<typeof ThreeModule>()
-  class FakeWebGLRenderer {
+  type WebGLRendererContract = Pick<
+    ThreeModule.WebGLRenderer,
+    'domElement' | 'outputColorSpace' | 'setSize' | 'setPixelRatio' | 'dispose'
+  >
+  class FakeWebGLRenderer implements WebGLRendererContract {
     domElement = document.createElement('canvas')
-    outputColorSpace = ''
+    outputColorSpace: ThreeModule.ColorSpace = ''
     setSize() {}
     setPixelRatio() {}
     dispose() {}
@@ -24,7 +28,11 @@ vi.mock('three', async (importOriginal) => {
       camera.updateMatrixWorld(true)
     }
   }
-  return { ...three, WebGLRenderer: FakeWebGLRenderer }
+  return {
+    ...three,
+    WebGLRenderer:
+      FakeWebGLRenderer as unknown as typeof ThreeModule.WebGLRenderer
+  }
 })
 
 const SIZE = 300

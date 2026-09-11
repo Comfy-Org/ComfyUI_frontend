@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
+import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { createPinia, setActivePinia } from 'pinia'
 import { defineComponent, nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -19,7 +19,7 @@ import type * as VueUse from '@vueuse/core'
 const intersectionCallbacks = vi.hoisted(
   () => [] as ((entries: { isIntersecting: boolean }[]) => void)[]
 )
-vi.mock('@vueuse/core', async (importOriginal) => ({
+vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => ({
   ...(await importOriginal<typeof VueUse>()),
   useIntersectionObserver: (
     _target: unknown,
@@ -78,8 +78,7 @@ const Harness = defineComponent({
 })
 
 function mountHarness() {
-  const pinia = createPinia()
-  setActivePinia(pinia)
+  const pinia = getActivePinia()!
   const utils = render(Harness, { global: { plugins: [pinia, i18n] } })
   return { store: useAgentConversationStore(), ...utils }
 }
@@ -87,11 +86,10 @@ function mountHarness() {
 describe('ConversationView', () => {
   beforeEach(() => {
     Element.prototype.scrollIntoView = vi.fn()
-    setActivePinia(createPinia())
     intersectionCallbacks.length = 0
   })
 
-  it('wire-driven v1 turn renders user pill, spinner, reasoning-free text, tool group', async () => {
+  it('wire-driven v1 turn renders user pill, spinner, reasoning-free text, work summary', async () => {
     const { store } = mountHarness()
     store.recordUser(T, 'make a cat')
     store.startTurn(T)
@@ -104,7 +102,7 @@ describe('ConversationView', () => {
     store.ingest(done('msg-1'))
 
     expect(await screen.findByText('make a cat')).toBeInTheDocument()
-    expect(screen.getByText('Ran 1 tool call')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^worked/i })).toBeInTheDocument()
     expect(screen.getByText('cat', { selector: 'strong' })).toBeInTheDocument()
     expect(store.entries.at(-1)).toMatchObject({
       role: 'assistant',

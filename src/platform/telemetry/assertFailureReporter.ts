@@ -29,6 +29,7 @@ export function reportAssertFailure(
 
   reportError(new Error(message), {
     errorType: 'invariant_assert',
-    context: { ...context, occurrenceCount }
+    context: { ...context, occurrenceCount },
+    logToConsole: false
   })
 }

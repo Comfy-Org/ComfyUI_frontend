@@ -10,7 +10,14 @@ export interface ModelFaq {
   readonly answer: string
 }
 
-const dirDescriptionKeys: Record<Model['directory'], TranslationKey> = {
+// Values are `| undefined` because `directory` is a generated string asserted to
+// ModelDirectory without runtime validation, so a new upstream directory reaches
+// this lookup as a miss. Keys stay exhaustive: Record still requires every known
+// directory to be listed.
+const dirDescriptionKeys: Record<
+  Model['directory'],
+  TranslationKey | undefined
+> = {
   diffusion_models: 'models.dirDescription.diffusion_models',
   checkpoints: 'models.dirDescription.checkpoints',
   loras: 'models.dirDescription.loras',
