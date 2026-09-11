@@ -72,19 +72,25 @@ export function migrateWorkspaceToScope(
   const missingPointerKeys = restorePointerKeys.filter(
     (keyFor) => localStorage.getItem(keyFor(scope)) === null
   )
+  const destinationSnapshot = snapshotScopeArtifacts(
+    scope,
+    draftKeys,
+    missingPointerKeys
+  )
 
   const artifactsCopied =
     draftKeys.every((draftKey) => copyPayload(draftKey, workspaceId, scope)) &&
     missingPointerKeys.every((keyFor) =>
       copyRestorePointer(keyFor, workspaceId, scope)
     )
-  const copied =
+  const published =
     artifactsCopied && ownsClaim(claimKey, claim) && writeIndex(scope, index)
+  const copied = published && ownsClaim(claimKey, claim)
 
   if (copied) {
     cleanupSourceIfCurrent(workspaceId, draftKeys, claimKey, claim)
   } else {
-    removeScopeArtifacts(scope, draftKeys, missingPointerKeys)
+    restoreStorageSnapshot(destinationSnapshot)
     releaseClaimIfOwned(claimKey, claim)
   }
 }
@@ -132,6 +138,28 @@ function removeScopeArtifacts(
     StorageKeys.draftIndex(scope),
     ...pointerKeys.map((keyFor) => keyFor(scope))
   ])
+}
+
+function snapshotScopeArtifacts(
+  scope: string,
+  draftKeys: string[],
+  pointerKeys: ((scope: string) => string)[]
+): Map<string, string | null> {
+  const keys = [
+    StorageKeys.draftIndex(scope),
+    ...draftKeys.map(
+      (draftKey) => `${StorageKeys.prefixes.draftPayload}${scope}:${draftKey}`
+    ),
+    ...pointerKeys.map((keyFor) => keyFor(scope))
+  ]
+  return new Map(keys.map((key) => [key, localStorage.getItem(key)]))
+}
+
+function restoreStorageSnapshot(snapshot: Map<string, string | null>): void {
+  for (const [key, value] of snapshot) {
+    if (value === null) localStorage.removeItem(key)
+    else localStorage.setItem(key, value)
+  }
 }
 
 function copyPayload(

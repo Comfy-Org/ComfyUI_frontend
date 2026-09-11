@@ -396,6 +396,39 @@ describe('migrateWorkspaceToScope', () => {
     expect(readJson(StorageKeys.draftIndex(sourceWorkspaceId))).toBe(null)
   })
 
+  it('rolls back a destination published after another identity takes the claim', () => {
+    seedSourceWorkspace()
+    const claimKey = StorageKeys.migrationClaim(sourceWorkspaceId)
+    const destinationIndexKey = StorageKeys.draftIndex(destinationScope)
+    const realSetItem = localStorage.setItem.bind(localStorage)
+    let claimTaken = false
+    vi.spyOn(localStorage, 'setItem').mockImplementation(
+      (key: string, value: string) => {
+        if (key === destinationIndexKey && !claimTaken) {
+          claimTaken = true
+          realSetItem(
+            claimKey,
+            JSON.stringify({
+              scope: competingScope,
+              sourceUpdatedAt: 10,
+              nonce: 'competing-tab'
+            })
+          )
+          migrateWorkspaceToScope(sourceWorkspaceId, competingScope)
+        }
+        realSetItem(key, value)
+      }
+    )
+
+    migrateWorkspaceToScope(sourceWorkspaceId, destinationScope)
+
+    expect(readJson(StorageKeys.draftIndex(competingScope))).toEqual(
+      buildIndex()
+    )
+    expect(readJson(destinationIndexKey)).toBe(null)
+    expect(readJson(StorageKeys.draftIndex(sourceWorkspaceId))).toBe(null)
+  })
+
   it('preserves a newer source generation written while committing the destination index', () => {
     seedSourceWorkspace()
     const sourceIndexKey = StorageKeys.draftIndex(sourceWorkspaceId)
