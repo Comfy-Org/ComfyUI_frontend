@@ -189,6 +189,30 @@ describe('BuyCreditsDialog', () => {
     })
   })
 
+  it('still reaches Stripe when the return host is rejected with a 404', async () => {
+    const user = userEvent.setup()
+    const tab = claimTab()
+    const fetchCheckout = vi
+      .fn()
+      .mockResolvedValueOnce(new Response('', { status: 404 }))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ checkout_url: 'https://checkout.stripe.com/c/s_3' }),
+          { status: 200 }
+        )
+      )
+    vi.stubGlobal('fetch', fetchCheckout)
+    renderOpenDialog()
+
+    await user.click(await screen.findByTestId('buy-credits-continue'))
+
+    await vi.waitFor(() =>
+      expect(tab.location.assign).toHaveBeenCalledWith(
+        'https://checkout.stripe.com/c/s_3'
+      )
+    )
+  })
+
   it('falls back to the platform rail while the checkout flag is dark', async () => {
     const user = userEvent.setup()
     const tab = claimTab()
