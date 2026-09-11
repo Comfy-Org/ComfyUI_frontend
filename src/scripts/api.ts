@@ -465,8 +465,14 @@ export class ComfyApi extends EventTarget {
    */
   serverFeatureFlags = ref<Record<string, unknown>>({})
 
-  /** Whether the server has delivered its first authoritative feature flag map. */
-  serverFeatureFlagsReceived = ref(false)
+  /**
+   * Whether feature-flag negotiation for the current socket has settled: the
+   * server delivered a map, or delivery was abandoned (5s timeout, or the
+   * socket closed first). True does not imply the map is non-empty, and after
+   * {@link resetSocket} {@link serverFeatureFlags} still holds the previous
+   * identity's map until the next `feature_flags` message replaces it.
+   */
+  serverFeatureFlagsSettled = ref(false)
 
   /**
    * The auth token for the comfy org account if the user is logged in.
@@ -838,12 +844,12 @@ export class ComfyApi extends EventTarget {
     // Arm the fallback settle timer for this connect attempt as soon as the
     // socket is created, not just from the `open` handler. This also covers
     // a socket that errors/closes before ever opening (falls back to
-    // _pollQueue), which otherwise left serverFeatureFlagsReceived false
+    // _pollQueue), which otherwise left serverFeatureFlagsSettled false
     // indefinitely. Guarded by `this.socket === socket` like the other
     // callbacks, and cleared on close so a live timer is never left behind.
     const settleTimer = setTimeout(() => {
-      if (this.socket === socket && !this.serverFeatureFlagsReceived.value) {
-        this.serverFeatureFlagsReceived.value = true
+      if (this.socket === socket && !this.serverFeatureFlagsSettled.value) {
+        this.serverFeatureFlagsSettled.value = true
       }
     }, SERVER_FEATURE_FLAGS_TIMEOUT_MS)
 
@@ -878,7 +884,7 @@ export class ComfyApi extends EventTarget {
       // A replaced socket (e.g. after resetSocket on an account switch) must
       // not reconnect; only the active socket owns the reconnect lifecycle.
       if (this.socket !== socket) return
-      this.serverFeatureFlagsReceived.value = true
+      this.serverFeatureFlagsSettled.value = true
       clearTimeout(settleTimer)
       setTimeout(async () => {
         if (this.socket !== socket) return
@@ -1031,7 +1037,7 @@ export class ComfyApi extends EventTarget {
               break
             case 'feature_flags':
               this.serverFeatureFlags.value = msg.data
-              this.serverFeatureFlagsReceived.value = true
+              this.serverFeatureFlagsSettled.value = true
               this.dispatchCustomEvent('feature_flags', msg.data)
               break
             default:
@@ -1073,7 +1079,7 @@ export class ComfyApi extends EventTarget {
     // 5s settle fallback, or indefinitely if it never opens. Marking only the
     // received latch as stale is enough; the next `feature_flags` message
     // replaces the map wholesale.
-    this.serverFeatureFlagsReceived.value = false
+    this.serverFeatureFlagsSettled.value = false
     // Detach before closing so the previous socket's close handler sees it is
     // no longer the active socket and does not start a competing reconnect.
     this.socket = null

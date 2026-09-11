@@ -18,16 +18,16 @@ const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
 describe('agentPanelStore engagement telemetry', () => {
   beforeEach(() => {
     localStorage.clear()
-    api.serverFeatureFlagsReceived.value = false
+    api.serverFeatureFlagsSettled.value = false
   })
 
-  it('derives flag delivery directly from the API state', async () => {
+  it('derives flag settlement directly from the API state', async () => {
     const store = useAgentPanelStore()
 
-    expect(store.flagDelivered).toBe(false)
-    api.serverFeatureFlagsReceived.value = true
+    expect(store.flagsSettled).toBe(false)
+    api.serverFeatureFlagsSettled.value = true
     await nextTick()
-    expect(store.flagDelivered).toBe(true)
+    expect(store.flagsSettled).toBe(true)
   })
 
   it('emits a restored open only once the rehydrated panel actually docks', async () => {

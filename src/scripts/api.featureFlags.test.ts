@@ -41,7 +41,7 @@ describe('API Feature Flags', () => {
     // test's socket is never closed here since WebSocket is fully mocked).
     api.socket = null
     api.serverFeatureFlags.value = {}
-    api.serverFeatureFlagsReceived.value = false
+    api.serverFeatureFlagsSettled.value = false
 
     // Mock getClientFeatureFlags to return test feature flags
     vi.spyOn(api, 'getClientFeatureFlags').mockReturnValue({
@@ -61,14 +61,14 @@ describe('API Feature Flags', () => {
       // https://github.com/Comfy-Org/ComfyUI_frontend/pull/16301#discussion_r3909242419
       const resettingApi = new ComfyApi()
       resettingApi.serverFeatureFlags.value = { account_a_feature: true }
-      resettingApi.serverFeatureFlagsReceived.value = true
+      resettingApi.serverFeatureFlagsSettled.value = true
 
       const resetPromise = resettingApi.resetSocket()
 
       expect(resettingApi.serverFeatureFlags.value).toEqual({
         account_a_feature: true
       })
-      expect(resettingApi.serverFeatureFlagsReceived.value).toBe(false)
+      expect(resettingApi.serverFeatureFlagsSettled.value).toBe(false)
       await resetPromise
     })
 
@@ -128,7 +128,7 @@ describe('API Feature Flags', () => {
         max_upload_size: 104857600,
         capabilities: ['isolated_nodes', 'dynamic_models']
       })
-      expect(api.serverFeatureFlagsReceived.value).toBe(true)
+      expect(api.serverFeatureFlagsSettled.value).toBe(true)
     })
 
     it('should handle server without feature flags support', async () => {
@@ -167,7 +167,7 @@ describe('API Feature Flags', () => {
 
       // Server features should remain empty
       expect(api.serverFeatureFlags.value).toEqual({})
-      expect(api.serverFeatureFlagsReceived.value).toBe(true)
+      expect(api.serverFeatureFlagsSettled.value).toBe(true)
     })
 
     it('settles feature flags when the socket closes before opening', () => {
@@ -178,7 +178,7 @@ describe('API Feature Flags', () => {
       wsEventHandlers['close'](new Event('close'))
 
       expect(mockWebSocket.close).toHaveBeenCalledOnce()
-      expect(api.serverFeatureFlagsReceived.value).toBe(true)
+      expect(api.serverFeatureFlagsSettled.value).toBe(true)
     })
 
     it('settles feature flags when a socket that never delivered them keeps reconnecting', async () => {
@@ -192,7 +192,7 @@ describe('API Feature Flags', () => {
       }
 
       expect(api.serverFeatureFlags.value).toEqual({})
-      expect(api.serverFeatureFlagsReceived.value).toBe(true)
+      expect(api.serverFeatureFlagsSettled.value).toBe(true)
     })
   })
 
