@@ -6,7 +6,7 @@ import type { Page, Route } from '@playwright/test'
  * place so a Firebase payload-shape change is a single edit, not one per spec.
  */
 
-export const WORKSHOP_UID = 'e2e-workshop-user'
+const WORKSHOP_UID = 'e2e-workshop-user'
 export const WORKSHOP_EMAIL = 'workshop-e2e@test.comfy.org'
 
 export function jsonRoute(body: unknown, status = 200) {
