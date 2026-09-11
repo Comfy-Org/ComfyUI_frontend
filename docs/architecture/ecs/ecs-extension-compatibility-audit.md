@@ -189,22 +189,72 @@ is later architecture work outside this data-centralization phase.
 
 ## Graph-level call-site atomicity audit
 
-Audited against `d196434c1b` (2026-09-01). All graph-level callers of
-`attachNodeToStores` (via `registerNodeState`), `replaceLink` (via
-`replaceLinkTopology`), and direct `updateEndpoints` batches were re-verified.
-Each rejected registration or endpoint batch leaves its graph indexes or
-topology unchanged. No non-atomic sites were found within those batch
-boundaries.
+Audited against `3d7c5d4df3` (2026-09-11). The audited population is every
+call site outside `src/stores/linkStore.ts` itself that reaches one of:
 
-| Call site                                                          | Function called                            | Atomic? | Notes                                                                                                                                                                                         |
-| ------------------------------------------------------------------ | ------------------------------------------ | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `LGraph.add()` (`LGraph.ts:1316`)                                  | `attachNodeToStores` → `registerNodeState` | Yes     | `attachNodeToStores` retries with a fresh minted id on collision; `node.graph = this` is set before the call but graph arrays mutate only after registration succeeds.                        |
-| `LGraphNode.connect()` (`LGraphNode.ts:3221`)                      | `replaceLinkTopology` → `replaceLink`      | Yes     | Returns before any topology mutation when `replaceLinkTopology` returns `false`. `finalizeInputLinkRemoval`, slot updates, and `onConnectionsChange` all follow the guard.                    |
-| `SubgraphInput.connect()` (`subgraph/SubgraphInput.ts:102`)        | `replaceLinkTopology` → `replaceLink`      | Yes     | Returns before `_disconnectNodeInput`, `linkIds.push`, and `anchorRerouteChain` when `replaceLinkTopology` returns `false`.                                                                   |
-| `SubgraphOutput.connect()` (`subgraph/SubgraphOutput.ts:73`)       | `replaceLinkTopology` → `replaceLink`      | Yes     | Returns before `existingLink.disconnect`, `linkIds[0]` assignment, and `anchorRerouteChain` when `replaceLinkTopology` returns `false`.                                                       |
-| `replaceNodeInputs()` (`node/slotLinks.ts:192`)                    | `updateEndpoints`                          | Yes     | Returns on `!result.ok` before `node.inputs.splice` or `finalizeInputLinkRemoval`.                                                                                                            |
-| reminted endpoint remap in `LGraph.configure()` (`LGraph.ts:2949`) | `updateEndpoints`                          | Yes     | Marks configuration as errored on `!result.ok`; the rejected endpoint batch does not mutate topology. Node and link registrations completed before this batch remain.                         |
-| `realignInputLinkSlots()` (`linkDeduplication.ts:200`)             | `updateEndpoints`                          | Yes     | A rejected endpoint batch fires no callbacks and marks its blocked links as skipped. The pass loop continues, so later successful batches for remaining links can fire `onConnectionsChange`. |
+- `attachNodeToStores` (which wraps `registerNodeState`);
+- `useLinkStore().replaceLink`, whether through `replaceLinkTopology` or
+  called on the store directly;
+- `useLinkStore().updateEndpoints` as a multi-update batch.
+
+The table is the complete result of grepping those three identifiers across
+`src/`, not a sample. Two other routes into the same store functions are
+deliberately **out of scope and unaudited**: `useLinkStore().registerLink`
+(the fresh-registration path, reached only from `registerLinkTopology`), and
+the single-patch `LLink.updateEndpoints` → `updateEndpoint` wrapper, which has
+no sibling mutations to leave half-applied.
+
+Every site in the table rejects without leaving graph indexes or topology
+inconsistent. One of them — the remote `connect` applier in
+`graphMutations.ts` — is atomic only because of a precondition validated
+elsewhere, and is called out below.
+
+| Call site                                                             | Function called                            | Atomic? | Notes                                                                                                                                                                                                                             |
+| --------------------------------------------------------------------- | ------------------------------------------ | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `LGraph.add()` (`LGraph.ts:1383`)                                     | `attachNodeToStores` → `registerNodeState` | Yes     | `attachNodeToStores` retries with a fresh minted id on collision; `node.graph = this` is set before the call but graph arrays mutate only after registration succeeds.                                                            |
+| `LGraphNode.connect()` (`LGraphNode.ts:3211`)                         | `replaceLinkTopology` → `replaceLink`      | Yes     | Returns before any topology mutation when `replaceLinkTopology` returns `false`. `finalizeInputLinkRemoval`, slot updates, and `onConnectionsChange` all follow the guard.                                                        |
+| `SubgraphInput.connect()` (`subgraph/SubgraphInput.ts:102`)           | `replaceLinkTopology` → `replaceLink`      | Yes     | Returns before `_disconnectNodeInput`, `linkIds.push`, and `anchorRerouteChain` when `replaceLinkTopology` returns `false`.                                                                                                       |
+| `SubgraphOutput.connect()` (`subgraph/SubgraphOutput.ts:73`)          | `replaceLinkTopology` → `replaceLink`      | Yes     | Returns before `existingLink.disconnect`, `linkIds[0]` assignment, and `anchorRerouteChain` when `replaceLinkTopology` returns `false`.                                                                                           |
+| remote `connect` applier in `graphMutations.ts:713`                   | `replaceLink` (direct store call)          | Cond.   | `if (!replacement) break` precedes `detachLinkSlots` and the `updateNodeSlots` writes. Atomic only by that guard plus the `prepare()` precondition — see below.                                                                   |
+| `replaceNodeInputs()` (`node/slotLinks.ts:192`)                       | `updateEndpoints`                          | Yes     | Returns on `!result.ok` before `node.inputs.splice` or `finalizeInputLinkRemoval`.                                                                                                                                                |
+| reminted endpoint remap in `LGraph.configure()` (`LGraph.ts:3203`)    | `updateEndpoints`                          | Yes     | Marks configuration as errored on `!result.ok`; the rejected endpoint batch does not mutate topology. Node and link registrations completed before this batch remain.                                                             |
+| `realignInputLinkSlots()` (`linkDeduplication.ts:240`)                | `updateEndpoints`                          | Yes     | A rejected endpoint batch fires no callbacks and marks its blocked links as skipped. The pass loop continues, so later successful batches for remaining links can fire `onConnectionsChange`.                                     |
+| `replaceNodesInPlace()` (`nodeReplacement/useNodeReplacement.ts:308`) | `updateEndpoints`                          | Yes     | The only site that rolls back rather than returning early: shell ownership moves to the replacement before the batch, and `!topologyResult.ok` reverses it with `transferReplacementOwnership(newNode, node)` before bailing out. |
+
+### `graphMutations.ts` is atomic by precondition, not locally
+
+The remote `connect` applier is the one audited site whose atomicity does not
+follow from reading the call site alone. The store's rejection signal is a
+plain `undefined` return, and the surrounding code performs three further
+mutations (`detachLinkSlots`, `linkPresentationStore.take`, and two
+`updateNodeSlots` writes) that all assume the replacement was placed.
+
+Two layers keep it correct, and only one of them was written for this purpose:
+
+1. `prepare()` rejects the whole batch before any write when the incoming link
+   id is already owned by a sibling graph. That is the only way `replaceLink`
+   can reject from this call site: the displaced occupant is read back out of
+   the same target index `replaceLink` validates against, so neither the
+   ownership check nor the occupied-slot check can fire.
+2. The `if (!replacement) break` guard, added by #16219 (2026-09-08) as a side
+   effect of link-presentation work rather than as an atomicity fix.
+
+Because layer 1 makes the rejection unreachable, layer 2 has no test that
+exercises it through the public API. `leaves the target occupant attached when
+the link store rejects the replacement` in
+`src/core/graph/graphMutations.test.ts` stubs `replaceLink` to return
+`undefined` and asserts the occupant keeps both its topology and its endpoint
+slots; deleting the `break` fails it. Without that guard — the shape this code
+had before #16219 — a sibling-owned id collision that reached `commit()` left
+the occupant's topology registered and target-indexed while its endpoint slots
+were cleared.
+
+Removing layer 1 alone is not graph corruption but is still a silent failure:
+`batch()` returns `true` having dropped a queued `connect`.
+
+A durable fix would be for `replaceLink` to return a discriminated result like
+`updateEndpoints` does, so the rejection cannot be dropped by omission. That is
+out of scope for this audit.
 
 ### Declared-non-atomic edge cases
 
@@ -222,8 +272,9 @@ subgraph call sites remain audit findings rather than executable assertions.
 
 Existing evidence includes `LLink.store.test.ts`, `NodeInputSlot.test.ts`,
 `NodeOutputSlot.test.ts`, `slotLinks.test.ts`, `LGraphNode.test.ts`,
-`LGraph.test.ts`, `nodeBadgeDraw.test.ts`, and browser geometry/registration
-specs under `browser_tests/tests/vueNodes/`.
+`LGraph.test.ts`, `graphMutations.test.ts`, `useNodeReplacement.test.ts`,
+`nodeBadgeDraw.test.ts`, and browser geometry/registration specs under
+`browser_tests/tests/vueNodes/`.
 
 Before removing compatibility shims, collect ecosystem evidence for:
 
