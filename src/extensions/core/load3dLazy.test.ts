@@ -1,24 +1,26 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { MockInstance } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { ComfyExtension } from '@/types/comfy'
+import { useExtensionStore } from '@/stores/extensionStore'
 
-const { registerExtensionMock, enabledExtensionsGetter } = vi.hoisted(() => ({
-  registerExtensionMock: vi.fn(),
-  enabledExtensionsGetter: vi.fn(() => [] as ComfyExtension[])
+const { registerExtensionMock } = vi.hoisted(() => ({
+  registerExtensionMock: vi.fn()
 }))
+
+let enabledExtensionsGetter: MockInstance<() => ComfyExtension[]>
+beforeEach(() => {
+  enabledExtensionsGetter = vi.spyOn(
+    useExtensionStore(),
+    'enabledExtensions',
+    'get'
+  )
+})
 
 vi.mock('@/services/extensionService', () => ({
   useExtensionService: () => ({ registerExtension: registerExtensionMock })
-}))
-
-vi.mock('@/stores/extensionStore', () => ({
-  useExtensionStore: () => ({
-    get enabledExtensions() {
-      return enabledExtensionsGetter()
-    }
-  })
 }))
 
 vi.mock('@/scripts/app', () => ({

@@ -6,27 +6,27 @@ import { useTelemetry } from '@/platform/telemetry'
 import { FEEDBACK_TYPEFORM_ID } from './config'
 import { openFeedbackDialog } from './feedbackDialog'
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
-vi.mock('@/platform/surveys/openTypeformDialog', () => ({
+vi.mock(import('@/platform/surveys/openTypeformDialog'), () => ({
   openTypeformDialog: vi.fn()
 }))
 
 const trackUiButtonClicked = vi.fn()
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: vi.fn(() => ({ trackUiButtonClicked }))
 }))
 
 const userEmail = vi.hoisted((): { value: string | undefined } => ({
   value: undefined
 }))
-vi.mock('@/composables/auth/useCurrentUser', () => ({
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({ userEmail })
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true,
   isNightly: false
 }))
