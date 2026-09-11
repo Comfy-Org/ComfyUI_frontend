@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 
 import { i18n } from '@/i18n'
+import { WORKSPACE_INSET_RIGHT } from '@/composables/useWorkspaceInset'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
@@ -65,6 +66,7 @@ function renderPanel() {
 describe('DockedAgentPanel', () => {
   beforeEach(() => {
     localStorage.clear()
+    document.documentElement.style.removeProperty(WORKSPACE_INSET_RIGHT)
     fetchApi.mockReset()
     fetchApi.mockResolvedValue(jsonResponse(404, { error: 'not found' }))
     vi.mocked(reportError).mockClear()
@@ -84,6 +86,9 @@ describe('DockedAgentPanel', () => {
         timeout: 5000
       })
     ).toBeTruthy()
+    expect(
+      document.documentElement.style.getPropertyValue(WORKSPACE_INSET_RIGHT)
+    ).toBe(`${store.width}px`)
   })
 
   it('restores the server run mode when the panel initializes', async () => {

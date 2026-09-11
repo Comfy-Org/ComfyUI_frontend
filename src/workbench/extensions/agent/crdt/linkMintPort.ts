@@ -2,12 +2,18 @@
  * The blessed connect port: litegraph's registerLinkTopology bridge calls
  * linkStore synchronously for EVERY link change, so nothing escapes this seam.
  * Register/replace mint a CONCRETE connect (a replace displaces the incumbent
- * register by LWW - no severance). Deletes cannot mint (no disconnect op in
- * the frozen vocabulary): they feed the severance log for delete_node, and an
- * unconsumed local severance surfaces as observable divergence after a double
- * microtask (strictly after the layout store's single-microtask delivery).
+ * register by LWW - no severance). A placement is held for one microtask so
+ * a same-task delete can cancel it before it ships; cross-port ORDER is not
+ * this port's concern - the wiring's shared mint queue decides it. Deletes
+ * cannot mint (no disconnect op in the frozen vocabulary): they feed the
+ * severance log for delete_node, and an unconsumed local severance surfaces
+ * as observable divergence after a double microtask (strictly after the
+ * layout store's single-microtask delivery).
  */
 import type { NodeId as WireNodeId } from '@comfyorg/comfy-multi-player'
+
+import { reportError } from '@/platform/telemetry/reportError'
+import type { LinkId } from '@/types/linkId'
 
 import type { GraphOperation } from './graphOperations'
 import { shouldMint } from './mintGate'
@@ -25,7 +31,7 @@ export interface LinkScopeView {
  * link - the wiring feed filters those out before this port sees them.
  */
 export interface LinkTopologyView {
-  id: string | number
+  id: LinkId
   originNodeId: string | number
   originSlot: number
   targetNodeId: string | number
@@ -63,7 +69,7 @@ export interface LinkMintPortDeps {
   isEnabled(): boolean
   /** A semantic doc is bound for the active workflow. */
   isDocBound(): boolean
-  /** Receives minted semantic operations (the sender's inbox). */
+  /** Receives minted semantic operations (the wiring's shared mint queue). */
   enqueue(operations: GraphOperation[]): void
 }
 
@@ -73,7 +79,7 @@ export interface LinkMintPort {
 }
 
 interface SeveranceEntry {
-  linkId: WireNodeId
+  linkId: LinkId
   /** The gate was open at severance: unconsumed means a real divergence. */
   mintable: boolean
 }
@@ -82,10 +88,23 @@ function isRootScope(scope: LinkScopeView): boolean {
   return scope.owningGraphId === scope.rootGraphId
 }
 
+/** Link ids are per root graph; two open workflows may both own link 41. */
+function placementKey(
+  scope: LinkScopeView,
+  topology: LinkTopologyView
+): string {
+  return `${scope.rootGraphId}:${topology.id}`
+}
+
 export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
   const severancesByNode = new Map<string, SeveranceEntry[]>()
   const consumedLinkIds = new Set<string>()
+  const pendingPlacements = new Map<
+    string,
+    { operation: GraphOperation; linkId: LinkId }
+  >()
   let sweepScheduled = false
+  let detached = false
 
   function gateOpen(): boolean {
     return shouldMint({
@@ -95,12 +114,17 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
     })
   }
 
-  function surfaceUnrepresentable(what: string, id: string | number): void {
+  function surfaceUnrepresentable(what: string, id: LinkId): void {
     // A doc that no longer matches the local graph must be observable,
     // never silent (the surfacing-honesty principle).
-    console.error(
-      `[agent-crdt] ${what} has no wire op; the bound doc diverges from the local graph`,
-      id
+    reportError(
+      new Error(
+        `[agent-crdt] ${what} has no wire op; the bound doc diverges from the local graph`
+      ),
+      {
+        errorType: 'agent_crdt_unrepresentable_link_change',
+        tags: { change: what, linkId: id }
+      }
     )
   }
 
@@ -110,8 +134,10 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
       surfaceUnrepresentable('subgraph-interior connect', topology.id)
       return
     }
-    deps.enqueue([
-      {
+    const key = placementKey(scope, topology)
+    pendingPlacements.set(key, {
+      linkId: topology.id,
+      operation: {
         op: 'connect',
         link_id: topology.id,
         from_node: topology.originNodeId,
@@ -120,7 +146,29 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
         to_slot: topology.targetSlot,
         link_type: String(topology.type)
       }
-    ])
+    })
+    queueMicrotask(() => flushPlacement(key))
+  }
+
+  function flushPlacement(key: string): void {
+    const pending = pendingPlacements.get(key)
+    if (!pending) return
+    pendingPlacements.delete(key)
+    if (detached || !gateOpen()) {
+      surfaceUnrepresentable('link connect', pending.linkId)
+      return
+    }
+    deps.enqueue([pending.operation])
+  }
+
+  /**
+   * A same-task deletion that cancels an unflushed placement: no connect
+   * ever reached `deps.enqueue()`, so nothing diverges from the local graph
+   * (which also omits the link) - drop it silently rather than reporting a
+   * `link connect` divergence for an op that never shipped.
+   */
+  function cancelPlacement(key: string): void {
+    pendingPlacements.delete(key)
   }
 
   function scheduleSweep(): void {
@@ -156,6 +204,10 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
   }
 
   function onDeleted(scope: LinkScopeView, topology: LinkTopologyView): void {
+    // A same-task placement that never flushed is canceled, not a real
+    // divergence: the local graph and the doc both end up without the link.
+    // Preserve mutation order for everything else that already flushed.
+    cancelPlacement(placementKey(scope, topology))
     const entry: SeveranceEntry = {
       linkId: topology.id,
       mintable: gateOpen() && isRootScope(scope)
@@ -182,6 +234,8 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
       }
     },
     detach() {
+      detached = true
+      for (const key of pendingPlacements.keys()) flushPlacement(key)
       detachPlaced()
       detachDeleted()
     }

@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { toLinkId } from '@/types/linkId'
+
 import type { GraphOperation } from './graphOperations'
 import { attachLinkMintPort } from './linkMintPort'
 import type {
@@ -9,6 +11,9 @@ import type {
 } from './linkMintPort'
 import { createMintSession } from './mintSession'
 import type { MintSession } from './mintSession'
+
+const { reportError } = vi.hoisted(() => ({ reportError: vi.fn() }))
+vi.mock(import('@/platform/telemetry/reportError'), () => ({ reportError }))
 
 const ROOT_SCOPE: LinkScopeView = {
   rootGraphId: 'root-uuid',
@@ -21,7 +26,7 @@ const SUBGRAPH_SCOPE: LinkScopeView = {
 
 function topology(id: number): LinkTopologyView {
   return {
-    id,
+    id: toLinkId(id),
     originNodeId: 1,
     originSlot: 0,
     targetNodeId: 2,
@@ -82,8 +87,9 @@ describe('attachLinkMintPort', () => {
     })
   })
 
-  it('mints a concrete connect for a local link placement', () => {
+  it('mints a concrete connect for a local link placement', async () => {
     place(ROOT_SCOPE, topology(41))
+    await Promise.resolve()
 
     expect(minted).toEqual([
       {
@@ -121,14 +127,10 @@ describe('attachLinkMintPort', () => {
   })
 
   it('surfaces a subgraph-interior placement observably instead of minting', () => {
-    const consoleError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined)
     place(SUBGRAPH_SCOPE, topology(41))
 
     expect(minted).toEqual([])
-    expect(consoleError).toHaveBeenCalledOnce()
-    consoleError.mockRestore()
+    expect(reportError).toHaveBeenCalledOnce()
   })
 
   it('captures a severed link under both endpoints, consumed exactly once', () => {
@@ -139,40 +141,34 @@ describe('attachLinkMintPort', () => {
   })
 
   it('surfaces an unconsumed local disconnect as divergence after the sweep', async () => {
-    const consoleError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined)
     remove(ROOT_SCOPE, topology(41))
     await afterSweep()
 
-    expect(consoleError).toHaveBeenCalledOnce()
-    expect(consoleError.mock.calls[0][1]).toBe(41)
-    consoleError.mockRestore()
+    expect(reportError).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'agent_crdt_unrepresentable_link_change',
+        tags: expect.objectContaining({ linkId: 41 })
+      })
+    )
   })
 
   it('stays silent for a consumed severance (the delete carried it)', async () => {
-    const consoleError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined)
     remove(ROOT_SCOPE, topology(41))
     port.severances.take('1')
     await afterSweep()
 
-    expect(consoleError).not.toHaveBeenCalled()
-    consoleError.mockRestore()
+    expect(reportError).not.toHaveBeenCalled()
   })
 
   it('stays silent for teardown severances', async () => {
-    const consoleError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined)
     session.beginGraphTeardown()
     remove(ROOT_SCOPE, topology(41))
     session.endGraphTeardown()
     await afterSweep()
 
-    expect(consoleError).not.toHaveBeenCalled()
-    consoleError.mockRestore()
+    expect(reportError).not.toHaveBeenCalled()
   })
 
   it('sweeps the capture window: a later take finds nothing', async () => {
@@ -190,5 +186,39 @@ describe('attachLinkMintPort', () => {
     place(ROOT_SCOPE, topology(41))
 
     expect(minted).toEqual([])
+  })
+
+  it('cancels a same-task deletion of an unflushed placement without a phantom connect', async () => {
+    place(ROOT_SCOPE, topology(41))
+    remove(ROOT_SCOPE, topology(41))
+    await afterSweep()
+
+    // The canceled placement never reaches enqueue and is never reported as
+    // a `link connect` divergence (it did not ship). The severance sweep
+    // still runs and correctly reports the unconsumed disconnect - it was a
+    // real local delete that nothing (e.g. a delete_node mint) consumed.
+    expect(minted).toEqual([])
+    expect(reportError).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining('link disconnect')
+      }),
+      expect.anything()
+    )
+  })
+
+  it('flushes and surfaces pending placements on detach instead of discarding them silently', () => {
+    place(ROOT_SCOPE, topology(41))
+    port.detach()
+
+    expect(minted).toEqual([])
+    expect(reportError).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'agent_crdt_unrepresentable_link_change',
+        tags: expect.objectContaining({ linkId: 41 })
+      })
+    )
   })
 })
