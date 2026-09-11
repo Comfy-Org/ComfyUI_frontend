@@ -63,7 +63,7 @@ All commands ran from the repository root under Node 26.8.2
 | Shared-frontend-utils standalone typecheck                            | Passed, including corrected PII fixture types |
 | `pnpm lint`                                                           | Passed; existing repository warnings remain   |
 | `pnpm knip:no-cache`                                                  | Passed                                        |
-| Models + header Playwright specs, desktop project                     | 17 passed; widths 390, 1024 and 1440 covered  |
+| Models + homepage + header + visual-font Playwright specs             | 35 passed; widths 390, 1024 and 1440 covered  |
 | JSON-LD / llms links / hreflang, enabled output                       | Passed                                        |
 | Packed contract/index and template-join regeneration                  | Byte-identical; 206 contracts in 208 lines    |
 
@@ -75,7 +75,8 @@ Browser command (uses the verified parent-owned preview on port 4325):
 ```sh
 WEBSITE_E2E_PORT=4325 PLAYWRIGHT_HTML_OPEN=never \
   pnpm --filter @comfyorg/website test:e2e --project=desktop \
-  e2e/workshop.spec.ts e2e/header-models-navigation.spec.ts \
+  e2e/homepage.spec.ts e2e/workshop.spec.ts e2e/header-models-navigation.spec.ts \
+  e2e/visual-fonts.spec.ts \
   --workers=3 --retries=0 --trace=retain-on-failure --reporter=list
 ```
 
@@ -113,13 +114,34 @@ The incoming landing page accounts for the two additional HTML files; the
 Models page counts are unchanged. All 75 prepared review replies are posted
 with the fix commit as their evidence. Human review threads remain open.
 
+## Post-push browser follow-up
+
+The Linux screenshot updater (run `34562487482`) passed 66 tests and committed
+17 baselines in `dee4fa6e01`. The subsequent full website run `34562667456`
+reported 466 passing tests and two failures:
+
+- The homepage carousel test still expected `/models/seedance-2/` instead of
+  the canonical Seedance 2.5 use-case URL. The expectation now pins the canonical
+  page. Review thread `3985991659` records this correction.
+- The updated small pricing screenshot had captured a fallback font. All three
+  CI actual images were byte-identical to the previous baseline, which is now
+  restored. The other 16 updates retain the enabled header changes and existing
+  pricing FAQ copy from `main`; the few remaining product-card pixels are
+  rounded-edge antialiasing, not content changes.
+
+Visual tests now load the real PP Formula Light file under a test-only family
+with blocking display, await it explicitly, and apply it only to the existing
+Formula/light combination. Production CSS is unchanged. A delayed-response
+regression proves the face is applied; disabling its selector makes the test
+fail. The integrated desktop run passes all 35 tests with no retries. A fresh
+Linux run must confirm the full suite after these test-only corrections.
+
 ## Not claimed complete
 
 - Real production-origin authentication/deployment: the Cloud prerequisites in
   the PR ledger still need production rollout and a real sign-in/balance check.
-- Linux visual baselines: local functional Playwright checks do not certify
-  screenshot snapshots. Use the repository's Linux screenshot workflow and
-  inspect its output before calling visual CI green.
+- The full Linux browser rerun after the two corrections above: the updater's
+  earlier pass is not proof that the follow-up run is green.
 - HTTP 301 alias responses (3984457892): Astro static output serves an immediate
   meta-refresh document with HTTP 200. The call site states this and a browser
   test verifies the canonical destination. Hosting-level permanent redirects

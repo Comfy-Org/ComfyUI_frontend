@@ -41,7 +41,10 @@ test.describe('Homepage @smoke', () => {
     await expect(activeSlide.getByText('New Model Release')).toBeVisible()
     const cta = activeSlide.getByRole('link', { name: 'Explore Seedance 2.5' })
     await expect(cta).toBeVisible()
-    await expect(cta).toHaveAttribute('href', '/models/seedance-2/')
+    await expect(cta).toHaveAttribute(
+      'href',
+      '/models/byteplus--seedance-2-5-text-to-video--generate-videos/'
+    )
   })
 
   test('ModelDiscoverySection links providers to the Workshop', async ({
