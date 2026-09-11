@@ -43,6 +43,9 @@ const GROUPED = OTHER_FORMAT_USE_CASES
 const titleClass =
   'group hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 inline-flex cursor-pointer items-baseline gap-2 rounded-lg text-xl font-medium text-primary-warm-white transition-colors outline-none focus-visible:ring-3'
 
+const cardClass =
+  'w-60 shrink-0 snap-start sm:w-[calc((100cqw-2*1.25rem)/2.5)] md:w-[calc((100cqw-3*1.25rem)/3.5)] lg:w-[calc((100cqw-4*1.25rem)/4.5)] xl:w-[calc((100cqw-5*1.25rem)/5.5)]'
+
 const sections = computed(() =>
   USE_CASES.filter((useCase) => !GROUPED.includes(useCase))
     .map((useCase) => {
@@ -108,7 +111,7 @@ const unplaced = computed(() =>
         <li
           v-for="family in section.shown"
           :key="family.key"
-          class="w-58 shrink-0 snap-start"
+          :class="cardClass"
         >
           <WorkshopModelCard :model="family.latest" :locale />
         </li>
@@ -144,7 +147,7 @@ const unplaced = computed(() =>
         <li
           v-for="family in otherFormats.slice(0, ROW_LIMIT)"
           :key="family.key"
-          class="w-58 shrink-0 snap-start"
+          :class="cardClass"
         >
           <WorkshopModelCard :model="family.latest" :locale />
         </li>

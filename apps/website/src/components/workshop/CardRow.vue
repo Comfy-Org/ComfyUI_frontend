@@ -49,7 +49,7 @@ const arrowClass = (spent: boolean) =>
 </script>
 
 <template>
-  <div>
+  <div class="@container">
     <div class="mb-5 flex items-baseline justify-between gap-4">
       <slot name="heading" />
       <div class="flex items-center gap-3">

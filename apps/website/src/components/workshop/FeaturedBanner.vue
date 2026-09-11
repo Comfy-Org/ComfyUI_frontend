@@ -6,6 +6,7 @@ import type { WorkshopModel } from '../../config/models-catalogue'
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import { bannerName } from '../../lib/workshop/banner-name'
 import { taskLabelFor } from '../../lib/workshop/task-label'
 import Badge from '../ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -19,11 +20,15 @@ const { models, locale = 'en' } = defineProps<{
 }>()
 
 const slides = computed(() =>
-  models.map((model) => ({
-    model,
-    task: taskLabelFor(model, locale),
-    capabilities: model.capabilities.slice(0, CAPABILITY_LIMIT)
-  }))
+  models.map((model) => {
+    const task = taskLabelFor(model, locale)
+    return {
+      model,
+      task,
+      name: bannerName(model.name, task),
+      capabilities: model.capabilities.slice(0, CAPABILITY_LIMIT)
+    }
+  })
 )
 
 const activeIndex = ref(0)
@@ -85,7 +90,7 @@ const fill = computed(() =>
   >
     <a
       :href="active.model.href"
-      class="group short:h-76 sm:short:h-80 block h-112"
+      class="group short:h-57 sm:short:h-60 block h-100"
       data-testid="featured-slide"
     >
       <video
@@ -115,7 +120,7 @@ const fill = computed(() =>
       />
 
       <div
-        class="sm:short:pb-16 lg:short:p-8 lg:short:pb-16 relative flex h-full flex-col justify-end gap-4 p-8 pb-20 max-sm:gap-3 max-sm:p-6 max-sm:pb-14 sm:max-w-2xl sm:justify-center lg:p-12 lg:pb-20"
+        class="short:gap-3 short:pt-5 short:pb-14 relative flex h-full flex-col justify-end gap-4 p-8 pt-6 pb-16 max-sm:gap-3 max-sm:p-6 max-sm:pb-14 sm:max-w-2xl sm:justify-center lg:p-12 lg:pt-8 lg:pb-18"
       >
         <div class="flex flex-wrap items-center gap-2">
           <Badge variant="subtle" size="md" class="text-primary-comfy-canvas">
@@ -132,13 +137,15 @@ const fill = computed(() =>
           </Badge>
         </div>
 
-        <h2 class="text-4xl font-bold text-primary-warm-white">
-          {{ active.model.name }}
+        <h2
+          class="mt-2 text-2xl font-bold text-balance text-primary-warm-white lg:text-[2rem]"
+        >
+          {{ active.name }}
         </h2>
 
         <p
           v-if="active.model.summary"
-          class="text-content-secondary line-clamp-2 max-w-prose"
+          class="text-content-secondary short:hidden line-clamp-2 max-w-prose shrink-0"
         >
           {{ active.model.summary }}
         </p>
