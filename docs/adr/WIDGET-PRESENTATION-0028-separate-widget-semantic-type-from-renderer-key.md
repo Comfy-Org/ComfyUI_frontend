@@ -75,25 +75,64 @@ the legacy name.
    widget's value, validation, connection compatibility, and reconstruction
    contract. It is fixed when the widget is registered and no public API
    mutates it afterwards.
-2. Add a store-backed `rendererKey`. It selects the Vue component or canvas
-   widget class used to draw the widget, and nothing else. It may change
-   through a validated widget store action and, once widget commands are
-   available, through the corresponding serializable command.
+2. Add a store-backed `rendererKey`. It selects the Vue component used to draw
+   the widget on a Vue node, and nothing else. It may change through a
+   validated widget store action and, once widget commands are available,
+   through the corresponding serializable command.
 3. `rendererKey` does not carry visibility or interaction model. Visibility is
    separate store-backed widget state, not a renderer identifier; the legacy
    `type = 'hidden'` assignment is a presentation hack that migrates to that
    state rather than to `rendererKey`. Interaction model follows from the
    selected component and is not independently addressable.
+4. `rendererKey` does not govern classic canvas rendering, and this ADR defines
+   no replacement or reconstruction behavior that would make it do so. A canvas
+   widget's class is bound once, when the object enters `node.widgets`, and a
+   later `rendererKey` change cannot alter it. See
+   [Why the canvas is out of scope](#why-the-canvas-is-out-of-scope).
+
+### Why the canvas is out of scope
+
+Classic canvas drawing is virtual dispatch on the widget object itself, not a
+keyed lookup. `LGraphNode.drawWidgets` calls `drawWidget()` on the constructed
+instance (`src/lib/litegraph/src/LGraphNode.ts`), and that instance's class is
+fixed on insertion into `node.widgets`: `instantiateConcreteWidget` returns the
+object unchanged for anything that is already a `BaseWidget`, so the
+`switch (widget.type)` that picks the class never runs a second time
+(`src/lib/litegraph/src/widgets/widgetMap.ts`). By that point
+`adoptConcreteWidget` has rewritten the original object's prototype in place.
+There is no draw-time renderer lookup for a key to feed.
+
+Making a key change take effect on canvas would therefore mean re-deriving the
+class and replacing the prototype of a live object that extensions still hold
+references to — the operation
+[ADR-ECS-WIDGETS-0023](ECS-WIDGETS-0023-widget-entities-with-a-legacy-layer.md)
+rules out for extension objects, and one that would drop prototype methods,
+retained references, and DOM-widget element bindings. Constructing a
+replacement object instead changes widget identity, which the same ADR
+preserves deliberately. Neither cost is worth paying for a presentation switch,
+so the contract is scoped to Vue dispatch rather than weakened to cover both
+renderers.
+
+Scoping matches what the code already does. `src/extensions/core/uploadAudio.ts`
+assigns `recordWidget.type = 'audiorecord'` after registration under the comment
+"Override the type for Vue rendering while keeping 'button' for LiteGraph" — a
+shipped extension treating post-registration `type` assignment as a Vue-only
+presentation switch and leaving the canvas class alone.
+
+A widget that needs a different canvas class must be registered with that class.
+Changing the canvas class after registration stays unsupported; if it is ever
+required, it needs its own ADR defining widget replacement, identity transfer,
+and the extension-visible consequences.
 
 ### Sources at registration
 
-4. `semanticType` derives from the node definition, not from the live widget
+5. `semanticType` derives from the node definition, not from the live widget
    object: it is `InputSpec.type` for schema-declared inputs, and the declared
    semantic type of the registration call for widgets added programmatically.
    `rendererKey` is seeded from `InputSpec.widgetType` when present and
    otherwise from `semanticType`. `addInputWidget` stops overwriting
    `widgetInputSpec.type` with `inputSpec.widgetType`.
-5. Legacy `type` assignment before registration is presentation-only: it seeds
+6. Legacy `type` assignment before registration is presentation-only: it seeds
    `rendererKey` and never `semanticType`. An extension that needs a widget
    whose semantic contract differs from its node-definition input declares it
    through the explicit registration API; there is no path by which assigning
@@ -103,18 +142,18 @@ the legacy name.
 
 ### Consumers
 
-6. Value coercion, validation, connection compatibility, type narrowing, and
-   reconstruction read `semanticType`. Renderer lookup reads `rendererKey`.
+7. Value coercion, validation, connection compatibility, type narrowing, and
+   reconstruction read `semanticType`. Vue component lookup reads `rendererKey`.
    Store-driven consumers do not fall back to the live widget object. Live
    widgets and promoted-widget adapters project the same authoritative store
    state.
 
 ### Compatibility boundary
 
-7. Keep `IBaseWidget.type` as a deprecated compatibility property during the
+8. Keep `IBaseWidget.type` as a deprecated compatibility property during the
    extension migration. After registration, reads project `rendererKey` and
    writes update `rendererKey`; writes never mutate `semanticType`.
-8. Staged compatibility requires a registered widget: a `BaseWidget` subclass,
+9. Staged compatibility requires a registered widget: a `BaseWidget` subclass,
    a `LegacyWidget` wrapper, or the compatibility adapter defined by
    [ADR-ECS-WIDGETS-0023](ECS-WIDGETS-0023-widget-entities-with-a-legacy-layer.md). A plain
    object with an unrecognized `type` is left unwrapped by
@@ -123,28 +162,28 @@ the legacy name.
    drive store-backed consumers. Those widgets are outside the compatibility
    promise of this ADR, and closing that gap is ADR-ECS-WIDGETS-0023's adapter registry,
    not a fallback path added here.
-9. Emit a development-mode deprecation warning for post-registration `type`
-   assignment, with migration guidance to the explicit presentation API.
+10. Emit a development-mode deprecation warning for post-registration `type`
+    assignment, with migration guidance to the explicit presentation API.
 
 ### Persistence
 
-10. Presentation state is ephemeral by default. `rendererKey` is not
+11. Presentation state is ephemeral by default. `rendererKey` is not
     serialized unless the widget's semantic contract declares it durable
     workflow state, and a widget declares that once at registration rather
     than per assignment. Legacy `type` writes therefore never make a
     presentation change persistent; an extension that needs a durable renderer
     change opts in through the semantic contract.
-11. `semanticType` is serialized wherever semantic reconstruction requires it.
+12. `semanticType` is serialized wherever semantic reconstruction requires it.
 
 ### Removal
 
-12. The compatibility promise covers both runtime behavior and TypeScript
+13. The compatibility promise covers both runtime behavior and TypeScript
     source compatibility. `IBaseWidget.type` is the generic literal
     discriminant `TType extends string` that every widget interface and
     `WidgetTypeMap` entry narrows on, so removing or renaming it is a source
     break for extensions compiled against the published types, not only a
     runtime break.
-13. Writable `type` may be removed no earlier than two consecutive stable
+14. Writable `type` may be removed no earlier than two consecutive stable
     frontend releases after the release that ships the deprecation warning.
     The removal PR must report: zero writable `type` uses in built-in widgets
     and core code; zero writable uses across the custom-node corpus executed by
@@ -173,6 +212,14 @@ Alternatives considered:
 - **Store a renderer component directly on the widget.** Rejected because
   components are not serializable domain state and would couple widget entities to
   the Vue renderer.
+- **Let `rendererKey` also select the classic canvas widget class.** Rejected
+  because the canvas has no mechanism to honor it: `drawWidget()` is called on
+  the already-constructed instance and the class is bound on insertion into
+  `node.widgets`. Supporting it would require either post-registration prototype
+  replacement or a replacement object, both of which
+  [ADR-ECS-WIDGETS-0023](ECS-WIDGETS-0023-widget-entities-with-a-legacy-layer.md)
+  rules out for extension-supplied widgets. Claiming the capability without the
+  mechanism would leave a contract the renderer cannot satisfy.
 
 ## Consequences
 
@@ -180,8 +227,9 @@ Alternatives considered:
 
 - Widget semantic classification becomes stable and suitable for validation,
   connection compatibility, reconstruction, and deterministic commands.
-- Dynamic renderer changes remain supported without mutating that semantic
-  classification.
+- Dynamic Vue renderer changes remain supported without mutating that semantic
+  classification, and the contract now stops where the renderer's capability
+  stops instead of promising a canvas behavior that does not exist.
 - Vue, legacy adapters, and promoted widgets observe one authoritative reactive
   value instead of applying consumer-specific fallback rules.
 - The node definition's existing `type` and `widgetType` distinction survives
@@ -208,6 +256,10 @@ Alternatives considered:
   instead of relying on assignment, which is stricter than current behavior.
 - Widget mutation commands are not yet complete, so the first implementation will
   use a validated store action before it can satisfy the full command architecture.
+- Renderer selection stays split by renderer: `rendererKey` is authoritative for
+  Vue nodes, while the canvas keeps the class it was given at registration. A
+  widget can therefore present differently on the two renderers, which is the
+  behavior shipped today but is now a stated contract rather than an accident.
 
 ## Notes
 
