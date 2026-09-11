@@ -1,16 +1,17 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useClipboard } from '@vueuse/core'
 
 const { writeText } = vi.hoisted(() => ({
-  writeText: vi.fn<(value: string) => Promise<void>>(() => Promise.resolve())
+  writeText: vi.fn<ReturnType<typeof useClipboard>['copy']>(() =>
+    Promise.resolve()
+  )
 }))
 
-const vueUse = await vi.hoisted(() => import('@vueuse/core'))
-vi.mock<unknown>(import('@vueuse/core'), () => ({
-  ...vueUse,
-  useClipboard: () => ({ copy: writeText })
-}))
+vi.mock(import('@vueuse/core'), { spy: true })
+vi.mocked(useClipboard).mockReturnValue(fromPartial({ copy: writeText }))
 
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 import CrdtDevPanel from './CrdtDevPanel.vue'
@@ -60,6 +61,7 @@ function renderPanel(overrides: Partial<AgentCrdtStatus> = {}) {
 
 describe('CrdtDevPanel clipboard controls', () => {
   beforeEach(() => {
+    vi.mocked(useClipboard).mockReturnValue(fromPartial({ copy: writeText }))
     setCrdtDebugEnabled(true)
     clearDevEvents()
     localStorage.clear()

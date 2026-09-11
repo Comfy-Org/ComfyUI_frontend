@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
+import { debounce } from 'es-toolkit/compat'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -11,11 +12,10 @@ import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores
 
 import PackEnableToggle from './PackEnableToggle.vue'
 
-const esToolkit = await vi.hoisted(() => import('es-toolkit/compat'))
-vi.mock(import('es-toolkit/compat'), () => ({
-  ...esToolkit,
-  debounce: <T extends (...args: unknown[]) => unknown>(fn: T) => fn
-}))
+vi.mock(import('es-toolkit/compat'), { spy: true })
+vi.mocked(debounce).mockImplementation((fn) =>
+  Object.assign(fn, { cancel: vi.fn(), flush: vi.fn() })
+)
 
 const {
   acknowledgmentState,
@@ -83,6 +83,9 @@ describe('PackEnableToggle', () => {
   const user = userEvent.setup()
 
   beforeEach(() => {
+    vi.mocked(debounce).mockImplementation((fn) =>
+      Object.assign(fn, { cancel: vi.fn(), flush: vi.fn() })
+    )
     mockGetConflictsForPackageByID = vi.fn()
     Object.assign(useConflictDetectionStore(), {
       getConflictsForPackageByID: mockGetConflictsForPackageByID

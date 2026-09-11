@@ -1,35 +1,24 @@
 // @vitest-environment happy-dom
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { PerspectiveCamera, Vector3 } from 'three'
-import type * as ThreeModule from 'three'
-import type { Camera, Scene } from 'three'
+import type { Camera, Scene, WebGLRenderer } from 'three'
 
 import { CameraWidget } from './CameraWidget'
 import type { CameraState } from './types'
 
-// Everything except the GPU-bound renderer runs for real: scene graph,
-// raycasting and drag math are the code under test. The fake renderer updates
-// world matrices the way WebGLRenderer.render does, so raycasts see current
-// object positions.
-vi.mock<unknown>(import('three'), async () => {
-  const three = await import('three/src/Three.js')
-  type WebGLRendererContract = Pick<
-    ThreeModule.WebGLRenderer,
-    'domElement' | 'outputColorSpace' | 'setSize' | 'setPixelRatio' | 'dispose'
-  >
-  class FakeWebGLRenderer implements WebGLRendererContract {
-    domElement = document.createElement('canvas')
-    outputColorSpace: ThreeModule.ColorSpace = ''
-    setSize() {}
-    setPixelRatio() {}
-    dispose() {}
+function fakeRenderer() {
+  return fromPartial<WebGLRenderer>({
+    domElement: document.createElement('canvas'),
+    setSize: vi.fn(),
+    setPixelRatio: vi.fn(),
+    dispose: vi.fn(),
     render(scene: Scene, camera: Camera) {
       scene.updateMatrixWorld(true)
       camera.updateMatrixWorld(true)
     }
-  }
-  return { ...three, WebGLRenderer: FakeWebGLRenderer }
-})
+  })
+}
 
 const SIZE = 300
 
@@ -77,11 +66,14 @@ function createWidget(
 ) {
   const container = createContainer()
   const states: CameraState[] = []
-  const widget = new CameraWidget({
-    container,
-    onStateChange: (state) => states.push(state),
-    ...options
-  })
+  const widget = new CameraWidget(
+    {
+      container,
+      onStateChange: (state) => states.push(state),
+      ...options
+    },
+    fakeRenderer()
+  )
   const canvas = container.querySelector('canvas')!
   vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue({
     left: 0,
@@ -130,7 +122,7 @@ describe('CameraWidget', () => {
     vi.stubGlobal('Image', FakeImage)
     vi.stubGlobal('ResizeObserver', FakeResizeObserver)
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
-      fake2dContext as unknown as CanvasRenderingContext2D
+      fromPartial<CanvasRenderingContext2D>(fake2dContext)
     )
   })
 

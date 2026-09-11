@@ -31,13 +31,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: mockApp
 }))
 
-const graphTraversalUtil = await vi.hoisted(
-  () => import('@/utils/graphTraversalUtil')
-)
-vi.mock(import('@/utils/graphTraversalUtil'), () => ({
-  ...graphTraversalUtil,
-  getNodeByLocatorId: vi.fn()
-}))
+vi.mock(import('@/utils/graphTraversalUtil'), { spy: true })
 
 vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({

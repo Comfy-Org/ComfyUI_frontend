@@ -1,8 +1,9 @@
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Mock } from 'vitest'
+import * as VueUse from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, shallowRef } from 'vue'
+import { nextTick, ref, shallowRef } from 'vue'
 
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
@@ -94,46 +95,35 @@ const mockIntervalResume = vi.fn()
 const rafCallbacks: Record<string, () => void> = {}
 let rafCallbackId = 0
 
-const vueUse = await vi.hoisted(() => import('@vueuse/core'))
-vi.mock<unknown>(import('@vueuse/core'), async () => {
-  const { ref } = await import('vue')
-  return {
-    ...vueUse,
-    useDocumentVisibility: vi.fn(() => ref('visible')),
-    useRafFn: vi.fn((callback, options) => {
+vi.mock(import('@vueuse/core'), { spy: true })
+function setupVueUseMocks() {
+  vi.mocked(VueUse.useDocumentVisibility).mockReturnValue(ref('visible'))
+  vi.mocked(VueUse.useRafFn, { partial: true }).mockImplementation(
+    (callback, options) => {
       const id = rafCallbackId++
-      rafCallbacks[id] = callback
-
-      if (options?.immediate !== false) {
-        void Promise.resolve().then(() => callback())
-      }
-
-      const resumeFn = vi.fn(() => {
-        mockResume()
-        // Execute the RAF callback immediately when resumed
-        const callback = Object.hasOwn(rafCallbacks, id)
-          ? rafCallbacks[id]
-          : undefined
-        callback?.()
-      })
-
+      const run = () => callback({ timestamp: 0, delta: 0 })
+      rafCallbacks[id] = run
+      if (options?.immediate !== false) void Promise.resolve().then(run)
       return {
+        isActive: ref(false),
         pause: mockPause,
-        resume: resumeFn
+        resume: vi.fn(() => {
+          mockResume()
+          rafCallbacks[id]?.()
+        })
       }
-    }),
-    useIntervalFn: vi.fn((callback, _interval, options) => {
+    }
+  )
+  vi.mocked(VueUse.useIntervalFn, { partial: true }).mockImplementation(
+    (callback, _interval, options) => {
       const id = rafCallbackId++
       const state = { active: options?.immediate !== false }
       rafCallbacks[id] = () => {
         if (state.active) callback()
       }
-
-      if (state.active) {
-        void Promise.resolve().then(() => callback())
-      }
-
+      if (state.active) void Promise.resolve().then(callback)
       return {
+        isActive: ref(state.active),
         pause: vi.fn(() => {
           state.active = false
           mockIntervalPause()
@@ -144,14 +134,12 @@ vi.mock<unknown>(import('@vueuse/core'), async () => {
           callback()
         })
       }
-    }),
-    useThrottleFn: vi.fn((callback) => {
-      return (...args: unknown[]) => {
-        return callback(...args)
-      }
-    })
-  }
-})
+    }
+  )
+  vi.mocked(VueUse.useThrottleFn, { partial: true }).mockImplementation(
+    (callback) => callback
+  )
+}
 
 let moduleMockCanvas: MockCanvas = null!
 let moduleMockGraph: MockGraph = null!
@@ -261,6 +249,7 @@ describe('useMinimap', () => {
   }
 
   beforeEach(() => {
+    setupVueUseMocks()
     registerMockLink(1, 'node2')
 
     mockContext2D = createMockCanvas2DContext()

@@ -49,6 +49,11 @@ interface StringLiteral extends Node {
   readonly value: string
 }
 
+interface ImportExpression extends Node {
+  readonly type: 'ImportExpression'
+  readonly source: Expression
+}
+
 interface PropertyDefinition extends Node {
   readonly type: 'PropertyDefinition'
   readonly static: boolean
@@ -82,6 +87,20 @@ interface CallExpression extends Node {
 interface FunctionExpression extends Node {
   readonly type: 'ArrowFunctionExpression' | 'FunctionExpression'
   readonly params: readonly Node[]
+}
+
+function isCallExpression(node: Node | undefined): node is CallExpression {
+  return node?.type === 'CallExpression'
+}
+
+function isImportExpression(node: Node | undefined): node is ImportExpression {
+  return node?.type === 'ImportExpression'
+}
+
+function staticModuleName(node: Node | undefined): string | undefined {
+  if (!node) return
+  if (isImportExpression(node)) return staticModuleName(node.source)
+  if ('value' in node && typeof node.value === 'string') return node.value
 }
 
 function isFunctionExpression(
@@ -425,6 +444,28 @@ export const noImportActual = {
           node,
           message:
             'Avoid importOriginal() and vi.importActual(). Import the module normally and use vi.spyOn(), vi.mock(..., { spy: true }), or a focused full mock.'
+        })
+      },
+      ImportExpression(node: ImportExpression) {
+        const importedModule = staticModuleName(node.source)
+        const ancestors = context.sourceCode.getAncestors(node)
+        const usesDynamicImportInMock = ancestors.some((ancestor, index) => {
+          if (!isFunctionExpression(ancestor)) return false
+          const call = ancestors[index - 1]
+          return (
+            isCallExpression(call) &&
+            call.arguments[1] === ancestor &&
+            vitestMethodName(context, call) === 'mock' &&
+            staticModuleName(call.arguments[0]) === importedModule
+          )
+        })
+
+        if (!usesDynamicImportInMock) return
+
+        context.report({
+          node,
+          message:
+            'Do not dynamically import the original module in a vi.mock() factory. Delete the mock, use vi.mock(..., { spy: true }), or provide a focused full mock.'
         })
       }
     }

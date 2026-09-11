@@ -49,13 +49,27 @@ const distribution = vi.hoisted(
 )
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({ api: apiMock }))
-const firebaseAuth = await vi.hoisted(() => import('firebase/auth'))
-vi.mock(import('firebase/auth'), () => ({
-  ...firebaseAuth,
-  setPersistence: vi.fn(async () => {}),
-  onAuthStateChanged: vi.fn(() => () => {}),
-  onIdTokenChanged: vi.fn(() => () => {})
-}))
+vi.mock<unknown>(import('firebase/auth'), () => {
+  class AuthProvider {
+    addScope() {}
+    setCustomParameters() {}
+  }
+
+  return {
+    AuthErrorCodes: {
+      POPUP_CLOSED_BY_USER: 'auth/popup-closed-by-user',
+      EXPIRED_POPUP_REQUEST: 'auth/cancelled-popup-request',
+      POPUP_BLOCKED: 'auth/popup-blocked',
+      CREDENTIAL_TOO_OLD_LOGIN_AGAIN: 'auth/requires-recent-login'
+    },
+    GoogleAuthProvider: AuthProvider,
+    GithubAuthProvider: AuthProvider,
+    browserLocalPersistence: {},
+    setPersistence: vi.fn(async () => {}),
+    onAuthStateChanged: vi.fn(() => () => {}),
+    onIdTokenChanged: vi.fn(() => () => {})
+  }
+})
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
@@ -80,12 +94,6 @@ vi.mock(import('@/composables/useReconnectingNotification'), () => {
   }
 })
 
-const vueUse = await vi.hoisted(() => import('@vueuse/core'))
-vi.mock<unknown>(import('@vueuse/core'), () => ({
-  ...vueUse,
-  useIntervalFn: vi.fn(() => ({ pause: vi.fn() }))
-}))
-
 vi.mock(import('@/base/common/async'), () => ({ runWhenGlobalIdle: vi.fn() }))
 vi.mock(import('@/composables/useBrowserTabTitle'), () => ({
   useBrowserTabTitle: vi.fn()
@@ -104,11 +112,6 @@ vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
 }))
 vi.mock(import('@/composables/useProgressFavicon'), () => ({
   useProgressFavicon: vi.fn()
-}))
-const i18nModule = await vi.hoisted(() => import('@/i18n'))
-vi.mock(import('@/i18n'), () => ({
-  ...i18nModule,
-  loadLocale: vi.fn().mockResolvedValue(undefined)
 }))
 vi.mock(import('@/platform/distribution/types'), () => distribution)
 

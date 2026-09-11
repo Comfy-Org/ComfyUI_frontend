@@ -28,21 +28,13 @@ const runState = ref<RunState>('idle')
 const framings: { glide?: boolean }[] = []
 
 const disposals = vi.hoisted(() => ({ spy: vi.fn() }))
-const canvasCoachTarget = await vi.hoisted(() => import('./canvasCoachTarget'))
+
 vi.mock(import('./canvasCoachTarget'), () => ({
-  ...canvasCoachTarget,
-  canvasNodeTarget: (
-    nodeId: Parameters<typeof canvasCoachTarget.canvasNodeTarget>[0]
-  ) => {
-    const target = canvasCoachTarget.canvasNodeTarget(nodeId)
-    return {
-      ...target,
-      dispose: () => {
-        disposals.spy()
-        target.dispose?.()
-      }
-    }
-  }
+  canvasNodeTarget: () => ({
+    getRect: () => new DOMRect(0, 0, 1, 1),
+    onMove: () => () => {},
+    dispose: disposals.spy
+  })
 }))
 
 vi.mock(import('./cameraFraming'), () => ({

@@ -12,11 +12,7 @@ import {
 import { useMinimapViewport } from '@/renderer/extensions/minimap/composables/useMinimapViewport'
 import type { MinimapCanvas } from '@/renderer/extensions/minimap/types'
 
-const vueUse = await vi.hoisted(() => import('@vueuse/core'))
-vi.mock(import('@vueuse/core'), () => ({
-  ...vueUse,
-  useRafFn: vi.fn()
-}))
+vi.mock(import('@vueuse/core'), { spy: true })
 
 vi.mock(import('@/renderer/core/spatial/boundsCalculator'), () => ({
   calculateNodeBounds: vi.fn(),

@@ -1,5 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { tryOnScopeDispose, useEventListener } from '@vueuse/core'
 
 import { toNodeId } from '@/types/nodeId'
 
@@ -200,15 +201,14 @@ vi.mock(import('@/renderer/core/canvas/links/linkDropOrchestrator'), () => ({
   resolveNodeSurfaceSlotCandidate: () => null
 }))
 
-const vueUse = await vi.hoisted(() => import('@vueuse/core'))
-vi.mock<unknown>(import('@vueuse/core'), () => ({
-  ...vueUse,
-  useEventListener: (event: string, handler: (...args: unknown[]) => void) => {
+vi.mock(import('@vueuse/core'), { spy: true })
+vi.mocked(useEventListener).mockImplementation((event, handler) => {
+  if (typeof event === 'string' && typeof handler === 'function') {
     capturedHandlers[event] = handler
-    return vi.fn()
-  },
-  tryOnScopeDispose: () => {}
-}))
+  }
+  return vi.fn()
+})
+vi.mocked(tryOnScopeDispose).mockImplementation(() => true)
 
 vi.mock<unknown>(import('@/lib/litegraph/src/LLink'), () => ({
   LLink: { getReroutes: () => [] },
@@ -256,6 +256,13 @@ function startDrag() {
 
 describe('useSlotLinkInteraction auto-pan', () => {
   beforeEach(() => {
+    vi.mocked(useEventListener).mockImplementation((event, handler) => {
+      if (typeof event === 'string' && typeof handler === 'function') {
+        capturedHandlers[event] = handler
+      }
+      return vi.fn()
+    })
+    vi.mocked(tryOnScopeDispose).mockImplementation(() => true)
     capturedOnPan.current = null
     capturedAutoPan.current = null
     for (const k of Object.keys(capturedHandlers)) {

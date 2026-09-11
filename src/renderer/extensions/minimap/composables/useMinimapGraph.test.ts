@@ -21,11 +21,7 @@ import {
   createMockLinks
 } from '@/utils/__tests__/litegraphTestUtils'
 
-const vueUse = await vi.hoisted(() => import('@vueuse/core'))
-vi.mock<unknown>(import('@vueuse/core'), () => ({
-  ...vueUse,
-  useThrottleFn: vi.fn((fn) => fn)
-}))
+vi.mock(import('@vueuse/core'), { spy: true })
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {

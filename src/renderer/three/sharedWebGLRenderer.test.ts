@@ -1,5 +1,7 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import * as THREE from 'three'
-import { describe, expect, it, vi } from 'vitest'
+import { WebGLRenderer } from 'three'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   acquireSharedRenderer,
@@ -8,44 +10,42 @@ import {
   ensureRendererSize
 } from './sharedWebGLRenderer'
 
-const { rendererCtor, forceContextLoss, dispose } = vi.hoisted(() => ({
-  rendererCtor: vi.fn(),
-  forceContextLoss: vi.fn(),
-  dispose: vi.fn()
-}))
+vi.mock(import('three'), { spy: true })
 
-const THREE_SOURCE = await vi.hoisted(() => import('three/src/Three.js'))
-vi.mock<unknown>(import('three'), () => {
-  class WebGLRenderer {
-    domElement = document.createElement('canvas')
-    autoClear = true
-    outputColorSpace = ''
-    toneMapping = 0
-    toneMappingExposure = 1
-    width = 0
-    height = 0
-    constructor(opts: unknown) {
-      rendererCtor(opts)
-    }
-    setSize(width: number, height: number) {
-      this.width = width
-      this.height = height
-    }
+const forceContextLoss = vi.fn()
+const dispose = vi.fn()
+
+function fakeRenderer() {
+  const domElement = document.createElement('canvas')
+  let width = 0
+  let height = 0
+  return fromPartial<WebGLRenderer>({
+    domElement,
+    autoClear: true,
+    outputColorSpace: THREE.SRGBColorSpace,
+    toneMapping: THREE.NoToneMapping,
+    toneMappingExposure: 1,
+    setSize(nextWidth: number, nextHeight: number) {
+      width = nextWidth
+      height = nextHeight
+    },
     getSize(target: THREE.Vector2) {
-      target.set(this.width, this.height)
-      return target
-    }
-    setPixelRatio() {}
-    setClearColor = vi.fn()
-    forceContextLoss = forceContextLoss
-    dispose = dispose
-  }
-  return { ...THREE_SOURCE, WebGLRenderer }
+      return target.set(width, height)
+    },
+    setPixelRatio: vi.fn(),
+    setClearColor: vi.fn(),
+    forceContextLoss,
+    dispose
+  })
+}
+
+beforeEach(() => {
+  vi.mocked(WebGLRenderer).mockImplementation(fakeRenderer)
 })
 
 describe('acquireSharedRenderer', () => {
   it('returns the same renderer for concurrent views and disposes after the last release', () => {
-    rendererCtor.mockClear()
+    vi.mocked(THREE.WebGLRenderer).mockClear()
     forceContextLoss.mockClear()
     dispose.mockClear()
 
@@ -53,7 +53,7 @@ describe('acquireSharedRenderer', () => {
     const second = acquireSharedRenderer()
 
     expect(second.renderer).toBe(first.renderer)
-    expect(rendererCtor).toHaveBeenCalledTimes(1)
+    expect(THREE.WebGLRenderer).toHaveBeenCalledTimes(1)
 
     first.release()
     expect(dispose).not.toHaveBeenCalled()
@@ -70,14 +70,14 @@ describe('acquireSharedRenderer', () => {
   })
 
   it('creates a fresh renderer after the previous one was torn down', () => {
-    rendererCtor.mockClear()
+    vi.mocked(THREE.WebGLRenderer).mockClear()
 
     const first = acquireSharedRenderer()
     first.release()
 
     const second = acquireSharedRenderer()
 
-    expect(rendererCtor).toHaveBeenCalledTimes(2)
+    expect(THREE.WebGLRenderer).toHaveBeenCalledTimes(2)
     expect(second.renderer).not.toBe(first.renderer)
     second.release()
   })
@@ -104,14 +104,16 @@ describe('ensureRendererSize', () => {
     renderer.setSize(300, 300)
 
     ensureRendererSize(renderer, 500, 200)
-    expect(renderer.getSize(new THREE.Vector2())).toEqual(
-      new THREE.Vector2(500, 300)
-    )
+    expect(renderer.getSize(new THREE.Vector2())).toMatchObject({
+      x: 500,
+      y: 300
+    })
 
     ensureRendererSize(renderer, 400, 250)
-    expect(renderer.getSize(new THREE.Vector2())).toEqual(
-      new THREE.Vector2(500, 300)
-    )
+    expect(renderer.getSize(new THREE.Vector2())).toMatchObject({
+      x: 500,
+      y: 300
+    })
 
     handle.release()
   })

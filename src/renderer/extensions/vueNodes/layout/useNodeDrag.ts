@@ -17,7 +17,7 @@ import { isLGraphNode } from '@/utils/litegraphUtil'
 
 export const useNodeDrag = createSharedComposable(useNodeDragIndividual)
 
-function useNodeDragIndividual() {
+export function useNodeDragIndividual() {
   const mutations = useLayoutMutations(LayoutSource.Vue)
   const { selectedNodeIds, selectedItems } = storeToRefs(useCanvasStore())
 

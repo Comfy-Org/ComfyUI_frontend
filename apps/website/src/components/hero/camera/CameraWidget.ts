@@ -118,7 +118,7 @@ export class CameraWidget {
   private paused = false
   private disposed = false
 
-  constructor(options: CameraWidgetOptions) {
+  constructor(options: CameraWidgetOptions, renderer?: WebGLRenderer) {
     this.container = options.container
     this.onStateChange = options.onStateChange
     this.pal = { ...DEFAULT_PALETTE, ...options.palette }
@@ -133,13 +133,13 @@ export class CameraWidget {
     this.liveElevation = this.state.elevation
     this.liveDistance = this.state.distance
 
-    this.initThreeJS()
+    this.initThreeJS(renderer)
     this.bindEvents()
     if (this.state.imageUrl) this.updateImage(this.state.imageUrl)
     this.animate()
   }
 
-  private initThreeJS(): void {
+  private initThreeJS(renderer?: WebGLRenderer): void {
     const width = this.container.clientWidth || 300
     const height = this.container.clientHeight || 300
 
@@ -154,7 +154,8 @@ export class CameraWidget {
     this.previewCamera = new PerspectiveCamera(50, width / height, 0.1, 100)
     this.activeCamera = this.camera
 
-    this.renderer = new WebGLRenderer({ antialias: true, alpha: true })
+    this.renderer =
+      renderer ?? new WebGLRenderer({ antialias: true, alpha: true })
     this.renderer.setSize(width, height, false)
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     this.renderer.outputColorSpace = SRGBColorSpace

@@ -18,6 +18,14 @@ ruleTester.run('no-import-actual', fromAny<Rule, unknown>(noImportActual), {
     `import { vi } from 'vitest'
 vi.mock(import('./dependency'), () => ({ dependency: vi.fn() }))
 vi.spyOn(dependency, 'method')`,
+    `async function loadDependency() {
+  return import('./dependency')
+}`,
+    `import { vi } from 'vitest'
+vi.mock('./dependency', async () => {
+  const { ref } = await import('vue')
+  return { dependency: ref(false) }
+})`,
     `const vi = { importActual: () => undefined }
 vi.importActual()`
   ],
@@ -38,6 +46,14 @@ Vitest.vi.mock('./dependency', function (importOriginal) {
   return importOriginal()
 })`,
       errors: [{ message: /Avoid importOriginal/ }]
+    },
+    {
+      code: `import { vi } from 'vitest'
+vi.mock('./dependency', async () => {
+  const original = await import('./dependency')
+  return { ...original, dependency: vi.fn() }
+})`,
+      errors: [{ message: /Do not dynamically import/ }]
     }
   ]
 })
