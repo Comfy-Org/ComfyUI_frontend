@@ -260,7 +260,8 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
     // an abandoned attempt leaves the visitor silently signed in.
     const abandon = () => {
       abandonAttempt()
-      if (authenticated) void firebase?.signOutWorkshop()
+      // Best-effort rollback; a failed sign-out must not go unhandled.
+      if (authenticated) void firebase?.signOutWorkshop().catch(() => {})
     }
     try {
       const loaded = await withinOperationDeadline(loadWorkshopFirebase())
