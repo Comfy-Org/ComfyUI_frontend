@@ -1,0 +1,64 @@
+diff --git a/lib/mutation-observer/MutationObserverListener.js b/lib/mutation-observer/MutationObserverListener.js
+index 47d4fe2cb0cf31b6c20da36e2b50a6a4a3396258..de386e6f2f94bf23d02987bbf6445c9a58818ee4 100644
+--- a/lib/mutation-observer/MutationObserverListener.js
++++ b/lib/mutation-observer/MutationObserverListener.js
+@@ -11,6 +11,7 @@ export default class MutationObserverListener {
+     #records = [];
+     #destroyed = false;
+     #microtaskQueued = false;
++    #listenerCallback;
+     /**
+      * Constructor.
+      *
+@@ -24,9 +25,10 @@ export default class MutationObserverListener {
+     constructor(init) {
+         this.options = init.options;
+         this.target = init.target;
++        this.#listenerCallback = (record) => this.report(record);
+         this.mutationListener = {
+             options: init.options,
+-            callback: new WeakRef((record) => this.report(record))
++            callback: new WeakRef(this.#listenerCallback)
+         };
+         this.#window = init.window;
+         this.#observer = init.observer;
+@@ -79,6 +81,7 @@ export default class MutationObserverListener {
+         this.#destroyed = true;
+         this.options = null;
+         this.target = null;
++        this.#listenerCallback = null;
+         this.mutationListener = null;
+         this.#window = null;
+         this.#observer = null;
+diff --git a/src/mutation-observer/MutationObserverListener.ts b/src/mutation-observer/MutationObserverListener.ts
+index 68d57de51e5f807b6921f252ed721faf0a3e8675..efb433279ad2baaba07d560ed4b8dcb76dc3deb2 100644
+--- a/src/mutation-observer/MutationObserverListener.ts
++++ b/src/mutation-observer/MutationObserverListener.ts
+@@ -18,6 +18,7 @@ export default class MutationObserverListener {
+ 	#records: MutationRecord[] = [];
+ 	#destroyed = false;
+ 	#microtaskQueued = false;
++	#listenerCallback: (record: MutationRecord) => void;
+ 
+ 	/**
+ 	 * Constructor.
+@@ -38,9 +39,10 @@ export default class MutationObserverListener {
+ 	}) {
+ 		this.options = init.options;
+ 		this.target = init.target;
++		this.#listenerCallback = (record: MutationRecord) => this.report(record);
+ 		this.mutationListener = {
+ 			options: init.options,
+-			callback: new WeakRef((record: MutationRecord) => this.report(record))
++			callback: new WeakRef(this.#listenerCallback)
+ 		};
+ 		this.#window = init.window;
+ 		this.#observer = init.observer;
+@@ -103,6 +105,7 @@ export default class MutationObserverListener {
+ 		this.#destroyed = true;
+ 		this.options = null!;
+ 		this.target = null!;
++		this.#listenerCallback = null!;
+ 		this.mutationListener = null!;
+ 		this.#window = null!;
+ 		this.#observer = null!;
