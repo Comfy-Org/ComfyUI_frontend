@@ -135,7 +135,8 @@ describe('readSubgraphDefinitions', () => {
     })
     const doc = seed(definition)
     const stored = doc.getMap<Y.Map<unknown>>('definitions').get(definition.id)
-    stored?.set('__definition_digest', 'cmp-owned-digest')
+    expect(stored).toBeDefined()
+    stored!.set('__definition_digest', 'cmp-owned-digest')
 
     const [projected] = readSubgraphDefinitions(doc)
 
