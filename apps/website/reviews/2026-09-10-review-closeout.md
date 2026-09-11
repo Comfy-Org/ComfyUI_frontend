@@ -163,6 +163,19 @@ warnings, seven existing hints), changed-file lint and formatting. The unit
 checks that inspect the gate immediately now await the mounted render tick.
 Deployment and live navigation must still be checked on the pushed head.
 
+The Run fix deployed as `79e14fece8` (Vercel run `34565149896`). Live menu →
+Krea and menu → Seedream navigation both enabled Run with the real account.
+
+A follow-up inspection found the same hydration mismatch on media uploads:
+the hidden file input was enabled, but the visible label retained SSR
+`pointer-events: none` and the group retained its disabled opacity. A real
+trial click was blocked. The upload gate now also waits for the existing
+`mounted` boundary. The browser regression clicks the visible label, waits
+for the file chooser and selects a local image fixture; checking the hidden
+input alone would miss this bug. It failed before this follow-up and passes
+after it. All 62 ModelDetail/FileSourceInput unit tests and 14 Models browser
+tests pass; no backend upload or generation is submitted by that regression.
+
 ## Not claimed complete
 
 - Real production-origin authentication/deployment: the Cloud prerequisites in

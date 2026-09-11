@@ -283,6 +283,7 @@ describe('ModelDetail', () => {
     const model = getRouterWorkshopModelDetail('wavespeed--seedvr2')
     if (!model) throw new Error('Missing Wavespeed model')
     mountDetail({ model })
+    await nextTick()
     const file = new File(['image'], 'image.png', { type: 'image/png' })
     await user().upload(
       screen.getByLabelText('Image to upscale', {
@@ -317,6 +318,7 @@ describe('ModelDetail', () => {
     const model = getRouterWorkshopModelDetail('wavespeed--seedvr2')
     if (!model) throw new Error('Missing Wavespeed model')
     mountDetail({ model })
+    await nextTick()
     await user().upload(
       screen.getByLabelText('Image to upscale', {
         selector: 'input[type="file"]'
@@ -346,6 +348,7 @@ describe('ModelDetail', () => {
     const model = getRouterWorkshopModelDetail('wavespeed--seedvr2')
     if (!model) throw new Error('Missing Wavespeed model')
     mountDetail({ model })
+    await nextTick()
     await user().upload(
       screen.getByLabelText('Image to upscale', {
         selector: 'input[type="file"]'

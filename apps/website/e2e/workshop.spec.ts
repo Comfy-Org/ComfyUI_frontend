@@ -199,7 +199,7 @@ test.describe('Model playground', () => {
     await expect(page.getByTestId('field-seed')).toBeVisible()
   })
 
-  test('restores sign-in and keeps Run enabled after Models menu navigation', async ({
+  test('restores sign-in and keeps Run and uploads enabled after Models menu navigation', async ({
     page,
     modelsAccount
   }) => {
@@ -243,6 +243,14 @@ test.describe('Model playground', () => {
     await expect(
       page.getByRole('button', { name: 'Run', exact: true })
     ).toBeEnabled()
+    const [chooser] = await Promise.all([
+      page.waitForEvent('filechooser'),
+      page.getByText('Choose images or drop them here', { exact: true }).click()
+    ])
+    await chooser.setFiles('e2e/assets/placeholder-1x1.webp')
+    await expect(
+      page.getByRole('button', { name: 'Replace placeholder-1x1.webp' })
+    ).toBeVisible()
   })
 
   test('API tab mirrors the form values', async ({ page }) => {

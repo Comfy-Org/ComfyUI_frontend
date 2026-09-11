@@ -484,7 +484,7 @@ function useInCode() {
             :errors
             :locale
             :disabled="isRunning"
-            :file-uploads-disabled="!session"
+            :file-uploads-disabled="!mounted || !session"
           />
           <p
             v-if="hasFileInputs && gate === 'signedOut'"
