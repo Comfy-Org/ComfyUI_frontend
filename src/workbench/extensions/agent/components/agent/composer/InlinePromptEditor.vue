@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { DOMParser, Fragment, Slice } from '@tiptap/pm/model'
 import { baseKeymap } from '@tiptap/pm/commands'
 import { closeHistory, history, redo, undo } from '@tiptap/pm/history'
 import { keymap } from '@tiptap/pm/keymap'
 import { EditorState, TextSelection } from '@tiptap/pm/state'
 import { EditorView } from '@tiptap/pm/view'
 import { onBeforeUnmount, onMounted, useTemplateRef, watch } from 'vue'
+import DOMPurify from 'dompurify'
 import { useI18n } from 'vue-i18n'
 
 import type { PromptEditor } from '../../../types/promptEditor'
@@ -24,11 +26,13 @@ defineOptions({ inheritAttrs: false })
 const {
   label,
   expanded = false,
-  activeDescendant
+  activeDescendant,
+  editableWorkflowId
 } = defineProps<{
   label: string
   expanded?: boolean
   activeDescendant?: string
+  editableWorkflowId?: string
 }>()
 const model = defineModel<PromptSnapshot>({
   default: () => ({ text: '', workflowReferences: [] })
@@ -158,15 +162,58 @@ onMounted(() => {
         return false
       }
     },
-    handlePaste(editor, event) {
-      const text = event.clipboardData?.getData('text/plain')
-      if (text === undefined) return false
-      editor.dispatch(editor.state.tr.insertText(text).scrollIntoView())
+    transformPastedHTML: (html) => DOMPurify.sanitize(html),
+    handlePaste(editor, event, slice) {
+      const clipboard = event.clipboardData
+      if (!clipboard) return false
+      const text = clipboard.getData('text/plain')
+      const { state } = editor
+      const hasWorkflows = slice.content.content.some(
+        (node) => node.type === inlinePromptSchema.nodes.workflow
+      )
+      if (!hasWorkflows) {
+        editor.dispatch(state.tr.insertText(text).scrollIntoView())
+        return true
+      }
+      const usedIds = new Set([editableWorkflowId])
+      state.doc.forEach((node, position) => {
+        if (
+          node.type === inlinePromptSchema.nodes.workflow &&
+          (position < state.selection.from || position >= state.selection.to)
+        )
+          usedIds.add(node.attrs.id)
+      })
+      // The default clipboard parser collapses whitespace in inline slices.
+      const pasted = DOMParser.fromSchema(inlinePromptSchema).parseSlice(
+        DOMPurify.sanitize(clipboard.getData('text/html'), {
+          RETURN_DOM_FRAGMENT: true
+        }),
+        { preserveWhitespace: 'full' }
+      )
+      const content = pasted.content.content.map((node) => {
+        if (node.type !== inlinePromptSchema.nodes.workflow) return node
+        if (usedIds.has(node.attrs.id))
+          return inlinePromptSchema.text(
+            `@[Workflow: ${String(node.attrs.name ?? '')}]`
+          )
+        usedIds.add(node.attrs.id)
+        return node
+      })
+      editor.dispatch(
+        state.tr
+          .replaceSelection(new Slice(Fragment.from(content), 0, 0))
+          .setMeta('paste', true)
+          .setMeta('uiEvent', 'paste')
+          .scrollIntoView()
+      )
       return true
     },
     clipboardTextSerializer: (slice) =>
-      slice.content.textBetween(0, slice.content.size, '', (node) =>
-        String(node.attrs.name ?? '')
+      slice.content.textBetween(
+        0,
+        slice.content.size,
+        '',
+        (node) => `@[Workflow: ${String(node.attrs.name ?? '')}]`
       ),
     nodeViews: {
       workflow(node, editor, getPos) {
