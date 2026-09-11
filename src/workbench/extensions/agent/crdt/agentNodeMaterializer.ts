@@ -1,6 +1,10 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { materializeLinkAdapter } from '@/lib/litegraph/src/LLink'
-import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphNode,
+  LiteGraph,
+  SubgraphNode
+} from '@/lib/litegraph/src/litegraph'
 import { topologicalSortSubgraphs } from '@/lib/litegraph/src/subgraph/subgraphDeduplication'
 import type {
   ExportedSubgraph,
@@ -227,9 +231,36 @@ function reconcile(
   const materialized: NodeId[] = []
   for (const state of records) {
     const live = graph._nodes_by_id[state.id]
-    if (live && nodeStore.ownsNode(scope, live._state)) continue
     const serialised = state.lastSerialization
     if (!serialised) continue
+    if (live && nodeStore.ownsNode(scope, live._state)) {
+      // Reconciliation can retain the instance but replace its inputs with
+      // serialized slots, losing the bindings that create promoted widgets.
+      // Repair only broken bindings: replaying an intact host's serialization
+      // would overwrite later set_widget values. Layout remains FE-owned.
+      if (
+        live instanceof SubgraphNode &&
+        (live.inputs.length !== live.subgraph.inputNode.slots.length ||
+          live.inputs.some(
+            (input, index) =>
+              input._subgraphSlot !== live.subgraph.inputNode.slots[index]
+          ))
+      ) {
+        try {
+          live.configure({
+            ...withNamedWidgetValues(serialised),
+            pos: [...live.pos],
+            size: [...live.size]
+          })
+        } catch (cause) {
+          reportError(cause, {
+            errorType: 'agent_node_materialize_configure_failed',
+            context: { graphId: graph.id, nodeId: String(state.id) }
+          })
+        }
+      }
+      continue
+    }
     if (pendingDefinitions.has(state.type)) continue
     if (
       materialize(graph, scope, state, serialised, orphansById.get(state.id))
