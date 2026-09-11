@@ -363,7 +363,7 @@ vi.mock<unknown>(
 
 const mockTrackResubscribeClicked = vi.hoisted(() => vi.fn())
 const mockTrackMonthlySubscriptionSucceeded = vi.hoisted(() => vi.fn())
-const mockCaptureCheckoutJourneyEvent = vi.hoisted(() => vi.fn())
+const mockTrackCheckoutJourneyEvent = vi.hoisted(() => vi.fn())
 
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
@@ -371,7 +371,7 @@ vi.mock<unknown>(import('@/platform/telemetry'), () => ({
     trackResubscribeClicked: mockTrackResubscribeClicked,
     trackBeginCheckout: mockTrackBeginCheckout,
     trackMonthlySubscriptionSucceeded: mockTrackMonthlySubscriptionSucceeded,
-    captureCheckoutJourneyEvent: mockCaptureCheckoutJourneyEvent
+    trackCheckoutJourneyEvent: mockTrackCheckoutJourneyEvent
   })
 }))
 
@@ -523,14 +523,14 @@ describe('useSubscriptionCheckout', () => {
     }
     mockCanReactivatePlan.value = true
     mockSubscription.value = null
-    mockCaptureCheckoutJourneyEvent.mockClear()
+    mockTrackCheckoutJourneyEvent.mockClear()
     sessionStorage.clear()
     clearCheckoutJourney()
   })
 
   describe('checkout journey instrumentation', () => {
     function journeyPhases() {
-      return mockCaptureCheckoutJourneyEvent.mock.calls.map(
+      return mockTrackCheckoutJourneyEvent.mock.calls.map(
         ([event]) => event.phase
       )
     }
@@ -559,7 +559,7 @@ describe('useSubscriptionCheckout', () => {
         phases.indexOf('operation_linked')
       )
 
-      const events = mockCaptureCheckoutJourneyEvent.mock.calls.map(
+      const events = mockTrackCheckoutJourneyEvent.mock.calls.map(
         ([event]) => event
       )
       const opLinked = events.find(
@@ -625,7 +625,7 @@ describe('useSubscriptionCheckout', () => {
     it('records a correlated preview failure with no operation id', async () => {
       await submitRejectedPreview('PREVIEW_FAILED')
 
-      const events = mockCaptureCheckoutJourneyEvent.mock.calls.map(
+      const events = mockTrackCheckoutJourneyEvent.mock.calls.map(
         ([event]) => event
       )
       const entered = events.find((event) => event.phase === 'entered')

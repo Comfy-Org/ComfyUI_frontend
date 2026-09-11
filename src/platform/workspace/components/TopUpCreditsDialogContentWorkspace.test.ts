@@ -34,7 +34,7 @@ const mockToastAdd = vi.fn()
 
 const mockTrackTopUpPurchase = vi.fn()
 const mockTrackBillingEvent = vi.fn()
-const mockCaptureCheckoutJourneyEvent = vi.hoisted(() => vi.fn())
+const mockTrackCheckoutJourneyEvent = vi.hoisted(() => vi.fn())
 const mockCanTopUp = vi.hoisted(() => ({
   ref: undefined as { value: boolean } | undefined
 }))
@@ -90,7 +90,7 @@ vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackApiCreditTopupButtonPurchaseClicked: mockTrackTopUpPurchase,
     trackBillingEvent: mockTrackBillingEvent,
-    captureCheckoutJourneyEvent: mockCaptureCheckoutJourneyEvent
+    trackCheckoutJourneyEvent: mockTrackCheckoutJourneyEvent
   })
 }))
 
@@ -192,7 +192,7 @@ beforeEach(() => {
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
   Object.assign(useAuthStore(), { userId: 'user-1' })
   Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-1' })
-  mockCaptureCheckoutJourneyEvent.mockClear()
+  mockTrackCheckoutJourneyEvent.mockClear()
   sessionStorage.clear()
   clearCheckoutJourney()
 })
@@ -260,7 +260,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
     renderDialog()
     await waitFor(() =>
-      expect(mockCaptureCheckoutJourneyEvent).toHaveBeenCalledWith(
+      expect(mockTrackCheckoutJourneyEvent).toHaveBeenCalledWith(
         expect.objectContaining({ phase: 'entered', entry_flow: 'topup' })
       )
     )
@@ -269,14 +269,14 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
 
     await waitFor(() =>
-      expect(mockCaptureCheckoutJourneyEvent).toHaveBeenCalledWith(
+      expect(mockTrackCheckoutJourneyEvent).toHaveBeenCalledWith(
         expect.objectContaining({
           phase: 'operation_linked',
           billing_op_id: 'op-1'
         })
       )
     )
-    const phases = mockCaptureCheckoutJourneyEvent.mock.calls.map(
+    const phases = mockTrackCheckoutJourneyEvent.mock.calls.map(
       ([event]) => event.phase
     )
     expect(phases.indexOf('submitted')).toBeLessThan(
@@ -297,7 +297,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     await clickAddCredits()
     await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
     await waitFor(() =>
-      expect(mockCaptureCheckoutJourneyEvent).toHaveBeenCalledWith(
+      expect(mockTrackCheckoutJourneyEvent).toHaveBeenCalledWith(
         expect.objectContaining({ phase: 'submitted' })
       )
     )
@@ -308,7 +308,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     resolveTopup(topupResponse('completed'))
     await waitFor(() => expect(mockFetchBalance).toHaveBeenCalled())
 
-    const phases = mockCaptureCheckoutJourneyEvent.mock.calls.map(
+    const phases = mockTrackCheckoutJourneyEvent.mock.calls.map(
       ([event]) => event.phase
     )
     expect(phases).toContain('submitted')

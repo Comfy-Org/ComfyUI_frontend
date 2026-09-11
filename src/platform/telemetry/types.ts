@@ -1106,12 +1106,10 @@ export function getCheckoutJourneyTelemetryEventName(
 }
 
 export function getCheckoutJourneyTelemetryEventPayload(
-  event: CheckoutJourneyTelemetryEvent,
-  eventId: string
+  event: CheckoutJourneyTelemetryEvent
 ) {
   return {
     schema_version: CHECKOUT_JOURNEY_SCHEMA_VERSION,
-    event_id: eventId,
     phase: event.phase,
     checkout_journey_id: event.checkout_journey_id,
     checkout_entered_at: event.checkout_entered_at,
@@ -1193,15 +1191,8 @@ export interface TelemetryProvider {
 
   trackBillingEvent?(event: BillingTelemetryEvent): void
 
-  /**
-   * Emit a checkout-journey lifecycle event. `eventId` is generated once by the
-   * dispatcher before fan-out so the same logical emission carries one identity
-   * across every provider.
-   */
-  trackCheckoutJourneyEvent?(
-    event: CheckoutJourneyTelemetryEvent,
-    eventId: string
-  ): void
+  /** Emit a checkout-journey lifecycle event to this provider. */
+  trackCheckoutJourneyEvent?(event: CheckoutJourneyTelemetryEvent): void
 
   // Survey flow events
   trackSurvey?(stage: 'opened' | 'submitted', responses?: SurveyResponses): void
@@ -1313,14 +1304,7 @@ export interface TelemetryProvider {
  * All methods are required - the registry implements all methods and dispatches
  * to registered providers using optional chaining.
  */
-export type TelemetryDispatcher = Required<TelemetryProvider> & {
-  /**
-   * Caller-facing entry point for checkout-journey events. Mints one `event_id`
-   * and fans out to every provider's `trackCheckoutJourneyEvent`, so callers
-   * never handle the identity themselves.
-   */
-  captureCheckoutJourneyEvent(event: CheckoutJourneyTelemetryEvent): void
-}
+export type TelemetryDispatcher = Required<TelemetryProvider>
 
 /**
  * Telemetry event constants

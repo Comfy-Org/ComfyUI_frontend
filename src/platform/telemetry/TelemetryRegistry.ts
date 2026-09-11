@@ -67,18 +67,6 @@ import type {
   WorkspaceInviteMetadata
 } from './types'
 
-let fallbackEventIdCounter = 0
-
-function createTelemetryEventId(): string {
-  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
-    return crypto.randomUUID()
-  }
-
-  // Monotonic suffix so emissions within the same millisecond stay distinct.
-  fallbackEventIdCounter += 1
-  return `event-${Date.now()}-${fallbackEventIdCounter}`
-}
-
 /**
  * Registry that holds multiple telemetry providers and dispatches
  * all tracking calls to each registered provider.
@@ -206,17 +194,8 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackBillingEvent?.(event))
   }
 
-  trackCheckoutJourneyEvent(
-    event: CheckoutJourneyTelemetryEvent,
-    eventId: string
-  ): void {
-    this.dispatch((provider) =>
-      provider.trackCheckoutJourneyEvent?.(event, eventId)
-    )
-  }
-
-  captureCheckoutJourneyEvent(event: CheckoutJourneyTelemetryEvent): void {
-    this.trackCheckoutJourneyEvent(event, createTelemetryEventId())
+  trackCheckoutJourneyEvent(event: CheckoutJourneyTelemetryEvent): void {
+    this.dispatch((provider) => provider.trackCheckoutJourneyEvent?.(event))
   }
 
   trackRunButton(properties: RunButtonProperties): void {

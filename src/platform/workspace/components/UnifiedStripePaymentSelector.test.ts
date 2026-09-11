@@ -10,10 +10,10 @@ import {
 
 import UnifiedStripePaymentSelector from './UnifiedStripePaymentSelector.vue'
 
-const mockCaptureCheckoutJourneyEvent = vi.hoisted(() => vi.fn())
+const mockTrackCheckoutJourneyEvent = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
-    captureCheckoutJourneyEvent: mockCaptureCheckoutJourneyEvent
+    trackCheckoutJourneyEvent: mockTrackCheckoutJourneyEvent
   })
 }))
 
@@ -92,7 +92,7 @@ describe('UnifiedStripePaymentSelector', () => {
   beforeEach(() => {
     sessionStorage.clear()
     clearCheckoutJourney()
-    mockCaptureCheckoutJourneyEvent.mockClear()
+    mockTrackCheckoutJourneyEvent.mockClear()
     resolveCheckoutJourney({
       actorUid: 'user-1',
       workspaceId: 'ws-1',
@@ -124,7 +124,7 @@ describe('UnifiedStripePaymentSelector', () => {
 
       fireStripeElementEvent('ready')
 
-      expect(mockCaptureCheckoutJourneyEvent).toHaveBeenCalledWith(
+      expect(mockTrackCheckoutJourneyEvent).toHaveBeenCalledWith(
         expect.objectContaining({ phase: 'payment_element_ready' })
       )
     })
@@ -137,7 +137,7 @@ describe('UnifiedStripePaymentSelector', () => {
         error: { code: 'invalid_request' }
       })
 
-      expect(mockCaptureCheckoutJourneyEvent).toHaveBeenCalledWith(
+      expect(mockTrackCheckoutJourneyEvent).toHaveBeenCalledWith(
         expect.objectContaining({
           phase: 'payment_element_failed',
           element_phase: 'mount',
@@ -159,7 +159,7 @@ describe('UnifiedStripePaymentSelector', () => {
       )
 
       await waitFor(() =>
-        expect(mockCaptureCheckoutJourneyEvent).toHaveBeenCalledWith(
+        expect(mockTrackCheckoutJourneyEvent).toHaveBeenCalledWith(
           expect.objectContaining({
             phase: 'payment_submit_failed',
             submit_phase: 'validation',
@@ -167,7 +167,7 @@ describe('UnifiedStripePaymentSelector', () => {
           })
         )
       )
-      const phases = mockCaptureCheckoutJourneyEvent.mock.calls.map(
+      const phases = mockTrackCheckoutJourneyEvent.mock.calls.map(
         ([event]) => event.phase
       )
       expect(phases.indexOf('payment_submit_attempted')).toBeLessThan(
@@ -186,7 +186,7 @@ describe('UnifiedStripePaymentSelector', () => {
       )
 
       await waitFor(() =>
-        expect(mockCaptureCheckoutJourneyEvent).toHaveBeenCalledWith(
+        expect(mockTrackCheckoutJourneyEvent).toHaveBeenCalledWith(
           expect.objectContaining({
             phase: 'payment_submit_failed',
             submit_phase: 'validation'
@@ -211,22 +211,22 @@ describe('UnifiedStripePaymentSelector', () => {
         screen.getByRole('button', { name: 'Pay and subscribe' })
       )
       unmount()
-      mockCaptureCheckoutJourneyEvent.mockClear()
+      mockTrackCheckoutJourneyEvent.mockClear()
       rejectSubmit(new Error('late'))
       await Promise.resolve()
 
-      expect(mockCaptureCheckoutJourneyEvent).not.toHaveBeenCalled()
+      expect(mockTrackCheckoutJourneyEvent).not.toHaveBeenCalled()
     })
 
     it('does not leak an element event after unmount', async () => {
       const { unmount } = renderSelector()
       await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalled())
       unmount()
-      mockCaptureCheckoutJourneyEvent.mockClear()
+      mockTrackCheckoutJourneyEvent.mockClear()
 
       fireStripeElementEvent('ready')
 
-      expect(mockCaptureCheckoutJourneyEvent).not.toHaveBeenCalled()
+      expect(mockTrackCheckoutJourneyEvent).not.toHaveBeenCalled()
     })
   })
 

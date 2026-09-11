@@ -29,16 +29,15 @@ describe('getCheckoutJourneyTelemetryEventName', () => {
 })
 
 describe('getCheckoutJourneyTelemetryEventPayload', () => {
-  it('stamps schema version and the supplied event id', () => {
+  it('stamps schema version and carries the resolved arm', () => {
     const event: CheckoutJourneyTelemetryEvent = {
       ...baseContext,
       phase: 'entered',
       assignment_status: 'resolved',
       assigned_arm: 'control'
     }
-    const payload = getCheckoutJourneyTelemetryEventPayload(event, 'evt-1')
+    const payload = getCheckoutJourneyTelemetryEventPayload(event)
     expect(payload.schema_version).toBe(CHECKOUT_JOURNEY_SCHEMA_VERSION)
-    expect(payload.event_id).toBe('evt-1')
     expect(payload.assigned_arm).toBe('control')
   })
 
@@ -48,7 +47,7 @@ describe('getCheckoutJourneyTelemetryEventPayload', () => {
       phase: 'entered',
       assignment_status: 'unavailable'
     }
-    const payload = getCheckoutJourneyTelemetryEventPayload(event, 'evt-2')
+    const payload = getCheckoutJourneyTelemetryEventPayload(event)
     expect(payload.assignment_status).toBe('unavailable')
     expect('assigned_arm' in payload).toBe(false)
   })
@@ -59,7 +58,7 @@ describe('getCheckoutJourneyTelemetryEventPayload', () => {
       phase: 'entered',
       assignment_status: 'unavailable'
     }
-    const payload = getCheckoutJourneyTelemetryEventPayload(event, 'evt-3')
+    const payload = getCheckoutJourneyTelemetryEventPayload(event)
     expect('checkout_attempt_id' in payload).toBe(false)
     expect('billing_op_id' in payload).toBe(false)
     expect('ui_mode' in payload).toBe(false)
@@ -74,7 +73,7 @@ describe('getCheckoutJourneyTelemetryEventPayload', () => {
       failure_category: 'network',
       preview_revision: 'rev-7'
     }
-    const payload = getCheckoutJourneyTelemetryEventPayload(event, 'evt-4')
+    const payload = getCheckoutJourneyTelemetryEventPayload(event)
     expect(payload).toMatchObject({
       phase: 'preview_failed',
       failure_category: 'network',
@@ -90,7 +89,7 @@ describe('getCheckoutJourneyTelemetryEventPayload', () => {
       assigned_arm: 'treatment',
       element_phase: 'mount'
     }
-    const payload = getCheckoutJourneyTelemetryEventPayload(event, 'evt-5')
+    const payload = getCheckoutJourneyTelemetryEventPayload(event)
     expect(payload).toMatchObject({ element_phase: 'mount' })
   })
 })
