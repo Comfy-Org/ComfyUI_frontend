@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { DraftIndexV2 } from '../base/draftTypes'
 import { hashPath } from '../base/hashUtil'
+import { prepareWorkflowWorkspaceTransition } from '../base/storageIO'
 import { StorageKeys } from '../base/storageKeys'
 import { migrateWorkspaceToScope } from './migrateWorkspaceToScope'
 
@@ -214,6 +215,24 @@ describe('migrateWorkspaceToScope', () => {
         StorageKeys.draftPayload(draftPath, sourceWorkspaceId)
       )
     ).not.toBe(null)
+  })
+
+  it('does not migrate drafts while workflow storage writes are deferred', () => {
+    seedSourceWorkspace()
+    const cancelTransition = prepareWorkflowWorkspaceTransition()
+
+    migrateWorkspaceToScope(sourceWorkspaceId, destinationScope)
+
+    expect(readJson(StorageKeys.draftIndex(sourceWorkspaceId))).toEqual(
+      buildIndex()
+    )
+    expect(localStorage.getItem(StorageKeys.draftIndex(destinationScope))).toBe(
+      null
+    )
+    expect(
+      localStorage.getItem(StorageKeys.migrationClaim(sourceWorkspaceId))
+    ).toBe(null)
+    cancelTransition()
   })
 
   it('keeps the workspace copy and writes no scoped index when a payload copy hits the quota', () => {
