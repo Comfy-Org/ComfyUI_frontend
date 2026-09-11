@@ -925,10 +925,9 @@ const attachment = useAttachment({
   // overlapping refresh into the in-flight one instead of scheduling a
   // trailing pass.
   onUploaded: () => {
-    inputAssetRefresh = inputAssetRefresh.then(
-      () => assetsStore.inputAssets.loadNew(),
-      () => assetsStore.inputAssets.loadNew()
-    )
+    inputAssetRefresh = inputAssetRefresh
+      .then(() => assetsStore.inputAssets.loadNew())
+      .catch(() => undefined)
   },
   maxBytes: () =>
     resolveAttachmentLimit(api.getServerFeature('max_upload_size')),
