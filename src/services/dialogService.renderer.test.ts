@@ -147,6 +147,13 @@ describe('dialogService Reka renderer opt-in', () => {
     expect(args.dialogComponentProps?.renderer).toBe('reka')
     expect(args.dialogComponentProps?.pt).toBeUndefined()
     expect(args.dialogComponentProps?.contentClass).toContain('w-fit')
+    expect(
+      args.dialogComponentProps?.contentClass,
+      'the small layout dialog draws its own bordered panel; the transparent self-styled chrome would leave it with no visible edge'
+    ).toContain('border-border-default')
+    expect(args.dialogComponentProps?.contentClass).not.toContain(
+      'bg-transparent'
+    )
     expect(args.dialogComponentProps?.headerClass).toBe('p-0')
     expect(args.dialogComponentProps?.bodyClass).toBe('p-0 overflow-y-hidden')
     expect(args.dialogComponentProps?.footerClass).toBe('p-0')
