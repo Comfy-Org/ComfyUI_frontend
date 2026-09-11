@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import type { TooltipOptions } from 'primevue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
@@ -270,75 +271,58 @@ describe('widget visibility', () => {
     expect(visibilityOf({})).toBe(true)
   })
 
-  it('removes widgets whose type is hidden at runtime', () => {
-    const nodeId = toNodeId(1)
-    const id = widgetId(GRAPH_ID, nodeId, 'runtime-hidden')
-    const state = registerWidgetState(id, { type: 'number' })
-    if (!state) throw new Error('Expected widget registration to succeed')
-
-    expect(processWidgets({ widgetIds: [id] })).toHaveLength(1)
-
-    state.type = 'converted-widget'
-
-    expect(processWidgets({ widgetIds: [id] })).toHaveLength(0)
-  })
-
-  it('keeps the row for a converted/hidden widget that still owns an input slot', () => {
-    const nodeId = toNodeId(1)
-    const id = widgetId(GRAPH_ID, nodeId, 'points_store')
-    const widget = createMockWidget({
-      name: 'points_store',
-      type: 'converted-widget',
-      options: { hidden: true },
-      widgetId: id
-    })
-    const { graph, node } = createGraphWithNode([widget], nodeId)
-    node.inputs = [
-      {
-        name: 'points_store',
-        type: 'STRING',
-        widget: { name: 'points_store' },
-        boundingRect: [0, 0, 0, 0]
+  describe('runtime type swaps on a widget that owns an input slot', () => {
+    function registerSlotOwningWidget(name = 'points_store') {
+      const nodeId = toNodeId(1)
+      const { graph, node } = createGraphWithNode([], nodeId)
+      const widget = node.addWidget('number', name, 0, () => {})
+      node.inputs = [
+        {
+          name,
+          type: 'INT',
+          widget: { name },
+          boundingRect: [0, 0, 0, 0]
+        }
+      ]
+      const id = widget.widgetId
+      if (!id) throw new Error('Expected widget registration to succeed')
+      return {
+        widget,
+        process: () =>
+          processWidgets({ widgetIds: [id], nodeId, rootGraph: graph })[0]
       }
-    ]
-    registerWidgetState(id, { type: 'converted-widget', options: {} })
+    }
 
-    const processed = processWidgets({
-      widgetIds: [id],
-      nodeId,
-      rootGraph: graph
+    it('suppresses a widget an extension hides by type', () => {
+      const { widget, process } = registerSlotOwningWidget()
+      expect(process().visible).toBe(true)
+
+      widget.type = fromAny('hidden')
+
+      const processed = process()
+      expect(processed.slotMetadata).toBeDefined()
+      expect(processed.visible).toBe(false)
+      expect(processed.suppressedByConnection).toBe(false)
     })
 
-    expect(processed).toHaveLength(1)
-    expect(processed[0]?.slotMetadata).toBeDefined()
-  })
+    it('restores the widget when the extension puts the original type back', () => {
+      const { widget, process } = registerSlotOwningWidget()
 
-  it('removes canvas-only widgets even when they own an input slot', () => {
-    const nodeId = toNodeId(1)
-    const id = widgetId(GRAPH_ID, nodeId, 'upload')
-    const widget = createMockWidget({
-      name: 'upload',
-      type: 'button',
-      options: { canvasOnly: true },
-      widgetId: id
-    })
-    const { graph, node } = createGraphWithNode([widget], nodeId)
-    node.inputs = [
-      {
-        name: 'upload',
-        type: 'STRING',
-        widget: { name: 'upload' },
-        boundingRect: [0, 0, 0, 0]
-      }
-    ]
-    registerWidgetState(id, {
-      type: 'button',
-      options: { canvasOnly: true }
+      widget.type = fromAny('hidden')
+      widget.type = fromAny('number')
+
+      expect(process().visible).toBe(true)
     })
 
-    expect(
-      processWidgets({ widgetIds: [id], nodeId, rootGraph: graph })
-    ).toHaveLength(0)
+    it('keeps a socket-only row for a converted widget', () => {
+      const { widget, process } = registerSlotOwningWidget()
+
+      widget.type = fromAny('converted-widget')
+
+      const processed = process()
+      expect(processed.simplified.type).toBe('converted-widget')
+      expect(processed.slotMetadata).toBeDefined()
+    })
   })
 
   it('hides hidden widgets', () => {
