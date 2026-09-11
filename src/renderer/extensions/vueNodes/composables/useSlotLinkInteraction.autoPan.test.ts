@@ -1,6 +1,5 @@
-import { createTestingPinia } from '@pinia/testing'
+import type * as VueUse from '@vueuse/core'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { toNodeId } from '@/types/nodeId'
@@ -58,10 +57,6 @@ vi.mock<unknown>(import('@/renderer/core/canvas/useAutoPan'), () => ({
       capturedAutoPan.current = this
     }
   }
-}))
-
-vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
-  useCanvasStore: () => ({ isReadOnly: false })
 }))
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
@@ -206,7 +201,8 @@ vi.mock(import('@/renderer/core/canvas/links/linkDropOrchestrator'), () => ({
   resolveNodeSurfaceSlotCandidate: () => null
 }))
 
-vi.mock<unknown>(import('@vueuse/core'), () => ({
+vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => ({
+  ...(await importOriginal<typeof VueUse>()),
   useEventListener: (event: string, handler: (...args: unknown[]) => void) => {
     capturedHandlers[event] = handler
     return vi.fn()
@@ -217,10 +213,6 @@ vi.mock<unknown>(import('@vueuse/core'), () => ({
 vi.mock<unknown>(import('@/lib/litegraph/src/LLink'), () => ({
   LLink: { getReroutes: () => [] },
   slotFloatingLinks: () => []
-}))
-
-vi.mock<unknown>(import('@/lib/litegraph/src/types/globalEnums'), () => ({
-  LinkDirection: { LEFT: 0, RIGHT: 1, NONE: -1 }
 }))
 
 vi.mock<unknown>(import('@/utils/rafBatch'), () => ({
@@ -264,7 +256,6 @@ function startDrag() {
 
 describe('useSlotLinkInteraction auto-pan', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     capturedOnPan.current = null
     capturedAutoPan.current = null
     for (const k of Object.keys(capturedHandlers)) {

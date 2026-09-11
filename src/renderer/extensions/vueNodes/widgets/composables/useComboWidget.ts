@@ -242,7 +242,9 @@ const addComboWidget = (
   const defaultValue = getDefaultValue(inputSpec)
 
   if (isCloud) {
-    if (assetService.shouldUseAssetBrowser(node.comfyClass, inputSpec.name)) {
+    if (
+      assetService.shouldUseWidgetAssetPicker(node.comfyClass, inputSpec.name)
+    ) {
       // Default from cloud assets, not from server combo options.
       // Server options list local files that may not exist in the user's
       // cloud asset library, leading to missing-model errors on undo/reload.

@@ -1,11 +1,19 @@
+import type * as VueUse from '@vueuse/core'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useExecutionStore } from '@/stores/executionStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useLinkStore } from '@/stores/linkStore'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, shallowRef } from 'vue'
+import { effectScope, nextTick, shallowRef } from 'vue'
+import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
+import type { LinkTopology } from '@/types/linkTopology'
 
 import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { MinimapDataSource } from '@/renderer/extensions/minimap/data/MinimapDataSource'
-import type { NodeProgressState } from '@/schemas/apiSchema'
 import { createMockCanvas2DContext } from '@/utils/__tests__/litegraphTestUtils'
 
 interface HarnessCounters {
@@ -31,9 +39,7 @@ interface HarnessCounters {
 
 const {
   counters,
-  defaultSettingStore,
-  mockCanvasStore,
-  progressStates,
+
   linkTopologies,
   apiListeners,
   pollControl
@@ -58,20 +64,12 @@ const {
     pollPauses: 0,
     pollResumes: 0
   }
-  const progressStates: Record<string, NodeProgressState> = {}
-  const canvasStore = (canvas: unknown) => ({ canvas })
   return {
     counters,
-    defaultSettingStore: {
-      visible: true,
-      get: vi.fn(() => true),
-      set: vi.fn().mockResolvedValue(undefined)
-    },
-    mockCanvasStore: canvasStore(null),
-    progressStates,
+
     linkTopologies: [] as Array<{
-      originNodeId: string
-      targetNodeId: string
+      originNodeId: NodeId
+      targetNodeId: NodeId
       originSlot: number
       targetSlot: number
     }>,
@@ -80,7 +78,8 @@ const {
   }
 })
 
-vi.mock<unknown>(import('@vueuse/core'), () => ({
+vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => ({
+  ...(await importOriginal<typeof VueUse>()),
   useDocumentVisibility: () => ({ value: 'visible' }),
   useIntervalFn: (callback: () => void) => {
     counters.pollRegistrations++
@@ -104,51 +103,6 @@ vi.mock<unknown>(import('@vueuse/core'), () => ({
     counters.throttleCallbacks++
     callback()
   }
-}))
-
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: () => ({
-    get: () => defaultSettingStore.visible,
-    set: defaultSettingStore.set
-  })
-}))
-
-vi.mock<unknown>(
-  import('@/platform/workflow/management/stores/workflowStore'),
-  () => ({
-    useWorkflowStore: () => ({ activeSubgraph: null })
-  })
-)
-
-vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => ({
-  useCanvasStore: () => mockCanvasStore
-}))
-
-vi.mock<unknown>(import('@/stores/executionStore'), () => ({
-  useExecutionStore: () => ({
-    nodeProgressStates: progressStates,
-    nodeLocationProgressStates: progressStates
-  })
-}))
-
-vi.mock<unknown>(import('@/stores/linkStore'), () => ({
-  useLinkStore: () => ({
-    graphTopologies: () => {
-      counters.topologyReads++
-      return (function* () {
-        for (const topology of linkTopologies) {
-          counters.topologyEntries++
-          yield topology
-        }
-      })()
-    }
-  })
-}))
-
-vi.mock<unknown>(import('@/stores/workspace/colorPaletteStore'), () => ({
-  useColorPaletteStore: () => ({
-    completedActivePalette: { light_theme: false }
-  })
 }))
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
@@ -239,8 +193,8 @@ function createGraph(graphSize: number, edgeCount: number) {
     0,
     linkTopologies.length,
     ...Array.from({ length: edgeCount }, (_, index) => ({
-      originNodeId: '1',
-      targetNodeId: String((index % graphSize) + 1),
+      originNodeId: toNodeId('1'),
+      targetNodeId: toNodeId(String((index % graphSize) + 1)),
       originSlot: index,
       targetSlot: index
     }))
@@ -271,8 +225,9 @@ async function runCell(
 ): Promise<MatrixResult> {
   resetCounters()
   apiListeners.clear()
-  for (const key of Object.keys(progressStates)) delete progressStates[key]
-  progressStates['1'] = {
+  for (const key of Object.keys(useExecutionStore().nodeProgressStates))
+    delete useExecutionStore().nodeProgressStates[key]
+  useExecutionStore().nodeProgressStates['1'] = {
     state: 'running',
     value: 1,
     max: 2,
@@ -293,28 +248,38 @@ async function runCell(
     height: 200,
     getContext: (kind: string) => (kind === '2d' ? context : null)
   } as unknown as HTMLCanvasElement
-  mockCanvasStore.canvas = {
+  const graphCanvasElement = document.createElement('canvas')
+  graphCanvasElement.width = 1000
+  graphCanvasElement.height = 800
+  Object.defineProperties(graphCanvasElement, {
+    clientWidth: { value: 1000 },
+    clientHeight: { value: 800 }
+  })
+  useCanvasStore().canvas = fromPartial({
     graph,
-    canvas: {
-      width: 1000,
-      height: 800,
-      clientWidth: 1000,
-      clientHeight: 800
-    },
+    canvas: graphCanvasElement,
     ds: { scale: 1, offset: [0, 0] },
     setDirty: () => counters.dirtyRequests++
-  }
-  defaultSettingStore.visible = visible
+  })
+  useSettingStore().settingValues['Comfy.Minimap.Visible'] = visible
+  useSettingStore().settingValues['Comfy.Minimap.ShowLinks'] = visible
+  useSettingStore().settingValues['Comfy.Minimap.ShowGroups'] = visible
+  useSettingStore().settingValues['Comfy.Minimap.NodeColors'] = visible
+  useSettingStore().settingValues['Comfy.Minimap.RenderBypassState'] = visible
+  useSettingStore().settingValues['Comfy.Minimap.RenderErrorState'] = visible
 
   const getNodes = vi.spyOn(MinimapDataSource.prototype, 'getNodes')
   const getLinks = vi.spyOn(MinimapDataSource.prototype, 'getLinks')
   const getBounds = vi.spyOn(MinimapDataSource.prototype, 'getBounds')
-  const minimap = useMinimap({
-    canvasRefMaybe: shallowRef(canvasElement),
-    containerRefMaybe: shallowRef({
-      getBoundingClientRect: () => new DOMRect(0, 0, 250, 200)
-    } as HTMLDivElement)
-  })
+  const scope = effectScope()
+  const minimap = scope.run(() =>
+    useMinimap({
+      canvasRefMaybe: shallowRef(canvasElement),
+      containerRefMaybe: shallowRef({
+        getBoundingClientRect: () => new DOMRect(0, 0, 250, 200)
+      } as HTMLDivElement)
+    })
+  )!
   await minimap.init()
   await nextTick()
   await nextTick()
@@ -338,10 +303,12 @@ async function runCell(
   getBounds.mockClear()
 
   if (operation === 'equal-progress') {
-    progressStates['1'] = { ...progressStates['1'] }
+    useExecutionStore().nodeProgressStates['1'] = {
+      ...useExecutionStore().nodeProgressStates['1']
+    }
   } else if (operation === 'changed-progress') {
-    progressStates['1'] = {
-      ...progressStates['1'],
+    useExecutionStore().nodeProgressStates['1'] = {
+      ...useExecutionStore().nodeProgressStates['1'],
       state: 'finished'
     }
   } else if (operation === 'geometry') {
@@ -358,8 +325,8 @@ async function runCell(
       target_slot: 0
     })
     linkTopologies.push({
-      originNodeId: '1',
-      targetNodeId: String(Math.min(2, graphSize)),
+      originNodeId: toNodeId('1'),
+      targetNodeId: toNodeId(String(Math.min(2, graphSize))),
       originSlot: 0,
       targetSlot: 0
     })
@@ -382,6 +349,7 @@ async function runCell(
     ...counters
   }
   minimap.destroy()
+  scope.stop()
   result.pollRegistrations = lifecycleAtInit.pollRegistrations
   result.listenersAdded = lifecycleAtInit.listenersAdded
   result.listenersRemoved = counters.listenersRemoved
@@ -392,6 +360,20 @@ async function runCell(
   getBounds.mockRestore()
   return result
 }
+
+beforeEach(() => {
+  Object.assign(useExecutionStore(), {
+    nodeLocationProgressStates: useExecutionStore().nodeProgressStates
+  })
+  vi.mocked(useSettingStore().set).mockResolvedValue(undefined)
+  vi.mocked(useLinkStore().graphTopologies).mockImplementation(function* () {
+    counters.topologyReads++
+    for (const topology of linkTopologies) {
+      counters.topologyEntries++
+      yield fromPartial<LinkTopology>(topology)
+    }
+  })
+})
 
 describe('minimap progress performance baseline', () => {
   beforeEach(() => {

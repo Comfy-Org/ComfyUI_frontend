@@ -215,9 +215,12 @@ function fieldFor(
     return {
       kind: 'text',
       ...common,
+      // A bound above 200 means long prose. So does no bound at all, which
+      // is the common case: every `negative_prompt` in the catalog is an
+      // unbounded string, and testing `maxLength > 200` alone put 135 of 332
+      // free-text fields into a single-line box.
       multiline:
-        name === 'prompt' ||
-        (typeof schema.maxLength === 'number' && schema.maxLength > 200),
+        typeof schema.maxLength === 'number' ? schema.maxLength > 200 : true,
       valueType: 'string',
       ...textLengthLimits(schema),
       ...(typeof schema.default === 'string'
@@ -237,7 +240,16 @@ function fieldFor(
   }
 }
 
+/**
+ * Which file types a media input should accept.
+ *
+ * `view_*` roles are named for the camera angle rather than the medium, so a
+ * substring match alone drops them to a generic file picker. Four models
+ * carry them, and `kling/dual-character-effect` has nothing but `view_left`
+ * and `view_right`, so it would offer no image picker at all.
+ */
 function acceptFor(role: string): 'image' | 'video' | 'audio' | 'file' {
+  if (role.startsWith('view_')) return 'image'
   if (role.includes('image') || role === 'mask') return 'image'
   if (role.includes('video')) return 'video'
   if (role.includes('audio')) return 'audio'

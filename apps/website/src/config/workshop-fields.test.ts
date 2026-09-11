@@ -388,4 +388,40 @@ describe('open-ended and free-precision inputs', () => {
 
     expect(invented).toEqual([])
   })
+
+  it('offers an image picker for angle-named media roles', () => {
+    // view_left / view_right / view_back name the camera angle, not the
+    // medium. Matched by substring alone they fall through to a generic file
+    // picker, and kling/dual-character-effect has only those two roles, so it
+    // would offer no image picker at all.
+    const fields = deriveWorkshopFields({ type: 'object', properties: {} }, [
+      { role: 'view_left', required: true, cardinality: 'single', minItems: 1 },
+      { role: 'view_right', required: true, cardinality: 'single', minItems: 1 }
+    ])
+
+    expect(
+      fields.map((field) => field.kind === 'media' && field.accept)
+    ).toEqual(['image', 'image'])
+  })
+
+  it('gives unbounded free text a textarea, not a one-line input', () => {
+    // Testing only `maxLength > 200` sends every unbounded string to a
+    // single-line box. Unbounded is the common case in this catalog: no
+    // negative_prompt anywhere declares a maxLength.
+    const [unbounded, short, long] = deriveWorkshopFields(
+      {
+        type: 'object',
+        properties: {
+          negative_prompt: { type: 'string' },
+          title: { type: 'string', maxLength: 60 },
+          story: { type: 'string', maxLength: 4000 }
+        }
+      },
+      []
+    )
+
+    expect(unbounded.kind === 'text' && unbounded.multiline).toBe(true)
+    expect(short.kind === 'text' && short.multiline).toBe(false)
+    expect(long.kind === 'text' && long.multiline).toBe(true)
+  })
 })

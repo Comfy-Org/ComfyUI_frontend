@@ -1,7 +1,5 @@
 // oxlint-disable no-empty-pattern
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { test as baseTest, beforeEach, describe, expect, vi } from 'vitest'
+import { test as baseTest, describe, expect, vi } from 'vitest'
 
 import type {
   MovingInputLink,
@@ -47,8 +45,6 @@ interface TestContext {
     slotType?: ISlotType
   ) => LLink
 }
-
-beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 
 const test = baseTest.extend<TestContext>({
   network: async ({}, use) => {

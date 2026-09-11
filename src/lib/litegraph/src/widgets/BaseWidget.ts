@@ -608,8 +608,16 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     ctx: CanvasRenderingContext2D,
     { width }: DrawWidgetOptions
   ): void {
-    ctx.textAlign = 'left'
-    this.drawTruncatingText({ ctx, width })
+    const { margin } = BaseWidget
+    const x = margin * 2 + 5
+    const area = new Rectangle(
+      x,
+      this.y,
+      width - x - 2 * margin,
+      this.height * 0.7
+    )
+    ctx.fillStyle = this.secondary_text_color
+    drawTextInArea({ ctx, text: this.displayName, area, align: 'left' })
   }
 
   /**

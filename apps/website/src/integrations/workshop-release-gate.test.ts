@@ -44,6 +44,19 @@ async function buildDone() {
 }
 
 describe('Workshop release output', () => {
+  it('rejects an invalid Cloud family before building', () => {
+    vi.stubEnv('VERCEL_ENV', 'preview')
+    vi.stubEnv('WORKSHOP_IN_BUILD', '1')
+    vi.stubEnv('PUBLIC_WORKSHOP_CLOUD_ENV', 'prod')
+
+    const hook = workshopReleaseGate().hooks['astro:build:start']
+    if (!hook) throw new Error('Missing build start hook')
+
+    expect(() => hook({ logger, setPrerenderer: vi.fn() })).toThrow(
+      /may only reach staging or test Cloud/
+    )
+  })
+
   it('removes only Workshop output when disabled, including repeated builds', async () => {
     vi.stubEnv('WORKSHOP_IN_BUILD', '0')
     await buildDone()
