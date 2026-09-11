@@ -1,0 +1,239 @@
+{
+  "seedance-bytedance": {
+    "provider": "ByteDance",
+    "modality": "video",
+    "creditsPerRun": 24
+  },
+  "seedance-2-0": {
+    "provider": "ByteDance",
+    "modality": "video",
+    "creditsPerRun": 26
+  },
+  "seedance-2": {
+    "provider": "ByteDance",
+    "modality": "video",
+    "creditsPerRun": 26
+  },
+  "grok-imagine": {
+    "provider": "xAI",
+    "modality": "video",
+    "creditsPerRun": 18
+  },
+  "grok-image": {
+    "provider": "xAI",
+    "modality": "image",
+    "creditsPerRun": 6
+  },
+  "openai-dall-e": {
+    "provider": "OpenAI",
+    "modality": "image",
+    "creditsPerRun": 8
+  },
+  "tripo-3d": {
+    "provider": "Tripo",
+    "modality": "3d",
+    "creditsPerRun": 30
+  },
+  "vidu": {
+    "provider": "Vidu",
+    "modality": "video",
+    "creditsPerRun": 20
+  },
+  "kling-ai": {
+    "provider": "Kling",
+    "modality": "video",
+    "creditsPerRun": 28
+  },
+  "kling-o3": {
+    "provider": "Kling",
+    "modality": "video",
+    "creditsPerRun": 32
+  },
+  "kling-2-6": {
+    "provider": "Kling",
+    "modality": "video",
+    "creditsPerRun": 30
+  },
+  "flux-api": {
+    "provider": "Black Forest Labs",
+    "modality": "image",
+    "creditsPerRun": 6
+  },
+  "flux": {
+    "provider": "Black Forest Labs",
+    "modality": "image",
+    "creditsPerRun": 6
+  },
+  "flux-2-api": {
+    "provider": "Black Forest Labs",
+    "modality": "image",
+    "creditsPerRun": 7
+  },
+  "bria-ai": {
+    "provider": "Bria",
+    "modality": "image",
+    "creditsPerRun": 5
+  },
+  "luma-dream-machine": {
+    "provider": "Luma",
+    "modality": "video",
+    "creditsPerRun": 22
+  },
+  "gemini-image": {
+    "provider": "Google",
+    "modality": "image",
+    "creditsPerRun": 6
+  },
+  "nano-banana": {
+    "provider": "Google",
+    "modality": "image",
+    "creditsPerRun": 6
+  },
+  "nano-banana-2": {
+    "provider": "Google",
+    "modality": "image",
+    "creditsPerRun": 7
+  },
+  "veo-2": {
+    "provider": "Google",
+    "modality": "video",
+    "creditsPerRun": 35,
+    "status": "deprecated",
+    "successorSlug": "veo-3"
+  },
+  "veo-3": {
+    "provider": "Google",
+    "modality": "video",
+    "creditsPerRun": 40
+  },
+  "recraft": {
+    "provider": "Recraft",
+    "modality": "image",
+    "creditsPerRun": 5
+  },
+  "ideogram": {
+    "provider": "Ideogram",
+    "modality": "image",
+    "creditsPerRun": 5
+  },
+  "krea-2": {
+    "provider": "Krea",
+    "modality": "image",
+    "creditsPerRun": 6
+  },
+  "elevenlabs": {
+    "provider": "ElevenLabs",
+    "modality": "audio",
+    "creditsPerRun": 4
+  },
+  "hunyuan-3d": {
+    "provider": "Tencent",
+    "modality": "3d",
+    "creditsPerRun": 25
+  },
+  "rodin-3d": {
+    "provider": "Rodin",
+    "modality": "3d",
+    "creditsPerRun": 28
+  },
+  "meshy-ai": {
+    "provider": "Meshy",
+    "modality": "3d",
+    "creditsPerRun": 26
+  },
+  "meshy-7": {
+    "provider": "Meshy",
+    "modality": "3d",
+    "creditsPerRun": 28
+  },
+  "openrouter": {
+    "provider": "OpenRouter",
+    "modality": "text",
+    "creditsPerRun": 1
+  },
+  "anthropic-claude": {
+    "provider": "Anthropic",
+    "modality": "text",
+    "creditsPerRun": 2
+  },
+  "qwen-3": {
+    "provider": "Alibaba",
+    "modality": "text",
+    "creditsPerRun": 1
+  },
+  "topaz-labs": {
+    "provider": "Topaz Labs",
+    "modality": "image",
+    "creditsPerRun": 10
+  },
+  "magnific-ai": {
+    "provider": "Magnific",
+    "modality": "image",
+    "creditsPerRun": 12
+  },
+  "heygen": {
+    "provider": "HeyGen",
+    "modality": "video",
+    "creditsPerRun": 30
+  },
+  "runway": {
+    "provider": "Runway",
+    "modality": "video",
+    "creditsPerRun": 25,
+    "status": "degraded"
+  },
+  "wan-api": {
+    "provider": "Alibaba",
+    "modality": "video",
+    "creditsPerRun": 18
+  },
+  "wan2-6": {
+    "provider": "Alibaba",
+    "modality": "video",
+    "creditsPerRun": 18
+  },
+  "wan2-7": {
+    "provider": "Alibaba",
+    "modality": "video",
+    "creditsPerRun": 20
+  },
+  "wan-3-0": {
+    "provider": "Alibaba",
+    "modality": "video",
+    "creditsPerRun": 22
+  },
+  "ltx-2": {
+    "provider": "Lightricks",
+    "modality": "video",
+    "creditsPerRun": 15
+  },
+  "minimax": {
+    "provider": "MiniMax",
+    "modality": "video",
+    "creditsPerRun": 24
+  },
+  "pixverse": {
+    "provider": "PixVerse",
+    "modality": "video",
+    "creditsPerRun": 16
+  },
+  "wavespeed": {
+    "provider": "WaveSpeed",
+    "modality": "image",
+    "creditsPerRun": 4
+  },
+  "beeble": {
+    "provider": "Beeble",
+    "modality": "image",
+    "creditsPerRun": 9
+  },
+  "sync": {
+    "provider": "Sync Labs",
+    "modality": "video",
+    "creditsPerRun": 20
+  },
+  "quiver": {
+    "modality": "image",
+    "creditsPerRun": 5
+  }
+}

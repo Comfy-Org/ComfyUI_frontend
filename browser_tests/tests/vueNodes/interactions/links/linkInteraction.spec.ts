@@ -155,8 +155,8 @@ test.describe(
         () => comfyPage.nextFrame()
       )
 
-      await expect.poll(() => samplerOutput.getLinkCount()).toBe(1)
-      await expect.poll(() => vaeInput.getLinkCount()).toBe(1)
+      await samplerOutput.expectLinkCount(1)
+      await vaeInput.expectLinkCount(1)
 
       await expect
         .poll(() => getInputLinkDetails(comfyPage.page, vaeNode.id, 0))
@@ -185,8 +185,8 @@ test.describe(
       await outputSlot.dragTo(inputSlot, { force: true })
       await comfyPage.nextFrame()
 
-      await expect.poll(() => samplerOutput.getLinkCount()).toBe(0)
-      await expect.poll(() => clipInput.getLinkCount()).toBe(0)
+      await samplerOutput.expectLinkCount(0)
+      await clipInput.expectLinkCount(0)
 
       await expect
         .poll(() => getInputLinkDetails(comfyPage.page, clipNode.id, 0))
@@ -210,8 +210,8 @@ test.describe(
       await outputSlot.dragTo(inputSlot, { force: true })
       await comfyPage.nextFrame()
 
-      await expect.poll(() => samplerOutput.getLinkCount()).toBe(0)
-      await expect.poll(() => samplerInput.getLinkCount()).toBe(0)
+      await samplerOutput.expectLinkCount(0)
+      await samplerInput.expectLinkCount(0)
     })
 
     test('should reuse the existing origin when dragging an input link', async ({
@@ -301,8 +301,8 @@ test.describe(
       await comfyPage.nextFrame()
 
       // Technically intended to disconnect existing as well
-      await expect.poll(() => vaeInput.getLinkCount()).toBe(0)
-      await expect.poll(() => samplerOutput.getLinkCount()).toBe(0)
+      await vaeInput.expectLinkCount(0)
+      await samplerOutput.expectLinkCount(0)
     })
 
     test('dropping an input link back on its slot restores the original connection', async ({
@@ -379,8 +379,8 @@ test.describe(
           targetSlot: originalLink!.targetSlot,
           parentId: originalLink!.parentId
         })
-      await expect.poll(() => samplerOutput.getLinkCount()).toBe(1)
-      await expect.poll(() => vaeInput.getLinkCount()).toBe(1)
+      await samplerOutput.expectLinkCount(1)
+      await vaeInput.expectLinkCount(1)
     })
 
     test('rerouted input drag preview remains anchored to reroute', async ({
@@ -640,7 +640,7 @@ test.describe(
         () => comfyPage.nextFrame()
       )
 
-      await expect.poll(() => clipOutput.getLinkCount()).toBe(2)
+      await clipOutput.expectLinkCount(2)
 
       const outputCenter = await getSlotCenter(
         comfyPage.page,
@@ -787,7 +787,7 @@ test.describe(
       )
 
       const clipOutput = await clipNode.getOutput(0)
-      await expect.poll(() => clipOutput.getLinkCount()).toBe(2)
+      await clipOutput.expectLinkCount(2)
 
       const clipOutputSlot = slotLocator(comfyPage.page, clipNode.id, 0, false)
 
@@ -801,7 +801,7 @@ test.describe(
         cancelable: true
       })
 
-      await expect.poll(() => clipOutput.getLinkCount()).toBe(0)
+      await clipOutput.expectLinkCount(0)
     })
 
     test.describe('Release actions (Shift-drop)', () => {
@@ -918,7 +918,7 @@ test.describe(
 
         // KSampler output should now have an outgoing link
         const samplerOutput = await samplerNode.getOutput(0)
-        await expect.poll(() => samplerOutput.getLinkCount()).toBe(1)
+        await samplerOutput.expectLinkCount(1)
 
         // One of the VAEDecode nodes should have an incoming link on input[0]
         await expect
@@ -981,7 +981,7 @@ test.describe(
         await comfyPage.searchBox.fillAndSelectFirstNode('VAEDecode')
 
         const samplerOutput = await samplerNode.getOutput(0)
-        await expect.poll(() => samplerOutput.getLinkCount()).toBe(1)
+        await samplerOutput.expectLinkCount(1)
 
         await expect
           .poll(async () => {
@@ -1040,8 +1040,8 @@ test.describe(
       await comfyMouse.drop()
 
       // Verify connection went to the correct slot
-      await expect.poll(() => positiveInput.getLinkCount()).toBe(1)
-      await expect.poll(() => negativeInput.getLinkCount()).toBe(0)
+      await positiveInput.expectLinkCount(1)
+      await negativeInput.expectLinkCount(0)
     })
   }
 )
