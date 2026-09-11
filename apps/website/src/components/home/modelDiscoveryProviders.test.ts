@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import type { DiscoveryProvider } from '../../data/modelDiscovery'
+import { discoveryProviders } from '../../data/modelDiscovery'
 import { resolveDiscoveryProviders } from './modelDiscoveryProviders'
 
 const provider: DiscoveryProvider = {
@@ -29,8 +30,6 @@ describe('resolveDiscoveryProviders', () => {
 
   it('reads the real catalogue by default when enabled', async () => {
     // Pins the default loader the homepages actually use, not just the seam.
-    const { discoveryProviders } = await import('../../data/modelDiscovery')
-
     const providers = await resolveDiscoveryProviders(true)
 
     expect(providers.length).toBeGreaterThan(0)
