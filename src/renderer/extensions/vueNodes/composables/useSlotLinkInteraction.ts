@@ -119,9 +119,10 @@ export function resolvePointerTarget(
 
 export function isRerouteVisibleForLinkDrag(
   graph: Pick<LGraph, 'getLink' | 'id' | 'rootGraph'>,
-  reroute: Pick<Reroute, 'linkIds'>
+  reroute: Pick<Reroute, 'linkIds' | 'floatingLinkIds'>
 ): boolean {
-  if (reroute.linkIds.size === 0) return true
+  if (reroute.linkIds.size === 0 || reroute.floatingLinkIds.size > 0)
+    return true
 
   const scope = graphScopeOf(graph)
   for (const linkId of reroute.linkIds) {

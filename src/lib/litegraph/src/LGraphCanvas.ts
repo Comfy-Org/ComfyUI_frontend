@@ -6124,6 +6124,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       LGraphCanvas.link_type_colors,
       this.default_link_color
     )
+    const renderedRerouteSegments = new Set<Reroute>()
 
     const renderConnection = (
       link: LLink,
@@ -6142,9 +6143,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         hiddenLayout?.outputTip ?? startPos,
         hiddenLayout?.inputTip ?? endPos,
         visibleReroutes,
+        renderedRerouteSegments,
         now,
         startDirection,
-        endDirection
+        endDirection,
+        false,
+        hiddenLayout !== undefined
       )
     }
 
@@ -6221,7 +6225,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     if (graph.floatingLinks.size > 0) {
-      this._renderFloatingLinks(ctx, graph, visibleReroutes, now)
+      this._renderFloatingLinks(
+        ctx,
+        graph,
+        visibleReroutes,
+        renderedRerouteSegments,
+        now
+      )
     }
 
     const rerouteSet = this._visibleReroutes
@@ -6287,6 +6297,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     ctx: CanvasRenderingContext2D,
     graph: LGraph,
     visibleReroutes: Reroute[],
+    renderedRerouteSegments: Set<Reroute>,
     now: number
   ) {
     // Render floating links with 3/4 current alpha
@@ -6318,6 +6329,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           startPos,
           endPos,
           visibleReroutes,
+          renderedRerouteSegments,
           now,
           LinkDirection.CENTER,
           endDirection,
@@ -6340,6 +6352,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           startPos,
           endPos,
           visibleReroutes,
+          renderedRerouteSegments,
           now,
           startDirection,
           LinkDirection.CENTER,
@@ -6356,10 +6369,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     startPos: Point,
     endPos: Point,
     visibleReroutes: Reroute[],
+    renderedRerouteSegments: Set<Reroute>,
     now: number,
     startDirection?: LinkDirection,
     endDirection?: LinkDirection,
-    disabled: boolean = false
+    disabled: boolean = false,
+    startsAtBadge: boolean = false
   ) {
     const { graph, renderedPaths } = this
     if (!graph) return
@@ -6393,15 +6408,18 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       const l = reroutes.length
       for (let j = 0; j < l; j++) {
         const reroute = reroutes[j]
+        const badgeEntry = j === 0 && startsAtBadge
 
-        // Only render once
-        if (!renderedPaths.has(reroute)) {
-          renderedPaths.add(reroute)
-          visibleReroutes.push(reroute)
-          reroute._colour =
-            link.color ||
-            LGraphCanvas.link_type_colors[link.type] ||
-            this.default_link_color
+        if (badgeEntry || !renderedRerouteSegments.has(reroute)) {
+          if (!badgeEntry) renderedRerouteSegments.add(reroute)
+          if (!renderedPaths.has(reroute)) {
+            renderedPaths.add(reroute)
+            visibleReroutes.push(reroute)
+            reroute._colour =
+              link.color ||
+              LGraphCanvas.link_type_colors[link.type] ||
+              this.default_link_color
+          }
 
           const prevReroute = graph.getReroute(reroute.parentId)
           const rerouteStartPos = prevReroute?.pos ?? startPos
@@ -6422,7 +6440,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
               {
                 startControl,
                 endControl: reroute.controlPoint,
-                reroute,
+                reroute: badgeEntry ? undefined : reroute,
                 disabled
               }
             )

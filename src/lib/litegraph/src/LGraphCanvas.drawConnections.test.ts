@@ -16,6 +16,7 @@ import type { Point } from '@/lib/litegraph/src/interfaces'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import {
+  clearRootLinkReveals,
   isLinkRevealed,
   setRevealedLinks
 } from '@/lib/litegraph/src/canvas/linkRevealState'
@@ -626,6 +627,7 @@ describe('drawConnections hidden links', () => {
 
   afterEach(() => {
     LiteGraph.vueNodesMode = false
+    clearRootLinkReveals(graphScopeOf(graph).rootGraphId)
   })
 
   function createHiddenLink(sourceId?: string): LLink {
@@ -1018,4 +1020,62 @@ describe('drawConnections hidden links', () => {
     expect(firstRender[1]).toEqual(outputTip)
     expect(lastRender?.[2]).toEqual(inputTip)
   })
+
+  it.for([
+    { name: 'all hidden', hidden: [true, true, true] },
+    { name: 'hidden first', hidden: [true, false, false] },
+    { name: 'visible first', hidden: [false, true, false] },
+    { name: 'all visible', hidden: [false, false, false] }
+  ])(
+    'draws badge entries and deduplicates shared reroute segments: $name',
+    ({ hidden }) => {
+      vi.stubGlobal('Path2D', StubPath2D)
+      const firstLink = createHiddenLink()
+      const source = graph.getNodeById(firstLink.origin_id)
+      if (!source) throw new Error('Missing source node')
+      const firstReroute = graph.createReroute([230, 170], firstLink)
+      const lastReroute = graph.createReroute([270, 170], firstLink)
+      if (!firstReroute || !lastReroute) throw new Error('Missing reroutes')
+      const links = [firstLink]
+      for (const y of [250, 400]) {
+        const target = new LGraphNode('Target')
+        target.pos = [500, y]
+        target.addInput('in', 'STRING')
+        graph.add(target)
+        const link = createTestLink(graph, source, 0, target, 0)
+        link.parentId = lastReroute.id
+        links.push(link)
+      }
+      const scope = graphScopeOf(graph)
+      links.forEach((link, index) =>
+        useLinkPresentationStore().patch(scope, link.id, {
+          hidden: hidden[index]
+        })
+      )
+      setRevealedLinks(
+        scope.rootGraphId,
+        links.map((link) => link.id),
+        canvas
+      )
+      const renderLink = vi.spyOn(canvas, 'renderLink')
+      const ctx = createMockCtx()
+
+      canvas.drawConnections(ctx)
+
+      const expectedStarts: Point[] = vi
+        .mocked(ctx.roundRect)
+        .mock.calls.filter(([x]) => x < firstReroute.pos[0])
+        .map(([x, y, width, height]) => [x + width, y + height / 2])
+      expect(expectedStarts).toHaveLength(hidden.filter(Boolean).length)
+      if (hidden.includes(false)) expectedStarts.push(source.getOutputPos(0))
+      const entryStarts = renderLink.mock.calls
+        .filter(([, , end]) => end === firstReroute.pos)
+        .map(([, start]) => start)
+      expect(entryStarts).toHaveLength(expectedStarts.length)
+      expect(entryStarts).toEqual(expect.arrayContaining(expectedStarts))
+      expect(
+        renderLink.mock.calls.filter(([, , end]) => end === lastReroute.pos)
+      ).toHaveLength(1)
+    }
+  )
 })
