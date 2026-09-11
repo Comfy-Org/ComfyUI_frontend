@@ -9,6 +9,7 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -18,6 +19,12 @@ import type { SubscriptionCheckoutSelection } from '@/platform/workspace/composa
 const { flags } = useFeatureFlags()
 const route = useRoute()
 const router = useRouter()
+
+// The splash loader is normally removed by the graph view's boot or the
+// workspace auth gate; this route mounts outside both.
+onMounted(() => {
+  document.getElementById('splash-loader')?.remove()
+})
 
 // The plan arrives chosen (products deep-link it); this page is only the
 // checkout. Plan selection gets its own full-page treatment separately.
