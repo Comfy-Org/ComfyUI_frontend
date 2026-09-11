@@ -167,6 +167,22 @@ export function mintDefinition(sg: SubgraphDef, catalog: WidgetCatalog): Y.Map<u
       });
       dm.set("links", lm);
       dm.set("link_order", order);
+    } else if (k === "definitions" && typeof v === "object" && v !== null && !Array.isArray(v)) {
+      const container = new Y.Map<unknown>();
+      const { subgraphs, ...extra } = v as { subgraphs?: unknown; [key: string]: unknown };
+      Object.entries(extra).forEach(([key, value]) => container.set(key, cloneForMap(value, `mint: definition.definitions.${key}`)));
+      if (Array.isArray(subgraphs)) {
+        const nested = new Y.Map<Y.Map<unknown>>();
+        const order: string[] = [];
+        for (const child of subgraphs as SubgraphDef[]) {
+          const key = String(child.id);
+          order.push(key);
+          nested.set(key, mintDefinition(child, catalog));
+        }
+        container.set("subgraphs", nested);
+        container.set("subgraph_order", order);
+      }
+      dm.set("definitions", container);
     } else {
       dm.set(k, cloneForMap(v, `mint: definition.${k}`));
     }

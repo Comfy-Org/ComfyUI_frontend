@@ -56,7 +56,6 @@ describe("define_subgraph schema", () => {
     ["layout op with definition payload", { op: "add_node", node_id: 1, class_type: "Inner", pos: [0, 0], node: { id: 1, type: "Inner" }, layout: {}, subgraph_definition: definition() }],
     ["remove-node with definition payload", { op: "delete_node", node_id: 1, removed_links: [], subgraph_definition: definition() }],
     ["subgraph_id cannot substitute for a node target", { op: "set_widget", subgraph_id: subgraphId, widget: "value", value: 2 }],
-    ["interior edit cannot implicitly create a definition", { op: "set_widget", node_id: 10, path: ["abcdefab-cdef-4abc-8def-abcdefabcdef", "10"], inner_widget: "value", widget: "value", value: 2 }],
   ] as const
 
   it.each(forbidden)("rejects %s", (_name, fields) => {
@@ -105,6 +104,18 @@ describe("define_subgraph application", () => {
     expect((project(doc, catalog).definitions as { subgraphs: unknown[] }).subgraphs).toEqual([definition()])
   })
 
+  it("projects the same deterministic winner for conflicting definitions in either delivery order", () => {
+    const a = define(subgraphId, 1)
+    const b = define(subgraphId, 2)
+    const projections = [[a, b], [b, a]].map((ops) => {
+      const doc = empty()
+      for (const op of ops) applyOps(doc, [op], catalog)
+      return project(doc, catalog)
+    })
+
+    expect(projections[0]).toEqual(projections[1])
+  })
+
   it.each([
     ["missing nodes", { ...definition(), nodes: undefined }],
     ["invalid definition id", definition("not-a-uuid")],
@@ -137,6 +148,60 @@ describe("define_subgraph application", () => {
     expect(applyOps(doc, [{ ...define(), subgraph_definition: outer }], catalog).outcomes[0]?.outcome).toBe("applied")
     const projected = (project(doc, catalog).definitions as { subgraphs: Array<Record<string, unknown>> }).subgraphs[0]!
     expect(projected.definitions).toEqual({ subgraphs: [nested] })
+  })
+
+  it("applies an id-addressed widget edit to a nested definition", () => {
+    const nestedId = "abcdefab-cdef-4abc-8def-abcdefabcdef"
+    const outer = { ...definition(), definitions: { subgraphs: [definition(nestedId, 4)] } }
+    const doc = empty()
+    applyOps(doc, [{ ...define(), subgraph_definition: outer }], catalog)
+
+    const outcome = applyOps(doc, [{
+      op: "set_widget", ...envelope(), node_id: 10, path: [nestedId, "10"], inner_widget: "value", widget: "value", value: 9,
+    }], catalog).outcomes[0]?.outcome
+    const projected = (project(doc, catalog).definitions as { subgraphs: Array<{ definitions: { subgraphs: Array<{ nodes: Array<{ widgets_values: unknown[] }> }> } }> }).subgraphs[0]!
+
+    expect(outcome).toBe("applied")
+    expect(projected.definitions.subgraphs[0]!.nodes[0]!.widgets_values).toEqual([9])
+  })
+
+  it.each([
+    ["ancestor", () => ({ ...definition(), definitions: { subgraphs: [definition(subgraphId)] } })],
+    ["cross-branch", () => {
+      const duplicate = "abcdefab-cdef-4abc-8def-abcdefabcdef"
+      const left = { ...definition("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"), definitions: { subgraphs: [definition(duplicate)] } }
+      const right = { ...definition("bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"), definitions: { subgraphs: [definition(duplicate)] } }
+      return { ...definition(), definitions: { subgraphs: [left, right] } }
+    }],
+  ])("rejects a duplicate definition id against an %s atomically", (_name, makeDefinition) => {
+    const doc = empty()
+    const before = Y.encodeStateAsUpdate(doc)
+    expect(rejectionCode(doc, { ...define(), subgraph_definition: makeDefinition() } as DefineSubgraphOp)).toBe("malformed_op")
+    expect(Y.encodeStateAsUpdate(doc)).toEqual(before)
+  })
+
+  it("never projects internal definition digests, including sender-supplied nested keys", () => {
+    const nestedId = "abcdefab-cdef-4abc-8def-abcdefabcdef"
+    const nested = { ...definition(nestedId), __definition_digest: "sender-value" }
+    const outer = { ...definition(), definitions: { subgraphs: [nested] } }
+    const doc = empty()
+
+    expect(rejectionCode(doc, { ...define(), subgraph_definition: outer } as DefineSubgraphOp)).toBe("malformed_op")
+    applyOps(doc, [{ ...define(), subgraph_definition: {
+      ...definition(), definitions: { subgraphs: [definition(nestedId)] },
+    } }], catalog)
+    expect(JSON.stringify(project(doc, catalog))).not.toContain("__definition_digest")
+  })
+
+  it("uses the same unknown-node outcome for UUID and non-UUID interior targets", () => {
+    const outcomes = ["abcdefab-cdef-4abc-8def-abcdefabcdef", "missing"].map((target) => {
+      const doc = empty()
+      return applyOps(doc, [{
+        op: "set_widget", ...envelope(), node_id: 10, path: [target, "10"], inner_widget: "value", widget: "value", value: 2,
+      }], catalog).outcomes[0]
+    })
+
+    expect(outcomes.map((outcome) => outcome?.outcome)).toEqual(["no-op", "no-op"])
   })
 
   it("uses a key-order-independent definition digest", () => {

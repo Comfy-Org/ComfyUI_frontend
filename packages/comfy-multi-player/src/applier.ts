@@ -109,6 +109,7 @@ import {
   opBoundsRefusal,
 } from "./limits.js";
 import { mintDefinition } from "./mint.js";
+import { projectDefinition } from "./project.js";
 import { codePointCompare, compareStampKeys, stampKey, stampTargetKey, widgetTargetKey } from "./stamps.js";
 import {
   DEFERRED_OPS,
@@ -479,12 +480,27 @@ function applyDefineSubgraph(
   const definitions = definitionsMap(doc);
   const existing = definitions.get(op.subgraph_id);
   if (existing !== undefined) {
-    if (existing.get("__definition_digest") === digest) return "no-op";
+    const digests = definitionDigests(doc);
+    const existingDigest = digests[op.subgraph_id] ?? sha256Hex(canonicalOp(projectDefinition(existing, catalog) as unknown as Op));
+    if (existingDigest === digest) return "no-op";
+    // The lexicographically larger canonical digest wins, independent of delivery order.
+    if (digest > existingDigest) {
+      let replacement: Y.Map<unknown>;
+      try {
+        replacement = mintDefinition(op.subgraph_definition, catalog);
+      } catch (error) {
+        throw new OpRejectedError("malformed_op", `define_subgraph(${op.subgraph_id}): ${error instanceof Error ? error.message : String(error)}`);
+      }
+      mset(definitions, op.subgraph_id, replacement);
+      setDefinitionDigest(doc, op.subgraph_id, digest);
+      return "applied";
+    }
     throw new OpRejectedError(
       "definition_conflict",
       `define_subgraph: definition '${op.subgraph_id}' already exists with different content`,
     );
   }
+  assertDefinitionIdsAvailable(doc, op.subgraph_definition);
   let definition: Y.Map<unknown>;
   try {
     definition = mintDefinition(op.subgraph_definition, catalog);
@@ -494,9 +510,37 @@ function applyDefineSubgraph(
       `define_subgraph(${op.subgraph_id}): ${error instanceof Error ? error.message : String(error)}`,
     );
   }
-  mset(definition, "__definition_digest", digest);
   mset(definitions, op.subgraph_id, definition);
+  setDefinitionDigest(doc, op.subgraph_id, digest);
   return "applied";
+}
+
+function definitionDigests(doc: Y.Doc): Record<string, string> {
+  const value = metaMap(doc).get("__definition_digests");
+  return isPlainRecord(value) ? value as Record<string, string> : {};
+}
+
+function setDefinitionDigest(doc: Y.Doc, id: string, digest: string): void {
+  mset(metaMap(doc), "__definition_digests", { ...definitionDigests(doc), [id]: digest });
+}
+
+function assertDefinitionIdsAvailable(doc: Y.Doc, definition: Record<string, unknown>): void {
+  const submitted = new Set<string>();
+  const visit = (candidate: Record<string, unknown>, path: string): void => {
+    const id = String(candidate.id);
+    if (submitted.has(id)) throw new OpRejectedError("malformed_op", `define_subgraph: duplicate definition id '${id}' at ${path}`);
+    submitted.add(id);
+    const nested = candidate.definitions;
+    if (isPlainRecord(nested) && Array.isArray(nested.subgraphs)) nested.subgraphs.forEach((child, index) => {
+      if (isPlainRecord(child)) visit(child, `${path}.definitions.subgraphs[${index}]`);
+    });
+  };
+  visit(definition, "subgraph_definition");
+  for (const id of submitted) {
+    if (id !== String(definition.id) && resolveDefinition(doc, id)) {
+      throw new OpRejectedError("malformed_op", `define_subgraph: definition id '${id}' is already registered`);
+    }
+  }
 }
 
 function isUuid(value: unknown): value is string {
@@ -516,6 +560,9 @@ function validateSubgraphDefinition(definition: Record<string, unknown>, path: s
   assertUniqueNormalizedIds(definition.nodes, `${path}.nodes`);
   assertUniqueNormalizedIds(definition.links, `${path}.links`);
   validateSerializableValue(definition, path);
+  if (Object.hasOwn(definition, "__definition_digest")) {
+    throw new OpRejectedError("malformed_op", `define_subgraph: ${path} contains reserved key '__definition_digest'`);
+  }
 
   const nested = definition.definitions;
   if (nested === undefined) return;
@@ -1113,9 +1160,6 @@ function resolveInteriorNode(doc: Y.Doc, path: string[], catalog?: WidgetCatalog
   const head = nodesMap(doc).get(path[0]!);
   if (!head) {
     const definition = resolveDefinition(doc, path[0]!);
-    if (!definition && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(path[0]!)) {
-      throw new OpRejectedError("not_a_subgraph", `subgraph definition '${path[0]}' not found`);
-    }
     if (!definition) return null;
     const innerNodes = definition.get("nodes");
     const inner = innerNodes instanceof Y.Map ? innerNodes.get(path[1]!) : undefined;
