@@ -265,6 +265,16 @@ it never wipes or independently reseeds that document. A `doc_reset` is the sole
 replacement path and starts a new lineage only after all projectors have observed the
 reset.
 
+That rule rests on an assumption the wire protocol does not yet let the follower check:
+that the frame lost in a gap was an ordinary update rather than the `doc_reset` itself.
+Frames carry no lineage identity, and `workflow_id` is stable across a host remint, so a
+replayed state vector can cross lineages undetected.
+[ADR-CRDT-RECOVERY-0029](CRDT-RECOVERY-0029-lineage-gated-replay-for-sequence-gap-recovery.md)
+records that exposure and proposes the generation ID that would close it. Until that
+generation ID ships, `doc_reset` remains the sole replacement path exactly as stated
+above; when it ships, a mismatched generation becomes a second lineage-break trigger and
+this clause is amended then.
+
 DQ-11(c)'s `node_incarnation` is shared-applier payload data. The frontend carries it
 through the document, queue, projection, and reload boundaries. It never infers an
 incarnation from the active canvas, collapses it into a client ID, or mints a replacement.
@@ -397,7 +407,8 @@ document registry and target-aware tracker seam are the intended follow-up.
 - **Host** — authoritative process using the shared `comfy-multi-player` applier to
   apply semantic operations and produce follower updates.
 - **Lineage** — history identity of a document; an explicit `doc_reset` starts a new
-  lineage and is the only ordinary follower-document replacement path.
+  lineage and is the only ordinary follower-document replacement path. It is not yet
+  carried on the wire as its own identity — see ADR-CRDT-RECOVERY-0029.
 - **`node_incarnation` / DQ-11(c)** — stamp namespace distinguishing a node after a
   delete/re-add from its prior occupant with the same node ID.
 - **Pending-effect queue** — bounded, target-scoped delivery buffer whose entries are
