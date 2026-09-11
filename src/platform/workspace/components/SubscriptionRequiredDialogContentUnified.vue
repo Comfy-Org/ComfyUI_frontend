@@ -176,8 +176,9 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+import { useKeybinding } from '@/platform/keybindings/useKeybinding'
 import { cn } from '@comfyorg/tailwind-utils'
-import { useEventListener } from '@vueuse/core'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -189,6 +190,8 @@ import SubscriptionAddPaymentPreviewWorkspace from './SubscriptionAddPaymentPrev
 import SubscriptionSuccessWorkspace from './SubscriptionSuccessWorkspace.vue'
 import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPreviewWorkspace.vue'
 import UnifiedPricingTable from './UnifiedPricingTable.vue'
+
+const { t } = useI18n()
 
 const {
   onClose,
@@ -341,27 +344,15 @@ watch(
   }
 )
 
-// Backspace mirrors the back arrow on the confirm step, but never while an
-// editable element is focused (let it delete text there).
-useEventListener(window, 'keydown', (event: KeyboardEvent) => {
-  if (
-    event.key !== 'Backspace' ||
-    checkoutStep.value !== 'preview' ||
-    isPolling.value ||
-    isEmbeddedPaymentStep.value ||
-    isEmbeddedConfirmStep.value
-  )
-    return
-  const target = event.target
-  if (
-    target instanceof HTMLInputElement ||
-    target instanceof HTMLTextAreaElement ||
-    target instanceof HTMLSelectElement ||
-    (target instanceof HTMLElement && target.isContentEditable)
-  ) {
-    return
-  }
-  event.preventDefault()
-  handleBackToPricing()
+useKeybinding({
+  id: 'Comfy.Subscription.BackToPricing',
+  label: () => t('keybindings.backToPricing'),
+  binding: { combo: { key: 'Backspace' }, dialogKey: 'subscription-required' },
+  enabled: () =>
+    checkoutStep.value === 'preview' &&
+    !isPolling.value &&
+    !isEmbeddedPaymentStep.value &&
+    !isEmbeddedConfirmStep.value,
+  run: handleBackToPricing
 })
 </script>

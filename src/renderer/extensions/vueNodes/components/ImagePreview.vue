@@ -2,7 +2,7 @@
   <div
     v-if="imageUrls.length > 0"
     class="image-preview group relative flex size-full min-h-55 min-w-16 flex-col justify-center px-2"
-    @keydown="handleKeyDown"
+    ref="previewEl"
   >
     <!-- Grid View -->
     <div
@@ -210,6 +210,8 @@ import { useElementSize, useTimeoutFn } from '@vueuse/core'
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useKeybinding } from '@/platform/keybindings/useKeybinding'
+
 import { downloadFile } from '@/base/common/downloadUtil'
 import Button from '@/components/ui/button/Button.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
@@ -403,41 +405,54 @@ function getNavigationDotClass(index: number) {
   )
 }
 
-function handleKeyDown(event: KeyboardEvent) {
-  if (
-    event.key === 'Escape' &&
-    viewMode.value === 'gallery' &&
-    hasMultipleImages.value
-  ) {
-    event.preventDefault()
-    viewMode.value = 'grid'
-    return
-  }
-
-  if (imageUrls.length <= 1 || viewMode.value === 'grid') return
-
-  switch (event.key) {
-    case 'ArrowLeft':
-      event.preventDefault()
+const previewEl = useTemplateRef('previewEl')
+for (const { key, id, label, run } of [
+  {
+    key: 'Escape',
+    id: 'Grid',
+    label: 'keybindings.imagePreviewGrid',
+    run: () => {
+      viewMode.value = 'grid'
+    }
+  },
+  {
+    key: 'ArrowLeft',
+    id: 'Previous',
+    label: 'keybindings.previousPreviewImage',
+    run: () =>
       setCurrentIndex(
-        currentIndex.value > 0 ? currentIndex.value - 1 : imageUrls.length - 1
+        (currentIndex.value + imageUrls.length - 1) % imageUrls.length
       )
-      break
-    case 'ArrowRight':
-      event.preventDefault()
-      setCurrentIndex(
-        currentIndex.value < imageUrls.length - 1 ? currentIndex.value + 1 : 0
-      )
-      break
-    case 'Home':
-      event.preventDefault()
-      setCurrentIndex(0)
-      break
-    case 'End':
-      event.preventDefault()
-      setCurrentIndex(imageUrls.length - 1)
-      break
+  },
+  {
+    key: 'ArrowRight',
+    id: 'Next',
+    label: 'keybindings.nextPreviewImage',
+    run: () => setCurrentIndex((currentIndex.value + 1) % imageUrls.length)
+  },
+  {
+    key: 'Home',
+    id: 'First',
+    label: 'keybindings.firstPreviewImage',
+    run: () => setCurrentIndex(0)
+  },
+  {
+    key: 'End',
+    id: 'Last',
+    label: 'keybindings.lastPreviewImage',
+    run: () => setCurrentIndex(imageUrls.length - 1)
   }
+]) {
+  useKeybinding({
+    id: `Comfy.ImagePreview.${id}`,
+    label: () => t(label),
+    binding: { combo: { key }, allowRepeat: key !== 'Escape' },
+    enabled: () =>
+      viewMode.value === 'gallery' &&
+      hasMultipleImages.value &&
+      previewEl.value?.contains(document.activeElement) === true,
+    run
+  })
 }
 
 function getImageFilename(url: string): string {

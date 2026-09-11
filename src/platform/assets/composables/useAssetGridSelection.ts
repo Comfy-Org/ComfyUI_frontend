@@ -1,3 +1,5 @@
+import { t } from '@/i18n'
+import { useKeybinding } from '@/platform/keybindings/useKeybinding'
 import { useElementHover, useEventListener } from '@vueuse/core'
 import type { Ref } from 'vue'
 import { computed, onScopeDispose, ref } from 'vue'
@@ -23,14 +25,6 @@ interface AssetGridSelectionOptions {
   setSelectedIds: (ids: string[], allAssets: AssetItem[]) => void
   selectAll: (assets: AssetItem[]) => void
   isEnabled?: () => boolean
-}
-
-function isTextEntryTarget(element: Element | null): boolean {
-  return (
-    element instanceof HTMLInputElement ||
-    element instanceof HTMLTextAreaElement ||
-    (element instanceof HTMLElement && element.isContentEditable)
-  )
 }
 
 export function useAssetGridSelection(options: AssetGridSelectionOptions) {
@@ -207,19 +201,14 @@ export function useAssetGridSelection(options: AssetGridSelectionOptions) {
     )
   }
 
-  function onKeydown(e: KeyboardEvent) {
-    if (!(e.ctrlKey || e.metaKey) || (e.key !== 'a' && e.key !== 'A')) return
-    if (
-      !(isHoveringPanel.value || isPointerInsidePanel()) ||
-      isTextEntryTarget(document.activeElement) ||
-      document.querySelector('[role="dialog"][aria-modal="true"]')
-    ) {
-      return
-    }
-    e.preventDefault()
-    e.stopImmediatePropagation()
-    selectAll(getAssets())
-  }
+  useKeybinding({
+    id: 'Comfy.Assets.SelectAll',
+    label: () => t('keybindings.selectAllAssets'),
+    binding: { combo: { key: 'a', ctrl: true }, when: '!modalOpen' },
+    enabled: () =>
+      isEnabled() && (isHoveringPanel.value || isPointerInsidePanel()),
+    run: () => selectAll(getAssets())
+  })
 
   useEventListener(marqueeContainerRef, 'pointerdown', onPointerDown)
   useEventListener(marqueeContainerRef, 'dragstart', preventDragStart, {
@@ -228,7 +217,6 @@ export function useAssetGridSelection(options: AssetGridSelectionOptions) {
   useEventListener(window, 'pointermove', onPointerMove)
   useEventListener(window, ['pointerup', 'pointercancel', 'dragend'], endDrag)
   useEventListener(window, 'click', onClickCapture, { capture: true })
-  useEventListener(window, 'keydown', onKeydown, { capture: true })
   useEventListener(window, 'selectstart', preventTextSelection, {
     capture: true
   })

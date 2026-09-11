@@ -1,3 +1,5 @@
+import { t } from '@/i18n'
+import { useRuntimeKeybindingStore } from '@/platform/keybindings/runtimeKeybindingStore'
 import { $el } from '../../ui'
 import { prop } from '../../utils'
 import { type ClassList, applyClasses } from '../utils'
@@ -69,7 +71,8 @@ export class ComfyPopup extends EventTarget {
     this.element.classList.remove('open')
     window.removeEventListener('resize', this.update)
     window.removeEventListener('click', this._clickHandler, { capture: true })
-    window.removeEventListener('keydown', this._escHandler, { capture: true })
+    this._removeEscapeBinding?.()
+    this._removeEscapeBinding = undefined
 
     this.dispatchEvent(new CustomEvent('close'))
     this.dispatchEvent(new CustomEvent('change'))
@@ -82,21 +85,33 @@ export class ComfyPopup extends EventTarget {
     window.addEventListener('resize', this.update)
     window.addEventListener('click', this._clickHandler, { capture: true })
     if (this.closeOnEscape) {
-      window.addEventListener('keydown', this._escHandler, { capture: true })
+      const runtime = useRuntimeKeybindingStore()
+      const stops = [
+        undefined,
+        'modalOpen',
+        'textInputFocus',
+        'modalOpen && textInputFocus'
+      ].map((when) =>
+        runtime.register({
+          id: 'Comfy.Popup.Close',
+          label: () => t('keybindings.closePopup'),
+          binding: { combo: { key: 'Escape' }, when },
+          enabled: () => this.open,
+          run: () => {
+            this.open = false
+          }
+        })
+      )
+      this._removeEscapeBinding = () => {
+        for (const stop of stops) stop()
+      }
     }
 
     this.dispatchEvent(new CustomEvent('open'))
     this.dispatchEvent(new CustomEvent('change'))
   }
 
-  // @ts-expect-error fixme ts strict error
-  private _escHandler = (e) => {
-    if (e.key === 'Escape') {
-      this.open = false
-      e.preventDefault()
-      e.stopImmediatePropagation()
-    }
-  }
+  private _removeEscapeBinding: (() => void) | undefined
 
   // @ts-expect-error fixme ts strict error
   private _clickHandler = (e) => {
