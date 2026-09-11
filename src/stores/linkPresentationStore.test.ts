@@ -84,6 +84,16 @@ describe('useLinkPresentationStore', () => {
     expect(store.getPresentation(graphA, LINK)).toBeUndefined()
   })
 
+  it('returns hidden link ids for one owning graph', () => {
+    const store = useLinkPresentationStore()
+    store.patch(graphA, toLinkId(1), { hidden: true })
+    store.patch(graphA, toLinkId(2), { label: 'Visible' })
+    store.patch(graphASibling, toLinkId(3), { hidden: true })
+
+    expect(store.graphHiddenLinkIds(graphA)).toEqual([toLinkId(1)])
+    expect(store.graphHiddenLinkIds(graphB)).toEqual([])
+  })
+
   it('clearing a previous owner leaves a reassigned link intact', () => {
     const store = useLinkPresentationStore()
     store.patch(graphA, toLinkId(9), { hidden: true })
