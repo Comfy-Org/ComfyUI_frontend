@@ -6,6 +6,7 @@ import type { WorkshopModel } from '../../config/models-catalogue'
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import { bannerName } from '../../lib/workshop/banner-name'
 import { taskLabelFor } from '../../lib/workshop/task-label'
 import Badge from '../ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -18,29 +19,13 @@ const { models, locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
 
-// "Recraft V4.1 Pro Text-to-Image" repeats the task chip shown directly
-// above it. When a name ends with its own task label, the banner drops the
-// suffix - the full name still stands on the card and the model page.
-function bannerName(model: WorkshopModel, task: string): string {
-  const words = task
-    .trim()
-    .split(/\s+/)
-    .map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-  // Whitespace required before the label: a hyphen is not enough, or the
-  // match starts mid-word ("Context-to-Image" \u2192 "Con") and product names
-  // like "P-Image" lose their last token.
-  const suffix = new RegExp(`\\s+${words.join('[\\s\\-\u2013\u2014]*')}$`, 'i')
-  const stripped = model.name.replace(suffix, '').trim()
-  return stripped.length >= 3 ? stripped : model.name
-}
-
 const slides = computed(() =>
   models.map((model) => {
     const task = taskLabelFor(model, locale)
     return {
       model,
       task,
-      name: bannerName(model, task),
+      name: bannerName(model.name, task),
       capabilities: model.capabilities.slice(0, CAPABILITY_LIMIT)
     }
   })
@@ -135,7 +120,7 @@ const fill = computed(() =>
       />
 
       <div
-        class="short:gap-3 short:pt-5 short:pb-11 relative flex h-full flex-col justify-end gap-4 p-8 pt-6 pb-16 max-sm:gap-3 max-sm:p-6 max-sm:pb-14 sm:max-w-2xl sm:justify-center lg:p-12 lg:pt-8 lg:pb-18"
+        class="short:gap-3 short:pt-5 short:pb-14 relative flex h-full flex-col justify-end gap-4 p-8 pt-6 pb-16 max-sm:gap-3 max-sm:p-6 max-sm:pb-14 sm:max-w-2xl sm:justify-center lg:p-12 lg:pt-8 lg:pb-18"
       >
         <div class="flex flex-wrap items-center gap-2">
           <Badge variant="subtle" size="md" class="text-primary-comfy-canvas">
@@ -158,15 +143,9 @@ const fill = computed(() =>
           {{ active.name }}
         </h2>
 
-        <!-- max-h, not line-clamp: current Chrome blockifies a line-clamped
-             box to flow-root and renders it at zero height, so the summary
-             never showed while still spending a gap slot. A two-line crop
-             does the same job without the broken machinery. 3em = two lines
-             at leading-normal; the exact-fit lh unit is missing from older
-             Safari/Firefox, where the crop would silently vanish. -->
         <p
           v-if="active.model.summary"
-          class="text-content-secondary short:hidden max-h-[3em] max-w-prose shrink-0 overflow-hidden"
+          class="text-content-secondary short:hidden line-clamp-2 max-w-prose shrink-0"
         >
           {{ active.model.summary }}
         </p>
