@@ -50,6 +50,8 @@ interface BillingSandbox {
 export const liveCloudBillingFixture = base.extend<{
   billingSandbox: BillingSandbox
 }>({
+  baseURL: sandbox.baseURL,
+  storageState: sandbox.storageState,
   networkPolicy: async ({ baseURL }, use) => {
     expect(baseURL).toBe(sandbox.baseURL)
     const origins = new Set([sandbox.baseURL, ...sandbox.allowedOrigins])
