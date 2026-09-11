@@ -59,6 +59,13 @@ class DummyNode extends LGraphNode {
   }
 }
 
+class DataInputNode extends LGraphNode {
+  constructor() {
+    super('data-input-node')
+    this.addInput('model', 'MODEL')
+  }
+}
+
 class WidgetNode extends LGraphNode {
   constructor() {
     super('widget-node')
@@ -203,6 +210,7 @@ function seedAgentAddedNode(graph: LGraph, id: number, type = 'dummy') {
 
 beforeEach(() => {
   LiteGraph.registerNodeType('dummy', DummyNode)
+  LiteGraph.registerNodeType('data-input-node', DataInputNode)
   LiteGraph.registerNodeType('widget-node', WidgetNode)
   LiteGraph.registerNodeType('configure-capture', ConfigureCapturingWidgetNode)
   LiteGraph.registerNodeType('throws-on-configure', ThrowsOnConfigureNode)
@@ -1059,6 +1067,91 @@ describe('reconcileAgentAdapters', () => {
 
       expect(host.widgets).toHaveLength(1)
       expect(host.widgets[0]).toBe(widget)
+    })
+
+    it('S3 ignores ordinary boundary inputs while reconciling promotions', () => {
+      const definition = createTestSubgraphData({
+        nodes: [
+          nodePayload(7, 'widget-node'),
+          nodePayload(8, 'data-input-node')
+        ] as never
+      })
+      const promoted = promotedDefinition(definition)
+      promoted.inputs.push({
+        id: '00000000-0000-4000-8000-000000000101',
+        name: 'model',
+        type: 'MODEL',
+        linkIds: [101]
+      })
+      promoted.links.push({
+        id: 101,
+        origin_id: SUBGRAPH_INPUT_ID,
+        origin_slot: 1,
+        target_id: 8,
+        target_slot: 0,
+        type: 'MODEL'
+      })
+      const { follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, definition.id)],
+        links: [],
+        definitions: { subgraphs: [promoted] }
+      })
+
+      reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+
+      const host = graph.getNodeById(toNodeId(1)) as SubgraphNode
+      expect(host.widgets.map(({ name }) => name)).toEqual(['value'])
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('S3 keeps a promotion when its declared link record is missing', () => {
+      const definition = promotedDefinition(
+        createTestSubgraphData({
+          nodes: [nodePayload(7, 'widget-node')] as never
+        })
+      )
+      const { follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, definition.id)],
+        links: [],
+        definitions: { subgraphs: [definition] }
+      })
+      reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+      const host = graph.getNodeById(toNodeId(1)) as SubgraphNode
+
+      reconcileAgentAdapters(graph, [{ ...definition, links: [] }])
+
+      expect(host.widgets.map(({ name }) => name)).toEqual(['value'])
+      expect(reportError).toHaveBeenCalledOnce()
+    })
+
+    it('S3 skips a boundary input that fans out to multiple widgets', () => {
+      const definition = createTestSubgraphData({
+        nodes: [
+          nodePayload(7, 'widget-node'),
+          nodePayload(8, 'widget-node')
+        ] as never
+      })
+      const promoted = promotedDefinition(definition)
+      promoted.inputs[0].linkIds.push(100)
+      promoted.links.push({
+        id: 100,
+        origin_id: SUBGRAPH_INPUT_ID,
+        origin_slot: 0,
+        target_id: 8,
+        target_slot: 0,
+        type: 'NUMBER'
+      })
+      const { follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, definition.id)],
+        links: [],
+        definitions: { subgraphs: [promoted] }
+      })
+
+      reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+
+      const host = graph.getNodeById(toNodeId(1)) as SubgraphNode
+      expect(host.widgets).toHaveLength(0)
+      expect(host.inputs).toHaveLength(0)
     })
 
     it('S3 skips duplicate declared boundary names incrementally and on replay', () => {
