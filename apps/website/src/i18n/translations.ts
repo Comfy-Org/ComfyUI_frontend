@@ -7020,16 +7020,15 @@ Enterprise`
     'zh-CN': '下一个精选活动'
   },
   'events.hero.browseEvents': { en: 'Browse events', 'zh-CN': '浏览活动' },
-  'events.hero.applyToHost': { en: 'Apply to host', 'zh-CN': '申请主办' },
   'events.hero.hostAnEvent': { en: 'Host an event', 'zh-CN': '主办活动' },
   'events.directory.title': {
     en: 'Events around the world',
     'zh-CN': '世界各地的活动'
   },
   'events.directory.lead': {
-    en: "Every event looks different, but they share the same energy: a room full of people building with ComfyUI. If you've got an audience and a vision, we want to hear from you.",
+    en: "Every event shares the same energy: people building with ComfyUI. If you've got an audience and a vision, we want to hear from you.",
     'zh-CN':
-      '每场活动都各不相同，但都洋溢着同样的能量：一屋子用 ComfyUI 创作的人。如果你有观众、有想法，我们期待听到你的声音。'
+      '每场活动都洋溢着同样的能量：一群用 ComfyUI 创作的人。如果你有观众、有想法，我们期待听到你的声音。'
   },
   'events.directory.count': { en: '{count} events', 'zh-CN': '{count} 场活动' },
   // zh-CN has no plural form; the key exists so English can say "1 event".
@@ -7066,9 +7065,15 @@ Enterprise`
     'zh-CN': '放大查看此处的 {count} 场活动'
   },
   'events.directory.saveTheDate': {
-    en: 'Save the date?',
-    'zh-CN': '标记日期？'
+    en: 'Save the date',
+    'zh-CN': '标记日期'
   },
+  'events.directory.pastBadge': { en: 'Past', 'zh-CN': '已结束' },
+  'events.directory.readMore': { en: 'Read more', 'zh-CN': '展开' },
+  'events.directory.readLess': { en: 'Read less', 'zh-CN': '收起' },
+  'events.directory.sortLabel': { en: 'Sort events', 'zh-CN': '活动排序' },
+  'events.directory.sortLatest': { en: 'Latest', 'zh-CN': '最新' },
+  'events.directory.sortOldest': { en: 'Oldest', 'zh-CN': '最早' },
   'events.directory.virtual': { en: 'Virtual event', 'zh-CN': '线上活动' },
   'events.directory.empty': {
     en: 'No events match those filters yet. Try a broader search.',
@@ -7132,8 +7137,8 @@ Enterprise`
       '确定活动主题、场地和理想的参与人数，然后把活动页面做出来。如果想找些参考，可以看看其他主办方办过什么。'
   },
   'events.host.step2.browseLink': {
-    en: 'Browse events from the Comfy community',
-    'zh-CN': '浏览 Comfy 社区的活动'
+    en: 'Browse events',
+    'zh-CN': '浏览活动'
   },
   'events.host.step3.title': {
     en: 'Apply',

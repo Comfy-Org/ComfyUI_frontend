@@ -57,7 +57,7 @@ const applyLabel = computed(() => t('events.host.applyToHost', locale))
     id="host-an-event"
     class="scroll-mt-24 lg:px-20"
     :title="t('events.host.title', locale)"
-    title-class="font-bold"
+    title-class="leading-[1.38] lg:leading-[1.15]"
     :lead="t('events.host.lead', locale)"
     :cta="{ label: applyLabel, href: applyHref, newTab: true }"
     :steps
@@ -103,7 +103,8 @@ const applyLabel = computed(() => t('events.host.applyToHost', locale))
       <p :class="bodyClass">{{ t('events.host.step3.body', locale) }}</p>
       <Button
         as="a"
-        class="mt-6"
+        variant="underlineLink"
+        class="mt-6 text-sm"
         :href="applyHref"
         target="_blank"
         :rel="resolveRel({ target: '_blank' })"
@@ -131,7 +132,8 @@ const applyLabel = computed(() => t('events.host.applyToHost', locale))
       <p :class="bodyClass">{{ t('events.host.step5.body', locale) }}</p>
       <Button
         as="a"
-        class="mt-6"
+        variant="underlineLink"
+        class="mt-6 text-sm"
         :href="applyHref"
         target="_blank"
         :rel="resolveRel({ target: '_blank' })"

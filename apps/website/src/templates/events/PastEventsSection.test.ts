@@ -126,17 +126,23 @@ describe('PastEventsSection', () => {
   it('offers a filter tab only for categories that have a card', () => {
     render(PastEventsSection)
 
-    expect(screen.getByRole('button', { name: 'ALL' })).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'LIVESTREAM' })).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'WORKSHOP' })).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'CONFERENCE' })).toBeTruthy()
-    expect(screen.queryByRole('button', { name: 'HACKATHON' })).toBeNull()
+    expect(screen.getByRole('button', { name: /^ALL \d+$/ })).toBeTruthy()
+    expect(
+      screen.getByRole('button', { name: /^LIVESTREAM \d+$/ })
+    ).toBeTruthy()
+    expect(screen.getByRole('button', { name: /^WORKSHOP \d+$/ })).toBeTruthy()
+    expect(
+      screen.getByRole('button', { name: /^CONFERENCE \d+$/ })
+    ).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /^HACKATHON/ })).toBeNull()
   })
 
   it('narrows the cards to a tab category and restores them via ALL', async () => {
     render(PastEventsSection)
 
-    await userEvent.click(screen.getByRole('button', { name: 'WORKSHOP' }))
+    await userEvent.click(
+      screen.getByRole('button', { name: /^WORKSHOP \d+$/ })
+    )
     await nextTick()
 
     expect(screen.getByText('Artless Workshop')).toBeTruthy()
@@ -144,7 +150,7 @@ describe('PastEventsSection', () => {
     expect(screen.queryByText('Clip Meetup')).toBeNull()
     expect(screen.queryByText('English-Only Conference')).toBeNull()
 
-    await userEvent.click(screen.getByRole('button', { name: 'ALL' }))
+    await userEvent.click(screen.getByRole('button', { name: /^ALL \d+$/ }))
     await nextTick()
 
     expect(screen.getByText('Artless Workshop')).toBeTruthy()

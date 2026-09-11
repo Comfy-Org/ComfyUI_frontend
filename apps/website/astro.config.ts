@@ -43,8 +43,10 @@ export default defineConfig({
       // Leaflet only reaches the graph through a dynamic import inside an
       // island (MapPins01), which Vite's dep scanner does not walk. Without
       // this the dev server serves a stale pre-bundle URL and the map silently
-      // fails to load.
-      include: ['leaflet']
+      // fails to load. The Agentation toolbar (dev-only, mounted from a
+      // dynamic import in BaseLayout) has the same shape, so its deps are
+      // listed too.
+      include: ['leaflet', 'react', 'react-dom/client', 'agentation']
     },
     server: {
       watch: {

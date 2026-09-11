@@ -23,6 +23,8 @@ export type CardArticleItem = {
   badge?: string
   category: string
   title: string
+  /** Small muted line under the title, e.g. an event date. */
+  date?: string
   description?: string
   media?: CardArticleMedia
   author?: { name: string; avatarSrc: string }
@@ -77,6 +79,12 @@ function fallbackGradient(id: string): string {
         >
           {{ item.title }}
         </CardTitle>
+        <p
+          v-if="item.date"
+          class="text-xs font-light text-primary-comfy-canvas/60"
+        >
+          {{ item.date }}
+        </p>
         <CardDescription v-if="item.description">
           {{ item.description }}
         </CardDescription>

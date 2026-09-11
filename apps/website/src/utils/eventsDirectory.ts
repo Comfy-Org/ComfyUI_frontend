@@ -7,7 +7,8 @@ import {
   eventPath,
   eventStatus,
   eventVideoId,
-  toCalendarEvent
+  toCalendarEvent,
+  youtubeWatchHref
 } from '../data/events'
 import { t } from '../i18n/translations'
 
@@ -61,7 +62,7 @@ function matchesQuery(
 }
 
 /** Search, type and organizer, applied to an already-ordered event list. The
- * caller's order (upcoming first, then past) is preserved. */
+ * caller's order (latest first) is preserved. */
 export function filterDirectoryEvents(
   events: readonly ComfyEvent[],
   filters: EventsDirectoryFilters,
@@ -154,15 +155,28 @@ function registerOf(
   event: ComfyEvent,
   locale: Locale
 ): DirectoryRow['register'] {
-  if (!event.link) return undefined
-  return {
-    href: event.link.href[locale] || event.link.href.en,
-    newTab: event.link.newTab ?? false,
-    label:
-      event.ctaLabel?.[locale] ||
-      event.ctaLabel?.en ||
-      t('events.past.learnMore', locale)
+  if (event.link) {
+    return {
+      href: event.link.href[locale] || event.link.href.en,
+      newTab: event.link.newTab ?? false,
+      label:
+        event.ctaLabel?.[locale] ||
+        event.ctaLabel?.en ||
+        t('events.past.learnMore', locale)
+    }
   }
+  // An upcoming livestream without an outbound link still has a public
+  // destination — its YouTube stream page — so the row offers a Learn more
+  // chip beside the calendar menu instead of the calendar standing alone.
+  if (event.category === 'livestream' && event.liveVideoId) {
+    const href = youtubeWatchHref(event.liveVideoId)
+    return {
+      href: href[locale] || href.en,
+      newTab: true,
+      label: t('events.past.learnMore', locale)
+    }
+  }
+  return undefined
 }
 
 function watchOf(event: ComfyEvent, locale: Locale): DirectoryRow['watch'] {

@@ -22,6 +22,14 @@ const CATEGORY_ORDER = [
 
 const PAGE_SIZE = 4
 
+// MM/DD/YYYY from the authored date part of the ISO string; slicing instead
+// of new Date() keeps the event-local calendar date regardless of the
+// viewer's timezone.
+function cardDate(iso: string): string {
+  const [year, month, day] = iso.slice(0, 10).split('-')
+  return `${month}/${day}/${year}`
+}
+
 const items = computed<CardArticleGalleryItem[]>(() =>
   pastEvents.map((event) => {
     // Carousel art is sized and hosted for the hero slider only, so no
@@ -37,6 +45,7 @@ const items = computed<CardArticleGalleryItem[]>(() =>
       filterKey: event.category,
       category: t(`events.category.${event.category}`, locale),
       title: event.title[locale] || event.title.en,
+      date: cardDate(event.startDateTime),
       media: media && {
         type: media.type,
         src: media.src,

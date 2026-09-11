@@ -293,26 +293,24 @@ test.describe('Events page — desktop @smoke', () => {
     }
   })
 
-  test('both apply-to-host CTAs point at the real form', async ({ page }) => {
+  test('the apply-to-host CTA points at the real form', async ({ page }) => {
     // The form URL was a '#' placeholder through most of the rebuild, which
     // left these visibly inert. Assert they stay wired. The hero's own CTA
-    // now anchors to the host section instead of the form (see "hero renders
-    // localized eyebrow, h1, and subtitle in both locales"), leaving the
-    // directory link and the host section's own CTA pointing at the form.
+    // anchors to the host section, and the directory header dropped its
+    // apply link in the design-feedback pass — the host section's own CTA is
+    // the one that renders on load (the step CTAs live in collapsed panels).
     const href = externalLinks.eventHostApplicationForm
     expect(href).not.toBe('#')
 
     for (const [path, locale] of LOCALES) {
       await page.goto(path)
-      const ctas = page.getByRole('link', {
+      const cta = page.getByRole('link', {
         name: t('events.host.applyToHost', locale)
       })
-      await expect(ctas).toHaveCount(2)
-      for (let i = 0; i < 2; i++) {
-        await expect(ctas.nth(i)).toHaveAttribute('href', href)
-        await expect(ctas.nth(i)).toHaveAttribute('target', '_blank')
-        await expect(ctas.nth(i)).toHaveAttribute('rel', /noopener/)
-      }
+      await expect(cta).toHaveCount(1)
+      await expect(cta).toHaveAttribute('href', href)
+      await expect(cta).toHaveAttribute('target', '_blank')
+      await expect(cta).toHaveAttribute('rel', /noopener/)
     }
   })
 
@@ -976,7 +974,9 @@ test.describe('Events page — desktop @smoke', () => {
     const section = pastSection(page, 'en')
     await section.scrollIntoViewIfNeeded()
 
-    // Retry until the island hydrates and the click lands.
+    // Retry until the island hydrates and the click lands. The count alone
+    // cannot tell a filtered page from the unfiltered first page when both
+    // fill PAST_PAGE_SIZE, so the first card's title is the real signal.
     const cards = section.locator('[data-slot="card"]')
     await expect(async () => {
       await section
@@ -986,6 +986,9 @@ test.describe('Events page — desktop @smoke', () => {
         Math.min(PAST_PAGE_SIZE, expected.length),
         { timeout: 1000 }
       )
+      await expect(cards.first()).toContainText(expected[0]!.title.en, {
+        timeout: 1000
+      })
     }).toPass()
     for (const [i, event] of expected.slice(0, PAST_PAGE_SIZE).entries()) {
       await expect(cards.nth(i)).toContainText(event.title.en)

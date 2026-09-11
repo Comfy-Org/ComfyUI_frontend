@@ -163,10 +163,10 @@ describe('event list derivation', () => {
     ])
   })
 
-  it('lists the whole directory upcoming-first, then past newest-first', () => {
+  it('lists the whole directory latest-first', () => {
     expect(deriveDirectoryEvents(list, now).map((event) => event.id)).toEqual([
-      'sooner',
       'later',
+      'sooner',
       'done',
       'older'
     ])

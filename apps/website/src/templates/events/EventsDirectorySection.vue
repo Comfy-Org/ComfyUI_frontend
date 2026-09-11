@@ -9,13 +9,10 @@ import type { Locale } from '../../i18n/translations'
 import type { EventsDirectoryView } from '../../utils/eventsDirectory'
 
 import MapPins01 from '../../components/blocks/MapPins01.vue'
-import Button from '../../components/ui/button/Button.vue'
 import EventsAgendaView from './EventsAgendaView.vue'
 import EventsCardsView from './EventsCardsView.vue'
-import { externalLinks } from '../../config/routes'
 import { directoryEvents, eventsDerivedAt } from '../../data/events'
 import { t } from '../../i18n/translations'
-import { resolveRel } from '../../utils/cta'
 import {
   DIRECTORY_FILTER_ALL,
   EVENT_CATEGORIES,
@@ -33,9 +30,19 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 // else, the visible events and the live count, is derived.
 const filters = reactive(defaultDirectoryFilters())
 const view = ref<EventsDirectoryView>('map')
+const sort = ref<'latest' | 'oldest'>('latest')
 
 const visibleEvents = computed(() =>
   filterDirectoryEvents(directoryEvents, filters, locale)
+)
+
+// `directoryEvents` is latest-first, so Oldest is a plain reversal of the
+// filtered slice rather than a second date sort. The agenda view re-groups
+// rows by month with its own chronology either way.
+const sortedEvents = computed(() =>
+  sort.value === 'latest'
+    ? visibleEvents.value
+    : [...visibleEvents.value].reverse()
 )
 
 // Derived once and handed to whichever view is showing, so the list and the
@@ -43,7 +50,7 @@ const visibleEvents = computed(() =>
 // clock that ordered `directoryEvents`, so a row's position and its CTA can
 // never straddle the upcoming/past boundary.
 const rows = computed(() =>
-  directoryRows(visibleEvents.value, locale, eventsDerivedAt)
+  directoryRows(sortedEvents.value, locale, eventsDerivedAt)
 )
 
 // Pins are the filtered events that have coordinates; virtual events stay in
@@ -120,35 +127,24 @@ const caretClass =
     class="max-w-9xl mx-auto scroll-mt-24 px-6 py-16 lg:px-20 lg:py-24"
   >
     <div class="mx-auto max-w-3xl text-center">
-      <h2
-        class="text-3xl font-light tracking-tight text-primary-warm-white lg:text-5xl"
-      >
-        {{ t('events.directory.title', locale) }}
-      </h2>
-
       <p
-        class="text-primary-comfy-yellow mt-4 text-xs font-semibold tracking-widest uppercase"
+        class="text-primary-comfy-yellow text-xs font-semibold tracking-widest uppercase"
         aria-live="polite"
       >
         {{ countLabel }}
       </p>
+
+      <h2
+        class="mt-4 text-3xl font-light tracking-tight text-primary-warm-white lg:text-5xl"
+      >
+        {{ t('events.directory.title', locale) }}
+      </h2>
 
       <p
         class="mt-6 text-base font-light text-balance text-primary-comfy-canvas lg:text-lg"
       >
         {{ t('events.directory.lead', locale) }}
       </p>
-
-      <Button
-        as="a"
-        variant="underlineLink"
-        class="mt-4 justify-center text-sm"
-        :href="externalLinks.eventHostApplicationForm"
-        target="_blank"
-        :rel="resolveRel({ target: '_blank' })"
-      >
-        {{ t('events.hero.applyToHost', locale) }}
-      </Button>
     </div>
 
     <div
@@ -223,6 +219,27 @@ const caretClass =
         <ChevronDown :class="caretClass" aria-hidden="true" />
       </div>
 
+      <template v-if="view !== 'calendar'">
+        <label for="events-directory-sort" class="sr-only">
+          {{ t('events.directory.sortLabel', locale) }}
+        </label>
+        <div class="relative">
+          <select
+            id="events-directory-sort"
+            v-model="sort"
+            :class="selectClass"
+          >
+            <option value="latest">
+              {{ t('events.directory.sortLatest', locale) }}
+            </option>
+            <option value="oldest">
+              {{ t('events.directory.sortOldest', locale) }}
+            </option>
+          </select>
+          <ChevronDown :class="caretClass" aria-hidden="true" />
+        </div>
+      </template>
+
       <div
         role="group"
         :aria-label="t('events.directory.viewLabel', locale)"
@@ -254,7 +271,7 @@ const caretClass =
 
     <div
       v-if="view === 'map'"
-      class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[3fr_2fr]"
+      class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[54fr_46fr]"
     >
       <MapPins01
         :markers

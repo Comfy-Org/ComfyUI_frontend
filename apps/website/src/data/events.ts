@@ -203,10 +203,14 @@ export function deriveDirectoryEvents(
   events: readonly ComfyEvent[],
   now: Date
 ): readonly ComfyEvent[] {
+  // Latest first across the whole directory: upcoming events lead (furthest
+  // out on top) and past events follow in reverse chronology. The agenda
+  // view re-groups by month, so only the list and cards views show this
+  // order directly.
   return [
     ...deriveUpcomingEvents(events, now),
     ...derivePastEvents(events, now)
-  ]
+  ].sort((a, b) => Date.parse(b.startDateTime) - Date.parse(a.startDateTime))
 }
 
 export function deriveFeaturedEvents(
