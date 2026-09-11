@@ -175,7 +175,10 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
   })
 
   test.describe('composer sizing', () => {
-    test.use({ viewport: { width: 1920, height: 1080 } })
+    test.use({
+      viewport: { width: 1920, height: 1080 },
+      permissions: ['clipboard-read', 'clipboard-write']
+    })
 
     test('caps long text at 400px and scrolls internally', async ({
       comfyPage
@@ -185,20 +188,28 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
 
       const panel = page.locator('#agent-panel-root')
       const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
+      const input = panel.getByTestId('composer-inline-input')
 
-      await composer.fill('A growing prompt line\n'.repeat(14))
+      await page.evaluate(() =>
+        navigator.clipboard.writeText('A growing prompt line\n'.repeat(14))
+      )
+      await composer.press('ControlOrMeta+v')
       await expect
         .poll(() =>
-          composer.evaluate((element) =>
+          input.evaluate((element) =>
             Math.round(element.getBoundingClientRect().height)
           )
         )
         .toBeGreaterThan(200)
 
-      await composer.fill('An overflowing prompt line\n'.repeat(60))
+      await page.evaluate(() =>
+        navigator.clipboard.writeText('An overflowing prompt line\n'.repeat(60))
+      )
+      await composer.press('ControlOrMeta+a')
+      await composer.press('ControlOrMeta+v')
       await expect
         .poll(() =>
-          composer.evaluate((element) => ({
+          input.evaluate((element) => ({
             height: Math.round(element.getBoundingClientRect().height),
             scrolls: element.scrollHeight > element.clientHeight
           }))
@@ -213,7 +224,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         .click()
       await expect
         .poll(() =>
-          composer.evaluate((element) => ({
+          input.evaluate((element) => ({
             height: Math.round(element.getBoundingClientRect().height),
             scrolls: element.scrollHeight > element.clientHeight
           }))

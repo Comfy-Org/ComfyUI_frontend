@@ -232,7 +232,9 @@ test.describe(
       await composer.press('Enter')
       await expect(nodes).toBeVisible()
       await composer.press('Escape')
-      await composer.fill('')
+      await composer.press('ControlOrMeta+a')
+      await composer.press('Backspace')
+      await expect(inline).toBeVisible()
       expect(workflowSelection.postedMessages).toHaveLength(0)
 
       await panel
