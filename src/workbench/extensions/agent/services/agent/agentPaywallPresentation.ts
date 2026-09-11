@@ -1,43 +1,43 @@
-import type { Distribution } from '@/platform/distribution/types'
+import type { SubscriptionTier } from '@comfyorg/ingest-types'
+
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 
+export type AgentPaywallAction = 'addCredits' | 'subscribe' | 'upgrade'
+
 export type AgentPaywallPresentation =
-  | { kind: 'unknown' }
-  | { kind: 'topUpAvailable' }
+  | { kind: 'subscribed'; showUpgrade: boolean }
   | { kind: 'subscriptionRequired' }
   | { kind: 'member' }
   | { kind: 'salesManaged' }
   | { kind: 'local' }
 
 interface AgentPaywallPresentationInput {
-  distribution: Distribution
   role: WorkspaceRole
-  hasAuthoritativeCapabilities: boolean
+  tier: SubscriptionTier | null
   canTopUp: boolean
   canSubscribeSelfServe: boolean
 }
 
-/**
- * Maps the server-owned billing capabilities to the Agent out-of-credit UI.
- *
- * Cloud owners follow the capability pair. Workspace members cannot purchase
- * for their owner, while Desktop and localhost users may have no subscription
- * at all and therefore retain the local add-credits path.
- */
+export const DEFAULT_AGENT_PAYWALL_PRESENTATION = {
+  kind: 'subscribed',
+  showUpgrade: true
+} as const satisfies AgentPaywallPresentation
+
 export function resolveAgentPaywallPresentation({
-  distribution,
   role,
-  hasAuthoritativeCapabilities,
+  tier,
   canTopUp,
   canSubscribeSelfServe
 }: AgentPaywallPresentationInput): AgentPaywallPresentation {
-  if (distribution !== 'cloud') return { kind: 'local' }
   if (role === 'member') return { kind: 'member' }
-  if (!hasAuthoritativeCapabilities) return { kind: 'unknown' }
   if (!canTopUp) {
     return canSubscribeSelfServe
       ? { kind: 'subscriptionRequired' }
       : { kind: 'salesManaged' }
   }
-  return { kind: 'topUpAvailable' }
+  return {
+    kind: 'subscribed',
+    showUpgrade:
+      canSubscribeSelfServe && (tier === 'STANDARD' || tier === 'CREATOR')
+  }
 }

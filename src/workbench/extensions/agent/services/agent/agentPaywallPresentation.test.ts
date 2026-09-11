@@ -1,102 +1,74 @@
 import { describe, expect, it } from 'vitest'
 
-import type { Distribution } from '@/platform/distribution/types'
-import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
-
 import { resolveAgentPaywallPresentation } from './agentPaywallPresentation'
 
 describe('resolveAgentPaywallPresentation', () => {
   it.for([
     {
-      name: 'Cloud owner with both self-serve actions',
-      distribution: 'cloud',
-      role: 'owner',
-      hasAuthoritativeCapabilities: true,
+      name: 'both self-serve actions',
       canTopUp: true,
       canSubscribeSelfServe: true,
-      expected: { kind: 'topUpAvailable' }
+      expected: { kind: 'subscribed', showUpgrade: true }
     },
     {
-      name: 'Cloud owner with top-up only',
-      distribution: 'cloud',
-      role: 'owner',
-      hasAuthoritativeCapabilities: true,
+      name: 'top-up only',
       canTopUp: true,
       canSubscribeSelfServe: false,
-      expected: { kind: 'topUpAvailable' }
+      expected: { kind: 'subscribed', showUpgrade: false }
     },
     {
-      name: 'Cloud owner who must subscribe before buying credits',
-      distribution: 'cloud',
-      role: 'owner',
-      hasAuthoritativeCapabilities: true,
+      name: 'subscription required',
       canTopUp: false,
       canSubscribeSelfServe: true,
       expected: { kind: 'subscriptionRequired' }
     },
     {
-      name: 'Cloud sales-managed owner',
-      distribution: 'cloud',
-      role: 'owner',
-      hasAuthoritativeCapabilities: true,
+      name: 'sales-managed owner',
       canTopUp: false,
       canSubscribeSelfServe: false,
       expected: { kind: 'salesManaged' }
-    },
-    {
-      name: 'Cloud workspace member',
-      distribution: 'cloud',
-      role: 'member',
-      hasAuthoritativeCapabilities: true,
-      canTopUp: true,
-      canSubscribeSelfServe: true,
-      expected: { kind: 'member' }
-    },
-    {
-      name: 'Desktop owner without a subscription',
-      distribution: 'desktop',
-      role: 'owner',
-      hasAuthoritativeCapabilities: false,
-      canTopUp: true,
-      canSubscribeSelfServe: false,
-      expected: { kind: 'local' }
-    },
-    {
-      name: 'Localhost owner without a subscription',
-      distribution: 'localhost',
-      role: 'owner',
-      hasAuthoritativeCapabilities: false,
-      canTopUp: true,
-      canSubscribeSelfServe: false,
-      expected: { kind: 'local' }
-    },
-    {
-      name: 'Desktop workspace member',
-      distribution: 'desktop',
-      role: 'member',
-      hasAuthoritativeCapabilities: false,
-      canTopUp: true,
-      canSubscribeSelfServe: false,
-      expected: { kind: 'local' }
-    },
-    {
-      name: 'Cloud owner while capabilities are unresolved',
-      distribution: 'cloud',
-      role: 'owner',
-      hasAuthoritativeCapabilities: false,
-      canTopUp: false,
-      canSubscribeSelfServe: false,
-      expected: { kind: 'unknown' }
     }
-  ] satisfies Array<{
-    name: string
-    distribution: Distribution
-    role: WorkspaceRole
-    hasAuthoritativeCapabilities: boolean
-    canTopUp: boolean
-    canSubscribeSelfServe: boolean
-    expected: ReturnType<typeof resolveAgentPaywallPresentation>
-  }>)('$name', ({ expected, name: _, ...input }) => {
-    expect(resolveAgentPaywallPresentation(input)).toEqual(expected)
+  ])('maps the ready server pair for $name', (testCase) => {
+    expect(
+      resolveAgentPaywallPresentation({
+        role: 'owner',
+        tier: 'STANDARD',
+        canTopUp: testCase.canTopUp,
+        canSubscribeSelfServe: testCase.canSubscribeSelfServe
+      })
+    ).toEqual(testCase.expected)
+  })
+
+  it.for([
+    { tier: 'STANDARD' as const, showUpgrade: true },
+    { tier: 'CREATOR' as const, showUpgrade: true },
+    { tier: 'PRO' as const, showUpgrade: false },
+    { tier: 'FOUNDERS_EDITION' as const, showUpgrade: false },
+    { tier: 'TEAM' as const, showUpgrade: false },
+    { tier: 'ENTERPRISE' as const, showUpgrade: false },
+    { tier: null, showUpgrade: false }
+  ])(
+    'offers Upgrade plan only from a personal tier with a higher tier ($tier)',
+    ({ tier, showUpgrade }) => {
+      expect(
+        resolveAgentPaywallPresentation({
+          role: 'owner',
+          tier,
+          canTopUp: true,
+          canSubscribeSelfServe: true
+        })
+      ).toEqual({ kind: 'subscribed', showUpgrade })
+    }
+  )
+
+  it('keeps the member override ahead of the server pair', () => {
+    expect(
+      resolveAgentPaywallPresentation({
+        role: 'member',
+        tier: 'STANDARD',
+        canTopUp: true,
+        canSubscribeSelfServe: true
+      })
+    ).toEqual({ kind: 'member' })
   })
 })

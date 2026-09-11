@@ -1,91 +1,72 @@
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useDialogStore } from '@/stores/dialogStore'
 /**
  * showTopUpCreditsDialog routes the paired server capabilities to purchase,
  * subscription, or read-only contact-admin UI.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const showDialog = vi.hoisted(() => vi.fn())
-const closeDialog = vi.hoisted(() => vi.fn())
-const addToast = vi.hoisted(() => vi.fn())
 const state = vi.hoisted(() => ({
   type: 'workspace' as 'workspace' | 'legacy',
-  role: 'owner' as 'owner' | 'member',
   canTopUp: true,
   canSubscribeSelfServe: false,
   isReady: true,
-  snapshotAuthoritative: true,
   initialize: vi.fn()
 }))
 
-vi.mock('@/stores/dialogStore', () => ({
-  useDialogStore: () => ({ showDialog, closeDialog })
-}))
-
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({ trackEvent: vi.fn() })
 }))
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
-vi.mock('@/platform/distribution/types', () => ({
-  get DISTRIBUTION() {
-    return mockIsCloud.value ? 'cloud' : 'desktop'
-  },
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }
 }))
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    activeWorkspace: { role: state.role }
-  })
-}))
-
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
-    type: { value: state.type }
+    type: { value: state.type },
+    tier: { value: 'STANDARD' }
   })
 }))
 
-vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
-  useBillingCapabilities: () => ({
-    // Getters, not snapshots: initialize() resolves capabilities mid-call.
-    canTopUp: {
-      get value() {
-        return state.canTopUp
-      }
-    },
-    canSubscribeSelfServe: {
-      get value() {
-        return state.canSubscribeSelfServe
-      }
-    },
-    isReady: {
-      get value() {
-        return state.isReady
-      }
-    },
-    snapshotAuthoritative: {
-      get value() {
-        return state.snapshotAuthoritative
-      }
-    },
-    initialize: () => state.initialize()
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingCapabilities'),
+  () => ({
+    useBillingCapabilities: () => ({
+      // Getters, not snapshots: initialize() resolves capabilities mid-call.
+      canTopUp: {
+        get value() {
+          return state.canTopUp
+        }
+      },
+      canSubscribeSelfServe: {
+        get value() {
+          return state.canSubscribeSelfServe
+        }
+      },
+      isReady: {
+        get value() {
+          return state.isReady
+        }
+      },
+      initialize: () => state.initialize()
+    })
   })
-}))
-
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({ add: addToast })
-}))
+)
 
 const showSubscriptionDialog = vi.hoisted(() => vi.fn())
 
-vi.mock(
-  '@/platform/cloud/subscription/composables/useSubscriptionDialog',
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
   () => ({
     useSubscriptionDialog: () => ({ show: showSubscriptionDialog })
   })
@@ -93,16 +74,19 @@ vi.mock(
 
 import { useDialogService } from '@/services/dialogService'
 
+function setActiveWorkspaceRole(role: WorkspaceRole) {
+  Object.assign(useTeamWorkspaceStore(), { activeWorkspace: { role } })
+}
+
 describe('showTopUpCreditsDialog', () => {
   beforeEach(() => {
     state.type = 'workspace'
-    state.role = 'owner'
     state.canTopUp = true
     state.canSubscribeSelfServe = false
     state.isReady = true
-    state.snapshotAuthoritative = true
     state.initialize = vi.fn()
     mockIsCloud.value = true
+    setActiveWorkspaceRole('owner')
   })
 
   it('shows the purchase dialog to users who can top up', async () => {
@@ -110,13 +94,13 @@ describe('showTopUpCreditsDialog', () => {
       isInsufficientCredits: true
     })
 
-    const [args] = showDialog.mock.calls[0]
+    const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
     expect(args.key).toBe('top-up-credits')
     expect(state.initialize).not.toHaveBeenCalled()
   })
 
   it('shows the contact-admin notice to team members instead of the purchase dialog', async () => {
-    state.role = 'member'
+    setActiveWorkspaceRole('member')
     state.canTopUp = false
     state.canSubscribeSelfServe = false
 
@@ -124,15 +108,17 @@ describe('showTopUpCreditsDialog', () => {
       isInsufficientCredits: true
     })
 
-    const [args] = showDialog.mock.calls[0]
+    const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
     expect(args.key).toBe('insufficient-credits-member')
     // The member notice draws its own header + close button, so it must open
     // headless or Reka wraps it in duplicate chrome.
-    expect(args.dialogComponentProps.headless).toBe(true)
-    expect(args.dialogComponentProps.renderer).toBe('reka')
+    expect(args.dialogComponentProps?.headless).toBe(true)
+    expect(args.dialogComponentProps?.renderer).toBe('reka')
 
-    args.props.onClose()
-    expect(closeDialog).toHaveBeenCalledWith({
+    const props = args.props
+    assert(props && 'onClose' in props && typeof props.onClose === 'function')
+    props.onClose()
+    expect(vi.mocked(useDialogStore().closeDialog)).toHaveBeenCalledWith({
       key: 'insufficient-credits-member'
     })
   })
@@ -143,7 +129,7 @@ describe('showTopUpCreditsDialog', () => {
 
     await useDialogService().showTopUpCreditsDialog()
 
-    const [args] = showDialog.mock.calls[0]
+    const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
     expect(args.key).toBe('top-up-credits')
   })
 
@@ -153,9 +139,9 @@ describe('showTopUpCreditsDialog', () => {
 
     await useDialogService().showTopUpCreditsDialog()
 
-    expect(showDialog).not.toHaveBeenCalled()
+    expect(vi.mocked(useDialogStore().showDialog)).not.toHaveBeenCalled()
     expect(showSubscriptionDialog).not.toHaveBeenCalled()
-    expect(addToast).toHaveBeenCalledWith({
+    expect(vi.mocked(useToastStore().add)).toHaveBeenCalledWith({
       severity: 'warn',
       summary: 'subscription.salesManagedRunBlockedTitle',
       detail: 'subscription.salesManagedRunBlockedDetail',
@@ -177,19 +163,18 @@ describe('showTopUpCreditsDialog', () => {
     })
 
     expect(state.initialize).toHaveBeenCalledOnce()
-    const [args] = showDialog.mock.calls[0]
+    const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
     expect(args.key).toBe('top-up-credits')
   })
 
   it('does not route when capabilities stay unresolved after initializing', async () => {
     state.canTopUp = false
     state.isReady = false
-    state.snapshotAuthoritative = false
 
     await useDialogService().showTopUpCreditsDialog()
 
     expect(state.initialize).toHaveBeenCalledOnce()
-    expect(showDialog).not.toHaveBeenCalled()
+    expect(vi.mocked(useDialogStore().showDialog)).not.toHaveBeenCalled()
     expect(showSubscriptionDialog).not.toHaveBeenCalled()
   })
 
@@ -202,7 +187,7 @@ describe('showTopUpCreditsDialog', () => {
     expect(showSubscriptionDialog).toHaveBeenCalledWith({
       reason: 'top_up_blocked'
     })
-    expect(showDialog).not.toHaveBeenCalled()
+    expect(vi.mocked(useDialogStore().showDialog)).not.toHaveBeenCalled()
   })
 
   describe('non-cloud distribution', () => {
@@ -215,7 +200,7 @@ describe('showTopUpCreditsDialog', () => {
       await useDialogService().showTopUpCreditsDialog()
 
       expect(showSubscriptionDialog).not.toHaveBeenCalled()
-      const [args] = showDialog.mock.calls[0]
+      const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
       expect(args.key).toBe('top-up-credits')
     })
   })

@@ -13,7 +13,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import { resolveAgentPaywallPresentation } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
-import { DISTRIBUTION, isCloud } from '@/platform/distribution/types'
+import { isCloud } from '@/platform/distribution/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -103,9 +103,9 @@ type ConfirmOptions = BaseConfirmOptions &
 export interface ExecutionErrorDialogInput {
   exception_type: string
   exception_message: string
-  node_id: string | number
-  node_type: string
-  traceback: string[]
+  node_id?: string | number | null
+  node_type?: string | null
+  traceback?: string[] | null
 }
 
 export const useDialogService = () => {
@@ -117,8 +117,8 @@ export const useDialogService = () => {
         exceptionType: executionError.exception_type,
         exceptionMessage: executionError.exception_message,
         nodeId: executionError.node_id?.toString(),
-        nodeType: executionError.node_type,
-        traceback: executionError.traceback.join('\n'),
+        nodeType: executionError.node_type ?? undefined,
+        traceback: executionError.traceback?.join('\n') ?? '',
         reportType: 'graphExecutionError'
       }
     }
@@ -345,29 +345,22 @@ export const useDialogService = () => {
   async function showTopUpCreditsDialog(options?: {
     isInsufficientCredits?: boolean
   }) {
-    const { type } = useBillingContext()
+    const { type, tier } = useBillingContext()
     const workspaceStore = useTeamWorkspaceStore()
-    const {
-      canTopUp,
-      canSubscribeSelfServe,
-      isReady,
-      snapshotAuthoritative,
-      initialize
-    } = useBillingCapabilities()
+    const { canTopUp, canSubscribeSelfServe, isReady, initialize } =
+      useBillingCapabilities()
     // A capability read still in flight has to be awaited here, or a top-up
     // triggered during that window is silently dropped with no recovery UI.
     if (!isReady.value) await initialize()
     if (!isReady.value) return
 
     const presentation = resolveAgentPaywallPresentation({
-      distribution: DISTRIBUTION,
       role: workspaceStore.activeWorkspace?.role ?? 'owner',
-      hasAuthoritativeCapabilities: snapshotAuthoritative.value,
+      tier: tier.value,
       canTopUp: canTopUp.value,
       canSubscribeSelfServe: canSubscribeSelfServe.value
     })
 
-    if (presentation.kind === 'unknown') return
     if (presentation.kind === 'subscriptionRequired') {
       await showSubscriptionRequiredDialog({
         reason: options?.isInsufficientCredits

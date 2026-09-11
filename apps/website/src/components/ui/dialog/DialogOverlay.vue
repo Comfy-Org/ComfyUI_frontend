@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable vue/no-unused-properties -- props forwarded via v-bind */
 import type { DialogOverlayProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 import { reactiveOmit } from '@vueuse/core'

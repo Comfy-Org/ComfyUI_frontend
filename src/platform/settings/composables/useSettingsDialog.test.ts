@@ -1,3 +1,6 @@
+import type * as DistributionModule from '@/platform/distribution/types'
+import type * as I18nModule from '@/i18n'
+import { useDialogStore } from '@/stores/dialogStore'
 /**
  * Settings dialog migration regression net: `useSettingsDialog().show()` must
  * open the Reka-renderer path with sizing that matches the previous
@@ -9,23 +12,23 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const showDialog = vi.hoisted(() => vi.fn())
 const isCloudRef = vi.hoisted(() => ({ value: false }))
 
-vi.mock('@/stores/dialogStore', () => ({
-  useDialogStore: () => ({ showDialog, closeDialog: vi.fn() })
-}))
-
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
+  ...(await importOriginal<typeof DistributionModule>()),
   get isCloud() {
     return isCloudRef.value
   }
 }))
 
-vi.mock('@/i18n', () => ({ t: (k: string) => k }))
+vi.mock(import('@/i18n'), async (importOriginal) => ({
+  ...(await importOriginal<typeof I18nModule>()),
+  t: (k: string) => k
+}))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({ trackEvent: vi.fn() })
 }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     canAccessSubscriptionFeatures: { value: true },
     isFreeTier: { value: false },
@@ -34,6 +37,11 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
 }))
 
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+
+beforeEach(() => {
+  useDialogStore().showDialog = showDialog
+  vi.mocked(useDialogStore().closeDialog).mockImplementation(() => undefined)
+})
 
 describe('useSettingsDialog', () => {
   beforeEach(() => {

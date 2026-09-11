@@ -1,5 +1,3 @@
-@import 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap';
-
 @import 'tailwindcss';
 @import '@comfyorg/design-system/css/base.css';
 @import 'tw-animate-css';
@@ -16,7 +14,7 @@
   src: url('/fonts/PPFormula-Light.woff2') format('woff2');
   font-weight: 300;
   font-style: normal;
-  font-display: swap;
+  font-display: optional;
 }
 
 @font-face {
@@ -24,7 +22,7 @@
   src: url('/fonts/PPFormula-Regular.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
-  font-display: swap;
+  font-display: optional;
 }
 
 @font-face {
@@ -32,7 +30,7 @@
   src: url('/fonts/PPFormula-Medium.woff2') format('woff2');
   font-weight: 500;
   font-style: normal;
-  font-display: swap;
+  font-display: optional;
 }
 
 @font-face {
@@ -40,7 +38,7 @@
   src: url('/fonts/PPFormula-Semibold.woff2') format('woff2');
   font-weight: 600;
   font-style: normal;
-  font-display: swap;
+  font-display: optional;
 }
 
 @font-face {
@@ -48,7 +46,7 @@
   src: url('/fonts/PPFormula-Bold.woff2') format('woff2');
   font-weight: 700;
   font-style: normal;
-  font-display: swap;
+  font-display: optional;
 }
 
 @font-face {
@@ -56,7 +54,7 @@
   src: url('/fonts/PPFormula-Bold.woff2') format('woff2');
   font-weight: 800;
   font-style: normal;
-  font-display: swap;
+  font-display: optional;
 }
 
 @font-face {
@@ -64,7 +62,7 @@
   src: url('/fonts/PPFormula-NarrowSemibold.woff2') format('woff2');
   font-weight: 600;
   font-style: normal;
-  font-display: swap;
+  font-display: optional;
 }
 
 @theme {
@@ -535,4 +533,12 @@ video::-webkit-media-controls-panel {
   @media (prefers-reduced-motion: no-preference) {
     animation: backdrop-drift 48s ease-in-out infinite alternate;
   }
+}
+
+/* WebKit shows its own play button on .cloud-hero-video when autoplay is
+   refused (iOS Low Power Mode); the UA rule only yields to !important. */
+.cloud-hero-video::-webkit-media-controls-start-playback-button,
+.cloud-hero-video::-webkit-media-controls-panel {
+  display: none !important;
+  appearance: none;
 }

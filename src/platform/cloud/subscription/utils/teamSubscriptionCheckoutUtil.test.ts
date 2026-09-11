@@ -1,29 +1,29 @@
+import type * as DistributionModule from '@/platform/distribution/types'
+import { useAuthStore } from '@/stores/authStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, reactive } from 'vue'
 
 const {
   mockIsCloud,
   mockSubscribe,
   mockTrackBeginCheckout,
-  mockTrackBillingEvent,
-  mockUserId
+  mockTrackBillingEvent
 } = vi.hoisted(() => ({
   mockIsCloud: { value: true },
   mockSubscribe: vi.fn(),
   mockTrackBeginCheckout: vi.fn(),
-  mockTrackBillingEvent: vi.fn(),
-  mockUserId: { value: 'user-1' }
+  mockTrackBillingEvent: vi.fn()
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
+  ...(await importOriginal<typeof DistributionModule>()),
   get isCloud() {
     return mockIsCloud.value
   }
 }))
-vi.mock('@/config/comfyApi', () => ({
+vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://app.test'
 }))
-vi.mock('@/platform/workspace/api/workspaceApi', () => ({
+vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
   workspaceApi: { subscribe: mockSubscribe },
   WorkspaceApiError: class WorkspaceApiError extends Error {
     constructor(
@@ -36,23 +36,18 @@ vi.mock('@/platform/workspace/api/workspaceApi', () => ({
     }
   }
 }))
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackBeginCheckout: mockTrackBeginCheckout,
     trackBillingEvent: mockTrackBillingEvent
   })
 }))
-vi.mock('@/stores/authStore', () => ({
-  useAuthStore: () => reactive({ userId: computed(() => mockUserId.value) }),
-  AuthStoreError: class AuthStoreError extends Error {
-    constructor(message: string) {
-      super(message)
-      this.name = 'AuthStoreError'
-    }
-  }
-}))
 
 import { performTeamSubscriptionCheckout } from './teamSubscriptionCheckoutUtil'
+
+beforeEach(() => {
+  Object.assign(useAuthStore(), { userId: 'user-1' })
+})
 
 describe('performTeamSubscriptionCheckout', () => {
   let assignedHref: string | undefined
@@ -63,6 +58,8 @@ describe('performTeamSubscriptionCheckout', () => {
     Object.defineProperty(globalThis, 'location', {
       configurable: true,
       value: {
+        origin: 'https://app.test',
+        pathname: '/payment/success',
         set href(value: string) {
           assignedHref = value
         }
@@ -167,3 +164,10 @@ describe('performTeamSubscriptionCheckout', () => {
     expect(assignedHref).toBeUndefined()
   })
 })
+
+vi.mock(import('firebase/auth'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  setPersistence: vi.fn().mockResolvedValue(undefined),
+  onAuthStateChanged: vi.fn(),
+  onIdTokenChanged: vi.fn()
+}))

@@ -9,10 +9,11 @@ import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { member, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
 /**
- * The `?topup=1` deep link opens the credit top-up dialog on app load, gated
- * to users who can top up (personal users and team owners). Drives a raw
- * `page` so the cloud app boots against fully mocked endpoints, like the
- * pricing-table deep-link spec.
+ * The `?topup=1` deep link hands the app-load billing intent to the dialog
+ * service, which owns the capability-to-UI policy: purchase, subscribe,
+ * contact-admin, or account-manager guidance. Drives a raw `page` so the cloud
+ * app boots against fully mocked endpoints, like the pricing-table deep-link
+ * spec.
  */
 const topUpDialog = (page: Page) => page.getByTestId('top-up-pay-amount')
 
@@ -178,7 +179,7 @@ test.describe('Top-up deep link', { tag: '@cloud' }, () => {
     await expect(page).not.toHaveURL(/[?&]topup=/)
   })
 
-  test('silently no-ops when capabilities are unavailable', async ({
+  test('uses the top-up fallback when capabilities are unavailable', async ({
     page
   }) => {
     test.slow()
@@ -189,10 +190,7 @@ test.describe('Top-up deep link', { tag: '@cloud' }, () => {
 
     await page.goto(`${APP_URL}/?topup=1`)
 
-    await page.waitForURL((url) => !url.searchParams.has('topup'), {
-      timeout: 45_000
-    })
-    await expect(topUpDialog(page)).toBeHidden()
+    await expect(topUpDialog(page)).toBeVisible({ timeout: 45_000 })
     await expect(page).not.toHaveURL(/[?&]topup=/)
   })
 })

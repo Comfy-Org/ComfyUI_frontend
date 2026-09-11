@@ -10,7 +10,7 @@ const preservedQueryMocks = vi.hoisted(() => ({
 }))
 
 vi.mock(
-  '@/platform/navigation/preservedQueryManager',
+  import('@/platform/navigation/preservedQueryManager'),
   () => preservedQueryMocks
 )
 
@@ -19,7 +19,7 @@ const mockRouteQuery = vi.hoisted(() => ({
 }))
 const mockRouterReplace = vi.hoisted(() => vi.fn(async () => undefined))
 
-vi.mock('vue-router', () => ({
+vi.mock<unknown>(import('vue-router'), () => ({
   useRoute: () => ({
     query: mockRouteQuery.value
   }),
@@ -32,7 +32,7 @@ const mockShowTopUpCreditsDialog = vi.hoisted(() =>
   vi.fn(async () => undefined)
 )
 
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({
     showTopUpCreditsDialog: mockShowTopUpCreditsDialog
   })
@@ -41,16 +41,19 @@ vi.mock('@/services/dialogService', () => ({
 const mockCanTopUp = vi.hoisted(() => ({ value: true }))
 const mockInitialize = vi.hoisted(() => vi.fn(async (): Promise<void> => {}))
 
-vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
-  useBillingCapabilities: () => ({
-    canTopUp: mockCanTopUp,
-    initialize: mockInitialize
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingCapabilities'),
+  () => ({
+    useBillingCapabilities: () => ({
+      canTopUp: mockCanTopUp,
+      initialize: mockInitialize
+    })
   })
-}))
+)
 
 const mockTrackAddApiCreditButtonClicked = vi.hoisted(() => vi.fn())
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackAddApiCreditButtonClicked: mockTrackAddApiCreditButtonClicked
   })
@@ -123,17 +126,6 @@ describe('useTopUpUrlLoader', () => {
   })
 
   it('delegates denied capabilities to the shared dialog policy', async () => {
-    mockRouteQuery.value = { topup: '1' }
-    mockCanTopUp.value = false
-
-    const { loadTopUpFromUrl } = useTopUpUrlLoader()
-    await loadTopUpFromUrl()
-
-    expect(mockShowTopUpCreditsDialog).toHaveBeenCalledOnce()
-    expect(mockTrackAddApiCreditButtonClicked).not.toHaveBeenCalled()
-  })
-
-  it('opens the subscription path without top-up telemetry', async () => {
     mockRouteQuery.value = { topup: '1' }
     mockCanTopUp.value = false
 

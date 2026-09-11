@@ -15,14 +15,7 @@ import type {
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { Dictionary } from '@/lib/litegraph/src/interfaces'
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
-
-const { settingsGetMock } = vi.hoisted(() => ({
-  settingsGetMock: vi.fn()
-}))
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({ get: settingsGetMock })
-}))
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 vi.mock('@/scripts/api', () => ({
   api: {
@@ -61,7 +54,7 @@ function createConfig(properties?: Dictionary<NodeProperty | undefined>) {
 }
 
 function stubSettings(values: Record<string, unknown>) {
-  settingsGetMock.mockImplementation((key: string) => values[key])
+  vi.mocked(useSettingStore().get).mockImplementation((key) => values[key])
 }
 
 const defaultGizmo: GizmoConfig = {
@@ -372,7 +365,7 @@ describe('Load3DConfiguration.loadSceneConfig', () => {
     })
 
     expect(createConfig(properties).loadSceneConfig()).toEqual(stored)
-    expect(settingsGetMock).not.toHaveBeenCalled()
+    expect(useSettingStore().get).not.toHaveBeenCalled()
   })
 
   it('falls back to settings and prepends # to the background color', () => {
@@ -401,7 +394,7 @@ describe('Load3DConfiguration.loadCameraConfig', () => {
     stubSettings({ 'Comfy.Load3D.CameraType': 'perspective' })
 
     expect(createConfig(properties).loadCameraConfig()).toEqual(stored)
-    expect(settingsGetMock).not.toHaveBeenCalled()
+    expect(useSettingStore().get).not.toHaveBeenCalled()
   })
 
   it('falls back to settings and a default fov of 35', () => {

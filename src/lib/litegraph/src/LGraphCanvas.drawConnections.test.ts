@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -16,7 +14,7 @@ import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import { createMockCanvas2DContext } from '@/utils/__tests__/litegraphTestUtils'
 
-vi.mock('@/renderer/core/layout/store/layoutStore')
+vi.mock(import('@/renderer/core/layout/store/layoutStore'))
 
 function createMockCtx(): CanvasRenderingContext2D {
   return createMockCanvas2DContext({
@@ -81,8 +79,6 @@ describe('drawConnections', () => {
   let canvasElement: HTMLCanvasElement
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
     canvasElement = document.createElement('canvas')
     canvasElement.width = 800
     canvasElement.height = 600
