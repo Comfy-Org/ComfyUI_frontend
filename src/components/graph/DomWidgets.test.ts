@@ -1,8 +1,6 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { nextTick, watch } from 'vue'
 
 import DomWidgets from '@/components/graph/DomWidgets.vue'
@@ -19,6 +17,8 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { BaseDOMWidget } from '@/scripts/domWidget'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { toNodeId } from '@/types/nodeId'
+import type { AppMode } from '@/utils/appMode'
+import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 
 type TestWidget = BaseDOMWidget<object | string>
 
@@ -72,6 +72,19 @@ function createCanvas(graph: LGraph): LGraphCanvas {
     selected_nodes: {},
     selectedItems: new Set()
   })
+}
+
+function createLoadedWorkflow(activeMode: AppMode): LoadedComfyWorkflow {
+  const workflow = new ComfyWorkflow({
+    path: 'workflows/test.json',
+    modified: Date.now(),
+    size: 1
+  })
+  workflow.changeTracker = createMockChangeTracker()
+  workflow.content = '{}'
+  workflow.originalContent = '{}'
+  workflow.activeMode = activeMode
+  return workflow as LoadedComfyWorkflow
 }
 
 function drawFrame(canvas: LGraphCanvas) {
@@ -430,23 +443,13 @@ describe('DomWidgets deterministic update matrix', () => {
 })
 
 describe('DomWidgets app mode round-trip', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('restores widget visibility after graph → app → graph without a draw frame', async () => {
     const canvasStore = useCanvasStore()
     const domWidgetStore = useDomWidgetStore()
     const { setMode } = useAppMode()
 
     const workflowStore = useWorkflowStore()
-    const workflow = new ComfyWorkflow({
-      path: 'workflows/test.json',
-      modified: Date.now(),
-      size: 1
-    })
-    workflow.activeMode = 'graph'
-    workflowStore.activeWorkflow = workflow as unknown as LoadedComfyWorkflow
+    workflowStore.activeWorkflow = createLoadedWorkflow('graph')
 
     const graph = new LGraph()
     const node = createNode(graph, 1, 'host', [100, 200])
