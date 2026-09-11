@@ -46,25 +46,24 @@ async function getPrimitiveFanoutSnapshot(
   return comfyPage.page.evaluate((id) => {
     const graph = window.app!.canvas.graph!
     const hostNode = graph.getNodeById(id)
-    if (!hostNode?.isSubgraphNode?.()) {
+    if (!hostNode?.isSubgraphNode()) {
       throw new Error(`Host node ${id} is not a SubgraphNode`)
     }
 
-    const [primitiveNode] = hostNode.subgraph.findNodesByType(
-      'PrimitiveNode',
-      []
-    )
+    const primitiveNode = hostNode.subgraph
+      .findNodesByType('PrimitiveNode', [])
+      .at(0)
     const primitiveOriginLinkCount = [
       ...hostNode.subgraph.links.values()
     ].filter((link) => link.origin_id === primitiveNode?.id).length
-    const serialized = window.app!.graph!.serialize()
+    const serialized = window.app!.graph.serialize()
     const serializedNode = serialized.nodes.find(
       (candidate) => String(candidate.id) === String(id)
     )
 
     return {
-      hostWidgetNames: (hostNode.widgets ?? []).map((widget) => widget.name),
-      hostWidgetValues: (hostNode.widgets ?? []).map((widget) => ({
+      hostWidgetNames: hostNode.widgets.map((widget) => widget.name),
+      hostWidgetValues: hostNode.widgets.map((widget) => ({
         name: widget.name,
         sourceNodeId:
           'sourceNodeId' in widget && typeof widget.sourceNodeId === 'string'
@@ -80,7 +79,7 @@ async function getPrimitiveFanoutSnapshot(
       interiorWidgetValues: hostNode.subgraph._nodes.flatMap((node) =>
         (node.widgets ?? []).map((widget) => widget.value)
       ),
-      primitiveOutputLinks: primitiveNode?.outputs?.[0]?.links ?? null,
+      primitiveOutputLinks: primitiveNode?.outputs.at(0)?.links ?? null,
       primitiveOriginLinkCount,
       serializedProperties: serializedNode?.properties ?? {}
     }
@@ -92,9 +91,9 @@ async function getSerializedSubgraphNodeProperties(
   hostNodeId: string
 ): Promise<Record<string, unknown>> {
   return comfyPage.page.evaluate((id) => {
-    const serialized = window.app!.graph!.serialize()
+    const serialized = window.app!.graph.serialize()
     const node = serialized.nodes.find(
-      (candidate) => String(candidate.id) === String(id)
+      (candidate) => String(candidate.id) === id
     )
     return node?.properties ?? {}
   }, hostNodeId)
@@ -111,13 +110,13 @@ async function expectPromotedWidgetsToResolveToInteriorNodes(
   const interiorNodeIds = widgets.map(([id]) => toNodeId(id))
   const results = await comfyPage.page.evaluate(
     ([hostId, ids]) => {
-      const graph = window.app!.graph!
+      const graph = window.app!.graph
       const hostNode = graph.getNodeById(hostId)
       if (!hostNode?.isSubgraphNode()) return ids.map(() => false)
 
       return ids.map((id) => {
         const interiorNode = hostNode.subgraph.getNodeById(id)
-        return interiorNode !== null && interiorNode !== undefined
+        return interiorNode != null
       })
     },
     [hostNodeId, interiorNodeIds] as const

@@ -1,5 +1,6 @@
 import { default as DOMPurify } from 'dompurify'
 import { Renderer, marked } from 'marked'
+import type { Tokens } from 'marked'
 
 const ALLOWED_TAGS = ['video', 'source']
 const ALLOWED_ATTRS = [
@@ -10,6 +11,10 @@ const ALLOWED_ATTRS = [
   'preload',
   'poster'
 ]
+
+type RuntimeLinkToken = Omit<Tokens.Link, 'tokens'> & {
+  tokens?: Tokens.Link['tokens']
+}
 
 // Matches relative src attributes in img, source, and video HTML tags
 // Captures: 1) opening tag with src=", 2) relative path, 3) closing quote
@@ -47,7 +52,7 @@ function createMarkdownRenderer(baseUrl?: string): Renderer {
     const titleAttr = title ? ` title="${title}"` : ''
     return `<img src="${src}" alt="${text}"${titleAttr} />`
   }
-  renderer.link = ({ href, title, tokens, text }) => {
+  renderer.link = ({ href, title, tokens, text }: RuntimeLinkToken) => {
     // For autolinks (bare URLs), tokens may be undefined, so fall back to text
     const target = resolveMarkdownUrl(href, normalizedBase)
     const linkText =

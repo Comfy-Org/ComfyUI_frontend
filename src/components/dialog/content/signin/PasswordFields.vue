@@ -27,46 +27,13 @@
       fluid
     />
     <div v-if="$field.dirty && isPasswordFocused" class="flex flex-col gap-1">
-      <small class="text-sm">
-        {{ t('validation.password.requirements') }}:
-        <ul class="mt-1 space-y-1">
-          <li
-            :class="{
-              'text-red-500': !passwordChecks.length
-            }"
-          >
-            {{ t('validation.password.minLength') }}
-          </li>
-          <li
-            :class="{
-              'text-red-500': !passwordChecks.uppercase
-            }"
-          >
-            {{ t('validation.password.uppercase') }}
-          </li>
-          <li
-            :class="{
-              'text-red-500': !passwordChecks.lowercase
-            }"
-          >
-            {{ t('validation.password.lowercase') }}
-          </li>
-          <li
-            :class="{
-              'text-red-500': !passwordChecks.number
-            }"
-          >
-            {{ t('validation.password.number') }}
-          </li>
-          <li
-            :class="{
-              'text-red-500': !passwordChecks.special
-            }"
-          >
-            {{ t('validation.password.special') }}
-          </li>
-        </ul>
-      </small>
+      <PasswordRules
+        :password="password"
+        :copy="passwordRulesCopy"
+        root-class="text-sm"
+        list-class="mt-1 space-y-1"
+        unmet-class="text-red-500"
+      />
     </div>
   </FormField>
 
@@ -103,6 +70,8 @@ import { computed, ref, useTemplateRef } from 'vue'
 import type { ComponentPublicInstance, HTMLAttributes } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { PasswordRules } from '@comfyorg/account/vue'
+
 const { fieldClass = 'h-10' } = defineProps<{
   fieldClass?: HTMLAttributes['class']
 }>()
@@ -112,13 +81,12 @@ const password = ref('')
 const passwordField = useTemplateRef<ComponentPublicInstance>('passwordField')
 const { focused: isPasswordFocused } = useFocusWithin(passwordField)
 
-// TODO: Use dynamic form to better organize the password checks.
-// Ref: https://primevue.org/forms/#dynamic
-const passwordChecks = computed(() => ({
-  length: password.value.length >= 8 && password.value.length <= 32,
-  uppercase: /[A-Z]/.test(password.value),
-  lowercase: /[a-z]/.test(password.value),
-  number: /\d/.test(password.value),
-  special: /[^A-Za-z0-9]/.test(password.value)
+const passwordRulesCopy = computed(() => ({
+  requirements: t('validation.password.requirements'),
+  length: t('validation.password.minLength'),
+  uppercase: t('validation.password.uppercase'),
+  lowercase: t('validation.password.lowercase'),
+  number: t('validation.password.number'),
+  special: t('validation.password.special')
 }))
 </script>

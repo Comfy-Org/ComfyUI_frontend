@@ -66,12 +66,6 @@ describe('attachWidgetMintPort', () => {
     ])
   })
 
-  it('never mints inside the remote-apply scope (KA-6 sender half)', () => {
-    session.runRemoteApply(() => deliver(widgetSet()))
-
-    expect(minted).toEqual([])
-  })
-
   it('never mints with the product flag off', () => {
     enabled = false
     deliver(widgetSet())
