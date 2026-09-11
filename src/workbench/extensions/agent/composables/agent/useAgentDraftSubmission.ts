@@ -9,7 +9,6 @@ import type { ComposerAttachment } from './useComposer'
 
 interface UseAgentDraftSubmissionOptions {
   canSubmit: () => boolean
-  contextGeneration: () => number
   target: () => ComfyWorkflow | null
   editableWorkflowId: () => string | undefined
   selection: Pick<
@@ -32,20 +31,30 @@ export function useAgentDraftSubmission(
 ) {
   const composer = useAgentComposerStore()
   const { selection } = options
-  let revision = 0
   watch(
-    () =>
-      JSON.stringify([
-        composer.draft,
-        composer.attachments,
-        composer.workflowReferences,
-        selection.staged.value
-      ]),
-    () => {
-      ++revision
+    selection.staged,
+    (nodes, previous) => {
+      if (nodes.length > 0 || previous.length > 0) composer.markEdited()
     },
-    { flush: 'sync' }
+    { deep: true, flush: 'sync' }
   )
+
+  function recoverFailedSubmission(): void {
+    const snapshot = composer.takeFailedSubmission()
+    if (!snapshot || selection.staged.value.length > 0) return
+
+    composer.draft = snapshot.draft
+    composer.attachments = snapshot.attachments
+    composer.workflowReferences = snapshot.references.filter(
+      ({ id }) => id !== options.editableWorkflowId()
+    )
+    if (options.target() === snapshot.target) selection.replace(snapshot.nodes)
+  }
+
+  watch(() => composer.submission, recoverFailedSubmission, {
+    immediate: true,
+    flush: 'sync'
+  })
 
   async function submit(
     text: string,
@@ -55,13 +64,13 @@ export function useAgentDraftSubmission(
     const target = options.target()
     if (
       !options.canSubmit() ||
+      composer.submission?.phase === 'pending' ||
       target === null ||
       (!text.trim() && attachments.length === 0) ||
       attachments.some((attachment) => attachment.uploading)
     )
       return
 
-    const generation = options.contextGeneration()
     const draft = composer.draft
     const draftReferences = [...composer.workflowReferences]
     const sentAttachments = [...attachments]
@@ -71,10 +80,13 @@ export function useAgentDraftSubmission(
       selection.workflow() === target ? [...selection.staged.value] : []
 
     selection.consume()
-    composer.draft = ''
-    composer.attachments = []
-    composer.workflowReferences = []
-    const submittedRevision = revision
+    const submissionId = composer.startSubmission({
+      draft,
+      references: draftReferences,
+      attachments: sentAttachments,
+      nodes,
+      target
+    })
 
     const sent = await options.send(
       text,
@@ -82,23 +94,7 @@ export function useAgentDraftSubmission(
       nodes,
       sentReferences
     )
-    if (
-      sent ||
-      generation !== options.contextGeneration() ||
-      submittedRevision !== revision ||
-      composer.draft.length > 0 ||
-      composer.attachments.length > 0 ||
-      composer.workflowReferences.length > 0 ||
-      selection.staged.value.length > 0
-    )
-      return
-
-    composer.draft = draft
-    composer.attachments = sentAttachments
-    composer.workflowReferences = draftReferences.filter(
-      ({ id }) => id !== options.editableWorkflowId()
-    )
-    if (options.target() === target) selection.replace(nodes)
+    composer.settleSubmission(submissionId, sent)
   }
 
   return { submit }

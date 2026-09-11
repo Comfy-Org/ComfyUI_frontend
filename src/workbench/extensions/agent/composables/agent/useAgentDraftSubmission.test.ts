@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { effectScope, ref, shallowRef } from 'vue'
+import { effectScope, nextTick, ref, shallowRef } from 'vue'
 import type { EffectScope } from 'vue'
 
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
@@ -34,7 +34,6 @@ function setup() {
     )
     const nodeWorkflow = shallowRef(target.value)
     const editableWorkflowId = ref<string | undefined>('wf-target')
-    const contextGeneration = ref(0)
     const canSubmit = ref(true)
     const selection = useCanvasSelection({
       selection: [],
@@ -54,9 +53,8 @@ function setup() {
     })
     const pending = { promise, resolve: resolveSend }
     const send = vi.fn(() => pending.promise)
-    const submission = useAgentDraftSubmission({
+    const options = {
       canSubmit: () => canSubmit.value,
-      contextGeneration: () => contextGeneration.value,
       target: () => target.value,
       editableWorkflowId: () => editableWorkflowId.value,
       selection: {
@@ -65,7 +63,9 @@ function setup() {
         exit: () => {}
       },
       send
-    })
+    }
+    let submission = useAgentDraftSubmission(options)
+    let mountedScope = scope
     return {
       composer,
       selection,
@@ -73,10 +73,20 @@ function setup() {
       target,
       nodeWorkflow,
       editableWorkflowId,
-      contextGeneration,
       canSubmit,
       pending,
       send,
+      unmount() {
+        mountedScope.stop()
+      },
+      remount() {
+        mountedScope.stop()
+        mountedScope = effectScope()
+        scopes.push(mountedScope)
+        mountedScope.run(() => {
+          submission = useAgentDraftSubmission(options)
+        })
+      },
       submit() {
         return submission.submit(
           composer.draft.trim(),
@@ -167,10 +177,87 @@ describe('Agent draft submission', () => {
     expect(selection.staged.value).toEqual([])
   })
 
-  it('does not recover into a changed composer context', async () => {
-    const { composer, selection, contextGeneration, submit, pending } = setup()
+  it.for(['pending', 'failed'])(
+    'keeps edits made while the panel is closed when the submission is %s',
+    async (phase) => {
+      const { composer, submit, pending, unmount, remount } = setup()
+      const sending = submit()
+      unmount()
+      if (phase === 'failed') {
+        pending.resolve(false)
+        await sending
+      }
+      composer.draft = 'New input'
+      composer.draft = ''
+      pending.resolve(false)
+      await sending
+      remount()
+
+      expect(composer.draft).toBe('')
+      expect(composer.workflowReferences).toEqual([])
+      expect(composer.attachments).toEqual([])
+    }
+  )
+
+  it('preserves a reference-only edit after reopening even when it is undone', async () => {
+    const { composer, submit, pending, remount } = setup()
     const sending = submit()
-    contextGeneration.value++
+    remount()
+    composer.workflowReferences = [
+      { id: 'wf-new', name: 'New reference', textOffset: 0 }
+    ]
+    composer.workflowReferences = []
+    pending.resolve(false)
+    await sending
+
+    expect(composer.draft).toBe('')
+    expect(composer.workflowReferences).toEqual([])
+  })
+
+  it('does not submit twice while the original request is pending after reopening', async () => {
+    const { composer, submit, send, pending, remount } = setup()
+    const sending = submit()
+    remount()
+    composer.draft = 'Next prompt'
+    await submit()
+    expect(send).toHaveBeenCalledOnce()
+    pending.resolve(true)
+    await sending
+
+    expect(composer.draft).toBe('Next prompt')
+    expect(composer.workflowReferences).toEqual([])
+    expect(composer.attachments).toEqual([])
+  })
+
+  it('ignores the older attempt when a new context has already submitted', async () => {
+    const { composer, submit, send, pending, remount } = setup()
+    const first = submit()
+    remount()
+    composer.invalidateSubmission()
+    composer.draft = 'New chat draft'
+    let resolveNext: (sent: boolean) => void = () => {}
+    const next = new Promise<boolean>((resolve) => {
+      resolveNext = resolve
+    })
+    send.mockImplementationOnce(() => next)
+    const second = submit()
+    pending.resolve(false)
+    await first
+    expect(composer.draft).toBe('')
+    resolveNext(false)
+    await second
+
+    expect(composer.draft).toBe('New chat draft')
+    composer.draft = ''
+    await nextTick()
+    remount()
+    expect(composer.draft).toBe('')
+  })
+
+  it('does not recover into a changed composer context', async () => {
+    const { composer, selection, submit, pending } = setup()
+    const sending = submit()
+    composer.invalidateSubmission()
     pending.resolve(false)
     await sending
 

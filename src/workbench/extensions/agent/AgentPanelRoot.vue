@@ -608,7 +608,7 @@ async function onWorkflowRestored(
 const {
   sendMessage,
   stopTurn,
-  isSending,
+  isSending: sessionIsSending,
   newChat,
   start,
   stop,
@@ -639,6 +639,10 @@ const {
     draft: targetWorkflowDraft
   }
 })
+
+const isSending = computed(
+  () => sessionIsSending.value || composerStore.submission?.phase === 'pending'
+)
 
 const isBoundWorkflowActive = computed(() => {
   const bound = boundWorkflowId.value
@@ -906,6 +910,7 @@ watch(threadId, (id) => history.setActive(id), { immediate: true })
 void refreshHistory()
 
 async function onSelectHistory(id: string): Promise<void> {
+  composerStore.invalidateSubmission()
   ++composerContextGeneration
   ++targetSelectionGeneration
   selectedTarget.value = null
@@ -940,7 +945,6 @@ const coachStep: CoachStep = {
 
 const { submit: onSend } = useAgentDraftSubmission({
   canSubmit: () => !workflowSelection.value && !isSending.value,
-  contextGeneration: () => composerContextGeneration,
   target: () => selectedTarget.value,
   editableWorkflowId: () => editableWorkflowId.value,
   selection: {
@@ -978,6 +982,7 @@ function onDeleteHistory(id: string): void {
 }
 
 function onNewChat(): void {
+  composerStore.invalidateSubmission()
   ++composerContextGeneration
   ++targetSelectionGeneration
   exitNodeSelectionMode()

@@ -4986,15 +4986,21 @@ describe('AgentPanelRoot workflow binding', () => {
   })
 
   it.for([
-    'untouched',
-    'new-draft',
-    'cleared-draft',
-    'removed-reference',
-    'removed-attachment',
-    'new-chat'
+    ...[
+      'untouched',
+      'new-draft',
+      'cleared-draft',
+      'removed-reference',
+      'removed-attachment',
+      'new-chat',
+      'history'
+    ].flatMap((nextAction) =>
+      ['mounted', 'reopened'].map((panel) => ({ nextAction, panel }))
+    ),
+    { nextAction: 'untouched', panel: 'closed' }
   ])(
-    'recovers a failed send only in its untouched composer: %s',
-    async (nextAction) => {
+    'recovers a failed send only in its untouched composer: $nextAction ($panel)',
+    async ({ nextAction, panel }) => {
       setupWorkflowContext({
         targetId: 'wf-42',
         references: [
@@ -5017,7 +5023,16 @@ describe('AgentPanelRoot workflow binding', () => {
           }
           if (url.includes('/messages')) return json(200, [])
           if (url.includes('/agent/threads'))
-            return json(200, agentThreadList())
+            return json(
+              200,
+              agentThreadList([
+                agentThread({
+                  id: 'th-earlier',
+                  title: 'Earlier chat',
+                  last_message_at: '2026-09-01T00:00:00Z'
+                })
+              ])
+            )
           if (url.includes('/workflows'))
             return json(200, {
               data: [],
@@ -5027,12 +5042,12 @@ describe('AgentPanelRoot workflow binding', () => {
         })
       )
       setupNodeSelectionCanvas()
-      renderWithSelectedTarget()
+      const first = renderWithSelectedTarget()
       useAgentPanelStore().isOpen = true
       await openMentionPicker()
       await userEvent.click(await screen.findByText('KSampler'))
-      const textbox = screen.getByRole('textbox')
-      await userEvent.type(textbox, '@')
+      let textbox = screen.getByRole('textbox')
+      await userEvent.type(textbox, '  Compare @')
       await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
       await userEvent.click(
         await screen.findByRole('menuitem', { name: 'reference' })
@@ -5042,6 +5057,7 @@ describe('AgentPanelRoot workflow binding', () => {
         { id: 'upload-1', name: 'cat.png', ref: 'uploaded_cat.png' }
       ]
       await userEvent.keyboard('  Keep this draft  ')
+      const originalReferences = [...composer.workflowReferences]
       await userEvent.click(screen.getByRole('button', { name: 'Send' }))
       await vi.waitFor(() => expect(bodies).toHaveLength(1))
       expect(screen.getByRole('button', { name: 'Stop' })).toBeVisible()
@@ -5053,6 +5069,12 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(
         screen.queryByRole('button', { name: 'Remove KSampler #12 reference' })
       ).toBeNull()
+      if (panel !== 'mounted') first.unmount()
+      if (panel === 'reopened') {
+        render(AgentPanelRoot, { global: { plugins: [i18n] } })
+        textbox = screen.getByRole('textbox')
+        expect(screen.getByRole('button', { name: 'Stop' })).toBeVisible()
+      }
       if (nextAction === 'new-draft' || nextAction === 'cleared-draft')
         await userEvent.type(textbox, 'New input')
       if (nextAction === 'cleared-draft') await userEvent.clear(textbox)
@@ -5086,12 +5108,29 @@ describe('AgentPanelRoot workflow binding', () => {
         await userEvent.click(
           screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
         )
+      if (nextAction === 'history') {
+        await userEvent.click(
+          screen.getByRole('button', {
+            name: i18n.global.t('agent.showChatHistory')
+          })
+        )
+        await userEvent.click(await screen.findByText('Earlier chat'))
+      }
       finishSend(json(500, { error: 'Unavailable' }))
+      if (panel === 'closed') {
+        await vi.waitFor(() =>
+          expect(composer.submission?.phase).toBe('failed')
+        )
+        render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      }
       await vi.waitFor(() =>
         expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull()
       )
       if (nextAction === 'untouched') {
-        expect(useAgentComposerStore().draft).toBe('   Keep this draft  ')
+        expect(useAgentComposerStore().draft).toBe(
+          '  Compare    Keep this draft  '
+        )
+        expect(composer.workflowReferences).toEqual(originalReferences)
         expect(composer.attachments).toMatchObject([
           { ref: 'uploaded_cat.png' }
         ])
@@ -5105,7 +5144,8 @@ describe('AgentPanelRoot workflow binding', () => {
         await vi.waitFor(() => expect(bodies).toHaveLength(2))
         expect(bodies[1]).toMatchObject({
           workflow_id: 'wf-42',
-          content: '[reference](workflow://wf-reference)   Keep this draft',
+          content:
+            'Compare [reference](workflow://wf-reference)   Keep this draft',
           selection: { node_ids: ['12'] },
           attachments: ['uploaded_cat.png'],
           workflow_references: [
