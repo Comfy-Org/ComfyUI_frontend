@@ -17,6 +17,7 @@ import type { TurnstileMode } from '@comfyorg/account/turnstile'
 
 import type { Platform } from '@/composables/useDownloadUrl'
 import type { ConnectionId, McpClientId } from '@/config/mcpClients'
+import type { WorkshopAnalyticsEvent } from './workshop-analytics'
 
 const POSTHOG_KEY =
   import.meta.env.PUBLIC_POSTHOG_KEY ??
@@ -54,6 +55,10 @@ export type CliClientId =
   | 'ci'
 
 type AnalyticsEvent =
+  | {
+      name: `website:workshop_${WorkshopAnalyticsEvent['name']}`
+      properties: WorkshopAnalyticsEvent['properties']
+    }
   | { name: typeof ANALYTICS_EVENT.pageview; properties?: undefined }
   | {
       name: typeof ANALYTICS_EVENT.downloadButtonClicked
@@ -96,7 +101,34 @@ type AnalyticsEvent =
 let initialized = false
 
 const WORKSHOP_AUTH_FLAG = 'workshop-auth'
+const WORKSHOP_ENABLED_FLAG = 'workshop-enabled'
 const WORKSHOP_TURNSTILE_FLAG = 'workshop-signup-turnstile'
+
+const VISIBILITY_OVERRIDE =
+  import.meta.env.DEV && import.meta.env.PUBLIC_WORKSHOP_ENABLED === '1'
+const workshopEnabled = ref(VISIBILITY_OVERRIDE)
+let workshopUserId: string | null | undefined
+
+export function useWorkshopEnabled(): Readonly<Ref<boolean>> {
+  return readonly(workshopEnabled)
+}
+
+export function identifyWorkshopUser(uid: string | null): void {
+  if (workshopUserId === uid) return
+  const previousUid = workshopUserId
+  workshopUserId = uid
+  if (!initialized) return
+  try {
+    if (!uid && !previousUid && !posthog.get_property('$user_id')) return
+    workshopEnabled.value = VISIBILITY_OVERRIDE
+    if (uid) posthog.identify(uid)
+    else posthog.reset()
+    posthog.reloadFeatureFlags()
+  } catch (error) {
+    workshopEnabled.value = VISIBILITY_OVERRIDE
+    console.error('PostHog identity failed', error)
+  }
+}
 
 /**
  * The build-time override forces the flag on for dev and preview builds, which
@@ -140,7 +172,11 @@ export function initPostHog() {
       before_send: createPostHogBeforeSend()
     })
     initialized = true
-    posthog.onFeatureFlags(() => {
+    posthog.onFeatureFlags((_flags, _variants, context) => {
+      workshopEnabled.value =
+        VISIBILITY_OVERRIDE ||
+        (!context?.errorsLoading &&
+          posthog.isFeatureEnabled(WORKSHOP_ENABLED_FLAG) === true)
       workshopAuthFlagSettled.value = true
       if (!OVERRIDDEN_ON) {
         workshopAuthEnabled.value =
@@ -153,6 +189,11 @@ export function initPostHog() {
         )
       }
     })
+    if (workshopUserId !== undefined) {
+      const uid = workshopUserId
+      workshopUserId = undefined
+      identifyWorkshopUser(uid)
+    }
   } catch (error) {
     console.error('PostHog init failed', error)
   }
@@ -169,6 +210,13 @@ function captureEvent(event: AnalyticsEvent): void {
 
 export function capturePageview(): void {
   captureEvent({ name: ANALYTICS_EVENT.pageview })
+}
+
+export function captureWorkshopEvent(event: WorkshopAnalyticsEvent): void {
+  captureEvent({
+    name: `website:workshop_${event.name}`,
+    properties: event.properties
+  })
 }
 
 export function captureDownloadClick(platform: Platform): void {

@@ -9,6 +9,7 @@ import DeveloperPlatformSection from "../components/home/DeveloperPlatformSectio
 import IndustriesSection from "../components/home/IndustriesSection.vue";
 import ModelReleaseSection from "../components/home/ModelReleaseSection.vue";
 import ModelDiscoverySection from "../components/home/ModelDiscoverySection.vue";
+import WorkshopGate from "../components/workshop/WorkshopGate.vue";
 import ProductShowcaseSection from "../components/home/ProductShowcaseSection.vue";
 import FeaturedWorkflowsSection from "../components/home/FeaturedWorkflowsSection.vue";
 import CaseStudySpotlightSection from "../components/home/CaseStudySpotlightSection.vue";
@@ -31,9 +32,6 @@ const { siteUrl } = pageContext(
   Astro.currentLocale,
 );
 
-// The same switch that decides whether Workshop is built at all. A release
-// build has no Workshop routes, so the homepage must not link to them; one
-// control rather than two that can drift apart.
 const workshopModels = await resolveHomepageWorkshopModels(
   isWorkshopInBuild(),
   async () =>
@@ -65,9 +63,9 @@ const workshopModels = await resolveHomepageWorkshopModels(
   <SocialProofBarSection />
   <DeveloperPlatformSection client:visible />
   <MinimaxLicenseHeroSection client:visible />
-  {isWorkshopInBuild() && <ModelDiscoverySection client:visible />}
+  {isWorkshopInBuild() && <WorkshopGate client:load><ModelDiscoverySection client:visible /></WorkshopGate>}
   <FeaturedWorkflowsSection client:load />
-  {workshopModels.length > 0 && <WorkshopSection models={workshopModels} />}
+  {workshopModels.length > 0 && <WorkshopGate client:load><WorkshopSection models={workshopModels} /></WorkshopGate>}
   <ProductShowcaseSection client:load />
   <IndustriesSection client:load />
   <GetStartedSection />

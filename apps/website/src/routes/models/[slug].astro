@@ -2,6 +2,8 @@
 import { ArrowRight } from '@lucide/vue'
 import type { GetStaticPaths } from 'astro'
 import BaseLayout from '../../layouts/BaseLayout.astro'
+import WorkshopGate from '../../components/workshop/WorkshopGate.vue'
+import ModelsShowcase from '../../components/models/ModelsShowcase.astro'
 import ModelDetail from '../../components/workshop/ModelDetail.vue'
 import ModelStatus from '../../components/workshop/ModelStatus.vue'
 import ModelSupport from '../../components/workshop/ModelSupport.vue'
@@ -33,6 +35,7 @@ const pillClass =
   ogImage={model.thumbnailUrl}
   noindex
 >
+  <WorkshopGate client:load>
   <div class="mx-auto max-w-10xl px-6 py-10 lg:px-8 lg:py-14">
     <nav aria-label="Breadcrumb" class="mb-8 text-xs text-primary-warm-gray sm:px-8 lg:px-10">
       <ol class="flex flex-wrap items-center gap-2">
@@ -153,4 +156,6 @@ const pillClass =
     </section>
     </div>
   </div>
+    <ModelsShowcase slot="fallback" />
+  </WorkshopGate>
 </BaseLayout>

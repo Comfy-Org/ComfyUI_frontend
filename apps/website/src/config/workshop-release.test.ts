@@ -9,14 +9,14 @@ import {
 describe('isWorkshopInBuild', () => {
   it.for([
     {
-      name: 'production excludes Workshop',
+      name: 'production includes Workshop',
       vercelEnv: 'production',
-      expected: false
+      expected: true
     },
     {
-      name: 'preview excludes Workshop',
+      name: 'preview includes Workshop',
       vercelEnv: 'preview',
-      expected: false
+      expected: true
     },
     { name: 'an unset environment includes Workshop', expected: true },
     {
@@ -80,6 +80,7 @@ describe('assertWorkshopCloudEnvForBuild', () => {
     {
       name: 'a preview without Workshop ignores the family',
       vercelEnv: 'preview',
+      inBuild: '0',
       family: 'prod'
     },
     {

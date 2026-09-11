@@ -17,12 +17,14 @@ import { getRouterWorkshopModelDetail } from '../../config/workshop-router-conte
 import { refreshWorkshopCredits } from '../../config/workshop-credits'
 import type { useWorkshopCredits } from '../../config/workshop-credits'
 import { WORKSHOP_CLOUD_BASE_URL } from '../../config/workshop-env'
+import { captureWorkshopEvent } from '../../scripts/posthog'
 import ModelDetail from './ModelDetail.vue'
 
 const auth = vi.hoisted(() => ({
   session: { value: undefined as AccountCredential | undefined },
   settled: { value: true },
   enabled: { value: true },
+  workshopEnabled: { value: true },
   flagSettled: { value: true },
   ensureFresh: vi.fn()
 }))
@@ -51,6 +53,8 @@ vi.mock(import('../../config/workshop-session-state'), () => ({
 
 vi.mock(import('../../scripts/posthog'), async (importOriginal) => ({
   ...(await importOriginal()),
+  captureWorkshopEvent: vi.fn(),
+  useWorkshopEnabled: () => computed(() => auth.workshopEnabled.value),
   useWorkshopAuthFlag: () => computed(() => auth.enabled.value),
   useWorkshopAuthFlagSettled: () => computed(() => auth.flagSettled.value)
 }))
@@ -186,6 +190,7 @@ describe('ModelDetail', () => {
     auth.session = ref<AccountCredential>()
     auth.settled = ref(true)
     auth.enabled = ref(true)
+    auth.workshopEnabled = ref(true)
     auth.flagSettled = ref(true)
     credits.balance = ref<
       ReturnType<typeof useWorkshopCredits>['balance']['value']
@@ -199,6 +204,108 @@ describe('ModelDetail', () => {
     auth.ensureFresh
       .mockReset()
       .mockResolvedValue({ status: 'ok', session: credential })
+  })
+
+  it('prevents generation while the feature is hidden', async () => {
+    auth.session.value = credential
+    auth.workshopEnabled.value = false
+    mountDetail({ model: runnable })
+    await nextTick()
+    expect(screen.queryByRole('button', { name: 'Run' })).toBeNull()
+    expect(runWorkshopRouter).not.toHaveBeenCalled()
+    expect(captureWorkshopEvent).not.toHaveBeenCalled()
+  })
+
+  it('tracks the render funnel and actions without sending inputs or output contents', async () => {
+    auth.session.value = credential
+    vi.mocked(runWorkshopRouter).mockResolvedValue(routerResult)
+    mountDetail({ model: runnable })
+    const visitor = user()
+    await visitor.type(
+      screen.getByRole('textbox', { name: 'Prompt' }),
+      'Private prompt'
+    )
+    await visitor.click(screen.getByRole('button', { name: 'Run' }))
+    const download = await screen.findByTestId('output-download')
+    download.addEventListener('click', (event) => event.preventDefault(), {
+      once: true
+    })
+    await visitor.click(download)
+    await visitor.click(screen.getByRole('tab', { name: 'API' }))
+
+    const events = vi
+      .mocked(captureWorkshopEvent)
+      .mock.calls.map(([event]) => event)
+    expect(events.map((event) => event.name)).toEqual([
+      'model_viewed',
+      'run_started',
+      'run_finished',
+      'output_download_clicked',
+      'api_viewed'
+    ])
+    const metadata = {
+      model_slug: runnable.slug,
+      router_id: runnable.routerId,
+      provider: 'Demo',
+      modality: 'image'
+    }
+    const started = events.find((event) => event.name === 'run_started')
+    expect(started).toEqual({
+      name: 'run_started',
+      properties: {
+        ...metadata,
+        attempt_id: expect.any(String),
+        user_id: credential.uid,
+        workspace_id: credential.workspace.id
+      }
+    })
+    expect(events.find((event) => event.name === 'run_finished')).toEqual({
+      name: 'run_finished',
+      properties: {
+        ...started?.properties,
+        status: 'succeeded',
+        duration_ms: expect.any(Number),
+        request_id: routerResult.requestId,
+        output_count: 1
+      }
+    })
+    expect(
+      events.find((event) => event.name === 'output_download_clicked')
+    ).toEqual({
+      name: 'output_download_clicked',
+      properties: { ...metadata, output_kind: 'image' }
+    })
+    expect(JSON.stringify(events)).not.toContain('Private prompt')
+    expect(JSON.stringify(events)).not.toContain(credential.token)
+    expect(JSON.stringify(events)).not.toContain(routerResult.outputs[0].url)
+  })
+
+  it('reports a failed attempt with a bounded reason and no error payload', async () => {
+    auth.session.value = credential
+    vi.mocked(runWorkshopRouter).mockRejectedValue(
+      new WorkshopRouterError('rateLimit', 'request-failed')
+    )
+    mountDetail({ model: runnable })
+    const visitor = user()
+    await visitor.type(
+      screen.getByRole('textbox', { name: 'Prompt' }),
+      'Private prompt'
+    )
+    await visitor.click(screen.getByRole('button', { name: 'Run' }))
+    await vi.waitFor(() =>
+      expect(captureWorkshopEvent).toHaveBeenCalledWith({
+        name: 'run_finished',
+        properties: expect.objectContaining({
+          status: 'failed',
+          reason: 'rateLimit',
+          request_id: 'request-failed',
+          workspace_id: credential.workspace.id
+        })
+      })
+    )
+    expect(
+      JSON.stringify(vi.mocked(captureWorkshopEvent).mock.calls)
+    ).not.toContain('Private prompt')
   })
 
   it.for([
@@ -625,6 +732,15 @@ describe('ModelDetail', () => {
     await nextTick()
     await user().click(screen.getByTestId('run-button'))
     expect(runWorkshopRouter).not.toHaveBeenCalled()
+    expect(captureWorkshopEvent).toHaveBeenCalledWith({
+      name: 'run_validation_failed',
+      properties: expect.objectContaining({ model_slug: runnable.slug })
+    })
+    expect(
+      vi
+        .mocked(captureWorkshopEvent)
+        .mock.calls.some(([event]) => event.name === 'run_started')
+    ).toBe(false)
     expect(
       screen.getByTestId('playground-output').getAttribute('data-state')
     ).toBe('failed')
@@ -733,28 +849,45 @@ describe('ModelDetail', () => {
     ).toBe('cancelled')
     expect(screen.queryByTestId('router-request-id')).toBeNull()
     expect(runWorkshopRouter).toHaveBeenCalledTimes(1)
+    const outcomes = vi
+      .mocked(captureWorkshopEvent)
+      .mock.calls.map(([event]) => event)
+      .filter((event) => event.name === 'run_finished')
+    expect(outcomes).toEqual([
+      {
+        name: 'run_finished',
+        properties: expect.objectContaining({
+          status: 'cancelled',
+          workspace_id: credential.workspace.id
+        })
+      }
+    ])
   })
 
-  it('does not publish a result after sign-out', async () => {
-    auth.session.value = credential
-    const late = Promise.withResolvers<typeof routerResult>()
-    vi.mocked(runWorkshopRouter).mockReturnValue(late.promise)
-    mountDetail({ model: runnable })
-    await user().type(screen.getByTestId('field-prompt'), 'A teapot')
-    await user().click(screen.getByTestId('run-button'))
-    await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledTimes(1))
-    auth.session.value = undefined
-    await nextTick()
-    late.resolve(routerResult)
-    await vi.waitFor(() => expect(refreshWorkshopCredits).toHaveBeenCalled())
-    expect(screen.getByTestId('run-button').getAttribute('data-gate')).toBe(
-      'signedOut'
-    )
-    expect(
-      screen.getByTestId('playground-output').getAttribute('data-state')
-    ).toBe('cancelled')
-    expect(screen.queryByTestId('router-request-id')).toBeNull()
-  })
+  it.for(['sign-out', 'visibility revoked'] as const)(
+    'does not publish a result after %s',
+    async (change) => {
+      auth.session.value = credential
+      const late = Promise.withResolvers<typeof routerResult>()
+      vi.mocked(runWorkshopRouter).mockReturnValue(late.promise)
+      mountDetail({ model: runnable })
+      await user().type(screen.getByTestId('field-prompt'), 'A teapot')
+      await user().click(screen.getByTestId('run-button'))
+      await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledTimes(1))
+      if (change === 'sign-out') auth.session.value = undefined
+      else auth.workshopEnabled.value = false
+      await nextTick()
+      late.resolve(routerResult)
+      await vi.waitFor(() => expect(refreshWorkshopCredits).toHaveBeenCalled())
+      expect(screen.getByTestId('run-button').getAttribute('data-gate')).toBe(
+        change === 'sign-out' ? 'signedOut' : 'unavailable'
+      )
+      expect(
+        screen.getByTestId('playground-output').getAttribute('data-state')
+      ).toBe('cancelled')
+      expect(screen.queryByTestId('router-request-id')).toBeNull()
+    }
+  )
 
   it('refuses a refreshed credential for a different workspace', async () => {
     auth.session.value = credential

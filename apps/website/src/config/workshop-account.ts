@@ -16,7 +16,8 @@ import {
 
 import {
   captureAuthRefreshFailed,
-  captureAuthRefreshSucceeded
+  captureAuthRefreshSucceeded,
+  identifyWorkshopUser
 } from '../scripts/posthog'
 import { createBalanceReader } from './workshop-balance'
 import { WORKSHOP_CLOUD_BASE_URL } from './workshop-env'
@@ -69,6 +70,9 @@ export const workshopBalanceReader = createBalanceReader(
 export function subscribeAuthRefreshTelemetry(): () => void {
   let lastReportedToken: string | undefined
   return workshopSessionClient.subscribe((snapshot) => {
+    if (snapshot.phase !== 'pending') {
+      identifyWorkshopUser(snapshot.user?.uid ?? null)
+    }
     if (snapshot.phase === 'authenticated') {
       if (snapshot.session.token === lastReportedToken) return
       lastReportedToken = snapshot.session.token

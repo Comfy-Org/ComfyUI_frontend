@@ -51,6 +51,7 @@ const emit = defineEmits<{
   retry: []
   useInCode: []
   switchPersonal: []
+  download: [kind: RunOutput['kind']]
 }>()
 
 const elapsed = computed(() =>
@@ -528,6 +529,7 @@ const earlierClass = (active: boolean) =>
           size="sm"
           class="w-full sm:w-auto"
           data-testid="output-download"
+          @click="emit('download', shown.kind)"
         >
           {{ t('workshop.output.download', locale) }}
         </Button>
