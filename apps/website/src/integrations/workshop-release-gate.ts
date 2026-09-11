@@ -12,6 +12,7 @@ import {
   assertWorkshopCloudEnvForBuild,
   isWorkshopInBuild
 } from '../config/workshop-release'
+import { workshopClientBoundary } from './workshop-client-boundary'
 
 /**
  * Where each locale's output sits, read from the locale's configured prefix
@@ -48,7 +49,8 @@ export function modelsBuildRoutes(enabled: boolean) {
  * earlier attempt filtered the route list at `astro:routes:resolved`, which
  * does not work: that hook reports the resolved routes, and mutating the
  * array does not stop them being generated. Deleting the output is
- * unambiguous. These checks cover route output, not shared CSS or translations.
+ * unambiguous. The client build rejects bundled catalogue modules when disabled;
+ * shared CSS and translations are not covered by that catalogue boundary.
  *
  * Every locale is removed, not only English. A locale serves Workshop from its
  * own prefix, so `/ja/workshop/` and `/zh-CN/workshop/` are separate trees on
@@ -70,7 +72,8 @@ export function workshopReleaseGate(): AstroIntegration {
   return {
     name: 'workshop-release-gate',
     hooks: {
-      'astro:config:setup': ({ injectRoute }) => {
+      'astro:config:setup': ({ injectRoute, updateConfig }) => {
+        updateConfig({ vite: { plugins: [workshopClientBoundary()] } })
         for (const route of modelsBuildRoutes(isWorkshopInBuild()))
           injectRoute(route)
       },
