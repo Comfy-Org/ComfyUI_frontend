@@ -12,6 +12,7 @@ import {
 } from '../lib/llms-txt'
 import { isNoindexPathname } from './indexing'
 import { getRoutes } from './routes'
+import { modelsBuildRoutes } from '../integrations/workshop-release-gate'
 
 const websiteRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const llmsTxt = readFileSync(join(websiteRoot, 'public', 'llms.txt'), 'utf8')
@@ -44,9 +45,6 @@ const EXCLUDED_PAGES = new Set([
   '/demos', // index is a "Coming Soon" placeholder; the demo pages are listed
   '/platform/serverless-animation', // noindex temporary motion study, not a real page
   '/workshop', // build-gated; static public/llms.txt cannot vary by build shape
-  '/models', // noindex models prototype, mock data
-  '/models/workflows', // noindex models prototype, mock data
-  '/models/sign-in', // noindex models prototype, mock data
   '/video-sitemap.xml' // machine-readable sitemap output, not a page for agents to read
 ])
 
@@ -132,6 +130,7 @@ describe('llms.txt', () => {
   const links = parseLlmsTxtLinks(llmsTxt)
   const internalPaths = internalLinks(links).map(({ path }) => path)
   const { static: staticPages, dynamic } = pageMatchers(pagesDir)
+  for (const route of modelsBuildRoutes(false)) staticPages.add(route.pattern)
   const zhCN = pageMatchers(join(pagesDir, 'zh-CN'))
 
   it('follows the llms.txt shape: one H1, a summary blockquote, Optional last', () => {

@@ -161,7 +161,7 @@ describe('PlaygroundField', () => {
     const player = slot.getByLabelText('source.mp4', { selector: 'video' })
     expect(player.getAttribute('src')).toBe('https://example.com/source.mp4')
     expect(player.hasAttribute('controls')).toBe(true)
-    expect(player.getAttribute('preload')).toBe('auto')
+    expect(player.getAttribute('preload')).toBe('metadata')
     expect(
       screen
         .getByLabelText('Source video', { selector: 'input[type="file"]' })

@@ -3,7 +3,7 @@ import { onMounted, ref } from 'vue'
 import { getRoutes } from '../config/routes'
 import type { Locale } from '../i18n/translations'
 
-export const RETURN_PARAM = 'returnTo'
+const RETURN_PARAM = 'returnTo'
 // The real auth page sends the visitor back to the page that asked for it,
 // so the playground form they were filling in is still there.
 export function useSignInHref(locale: Locale = 'en') {

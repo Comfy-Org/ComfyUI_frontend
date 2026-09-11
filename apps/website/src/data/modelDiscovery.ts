@@ -33,17 +33,14 @@ const LINEUP: readonly { provider: string; logo: string }[] = [
 export const discoveryProviders: readonly DiscoveryProvider[] = LINEUP.flatMap(
   ({ provider, logo }) => {
     const models = workshopModels.filter((model) => model.provider === provider)
-    const popular = models
-      .filter((model) => model.thumbnailUrl)
-      .sort((a, b) => b.runs - a.runs)
-      .at(0)
-    return popular
+    const illustrated = models.find((model) => model.thumbnailUrl)
+    return illustrated
       ? [
           {
             name: provider,
             logo: `/icons/ai-models/${logo}.svg`,
             modelCount: models.length,
-            thumbnailUrl: popular.thumbnailUrl
+            thumbnailUrl: illustrated.thumbnailUrl
           }
         ]
       : []

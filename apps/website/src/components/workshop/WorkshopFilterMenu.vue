@@ -3,6 +3,7 @@ import { ChevronDown, ListFilter } from '@lucide/vue'
 import { computed, ref, useTemplateRef, watchEffect } from 'vue'
 
 import { onClickOutside, useMediaQuery } from '@vueuse/core'
+import { FocusScope } from 'reka-ui'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -47,6 +48,7 @@ const open = ref(false)
 // the panel rises from the bottom of the screen instead.
 const isPhone = useMediaQuery('(max-width: 639px)')
 const panel = useTemplateRef<HTMLElement>('panel')
+const trigger = useTemplateRef<HTMLButtonElement>('trigger')
 onClickOutside(panel, () => (open.value = false), {
   ignore: ['[data-testid="workshop-filter"]']
 })
@@ -130,6 +132,7 @@ const sheetLabels = computed(() => ({
 <template>
   <div class="relative" @keydown.escape="open = false">
     <button
+      ref="trigger"
       type="button"
       data-testid="workshop-filter"
       :aria-expanded="open"
@@ -173,21 +176,32 @@ const sheetLabels = computed(() => ({
         data-testid="workshop-filter-backdrop"
         @click="open = false"
       />
-      <div
+      <FocusScope
         v-if="open"
-        ref="panel"
-        data-testid="workshop-filter-menu"
-        class="bg-site-dropdown z-50 flex flex-col overflow-y-auto border border-white/10 shadow-2xl shadow-black/50 outline-none max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:max-h-[85vh] max-sm:rounded-t-3xl sm:absolute sm:top-full sm:right-0 sm:mt-2 sm:max-h-[75vh] sm:w-96 sm:max-w-[calc(100vw-2rem)] sm:rounded-2xl"
+        as-child
+        :trapped="isPhone"
+        loop
+        @unmount-auto-focus.prevent="trigger?.focus()"
       >
-        <FacetSheet
-          :groups
-          :labels="sheetLabels"
-          :result-count
-          @toggle="toggle"
-          @clear-all="clearAll"
-          @close="open = false"
-        />
-      </div>
+        <div
+          ref="panel"
+          role="dialog"
+          :aria-label="t('workshop.filter.label', locale)"
+          :aria-modal="isPhone || undefined"
+          data-testid="workshop-filter-menu"
+          class="bg-site-dropdown z-50 flex flex-col overflow-y-auto border border-white/10 shadow-2xl shadow-black/50 outline-none max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:max-h-[85vh] max-sm:rounded-t-3xl sm:absolute sm:top-full sm:right-0 sm:mt-2 sm:max-h-[75vh] sm:w-96 sm:max-w-[calc(100vw-2rem)] sm:rounded-2xl"
+          @keydown.escape.stop.prevent="open = false"
+        >
+          <FacetSheet
+            :groups
+            :labels="sheetLabels"
+            :result-count
+            @toggle="toggle"
+            @clear-all="clearAll"
+            @close="open = false"
+          />
+        </div>
+      </FocusScope>
     </Teleport>
   </div>
 </template>

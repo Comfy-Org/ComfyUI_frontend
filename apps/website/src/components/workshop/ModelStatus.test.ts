@@ -1,15 +1,7 @@
 // @vitest-environment happy-dom
 import { render, screen } from '@testing-library/vue'
-import { afterEach, describe, expect, it } from 'vitest'
-
-import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
+import { describe, expect, it } from 'vitest'
 import ModelStatus from './ModelStatus.vue'
-
-const { modelState } = usePrototypeTweaks()
-
-afterEach(() => {
-  modelState.value = 'none'
-})
 
 describe('ModelStatus', () => {
   it('stays hidden while nothing asks for a state', () => {
@@ -17,19 +9,18 @@ describe('ModelStatus', () => {
     expect(screen.queryByTestId('model-status')).toBeNull()
   })
 
-  it('shows a pill once the prototype stands a state up', () => {
-    modelState.value = 'deprecated'
-    render(ModelStatus, { props: { variant: 'pill' } })
+  it('shows the supplied model status', () => {
+    render(ModelStatus, { props: { variant: 'pill', status: 'deprecated' } })
     expect(screen.getByTestId('model-status').textContent).toContain(
       'Deprecated'
     )
   })
 
   it('links a deprecated model to its successor in the banner', () => {
-    modelState.value = 'deprecated'
     render(ModelStatus, {
       props: {
         variant: 'banner',
+        status: 'deprecated',
         successor: { name: 'Kling 2.6', href: '/models/kling-2-6/' }
       }
     })
@@ -39,8 +30,7 @@ describe('ModelStatus', () => {
   })
 
   it('explains a degraded model without a link', () => {
-    modelState.value = 'degraded'
-    render(ModelStatus, { props: { variant: 'banner' } })
+    render(ModelStatus, { props: { variant: 'banner', status: 'degraded' } })
     expect(screen.getByTestId('model-status-banner')).toBeTruthy()
     expect(screen.queryByRole('link')).toBeNull()
   })

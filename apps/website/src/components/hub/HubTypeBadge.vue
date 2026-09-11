@@ -37,7 +37,7 @@ const labels: Record<Kind, TranslationKey> = {
   >
     <component :is="icons[kind]" class="size-4 shrink-0" />
     <span
-      class="grid grid-cols-[0fr] transition-[grid-template-columns] duration-300 ease-out group-hover:grid-cols-[1fr]"
+      class="grid grid-cols-[0fr] transition-[grid-template-columns] duration-300 ease-out group-focus-within:grid-cols-[1fr] group-hover:grid-cols-[1fr]"
     >
       <span class="overflow-hidden">
         <span class="pl-1.5 text-2xs/none whitespace-nowrap">

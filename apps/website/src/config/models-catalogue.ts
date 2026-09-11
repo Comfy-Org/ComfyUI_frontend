@@ -130,7 +130,6 @@ export interface WorkshopModel {
   readonly modalities?: readonly Modality[]
   readonly task?: WorkshopTask
   readonly capabilities: readonly string[]
-  readonly runs: number
   readonly creditsPerRun?: number
   readonly priceUsdFrom?: number
   readonly thumbnailUrl?: string
@@ -392,24 +391,6 @@ export function capabilitiesFor(
     return wanted === undefined || modality === undefined || wanted === modality
   }
   return [...new Set(labels)].filter(fits).sort()
-}
-
-// Router does not report usage yet; until it does, each model gets a stable
-// placeholder derived from its slug and workflow count.
-export function mockRuns(slug: string, workflowCount: number): number {
-  let seed = 7
-  for (let i = 0; i < slug.length; i += 1)
-    seed = (seed * 31 + slug.charCodeAt(i)) % 1_000_003
-  return (workflowCount + 1) * (4000 + (seed % 37) * 1000)
-}
-
-export function formatRuns(runs: number, locale: string): string {
-  return new Intl.NumberFormat(locale, {
-    notation: 'compact',
-    maximumFractionDigits: 1
-  })
-    .format(runs)
-    .toLowerCase()
 }
 
 // The templates already describe what each model does, in Comfy's own words.

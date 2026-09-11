@@ -12,7 +12,6 @@ const base: WorkshopModel = {
   href: '/models/flux/',
   routerId: 'bfl/flux',
   capabilities: [],
-  runs: 12_000,
   provider: 'Black Forest Labs',
   modality: 'image',
   task: 'image-to-image'

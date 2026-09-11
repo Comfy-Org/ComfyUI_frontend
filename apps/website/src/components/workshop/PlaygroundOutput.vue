@@ -7,8 +7,8 @@ import {
   Maximize2,
   X
 } from '@lucide/vue'
-import { onKeyStroke } from '@vueuse/core'
-import { computed, ref, watch } from 'vue'
+import { computed, ref, useTemplateRef, watch } from 'vue'
+import { DialogContent, DialogPortal, DialogRoot, DialogTitle } from 'reka-ui'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -55,7 +55,7 @@ const elapsed = computed(() =>
 )
 
 const expanded = ref(false)
-onKeyStroke('Escape', () => (expanded.value = false))
+const expandTrigger = useTemplateRef<HTMLButtonElement>('expandTrigger')
 
 const mediaControlClass =
   'focus-visible:ring-primary-comfy-yellow/50 grid size-8 cursor-pointer place-items-center rounded-lg bg-primary-comfy-ink/70 text-primary-warm-white backdrop-blur-sm transition-colors outline-none hover:text-primary-comfy-yellow focus-visible:ring-2'
@@ -75,7 +75,13 @@ const statusMessage = computed(() => {
   if (state.status === 'running') return t('workshop.run.running', locale)
   if (state.status === 'cancelled')
     return t('workshop.output.cancelled', locale)
-  if (state.status === 'succeeded') return t('workshop.output.complete', locale)
+  if (state.status === 'succeeded')
+    return t(
+      now >= state.expiresAt
+        ? 'workshop.output.expired'
+        : 'workshop.output.complete',
+      locale
+    )
   return ''
 })
 
@@ -317,6 +323,7 @@ const earlierClass = (active: boolean) =>
 
         <button
           v-if="currentUrl && !blurred && expandable"
+          ref="expandTrigger"
           type="button"
           :aria-label="t('workshop.output.expand', locale)"
           :class="cn(mediaControlClass, 'absolute right-3 bottom-3')"
@@ -507,30 +514,35 @@ const earlierClass = (active: boolean) =>
       </div>
     </template>
 
-    <Teleport to="body">
-      <div
-        v-if="expanded && currentUrl"
-        class="fixed inset-0 z-100 flex items-center justify-center bg-primary-comfy-ink/90 p-6 backdrop-blur-sm"
-        role="dialog"
-        aria-modal="true"
-        data-testid="output-expanded"
-        @click.self="expanded = false"
-      >
-        <button
-          type="button"
-          :aria-label="t('workshop.output.collapse', locale)"
-          :class="cn(mediaControlClass, 'absolute top-6 right-6')"
-          data-testid="output-collapse"
-          @click="expanded = false"
+    <DialogRoot v-model:open="expanded">
+      <DialogPortal>
+        <DialogContent
+          v-if="currentUrl"
+          class="fixed inset-0 z-100 flex items-center justify-center bg-primary-comfy-ink/90 p-6 backdrop-blur-sm"
+          :aria-describedby="undefined"
+          data-testid="output-expanded"
+          @click.self="expanded = false"
+          @close-auto-focus.prevent="expandTrigger?.focus()"
         >
-          <X class="size-4" aria-hidden="true" />
-        </button>
-        <img
-          :src="currentUrl"
-          :alt="t('workshop.output.title', locale)"
-          class="max-h-full max-w-full rounded-2xl object-contain"
-        />
-      </div>
-    </Teleport>
+          <DialogTitle class="sr-only">{{
+            t('workshop.output.title', locale)
+          }}</DialogTitle>
+          <button
+            type="button"
+            :aria-label="t('workshop.output.collapse', locale)"
+            :class="cn(mediaControlClass, 'absolute top-6 right-6')"
+            data-testid="output-collapse"
+            @click="expanded = false"
+          >
+            <X class="size-4" aria-hidden="true" />
+          </button>
+          <img
+            :src="currentUrl"
+            :alt="t('workshop.output.title', locale)"
+            class="max-h-full max-w-full rounded-2xl object-contain"
+          />
+        </DialogContent>
+      </DialogPortal>
+    </DialogRoot>
   </section>
 </template>

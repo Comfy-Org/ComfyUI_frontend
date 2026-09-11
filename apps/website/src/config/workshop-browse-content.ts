@@ -57,17 +57,6 @@ function providerName(provider: string): string {
   )
 }
 
-// Router does not expose usage counts yet. Keep Mar's prototype treatment:
-// a stable, clearly synthetic ordering value rather than showing every model
-// as having zero runs in the popular-model picker.
-function placeholderRuns(slug: string, workflowCount: number): number {
-  let seed = 7
-  for (let index = 0; index < slug.length; index += 1) {
-    seed = (seed * 31 + slug.charCodeAt(index)) % 1_000_003
-  }
-  return (workflowCount + 1) * (4000 + (seed % 37) * 1000)
-}
-
 function taskForUseCases(useCases: readonly UseCase[]): WorkshopModel['task'] {
   if (useCases.includes('edit-images')) return 'image-to-image'
   if (useCases.includes('animate-images')) return 'image-to-video'
@@ -146,7 +135,6 @@ const browseModels: readonly WorkshopModel[] = contentSources.map(
       task: taskForUseCases(useCases),
       useCases,
       capabilities: entry.tags,
-      runs: placeholderRuns(slug, exampleCount),
       ...(overlay.pricing && entry.id === record.id
         ? { creditsPerRun: overlay.pricing.creditsPerRun }
         : {}),

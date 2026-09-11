@@ -12,7 +12,6 @@ const model: WorkshopModelDetail = {
   routerId: 'demo/demo',
   workflowCount: 0,
   capabilities: [],
-  runs: 0,
   modality: 'image',
   fields: [
     {

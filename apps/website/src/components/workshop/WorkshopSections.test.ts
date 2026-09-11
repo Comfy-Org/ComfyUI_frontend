@@ -31,7 +31,6 @@ function model(
     href: `/models/${slug}/`,
     routerId: `acme/${slug}`,
     capabilities: [],
-    runs: 10,
     provider: 'Acme',
     modality,
     task

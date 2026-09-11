@@ -4,7 +4,10 @@ import { computed, ref } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { WorkshopModel } from '../../config/models-catalogue'
-import { formatRuns } from '../../config/models-catalogue'
+import {
+  filterWorkshopModels,
+  sortWorkshopModels
+} from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
@@ -32,23 +35,13 @@ const emit = defineEmits<{
   toggleCapability: [capability: string]
 }>()
 
-const POPULAR = 4
+const SUGGESTIONS = 4
 const CHIPS = 6
 
-const needle = computed(() => query.trim().toLowerCase())
+const matching = computed(() => filterWorkshopModels(models, { query }))
 
-const matching = computed(() =>
-  needle.value === ''
-    ? models
-    : models.filter(
-        (model) =>
-          model.name.toLowerCase().includes(needle.value) ||
-          (model.provider ?? '').toLowerCase().includes(needle.value)
-      )
-)
-
-const popular = computed(() =>
-  [...matching.value].sort((a, b) => b.runs - a.runs).slice(0, POPULAR)
+const suggestions = computed(() =>
+  sortWorkshopModels(matching.value, 'name').slice(0, SUGGESTIONS)
 )
 
 // A provider or capability is worth offering only while it still leads
@@ -121,20 +114,21 @@ const chipClass = (selected: boolean) =>
     "
     data-testid="workshop-search-panel"
   >
-    <section v-if="popular.length" class="flex flex-col gap-2">
+    <section v-if="suggestions.length" class="flex flex-col gap-2">
       <p
         class="text-[11px] font-bold tracking-wider text-primary-warm-gray uppercase"
       >
-        {{ t('workshop.search.popular', locale) }}
+        {{ t('workshop.search.models', locale) }}
         <span class="tabular-nums opacity-60">({{ matching.length }})</span>
       </p>
       <button
-        v-for="model in popular"
+        v-for="model in suggestions"
         :key="model.slug"
         type="button"
         class="hover:bg-transparency-white-t4 focus-visible:bg-transparency-white-t4 flex cursor-pointer items-center gap-3 rounded-xl p-2 text-left outline-none"
         data-testid="workshop-search-model"
-        @mousedown.prevent="emit('pick', model)"
+        @mousedown.prevent
+        @click="emit('pick', model)"
       >
         <img
           v-if="model.thumbnailUrl"
@@ -157,13 +151,6 @@ const chipClass = (selected: boolean) =>
           </span>
           <span class="truncate text-xs text-primary-warm-gray">
             {{ model.provider ?? t('workshop.card.partnerNode', locale) }}
-            ·
-            {{
-              t('workshop.card.runs', locale).replace(
-                '{n}',
-                formatRuns(model.runs, locale)
-              )
-            }}
           </span>
         </span>
       </button>
@@ -189,7 +176,8 @@ const chipClass = (selected: boolean) =>
         :aria-pressed="chip.selected"
         :class="chipClass(chip.selected)"
         data-testid="workshop-search-provider"
-        @mousedown.prevent="emit('toggleProvider', chip.value)"
+        @mousedown.prevent
+        @click="emit('toggleProvider', chip.value)"
       >
         {{ chip.value }}
         <span class="tabular-nums opacity-60">{{ chip.count }}</span>
@@ -199,7 +187,8 @@ const chipClass = (selected: boolean) =>
         type="button"
         :class="moreClass"
         data-testid="workshop-search-provider-more"
-        @mousedown.prevent="allProviders = !allProviders"
+        @mousedown.prevent
+        @click="allProviders = !allProviders"
       >
         {{ moreLabel(allProviders, providerChips.hidden) }}
       </button>
@@ -221,7 +210,8 @@ const chipClass = (selected: boolean) =>
         :aria-pressed="chip.selected"
         :class="chipClass(chip.selected)"
         data-testid="workshop-search-capability"
-        @mousedown.prevent="emit('toggleCapability', chip.value)"
+        @mousedown.prevent
+        @click="emit('toggleCapability', chip.value)"
       >
         {{ chip.value }}
         <span class="tabular-nums opacity-60">{{ chip.count }}</span>
@@ -231,7 +221,8 @@ const chipClass = (selected: boolean) =>
         type="button"
         :class="moreClass"
         data-testid="workshop-search-capability-more"
-        @mousedown.prevent="allCapabilities = !allCapabilities"
+        @mousedown.prevent
+        @click="allCapabilities = !allCapabilities"
       >
         {{ moreLabel(allCapabilities, capabilityChips.hidden) }}
       </button>

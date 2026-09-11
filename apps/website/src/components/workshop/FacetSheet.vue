@@ -135,14 +135,12 @@ function visibleOptions(group: FacetSheetGroup) {
           resize the sheet under the thumb. -->
         <ul
           class="h-72 scrollbar-thin overflow-y-auto py-1"
-          role="listbox"
-          aria-multiselectable="true"
+          :aria-label="group.label"
         >
           <li v-for="option in visibleOptions(group)" :key="option.value">
             <button
               type="button"
-              role="option"
-              :aria-selected="group.selected.includes(option.value)"
+              :aria-pressed="group.selected.includes(option.value)"
               :data-testid="`filter-${group.key}-${option.value}`"
               class="text-content-secondary hover:text-content flex w-full cursor-pointer items-center gap-2.5 px-3 py-2 text-left text-xs transition-colors outline-none hover:bg-white/5 focus-visible:bg-white/5 max-sm:py-2.5 max-sm:text-sm"
               @click="emit('toggle', group.key, option.value)"

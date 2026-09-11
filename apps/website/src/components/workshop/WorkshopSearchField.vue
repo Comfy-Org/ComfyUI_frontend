@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Search, X } from '@lucide/vue'
-import { computed, nextTick, ref, useTemplateRef, watchEffect } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
+import { DialogContent, DialogPortal, DialogRoot, DialogTitle } from 'reka-ui'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -34,21 +35,7 @@ const capabilities = defineModel<string[]>('capabilities', { required: true })
 const open = ref(false)
 const sheetOpen = ref(false)
 const sheetInput = useTemplateRef<HTMLInputElement>('sheetInput')
-
-async function openSheet() {
-  sheetOpen.value = true
-  await nextTick()
-  sheetInput.value?.focus()
-}
-
-// The sheet covers the page, so the catalogue behind it should not scroll
-// under the finger.
-watchEffect((onCleanup) => {
-  if (!sheetOpen.value) return
-  const previous = document.body.style.overflow
-  document.body.style.overflow = 'hidden'
-  onCleanup(() => (document.body.style.overflow = previous))
-})
+const sheetTrigger = useTemplateRef<HTMLButtonElement>('sheetTrigger')
 
 // Focus moving to the clear button or into the panel itself is still inside
 // the search, so only a move out of the wrapper closes it.
@@ -100,6 +87,7 @@ const clearButtonClass =
   <div class="relative" @focusout="closeOnLeave">
     <button
       v-if="compact"
+      ref="sheetTrigger"
       type="button"
       :aria-label="t('workshop.search.label', locale)"
       data-testid="workshop-search-button"
@@ -109,7 +97,7 @@ const clearButtonClass =
           query ? 'text-primary-warm-white' : 'text-primary-warm-gray'
         )
       "
-      @click="openSheet"
+      @click="sheetOpen = true"
     >
       <Search class="size-4 shrink-0" aria-hidden="true" />
       <span class="truncate">
@@ -165,91 +153,99 @@ const clearButtonClass =
       />
     </div>
 
-    <Teleport v-if="sheetOpen" to="body">
-      <div
-        class="bg-page fixed inset-0 z-50 flex flex-col sm:hidden"
-        role="dialog"
-        aria-modal="true"
-        :aria-label="t('workshop.search.label', locale)"
-        data-testid="workshop-search-sheet"
-      >
-        <div
-          class="flex items-center gap-3 border-b border-transparency-white-t8 p-3"
+    <DialogRoot v-model:open="sheetOpen">
+      <DialogPortal>
+        <DialogContent
+          class="bg-page fixed inset-0 z-50 flex flex-col sm:hidden"
+          :aria-describedby="undefined"
+          data-testid="workshop-search-sheet"
+          @open-auto-focus.prevent="sheetInput?.focus()"
+          @close-auto-focus.prevent="sheetTrigger?.focus()"
         >
-          <div class="relative flex-1">
-            <Search :class="leadingIconClass" aria-hidden="true" />
-            <input
-              ref="sheetInput"
-              v-model="query"
-              type="search"
-              :placeholder="t('workshop.search.label', locale)"
-              :aria-label="t('workshop.search.label', locale)"
-              data-testid="workshop-search-sheet-input"
-              :class="fieldClass"
-              @keydown.escape="sheetOpen = false"
-            />
+          <DialogTitle class="sr-only">{{
+            t('workshop.search.label', locale)
+          }}</DialogTitle>
+          <div
+            class="flex items-center gap-3 border-b border-transparency-white-t8 p-3"
+          >
+            <div class="relative flex-1">
+              <Search :class="leadingIconClass" aria-hidden="true" />
+              <input
+                ref="sheetInput"
+                v-model="query"
+                type="search"
+                :placeholder="t('workshop.search.label', locale)"
+                :aria-label="t('workshop.search.label', locale)"
+                data-testid="workshop-search-sheet-input"
+                :class="fieldClass"
+              />
+              <button
+                v-if="query"
+                type="button"
+                :aria-label="t('workshop.search.clear', locale)"
+                :class="clearButtonClass"
+                @click="query = ''"
+              >
+                <X class="size-4" aria-hidden="true" />
+              </button>
+            </div>
             <button
-              v-if="query"
               type="button"
-              :aria-label="t('workshop.search.clear', locale)"
-              :class="clearButtonClass"
-              @click="query = ''"
+              :aria-label="t('workshop.search.close', locale)"
+              class="grid size-10 shrink-0 cursor-pointer place-items-center rounded-xl bg-white/8 text-primary-warm-gray hover:text-primary-warm-white"
+              data-testid="workshop-search-sheet-close"
+              @click="sheetOpen = false"
             >
               <X class="size-4" aria-hidden="true" />
             </button>
           </div>
-          <button
-            type="button"
-            :aria-label="t('workshop.search.close', locale)"
-            class="grid size-10 shrink-0 cursor-pointer place-items-center rounded-xl bg-white/8 text-primary-warm-gray hover:text-primary-warm-white"
-            data-testid="workshop-search-sheet-close"
-            @click="sheetOpen = false"
-          >
-            <X class="size-4" aria-hidden="true" />
-          </button>
-        </div>
 
-        <WorkshopSearchPanel
-          :models
-          :query
-          :providers
-          :capabilities
-          :locale
-          variant="sheet"
-          @pick="
-            (model) => {
-              query = model.name
-              sheetOpen = false
-            }
-          "
-          @toggle-provider="(value) => (providers = toggled(providers, value))"
-          @toggle-capability="
-            (value) => (capabilities = toggled(capabilities, value))
-          "
-        />
+          <WorkshopSearchPanel
+            :models
+            :query
+            :providers
+            :capabilities
+            :locale
+            variant="sheet"
+            @pick="
+              (model) => {
+                query = model.name
+                sheetOpen = false
+              }
+            "
+            @toggle-provider="
+              (value) => (providers = toggled(providers, value))
+            "
+            @toggle-capability="
+              (value) => (capabilities = toggled(capabilities, value))
+            "
+          />
 
-        <div
-          class="flex items-center gap-3 border-t border-transparency-white-t8 p-3"
-        >
-          <button
-            v-if="query || providers.length || capabilities.length"
-            type="button"
-            class="shrink-0 cursor-pointer px-2 text-sm text-primary-warm-gray hover:text-primary-warm-white"
-            data-testid="workshop-search-sheet-clear"
-            @click="clearSheet"
+          <div
+            class="flex items-center gap-3 border-t border-transparency-white-t8 p-3"
           >
-            {{ t('workshop.filter.clearAll', locale) }}
-          </button>
-          <button
-            type="button"
-            class="bg-primary-comfy-yellow hover:bg-primary-comfy-yellow/90 h-11 flex-1 cursor-pointer rounded-2xl text-sm font-bold text-primary-comfy-ink"
-            data-testid="workshop-search-sheet-apply"
-            @click="sheetOpen = false"
-          >
-            {{ t('workshop.search.show', locale).replace('{n}', `${matches}`) }}
-          </button>
-        </div>
-      </div>
-    </Teleport>
+            <button
+              v-if="query || providers.length || capabilities.length"
+              type="button"
+              class="shrink-0 cursor-pointer px-2 text-sm text-primary-warm-gray hover:text-primary-warm-white"
+              data-testid="workshop-search-sheet-clear"
+              @click="clearSheet"
+            >
+              {{ t('workshop.filter.clearAll', locale) }}
+            </button>
+            <button
+              type="button"
+              class="bg-primary-comfy-yellow hover:bg-primary-comfy-yellow/90 h-11 flex-1 cursor-pointer rounded-2xl text-sm font-bold text-primary-comfy-ink"
+              data-testid="workshop-search-sheet-apply"
+              @click="sheetOpen = false"
+            >
+              {{
+                t('workshop.search.show', locale).replace('{n}', `${matches}`)
+              }}
+            </button>
+          </div>
+        </DialogContent>
+      </DialogPortal>
+    </DialogRoot>
   </div>
 </template>

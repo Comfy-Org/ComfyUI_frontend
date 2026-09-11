@@ -4,6 +4,7 @@ import {
   refAutoReset,
   useElementHover,
   useEventListener,
+  useFocusWithin,
   useFullscreen,
   useMediaControls,
   useMouseInElement,
@@ -108,12 +109,15 @@ watch(
 
 // Controls fade
 const hovering = useElementHover(playerEl)
+const { focused } = useFocusWithin(playerEl)
 const recentActivity = refAutoReset(false, 800)
 
-const controlsVisible = computed(() =>
-  controlsOnHover
-    ? hovering.value || recentActivity.value
-    : !playing.value || hovering.value || recentActivity.value
+const controlsVisible = computed(
+  () =>
+    focused.value ||
+    (controlsOnHover
+      ? hovering.value || recentActivity.value
+      : !playing.value || hovering.value || recentActivity.value)
 )
 
 function showControls() {

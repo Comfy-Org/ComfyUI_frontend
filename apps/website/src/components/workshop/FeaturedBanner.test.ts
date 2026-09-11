@@ -13,7 +13,6 @@ const base: WorkshopModel = {
   href: '/models/flux/',
   routerId: 'bfl/flux',
   capabilities: ['Inpainting'],
-  runs: 12_000,
   provider: 'Black Forest Labs',
   modality: 'image',
   task: 'text-to-image',

@@ -9089,7 +9089,7 @@ Enterprise`
     en: 'Show {n} models',
     'zh-CN': '显示 {n} 个模型'
   },
-  'workshop.search.popular': { en: 'Popular models', 'zh-CN': '热门模型' },
+  'workshop.search.models': { en: 'Models', 'zh-CN': '模型' },
   'workshop.search.more': { en: '+ {n} more', 'zh-CN': '+ {n} 个' },
   'workshop.search.providers': { en: 'Providers', 'zh-CN': '提供商' },
   'workshop.filter.text': { en: 'Text', 'zh-CN': '文本' },
@@ -9115,7 +9115,7 @@ Enterprise`
   },
   'workshop.filter.search': { en: 'Search…', 'zh-CN': '搜索…' },
   'workshop.sort.label': { en: 'Sort', 'zh-CN': '排序' },
-  'workshop.sort.popular': { en: 'Most popular', 'zh-CN': '最受欢迎' },
+  'workshop.sort.popular': { en: 'Most examples', 'zh-CN': '示例最多' },
   'workshop.sort.name': { en: 'Name A to Z', 'zh-CN': '名称 A 到 Z' },
   'workshop.sort.priceAsc': {
     en: 'Price: low to high',

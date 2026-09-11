@@ -93,7 +93,6 @@ const model: WorkshopModelDetail = {
   href: '/models/demo/',
   routerId: 'demo/demo',
   capabilities: [],
-  runs: 12_000,
   provider: 'Demo',
   modality: 'image',
   task: 'text-to-image',

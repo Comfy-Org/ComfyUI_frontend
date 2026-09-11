@@ -14,7 +14,6 @@ function model(id: string, url?: string): WorkshopModel {
     name: id,
     workflowCount: 0,
     capabilities: [],
-    runs: 0,
     ...(url ? { thumbnail: { kind: 'image', url } as const } : {})
   }
 }

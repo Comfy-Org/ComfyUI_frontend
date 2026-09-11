@@ -35,7 +35,6 @@ const buttonClass =
     />
     <button
       type="button"
-      :aria-pressed="playing"
       :aria-label="
         t(playing ? 'workshop.output.pause' : 'workshop.output.play', locale)
       "
@@ -63,7 +62,6 @@ const buttonClass =
     >
     <button
       type="button"
-      :aria-pressed="!muted"
       :aria-label="
         t(
           muted ? 'workshop.output.soundOn' : 'workshop.output.soundOff',

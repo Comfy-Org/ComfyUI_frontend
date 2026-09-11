@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
+import '@testing-library/jest-dom/vitest'
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
 
@@ -60,6 +61,21 @@ function mountMenu(withUseCases = false) {
 }
 
 describe('WorkshopFilterMenu', () => {
+  it('closes on Escape from inside the filter panel and restores trigger focus', async () => {
+    const user = userEvent.setup()
+    mountMenu()
+    const trigger = screen.getByRole('button', { name: 'Filter' })
+    await user.click(trigger)
+    const dialog = await screen.findByRole('dialog')
+    const provider = within(dialog).getByRole('button', { name: 'Kling 3' })
+    provider.focus()
+    await user.keyboard(' ')
+    expect(provider.getAttribute('aria-pressed')).toBe('true')
+    await user.keyboard('{Escape}')
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    await waitFor(() => expect(trigger).toHaveFocus())
+  })
+
   it('switches facets, toggles an option and counts it on the button and tab', async () => {
     const user = userEvent.setup()
     const { capabilities } = mountMenu()

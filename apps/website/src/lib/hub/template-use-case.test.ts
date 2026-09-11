@@ -35,7 +35,6 @@ const model = (name: string): WorkshopModel => ({
   href: '/models/demo/',
   routerId: `acme/${name}`,
   capabilities: [],
-  runs: 10,
   modality: 'video',
   task: 'text-to-video'
 })

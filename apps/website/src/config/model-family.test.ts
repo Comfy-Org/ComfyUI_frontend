@@ -16,7 +16,6 @@ function model(
     routerId: `provider/${slug}`,
     provider: 'Alibaba',
     capabilities: [],
-    runs: 0,
     ...extra
   }
 }

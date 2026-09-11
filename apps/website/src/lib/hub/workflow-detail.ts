@@ -262,7 +262,6 @@ export function getHubWorkflowPage(name: string): HubWorkflowPage | undefined {
     provider: template.username || 'ComfyUI',
     modality: MEDIA_TO_MODALITY[mediaType],
     capabilities: template.tags.map(tagDisplayName),
-    runs: template.usage,
     creditsPerRun,
     thumbnailUrl: template.thumbnails[0],
     fields,

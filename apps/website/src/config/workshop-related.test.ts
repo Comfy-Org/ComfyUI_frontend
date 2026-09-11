@@ -17,7 +17,6 @@ function model(
     href: `/${slug}`,
     routerId: `x/${slug}`,
     capabilities,
-    runs: 12_000,
     modality,
     ...(provider ? { provider } : {})
   }

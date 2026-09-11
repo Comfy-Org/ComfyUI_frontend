@@ -14,7 +14,6 @@ const models: WorkshopModel[] = [
     href: '/models/kling-ai/',
     routerId: 'kling/kling-ai',
     capabilities: [],
-    runs: 12_000,
     provider: 'Kling',
     modality: 'video',
     task: 'text-to-video',
@@ -27,7 +26,6 @@ const models: WorkshopModel[] = [
     href: '/models/flux/',
     routerId: 'bfl/flux',
     capabilities: ['Upscale'],
-    runs: 12_000,
     provider: 'Black Forest Labs',
     modality: 'image',
     task: 'image-to-image',
@@ -39,8 +37,7 @@ const models: WorkshopModel[] = [
     workflowCount: 1,
     href: '/models/mystery/',
     routerId: 'comfy/mystery',
-    capabilities: [],
-    runs: 12_000
+    capabilities: []
   }
 ]
 
@@ -137,7 +134,7 @@ describe('WorkshopModelsGrid', () => {
     expect(cardNames()).toEqual([expect.stringContaining('Flux')])
   })
 
-  it('sorts by popularity by default and by name on request', async () => {
+  it('sorts by example count by default and by name on request', async () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
     await user.type(screen.getByTestId('workshop-search'), ' ')

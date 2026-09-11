@@ -156,8 +156,8 @@ const tags = model.capabilities.map((capability) => ({
 
       <ModelStatus
         variant="banner"
+        status={model.status}
         successor={successor ? { name: successor.name, href: successor.href } : undefined}
-        client:load
       />
     </header>
 

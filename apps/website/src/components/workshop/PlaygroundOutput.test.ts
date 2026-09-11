@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
+import '@testing-library/jest-dom/vitest'
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
 import type { RunOutput, RunState } from '../../config/workshop-run'
@@ -22,6 +23,34 @@ const succeeded = (out: RunOutput, nsfw = false): RunState => ({
 })
 
 describe('PlaygroundOutput', () => {
+  it('contains focus in the expanded image and restores it on Escape', async () => {
+    const user = userEvent.setup()
+    render(PlaygroundOutput, {
+      props: { state: succeeded(output('latest')), now: 2_000 }
+    })
+    const trigger = screen.getByRole('button', { name: 'Expand' })
+    await user.click(trigger)
+    const dialog = await screen.findByRole('dialog', { name: 'Output' })
+    const close = within(dialog).getByRole('button', { name: 'Close' })
+    await waitFor(() => expect(close).toHaveFocus())
+    await user.tab()
+    expect(close).toHaveFocus()
+    await user.keyboard('{Escape}')
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    await waitFor(() => expect(trigger).toHaveFocus())
+  })
+
+  it('announces expiration when a completed output is no longer available', async () => {
+    const { rerender } = render(PlaygroundOutput, {
+      props: { state: succeeded(output('latest')), now: 2_000 }
+    })
+    expect(screen.getByRole('status').textContent).toBe('Generation complete.')
+    await rerender({ now: 100_000 })
+    expect(screen.getByRole('status').textContent).toBe(
+      'This output has expired.'
+    )
+  })
+
   it.for([
     { locale: 'en' as const, label: 'Buy credits' },
     { locale: 'zh-CN' as const, label: '购买积分' }
@@ -161,6 +190,8 @@ describe('PlaygroundOutput', () => {
     render(PlaygroundOutput, {
       props: { state: succeeded(batch, true), now: 2_000 }
     })
+    expect(screen.queryByRole('button', { name: 'Expand' })).toBeNull()
+    expect(screen.getByTestId('output-reveal')).toBeTruthy()
     await user.click(screen.getByTestId('output-reveal'))
     await user.click(screen.getByTestId('output-thumb-1'))
     expect(
