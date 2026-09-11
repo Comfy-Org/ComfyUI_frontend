@@ -68,6 +68,7 @@ catalog:
   '@vueuse/integrations': ^14.4.0
   '@webgpu/types': ^0.1.66
   ajv: ^8.20.0
+  ajv-formats: ^3.0.1
   ag-psd: ^31.0.2
   algoliasearch: ^5.21.0
   astro: ^7.2.1

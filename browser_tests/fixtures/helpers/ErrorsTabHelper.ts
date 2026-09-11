@@ -33,6 +33,20 @@ export async function loadWorkflowAndOpenErrorsTab(
   await expect(errorOverlay).toBeHidden()
 }
 
+/** Queue a workflow that fails at runtime and open its Errors tab. */
+export async function queueWorkflowAndOpenExecutionErrors(
+  comfyPage: ComfyPage,
+  workflow = 'nodes/execution_error'
+) {
+  await comfyPage.workflow.loadWorkflow(workflow)
+  await comfyPage.command.executeCommand('Comfy.QueuePrompt')
+
+  const errorOverlay = comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
+  await expect(errorOverlay).toBeVisible()
+  await errorOverlay.getByTestId(TestIds.dialogs.errorOverlaySeeErrors).click()
+  await expect(errorOverlay).toBeHidden()
+}
+
 export async function openErrorsTab(comfyPage: ComfyPage) {
   const panel = new PropertiesPanelHelper(comfyPage.page)
   await panel.open(comfyPage.actionbar.propertiesButton)
