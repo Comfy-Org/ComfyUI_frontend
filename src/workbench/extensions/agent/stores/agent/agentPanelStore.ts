@@ -11,6 +11,11 @@ const PANEL_MIN_WIDTH = 420
 const PANEL_MAX_WIDTH = 960
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
 
+type WorkflowTargetSelection =
+  | { status: 'uninitialized' }
+  | { status: 'cleared' }
+  | { status: 'selected'; workflow: ComfyWorkflow }
+
 export const useAgentPanelStore = defineStore('agentPanel', () => {
   const enabled = ref(false)
   // writeDefaults false: no storage key planted for flag-off users.
@@ -20,7 +25,27 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const gateSettled = ref(false)
   const width = ref(PANEL_MIN_WIDTH)
   const dismissedSelectionSignature = ref<string | null>(null)
-  const selectedWorkflow = ref<ComfyWorkflow | null>(null)
+  const workflowTargetSelection = ref<WorkflowTargetSelection>({
+    status: 'uninitialized'
+  })
+  const selectedWorkflow = computed(() =>
+    workflowTargetSelection.value.status === 'selected'
+      ? workflowTargetSelection.value.workflow
+      : null
+  )
+  const canRestoreWorkflow = computed(
+    () => workflowTargetSelection.value.status === 'uninitialized'
+  )
+
+  function resetWorkflowTarget(): void {
+    workflowTargetSelection.value = { status: 'uninitialized' }
+  }
+
+  function setWorkflowTarget(workflow: ComfyWorkflow | null): void {
+    workflowTargetSelection.value = workflow
+      ? { status: 'selected', workflow }
+      : { status: 'cleared' }
+  }
 
   const workflowStore = useWorkflowStore()
   watch(
@@ -30,7 +55,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
         selectedWorkflow.value !== null &&
         !workflowStore.openWorkflows.includes(selectedWorkflow.value)
       )
-        selectedWorkflow.value = null
+        setWorkflowTarget(null)
     }
   )
 
@@ -85,7 +110,11 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     width,
     isMaximized,
     dismissedSelectionSignature,
+    workflowTargetSelection,
     selectedWorkflow,
+    canRestoreWorkflow,
+    resetWorkflowTarget,
+    setWorkflowTarget,
     toggle,
     close,
     setWidth,

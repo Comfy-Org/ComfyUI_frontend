@@ -310,7 +310,7 @@ describe('WorkflowTab - Agent target', () => {
     panel.enabled = true
     expect(screen.queryByRole('img', { name: targetLabel })).toBeNull()
 
-    panel.selectedWorkflow = workflowOption.workflow
+    panel.setWorkflowTarget(workflowOption.workflow)
     await nextTick()
     expect(screen.getByRole('img', { name: targetLabel })).toBeVisible()
 
@@ -320,14 +320,14 @@ describe('WorkflowTab - Agent target', () => {
     await nextTick()
     expect(screen.getByRole('img', { name: targetLabel })).toBeVisible()
 
-    panel.selectedWorkflow = other
+    panel.setWorkflowTarget(other)
     await nextTick()
     expect(screen.queryByRole('img', { name: targetLabel })).toBeNull()
 
-    panel.selectedWorkflow = workflowOption.workflow
+    panel.setWorkflowTarget(workflowOption.workflow)
     await nextTick()
     expect(screen.getByRole('img', { name: targetLabel })).toBeVisible()
-    panel.selectedWorkflow = null
+    panel.setWorkflowTarget(null)
     await nextTick()
     expect(screen.queryByRole('img', { name: targetLabel })).toBeNull()
   })
@@ -337,7 +337,7 @@ describe('WorkflowTab - Agent target', () => {
     renderTab({ workflowOption, activeWorkflowKey: 'test-key' })
     const panel = useAgentPanelStore()
     panel.enabled = true
-    panel.selectedWorkflow = workflowOption.workflow
+    panel.setWorkflowTarget(workflowOption.workflow)
     await nextTick()
     expect(screen.getByRole('img', { name: targetLabel })).toBeVisible()
 
@@ -351,7 +351,7 @@ describe('WorkflowTab - Agent target', () => {
     renderTab({ workflowOption })
     const panel = useAgentPanelStore()
     panel.enabled = true
-    panel.selectedWorkflow = workflowOption.workflow
+    panel.setWorkflowTarget(workflowOption.workflow)
     const activity = useWorkflowTabActivityStore()
     activity.setEditing(workflowOption.workflow.path)
     await nextTick()

@@ -30,7 +30,9 @@ export function useAgentWorkflowSelection({
   const workflowStore = useWorkflowStore()
   const workflowService = useWorkflowService()
   const bindingStore = useAgentWorkflowTabBindingStore()
-  const { selectedWorkflow: selectedTarget } = storeToRefs(useAgentPanelStore())
+  const panelStore = useAgentPanelStore()
+  const { selectedWorkflow: selectedTarget, canRestoreWorkflow } =
+    storeToRefs(panelStore)
   const { workflowReferences } = storeToRefs(useAgentComposerStore())
   const { t } = useI18n()
   const toast = useToastStore()
@@ -64,7 +66,7 @@ export function useAgentWorkflowSelection({
     workflowId: string
   ): void {
     bindingStore.bind(workflowId, workflow.path)
-    selectedTarget.value = workflow
+    panelStore.setWorkflowTarget(workflow)
     workflowReferences.value = workflowReferences.value.filter(
       ({ id }) => id !== workflowId
     )
@@ -191,30 +193,32 @@ export function useAgentWorkflowSelection({
     workflowId: string | undefined,
     isSessionCurrent: () => boolean
   ): Promise<void> {
-    if (selectedTarget.value !== null || !isSessionCurrent()) return
+    if (!canRestoreWorkflow.value || !isSessionCurrent()) return
     const generation = ++targetSelectionGeneration
+    const isCurrent = () =>
+      generation === targetSelectionGeneration &&
+      isSessionCurrent() &&
+      canRestoreWorkflow.value
     if (workflowId === undefined) return
     await refreshCloudWorkflowIds()
-    if (generation !== targetSelectionGeneration || !isSessionCurrent()) return
+    if (!isCurrent()) return
     const target = boundOrOpenWorkflowFor(workflowId)
     if (target === null) {
-      selectedTarget.value = null
+      panelStore.setWorkflowTarget(null)
       warnWorkflowUnavailable()
       return
     }
     try {
       const opened = await workflowService.openWorkflow(target)
-      if (generation !== targetSelectionGeneration || !isSessionCurrent())
-        return
+      if (!isCurrent()) return
       if (!opened) {
-        selectedTarget.value = null
+        panelStore.setWorkflowTarget(null)
         warnWorkflowUnavailable()
         return
       }
       commitWorkflowTarget(target, workflowId)
     } catch {
-      if (generation !== targetSelectionGeneration || !isSessionCurrent())
-        return
+      if (!isCurrent()) return
       warnWorkflowUnavailable()
     }
   }

@@ -14,7 +14,7 @@ function setup() {
   const other = workflows.createTemporary('b.json')
   workflows.openWorkflowsInBackground({ right: [target.path, other.path] })
   const panel = useAgentPanelStore()
-  panel.selectedWorkflow = target
+  panel.setWorkflowTarget(target)
   return { workflows, panel, target, other }
 }
 

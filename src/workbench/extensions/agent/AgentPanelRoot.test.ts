@@ -293,7 +293,7 @@ vi.mock<unknown>(
   }
 )
 
-import type { TurnId } from './schemas/agentApiSchema'
+import type { AgentMessages, TurnId } from './schemas/agentApiSchema'
 import { zAgentWsEvent } from './schemas/agentApiSchema'
 import { MAX_ATTACHMENT_BYTES } from './composables/agent/useAttachment'
 import type { AgentChatEvent } from './services/agent/agentEventTransport'
@@ -391,9 +391,9 @@ function ack(workflowId: string, messageId = 'm-1') {
 
 function renderWithSelectedTarget() {
   const active = workflowStore.activeWorkflow
-  useAgentPanelStore().selectedWorkflow = active
-    ? fromPartial<ComfyWorkflow>(active)
-    : null
+  useAgentPanelStore().setWorkflowTarget(
+    active ? fromPartial<ComfyWorkflow>(active) : null
+  )
   return render(AgentPanelRoot, { global: { plugins: [i18n] } })
 }
 
@@ -2464,6 +2464,98 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(workflowStore.activeWorkflow).toEqual(current)
       expect(workflowService.openWorkflow).not.toHaveBeenCalled()
       expect(useToastStore().messagesToAdd).toHaveLength(0)
+    }
+  )
+
+  it.for(['hidden', 'reopened'] as const)(
+    'keeps a target closed while the panel is %s cleared after history hydration',
+    async (panelState) => {
+      const target = makeTab('wf-42')
+      const old = addTab('workflows/old.json')
+      const viewed = addTab('workflows/viewed.json')
+      useAgentWorkflowTabBindingStore().bind('wf-old', old.path)
+      useAgentConversationStore().setThreadId('th-1')
+      let reads = 0
+      let finishHistory = () => {}
+      const pendingHistory = new Promise<void>((resolve) => {
+        finishHistory = resolve
+      })
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (url: string) => {
+          if (url.includes('/messages')) {
+            const read = ++reads
+            if (read === 2) await pendingHistory
+            const messages: AgentMessages = [
+              {
+                id: 'row',
+                thread_id: 'th-1',
+                seq: 1,
+                role: 'user',
+                status: 'complete',
+                turn_id: 'turn',
+                workflow_id: 'wf-old',
+                content: { text: `History loaded ${read}` }
+              }
+            ]
+            return json(200, messages)
+          }
+          if (url.includes('/assets'))
+            return json(200, { assets: [], total: 0, has_more: false })
+          if (url.includes('/workflows'))
+            return json(200, {
+              data: [],
+              pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+            })
+          return json(
+            200,
+            agentThreadList([
+              agentThread({
+                id: 'th-1',
+                title: 'Earlier chat',
+                last_message_at: '2026-09-01T00:00:00Z'
+              })
+            ])
+          )
+        })
+      )
+      const first = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      const selector = () =>
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.switchWorkflow')
+        })
+      await vi.waitFor(() => expect(selector()).toHaveTextContent('old'))
+      await userEvent.click(selector())
+      await userEvent.click(
+        await screen.findByRole('menuitemradio', { name: 'current' })
+      )
+      await vi.waitFor(() => expect(selector()).toHaveTextContent('current'))
+      await userEvent.type(screen.getByRole('textbox'), 'Keep this draft')
+      workflowStore.activeWorkflow = viewed
+      first.unmount()
+      if (panelState === 'hidden') await workflowStore.closeWorkflow(target)
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      await vi.waitFor(() => expect(reads).toBe(2))
+      if (panelState === 'reopened') await workflowStore.closeWorkflow(target)
+      finishHistory()
+      await screen.findAllByText('History loaded 2')
+      await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+      expect(await screen.findByRole('menu')).toBeVisible()
+      await userEvent.keyboard('{Escape}')
+      expect(selector()).toHaveTextContent(
+        i18n.global.t('agent.selectWorkflowForAgent')
+      )
+      expect(workflowStore.activeWorkflow).toEqual(viewed)
+      expect(screen.getByRole('textbox')).toHaveTextContent('Keep this draft')
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.showChatHistory')
+        })
+      )
+      await userEvent.click(await screen.findByText('Earlier chat'))
+      await screen.findAllByText('History loaded 3')
+      await vi.waitFor(() => expect(selector()).toHaveTextContent('old'))
+      expect(workflowStore.activeWorkflow).toEqual(old)
     }
   )
 
@@ -5524,7 +5616,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.click(action)
     expect(useAgentNodeSelectionStore().isActive).toBe(false)
 
-    useAgentPanelStore().selectedWorkflow = fromPartial<ComfyWorkflow>(target)
+    useAgentPanelStore().setWorkflowTarget(fromPartial<ComfyWorkflow>(target))
     await nextTick()
     expect(action).not.toHaveAttribute('aria-disabled', 'true')
     await userEvent.click(action)
