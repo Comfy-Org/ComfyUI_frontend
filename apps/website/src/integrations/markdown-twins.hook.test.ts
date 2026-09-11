@@ -68,6 +68,20 @@ describe('the markdown-twins build hook', () => {
     )
   })
 
+  it.for(['zh-CN/enterprise', 'zh-CN/enterprise/managed-builds'])(
+    'publishes the translated sales page %s as Markdown',
+    async (path) => {
+      const body = '治理每个团队、每个运行环境中的 ComfyUI。'
+      await page(path, article('Comfy Enterprise', body))
+
+      await run()
+
+      const twin = await readFile(join(root, `${path}.md`), 'utf8')
+      expect(twin).toContain(body)
+      expect(twin).toContain(`canonical: https://comfy.org/${path}`)
+    }
+  )
+
   /**
    * The regression this exists for. A twin a page endpoint already wrote is
    * reported as `existing`, not `written`, and the indexes are built from both.

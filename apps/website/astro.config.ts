@@ -65,8 +65,8 @@ export default defineConfig({
      * `astroI18n.test.ts` fails if a locale is missing an entry.
      *
      * Astro's fallback is per-locale with no route granularity, so this also
-     * mints localized URLs for the 401 routes that are deliberately
-     * English-only — the model catalogue, Enterprise, the legal documents. Those
+     * mints localized URLs for routes that are deliberately
+     * English-only — the model catalogue and legal documents. Those
      * are held back rather than hidden: `isExcludedFromSitemap` keeps a
      * localized copy of a locale-invariant route out of the sitemap, and
      * `hreflangAlternates` refuses to cluster it, so each canonicals to its

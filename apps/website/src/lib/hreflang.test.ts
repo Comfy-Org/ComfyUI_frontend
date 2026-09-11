@@ -35,6 +35,21 @@ describe('hreflangAlternates', () => {
     )
   })
 
+  it.for(['/enterprise/', '/enterprise/managed-builds/'])(
+    'pairs %s with its published Chinese translation',
+    (path) => {
+      const alternates = hreflangAlternates(path, ORIGIN, 'en')
+      expect(alternates).toEqual([
+        { hreflang: 'en', href: `${ORIGIN}${path}` },
+        { hreflang: 'zh-CN', href: `${ORIGIN}/zh-CN${path}` },
+        { hreflang: 'x-default', href: `${ORIGIN}${path}` }
+      ])
+      expect(hreflangAlternates(`/zh-CN${path}`, ORIGIN, 'zh-CN')).toEqual(
+        alternates
+      )
+    }
+  )
+
   it('handles the home page in every locale that has one', () => {
     // The home page is the one route with all three locales, so it is the only
     // place the full cluster shape can be asserted today.
@@ -314,13 +329,13 @@ describe('canonicalPath', () => {
    * The canonical must follow whether the page is PUBLISHED in its locale, not
    * whatever path Astro happens to report.
    */
-  it('points a published Chinese page at itself', () => {
-    expect(canonicalPath('/pricing/', 'zh-CN')).toBe('/zh-CN/pricing/')
-  })
-
-  it('still points a published Chinese page at itself when Astro reports the localized path', () => {
-    expect(canonicalPath('/zh-CN/pricing/', 'zh-CN')).toBe('/zh-CN/pricing/')
-  })
+  it.for(['/pricing/', '/enterprise/', '/enterprise/managed-builds/'])(
+    'points the published Chinese page %s at itself',
+    (path) => {
+      expect(canonicalPath(path, 'zh-CN')).toBe(`/zh-CN${path}`)
+      expect(canonicalPath(`/zh-CN${path}`, 'zh-CN')).toBe(`/zh-CN${path}`)
+    }
+  )
 
   it('points a held-back Japanese page at the English original', () => {
     expect(canonicalPath('/mcp/', 'ja')).toBe('/mcp/')
@@ -338,7 +353,7 @@ describe('canonicalPath', () => {
   })
 
   it('points a Chinese copy of an English-only route at English', () => {
-    expect(canonicalPath('/enterprise/', 'zh-CN')).toBe('/enterprise/')
+    expect(canonicalPath('/enterprise-msa/', 'zh-CN')).toBe('/enterprise-msa/')
   })
 
   it('leaves English alone', () => {

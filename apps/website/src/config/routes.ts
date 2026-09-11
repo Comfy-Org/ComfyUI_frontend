@@ -90,8 +90,6 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'affiliateTerms',
   'termsOfService',
   'enterpriseMsa',
-  'enterprise',
-  'managedBuilds',
   'models',
   'minimaxLicenseProfessionalRequest',
   'workshop',

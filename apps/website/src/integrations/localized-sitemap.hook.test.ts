@@ -60,13 +60,17 @@ afterEach(async () => {
 })
 
 describe('the localized-sitemap build hook', () => {
-  it('adds a built page the sitemap left out', async () => {
+  it.for([
+    'zh-CN/customers/example',
+    'zh-CN/enterprise',
+    'zh-CN/enterprise/managed-builds'
+  ])('adds the built page %s that the sitemap left out', async (path) => {
     await writeFile(join(root, 'sitemap-0.xml'), EMPTY_SITEMAP, 'utf8')
-    await page('zh-CN/customers/example')
+    await page(path)
 
     const sitemap = await run()
 
-    expect(sitemap).toContain(`${ORIGIN}/zh-CN/customers/example/`)
+    expect(sitemap).toContain(`<loc>${ORIGIN}/${path}/</loc>`)
     expect(sitemap.trimEnd().endsWith('</urlset>')).toBe(true)
   })
 

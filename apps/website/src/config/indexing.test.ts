@@ -46,6 +46,8 @@ describe('indexing policy', () => {
   it.for([
     '/privacy',
     '/pricing',
+    '/zh-CN/enterprise/',
+    '/zh-CN/enterprise/managed-builds/',
     '/p/supported-models/grok-imagine',
     '/demos/image-to-video'
   ])('keeps %s indexable', (pathname) => {
@@ -100,8 +102,8 @@ describe('localized copies of English-only routes', () => {
   /**
    * P3-9 gives Chinese a fallback so its 47 page files can be deleted. Astro's
    * fallback is per-locale with no route granularity, so it also mints Chinese
-   * URLs for the 401 routes that are deliberately English-only — the model
-   * catalogue, Enterprise, the legal documents. Chinese is marked 'all' in
+   * URLs for routes that are deliberately English-only — the model
+   * catalogue and legal documents. Chinese is marked 'all' in
    * INDEXABLE_PAGES, so without this they would enter the sitemap the moment
    * they exist, advertising Chinese pages that are English content.
    *
@@ -110,7 +112,8 @@ describe('localized copies of English-only routes', () => {
    */
   it.for([
     'https://comfy.org/zh-CN/p/supported-models/grok-imagine/',
-    'https://comfy.org/zh-CN/enterprise/',
+    'https://comfy.org/ja/enterprise/',
+    'https://comfy.org/ja/enterprise/managed-builds/',
     'https://comfy.org/zh-CN/enterprise-msa/',
     'https://comfy.org/zh-CN/pixal3d-trellis2/',
     'https://comfy.org/ja/p/supported-models/grok-imagine/'
