@@ -1302,7 +1302,26 @@
     "cancelled": "Cancelled"
   },
   "keybindings": {
-    "releaseHold": "Release: {command}"
+    "releaseHold": "Release: {command}",
+    "canvasPan": "Pan canvas while held",
+    "cancelGhostPlacement": "Cancel node placement",
+    "cancelLink": "Cancel link connection",
+    "closeCanvasPanel": "Close canvas panel",
+    "closeCanvasImage": "Close canvas image",
+    "previousCanvasImage": "Previous canvas image",
+    "nextCanvasImage": "Next canvas image",
+    "maskEditorPan": "Pan Mask Editor while held",
+    "layerEditorUndo": "Undo in Compositor",
+    "layerEditorRedo": "Redo in Compositor",
+    "layerEditorApply": "Apply Compositor transform",
+    "layerEditorSelectAll": "Select all Compositor layers",
+    "layerEditorSelectNone": "Deselect Compositor layers",
+    "layerEditorPan": "Pan Compositor while held",
+    "increaseAttention": "Increase prompt attention",
+    "decreaseAttention": "Decrease prompt attention",
+    "cancelBoundingBoxText": "Cancel bounding box text editing",
+    "commitBoundingBoxText": "Apply bounding box text",
+    "deleteBoundingBox": "Delete selected bounding box"
   },
   "layerEditor": {
     "title": "Compositor",

@@ -50,7 +50,6 @@
           @pointerleave="onPointerLeave"
           @lostpointercapture="onDocPointerUp"
           @dblclick="onDoubleClick"
-          @keydown="onCanvasKeyDown"
           @focus="focused = true"
           @blur="focused = false"
         />
@@ -61,7 +60,6 @@
           class="absolute box-border resize-none rounded-sm border-2 bg-black/90 p-1 font-mono text-xs text-white outline-none"
           :style="inlineEditor.style"
           data-capture-wheel="true"
-          @keydown.stop="onInlineKeyDown"
           @blur="commitInlineEditor"
         />
       </div>
@@ -190,8 +188,6 @@ const {
   onDocPointerUp,
   onPointerLeave,
   onDoubleClick,
-  onCanvasKeyDown,
-  onInlineKeyDown,
   commitInlineEditor,
   setActiveType,
   clearAll,

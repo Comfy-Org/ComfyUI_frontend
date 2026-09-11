@@ -33,7 +33,8 @@ export function useMaskEditor() {
         bodyClass: 'flex min-h-0 flex-col p-0',
         modal: true,
         maximizable: true,
-        closable: true
+        closable: true,
+        closeOnEscape: false
       }
     })
   }

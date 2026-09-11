@@ -511,7 +511,6 @@ export const useLitegraphService = () => {
 
     addNodeContextMenuHandler(node)
     addDrawBackgroundHandler(node)
-    addNodeKeyHandler(node)
     // Note: Some extensions expects node.comfyClass to be set in
     // `beforeRegisterNodeDef`.
     node.prototype.comfyClass = nodeDefV1.name
@@ -614,7 +613,6 @@ export const useLitegraphService = () => {
 
     addNodeContextMenuHandler(node)
     addDrawBackgroundHandler(node)
-    addNodeKeyHandler(node)
     // Note: Some extensions expects node.comfyClass to be set in
     // `beforeRegisterNodeDef`.
     node.prototype.comfyClass = nodeDefV1.name
@@ -857,51 +855,6 @@ export const useLitegraphService = () => {
             parentGraph?.setDirtyCanvas(true)
           })
         }
-      }
-    }
-  }
-
-  function addNodeKeyHandler(node: typeof LGraphNode) {
-    const origNodeOnKeyDown = node.prototype.onKeyDown
-
-    node.prototype.onKeyDown = function (e) {
-      // @ts-expect-error fixme ts strict error
-      if (origNodeOnKeyDown && origNodeOnKeyDown.apply(this, e) === false) {
-        return false
-      }
-
-      if (this.flags.collapsed || !this.imgs || this.imageIndex === null) {
-        return
-      }
-
-      let handled = false
-
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-        if (e.key === 'ArrowLeft') {
-          // @ts-expect-error fixme ts strict error
-          this.imageIndex -= 1
-        } else {
-          // @ts-expect-error fixme ts strict error
-          this.imageIndex += 1
-        }
-        // @ts-expect-error fixme ts strict error
-        this.imageIndex %= this.imgs.length
-
-        // @ts-expect-error fixme ts strict error
-        if (this.imageIndex < 0) {
-          // @ts-expect-error fixme ts strict error
-          this.imageIndex = this.imgs.length + this.imageIndex
-        }
-        handled = true
-      } else if (e.key === 'Escape') {
-        this.imageIndex = null
-        handled = true
-      }
-
-      if (handled) {
-        e.preventDefault()
-        e.stopImmediatePropagation()
-        return false
       }
     }
   }

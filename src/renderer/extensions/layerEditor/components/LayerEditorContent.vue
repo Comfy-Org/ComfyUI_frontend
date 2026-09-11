@@ -24,7 +24,6 @@
 </template>
 
 <script setup lang="ts">
-import { useEventListener } from '@vueuse/core'
 import { onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -39,10 +38,7 @@ import {
 } from '@/renderer/extensions/compositor/composables/compositorSave'
 import { loadCompositorSession } from '@/renderer/extensions/compositor/composables/compositorSession'
 import { useCompositorAutoSave } from '@/renderer/extensions/compositor/composables/useCompositorAutoSave'
-import {
-  isTextEditingTarget,
-  useLayerEditorSession
-} from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
+import { useLayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -74,19 +70,6 @@ function layerName(url: string, index: number): string {
   }
   return t('layerEditor.layerN', { n: index + 1 })
 }
-
-useEventListener(document, 'keydown', (e: KeyboardEvent) => {
-  if (e.defaultPrevented || isTextEditingTarget(e.target)) return
-  if (!(e.ctrlKey || e.metaKey)) return
-  if (e.code === 'KeyZ') {
-    e.preventDefault()
-    if (e.shiftKey) session.redo()
-    else session.undo()
-  } else if (e.code === 'KeyY') {
-    e.preventDefault()
-    session.redo()
-  }
-})
 
 function onRestore(): void {
   session.editor.cancelFloating()
