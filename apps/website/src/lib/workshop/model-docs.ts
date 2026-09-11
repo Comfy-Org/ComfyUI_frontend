@@ -28,6 +28,7 @@ const ANCHORS: Readonly<Record<string, string>> = {
   fal: 'fal',
   freepik: 'freepik',
   gemini: 'google',
+  geminiinteractions: 'gemini-interactions',
   google: 'google',
   grok: 'xai',
   heygen: 'heygen',
@@ -49,6 +50,7 @@ const ANCHORS: Readonly<Record<string, string>> = {
   tencent: 'tencent',
   tencenthunyuan3d: 'tencent',
   veo: 'veo',
+  vertexai: 'google',
   wan: 'wan',
   wavespeed: 'wavespeed',
   xai: 'xai'

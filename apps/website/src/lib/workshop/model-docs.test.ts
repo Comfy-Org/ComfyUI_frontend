@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import routerIndex from '../../content/workshop-router-index.json'
 import { modelDocsHref } from './model-docs'
 
 const DOCS = 'https://docs.comfy.org/development/comfy-router/models'
@@ -27,6 +28,17 @@ describe('modelDocsHref', () => {
     expect(
       modelDocsHref({ provider: 'Luma', routerId: 'luma_2/dream-machine' })
     ).toBe(`${DOCS}#luma-2`)
+  })
+
+  it('maps every provider in the Router index or lists it as undocumented', () => {
+    const prefixes = new Set(
+      routerIndex.map((entry) => entry.id.split('/')[0] ?? '')
+    )
+    const undocumented: string[] = []
+    for (const prefix of prefixes) {
+      if (!modelDocsHref({ routerId: `${prefix}/x` }))
+        expect(undocumented).toContain(prefix)
+    }
   })
 
   it('offers no link for a provider the docs do not cover', () => {

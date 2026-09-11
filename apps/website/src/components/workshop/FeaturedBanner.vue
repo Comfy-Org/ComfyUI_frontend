@@ -34,6 +34,7 @@ const slides = computed(() =>
       model,
       task,
       name: bannerName(model.name, task),
+      docsHref: modelDocsHref(model),
       capabilities: model.capabilities.slice(0, CAPABILITY_LIMIT)
     }
   })
@@ -117,7 +118,8 @@ const fill = computed(() =>
     >
       <a
         :href="active.model.href"
-        :aria-label="active.name"
+        tabindex="-1"
+        aria-hidden="true"
         class="absolute inset-0"
         data-testid="featured-slide-link"
       ></a>
@@ -183,12 +185,12 @@ const fill = computed(() =>
             {{ t('workshop.hub.tryNow', locale) }}
           </Button>
           <Button
-            v-if="modelDocsHref(active.model)"
+            v-if="active.docsHref"
             as="a"
             variant="outline"
-            :href="modelDocsHref(active.model)"
+            :href="active.docsHref"
             target="_blank"
-            rel="noopener"
+            rel="noopener noreferrer"
             class="w-fit"
             data-testid="featured-docs-link"
           >
