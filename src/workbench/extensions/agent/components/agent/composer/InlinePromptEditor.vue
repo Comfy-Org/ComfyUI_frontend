@@ -4,7 +4,7 @@ import { baseKeymap } from '@tiptap/pm/commands'
 import { closeHistory, history, redo, undo } from '@tiptap/pm/history'
 import { keymap } from '@tiptap/pm/keymap'
 import { EditorState, TextSelection } from '@tiptap/pm/state'
-import { EditorView } from '@tiptap/pm/view'
+import { Decoration, DecorationSet, EditorView } from '@tiptap/pm/view'
 import { onBeforeUnmount, onMounted, useTemplateRef, watch } from 'vue'
 import DOMPurify from 'dompurify'
 import { useI18n } from 'vue-i18n'
@@ -86,8 +86,25 @@ onMounted(() => {
         ? { 'aria-activedescendant': activeDescendant }
         : {}),
       class:
-        'text-agent-fg min-h-7 w-full cursor-text font-inter text-[14px]/5 font-normal wrap-anywhere whitespace-pre-wrap outline-none [&_.ProseMirror-selectednode]:outline-1'
+        'text-agent-fg min-h-7 w-full cursor-text font-inter text-[14px]/5 font-normal wrap-anywhere whitespace-pre-wrap outline-none'
     }),
+    decorations(state) {
+      if (state.selection.empty) return null
+      const decorations: Decoration[] = []
+      state.doc.nodesBetween(
+        state.selection.from,
+        state.selection.to,
+        (node, position) => {
+          if (node.type === inlinePromptSchema.nodes.workflow)
+            decorations.push(
+              Decoration.node(position, position + node.nodeSize, {
+                'data-selected': 'true'
+              })
+            )
+        }
+      )
+      return DecorationSet.create(state.doc, decorations)
+    },
     dispatchTransaction(transaction) {
       if (!view) return
       const previousReferences = promptDraft(view.state.doc).references
@@ -223,7 +240,8 @@ onMounted(() => {
         if (typeof id !== 'string' || typeof name !== 'string') return { dom }
         dom.contentEditable = 'false'
         dom.dataset.testid = 'workflow-reference-chip'
-        dom.className = 'group/workflow inline'
+        dom.className =
+          'group/workflow inline selection:bg-transparent selection:text-inherit'
         const open = document.createElement('span')
         open.setAttribute('role', 'button')
         open.tabIndex = 0
@@ -244,7 +262,7 @@ onMounted(() => {
           open.title = reason
         }
         open.className =
-          'inline cursor-pointer rounded-sm bg-primary-background/30 box-decoration-clone px-1 py-0.5 font-inter text-xs/[15px] font-normal break-all whitespace-normal text-primary-background-hover ring-1 ring-primary-background/30 transition-colors ring-inset hover:bg-primary-background/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background aria-disabled:cursor-not-allowed aria-disabled:opacity-50'
+          'inline cursor-pointer rounded-sm bg-primary-background/30 box-decoration-clone px-1 py-0.5 font-inter text-xs/[15px] font-normal break-all whitespace-normal text-primary-background-hover ring-1 ring-primary-background/30 transition-colors ring-inset group-data-selected/workflow:bg-primary-background/60 group-data-selected/workflow:text-base-foreground group-data-selected/workflow:ring-primary-background hover:bg-primary-background/40 group-data-selected/workflow:hover:bg-primary-background/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background aria-disabled:cursor-not-allowed aria-disabled:opacity-50'
         const icon = document.createElement('span')
         icon.className =
           'icon-[comfy--workflow] mr-1 inline-block size-3 align-middle'
