@@ -38,6 +38,16 @@ describe('test skip accountability checker', () => {
     assert.match(result.stderr, /tracking issue or follow-up PR/)
   })
 
+  it('rejects an added skip that follows other tokens on the line', () => {
+    const result = runChecker(
+      'unlinked-body.md',
+      'inline-conditional-skip.diff'
+    )
+
+    assert.equal(result.status, 1)
+    assert.match(result.stderr, /tracking issue or follow-up PR/)
+  })
+
   it('ignores non-executable and unchanged skip calls', () => {
     const result = runChecker('unlinked-body.md', 'non-executable-skips.diff')
 

@@ -42,12 +42,53 @@ const readPullRequestBody = () => {
   })
 }
 
-const addedSkipPattern = /^\+[ \t]*test\.(?:describe\.)?(?:fixme|skip)[ \t]*\(/m
+const stringLiteralPattern =
+  /'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"|`(?:\\.|[^`\\])*`/g
+const skipCallPattern = /\btest\.(?:describe\.)?(?:fixme|skip)[ \t]*\(/
 const trackingLinkPattern =
   /(?:https?:\/\/github\.com\/[\w.-]+\/[\w.-]+\/(?:issues|pull)\/\d+|(?:^|[\s([])#\d+)/m
 
+const executableAddedSource = function* (diff) {
+  let insideBlockComment = false
+
+  for (const line of diff.split('\n')) {
+    if (line.startsWith('@@')) {
+      insideBlockComment = false
+      continue
+    }
+    if (!line.startsWith('+') || line.startsWith('+++')) continue
+
+    let source = line.slice(1).replace(stringLiteralPattern, "''")
+
+    if (insideBlockComment) {
+      const blockEnd = source.indexOf('*/')
+      if (blockEnd === -1) continue
+      source = source.slice(blockEnd + 2)
+      insideBlockComment = false
+    }
+
+    source = source.replace(/\/\*[\s\S]*?\*\//g, ' ')
+
+    const blockStart = source.indexOf('/*')
+    if (blockStart !== -1) {
+      insideBlockComment = true
+      source = source.slice(0, blockStart)
+    }
+
+    const lineCommentStart = source.indexOf('//')
+    if (lineCommentStart !== -1) source = source.slice(0, lineCommentStart)
+
+    if (source.trimStart().startsWith('*')) continue
+
+    yield source
+  }
+}
+
 const diff = readDiff()
-if (!addedSkipPattern.test(diff)) process.exit(0)
+const addsSkip = [...executableAddedSource(diff)].some((source) =>
+  skipCallPattern.test(source)
+)
+if (!addsSkip) process.exit(0)
 
 const body = readPullRequestBody()
 if (!trackingLinkPattern.test(body)) {
