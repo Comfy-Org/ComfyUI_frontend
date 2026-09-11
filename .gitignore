@@ -32,6 +32,9 @@ dist-ssr
 .claude/worktrees
 CLAUDE.local.md
 
+# Glary agent artifacts
+.glary/
+
 # Editor directories and files
 .vscode/*
 *.code-workspace
@@ -111,3 +114,6 @@ matrix-proof/
 
 # Agent telemetry working files
 /telemetry/
+
+# Raw recorder sidecars (frames, rows, identifiers); only the sanitized conversation JSON is tracked
+browser_tests/fixtures/data/agent/conversations/recordings/

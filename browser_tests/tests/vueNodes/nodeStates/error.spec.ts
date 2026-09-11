@@ -385,11 +385,9 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
 
       const ws = await getWebSocket()
       const exec = new ExecutionHelper(comfyPage, ws)
-      exec.executionError(
-        'mocked-prompt',
-        INNER_EXECUTION_ID,
-        'boom inside the subgraph'
-      )
+      const jobId = await exec.run()
+      await comfyPage.nextFrame()
+      exec.executionError(jobId, INNER_EXECUTION_ID, 'boom inside the subgraph')
 
       await expect(innerWrapper).toHaveClass(ERROR_CLASS)
     })

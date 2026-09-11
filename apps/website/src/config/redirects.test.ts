@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { z } from 'zod'
 
+import { redirects as astroRedirects } from './redirects'
 import { getRoutes } from './routes'
 
 const appDir = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
@@ -62,6 +63,31 @@ describe('legacy MiniMax H3 redirects', () => {
     minimaxZhCanonical
   ])('leaves the new canonical path %s unredirected', (canonicalPath) => {
     expect(findRedirect(canonicalPath)).toBeUndefined()
+  })
+})
+
+/**
+ * Astro renders a stub page for each entry in its redirect map, and that stub's
+ * canonical is the destination string verbatim. Every real page self-canonicalizes
+ * with a trailing slash via `absoluteUrl()`, so a slash-less destination points
+ * the stub's canonical one hop short of the page it redirects to.
+ *
+ * #14390 fixed exactly this once already and it regressed, which is why it is a
+ * test now rather than a convention.
+ */
+describe('astro redirect destinations', () => {
+  const destinations = Object.values(astroRedirects).map((entry) =>
+    typeof entry === 'string' ? entry : entry.destination
+  )
+
+  it('every destination ends with a trailing slash', () => {
+    const slashless = destinations.filter(
+      (destination) => !destination.endsWith('/')
+    )
+    expect(
+      slashless,
+      'these canonicalize one hop short of their target'
+    ).toEqual([])
   })
 })
 

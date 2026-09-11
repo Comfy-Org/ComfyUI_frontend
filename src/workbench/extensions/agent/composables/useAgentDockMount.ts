@@ -15,7 +15,12 @@ interface AgentDockMount {
  * enables and opens the panel, so a flag-off session fetches no agent chunk.
  */
 export function useAgentDockMount(): AgentDockMount {
-  if (__DISTRIBUTION__ !== 'cloud') {
+  // The local agent harness (VITE_AGENT_STANDALONE) mounts the panel in any
+  // distribution; production keeps it cloud-only.
+  if (
+    __DISTRIBUTION__ !== 'cloud' &&
+    import.meta.env.VITE_AGENT_STANDALONE !== 'true'
+  ) {
     return { docked: computed(() => false), DockedAgentPanel: null }
   }
   const agentPanelStore = useAgentPanelStore()

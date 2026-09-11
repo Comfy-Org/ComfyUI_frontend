@@ -3,11 +3,26 @@ import { dirname, join, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
+import {
+  findRedirectedLinks,
+  internalLinks,
+  isLlmsTxtLinkLine,
+  normalizePath,
+  parseLlmsTxtLinks
+} from '../lib/llms-txt'
+import { isNoindexPathname } from './indexing'
 import { getRoutes } from './routes'
 
 const websiteRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const llmsTxt = readFileSync(join(websiteRoot, 'public', 'llms.txt'), 'utf8')
 const pagesDir = join(websiteRoot, 'src', 'pages')
+const vercelRedirectSources = new Set<string>(
+  (
+    JSON.parse(readFileSync(join(websiteRoot, 'vercel.json'), 'utf8')) as {
+      redirects: { source: string }[]
+    }
+  ).redirects.map((redirect) => normalizePath(redirect.source))
+)
 
 /**
  * Pages that exist in src/pages but are deliberately kept out of llms.txt.
@@ -16,14 +31,40 @@ const pagesDir = join(websiteRoot, 'src', 'pages')
  */
 const EXCLUDED_PAGES = new Set([
   '/404',
+  '/agent', // unlisted agent beta waitlist page, noindex
   '/booking-confirmation', // post-form confirmation, no standalone content
+  '/forgot-password', // auth surface, noindex
   '/individual-submission', // gallery submission form
+  '/login', // auth surface, noindex
+  '/signup', // auth surface, noindex
   '/payment/failed', // checkout return page
   '/payment/success', // checkout return page
   '/case-studies', // "Coming Soon" placeholder
   '/videos', // "Coming Soon" placeholder
-  '/demos' // index is a "Coming Soon" placeholder; the demo pages are listed
+  '/demos', // index is a "Coming Soon" placeholder; the demo pages are listed
+  '/platform/serverless-animation', // noindex temporary motion study, not a real page
+  '/workshop', // build-gated; static public/llms.txt cannot vary by build shape
+  '/video-sitemap.xml' // machine-readable sitemap output, not a page for agents to read
 ])
+
+const LLMS_TXT_NOINDEX_EXCEPTIONS = new Set([
+  '/privacy-policy',
+  '/terms-of-service'
+])
+
+/**
+ * A page kept out of search indexes has no business in llms.txt either, so
+ * the noindex policy in ./indexing is the second source of exclusions.
+ * Deriving it rather than restating it means a launch that lifts noindex
+ * also starts requiring the page here, instead of leaving a second list to
+ * remember.
+ */
+function isExcludedPage(page: string): boolean {
+  return (
+    EXCLUDED_PAGES.has(page) ||
+    (isNoindexPathname(page) && !LLMS_TXT_NOINDEX_EXCEPTIONS.has(page))
+  )
+}
 
 /**
  * Files the build emits outside src/pages: the sitemap integration writes
@@ -48,14 +89,6 @@ const WORKFLOW_APP_ROUTES = [
   /^\/workflows\/use-cases(\/[a-z0-9-]+)?$/,
   /^\/[a-z]{2}(-[A-Za-z]{2})?\/workflows$/
 ]
-
-const LINK_LINE =
-  /^- \[(?<title>[^\]]+)\]\((?<url>https?:\/\/[^)\s]+)\): (?<description>.+)$/
-
-function normalizePath(path: string): string {
-  const trimmed = path.replace(/\/+$/, '')
-  return trimmed === '' ? '/' : trimmed
-}
 
 /** Turn `src/pages/learning/[category]/[slug].astro` into a matcher for `/learning/x/y`. */
 function pageMatchers(root: string): {
@@ -92,22 +125,9 @@ function pageMatchers(root: string): {
   return { static: staticPages, dynamic }
 }
 
-function parseLinks() {
-  return llmsTxt
-    .split('\n')
-    .map((line) => LINK_LINE.exec(line)?.groups)
-    .filter(
-      (groups): groups is { title: string; url: string; description: string } =>
-        Boolean(groups)
-    )
-}
-
 describe('llms.txt', () => {
-  const links = parseLinks()
-  const internalPaths = links
-    .map((link) => new URL(link.url))
-    .filter((url) => url.hostname === 'comfy.org')
-    .map((url) => normalizePath(url.pathname))
+  const links = parseLlmsTxtLinks(llmsTxt)
+  const internalPaths = internalLinks(links).map(({ path }) => path)
   const { static: staticPages, dynamic } = pageMatchers(pagesDir)
   const zhCN = pageMatchers(join(pagesDir, 'zh-CN'))
 
@@ -122,7 +142,7 @@ describe('llms.txt', () => {
 
   it('formats every bullet as "- [title](url): description"', () => {
     const bullets = llmsTxt.split('\n').filter((line) => line.startsWith('- ['))
-    const malformed = bullets.filter((line) => !LINK_LINE.test(line))
+    const malformed = bullets.filter((line) => !isLlmsTxtLinkLine(line))
     expect(malformed).toEqual([])
     expect(links.length).toBeGreaterThan(100)
   })
@@ -159,7 +179,7 @@ describe('llms.txt', () => {
   it('covers every static page in src/pages', () => {
     const linked = new Set(internalPaths)
     const missing = [...staticPages]
-      .filter((page) => !EXCLUDED_PAGES.has(page) && !linked.has(page))
+      .filter((page) => !isExcludedPage(page) && !linked.has(page))
       .sort()
     expect(missing).toEqual([])
   })
@@ -168,15 +188,24 @@ describe('llms.txt', () => {
     const linked = new Set(internalPaths)
     const missing = Object.values(getRoutes('en'))
       .map(normalizePath)
-      .filter((route) => !EXCLUDED_PAGES.has(route) && !linked.has(route))
+      .filter((route) => !isExcludedPage(route) && !linked.has(route))
     expect(missing).toEqual([])
   })
 
   it('does not list excluded pages by accident', () => {
-    const linked = new Set(internalPaths)
-    const listedButExcluded = [...EXCLUDED_PAGES].filter((page) =>
-      linked.has(page)
-    )
+    const listedButExcluded = internalPaths.filter(isExcludedPage)
     expect(listedButExcluded).toEqual([])
+  })
+
+  it('uses only literal redirect sources for stale link checks', () => {
+    const patternedSources = [...vercelRedirectSources].filter((source) =>
+      /[:*(]/.test(source)
+    )
+    expect(patternedSources).toEqual([])
+  })
+
+  it('links a redirect destination rather than its stale source', () => {
+    const redirected = findRedirectedLinks(links, vercelRedirectSources)
+    expect(redirected).toEqual([])
   })
 })
