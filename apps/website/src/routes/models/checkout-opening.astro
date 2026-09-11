@@ -1,0 +1,33 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import { t } from '../../i18n/translations'
+---
+
+<BaseLayout
+  title="Opening checkout - Comfy"
+  description="Taking you to the secure checkout."
+>
+  <main
+    class="flex min-h-[calc(100dvh-12rem)] items-center justify-center px-6 py-16"
+  >
+    <div class="flex max-w-2xl flex-col items-center gap-6 text-center">
+      <div
+        class="border-primary-comfy-yellow text-primary-comfy-yellow flex size-20 items-center justify-center rounded-full border-2"
+        aria-hidden="true"
+      >
+        <span class="text-3xl">↗</span>
+      </div>
+      <p
+        class="text-xs font-bold tracking-wider text-primary-warm-gray uppercase"
+      >
+        {t('workshop.credits.openingLabel')}
+      </p>
+      <h1 class="text-4xl font-bold text-primary-warm-white">
+        {t('workshop.credits.openingTitle')}
+      </h1>
+      <p class="text-primary-warm-gray">
+        {t('workshop.credits.openingBody')}
+      </p>
+    </div>
+  </main>
+</BaseLayout>

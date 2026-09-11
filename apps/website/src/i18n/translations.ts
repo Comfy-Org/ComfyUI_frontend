@@ -9400,6 +9400,68 @@ Enterprise`
     'zh-CN': '返回模型'
   },
   'workshop.credits.close': { en: 'Close', 'zh-CN': '关闭' },
+  'workshop.credits.waitingTitle': {
+    en: 'Waiting for your payment',
+    'zh-CN': '正在等待付款'
+  },
+  'workshop.credits.waitingBody': {
+    en: 'Complete the purchase in the tab that just opened. This page updates on its own.',
+    'zh-CN': '请在新标签页中完成购买，此处会自动更新。'
+  },
+  'workshop.credits.waitingPolling': {
+    en: 'Checking for credits…',
+    'zh-CN': '正在查询积分…'
+  },
+  'workshop.credits.reopenPrompt': {
+    en: 'Lost the tab?',
+    'zh-CN': '不小心关闭了？'
+  },
+  'workshop.credits.reopen': {
+    en: 'Reopen checkout',
+    'zh-CN': '重新打开结账页'
+  },
+  'workshop.credits.closingIsSafe': {
+    en: 'Closing this won’t affect your payment.',
+    'zh-CN': '关闭此窗口不会影响你的付款。'
+  },
+  'workshop.credits.addedTo': {
+    en: 'Added to {workspace}. Your inputs are as you left them.',
+    'zh-CN': '已添加到 {workspace}。你的输入保持原样。'
+  },
+  'workshop.credits.previousBalance': {
+    en: 'Previous balance',
+    'zh-CN': '原有余额'
+  },
+  'workshop.credits.added': { en: 'Added', 'zh-CN': '新增' },
+  'workshop.credits.newBalance': { en: 'New balance', 'zh-CN': '当前余额' },
+  'workshop.credits.heldTitle': {
+    en: 'Payment received',
+    'zh-CN': '已收到付款'
+  },
+  'workshop.credits.heldBody': {
+    en: 'Your payment went through, but the credits have not arrived yet. You will not be charged again.',
+    'zh-CN': '付款已成功，但积分尚未到账。不会重复扣款。'
+  },
+  'workshop.credits.heldSupport': {
+    en: 'If they do not appear, give support this ID',
+    'zh-CN': '若积分仍未到账，请将此 ID 提供给客服'
+  },
+  'workshop.credits.contactSupport': {
+    en: 'Contact support',
+    'zh-CN': '联系客服'
+  },
+  'workshop.credits.openingLabel': {
+    en: 'Secure checkout',
+    'zh-CN': '安全结账'
+  },
+  'workshop.credits.openingTitle': {
+    en: 'Taking you to Stripe',
+    'zh-CN': '正在前往 Stripe'
+  },
+  'workshop.credits.openingBody': {
+    en: 'Finish your purchase here. The page you came from is still open, and your credits will appear there.',
+    'zh-CN': '请在此完成购买。你来时的页面仍然打开，积分会显示在那里。'
+  },
   'workshop.credits.returnTitle': {
     en: 'All done here',
     'zh-CN': '这里已完成'

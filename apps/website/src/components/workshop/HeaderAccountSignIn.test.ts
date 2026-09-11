@@ -48,9 +48,13 @@ vi.mock<unknown>(import('../../config/workshop-credits'), async () => {
   const { ref } = await import('vue')
   const balance = ref<unknown>({ status: 'unknown' })
   h.balance = balance
+  const { computed } = await import('vue')
   return {
     useWorkshopCredits: () => ({ balance }),
-    refreshWorkshopCredits: vi.fn().mockResolvedValue(undefined)
+    refreshWorkshopCredits: vi.fn().mockResolvedValue(undefined),
+    watchForTopUp: vi.fn(),
+    clearTopUpWatch: vi.fn(),
+    useTopUpWatch: () => computed(() => ({ status: 'idle' }))
   }
 })
 

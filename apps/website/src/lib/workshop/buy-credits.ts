@@ -43,13 +43,21 @@ export class TopUpCheckoutError extends Error {
   }
 }
 
-const zTopUpCheckout = z.object({ checkout_url: z.string().url() })
+const zTopUpCheckout = z.object({
+  checkout_url: z.string().url(),
+  session_id: z.string().optional()
+})
+
+export interface TopUpCheckoutSession {
+  readonly url: string
+  readonly sessionId?: string
+}
 
 async function requestCheckout(
   token: string,
   amountCents: number,
   returnUrl: string
-): Promise<string> {
+): Promise<TopUpCheckoutSession> {
   const response = await fetch(
     new URL('/api/billing/topup/checkout', WORKSHOP_CLOUD_BASE_URL),
     {
@@ -68,23 +76,29 @@ async function requestCheckout(
   const body: unknown = await response.json().catch(() => undefined)
   const parsed = zTopUpCheckout.safeParse(body)
   if (!parsed.success) throw new TopUpCheckoutError(response.status)
-  return parsed.data.checkout_url
+  return {
+    url: parsed.data.checkout_url,
+    ...(parsed.data.session_id !== undefined
+      ? { sessionId: parsed.data.session_id }
+      : {})
+  }
 }
 
 /**
- * The buyer should land on this site's own close-yourself page, which hands
- * focus back to the tab they came from. Ingest allowlists return hosts and
- * admits only Cloud's today; a 400 means this origin is not on the list yet,
- * and the buyer returns through Cloud's credits page instead.
+ * The buyer should land on this site's own /payment/success, which hands
+ * focus back to the tab that opened checkout and closes itself, and renders
+ * as the ordinary thank-you page everywhere else. Ingest allowlists return
+ * hosts and admits only Cloud's today; a 400 means this origin is not on
+ * the list yet, and the buyer returns through Cloud's credits page instead.
  */
 export async function createTopUpCheckout(
   token: string,
   amountCents: number
-): Promise<string> {
+): Promise<TopUpCheckoutSession> {
   if (typeof window === 'undefined')
     return requestCheckout(token, amountCents, WORKSHOP_CREDITS_URL)
   const ownReturn = new URL(
-    '/models/checkout-complete',
+    '/payment/success',
     window.location.origin
   ).toString()
   try {
