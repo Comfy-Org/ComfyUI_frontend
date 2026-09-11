@@ -9469,8 +9469,8 @@ Enterprise`
     'zh-CN': '预计 {price}'
   },
   'workshop.model.nodePriceDefaults': {
-    en: 'Node defaults. Actual cost varies with settings and usage.',
-    'zh-CN': '基于节点默认设置。实际费用随设置和用量变化。'
+    en: 'Estimated from published rates or node defaults. Actual cost varies with settings and usage.',
+    'zh-CN': '根据公布的费率或节点默认设置估算。实际费用随设置和用量变化。'
   },
   'workshop.field.uploadLimit': { en: 'up to 25 MB', 'zh-CN': '最大 25 MB' },
   'workshop.field.remove': { en: 'Remove file', 'zh-CN': '移除文件' },

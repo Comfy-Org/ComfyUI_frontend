@@ -1,3 +1,10 @@
+import type { Dimensions } from './router-parameter-options'
+import {
+  closestNumber,
+  closestOption,
+  dimensions,
+  numericValue
+} from './router-parameter-options'
 import type { RouterMedia } from './router-media'
 import { routerMediaValue } from './router-media'
 import type { WorkshopContract } from './workshop-contract'
@@ -7,10 +14,6 @@ import { urlUploadField, validateForm } from './workshop-playground'
 import { WorkshopRouterError } from './workshop-router-errors'
 
 type Scalar = string | number | boolean
-interface Dimensions {
-  readonly width: number
-  readonly height: number
-}
 
 export interface RouterRenderParameters {
   readonly prompt?: string
@@ -133,20 +136,6 @@ const mediaParameters = new Set<RouterParameterName>([
   'mask_image'
 ])
 
-const qualityValues: Readonly<Partial<Record<string, number>>> = {
-  very_low: 0,
-  low: 0.25,
-  medium: 0.5,
-  standard: 0.5,
-  std: 0.5,
-  default: 0.5,
-  turbo: 0,
-  high: 1,
-  hd: 1,
-  pro: 1,
-  quality: 1
-}
-
 export function routerParameterMappings(
   contract: WorkshopContract | undefined,
   modality?: WorkshopModelDetail['modality']
@@ -184,27 +173,27 @@ function rejected(name: string): never {
   throw new WorkshopRouterError('validation', null, { [name]: 'rejected' })
 }
 
-function dimensions(value: unknown): Dimensions | undefined {
-  if (typeof value === 'string') {
-    const match = /^(\d+(?:\.\d+)?)\s*[x×*:]\s*(\d+(?:\.\d+)?)$/i.exec(
-      value.trim()
-    )
-    if (match)
-      return dimensions({ width: Number(match[1]), height: Number(match[2]) })
-  }
+function selectionMapping(
+  field: Extract<FieldSchema, { kind: 'select' }>,
+  name: string
+): RouterParameterMapping | undefined {
   if (
-    value !== null &&
-    typeof value === 'object' &&
-    'width' in value &&
-    'height' in value &&
-    typeof value.width === 'number' &&
-    typeof value.height === 'number' &&
-    Number.isFinite(value.width) &&
-    Number.isFinite(value.height) &&
-    value.width > 0 &&
-    value.height > 0
+    name === 'mode' &&
+    field.options.every((value) => value === 'std' || value === 'pro')
   )
-    return { width: value.width, height: value.height }
+    return { parameter: 'quality' }
+  if (name === 'sound')
+    return { parameter: 'generate_audio', options: { on: true, off: false } }
+  if (['size', 'resolution', 'imageSize'].includes(name)) {
+    const sizes = field.options.flatMap((value) => dimensions(value) ?? [])
+    if (sizes.length)
+      return {
+        parameter: sizes.every((size) => size.width < 100 && size.height < 100)
+          ? 'aspect_ratio'
+          : 'size'
+      }
+    return { parameter: 'resolution' }
+  }
   return undefined
 }
 
@@ -220,25 +209,8 @@ function mappingFor(
   if (name === 'width' || name === 'height')
     return { parameter: 'size', component: name }
   if (field.kind === 'select') {
-    if (
-      name === 'mode' &&
-      field.options.every((value) => value === 'std' || value === 'pro')
-    )
-      return { parameter: 'quality' }
-    if (name === 'sound')
-      return { parameter: 'generate_audio', options: { on: true, off: false } }
-    if (['size', 'resolution', 'imageSize'].includes(name)) {
-      const sizes = field.options.flatMap((value) => dimensions(value) ?? [])
-      if (sizes.length)
-        return {
-          parameter: sizes.every(
-            (size) => size.width < 100 && size.height < 100
-          )
-            ? 'aspect_ratio'
-            : 'size'
-        }
-      return { parameter: 'resolution' }
-    }
+    const selection = selectionMapping(field, name)
+    if (selection) return selection
   }
   const reference = /^reference_image_url(?:_(\d+))?$/.exec(field.name)
   if (reference)
@@ -284,73 +256,22 @@ function structuredPrompt(
     : rejected(field.name)
 }
 
-function numericValue(
-  value: unknown,
-  parameter: RouterParameterName,
-  videoResolution: boolean
-): number | undefined {
-  if (typeof value === 'number')
-    return Number.isFinite(value) ? value : undefined
-  if (typeof value !== 'string') return
-  const text = value.toLowerCase().trim()
-  if (parameter === 'quality') return qualityValues[text]
-  if (parameter === 'duration_seconds') {
-    const duration = /^(\d+(?:\.\d+)?)\s*(?:s|seconds?)?$/.exec(text)
-    return duration ? Number(duration[1]) : undefined
-  }
-  if (parameter === 'resolution' || parameter === 'size') {
-    if (text === 'hd') return 720
-    if (text === 'fhd') return 1080
-    const pixels = /^(\d+(?:\.\d+)?)(p|k)?$/.exec(text)
-    if (pixels) {
-      const amount = Number(pixels[1])
-      if (pixels[2] !== 'k') return amount
-      return amount * (videoResolution ? 540 : 1024)
-    }
-  }
-  if (!/^-?\d+(?:\.\d+)?$/.test(text)) return
-  return Number(text)
-}
-
-function optionDistance(
+function mediaInput(
+  field: FieldSchema,
   input: unknown,
-  option: Scalar,
-  mapping: RouterParameterMapping,
-  videoResolution: boolean
-): number {
-  const target = mapping.options?.[String(option)] ?? option
-  const inputSize = dimensions(input)
-  const optionSize = dimensions(target)
-  if (inputSize && optionSize) {
-    const ratio = Math.log(
-      optionSize.width /
-        optionSize.height /
-        (inputSize.width / inputSize.height)
-    )
-    if (mapping.parameter === 'aspect_ratio' || optionSize.width < 100)
-      return Math.abs(ratio)
-    return Math.hypot(
-      Math.log(optionSize.width / inputSize.width),
-      Math.log(optionSize.height / inputSize.height)
-    )
-  }
-  const left = inputSize
-    ? videoResolution
-      ? Math.min(inputSize.width, inputSize.height)
-      : Math.max(inputSize.width, inputSize.height)
-    : numericValue(input, mapping.parameter, videoResolution)
-  const right = optionSize
-    ? Math.min(optionSize.width, optionSize.height)
-    : numericValue(target, mapping.parameter, videoResolution)
-  if (
-    mapping.parameter === 'duration_seconds' &&
-    right !== undefined &&
-    right <= 0
+  mapping: RouterParameterMapping
+): FieldValue {
+  if (Array.isArray(input) && mapping.index !== undefined)
+    input = input[mapping.index]
+  else if (Array.isArray(input) && !(field.kind === 'file' && field.multiple))
+    input = input[0]
+  else if (
+    Array.isArray(input) &&
+    field.kind === 'file' &&
+    field.maxItems !== undefined
   )
-    return Infinity
-  return left === undefined || right === undefined
-    ? Infinity
-    : Math.abs(left - right)
+    input = input.slice(0, field.maxItems)
+  return input === undefined ? undefined : routerMediaValue(field, input)
 }
 
 function closest(
@@ -366,87 +287,20 @@ function closest(
   )
     return structuredPrompt(field, input, initial)
   const size = dimensions(input)
-  if (mapping.component)
-    input = size?.[mapping.component] ?? rejected(field.name)
-  if (mediaParameters.has(mapping.parameter)) {
-    if (Array.isArray(input) && mapping.index !== undefined)
-      input = input[mapping.index]
-    else if (Array.isArray(input) && !(field.kind === 'file' && field.multiple))
-      input = input[0]
-    else if (
-      Array.isArray(input) &&
-      field.kind === 'file' &&
-      field.maxItems !== undefined
-    )
-      input = input.slice(0, field.maxItems)
-    return input === undefined ? undefined : routerMediaValue(field, input)
+  const value = mapping.component
+    ? (size?.[mapping.component] ?? rejected(field.name))
+    : input
+  if (mediaParameters.has(mapping.parameter))
+    return mediaInput(field, value, mapping)
+  if (field.kind === 'select') return closestOption(field, value, mapping)
+  if (field.kind === 'number')
+    return closestNumber(field, value, mapping.parameter)
+  if (field.kind === 'text' && size) {
+    if (mapping.parameter === 'size') return `${size.width}x${size.height}`
+    if (mapping.parameter === 'aspect_ratio')
+      return `${size.width}:${size.height}`
   }
-  if (field.kind === 'select') {
-    const exact = field.options.find(
-      (option) =>
-        mapping.options?.[String(option)] === input ||
-        String(option).toLowerCase() === String(input).toLowerCase()
-    )
-    if (exact !== undefined) return exact
-    const videoResolution = field.options.some(
-      (option) => typeof option === 'string' && /^(\d+p|f?hd)$/i.test(option)
-    )
-    const nearest = field.options.reduce<
-      { option: Scalar; distance: number } | undefined
-    >((best, option) => {
-      const distance = optionDistance(input, option, mapping, videoResolution)
-      return !best || distance < best.distance ? { option, distance } : best
-    }, undefined)
-    return nearest && Number.isFinite(nearest.distance)
-      ? nearest.option
-      : rejected(field.name)
-  }
-  if (field.kind === 'number') {
-    let value = numericValue(input, mapping.parameter, false)
-    if (value === undefined) return rejected(field.name)
-    if (
-      mapping.parameter === 'quality' &&
-      typeof input === 'number' &&
-      field.min !== undefined &&
-      field.max !== undefined
-    )
-      value =
-        field.min + Math.max(0, Math.min(1, value)) * (field.max - field.min)
-    const step =
-      typeof field.inputSchema?.multipleOf === 'number'
-        ? field.inputSchema.multipleOf
-        : field.inputSchema?.type === 'integer'
-          ? 1
-          : field.inputSchema
-            ? 'any'
-            : field.step
-    const origin = field.inputSchema ? 0 : (field.min ?? 0)
-    if (step !== 'any' && step > 0) {
-      const low =
-        field.min === undefined
-          ? -Infinity
-          : Math.ceil((field.min - origin) / step)
-      const high =
-        field.max === undefined
-          ? Infinity
-          : Math.floor((field.max - origin) / step)
-      value =
-        origin +
-        Math.max(low, Math.min(high, Math.round((value - origin) / step))) *
-          step
-      value = Number(value.toPrecision(15))
-    } else
-      value = Math.max(
-        field.min ?? -Infinity,
-        Math.min(field.max ?? Infinity, value)
-      )
-    return value
-  }
-  if (field.kind === 'text' && mapping.parameter === 'size' && size)
-    return `${size.width}x${size.height}`
-  if (field.kind === 'text' && mapping.parameter === 'aspect_ratio' && size)
-    return `${size.width}:${size.height}`
-  return strictValue(field, input)
+  return strictValue(field, value)
 }
 
 function strictValue(field: FieldSchema, value: unknown): FieldValue {
@@ -472,77 +326,113 @@ function strictValue(field: FieldSchema, value: unknown): FieldValue {
   return rejected(field.name)
 }
 
+interface ParameterContext {
+  readonly schema: readonly FieldSchema[]
+  readonly defaults: FormValues
+  readonly mappings: RouterParameterMappings
+}
+
+function frameInputs(
+  frames: NonNullable<RouterParameterMapping['frames']>,
+  parameters: RouterRenderParameters,
+  initial: FieldValue
+) {
+  const previous = Array.isArray(initial) ? initial : [initial]
+  return frames.flatMap(
+    (role, index) =>
+      parameters[role] ??
+      parameters.source_images?.[index] ??
+      previous[index] ??
+      []
+  )
+}
+
+function hasSeparateReferences(
+  schema: readonly FieldSchema[],
+  mappings: RouterParameterMappings
+) {
+  return schema.some(
+    (field) => mappingFor(field, mappings)?.parameter === 'reference_images'
+  )
+}
+
+function sourceImageInputs(
+  parameters: RouterRenderParameters,
+  separateReferences: boolean
+) {
+  const sources =
+    parameters.first_frame !== undefined
+      ? [parameters.first_frame, ...(parameters.source_images?.slice(1) ?? [])]
+      : parameters.source_images
+  const references = separateReferences
+    ? undefined
+    : parameters.reference_images
+  return sources || references
+    ? [...(sources ?? []), ...(references ?? [])]
+    : undefined
+}
+
+function sizeLimits(shape: Dimensions, context: ParameterContext) {
+  return context.schema.flatMap((field) => {
+    const component = mappingFor(field, context.mappings)?.component
+    return component && field.kind === 'number'
+      ? [
+          {
+            min: (field.min ?? 0) / shape[component],
+            max: (field.max ?? Infinity) / shape[component]
+          }
+        ]
+      : []
+  })
+}
+
+function sizeInput(
+  field: FieldSchema,
+  mapping: RouterParameterMapping,
+  parameters: RouterRenderParameters,
+  context: ParameterContext
+): Dimensions | undefined {
+  const ratio = dimensions(parameters.aspect_ratio)
+  const resolution = numericValue(parameters.resolution, 'resolution', false)
+  if (!ratio && resolution === undefined) return
+  const { defaults } = context
+  const initial = dimensions(defaults[field.name]) ?? {
+    width: typeof defaults.width === 'number' ? defaults.width : 1024,
+    height: typeof defaults.height === 'number' ? defaults.height : 1024
+  }
+  const shape = ratio ?? initial
+  const pixels = resolution ?? Math.min(initial.width, initial.height)
+  const limits = mapping.component ? sizeLimits(shape, context) : []
+  const scale = Math.min(
+    Math.max(
+      pixels / Math.min(shape.width, shape.height),
+      ...limits.map((limit) => limit.min)
+    ),
+    ...limits.map((limit) => limit.max)
+  )
+  return { width: shape.width * scale, height: shape.height * scale }
+}
+
 function parameterInput(
   field: FieldSchema,
   mapping: RouterParameterMapping,
   parameters: RouterRenderParameters,
-  schema: readonly FieldSchema[],
-  defaults: FormValues,
-  mappings: RouterParameterMappings
+  context: ParameterContext
 ): unknown {
-  if (mapping.frames?.some((role) => parameters[role] !== undefined)) {
-    const initial = defaults[field.name]
-    const previous = Array.isArray(initial) ? initial : [initial]
-    return mapping.frames.flatMap(
-      (role, index) =>
-        parameters[role] ??
-        parameters.source_images?.[index] ??
-        previous[index] ??
-        []
-    )
-  }
+  if (mapping.frames?.some((role) => parameters[role] !== undefined))
+    return frameInputs(mapping.frames, parameters, context.defaults[field.name])
   if (mapping.parameter === 'source_images' && field.name !== 'source_uri') {
-    const separateReferences = schema.some(
-      (candidate) =>
-        mappingFor(candidate, mappings)?.parameter === 'reference_images'
+    const images = sourceImageInputs(
+      parameters,
+      hasSeparateReferences(context.schema, context.mappings)
     )
-    const sources =
-      parameters.first_frame !== undefined
-        ? [
-            parameters.first_frame,
-            ...(parameters.source_images?.slice(1) ?? [])
-          ]
-        : parameters.source_images
-    const references = separateReferences
-      ? undefined
-      : parameters.reference_images
-    if (sources || references)
-      return [...(sources ?? []), ...(references ?? [])]
+    if (images) return images
   }
   const input = parameters[mapping.parameter]
   if (input !== undefined) return input
   if (mapping.parameter === 'size') {
-    const ratio = dimensions(parameters.aspect_ratio)
-    const resolution = numericValue(parameters.resolution, 'resolution', false)
-    if (ratio || resolution !== undefined) {
-      const initial = dimensions(defaults[field.name]) ?? {
-        width: typeof defaults.width === 'number' ? defaults.width : 1024,
-        height: typeof defaults.height === 'number' ? defaults.height : 1024
-      }
-      const shape = ratio ?? initial
-      const pixels = resolution ?? Math.min(initial.width, initial.height)
-      const limits = mapping.component
-        ? schema.flatMap((candidate) => {
-            const component = mappingFor(candidate, mappings)?.component
-            return component && candidate.kind === 'number'
-              ? [
-                  {
-                    min: (candidate.min ?? 0) / shape[component],
-                    max: (candidate.max ?? Infinity) / shape[component]
-                  }
-                ]
-              : []
-          })
-        : []
-      const scale = Math.min(
-        Math.max(
-          pixels / Math.min(shape.width, shape.height),
-          ...limits.map((limit) => limit.min)
-        ),
-        ...limits.map((limit) => limit.max)
-      )
-      return { width: shape.width * scale, height: shape.height * scale }
-    }
+    const size = sizeInput(field, mapping, parameters, context)
+    if (size) return size
   }
   if (field.name === 'source_uri') return parameters.source_videos
   if (field.name === 'background_url') return parameters.reference_videos
@@ -566,10 +456,7 @@ function parameterNames(
   )
     return [mapping.parameter, 'size']
   if (mapping.parameter === 'source_images' && field.name !== 'source_uri') {
-    const separateReferences = schema.some(
-      (candidate) =>
-        mappingFor(candidate, mappings)?.parameter === 'reference_images'
-    )
+    const separateReferences = hasSeparateReferences(schema, mappings)
     const references: readonly RouterParameterName[] = separateReferences
       ? []
       : ['reference_images']
@@ -611,14 +498,11 @@ export function mapRouterParameters(
       )
     )
       continue
-    const input = parameterInput(
-      field,
-      mapping,
-      parameters,
+    const input = parameterInput(field, mapping, parameters, {
       schema,
       defaults,
       mappings
-    )
+    })
     if (input !== undefined)
       values[field.name] = closest(field, input, mapping, defaults[field.name])
   }
@@ -686,9 +570,7 @@ export function createRouterParameters(
               field,
               mapping,
               { [arg_name]: input },
-              schema,
-              defaults,
-              mappings
+              { schema, defaults, mappings }
             ),
             mapping,
             defaults[field.name]
