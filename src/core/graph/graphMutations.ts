@@ -122,6 +122,7 @@ interface PreparedNode {
   state: NodeState
   layout: SemanticNodeLayout
   widgets: Array<{ name: string; value: WidgetValue; type: string }>
+  widgetsAuthoritative: boolean
 }
 
 type PreparedMutation =
@@ -283,6 +284,8 @@ function prepareNode(
   return {
     state,
     widgets: widgetEntries(payload),
+    widgetsAuthoritative:
+      Array.isArray(payload.widgets_values) || isRecord(payload.widgets_values),
     layout: {
       position: { x, y },
       size: { width, height }
@@ -388,13 +391,23 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             if (Array.isArray(widgets_values)) {
               const serializable = widgetStore
                 .getNodeWidgets(scope.rootGraphId, node.state.id)
-                .filter((widget) => widget.serialize !== false)
+                .filter(
+                  (widget) =>
+                    widget.serialize !== false && widget.type !== 'button'
+                )
               node.widgets.forEach((widget, index) => {
                 widget.name = serializable[index]?.name ?? widget.name
               })
             }
             if (typeof title !== 'string' || !title)
               node.state.title = incumbent.title
+            node.state.inputs = reconcileInputSlots(
+              {
+                ...incumbent,
+                inputs: incumbent.inputs.map((input) => ({ ...input }))
+              },
+              node.state
+            )
           }
           if (mutation.kind === 'addNode' && nodes.has(key)) {
             return `node id ${key} is already registered`
@@ -669,7 +682,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
       switch (mutation.kind) {
         case 'addNode':
         case 'reconcileNode': {
-          const { state, widgets } = mutation.node
+          const { state, widgets, widgetsAuthoritative } = mutation.node
           const existing = nodeStore.getNode(scope.rootGraphId, state.id)
           if (mutation.kind === 'reconcileNode' && existing) {
             if (existing.type === state.type) {
@@ -691,6 +704,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
               state.id
             )) {
               if (
+                widgetsAuthoritative &&
                 widget.serialize !== false &&
                 widget.type !== 'button' &&
                 !names.has(widget.name)

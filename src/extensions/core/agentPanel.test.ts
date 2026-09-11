@@ -256,6 +256,7 @@ describe('AgentPanel extension flag gate', () => {
 
     expect(mocks.notifyBeforeGraphLoad).toHaveBeenCalledOnce()
     expect(nodeSelectionStore.beginWorkflowLoad).toHaveBeenCalledOnce()
+    expect(nodeSelectionStore.isLoadingWorkflow).toBe(true)
   })
 
   it('finishes restoration when the panel closes during graph load', async () => {

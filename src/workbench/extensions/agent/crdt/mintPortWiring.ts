@@ -8,6 +8,7 @@
  */
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import type { NodeId } from '@/types/nodeId'
 import type { WorkflowNode } from '@comfyorg/comfy-multi-player'
 
@@ -103,29 +104,24 @@ export function runMintPortsIntentionalClear<T>(clear: () => T): T {
  * `widget_order`, and any extra key is an opaque server-side 500).
  */
 function serializeForMint(node: LGraphNode): WorkflowNode | null {
-  let serialized: Record<string, unknown>
+  let serialized: ISerialisedNode
   try {
-    serialized = node.serialize() as unknown as Record<string, unknown>
+    serialized = node.serialize()
   } catch {
     return null
   }
-  if (node.isVirtualNode) {
-    delete serialized.widgets_values_named
-    return serialized as unknown as WorkflowNode
-  }
-  const named = serialized.widgets_values_named
-  if (named != null && typeof named === 'object') {
-    const filtered: Record<string, unknown> = {}
-    for (const [name, value] of Object.entries(named)) {
-      const widget = node.widgets?.find((candidate) => candidate.name === name)
-      if (widget && widget.type !== 'button' && widget.serialize !== false) {
-        filtered[name] = value
-      }
+  const { widgets_values_named: named, ...rest } = serialized
+  const plain = { ...rest, flags: { ...rest.flags } }
+  if (node.isVirtualNode || named == null || typeof named !== 'object')
+    return plain
+  const filtered: Record<string, unknown> = {}
+  for (const [name, value] of Object.entries(named)) {
+    const widget = node.widgets?.find((candidate) => candidate.name === name)
+    if (widget && widget.type !== 'button' && widget.serialize !== false) {
+      filtered[name] = value
     }
-    serialized.widgets_values = filtered
-    delete serialized.widgets_values_named
   }
-  return serialized as unknown as WorkflowNode
+  return { ...plain, widgets_values: filtered }
 }
 
 export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {

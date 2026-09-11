@@ -385,6 +385,124 @@ describe('graphMutations', () => {
     expect(store.getNodeWidgets('root', toNodeId(1))).toEqual([control, text])
   })
 
+  it('keeps existing widgets when a reconcile payload carries no widgets_values', () => {
+    const graph = mutations()
+    graph.addNode(node(1, { seed: 4 }), context)
+    const store = useWidgetValueStore()
+    const seedId = widgetId('root', toNodeId(1), 'seed')
+    const seed = store.getWidget(seedId)
+    const { widgets_values: _values, ...payload } = node(1)
+
+    expect(graph.batch(context, (batch) => batch.reconcileNode(payload))).toBe(
+      true
+    )
+
+    expect(store.getWidget(seedId)).toBe(seed)
+    expect(seed?.value).toBe(4)
+
+    graph.batch(context, (batch) =>
+      batch.reconcileNode({ ...node(1), widgets_values: [] })
+    )
+
+    expect(store.getWidget(seedId)).toBeUndefined()
+  })
+
+  it('skips button widgets when remapping positional values', () => {
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    const store = useWidgetValueStore()
+    const controlId = widgetId('root', toNodeId(1), 'edit')
+    const control = store.registerWidget(controlId, {
+      type: 'button',
+      value: null,
+      options: {}
+    })
+    const textId = widgetId('root', toNodeId(1), 'text')
+    const text = store.registerWidget(textId, {
+      type: 'markdown',
+      value: '# Before',
+      options: {},
+      label: 'text'
+    })
+
+    graph.batch(context, (batch) =>
+      batch.reconcileNode({ ...node(1), widgets_values: ['# After'] })
+    )
+
+    expect(store.getWidget(controlId)).toBe(control)
+    expect(control?.value).toBeNull()
+    expect(store.getWidget(textId)).toBe(text)
+    expect(text?.value).toBe('# After')
+    expect(store.getWidget(widgetId('root', toNodeId(1), '0'))).toBeUndefined()
+  })
+
+  it('registers surplus positional values as index-named widgets', () => {
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    const store = useWidgetValueStore()
+    const textId = widgetId('root', toNodeId(1), 'text')
+    store.registerWidget(textId, {
+      type: 'markdown',
+      value: '# Before',
+      options: {},
+      label: 'text'
+    })
+
+    graph.batch(context, (batch) =>
+      batch.reconcileNode({
+        ...node(1),
+        widgets_values: ['# Preserved note', 'extra']
+      })
+    )
+
+    expect(store.getWidget(textId)?.value).toBe('# Preserved note')
+    expect(store.getWidget(widgetId('root', toNodeId(1), '1'))?.value).toBe(
+      'extra'
+    )
+  })
+
+  it('connects to a retained promoted input in the same batch as a reconcile', () => {
+    const graph = mutations()
+    const promoted = {
+      name: 'steps',
+      type: 'IMAGE',
+      link: null,
+      _subgraphSlot: true
+    }
+    graph.addNode(
+      {
+        ...node(1),
+        inputs: [...node(1).inputs, promoted],
+        properties: { proxyWidgets: [] }
+      },
+      context
+    )
+    graph.addNode(node(2), context)
+
+    expect(
+      graph.batch(context, (batch) => {
+        batch.reconcileNode({ ...node(1), properties: { proxyWidgets: [] } })
+        batch.connect({
+          id: 9,
+          originNodeId: 2,
+          originSlot: 0,
+          targetNodeId: 1,
+          targetSlot: 1,
+          type: 'IMAGE'
+        })
+      })
+    ).toBe(true)
+
+    expect(
+      useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))?.targetSlot
+    ).toBe(1)
+    expect(
+      useNodeDataStore()
+        .getNode(scope.rootGraphId, toNodeId(1))
+        ?.inputs.map(({ name }) => name)
+    ).toEqual(['in', 'steps'])
+  })
+
   it.for(['named', 'positional'])(
     'rebuilds widgets on type change: %s',
     (format) => {

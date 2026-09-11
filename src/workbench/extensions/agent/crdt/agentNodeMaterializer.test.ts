@@ -230,6 +230,9 @@ describe('reconcileAgentAdapters', () => {
         widgetId(graph.id, hostNode.id, 'steps'),
         12
       )
+      expect(hostNode.widgets.find(({ name }) => name === 'steps')?.value).toBe(
+        12
+      )
       const widgets = hostNode.widgets.map(({ name, value, type }) => ({
         name,
         value,

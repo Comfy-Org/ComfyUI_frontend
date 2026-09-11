@@ -279,6 +279,7 @@ describe('attachMintPortWiring', () => {
       serialize: () => ({
         id: 5,
         type: 'LoadImage',
+        flags: {},
         widgets_values: ['positional'],
         widgets_values_named: { image: 'cat.png', upload: 'button-slot' }
       }),
@@ -306,6 +307,7 @@ describe('attachMintPortWiring', () => {
         node: {
           id: 5,
           type: 'LoadImage',
+          flags: {},
           widgets_values: { image: 'cat.png' }
         }
       }
