@@ -103,7 +103,7 @@ function passiveReferenceView(node: Node, iconClass: string) {
   dom.contentEditable = 'false'
   dom.dataset.testid = `${reference.kind}-reference-chip`
   dom.className =
-    'inline rounded-sm bg-primary-background/30 box-decoration-clone px-1 py-0.5 font-inter text-xs/[15px] font-normal break-all whitespace-normal text-primary-background-hover ring-1 ring-primary-background/30 ring-inset'
+    'inline rounded-sm bg-primary-background/30 box-decoration-clone px-1 py-0.5 font-inter text-xs/[15px] font-normal break-all whitespace-normal text-primary-background-hover ring-1 ring-primary-background/30 ring-inset [&.ProseMirror-selectednode]:outline-1'
   const icon = document.createElement('span')
   icon.className = `${iconClass} mr-1 inline-block size-3 align-middle`
   icon.setAttribute('aria-hidden', 'true')
