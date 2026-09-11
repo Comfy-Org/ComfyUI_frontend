@@ -11,7 +11,7 @@ import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import { useAgentPanelStore } from '../../stores/agent/agentPanelStore'
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
 import type {
-  WorkflowReference,
+  WorkflowReferenceMetadata,
   WorkflowReferenceOption
 } from '../../types/workflowReference'
 import type { useAgentWorkflowResolver } from './useAgentWorkflowResolver'
@@ -144,7 +144,7 @@ export function useAgentWorkflowSelection({
 
   async function onSelectWorkflowReference(
     option: WorkflowReferenceOption
-  ): Promise<WorkflowReference | undefined> {
+  ): Promise<WorkflowReferenceMetadata | undefined> {
     if (workflowSelection.value) return undefined
     if (option.id !== undefined) {
       if (

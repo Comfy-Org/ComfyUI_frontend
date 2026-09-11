@@ -10,7 +10,7 @@ import type {
 } from '../../services/agent/agentRestClient'
 import type { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
 import type {
-  WorkflowReference,
+  WorkflowReferenceMetadata,
   WorkflowReferenceOption
 } from '../../types/workflowReference'
 
@@ -31,7 +31,7 @@ export function useAgentWorkflowResolver({
   bindings,
   listCloudWorkflows
 }: WorkflowResolverDeps) {
-  const cloudIndex = ref<WorkflowReference[]>([])
+  const cloudIndex = ref<WorkflowReferenceMetadata[]>([])
   let refreshGeneration = 0
   const cloudIdsByName = computed(() => {
     const counts = new Map<string, number>()

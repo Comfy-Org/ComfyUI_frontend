@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
+import type { AgentMessages } from '../../schemas/agentApiSchema'
+import { toTurnId } from '../../schemas/agentApiSchema'
 import { normalizeAgentTranscript } from './agentTranscript'
 
 const row = (
@@ -31,8 +32,8 @@ describe('normalizeAgentTranscript', () => {
     }
     const transcript = normalizeAgentTranscript([message])
 
-    expect(transcript.userTexts.get('turn-a' as TurnId)).toBe('Copy  into .')
-    expect(transcript.userWorkflowReferences.get('turn-a' as TurnId)).toEqual([
+    expect(transcript.userTexts.get(toTurnId('turn-a'))).toBe('Copy  into .')
+    expect(transcript.userWorkflowReferences.get(toTurnId('turn-a'))).toEqual([
       { id: 'wf-a', name: 'A', textOffset: 5 },
       { id: 'wf-b', name: 'B', unavailable: true, textOffset: 11 }
     ])
@@ -66,7 +67,7 @@ describe('normalizeAgentTranscript', () => {
       'turn-a',
       'turn-b'
     ])
-    expect(transcript.userTexts.get('turn-a' as TurnId)).toBe('First prompt')
+    expect(transcript.userTexts.get(toTurnId('turn-a'))).toBe('First prompt')
     expect(transcript.messages[0].parts).toEqual([
       { type: 'text', text: 'First reply', state: 'done' }
     ])
@@ -106,7 +107,7 @@ describe('normalizeAgentTranscript', () => {
         streaming: false
       }
     ])
-    expect(transcript.userTexts.get('turn-a' as TurnId)).toBe('Prompt')
+    expect(transcript.userTexts.get(toTurnId('turn-a'))).toBe('Prompt')
     expect(transcript.assistantTurnIds).toEqual(new Set())
     expect(transcript.rowIds).toEqual(new Set(['row-1', 'row-2']))
   })

@@ -1,4 +1,4 @@
-import type { WorkflowReference } from './workflowReference'
+import type { WorkflowReferenceMetadata } from './workflowReference'
 
 export interface PromptEditor {
   focus: () => void
@@ -8,7 +8,7 @@ export interface PromptEditor {
     from?: number,
     to?: number
   ) => {
-    insert: (reference: WorkflowReference) => void
+    insert: (reference: WorkflowReferenceMetadata) => void
     cancel: () => void
   }
 }

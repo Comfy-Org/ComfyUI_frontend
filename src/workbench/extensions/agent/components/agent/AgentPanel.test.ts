@@ -208,7 +208,7 @@ describe('AgentPanel', () => {
               [],
               references.map((reference) => ({
                 ...reference,
-                textOffset: (reference.textOffset ?? 0) + 9
+                textOffset: reference.textOffset + 9
               }))
             ]
           : [`Updated. ${prompt}`, []]

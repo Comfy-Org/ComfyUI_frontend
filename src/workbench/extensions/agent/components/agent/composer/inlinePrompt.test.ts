@@ -1,6 +1,8 @@
 import { EditorState } from '@tiptap/pm/state'
 import { describe, expect, it } from 'vitest'
 
+import { parseWorkflowReferences } from '../../../utils/workflowReferenceText'
+
 import {
   promptDocument,
   promptDocumentPosition,
@@ -46,8 +48,9 @@ describe('inline workflow prompt', () => {
   })
 
   it('opens older drafts without recorded positions without losing references', () => {
+    const restored = parseWorkflowReferences('prompt', [{ id: 'b', name: 'B' }])
     expect(
-      promptDraft(promptDocument('prompt', [{ id: 'b', name: 'B' }]))
+      promptDraft(promptDocument(restored.text, restored.references))
     ).toEqual({
       text: 'prompt',
       references: [{ id: 'b', name: 'B', textOffset: 0 }]

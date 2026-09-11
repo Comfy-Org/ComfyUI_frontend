@@ -1,9 +1,12 @@
-export interface WorkflowReference {
+export interface WorkflowReferenceMetadata {
   id: string
   name: string
   unavailable?: boolean
+}
+
+export interface WorkflowReference extends WorkflowReferenceMetadata {
   /** UTF-16 offset in the prompt text, excluding reference tokens. */
-  textOffset?: number
+  textOffset: number
 }
 
 export interface PromptSnapshot {

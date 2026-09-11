@@ -10,12 +10,9 @@ export function workflowReferenceParts(
   )[] = []
   let offset = 0
   for (const reference of [...references].sort(
-    (a, b) => (a.textOffset ?? 0) - (b.textOffset ?? 0)
+    (a, b) => a.textOffset - b.textOffset
   )) {
-    const next = Math.max(
-      offset,
-      Math.min(text.length, reference.textOffset ?? 0)
-    )
+    const next = Math.max(offset, Math.min(text.length, reference.textOffset))
     if (next > offset)
       parts.push({ type: 'text', text: text.slice(offset, next) })
     parts.push({ type: 'workflow', reference })

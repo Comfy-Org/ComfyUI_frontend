@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import type {
-  WorkflowReference,
+  WorkflowReferenceMetadata,
   WorkflowReferenceOption
 } from '../../types/workflowReference'
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
@@ -588,7 +588,7 @@ describe('Composer', () => {
     it('keeps a failed workflow mention retryable and consumes it only on success', async () => {
       const selectWorkflowReference = vi
         .fn(
-          async (): Promise<WorkflowReference | undefined> => ({
+          async (): Promise<WorkflowReferenceMetadata | undefined> => ({
             id: 'saved-scratch',
             name: 'Scratch'
           })
@@ -681,17 +681,15 @@ describe('Composer', () => {
     })
 
     it('includes selected workflow references in the send snapshot', async () => {
-      const references = [{ id: 'wf-water', name: 'Water world' }]
+      const references = [
+        { id: 'wf-water', name: 'Water world', textOffset: 0 }
+      ]
       useAgentComposerStore().draft = 'use this workflow'
       const { emitted } = mount({ workflowReferences: references })
 
       await userEvent.click(screen.getByRole('button', { name: 'Send' }))
 
-      expect(emitted().send[0]).toEqual([
-        'use this workflow',
-        [],
-        references.map((reference) => ({ ...reference, textOffset: 0 }))
-      ])
+      expect(emitted().send[0]).toEqual(['use this workflow', [], references])
     })
 
     it('keeps spaces next to boundary chips when trimming a sent prompt', async () => {
@@ -833,7 +831,9 @@ describe('Composer', () => {
         { id: 'wf-selected', name: 'Already selected' },
         { id: 'wf-eligible', name: 'Water world' }
       ],
-      workflowReferences: [{ id: 'wf-selected', name: 'Already selected' }],
+      workflowReferences: [
+        { id: 'wf-selected', name: 'Already selected', textOffset: 0 }
+      ],
       editableWorkflowId: 'wf-edit'
     })
 
@@ -856,10 +856,14 @@ describe('Composer', () => {
   })
 
   it('preserves typing done while a reference selection is saving', async () => {
-    let resolve: (saved: WorkflowReference | undefined) => void = () => {}
-    const promise = new Promise<WorkflowReference | undefined>((done) => {
-      resolve = done
-    })
+    let resolve: (
+      saved: WorkflowReferenceMetadata | undefined
+    ) => void = () => {}
+    const promise = new Promise<WorkflowReferenceMetadata | undefined>(
+      (done) => {
+        resolve = done
+      }
+    )
     mount({
       availableWorkflows: [{ tabPath: 'scratch.json', name: 'Scratch' }],
       selectWorkflowReference: () => promise
@@ -882,7 +886,9 @@ describe('Composer', () => {
     'opens a staged workflow with %s without consuming the draft',
     async (interaction) => {
       const { emitted } = mount({
-        workflowReferences: [{ id: 'wf-1', name: 'Water world' }],
+        workflowReferences: [
+          { id: 'wf-1', name: 'Water world', textOffset: 0 }
+        ],
         selectionTags: [{ id: '5', title: 'KSampler' }]
       })
       const textarea = screen.getByRole('textbox')
@@ -909,8 +915,8 @@ describe('Composer', () => {
     async (interaction) => {
       const { emitted } = mount({
         workflowReferences: [
-          { id: 'wf-1', name: 'Water world' },
-          { id: 'wf-2', name: 'Portrait lighting' }
+          { id: 'wf-1', name: 'Water world', textOffset: 0 },
+          { id: 'wf-2', name: 'Portrait lighting', textOffset: 0 }
         ]
       })
       const textarea = screen.getByRole('textbox')
@@ -935,8 +941,8 @@ describe('Composer', () => {
     useAgentComposerStore().draft = 'keep me'
     const { emitted } = mount({
       workflowReferences: [
-        { id: 'wf-1', name: 'Water world' },
-        { id: 'wf-2', name: 'Portrait lighting' }
+        { id: 'wf-1', name: 'Water world', textOffset: 0 },
+        { id: 'wf-2', name: 'Portrait lighting', textOffset: 0 }
       ]
     })
 
@@ -962,7 +968,7 @@ describe('Composer', () => {
 
   it('keeps normal text deletion when the caret is not at the start', async () => {
     const { emitted } = mount({
-      workflowReferences: [{ id: 'wf-1', name: 'Water world' }]
+      workflowReferences: [{ id: 'wf-1', name: 'Water world', textOffset: 0 }]
     })
 
     const textarea = screen.getByRole('textbox')
@@ -976,7 +982,7 @@ describe('Composer', () => {
   it('keeps selected nodes in a dedicated section above the inline prompt', () => {
     mount({
       selectionTags: [{ id: '5', title: 'KSampler' }],
-      workflowReferences: [{ id: 'wf-1', name: 'Water world' }]
+      workflowReferences: [{ id: 'wf-1', name: 'Water world', textOffset: 0 }]
     })
 
     const nodeSection = screen.getByTestId('composer-node-section')
@@ -1022,7 +1028,9 @@ describe('Composer', () => {
       setup: () => () =>
         h(Composer, {
           ref: composer,
-          workflowReferences: [{ id: 'wf-1', name: 'Water world' }],
+          workflowReferences: [
+            { id: 'wf-1', name: 'Water world', textOffset: 0 }
+          ],
           onOpenReferenceWorkflow
         })
     })

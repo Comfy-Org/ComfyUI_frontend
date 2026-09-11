@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import type { PromptEditor } from '../../types/promptEditor'
 import type {
   WorkflowReference,
+  WorkflowReferenceMetadata,
   WorkflowReferenceOption
 } from '../../types/workflowReference'
 import type {
@@ -27,7 +28,7 @@ interface MentionPickerOptions {
   getMentionNodes: () => SelectedNode[]
   selectWorkflowReference: (
     workflow: WorkflowReferenceOption
-  ) => Promise<WorkflowReference | undefined>
+  ) => Promise<WorkflowReferenceMetadata | undefined>
   pickNode: (node: SelectedNode) => void
   selectNodes: () => void
   requestWorkflows: () => void

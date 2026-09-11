@@ -28,7 +28,9 @@ function setup() {
         previewUrl: 'blob:cat'
       }
     ]
-    composer.workflowReferences = [{ id: 'wf-reference', name: 'Lighting' }]
+    composer.workflowReferences = [
+      { id: 'wf-reference', name: 'Lighting', textOffset: 0 }
+    ]
     const target = shallowRef<ComfyWorkflow | null>(
       createMockLoadedWorkflow({ path: 'workflows/target.json' })
     )

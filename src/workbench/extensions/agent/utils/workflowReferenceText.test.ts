@@ -43,11 +43,29 @@ describe('workflow reference text', () => {
   it('preserves legacy text and unattached or malformed links verbatim', () => {
     const text = 'See [Unknown](workflow://other) and [broken](workflow://%ZZ).'
     const references = [{ id: 'a', name: 'Attached' }]
-    expect(serializeWorkflowReferences(text, references)).toBe(text)
     expect(parseWorkflowReferences(text, references)).toEqual({
       text,
-      references
+      references: [{ id: 'a', name: 'Attached', textOffset: 0 }]
     })
+  })
+
+  it('uses one position for legacy references through restoration and resend', () => {
+    const restored = parseWorkflowReferences('Explain this', [
+      { id: 'a', name: 'Legacy' }
+    ])
+
+    expect(restored.references).toEqual([
+      { id: 'a', name: 'Legacy', textOffset: 0 }
+    ])
+    expect(
+      serializeWorkflowReferences(restored.text, restored.references)
+    ).toBe('[Legacy](workflow://a)Explain this')
+    expect(
+      parseWorkflowReferences(
+        serializeWorkflowReferences(restored.text, restored.references),
+        [{ id: 'a', name: 'Legacy' }]
+      )
+    ).toEqual(restored)
   })
 
   it('keeps the sent name and unavailable status when restoring a reference', () => {

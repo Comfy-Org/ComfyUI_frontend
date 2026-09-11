@@ -862,13 +862,15 @@ describe('useAgentSession (v1 composition root)', () => {
   it('(h3) sends workflow references separately and keeps them in the local turn', async () => {
     const rest = fakeRest()
     const session = useAgentSession({ rest, events: fakeEvents().source })
-    const references = [{ id: 'wf-context', name: 'Context workflow' }]
+    const references = [
+      { id: 'wf-context', name: 'Context workflow', textOffset: 0 }
+    ]
     session.start()
 
     await session.sendMessage('compare this', undefined, undefined, references)
 
     expect(vi.mocked(rest.postMessage).mock.calls[0][1]).toEqual({
-      content: 'compare this',
+      content: '[Context workflow](workflow://wf-context)compare this',
       workflowReferences: [
         { workflow_id: 'wf-context', name: 'Context workflow' }
       ],

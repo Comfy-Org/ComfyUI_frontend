@@ -25,6 +25,7 @@ import { selectedNodeKey } from '../../composables/agent/useCanvasSelection'
 import type {
   PromptSnapshot,
   WorkflowReference,
+  WorkflowReferenceMetadata,
   WorkflowReferenceOption
 } from '../../types/workflowReference'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -56,7 +57,7 @@ const {
   availableWorkflows?: WorkflowReferenceOption[]
   selectWorkflowReference?: (
     workflow: WorkflowReferenceOption
-  ) => Promise<WorkflowReference | undefined>
+  ) => Promise<WorkflowReferenceMetadata | undefined>
   editableWorkflowId?: string
   hasWorkflowTarget?: boolean
   workflowSelecting?: boolean
@@ -103,7 +104,7 @@ const composer = useComposer({
     if (workflowReferences.value.length > 0) {
       const draft = composer.draft.value
       const offsets = workflowReferences.value.map(
-        (reference) => reference.textOffset ?? 0
+        (reference) => reference.textOffset
       )
       const start = Math.min(
         draft.length - draft.trimStart().length,
@@ -118,7 +119,7 @@ const composer = useComposer({
           ...reference,
           textOffset: Math.min(
             end - start,
-            Math.max(0, (reference.textOffset ?? 0) - start)
+            Math.max(0, reference.textOffset - start)
           )
         }))
       )

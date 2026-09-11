@@ -2691,7 +2691,7 @@ describe('AgentPanelRoot workflow binding', () => {
     const conversation = useAgentConversationStore()
     conversation.startTurn(oldTurn)
     conversation.recordUser(oldTurn, 'Earlier prompt', undefined, undefined, [
-      { id: 'wf-b', name: 'reference-b' }
+      { id: 'wf-b', name: 'reference-b', textOffset: 0 }
     ])
     conversation.ingest({
       type: 'agent_message_done',
@@ -4597,7 +4597,7 @@ describe('AgentPanelRoot workflow binding', () => {
       'Compare these',
       undefined,
       undefined,
-      [{ id: 'wf-reference', name: 'reference' }]
+      [{ id: 'wf-reference', name: 'reference', textOffset: 0 }]
     )
     conversation.ingest({
       type: 'agent_message_done',

@@ -32,7 +32,10 @@ Inline references are represented in message `content` as
 workflows with matching names. The frontend restores these links as chips only
 when their IDs appear in the persisted reference metadata. The links are prose;
 `workflow_references` still owns context selection and authorization. Older
-messages without inline links retain their separate reference presentation.
+messages without inline links keep their text and normalize references to
+position zero on ingestion. Drafts and transcripts require positioned references;
+workflow discovery returns metadata, and the editor assigns its insertion
+position. Sending an edited legacy prompt uses these same explicit positions.
 
 We considered marking individual open tabs as selected. A separate field keeps
 view state and prompt intent independently owned and permits referencing a saved

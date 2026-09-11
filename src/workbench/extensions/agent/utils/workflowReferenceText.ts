@@ -1,4 +1,7 @@
-import type { WorkflowReference } from '../types/workflowReference'
+import type {
+  WorkflowReference,
+  WorkflowReferenceMetadata
+} from '../types/workflowReference'
 import { workflowReferenceParts } from './workflowReferenceParts'
 
 function workflowReferenceUrl(id: string): string {
@@ -9,10 +12,7 @@ export function serializeWorkflowReferences(
   text: string,
   references: WorkflowReference[]
 ): string {
-  return workflowReferenceParts(
-    text,
-    references.filter((reference) => reference.textOffset !== undefined)
-  )
+  return workflowReferenceParts(text, references)
     .map((part) => {
       if (part.type === 'text') return part.text
       const name = part.reference.name.replace(/[\\[\]]/g, '\\$&')
@@ -23,12 +23,12 @@ export function serializeWorkflowReferences(
 
 export function parseWorkflowReferences(
   content: string,
-  references: WorkflowReference[]
+  references: WorkflowReferenceMetadata[]
 ): { text: string; references: WorkflowReference[] } {
   const remaining = new Map(
     references.map((reference) => [
       workflowReferenceUrl(reference.id),
-      reference
+      { ...reference, textOffset: 0 }
     ])
   )
   const positioned: WorkflowReference[] = []

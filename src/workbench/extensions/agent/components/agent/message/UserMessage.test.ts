@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
+import type { ComponentProps } from 'vue-component-type-helpers'
 
 // jsdom lacks ResizeObserver, which the asset-preview import chain references.
 vi.hoisted(() => {
@@ -33,13 +34,7 @@ vi.mock<unknown>(import('@vueuse/core'), () => ({
 
 const t = i18n.global.t
 
-function renderMessage(props: {
-  text: string
-  attachments?: { name: string; previewUrl?: string; ref?: string }[]
-  tags?: string[]
-  editable?: boolean
-  workflowReferences?: { id: string; name: string; unavailable?: boolean }[]
-}) {
+function renderMessage(props: ComponentProps<typeof UserMessage>) {
   return render(UserMessage, {
     props,
     global: {
@@ -67,8 +62,13 @@ describe('UserMessage', () => {
       text: '',
       attachments: [{ name: 'image.png', ref: 'image.png' }],
       workflowReferences: [
-        { id: 'missing', name: 'Deleted workflow', unavailable: true },
-        { id: 'available', name: 'Available' }
+        {
+          id: 'missing',
+          name: 'Deleted workflow',
+          unavailable: true,
+          textOffset: 0
+        },
+        { id: 'available', name: 'Available', textOffset: 0 }
       ]
     })
     const unavailable = screen.getByRole('button', {
@@ -86,21 +86,22 @@ describe('UserMessage', () => {
   })
   it('renders submitted workflow references inline with the prompt snapshot', () => {
     renderMessage({
-      text: 'Build a scene from water world.',
+      text: 'Use  and compare with  today.',
       workflowReferences: [
-        { id: 'wf-1', name: 'Workflow 1' },
-        { id: 'wf-2', name: 'Workflow 2' }
+        { id: 'wf-1', name: 'Workflow 1', textOffset: 4 },
+        { id: 'wf-2', name: 'Workflow 2', textOffset: 22 }
       ]
     })
 
     const bubble = screen.getByTestId('user-message-bubble')
-    const [firstWorkflowChip] = within(bubble).getAllByTestId(
-      'workflow-reference-chip'
+    expect(bubble).toHaveTextContent(
+      /^Use Workflow 1 and compare with Workflow 2 today\.$/
     )
-    expect(firstWorkflowChip).toBeVisible()
-    expect(within(bubble).getByText('Workflow 2')).toBeVisible()
     expect(
-      within(bubble).getByText('Build a scene from water world.')
+      within(bubble).getByRole('button', { name: 'Open Workflow 1' })
+    ).toBeVisible()
+    expect(
+      within(bubble).getByRole('button', { name: 'Open Workflow 2' })
     ).toBeVisible()
   })
 
@@ -109,7 +110,9 @@ describe('UserMessage', () => {
     async (interaction) => {
       const view = renderMessage({
         text: 'Compare this',
-        workflowReferences: [{ id: 'wf-reference', name: 'Reference' }]
+        workflowReferences: [
+          { id: 'wf-reference', name: 'Reference', textOffset: 0 }
+        ]
       })
 
       const chip = screen.getByRole('button', { name: 'Open Reference' })

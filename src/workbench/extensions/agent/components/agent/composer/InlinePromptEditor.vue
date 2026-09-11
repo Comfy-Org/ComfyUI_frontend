@@ -8,7 +8,10 @@ import { onBeforeUnmount, onMounted, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { PromptEditor } from '../../../types/promptEditor'
-import type { WorkflowReference } from '../../../types/workflowReference'
+import type {
+  WorkflowReference,
+  WorkflowReferenceMetadata
+} from '../../../types/workflowReference'
 import {
   inlinePromptSchema,
   promptDocument,
@@ -293,7 +296,7 @@ function captureInsertion(from?: number, to?: number) {
   }
   insertions.add(insertion)
   return {
-    insert(reference: WorkflowReference) {
+    insert(reference: WorkflowReferenceMetadata) {
       if (!view || !insertions.delete(insertion)) return
       const node = inlinePromptSchema.nodes.workflow.create({
         id: reference.id,

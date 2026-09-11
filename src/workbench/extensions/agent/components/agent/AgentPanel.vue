@@ -15,6 +15,7 @@ import { buildAgentTooltipConfig } from '@/composables/useTooltipConfig'
 import type { ActiveTab } from '../../types/activeTab'
 import type {
   WorkflowReference,
+  WorkflowReferenceMetadata,
   WorkflowReferenceOption
 } from '../../types/workflowReference'
 import type { TurnId } from '../../schemas/agentApiSchema'
@@ -76,7 +77,7 @@ const {
   availableWorkflows?: WorkflowReferenceOption[]
   selectWorkflowReference?: (
     workflow: WorkflowReferenceOption
-  ) => Promise<WorkflowReference | undefined>
+  ) => Promise<WorkflowReferenceMetadata | undefined>
   savingReference?: boolean
   editableWorkflowId?: string
   activeTab?: ActiveTab | null
