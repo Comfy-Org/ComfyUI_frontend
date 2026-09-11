@@ -5,8 +5,8 @@ import type { Modifiers } from '@/lib/litegraph/src/__fixtures__/canvasHarness'
 import {
   addGroup,
   addNode,
+  attachKeyboard,
   createCanvas,
-  keyEvent,
   pointerEvent,
   selectedTitles
 } from '@/lib/litegraph/src/__fixtures__/canvasHarness'
@@ -1089,15 +1089,28 @@ describe('LGraphCanvas selection', () => {
   })
 
   describe('space bar pan override', () => {
+    let keyboard: ReturnType<typeof attachKeyboard>
+    const settleRelease = () =>
+      new Promise<void>((resolve) => setTimeout(resolve))
+
+    beforeEach(() => {
+      keyboard = attachKeyboard(canvas)
+    })
+
+    afterEach(() => {
+      keyboard.dispose()
+    })
+
     it.for([{ readOnly: true }, { readOnly: false }])(
       'restores read_only=$readOnly after release',
-      ({ readOnly }) => {
+      async ({ readOnly }) => {
         canvas.read_only = readOnly
 
-        canvas.processKey(keyEvent('keydown', ' '))
+        keyboard.press(' ')
         expect(canvas.read_only).toBe(true)
 
-        canvas.processKey(keyEvent('keyup', ' '))
+        keyboard.release(' ')
+        await settleRelease()
         expect(canvas.read_only).toBe(readOnly)
       }
     )
@@ -1105,22 +1118,24 @@ describe('LGraphCanvas selection', () => {
     it('ignores a release without a matching press', () => {
       canvas.read_only = true
 
-      canvas.processKey(keyEvent('keyup', ' '))
+      keyboard.release(' ')
 
       expect(canvas.read_only).toBe(true)
     })
 
-    it('clears held state when the graph is detached before release', () => {
-      canvas.processKey(keyEvent('keydown', ' '))
+    it('clears held state when the graph is detached before release', async () => {
+      keyboard.press(' ')
       graph.detachCanvas(canvas)
 
-      canvas.processKey(keyEvent('keyup', ' '))
+      keyboard.release(' ')
+      await settleRelease()
       expect(canvas.read_only).toBe(false)
 
       new LGraph().attachCanvas(canvas)
       canvas.read_only = true
-      canvas.processKey(keyEvent('keydown', ' '))
-      canvas.processKey(keyEvent('keyup', ' '))
+      keyboard.press(' ')
+      keyboard.release(' ')
+      await settleRelease()
 
       expect(canvas.read_only).toBe(true)
     })

@@ -531,7 +531,6 @@ export const useLitegraphService = () => {
 
     addNodeContextMenuHandler(node)
     addDrawBackgroundHandler(node)
-    addNodeKeyHandler(node)
     // Note: Some extensions expects node.comfyClass to be set in
     // `beforeRegisterNodeDef`.
     node.prototype.comfyClass = nodeDefV1.name
@@ -634,7 +633,6 @@ export const useLitegraphService = () => {
 
     addNodeContextMenuHandler(node)
     addDrawBackgroundHandler(node)
-    addNodeKeyHandler(node)
     // Note: Some extensions expects node.comfyClass to be set in
     // `beforeRegisterNodeDef`.
     node.prototype.comfyClass = nodeDefV1.name
@@ -876,48 +874,6 @@ export const useLitegraphService = () => {
             parentGraph?.setDirtyCanvas(true)
           })
         }
-      }
-    }
-  }
-
-  function addNodeKeyHandler(node: typeof LGraphNode) {
-    const origNodeOnKeyDown = node.prototype.onKeyDown
-
-    node.prototype.onKeyDown = function (e) {
-      const originalResult: unknown = origNodeOnKeyDown?.call(this, e)
-      if (originalResult === false) {
-        return false
-      }
-
-      if (this.flags.collapsed || !this.imgs || this.imageIndex === null) {
-        return
-      }
-
-      let handled = false
-
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-        const imageIndex = this.imageIndex
-        if (imageIndex === undefined) return
-        if (e.key === 'ArrowLeft') {
-          this.imageIndex = imageIndex - 1
-        } else {
-          this.imageIndex = imageIndex + 1
-        }
-        this.imageIndex %= this.imgs.length
-
-        if (this.imageIndex < 0) {
-          this.imageIndex = this.imgs.length + this.imageIndex
-        }
-        handled = true
-      } else if (e.key === 'Escape') {
-        this.imageIndex = null
-        handled = true
-      }
-
-      if (handled) {
-        e.preventDefault()
-        e.stopImmediatePropagation()
-        return false
       }
     }
   }

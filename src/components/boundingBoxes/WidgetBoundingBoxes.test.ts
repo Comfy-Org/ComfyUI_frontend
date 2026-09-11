@@ -1,11 +1,13 @@
 /* oxlint-disable testing-library/no-container, testing-library/no-node-access, testing-library/prefer-user-event */
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import WidgetBoundingBoxes from './WidgetBoundingBoxes.vue'
 import boundingBoxes from '@/locales/en/main.json'
+import { useKeybindingService } from '@/platform/keybindings/keybindingService'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { BoundingBox } from '@/types/boundingBoxes'
 import { toNodeId } from '@/types/nodeId'
 
@@ -200,7 +202,10 @@ describe('WidgetBoundingBoxes', () => {
   })
 
   it('deletes the active region with the Delete key', async () => {
+    useSettingStore().settingValues['Comfy.Keybinding.CapturePhase'] = true
+    onTestFinished(useKeybindingService().install())
     const { canvas, emitted } = renderWidget([box()])
+    canvas.focus()
     await fireEvent.keyDown(canvas, { key: 'Delete' })
     expect(lastBoxes(emitted)).toEqual([])
   })

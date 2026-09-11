@@ -8,8 +8,7 @@ import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
 const mockKeyboard = vi.hoisted(() => ({
-  addListeners: vi.fn(),
-  removeListeners: vi.fn()
+  isPanning: { value: false }
 }))
 
 const mockPanZoom = vi.hoisted(() => ({
@@ -134,11 +133,6 @@ describe('MaskEditorContent', () => {
   })
 
   describe('mount', () => {
-    it('should add keyboard listeners on mount', () => {
-      renderContent()
-      expect(mockKeyboard.addListeners).toHaveBeenCalledTimes(1)
-    })
-
     it('should observe the container with a ResizeObserver', async () => {
       renderContent()
       await waitFor(() => expect(observeSpy).toHaveBeenCalledTimes(1))
@@ -305,7 +299,6 @@ describe('MaskEditorContent', () => {
       unmount()
 
       expect(mockBrushDrawing.saveBrushSettings).toHaveBeenCalledTimes(1)
-      expect(mockKeyboard.removeListeners).toHaveBeenCalledTimes(1)
       expect(
         vi.mocked(mockStore.canvasHistory).clearStates
       ).toHaveBeenCalledTimes(1)

@@ -5,7 +5,6 @@
     class="maskEditor-dialog-root flex size-full flex-col"
     @contextmenu.prevent
     @dragstart="handleDragStart"
-    @keydown.escape.stop
   >
     <div
       id="maskEditorCanvasContainer"
@@ -183,8 +182,6 @@ const initUI = async () => {
 }
 
 onMounted(() => {
-  keyboard.addListeners()
-
   if (containerRef.value) {
     resizeObserver = new ResizeObserver(async () => {
       if (panZoom) {
@@ -199,8 +196,6 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   toolManager.brushDrawing.saveBrushSettings()
-
-  keyboard?.removeListeners()
 
   if (resizeObserver) {
     resizeObserver.disconnect()
