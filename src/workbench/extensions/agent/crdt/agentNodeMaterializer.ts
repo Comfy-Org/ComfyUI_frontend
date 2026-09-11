@@ -1,6 +1,12 @@
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraph, Subgraph } from '@/lib/litegraph/src/LGraph'
 import { materializeLinkAdapter } from '@/lib/litegraph/src/LLink'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  demoteWidget,
+  promoteWidget
+} from '@/core/graph/subgraph/promotionUtils'
+import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
+import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { topologicalSortSubgraphs } from '@/lib/litegraph/src/subgraph/subgraphDeduplication'
 import type {
   ExportedSubgraph,
@@ -14,6 +20,7 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { GraphScope } from '@/types/graphScopeId'
 import { graphScopeOf } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetStateInit } from '@/types/widgetState'
@@ -51,9 +58,136 @@ export function reconcileAgentAdapters(
   subgraphDefinitions: ExportedSubgraph[] = []
 ): NodeId[] {
   return runMintPortsSuppressed(() => {
+    const existingDefinitions = new Set(graph.rootGraph.subgraphs.keys())
     const pending = registerSubgraphDefinitions(graph, subgraphDefinitions)
+    reconcileSubgraphPromotions(
+      graph.rootGraph,
+      subgraphDefinitions,
+      existingDefinitions
+    )
     return reconcile(graph, pending)
   })
+}
+
+interface PromotionSource {
+  node: LGraphNode
+  widget: NonNullable<LGraphNode['widgets']>[number]
+}
+
+function promotionKey(node: LGraphNode, widget: PromotionSource['widget']) {
+  return `${node.id}\u0000${widget.name}`
+}
+
+function resolvePromotionSources(
+  subgraph: Subgraph,
+  definition: ExportedSubgraph
+): PromotionSource[] | Error {
+  const links = new Map(
+    (definition.links ?? []).map((link) => {
+      const tuple: unknown = link
+      return Array.isArray(tuple)
+        ? [
+            Number(tuple[0]),
+            {
+              originId: tuple[1],
+              targetId: tuple[3],
+              targetSlot: Number(tuple[4])
+            }
+          ]
+        : [
+            link.id,
+            {
+              originId: link.origin_id,
+              targetId: link.target_id,
+              targetSlot: link.target_slot
+            }
+          ]
+    })
+  )
+  const sources: PromotionSource[] = []
+  for (const input of definition.inputs ?? []) {
+    for (const linkId of input.linkIds ?? []) {
+      const link = links.get(linkId)
+      if (!link || String(link.originId) !== SUBGRAPH_INPUT_ID) continue
+      const node = subgraph.getNodeById(toNodeId(String(link.targetId)))
+      const slot = node?.inputs[link.targetSlot]
+      const widget = slot ? node.getWidgetFromSlot(slot) : undefined
+      if (!node || !slot || !widget) {
+        return new Error(
+          `Agent subgraph promotion source is unknown: ${definition.id}/${String(link.targetId)}/${input.name}`
+        )
+      }
+      sources.push({ node, widget })
+    }
+  }
+  return sources
+}
+
+function currentPromotionSources(subgraph: Subgraph): PromotionSource[] {
+  return subgraph.inputs.flatMap((input) =>
+    input.linkIds.flatMap((linkId) => {
+      const link = subgraph.getLink(linkId)
+      if (!link) return []
+      const { inputNode, input: targetInput } = link.resolve(subgraph)
+      const widget = targetInput
+        ? inputNode?.getWidgetFromSlot(targetInput)
+        : undefined
+      return inputNode && targetInput && widget
+        ? [{ node: inputNode, widget }]
+        : []
+    })
+  )
+}
+
+function definitionHosts(rootGraph: LGraph, definitionId: string) {
+  const graphs = [rootGraph, ...rootGraph.subgraphs.values()]
+  return graphs.flatMap((candidate) =>
+    candidate.nodes.filter(
+      (node): node is SubgraphNode =>
+        node.isSubgraphNode() && node.type === definitionId
+    )
+  )
+}
+
+const reportedPromotionFailures = new WeakMap<LGraph, Set<string>>()
+
+function reconcileSubgraphPromotions(
+  rootGraph: LGraph,
+  definitions: ExportedSubgraph[],
+  existingDefinitions: ReadonlySet<string>
+): void {
+  const reported =
+    reportedPromotionFailures.get(rootGraph) ??
+    reportedPromotionFailures.set(rootGraph, new Set()).get(rootGraph)!
+  const flattened = flattenDefinitions(definitions)
+  for (const definition of topologicalSortSubgraphs(flattened)) {
+    if (!existingDefinitions.has(definition.id)) continue
+    const live = rootGraph.subgraphs.get(definition.id)
+    if (!live) continue
+    const desired = resolvePromotionSources(live, definition)
+    if (desired instanceof Error) {
+      if (!reported.has(desired.message)) {
+        reported.add(desired.message)
+        reportError(desired, {
+          errorType: 'agent_subgraph_promotion_failed',
+          context: { graphId: rootGraph.id, definitionId: definition.id }
+        })
+      }
+      continue
+    }
+
+    const hosts = definitionHosts(rootGraph, definition.id)
+    if (hosts.length === 0) continue
+    const desiredKeys = new Set(
+      desired.map(({ node, widget }) => promotionKey(node, widget))
+    )
+    for (const { node, widget } of currentPromotionSources(live)) {
+      if (!desiredKeys.has(promotionKey(node, widget))) {
+        demoteWidget(node, widget, hosts)
+      }
+    }
+    for (const { node, widget } of desired) promoteWidget(node, widget, hosts)
+  }
 }
 
 /**
