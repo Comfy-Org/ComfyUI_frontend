@@ -6,15 +6,22 @@ import { describe, expect, it } from 'vitest'
 import type {
   PerfMeasurement,
   PerfMeasurementResult,
+  PerfReport,
   PerfReportV3
 } from '../browser_tests/fixtures/utils/perfReportSchema'
 import {
   perfMeasurementResultSchema,
   perfReportSchema
 } from '../browser_tests/fixtures/utils/perfReportSchema'
+import { summarizeRafIntervals } from '../browser_tests/fixtures/helpers/rafMetrics'
 import { renderPerfReport } from './perf-report'
 
-function measurement(name: string, rafIntervalP95Ms: number): PerfMeasurement {
+function measurement(
+  name: string,
+  rafIntervalP95Ms: number,
+  topologyHash = 'sha256:test'
+): PerfMeasurement {
+  const rafIntervalsMs = [rafIntervalP95Ms]
   return {
     name,
     durationMs: 0,
@@ -32,6 +39,7 @@ function measurement(name: string, rafIntervalP95Ms: number): PerfMeasurement {
     taskAccountingResidualMs: 0,
     missingCdpMetrics: [],
     nonMonotonicCdpMetrics: [],
+    invalidCdpMetrics: [],
     heapDeltaBytes: 0,
     heapUsedBytes: 0,
     domNodes: 0,
@@ -39,20 +47,12 @@ function measurement(name: string, rafIntervalP95Ms: number): PerfMeasurement {
     scriptDurationMs: 0,
     eventListeners: 0,
     totalBlockingTimeMs: 0,
-    rafIntervalsMs: [rafIntervalP95Ms],
-    rafIntervalCount: 1,
-    rafIntervalP50Ms: rafIntervalP95Ms,
-    rafIntervalP95Ms,
-    rafIntervalP99Ms: rafIntervalP95Ms,
-    rafIntervalMaxMs: rafIntervalP95Ms,
-    rafIntervalsOver8_33Ms: 0,
-    rafIntervalsOver16_67Ms: 0,
-    rafIntervalsOver33_3Ms: 0,
-    rafIntervalsOver50Ms: 0,
+    rafIntervalsMs,
+    ...summarizeRafIntervals(rafIntervalsMs),
     workloadIdentity: {
       schemaVersion: 1,
       topology: {
-        hash: 'sha256:test',
+        hash: topologyHash,
         nodes: 1,
         visibleNodes: 1,
         inputs: 0,
@@ -215,6 +215,20 @@ describe('performance report', () => {
     ).toBe(false)
   })
 
+  it('rejects accepted results with invalid or inconsistent raw intervals', () => {
+    const emptyIntervals = accepted(20)
+    emptyIntervals.measurement.rafIntervalsMs = []
+    const inconsistentSummary = accepted(20)
+    inconsistentSummary.measurement.rafIntervalP95Ms = 10
+
+    expect(perfMeasurementResultSchema.safeParse(emptyIntervals).success).toBe(
+      false
+    )
+    expect(
+      perfMeasurementResultSchema.safeParse(inconsistentSummary).success
+    ).toBe(false)
+  })
+
   it('preserves accounting and identity on rejected results', () => {
     const input = report([rejected(20)])
     const parsed = perfReportSchema.parse(input)
@@ -228,8 +242,93 @@ describe('performance report', () => {
     const parsed = perfMeasurementResultSchema.parse(serialized)
 
     expect(parsed.kind).toBe('rejected')
-    expect(Number.isNaN(parsed.measurement.rafIntervalP95Ms)).toBe(true)
-    expect(Number.isNaN(parsed.measurement.rafIntervalsMs[0])).toBe(true)
+    expect(parsed.measurement.rafIntervalP95Ms).toBeNull()
+    expect(parsed.measurement.rafIntervalsMs[0]).toBeNull()
+  })
+
+  it('escapes artifact-controlled text in rendered Markdown', () => {
+    const hostileName = '@everyone | **owned** <img src=x>\n# heading'
+    const hostileReason = '@octocat | [link](https://example.com) </details>'
+    const output = renderPerfReport(
+      report([
+        {
+          kind: 'rejected',
+          reason: hostileReason,
+          measurement: measurement(hostileName, 20)
+        }
+      ]),
+      null,
+      []
+    )
+    const renderedReport = output.split(
+      '<details><summary>Summary data</summary>'
+    )[0]
+
+    expect(renderedReport).not.toContain(hostileName)
+    expect(renderedReport).not.toContain(hostileReason)
+    expect(renderedReport).not.toContain('@everyone')
+    expect(renderedReport).not.toContain('@octocat')
+    expect(renderedReport).not.toContain('<img')
+    expect(renderedReport).not.toContain('</details> |')
+    expect(renderedReport).not.toContain('\n# heading')
+  })
+
+  it('excludes incompatible v3 baseline and history by workload identity', () => {
+    const incompatible = (value: number): PerfMeasurementResult => ({
+      kind: 'accepted',
+      measurement: measurement('sample', value, 'sha256:other')
+    })
+    const output = renderPerfReport(
+      report([accepted(20)]),
+      report([incompatible(1_000)]),
+      [
+        report([accepted(10), incompatible(2_000)]),
+        report([accepted(30), incompatible(3_000)])
+      ]
+    )
+
+    expect(output).toContain(
+      '| sample: rAF interval p95 | — | 20ms | new | — |'
+    )
+    expect(output).toContain(
+      '| sample: rAF interval p95 | 20ms | 14ms | 70.7% |'
+    )
+    expect(output).not.toContain('1000ms')
+    expect(output).not.toContain('2500ms')
+  })
+
+  it('ignores old-schema history when calculating v3 variance', () => {
+    const current = report([accepted(20)])
+    const baseline = report([accepted(20)])
+    const v3History = [report([accepted(10)]), report([accepted(30)])]
+    const oldHistory: PerfReport = {
+      timestamp: '2026-08-20T00:00:00.000Z',
+      gitSha: 'old',
+      branch: 'main',
+      measurements: [{ arbitrary: 'old schema data' }]
+    }
+
+    expect(
+      renderPerfReport(current, baseline, [...v3History, oldHistory])
+    ).toBe(renderPerfReport(current, baseline, v3History))
+  })
+
+  it('bounds the entire report for many rejections and reports omissions', () => {
+    const measurementCount = 2_000
+    const output = renderPerfReport(
+      report(
+        Array.from({ length: measurementCount }, (_, index) => ({
+          kind: 'rejected',
+          reason: `rejection-${index}`,
+          measurement: measurement(`sample-${index}`, 20)
+        }))
+      ),
+      null,
+      []
+    )
+
+    expect(output.length).toBeLessThanOrEqual(48_000)
+    expect(output).toMatch(/\d+ rejected measurements? (?:omitted|truncated)/i)
   })
 
   it('bounds fallback summary data and reports omitted measurements', () => {

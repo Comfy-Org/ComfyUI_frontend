@@ -91,6 +91,15 @@ describe('perf workload identity', () => {
     expect(serialized).not.toContain('"20"')
   })
 
+  it('accepts custom non-empty Vite build modes', () => {
+    const identity = buildPerfWorkloadIdentity({
+      ...source,
+      buildMode: 'staging'
+    })
+
+    expect(identity.environment.buildMode).toBe('staging')
+  })
+
   it('filters samples by topology and execution environment', () => {
     const reference = { workloadIdentity: buildPerfWorkloadIdentity(source) }
     const sameWorkloadNewBuild = {

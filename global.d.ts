@@ -66,7 +66,7 @@ interface SyftDisabledClient {
 interface Window {
   __COMFYUI_FRONTEND_VERSION__: string
   __COMFYUI_FRONTEND_COMMIT__: string
-  __COMFYUI_BUILD_MODE__: 'development' | 'production' | 'test'
+  __COMFYUI_BUILD_MODE__: string
   __CONFIG__?: {
     gtm_container_id?: string
     ga_measurement_id?: string

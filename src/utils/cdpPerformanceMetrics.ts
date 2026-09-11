@@ -24,11 +24,10 @@ export interface CdpTaskAccounting {
   taskAccountingResidualMs: number | null
   missingCdpMetrics: string[]
   nonMonotonicCdpMetrics: string[]
+  invalidCdpMetrics: string[]
 }
 
 export type CdpMetricSnapshot = ReadonlyMap<string, number>
-
-class MissingCdpMetricError extends Error {}
 
 export function parseCdpMetrics(
   metrics: CdpPerformanceMetric[]
@@ -47,7 +46,7 @@ export function requireCdpMetric(
 ): number {
   const value = snapshot.get(name)
   if (value === undefined) {
-    throw new MissingCdpMetricError(
+    throw new TypeError(
       `Performance.getMetrics omitted required metric ${name}`
     )
   }
@@ -62,7 +61,8 @@ function optionalDeltaSeconds(
   const beforeValue = before.get(name)
   const afterValue = after.get(name)
   if (beforeValue === undefined || afterValue === undefined) return null
-  return afterValue - beforeValue
+  const delta = afterValue - beforeValue
+  return Number.isFinite(delta) && Number.isFinite(delta * 1000) ? delta : null
 }
 
 export function computeCdpTaskAccounting(
@@ -79,11 +79,32 @@ export function computeCdpTaskAccounting(
     'ThreadTime',
     'ProcessTime'
   ]
+  const rawDeltas = new Map(
+    names.map((name) => {
+      const beforeValue = before.get(name)
+      const afterValue = after.get(name)
+      return [
+        name,
+        beforeValue === undefined || afterValue === undefined
+          ? null
+          : afterValue - beforeValue
+      ] as const
+    })
+  )
   const deltas = new Map(
     names.map((name) => [name, optionalDeltaSeconds(before, after, name)])
   )
   const getDelta = (name: string): number | null => deltas.get(name) ?? null
-  const missingCdpMetrics = names.filter((name) => getDelta(name) === null)
+  const missingCdpMetrics = names.filter(
+    (name) => before.get(name) === undefined || after.get(name) === undefined
+  )
+  const invalidCdpMetrics = names.filter((name) => {
+    const delta = rawDeltas.get(name)
+    return (
+      delta != null &&
+      (!Number.isFinite(delta) || !Number.isFinite(delta * 1000))
+    )
+  })
   const nonMonotonicCdpMetrics = names.filter((name) => {
     const delta = getDelta(name)
     return delta !== null && delta < 0
@@ -96,12 +117,27 @@ export function computeCdpTaskAccounting(
       (value): value is number => value !== null && value >= 0
     ) &&
     taskDuration >= 0
-  const accountedSeconds = canCompose
+  const componentSum = canCompose
     ? componentDeltas.reduce<number>((sum, value) => sum + value, 0)
     : null
+  const accountedSeconds =
+    componentSum !== null &&
+    Number.isFinite(componentSum) &&
+    Number.isFinite(componentSum * 1000)
+      ? componentSum
+      : null
+  if (
+    componentSum !== null &&
+    (!Number.isFinite(componentSum) || !Number.isFinite(componentSum * 1000))
+  ) {
+    invalidCdpMetrics.push('TaskDuration components')
+  }
 
-  const milliseconds = (value: number | null | undefined) =>
-    value === null || value === undefined || value < 0 ? null : value * 1000
+  const milliseconds = (value: number | null | undefined) => {
+    if (value === null || value === undefined || value < 0) return null
+    const result = value * 1000
+    return Number.isFinite(result) ? result : null
+  }
 
   return {
     taskOtherDurationMs: milliseconds(getDelta('TaskOtherDuration')),
@@ -112,11 +148,15 @@ export function computeCdpTaskAccounting(
     threadTimeMs: milliseconds(getDelta('ThreadTime')),
     processTimeMs: milliseconds(getDelta('ProcessTime')),
     accountedTaskDurationMs: milliseconds(accountedSeconds),
-    taskAccountingResidualMs:
-      canCompose && accountedSeconds !== null
-        ? (taskDuration - accountedSeconds) * 1000
-        : null,
+    taskAccountingResidualMs: (() => {
+      if (!canCompose || accountedSeconds === null) return null
+      const residual = (taskDuration - accountedSeconds) * 1000
+      if (Number.isFinite(residual)) return residual
+      invalidCdpMetrics.push('TaskDuration residual')
+      return null
+    })(),
     missingCdpMetrics,
-    nonMonotonicCdpMetrics
+    nonMonotonicCdpMetrics,
+    invalidCdpMetrics
   }
 }

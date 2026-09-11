@@ -10,7 +10,11 @@ import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
-import type { PerfMeasurement } from '@e2e/fixtures/utils/perfReportSchema'
+import { summarizeRafIntervals } from '@e2e/fixtures/helpers/rafMetrics'
+import type {
+  PerfMeasurement,
+  PerfMeasurementResult
+} from '@e2e/fixtures/utils/perfReportSchema'
 import { perfReportSchema } from '@e2e/fixtures/utils/perfReportSchema'
 import {
   recordMeasurement,
@@ -31,6 +35,7 @@ function withTemporaryWorkingDirectory(run: () => void): void {
 }
 
 function sample(rafIntervalP95Ms: number): PerfMeasurement {
+  const rafIntervalsMs = [rafIntervalP95Ms]
   return {
     name: 'canvas-idle',
     durationMs: 0,
@@ -48,6 +53,7 @@ function sample(rafIntervalP95Ms: number): PerfMeasurement {
     taskAccountingResidualMs: 0,
     missingCdpMetrics: [],
     nonMonotonicCdpMetrics: [],
+    invalidCdpMetrics: [],
     heapDeltaBytes: 0,
     heapUsedBytes: 0,
     domNodes: 0,
@@ -55,16 +61,8 @@ function sample(rafIntervalP95Ms: number): PerfMeasurement {
     scriptDurationMs: 0,
     eventListeners: 0,
     totalBlockingTimeMs: 0,
-    rafIntervalsMs: [rafIntervalP95Ms],
-    rafIntervalCount: 1,
-    rafIntervalP50Ms: rafIntervalP95Ms,
-    rafIntervalP95Ms,
-    rafIntervalP99Ms: rafIntervalP95Ms,
-    rafIntervalMaxMs: rafIntervalP95Ms,
-    rafIntervalsOver8_33Ms: 0,
-    rafIntervalsOver16_67Ms: 0,
-    rafIntervalsOver33_3Ms: 0,
-    rafIntervalsOver50Ms: 0,
+    rafIntervalsMs,
+    ...summarizeRafIntervals(rafIntervalsMs),
     workloadIdentity: {
       schemaVersion: 1,
       topology: {
@@ -94,6 +92,18 @@ function sample(rafIntervalP95Ms: number): PerfMeasurement {
 }
 
 describe('performance reporter', () => {
+  it('preserves the result discriminant when recording', () => {
+    withTemporaryWorkingDirectory(() => {
+      const result: PerfMeasurementResult = {
+        kind: 'rejected',
+        reason: 'invalid window',
+        measurement: sample(16.7)
+      }
+
+      expect(recordMeasurement(result)).toBe(result)
+    })
+  })
+
   it('fails when every recorded measurement is invalid', () => {
     withTemporaryWorkingDirectory(() => {
       writeFileSync(
@@ -120,6 +130,36 @@ describe('performance reporter', () => {
         )
       )
       expect(report.measurements).toHaveLength(2)
+    })
+  })
+
+  it('writes schema version 3', () => {
+    withTemporaryWorkingDirectory(() => {
+      recordMeasurement({ kind: 'accepted', measurement: sample(16.7) })
+
+      writePerfReport()
+
+      const output: unknown = JSON.parse(
+        readFileSync(join('test-results', 'perf-metrics.json'), 'utf-8')
+      )
+      expect(output).toMatchObject({ schemaVersion: 3 })
+    })
+  })
+
+  it('keeps valid measurements when temp files contain invalid JSON', () => {
+    withTemporaryWorkingDirectory(() => {
+      recordMeasurement({ kind: 'accepted', measurement: sample(16.7) })
+      writeFileSync(
+        join('test-results', 'perf-temp', 'invalid.json'),
+        '{not valid JSON'
+      )
+
+      expect(() => writePerfReport()).not.toThrow()
+      const output: unknown = JSON.parse(
+        readFileSync(join('test-results', 'perf-metrics.json'), 'utf-8')
+      )
+      const parsed = perfReportSchema.parse(output)
+      expect(parsed.measurements).toHaveLength(1)
     })
   })
 })

@@ -19,10 +19,10 @@ const before = parseCdpMetrics([
 describe('CDP performance task accounting', () => {
   it('retains every Chromium TaskDuration component and CPU counter', () => {
     const after = parseCdpMetrics([
-      { name: 'TaskDuration', value: 10.1 },
+      { name: 'TaskDuration', value: 10.2 },
       { name: 'ScriptDuration', value: 4.04 },
       { name: 'V8CompileDuration', value: 1.01 },
-      { name: 'RecalcStyleDuration', value: 1.01 },
+      { name: 'RecalcStyleDuration', value: 1.02 },
       { name: 'LayoutDuration', value: 1.015 },
       { name: 'DevToolsCommandDuration', value: 1.005 },
       { name: 'TaskOtherDuration', value: 2.02 },
@@ -33,15 +33,16 @@ describe('CDP performance task accounting', () => {
     const result = computeCdpTaskAccounting(before, after)
     expect(result).toMatchObject({
       missingCdpMetrics: [],
-      nonMonotonicCdpMetrics: []
+      nonMonotonicCdpMetrics: [],
+      invalidCdpMetrics: []
     })
     expect(result.taskOtherDurationMs).toBeCloseTo(20)
     expect(result.v8CompileDurationMs).toBeCloseTo(10)
     expect(result.devToolsCommandDurationMs).toBeCloseTo(5)
     expect(result.threadTimeMs).toBeCloseTo(70)
     expect(result.processTimeMs).toBeCloseTo(200)
-    expect(result.accountedTaskDurationMs).toBeCloseTo(100)
-    expect(result.taskAccountingResidualMs).toBeCloseTo(0)
+    expect(result.accountedTaskDurationMs).toBeCloseTo(110)
+    expect(result.taskAccountingResidualMs).toBeCloseTo(90)
   })
 
   it('does not invent an omitted category or composition', () => {
@@ -57,12 +58,28 @@ describe('CDP performance task accounting', () => {
 
   it('rejects reset counters instead of reporting negative durations', () => {
     const after = new Map(before)
-    after.set('TaskDuration', 0)
+    after.set('TaskOtherDuration', 0)
 
     const result = computeCdpTaskAccounting(before, after)
+    expect(result.taskOtherDurationMs).toBeNull()
     expect(result.accountedTaskDurationMs).toBeNull()
     expect(result.taskAccountingResidualMs).toBeNull()
-    expect(result.nonMonotonicCdpMetrics).toEqual(['TaskDuration'])
+    expect(result.nonMonotonicCdpMetrics).toEqual(['TaskOtherDuration'])
+  })
+
+  it('rejects finite counters whose delta or millisecond conversion overflows', () => {
+    const opening = new Map(before)
+    const closing = new Map(before)
+    opening.set('ScriptDuration', -Number.MAX_VALUE)
+    closing.set('ScriptDuration', Number.MAX_VALUE)
+    opening.set('ThreadTime', 0)
+    closing.set('ThreadTime', Number.MAX_VALUE)
+
+    const result = computeCdpTaskAccounting(opening, closing)
+    expect(result.accountedTaskDurationMs).toBeNull()
+    expect(result.taskAccountingResidualMs).toBeNull()
+    expect(result.threadTimeMs).toBeNull()
+    expect(result.invalidCdpMetrics).toEqual(['ScriptDuration', 'ThreadTime'])
   })
 
   it('fails loudly when an existing required metric is absent', () => {

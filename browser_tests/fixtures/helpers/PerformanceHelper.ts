@@ -10,7 +10,10 @@ import type {
   PerfIdentitySource,
   PerfWorkloadIdentity
 } from '@e2e/fixtures/helpers/perfWorkloadIdentity'
-import { buildPerfWorkloadIdentity } from '@e2e/fixtures/helpers/perfWorkloadIdentity'
+import {
+  buildPerfWorkloadIdentity,
+  stableSerialize
+} from '@e2e/fixtures/helpers/perfWorkloadIdentity'
 import type {
   RafCollection,
   RafCollectorState
@@ -39,20 +42,47 @@ interface PerfSnapshot {
   cdpMetrics: CdpMetricSnapshot
 }
 
-const RAF_STATE_KEY = '__perfRafCollectorState'
-
 type MeasurementState =
   | { kind: 'idle' }
-  | { kind: 'measuring'; snapshot: PerfSnapshot }
+  | {
+      kind: 'measuring'
+      snapshot: PerfSnapshot
+      workloadIdentity: PerfWorkloadIdentity
+    }
 
-export function getMeasurementRejectionReason(
+function getMeasurementRejectionReason(
   rafCollection: RafCollection | null,
-  nonMonotonicCdpMetrics: string[]
+  nonMonotonicCdpMetrics: string[],
+  invalidCdpMetrics: string[],
+  additionalReasons: string[]
 ): string | null {
+  const reasons = [...additionalReasons]
   if (nonMonotonicCdpMetrics.length) {
-    return `non-monotonic CDP metrics: ${nonMonotonicCdpMetrics.join(', ')}`
+    reasons.push(
+      `non-monotonic CDP metrics: ${nonMonotonicCdpMetrics.join(', ')}`
+    )
   }
-  return getRafRejectionReason(rafCollection)
+  if (invalidCdpMetrics.length) {
+    reasons.push(`invalid CDP metrics: ${invalidCdpMetrics.join(', ')}`)
+  }
+  const rafReason = getRafRejectionReason(rafCollection)
+  if (rafReason) reasons.push(rafReason)
+  return reasons.length ? reasons.join('; ') : null
+}
+
+async function collectOrFallback<T>(
+  stage: string,
+  collect: () => Promise<T>,
+  fallback: T,
+  failureReasons: string[]
+): Promise<T> {
+  try {
+    return await collect()
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error)
+    failureReasons.push(`${stage} failed: ${detail}`)
+    return fallback
+  }
 }
 
 export class PerformanceHelper {
@@ -64,25 +94,44 @@ export class PerformanceHelper {
   async init(): Promise<void> {
     this.cdp = await this.page.context().newCDPSession(this.page)
     await this.cdp.send('Performance.enable', { timeDomain: 'timeTicks' })
+    await this.page.evaluate(() => {
+      const state = {
+        observer: new PerformanceObserver((list) => {
+          const self = window.__perfLongtaskState
+          if (!self) return
+          for (const entry of list.getEntries()) {
+            if (entry.duration > 50) self.tbtMs += entry.duration - 50
+          }
+        }),
+        tbtMs: 0
+      }
+      state.observer.observe({ type: 'longtask', buffered: true })
+      window.__perfLongtaskState = state
+    })
   }
 
   async dispose(): Promise<void> {
     this.measurementState = { kind: 'idle' }
-    try {
-      await this.stopRafCollectorIfRunning()
-    } catch (error) {
-      if (!this.page.isClosed()) throw error
-    } finally {
-      if (this.cdp) {
-        const cdp = this.cdp
-        this.cdp = null
-        try {
-          await cdp.send('Performance.disable')
-        } finally {
-          await cdp.detach()
-        }
+    const cleanupResults = await Promise.allSettled([
+      this.stopRafCollectorIfRunning(),
+      this.page.evaluate(() => {
+        window.__perfLongtaskState?.observer.disconnect()
+        delete window.__perfLongtaskState
+      })
+    ])
+    if (this.cdp) {
+      const cdp = this.cdp
+      this.cdp = null
+      try {
+        await cdp.send('Performance.disable')
+      } finally {
+        await cdp.detach()
       }
     }
+    const cleanupFailure = cleanupResults.find(
+      (result): result is PromiseRejectedResult => result.status === 'rejected'
+    )
+    if (cleanupFailure && !this.page.isClosed()) throw cleanupFailure.reason
   }
 
   private async getSnapshot(): Promise<PerfSnapshot> {
@@ -108,10 +157,7 @@ export class PerformanceHelper {
 
   private async collectTBT(): Promise<number> {
     return this.page.evaluate(() => {
-      const state = (window as unknown as Record<string, unknown>)
-        .__perfLongtaskState as
-        | { observer: PerformanceObserver; tbtMs: number }
-        | undefined
+      const state = window.__perfLongtaskState
       if (!state) return 0
 
       for (const entry of state.observer.takeRecords()) {
@@ -124,12 +170,13 @@ export class PerformanceHelper {
   }
 
   private async startRafCollector(): Promise<void> {
-    await this.page.evaluate((stateKey) => {
-      const win = window as unknown as Record<string, unknown>
-      if (win[stateKey]) throw new Error('rAF measurement already in progress')
+    await this.page.evaluate(() => {
+      if (window.__perfRafCollectorState) {
+        throw new Error('rAF measurement already in progress')
+      }
 
       return new Promise<void>((resolve) => {
-        const startTimeoutId = setTimeout(resolve, 1_000)
+        let startTimeoutId: ReturnType<typeof setTimeout> | null = null
         const state: RafCollectorState = {
           intervalsMs: [],
           lastTimestamp: null,
@@ -137,13 +184,18 @@ export class PerformanceHelper {
           running: true,
           startVisibility: document.visibilityState,
           visibilityChanged: false,
+          startBoundaryTimedOut: false,
           onVisibilityChange: () => {
             state.visibilityChanged = true
-            clearTimeout(startTimeoutId)
+            if (startTimeoutId !== null) clearTimeout(startTimeoutId)
             resolve()
           }
         }
-        win[stateKey] = state
+        startTimeoutId = setTimeout(() => {
+          state.startBoundaryTimedOut = true
+          resolve()
+        }, 1_000)
+        window.__perfRafCollectorState = state
         document.addEventListener('visibilitychange', state.onVisibilityChange)
 
         if (document.visibilityState !== 'visible') {
@@ -164,13 +216,12 @@ export class PerformanceHelper {
         }
         state.requestId = requestAnimationFrame(tick)
       })
-    }, RAF_STATE_KEY)
+    })
   }
 
   private async stopRafCollectorIfRunning(): Promise<RafCollection | null> {
-    return this.page.evaluate((stateKey) => {
-      const win = window as unknown as Record<string, unknown>
-      const state = win[stateKey] as RafCollectorState | undefined
+    return this.page.evaluate(() => {
+      const state = window.__perfRafCollectorState
       if (!state) return null
 
       if (state.requestId !== null) cancelAnimationFrame(state.requestId)
@@ -194,12 +245,13 @@ export class PerformanceHelper {
             state.intervalsMs.push(timestamp - state.lastTimestamp)
           }
           state.running = false
-          delete win[stateKey]
+          delete window.__perfRafCollectorState
           resolve({
             intervalsMs: state.intervalsMs,
             startVisibility: state.startVisibility,
             endVisibility: document.visibilityState,
             visibilityChanged: state.visibilityChanged,
+            startBoundaryTimedOut: state.startBoundaryTimedOut,
             boundaryTimedOut
           })
         }
@@ -218,7 +270,7 @@ export class PerformanceHelper {
         finalRequestId = requestAnimationFrame((timestamp) => finish(timestamp))
         timeoutId = setTimeout(() => finish(undefined, true), 1_000)
       })
-    }, RAF_STATE_KEY)
+    })
   }
 
   async startMeasuring(): Promise<void> {
@@ -227,36 +279,21 @@ export class PerformanceHelper {
         'Measurement already in progress — call stopMeasuring() first'
       )
     }
-    await this.page.evaluate(() => {
-      const win = window as unknown as Record<string, unknown>
-      if (!win.__perfLongtaskState) {
-        const state: { observer: PerformanceObserver; tbtMs: number } = {
-          observer: new PerformanceObserver((list) => {
-            const self = (window as unknown as Record<string, unknown>)
-              .__perfLongtaskState as {
-              observer: PerformanceObserver
-              tbtMs: number
-            }
-            for (const entry of list.getEntries()) {
-              if (entry.duration > 50) self.tbtMs += entry.duration - 50
-            }
-          }),
-          tbtMs: 0
-        }
-        state.observer.observe({ type: 'longtask', buffered: true })
-        win.__perfLongtaskState = state
-      }
-      const state = win.__perfLongtaskState as {
-        observer: PerformanceObserver
-        tbtMs: number
-      }
-      state.tbtMs = 0
-      state.observer.takeRecords()
-    })
     try {
+      const workloadIdentity = await this.collectWorkloadIdentity()
       const snapshot = await this.getSnapshot()
+      await this.page.evaluate(() => {
+        const state = window.__perfLongtaskState
+        if (!state) throw new Error('PerformanceHelper not initialized')
+        state.tbtMs = 0
+        state.observer.takeRecords()
+      })
       await this.startRafCollector()
-      this.measurementState = { kind: 'measuring', snapshot }
+      this.measurementState = {
+        kind: 'measuring',
+        snapshot,
+        workloadIdentity
+      }
     } catch (error) {
       await Promise.allSettled([this.stopRafCollectorIfRunning()])
       throw error
@@ -269,16 +306,50 @@ export class PerformanceHelper {
     }
 
     const before = this.measurementState.snapshot
+    const startingWorkloadIdentity = this.measurementState.workloadIdentity
     this.measurementState = { kind: 'idle' }
-    const rafCollection = await this.stopRafCollectorIfRunning()
-    const after = await this.getSnapshot()
-
-    function delta(key: Exclude<keyof PerfSnapshot, 'cdpMetrics'>): number {
-      return after[key] - before[key]
+    const failureReasons: string[] = []
+    const rafCollection = await collectOrFallback(
+      'rAF stop',
+      () => this.stopRafCollectorIfRunning(),
+      null,
+      failureReasons
+    )
+    const totalBlockingTimeMs = await collectOrFallback(
+      'long-task collection',
+      () => this.collectTBT(),
+      0,
+      failureReasons
+    )
+    const after = await collectOrFallback(
+      'closing CDP snapshot',
+      () => this.getSnapshot(),
+      before,
+      failureReasons
+    )
+    const workloadIdentity = await collectOrFallback(
+      'closing workload identity',
+      () => this.collectWorkloadIdentity(),
+      startingWorkloadIdentity,
+      failureReasons
+    )
+    if (
+      stableSerialize(workloadIdentity) !==
+      stableSerialize(startingWorkloadIdentity)
+    ) {
+      failureReasons.push('workload identity changed during measurement')
     }
 
-    const totalBlockingTimeMs = await this.collectTBT()
-    const workloadIdentity = await this.collectWorkloadIdentity()
+    function delta(
+      key: Exclude<keyof PerfSnapshot, 'cdpMetrics'>,
+      scale = 1
+    ): number {
+      const value = (after[key] - before[key]) * scale
+      if (Number.isFinite(value)) return value
+      failureReasons.push(`invalid CDP metric: ${key}`)
+      return 0
+    }
+
     const taskAccounting = computeCdpTaskAccounting(
       before.cdpMetrics,
       after.cdpMetrics
@@ -286,18 +357,18 @@ export class PerformanceHelper {
     const rafIntervalsMs = rafCollection?.intervalsMs ?? []
     const measurement: PerfMeasurement = {
       name,
-      durationMs: delta('Timestamp') * 1000,
+      durationMs: delta('Timestamp', 1000),
       styleRecalcs: delta('RecalcStyleCount'),
-      styleRecalcDurationMs: delta('RecalcStyleDuration') * 1000,
+      styleRecalcDurationMs: delta('RecalcStyleDuration', 1000),
       layouts: delta('LayoutCount'),
-      layoutDurationMs: delta('LayoutDuration') * 1000,
-      taskDurationMs: delta('TaskDuration') * 1000,
+      layoutDurationMs: delta('LayoutDuration', 1000),
+      taskDurationMs: delta('TaskDuration', 1000),
       ...taskAccounting,
       heapDeltaBytes: delta('JSHeapUsedSize'),
       heapUsedBytes: after.JSHeapUsedSize,
       domNodes: delta('Nodes'),
       jsHeapTotalBytes: delta('JSHeapTotalSize'),
-      scriptDurationMs: delta('ScriptDuration') * 1000,
+      scriptDurationMs: delta('ScriptDuration', 1000),
       eventListeners: delta('JSEventListeners'),
       totalBlockingTimeMs,
       rafIntervalsMs,
@@ -306,7 +377,9 @@ export class PerformanceHelper {
     }
     const rejectionReason = getMeasurementRejectionReason(
       rafCollection,
-      taskAccounting.nonMonotonicCdpMetrics
+      taskAccounting.nonMonotonicCdpMetrics,
+      taskAccounting.invalidCdpMetrics,
+      failureReasons
     )
     return rejectionReason
       ? { kind: 'rejected', reason: rejectionReason, measurement }

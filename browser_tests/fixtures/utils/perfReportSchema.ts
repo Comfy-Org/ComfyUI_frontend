@@ -1,32 +1,7 @@
 import { z } from 'zod'
 
-import { PERF_IDENTITY_SCHEMA_VERSION } from '@e2e/fixtures/helpers/perfWorkloadIdentity'
-
-const perfWorkloadIdentitySchema = z.object({
-  schemaVersion: z.literal(PERF_IDENTITY_SCHEMA_VERSION),
-  topology: z.object({
-    hash: z.string(),
-    nodes: z.number(),
-    visibleNodes: z.number(),
-    inputs: z.number(),
-    outputs: z.number(),
-    links: z.number(),
-    maxFanOut: z.number(),
-    widgets: z.number()
-  }),
-  environment: z.object({
-    renderer: z.enum(['legacy', 'vue']),
-    canvasInfoEnabled: z.boolean().nullable(),
-    viewportWidth: z.number(),
-    viewportHeight: z.number(),
-    devicePixelRatio: z.number(),
-    frontendVersion: z.string(),
-    frontendCommit: z.string(),
-    buildMode: z.enum(['development', 'production', 'test']),
-    browserVersion: z.string(),
-    gpuClass: z.enum(['hardware', 'software', 'swiftshader', 'unknown'])
-  })
-})
+import { perfWorkloadIdentitySchema } from '@e2e/fixtures/helpers/perfWorkloadIdentity'
+import { summarizeRafIntervals } from '@e2e/fixtures/helpers/rafMetrics'
 
 const perfMeasurementV2Schema = z.object({
   name: z.string(),
@@ -65,15 +40,41 @@ const perfMeasurementSchema = perfMeasurementV2Schema.extend({
   taskAccountingResidualMs: z.number().nullable(),
   missingCdpMetrics: z.array(z.string()),
   nonMonotonicCdpMetrics: z.array(z.string()),
+  invalidCdpMetrics: z.array(z.string()),
   workloadIdentity: perfWorkloadIdentitySchema
 })
 
-export type PerfMeasurement = z.infer<typeof perfMeasurementSchema>
+const acceptedPerfMeasurementSchema = perfMeasurementSchema.superRefine(
+  (measurement, context) => {
+    if (
+      measurement.rafIntervalsMs.length === 0 ||
+      measurement.rafIntervalsMs.some(
+        (interval) => !Number.isFinite(interval) || interval <= 0
+      )
+    ) {
+      context.addIssue({
+        code: 'custom',
+        message: 'accepted measurements require positive finite rAF intervals'
+      })
+      return
+    }
 
-const rejectedRafNumberSchema = z.union([
-  z.number(),
-  z.null().transform(() => Number.NaN)
-])
+    const expected = summarizeRafIntervals(measurement.rafIntervalsMs)
+    for (const key of Object.keys(expected) as (keyof typeof expected)[]) {
+      if (measurement[key] !== expected[key]) {
+        context.addIssue({
+          code: 'custom',
+          message: `${key} does not match raw rAF intervals`,
+          path: [key]
+        })
+      }
+    }
+  }
+)
+
+export type PerfMeasurement = z.infer<typeof acceptedPerfMeasurementSchema>
+
+const rejectedRafNumberSchema = z.number().nullable()
 const rejectedPerfMeasurementSchema = perfMeasurementSchema.extend({
   rafIntervalsMs: z.array(rejectedRafNumberSchema),
   rafIntervalP50Ms: rejectedRafNumberSchema,
@@ -85,7 +86,7 @@ const rejectedPerfMeasurementSchema = perfMeasurementSchema.extend({
 export const perfMeasurementResultSchema = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('accepted'),
-    measurement: perfMeasurementSchema
+    measurement: acceptedPerfMeasurementSchema
   }),
   z.object({
     kind: z.literal('rejected'),

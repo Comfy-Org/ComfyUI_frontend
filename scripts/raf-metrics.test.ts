@@ -12,6 +12,7 @@ function collection(overrides: Partial<RafCollection> = {}): RafCollection {
     startVisibility: 'visible',
     endVisibility: 'visible',
     visibilityChanged: false,
+    startBoundaryTimedOut: false,
     boundaryTimedOut: false,
     ...overrides
   }
@@ -19,22 +20,32 @@ function collection(overrides: Partial<RafCollection> = {}): RafCollection {
 
 describe('rAF measurement validity', () => {
   it('summarizes percentiles and strict budget buckets without mutation', () => {
-    const intervals = [8.33, 8.34, 16.67, 16.68, 33.3, 33.31, 50, 50.01]
+    const intervals = [
+      100,
+      ...Array<number>(91).fill(8.33),
+      8.34,
+      16.67,
+      16.68,
+      33.3,
+      33.31,
+      50,
+      50.01,
+      60
+    ]
+    const originalIntervals = [...intervals]
 
     expect(summarizeRafIntervals(intervals)).toEqual({
-      rafIntervalCount: 8,
-      rafIntervalP50Ms: 16.68,
-      rafIntervalP95Ms: 50.01,
-      rafIntervalP99Ms: 50.01,
-      rafIntervalMaxMs: 50.01,
-      rafIntervalsOver8_33Ms: 7,
-      rafIntervalsOver16_67Ms: 5,
-      rafIntervalsOver33_3Ms: 3,
-      rafIntervalsOver50Ms: 1
+      rafIntervalCount: 100,
+      rafIntervalP50Ms: 8.33,
+      rafIntervalP95Ms: 33.3,
+      rafIntervalP99Ms: 60,
+      rafIntervalMaxMs: 100,
+      rafIntervalsOver8_33Ms: 9,
+      rafIntervalsOver16_67Ms: 7,
+      rafIntervalsOver33_3Ms: 5,
+      rafIntervalsOver50Ms: 3
     })
-    expect(intervals).toEqual([
-      8.33, 8.34, 16.67, 16.68, 33.3, 33.31, 50, 50.01
-    ])
+    expect(intervals).toEqual(originalIntervals)
     expect(summarizeRafIntervals([])).toEqual({
       rafIntervalCount: 0,
       rafIntervalP50Ms: 0,
@@ -50,6 +61,10 @@ describe('rAF measurement validity', () => {
 
   const validityCases: [RafCollection | null, string | null][] = [
     [null, 'rAF collector missing at stop'],
+    [
+      collection({ startBoundaryTimedOut: true }),
+      'rAF start boundary timed out'
+    ],
     [collection({ boundaryTimedOut: true }), 'rAF stop boundary timed out'],
     [
       collection({ visibilityChanged: true }),

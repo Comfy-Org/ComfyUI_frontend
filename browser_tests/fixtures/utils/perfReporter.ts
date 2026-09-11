@@ -31,7 +31,7 @@ const FIELD_FORMATTERS: Partial<
 
 /**
  * Log a perf measurement to the console in a consistent format.
- * Fields are formatted automatically based on their type.
+ * Known fields use field-specific formatters; other fields use key=value.
  */
 export function logMeasurement(
   label: string,
@@ -49,11 +49,11 @@ export function logMeasurement(
 
 export function recordMeasurement(
   result: PerfMeasurementResult
-): PerfMeasurement {
+): PerfMeasurementResult {
   mkdirSync(TEMP_DIR, { recursive: true })
   const filename = `${result.measurement.name}-${Date.now()}-${randomUUID()}.json`
   writeFileSync(join(TEMP_DIR, filename), JSON.stringify(result))
-  return result.measurement
+  return result
 }
 
 export function writePerfReport(

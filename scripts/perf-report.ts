@@ -61,6 +61,21 @@ interface MetricDef {
   minAbsDelta?: number
 }
 
+function escapeMarkdown(value: string): string {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('@', '&#64;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('|', '&#124;')
+    .replaceAll('`', '&#96;')
+    .replaceAll('*', '&#42;')
+    .replaceAll('[', '&#91;')
+    .replaceAll(']', '&#93;')
+    .replaceAll('\r', ' ')
+    .replaceAll('\n', ' ')
+}
+
 const REPORTED_METRICS: MetricDef[] = [
   { key: 'rafIntervalP50Ms', label: 'rAF interval p50', unit: 'ms' },
   { key: 'rafIntervalP95Ms', label: 'rAF interval p95', unit: 'ms' },
@@ -193,10 +208,8 @@ function getHistoricalStats(
       reference,
       group.get(testName) ?? []
     )
-    if (samples) {
-      const mean = meanMetric(samples, metric)
-      if (mean !== null) values.push(mean)
-    }
+    const mean = meanMetric(samples, metric)
+    if (mean !== null) values.push(mean)
   }
   return computeStats(values)
 }
@@ -217,10 +230,8 @@ function getHistoricalTimeSeries(
       reference,
       group.get(testName) ?? []
     )
-    if (samples) {
-      const mean = meanMetric(samples, metric)
-      if (mean !== null) values.push(mean)
-    }
+    const mean = meanMetric(samples, metric)
+    if (mean !== null) values.push(mean)
   }
   return values
 }
@@ -232,7 +243,7 @@ function computeCV(stats: MetricStats): number {
 function formatValue(value: number, unit: string): string {
   if (unit === 'ms') return `${value.toFixed(0)}ms`
   if (unit === 'bytes') return formatBytes(value)
-  return `${value.toFixed(0)}`
+  return value.toFixed(0)
 }
 
 function formatDelta(pct: number | null): string {
@@ -291,7 +302,7 @@ function renderHeadlineSummary(
     const tbt = medianMetric(prSamples, 'totalBlockingTimeMs')
     const heap = medianMetric(prSamples, 'heapUsedBytes')
 
-    const parts: string[] = [`**${testName}**:`]
+    const parts: string[] = [`**${escapeMarkdown(testName)}**:`]
     if (p95Interval !== null) parts.push(`${p95Interval.toFixed(1)}ms rAF p95`)
     if (maxInterval !== null) parts.push(`${maxInterval.toFixed(1)}ms rAF max`)
     if (over16 !== null) parts.push(`${over16.toFixed(0)} intervals >16.67ms`)
@@ -326,6 +337,7 @@ function renderFullReport(
   const allRows: string[] = []
 
   for (const [testName, prSamples] of prGroups) {
+    const displayName = escapeMarkdown(testName)
     const reference = prSamples[0]
     const baseSamples = filterComparableWorkloads(
       reference,
@@ -339,9 +351,9 @@ function renderFullReport(
       const histStats = getHistoricalStats(historical, testName, key, reference)
       const cv = computeCV(histStats)
 
-      if (!baseSamples?.length) {
+      if (!baseSamples.length) {
         allRows.push(
-          `| ${testName}: ${label} | — | ${formatValue(prVal, unit)} | new | — |`
+          `| ${displayName}: ${label} | — | ${formatValue(prVal, unit)} | new | — |`
         )
         continue
       }
@@ -349,7 +361,7 @@ function renderFullReport(
       const baseVal = medianMetric(baseSamples, key)
       if (baseVal === null) {
         allRows.push(
-          `| ${testName}: ${label} | — | ${formatValue(prVal, unit)} | new | — |`
+          `| ${displayName}: ${label} | — | ${formatValue(prVal, unit)} | new | — |`
         )
         continue
       }
@@ -363,7 +375,7 @@ function renderFullReport(
       const z = zScore(prVal, histStats)
       const sig = classifyChange(z, cv, absDelta, minAbsDelta)
 
-      const row = `| ${testName}: ${label} | ${formatValue(baseVal, unit)} | ${formatValue(prVal, unit)} | ${formatDelta(deltaPct)} | ${formatSignificance(sig, z)} |`
+      const row = `| ${displayName}: ${label} | ${formatValue(baseVal, unit)} | ${formatValue(prVal, unit)} | ${formatDelta(deltaPct)} | ${formatSignificance(sig, z)} |`
       allRows.push(row)
       if (isNoteworthy(sig)) {
         flaggedRows.push(row)
@@ -404,13 +416,14 @@ function renderFullReport(
     '|--------|---|---|-----|'
   )
   for (const [testName, prSamples] of prGroups) {
+    const displayName = escapeMarkdown(testName)
     const reference = prSamples[0]
     for (const { key, label, unit } of REPORTED_METRICS) {
       const stats = getHistoricalStats(historical, testName, key, reference)
       if (stats.n < 2) continue
       const cv = computeCV(stats)
       lines.push(
-        `| ${testName}: ${label} | ${formatValue(stats.mean, unit)} | ${formatValue(stats.stddev, unit)} | ${cv.toFixed(1)}% |`
+        `| ${displayName}: ${label} | ${formatValue(stats.mean, unit)} | ${formatValue(stats.stddev, unit)} | ${cv.toFixed(1)}% |`
       )
     }
   }
@@ -418,6 +431,7 @@ function renderFullReport(
 
   const trendRows: string[] = []
   for (const [testName, prSamples] of prGroups) {
+    const displayName = escapeMarkdown(testName)
     const reference = prSamples[0]
     for (const { key, label, unit } of REPORTED_METRICS) {
       const series = getHistoricalTimeSeries(
@@ -432,7 +446,7 @@ function renderFullReport(
       const spark = sparkline(series)
       const last = series[series.length - 1]
       trendRows.push(
-        `| ${testName}: ${label} | ${spark} | ${arrow} | ${formatValue(last, unit)} |`
+        `| ${displayName}: ${label} | ${spark} | ${arrow} | ${formatValue(last, unit)} |`
       )
     }
   }
@@ -470,6 +484,7 @@ function renderColdStartReport(
   )
 
   for (const [testName, prSamples] of prGroups) {
+    const displayName = escapeMarkdown(testName)
     const baseSamples = filterComparableWorkloads(
       prSamples[0],
       baselineGroups.get(testName) ?? []
@@ -479,9 +494,9 @@ function renderColdStartReport(
       const prVal = medianMetric(prSamples, key)
       if (prVal === null) continue
 
-      if (!baseSamples?.length) {
+      if (!baseSamples.length) {
         lines.push(
-          `| ${testName}: ${label} | — | ${formatValue(prVal, unit)} | new |`
+          `| ${displayName}: ${label} | — | ${formatValue(prVal, unit)} | new |`
         )
         continue
       }
@@ -489,7 +504,7 @@ function renderColdStartReport(
       const baseVal = medianMetric(baseSamples, key)
       if (baseVal === null) {
         lines.push(
-          `| ${testName}: ${label} | — | ${formatValue(prVal, unit)} | new |`
+          `| ${displayName}: ${label} | — | ${formatValue(prVal, unit)} | new |`
         )
         continue
       }
@@ -500,7 +515,7 @@ function renderColdStartReport(
             : null
           : ((prVal - baseVal) / baseVal) * 100
       lines.push(
-        `| ${testName}: ${label} | ${formatValue(baseVal, unit)} | ${formatValue(prVal, unit)} | ${formatDelta(deltaPct)} |`
+        `| ${displayName}: ${label} | ${formatValue(baseVal, unit)} | ${formatValue(prVal, unit)} | ${formatDelta(deltaPct)} |`
       )
     }
   }
@@ -522,10 +537,11 @@ function renderNoBaselineReport(
     '|--------|-------|'
   )
   for (const [testName, prSamples] of prGroups) {
+    const displayName = escapeMarkdown(testName)
     for (const { key, label, unit } of REPORTED_METRICS) {
       const prVal = medianMetric(prSamples, key)
       if (prVal === null) continue
-      lines.push(`| ${testName}: ${label} | ${formatValue(prVal, unit)} |`)
+      lines.push(`| ${displayName}: ${label} | ${formatValue(prVal, unit)} |`)
     }
   }
   lines.push('', '</details>')
@@ -546,7 +562,8 @@ function renderRejectedMeasurements(report: PerfReportV3): string[] {
     '| Test | Reason |',
     '|------|--------|',
     ...rejected.map(
-      (result) => `| ${result.measurement.name} | ${result.reason} |`
+      (result) =>
+        `| ${escapeMarkdown(result.measurement.name)} | ${escapeMarkdown(result.reason)} |`
     ),
     '',
     '</details>',
@@ -619,7 +636,7 @@ export function renderPerfReport(
   lines.push(...renderRejectedMeasurements(current))
   lines.push(
     ...mixedIdentityNames.flatMap((name) => [
-      `> ⚠️ ${name} rejected because its current samples have mixed workload identities.`,
+      `> ⚠️ ${escapeMarkdown(name)} rejected because its current samples have mixed workload identities.`,
       ''
     ])
   )
@@ -657,11 +674,46 @@ export function renderPerfReport(
 
   lines.push('\n<details><summary>Summary data</summary>\n')
   lines.push('```json')
-  lines.push(serializeCommentData(current))
+  lines.push(serializeCommentData(current).replaceAll('`', '\\u0060'))
   lines.push('```')
   lines.push('\n</details>')
 
-  return lines.join('\n') + '\n'
+  const output = lines.join('\n') + '\n'
+  if (output.length <= COMMENT_DATA_LIMIT) return output
+
+  const rejectedCount = current.measurements.filter(
+    (result) => result.kind === 'rejected'
+  ).length
+  const fallbackData = JSON.stringify(
+    {
+      schemaVersion: current.schemaVersion,
+      timestamp: current.timestamp,
+      gitSha: current.gitSha,
+      branch: current.branch,
+      summaryTruncated: true,
+      fullArtifact: CURRENT_PATH,
+      measurementCount: current.measurements.length,
+      measurementIdentities: []
+    },
+    null,
+    2
+  )
+  return [
+    '## ⚡ Performance Report',
+    '',
+    '> ⚠️ Detailed performance output exceeded the PR comment limit. Review the full perf-metrics artifact.',
+    '',
+    `${rejectedCount} rejected measurements truncated; ${current.measurements.length} total measurements.`,
+    '',
+    '<details><summary>Summary data</summary>',
+    '',
+    '```json',
+    fallbackData.replaceAll('`', '\\u0060'),
+    '```',
+    '',
+    '</details>',
+    ''
+  ].join('\n')
 }
 
 function main() {

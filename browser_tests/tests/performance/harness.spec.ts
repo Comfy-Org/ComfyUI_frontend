@@ -1,15 +1,8 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { getMeasurementRejectionReason } from '@e2e/fixtures/helpers/PerformanceHelper'
 
 test.describe('Performance measurement controls', { tag: ['@perf'] }, () => {
-  test('rejects non-monotonic CDP counters', () => {
-    expect(
-      getMeasurementRejectionReason(null, ['TaskDuration', 'ProcessTime'])
-    ).toBe('non-monotonic CDP metrics: TaskDuration, ProcessTime')
-  })
-
   test('collects quiet rAF intervals inside the measured window', async ({
     comfyPage
   }) => {
@@ -29,9 +22,11 @@ test.describe('Performance measurement controls', { tag: ['@perf'] }, () => {
     const result = await comfyPage.perf.stopMeasuring(
       'raf-collector-quiet-control'
     )
+    if (result.kind !== 'accepted') {
+      throw new Error(`Quiet control was rejected: ${result.reason}`)
+    }
     const measurement = result.measurement
 
-    expect(result.kind).toBe('accepted')
     expect(measurement.rafIntervalCount).toBeGreaterThanOrEqual(10)
     expect(measurement.rafIntervalMaxMs).toBeGreaterThan(0)
     expect(measurement.rafIntervalP50Ms).toBeGreaterThan(0)
@@ -43,7 +38,7 @@ test.describe('Performance measurement controls', { tag: ['@perf'] }, () => {
       environment: {
         frontendVersion: expect.any(String),
         frontendCommit: expect.any(String),
-        buildMode: expect.stringMatching(/^(development|production|test)$/)
+        buildMode: expect.any(String)
       }
     })
     expect(measurement.workloadIdentity.topology.hash).toMatch(/^sha256:/)
@@ -61,9 +56,11 @@ test.describe('Performance measurement controls', { tag: ['@perf'] }, () => {
     const result = await comfyPage.perf.stopMeasuring(
       'raf-collector-busy-control'
     )
+    if (result.kind !== 'accepted') {
+      throw new Error(`Busy control was rejected: ${result.reason}`)
+    }
     const measurement = result.measurement
 
-    expect(result.kind).toBe('accepted')
     expect(measurement.rafIntervalsOver50Ms).toBeGreaterThanOrEqual(1)
     // rAF timestamps are display-aligned, so a 100ms task may surface as a
     // slightly shorter multiple of the refresh interval at either boundary.
@@ -94,6 +91,29 @@ test.describe('Performance measurement controls', { tag: ['@perf'] }, () => {
     expect(result).toMatchObject({
       kind: 'rejected',
       reason: 'document visibility toggled during the measurement window'
+    })
+  })
+
+  test('rejects workload identity drift during the window', async ({
+    comfyPage
+  }) => {
+    await comfyPage.perf.startMeasuring()
+    const viewport = comfyPage.page.viewportSize()
+    if (!viewport) throw new Error('Viewport size is unavailable')
+    await comfyPage.page.setViewportSize({
+      width: viewport.width - 1,
+      height: viewport.height
+    })
+
+    const result = await comfyPage.perf.stopMeasuring(
+      'workload-identity-drift-control'
+    )
+
+    expect(result).toMatchObject({
+      kind: 'rejected',
+      reason: expect.stringContaining(
+        'workload identity changed during measurement'
+      )
     })
   })
 })

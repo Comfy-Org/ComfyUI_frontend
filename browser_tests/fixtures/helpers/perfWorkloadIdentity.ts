@@ -1,6 +1,8 @@
 import { createHash } from 'node:crypto'
 
-export const PERF_IDENTITY_SCHEMA_VERSION = 1 as const
+import { z } from 'zod'
+
+const PERF_IDENTITY_SCHEMA_VERSION = 1 as const
 
 export interface PerfTopologyNode {
   id: string
@@ -28,25 +30,38 @@ export interface PerfIdentitySource {
   devicePixelRatio: number
   frontendVersion: string
   frontendCommit: string
-  buildMode: 'development' | 'production' | 'test'
+  buildMode: string
   browserVersion: string
   gpuClass: 'hardware' | 'software' | 'swiftshader' | 'unknown'
 }
 
-export interface PerfWorkloadIdentity {
-  schemaVersion: typeof PERF_IDENTITY_SCHEMA_VERSION
-  topology: {
-    hash: string
-    nodes: number
-    visibleNodes: number
-    inputs: number
-    outputs: number
-    links: number
-    maxFanOut: number
-    widgets: number
-  }
-  environment: Omit<PerfIdentitySource, 'nodes' | 'links' | 'visibleNodes'>
-}
+export const perfWorkloadIdentitySchema = z.object({
+  schemaVersion: z.literal(PERF_IDENTITY_SCHEMA_VERSION),
+  topology: z.object({
+    hash: z.string(),
+    nodes: z.number(),
+    visibleNodes: z.number(),
+    inputs: z.number(),
+    outputs: z.number(),
+    links: z.number(),
+    maxFanOut: z.number(),
+    widgets: z.number()
+  }),
+  environment: z.object({
+    renderer: z.enum(['legacy', 'vue']),
+    canvasInfoEnabled: z.boolean().nullable(),
+    viewportWidth: z.number(),
+    viewportHeight: z.number(),
+    devicePixelRatio: z.number(),
+    frontendVersion: z.string(),
+    frontendCommit: z.string(),
+    buildMode: z.string().min(1),
+    browserVersion: z.string(),
+    gpuClass: z.enum(['hardware', 'software', 'swiftshader', 'unknown'])
+  })
+})
+
+export type PerfWorkloadIdentity = z.infer<typeof perfWorkloadIdentitySchema>
 
 export function stableSerialize(value: unknown): string {
   if (value === null || typeof value !== 'object') return JSON.stringify(value)

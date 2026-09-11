@@ -20,74 +20,48 @@ const REQUIRED_METRICS = [
   'JSEventListeners'
 ]
 
-function installSelfDrivingRaf(): () => void {
-  const originalRequest = globalThis.requestAnimationFrame
-  const originalCancel = globalThis.cancelAnimationFrame
-  const timers = new Map<number, ReturnType<typeof setTimeout>>()
+function installControlledRaf() {
+  const callbacks = new Map<number, FrameRequestCallback>()
   let nextHandle = 1
-  let timestampMs = 0
+  const createDeferred = () => {
+    let resolve: () => void = () => {
+      throw new Error('Deferred promise was not initialized')
+    }
+    const promise = new Promise<void>((resolvePromise) => {
+      resolve = resolvePromise
+    })
+    return { promise, resolve }
+  }
+  let requested = createDeferred()
 
-  globalThis.requestAnimationFrame = (callback: FrameRequestCallback) => {
+  vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
     const handle = nextHandle++
-    timers.set(
-      handle,
-      setTimeout(() => {
-        timers.delete(handle)
-        timestampMs += 16.7
-        callback(timestampMs)
-      }, 0)
-    )
+    callbacks.set(handle, callback)
+    requested.resolve()
     return handle
-  }
-  globalThis.cancelAnimationFrame = (handle: number) => {
-    const timer = timers.get(handle)
-    if (timer === undefined) return
-    clearTimeout(timer)
-    timers.delete(handle)
-  }
+  })
+  vi.stubGlobal('cancelAnimationFrame', (handle: number) => {
+    callbacks.delete(handle)
+  })
 
-  return () => {
-    for (const timer of timers.values()) clearTimeout(timer)
-    timers.clear()
-    globalThis.requestAnimationFrame = originalRequest
-    globalThis.cancelAnimationFrame = originalCancel
+  return {
+    waitUntilRequested: () => requested.promise,
+    async runNext(timestamp: number) {
+      if (callbacks.size === 0) await requested.promise
+      const entry = callbacks.entries().next().value
+      if (!entry) throw new Error('Expected a queued animation frame')
+      const [handle, callback] = entry
+      callbacks.delete(handle)
+      requested = createDeferred()
+      callback(timestamp)
+    }
   }
 }
 
-async function waitForFrames(count: number): Promise<void> {
-  for (let i = 0; i < count; i++) {
-    await new Promise<void>((resolve) => setTimeout(resolve, 0))
-  }
-}
-
-/**
- * Runs the real rAF collector page functions so the collector lifecycle under
- * test is the shipped one, and stubs the unrelated in-page probes.
- */
 function createPage(send: (method: string) => Promise<unknown>): Page {
   const cdp = fromAny<CDPSession, unknown>({ send, detach: vi.fn() })
-  const evaluate = async (fn: (arg?: unknown) => unknown, arg?: unknown) => {
-    if (arg === RAF_STATE_KEY) return fn(arg)
-    const source = String(fn)
-    if (source.includes('new PerformanceObserver')) return undefined
-    if (source.includes('takeRecords')) return 0
-    if (source.includes('window.app')) {
-      return {
-        nodes: [],
-        links: [],
-        visibleNodes: 0,
-        renderer: 'legacy',
-        canvasInfoEnabled: null,
-        viewportWidth: 1280,
-        viewportHeight: 720,
-        devicePixelRatio: 1,
-        frontendVersion: 'test',
-        frontendCommit: 'test',
-        buildMode: 'test'
-      }
-    }
-    return 'unknown'
-  }
+  const evaluate = async (fn: (arg?: unknown) => unknown, arg?: unknown) =>
+    fn(arg)
   return fromAny<Page, unknown>({
     context: () => ({
       newCDPSession: async () => cdp,
@@ -95,6 +69,34 @@ function createPage(send: (method: string) => Promise<unknown>): Page {
     }),
     evaluate
   })
+}
+
+function installPageGlobals() {
+  delete window.__perfLongtaskState
+  delete window.__perfRafCollectorState
+  const observer = {
+    disconnect: vi.fn(),
+    observe: vi.fn(),
+    takeRecords: vi.fn(() => [])
+  }
+  class PerformanceObserverStub {
+    disconnect = observer.disconnect
+    observe = observer.observe
+    takeRecords = observer.takeRecords
+  }
+  vi.stubGlobal('PerformanceObserver', PerformanceObserverStub)
+  Object.defineProperty(window, 'app', {
+    configurable: true,
+    value: fromAny({
+      canvas: { graph: null, visible_nodes: [] },
+      graph: { links: new Map(), nodes: [] },
+      extensionManager: { setting: { get: () => undefined } }
+    })
+  })
+  window.__COMFYUI_FRONTEND_VERSION__ = 'test'
+  window.__COMFYUI_FRONTEND_COMMIT__ = 'test'
+  window.__COMFYUI_BUILD_MODE__ = 'test'
+  return observer
 }
 
 describe('PerformanceHelper', () => {
@@ -136,31 +138,109 @@ describe('PerformanceHelper', () => {
   })
 
   it('issues no CDP metrics call while the rAF collector is armed', async () => {
-    const restoreRaf = installSelfDrivingRaf()
+    installPageGlobals()
+    const raf = installControlledRaf()
+    const collectorArmedDuringGetMetrics: boolean[] = []
+    const send = vi.fn(async (method: string) => {
+      if (method !== 'Performance.getMetrics') return {}
+      collectorArmedDuringGetMetrics.push(RAF_STATE_KEY in window)
+      return { metrics: REQUIRED_METRICS.map((name) => ({ name, value: 0 })) }
+    })
+    const page = createPage(send)
+    const helper = new PerformanceHelper(page)
+    await helper.init()
+
+    const start = helper.startMeasuring()
+    await raf.runNext(0)
+    await start
+    await raf.runNext(16.7)
+    await raf.runNext(33.4)
+    const stop = helper.stopMeasuring('raf-window')
+    await raf.runNext(50.1)
+    const result = await stop
+
+    expect(collectorArmedDuringGetMetrics).toEqual([false, false])
+    expect(result.measurement.rafIntervalsMs.length).toBeGreaterThan(0)
+    expect(RAF_STATE_KEY in window).toBe(false)
+  })
+
+  it('rejects a collector that misses its start boundary', async () => {
+    vi.useFakeTimers()
     try {
-      const collectorArmedDuringGetMetrics: boolean[] = []
-      const send = vi.fn(async (method: string) => {
-        if (method !== 'Performance.getMetrics') return {}
-        collectorArmedDuringGetMetrics.push(
-          RAF_STATE_KEY in (window as unknown as Record<string, unknown>)
-        )
-        return { metrics: REQUIRED_METRICS.map((name) => ({ name, value: 0 })) }
-      })
-      const page = createPage(send)
+      installPageGlobals()
+      const raf = installControlledRaf()
+      const page = createPage(async (method) =>
+        method === 'Performance.getMetrics'
+          ? {
+              metrics: REQUIRED_METRICS.map((name) => ({ name, value: 0 }))
+            }
+          : {}
+      )
       const helper = new PerformanceHelper(page)
       await helper.init()
 
-      await helper.startMeasuring()
-      await waitForFrames(3)
-      const result = await helper.stopMeasuring('raf-window')
+      const start = helper.startMeasuring()
+      await raf.waitUntilRequested()
+      await vi.advanceTimersByTimeAsync(1_000)
+      await start
+      const stop = helper.stopMeasuring('missed-start-boundary')
+      await raf.runNext(16.7)
 
-      expect(collectorArmedDuringGetMetrics).toEqual([false, false])
-      expect(result.measurement.rafIntervalsMs.length).toBeGreaterThan(0)
-      expect(
-        RAF_STATE_KEY in (window as unknown as Record<string, unknown>)
-      ).toBe(false)
+      await expect(stop).resolves.toMatchObject({
+        kind: 'rejected',
+        reason: expect.stringContaining('rAF start boundary timed out')
+      })
     } finally {
-      restoreRaf()
+      vi.useRealTimers()
     }
+  })
+
+  it('returns a rejected result when closing collection fails', async () => {
+    installPageGlobals()
+    const raf = installControlledRaf()
+    let snapshotCount = 0
+    const page = createPage(async (method) => {
+      if (method !== 'Performance.getMetrics') return {}
+      snapshotCount++
+      if (snapshotCount === 2) throw new Error('CDP session closed')
+      return { metrics: REQUIRED_METRICS.map((name) => ({ name, value: 0 })) }
+    })
+    const helper = new PerformanceHelper(page)
+    await helper.init()
+
+    const start = helper.startMeasuring()
+    await raf.runNext(0)
+    await start
+    await raf.runNext(16.7)
+    const stop = helper.stopMeasuring('closing-failure')
+    await raf.runNext(33.4)
+
+    await expect(stop).resolves.toMatchObject({
+      kind: 'rejected',
+      reason: expect.stringContaining(
+        'closing CDP snapshot failed: CDP session closed'
+      )
+    })
+  })
+
+  it('disconnects the long-task observer on disposal', async () => {
+    const observer = installPageGlobals()
+    const raf = installControlledRaf()
+    const page = createPage(async (method) =>
+      method === 'Performance.getMetrics'
+        ? { metrics: REQUIRED_METRICS.map((name) => ({ name, value: 0 })) }
+        : {}
+    )
+    const helper = new PerformanceHelper(page)
+    await helper.init()
+    const start = helper.startMeasuring()
+    await raf.runNext(0)
+    await start
+
+    const dispose = helper.dispose()
+    await raf.runNext(16.7)
+    await dispose
+
+    expect(observer.disconnect).toHaveBeenCalledOnce()
   })
 })

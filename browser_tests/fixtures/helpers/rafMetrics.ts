@@ -5,6 +5,7 @@ export interface RafCollectorState {
   running: boolean
   startVisibility: DocumentVisibilityState
   visibilityChanged: boolean
+  startBoundaryTimedOut: boolean
   onVisibilityChange: () => void
 }
 
@@ -13,6 +14,7 @@ export interface RafCollection {
   startVisibility: DocumentVisibilityState
   endVisibility: DocumentVisibilityState
   visibilityChanged: boolean
+  startBoundaryTimedOut: boolean
   boundaryTimedOut: boolean
 }
 
@@ -55,6 +57,7 @@ export function getRafRejectionReason(
   collection: RafCollection | null
 ): string | null {
   if (!collection) return 'rAF collector missing at stop'
+  if (collection.startBoundaryTimedOut) return 'rAF start boundary timed out'
   if (collection.boundaryTimedOut) return 'rAF stop boundary timed out'
   if (
     collection.startVisibility !== 'visible' ||
