@@ -509,6 +509,28 @@ describe('migrateWorkspaceToScope', () => {
     })
   })
 
+  it('ignores a valid completion record belonging to a different scope', () => {
+    seedSourceWorkspace()
+    localStorage.setItem(
+      StorageKeys.migrationCompletion(sourceWorkspaceId),
+      JSON.stringify({
+        scope: competingScope,
+        sourceUpdatedAt: 10,
+        nonce: 'other-scope-migration'
+      })
+    )
+
+    migrateWorkspaceToScope(sourceWorkspaceId, destinationScope)
+
+    expect(readJson(StorageKeys.draftIndex(destinationScope))).toEqual(
+      buildIndex()
+    )
+    expect(
+      readJson(StorageKeys.draftPayload(draftPath, destinationScope))
+    ).toEqual({ data: '{"nodes":[]}', updatedAt: 10 })
+    expect(readJson(StorageKeys.draftIndex(sourceWorkspaceId))).toBe(null)
+  })
+
   it('keeps artifacts committed by a same-scope migration winner', () => {
     seedSourceWorkspace()
     const claimKey = StorageKeys.migrationClaim(sourceWorkspaceId)
