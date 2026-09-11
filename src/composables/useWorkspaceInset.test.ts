@@ -65,4 +65,15 @@ describe('useWorkspaceInsetRight', () => {
     // every portaled overlay permanently offset.
     expect(readInset()).toBe('0px')
   })
+
+  it('leaves the incoming publisher alone when the outgoing one disposes', () => {
+    const outgoing = effectScope()
+    outgoing.run(() => useWorkspaceInsetRight(() => 420))
+    runInScope(() => 960)
+
+    // A mode switch mounts the new docked host before unmounting the old one.
+    outgoing.stop()
+
+    expect(readInset()).toBe('960px')
+  })
 })
