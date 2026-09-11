@@ -434,9 +434,9 @@ defineExpose({
                 ? `agent-reference-item-${mentionActive}`
                 : undefined
             "
+            :history-epoch="composer.promptEpoch.value"
             :editable-workflow-id
             @keydown="onComposerKeydown"
-            :history-epoch="composer.promptEpoch.value"
             @update:model-value="composer.applyEditorPrompt"
             @keyup="onComposerKeyup"
             @input="syncMention"
