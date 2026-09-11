@@ -211,6 +211,25 @@ describe('createOpSender', () => {
     })
   })
 
+  it('a late anonymous result from the discarded lineage never settles the replacement batch', () => {
+    sender.enqueue([addNode(1)])
+    expect(sent).toHaveLength(1)
+
+    sender.resetLineage()
+    expect(settled.map((outcome) => outcome.state)).toEqual(['undeliverable'])
+
+    baseVersion = 0
+    sender.enqueue([addNode(2)])
+    expect(sent).toHaveLength(2)
+
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+    expect(settled).toHaveLength(1)
+
+    ackInFlight()
+    expect(settled).toHaveLength(2)
+    expect(settled[1].state).toBe('acknowledged')
+  })
+
   it('retries a down transport with the SAME minted ops and never re-mints', () => {
     transportUp = false
     sender.enqueue([addNode(1)])
