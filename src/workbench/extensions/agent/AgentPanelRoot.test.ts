@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import type {
@@ -12,16 +11,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Mocked } from 'vitest'
 import { computed, defineComponent, h, nextTick, ref } from 'vue'
 import { useClipboard } from '@vueuse/core'
-
-// jsdom does not implement ResizeObserver (happy-dom does); stub it before the
-// Vue node preview chain constructs its module-level observer at import time.
-vi.hoisted(() => {
-  globalThis.ResizeObserver = class {
-    observe() {}
-    unobserve() {}
-    disconnect() {}
-  }
-})
 
 vi.mock(import('firebase/auth'))
 vi.mock<unknown>(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
