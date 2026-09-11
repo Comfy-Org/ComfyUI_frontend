@@ -191,7 +191,6 @@
       "label": "Compression",
       "help": "Set compression for JPEG or WebP output, from 0 to 100.",
       "advanced": true,
-      "defaultCandidates": [90],
       "control": "number"
     },
     {
@@ -1108,6 +1107,11 @@
         "help": "Set the image's [width, height] in pixels when Aspect ratio is empty.",
         "advanced": true,
         "control": "text-area"
+      },
+      "image": {
+        "label": "Source image",
+        "help": "Choose the image to expand.",
+        "urlUpload": "image"
       }
     },
     "bria/image-edit-gen-fill": {
@@ -1650,16 +1654,88 @@
         "advanced": true,
         "control": "dropdown",
         "options": ["text", "ssml"],
-        "default": "text"
+        "default": "text",
+        "optionLabels": {
+          "text": "Plain text",
+          "ssml": "SSML"
+        }
       },
       "language": {
-        "help": "Set a base language code, such as en; leave empty for automatic detection.",
-        "defaultCandidates": []
+        "help": "Choose a language, or leave unset to detect it from the speech text.",
+        "defaultCandidates": [],
+        "advanced": false,
+        "options": [
+          "ar",
+          "zh",
+          "en",
+          "fr",
+          "de",
+          "hi",
+          "id",
+          "it",
+          "pl",
+          "pt",
+          "es",
+          "tr",
+          "vi"
+        ],
+        "optionLabels": {
+          "ar": "Arabic",
+          "zh": "Chinese",
+          "en": "English",
+          "fr": "French",
+          "de": "German",
+          "hi": "Hindi",
+          "id": "Indonesian",
+          "it": "Italian",
+          "pl": "Polish",
+          "pt": "Portuguese",
+          "es": "Spanish",
+          "tr": "Turkish",
+          "vi": "Vietnamese"
+        }
       },
       "locale": {
         "label": "Locale",
-        "help": "Set a locale such as en-US; this also determines the base language.",
-        "defaultCandidates": []
+        "help": "Choose a regional pronunciation, or leave unset to use the language. A selected locale overrides Language.",
+        "defaultCandidates": [],
+        "advanced": false,
+        "options": [
+          "ar-SA",
+          "zh-CN",
+          "en-US",
+          "en-GB",
+          "fr-FR",
+          "de-DE",
+          "hi-IN",
+          "id-ID",
+          "it-IT",
+          "pl-PL",
+          "pt-BR",
+          "pt-PT",
+          "es-ES",
+          "es-MX",
+          "tr-TR",
+          "vi-VN"
+        ],
+        "optionLabels": {
+          "ar-SA": "Arabic (Saudi Arabia)",
+          "zh-CN": "Chinese (China)",
+          "en-US": "English (United States)",
+          "en-GB": "English (United Kingdom)",
+          "fr-FR": "French (France)",
+          "de-DE": "German (Germany)",
+          "hi-IN": "Hindi (India)",
+          "id-ID": "Indonesian (Indonesia)",
+          "it-IT": "Italian (Italy)",
+          "pl-PL": "Polish (Poland)",
+          "pt-BR": "Portuguese (Brazil)",
+          "pt-PT": "Portuguese (Portugal)",
+          "es-ES": "Spanish (Spain)",
+          "es-MX": "Spanish (Mexico)",
+          "tr-TR": "Turkish (Türkiye)",
+          "vi-VN": "Vietnamese (Vietnam)"
+        }
       },
       "text": {
         "label": "Speech text",
@@ -1667,7 +1743,8 @@
       },
       "voice_id": {
         "label": "Voice ID",
-        "help": "Enter a voice ID that supports the Starfish speech engine."
+        "help": "Defaults to Chill Brian (English, male). To use another voice, enter its Starfish-compatible HeyGen voice ID.",
+        "advanced": true
       }
     },
     "ideogram/ideogram-v3": {

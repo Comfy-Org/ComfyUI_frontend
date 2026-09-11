@@ -17,7 +17,7 @@ const providers: readonly DiscoveryProvider[] = [
 ]
 
 describe('ModelDiscoverySection', () => {
-  it('only lines up providers that run models and have a preview', () => {
+  it('only lines up providers that run published models and have a preview', () => {
     expect(discoveryProviders.length).toBeGreaterThan(1)
     for (const provider of discoveryProviders) {
       expect(provider.modelCount, provider.name).toBeGreaterThan(0)
