@@ -12,6 +12,7 @@ import type { z } from 'zod'
 import type { SessionClient } from '../session.js'
 import type { BillingResult, BillingTransport } from './billingContracts.js'
 import { codeForHttpStatus } from './httpStatus.js'
+import { releaseOnAbort } from './sharedRead.js'
 
 export const CREDITS_ROUTE = '/billing/balance'
 
@@ -127,13 +128,16 @@ export function createCreditsReader(
     }
 
     if (inFlight !== undefined && sameScope(inFlight.scope, scope)) {
-      return inFlight.promise
+      return releaseOnAbort(inFlight.promise, readOptions?.signal)
     }
 
+    // No caller signal reaches the shared request: it is bounded by its own
+    // timeout, and one caller walking away must not fail the readers still
+    // waiting on it. Each caller's signal releases only that caller, below.
     const attempt: InFlightRead = {
       scope,
       promise: (async () => {
-        const result = await requestBalance(scope, readOptions?.signal)
+        const result = await requestBalance(scope, undefined)
         if (result.status !== 'ok') return result
 
         // The publish guard: a balance that arrives after the host moved to
@@ -150,11 +154,14 @@ export function createCreditsReader(
     }
 
     inFlight = attempt
-    try {
-      return await attempt.promise
-    } finally {
+    // The slot is released when the request settles, not when this caller
+    // stops waiting, so an abandoned read still serves whoever joined it.
+    const release = () => {
       if (inFlight === attempt) inFlight = undefined
     }
+    attempt.promise.then(release, release)
+
+    return releaseOnAbort(attempt.promise, readOptions?.signal)
   }
 
   return {

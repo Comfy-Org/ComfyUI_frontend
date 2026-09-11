@@ -152,6 +152,57 @@ describe('createCreditsReader', () => {
       expect(first).toEqual(second)
     })
 
+    it('releases a joining caller that aborts, without disturbing the shared read', async () => {
+      const { session } = fakeSession()
+      let release = () => {}
+      const gate = new Promise<void>((resolve) => {
+        release = resolve
+      })
+      const transport: BillingTransport = vi.fn(async () => {
+        await gate
+        return httpOk(BALANCE)
+      })
+      const reader = createCreditsReader({ transport, session })
+
+      const first = reader.read()
+      const joiner = new AbortController()
+      const second = reader.read({ signal: joiner.signal })
+      joiner.abort()
+
+      expect(await second).toEqual({ status: 'error', code: 'REQUEST_FAILED' })
+
+      release()
+      const result = await first
+      expect(result.status).toBe('ok')
+      expect(reader.getSnapshot()).toBeDefined()
+    })
+
+    it('keeps joined callers alive when the initiating caller aborts', async () => {
+      const { session } = fakeSession()
+      let release = () => {}
+      const gate = new Promise<void>((resolve) => {
+        release = resolve
+      })
+      const transport: BillingTransport = vi.fn(async () => {
+        await gate
+        return httpOk(BALANCE)
+      })
+      const reader = createCreditsReader({ transport, session })
+
+      const initiator = new AbortController()
+      const first = reader.read({ signal: initiator.signal })
+      const second = reader.read()
+      initiator.abort()
+
+      expect(await first).toEqual({ status: 'error', code: 'REQUEST_FAILED' })
+
+      release()
+      const result = await second
+      expect(result.status).toBe('ok')
+      if (result.status !== 'ok') return
+      expect(result.value.balance.amount_micros).toBe(12_500_000)
+    })
+
     it('requests again on a later read rather than serving the cache', async () => {
       const { session } = fakeSession()
       const { transport } = fakeTransport([httpOk(BALANCE)])

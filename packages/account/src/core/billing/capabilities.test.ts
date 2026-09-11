@@ -217,6 +217,74 @@ describe('createCapabilitiesReader', () => {
       expect(transport).toHaveBeenCalledTimes(1)
     })
 
+    it('releases a joining caller that aborts, without disturbing the shared read', async () => {
+      const { session } = fakeSession()
+      let release = () => {}
+      const gate = new Promise<void>((resolve) => {
+        release = resolve
+      })
+      const transport: BillingTransport = vi.fn(async () => {
+        await gate
+        return httpOk(capabilitiesBody())
+      })
+      const reader = createCapabilitiesReader({ transport, session })
+
+      const first = reader.read()
+      const joiner = new AbortController()
+      const second = reader.read({ signal: joiner.signal })
+      joiner.abort()
+
+      expect(await second).toEqual({
+        status: 'error',
+        code: 'REQUEST_FAILED'
+      })
+
+      release()
+      // The joiner walking away must not cancel the request the first caller
+      // is still waiting on.
+      const result = await first
+      expect(result.status).toBe('ok')
+      expect(reader.getSnapshot()).toBeDefined()
+    })
+
+    it('keeps joined callers alive when the initiating caller aborts', async () => {
+      const { session } = fakeSession()
+      let release = () => {}
+      const gate = new Promise<void>((resolve) => {
+        release = resolve
+      })
+      const transport: BillingTransport = vi.fn(async () => {
+        await gate
+        return httpOk(capabilitiesBody())
+      })
+      const reader = createCapabilitiesReader({ transport, session })
+
+      const initiator = new AbortController()
+      const first = reader.read({ signal: initiator.signal })
+      const second = reader.read()
+      initiator.abort()
+
+      expect(await first).toEqual({ status: 'error', code: 'REQUEST_FAILED' })
+
+      release()
+      // The initiator's signal belongs to the initiator, not to the shared
+      // request: whoever joined it still gets the answer.
+      const result = await second
+      expect(result.status).toBe('ok')
+      if (result.status !== 'ok') return
+      expect(result.value.revision).toBe(42)
+    })
+
+    it('releases a caller whose signal was already aborted', async () => {
+      const { session } = fakeSession()
+      const { transport } = fakeTransport([httpOk(capabilitiesBody())])
+      const reader = createCapabilitiesReader({ transport, session })
+
+      const result = await reader.read({ signal: AbortSignal.abort() })
+
+      expect(result).toEqual({ status: 'error', code: 'REQUEST_FAILED' })
+    })
+
     it('refetches when the caller forces a refresh', async () => {
       const { session } = fakeSession()
       const { transport } = fakeTransport([httpOk(capabilitiesBody())])

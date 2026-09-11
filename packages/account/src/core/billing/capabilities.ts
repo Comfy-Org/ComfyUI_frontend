@@ -24,6 +24,7 @@ import type { BillingResult, BillingTransport } from './billingContracts.js'
 import type { CapabilityDenials } from './capabilityDenials.js'
 import { decodeCapabilityDenials } from './capabilityDenials.js'
 import { codeForHttpStatus } from './httpStatus.js'
+import { releaseOnAbort } from './sharedRead.js'
 
 export const CAPABILITIES_ROUTE = '/billing/capabilities'
 
@@ -253,14 +254,17 @@ export function createCapabilitiesReader(
     // joins rather than issuing a second identical request; a caller for a
     // different scope starts its own, and the older one can no longer publish.
     if (inFlight !== undefined && sameScope(inFlight.scope, scope)) {
-      return inFlight.promise
+      return releaseOnAbort(inFlight.promise, readOptions?.signal)
     }
 
     // The invalidation flag lives outside the attempt so the read body can
     // consult it without referencing the object that holds its own promise.
     const pending = { invalidated: false }
+    // No caller signal reaches the shared request: it is bounded by its own
+    // timeout, and one caller walking away must not fail the readers still
+    // waiting on it. Each caller's signal releases only that caller, below.
     const promise = (async (): Promise<BillingResult<CapabilitiesSnapshot>> => {
-      const result = await requestCapabilities(scope, readOptions?.signal)
+      const result = await requestCapabilities(scope, undefined)
       if (result.status !== 'ok') return result
 
       // The publish guard. Between issuing the request and settling it the
@@ -284,11 +288,14 @@ export function createCapabilitiesReader(
 
     const attempt: InFlightRead = { scope, promise, pending }
     inFlight = attempt
-    try {
-      return await attempt.promise
-    } finally {
+    // The slot is released when the request settles, not when this caller
+    // stops waiting, so an abandoned read still serves whoever joined it.
+    const release = () => {
       if (inFlight === attempt) inFlight = undefined
     }
+    promise.then(release, release)
+
+    return releaseOnAbort(promise, readOptions?.signal)
   }
 
   return {
