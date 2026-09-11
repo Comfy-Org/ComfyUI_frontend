@@ -199,5 +199,68 @@ baseTest.describe(
           .toBe(true)
       }
     )
+
+    baseTest(
+      'refused asset deletion preserves widget, preview, and workflow state',
+      async ({ comfyPage, page }) => {
+        const deleteRequests: string[] = []
+        await page.route(/\/api\/assets\/([^/?#]+)$/, async (route) => {
+          if (route.request().method() !== 'DELETE') return route.fallback()
+          deleteRequests.push(route.request().url())
+          return route.fulfill({
+            status: 500,
+            contentType: 'application/json',
+            body: JSON.stringify({ error: 'delete refused' })
+          })
+        })
+
+        await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
+        const loadImageNode = (
+          await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
+        )[0]
+        const { x, y } = await loadImageNode.getPosition()
+        await comfyPage.dragDrop.dragAndDropFile(DROPPED_FILE, {
+          dropPosition: { x, y },
+          waitForUpload: true
+        })
+        const imageWidget = await loadImageNode.getWidget(0)
+        await expect.poll(() => imageWidget.getValue()).toBe(DROPPED_FILE)
+
+        await comfyPage.page.evaluate(() => {
+          const tracker =
+            window.app?.extensionManager.workflow?.activeWorkflow?.changeTracker
+          tracker?.reset()
+          tracker?.updateModified()
+        })
+        await expect
+          .poll(() => comfyPage.workflow.isCurrentWorkflowModified())
+          .toBe(false)
+
+        const sidebar = comfyPage.menu.assetsTab
+        await sidebar.open({ waitForAssets: false })
+        await sidebar.switchToImported()
+        await sidebar.waitForAssets(1)
+        await sidebar.rightClickAsset(TARGET_CARD_TEXT)
+        await sidebar.contextMenuItem('Delete').click()
+        await comfyPage.confirmDialog.click('delete')
+
+        await expect.poll(() => deleteRequests).toHaveLength(1)
+        await expect(comfyPage.toast.toastErrors).toBeVisible()
+        await expect(comfyPage.toast.toastSuccesses).toHaveCount(0)
+        await expect.poll(() => imageWidget.getValue()).toBe(DROPPED_FILE)
+        await expect
+          .poll(() =>
+            comfyPage.page.evaluate((nodeId) => {
+              const node = window.app!.graph.getNodeById(nodeId)
+              return node?.imgs?.length ?? 0
+            }, loadImageNode.id)
+          )
+          .toBeGreaterThan(0)
+        await expect
+          .poll(() => comfyPage.workflow.isCurrentWorkflowModified())
+          .toBe(false)
+        await expect(sidebar.assetCards).toHaveCount(1)
+      }
+    )
   }
 )

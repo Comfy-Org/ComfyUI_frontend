@@ -82,6 +82,34 @@ test.describe('Subgraph CRUD', { tag: ['@slow', '@subgraph'] }, () => {
       await expect.poll(() => comfyPage.subgraph.getNodeCount()).toBe(1)
     })
 
+    test('Empty selection conversion shows an error toast and leaves the graph unchanged', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow('default')
+      const initialCount = await comfyPage.nodeOps.getGraphNodesCount()
+
+      await comfyPage.page.evaluate(() => window.app!.canvas.deselectAll())
+      await comfyPage.nextFrame()
+      await comfyPage.command.executeCommand('Comfy.Graph.ConvertToSubgraph')
+
+      await expect(comfyPage.toast.toastErrors).toContainText(
+        'Cannot create subgraph'
+      )
+      await expect(comfyPage.toast.toastErrors).toContainText(
+        'Failed to convert items to subgraph'
+      )
+      await expect
+        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+        .toBe(initialCount)
+      await expect
+        .poll(
+          async () =>
+            (await comfyPage.nodeOps.getNodeRefsByTitle(NEW_SUBGRAPH_TITLE))
+              .length
+        )
+        .toBe(0)
+    })
+
     test('Can delete subgraph node', async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
 
