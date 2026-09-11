@@ -122,20 +122,36 @@ let restoredForUid: string | undefined
 function keepWorkspaceRemembered(): void {
   const current = snapshot.value
   if (current.phase !== 'authenticated') return
-  const { uid, workspace } = current.session
-  if (restoredForUid !== uid) {
-    restoredForUid = uid
-    const remembered = rememberedWorkspace(uid)
-    if (remembered && remembered !== workspace.id) {
-      void workshopSessionClient
-        .remint(undefined, { workspaceId: remembered })
-        .then((result) => {
-          if (result?.status !== 'ok') rememberWorkspace(uid, undefined)
-        })
-      return
-    }
+  rememberWorkspace(current.session.uid, current.session.workspace.id)
+}
+
+/**
+ * The restore is one extra mint, and publishing the boot's personal
+ * credential first would flash the wrong workspace for its duration. Hold
+ * that first snapshot back - the page stays on its signing-in state - and
+ * publish either the restored workspace or, if the restore is refused, the
+ * held personal one so sign-in still completes.
+ */
+function holdsForRestore(next: SessionSnapshot<User>): boolean {
+  if (next.phase !== 'authenticated') {
+    if (next.phase === 'signed-out') restoredForUid = undefined
+    return false
   }
-  rememberWorkspace(uid, workspace.id)
+  const { uid, workspace } = next.session
+  if (restoredForUid === uid) return false
+  restoredForUid = uid
+  const remembered = rememberedWorkspace(uid)
+  if (!remembered || remembered === workspace.id) return false
+  void workshopSessionClient
+    .remint(undefined, { workspaceId: remembered })
+    .then((result) => {
+      if (result?.status !== 'ok') {
+        rememberWorkspace(uid, undefined)
+        snapshot.value = next
+        keepWorkspaceRemembered()
+      }
+    })
+  return true
 }
 
 async function begin(expectedGeneration: number): Promise<void> {
@@ -143,6 +159,7 @@ async function begin(expectedGeneration: number): Promise<void> {
   if (generation !== expectedGeneration) return
 
   stopSnapshot = workshopSessionClient.subscribe((next) => {
+    if (holdsForRestore(next)) return
     snapshot.value = next
     keepWorkspaceRemembered()
   })

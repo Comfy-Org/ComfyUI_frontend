@@ -170,6 +170,42 @@ describe('useWorkshopSession', () => {
     )
   })
 
+  it('holds the boot snapshot back while the restore is in flight', async () => {
+    window.localStorage.setItem(
+      'workshop:workspace',
+      JSON.stringify({ uid: 'user-1', workspaceId: 'team-9' })
+    )
+    let releaseRemint!: (value: unknown) => void
+    h.remint.mockImplementation(
+      () => new Promise((resolve) => (releaseRemint = resolve))
+    )
+    const s = await importFresh()
+
+    h.publish({
+      phase: 'authenticated',
+      user: { uid: 'user-1' },
+      session: okSession,
+      settled: true
+    })
+
+    await vi.waitFor(() => expect(h.remint).toHaveBeenCalledOnce())
+    expect(s.session.value, 'the personal boot must not flash').toBeUndefined()
+
+    const restored = {
+      ...okSession,
+      workspace: { id: 'team-9', name: 'Studio', type: 'team' as const }
+    }
+    h.publish({
+      phase: 'authenticated',
+      user: { uid: 'user-1' },
+      session: restored,
+      settled: true
+    })
+    releaseRemint({ status: 'ok', session: restored })
+
+    await vi.waitFor(() => expect(s.session.value?.workspace.id).toBe('team-9'))
+  })
+
   it('remembers the workspace each authenticated snapshot names', async () => {
     window.localStorage.removeItem('workshop:workspace')
     await importFresh()
