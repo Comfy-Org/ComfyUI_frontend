@@ -5169,6 +5169,10 @@
   "agent": {
     "title": "Comfy Agent",
     "loadFailed": "The agent panel failed to load.",
+    "syncStatus": "Workflow synchronization",
+    "syncChecking": "Checking workflow synchronization…",
+    "syncRecovering": "Restoring workflow synchronization…",
+    "syncFailed": "Workflow synchronization could not be restored. Changes from the agent or other windows may be missing.",
     "askComfyAgent": "Ask Comfy Agent",
     "caption": "The AI agent can make mistakes",
     "captionExpanded": "The AI agent can make mistakes. Double check your response.",

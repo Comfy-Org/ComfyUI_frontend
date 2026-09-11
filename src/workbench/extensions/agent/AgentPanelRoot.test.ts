@@ -1159,13 +1159,16 @@ describe('AgentPanelRoot attach flow', () => {
     dispatchDrag(target, 'dragenter', data)
     await nextTick()
 
-    const dropTarget = screen.getByRole('status')
+    expect(
+      screen.getByRole('status', { name: 'Workflow synchronization' })
+    ).toBeEmptyDOMElement()
+    const dropTarget = screen.getByRole('status', { name: '' })
     expect(dropTarget).toHaveTextContent('Drag and drop assets here')
 
     dispatchDrag(dropTarget, 'dragleave', data)
     await nextTick()
 
-    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(screen.queryByRole('status', { name: '' })).not.toBeInTheDocument()
   })
 
   it('rejects URI-only drags without showing or claiming the asset target', async () => {
@@ -1180,7 +1183,7 @@ describe('AgentPanelRoot attach flow', () => {
 
     expect(dispatchDrag(target, 'dragenter', data)).toBe(false)
     await nextTick()
-    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(screen.queryByRole('status', { name: '' })).not.toBeInTheDocument()
     expect(dispatchDrag(target, 'dragover', data)).toBe(false)
     expect(dispatchDrag(target, 'drop', data)).toBe(false)
     expect(uploaded).toEqual([])
@@ -1235,7 +1238,7 @@ describe('AgentPanelRoot attach flow', () => {
 
       dispatchDrag(target, 'dragenter', dragData)
       await nextTick()
-      expect(screen.getByRole('status')).toHaveTextContent(
+      expect(screen.getByRole('status', { name: '' })).toHaveTextContent(
         'Drag and drop assets here'
       )
 
@@ -1244,7 +1247,7 @@ describe('AgentPanelRoot attach flow', () => {
       const claimed = dispatchDrag(target, 'drop', dragData)
       expect(claimed).toBe(true)
       await nextTick()
-      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+      expect(screen.queryByRole('status', { name: '' })).not.toBeInTheDocument()
 
       expect(await screen.findByText(filename)).toBeInTheDocument()
 
@@ -2354,7 +2357,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(
       screen.getByRole('menuitemradio', { name: 'scratch' })
     ).not.toHaveAttribute('aria-disabled', 'true')
-    expect(screen.queryByRole('status')).toBeNull()
+    expect(screen.queryByRole('status', { name: '' })).toBeNull()
     expect(useAgentComposerStore().draft).toBe('keep draft')
     await userEvent.click(
       screen.getByRole('menuitemradio', { name: 'scratch' })
@@ -4380,7 +4383,9 @@ describe('AgentPanelRoot workflow binding', () => {
       await vi.waitFor(() =>
         expect(workflowService.saveWorkflowAs).toHaveBeenCalledOnce()
       )
-      expect(screen.getByRole('status')).toHaveTextContent('Saving workflow')
+      expect(screen.getByRole('status', { name: '' })).toHaveTextContent(
+        'Saving workflow'
+      )
       expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled()
       expect(
         screen.getByRole('button', {
