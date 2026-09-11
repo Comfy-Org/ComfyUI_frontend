@@ -7,7 +7,10 @@ import type {
   PerfMeasurementResult,
   PerfReportV2
 } from '@e2e/fixtures/utils/perfReportSchema'
-import { perfMeasurementResultSchema } from '@e2e/fixtures/utils/perfReportSchema'
+import {
+  perfMeasurementResultSchema,
+  requireAcceptedMeasurement
+} from '@e2e/fixtures/utils/perfReportSchema'
 
 const TEMP_DIR = join('test-results', 'perf-temp')
 
@@ -51,7 +54,7 @@ export function recordMeasurement(
   mkdirSync(TEMP_DIR, { recursive: true })
   const filename = `${result.measurement.name}-${Date.now()}-${randomUUID()}.json`
   writeFileSync(join(TEMP_DIR, filename), JSON.stringify(result))
-  return result.measurement
+  return requireAcceptedMeasurement(result)
 }
 
 export function writePerfReport(
