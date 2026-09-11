@@ -179,16 +179,18 @@ is a data loss for the common single-user case.
 
 ### Positive
 
-- Two users on one browser never read or overwrite each other's drafts, even
-  when they share a workspace id.
+- Once a scope has been migrated, drafts written under one identity are never
+  read or overwritten by another identity on the same browser, even when both
+  share a workspace id. Legacy workspace-scoped drafts are attributed to the
+  first identity that migrates them (see Negative consequences).
 - Logout removes only the departing user's data in the scope they were in;
   drafts in their other workspaces survive.
 - No write can commit while the owner is unknown or changing.
 
 ### Negative
 
-- Existing workspace-keyed drafts are attributed to the first user who signs in
-  after the upgrade.
+- Existing workspace-keyed drafts are attributed to the first identity that
+  migrates them after the upgrade.
 - Writes made while the gate is `deferred` are not queued; if the tab closes
   before the gate opens, changes made during the transition are lost. This is
   the same window that already existed for the transitioning state.
