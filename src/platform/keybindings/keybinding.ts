@@ -10,6 +10,9 @@ export class KeybindingImpl implements Keybinding {
   targetElementId?: string
   dialogKey?: string
   when?: string
+  allowRepeat?: boolean
+  preventDefault?: boolean
+  releaseCommandId?: string
 
   constructor(obj: Keybinding) {
     this.commandId = obj.commandId
@@ -17,6 +20,9 @@ export class KeybindingImpl implements Keybinding {
     this.targetElementId = obj.targetElementId || undefined
     this.dialogKey = obj.dialogKey || undefined
     this.when = obj.when ? canonicalWhenClause(obj.when) : undefined
+    this.allowRepeat = obj.allowRepeat
+    this.preventDefault = obj.preventDefault
+    this.releaseCommandId = obj.releaseCommandId || undefined
   }
 
   /** Every field that distinguishes one binding from another. */
@@ -26,7 +32,10 @@ export class KeybindingImpl implements Keybinding {
       this.combo.serialize(),
       this.targetElementId ?? '',
       this.dialogKey ?? '',
-      this.when ?? ''
+      this.when ?? '',
+      this.allowRepeat ?? true,
+      this.preventDefault ?? true,
+      this.releaseCommandId ?? ''
     ])
   }
 
@@ -34,11 +43,7 @@ export class KeybindingImpl implements Keybinding {
     const raw = toRaw(other)
 
     return raw instanceof KeybindingImpl
-      ? this.commandId === raw.commandId &&
-          this.combo.equals(raw.combo) &&
-          this.targetElementId === raw.targetElementId &&
-          this.dialogKey === raw.dialogKey &&
-          this.when === raw.when
+      ? this.serialize() === raw.serialize()
       : false
   }
 }

@@ -13,7 +13,6 @@ import { uploadFile } from '@/scripts/utils'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 
-import { KeybindingImpl } from './keybinding'
 import { useKeybindingService } from './keybindingService'
 import { useKeybindingStore } from './keybindingStore'
 import type { KeybindingPreset } from './types'
@@ -112,13 +111,7 @@ export function useKeybindingPresetService() {
   }
 
   function applyPreset(preset: KeybindingPreset) {
-    keybindingStore.resetAllKeybindings()
-    for (const binding of preset.unsetBindings) {
-      keybindingStore.unsetKeybinding(new KeybindingImpl(binding))
-    }
-    for (const binding of preset.newBindings) {
-      keybindingStore.addUserKeybinding(new KeybindingImpl(binding))
-    }
+    keybindingStore.loadUserKeybindings(preset)
     // Snapshot savedPresetData from the store's actual state after applying,
     // because addUserKeybinding may auto-unset conflicting defaults beyond
     // what the raw preset specifies.

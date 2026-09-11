@@ -1,3 +1,4 @@
+import { reportError } from '@/platform/telemetry/reportError'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
@@ -11,6 +12,8 @@ import { KeyComboImpl } from './keyCombo'
 import { KeybindingImpl } from './keybinding'
 import type { KeybindingSource } from './keybindingStore'
 import { useKeybindingStore } from './keybindingStore'
+import { legacyBindings } from './persistence'
+import { zKeybindingSettings } from './types'
 import { matchesContext, parseWhenClause } from './whenClause'
 
 const RUN_COMMAND_IDS = new Set([
@@ -204,30 +207,44 @@ export function useKeybindingService() {
   }
 
   function registerUserKeybindings() {
-    const unsetBindings = settingStore.get('Comfy.Keybinding.UnsetBindings')
-    for (const keybinding of unsetBindings) {
-      if (!commandStore.isRegistered(keybinding.commandId)) {
-        continue
-      }
-      keybindingStore.unsetKeybinding(new KeybindingImpl(keybinding))
-    }
-    const newBindings = settingStore.get('Comfy.Keybinding.NewBindings')
-    for (const keybinding of newBindings) {
-      if (
-        isCloud &&
-        keybinding.commandId === 'Workspace.ToggleBottomPanelTab.logs-terminal'
-      ) {
-        continue
-      }
-      keybindingStore.addUserKeybinding(new KeybindingImpl(keybinding))
+    try {
+      const settings = zKeybindingSettings.parse(
+        settingStore.get('Comfy.Keybinding.SettingsV1') ?? {
+          version: 1,
+          newBindings: settingStore.get('Comfy.Keybinding.NewBindings'),
+          unsetBindings: settingStore.get('Comfy.Keybinding.UnsetBindings'),
+          currentPreset: settingStore.get('Comfy.Keybinding.CurrentPreset')
+        }
+      )
+      keybindingStore.loadUserKeybindings({
+        newBindings: settings.newBindings.filter(
+          (binding) =>
+            !isCloud ||
+            binding.commandId !== 'Workspace.ToggleBottomPanelTab.logs-terminal'
+        ),
+        unsetBindings: settings.unsetBindings
+      })
+      keybindingStore.currentPresetName = settings.currentPreset
+    } catch {
+      reportError(new Error('Stored keyboard shortcuts could not be loaded'), {
+        errorType: 'error_loading_keybinding',
+        level: 'warning'
+      })
     }
   }
 
   async function persistUserKeybindings() {
+    const newBindings = keybindingStore.getUserKeybindings()
+    const unsetBindings = keybindingStore.getUserUnsetKeybindings()
     await settingStore.setMany({
-      'Comfy.Keybinding.NewBindings': keybindingStore.getUserKeybindings(),
-      'Comfy.Keybinding.UnsetBindings':
-        keybindingStore.getUserUnsetKeybindings()
+      'Comfy.Keybinding.SettingsV1': {
+        version: 1,
+        newBindings,
+        unsetBindings,
+        currentPreset: keybindingStore.currentPresetName
+      },
+      'Comfy.Keybinding.NewBindings': legacyBindings(newBindings),
+      'Comfy.Keybinding.UnsetBindings': legacyBindings(unsetBindings)
     })
   }
 

@@ -18,6 +18,9 @@ export interface EditKeybindingDialogState {
   targetElementId?: string
   dialogKey?: string
   when?: string
+  allowRepeat?: boolean
+  preventDefault?: boolean
+  releaseCommandId?: string
 }
 
 export function useEditKeybindingDialog() {
@@ -32,7 +35,9 @@ export function useEditKeybindingDialog() {
   }) {
     const scopeTemplate =
       options.existingBinding ??
-      keybindingStore.getDefaultKeybindingsByCommandId(options.commandId)[0] ??
+      keybindingStore
+        .getDefaultKeybindingsByCommandId(options.commandId)
+        .at(0) ??
       keybindingStore.getKeybindingByCommandId(options.commandId)
     const dialogState = reactive<EditKeybindingDialogState>({
       commandId: options.commandId,
@@ -41,7 +46,10 @@ export function useEditKeybindingDialog() {
       existingBinding: options.existingBinding ?? null,
       targetElementId: scopeTemplate?.targetElementId,
       dialogKey: scopeTemplate?.dialogKey,
-      when: scopeTemplate?.when
+      when: scopeTemplate?.when,
+      allowRepeat: scopeTemplate?.allowRepeat,
+      preventDefault: scopeTemplate?.preventDefault,
+      releaseCommandId: scopeTemplate?.releaseCommandId
     })
 
     const newKeybinding = computed(() =>
@@ -51,7 +59,10 @@ export function useEditKeybindingDialog() {
             combo: dialogState.newCombo,
             targetElementId: dialogState.targetElementId,
             dialogKey: dialogState.dialogKey,
-            when: dialogState.when
+            when: dialogState.when,
+            allowRepeat: dialogState.allowRepeat,
+            preventDefault: dialogState.preventDefault,
+            releaseCommandId: dialogState.releaseCommandId
           })
         : null
     )

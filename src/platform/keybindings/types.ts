@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 const zKeyCombo = z.object({
-  key: z.string(),
+  key: z.string().min(1),
   ctrl: z.boolean().optional(),
   alt: z.boolean().optional(),
   shift: z.boolean().optional(),
@@ -24,8 +24,20 @@ export const zKeybinding = z.object({
    * keys through `contextKeys` and set them with
    * `app.extensionManager.contextKey.set`.
    */
-  when: zOptionalString
+  when: zOptionalString,
+  allowRepeat: z.boolean().optional(),
+  preventDefault: z.boolean().optional(),
+  releaseCommandId: zOptionalString
 })
+
+export const zKeybindingSettings = z.object({
+  version: z.literal(1),
+  newBindings: z.array(zKeybinding),
+  unsetBindings: z.array(zKeybinding),
+  currentPreset: z.string()
+})
+
+export type KeybindingSettings = z.infer<typeof zKeybindingSettings>
 
 export const zKeybindingPreset = z.object({
   name: z.string().trim().min(1, 'Preset name cannot be empty'),
