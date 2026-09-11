@@ -71,7 +71,9 @@ import {
 } from './canvas/linkBadgeRenderer'
 import {
   getLinkMenuOptions,
+  getVisibleRerouteLink,
   hideLink,
+  hideLinks,
   promptRenameLinkBadge,
   showLink
 } from './canvas/linkVisibility'
@@ -6748,10 +6750,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const node_left = graph.getNodeById(origin_id)
     const fromType = node_left?.outputs[origin_slot]?.type
 
+    const rerouteLink =
+      segment instanceof Reroute
+        ? getVisibleRerouteLink(graph, segment)
+        : undefined
     const link =
       segment instanceof LLink && graph.getLink(segment.id) === segment
         ? segment
-        : presentationLink
+        : (presentationLink ?? rerouteLink)
     const graphScope = graphScopeOf(graph)
     const options = getLinkMenuOptions(graphScope, link?.id)
     const menu = new LiteGraph.ContextMenu<string>(options, {
@@ -6826,7 +6832,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           break
         }
         case 'Hide Link':
-          if (link) hideLink(this, graphScope, link.id)
+          if (segment instanceof Reroute) {
+            hideLinks(this, graphScope, segment.linkIds)
+          } else if (link) {
+            hideLink(this, graphScope, link.id)
+          }
           break
         case 'Show Link':
           if (link) showLink(this, graphScope, link.id)
