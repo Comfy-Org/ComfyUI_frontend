@@ -249,6 +249,10 @@ describe('CrdtDevPanel clipboard controls', () => {
     await user.click(screen.getByTestId('crdt-dev-panel-tab-log'))
 
     expect(screen.getByText('[object Object]')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Copy log detail' }))
+
+    expect(writeText).toHaveBeenCalledExactlyOnceWith('[object Object]')
   })
 
   it('bounds retained details and truncates excerpts on code-point boundaries', async () => {
