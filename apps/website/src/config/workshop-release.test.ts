@@ -135,6 +135,13 @@ describe('assertWorkshopCloudEnvForBuild', () => {
       message: /PUBLIC_WORKSHOP_CLOUD_ENV is unset/
     },
     {
+      name: 'a preview with Workshop treats an empty family as unset',
+      vercelEnv: 'preview',
+      inBuild: '1',
+      family: '',
+      message: /PUBLIC_WORKSHOP_CLOUD_ENV is unset/
+    },
+    {
       name: 'a preview may not reach prod',
       vercelEnv: 'preview',
       inBuild: '1',
