@@ -11,11 +11,13 @@ import { computed, onMounted, watch } from 'vue'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import config from '@/config'
 import { isDesktop } from '@/platform/distribution/types'
-import { reportError } from '@/platform/telemetry/reportError'
+import {
+  reportPreloadError,
+  reportResourceLoadError
+} from '@/platform/telemetry/assetLoadErrorReporting'
 import { app } from '@/scripts/app'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI } from '@/utils/envUtil'
-import { parsePreloadError } from '@/utils/preloadErrorUtil'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 
 const workspaceStore = useWorkspaceStore()
@@ -45,17 +47,6 @@ const showContextMenu = (event: MouseEvent) => {
   }
 }
 
-function handleResourceError(url: string, tagName: string) {
-  console.error('[resource:loadError]', { url, tagName })
-
-  if (__DISTRIBUTION__ === 'cloud') {
-    reportError(new Error(`Resource load failed: ${url}`), {
-      errorType: 'resource_load_error',
-      tags: { tag_name: tagName }
-    })
-  }
-}
-
 onMounted(() => {
   window['__COMFYUI_FRONTEND_VERSION__'] = config.app_version
 
@@ -67,32 +58,12 @@ onMounted(() => {
   // See: https://vite.dev/guide/build#load-error-handling
   window.addEventListener('vite:preloadError', (event) => {
     event.preventDefault()
-    const info = parsePreloadError(event.payload)
-    console.error('[vite:preloadError]', {
-      url: info.url,
-      fileType: info.fileType,
-      chunkName: info.chunkName,
-      message: info.message
-    })
-    if (__DISTRIBUTION__ === 'cloud') {
-      reportError(event.payload, {
-        errorType: 'vite_preload_error',
-        tags: {
-          file_type: info.fileType,
-          chunk_name: info.chunkName ?? undefined
-        },
-        context: {
-          url: info.url,
-          fileType: info.fileType,
-          chunkName: info.chunkName
-        }
-      })
-    }
+    reportPreloadError(event.payload)
     // Disabled: Third-party custom node extensions frequently trigger this toast
     // (e.g., bare "vue" imports, wrong relative paths to scripts/app.js, missing
     // core dependencies). These are plugin bugs, not ComfyUI core failures, but
     // the generic error message alarms users and offers no actionable guidance.
-    // The console.error above still logs the details for developers to debug.
+    // The reporter above still logs the details for developers to debug.
     // useToastStore().add({
     //   severity: 'error',
     //   summary: t('g.preloadErrorTitle'),
@@ -108,12 +79,12 @@ onMounted(() => {
       (event) => {
         const target = event.target
         if (target instanceof HTMLScriptElement) {
-          handleResourceError(target.src, 'script')
+          reportResourceLoadError(target.src, 'script')
         } else if (
           target instanceof HTMLLinkElement &&
           target.rel === 'stylesheet'
         ) {
-          handleResourceError(target.href, 'link')
+          reportResourceLoadError(target.href, 'link')
         }
       },
       true
