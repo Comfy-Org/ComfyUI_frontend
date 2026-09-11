@@ -133,6 +133,40 @@ API.
    transform-pipeline version is stale — two different workflows on the same
    pipeline version are otherwise indistinguishable from provenance alone.
 
+   **This ADR does not define the digest contract, and deliberately defers
+   it.** What is decided here is that provenance must identify the paired
+   workflow; which bytes are hashed is not. Nothing in the codebase
+   canonicalizes a workflow today — `graphToPrompt()` returns the
+   `graph.serialize()` output that `api.queuePrompt()` nests at
+   `extra_data.extra_pnginfo.workflow` and hands to `JSON.stringify`, so key
+   order follows insertion order and has never had to be a guarantee.
+   Specifying serialization, hash, and versioning
+   here would invent a contract rather than record one, and the computation
+   point cannot be fixed before open question 2 settles where the payload is
+   persisted. Until a follow-on ADR in the `WORKFLOW-EXECUTION` domain defines
+   it, consumers should not implement a digest: a provenance envelope that
+   omits the field is recoverable, whereas two implementations that disagree
+   on the bytes produce a checker that rejects matching workflows. That
+   follow-on must settle at minimum:
+
+   - **Canonical bytes.** Key ordering, unicode normalization and escaping,
+     number formatting (float repr, `-0`), and whitespace. Absent these, two
+     encodings of one workflow hash differently and the check rejects a pair
+     that actually matches.
+   - **Covered fields.** Which parts of the workflow are in scope. `extra.ds`
+     (canvas scale and offset) and similar view-only state do not affect
+     execution, so hashing them makes the digest reject payloads that are in
+     fact equivalent.
+   - **Circularity boundary.** The digest covers the workflow and the envelope
+     carries the digest. If the hashed input can ever include the provenance
+     block, the value has no fixed point and cannot be computed. The boundary
+     has to be stated, not implied.
+   - **Algorithm and algorithm version**, as two fields, so the hash can be
+     rotated without burning a transform-pipeline version.
+   - **Computation point**, including which object is hashed — the workflow as
+     stored in `extra_data.extra_pnginfo.workflow`, not an earlier in-memory
+     form, or the digest describes something the recipient never sees.
+
 Mental model: **workflow → explicit named transforms → execution payload**. The
 payload is never edited directly; it is always regenerated from the workflow.
 
@@ -144,6 +178,9 @@ payload is never edited directly; it is always regenerated from the workflow.
   governs that).
 - How extensions register custom transforms after this centralization — that
   registration contract is deferred pending the centralized implementation.
+- The canonical workflow digest contract — serialization, covered fields, hash
+  algorithm and version, and computation point. Deferred to a follow-on ADR in
+  the `WORKFLOW-EXECUTION` domain, as set out in decision 3.
 
 ### Enforceability as a standard for new code
 
@@ -218,3 +255,7 @@ At that point:
 5. Are ecosystem-level graph rewrites (Easy-Use "use everywhere" variables,
    KJNodes get/set nodes, link rewrites — see #15704) in scope for the central
    pipeline via the registration contract, or explicitly outside the standard?
+6. Is the canonical workflow digest load-bearing for the initial scope, or can
+   the transform-pipeline version alone carry provenance until the digest
+   contract is written? The answer decides whether the follow-on ADR blocks
+   this one or trails it.
