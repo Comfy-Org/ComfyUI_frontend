@@ -300,6 +300,7 @@ const earlierClass = (active: boolean) =>
             controls-on-hover
             autoplay
             loop
+            no-cors
           />
           <img
             v-else-if="currentUrl && shown.kind === 'image' && !blurred"
