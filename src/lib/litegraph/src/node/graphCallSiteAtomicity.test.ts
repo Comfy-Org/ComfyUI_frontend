@@ -170,6 +170,10 @@ describe('updateEndpoints – replaceNodeInputs() atomicity', () => {
     source.connect(0, target, 1)
 
     const inputsBefore = [...target.inputs]
+    const linkAtA = target.getInputLink(0)!.id
+    const linkAtB = target.getInputLink(1)!.id
+    const onInputRemoved = vi.fn()
+    target.onInputRemoved = onInputRemoved
 
     // The last test in legacySlotLinkMutations.test.ts already exercises the
     // "keeps the input layout when the endpoint batch is rejected" path via
@@ -193,6 +197,11 @@ describe('updateEndpoints – replaceNodeInputs() atomicity', () => {
     )
     // Both links are still registered.
     expect(graph.links.size).toBe(2)
+    // Which link sits in which slot, not just how many survive.
+    expect(target.getInputLink(0)?.id).toBe(linkAtA)
+    expect(target.getInputLink(1)?.id).toBe(linkAtB)
+    // A rejected splice must not have announced a removal.
+    expect(onInputRemoved).not.toHaveBeenCalled()
   })
 
   it('splices inputs and updates endpoints together on success', () => {
