@@ -159,9 +159,14 @@ test.describe(
       await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
       await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
       const tabsAfterNew = await comfyPage.menu.topbar.getTabNames()
-      const tabBName = tabsAfterNew.find(
+      const newTabs = tabsAfterNew.filter(
         (name) => !tabsBeforeNew.includes(name)
-      )!
+      )
+      expect(newTabs, 'New must create exactly one workflow tab').toHaveLength(
+        1
+      )
+      if (newTabs.length !== 1) throw new Error('Expected one new workflow tab')
+      const [tabBName] = newTabs
       const tabB = comfyPage.menu.topbar.getWorkflowTab(tabBName)
       await expect(tabB).toBeVisible()
 
