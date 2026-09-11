@@ -75,6 +75,19 @@
     },
     "notHelpful": "Yararlı değil",
     "openWorkflowTab": "{name} öğesini aç",
+    "paywall": {
+      "addCredits": "Kredi ekle",
+      "body": {
+        "local": "Kredi bakiyenizi harcadınız. Aracının çalışmaya devam etmesi için kredi ekleyin.",
+        "member": "Bu çalışma alanı tüm kredilerini kullandı. Daha fazla kredi eklemesi için çalışma alanı sahibinize başvurun.",
+        "salesManaged": "Bu çalışma alanı Comfy hesap ekibiniz aracılığıyla faturalandırılır. Kredi eklemek için onlarla iletişime geçin.",
+        "subscribed": "Bu çalışma alanı aylık kredilerini ve ek kredi bakiyesini harcadı. Aracının çalışmaya devam etmesi için kredi ekleyin.",
+        "subscriptionRequired": "Kullanılabilir kredileriniz tükendi."
+      },
+      "subscribe": "Abone ol",
+      "title": "Kredi tükendi",
+      "upgradePlan": "Planı yükselt"
+    },
     "placeholder": "Fikirleri açıklayın, referans vermek için {'@'} kullanın,\ngraftaki düğümlerden bahsedin veya varlıkları sürükleyip bırakın",
     "ranToolCalls": "{count} araç çağrısı çalıştırıldı | {count} araç çağrısı çalıştırıldı",
     "ranToolCallsTimed": "{seconds} saniye boyunca {count} araç çağrısı çalıştırıldı | {seconds} saniye boyunca {count} araç çağrısı çalıştırıldı",
@@ -2944,7 +2957,6 @@
     "Edit Subgraph Widgets": "Alt Grafik Widget'larını Düzenle",
     "Exit Subgraph": "Alt Grafikten Çık",
     "Experimental: Browse Model Assets": "Deneysel: Model Varlıklarını Gözat",
-    "Experimental: Enable AssetAPI": "Deneysel: AssetAPI'yi Etkinleştir",
     "Experimental: Enable Nodes 2_0": "Deneysel: Nodes 2.0'ı Etkinleştir",
     "Export": "Dışa Aktar",
     "Export (API)": "Dışa Aktar (API)",
@@ -4278,7 +4290,7 @@
     "additionalCredits": "Ek krediler",
     "additionalCreditsInUse": "Kullanımda",
     "additionalCreditsInfo": "Ek krediler hakkında",
-    "additionalCreditsTooltip": "Planınıza ek olarak eklediğiniz krediler. Aylık krediler bittikten sonra kullanılır. Her biri satın alındıktan bir yıl sonra sona erer.",
+    "additionalCreditsTooltip": "Planınıza ek olarak satın aldığınız krediler. Plan kredileriniz tükendikten sonra kullanılır. Her biri satın alma tarihinden bir yıl sonra sona erer.",
     "benefits": {
       "benefit1": "Partner Düğümleri için aylık krediler — ihtiyaç duyulduğunda yükleyin",
       "benefit1FreeTier": "Daha fazla aylık kredi, istediğiniz zaman yükleyin",
@@ -4454,6 +4466,7 @@
       "billedEachMonth": "Her ay {amount} faturalandırılır. İstediğiniz zaman iptal edebilirsiniz.",
       "changePaymentMethod": "Değiştir",
       "commitment": "taahhüt",
+      "completePayment": "Ödemenizi tamamlayın",
       "completeVerification": "Doğrulamayı tamamla",
       "confirm": "Onayla",
       "confirmChange": "Değişikliği onayla",
@@ -4479,6 +4492,7 @@
       "hideFeatures": "Özellikleri gizle",
       "newMonthlySubscription": "Yeni aylık abonelik",
       "nextPaymentDue": "Sonraki ödeme {date} tarihinde. İstediğiniz zaman iptal edebilirsiniz.",
+      "parkedCheckoutDetail": "Önceki ödeme işleminiz hâlâ bir ödeme yöntemi bekliyor. Bu planı etkinleştirmek için ödemenizi tamamlayın.",
       "payAndSubscribe": "Öde ve abone ol",
       "paymentMethod": "Ödeme yöntemi",
       "paymentPopupBlocked": "Ödeme sayfası açılamadı — lütfen açılır pencerelere izin verin ve tekrar deneyin.",
@@ -4595,7 +4609,7 @@
       "perkProjectAssets": "Proje ve varlık yönetimi",
       "perkRolePermissions": "Rol tabanlı izinler",
       "perkSharedPool": "Tüm üyeler için ortak kredi havuzu",
-      "tagline": "Kendi aylık kredi aboneliğinizi seçin. Daha fazla krediyle daha büyük indirim elde edin.",
+      "tagline": "Kendi kredi aboneliğinizi seçin. Daha büyük kredi aboneliklerinde daha yüksek indirim kazanın.",
       "unavailable": "Bu ekip planı şu anda kullanılamıyor."
     },
     "teamPlanIncludes": "Planınız {plan} içeriğine ek olarak şunları da kapsar:",
@@ -4638,6 +4652,7 @@
     "usdPerMonthPerMember": "USD / ay / üye",
     "usdPerYear": "USD / yıl",
     "usedAfterMonthly": "Aylık krediler bittikten sonra kullanıldı",
+    "usedAfterYearly": "Yıllık krediler tükendikten sonra kullanılır",
     "videoEstimate": "Yaklaşık {count} adet 5 sn'lik video üretir*",
     "videoEstimateExplanation": "Bu tahminler, varsayılan ayarlarla (5 saniye, 640x640, 16fps, 4 adım örnekleme) Wan 2.2 Görselden Videoya şablonuna dayanmaktadır.",
     "videoEstimateHelp": "Bu şablon hakkında daha fazla bilgi",
@@ -4650,7 +4665,12 @@
     "whatsIncluded": "Dahil olanlar:",
     "workspaceNotSubscribed": "Bu çalışma alanı bir aboneliğe sahip değil",
     "yearly": "Yıllık",
+    "yearlyCredits": "yıllık kredi",
     "yearlyCreditsLabel": "Toplam yıllık krediler",
+    "yearlyCreditsPerMemberLabel": "Yıllık krediler / üye",
+    "yearlyCreditsUsedUpTitle": "Yıllık krediler tükendi. {date} tarihinde yenilenir",
+    "yearlyCreditsUsedUpTitleNoDate": "Yıllık krediler tükendi",
+    "yearlyUsageProgress": "Yıllık kredilerin {total} adedinden {used} adedi kullanıldı",
     "yourPlanIncludes": "Planınız şunları içerir:"
   },
   "tabMenu": {

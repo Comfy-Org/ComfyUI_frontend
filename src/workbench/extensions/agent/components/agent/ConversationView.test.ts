@@ -89,7 +89,7 @@ describe('ConversationView', () => {
     intersectionCallbacks.length = 0
   })
 
-  it('wire-driven v1 turn renders user pill, spinner, reasoning-free text, tool group', async () => {
+  it('wire-driven v1 turn renders user pill, spinner, reasoning-free text, work summary', async () => {
     const { store } = mountHarness()
     store.recordUser(T, 'make a cat')
     store.startTurn(T)
@@ -102,7 +102,7 @@ describe('ConversationView', () => {
     store.ingest(done('msg-1'))
 
     expect(await screen.findByText('make a cat')).toBeInTheDocument()
-    expect(screen.getByText('Ran 1 tool call')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^worked/i })).toBeInTheDocument()
     expect(screen.getByText('cat', { selector: 'strong' })).toBeInTheDocument()
     expect(store.entries.at(-1)).toMatchObject({
       role: 'assistant',
