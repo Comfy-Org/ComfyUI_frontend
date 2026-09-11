@@ -3,16 +3,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ResultItem } from '@/schemas/apiSchema'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useAssetsStore } from '@/stores/assetsStore'
+import { useNodeImageUpload } from './useNodeImageUpload'
+import type { Mock } from 'vitest'
 
-const { mockFetchApi, mockAddAlert, mockInvalidateInputs } = vi.hoisted(() => ({
-  mockFetchApi: vi.fn(),
-  mockAddAlert: vi.fn(),
-  mockInvalidateInputs: vi.fn()
-}))
+const mockFetchApi = vi.hoisted(() => vi.fn())
+let mockInvalidateInputs: Mock<
+  ReturnType<typeof useAssetsStore>['inputAssets']['invalidate']
+>
 
 let capturedDragOnDrop: (files: File[]) => Promise<string[]>
 
-vi.mock('@/composables/node/useNodeDragAndDrop', () => ({
+vi.mock<unknown>(import('@/composables/node/useNodeDragAndDrop'), () => ({
   useNodeDragAndDrop: (
     _node: LGraphNode,
     opts: { onDrop: typeof capturedDragOnDrop }
@@ -21,30 +24,25 @@ vi.mock('@/composables/node/useNodeDragAndDrop', () => ({
   }
 }))
 
-vi.mock('@/composables/node/useNodeFileInput', () => ({
+vi.mock(import('@/composables/node/useNodeFileInput'), () => ({
   useNodeFileInput: () => ({ openFileSelection: vi.fn() })
 }))
 
-vi.mock('@/composables/node/useNodePaste', () => ({
+vi.mock(import('@/composables/node/useNodePaste'), () => ({
   useNodePaste: vi.fn()
 }))
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({ addAlert: mockAddAlert })
-}))
-
-vi.mock('@/scripts/api', () => ({
-  api: { fetchApi: mockFetchApi }
-}))
-
-vi.mock('@/stores/assetsStore', () => ({
-  useAssetsStore: () => ({
-    inputAssets: { invalidate: mockInvalidateInputs }
-  })
+vi.mock<unknown>(import('@/scripts/api'), () => ({
+  api: {
+    fetchApi: mockFetchApi,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    getServerFeature: vi.fn()
+  }
 }))
 
 function createMockNode(): LGraphNode {
@@ -80,14 +78,15 @@ describe('useNodeImageUpload', () => {
   let onUploadStart: (files: File[]) => void
   let onUploadError: () => void
 
-  beforeEach(async () => {
-    vi.resetModules()
+  beforeEach(() => {
+    mockInvalidateInputs = vi
+      .spyOn(useAssetsStore().inputAssets, 'invalidate')
+      .mockResolvedValue(undefined)
     node = createMockNode()
     onUploadComplete = vi.fn()
     onUploadStart = vi.fn()
     onUploadError = vi.fn()
 
-    const { useNodeImageUpload } = await import('./useNodeImageUpload')
     useNodeImageUpload(node, {
       onUploadComplete,
       onUploadStart,
@@ -148,6 +147,10 @@ describe('useNodeImageUpload', () => {
     invalidateResolve()
     await drop
     expect(onUploadComplete).toHaveBeenCalledWith(['test.png'])
+    expect(mockFetchApi).toHaveBeenCalledWith(
+      '/upload/image',
+      expect.objectContaining({ timeoutMs: 120_000 })
+    )
   })
 
   it('includes subfolder in returned path', async () => {
@@ -184,7 +187,9 @@ describe('useNodeImageUpload', () => {
     const second = await capturedDragOnDrop([createFile('b.png')])
 
     expect(second).toEqual([])
-    expect(mockAddAlert).toHaveBeenCalledWith('g.uploadAlreadyInProgress')
+    expect(useToastStore().addAlert).toHaveBeenCalledWith(
+      'g.uploadAlreadyInProgress'
+    )
 
     await first
   })

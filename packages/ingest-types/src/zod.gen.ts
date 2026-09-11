@@ -549,6 +549,98 @@ export const zStoredAgentConsentSetting = zAgentConsentSettingValue.and(
 )
 
 /**
+ * First rejected op in an abort-remainder batch.
+ */
+export const zDocOpFailure = z.object({
+  code: z.string(),
+  index: z.number().int(),
+  message: z.string(),
+  op_id: z.string().max(128).optional()
+})
+
+export const zDocOpsResultData = z.object({
+  applied: z.array(z.string()).optional(),
+  code: z.string().optional(),
+  failed: zDocOpFailure.optional(),
+  message: z.string().optional(),
+  ok: z.boolean(),
+  seq: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  skipped: z.array(z.string()).optional(),
+  v: z.number().int().gte(1).lte(1),
+  workflow_id: z.string().min(1).max(128)
+})
+
+/**
+ * Host acknowledgement for a doc_ops batch.
+ */
+export const zDocOpsResultFrame = z.object({
+  data: zDocOpsResultData,
+  type: z.enum(['doc_ops_result'])
+})
+
+export const zDocResetData = z.object({
+  actor: z.string().max(256).optional(),
+  seq: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  v: z.number().int().gte(1).lte(1),
+  workflow_id: z.string().min(1).max(128)
+})
+
+/**
+ * Host-to-follower lineage break. The follower must resubscribe for fresh state.
+ */
+export const zDocResetFrame = z.object({
+  data: zDocResetData,
+  type: z.enum(['doc_reset'])
+})
+
+export const zDocUpdateData = z.object({
+  actor: z.string().max(256).optional(),
+  seq: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  update_b64: z.string(),
+  v: z.number().int().gte(1).lte(1),
+  workflow_id: z.string().min(1).max(128)
+})
+
+/**
+ * Host-to-follower incremental Yjs document update.
+ */
+export const zDocUpdateFrame = z.object({
+  data: zDocUpdateData,
+  type: z.enum(['doc_update'])
+})
+
+/**
+ * Server-to-client CRDT document frame carried by the /ws envelope.
+ */
+export const zServerDocFrame = z.union([
+  zDocUpdateFrame,
+  zDocResetFrame,
+  zDocOpsResultFrame
+])
+
+/**
  * User secret metadata (the secret value itself is never returned after creation).
  */
 export const zSecretResponse = z.object({
@@ -2162,6 +2254,14 @@ export const zCancelSubscriptionRequest = z.object({
 })
 
 /**
+ * Response when a cancellation is accepted but has not committed yet. Carries no cancel_at: no cancellation time exists to report until the operation settles. The billing operation reports only status, so once it reaches `succeeded` the committed date is read from `cancel_at` on `GET /api/billing/status`.
+ */
+export const zCancelSubscriptionAcceptedResponse = z.object({
+  billing_op_id: z.string(),
+  status: z.enum(['pending'])
+})
+
+/**
  * Response after bulk-revoking API keys for a workspace member.
  */
 export const zBulkRevokeApiKeysResponse = z.object({
@@ -2254,6 +2354,13 @@ export const zBillingOpStatusResponse = z.object({
   error_message: z.string().optional(),
   id: z.string(),
   payment_intent_client_secret: z.string().optional(),
+  phase: z
+    .enum([
+      'awaiting_payment_method',
+      'awaiting_invoice_payment',
+      'in_progress'
+    ])
+    .optional(),
   recovery_action: z
     .enum([
       'retry',
@@ -2755,6 +2862,23 @@ export const zAgentGetDraftQuery = z.object({
  */
 export const zAgentGetDraftResponse = zAgentDraftSnapshot
 
+export const zAgentLlmAdmitBody = z.object({
+  message_id: z.string().optional(),
+  step: z.number().int().gte(0),
+  turn_id: z.string()
+})
+
+/**
+ * The admission verdict for the round.
+ */
+export const zAgentLlmAdmitResponse = z.object({
+  after_seconds: z.number().int().optional(),
+  kind: z.enum(['proceed', 'wait', 'pause', 'fail']),
+  message: z.string().optional(),
+  position: z.number().int().optional(),
+  reason: z.string().optional()
+})
+
 /**
  * Opaque Anthropic Messages request body, passed through to the upstream. Not modeled here — the agent's LLM proxy owns the contract.
  */
@@ -3236,10 +3360,10 @@ export const zSubscribeResponse2 = zSubscribeResponse
 
 export const zCancelSubscriptionBody = zCancelSubscriptionRequest
 
-/**
- * Subscription cancellation scheduled
- */
-export const zCancelSubscriptionResponse2 = zCancelSubscriptionResponse
+export const zCancelSubscriptionResponse2 = z.union([
+  zCancelSubscriptionResponse,
+  zCancelSubscriptionAcceptedResponse
+])
 
 export const zResubscribeBody = zResubscribeRequest
 

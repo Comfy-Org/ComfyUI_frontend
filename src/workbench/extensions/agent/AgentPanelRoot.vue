@@ -47,6 +47,8 @@ import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { blankGraph } from '@/scripts/defaultGraph'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
@@ -54,6 +56,10 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 import AgentPanel from './components/agent/AgentPanel.vue'
 import OnboardingCoach from './components/agent/OnboardingCoach.vue'
@@ -82,11 +88,14 @@ import type {
 import { useAgentSession } from './composables/agent/useAgentSession'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import { createAgentRestClient } from './services/agent/agentRestClient'
+import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
+import { resolveAgentPaywallPresentation } from './services/agent/agentPaywallPresentation'
 import type {
   DraftSnapshot,
   OpenTabsSnapshot
 } from './services/agent/agentRestClient'
 import { createAgentEventSource } from './services/agent/agentEventSource'
+import { createStandaloneAgentEventSource } from './services/agent/standaloneAgentEventSource'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import {
@@ -102,6 +111,28 @@ const CrdtDevPanel = defineAsyncComponent(
 
 const { t } = useI18n()
 const toast = useToastStore()
+const { open: openAccountPrecondition } = useAccountPreconditionDialog()
+const { workspaceRole } = useWorkspaceUI()
+const { tier: subscriptionTier } = useBillingContext()
+const {
+  canTopUp,
+  canSubscribeSelfServe,
+  isReady: billingCapabilitiesReady
+} = useBillingCapabilities()
+const paywallPresentation = computed(() =>
+  resolveAgentPaywallPresentation({
+    role: workspaceRole.value,
+    tier: subscriptionTier.value,
+    // The initial false/false pair is not an authoritative sales-managed
+    // result while the shared capability source initializes in the background.
+    canTopUp: billingCapabilitiesReady.value
+      ? canTopUp.value
+      : workspaceRole.value === 'owner',
+    canSubscribeSelfServe: billingCapabilitiesReady.value
+      ? canSubscribeSelfServe.value
+      : workspaceRole.value === 'owner'
+  })
+)
 const sidebarTabStore = useSidebarTabStore()
 const { isBuilderMode } = useAppMode()
 
@@ -112,7 +143,14 @@ const userName = computed(
 
 const rest = createAgentRestClient()
 
-const events = createAgentEventSource(api)
+const events =
+  import.meta.env.VITE_AGENT_STANDALONE === 'true'
+    ? createStandaloneAgentEventSource()
+    : createAgentEventSource(api)
+
+function onPaywallAction(action: AgentPaywallAction): void {
+  openAccountPrecondition(action === 'addCredits' ? 'credits' : 'subscription')
+}
 
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
@@ -123,6 +161,11 @@ const { dismissedSelectionSignature, enabled: agentEnabled } =
 const agentNodeSelectionStore = useAgentNodeSelectionStore()
 const tabActivity = useWorkflowTabActivityStore()
 const CREATING_TAB_MIN_DURATION_MS = 500
+// Opens at the template's view so the follower's first nodes land on screen.
+const agentTabGraph: ComfyWorkflowJSON = {
+  ...blankGraph,
+  extra: { ds: { offset: [0, 0], scale: 1 } }
+}
 
 const canvasStore = useCanvasStore()
 const graphMutationsByWorkflow = new Map<
@@ -597,9 +640,6 @@ async function onAgentActiveTab(
       })
       return
     }
-    // A new agent workflow opens as an EMPTY tab: the host minted its doc
-    // server-side (seed-at-bind), and the follower fills the canvas through
-    // the ordinary subscribe catch-up - no snapshot fetch, no draft apply.
     const creatingStartedAt = Date.now()
     tabActivity.setCreating(true)
     const remainingCreatingTime =
@@ -607,9 +647,24 @@ async function onAgentActiveTab(
     if (remainingCreatingTime > 0)
       await new Promise((resolve) => setTimeout(resolve, remainingCreatingTime))
     if (stale()) return
-    const tab = workflowStore.createTemporary(agentTabFilename(data.name))
+    const tab = workflowStore.createNewTemporary(
+      agentTabFilename(data.name),
+      agentTabGraph
+    )
     tabActivity.setCreating(false)
-    await workflowService.openWorkflow(tab)
+    // openWorkflow reports a handled load failure by resolving false, having
+    // restored the retained workflow; the minted tab is a ghost either way.
+    let opened = false
+    try {
+      opened = await workflowService.openWorkflow(tab)
+    } catch (error) {
+      await workflowStore.closeWorkflow(tab)
+      throw error
+    }
+    if (!opened) {
+      await workflowStore.closeWorkflow(tab)
+      return
+    }
     if (stale()) {
       // A newer activation superseded this one mid-open: close the minted
       // tab rather than stranding a ghost the user never asked for.
@@ -1070,6 +1125,7 @@ function onPanelDrop(event: DragEvent): void {
       :workflow-detached="workflowDetached"
       :get-mention-nodes="mentionableNodes"
       :get-mention-assets="mentionableAssets"
+      :paywall-presentation="paywallPresentation"
       @select-tab="onSelectTab"
       @clear-workflow="onClearWorkflow"
       @send="onSend"
@@ -1083,6 +1139,7 @@ function onPanelDrop(event: DragEvent): void {
       @feedback="onFeedback"
       @answer-ask="answerAsk"
       @open-workflow="onOpenApprovalWorkflow"
+      @paywall-action="onPaywallAction"
       @new-chat="onNewChat"
       @toggle-size="agentPanelStore.toggleMaximize()"
       @close="onClosePanel"

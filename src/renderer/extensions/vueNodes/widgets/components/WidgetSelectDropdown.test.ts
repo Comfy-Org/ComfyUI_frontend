@@ -1,6 +1,7 @@
+import { getActivePinia } from 'pinia'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 
-import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
 import { computed, nextTick, ref } from 'vue'
@@ -17,20 +18,10 @@ import { createMockWidget } from './widgetTestUtils'
 const mockCheckState = vi.hoisted(() => vi.fn())
 const mockAssetsData = vi.hoisted(() => ({ items: [] as AssetItem[] }))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({
-    activeWorkflow: {
-      changeTracker: {
-        checkState: mockCheckState
-      }
-    }
-  })
-}))
-
-vi.mock('@/scripts/api')
+vi.mock<unknown>(import('@/scripts/api'))
 
 vi.mock(
-  '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData',
+  import('@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'),
   () => ({
     useAssetWidgetData: () => ({
       category: computed(() => 'checkpoints'),
@@ -58,7 +49,7 @@ const { mockMediaAssets } = vi.hoisted(() => {
   }
 })
 
-vi.mock('@/platform/assets/utils/outputAssetUtil')
+vi.mock(import('@/platform/assets/utils/outputAssetUtil'))
 
 const mockUpdateSelectedItems = vi.hoisted(() => vi.fn())
 const mockHandleFilesUpdate = vi.hoisted(() => vi.fn())
@@ -76,7 +67,7 @@ const { mockItemsRef, mockSelectedSetRef, mockFilterSelectedRef } = vi.hoisted(
 )
 
 vi.mock(
-  '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems',
+  import('@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'),
   () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { computed } = require('vue')
@@ -102,7 +93,7 @@ vi.mock(
 )
 
 vi.mock(
-  '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions',
+  import('@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'),
   () => ({
     useWidgetSelectActions: () => ({
       updateSelectedItems: mockUpdateSelectedItems,
@@ -115,6 +106,12 @@ const i18n = createI18n({
   legacy: false,
   locale: 'en',
   messages: { en: {} }
+})
+
+beforeEach(() => {
+  useWorkflowStore().activeWorkflow = fromPartial({
+    changeTracker: { checkState: mockCheckState }
+  })
 })
 
 describe('WidgetSelectDropdown', () => {
@@ -141,7 +138,7 @@ describe('WidgetSelectDropdown', () => {
         ...extraProps
       },
       global: {
-        plugins: [PrimeVue, createTestingPinia(), i18n]
+        plugins: [PrimeVue, getActivePinia()!, i18n]
       }
     })
   }

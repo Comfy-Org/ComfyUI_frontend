@@ -1,42 +1,28 @@
+import type * as VueUseModule from '@vueuse/core'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
+import { useDialogStore } from '@/stores/dialogStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import AssetCard from '@/platform/assets/components/AssetCard.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({
-    get: () => 0
-  })
-}))
-
-vi.mock('@/stores/assetDownloadStore', () => ({
-  useAssetDownloadStore: () => ({
-    isDownloadedThisSession: () => false,
-    acknowledgeAsset: vi.fn()
-  })
-}))
-
-vi.mock('@/stores/dialogStore', () => ({
-  useDialogStore: () => ({
-    closeDialog: vi.fn()
-  })
-}))
-
-vi.mock('@/platform/assets/services/assetService', () => ({
+vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
     deleteAsset: vi.fn()
   }
 }))
 
-vi.mock('@/components/dialog/confirm/confirmDialog', () => ({
+vi.mock(import('@/components/dialog/confirm/confirmDialog'), () => ({
   showConfirmDialog: vi.fn()
 }))
 
-vi.mock('@vueuse/core', () => ({
+vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => ({
+  ...(await importOriginal<typeof VueUseModule>()),
   useImage: () => ({ isLoading: false, error: null })
 }))
 
@@ -86,6 +72,17 @@ function renderCard(asset: AssetDisplayItem) {
     }
   })
 }
+
+beforeEach(() => {
+  vi.mocked(useSettingStore().get).mockImplementation(() => 0)
+  vi.mocked(useAssetDownloadStore().isDownloadedThisSession).mockImplementation(
+    () => false
+  )
+  vi.mocked(useAssetDownloadStore().acknowledgeAsset).mockImplementation(
+    () => undefined
+  )
+  vi.mocked(useDialogStore().closeDialog).mockImplementation(() => undefined)
+})
 
 describe('AssetCard', () => {
   describe('FE-228: filename rendering', () => {

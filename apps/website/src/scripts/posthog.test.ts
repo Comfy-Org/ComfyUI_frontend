@@ -1,17 +1,47 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type * as PostHogModule from 'posthog-js'
+
+import {
+  AUTH_TELEMETRY_EVENT,
+  SESSION_TELEMETRY_EVENT
+} from '@comfyorg/account/telemetry'
+
 const hoisted = vi.hoisted(() => ({
   mockInit: vi.fn(),
-  mockCapture: vi.fn()
+  mockCapture: vi.fn(),
+  mockOnFeatureFlags: vi.fn(),
+  mockIsFeatureEnabled: vi.fn(),
+  mockGetFeatureFlag: vi.fn()
 }))
 
-vi.mock('posthog-js', () => ({
-  default: {
-    init: hoisted.mockInit,
-    capture: hoisted.mockCapture
-  }
+type PostHogMock = Pick<
+  typeof PostHogModule.default,
+  'init' | 'capture' | 'onFeatureFlags' | 'isFeatureEnabled' | 'getFeatureFlag'
+>
+
+const postHogMock = {
+  init: hoisted.mockInit,
+  capture: hoisted.mockCapture,
+  onFeatureFlags: hoisted.mockOnFeatureFlags,
+  isFeatureEnabled: hoisted.mockIsFeatureEnabled,
+  getFeatureFlag: hoisted.mockGetFeatureFlag
+} satisfies PostHogMock
+
+// The real default export carries 130+ members, so only the boundary handoff
+// is asserted; the shape itself is checked against PostHogMock above.
+vi.mock(import('posthog-js'), () => ({
+  default: postHogMock as unknown as typeof PostHogModule.default
 }))
+
+/** Fire the callback PostHog registered with onFeatureFlags. */
+function emitFeatureFlags() {
+  const cb = hoisted.mockOnFeatureFlags.mock.calls.at(-1)?.[0] as
+    | (() => void)
+    | undefined
+  cb?.()
+}
 
 describe('initPostHog', () => {
   beforeEach(() => {
@@ -162,5 +192,171 @@ describe('captureMcpClientTabClick', () => {
     captureMcpClientTabClick('cursor')
 
     expect(hoisted.mockCapture).not.toHaveBeenCalled()
+  })
+})
+
+describe('useWorkshopAuthFlag', () => {
+  beforeEach(() => {
+    vi.resetModules()
+    hoisted.mockOnFeatureFlags.mockReset()
+    hoisted.mockIsFeatureEnabled.mockReset()
+  })
+
+  it('is off until PostHog answers, then tracks the flag in both directions', async () => {
+    hoisted.mockIsFeatureEnabled.mockReturnValue(true)
+    const { initPostHog, useWorkshopAuthFlag } = await import('./posthog')
+    const enabled = useWorkshopAuthFlag()
+
+    expect(enabled.value, 'off until PostHog answers').toBe(false)
+
+    initPostHog()
+    emitFeatureFlags()
+    expect(enabled.value).toBe(true)
+
+    // The flag being turned off remotely must actually take the surface down.
+    hoisted.mockIsFeatureEnabled.mockReturnValue(false)
+    emitFeatureFlags()
+    expect(enabled.value, 'a remote disable must not be a one-way latch').toBe(
+      false
+    )
+  })
+
+  it('reports settled only once PostHog has answered, whichever way', async () => {
+    hoisted.mockIsFeatureEnabled.mockReturnValue(false)
+    const { initPostHog, useWorkshopAuthFlag, useWorkshopAuthFlagSettled } =
+      await import('./posthog')
+    const settled = useWorkshopAuthFlagSettled()
+
+    initPostHog()
+    expect(settled.value, 'an unanswered flag is not a "no"').toBe(false)
+
+    emitFeatureFlags()
+    expect(settled.value).toBe(true)
+    expect(useWorkshopAuthFlag().value).toBe(false)
+  })
+
+  it('counts the build override as an answer', async () => {
+    vi.stubEnv('PUBLIC_WORKSHOP_AUTH_FLAG', '1')
+    const { useWorkshopAuthFlagSettled } = await import('./posthog')
+
+    expect(useWorkshopAuthFlagSettled().value).toBe(true)
+  })
+
+  it('honors the build override and keeps it sticky against a remote disable', async () => {
+    vi.stubEnv('PUBLIC_WORKSHOP_AUTH_FLAG', '1')
+    hoisted.mockIsFeatureEnabled.mockReturnValue(false)
+    const { initPostHog, useWorkshopAuthFlag } = await import('./posthog')
+    const enabled = useWorkshopAuthFlag()
+
+    expect(enabled.value, 'override forces on with no PostHog').toBe(true)
+
+    initPostHog()
+    emitFeatureFlags()
+    expect(
+      enabled.value,
+      'an override-on build ignores PostHog turning the flag off'
+    ).toBe(true)
+  })
+})
+
+describe('useWorkshopTurnstileMode', () => {
+  beforeEach(() => {
+    vi.resetModules()
+    hoisted.mockOnFeatureFlags.mockReset()
+    hoisted.mockGetFeatureFlag.mockReset()
+  })
+
+  it('defaults off and accepts only known remote variants', async () => {
+    hoisted.mockGetFeatureFlag.mockReturnValue('shadow')
+    const { initPostHog, useWorkshopTurnstileMode } = await import('./posthog')
+    const mode = useWorkshopTurnstileMode()
+
+    expect(mode.value).toBe('off')
+    initPostHog()
+    emitFeatureFlags()
+    expect(mode.value).toBe('shadow')
+
+    hoisted.mockGetFeatureFlag.mockReturnValue('typo')
+    emitFeatureFlags()
+    expect(mode.value, 'unknown remote variants fail closed').toBe('off')
+  })
+
+  it('honors a valid build override against remote changes', async () => {
+    vi.stubEnv('PUBLIC_WORKSHOP_TURNSTILE_MODE', 'enforce')
+    hoisted.mockGetFeatureFlag.mockReturnValue('off')
+    const { initPostHog, useWorkshopTurnstileMode } = await import('./posthog')
+    const mode = useWorkshopTurnstileMode()
+
+    initPostHog()
+    emitFeatureFlags()
+    expect(mode.value).toBe('enforce')
+  })
+})
+
+describe('shared auth telemetry events', () => {
+  beforeEach(() => {
+    vi.resetModules()
+    hoisted.mockCapture.mockClear()
+  })
+
+  it("reports refresh outcomes under the package's shared event names", async () => {
+    const {
+      initPostHog,
+      captureAuthRefreshSucceeded,
+      captureAuthRefreshFailed
+    } = await import('./posthog')
+    initPostHog()
+
+    captureAuthRefreshSucceeded()
+    captureAuthRefreshFailed('retry_scheduled')
+
+    expect(hoisted.mockCapture).toHaveBeenCalledWith(
+      SESSION_TELEMETRY_EVENT.refreshSucceeded,
+      { outcome: 'succeeded' }
+    )
+    expect(hoisted.mockCapture).toHaveBeenCalledWith(
+      SESSION_TELEMETRY_EVENT.refreshFailed,
+      { outcome: 'retry_scheduled' }
+    )
+  })
+
+  it("reports sign-up opens and auth failures under the cloud app's event names", async () => {
+    const {
+      initPostHog,
+      captureSignupOpened,
+      captureAuthCompleted,
+      captureAuthFailed
+    } = await import('./posthog')
+    initPostHog()
+
+    captureSignupOpened()
+    captureAuthCompleted({
+      method: 'google',
+      is_new_user: false,
+      user_id: 'uid-1',
+      email: 'a@b.co'
+    })
+    captureAuthFailed({
+      error_code: 'auth/popup-closed-by-user',
+      auth_action: 'google_sign_in'
+    })
+
+    expect(hoisted.mockCapture).toHaveBeenCalledWith(
+      AUTH_TELEMETRY_EVENT.signUpOpened,
+      undefined
+    )
+    expect(hoisted.mockCapture).toHaveBeenCalledWith(
+      AUTH_TELEMETRY_EVENT.authCompleted,
+      {
+        method: 'google',
+        is_new_user: false,
+        user_id: 'uid-1',
+        email: 'a@b.co'
+      }
+    )
+    expect(hoisted.mockCapture).toHaveBeenCalledWith(
+      AUTH_TELEMETRY_EVENT.authFailed,
+      { error_code: 'auth/popup-closed-by-user', auth_action: 'google_sign_in' }
+    )
   })
 })

@@ -1,8 +1,14 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { assetPath } from '@e2e/fixtures/utils/paths'
 
-test.beforeEach(async ({ comfyPage }) => {
+test.beforeEach(async ({ page, comfyPage }) => {
+  await page.route(
+    'https://comfyanonymous.github.io/ComfyUI_examples/hidream/hidream_dev_example.png',
+    (route) =>
+      route.fulfill({ path: assetPath('workflowInMedia/workflow_itxt.png') })
+  )
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
@@ -60,7 +66,9 @@ test.describe(
       test(`Load workflow from URL ${url} (drop from different browser tabs)`, async ({
         comfyPage
       }) => {
+        await comfyPage.nodeOps.clearGraph()
         const initialNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
+        expect(initialNodeCount).toBe(0)
 
         await comfyPage.dragDrop.dragAndDropURL(url)
 
@@ -71,6 +79,7 @@ test.describe(
             timeout: 15000
           })
           .toBeGreaterThan(initialNodeCount)
+        expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
       })
     })
 

@@ -25,6 +25,7 @@ const SEND_RETRY_INTERVAL_MS = 500
 const RESULT_TIMEOUT_MS = 10_000
 
 export interface OpsResultView {
+  workflowId?: string
   ok: boolean
   applied: string[]
   skipped: string[]
@@ -121,6 +122,9 @@ export function toOpsResultView(detail: unknown): OpsResultView {
   const hasFailure =
     failureOpIds.length > 0 || (!ok && Object.keys(diagnostics).length > 0)
   return {
+    ...(typeof detail.workflowId === 'string' && {
+      workflowId: detail.workflowId
+    }),
     ok,
     applied: Array.isArray(detail.applied) ? detail.applied : [],
     skipped: Array.isArray(detail.skipped) ? detail.skipped : [],
@@ -277,9 +281,14 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   }
 
   const unsubscribe = deps.onOpsResult((result) => {
-    if (!inFlight) {
-      // A late result with no batch waiting: drain a credit if one is
-      // outstanding so it cannot swallow a future batch's own result.
+    if (
+      !inFlight ||
+      (result.workflowId !== undefined &&
+        result.workflowId !== inFlight.workflowId)
+    ) {
+      // A late result with no batch waiting, or addressed to another workflow
+      // than the in-flight batch: drain a credit if one is outstanding so it
+      // cannot swallow a future batch's own result.
       if (staleAnonymousBudget > 0) staleAnonymousBudget--
       return
     }

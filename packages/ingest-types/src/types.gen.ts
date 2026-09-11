@@ -931,6 +931,75 @@ export type AgentConsentSettingValue = {
 }
 
 /**
+ * Server-to-client CRDT document frame carried by the /ws envelope.
+ */
+export type ServerDocFrame = DocUpdateFrame | DocResetFrame | DocOpsResultFrame
+
+/**
+ * First rejected op in an abort-remainder batch.
+ */
+export type DocOpFailure = {
+  code: string
+  index: number
+  message: string
+  op_id?: string
+}
+
+export type DocOpsResultData = {
+  applied?: Array<string>
+  code?: string
+  failed?: DocOpFailure
+  message?: string
+  ok: boolean
+  seq?: number
+  skipped?: Array<string>
+  v: number
+  workflow_id: string
+}
+
+/**
+ * Host acknowledgement for a doc_ops batch.
+ */
+export type DocOpsResultFrame = {
+  data: DocOpsResultData
+  type: 'doc_ops_result'
+}
+
+export type DocResetData = {
+  actor?: string
+  seq: number
+  v: number
+  workflow_id: string
+}
+
+/**
+ * Host-to-follower lineage break. The follower must resubscribe for fresh state.
+ */
+export type DocResetFrame = {
+  data: DocResetData
+  type: 'doc_reset'
+}
+
+export type DocUpdateData = {
+  actor?: string
+  seq: number
+  /**
+   * Standard-base64 encoded Yjs update. Host-to-follower only.
+   */
+  update_b64: string
+  v: number
+  workflow_id: string
+}
+
+/**
+ * Host-to-follower incremental Yjs document update.
+ */
+export type DocUpdateFrame = {
+  data: DocUpdateData
+  type: 'doc_update'
+}
+
+/**
  * User secret metadata (the secret value itself is never returned after creation).
  */
 export type SecretResponse = {
@@ -3655,6 +3724,20 @@ export type CancelSubscriptionRequest = {
 }
 
 /**
+ * Response when a cancellation is accepted but has not committed yet. Carries no cancel_at: no cancellation time exists to report until the operation settles. The billing operation reports only status, so once it reaches `succeeded` the committed date is read from `cancel_at` on `GET /api/billing/status`.
+ */
+export type CancelSubscriptionAcceptedResponse = {
+  /**
+   * Billing operation ID to poll for status via GET /api/billing/ops/{id}
+   */
+  billing_op_id: string
+  /**
+   * Always `pending` — the cancellation is still executing. Poll the billing operation for the final outcome.
+   */
+  status: 'pending'
+}
+
+/**
  * Response after bulk-revoking API keys for a workspace member.
  */
 export type BulkRevokeApiKeysResponse = {
@@ -3861,6 +3944,21 @@ export type BillingOpStatusResponse = {
    *
    */
   payment_intent_client_secret?: string
+  /**
+   * What a pending operation is waiting on, for callers deciding
+   * whether to keep polling or to put the customer back in the loop.
+   * The two awaiting_ values are blocked on the customer and will not
+   * advance on their own: awaiting_payment_method is parked on a hosted
+   * checkout needing a card, awaiting_invoice_payment on an invoice
+   * needing payment or authentication. in_progress means the operation
+   * is ours to finish, so polling is the right response. Deliberately
+   * coarser than the internal phase — phases that differ only in what
+   * the workflow is doing all report in_progress. Absent for a terminal
+   * operation, and for a phase this build does not recognise: absent
+   * means no claim, never an implied in_progress.
+   *
+   */
+  phase?: 'awaiting_payment_method' | 'awaiting_invoice_payment' | 'in_progress'
   /**
    * Typed next action for a failed operation. Absent for pending and succeeded operations.
    */
@@ -4357,7 +4455,7 @@ export type AgentRunMode = {
  */
 export type AgentPostMessageRequest = {
   /**
-   * Optional input-image filenames the client already uploaded to the ComfyUI input namespace (via /api/upload/image, which returns the {name, subfolder, type} reference). The agent wires them into the workflow by filename — it never receives image bytes here.
+   * Optional input filenames the client already uploaded to the ComfyUI input namespace (via /api/upload/image, which returns the {name, subfolder, type} reference). Images, video and audio are all accepted. The agent wires them into the workflow by filename — it never receives file bytes here, and reads an attachment's contents through its own asset tools when a request depends on them.
    */
   attachments?: Array<string>
   /**
@@ -4882,6 +4980,79 @@ export type AgentGetDraftResponses = {
 
 export type AgentGetDraftResponse =
   AgentGetDraftResponses[keyof AgentGetDraftResponses]
+
+export type AgentLlmAdmitData = {
+  body: {
+    /**
+     * The assistant message the turn is writing (attribution only).
+     */
+    message_id?: string
+    /**
+     * The zero-based index of the model round about to run.
+     */
+    step: number
+    /**
+     * The turn about to run a round; a bounded [A-Za-z0-9._:-] id.
+     */
+    turn_id: string
+  }
+  path?: never
+  query?: never
+  url: '/api/agent/llm/v1/admit'
+}
+
+export type AgentLlmAdmitErrors = {
+  /**
+   * Malformed body, missing turn_id, or a negative step.
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * The agent in-app experience is disabled for this caller (FlagAgentInAppExperience off). Kept invisible when off, so 404 rather than 403.
+   */
+  404: ErrorResponse
+  /**
+   * Agent service unavailable (the binary proceeds).
+   */
+  502: ErrorResponse
+  /**
+   * The agent proxy is not configured to forward safely (a non-local agent service URL with no shared machine-to-machine secret).
+   */
+  503: ErrorResponse
+}
+
+export type AgentLlmAdmitError = AgentLlmAdmitErrors[keyof AgentLlmAdmitErrors]
+
+export type AgentLlmAdmitResponses = {
+  /**
+   * The admission verdict for the round.
+   */
+  200: {
+    /**
+     * For wait and pause, how long to sleep (already floored at 1 s and capped at 15 min) before asking again.
+     */
+    after_seconds?: number
+    kind: 'proceed' | 'wait' | 'pause' | 'fail'
+    /**
+     * Optional user-facing copy (the paused card's text).
+     */
+    message?: string
+    /**
+     * Tickets ahead of this round in the user's queue, when waiting on queue order.
+     */
+    position?: number
+    /**
+     * The binding limit or policy reason (workspace_inflight, user_inflight, queue_position, queue_full, workspace_paused, ...).
+     */
+    reason?: string
+  }
+}
+
+export type AgentLlmAdmitResponse =
+  AgentLlmAdmitResponses[keyof AgentLlmAdmitResponses]
 
 export type AgentLlmMessagesData = {
   /**
@@ -7324,6 +7495,10 @@ export type CancelSubscriptionResponses = {
    * Subscription cancellation scheduled
    */
   200: CancelSubscriptionResponse
+  /**
+   * Cancellation accepted and still executing. No cancellation time is confirmed yet; poll `GET /api/billing/ops/{id}` for the final outcome, then read `cancel_at` from `GET /api/billing/status` once that operation reports `succeeded`.
+   */
+  202: CancelSubscriptionAcceptedResponse
 }
 
 export type CancelSubscriptionResponse2 =

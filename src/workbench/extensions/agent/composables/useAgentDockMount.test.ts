@@ -1,16 +1,17 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import { useAgentDockMount } from './useAgentDockMount'
 
-vi.mock('@/platform/telemetry', () => ({ useTelemetry: () => undefined }))
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
+  useTelemetry: () => undefined
+}))
 const { loadDockedAgentPanel } = vi.hoisted(() => ({
   loadDockedAgentPanel: vi.fn(() => ({ name: 'DockedAgentPanel' }))
 }))
-vi.mock(
-  '@/workbench/extensions/agent/components/agent/DockedAgentPanel.vue',
+vi.mock<unknown>(
+  import('@/workbench/extensions/agent/components/agent/DockedAgentPanel.vue'),
   () => ({ __esModule: true, default: loadDockedAgentPanel() })
 )
 
@@ -28,7 +29,6 @@ function getAsyncLoader(component: unknown): () => Promise<unknown> {
 
 describe('useAgentDockMount', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     localStorage.clear()
   })
 
