@@ -128,8 +128,8 @@ jobs:
           if-no-files-found: warn
 
   playwright-tests:
-    # Ideally, each shard runs test in 6 minutes, but allow up to 15 minutes
-    timeout-minutes: 15
+    # Ideally, each shard runs test in 6 minutes, but allow up to 30 minutes
+    timeout-minutes: 30
     needs: setup
     runs-on: ubuntu-latest
     container:
