@@ -85,6 +85,60 @@ export type ServerDocFrame =
   | { type: 'doc_reset'; data: DocReset }
   | { type: 'awareness'; data: DocAwareness }
 
+/** Snake-cased, base64-payloaded wire shape, before `parseServerDocFrame`. */
+interface RawDocFrameData {
+  v: typeof DOC_PROTOCOL_VERSION
+  workflow_id: string
+}
+
+/**
+ * What the server actually puts on the socket. `ServerDocFrame` is the
+ * normalized form this module hands on; anything producing frames -- a test
+ * double standing in for the server, most of all -- is writing this one.
+ */
+export type RawServerDocFrame =
+  | {
+      type: 'doc_update'
+      data: RawDocFrameData & {
+        seq: number
+        update_b64: string
+        actor?: string
+        op_ids?: string[]
+      }
+    }
+  | {
+      type: 'doc_subscribed'
+      data: RawDocFrameData & {
+        ok: boolean
+        seq?: number
+        code?: string
+        message?: string
+      }
+    }
+  | {
+      type: 'doc_ops_result'
+      data: RawDocFrameData & {
+        ok: boolean
+        applied?: string[]
+        skipped?: string[]
+        seq?: number
+        code?: string
+        message?: string
+      }
+    }
+  | {
+      type: 'doc_reset'
+      data: RawDocFrameData & { seq: number; actor?: string }
+    }
+  | {
+      type: 'awareness'
+      data: RawDocFrameData & {
+        actor: string
+        state?: Record<string, unknown>
+        expires_at?: number
+      }
+    }
+
 export interface DocFrameTransport {
   /**
    * Best-effort send. Returns `true` when the frame left the transport and

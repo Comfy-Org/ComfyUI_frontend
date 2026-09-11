@@ -7,6 +7,7 @@ import { webSocketFixture } from '@e2e/fixtures/ws'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type { RawServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import { encodeBase64 } from '@/workbench/extensions/agent/crdt/docFrameClient'
 
 import {
@@ -31,7 +32,7 @@ function pushEvent(ws: WebSocketRoute, event: AgentWsEvent): void {
   ws.send(JSON.stringify(event))
 }
 
-function pushFrame(ws: WebSocketRoute, frame: unknown): void {
+function pushFrame(ws: WebSocketRoute, frame: RawServerDocFrame): void {
   ws.send(JSON.stringify(frame))
 }
 
