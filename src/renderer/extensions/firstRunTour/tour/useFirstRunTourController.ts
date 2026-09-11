@@ -10,6 +10,7 @@ import { computed, onScopeDispose, readonly, ref, shallowRef, watch } from 'vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { registerTour } from '@/platform/onboarding/onboardingTours'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -225,6 +226,37 @@ function useFirstRunTourControllerInternal() {
   )
 
   let acceptTimer: ReturnType<typeof setTimeout> | undefined
+  function reportCorrelationTimeout(
+    reason: 'acceptance_timeout' | 'connection_timeout',
+    timeoutMs: number
+  ) {
+    const correlation = runCorrelation.value
+    if (correlation.phase !== 'pending' && correlation.phase !== 'accepted')
+      return
+    reportError(new Error('First-run execution correlation timed out'), {
+      errorType: 'error_correlating_first_run_execution',
+      level: 'warning',
+      tags: {
+        failure_category: 'execution_correlation',
+        failure_reason: reason
+      },
+      context: {
+        templateId: correlation.templateId,
+        phase: correlation.phase,
+        jobId: correlation.phase === 'accepted' ? correlation.jobId : undefined,
+        outputNodeId: correlation.outputNodeId,
+        hasOutput: correlation.output !== null,
+        pendingOutputCount:
+          correlation.phase === 'pending' ? correlation.pendingOutputs.size : 0,
+        pendingCompletionCount:
+          correlation.phase === 'pending'
+            ? correlation.pendingCompletions.size
+            : 0,
+        timeoutMs
+      }
+    })
+  }
+
   function stopAcceptDeadline() {
     clearTimeout(acceptTimer)
     acceptTimer = undefined
@@ -233,6 +265,7 @@ function useFirstRunTourControllerInternal() {
     stopAcceptDeadline()
     acceptTimer = setTimeout(() => {
       stopAcceptDeadline()
+      reportCorrelationTimeout('acceptance_timeout', ACCEPT_DEADLINE_MS)
       dispatchRunCorrelation({ type: 'released' })
       if (runState.value === 'generating') runState.value = 'failed'
     }, ACCEPT_DEADLINE_MS)
@@ -253,6 +286,7 @@ function useFirstRunTourControllerInternal() {
       return
     offlineTimer = setTimeout(() => {
       stopOfflineGrace()
+      reportCorrelationTimeout('connection_timeout', OFFLINE_GRACE_MS)
       dispatchRunCorrelation({ type: 'released' })
       if (runState.value === 'generating') runState.value = 'failed'
     }, OFFLINE_GRACE_MS)
@@ -330,6 +364,7 @@ function useFirstRunTourControllerInternal() {
       if (tourWorkflow.value) {
         dispatchRunCorrelation({
           type: 'submitted',
+          templateId: tourTemplateId,
           outputNodeId: resolvePinnedImageOutput(
             app.rootGraphOrUndefined,
             tourTemplateId

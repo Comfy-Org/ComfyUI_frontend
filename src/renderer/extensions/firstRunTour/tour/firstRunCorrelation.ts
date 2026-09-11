@@ -6,6 +6,7 @@ export type FirstRunCorrelationState = { output: ResultItem | null } & (
   | { phase: 'idle' }
   | {
       phase: 'pending'
+      templateId: string | undefined
       outputNodeId: NodeExecutionId | null
       workflow: ComfyWorkflow
       previousJobIds: ReadonlySet<string>
@@ -14,6 +15,7 @@ export type FirstRunCorrelationState = { output: ResultItem | null } & (
     }
   | {
       phase: 'accepted'
+      templateId: string | undefined
       workflow: ComfyWorkflow
       jobId: string
       outputNodeId: NodeExecutionId | null
@@ -31,6 +33,7 @@ export type FirstRunCorrelationEvent =
   | { type: 'released' }
   | {
       type: 'submitted'
+      templateId: string | undefined
       outputNodeId: NodeExecutionId | null
       workflow: ComfyWorkflow
       previousJobIds: ReadonlySet<string>
@@ -56,6 +59,7 @@ export function transitionFirstRunCorrelation(
     case 'submitted':
       return {
         phase: 'pending',
+        templateId: event.templateId,
         outputNodeId: event.outputNodeId,
         output: state.output,
         workflow: event.workflow,
@@ -79,6 +83,7 @@ export function transitionFirstRunCorrelation(
         }
       return {
         phase: 'accepted',
+        templateId: state.templateId,
         outputNodeId: state.outputNodeId,
         workflow: state.workflow,
         jobId: event.jobId,

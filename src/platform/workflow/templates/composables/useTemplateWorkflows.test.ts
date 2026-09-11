@@ -1,11 +1,41 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import type { ReportErrorOptions } from '@/platform/telemetry/reportError'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import { app } from '@/scripts/app'
 
-vi.mock('@/platform/telemetry/reportError', () => ({ reportError: vi.fn() }))
+const { mockCaptureException, mockAddError } = vi.hoisted(() => ({
+  mockCaptureException: vi.fn(),
+  mockAddError: vi.fn()
+}))
+
+vi.mock('@sentry/vue', () => ({
+  captureException: mockCaptureException,
+  isEnabled: () => true
+}))
+
+vi.mock('@datadog/browser-rum', () => ({
+  datadogRum: {
+    addError: mockAddError,
+    getInitConfiguration: () => ({})
+  }
+}))
+
+function expectReportedFailure(
+  error: Error,
+  { errorType, tags, context }: ReportErrorOptions
+) {
+  expect(mockCaptureException).toHaveBeenCalledExactlyOnceWith(error, {
+    tags: { ...tags, error_type: errorType },
+    extra: context,
+    level: undefined
+  })
+  expect(mockAddError).toHaveBeenCalledExactlyOnceWith(
+    expect.objectContaining({ name: errorType, message: error.message }),
+    { ...context, ...tags, error_type: errorType }
+  )
+}
 
 const { mockCloseDialog } = vi.hoisted(() => ({ mockCloseDialog: vi.fn() }))
 
@@ -401,6 +431,8 @@ describe('useTemplateWorkflows', () => {
       'template1',
       { openSource: 'template' }
     )
+    expect(mockCaptureException).not.toHaveBeenCalled()
+    expect(mockAddError).not.toHaveBeenCalled()
   })
 
   it('tracks template telemetry on load in cloud builds', async () => {
@@ -514,16 +546,58 @@ describe('useTemplateWorkflows', () => {
     const result = await loadWorkflowTemplate('error-template', 'default')
 
     expect(result).toBe(false)
-    expect(reportError).toHaveBeenCalledExactlyOnceWith(
-      new Error('Failed to fetch'),
-      {
-        errorType: 'error_loading_workflow_template',
-        context: { templateId: 'error-template', sourceModule: 'default' }
-      }
-    )
+    expectReportedFailure(new Error('Failed to fetch'), {
+      errorType: 'error_loading_workflow_template',
+      tags: {
+        failure_category: 'template_loading',
+        failure_reason: 'load_failed'
+      },
+      context: { templateId: 'error-template', sourceModule: 'default' }
+    })
     expect(app.loadGraphData).not.toHaveBeenCalled()
     expect(mockCloseDialog).not.toHaveBeenCalled()
     expect(loadingTemplateId.value).toBe(null) // Should reset even after error
+  })
+
+  it.for([
+    {
+      catalogLoaded: false,
+      sourceModule: 'default',
+      error: 'Template catalog is unavailable',
+      errorType: 'error_loading_workflow_template',
+      category: 'template_loading',
+      reason: 'catalog_unavailable'
+    },
+    {
+      catalogLoaded: true,
+      sourceModule: 'all',
+      error: 'Template source metadata is unavailable',
+      errorType: 'error_transforming_workflow_template',
+      category: 'template_metadata',
+      reason: 'source_module_unavailable'
+    }
+  ])('reports unavailable template prerequisites: $reason', async (failure) => {
+    const { loadWorkflowTemplate, loadingTemplateId } = useTemplateWorkflows()
+    mockWorkflowTemplatesStore.isLoaded = failure.catalogLoaded
+
+    expect(
+      await loadWorkflowTemplate('missing-template', failure.sourceModule)
+    ).toBe(false)
+    expectReportedFailure(new Error(failure.error), {
+      errorType: failure.errorType,
+      tags: {
+        failure_category: failure.category,
+        failure_reason: failure.reason
+      },
+      context: {
+        templateId: 'missing-template',
+        sourceModule: failure.sourceModule
+      }
+    })
+    expect(fetch).not.toHaveBeenCalled()
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+    expect(mockCloseDialog).not.toHaveBeenCalled()
+    expect(loadingTemplateId.value).toBeNull()
   })
 
   it('reports a failed template response without parsing or loading it', async () => {
@@ -537,17 +611,18 @@ describe('useTemplateWorkflows', () => {
     } as Partial<Response> as Response)
 
     expect(await loadWorkflowTemplate('template1', 'default')).toBe(false)
-    expect(reportError).toHaveBeenCalledExactlyOnceWith(
-      new Error('Template response failed (404)'),
-      {
-        errorType: 'error_loading_workflow_template_response',
-        context: {
-          templateId: 'template1',
-          sourceModule: 'default',
-          status: 404
-        }
+    expectReportedFailure(new Error('Template response failed (404)'), {
+      errorType: 'error_loading_workflow_template_response',
+      tags: {
+        failure_category: 'template_loading',
+        failure_reason: 'http_response'
+      },
+      context: {
+        templateId: 'template1',
+        sourceModule: 'default',
+        status: 404
       }
-    )
+    })
     expect(json).not.toHaveBeenCalled()
     expect(app.loadGraphData).not.toHaveBeenCalled()
     expect(mockCloseDialog).not.toHaveBeenCalled()
@@ -560,12 +635,19 @@ describe('useTemplateWorkflows', () => {
       nodes: [
         { id: 2, type: 'LoadImage', widgets_values: ['different.png', 'image'] }
       ],
-      error: 'Expected one matching template widget value'
+      error: 'Expected one matching template widget value',
+      category: 'semantic_binding',
+      reason: 'widget_value_missing'
     },
-    { nodes: undefined, error: 'Template workflow has no nodes' }
+    {
+      nodes: undefined,
+      error: 'Template workflow has no nodes',
+      category: 'template_metadata',
+      reason: 'invalid_workflow'
+    }
   ])(
     'reports invalid template data and preserves the active graph: $error',
-    async ({ nodes, error }) => {
+    async ({ nodes, error, category, reason }) => {
       const { loadWorkflowTemplate, loadingTemplateId } = useTemplateWorkflows()
       mockWorkflowTemplatesStore.isLoaded = true
       const workflow = { nodes }
@@ -580,8 +662,9 @@ describe('useTemplateWorkflows', () => {
           input: { filename: 'output.png' }
         })
       ).toBe(false)
-      expect(reportError).toHaveBeenCalledExactlyOnceWith(new Error(error), {
+      expectReportedFailure(new Error(error), {
         errorType: 'error_transforming_workflow_template',
+        tags: { failure_category: category, failure_reason: reason },
         context: { templateId: 'template1', sourceModule: 'default' }
       })
       expect(app.loadGraphData).not.toHaveBeenCalled()
@@ -604,13 +687,14 @@ describe('useTemplateWorkflows', () => {
         input: { filename: 'output.png' }
       })
     ).toBe(false)
-    expect(reportError).toHaveBeenCalledExactlyOnceWith(
-      new Error('Template input metadata is unavailable'),
-      {
-        errorType: 'error_transforming_workflow_template',
-        context: { templateId: 'template1', sourceModule: 'default' }
-      }
-    )
+    expectReportedFailure(new Error('Template input metadata is unavailable'), {
+      errorType: 'error_transforming_workflow_template',
+      tags: {
+        failure_category: 'template_metadata',
+        failure_reason: 'input_metadata_unavailable'
+      },
+      context: { templateId: 'template1', sourceModule: 'default' }
+    })
     expect(app.loadGraphData).not.toHaveBeenCalled()
     expect(mockCloseDialog).not.toHaveBeenCalled()
     expect(loadingTemplateId.value).toBeNull()

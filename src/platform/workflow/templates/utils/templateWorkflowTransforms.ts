@@ -20,7 +20,24 @@ interface NodeSelector {
 
 type TemplateTransformResult<T> =
   | { ok: true; value: T }
-  | { ok: false; error: string }
+  | {
+      ok: false
+      error: string
+      failureCategory: 'template_metadata'
+      reason: 'invalid_workflow' | 'missing_image_input' | 'invalid_image_input'
+    }
+  | {
+      ok: false
+      error: string
+      failureCategory: 'semantic_binding'
+      reason:
+        | 'missing_output_filename'
+        | 'input_node_missing'
+        | 'input_node_ambiguous'
+        | 'missing_widget_values'
+        | 'widget_value_missing'
+        | 'widget_value_ambiguous'
+    }
 
 /**
  * Both serializations of `widgets_values` — the positional array and the
@@ -36,13 +53,21 @@ function replaceWidgetValue(
   if (!isArray && (typeof widgetValues !== 'object' || widgetValues === null))
     return {
       ok: false,
-      error: 'Template input node has no configurable widgets'
+      error: 'Template input node has no configurable widgets',
+      failureCategory: 'semantic_binding',
+      reason: 'missing_widget_values'
     }
 
   const entries = Object.entries(widgetValues)
   const matches = entries.filter(([, value]) => value === currentValue)
   if (matches.length !== 1)
-    return { ok: false, error: 'Expected one matching template widget value' }
+    return {
+      ok: false,
+      error: 'Expected one matching template widget value',
+      failureCategory: 'semantic_binding',
+      reason:
+        matches.length === 0 ? 'widget_value_missing' : 'widget_value_ambiguous'
+    }
 
   const [matchedKey] = matches[0]
   const replaced = entries.map(([key, value]) => [
@@ -66,7 +91,12 @@ function replaceNodeWidgetValue<T extends TransformableWorkflow>(
   // The fetched JSON is unvalidated, so say what is wrong with it rather than
   // letting a served error page reach `.filter` as an anonymous TypeError.
   if (!Array.isArray(workflow.nodes))
-    return { ok: false, error: 'Template workflow has no nodes' }
+    return {
+      ok: false,
+      error: 'Template workflow has no nodes',
+      failureCategory: 'template_metadata',
+      reason: 'invalid_workflow'
+    }
 
   const matchingNodes = workflow.nodes.filter(
     (node) =>
@@ -74,7 +104,15 @@ function replaceNodeWidgetValue<T extends TransformableWorkflow>(
       String(node.id) === String(selector.nodeId)
   )
   if (matchingNodes.length !== 1)
-    return { ok: false, error: 'Expected one matching template node' }
+    return {
+      ok: false,
+      error: 'Expected one matching template node',
+      failureCategory: 'semantic_binding',
+      reason:
+        matchingNodes.length === 0
+          ? 'input_node_missing'
+          : 'input_node_ambiguous'
+    }
 
   const target = matchingNodes[0]
   const replaced = replaceWidgetValue(
@@ -133,13 +171,28 @@ export function replaceTemplateImageInput<T extends TransformableWorkflow>(
   image: ResultItem
 ): TemplateTransformResult<T> {
   if (!image.filename)
-    return { ok: false, error: 'Image output has no filename' }
+    return {
+      ok: false,
+      error: 'Image output has no filename',
+      failureCategory: 'semantic_binding',
+      reason: 'missing_output_filename'
+    }
 
   const input = findImageInput(template)
   if (!input)
-    return { ok: false, error: 'Template has no declared image input' }
+    return {
+      ok: false,
+      error: 'Template has no declared image input',
+      failureCategory: 'template_metadata',
+      reason: 'missing_image_input'
+    }
   if (!isSeedable(input))
-    return { ok: false, error: 'Template image input declaration is invalid' }
+    return {
+      ok: false,
+      error: 'Template image input declaration is invalid',
+      failureCategory: 'template_metadata',
+      reason: 'invalid_image_input'
+    }
 
   return replaceNodeWidgetValue(
     workflow,

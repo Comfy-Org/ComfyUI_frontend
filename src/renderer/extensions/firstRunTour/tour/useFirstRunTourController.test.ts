@@ -26,6 +26,8 @@ const mocks = vi.hoisted(() => {
     value: {}
   }
   return {
+    captureException: vi.fn(),
+    addError: vi.fn(),
     graph: undefined as LGraph | undefined,
     canRunWorkflows: { value: true },
     showSubscriptionDialog: vi.fn(),
@@ -51,6 +53,18 @@ const mocks = vi.hoisted(() => {
     }
   }
 })
+
+vi.mock('@sentry/vue', () => ({
+  captureException: mocks.captureException,
+  isEnabled: () => true
+}))
+
+vi.mock('@datadog/browser-rum', () => ({
+  datadogRum: {
+    addError: mocks.addError,
+    getInitConfiguration: () => ({})
+  }
+}))
 
 vi.mock('@/scripts/app', () => ({
   app: {
@@ -602,6 +616,8 @@ describe('useFirstRunTourController', () => {
         mocks.runState.value,
         'a blink of connection loss must not fail a run that is still going'
       ).toBe('generating')
+      expect(mocks.captureException).not.toHaveBeenCalled()
+      expect(mocks.addError).not.toHaveBeenCalled()
     })
 
     it('leaves a run that is still reporting alone', async () => {
@@ -1275,15 +1291,66 @@ describe('useFirstRunTourController', () => {
       expect(controller.nudgeOutput.value?.filename).toBe('tour-job.png')
     })
 
-    it('expires an unresolved submission after the tour ends', async () => {
+    it('reports uncorrelated output once when acceptance expires after tour end', async () => {
       const { controller } = await tourOnRunStep()
       mountRunButton('queue-button', () => {}).click()
       await endTour(COMPLETED)
+      const { api } = await import('@/scripts/api')
+      api.dispatchCustomEvent('executed', {
+        prompt_id: 'tour-job',
+        node: IMAGE_SINK.id,
+        display_node: IMAGE_SINK.id,
+        output: {
+          images: [{ filename: 'must-not-report.png', type: 'output' }]
+        }
+      })
+      api.dispatchCustomEvent('execution_success', {
+        prompt_id: 'tour-job',
+        timestamp: 1
+      })
       await vi.advanceTimersByTimeAsync(ACCEPT_DEADLINE_MS)
 
+      const context = {
+        templateId: 'image_z_image_turbo',
+        phase: 'pending',
+        jobId: undefined,
+        outputNodeId: String(IMAGE_SINK.id),
+        hasOutput: false,
+        pendingOutputCount: 1,
+        pendingCompletionCount: 1,
+        timeoutMs: ACCEPT_DEADLINE_MS
+      }
+      expect(mocks.captureException).toHaveBeenCalledExactlyOnceWith(
+        new Error('First-run execution correlation timed out'),
+        {
+          tags: {
+            error_type: 'error_correlating_first_run_execution',
+            failure_category: 'execution_correlation',
+            failure_reason: 'acceptance_timeout'
+          },
+          level: 'warning',
+          extra: context
+        }
+      )
+      expect(mocks.addError).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          name: 'error_correlating_first_run_execution'
+        }),
+        {
+          error_type: 'error_correlating_first_run_execution',
+          failure_category: 'execution_correlation',
+          failure_reason: 'acceptance_timeout',
+          level: 'warning',
+          ...context
+        }
+      )
+
       await captureFirstImage()
+      await vi.advanceTimersByTimeAsync(ACCEPT_DEADLINE_MS)
 
       expect(controller.nudgeOutput.value).toBeNull()
+      expect(mocks.captureException).toHaveBeenCalledOnce()
+      expect(mocks.addError).toHaveBeenCalledOnce()
     })
 
     it('expires a refused submission with no acceptance after tour end', async () => {
@@ -1322,6 +1389,8 @@ describe('useFirstRunTourController', () => {
       await captureFirstImage()
 
       expect(controller.nudgeOutput.value?.filename).toBe('first-output.png')
+      expect(mocks.captureException).not.toHaveBeenCalled()
+      expect(mocks.addError).not.toHaveBeenCalled()
     })
 
     it('stops correlating a cancelled job after the tour ends', async () => {
@@ -1334,6 +1403,8 @@ describe('useFirstRunTourController', () => {
       await captureFirstImage()
 
       expect(controller.nudgeOutput.value).toBeNull()
+      expect(mocks.captureException).not.toHaveBeenCalled()
+      expect(mocks.addError).not.toHaveBeenCalled()
     })
 
     it('releases pending correlation when the nudge is dismissed', async () => {
@@ -1355,6 +1426,36 @@ describe('useFirstRunTourController', () => {
       api.dispatchCustomEvent('reconnecting')
       await endTour(COMPLETED)
       await vi.advanceTimersByTimeAsync(OFFLINE_GRACE_MS)
+
+      expect(mocks.captureException).toHaveBeenCalledExactlyOnceWith(
+        new Error('First-run execution correlation timed out'),
+        expect.objectContaining({
+          tags: {
+            error_type: 'error_correlating_first_run_execution',
+            failure_category: 'execution_correlation',
+            failure_reason: 'connection_timeout'
+          },
+          extra: expect.objectContaining({
+            templateId: 'image_z_image_turbo',
+            phase: 'accepted',
+            jobId: 'tour-job',
+            timeoutMs: OFFLINE_GRACE_MS
+          })
+        })
+      )
+      expect(mocks.addError).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          name: 'error_correlating_first_run_execution'
+        }),
+        expect.objectContaining({
+          failure_category: 'execution_correlation',
+          failure_reason: 'connection_timeout',
+          templateId: 'image_z_image_turbo',
+          phase: 'accepted',
+          jobId: 'tour-job',
+          timeoutMs: OFFLINE_GRACE_MS
+        })
+      )
 
       await captureFirstImage()
 

@@ -12,6 +12,8 @@ Documentation for unit tests is organized into five guides:
 - [LiteGraph Testing](./litegraph-testing.md) - How to test LiteGraph graph, node, link, and workflow behavior
 - [Vitest Patterns](./vitest-patterns.md) - Setup, mocking, and fake-timer patterns that apply across all of the above
 
+For release evidence, see [Post-first-run error reporting](./post-first-run-error-reporting.md).
+
 ## Testing Structure
 
 The ComfyUI Frontend project uses **colocated tests** - test files are placed alongside their source files:

@@ -73,7 +73,9 @@ describe('template workflow transforms', () => {
       })
     ).toEqual({
       ok: false,
-      error: 'Expected one matching template widget value'
+      error: 'Expected one matching template widget value',
+      failureCategory: 'semantic_binding',
+      reason: 'widget_value_missing'
     })
     expect(workflow.nodes[0].widgets_values).toEqual(['different.png', 'image'])
   })
@@ -91,7 +93,12 @@ describe('template workflow transforms', () => {
 
     expect(
       replaceTemplateImageInput(workflow, template, { type: 'output' })
-    ).toEqual({ ok: false, error: 'Image output has no filename' })
+    ).toEqual({
+      ok: false,
+      error: 'Image output has no filename',
+      failureCategory: 'semantic_binding',
+      reason: 'missing_output_filename'
+    })
     expect(workflow.nodes[0].widgets_values).toEqual(['starter.png', 'image'])
   })
 
@@ -119,7 +126,9 @@ describe('template workflow transforms', () => {
         })
       ).toEqual({
         ok: false,
-        error: 'Template image input declaration is invalid'
+        error: 'Template image input declaration is invalid',
+        failureCategory: 'template_metadata',
+        reason: 'invalid_image_input'
       })
       expect(workflow.nodes[0].widgets_values).toEqual(['starter.png', 'image'])
     }
@@ -138,14 +147,32 @@ describe('template workflow transforms', () => {
           filename: 'output.png'
         }
       )
-    ).toEqual({ ok: false, error: 'Template has no declared image input' })
+    ).toEqual({
+      ok: false,
+      error: 'Template has no declared image input',
+      failureCategory: 'template_metadata',
+      reason: 'missing_image_input'
+    })
   })
 
   it.for([
-    { nodes: [], error: 'Expected one matching template node' },
+    {
+      nodes: [],
+      error: 'Expected one matching template node',
+      reason: 'input_node_missing'
+    },
+    {
+      nodes: [
+        { id: 2, type: 'LoadImage', widgets_values: ['starter.png'] },
+        { id: 2, type: 'LoadImage', widgets_values: ['starter.png'] }
+      ],
+      error: 'Expected one matching template node',
+      reason: 'input_node_ambiguous'
+    },
     {
       nodes: [{ id: 2, type: 'LoadImage' }],
-      error: 'Template input node has no configurable widgets'
+      error: 'Template input node has no configurable widgets',
+      reason: 'missing_widget_values'
     },
     {
       nodes: [
@@ -155,18 +182,24 @@ describe('template workflow transforms', () => {
           widgets_values: ['starter.png', 'starter.png']
         }
       ],
-      error: 'Expected one matching template widget value'
+      error: 'Expected one matching template widget value',
+      reason: 'widget_value_ambiguous'
     }
   ])(
     'rejects invalid workflow input without mutation: $error',
-    ({ nodes, error }) => {
+    ({ nodes, error, reason }) => {
       const workflow = { nodes }
       const before = structuredClone(workflow)
       expect(
         replaceTemplateImageInput(workflow, template, {
           filename: 'output.png'
         })
-      ).toEqual({ ok: false, error })
+      ).toEqual({
+        ok: false,
+        error,
+        failureCategory: 'semantic_binding',
+        reason
+      })
       expect(workflow).toEqual(before)
     }
   )

@@ -108,7 +108,17 @@ export function useTemplateWorkflows() {
     sourceModule: string,
     options: LoadWorkflowTemplateOptions = {}
   ) => {
-    if (!isTemplatesLoaded.value) return false
+    if (!isTemplatesLoaded.value) {
+      reportError(new Error('Template catalog is unavailable'), {
+        errorType: 'error_loading_workflow_template',
+        tags: {
+          failure_category: 'template_loading',
+          failure_reason: 'catalog_unavailable'
+        },
+        context: { templateId: id, sourceModule }
+      })
+      return false
+    }
 
     loadingTemplateId.value = id
 
@@ -126,7 +136,17 @@ export function useTemplateWorkflows() {
         )
         const template = allCategory?.templates.find((t) => t.name === id)
 
-        if (!template || !template.sourceModule) return false
+        if (!template || !template.sourceModule) {
+          reportError(new Error('Template source metadata is unavailable'), {
+            errorType: 'error_transforming_workflow_template',
+            tags: {
+              failure_category: 'template_metadata',
+              failure_reason: 'source_module_unavailable'
+            },
+            context: { templateId: id, sourceModule }
+          })
+          return false
+        }
 
         // Use the stored source module for loading
         sourceModule = template.sourceModule
@@ -141,6 +161,10 @@ export function useTemplateWorkflows() {
         if (!template || template.sourceModule !== sourceModule) {
           reportError(new Error('Template input metadata is unavailable'), {
             errorType: 'error_transforming_workflow_template',
+            tags: {
+              failure_category: 'template_metadata',
+              failure_reason: 'input_metadata_unavailable'
+            },
             context: { templateId: id, sourceModule }
           })
           return false
@@ -153,6 +177,10 @@ export function useTemplateWorkflows() {
         if (!transformed.ok) {
           reportError(new Error(transformed.error), {
             errorType: 'error_transforming_workflow_template',
+            tags: {
+              failure_category: transformed.failureCategory,
+              failure_reason: transformed.reason
+            },
             context: { templateId: id, sourceModule }
           })
           return false
@@ -196,6 +224,10 @@ export function useTemplateWorkflows() {
     } catch (error) {
       reportError(error, {
         errorType: 'error_loading_workflow_template',
+        tags: {
+          failure_category: 'template_loading',
+          failure_reason: 'load_failed'
+        },
         context: { templateId: id, sourceModule }
       })
       return false
@@ -225,6 +257,10 @@ export function useTemplateWorkflows() {
     if (!response.ok) {
       reportError(new Error(`Template response failed (${response.status})`), {
         errorType: 'error_loading_workflow_template_response',
+        tags: {
+          failure_category: 'template_loading',
+          failure_reason: 'http_response'
+        },
         context: { templateId: id, sourceModule, status: response.status }
       })
       return null
