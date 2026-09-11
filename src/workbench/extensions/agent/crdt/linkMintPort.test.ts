@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { toLinkId } from '@/types/linkId'
+
 import type { GraphOperation } from './graphOperations'
 import { attachLinkMintPort } from './linkMintPort'
 import type {
@@ -21,7 +23,7 @@ const SUBGRAPH_SCOPE: LinkScopeView = {
 
 function topology(id: number): LinkTopologyView {
   return {
-    id,
+    id: toLinkId(id),
     originNodeId: 1,
     originSlot: 0,
     targetNodeId: 2,

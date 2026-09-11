@@ -12,6 +12,8 @@
  */
 import type { NodeId as WireNodeId } from '@comfyorg/comfy-multi-player'
 
+import type { LinkId } from '@/types/linkId'
+
 import type { GraphOperation } from './graphOperations'
 import { shouldMint } from './mintGate'
 import type { MintSession } from './mintSession'
@@ -28,7 +30,7 @@ export interface LinkScopeView {
  * link - the wiring feed filters those out before this port sees them.
  */
 export interface LinkTopologyView {
-  id: string | number
+  id: LinkId
   originNodeId: string | number
   originSlot: number
   targetNodeId: string | number
@@ -76,7 +78,7 @@ export interface LinkMintPort {
 }
 
 interface SeveranceEntry {
-  linkId: WireNodeId
+  linkId: LinkId
   /** The gate was open at severance: unconsumed means a real divergence. */
   mintable: boolean
 }
@@ -90,7 +92,7 @@ function placementKey(
   scope: LinkScopeView,
   topology: LinkTopologyView
 ): string {
-  return `${scope.rootGraphId}:${String(topology.id)}`
+  return `${scope.rootGraphId}:${topology.id}`
 }
 
 export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
@@ -98,7 +100,7 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
   const consumedLinkIds = new Set<string>()
   const pendingPlacements = new Map<
     string,
-    { operation: GraphOperation; linkId: string | number }
+    { operation: GraphOperation; linkId: LinkId }
   >()
   let sweepScheduled = false
   let detached = false
@@ -111,7 +113,7 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
     })
   }
 
-  function surfaceUnrepresentable(what: string, id: string | number): void {
+  function surfaceUnrepresentable(what: string, id: LinkId): void {
     // A doc that no longer matches the local graph must be observable,
     // never silent (the surfacing-honesty principle).
     console.error(
