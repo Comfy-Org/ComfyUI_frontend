@@ -73,7 +73,6 @@ import {
   useCanvasSelection
 } from './composables/agent/useCanvasSelection'
 import type { CoachStep } from './composables/agent/useOnboarding'
-import type { ComposerAttachment } from './composables/agent/useComposer'
 import type {
   AgentActiveTabData,
   AgentThreadSummary
@@ -86,6 +85,7 @@ import type {
 } from './composables/agent/useAgentSession'
 import { useAgentWorkflowResolver } from './composables/agent/useAgentWorkflowResolver'
 import { useAgentSession } from './composables/agent/useAgentSession'
+import { useAgentDraftSubmission } from './composables/agent/useAgentDraftSubmission'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import { createAgentRestClient } from './services/agent/agentRestClient'
 import type { DraftSnapshot } from './services/agent/agentRestClient'
@@ -323,20 +323,6 @@ watch(
   { immediate: true }
 )
 
-let composerRevision = 0
-watch(
-  () =>
-    JSON.stringify([
-      composerStore.draft,
-      composerStore.attachments,
-      workflowReferences.value,
-      selectionTags.value
-    ]),
-  () => {
-    ++composerRevision
-  },
-  { flush: 'sync' }
-)
 const workflowSelection = ref<{
   purpose: 'target' | 'reference'
   workflow: ComfyWorkflow
@@ -936,53 +922,26 @@ const coachStep: CoachStep = {
   body: t('agent.coachBody')
 }
 
-async function onSend(
-  text: string,
-  attachments: ComposerAttachment[],
-  references: WorkflowReference[] = []
-): Promise<void> {
-  if (
-    workflowSelection.value ||
-    selectedTarget.value === null ||
-    isSending.value
-  )
-    return
-  const generation = composerContextGeneration
-  const target = selectedTarget.value
-  const draft = composerStore.draft
-  const sentAttachments = [...attachments]
-  exitNodeSelectionMode()
-  const nodeTags =
-    nodeReferenceWorkflow === selectedTarget.value
-      ? [...selectionTags.value]
-      : []
-  consumeSelection()
-  workflowReferences.value = []
-  useTelemetry()?.trackAgentMessageSent({
-    attachment_count: attachments.length,
-    node_tag_count: nodeTags.length
-  })
-  const sending = sendMessage(text, attachments, nodeTags, references)
-  await nextTick()
-  const submittedRevision = composerRevision
-  const sent = await sending
-  if (
-    sent ||
-    generation !== composerContextGeneration ||
-    submittedRevision !== composerRevision ||
-    composerStore.draft.length > 0 ||
-    composerStore.attachments.length > 0 ||
-    workflowReferences.value.length > 0 ||
-    selectionTags.value.length > 0
-  )
-    return
-  composerStore.draft = draft
-  composerStore.attachments = sentAttachments
-  workflowReferences.value = references.filter(
-    ({ id }) => id !== editableWorkflowId.value
-  )
-  if (selectedTarget.value === target) replaceSelectionTags(nodeTags)
-}
+const { submit: onSend } = useAgentDraftSubmission({
+  canSubmit: () => !workflowSelection.value && !isSending.value,
+  contextGeneration: () => composerContextGeneration,
+  target: () => selectedTarget.value,
+  editableWorkflowId: () => editableWorkflowId.value,
+  selection: {
+    staged: selectionTags,
+    workflow: () => nodeReferenceWorkflow,
+    consume: consumeSelection,
+    replace: replaceSelectionTags,
+    exit: exitNodeSelectionMode
+  },
+  send: (text, attachments, nodes, references) => {
+    useTelemetry()?.trackAgentMessageSent({
+      attachment_count: attachments.length,
+      node_tag_count: nodes.length
+    })
+    return sendMessage(text, attachments, nodes, references)
+  }
+})
 
 function onStop(): void {
   void stopTurn()

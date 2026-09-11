@@ -16,7 +16,7 @@ function setup(streaming = false) {
 }
 
 describe('useComposer', () => {
-  it('submit trims the draft, sends it, and clears draft + attachments', () => {
+  it('requests submission with trimmed text while retaining the editable draft', () => {
     const { composer, onSend } = setup()
     const attachment: ComposerAttachment = {
       id: 'a1',
@@ -29,8 +29,8 @@ describe('useComposer', () => {
     composer.submit()
 
     expect(onSend).toHaveBeenCalledWith('make a cat', [attachment])
-    expect(composer.draft.value).toBe('')
-    expect(composer.attachments.value).toEqual([])
+    expect(composer.draft.value).toBe('  make a cat  ')
+    expect(composer.attachments.value).toEqual([attachment])
   })
 
   it('blocks send while any attachment is uploading, unblocks on settle', () => {
@@ -134,8 +134,10 @@ describe('useComposer', () => {
     expect(onSend).toHaveBeenCalledWith('still here', [
       { id: 'a1', name: 'cat.png', ref: 'r' }
     ])
-    expect(first.draft.value).toBe('')
-    expect(first.attachments.value).toEqual([])
+    expect(first.draft.value).toBe('still here')
+    expect(first.attachments.value.map((attachment) => attachment.id)).toEqual([
+      'a1'
+    ])
   })
 
   it('removeAttachment drops the matching staged attachment', () => {

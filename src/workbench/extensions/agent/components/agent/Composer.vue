@@ -441,10 +441,10 @@ const placeholderHint = computed(() => {
 
 const composer = useComposer({
   onSend: (text, attachments) => {
-    if (workflowSelecting || submitting) return false
+    if (workflowSelecting || submitting) return
     if (!hasWorkflowTarget) {
       emit('workflowTargetRequired')
-      return false
+      return
     }
     if (workflowReferences.length > 0)
       emit('send', text, attachments, [...workflowReferences])

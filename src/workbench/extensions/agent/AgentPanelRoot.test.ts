@@ -4978,6 +4978,14 @@ describe('AgentPanelRoot workflow binding', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Send' }))
       await vi.waitFor(() => expect(bodies).toHaveLength(1))
       expect(screen.getByRole('button', { name: 'Stop' })).toBeVisible()
+      expect(textbox).toHaveValue('')
+      expect(composer.attachments).toEqual([])
+      expect(
+        screen.queryByRole('button', { name: 'Open reference' })
+      ).toBeNull()
+      expect(
+        screen.queryByRole('button', { name: 'Remove KSampler #12 reference' })
+      ).toBeNull()
       if (nextAction === 'new-draft' || nextAction === 'cleared-draft')
         await userEvent.type(textbox, 'New input')
       if (nextAction === 'cleared-draft') await userEvent.clear(textbox)

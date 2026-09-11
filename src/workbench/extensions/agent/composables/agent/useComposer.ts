@@ -12,7 +12,7 @@ export interface ComposerAttachment {
 }
 
 export interface UseComposerOptions {
-  onSend: (text: string, attachments: ComposerAttachment[]) => boolean | void
+  onSend: (text: string, attachments: ComposerAttachment[]) => void
   isStreaming: () => boolean
   onStop: () => void
 }
@@ -32,9 +32,7 @@ export function useComposer(options: UseComposerOptions) {
       return
     }
     if (!canSend.value) return
-    if (options.onSend(draft.value.trim(), attachments.value) === false) return
-    draft.value = ''
-    attachments.value = []
+    options.onSend(draft.value.trim(), attachments.value)
   }
 
   function insert(text: string): void {

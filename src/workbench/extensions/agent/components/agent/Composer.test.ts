@@ -228,13 +228,13 @@ describe('Composer', () => {
     consoleError.mockRestore()
   })
 
-  it('emits send with the trimmed text and clears the draft', async () => {
+  it('emits trimmed text and leaves the draft for the submission owner', async () => {
     const { emitted } = mount()
     const box = screen.getByRole('textbox')
     await userEvent.type(box, '  make art  ')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     expect(emitted().send[0]).toEqual(['make art', []])
-    expect((box as HTMLTextAreaElement).value).toBe('')
+    expect(box).toHaveValue('  make art  ')
   })
 
   it('sends on Enter but not on Shift+Enter', async () => {
