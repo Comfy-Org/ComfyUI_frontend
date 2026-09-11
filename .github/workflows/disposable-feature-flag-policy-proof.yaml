@@ -23,7 +23,7 @@ jobs:
       - name: Checkout policy
         uses: actions/checkout@v7
         with:
-          ref: bc7f1ec2c0589735c94c67180502ffb929f5612f
+          ref: f85693b4ce0ccb193d1e32c72945716d672561b5
           persist-credentials: false
 
       - name: Setup Node.js
@@ -92,7 +92,9 @@ jobs:
 
             Verify that the flag defaults OFF in code, contains every Cloud
             runtime behavior in the diff, and leaves the OFF path behaviorally
-            unchanged with automated coverage.
+            unchanged with automated coverage. Use the supplied runtime and test
+            patches for the PR head; the checkout contains trusted policy code,
+            not the PR head. Do not search the checkout for newly added PR files.
 
             PostHog lookup available: ${{ steps.posthog.outputs.available }}.
             When available, use only the configured read-only tools to verify
@@ -104,7 +106,7 @@ jobs:
             specific defect, and `inconclusive` for missing evidence. Return the
             exact author-provided flag key with every verdict.
           claude_args: >-
-            --max-turns 12
+            --max-turns 24
             --mcp-config /tmp/posthog-mcp.json
             --allowedTools "Read,mcp__posthog__feature-flag-get-definition-by-key,mcp__posthog__feature-flags-status-retrieve"
             --json-schema '{"type":"object","properties":{"verdict":{"type":"string","enum":["pass","fail","inconclusive"]},"flag":{"type":"string","minLength":1},"reason":{"type":"string","minLength":1}},"required":["verdict","flag","reason"],"additionalProperties":false}'
@@ -117,3 +119,19 @@ jobs:
           AI_RESULT: ${{ steps.ai.outputs.structured_output }}
           AI_OUTCOME: ${{ steps.ai.outcome }}
         run: node --experimental-strip-types scripts/cicd/feature-flag-policy.ts finalize
+
+      - name: Assert expected fixture verdict
+        env:
+          AI_RESULT: ${{ steps.ai.outputs.structured_output }}
+          AI_OUTCOME: ${{ steps.ai.outcome }}
+          PR_NUMBER: ${{ matrix.pr }}
+        run: |
+          node --experimental-strip-types --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs'
+          import { applyAiVerdict } from './scripts/cicd/feature-flag-policy.ts'
+          const state = JSON.parse(readFileSync('.feature-flag-policy-state.json', 'utf8'))
+          const result = applyAiVerdict(state.result, process.env.AI_RESULT || '', process.env.AI_OUTCOME || '')
+          const expected = process.env.PR_NUMBER === '17034' ? 'pass' : 'fail'
+          console.log(JSON.stringify({ sha: state.sha, expected, result }))
+          if (result.verdict !== expected) process.exit(1)
+          NODE
