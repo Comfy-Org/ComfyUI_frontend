@@ -183,6 +183,20 @@ describe('postMessage wire body', () => {
     expect(contentType(init)).toBe('application/json')
   })
 
+  it('sends current_tab_unbound when the turn comes from a tab with no workflow', async () => {
+    respond(jsonResponse(202, turnAccepted))
+    await makeClient().postMessage('t1', {
+      content: 'add a node',
+      currentTabUnbound: true
+    })
+
+    const parsed = JSON.parse(lastCall().init.body as string) as Record<
+      string,
+      unknown
+    >
+    expect(parsed).toEqual({ content: 'add a node', current_tab_unbound: true })
+  })
+
   it('omits absent optionals rather than sending them as undefined keys', async () => {
     respond(jsonResponse(202, turnAccepted))
     await makeClient().postMessage('t1', { content: 'just text' })

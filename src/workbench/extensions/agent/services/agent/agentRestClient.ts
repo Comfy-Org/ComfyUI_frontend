@@ -65,6 +65,12 @@ export interface DraftSnapshot {
 export interface PostMessageInput {
   content: string
   workflowId?: string
+  /**
+   * The turn comes from a tab that has no workflow yet. The server then mints
+   * one for it instead of falling back to the thread's previous workflow —
+   * which would edit a tab the user is not looking at.
+   */
+  currentTabUnbound?: boolean
   selection?: Record<string, unknown>
   attachments?: string[]
   tabs?: OpenTabsSnapshot
@@ -139,6 +145,7 @@ export function createAgentRestClient() {
   ): Promise<AgentTurnAccepted> {
     const body: Record<string, unknown> = { content: req.content }
     if (req.workflowId !== undefined) body.workflow_id = req.workflowId
+    if (req.currentTabUnbound) body.current_tab_unbound = true
     if (req.tabs !== undefined) {
       body.open_tabs = req.tabs.open_tabs
       if (req.tabs.current_tab !== undefined)
