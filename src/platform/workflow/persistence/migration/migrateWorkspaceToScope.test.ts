@@ -479,8 +479,7 @@ describe('migrateWorkspaceToScope', () => {
       JSON.stringify({
         scope: destinationScope,
         sourceUpdatedAt: 5,
-        nonce: 'old-migration',
-        completedAt: Date.now()
+        nonce: 'old-migration'
       })
     )
     const realSetItem = localStorage.setItem.bind(localStorage)
@@ -544,6 +543,44 @@ describe('migrateWorkspaceToScope', () => {
       updatedAt: 10
     })
     expect(readJson(StorageKeys.draftIndex(sourceWorkspaceId))).toBe(null)
+  })
+
+  it('keeps artifacts committed by a delayed same-scope migration winner', () => {
+    vi.useFakeTimers()
+    seedSourceWorkspace()
+    const claimKey = StorageKeys.migrationClaim(sourceWorkspaceId)
+    const completionKey = StorageKeys.migrationCompletion(sourceWorkspaceId)
+    const destinationPayloadKey = StorageKeys.draftPayload(
+      draftPath,
+      destinationScope
+    )
+    const realSetItem = localStorage.setItem.bind(localStorage)
+    let claimTaken = false
+    vi.spyOn(localStorage, 'setItem').mockImplementation(
+      (key: string, value: string) => {
+        realSetItem(key, value)
+        if (key === destinationPayloadKey && !claimTaken) {
+          claimTaken = true
+          realSetItem(
+            claimKey,
+            JSON.stringify({
+              scope: destinationScope,
+              sourceUpdatedAt: 10,
+              nonce: 'same-scope-tab'
+            })
+          )
+          migrateWorkspaceToScope(sourceWorkspaceId, destinationScope)
+        } else if (key === completionKey) {
+          vi.advanceTimersByTime(60_001)
+        }
+      }
+    )
+
+    migrateWorkspaceToScope(sourceWorkspaceId, destinationScope)
+
+    expect(readJson(StorageKeys.draftIndex(destinationScope))).toEqual(
+      buildIndex()
+    )
   })
 
   it('keeps both copies when a winner cannot record completion', () => {

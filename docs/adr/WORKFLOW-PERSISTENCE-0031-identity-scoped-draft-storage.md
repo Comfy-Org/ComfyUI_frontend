@@ -123,10 +123,9 @@ payloads, index and restore pointers are removed. If the source index still
 exists but the destination index is already present, an earlier run committed
 and was interrupted before its source cleanup; the migration only finishes that
 cleanup and does not copy again, so the committed destination is never
-overwritten by stale source data. A short-lived completion record identifies
-the source generation and lets a losing same-scope tab distinguish the winning
-copy from its own artifacts without allowing an older migration to suppress
-rollback.
+overwritten by stale source data. A completion record identifies the source
+generation and lets a losing same-scope tab distinguish the winning copy from
+its own artifacts without allowing an older migration to suppress rollback.
 
 The first user to sign in on a browser therefore claims any pre-existing
 workspace-keyed drafts. This is accepted: before this change those drafts were

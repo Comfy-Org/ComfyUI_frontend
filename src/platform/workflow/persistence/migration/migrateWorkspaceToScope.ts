@@ -16,12 +16,7 @@ type MigrationClaim = {
   nonce?: string
 }
 
-type MigrationCompletion = MigrationClaim & {
-  completedAt: number
-  nonce: string
-}
-
-const migrationCompletionLifetime = 60_000
+type MigrationCompletion = MigrationClaim & { nonce: string }
 
 const restorePointerKeys = [
   StorageKeys.lastActivePath,
@@ -37,14 +32,10 @@ function isValidClaim(value: unknown): value is MigrationClaim {
   )
 }
 
-function isCurrentCompletion(value: unknown): value is MigrationCompletion {
+function isValidCompletion(value: unknown): value is MigrationCompletion {
   if (!isValidClaim(value)) return false
   const candidate = value as Record<string, unknown>
-  return (
-    typeof candidate.nonce === 'string' &&
-    typeof candidate.completedAt === 'number' &&
-    Date.now() - candidate.completedAt <= migrationCompletionLifetime
-  )
+  return typeof candidate.nonce === 'string'
 }
 
 export function migrateWorkspaceToScope(
@@ -130,7 +121,7 @@ export function migrateWorkspaceToScope(
     const completionRecorded = writeStorage(
       localStorage,
       completionKey,
-      JSON.stringify({ ...claim, completedAt: Date.now() })
+      JSON.stringify(claim)
     )
     if (!completionRecorded) return
     cleanupSourceIfCurrent(
@@ -142,7 +133,7 @@ export function migrateWorkspaceToScope(
     )
   } else {
     const currentClaim = readLocalPointer(claimKey, isValidClaim)
-    const completion = readLocalPointer(completionKey, isCurrentCompletion)
+    const completion = readLocalPointer(completionKey, isValidCompletion)
     const sameScopePeer =
       currentClaim?.scope === scope
         ? currentClaim.nonce !== claim.nonce
