@@ -1,21 +1,42 @@
+import { z } from 'zod'
+
 import type { ResultItem } from '@/schemas/apiSchema'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 
-import type { TemplateInfo, TemplateMediaInfo } from '../types/template'
+import type { TemplateInfo } from '../types/template'
+
+const nodeIdSchema = z.union([z.number().finite(), z.string().min(1)])
+const declaredInputsSchema = z.array(
+  z.object({
+    mediaType: z.string().optional(),
+    nodeId: nodeIdSchema.optional(),
+    nodeType: z.string().optional()
+  })
+)
+const workflowSchema = z.object({
+  nodes: z.array(z.object({ id: nodeIdSchema, type: z.string() }))
+})
+const namedWidgetsSchema = z.object({ image: z.string() }).passthrough()
+const legacyNamedWidgetsSchema = z
+  .object({
+    image: z.string(),
+    upload: z.string().optional()
+  })
+  .strict()
+const nodeInputsSchema = z.array(
+  z.object({ name: z.string(), link: z.unknown().optional() })
+)
 
 interface TransformableNode {
   id: string | number
   type: string
   widgets_values?: unknown
+  widgets_values_named?: unknown
+  inputs?: unknown
 }
 
 interface TransformableWorkflow {
   nodes: TransformableNode[]
-}
-
-interface NodeSelector {
-  nodeId: string | number
-  nodeType: string
 }
 
 type TemplateTransformResult<T> =
@@ -34,137 +55,68 @@ type TemplateTransformResult<T> =
         | 'missing_output_filename'
         | 'input_node_missing'
         | 'input_node_ambiguous'
+        | 'input_widget_linked'
         | 'missing_widget_values'
         | 'widget_value_missing'
-        | 'widget_value_ambiguous'
     }
 
-/**
- * Both serializations of `widgets_values` — the positional array and the
- * name-keyed object — replace the one entry holding the template's declared
- * file, so they differ only in how the entries are taken apart and put back.
- */
-function replaceWidgetValue(
-  widgetValues: unknown,
-  currentValue: unknown,
-  nextValue: unknown
-): TemplateTransformResult<unknown> {
-  const isArray = Array.isArray(widgetValues)
-  if (!isArray && (typeof widgetValues !== 'object' || widgetValues === null))
+function imageBinding(template: TemplateInfo) {
+  const parsed = declaredInputsSchema.safeParse(template.io?.inputs ?? [])
+  if (!parsed.success) return null
+  const inputs = parsed.data.filter(({ mediaType }) => mediaType === 'image')
+  if (inputs.length !== 1) return null
+  const input = inputs[0]
+  return input.nodeId !== undefined && input.nodeType === 'LoadImage'
+    ? { nodeId: input.nodeId, nodeType: input.nodeType }
+    : null
+}
+
+export function acceptsTemplateImageInput(template: TemplateInfo): boolean {
+  return imageBinding(template) !== null
+}
+
+function replaceImageWidget(
+  values: unknown,
+  imagePath: string
+): TemplateTransformResult<{
+  widgets_values: unknown[]
+  widgets_values_named?: Record<string, unknown>
+}> {
+  if (Array.isArray(values)) {
+    if (typeof values[0] === 'string')
+      return {
+        ok: true,
+        value: { widgets_values: [imagePath, ...values.slice(1)] }
+      }
+  } else if (typeof values === 'object' && values !== null) {
+    const named = legacyNamedWidgetsSchema.safeParse(values)
+    if (named.success)
+      return {
+        ok: true,
+        value: {
+          widgets_values: [
+            imagePath,
+            ...(named.data.upload === undefined ? [] : [named.data.upload])
+          ],
+          widgets_values_named: { ...named.data, image: imagePath }
+        }
+      }
+  } else {
     return {
       ok: false,
       error: 'Template input node has no configurable widgets',
       failureCategory: 'semantic_binding',
       reason: 'missing_widget_values'
     }
-
-  const entries = Object.entries(widgetValues)
-  const matches = entries.filter(([, value]) => value === currentValue)
-  if (matches.length !== 1)
-    return {
-      ok: false,
-      error: 'Expected one matching template widget value',
-      failureCategory: 'semantic_binding',
-      reason:
-        matches.length === 0 ? 'widget_value_missing' : 'widget_value_ambiguous'
-    }
-
-  const [matchedKey] = matches[0]
-  const replaced = entries.map(([key, value]) => [
-    key,
-    key === matchedKey ? nextValue : value
-  ])
+  }
   return {
-    ok: true,
-    value: isArray
-      ? replaced.map(([, value]) => value)
-      : Object.fromEntries(replaced)
+    ok: false,
+    error: 'LoadImage has no serialized image widget',
+    failureCategory: 'semantic_binding',
+    reason: 'widget_value_missing'
   }
 }
 
-function replaceNodeWidgetValue<T extends TransformableWorkflow>(
-  workflow: T,
-  selector: NodeSelector,
-  currentValue: unknown,
-  nextValue: unknown
-): TemplateTransformResult<T> {
-  // The fetched JSON is unvalidated, so say what is wrong with it rather than
-  // letting a served error page reach `.filter` as an anonymous TypeError.
-  if (!Array.isArray(workflow.nodes))
-    return {
-      ok: false,
-      error: 'Template workflow has no nodes',
-      failureCategory: 'template_metadata',
-      reason: 'invalid_workflow'
-    }
-
-  const matchingNodes = workflow.nodes.filter(
-    (node) =>
-      node.type === selector.nodeType &&
-      String(node.id) === String(selector.nodeId)
-  )
-  if (matchingNodes.length !== 1)
-    return {
-      ok: false,
-      error: 'Expected one matching template node',
-      failureCategory: 'semantic_binding',
-      reason:
-        matchingNodes.length === 0
-          ? 'input_node_missing'
-          : 'input_node_ambiguous'
-    }
-
-  const target = matchingNodes[0]
-  const replaced = replaceWidgetValue(
-    target.widgets_values,
-    currentValue,
-    nextValue
-  )
-  if (!replaced.ok) return replaced
-
-  return {
-    ok: true,
-    value: {
-      ...workflow,
-      nodes: workflow.nodes.map((node) =>
-        node === target ? { ...node, widgets_values: replaced.value } : node
-      )
-    }
-  }
-}
-
-interface SeedableMediaInput extends NodeSelector {
-  file: string
-}
-
-function findImageInput(template: TemplateInfo) {
-  return template.io?.inputs?.find(({ mediaType }) => mediaType === 'image')
-}
-
-function isSeedable(input: TemplateMediaInfo): input is SeedableMediaInput {
-  const { nodeId, nodeType, file } = input
-  const hasNodeId =
-    typeof nodeId === 'number' ? Number.isFinite(nodeId) : Boolean(nodeId)
-  return hasNodeId && Boolean(nodeType) && Boolean(file)
-}
-
-/**
- * Whether `replaceTemplateImageInput` has enough metadata to seed this
- * template, so a caller can hide an action rather than fail it on click.
- */
-export function acceptsTemplateImageInput(template: TemplateInfo): boolean {
-  const input = findImageInput(template)
-  return input !== undefined && isSeedable(input)
-}
-
-/**
- * Continues `image` into `template` by rewriting the widget value its declared
- * image input currently holds.
- *
- * The declared node has to live in `workflow.nodes`: a node nested inside
- * `definitions.subgraphs` is not reachable from `io.inputs`, and a template
- * that declares one receives a failure result rather than loading unseeded.
- */
 export function replaceTemplateImageInput<T extends TransformableWorkflow>(
   workflow: T,
   template: TemplateInfo,
@@ -178,26 +130,84 @@ export function replaceTemplateImageInput<T extends TransformableWorkflow>(
       reason: 'missing_output_filename'
     }
 
-  const input = findImageInput(template)
-  if (!input)
+  const input = imageBinding(template)
+  if (!input) {
+    const parsed = declaredInputsSchema.safeParse(template.io?.inputs ?? [])
+    const missing =
+      parsed.success &&
+      !parsed.data.some(({ mediaType }) => mediaType === 'image')
     return {
       ok: false,
-      error: 'Template has no declared image input',
+      error: missing
+        ? 'Template has no declared image input'
+        : 'Template image input declaration is invalid',
       failureCategory: 'template_metadata',
-      reason: 'missing_image_input'
+      reason: missing ? 'missing_image_input' : 'invalid_image_input'
     }
-  if (!isSeedable(input))
+  }
+  if (!workflowSchema.safeParse(workflow).success)
     return {
       ok: false,
-      error: 'Template image input declaration is invalid',
+      error: 'Template workflow has invalid nodes',
       failureCategory: 'template_metadata',
-      reason: 'invalid_image_input'
+      reason: 'invalid_workflow'
     }
 
-  return replaceNodeWidgetValue(
-    workflow,
-    { nodeId: input.nodeId, nodeType: input.nodeType },
-    input.file,
-    createAnnotatedPath({ ...image, type: image.type ?? 'output' })
+  const matches = workflow.nodes.filter(
+    ({ id }) => String(id) === String(input.nodeId)
   )
+  if (matches.length !== 1 || matches[0].type !== input.nodeType)
+    return {
+      ok: false,
+      error: 'Expected one matching template node',
+      failureCategory: 'semantic_binding',
+      reason: matches.length > 1 ? 'input_node_ambiguous' : 'input_node_missing'
+    }
+
+  const target = matches[0]
+  const slots = nodeInputsSchema.safeParse(target.inputs ?? [])
+  if (
+    !slots.success ||
+    slots.data.some(({ name, link }) => name === 'image' && link != null)
+  )
+    return {
+      ok: false,
+      error: 'LoadImage image input must be an unlinked widget',
+      failureCategory: 'semantic_binding',
+      reason: 'input_widget_linked'
+    }
+  const imagePath = createAnnotatedPath({
+    ...image,
+    type: image.type ?? 'output'
+  })
+  const named =
+    target.widgets_values_named === undefined
+      ? undefined
+      : namedWidgetsSchema.safeParse(target.widgets_values_named)
+  if (named && !named.success)
+    return {
+      ok: false,
+      error: 'LoadImage has no serialized image widget',
+      failureCategory: 'semantic_binding',
+      reason: 'widget_value_missing'
+    }
+  const replaced = replaceImageWidget(target.widgets_values, imagePath)
+  if (!replaced.ok) return replaced
+  return {
+    ok: true,
+    value: {
+      ...workflow,
+      nodes: workflow.nodes.map((node) =>
+        node === target
+          ? {
+              ...node,
+              ...replaced.value,
+              ...(named && {
+                widgets_values_named: { ...named.data, image: imagePath }
+              })
+            }
+          : node
+      )
+    }
+  }
 }

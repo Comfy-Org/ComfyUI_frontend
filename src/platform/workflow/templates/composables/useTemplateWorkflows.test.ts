@@ -633,15 +633,15 @@ describe('useTemplateWorkflows', () => {
   it.for([
     {
       nodes: [
-        { id: 2, type: 'LoadImage', widgets_values: ['different.png', 'image'] }
+        { id: 2, type: 'LoadImage', widgets_values: { upload: 'image' } }
       ],
-      error: 'Expected one matching template widget value',
+      error: 'LoadImage has no serialized image widget',
       category: 'semantic_binding',
       reason: 'widget_value_missing'
     },
     {
       nodes: undefined,
-      error: 'Template workflow has no nodes',
+      error: 'Template workflow has invalid nodes',
       category: 'template_metadata',
       reason: 'invalid_workflow'
     }

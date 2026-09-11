@@ -41,42 +41,46 @@ function matchingNodes(workflow: SerialisableGraph, id: number) {
   return nodesOf(workflow).filter((node) => String(node.id) === String(id))
 }
 
-test.describe('first-run tour role pins', { tag: '@workflow' }, () => {
-  test('every pinned node still exists with its pinned type', async ({
-    request
-  }) => {
-    const unserved: string[] = []
+test.describe(
+  'first-run tour role pins',
+  { tag: ['@cloud', '@workflow'] },
+  () => {
+    test('every pinned node still exists with its pinned type', async ({
+      request
+    }) => {
+      const unserved: string[] = []
 
-    for (const [templateId, pins] of pinnedTemplates) {
-      const url = new URL(`/templates/${templateId}.json`, baseUrl).toString()
-      const response = await request.get(url)
-      if (!response.ok()) {
-        unserved.push(templateId)
-        continue
-      }
+      for (const [templateId, pins] of pinnedTemplates) {
+        const url = new URL(`/templates/${templateId}.json`, baseUrl).toString()
+        const response = await request.get(url)
+        if (!response.ok()) {
+          unserved.push(templateId)
+          continue
+        }
 
-      const workflow = (await response.json()) as SerialisableGraph
-      for (const [role, pin] of pinnedRoles(pins)) {
-        const matches = matchingNodes(workflow, pin.id)
+        const workflow = (await response.json()) as SerialisableGraph
+        for (const [role, pin] of pinnedRoles(pins)) {
+          const matches = matchingNodes(workflow, pin.id)
+          expect(
+            matches,
+            `${templateId} pins its ${role} to node ${pin.id}, which this backend serves ${matches.length} times — a nested same-id node would resolve arbitrarily`
+          ).toHaveLength(1)
+          expect(
+            matches[0]?.type,
+            `${templateId} pins its ${role} to node ${pin.id}, which this backend no longer serves as a ${pin.type}`
+          ).toBe(pin.type)
+        }
+
         expect(
-          matches,
-          `${templateId} pins its ${role} to node ${pin.id}, which this backend serves ${matches.length} times — a nested same-id node would resolve arbitrarily`
-        ).toHaveLength(1)
-        expect(
-          matches[0]?.type,
-          `${templateId} pins its ${role} to node ${pin.id}, which this backend no longer serves as a ${pin.type}`
-        ).toBe(pin.type)
+          MEDIA_KIND_BY_SINK_TYPE[pins.sink.type],
+          `${templateId} pins a ${pins.sink.type} sink but claims mediaKind '${pins.mediaKind}', so the result step would preview the wrong medium`
+        ).toBe(pins.mediaKind)
       }
-
+      // On failure fix the pin, do not widen this.
       expect(
-        MEDIA_KIND_BY_SINK_TYPE[pins.sink.type],
-        `${templateId} pins a ${pins.sink.type} sink but claims mediaKind '${pins.mediaKind}', so the result step would preview the wrong medium`
-      ).toBe(pins.mediaKind)
-    }
-    // On failure fix the pin, do not widen this.
-    expect(
-      unserved,
-      'every pinned template must be served, or its card vanishes from the Getting Started grid and its pins go unchecked'
-    ).toEqual([])
-  })
-})
+        unserved,
+        'every pinned template must be served, or its card vanishes from the Getting Started grid and its pins go unchecked'
+      ).toEqual([])
+    })
+  }
+)

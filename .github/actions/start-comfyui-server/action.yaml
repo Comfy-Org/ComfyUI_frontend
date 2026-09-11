@@ -6,6 +6,10 @@ inputs:
     description: 'Path to frontend dist directory'
     required: false
     default: '$GITHUB_WORKSPACE/dist'
+  workflow_templates_version:
+    description: 'Optional template package version required by served-template contract tests'
+    required: false
+    default: ''
   timeout:
     description: 'Timeout in seconds for server startup'
     required: false
@@ -14,6 +18,18 @@ inputs:
 runs:
   using: 'composite'
   steps:
+    - name: Install required workflow templates
+      if: inputs.workflow_templates_version != ''
+      shell: bash
+      env:
+        COMFY_TEMPLATE_VERSION: ${{ inputs.workflow_templates_version }}
+      run: |
+        set -euo pipefail
+        if ! python3 -m pip --version >/dev/null 2>&1; then
+          curl -fsSL https://bootstrap.pypa.io/get-pip.py -o /tmp/comfy-e2e-get-pip.py
+          python3 /tmp/comfy-e2e-get-pip.py
+        fi
+        python3 -m pip install "comfyui-workflow-templates==${COMFY_TEMPLATE_VERSION}"
     - name: Copy devtools and start server
       shell: bash
       run: |

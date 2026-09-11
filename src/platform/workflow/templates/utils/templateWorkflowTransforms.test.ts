@@ -56,7 +56,7 @@ describe('template workflow transforms', () => {
     expect(workflow.nodes[0].widgets_values).toEqual(['starter.png', 'image'])
   })
 
-  it('rejects drift between declared input metadata and workflow widgets', () => {
+  it('binds the image widget even when the placeholder changes', () => {
     const workflow = {
       nodes: [
         {
@@ -72,10 +72,16 @@ describe('template workflow transforms', () => {
         filename: 'first-output.png'
       })
     ).toEqual({
-      ok: false,
-      error: 'Expected one matching template widget value',
-      failureCategory: 'semantic_binding',
-      reason: 'widget_value_missing'
+      ok: true,
+      value: {
+        nodes: [
+          {
+            id: 2,
+            type: 'LoadImage',
+            widgets_values: ['first-output.png [output]', 'image']
+          }
+        ]
+      }
     })
     expect(workflow.nodes[0].widgets_values).toEqual(['different.png', 'image'])
   })
@@ -102,7 +108,7 @@ describe('template workflow transforms', () => {
     expect(workflow.nodes[0].widgets_values).toEqual(['starter.png', 'image'])
   })
 
-  it.for(['nodeId', 'nodeType', 'file'] as const)(
+  it.for(['nodeId', 'nodeType'] as const)(
     'rejects an image input without %s',
     (field) => {
       const incompleteTemplate = structuredClone(template)
@@ -179,11 +185,11 @@ describe('template workflow transforms', () => {
         {
           id: 2,
           type: 'LoadImage',
-          widgets_values: ['starter.png', 'starter.png']
+          widgets_values: { upload: 'starter.png' }
         }
       ],
-      error: 'Expected one matching template widget value',
-      reason: 'widget_value_ambiguous'
+      error: 'LoadImage has no serialized image widget',
+      reason: 'widget_value_missing'
     }
   ])(
     'rejects invalid workflow input without mutation: $error',
@@ -204,6 +210,158 @@ describe('template workflow transforms', () => {
     }
   )
 
+  it.for([undefined, 'changed.png'])(
+    'does not require a placeholder file: %s',
+    (file) => {
+      const declared = structuredClone(template)
+      declared.io!.inputs![0].file = file
+      expect(acceptsTemplateImageInput(declared)).toBe(true)
+      const result = replaceTemplateImageInput(
+        {
+          nodes: [
+            {
+              id: 2,
+              type: 'LoadImage',
+              widgets_values: ['same.png', 'same.png']
+            }
+          ]
+        },
+        declared,
+        { filename: 'output.png' }
+      )
+      expect(result).toMatchObject({
+        ok: true,
+        value: {
+          nodes: [{ widgets_values: ['output.png [output]', 'same.png'] }]
+        }
+      })
+    }
+  )
+
+  it.for([
+    [{ mediaType: 'image', nodeId: 2, nodeType: 'OtherImageLoader' }],
+    [
+      { mediaType: 'image', nodeId: 2, nodeType: 'LoadImage' },
+      { mediaType: 'image', nodeId: 3, nodeType: 'LoadImage' }
+    ],
+    [{ mediaType: 'image', nodeId: '', nodeType: 'LoadImage' }],
+    [{ mediaType: 'image', nodeId: Number.NaN, nodeType: 'LoadImage' }]
+  ])('rejects unsupported or ambiguous declarations: %j', (inputs) => {
+    const declared = { ...template, io: { inputs } }
+    expect(acceptsTemplateImageInput(declared)).toBe(false)
+    expect(
+      replaceTemplateImageInput({ nodes: [] }, declared, {
+        filename: 'output.png'
+      })
+    ).toMatchObject({ ok: false, reason: 'invalid_image_input' })
+  })
+
+  it('rejects duplicate node ids even when their types differ', () => {
+    expect(
+      replaceTemplateImageInput(
+        {
+          nodes: [
+            { id: 2, type: 'LoadImage' },
+            { id: '2', type: 'Other' }
+          ]
+        },
+        template,
+        { filename: 'output.png' }
+      )
+    ).toMatchObject({ ok: false, reason: 'input_node_ambiguous' })
+  })
+
+  it('updates both native widget serializations without changing other values', () => {
+    const workflow = {
+      nodes: [
+        {
+          id: 2,
+          type: 'LoadImage',
+          widgets_values: ['array.png', 'upload'],
+          widgets_values_named: { image: 'named.png', upload: 'upload' }
+        }
+      ]
+    }
+    expect(
+      replaceTemplateImageInput(workflow, template, { filename: 'output.png' })
+    ).toEqual({
+      ok: true,
+      value: {
+        nodes: [
+          {
+            id: 2,
+            type: 'LoadImage',
+            widgets_values: ['output.png [output]', 'upload'],
+            widgets_values_named: {
+              image: 'output.png [output]',
+              upload: 'upload'
+            }
+          }
+        ]
+      }
+    })
+    expect(workflow.nodes[0].widgets_values_named.image).toBe('named.png')
+  })
+
+  it('rejects an incompatible native named serialization', () => {
+    expect(
+      replaceTemplateImageInput(
+        {
+          nodes: [
+            {
+              id: 2,
+              type: 'LoadImage',
+              widgets_values: ['starter.png'],
+              widgets_values_named: { renamed_image: 'starter.png' }
+            }
+          ]
+        },
+        template,
+        { filename: 'output.png' }
+      )
+    ).toMatchObject({ ok: false, reason: 'widget_value_missing' })
+  })
+
+  it('refuses to seed a linked input whose widget value would be ignored', () => {
+    expect(
+      replaceTemplateImageInput(
+        {
+          nodes: [
+            {
+              id: 2,
+              type: 'LoadImage',
+              widgets_values: ['starter.png'],
+              inputs: [{ name: 'image', link: 5 }]
+            }
+          ]
+        },
+        template,
+        { filename: 'output.png' }
+      )
+    ).toMatchObject({ ok: false, reason: 'input_widget_linked' })
+  })
+
+  it('rejects unknown legacy named widgets rather than losing their values', () => {
+    expect(
+      replaceTemplateImageInput(
+        {
+          nodes: [
+            {
+              id: 2,
+              type: 'LoadImage',
+              widgets_values: {
+                image: 'starter.png',
+                unknownWidget: 'preserve me'
+              }
+            }
+          ]
+        },
+        template,
+        { filename: 'output.png' }
+      )
+    ).toMatchObject({ ok: false, reason: 'widget_value_missing' })
+  })
+
   it('preserves named widget values when seeding an image', () => {
     const workflow = {
       nodes: [
@@ -223,7 +381,11 @@ describe('template workflow transforms', () => {
           {
             id: 2,
             type: 'LoadImage',
-            widgets_values: { image: 'output.png [output]', upload: 'image' }
+            widgets_values: ['output.png [output]', 'image'],
+            widgets_values_named: {
+              image: 'output.png [output]',
+              upload: 'image'
+            }
           }
         ]
       }

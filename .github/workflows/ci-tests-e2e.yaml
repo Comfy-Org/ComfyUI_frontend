@@ -154,6 +154,8 @@ jobs:
 
       - name: Start ComfyUI server
         uses: ./.github/actions/start-comfyui-server
+        with:
+          workflow_templates_version: ${{ matrix.browser == 'cloud' && '0.11.59' || '' }}
 
       - name: Install frontend deps
         run: pnpm install --frozen-lockfile
