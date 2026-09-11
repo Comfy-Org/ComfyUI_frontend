@@ -4,6 +4,7 @@ import { nextTick } from 'vue'
 import { assetService } from '@/platform/assets/services/assetService'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import {
   MAX_CONCURRENT_METADATA_LOADS,
@@ -55,6 +56,10 @@ vi.mock('@/platform/assets/services/assetService', () => ({
 // Mock the settingStore
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: vi.fn()
+}))
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: vi.fn()
 }))
 
 function enableMocks(useAssetAPI = false) {
@@ -328,6 +333,44 @@ describe('useModelStore', () => {
       expect(called).toContain('next.safetensors')
       expect(model.is_load_requested).toBe(false)
     })
+  })
+
+  it('reports a failed metadata read but stays quiet on abort', async () => {
+    enableMocks()
+    store = useModelStore()
+    await store.loadModelFolders()
+    const folder = await store.getLoadedModelFolder('checkpoints')
+
+    vi.mocked(api.viewMetadata).mockImplementation(
+      (_folder, _model, signal) =>
+        new Promise((_resolve, reject) => {
+          if (signal?.aborted) {
+            reject(signal.reason)
+            return
+          }
+          signal?.addEventListener('abort', () => reject(signal.reason), {
+            once: true
+          })
+        })
+    )
+    const unmounting = new AbortController()
+    const abortedLoad = folder!.models['0/sdv15.safetensors'].load({
+      signal: unmounting.signal
+    })
+    unmounting.abort()
+    await abortedLoad
+
+    expect(reportError).not.toHaveBeenCalled()
+
+    vi.mocked(api.viewMetadata).mockRejectedValue(new Error('502 Bad Gateway'))
+    const failing = folder!.models['0/sdxl.safetensors']
+    await failing.load()
+
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ errorType: 'model_metadata_load_failure' })
+    )
+    expect(failing.is_load_requested).toBe(false)
   })
 
   it('should cache model information', async () => {

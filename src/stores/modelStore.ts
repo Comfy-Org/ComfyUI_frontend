@@ -7,6 +7,7 @@ import type { ModelFile } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 
 /** (Internal helper) finds a value in a metadata object from any of a list of keys. */
@@ -322,16 +323,15 @@ export class ComfyModelDef {
       this.updateSearchable()
     } catch (error) {
       // A timeout or transport failure must not permanently blank the model:
-      // clear the request flag so a later load() can retry. An abort from the
-      // requesting leaf unmounting is expected, so it is not logged.
+      // clear the request flag so a later load() can retry. An abort once every
+      // requesting leaf has unmounted is expected control flow, not a failure.
       this.is_load_requested = false
       if (!signal.aborted) {
-        console.error(
-          'Error loading model metadata',
-          this.file_name,
-          this,
-          error
-        )
+        reportError(error, {
+          errorType: 'model_metadata_load_failure',
+          tags: { model_directory: this.directory },
+          context: { fileName: this.file_name }
+        })
       }
     } finally {
       this.promoteMetadataLoad = null
