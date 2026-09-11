@@ -9,7 +9,12 @@ import { api } from '@/scripts/api'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 import type { UserAttachment } from '../../../stores/agent/agentConversationStore'
+import type {
+  PromptSnapshot,
+  WorkflowReference
+} from '../../../types/workflowReference'
 import type { ReplyAsset } from '../../../utils/replyAssets'
+import { workflowReferenceParts } from '../../../utils/workflowReferenceParts'
 import AgentTooltip from '../AgentTooltip.vue'
 import ReplyAssetGroup from './ReplyAssetGroup.vue'
 
@@ -17,19 +22,30 @@ const {
   text,
   attachments = [],
   tags = [],
+  workflowReferences = [],
   editable = false
 } = defineProps<{
   text: string
   attachments?: UserAttachment[]
   tags?: string[]
+  workflowReferences?: WorkflowReference[]
   editable?: boolean
 }>()
 const emit = defineEmits<{
-  edit: [text: string]
+  edit: [prompt: PromptSnapshot]
+  openReferenceWorkflow: [workflowId: string, workflowName: string]
 }>()
 
 const { t } = useI18n()
+const promptParts = computed(() =>
+  workflowReferenceParts(text, workflowReferences)
+)
 const { copy, copied } = useClipboard({ copiedDuring: 2000, legacy: true })
+
+function openReference(reference: WorkflowReference): void {
+  if (reference.unavailable) return
+  emit('openReferenceWorkflow', reference.id, reference.name)
+}
 
 /* The shared map's 'other' glyph is a checkmark, which reads as a status
    rather than a file on this surface. */
@@ -108,10 +124,47 @@ const splitAttachments = computed(() => {
       </figure>
     </div>
     <div
-      v-if="text"
-      class="border-agent-border bg-agent-surface-raised text-agent-fg w-fit max-w-full rounded-[10px] border px-2.5 py-1.5 text-sm wrap-break-word whitespace-pre-wrap"
+      v-if="text || workflowReferences.length"
+      data-testid="user-message-bubble"
+      class="border-agent-border bg-agent-surface-raised text-agent-fg-muted w-fit max-w-full rounded-[10px] border px-2.5 py-1.5 text-sm/5 font-normal wrap-break-word whitespace-pre-wrap"
     >
-      {{ text }}
+      <template v-for="(part, index) in promptParts" :key="index">
+        <span
+          v-if="part.type === 'workflow'"
+          role="button"
+          tabindex="0"
+          :aria-label="
+            part.reference.unavailable
+              ? t('agent.unavailableWorkflowReference', {
+                  name: part.reference.name
+                })
+              : t('agent.openWorkflowTab', { name: part.reference.name })
+          "
+          data-testid="workflow-reference-chip"
+          :aria-disabled="part.reference.unavailable"
+          :aria-description="
+            part.reference.unavailable
+              ? t('agent.workflowReferenceUnavailableReason')
+              : undefined
+          "
+          :title="
+            part.reference.unavailable
+              ? t('agent.workflowReferenceUnavailableReason')
+              : undefined
+          "
+          class="inline cursor-pointer rounded-sm bg-primary-background/30 box-decoration-clone px-1 py-0.5 font-inter text-xs/[15px] font-normal break-all whitespace-normal text-primary-background-hover ring-1 ring-primary-background/30 ring-inset focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+          @click="openReference(part.reference)"
+          @keydown.enter.prevent="openReference(part.reference)"
+          @keydown.space.prevent
+          @keyup.space.prevent="openReference(part.reference)"
+        >
+          <span
+            class="mr-1 icon-[comfy--workflow] inline-block size-3 align-middle"
+          />
+          <span>{{ part.reference.name }}</span>
+        </span>
+        <template v-else>{{ part.text }}</template>
+      </template>
     </div>
     <div
       v-if="text"
@@ -122,7 +175,7 @@ const splitAttachments = computed(() => {
           type="button"
           :aria-label="t('g.edit')"
           class="hover:bg-agent-surface-hover hover:text-agent-fg flex size-6 cursor-pointer items-center justify-center rounded-lg p-1 transition-colors"
-          @click="emit('edit', text)"
+          @click="emit('edit', { text, workflowReferences })"
         >
           <span class="icon-[lucide--pencil] size-3" />
         </button>
