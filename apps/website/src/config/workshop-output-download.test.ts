@@ -63,23 +63,39 @@ describe('downloadOutput', () => {
     ])
   })
 
-  it('saves output from a host that allows CORS under its file name', async () => {
+  it('downloads a slow body without opening a tab or timing out after headers', async () => {
     vi.useFakeTimers()
     const clicks = recordClicks()
-    vi.spyOn(window, 'open').mockReturnValue(window)
-    const close = vi.spyOn(window, 'close').mockImplementation(() => {})
+    const open = vi.spyOn(window, 'open').mockReturnValue(null)
     const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
-    vi.stubGlobal(
-      'fetch',
-      vi.fn<typeof globalThis.fetch>(
-        async () => new Response(new Blob(['video'], { type: 'video/mp4' }))
+    const body = Promise.withResolvers<void>()
+    const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(
+      new Response(
+        new ReadableStream({
+          async start(controller) {
+            await body.promise
+            controller.enqueue(new TextEncoder().encode('video'))
+            controller.close()
+          }
+        }),
+        { headers: { 'Content-Type': 'video/mp4' } }
       )
     )
+    vi.stubGlobal('fetch', fetch)
     vi.spyOn(URL, 'createObjectURL').mockReturnValue(
       'blob:https://comfy.org/output'
     )
 
-    await downloadOutput('https://cdn.example.com/render.mp4', 'wan-video.mp4')
+    const result = downloadOutput(
+      'https://cdn.example.com/render.mp4',
+      'wan-video.mp4'
+    )
+    await vi.advanceTimersByTimeAsync(30_000)
+    expect(fetch.mock.lastCall?.[1]?.signal?.aborted).toBe(false)
+    expect(open).not.toHaveBeenCalled()
+    expect(clicks).toEqual([])
+    body.resolve()
+    await expect(result).resolves.toBe(true)
 
     expect(clicks).toEqual([
       {
@@ -88,7 +104,7 @@ describe('downloadOutput', () => {
         target: ''
       }
     ])
-    expect(close).toHaveBeenCalledOnce()
+    expect(open).not.toHaveBeenCalled()
     expect(revoke).not.toHaveBeenCalled()
     await vi.advanceTimersByTimeAsync(60_000)
     expect(revoke).toHaveBeenCalledWith('blob:https://comfy.org/output')
@@ -101,59 +117,85 @@ describe('downloadOutput', () => {
       const response = Promise.withResolvers<Response>()
       const fetch = vi.fn<typeof globalThis.fetch>(() => response.promise)
       vi.stubGlobal('fetch', fetch)
-      const open = vi.spyOn(window, 'open').mockReturnValue(window)
-      const navigate = vi
-        .spyOn(window.location, 'replace')
-        .mockImplementation(() => {})
-      const close = vi.spyOn(window, 'close').mockImplementation(() => {})
+      const open = vi.spyOn(window, 'open').mockReturnValue(null)
       const blob = vi.spyOn(URL, 'createObjectURL')
       const result = downloadOutput(
         'https://gen.krea.ai/images/a.png',
         'krea.png'
       )
 
-      expect(open).toHaveBeenCalledWith('about:blank', '_blank')
-      expect(open.mock.invocationCallOrder[0]).toBeLessThan(
-        fetch.mock.invocationCallOrder[0]
-      )
-      expect(window.opener).toBeNull()
-      expect(navigate).not.toHaveBeenCalled()
+      expect(open).not.toHaveBeenCalled()
       if (typeof failure === 'string')
         response.reject(new TypeError('Failed to fetch'))
       else response.resolve(new Response('Access denied', { status: failure }))
-      await result
+      await expect(result).resolves.toBe(false)
 
-      expect(navigate).toHaveBeenCalledWith('https://gen.krea.ai/images/a.png')
+      expect(open).toHaveBeenCalledWith(
+        'https://gen.krea.ai/images/a.png',
+        '_blank',
+        'noopener'
+      )
       expect(open).toHaveBeenCalledOnce()
-      expect(close).not.toHaveBeenCalled()
       expect(blob).not.toHaveBeenCalled()
       expect(clicks).toEqual([])
     }
   )
 
-  it('does not reopen a fallback the user closed while the download was pending', async () => {
-    const response = Promise.withResolvers<Response>()
-    vi.stubGlobal('fetch', () => response.promise)
-    const open = vi.spyOn(window, 'open').mockReturnValue(window)
-    vi.spyOn(window, 'closed', 'get').mockReturnValue(true)
-    const navigate = vi
-      .spyOn(window.location, 'replace')
-      .mockImplementation(() => {})
+  it('bounds only the header wait before attempting the fallback', async () => {
+    vi.useFakeTimers()
+    const clicks = recordClicks()
+    const open = vi.spyOn(window, 'open').mockReturnValue(null)
+    const fetch = vi.fn<typeof globalThis.fetch>(
+      (_url, init) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener(
+            'abort',
+            () => reject(init.signal?.reason),
+            { once: true }
+          )
+        })
+    )
+    vi.stubGlobal('fetch', fetch)
     const result = downloadOutput('https://cdn.example.com/a.png', 'a.png')
-    response.resolve(new Response(null, { status: 403 }))
-    await result
-    expect(navigate).not.toHaveBeenCalled()
-    expect(open).toHaveBeenCalledOnce()
+    await vi.advanceTimersByTimeAsync(3_999)
+    expect(open).not.toHaveBeenCalled()
+    expect(fetch.mock.lastCall?.[1]?.signal?.aborted).toBe(false)
+    await vi.advanceTimersByTimeAsync(1)
+    await expect(result).resolves.toBe(false)
+    expect(fetch.mock.lastCall?.[1]?.signal?.aborted).toBe(true)
+    expect(open).toHaveBeenCalledWith(
+      'https://cdn.example.com/a.png',
+      '_blank',
+      'noopener'
+    )
+    expect(clicks).toEqual([])
   })
 
-  it('retains a native download when the browser refused the fallback window', async () => {
+  it('reports a late body failure without navigating away from the Models page', async () => {
+    vi.useFakeTimers()
+    const body = Promise.withResolvers<void>()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof globalThis.fetch>().mockResolvedValue(
+        new Response(
+          new ReadableStream({
+            async start() {
+              await body.promise
+              throw new TypeError('Connection lost')
+            }
+          })
+        )
+      )
+    )
     const clicks = recordClicks()
-    vi.spyOn(window, 'open').mockReturnValue(null)
-    vi.stubGlobal('fetch', async () => new Response(null, { status: 500 }))
-    await downloadOutput('https://cdn.example.com/a.png', 'a.png')
-    expect(clicks).toEqual([
-      { href: 'https://cdn.example.com/a.png', download: 'a.png', target: '' }
-    ])
+    const open = vi.spyOn(window, 'open').mockReturnValue(null)
+    const result = downloadOutput('https://cdn.example.com/a.png', 'a.png')
+    await vi.advanceTimersByTimeAsync(30_000)
+    expect(open).not.toHaveBeenCalled()
+    body.resolve()
+    await expect(result).resolves.toBe(false)
+    expect(open).toHaveBeenCalledOnce()
+    expect(clicks).toEqual([])
   })
 
   it.for(['blob:https://comfy.org/output', 'data:image/png;base64,AA=='])(

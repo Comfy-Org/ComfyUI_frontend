@@ -16,10 +16,10 @@ const compiled = transpileModule(
 const moduleUrl = `data:text/javascript;base64,${Buffer.from(compiled.outputText).toString('base64')}`
 
 export const test = base.extend<{
-  outputDownload: { release: () => void; url: string }
+  outputDownload: { release: (status?: number) => void; url: string }
 }>({
   outputDownload: async ({ page, context }, use) => {
-    const failed = Promise.withResolvers<void>()
+    const response = Promise.withResolvers<number>()
     const url = 'https://output.example/render.png'
     await context.route(url, async (route) => {
       if (route.request().isNavigationRequest())
@@ -27,11 +27,12 @@ export const test = base.extend<{
           contentType: 'text/html',
           body: '<p>Provider output</p>'
         })
-      await failed.promise
+      const status = await response.promise
       return route.fulfill({
-        status: 500,
+        status,
         headers: { 'Access-Control-Allow-Origin': '*' },
-        body: 'Download failed'
+        contentType: 'image/png',
+        body: status === 200 ? 'output bytes' : 'Download failed'
       })
     })
     await page.setContent('<button type="button">Download output</button>')
@@ -49,9 +50,9 @@ export const test = base.extend<{
       { moduleUrl, url }
     )
     try {
-      await use({ release: () => failed.resolve(), url })
+      await use({ release: (status = 500) => response.resolve(status), url })
     } finally {
-      failed.resolve()
+      response.resolve(500)
     }
   }
 })

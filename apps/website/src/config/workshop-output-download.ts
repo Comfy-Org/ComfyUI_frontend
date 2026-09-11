@@ -1,4 +1,5 @@
 const OBJECT_URL_LIFETIME_MS = 60_000
+const DOWNLOAD_HEADERS_TIMEOUT_MS = 4_000
 
 function attachmentName(fileName: string): string {
   return fileName.replaceAll(/[^\w.-]/g, '_') || 'output'
@@ -47,22 +48,39 @@ function save(href: string, fileName: string, target?: '_blank'): void {
 export async function downloadOutput(
   url: string,
   fileName: string
-): Promise<void> {
-  if (url.startsWith('blob:') || url.startsWith('data:'))
-    return save(url, fileName)
+): Promise<boolean> {
+  if (url.startsWith('blob:') || url.startsWith('data:')) {
+    save(url, fileName)
+    return true
+  }
   const attachment = attachmentUrl(url, fileName)
-  if (attachment) return save(attachment, fileName, '_blank')
-  const fallback = window.open('about:blank', '_blank')
-  if (fallback) fallback.opener = null
+  if (attachment) {
+    save(attachment, fileName, '_blank')
+    return true
+  }
+  const controller = new AbortController()
+  const timer = setTimeout(
+    () => controller.abort(),
+    DOWNLOAD_HEADERS_TIMEOUT_MS
+  )
   try {
-    const response = await fetch(url, { credentials: 'omit' })
-    if (!response.ok) throw new Error(`Download failed: ${response.status}`)
+    let response: Response
+    try {
+      response = await fetch(url, {
+        credentials: 'omit',
+        signal: controller.signal
+      })
+      if (!response.ok) throw new Error(`Download failed: ${response.status}`)
+    } finally {
+      clearTimeout(timer)
+    }
     const objectUrl = URL.createObjectURL(await response.blob())
     save(objectUrl, fileName)
     setTimeout(() => URL.revokeObjectURL(objectUrl), OBJECT_URL_LIFETIME_MS)
-    fallback?.close()
+    return true
   } catch {
-    if (!fallback) save(url, fileName)
-    else if (!fallback.closed) fallback.location.replace(url)
+    controller.abort()
+    window.open(url, '_blank', 'noopener')
+    return false
   }
 }

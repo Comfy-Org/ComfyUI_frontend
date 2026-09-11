@@ -9607,6 +9607,11 @@ Enterprise`
     'zh-CN': '你的输出会显示在这里。'
   },
   'workshop.output.download': { en: 'Download', 'zh-CN': '下载' },
+  'workshop.output.openOriginal': { en: 'Open output', 'zh-CN': '打开输出' },
+  'workshop.output.downloadFallback': {
+    en: 'Automatic download failed. Open the output to save it.',
+    'zh-CN': '自动下载失败。请打开输出文件后保存。'
+  },
   'workshop.output.useInCode': {
     en: 'Use these settings in code',
     'zh-CN': '在代码中使用这些设置'
