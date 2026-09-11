@@ -21,6 +21,9 @@ const LINK_ORDER = 'link_order'
  */
 const NODE_INCARNATION = '__incarnation'
 
+/** Private replay-conflict stamp written by the `define_subgraph` applier. */
+const DEFINITION_DIGEST = '__definition_digest'
+
 /**
  * Own-key filter shared by both record readers. Assigning through
  * `record['__proto__']` swaps the record's prototype, so a document carrying
@@ -84,7 +87,13 @@ function readInteriorNode(source: unknown): Record<string, unknown> | null {
 function readDefinition(source: Y.Map<unknown>): ExportedSubgraph {
   const definition: Record<string, unknown> = {}
   source.forEach((value, key) => {
-    if (key === NODE_ORDER || key === LINK_ORDER || !isReadableKey(key)) return
+    if (
+      key === NODE_ORDER ||
+      key === LINK_ORDER ||
+      key === DEFINITION_DIGEST ||
+      !isReadableKey(key)
+    )
+      return
     if (key === 'nodes' && value instanceof Y.Map) {
       definition.nodes = orderedKeys(source.get(NODE_ORDER), value).flatMap(
         (id) => {
