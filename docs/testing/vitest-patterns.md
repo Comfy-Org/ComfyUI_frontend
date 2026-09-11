@@ -44,6 +44,51 @@ namespace access to factories, Pinia module mocks, and replacements of store
 composables. Non-Pinia modules such as `layoutStore` and spies on real store
 actions remain allowed. Only the global setup owns Pinia creation and disposal.
 
+### Avoid hook-assigned aliases of store actions
+
+Read an action from its store where it is used instead of caching it in a
+suite-level `let` assigned by `beforeEach`:
+
+```typescript
+vi.mocked(useToastStore().addAlert).mockImplementation(() => {})
+expect(useToastStore().addAlert).toHaveBeenCalledWith('Upload failed')
+```
+
+Use a test-local `const store = useToastStore()` when several accesses become
+hard to read. Keep shared variables when they own a per-test resource, a
+reactive fixture, or a value that teardown must restore.
+
+### Capture import-time extension registration
+
+Use `createExtensionCapture` for tests that need registered extension hooks
+without running registration services. Create one capture per test file and
+keep the mock factory in that file:
+
+```typescript
+const extensions = await vi.hoisted(async () => {
+  const { createExtensionCapture } =
+    await import('@/utils/__tests__/extensionTestUtils')
+  return createExtensionCapture()
+})
+
+vi.mock(import('@/scripts/app'), async (importOriginal) => {
+  const original = await importOriginal()
+  original.app.registerExtension = extensions.registerExtension
+  return original
+})
+
+await import('@/extensions/core/customWidgets')
+const extension = extensions.getExtension('Comfy.CustomWidgets')
+```
+
+For an existing partial app or extension-service mock, replace only its
+`registerExtension` member. The capture retains registrations across Vitest's
+mock resets; named lookup throws if the module did not register that extension.
+Use the authoritative `ComfyExtension` hook signatures rather than casting the
+captured object to a custom hook interface. Reset scenario state per test, not
+the module cache. Each capture owns its registrations; there is no shared
+registry or Pinia setup in the helper.
+
 ## Don't Mock `vue-i18n` — Use a Real Plugin
 
 Mount with a real `createI18n` instance instead of mocking `vue-i18n`. The plugin is cheap, owned by a third party (don't mock what you don't own), and a real instance exercises the same translation key resolution and pluralization logic that production uses.

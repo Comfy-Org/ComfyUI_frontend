@@ -202,6 +202,16 @@ describe('link badge frame layout', () => {
 
   it.for([
     { name: 'visible', visibleArea: VISIBLE_AREA, paintCount: 2 },
+    {
+      name: 'output-only visible',
+      visibleArea: [120, 95, 1, 1],
+      paintCount: 2
+    },
+    {
+      name: 'input-only visible',
+      visibleArea: [330, 195, 1, 1],
+      paintCount: 2
+    },
     { name: 'culled', visibleArea: [5000, 5000, 10, 10], paintCount: 0 }
   ] satisfies {
     name: string

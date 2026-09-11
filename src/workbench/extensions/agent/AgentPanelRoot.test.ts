@@ -159,6 +159,7 @@ const workflowService = vi.hoisted(() => ({
       workflowStore.openWorkflowsInBackground({ right: [tab.path] })
       workflowStore.activeWorkflow = await known.load()
     }
+    return true
   })
 }))
 
@@ -2596,6 +2597,7 @@ describe('AgentPanelRoot workflow binding', () => {
     mockMessagesEndpoint('wf-42')
 
     await renderAndSend('work here')
+    const mint = vi.spyOn(workflowStore, 'createNewTemporary')
 
     ws.emit('agent_active_tab', {
       workflow_id: 'wf-77',
@@ -2607,7 +2609,13 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(workflowService.openWorkflow).toHaveBeenCalled()
     )
     const minted = workflowStore.getWorkflowByPath('workflows/Video test.json')
+    expect(mint).toHaveBeenCalledOnce()
     expect(minted?.filename).toBe('Video test')
+    expect(JSON.parse(minted?.originalContent ?? 'null')).toMatchObject({
+      nodes: [],
+      links: [],
+      extra: { ds: { offset: [0, 0], scale: 1 } }
+    })
     // The host minted the doc server-side; the follower fills the canvas.
     // Nothing loads, saves, or adopts here.
     expect(workflowService.saveWorkflowAs).not.toHaveBeenCalled()
@@ -2647,6 +2655,60 @@ describe('AgentPanelRoot workflow binding', () => {
         workflowStore.getWorkflowByPath('workflows/Unsaved Workflow.json')
       ).not.toBeNull()
     )
+  })
+
+  it('agent_active_tab closes the minted tab when opening it fails', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    await renderAndSend('work here')
+    workflowService.openWorkflow.mockRejectedValueOnce(new Error('disk full'))
+
+    ws.emit('agent_active_tab', {
+      workflow_id: 'wf-77',
+      name: 'Video test',
+      thread_id: 'th-1'
+    })
+
+    await vi.waitFor(() =>
+      expect(workflowService.openWorkflow).toHaveBeenCalledWith(
+        expect.objectContaining({ path: 'workflows/Video test.json' })
+      )
+    )
+    await vi.waitFor(() =>
+      expect(
+        workflowStore.getWorkflowByPath('workflows/Video test.json')
+      ).toBeNull()
+    )
+  })
+
+  it('agent_active_tab closes the minted tab when opening it reports failure', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    await renderAndSend('work here')
+    workflowService.openWorkflow.mockResolvedValueOnce(false)
+
+    ws.emit('agent_active_tab', {
+      workflow_id: 'wf-77',
+      name: 'Video test',
+      thread_id: 'th-1'
+    })
+
+    await vi.waitFor(() =>
+      expect(workflowService.openWorkflow).toHaveBeenCalledWith(
+        expect.objectContaining({ path: 'workflows/Video test.json' })
+      )
+    )
+    await vi.waitFor(() =>
+      expect(
+        workflowStore.getWorkflowByPath('workflows/Video test.json')
+      ).toBeNull()
+    )
+    expect(
+      useAgentWorkflowTabBindingStore().tabPathFor('wf-77')
+    ).toBeUndefined()
+    expect(telemetry.trackAgentWorkflowApplied).not.toHaveBeenCalled()
   })
 
   it('agent_active_tab strips dotfile prefixes hidden behind whitespace', async () => {
@@ -2711,6 +2773,7 @@ describe('AgentPanelRoot workflow binding', () => {
         })
         const known = workflowStore.getWorkflowByPath(slow.path)
         if (known) workflowStore.activeWorkflow = await known.load()
+        return true
       }
     )
 

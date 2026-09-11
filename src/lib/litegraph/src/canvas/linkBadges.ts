@@ -18,6 +18,7 @@ const BADGE_CONNECT_INSET = 2
 
 interface BadgeHitArea extends HasBoundingRect {
   readonly linkId: LinkId
+  readonly boundingRect: Rect
 }
 
 export interface HiddenLinkBadge {
@@ -28,19 +29,11 @@ export interface HiddenLinkBadge {
   color: string
 }
 
-interface LinkBadgeLayout {
-  linkId: LinkId
+interface LinkBadgePair {
   badge: LGraphBadge
   color: string
-  width: number
-  outputSocket: Point
-  outputBadgeX: number
-  outputBadgeY: number
-  inputSocket: Point
-  inputBadgeX: number
-  inputBadgeY: number
-  outputTip: Point
-  inputTip: Point
+  output: BadgeEndpoint
+  input: BadgeEndpoint
 }
 
 interface BadgeEndpoint {
@@ -48,7 +41,8 @@ interface BadgeEndpoint {
   slot: number
   side: 'input' | 'output'
   socket: Point
-  layout: LinkBadgeLayout
+  hitArea: BadgeHitArea
+  tip: Point
 }
 
 const hitAreasByHost = new WeakMap<object, BadgeHitArea[]>()
@@ -125,44 +119,24 @@ function freeBadgeCenterY(
   return centerY
 }
 
-function createHitArea(
-  linkId: LinkId,
-  left: number,
-  centerY: number,
+function createBadgeEndpoint(
+  link: LLink,
+  side: BadgeEndpoint['side'],
+  socket: Point,
   width: number
-): BadgeHitArea {
+): BadgeEndpoint {
+  const isOutput = side === 'output'
+  const left = isOutput ? socket[0] + BADGE_GAP : socket[0] - BADGE_GAP - width
   return {
-    linkId,
-    boundingRect: [left, centerY - BADGE_HEIGHT / 2, width, BADGE_HEIGHT]
-  }
-}
-
-function createBadgeLayout(
-  ctx: CanvasRenderingContext2D,
-  { link, presentation, startPos, endPos, color }: HiddenLinkBadge
-): LinkBadgeLayout {
-  const text = linkBadgeText(link.type, presentation)
-
-  const badge = makeBadge(text, color)
-  const width = badge.getWidth(ctx)
-  const [outputSocketX, outputSocketY] = startPos
-  const outputBadgeX = outputSocketX + BADGE_GAP
-  const [inputSocketX, inputSocketY] = endPos
-  const inputBadgeX = inputSocketX - BADGE_GAP - width
-
-  return {
-    linkId: link.id,
-    badge,
-    color,
-    width,
-    outputSocket: startPos,
-    outputBadgeX,
-    outputBadgeY: outputSocketY,
-    inputSocket: endPos,
-    inputBadgeX,
-    inputBadgeY: inputSocketY,
-    outputTip: [outputBadgeX + width, outputSocketY],
-    inputTip: [inputBadgeX, inputSocketY]
+    nodeId: isOutput ? link.origin_id : link.target_id,
+    slot: isOutput ? link.origin_slot : link.target_slot,
+    side,
+    socket,
+    hitArea: {
+      linkId: link.id,
+      boundingRect: [left, socket[1] - BADGE_HEIGHT / 2, width, BADGE_HEIGHT]
+    },
+    tip: [isOutput ? left + width : left, socket[1]]
   }
 }
 
@@ -176,7 +150,7 @@ function compareBadgeEndpoints(
   return (
     first.socket[1] - second.socket[1] ||
     first.slot - second.slot ||
-    first.layout.linkId - second.layout.linkId
+    first.hitArea.linkId - second.hitArea.linkId
   )
 }
 
@@ -184,66 +158,29 @@ export function layoutHiddenLinkBadges(
   host: object,
   ctx: CanvasRenderingContext2D,
   hiddenLinks: readonly HiddenLinkBadge[]
-): Map<LinkId, LinkBadgeLayout> {
-  const layouts = new Map<LinkId, LinkBadgeLayout>()
+): Map<LinkId, LinkBadgePair> {
+  const layouts = new Map<LinkId, LinkBadgePair>()
   const endpoints: BadgeEndpoint[] = []
-  for (const hiddenLink of hiddenLinks) {
-    const { link, startPos, endPos } = hiddenLink
-    const layout = createBadgeLayout(ctx, hiddenLink)
-    layouts.set(link.id, layout)
-    endpoints.push(
-      {
-        nodeId: link.origin_id,
-        slot: link.origin_slot,
-        side: 'output',
-        socket: startPos,
-        layout
-      },
-      {
-        nodeId: link.target_id,
-        slot: link.target_slot,
-        side: 'input',
-        socket: endPos,
-        layout
-      }
-    )
+  for (const { link, presentation, startPos, endPos, color } of hiddenLinks) {
+    const badge = makeBadge(linkBadgeText(link.type, presentation), color)
+    const width = badge.getWidth(ctx)
+    const output = createBadgeEndpoint(link, 'output', startPos, width)
+    const input = createBadgeEndpoint(link, 'input', endPos, width)
+    layouts.set(link.id, { badge, color, output, input })
+    endpoints.push(output, input)
   }
   endpoints.sort(compareBadgeEndpoints)
 
   const hitAreas: BadgeHitArea[] = []
-  for (const { layout, side, socket } of endpoints) {
-    const x = side === 'output' ? layout.outputBadgeX : layout.inputBadgeX
-    const y = freeBadgeCenterY(hitAreas, x, socket[1], layout.width)
-    if (side === 'output') {
-      layout.outputBadgeY = y
-      layout.outputTip[1] = y
-    } else {
-      layout.inputBadgeY = y
-      layout.inputTip[1] = y
-    }
-    hitAreas.push(createHitArea(layout.linkId, x, y, layout.width))
+  for (const { hitArea, socket, tip } of endpoints) {
+    const [left, , width] = hitArea.boundingRect
+    const centerY = freeBadgeCenterY(hitAreas, left, socket[1], width)
+    hitArea.boundingRect[1] = centerY - BADGE_HEIGHT / 2
+    tip[1] = centerY
+    hitAreas.push(hitArea)
   }
   hitAreasByHost.set(host, hitAreas)
   return layouts
-}
-
-function getBadgeHitAreas(
-  layout: LinkBadgeLayout
-): [BadgeHitArea, BadgeHitArea] {
-  return [
-    createHitArea(
-      layout.linkId,
-      layout.outputBadgeX,
-      layout.outputBadgeY,
-      layout.width
-    ),
-    createHitArea(
-      layout.linkId,
-      layout.inputBadgeX,
-      layout.inputBadgeY,
-      layout.width
-    )
-  ]
 }
 
 function getConnectorBounds(socket: Point, area: BadgeHitArea): Rect {
@@ -272,53 +209,24 @@ function drawConnector(
   ctx.restore()
 }
 
-function drawBadgeLayout(
-  ctx: CanvasRenderingContext2D,
-  layout: LinkBadgeLayout
-): void {
-  drawConnector(
-    ctx,
-    layout.outputSocket,
-    [layout.outputBadgeX + BADGE_CONNECT_INSET, layout.outputBadgeY],
-    layout.color
-  )
-  layout.badge.draw(
-    ctx,
-    layout.outputBadgeX,
-    layout.outputBadgeY - BADGE_HEIGHT / 2
-  )
-  drawConnector(
-    ctx,
-    layout.inputSocket,
-    [
-      layout.inputBadgeX + layout.width - BADGE_CONNECT_INSET,
-      layout.inputBadgeY
-    ],
-    layout.color
-  )
-  layout.badge.draw(
-    ctx,
-    layout.inputBadgeX,
-    layout.inputBadgeY - BADGE_HEIGHT / 2
-  )
-}
-
 export function drawHiddenLinkBadges(
   ctx: CanvasRenderingContext2D,
-  layout: LinkBadgeLayout,
+  layout: LinkBadgePair,
   visibleArea: ReadOnlyRect
 ): void {
-  const endpointHitAreas = getBadgeHitAreas(layout)
-  if (
-    overlapBounding(
-      getConnectorBounds(layout.outputSocket, endpointHitAreas[0]),
-      visibleArea
-    ) ||
-    overlapBounding(
-      getConnectorBounds(layout.inputSocket, endpointHitAreas[1]),
-      visibleArea
-    )
-  ) {
-    drawBadgeLayout(ctx, layout)
+  const endpoints = [layout.output, layout.input]
+  const visible = endpoints.some(({ socket, hitArea }) =>
+    overlapBounding(getConnectorBounds(socket, hitArea), visibleArea)
+  )
+  if (!visible) return
+
+  for (const { side, socket, hitArea } of endpoints) {
+    const [left, top, width, height] = hitArea.boundingRect
+    const connectorX =
+      side === 'output'
+        ? left + BADGE_CONNECT_INSET
+        : left + width - BADGE_CONNECT_INSET
+    drawConnector(ctx, socket, [connectorX, top + height / 2], layout.color)
+    layout.badge.draw(ctx, left, top)
   }
 }
