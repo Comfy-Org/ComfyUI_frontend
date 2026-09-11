@@ -89,6 +89,8 @@ async function importFresh() {
 }
 
 beforeEach(() => {
+  window.localStorage.removeItem('workshop:workspace')
+  h.remint.mockReset()
   h.initialFlag = true
   h.listeners.clear()
   h.snapshot = { phase: 'signed-out', user: null, session: undefined }
@@ -144,6 +146,50 @@ describe('useWorkshopSession', () => {
       popupUser,
       expect.objectContaining({ workspaceId: undefined })
     )
+  })
+
+  it('restores the remembered workspace after a reload lands on personal', async () => {
+    window.localStorage.setItem(
+      'workshop:workspace',
+      JSON.stringify({ uid: 'user-1', workspaceId: 'team-9' })
+    )
+    h.remint.mockResolvedValue({ status: 'ok' })
+    await importFresh()
+
+    h.publish({
+      phase: 'authenticated',
+      user: { uid: 'user-1' },
+      session: okSession,
+      settled: true
+    })
+
+    await vi.waitFor(() =>
+      expect(h.remint).toHaveBeenCalledWith(undefined, {
+        workspaceId: 'team-9'
+      })
+    )
+  })
+
+  it('remembers the workspace each authenticated snapshot names', async () => {
+    window.localStorage.removeItem('workshop:workspace')
+    await importFresh()
+
+    h.publish({
+      phase: 'authenticated',
+      user: { uid: 'user-1' },
+      session: {
+        ...okSession,
+        workspace: { id: 'team-3', name: 'Studio', type: 'team' }
+      },
+      settled: true
+    })
+
+    await vi.waitFor(() =>
+      expect(window.localStorage.getItem('workshop:workspace')).toBe(
+        JSON.stringify({ uid: 'user-1', workspaceId: 'team-3' })
+      )
+    )
+    expect(h.remint).not.toHaveBeenCalled()
   })
 
   it('clears the session on sign-out', async () => {

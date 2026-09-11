@@ -14,6 +14,8 @@
  * before use — freshness is valid-on-read, guaranteed by the client, not by
  * these warm-ups.
  */
+import { z } from 'zod'
+
 import type { User } from 'firebase/auth'
 import { computed, effectScope, shallowRef, watch } from 'vue'
 import type { EffectScope } from 'vue'
@@ -76,12 +78,73 @@ const ensureFreshHere: typeof workshopSessionClient.ensureFresh = (
     ...options
   })
 
+/**
+ * The exchange resolves a target-less boot mint to the personal workspace
+ * by design, so the chosen workspace must be the site's memory: written on
+ * every authenticated snapshot, restored with one targeted re-mint on the
+ * first snapshot after a reload, and dropped if that restore is refused.
+ */
+const REMEMBERED_WORKSPACE_KEY = 'workshop:workspace'
+
+const zRememberedWorkspace = z.object({
+  uid: z.string(),
+  workspaceId: z.string()
+})
+
+function rememberedWorkspace(uid: string): string | undefined {
+  try {
+    const raw = window.localStorage.getItem(REMEMBERED_WORKSPACE_KEY)
+    if (!raw) return undefined
+    const parsed = zRememberedWorkspace.safeParse(JSON.parse(raw))
+    return parsed.success && parsed.data.uid === uid
+      ? parsed.data.workspaceId
+      : undefined
+  } catch {
+    return undefined
+  }
+}
+
+function rememberWorkspace(uid: string, workspaceId: string | undefined): void {
+  try {
+    if (workspaceId)
+      window.localStorage.setItem(
+        REMEMBERED_WORKSPACE_KEY,
+        JSON.stringify({ uid, workspaceId })
+      )
+    else window.localStorage.removeItem(REMEMBERED_WORKSPACE_KEY)
+  } catch {
+    /* storage may be unavailable; the workspace just does not persist */
+  }
+}
+
+let restoredForUid: string | undefined
+
+function keepWorkspaceRemembered(): void {
+  const current = snapshot.value
+  if (current.phase !== 'authenticated') return
+  const { uid, workspace } = current.session
+  if (restoredForUid !== uid) {
+    restoredForUid = uid
+    const remembered = rememberedWorkspace(uid)
+    if (remembered && remembered !== workspace.id) {
+      void workshopSessionClient
+        .remint(undefined, { workspaceId: remembered })
+        .then((result) => {
+          if (result?.status !== 'ok') rememberWorkspace(uid, undefined)
+        })
+      return
+    }
+  }
+  rememberWorkspace(uid, workspace.id)
+}
+
 async function begin(expectedGeneration: number): Promise<void> {
   const firebase = await import('./workshop-firebase')
   if (generation !== expectedGeneration) return
 
   stopSnapshot = workshopSessionClient.subscribe((next) => {
     snapshot.value = next
+    keepWorkspaceRemembered()
   })
   detachIdentity = workshopSessionClient.attachIdentity(
     firebase.workshopIdentity
