@@ -64,7 +64,18 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
       timeout: 15000,
-      grepInvert: /@mobile|@perf|@audit|@cloud|@custom-nodes/
+      grepInvert: /@mobile|@perf|@audit|@cloud|@custom-nodes|@agent-harness/
+    },
+
+    // Runs only against the local agent integration harness
+    // (scripts/dev-agent-integration.ts): the panel's local-agent path gates
+    // on VITE_AGENT_STANDALONE, baked at build time and unset in the CI
+    // dist, so these specs are excluded from every CI project by tag.
+    {
+      name: 'agent-harness',
+      use: { ...devices['Desktop Chrome'] },
+      timeout: 180000,
+      grep: /@agent-harness/
     },
 
     // The custom-node suite needs the manifest packs installed and a quiet
