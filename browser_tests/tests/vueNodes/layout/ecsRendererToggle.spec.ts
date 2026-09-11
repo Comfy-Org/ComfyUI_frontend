@@ -88,7 +88,9 @@ test.describe(
         .toEqual({
           nodeCount: initialGraph.nodeCount,
           positions: initialGraph.positions.map((node) =>
-            String(node.id) === '3' ? { ...node, pos: movedPosition } : node
+            String(node.id) === '3'
+              ? { ...node, pos: [...movedPosition] }
+              : node
           ),
           cfg: 7.5
         })
@@ -152,7 +154,7 @@ test.describe(
           .getWidgetByName('KSampler', 'cfg')
           .first()
         await expect(cfgWidget).toBeVisible()
-        await expect(cfgWidget).toContainText('cfg')
+        await expect(cfgWidget).toHaveAccessibleName('cfg')
         const { input } = comfyPage.vueNodes.getInputNumberControls(cfgWidget)
         await input.fill('7.5')
         await input.blur()
