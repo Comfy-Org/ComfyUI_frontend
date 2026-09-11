@@ -57,6 +57,25 @@ function stopListeners(): void {
   stopFocusListener = undefined
 }
 
+// A refresh that means "keep my session fresh" must keep the workspace the
+// session is in: a target-less mint resolves the personal workspace, which
+// reads as the account silently switching itself.
+function currentWorkspaceId(): string | undefined {
+  const current = snapshot.value
+  return current.phase === 'authenticated'
+    ? current.session.workspace.id
+    : undefined
+}
+
+const ensureFreshHere: typeof workshopSessionClient.ensureFresh = (
+  user,
+  options
+) =>
+  workshopSessionClient.ensureFresh(user, {
+    workspaceId: currentWorkspaceId(),
+    ...options
+  })
+
 async function begin(expectedGeneration: number): Promise<void> {
   const firebase = await import('./workshop-firebase')
   if (generation !== expectedGeneration) return
@@ -71,7 +90,7 @@ async function begin(expectedGeneration: number): Promise<void> {
   // billing stay a separate consumer.
   stopTelemetry = subscribeAuthRefreshTelemetry()
 
-  const onFocus = () => void workshopSessionClient.ensureFresh()
+  const onFocus = () => void ensureFreshHere()
   window.addEventListener('focus', onFocus)
   stopFocusListener = () => window.removeEventListener('focus', onFocus)
 }
@@ -133,7 +152,7 @@ export function useWorkshopSession() {
     ),
     settled: computed(() => snapshot.value.phase !== 'pending'),
     signedIn: computed(() => snapshot.value.phase === 'authenticated'),
-    ensureFresh: workshopSessionClient.ensureFresh,
+    ensureFresh: ensureFreshHere,
     remint: workshopSessionClient.remint,
     signOut
   }
