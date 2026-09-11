@@ -8,7 +8,10 @@ import { TOUR_SEEN_SETTING } from '@/platform/onboarding/onboardingTours'
 import { CANVAS_NAVIGATION_PRESETS } from '@/platform/settings/constants/canvasNavigation'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
-import type { Keybinding } from '@/platform/keybindings/types'
+import type {
+  Keybinding,
+  KeybindingSettings
+} from '@/platform/keybindings/types'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 import { breakpointsTailwind } from '@vueuse/core'
@@ -649,6 +652,12 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'number',
     defaultValue: 100,
     versionAdded: '1.3.5'
+  },
+  {
+    id: 'Comfy.Keybinding.SettingsV1',
+    name: 'Versioned keyboard shortcut settings',
+    type: 'hidden',
+    defaultValue: null as KeybindingSettings | null
   },
   {
     id: 'Comfy.Keybinding.UnsetBindings',

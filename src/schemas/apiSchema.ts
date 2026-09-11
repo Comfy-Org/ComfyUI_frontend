@@ -5,7 +5,7 @@ import { zNodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { colorPalettesSchema } from '@/schemas/colorPaletteSchema'
 import { resultItemType } from '@/schemas/resultItemTypeSchema'
 import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
-import { zKeybinding } from '@/platform/keybindings/types'
+import { zKeybinding, zKeybindingSettings } from '@/platform/keybindings/types'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 
@@ -395,6 +395,7 @@ const zSettings = z.object({
   'Comfy.Keybinding.UnsetBindings': z.array(zKeybinding),
   'Comfy.Keybinding.NewBindings': z.array(zKeybinding),
   'Comfy.Keybinding.CurrentPreset': z.string(),
+  'Comfy.Keybinding.SettingsV1': zKeybindingSettings.nullable(),
   'Comfy.Extension.Disabled': z.array(z.string()),
   'Comfy.LinkRenderMode': z.number(),
   'Comfy.Node.AutoSnapLinkToSlot': z.boolean(),
