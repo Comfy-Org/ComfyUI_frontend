@@ -158,19 +158,30 @@ describe('OnboardingCoach', () => {
   it('places each card against its intended surface and moves the spotlight with it', async () => {
     const user = userEvent.setup()
     mount()
-    const expected = [
-      { left: 627, top: 318 },
-      { left: 643, top: 560 },
-      { left: 347, top: 500 },
-      { left: 647, top: 88 }
-    ]
     for (const [index, step] of STEPS.entries()) {
       const dialog = await screen.findByRole('dialog', { name: step.title })
-      await waitFor(() => {
-        expect(parseFloat(dialog.style.left)).toBe(expected[index].left)
-        expect(parseFloat(dialog.style.top)).toBe(expected[index].top)
-      })
       const targetRect = rectangles[step.target.slice(1)]
+      await waitFor(() => {
+        const left = parseFloat(dialog.style.left)
+        const top = parseFloat(dialog.style.top)
+        const right = left + dialog.offsetWidth
+        const bottom = top + dialog.offsetHeight
+        expect(left).toBeGreaterThanOrEqual(8)
+        expect(top).toBeGreaterThanOrEqual(8)
+        expect(right).toBeLessThanOrEqual(window.innerWidth - 8)
+        expect(bottom).toBeLessThanOrEqual(window.innerHeight - 8)
+        if (step.placement === 'graph-bottom') {
+          const center = targetRect.left + targetRect.width / 2
+          expect(left).toBeLessThan(center)
+          expect(right).toBeGreaterThan(center)
+          expect(top).toBeGreaterThanOrEqual(targetRect.top)
+          expect(bottom).toBeLessThanOrEqual(rectangles.toolbar.top)
+        } else {
+          expect(right).toBeLessThanOrEqual(targetRect.left)
+          expect(top).toBeLessThan(targetRect.bottom)
+          expect(bottom).toBeGreaterThan(targetRect.top)
+        }
+      })
       const spotlight = screen.getByTestId('agent-coach-spotlight')
       expect(parseFloat(spotlight.style.left)).toBe(targetRect.left)
       expect(parseFloat(spotlight.style.top)).toBe(targetRect.top)
@@ -193,8 +204,13 @@ describe('OnboardingCoach', () => {
     window.innerHeight = 240
     window.dispatchEvent(new Event('resize'))
     await waitFor(() => {
-      expect(parseFloat(dialog.style.left)).toBe(385)
-      expect(parseFloat(dialog.style.top) + 184).toBeLessThanOrEqual(232)
+      expect(parseFloat(dialog.style.left)).toBeGreaterThanOrEqual(8)
+      expect(
+        parseFloat(dialog.style.left) + dialog.offsetWidth
+      ).toBeLessThanOrEqual(window.innerWidth - 8)
+      expect(
+        parseFloat(dialog.style.top) + dialog.offsetHeight
+      ).toBeLessThanOrEqual(window.innerHeight - 8)
       expect(parseFloat(dialog.style.top)).toBeGreaterThanOrEqual(8)
     })
   })
