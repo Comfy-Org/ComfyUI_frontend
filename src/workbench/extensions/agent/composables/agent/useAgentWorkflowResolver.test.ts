@@ -64,7 +64,9 @@ describe('Agent workflow resolution', () => {
     bindings.bind('stale-cloud-id', 'workflows/scratch.json')
     expect(resolver.cloudIdFor(workflows.openWorkflows[0])).toBeUndefined()
     expect(resolver.boundWorkflowFor('stale-cloud-id')).toBeNull()
-    expect(resolver.availableWorkflowReferences.value).toEqual([])
+    expect(resolver.availableWorkflowReferences.value).toEqual([
+      { tabPath: 'workflows/scratch.json', name: 'Scratch' }
+    ])
   })
 
   it('uses unique saved names ahead of old bindings and re-evaluates renamed workflows', async () => {
@@ -79,7 +81,8 @@ describe('Agent workflow resolution', () => {
     tab.filename = 'Renamed'
     expect(resolver.cloudIdFor(tab)).toBe('old-binding')
     expect(resolver.availableWorkflowReferences.value).toEqual([
-      { id: 'old-binding', name: 'Renamed' }
+      { id: 'old-binding', name: 'Renamed' },
+      { id: 'cloud-portrait', name: 'Portrait' }
     ])
     expect(bindings.workflowIdFor(tab.path)).toBe('old-binding')
   })
@@ -109,7 +112,12 @@ describe('Agent workflow resolution', () => {
     ])
     bindings.bind('explicit-shared', workflows.openWorkflows[0].path)
     expect(resolver.availableWorkflowReferences.value).toEqual([
-      { id: 'explicit-shared', name: 'Shared' }
+      { tabPath: 'workflows/scratch.json', name: 'Scratch' },
+      { id: 'explicit-shared', name: 'Shared' },
+      { id: 'cloud-ambiguous-1', name: 'Ambiguous' },
+      { id: 'cloud-ambiguous-2', name: 'Ambiguous' },
+      { id: 'cloud-scratch', name: 'Scratch' },
+      { id: 'cloud-shared', name: 'Shared' }
     ])
     expect(resolver.storedWorkflowFor('cloud-shared')).toBeNull()
     expect(resolver.boundWorkflowFor('cloud-ambiguous-1')).toBeNull()
@@ -154,8 +162,8 @@ describe('Agent workflow resolution', () => {
       ]
     })
     expect(resolver.availableWorkflowReferences.value).toEqual([
-      { id: 'cloud-app', name: 'Portrait.app' },
-      { id: 'cloud-graph', name: 'Portrait' }
+      { id: 'cloud-graph', name: 'Portrait' },
+      { id: 'cloud-app', name: 'Portrait.app' }
     ])
     workflows.openWorkflows.reverse()
     expect(
@@ -163,7 +171,10 @@ describe('Agent workflow resolution', () => {
     ).toEqual(['cloud-graph', 'cloud-app'])
     workflows.openWorkflows = []
     expect(resolver.openTabsSnapshot()).toBeUndefined()
-    expect(resolver.availableWorkflowReferences.value).toEqual([])
+    expect(resolver.availableWorkflowReferences.value).toEqual([
+      { id: 'cloud-graph', name: 'Portrait' },
+      { id: 'cloud-app', name: 'Portrait.app' }
+    ])
   })
 
   it('deduplicates reference candidates without changing the editor snapshot', async () => {
@@ -181,6 +192,29 @@ describe('Agent workflow resolution', () => {
       { id: 'cloud-renamed', name: 'Old' }
     ])
     expect(resolver.openTabsSnapshot()?.open_tabs).toHaveLength(2)
+  })
+
+  it('puts open workflows before the saved catalog and deduplicates by Cloud ID', async () => {
+    const { resolver } = setup(
+      [
+        workflow('workflows/z.json', 'Z'),
+        workflow('workflows/draft.json', 'Draft', { isTemporary: true })
+      ],
+      [
+        { id: 'a', name: 'A' },
+        { id: 'z', name: 'Z' },
+        { id: 'a', name: 'A' }
+      ]
+    )
+    await resolver.refreshCloudWorkflowIds()
+    expect(resolver.availableWorkflowReferences.value).toEqual([
+      { tabPath: 'workflows/draft.json', name: 'Draft' },
+      { id: 'z', name: 'Z' },
+      { id: 'a', name: 'A' }
+    ])
+    expect(resolver.openTabsSnapshot()).toEqual({
+      open_tabs: [{ workflow_id: 'z', name: 'Z' }]
+    })
   })
 
   it('chooses a save name against local and Cloud collisions with app suffixes', async () => {

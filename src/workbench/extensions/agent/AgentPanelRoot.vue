@@ -63,7 +63,10 @@ import {
   useAttachment
 } from './composables/agent/useAttachment'
 import type { ActiveTab } from './types/activeTab'
-import type { WorkflowReference } from './types/workflowReference'
+import type {
+  WorkflowReference,
+  WorkflowReferenceOption
+} from './types/workflowReference'
 import type { SelectedNode } from './composables/agent/useCanvasSelection'
 import {
   selectedNodeKey,
@@ -334,7 +337,18 @@ watch(
   },
   { flush: 'sync' }
 )
-const selectingTarget = ref<ComfyWorkflow | null>(null)
+const workflowSelection = ref<{
+  purpose: 'target' | 'reference'
+  workflow: ComfyWorkflow
+} | null>(null)
+const selectingTarget = computed(() =>
+  workflowSelection.value?.purpose === 'target'
+    ? workflowSelection.value.workflow
+    : null
+)
+const savingReference = computed(
+  () => workflowSelection.value?.purpose === 'reference'
+)
 let targetSelectionGeneration = 0
 const workflowDetached = computed(() => selectedTarget.value === null)
 
@@ -424,58 +438,119 @@ const workflowTabs = computed<ActiveTab[]>(() =>
   }))
 )
 
+async function prepareWorkflowSelection(
+  tab: ComfyWorkflow,
+  isCurrent: () => boolean
+): Promise<string | undefined> {
+  const fail = (detail?: string): undefined => {
+    if (isCurrent()) warnWorkflowSelectionFailed(detail)
+    return undefined
+  }
+  try {
+    if (tab.isTemporary && cloudIdFor(tab) === undefined) {
+      if (!(await refreshCloudWorkflowIds())) return fail()
+      if (!isCurrent()) return
+      const filename = nextSaveFilename(tab)
+      if (!(await workflowService.saveWorkflowAs(tab, { filename })))
+        return fail()
+    }
+    if (!isCurrent()) return
+    let workflowId = cloudIdFor(tab)
+    if (workflowId === undefined) {
+      if (!(await refreshCloudWorkflowIds())) return fail()
+      if (!isCurrent()) return
+      workflowId = cloudIdFor(tab)
+    }
+    if (workflowId === undefined) warnWorkflowUnavailable()
+    return workflowId
+  } catch (error) {
+    return fail(error instanceof Error ? error.message : undefined)
+  }
+}
+
+function warnWorkflowSelectionFailed(
+  detail = t('shareWorkflow.saveFailedDescription')
+): void {
+  toast.add({
+    severity: 'warn',
+    summary: t('shareWorkflow.saveFailedTitle'),
+    detail
+  })
+}
+
 async function onSelectWorkflowTarget(path: string): Promise<boolean> {
   const tab = workflowStore.getWorkflowByPath(path)
   if (
     !tab ||
-    selectingTarget.value ||
+    workflowSelection.value ||
     isSending.value ||
     status.value !== 'idle'
   )
     return false
-  selectingTarget.value = tab
+  workflowSelection.value = { purpose: 'target', workflow: tab }
   const generation = ++targetSelectionGeneration
   const isCurrent = () =>
     generation === targetSelectionGeneration &&
     workflowStore.openWorkflows.includes(tab)
-  const failSelection = (detail = t('shareWorkflow.saveFailedDescription')) => {
-    if (isCurrent())
-      toast.add({
-        severity: 'warn',
-        summary: t('shareWorkflow.saveFailedTitle'),
-        detail
-      })
-    return false
-  }
   try {
-    if (tab.isTemporary && cloudIdFor(tab) === undefined) {
-      if (!(await refreshCloudWorkflowIds())) return failSelection()
-      if (!isCurrent()) return false
-      const filename = nextSaveFilename(tab)
-      if (!(await workflowService.saveWorkflowAs(tab, { filename })))
-        return failSelection()
-    }
-    if (!isCurrent()) return false
-    let workflowId = cloudIdFor(tab)
-    if (workflowId === undefined) {
-      if (!(await refreshCloudWorkflowIds())) return failSelection()
-      if (!isCurrent()) return false
-      workflowId = cloudIdFor(tab)
-    }
-    if (workflowId === undefined) {
-      if (isCurrent()) warnWorkflowUnavailable()
+    const workflowId = await prepareWorkflowSelection(tab, isCurrent)
+    if (workflowId === undefined || !isCurrent()) return false
+    if ((await workflowService.openWorkflow(tab)) === false) {
+      if (isCurrent())
+        warnWorkflowSelectionFailed(t('agent.targetNavigationUnavailable'))
       return false
     }
-    if ((await workflowService.openWorkflow(tab)) === false)
-      return failSelection(t('agent.targetNavigationUnavailable'))
     if (!isCurrent()) return false
     commitWorkflowTarget(tab, workflowId)
     return true
   } catch (error) {
-    return failSelection(error instanceof Error ? error.message : undefined)
+    if (isCurrent())
+      warnWorkflowSelectionFailed(
+        error instanceof Error ? error.message : undefined
+      )
+    return false
   } finally {
-    selectingTarget.value = null
+    workflowSelection.value = null
   }
+}
+
+async function onSelectWorkflowReference(
+  option: WorkflowReferenceOption
+): Promise<boolean> {
+  if (workflowSelection.value) return false
+  if (option.id !== undefined) {
+    addWorkflowReference(option)
+    return true
+  }
+  const tab = workflowStore.getWorkflowByPath(option.tabPath)
+  if (!tab || !workflowStore.openWorkflows.includes(tab)) return false
+  workflowSelection.value = { purpose: 'reference', workflow: tab }
+  const generation = composerContextGeneration
+  const isCurrent = () =>
+    generation === composerContextGeneration &&
+    workflowStore.openWorkflows.includes(tab)
+  try {
+    const workflowId = await prepareWorkflowSelection(tab, isCurrent)
+    if (workflowId === undefined || !isCurrent()) return false
+    bindingStore.bind(workflowId, tab.path)
+    addWorkflowReference({
+      id: workflowId,
+      name: tab.suffix === 'app.json' ? `${tab.filename}.app` : tab.filename
+    })
+    return true
+  } catch (error) {
+    if (isCurrent())
+      warnWorkflowSelectionFailed(
+        error instanceof Error ? error.message : undefined
+      )
+    return false
+  } finally {
+    workflowSelection.value = null
+  }
+}
+
+function onRequestWorkflowReferences(): void {
+  if (!workflowSelection.value) void refreshCloudWorkflowIds()
 }
 
 function onWorkflowAdopted(
@@ -869,7 +944,11 @@ async function onSend(
   attachments: ComposerAttachment[],
   references: WorkflowReference[] = []
 ): Promise<void> {
-  if (selectingTarget.value || selectedTarget.value === null || isSending.value)
+  if (
+    workflowSelection.value ||
+    selectedTarget.value === null ||
+    isSending.value
+  )
     return
   const generation = composerContextGeneration
   const target = selectedTarget.value
@@ -1249,6 +1328,8 @@ function onPanelDrop(event: DragEvent): void {
       :selection-tags="selectionTags"
       :node-reference-disabled-reason="nodeReferenceDisabledReason"
       :workflow-references="workflowReferences"
+      :select-workflow-reference="onSelectWorkflowReference"
+      :saving-reference="savingReference"
       :available-workflows="availableWorkflowReferences"
       :editable-workflow-id="editableWorkflowId"
       :active-tab="activeTab"
@@ -1266,8 +1347,7 @@ function onPanelDrop(event: DragEvent): void {
       @select-nodes="onSelectNodes"
       @remove-tag="onRemoveSelectionTag"
       @mention-pick="onMentionPick"
-      @workflow-reference-pick="addWorkflowReference"
-      @request-workflow-references="refreshCloudWorkflowIds"
+      @request-workflow-references="onRequestWorkflowReferences"
       @remove-workflow-reference="removeWorkflowReference"
       @feedback="onFeedback"
       @answer-ask="answerAsk"

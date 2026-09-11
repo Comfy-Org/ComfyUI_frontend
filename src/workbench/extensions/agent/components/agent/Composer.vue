@@ -21,7 +21,10 @@ import type { ComposerAttachment } from '../../composables/agent/useComposer'
 import { useComposer } from '../../composables/agent/useComposer'
 import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
 import { selectedNodeKey } from '../../composables/agent/useCanvasSelection'
-import type { WorkflowReference } from '../../types/workflowReference'
+import type {
+  WorkflowReference,
+  WorkflowReferenceOption
+} from '../../types/workflowReference'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import AttachmentChip from './composer/AttachmentChip.vue'
@@ -37,9 +40,10 @@ const {
   nodeReferenceDisabledReason,
   workflowReferences = [],
   availableWorkflows = [],
+  selectWorkflowReference = async () => false,
   editableWorkflowId,
   hasWorkflowTarget = false,
-  targetSelecting = false,
+  workflowSelecting = false,
   getMentionNodes = () => []
 } = defineProps<{
   streaming?: boolean
@@ -49,10 +53,13 @@ const {
   selectionTags?: SelectedNode[]
   nodeReferenceDisabledReason?: string
   workflowReferences?: WorkflowReference[]
-  availableWorkflows?: WorkflowReference[]
+  availableWorkflows?: WorkflowReferenceOption[]
+  selectWorkflowReference?: (
+    workflow: WorkflowReferenceOption
+  ) => Promise<boolean>
   editableWorkflowId?: string
   hasWorkflowTarget?: boolean
-  targetSelecting?: boolean
+  workflowSelecting?: boolean
   getMentionNodes?: () => SelectedNode[]
 }>()
 const emit = defineEmits<{
@@ -67,7 +74,6 @@ const emit = defineEmits<{
   selectNodes: []
   removeTag: [id: string]
   mentionPick: [node: SelectedNode]
-  workflowReferencePick: [workflow: WorkflowReference]
   requestWorkflowReferences: []
   removeWorkflowReference: [id: string]
   openReferenceWorkflow: [workflowId: string, workflowName: string]
@@ -92,9 +98,10 @@ const mentionNodes = computed(() => {
 })
 const eligibleWorkflows = computed(() => {
   const selectedIds = new Set(workflowReferences.map(({ id }) => id))
-  return availableWorkflows
-    .filter(({ id }) => id !== editableWorkflowId && !selectedIds.has(id))
-    .toSorted((a, b) => a.name.localeCompare(b.name))
+  return availableWorkflows.filter(
+    ({ id }) =>
+      id === undefined || (id !== editableWorkflowId && !selectedIds.has(id))
+  )
 })
 function loadMentionNodes(): void {
   if (nodeReferenceDisabledReason) {
@@ -109,6 +116,7 @@ function loadMentionNodes(): void {
 const mentionOpen = ref(false)
 const mentionSection = ref<'root' | 'nodes' | 'workflows'>('root')
 const workflowSubmenuOpen = ref(false)
+const addMenuOpen = ref(false)
 const mentionQuery = ref('')
 const mentionStart = ref(-1)
 const mentionActive = ref(0)
@@ -121,7 +129,7 @@ type MentionMatch =
       kind: 'workflow'
       id: string
       label: string
-      workflow: WorkflowReference
+      workflow: WorkflowReferenceOption
     }
 
 /**
@@ -177,7 +185,7 @@ const mentionMatches = computed<MentionMatch[]>(() => {
       .map(
         (workflow): MentionMatch => ({
           kind: 'workflow',
-          id: workflow.id,
+          id: workflow.id ?? workflow.tabPath,
           label: workflow.name,
           workflow
         })
@@ -295,8 +303,8 @@ watch(
   { flush: 'sync' }
 )
 
-function pickMention(match: MentionMatch): void {
-  if (isNodeReferenceDisabled(match)) return
+async function pickMention(match: MentionMatch): Promise<void> {
+  if (isMentionDisabled(match)) return
   if (match.kind === 'section') {
     mentionSection.value = match.id
     const before = composer.draft.value.slice(0, mentionStart.value + 1)
@@ -314,9 +322,18 @@ function pickMention(match: MentionMatch): void {
     mentionActive.value = 0
     return
   }
-  if (match.kind === 'node') emit('mentionPick', match.node)
-  else emit('workflowReferencePick', match.workflow)
   const draft = composer.draft.value
+  const start = mentionStart.value
+  const query = mentionQuery.value
+  if (match.kind === 'node') emit('mentionPick', match.node)
+  else if (!(await selectWorkflowReference(match.workflow))) return
+  if (
+    composer.draft.value !== draft ||
+    mentionStart.value !== start ||
+    mentionQuery.value !== query ||
+    !mentionOpen.value
+  )
+    return
   const before = draft.slice(0, mentionStart.value)
   const end = mentionStart.value + 1 + mentionQuery.value.length
   let after = draft.slice(end)
@@ -328,7 +345,19 @@ function pickMention(match: MentionMatch): void {
 }
 
 function onWorkflowSubmenuOpenChange(open: boolean): void {
-  if (open) emit('requestWorkflowReferences')
+  if (open && !workflowSelecting) emit('requestWorkflowReferences')
+}
+
+async function pickWorkflow(workflow: WorkflowReferenceOption): Promise<void> {
+  if (workflowSelecting) return
+  if (await selectWorkflowReference(workflow)) addMenuOpen.value = false
+}
+
+function isMentionDisabled(match: MentionMatch): boolean {
+  return (
+    isNodeReferenceDisabled(match) ||
+    (match.kind === 'workflow' && workflowSelecting)
+  )
 }
 
 function onComposerKeydown(event: KeyboardEvent): void {
@@ -338,7 +367,7 @@ function onComposerKeydown(event: KeyboardEvent): void {
       event.preventDefault()
       do {
         mentionActive.value = (mentionActive.value + 1) % matches.length
-      } while (isNodeReferenceDisabled(matches[mentionActive.value]))
+      } while (isMentionDisabled(matches[mentionActive.value]))
       return
     }
     if (event.key === 'ArrowUp') {
@@ -346,7 +375,7 @@ function onComposerKeydown(event: KeyboardEvent): void {
       do {
         mentionActive.value =
           (mentionActive.value - 1 + matches.length) % matches.length
-      } while (isNodeReferenceDisabled(matches[mentionActive.value]))
+      } while (isMentionDisabled(matches[mentionActive.value]))
       return
     }
     if (event.key === 'Enter' || event.key === 'Tab') {
@@ -399,7 +428,7 @@ const placeholderHint = computed(() => {
 
 const composer = useComposer({
   onSend: (text, attachments) => {
-    if (targetSelecting || submitting) return false
+    if (workflowSelecting || submitting) return false
     if (!hasWorkflowTarget) {
       emit('workflowTargetRequired')
       return false
@@ -479,7 +508,7 @@ defineExpose({
       >
         <div
           :id="`agent-reference-item-${index}`"
-          :aria-disabled="isNodeReferenceDisabled(match) || undefined"
+          :aria-disabled="isMentionDisabled(match) || undefined"
           :aria-description="
             isNodeReferenceDisabled(match)
               ? nodeReferenceDisabledReason
@@ -509,6 +538,11 @@ defineExpose({
             class="icon-[lucide--chevron-left] size-4 shrink-0"
           />
           <span class="min-w-0 flex-1 truncate">{{ match.label }}</span>
+          <span
+            v-if="match.kind === 'workflow' && match.workflow.id === undefined"
+            class="text-agent-fg-muted text-xs"
+            >{{ t('agent.unsavedWorkflow') }}</span
+          >
           <span
             v-if="match.kind === 'node' && graphDupes.has(match.node.title)"
             :class="cn(duplicateIdClass, 'ml-auto')"
@@ -645,6 +679,14 @@ defineExpose({
           </button>
         </span>
 
+        <span
+          v-if="workflowSelecting"
+          role="status"
+          class="text-agent-fg-muted flex items-center gap-1 text-xs"
+        >
+          <span class="icon-[lucide--loader-circle] size-3 animate-spin" />
+          {{ t('agent.savingWorkflow') }}
+        </span>
         <div class="relative min-h-7 min-w-32 flex-1">
           <Textarea
             ref="textareaRef"
@@ -695,7 +737,7 @@ defineExpose({
       </div>
 
       <div class="flex items-center justify-between px-3 py-2">
-        <DropdownMenuRoot>
+        <DropdownMenuRoot v-model:open="addMenuOpen">
           <DropdownMenuTrigger
             v-tooltip.top="buildAgentTooltipConfig(t('agent.addToPrompt'))"
             :aria-label="t('agent.addToPrompt')"
@@ -755,12 +797,18 @@ defineExpose({
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       v-for="workflow in eligibleWorkflows"
-                      :key="workflow.id"
+                      :key="workflow.id ?? workflow.tabPath"
+                      :disabled="workflowSelecting"
                       class="text-agent-fg data-highlighted:bg-agent-surface-hover box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal outline-none"
-                      @select="emit('workflowReferencePick', workflow)"
+                      @select.prevent="pickWorkflow(workflow)"
                     >
                       <span class="icon-[comfy--workflow] size-4 shrink-0" />
                       <span class="max-w-64 truncate">{{ workflow.name }}</span>
+                      <span
+                        v-if="workflow.id === undefined"
+                        class="text-agent-fg-muted text-xs"
+                        >{{ t('agent.unsavedWorkflow') }}</span
+                      >
                     </DropdownMenuItem>
                     <div
                       v-if="eligibleWorkflows.length === 0"
@@ -806,7 +854,7 @@ defineExpose({
               type="button"
               :aria-label="running ? t('agent.stop') : t('agent.send')"
               :disabled="
-                targetSelecting || (!running && !composer.canSend.value)
+                !running && (workflowSelecting || !composer.canSend.value)
               "
               :class="
                 cn(

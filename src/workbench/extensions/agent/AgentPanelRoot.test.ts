@@ -2219,7 +2219,8 @@ describe('AgentPanelRoot workflow binding', () => {
     ackWorkflowId: string,
     cloudWorkflows:
       | { id: string; name: string }[]
-      | (() => { id: string; name: string }[]) = []
+      | (() => { id: string; name: string }[]) = [],
+    threads: AgentThreadSummary[] = []
   ): unknown[] {
     const bodies: unknown[] = []
     vi.stubGlobal(
@@ -2231,7 +2232,7 @@ describe('AgentPanelRoot workflow binding', () => {
         }
         if (url.includes('/messages')) return json(200, [])
         if (url.includes('/agent/threads')) {
-          return json(200, agentThreadList())
+          return json(200, agentThreadList(threads))
         }
         if (url.includes('/workflows')) {
           const workflows =
@@ -4006,6 +4007,238 @@ describe('AgentPanelRoot workflow binding', () => {
     }
   )
 
+  it.for(['mention', 'plus'] as const)(
+    'references a saved workflow without opening its tab via %s',
+    async (picker) => {
+      const target = makeTab('wf-current')
+      const bodies = mockMessagesEndpoint('wf-current', [
+        { id: 'wf-closed', name: 'Closed workflow' }
+      ])
+      renderWithSelectedTarget()
+      if (picker === 'mention') {
+        await userEvent.type(screen.getByRole('textbox'), '@')
+      } else {
+        await userEvent.click(
+          screen.getByRole('button', { name: 'Add to prompt' })
+        )
+      }
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
+      await userEvent.click(
+        await screen.findByRole('menuitem', { name: 'Closed workflow' })
+      )
+      expect(
+        await screen.findByRole('button', { name: 'Open Closed workflow' })
+      ).toBeVisible()
+      expect(workflowStore.activeWorkflow).toEqual(target)
+      expect(useAgentPanelStore().selectedWorkflow).toEqual(target)
+      expect(workflowService.openWorkflow).not.toHaveBeenCalled()
+      await sendFromComposer('Compare these')
+      expect(bodies[0]).toMatchObject({
+        workflow_id: 'wf-current',
+        open_tabs: [{ workflow_id: 'wf-current', name: 'current' }],
+        workflow_references: [
+          { workflow_id: 'wf-closed', name: 'Closed workflow' }
+        ]
+      })
+    }
+  )
+
+  it('saves an inactive scratch reference without changing the canvas or target', async () => {
+    const target = makeTab('wf-current')
+    const scratch = addTab('workflows/scratch.json', { isTemporary: true })
+    const cloudWorkflows = [{ id: 'wf-existing', name: 'scratch' }]
+    const bodies = mockMessagesEndpoint('wf-current', cloudWorkflows)
+    workflowService.saveWorkflowAs.mockImplementationOnce(
+      async (tab, options) => {
+        await workflowStore.renameWorkflow(
+          tab,
+          `workflows/${options?.filename}.json`
+        )
+        Object.assign(tab, { isTemporary: false })
+        cloudWorkflows.push({ id: 'wf-scratch', name: tab.filename })
+        return true
+      }
+    )
+    renderWithSelectedTarget()
+    await userEvent.type(screen.getByRole('textbox'), 'Compare @')
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: /scratch\s*Unsaved/ })
+    )
+    expect(
+      await screen.findByRole('button', { name: 'Open scratch (2)' })
+    ).toBeVisible()
+    expect(workflowService.saveWorkflowAs).toHaveBeenCalledWith(scratch, {
+      filename: 'scratch (2)'
+    })
+    expect(workflowService.openWorkflow).not.toHaveBeenCalled()
+    expect(workflowStore.activeWorkflow).toEqual(target)
+    expect(useAgentPanelStore().selectedWorkflow).toEqual(target)
+    expect(screen.getByRole('textbox')).toHaveValue('Compare ')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await vi.waitFor(() => expect(bodies).toHaveLength(1))
+    expect(bodies[0]).toMatchObject({
+      workflow_id: 'wf-current',
+      workflow_references: [{ workflow_id: 'wf-scratch', name: 'scratch (2)' }]
+    })
+  })
+
+  it.for(['mention', 'plus'] as const)(
+    'keeps a failed scratch reference selection retryable via %s',
+    async (picker) => {
+      const target = makeTab('wf-current')
+      const scratch = addTab('workflows/scratch.json', { isTemporary: true })
+      const cloudWorkflows: { id: string; name: string }[] = []
+      mockMessagesEndpoint('wf-current', cloudWorkflows)
+      workflowService.saveWorkflowAs.mockRejectedValueOnce(
+        new Error('Save unavailable')
+      )
+      workflowService.saveWorkflowAs.mockImplementationOnce(async () => {
+        Object.assign(scratch, { isTemporary: false })
+        cloudWorkflows.push({ id: 'wf-scratch', name: 'scratch' })
+        return true
+      })
+      renderWithSelectedTarget()
+      const textbox = screen.getByRole('textbox')
+      await userEvent.type(
+        textbox,
+        picker === 'mention' ? 'Compare @' : 'Compare'
+      )
+      if (picker === 'plus')
+        await userEvent.click(
+          screen.getByRole('button', { name: 'Add to prompt' })
+        )
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
+      await userEvent.click(
+        await screen.findByRole('menuitem', { name: /scratch\s*Unsaved/ })
+      )
+      await vi.waitFor(() =>
+        expect(useToastStore().messagesToAdd).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ detail: 'Save unavailable' })
+          ])
+        )
+      )
+      expect(textbox).toHaveValue(
+        picker === 'mention' ? 'Compare @' : 'Compare'
+      )
+      expect(screen.queryByRole('button', { name: 'Open scratch' })).toBeNull()
+      await userEvent.click(
+        screen.getByRole('menuitem', { name: /scratch\s*Unsaved/ })
+      )
+      expect(
+        await screen.findByRole('button', { name: 'Open scratch' })
+      ).toBeVisible()
+      expect(workflowService.saveWorkflowAs).toHaveBeenCalledTimes(2)
+      expect(workflowService.openWorkflow).not.toHaveBeenCalled()
+      expect(useAgentPanelStore().selectedWorkflow).toEqual(target)
+      expect(workflowStore.activeWorkflow).toEqual(target)
+    }
+  )
+
+  it.for(['complete', 'new-chat', 'unmount', 'close-tab', 'history'] as const)(
+    'guards a pending scratch reference save when it ends with %s',
+    async (outcome) => {
+      const target = makeTab('wf-current')
+      const scratch = addTab('workflows/scratch.json', { isTemporary: true })
+      const cloudWorkflows: { id: string; name: string }[] = []
+      const bodies = mockMessagesEndpoint('wf-current', cloudWorkflows, [
+        agentThread({
+          id: 'th-earlier',
+          title: 'Earlier chat',
+          last_message_at: '2026-09-01T00:00:00Z'
+        })
+      ])
+      let resolve = () => {}
+      const promise = new Promise<void>((done) => {
+        resolve = done
+      })
+      workflowService.saveWorkflowAs.mockImplementationOnce(async () => {
+        await promise
+        Object.assign(scratch, { isTemporary: false })
+        cloudWorkflows.push({ id: 'wf-scratch', name: 'scratch' })
+        return true
+      })
+      const view = renderWithSelectedTarget()
+      const textbox = screen.getByRole('textbox')
+      await userEvent.type(textbox, 'Compare @')
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
+      await userEvent.click(
+        await screen.findByRole('menuitem', { name: /scratch\s*Unsaved/ })
+      )
+      await vi.waitFor(() =>
+        expect(workflowService.saveWorkflowAs).toHaveBeenCalledOnce()
+      )
+      expect(screen.getByRole('status')).toHaveTextContent('Saving workflow')
+      expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled()
+      expect(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.switchWorkflow')
+        })
+      ).toBeDisabled()
+      expect(
+        screen.getByRole('menuitem', { name: /scratch\s*Unsaved/ })
+      ).toHaveAttribute('aria-disabled', 'true')
+      await userEvent.keyboard('{Enter}')
+      expect(bodies).toHaveLength(0)
+      expect(workflowService.saveWorkflowAs).toHaveBeenCalledOnce()
+      if (outcome === 'new-chat')
+        await userEvent.click(screen.getByRole('button', { name: 'New chat' }))
+      if (outcome === 'unmount') view.unmount()
+      if (outcome === 'close-tab') await workflowStore.closeWorkflow(scratch)
+      if (outcome === 'history') {
+        await userEvent.click(
+          screen.getByRole('button', {
+            name: i18n.global.t('agent.showChatHistory')
+          })
+        )
+        await userEvent.click(await screen.findByText('Earlier chat'))
+      }
+
+      resolve()
+      await promise
+      if (outcome === 'unmount') {
+        await vi.waitFor(() =>
+          expect(workflowService.saveWorkflowAs).toHaveResolvedTimes(1)
+        )
+      } else {
+        await vi.waitFor(() =>
+          expect(screen.queryByText('Saving workflow')).toBeNull()
+        )
+      }
+      expect(useAgentComposerStore().workflowReferences).toEqual(
+        outcome === 'complete' ? [{ id: 'wf-scratch', name: 'scratch' }] : []
+      )
+      expect(workflowService.openWorkflow).not.toHaveBeenCalled()
+      expect(workflowStore.activeWorkflow).toEqual(target)
+    }
+  )
+
+  it.for(['saved', 'agent-draft'] as const)(
+    'does not implicitly save an already backed reference: %s',
+    async (kind) => {
+      makeTab('wf-current')
+      const reference = addTab('workflows/reference.json', {
+        isTemporary: kind === 'agent-draft',
+        isModified: true
+      })
+      useAgentWorkflowTabBindingStore().bind('wf-reference', reference.path)
+      mockMessagesEndpoint('wf-current')
+      renderWithSelectedTarget()
+      await userEvent.type(screen.getByRole('textbox'), '@')
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
+      await userEvent.click(
+        await screen.findByRole('menuitem', { name: 'reference' })
+      )
+      expect(
+        await screen.findByRole('button', { name: 'Open reference' })
+      ).toBeVisible()
+      expect(workflowService.saveWorkflowAs).not.toHaveBeenCalled()
+      expect(workflowService.saveWorkflow).not.toHaveBeenCalled()
+      expect(reference.isModified).toBe(true)
+    }
+  )
+
   it.for(['send', 'new-chat'] as const)(
     'retains draft workflow references on panel reopen and clears them after %s',
     async (action) => {
@@ -4451,7 +4684,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(textbox).toHaveValue('@')
   })
 
-  it('offers only Cloud-backed workflows that are open in editor tabs', async () => {
+  it('offers both open and closed Cloud-backed workflows', async () => {
     makeTab('wf-current')
     const other = addTab('workflows/other.json')
     useAgentWorkflowTabBindingStore().bind('wf-other', other.path)
@@ -4465,8 +4698,8 @@ describe('AgentPanelRoot workflow binding', () => {
 
     expect(await screen.findByRole('menuitem', { name: 'other' })).toBeVisible()
     expect(
-      screen.queryByRole('menuitem', { name: 'Remote workflow' })
-    ).toBeNull()
+      await screen.findByRole('menuitem', { name: 'Remote workflow' })
+    ).toBeVisible()
   })
 
   it('offers an open tab after it is saved while the panel remains mounted', async () => {
@@ -4482,8 +4715,8 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.type(textbox, '@')
     await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
     expect(
-      screen.queryByRole('menuitem', { name: 'video_minimax_h3_i2v' })
-    ).toBeNull()
+      screen.getByRole('menuitem', { name: /video_minimax_h3_i2v\s*Unsaved/ })
+    ).toBeVisible()
 
     await userEvent.keyboard('{Escape}')
     await userEvent.clear(textbox)

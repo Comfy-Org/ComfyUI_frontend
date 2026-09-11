@@ -13,7 +13,10 @@ import { useI18n } from 'vue-i18n'
 import { buildAgentTooltipConfig } from '@/composables/useTooltipConfig'
 
 import type { ActiveTab } from '../../types/activeTab'
-import type { WorkflowReference } from '../../types/workflowReference'
+import type {
+  WorkflowReference,
+  WorkflowReferenceOption
+} from '../../types/workflowReference'
 import type { TurnId } from '../../schemas/agentApiSchema'
 import type { ComposerAttachment } from '../../composables/agent/useComposer'
 import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
@@ -45,6 +48,8 @@ const {
   nodeReferenceDisabledReason,
   workflowReferences = [],
   availableWorkflows = [],
+  selectWorkflowReference,
+  savingReference = false,
   editableWorkflowId,
   activeTab = null,
   workflowTabs = [],
@@ -70,7 +75,11 @@ const {
   selectionTags?: SelectedNode[]
   nodeReferenceDisabledReason?: string
   workflowReferences?: WorkflowReference[]
-  availableWorkflows?: WorkflowReference[]
+  availableWorkflows?: WorkflowReferenceOption[]
+  selectWorkflowReference?: (
+    workflow: WorkflowReferenceOption
+  ) => Promise<boolean>
+  savingReference?: boolean
   editableWorkflowId?: string
   activeTab?: ActiveTab | null
   workflowTabs?: ActiveTab[]
@@ -98,7 +107,6 @@ const emit = defineEmits<{
   selectNodes: []
   removeTag: [id: string]
   mentionPick: [node: SelectedNode]
-  workflowReferencePick: [workflow: WorkflowReference]
   requestWorkflowReferences: []
   removeWorkflowReference: [id: string]
   feedback: [turnId: string, vote: 'up' | 'down' | null]
@@ -366,10 +374,11 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             :selection-tags="selectionTags"
             :node-reference-disabled-reason="nodeReferenceDisabledReason"
             :workflow-references="workflowReferences"
+            :select-workflow-reference="selectWorkflowReference"
             :available-workflows="availableWorkflows"
             :editable-workflow-id="editableWorkflowId"
             :has-workflow-target="!workflowDetached"
-            :target-selecting="selectingTabPath !== null"
+            :workflow-selecting="selectingTabPath !== null || savingReference"
             :get-mention-nodes="getMentionNodes"
             @send="onComposerSend"
             @stop="emit('stop')"
@@ -378,7 +387,6 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             @select-nodes="emit('selectNodes')"
             @remove-tag="emit('removeTag', $event)"
             @mention-pick="emit('mentionPick', $event)"
-            @workflow-reference-pick="emit('workflowReferencePick', $event)"
             @request-workflow-references="emit('requestWorkflowReferences')"
             @remove-workflow-reference="emit('removeWorkflowReference', $event)"
             @open-reference-workflow="
@@ -396,7 +404,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
                 :selecting-tab-path="selectingTabPath"
                 :select-tab="selectTab"
                 :detached="workflowDetached"
-                :disabled="streaming || submitting"
+                :disabled="streaming || submitting || savingReference"
               />
             </template>
           </Composer>

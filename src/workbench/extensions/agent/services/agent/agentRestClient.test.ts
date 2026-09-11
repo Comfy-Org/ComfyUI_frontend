@@ -180,6 +180,45 @@ describe('agentRestClient route + method', () => {
 
     expect(fetchApi).toHaveBeenCalledTimes(1)
   })
+
+  it('stops when pagination cycles through previously seen cursors', async () => {
+    for (const cursor of ['a', 'b', 'a']) {
+      respond(
+        jsonResponse(200, {
+          data: [],
+          pagination: {
+            offset: 0,
+            limit: 100,
+            total: 0,
+            has_more: true,
+            next_cursor: cursor
+          }
+        })
+      )
+    }
+    await makeClient().listCloudWorkflows()
+    expect(fetchApi).toHaveBeenCalledTimes(3)
+  })
+
+  it('includes saved workflows beyond the fifth page', async () => {
+    for (let page = 0; page < 6; page++) {
+      respond(
+        jsonResponse(200, {
+          data: [{ id: `wf-${page}`, name: `Workflow ${page}` }],
+          pagination: {
+            offset: page,
+            limit: 100,
+            total: 6,
+            has_more: page < 5,
+            next_cursor: `page-${page + 1}`
+          }
+        })
+      )
+    }
+    expect(
+      (await makeClient().listCloudWorkflows()).map(({ id }) => id)
+    ).toEqual(['wf-0', 'wf-1', 'wf-2', 'wf-3', 'wf-4', 'wf-5'])
+  })
 })
 
 describe('postMessage wire body', () => {

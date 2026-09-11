@@ -5243,6 +5243,7 @@
     "currentTab": "Current tab",
     "otherOpenWorkflows": "Other open workflows",
     "savingWorkflow": "Saving workflow",
+    "unsavedWorkflow": "Unsaved",
     "selectWorkflowToGenerate": "Select a workflow to generate in",
     "switchWorkflow": "Switch workflow",
     "modelAuto": "Auto",

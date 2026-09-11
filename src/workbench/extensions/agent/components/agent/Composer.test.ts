@@ -37,14 +37,16 @@ function mount(
   props: ComponentProps<typeof Composer> = {},
   attrs: Record<string, unknown> = {}
 ) {
-  return render(Composer, {
-    props: { hasWorkflowTarget: true, ...props },
+  const selectWorkflowReference = vi.fn(async () => true)
+  const view = render(Composer, {
+    props: { hasWorkflowTarget: true, selectWorkflowReference, ...props },
     attrs,
     global: {
       plugins: [i18n],
       directives: { tooltip: tooltipDirectiveStub }
     }
   })
+  return { ...view, selectWorkflowReference }
 }
 
 describe('Composer', () => {
@@ -176,14 +178,14 @@ describe('Composer', () => {
   })
 
   it('retains the draft on Enter while a workflow selection is saving', async () => {
-    const { emitted, rerender } = mount({ targetSelecting: true })
+    const { emitted, rerender } = mount({ workflowSelecting: true })
     const box = screen.getByRole('textbox')
     await userEvent.type(box, 'keep this draft{Enter}')
     expect(box).toHaveValue('keep this draft')
     expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled()
     expect(emitted().send).toBeUndefined()
 
-    await rerender({ targetSelecting: false })
+    await rerender({ workflowSelecting: false })
     expect(emitted().send).toBeUndefined()
     await userEvent.keyboard('{Enter}')
     expect(emitted().send).toHaveLength(1)
@@ -250,6 +252,14 @@ describe('Composer', () => {
     await userEvent.click(stop)
     expect(emitted().stop).toHaveLength(1)
     expect(emitted().send).toBeUndefined()
+  })
+
+  it('keeps Stop available while a workflow reference is saving', async () => {
+    const { emitted } = mount({ streaming: true, workflowSelecting: true })
+    const stop = screen.getByRole('button', { name: 'Stop' })
+    expect(stop).toBeEnabled()
+    await userEvent.click(stop)
+    expect(emitted().stop).toHaveLength(1)
   })
 
   it('shows Stop instead of a spinner while submitting and emits stop', async () => {
@@ -497,7 +507,9 @@ describe('Composer', () => {
 
     it('navigates categories and submenu items with the keyboard', async () => {
       const workflow = { id: 'wf-water', name: 'Water world' }
-      const { emitted } = mount({ availableWorkflows: [workflow] })
+      const { emitted, selectWorkflowReference } = mount({
+        availableWorkflows: [workflow]
+      })
 
       const root = await openReferenceRoot()
       const categories = within(root).getAllByRole('menuitem')
@@ -512,13 +524,13 @@ describe('Composer', () => {
       ).toHaveAttribute('data-active', 'true')
       await userEvent.keyboard('{ArrowDown}{Tab}')
 
-      expect(emitted().workflowReferencePick).toEqual([[workflow]])
+      expect(selectWorkflowReference).toHaveBeenCalledWith(workflow)
       expect(emitted().send).toBeUndefined()
     })
 
     it('stages an eligible workflow from the Workflows submenu', async () => {
       const workflow = { id: 'wf-water', name: 'Water world' }
-      const { emitted } = mount({
+      const { selectWorkflowReference } = mount({
         availableWorkflows: [
           { id: 'wf-edit', name: 'Editable workflow' },
           workflow
@@ -531,7 +543,7 @@ describe('Composer', () => {
         within(menu).getByRole('menuitem', { name: 'Water world' })
       )
 
-      expect(emitted().workflowReferencePick).toEqual([[workflow]])
+      expect(selectWorkflowReference).toHaveBeenCalledWith(workflow)
       expect(screen.getByRole('textbox')).toHaveValue('')
     })
 
@@ -684,8 +696,8 @@ describe('Composer', () => {
     expect(emitted().requestWorkflowReferences).toHaveLength(1)
   })
 
-  it('lists only eligible workflows and emits the selected reference', async () => {
-    const { emitted } = mount({
+  it('lists only eligible workflows and selects the chosen reference', async () => {
+    const { selectWorkflowReference } = mount({
       availableWorkflows: [
         { id: 'wf-edit', name: 'Editable workflow' },
         { id: 'wf-selected', name: 'Already selected' },
@@ -708,9 +720,31 @@ describe('Composer', () => {
       await screen.findByRole('menuitem', { name: 'Water world' })
     )
 
-    expect(emitted().workflowReferencePick).toEqual([
+    expect(selectWorkflowReference.mock.calls).toEqual([
       [{ id: 'wf-eligible', name: 'Water world' }]
     ])
+  })
+
+  it('preserves typing done while a reference selection is saving', async () => {
+    let resolve: (saved: boolean) => void = () => {}
+    const promise = new Promise<boolean>((done) => {
+      resolve = done
+    })
+    mount({
+      availableWorkflows: [{ tabPath: 'scratch.json', name: 'Scratch' }],
+      selectWorkflowReference: () => promise
+    })
+    const textbox = screen.getByRole('textbox')
+    await userEvent.type(textbox, 'Compare @')
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
+    await userEvent.click(
+      screen.getByRole('menuitem', { name: 'Scratch Unsaved' })
+    )
+    await userEvent.type(textbox, ' more detail')
+    resolve(true)
+    await promise
+    await nextTick()
+    expect(textbox).toHaveValue('Compare @ more detail')
   })
 
   it.for(['pointer', 'keyboard'])(

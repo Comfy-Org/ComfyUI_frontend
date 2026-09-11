@@ -26,7 +26,6 @@ import type {
 } from '../../schemas/agentApiSchema'
 
 const CLOUD_WORKFLOW_PAGE_SIZE = 100
-const CLOUD_WORKFLOW_MAX_PAGES = 5
 
 export class AgentApiError extends Error {
   readonly status: number
@@ -186,9 +185,10 @@ export function createAgentRestClient() {
 
   async function listCloudWorkflows(): Promise<CloudWorkflowEntry[]> {
     const entries: CloudWorkflowEntry[] = []
-    let hasMore = false
+    let hasMore: boolean
     let cursor: string | undefined
-    for (let page = 0; page < CLOUD_WORKFLOW_MAX_PAGES; page++) {
+    const seenCursors = new Set<string>()
+    do {
       const after = cursor ? `&after=${encodeURIComponent(cursor)}` : ''
       const result = await request(
         `/workflows?limit=${CLOUD_WORKFLOW_PAGE_SIZE}${after}`,
@@ -197,11 +197,13 @@ export function createAgentRestClient() {
       )
       entries.push(...result.data)
       hasMore = result.pagination.has_more
-      if (!hasMore) break
-      const nextCursor = result.pagination.next_cursor
-      if (!nextCursor || nextCursor === cursor) break
-      cursor = nextCursor
-    }
+      if (hasMore) {
+        const nextCursor = result.pagination.next_cursor
+        if (!nextCursor || seenCursors.has(nextCursor)) break
+        seenCursors.add(nextCursor)
+        cursor = nextCursor
+      }
+    } while (hasMore)
     if (hasMore)
       console.warn(
         `[agent] cloud workflow index truncated at ${entries.length} entries`

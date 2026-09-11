@@ -9,7 +9,10 @@ import type {
   OpenTabsSnapshot
 } from '../../services/agent/agentRestClient'
 import type { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
-import type { WorkflowReference } from '../../types/workflowReference'
+import type {
+  WorkflowReference,
+  WorkflowReferenceOption
+} from '../../types/workflowReference'
 
 type WorkflowResolverDeps = {
   workflows: Pick<
@@ -120,15 +123,32 @@ export function useAgentWorkflowResolver({
     )
   }
 
-  const availableWorkflowReferences = computed<WorkflowReference[]>(() => {
-    const byId = new Map<string, WorkflowReference>()
-    for (const workflow of workflows.openWorkflows) {
-      const id = cloudIdFor(workflow)
-      if (id !== undefined && !byId.has(id))
-        byId.set(id, { id, name: cloudWorkflowName(workflow) })
+  const availableWorkflowReferences = computed<WorkflowReferenceOption[]>(
+    () => {
+      const seenIds = new Set<string>()
+      const open: WorkflowReferenceOption[] = []
+      for (const workflow of workflows.openWorkflows) {
+        const id = cloudIdFor(workflow)
+        const name = cloudWorkflowName(workflow)
+        if (id !== undefined) {
+          if (seenIds.has(id)) continue
+          seenIds.add(id)
+          open.push({ id, name })
+        } else if (workflow.isTemporary) {
+          open.push({ tabPath: workflow.path, name })
+        }
+      }
+      const saved = cloudIndex.value.filter(({ id }) => {
+        if (seenIds.has(id)) return false
+        seenIds.add(id)
+        return true
+      })
+      return [
+        ...open.toSorted((a, b) => a.name.localeCompare(b.name)),
+        ...saved.toSorted((a, b) => a.name.localeCompare(b.name))
+      ]
     }
-    return [...byId.values()]
-  })
+  )
 
   function openTabsSnapshot(): OpenTabsSnapshot | undefined {
     const openTabs = workflows.openWorkflows.flatMap((workflow) => {
