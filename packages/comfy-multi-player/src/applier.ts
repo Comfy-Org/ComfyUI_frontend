@@ -492,11 +492,16 @@ function applyDefineSubgraph(
       } catch (error) {
         throw new OpRejectedError("malformed_op", `define_subgraph(${op.subgraph_id}): ${error instanceof Error ? error.message : String(error)}`);
       }
+      const widgetEdits = definitionWidgetEdits(doc, existing);
       mset(definitions, op.subgraph_id, replacement);
+      restoreDefinitionWidgetEdits(doc, replacement, widgetEdits);
       setDefinitionDigest(doc, op.subgraph_id, digest);
       return "applied";
     }
-    return "lww-dropped";
+    throw new OpRejectedError(
+      "definition_conflict",
+      `define_subgraph: definition id '${op.subgraph_id}' is already registered with different content`,
+    );
   }
   const existingNested = resolveDefinition(doc, op.subgraph_id);
   if (existingNested !== null) {
@@ -529,6 +534,84 @@ function definitionDigests(doc: Y.Doc): Record<string, string> {
 
 function setDefinitionDigest(doc: Y.Doc, id: string, digest: string): void {
   mset(metaMap(doc), "__definition_digests", { ...definitionDigests(doc), [id]: digest });
+}
+
+type DefinitionWidgetEdit = {
+  targetKey: string;
+  definitionId: string;
+  nodeId: string;
+  widget: string;
+  value: unknown;
+};
+
+function definitionWidgetEdits(
+  doc: Y.Doc,
+  existing: Y.Map<unknown>,
+): DefinitionWidgetEdit[] {
+  const edits: DefinitionWidgetEdit[] = [];
+  for (const targetKey of stampsMap(doc).keys()) {
+    let target: unknown;
+    try {
+      target = JSON.parse(targetKey);
+    } catch {
+      continue;
+    }
+    if (!Array.isArray(target) || target[0] !== "widget" || !Array.isArray(target[1])) continue;
+    const path = target[1].map(String);
+    const widget = target[3];
+    if (path.length !== 2 || typeof widget !== "string") continue;
+    const oldNode = definitionNode(existing, path[0]!, path[1]!);
+    if (!oldNode) continue;
+    const oldWidgets = oldNode.get("widgets");
+    if (oldWidgets instanceof Y.Map && oldWidgets.has(widget)) {
+      edits.push({
+        targetKey,
+        definitionId: path[0]!,
+        nodeId: path[1]!,
+        widget,
+        value: structuredClone(oldWidgets.get(widget)),
+      });
+    }
+  }
+  return edits;
+}
+
+function restoreDefinitionWidgetEdits(
+  doc: Y.Doc,
+  replacement: Y.Map<unknown>,
+  edits: DefinitionWidgetEdit[],
+): void {
+  for (const edit of edits) {
+    const newNode = definitionNode(replacement, edit.definitionId, edit.nodeId);
+    const newWidgets = newNode?.get("widgets");
+    if (!(newWidgets instanceof Y.Map)) {
+      mdel(stampsMap(doc), edit.targetKey);
+      continue;
+    }
+    mset(newWidgets, edit.widget, edit.value);
+  }
+}
+
+function definitionNode(
+  root: Y.Map<unknown>,
+  definitionId: string,
+  nodeId: string,
+): Y.Map<unknown> | null {
+  if (String(root.get("id")) === definitionId) {
+    const nodes = root.get("nodes");
+    const node = nodes instanceof Y.Map ? nodes.get(nodeId) : undefined;
+    return node instanceof Y.Map ? node : null;
+  }
+  const container = root.get("definitions");
+  const nested = container instanceof Y.Map ? container.get("subgraphs") : undefined;
+  if (!(nested instanceof Y.Map)) return null;
+  for (const child of nested.values()) {
+    if (child instanceof Y.Map) {
+      const node = definitionNode(child, definitionId, nodeId);
+      if (node) return node;
+    }
+  }
+  return null;
 }
 
 function assertDefinitionIdsAvailable(doc: Y.Doc, definition: Record<string, unknown>): void {

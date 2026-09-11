@@ -117,10 +117,10 @@ describe("define_subgraph application", () => {
     expect((projections[0]!.definitions as { subgraphs: Array<{ nodes: Array<{ widgets_values: unknown[] }> }> }).subgraphs[0]!.nodes[0]!.widgets_values).toEqual([7])
   })
 
-  it("drops a losing definition conflict without changing the winner", () => {
+  it("rejects a losing definition conflict without changing the winner", () => {
     const doc = empty()
     applyOps(doc, [define()], catalog)
-    expect(applyOps(doc, [define(subgraphId, 2)], catalog).outcomes[0]?.outcome).toBe("lww-dropped")
+    expect(rejectionCode(doc, define(subgraphId, 2))).toBe("definition_conflict")
     expect((project(doc, catalog).definitions as { subgraphs: unknown[] }).subgraphs).toEqual([definition()])
   })
 
@@ -136,6 +136,48 @@ describe("define_subgraph application", () => {
     expect(projections[0]).toEqual(projections[1])
   })
 
+  it("preserves edits to the deterministic winner and reports the same conflict in either legal order", () => {
+    const a = define(subgraphId, 1)
+    const b = define(subgraphId, 2)
+    const edit = {
+      op: "set_widget", ...envelope(), node_id: 10, path: [subgraphId, "10"], inner_widget: "value", widget: "value", value: 9,
+    } as Op
+
+    const results = [[a, edit, b], [b, edit, a]].map((ops) => {
+      const doc = empty()
+      const outcomes = ops.map((op) => applyOps(doc, [op], catalog).outcomes[0])
+      return { outcomes, projection: project(doc, catalog) }
+    })
+
+    expect(results[0]!.projection).toEqual(results[1]!.projection)
+    expect(results[0]!.outcomes.find((outcome) => outcome?.outcome === "rejected")?.op_id).toBe(b.op_id)
+    const projected = (results[0]!.projection.definitions as { subgraphs: Array<{ nodes: Array<{ widgets_values: unknown[] }> }> }).subgraphs[0]!
+    expect(projected.nodes[0]!.widgets_values).toEqual([9])
+  })
+
+  it("rejects an edit to a node that exists only in the replaced definition", () => {
+    const first = {
+      ...definition(subgraphId, 2),
+      nodes: [{ id: 11, type: "Inner", inputs: [], outputs: [], widgets_values: [2] }],
+    }
+    const second = {
+      ...definition(subgraphId, 1),
+      nodes: [{ id: 12, type: "Inner", inputs: [], outputs: [], widgets_values: [1] }],
+    }
+    const doc = empty()
+    applyOps(doc, [{ ...define(subgraphId, 2), subgraph_definition: first }], catalog)
+    applyOps(doc, [{ ...define(subgraphId, 1), subgraph_definition: second }], catalog)
+    const winnerNodes = (project(doc, catalog).definitions as { subgraphs: Array<{ nodes: Array<{ id: number }> }> }).subgraphs[0]!.nodes
+    const losingNodeId = winnerNodes[0]!.id === 11 ? 12 : 11
+
+    const outcome = applyOps(doc, [{
+      op: "set_widget", ...envelope(), node_id: losingNodeId, path: [subgraphId, String(losingNodeId)], inner_widget: "value", widget: "value", value: 9,
+    }], catalog).outcomes[0]
+
+    expect(outcome?.outcome).toBe("rejected")
+    expect(outcome?.outcome === "rejected" ? outcome.reason.code : undefined).toBe("interior_node_not_found")
+  })
+
   it("keeps applying a batch suffix after the deterministic conflict loser", () => {
     const a = define(subgraphId, 1)
     const b = define(subgraphId, 2)
@@ -143,7 +185,8 @@ describe("define_subgraph application", () => {
     const projections = [[a, b], [b, a]].map((ops) => {
       const doc = empty()
       applyOps(doc, [ops[0]!], catalog)
-      applyOps(doc, [ops[1]!, suffix], catalog)
+      applyOps(doc, [ops[1]!], catalog)
+      applyOps(doc, [suffix], catalog)
       return project(doc, catalog)
     })
     expect(projections[0]).toEqual(projections[1])
