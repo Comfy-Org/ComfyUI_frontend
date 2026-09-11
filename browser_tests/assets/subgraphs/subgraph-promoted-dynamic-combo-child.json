@@ -1,12 +1,12 @@
 {
-  "id": "b2c3d4e5-0000-4000-8000-fe258fixture2",
+  "id": "b2c3d4e5-0000-4000-8000-0000fe258002",
   "revision": 0,
   "last_node_id": 11,
   "last_link_id": 1,
   "nodes": [
     {
       "id": 11,
-      "type": "a1b2c3d4-0000-4000-8000-fe258fixture1",
+      "type": "a1b2c3d4-0000-4000-8000-0000fe258001",
       "pos": [400, 200],
       "size": [320, 130],
       "flags": {},
@@ -48,7 +48,7 @@
   "definitions": {
     "subgraphs": [
       {
-        "id": "a1b2c3d4-0000-4000-8000-fe258fixture1",
+        "id": "a1b2c3d4-0000-4000-8000-0000fe258001",
         "version": 1,
         "state": {
           "lastGroupId": 0,

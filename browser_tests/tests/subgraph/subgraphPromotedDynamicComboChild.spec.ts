@@ -22,6 +22,8 @@ test.describe(
     }) => {
       await comfyPage.workflow.loadWorkflow(WORKFLOW)
 
+      // Settle-wait only. This resolves the *interior* widget name, which the
+      // duplicate host input also maps to, so it holds either way.
       await expect
         .poll(() => getPromotedWidgetNames(comfyPage, HOST_NODE_ID))
         .toContain(PROMOTED_INPUT)
@@ -46,11 +48,13 @@ test.describe(
         `${PROMOTED_INPUT}_1`
       )
 
-      const promotedValue = await comfyPage.page.evaluate((id) => {
-        const node = window.app?.graph.getNodeById(id)
-        return node?.widgets?.find((w) => w.name === 'resize_type.multiplier')
-          ?.value
-      }, toNodeId(HOST_NODE_ID))
+      const promotedValue = await comfyPage.page.evaluate(
+        ({ id, name }) => {
+          const node = window.app?.graph.getNodeById(id)
+          return node?.widgets?.find((w) => w.name === name)?.value
+        },
+        { id: toNodeId(HOST_NODE_ID), name: PROMOTED_INPUT }
+      )
       expect(promotedValue).toBe(4)
     })
   }

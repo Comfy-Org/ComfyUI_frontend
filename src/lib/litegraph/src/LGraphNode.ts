@@ -1091,6 +1091,7 @@ export class LGraphNode
 
     const widgetNames = new Set(this.widgets.map(({ name }) => name))
     const dynamicChildInputs = info.inputs?.filter(({ name }) => {
+      if (typeof name !== 'string') return false
       const separator = name.lastIndexOf('.')
       return separator > 0 && widgetNames.has(name.slice(0, separator))
     })
