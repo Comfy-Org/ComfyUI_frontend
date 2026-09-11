@@ -12,6 +12,7 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
 import { useAppModeStore } from '@/stores/appModeStore'
 import type { AugmentedResultItem } from '@/utils/resultItem'
+import { mockPagedList } from '@/utils/__tests__/pagedListUtils'
 import { toNodeId } from '@/types/nodeId'
 
 vi.mock(import('@/platform/assets/composables/media/assetMappers'), () => ({
@@ -66,11 +67,11 @@ function makeResult(
   }
 }
 
+const mockOutputAssets = mockPagedList<AssetItem>({})
 beforeEach(() => {
-  vi.spyOn(useAssetsStore().outputAssets, 'hasMore', 'get').mockReturnValue(
-    false
-  )
-  vi.spyOn(useAssetsStore().outputAssets, 'loadMore').mockResolvedValue(false)
+  Object.assign(useAssetsStore(), { outputAssets: mockOutputAssets })
+  mockOutputAssets.hasMore = false
+  vi.spyOn(mockOutputAssets, 'loadMore').mockResolvedValue(false)
   vi.mocked(useLinearOutputStore().selectAsLatest).mockImplementation(
     () => undefined
   )
@@ -81,7 +82,7 @@ beforeEach(() => {
 
 describe(useOutputHistory, () => {
   beforeEach(() => {
-    Object.assign(useAssetsStore().outputAssets, { items: [] })
+    mockOutputAssets.items = []
     useLinearOutputStore().pendingResolve = new Set()
     useLinearOutputStore().inProgressItems = []
     Object.assign(useLinearOutputStore(), { activeWorkflowInProgressItems: [] })
@@ -103,9 +104,10 @@ describe(useOutputHistory, () => {
         ['job-1', 'workflows/test.json'],
         ['job-2', 'workflows/other.json']
       ])
-      Object.assign(useAssetsStore().outputAssets, {
-        items: [makeAsset('a1', 'job-1'), makeAsset('a2', 'job-2')]
-      })
+      mockOutputAssets.items = [
+        makeAsset('a1', 'job-1'),
+        makeAsset('a2', 'job-2')
+      ]
 
       const { outputs } = useOutputHistory()
 
@@ -118,9 +120,7 @@ describe(useOutputHistory, () => {
       useExecutionStore().jobIdToSessionWorkflowPath = new Map([
         ['job-1', 'workflows/test.json']
       ])
-      Object.assign(useAssetsStore().outputAssets, {
-        items: [makeAsset('a1', 'job-1')]
-      })
+      mockOutputAssets.items = [makeAsset('a1', 'job-1')]
 
       const { outputs } = useOutputHistory()
 
@@ -132,9 +132,10 @@ describe(useOutputHistory, () => {
         ['job-1', 'workflows/a.json'],
         ['job-2', 'workflows/b.json']
       ])
-      Object.assign(useAssetsStore().outputAssets, {
-        items: [makeAsset('a1', 'job-1'), makeAsset('a2', 'job-2')]
-      })
+      mockOutputAssets.items = [
+        makeAsset('a1', 'job-1'),
+        makeAsset('a2', 'job-2')
+      ]
 
       useWorkflowStore().activeWorkflow = fromPartial({
         path: 'workflows/a.json'
@@ -303,7 +304,7 @@ describe(useOutputHistory, () => {
         ['job-1', 'workflows/test.json']
       ])
       useLinearOutputStore().pendingResolve = new Set(['job-1'])
-      Object.assign(useAssetsStore().outputAssets, { items: [asset] })
+      mockOutputAssets.items = [asset]
       useLinearOutputStore().selectedId = null
 
       useOutputHistory()
@@ -329,7 +330,7 @@ describe(useOutputHistory, () => {
         ['job-1', 'workflows/test.json']
       ])
       useLinearOutputStore().pendingResolve = new Set(['job-1'])
-      Object.assign(useAssetsStore().outputAssets, { items: [asset] })
+      mockOutputAssets.items = [asset]
       useLinearOutputStore().selectedId = 'history:existing:0'
 
       useOutputHistory()
@@ -344,7 +345,7 @@ describe(useOutputHistory, () => {
 
     it('skips jobs with no matching asset in media', async () => {
       useLinearOutputStore().pendingResolve = new Set(['job-missing'])
-      Object.assign(useAssetsStore().outputAssets, { items: [] })
+      mockOutputAssets.items = []
 
       useOutputHistory()
       await nextTick()
@@ -358,9 +359,7 @@ describe(useOutputHistory, () => {
       useExecutionStore().jobIdToSessionWorkflowPath = new Map([
         ['job-1', 'workflows/test.json']
       ])
-      Object.assign(useAssetsStore().outputAssets, {
-        items: [makeAsset('a1', 'job-1')]
-      })
+      mockOutputAssets.items = [makeAsset('a1', 'job-1')]
 
       const { selectFirstHistory } = useOutputHistory()
       selectFirstHistory()

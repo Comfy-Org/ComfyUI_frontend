@@ -43,12 +43,12 @@ function renderInput(
 describe('FormDropdownInput', () => {
   describe('Display text', () => {
     it('shows placeholder when no items are selected', () => {
-      renderInput({ placeholder: 'Pick one' })
+      renderInput({ placeholder: 'Pick one', selectedItems: [] })
       expect(screen.getByText('Pick one')).toBeInTheDocument()
     })
 
     it('shows default placeholder when none is provided', () => {
-      renderInput()
+      renderInput({ selectedItems: [] })
       expect(screen.getByText('Select...')).toBeInTheDocument()
     })
 
