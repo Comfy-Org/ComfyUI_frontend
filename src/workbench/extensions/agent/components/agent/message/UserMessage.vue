@@ -11,6 +11,7 @@ import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import type { UserAttachment } from '../../../stores/agent/agentConversationStore'
 import type { WorkflowReference } from '../../../types/workflowReference'
 import type { ReplyAsset } from '../../../utils/replyAssets'
+import { workflowReferenceParts } from '../../../utils/workflowReferenceParts'
 import AgentTooltip from '../AgentTooltip.vue'
 import ReplyAssetGroup from './ReplyAssetGroup.vue'
 
@@ -33,6 +34,9 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const promptParts = computed(() =>
+  workflowReferenceParts(text, workflowReferences)
+)
 const { copy, copied } = useClipboard({ copiedDuring: 2000, legacy: true })
 
 /* The shared map's 'other' glyph is a checkmark, which reads as a status
@@ -114,27 +118,36 @@ const splitAttachments = computed(() => {
     <div
       v-if="text || workflowReferences.length"
       data-testid="user-message-bubble"
-      class="border-agent-border bg-agent-surface-raised text-agent-fg-muted flex w-fit max-w-full flex-wrap items-center gap-1 rounded-[10px] border px-2.5 py-1.5 text-sm/5 font-normal wrap-break-word whitespace-pre-wrap"
+      class="border-agent-border bg-agent-surface-raised text-agent-fg-muted w-fit max-w-full rounded-[10px] border px-2.5 py-1.5 text-sm/5 font-normal wrap-break-word whitespace-pre-wrap"
     >
-      <button
-        v-for="workflow in workflowReferences"
-        :key="workflow.id"
-        type="button"
-        :aria-label="t('agent.openWorkflowTab', { name: workflow.name })"
-        data-testid="workflow-reference-chip"
-        :disabled="workflow.unavailable"
-        :title="
-          workflow.unavailable
-            ? t('agent.targetNavigationUnavailable')
-            : undefined
-        "
-        class="inline-flex max-w-40 cursor-pointer items-center gap-1 rounded-sm border-0 bg-primary-background/30 px-1 py-0.5 align-middle font-inter text-xs/[15px] font-normal text-primary-background-hover ring-1 ring-primary-background/30 ring-inset disabled:cursor-not-allowed disabled:opacity-50"
-        @click="emit('openReferenceWorkflow', workflow.id, workflow.name)"
-      >
-        <span class="icon-[comfy--workflow] size-3 shrink-0" />
-        <span class="truncate">{{ workflow.name }}</span>
-      </button>
-      <span>{{ text }}</span>
+      <template v-for="(part, index) in promptParts" :key="index">
+        <button
+          v-if="part.type === 'workflow'"
+          type="button"
+          :aria-label="
+            t('agent.openWorkflowTab', { name: part.reference.name })
+          "
+          data-testid="workflow-reference-chip"
+          :disabled="part.reference.unavailable"
+          :title="
+            part.reference.unavailable
+              ? t('agent.targetNavigationUnavailable')
+              : undefined
+          "
+          class="inline-flex max-w-40 cursor-pointer items-center gap-1 rounded-sm border-0 bg-primary-background/30 px-1 py-0.5 align-middle font-inter text-xs/[15px] font-normal text-primary-background-hover ring-1 ring-primary-background/30 ring-inset disabled:cursor-not-allowed disabled:opacity-50"
+          @click="
+            emit(
+              'openReferenceWorkflow',
+              part.reference.id,
+              part.reference.name
+            )
+          "
+        >
+          <span class="icon-[comfy--workflow] size-3 shrink-0" />
+          <span class="truncate">{{ part.reference.name }}</span>
+        </button>
+        <template v-else>{{ part.text }}</template>
+      </template>
     </div>
     <div
       v-if="text"

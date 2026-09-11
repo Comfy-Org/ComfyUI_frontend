@@ -63,6 +63,7 @@ export function useAgentDraftSubmission(
 
     const generation = options.contextGeneration()
     const draft = composer.draft
+    const draftReferences = [...composer.workflowReferences]
     const sentAttachments = [...attachments]
     const sentReferences = [...references]
     selection.exit()
@@ -94,7 +95,7 @@ export function useAgentDraftSubmission(
 
     composer.draft = draft
     composer.attachments = sentAttachments
-    composer.workflowReferences = sentReferences.filter(
+    composer.workflowReferences = draftReferences.filter(
       ({ id }) => id !== options.editableWorkflowId()
     )
     if (options.target() === target) selection.replace(nodes)
