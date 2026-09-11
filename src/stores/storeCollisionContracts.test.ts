@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
@@ -66,10 +64,6 @@ function rerouteChain(id: number, graphId: UUID = rootA): RerouteChain {
 }
 
 describe('store collision contracts (EX-002)', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('nodeDataStore rejects a registration at an occupied identity key', () => {
     const store = useNodeDataStore()
     const incumbent = nodeState(1)

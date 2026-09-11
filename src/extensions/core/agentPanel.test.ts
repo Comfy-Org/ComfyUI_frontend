@@ -1,31 +1,27 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Mocked } from 'vitest'
 
 import type { ComfyExtension } from '@/types/comfy'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
+
+let agentStore: Mocked<ReturnType<typeof useAgentPanelStore>>
+let canvasStore: Mocked<ReturnType<typeof useCanvasStore>>
+let nodeSelectionStore: Mocked<ReturnType<typeof useAgentNodeSelectionStore>>
+let workflowStore: ReturnType<typeof useWorkflowStore>
 
 const mocks = vi.hoisted(() => ({
   capturedExtensions: [] as ComfyExtension[],
   notifyAfterGraphConfigure: vi.fn(),
   notifyBeforeGraphLoad: vi.fn(),
-  agentStore: { enabled: false, isOpen: true, close: vi.fn() },
-  canvasStore: { updateSelectedItems: vi.fn() },
   getNodeByLocatorId: vi.fn(),
   flagEnabled: undefined as boolean | undefined,
   flagListener: null as (() => void) | null,
-  nodeSelectionStore: {
-    beginWorkflowLoad: vi.fn(),
-    finishWorkflowLoad: vi.fn(),
-    isLoadingWorkflow: false,
-    nodeIds: vi.fn(() => [] as string[]),
-    restoreNodeIds: vi.fn(),
-    saveNodeIds: vi.fn()
-  },
-  registerTracker: vi.fn(() => () => {}),
-  workflowStore: {
-    activeWorkflow: { path: 'workflows/first.json' },
-    nodeToNodeLocatorId: vi.fn((node: { locatorId?: string; id: number }) =>
-      node.locatorId ? node.locatorId : String(node.id)
-    )
-  }
+  registerTracker: vi.fn(() => () => {})
 }))
 
 vi.mock('@/services/extensionService', () => ({
@@ -41,28 +37,14 @@ vi.mock('@/workbench/extensions/agent/crdt/mintPortWiring', () => ({
   notifyMintPortsBeforeGraphLoad: mocks.notifyBeforeGraphLoad
 }))
 
-vi.mock('@/workbench/extensions/agent/stores/agent/agentPanelStore', () => ({
-  useAgentPanelStore: () => mocks.agentStore
-}))
-
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => mocks.workflowStore
-}))
-
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => mocks.canvasStore
-}))
-
-vi.mock('@/stores/agentNodeSelectionStore', () => ({
-  useAgentNodeSelectionStore: () => mocks.nodeSelectionStore
-}))
-
-vi.mock('@/utils/litegraphUtil', () => ({
-  isLGraphNode: (node: unknown): node is { id: number } =>
+vi.mock(import('@/utils/litegraphUtil'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  isLGraphNode: (node: unknown): node is LGraphNode =>
     typeof node === 'object' && node !== null && 'id' in node
 }))
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock(import('@/utils/graphTraversalUtil'), async (importOriginal) => ({
+  ...(await importOriginal()),
   getNodeByLocatorId: mocks.getNodeByLocatorId
 }))
 
@@ -100,25 +82,33 @@ async function loadEntryAndSetup(): Promise<void> {
 
 describe('AgentPanel extension flag gate', () => {
   beforeEach(() => {
+    agentStore = vi.mocked(useAgentPanelStore())
+    canvasStore = vi.mocked(useCanvasStore())
+    nodeSelectionStore = vi.mocked(useAgentNodeSelectionStore())
+    workflowStore = useWorkflowStore()
+    canvasStore.updateSelectedItems.mockImplementation(() => {})
+    nodeSelectionStore.restoreNodeIds.mockImplementation(() => {})
     mocks.capturedExtensions.length = 0
     mocks.notifyAfterGraphConfigure.mockClear()
     mocks.notifyBeforeGraphLoad.mockClear()
-    mocks.agentStore.close.mockClear()
-    mocks.agentStore.enabled = false
-    mocks.agentStore.isOpen = true
+    agentStore.close.mockClear()
+    agentStore.enabled = false
+    agentStore.isOpen = true
     mocks.flagEnabled = undefined
     mocks.flagListener = null
     mocks.registerTracker.mockClear()
-    mocks.canvasStore.updateSelectedItems.mockClear()
+    canvasStore.updateSelectedItems.mockClear()
     mocks.getNodeByLocatorId.mockReset()
-    mocks.nodeSelectionStore.beginWorkflowLoad.mockClear()
-    mocks.nodeSelectionStore.finishWorkflowLoad.mockClear()
-    mocks.nodeSelectionStore.nodeIds.mockReset()
-    mocks.nodeSelectionStore.nodeIds.mockReturnValue([])
-    mocks.nodeSelectionStore.restoreNodeIds.mockClear()
-    mocks.nodeSelectionStore.saveNodeIds.mockClear()
-    mocks.nodeSelectionStore.isLoadingWorkflow = false
-    mocks.workflowStore.activeWorkflow = { path: 'workflows/first.json' }
+    nodeSelectionStore.beginWorkflowLoad.mockClear()
+    nodeSelectionStore.finishWorkflowLoad.mockClear()
+    nodeSelectionStore.nodeIds.mockReset()
+    nodeSelectionStore.nodeIds.mockReturnValue([])
+    nodeSelectionStore.restoreNodeIds.mockClear()
+    nodeSelectionStore.saveNodeIds.mockClear()
+    nodeSelectionStore.isLoadingWorkflow = false
+    workflowStore.activeWorkflow = createMockLoadedWorkflow({
+      path: 'workflows/first.json'
+    })
     vi.resetModules()
   })
 
@@ -134,12 +124,12 @@ describe('AgentPanel extension flag gate', () => {
 
     await loadEntryAndSetup()
 
-    expect(mocks.agentStore.enabled).toBe(true)
+    expect(agentStore.enabled).toBe(true)
   })
 
   it('leaves the panel disabled while the flag is undefined', async () => {
     await loadEntryAndSetup()
-    expect(mocks.agentStore.enabled).toBe(false)
+    expect(agentStore.enabled).toBe(false)
   })
 
   it('registers the tab-activity tracker once at setup, not gated on the flag', async () => {
@@ -151,7 +141,7 @@ describe('AgentPanel extension flag gate', () => {
     await loadEntryAndSetup()
     mocks.flagEnabled = true
     mocks.flagListener!()
-    expect(mocks.agentStore.enabled).toBe(true)
+    expect(agentStore.enabled).toBe(true)
   })
 
   it('disables the panel without closing it when the flag flips back to false', async () => {
@@ -161,21 +151,21 @@ describe('AgentPanel extension flag gate', () => {
     mocks.flagEnabled = false
     mocks.flagListener!()
 
-    expect(mocks.agentStore.enabled).toBe(false)
-    expect(mocks.agentStore.close).not.toHaveBeenCalled()
-    expect(mocks.agentStore.isOpen).toBe(true)
+    expect(agentStore.enabled).toBe(false)
+    expect(agentStore.close).not.toHaveBeenCalled()
+    expect(agentStore.isOpen).toBe(true)
   })
 
   it('finishes a pending selection restore when the flag is disabled', async () => {
     await loadEntryAndSetup()
     mocks.flagEnabled = true
     mocks.flagListener!()
-    mocks.nodeSelectionStore.isLoadingWorkflow = true
+    nodeSelectionStore.isLoadingWorkflow = true
 
     mocks.flagEnabled = false
     mocks.flagListener!()
 
-    expect(mocks.nodeSelectionStore.finishWorkflowLoad).toHaveBeenCalledOnce()
+    expect(nodeSelectionStore.finishWorkflowLoad).toHaveBeenCalledOnce()
   })
 
   it('restores each workflow reference after the shared graph load', async () => {
@@ -187,17 +177,19 @@ describe('AgentPanel extension flag gate', () => {
     const secondNode = { id: 12 }
     const rootGraph = {}
     const selectItems = vi.fn()
-    mocks.agentStore.enabled = true
+    agentStore.enabled = true
 
     extension!.beforeLoadGraph!({} as never)
 
     expect(mocks.notifyBeforeGraphLoad).toHaveBeenCalledOnce()
-    expect(mocks.nodeSelectionStore.beginWorkflowLoad).toHaveBeenCalledOnce()
+    expect(nodeSelectionStore.beginWorkflowLoad).toHaveBeenCalledOnce()
 
-    mocks.nodeSelectionStore.isLoadingWorkflow = true
-    mocks.nodeSelectionStore.nodeIds.mockReturnValue(['12'])
+    nodeSelectionStore.isLoadingWorkflow = true
+    nodeSelectionStore.nodeIds.mockReturnValue(['12'])
     mocks.getNodeByLocatorId.mockReturnValue(secondNode)
-    mocks.workflowStore.activeWorkflow = { path: 'workflows/second.json' }
+    workflowStore.activeWorkflow = createMockLoadedWorkflow({
+      path: 'workflows/second.json'
+    })
 
     extension!.afterLoadGraph!({
       rootGraph,
@@ -208,9 +200,9 @@ describe('AgentPanel extension flag gate', () => {
 
     expect(mocks.getNodeByLocatorId).toHaveBeenCalledWith(rootGraph, '12')
     expect(selectItems).toHaveBeenCalledWith([secondNode])
-    expect(mocks.nodeSelectionStore.restoreNodeIds).toHaveBeenCalledWith(['12'])
-    expect(mocks.canvasStore.updateSelectedItems).toHaveBeenCalledOnce()
-    expect(mocks.nodeSelectionStore.finishWorkflowLoad).not.toHaveBeenCalled()
+    expect(nodeSelectionStore.restoreNodeIds).toHaveBeenCalledWith(['12'])
+    expect(canvasStore.updateSelectedItems).toHaveBeenCalledOnce()
+    expect(nodeSelectionStore.finishWorkflowLoad).not.toHaveBeenCalled()
   })
 
   it('closes the mint suppression bracket after graph configuration', async () => {
@@ -232,22 +224,23 @@ describe('AgentPanel extension flag gate', () => {
       (item) => item.name === 'Comfy.AgentPanel'
     )
     const locator = '12345678-1234-1234-1234-123456789abc:shared'
-    const subgraphNode = { id: 'shared', locatorId: locator }
+    const subgraphNode = {
+      id: 'shared',
+      graph: { id: '12345678-1234-1234-1234-123456789abc', isRootGraph: false }
+    }
     const rootGraph = {}
     const selectItems = vi.fn()
 
-    mocks.agentStore.enabled = true
-    mocks.nodeSelectionStore.isLoadingWorkflow = true
-    mocks.nodeSelectionStore.nodeIds.mockReturnValue([locator])
+    agentStore.enabled = true
+    nodeSelectionStore.isLoadingWorkflow = true
+    nodeSelectionStore.nodeIds.mockReturnValue([locator])
     mocks.getNodeByLocatorId.mockReturnValue(subgraphNode)
 
     extension!.afterLoadGraph!({ rootGraph, canvas: { selectItems } } as never)
 
     expect(mocks.getNodeByLocatorId).toHaveBeenCalledWith(rootGraph, locator)
     expect(selectItems).toHaveBeenCalledWith([subgraphNode])
-    expect(mocks.nodeSelectionStore.restoreNodeIds).toHaveBeenCalledWith([
-      locator
-    ])
+    expect(nodeSelectionStore.restoreNodeIds).toHaveBeenCalledWith([locator])
   })
 
   it('skips graph-load selection tracking while the panel is closed', async () => {
@@ -256,12 +249,12 @@ describe('AgentPanel extension flag gate', () => {
     const extension = mocks.capturedExtensions.find(
       (item) => item.name === 'Comfy.AgentPanel'
     )
-    mocks.agentStore.isOpen = false
+    agentStore.isOpen = false
 
     extension!.beforeLoadGraph!({} as never)
 
     expect(mocks.notifyBeforeGraphLoad).toHaveBeenCalledOnce()
-    expect(mocks.nodeSelectionStore.beginWorkflowLoad).not.toHaveBeenCalled()
+    expect(nodeSelectionStore.beginWorkflowLoad).not.toHaveBeenCalled()
   })
 
   it('finishes restoration when the panel closes during graph load', async () => {
@@ -270,14 +263,14 @@ describe('AgentPanel extension flag gate', () => {
     const extension = mocks.capturedExtensions.find(
       (item) => item.name === 'Comfy.AgentPanel'
     )
-    mocks.agentStore.isOpen = false
-    mocks.nodeSelectionStore.isLoadingWorkflow = true
+    agentStore.isOpen = false
+    nodeSelectionStore.isLoadingWorkflow = true
 
     extension!.afterLoadGraph!({} as never)
 
-    expect(mocks.nodeSelectionStore.finishWorkflowLoad).toHaveBeenCalledOnce()
+    expect(nodeSelectionStore.finishWorkflowLoad).toHaveBeenCalledOnce()
     expect(mocks.getNodeByLocatorId).not.toHaveBeenCalled()
-    expect(mocks.canvasStore.updateSelectedItems).not.toHaveBeenCalled()
+    expect(canvasStore.updateSelectedItems).not.toHaveBeenCalled()
   })
 
   it('finishes restoration when graph configuration fails', async () => {
@@ -286,11 +279,11 @@ describe('AgentPanel extension flag gate', () => {
     const extension = mocks.capturedExtensions.find(
       (item) => item.name === 'Comfy.AgentPanel'
     )
-    mocks.nodeSelectionStore.isLoadingWorkflow = true
+    nodeSelectionStore.isLoadingWorkflow = true
 
     extension!.onGraphLoadError!(new Error('bad workflow json'), {} as never)
 
-    expect(mocks.nodeSelectionStore.finishWorkflowLoad).toHaveBeenCalledOnce()
+    expect(nodeSelectionStore.finishWorkflowLoad).toHaveBeenCalledOnce()
   })
 
   it('finishes restoration when selection restoration throws', async () => {
@@ -299,10 +292,10 @@ describe('AgentPanel extension flag gate', () => {
     const extension = mocks.capturedExtensions.find(
       (item) => item.name === 'Comfy.AgentPanel'
     )
-    mocks.agentStore.enabled = true
-    mocks.agentStore.isOpen = true
-    mocks.nodeSelectionStore.isLoadingWorkflow = true
-    mocks.nodeSelectionStore.nodeIds.mockReturnValue(['12'])
+    agentStore.enabled = true
+    agentStore.isOpen = true
+    nodeSelectionStore.isLoadingWorkflow = true
+    nodeSelectionStore.nodeIds.mockReturnValue(['12'])
     mocks.getNodeByLocatorId.mockImplementation(() => {
       throw new Error('selection restore failed')
     })
@@ -310,7 +303,7 @@ describe('AgentPanel extension flag gate', () => {
     expect(() =>
       extension!.afterLoadGraph!({ rootGraph: {} } as never)
     ).toThrow('selection restore failed')
-    expect(mocks.nodeSelectionStore.finishWorkflowLoad).toHaveBeenCalledOnce()
+    expect(nodeSelectionStore.finishWorkflowLoad).toHaveBeenCalledOnce()
   })
 
   it('does not start selection restoration while the flag is disabled', async () => {
@@ -322,6 +315,6 @@ describe('AgentPanel extension flag gate', () => {
 
     extension!.beforeLoadGraph!({} as never)
 
-    expect(mocks.nodeSelectionStore.beginWorkflowLoad).not.toHaveBeenCalled()
+    expect(nodeSelectionStore.beginWorkflowLoad).not.toHaveBeenCalled()
   })
 })

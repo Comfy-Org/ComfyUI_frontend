@@ -29,7 +29,7 @@ const baseRoutes = {
   agent: '/agent',
   platform: '/platform',
   platformComfyApi: '/platform/comfy-api',
-  platformModels: '/platform/models',
+  platformRouter: '/platform/router',
   platformBuilder: '/platform/builder',
   cli: '/cli',
   minimax: '/minimax-h3',
@@ -44,6 +44,7 @@ const baseRoutes = {
   wanAnimate2: '/wan-animate-2',
   cloudNodes: '/cloud-nodes',
   wan3: '/wan-3.0',
+  chatgptImage25: '/chatgpt-image-2.5',
   brand: '/brand'
 } as const
 
@@ -101,8 +102,13 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
 // workshop: the catalog is English-only. It is also build-gated until launch,
 // but enabled previews must not advertise a localized page that does not exist.
 const LOCALE_INVARIANT_EXTRA_PATHS = [
+  // Auth surfaces render one page for every locale (copy localizes in the
+  // island); a /zh-CN twin does not exist and must not be advertised.
+  '/forgot-password',
+  '/login',
   '/pixal3d-trellis2',
   '/platform/serverless-animation',
+  '/signup',
   '/workshop'
 ]
 

@@ -594,6 +594,9 @@ export function useAgentCrdtFollower(
       ? readSubgraphDefinitions(bridge.follower.doc)
       : []
     const nodeIds = reconcileAgentAdapters(graph, definitions)
+    // A frame that only wires or rewires nodes moves no layout, so nothing
+    // else asks the canvas to paint the new links.
+    graph.setDirtyCanvas(true, true)
     if (nodeIds.length > 0) {
       recordDevEvent('agent_node_adapters_materialized', {
         workflowId: docId,

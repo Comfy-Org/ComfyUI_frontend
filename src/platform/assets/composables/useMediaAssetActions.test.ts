@@ -1,3 +1,10 @@
+import type * as DistributionModule from '@/platform/distribution/types'
+import { useDialogStore } from '@/stores/dialogStore'
+import { useAssetsStore } from '@/stores/assetsStore'
+import { useAssetExportStore } from '@/stores/assetExportStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { CreateAssetExportData } from '@comfyorg/ingest-types'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { useToast } from 'primevue/usetoast'
@@ -23,7 +30,8 @@ vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadFile: mockDownloadFile
 }))
 
-vi.mock(import('@/platform/distribution/types'), () => ({
+vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
+  ...(await importOriginal<typeof DistributionModule>()),
   get isCloud() {
     return mockIsCloud.value
   }
@@ -41,38 +49,11 @@ vi.mock<unknown>(
 )
 
 const mockShowDialog = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
-  useDialogStore: () => ({
-    showDialog: mockShowDialog
-  })
-}))
 
 const mockInvalidateModelsForCategory = vi.hoisted(() => vi.fn())
 const mockSetAssetDeleting = vi.hoisted(() => vi.fn())
 const mockHasCategory = vi.hoisted(() => vi.fn())
 const mockInputAssets = vi.hoisted(() => ({ items: [] as AssetItem[] }))
-vi.mock<unknown>(import('@/stores/assetsStore'), () => ({
-  useAssetsStore: () => ({
-    setAssetDeleting: mockSetAssetDeleting,
-    inputAssets: {
-      get items() {
-        return mockInputAssets.items
-      },
-      invalidate: (stale?: string[]) => {
-        const ids = new Set(stale)
-        mockInputAssets.items = mockInputAssets.items.filter(
-          (item) => !ids.has(item.id)
-        )
-      }
-    },
-    invalidateModelsForCategory: mockInvalidateModelsForCategory,
-    hasCategory: mockHasCategory
-  })
-}))
-
-vi.mock<unknown>(import('@/stores/modelToNodeStore'), () => ({
-  useModelToNodeStore: () => ({})
-}))
 
 vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: () => ({
@@ -103,17 +84,6 @@ const litegraphServiceMock = vi.hoisted(() => ({
 }))
 vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: () => litegraphServiceMock
-}))
-
-vi.mock<unknown>(import('@/stores/nodeDefStore'), () => ({
-  useNodeDefStore: () => ({
-    nodeDefsByName: {
-      LoadImage: {
-        name: 'LoadImage',
-        display_name: 'Load Image'
-      }
-    }
-  })
 }))
 
 vi.mock<unknown>(import('@/utils/loaderNodeUtil'), () => ({
@@ -162,11 +132,6 @@ vi.mock<unknown>(import('../services/assetService'), () => ({
 }))
 
 const mockTrackExport = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(import('@/stores/assetExportStore'), () => ({
-  useAssetExportStore: () => ({
-    trackExport: mockTrackExport
-  })
-}))
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
@@ -185,6 +150,8 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
 const mockAppGraph = vi.hoisted(() => ({ value: { _nodes: [] as unknown[] } }))
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
+    nodeOutputs: {},
+    nodePreviewImages: {},
     get graph() {
       return mockAppGraph.value
     },
@@ -196,24 +163,8 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 
 const mockRemoveNodeOutputs = vi.hoisted(() => vi.fn())
 const mockRemoveNodeOutputsForNode = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(import('@/stores/nodeOutputStore'), () => ({
-  useNodeOutputStore: () => ({
-    removeNodeOutputs: mockRemoveNodeOutputs,
-    removeNodeOutputsForNode: mockRemoveNodeOutputsForNode
-  })
-}))
 
 const mockCaptureCanvasState = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(
-  import('@/platform/workflow/management/stores/workflowStore'),
-  () => ({
-    useWorkflowStore: () => ({
-      activeWorkflow: {
-        changeTracker: { captureCanvasState: mockCaptureCanvasState }
-      }
-    })
-  })
-)
 
 const mockClearNodePreviewCache = vi.hoisted(() => vi.fn())
 vi.mock(import('../utils/clearNodePreviewCacheForValues'), () => ({
@@ -309,6 +260,49 @@ function useMediaAssetActions() {
 }
 
 afterEach(() => apps.splice(0).forEach((app) => app.unmount()))
+
+beforeEach(() => {
+  useNodeDefStore().nodeDefsByName = {
+    LoadImage: fromPartial({
+      name: 'LoadImage',
+      display_name: 'Load Image'
+    })
+  }
+  useWorkflowStore().activeWorkflow = fromPartial({
+    changeTracker: { captureCanvasState: mockCaptureCanvasState }
+  })
+})
+
+beforeEach(() => {
+  vi.mocked(useDialogStore().showDialog).mockImplementation(mockShowDialog)
+  vi.mocked(useAssetsStore().setAssetDeleting).mockImplementation(
+    mockSetAssetDeleting
+  )
+  vi.spyOn(useAssetsStore().inputAssets, 'items', 'get').mockImplementation(
+    () => mockInputAssets.items
+  )
+  vi.spyOn(useAssetsStore().inputAssets, 'invalidate').mockImplementation(
+    async (stale?: string[]) => {
+      const ids = new Set(stale)
+      mockInputAssets.items = mockInputAssets.items.filter(
+        (item) => !ids.has(item.id)
+      )
+    }
+  )
+  vi.mocked(useAssetsStore().invalidateModelsForCategory).mockImplementation(
+    mockInvalidateModelsForCategory
+  )
+  vi.mocked(useAssetsStore().hasCategory).mockImplementation(mockHasCategory)
+  vi.mocked(useAssetExportStore().trackExport).mockImplementation(
+    mockTrackExport
+  )
+  vi.mocked(useNodeOutputStore().removeNodeOutputs).mockImplementation(
+    mockRemoveNodeOutputs
+  )
+  vi.mocked(useNodeOutputStore().removeNodeOutputsForNode).mockImplementation(
+    mockRemoveNodeOutputsForNode
+  )
+})
 
 describe('useMediaAssetActions', () => {
   beforeEach(() => {
@@ -580,7 +574,7 @@ describe('useMediaAssetActions', () => {
       unmount()
     })
 
-    it('keeps single explicit assets on the direct download path in cloud', () => {
+    it('downloads a single explicit asset by asset id in cloud', () => {
       mockIsCloud.value = true
       mockGetOutputAssetMetadata.mockReturnValue({
         jobId: 'job1',
@@ -600,7 +594,7 @@ describe('useMediaAssetActions', () => {
 
       expect(mockDownloadFile).toHaveBeenCalledOnce()
       expect(mockDownloadFile).toHaveBeenCalledWith(
-        'https://example.com/single-output.png',
+        'http://localhost:8188/api/assets/single-output/content',
         'single-output.png'
       )
       expect(mockCreateAssetExport).not.toHaveBeenCalled()

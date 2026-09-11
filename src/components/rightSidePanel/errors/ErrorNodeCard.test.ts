@@ -1,15 +1,19 @@
-import { createTestingPinia } from '@pinia/testing'
-import { render, screen, waitFor } from '@testing-library/vue'
+import { getActivePinia } from 'pinia'
 import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
+
+import { resolveRunErrorMessage } from '@/platform/errorCatalog/errorMessageResolver'
+import { useCommandStore } from '@/stores/commandStore'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
+import { toNodeId } from '@/types/nodeId'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
+import { validationError } from '@/utils/__tests__/nodeErrorHelpers'
+
 import ErrorNodeCard from './ErrorNodeCard.vue'
 import type { ErrorCardData } from './types'
-import { resolveRunErrorMessage } from '@/platform/errorCatalog/errorMessageResolver'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
-import { toNodeId } from '@/types/nodeId'
-import { validationError } from '@/utils/__tests__/nodeErrorHelpers'
 
 const mockGetLogs = vi.fn(() => Promise.resolve('mock server logs'))
 const mockSerialize = vi.fn(() => ({ nodes: [] }))
@@ -44,13 +48,6 @@ vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   }))
 }))
 
-const mockExecuteCommand = vi.fn()
-vi.mock<unknown>(import('@/stores/commandStore'), () => ({
-  useCommandStore: vi.fn(() => ({
-    execute: mockExecuteCommand
-  }))
-}))
-
 vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
   useExternalLink: vi.fn(() => ({
     staticUrls: {
@@ -66,6 +63,30 @@ describe('ErrorNodeCard.vue', () => {
     cardIdCounter = 0
     mockGetLogs.mockResolvedValue('mock server logs')
     mockGenerateErrorReport.mockReturnValue('# ComfyUI Error Report\n...')
+    vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
+    useSystemStatsStore().systemStats = {
+      system: {
+        os: 'Linux',
+        python_version: '3.11.0',
+        embedded_python: false,
+        comfyui_version: '1.0.0',
+        pytorch_version: '2.1.0',
+        ram_total: 32000,
+        ram_free: 16000,
+        argv: ['--listen']
+      },
+      devices: [
+        {
+          name: 'NVIDIA RTX 4090',
+          type: 'cuda',
+          index: 0,
+          vram_total: 24000,
+          vram_free: 12000,
+          torch_vram_total: 24000,
+          torch_vram_free: 12000
+        }
+      ]
+    }
 
     i18n = createI18n({
       legacy: false,
@@ -95,47 +116,14 @@ describe('ErrorNodeCard.vue', () => {
     })
   })
 
-  function renderCard(
-    card: ErrorCardData,
-    options: { initialState?: Record<string, unknown> } = {}
-  ) {
+  function renderCard(card: ErrorCardData) {
     const user = userEvent.setup()
     const onCopyToClipboard = vi.fn()
     const onLocateNode = vi.fn()
     const { container } = render(ErrorNodeCard, {
       props: { card, onCopyToClipboard, onLocateNode },
       global: {
-        plugins: [
-          PrimeVue,
-          i18n,
-          createTestingPinia({
-            createSpy: vi.fn,
-            initialState: options.initialState ?? {
-              systemStats: {
-                systemStats: {
-                  system: {
-                    os: 'Linux',
-                    python_version: '3.11.0',
-                    embedded_python: false,
-                    comfyui_version: '1.0.0',
-                    pytorch_version: '2.1.0',
-                    argv: ['--listen']
-                  },
-                  devices: [
-                    {
-                      name: 'NVIDIA RTX 4090',
-                      type: 'cuda',
-                      vram_total: 24000,
-                      vram_free: 12000,
-                      torch_vram_total: 24000,
-                      torch_vram_free: 12000
-                    }
-                  ]
-                }
-              }
-            }
-          })
-        ],
+        plugins: [PrimeVue, i18n, getActivePinia()!],
         stubs: {
           TransitionCollapse: { template: '<div><slot /></div>' },
           Button: {
@@ -413,7 +401,9 @@ describe('ErrorNodeCard.vue', () => {
 
     await user.click(screen.getByRole('button', { name: /Get Help/ }))
 
-    expect(mockExecuteCommand).toHaveBeenCalledWith('Comfy.ContactSupport')
+    expect(useCommandStore().execute).toHaveBeenCalledWith(
+      'Comfy.ContactSupport'
+    )
     expect(mockTrackHelpResourceClicked).toHaveBeenCalledWith(
       expect.objectContaining({
         resource_type: 'help_feedback',
@@ -463,11 +453,8 @@ describe('ErrorNodeCard.vue', () => {
   })
 
   it('falls back to original details when systemStats is unavailable', async () => {
-    renderCard(makeRuntimeErrorCard(), {
-      initialState: {
-        systemStats: { systemStats: null }
-      }
-    })
+    useSystemStatsStore().systemStats = null
+    renderCard(makeRuntimeErrorCard())
 
     expect(screen.getByText(/Traceback line 1/)).toBeInTheDocument()
 
