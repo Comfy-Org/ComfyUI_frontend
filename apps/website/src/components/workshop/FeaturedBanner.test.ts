@@ -77,17 +77,26 @@ describe('FeaturedBanner', () => {
     )
   })
 
-  it('keeps a name whose task label only matches mid-word', () => {
-    const midWord: WorkshopModel = {
-      ...base,
-      name: 'Context-to-Image',
-      slug: 'context',
-      href: '/models/context/'
+  it('shows the docs button only when the provider has a docs section', async () => {
+    const user = userEvent.setup()
+    const undocumented: WorkshopModel = {
+      ...kling,
+      slug: 'magnific',
+      name: 'Magnific',
+      href: '/models/magnific/',
+      provider: 'Magnific',
+      routerId: 'magnific/upscale'
     }
-    render(FeaturedBanner, { props: { models: [midWord] } })
-    expect(screen.getByRole('heading', { level: 2 }).textContent).toBe(
-      'Context-to-Image'
+    render(FeaturedBanner, { props: { models: [base, undocumented] } })
+
+    const docs = screen.getByTestId('featured-docs-link')
+    expect(docs.getAttribute('href')).toBe(
+      'https://docs.comfy.org/development/comfy-router/models#black-forest-labs'
     )
+    expect(docs.getAttribute('target')).toBe('_blank')
+
+    await user.click(screen.getByRole('button', { name: 'Magnific' }))
+    expect(screen.queryByTestId('featured-docs-link')).toBeNull()
   })
 
   it('drops the pagination when there is nothing to page through', () => {

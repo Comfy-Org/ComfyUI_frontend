@@ -168,6 +168,7 @@ const authEnabled = useWorkshopAuthFlag()
 const authFlagSettled = useWorkshopAuthFlagSettled()
 const mounted = useMounted()
 const signInHref = useSignInHref(locale)
+const docsHref = modelDocsHref(model)
 const gate = computed(() => {
   if (
     model.incompleteReason ||
@@ -438,10 +439,10 @@ function useInCode() {
         </button>
       </div>
       <a
-        v-if="modelDocsHref(model)"
-        :href="modelDocsHref(model)"
+        v-if="docsHref"
+        :href="docsHref"
         target="_blank"
-        rel="noopener"
+        rel="noopener noreferrer"
         class="hover:text-primary-comfy-yellow ml-auto inline-flex shrink-0 items-center gap-1.5 pb-3 text-sm font-bold tracking-wider whitespace-nowrap text-primary-warm-white uppercase transition-colors"
         data-testid="model-docs-link"
       >
