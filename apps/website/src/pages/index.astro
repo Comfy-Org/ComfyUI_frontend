@@ -17,6 +17,7 @@ import { getCollection } from "astro:content";
 import { isWorkshopInBuild } from "../config/workshop-release";
 import { modelReleaseLinks } from "../config/model-release-links";
 import { resolveHomepageWorkshopModels } from "../config/workshop-homepage";
+import { resolveDiscoveryProviders } from "../components/home/modelDiscoveryProviders";
 import { t } from "../i18n/translations";
 import {
   comfyUiApplicationNode,
@@ -31,9 +32,7 @@ const { siteUrl } = pageContext(
   Astro.currentLocale,
 );
 
-const discoveryProviders = isWorkshopInBuild()
-  ? (await import("../data/modelDiscovery")).discoveryProviders
-  : [];
+const discoveryProviders = await resolveDiscoveryProviders(isWorkshopInBuild());
 
 // The same switch that decides whether Workshop is built at all. A release
 // build has no Workshop routes, so the homepage must not link to them; one
