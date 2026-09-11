@@ -210,10 +210,15 @@ async function mockPasswordReset(page: Page) {
       const email =
         typeof body === 'object' &&
         body !== null &&
+        'requestType' in body &&
+        body.requestType === 'PASSWORD_RESET' &&
         'email' in body &&
         typeof body.email === 'string'
           ? body.email
           : undefined
+      if (email === undefined) {
+        throw new Error('Expected a PASSWORD_RESET request with a string email')
+      }
       return route.fulfill(
         jsonRoute({
           kind: 'identitytoolkit#GetOobConfirmationCodeResponse',
@@ -298,10 +303,6 @@ test.describe('Live email sign-in', () => {
     ).toBeVisible()
     await expect(page).toHaveURL(/\/login\/(?:[?#].*)?$/)
 
-    // The banner alone does not prove the session survived: a consumer that
-    // signed the user out before throwing would render it identically. Reload
-    // and confirm the restored session mints and carries the now-provisioned
-    // user home — a signed-out user would stay on the login form.
     await page.unroute('**/customers')
     await mockProvisioning(page)
     await page.reload()
