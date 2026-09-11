@@ -144,7 +144,11 @@ export function watchForTopUp(): void {
   let ticks = 0
   topUpPoll = setInterval(() => {
     ticks += 1
-    if (session.value?.workspace.id !== forWorkspace) {
+    // Only a definitely different workspace retires the watch: a snapshot
+    // mid-remint has no session for a beat, and that transient must not
+    // kill a checkout in flight.
+    const liveWorkspace = session.value?.workspace.id
+    if (liveWorkspace !== undefined && liveWorkspace !== forWorkspace) {
       clearTopUpWatch()
       return
     }
