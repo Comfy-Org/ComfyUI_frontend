@@ -215,11 +215,13 @@ describe('useAgentCrdtFollower', () => {
     definitionsState.readSubgraphDefinitions.mockClear()
   })
 
-  it('reconciles subscription intent when the transport reports its socket connected', () => {
-    // A subscribe sent while the transport's socket is still connecting is
-    // dropped. The cloud follower re-drives it off ComfyUI's own socket
-    // events; a transport on a different socket (the standalone agent's)
-    // must be able to say "I am usable now" and get the same reconcile.
+  it('resubscribes when the transport reports its socket (re)connected', () => {
+    // The server drops a connection's follows when the socket closes, while
+    // the bridge still believes it is subscribed — so a plain reconcile
+    // (which no-ops once intent equals reality) would leave the follower
+    // deaf after a reconnect. A transport on a socket other than ComfyUI's
+    // must get the same treatment as a ComfyUI `reconnected`: drop the
+    // connection state and resubscribe.
     let connectedListener: (() => void) | null = null
     const stopConnected = vi.fn()
     const transport: DocFrameTransport = {
@@ -231,13 +233,21 @@ describe('useAgentCrdtFollower', () => {
         return stopConnected
       }
     }
-    const { unmount } = mountFollower('wf-1', true, () => null, transport)
+    const { unmount, status } = mountFollower(
+      'wf-1',
+      true,
+      () => null,
+      transport
+    )
     expect(connectedListener).toBeTypeOf('function')
-    const before = bridge().reconcile.mock.calls.length
+    dispatchFrame('doc_subscribed', { ok: true, workflow_id: 'wf-1', seq: 3 })
+    expect(status().connected).toBe(true)
+    const before = bridge().resubscribe.mock.calls.length
 
     connectedListener!()
 
-    expect(bridge().reconcile.mock.calls.length).toBe(before + 1)
+    expect(bridge().resubscribe.mock.calls.length).toBe(before + 1)
+    expect(status().connected).toBe(false)
     unmount()
     expect(stopConnected).toHaveBeenCalledTimes(1)
   })
