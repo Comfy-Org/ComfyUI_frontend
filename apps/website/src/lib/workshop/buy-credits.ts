@@ -17,6 +17,8 @@ import {
  */
 const PLATFORM_ORIGIN = 'https://platform.comfy.org'
 
+export const TOP_UP_ON_PLATFORM = WORKSHOP_CLOUD_ENV === 'prod'
+
 export function platformTopUpHref(workspaceId?: string): string {
   if (WORKSHOP_CLOUD_ENV !== 'prod') return WORKSHOP_CREDITS_URL
   const url = new URL('/billing', PLATFORM_ORIGIN)
