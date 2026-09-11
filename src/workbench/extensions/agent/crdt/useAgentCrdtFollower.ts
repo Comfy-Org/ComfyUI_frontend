@@ -496,7 +496,7 @@ export function useAgentCrdtFollower(
       workflowId === subscribedWorkflowId.value
     ) {
       updatesApplied.value = 0
-      adapter.clearForReset(workflowId, {
+      const cleared = adapter.clearForReset(workflowId, {
         source: 'agent-remote',
         actor: 'agent-lineage',
         opId: `follower-replaced:${workflowId}`
@@ -504,7 +504,12 @@ export function useAgentCrdtFollower(
       // Same reasoning as `onDocReset`: the clear is store-only, so the stale
       // live adapters have to be swept before the replacement doc's frames
       // start landing.
-      reconcileLiveGraph(workflowId)
+      //
+      // Only when there WAS a session to clear. A target switch replaces the
+      // lineage before the new target is bound, so the stores still hold the
+      // outgoing target and reconciling here would project them into the
+      // incoming one. That target's own first frame reconciles it fully.
+      if (cleared) reconcileLiveGraph(workflowId)
       bindFollower(workflowId)
     }
   }
