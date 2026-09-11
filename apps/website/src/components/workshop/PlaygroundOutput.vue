@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
   Download,
+  ExternalLink,
   File as FileIcon,
   Image as ImageIcon,
   Loader2,
@@ -24,6 +25,7 @@ import type {
 } from '../../config/workshop-run'
 import { formatElapsed, isExpired } from '../../config/workshop-run'
 import { WORKSHOP_CREDITS_URL } from '../../config/workshop-env'
+import { downloadOutput } from '../../config/workshop-output-download'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
@@ -125,6 +127,18 @@ const outputs = computed(() =>
     : []
 )
 const currentUrl = computed(() => outputs.value[selected.value] ?? '')
+const failedDownloadUrl = ref<string>()
+const downloadNeedsLink = computed(
+  () => failedDownloadUrl.value === currentUrl.value
+)
+async function download(event: MouseEvent) {
+  if (downloadNeedsLink.value) return
+  event.preventDefault()
+  if (!shown.value) return
+  const url = currentUrl.value
+  if (!(await downloadOutput(url, shown.value.fileName)))
+    failedDownloadUrl.value = url
+}
 watch(latest, () => {
   viewing.value = undefined
 })
@@ -300,6 +314,7 @@ const earlierClass = (active: boolean) =>
             controls-on-hover
             autoplay
             loop
+            no-cors
           />
           <img
             v-else-if="currentUrl && shown.kind === 'image' && !blurred"
@@ -510,6 +525,13 @@ const earlierClass = (active: boolean) =>
         v-if="state.status === 'succeeded'"
         class="flex flex-col gap-2 border-t border-transparency-white-t8 p-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end"
       >
+        <p
+          v-if="downloadNeedsLink && !blurred"
+          role="status"
+          class="w-full text-xs text-primary-warm-gray"
+        >
+          {{ t('workshop.output.downloadFallback', locale) }}
+        </p>
         <Button
           variant="outline"
           size="sm"
@@ -523,13 +545,23 @@ const earlierClass = (active: boolean) =>
           v-if="currentUrl && !blurred"
           as="a"
           :href="currentUrl"
-          :download="shown.fileName"
-          :prepend-icon="Download"
+          :download="downloadNeedsLink ? undefined : shown.fileName"
+          :prepend-icon="downloadNeedsLink ? ExternalLink : Download"
+          target="_blank"
+          rel="noopener"
           size="sm"
           class="w-full sm:w-auto"
           data-testid="output-download"
+          @click="download"
         >
-          {{ t('workshop.output.download', locale) }}
+          {{
+            t(
+              downloadNeedsLink
+                ? 'workshop.output.openOriginal'
+                : 'workshop.output.download',
+              locale
+            )
+          }}
         </Button>
       </div>
     </template>

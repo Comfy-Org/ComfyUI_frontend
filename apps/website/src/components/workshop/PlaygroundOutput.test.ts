@@ -2,11 +2,18 @@
 import '@testing-library/jest-dom/vitest'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor, within } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { nextTick } from 'vue'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { RunOutput, RunState } from '../../config/workshop-run'
 import { WORKSHOP_CLOUD_BASE_URL } from '../../config/workshop-env'
 import PlaygroundOutput from './PlaygroundOutput.vue'
+import { downloadOutput } from '../../config/workshop-output-download'
+
+vi.mock(import('../../config/workshop-output-download'), async (original) => ({
+  ...(await original()),
+  downloadOutput: vi.fn(async () => true)
+}))
 
 const output = (name: string): RunOutput => ({
   kind: 'image',
@@ -157,6 +164,87 @@ describe('PlaygroundOutput', () => {
     expect(
       screen.getByTestId('output-download').getAttribute('href')
     ).toContain('latest')
+  })
+
+  it('downloads the selected batch item and the selected earlier run', async () => {
+    const user = userEvent.setup()
+    render(PlaygroundOutput, {
+      props: {
+        state: succeeded({
+          ...output('latest'),
+          urls: ['https://example.com/a.webp', 'https://example.com/b.webp']
+        }),
+        earlier: [{ output: output('first'), attachments: [] }],
+        now: 2_000
+      }
+    })
+    await user.click(screen.getByTestId('output-thumb-1'))
+    await user.click(screen.getByTestId('output-download'))
+    expect(downloadOutput).toHaveBeenLastCalledWith(
+      'https://example.com/b.webp',
+      'latest.webp'
+    )
+    await user.click(screen.getByTestId('earlier-run-0'))
+    await user.click(screen.getByTestId('output-download'))
+    expect(downloadOutput).toHaveBeenLastCalledWith(
+      'https://example.com/first.webp',
+      'first.webp'
+    )
+  })
+
+  it.for([
+    {
+      locale: 'en' as const,
+      label: 'Open output',
+      hint: 'Automatic download failed. Open the output to save it.'
+    },
+    {
+      locale: 'zh-CN' as const,
+      label: '打开输出',
+      hint: '自动下载失败。请打开输出文件后保存。'
+    }
+  ])(
+    'offers a native fallback link after download failure in $locale',
+    async ({ locale, label, hint }) => {
+      const user = userEvent.setup()
+      vi.mocked(downloadOutput).mockResolvedValueOnce(false)
+      render(PlaygroundOutput, {
+        props: { state: succeeded(output('latest')), now: 2_000, locale }
+      })
+      await user.click(screen.getByTestId('output-download'))
+      const fallback = await screen.findByRole('link', { name: label })
+      expect(fallback).toHaveAttribute('href', output('latest').url)
+      expect(fallback).toHaveAttribute('target', '_blank')
+      expect(fallback).toHaveAttribute('rel', 'noopener')
+      expect(fallback).not.toHaveAttribute('download')
+      expect(screen.getByText(hint)).toHaveAttribute('role', 'status')
+      let prevented: boolean | undefined
+      fallback.addEventListener('click', (event) => {
+        prevented = event.defaultPrevented
+        event.preventDefault()
+      })
+      await user.click(fallback)
+      expect(prevented).toBe(false)
+      expect(downloadOutput).toHaveBeenCalledOnce()
+    }
+  )
+
+  it('does not apply a previous output download failure to the current output', async () => {
+    const result = Promise.withResolvers<boolean>()
+    vi.mocked(downloadOutput).mockReturnValueOnce(result.promise)
+    const { rerender } = render(PlaygroundOutput, {
+      props: { state: succeeded(output('first')), now: 2_000 }
+    })
+    await userEvent.setup().click(screen.getByTestId('output-download'))
+    await rerender({ state: succeeded(output('latest')) })
+    result.resolve(false)
+    await result.promise
+    await nextTick()
+    expect(screen.getByRole('link', { name: 'Download' })).toHaveAttribute(
+      'href',
+      output('latest').url
+    )
+    expect(screen.queryByRole('link', { name: 'Open output' })).toBeNull()
   })
 
   it('starts an earlier run at its own first output', async () => {
