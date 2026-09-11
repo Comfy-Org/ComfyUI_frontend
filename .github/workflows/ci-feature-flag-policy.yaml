@@ -114,7 +114,9 @@ jobs:
 
             Verify that the flag defaults OFF in code, contains every Cloud
             runtime behavior in the diff, and leaves the OFF path behaviorally
-            unchanged with automated coverage.
+            unchanged with automated coverage. Use the supplied runtime and test
+            patches for the PR head; the checkout contains trusted policy code,
+            not the PR head. Do not search the checkout for newly added PR files.
 
             PostHog lookup available: ${{ steps.posthog.outputs.available }}.
             When available, use only the configured read-only tools to verify
@@ -126,7 +128,7 @@ jobs:
             specific defect, and `inconclusive` for missing evidence. Return the
             exact author-provided flag key with every verdict.
           claude_args: >-
-            --max-turns 12
+            --max-turns 24
             --mcp-config /tmp/posthog-mcp.json
             --allowedTools "Read,mcp__posthog__feature-flag-get-definition-by-key,mcp__posthog__feature-flags-status-retrieve"
             --json-schema '{"type":"object","properties":{"verdict":{"type":"string","enum":["pass","fail","inconclusive"]},"flag":{"type":"string","minLength":1},"reason":{"type":"string","minLength":1}},"required":["verdict","flag","reason"],"additionalProperties":false}'

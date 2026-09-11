@@ -167,6 +167,33 @@ describe('applyAiVerdict', () => {
 })
 
 describe('buildReviewContext', () => {
+  it('includes changed test evidence and rejects missing test patches', () => {
+    const result = { verdict: 'pass' as const, requiresAi: true, reasons: [] }
+    const runtime = { filename: 'src/runtime.ts', patch: '+ gatedBehavior()' }
+    const test = {
+      filename: 'src/runtime.test.ts',
+      patch: '+ expect(off()).toBe(current)'
+    }
+    const context = buildReviewContext(
+      12,
+      'abc123',
+      result,
+      [runtime, test],
+      ['src/runtime.ts']
+    )
+    expect(context.complete).toBe(true)
+    expect(context.content).toContain(test.patch)
+    expect(
+      buildReviewContext(
+        12,
+        'abc123',
+        result,
+        [runtime, { filename: test.filename }],
+        ['src/runtime.ts']
+      ).complete
+    ).toBe(false)
+  })
+
   it('marks a missing runtime patch as incomplete', () => {
     const context = buildReviewContext(
       12,

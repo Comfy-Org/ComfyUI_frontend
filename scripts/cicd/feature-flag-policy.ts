@@ -338,6 +338,7 @@ export function buildReviewContext(
     .filter(
       (file) =>
         paths.has(file.filename) ||
+        /\.(test|spec)\.[cm]?[jt]sx?$/.test(file.filename) ||
         (file.previous_filename && paths.has(file.previous_filename))
     )
     .map((file) => {
@@ -377,7 +378,7 @@ export function buildReviewContext(
       ),
       '```',
       '',
-      '## Runtime patches',
+      '## Runtime and test patches',
       ...patches
     ].join('\n')
   }
