@@ -1,5 +1,6 @@
 import type { MockInstance } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Ref } from 'vue'
 
 import type { CompassCorners } from '@/lib/litegraph/src/interfaces'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
@@ -174,6 +175,7 @@ describe('useNodeResize', () => {
   let callback: ResizeCallback & MockInstance<ResizeCallback>
   let nodeElement: HTMLElement
   let handle: HTMLElement
+  let isResizing: Ref<boolean>
 
   beforeEach(async () => {
     eventHandlers.pointermove = []
@@ -190,10 +192,12 @@ describe('useNodeResize', () => {
 
     // Need fresh import after mocks are set up
     const { useNodeResize } = await import('./useNodeResize')
-    const { startResize } = useNodeResize(callback)
+    const resize = useNodeResize(callback)
+    isResizing = resize.isResizing
 
     // Store startResize for access in tests
-    ;(globalThis as Record<string, unknown>).__testStartResize = startResize
+    ;(globalThis as Record<string, unknown>).__testStartResize =
+      resize.startResize
   })
 
   function getStartResize() {
@@ -594,6 +598,24 @@ describe('useNodeResize', () => {
 
       simulateMove(20, 20)
       expect(callback).toHaveBeenCalledTimes(1)
+    })
+
+    it('tears down the resize when the active pointer cancels', () => {
+      startResizeAt(getStartResize(), handle, 'SE')
+      simulateMove(10, 10)
+      expect(isResizing.value).toBe(true)
+
+      for (const h of [...eventHandlers.pointercancel])
+        h(createPointerEvent('pointercancel', { pointerId: 1 }))
+
+      expect(isResizing.value).toBe(false)
+      expect(eventHandlers.pointermove).toHaveLength(0)
+      expect(eventHandlers.pointerup).toHaveLength(0)
+      expect(eventHandlers.pointercancel).toHaveLength(0)
+
+      callback.mockClear()
+      simulateMove(20, 20)
+      expect(callback).not.toHaveBeenCalled()
     })
   })
 })
