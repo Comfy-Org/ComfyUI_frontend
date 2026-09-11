@@ -71,7 +71,7 @@
 <script setup lang="ts">
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
-import { ref } from 'vue'
+import { onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
@@ -90,6 +90,8 @@ const email = ref('')
 const loading = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
+
+let redirectTimer: ReturnType<typeof setTimeout> | undefined
 
 const navigateToLogin = () => {
   void router.push({ name: 'cloud-login' })
@@ -115,6 +117,9 @@ const handleSubmit = async () => {
   }
 
   successMessage.value = t('cloudForgotPassword_passwordResetSent')
-  setTimeout(navigateToLogin, 3000)
+  redirectTimer = setTimeout(navigateToLogin, 3000)
 }
+
+// A view unmounted inside the 3s window must not navigate after disposal.
+onUnmounted(() => clearTimeout(redirectTimer))
 </script>
