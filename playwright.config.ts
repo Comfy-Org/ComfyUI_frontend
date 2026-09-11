@@ -42,6 +42,7 @@ const maybeLocalOptions: PlaywrightTestConfig = process.env.PLAYWRIGHT_LOCAL
 export default defineConfig({
   testDir: './browser_tests',
   testIgnore: [
+    '**/liveCloud/**',
     '**/*.test.ts',
     // Untransformed recorder output — still bare codegen, not a runnable spec
     '**/*.raw.spec.ts',

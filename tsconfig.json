@@ -55,6 +55,7 @@
     "src/**/*",
     "src/types/**/*.d.ts",
     "playwright.config.ts",
+    "playwright.cloud-billing.config.ts",
     "playwright.i18n.config.ts",
     "vite.config.mts",
     "vitest.config.ts"

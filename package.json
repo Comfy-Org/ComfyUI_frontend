@@ -58,6 +58,7 @@
     "comfy-test": "tsx tools/test-recorder/src/index.ts",
     "test:assets-flag-artifact": "tsx scripts/checkAssetsFlagArtifact.ts",
     "test:browser": "pnpm exec playwright test",
+    "test:browser:cloud-billing": "pnpm exec playwright test --config playwright.cloud-billing.config.ts",
     "test:browser:coverage": "cross-env COLLECT_COVERAGE=true pnpm test:browser",
     "test:browser:local": "cross-env PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://localhost:5173 pnpm test:browser",
     "custom-node-quarantine": "tsx scripts/customNodeQuarantine.ts",

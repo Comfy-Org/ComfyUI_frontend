@@ -1,6 +1,7 @@
-# Cloud billing E2E coverage proposal
+# Cloud billing E2E coverage
 
-Status: Draft for scope review. This document adds no executable tests or CI gate.
+Status: Draft implementation. One live checkout recovery test is included;
+sandbox execution and a CI gate remain pending.
 
 ## Problem and current coverage
 
@@ -37,6 +38,83 @@ The additional assignments below remain open for review.
 | CI failures and release decision                                           | ShihChi proposes test triage; release owner and escalation path to confirm                             |
 
 ## First executable slice
+
+The [live recovery spec](../../browser_tests/tests/liveCloud/checkoutRecovery.spec.ts)
+uses real browser authentication and Cloud billing responses. It checks the
+displayed preview, starts a no-card checkout, closes the Stripe test popup,
+retries through the payment button, and verifies that the backend returns the
+same pending operation. It does not enter card details or prove payment success,
+reload recovery, duplicate-charge prevention, or backend expiry.
+
+The dedicated runner excludes this suite from ordinary mocked browser runs. It
+requires an explicit sandbox config, authenticated browser storage, and a reset
+executable; missing prerequisites fail setup. Sandbox execution has not yet been
+verified.
+
+### Run the live recovery test
+
+Store configuration and browser credentials outside the repository. Example
+configuration (replace the workspace ID and paths):
+
+```json
+{
+  "baseURL": "https://testcloud.comfy.org",
+  "storageState": "/absolute/private/cloud-billing-auth.json",
+  "workspaceId": "12345678-1234-4234-8234-123456789abc",
+  "resetScript": "/absolute/private/reset-cloud-billing",
+  "allowedOrigins": [
+    "https://identitytoolkit.googleapis.com",
+    "https://securetoken.googleapis.com",
+    "https://checkout.stripe.com",
+    "https://js.stripe.com"
+  ]
+}
+```
+
+Use storage captured after a real sandbox login with Playwright's
+`context.storageState({ path, indexedDB: true })`, including Firebase IndexedDB.
+The account must own the configured personal workspace, have finished onboarding,
+and use English UI settings. Configure the deployment for classic hosted checkout.
+The allowed origins above are a starting set, not a verified dependency inventory;
+add exact sandbox dependency origins reported by the network guard. Billing and
+auth remain real; the shared fixture retains its unrelated media/metadata mocks.
+
+```bash
+CLOUD_BILLING_CONFIG=/absolute/private/cloud-billing-config.json \
+  pnpm test:browser:cloud-billing
+```
+
+The reset executable is an integration requirement, **not an existing backend
+endpoint or an implementation supplied by this PR**. The backend partner must
+provide it before the suite can run. It receives two arguments, the sandbox
+origin and workspace ID, and must:
+
+1. Reject any non-test Stripe account or workspace outside its dedicated allowlist.
+2. Idempotently end test subscriptions, clear test payment methods, and terminate
+   pending operations/sessions using supported backend mechanisms. Do not delete
+   the identity or invalidate its browser credentials.
+3. Verify the workspace is inactive with no active subscription, saved payment
+   method, or pending operation. Exit nonzero if any step fails.
+4. Write only this JSON receipt to stdout after verification:
+
+```json
+{
+  "workspace_id": "12345678-1234-4234-8234-123456789abc",
+  "stripe_livemode": false,
+  "pending_operations": 0
+}
+```
+
+The runner invokes reset before and after each test, including failure paths.
+It also reads real billing status and saved payment methods before the scenario
+and after cleanup when authenticated setup succeeded. Run only one job per
+workspace across machines; `workers: 1` only serializes a single invocation.
+Retries are disabled. Trace, screenshot, and video capture are disabled because
+they can contain auth and checkout credentials. The small `sandbox.json`
+attachment records the target and frontend version header if available; it is
+not a complete FE/BE release-evidence record.
+
+### Remaining scenario matrix
 
 Use a candidate frontend with a real Cloud test backend and Stripe test mode.
 Start with personal, no-card, classic hosted checkout (`embedded_checkout=false`),
@@ -116,5 +194,5 @@ not become a flaky payment-test assertion.
 The gap is closed when the agreed matrix has executable tests, a recorded live
 pass and known-bad rejection, a functioning CI/release gate, and a named failure
 owner. Separately track the FE recovery fix, backend deployment, monitoring, and
-BE-12602 cleanup with their own completion evidence. Merging this plan completes
-none of those implementation or rollout steps.
+BE-12602 cleanup with their own completion evidence. Merging the first test does
+not complete those remaining scenarios or rollout steps.
