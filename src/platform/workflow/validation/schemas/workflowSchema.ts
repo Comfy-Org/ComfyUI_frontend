@@ -516,6 +516,15 @@ export const zProjectedSubgraphDefinition = zSubgraphDefinition
   .extend({
     id: z.string(),
     extra: z.unknown().optional(),
+    // `Subgraph.configure()` merges these into the root graph's id counters, so
+    // a non-finite one poisons every id minted after it. `z.number()` admits
+    // `Infinity`, and nothing the op layer mints ever is one.
+    state: zGraphState.extend({
+      lastGroupId: z.number().int(),
+      lastNodeId: z.number().int(),
+      lastLinkId: z.number().int(),
+      lastRerouteId: z.number().int()
+    }),
     nodes: z
       .array(
         zComfyNode.extend({
