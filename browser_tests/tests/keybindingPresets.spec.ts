@@ -195,6 +195,53 @@ test.describe('Keybinding Presets', { tag: '@keyboard' }, () => {
     await comfyPage.settingDialog.close()
   })
 
+  test('Keeps the imported preset when deletion is refused', async ({
+    comfyPage
+  }) => {
+    test.setTimeout(30000)
+    const { page } = comfyPage
+    const menuButton = page.getByTestId('keybinding-preset-menu')
+
+    await page.route(
+      '**/api/userdata/keybindings%2Ftest-preset.json',
+      (route) =>
+        route.request().method() === 'DELETE'
+          ? route.fulfill({ status: 500, body: 'delete refused' })
+          : route.fallback()
+    )
+
+    await comfyPage.settingDialog.open()
+    await comfyPage.settingDialog.category('Keybinding').click()
+    await importPreset(page, TEST_PRESET)
+
+    const presetTrigger = page
+      .locator('#keybinding-panel-actions')
+      .locator('button[role="combobox"]')
+    await expect(presetTrigger).toContainText('test-preset')
+    await expect(comfyPage.toast.visibleToasts).toHaveCount(0)
+
+    await menuButton.click()
+    await page.getByRole('menuitem', { name: /Delete preset/i }).click()
+    const confirmDialog = page.getByRole('dialog', {
+      name: /Delete the current preset/i
+    })
+    await confirmDialog.getByRole('button', { name: /Delete/i }).click()
+
+    await expect(comfyPage.toast.toastErrors).toContainText(
+      'Failed to delete preset "test-preset"'
+    )
+    await expect(comfyPage.toast.toastSuccesses).toHaveCount(0)
+    await expect(presetTrigger).toContainText('test-preset')
+
+    await presetTrigger.click()
+    await expect(
+      page.getByRole('option', { name: /test-preset/i })
+    ).toBeVisible()
+    await page.keyboard.press('Escape')
+
+    await comfyPage.settingDialog.close()
+  })
+
   test('Can save modifications as a new preset', async ({ comfyPage }) => {
     test.setTimeout(30000)
     const { page } = comfyPage

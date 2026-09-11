@@ -395,6 +395,76 @@ This is English documentation.
       })
     })
 
+    test('Falls back to nonlocalized custom-node docs after a locale request fails', async ({
+      comfyPage
+    }) => {
+      const customNodeName = 'HelpFallbackNode'
+      await comfyPage.page.evaluate(async (name) => {
+        const nodeDef = {
+          name,
+          display_name: 'Help Fallback Node',
+          category: 'help_fallback',
+          input: { required: {}, optional: {} },
+          output: ['IMAGE'],
+          output_name: ['image'],
+          output_is_list: [false],
+          output_node: false,
+          python_module: 'custom_nodes.help_fallback_pack',
+          description: 'Custom node description fallback'
+        }
+        await window.app!.registerNodeDef(name, nodeDef)
+        const appEl = document.querySelector('#vue-app') as {
+          __vue_app__?: {
+            config: {
+              globalProperties: {
+                $pinia?: {
+                  _s?: Map<
+                    string,
+                    { addNodeDef: (nodeDef: Record<string, unknown>) => void }
+                  >
+                }
+              }
+            }
+          }
+        } | null
+        const store =
+          appEl?.__vue_app__?.config.globalProperties.$pinia?._s?.get('nodeDef')
+        if (!store) throw new Error('nodeDef store is not available')
+        store.addNodeDef(nodeDef)
+      }, customNodeName)
+
+      await comfyPage.page.route(
+        `**/extensions/help_fallback_pack/docs/${customNodeName}/en.md`,
+        async (route) => {
+          await route.abort('failed')
+        }
+      )
+      await comfyPage.page.route(
+        `**/extensions/help_fallback_pack/docs/${customNodeName}.md`,
+        async (route) => {
+          await route.fulfill({
+            status: 200,
+            contentType: 'text/markdown',
+            body: '# Custom fallback help\n\nNonlocalized custom node docs.'
+          })
+        }
+      )
+
+      const customNode = await comfyPage.nodeOps.addNode(
+        customNodeName,
+        undefined,
+        { x: 200, y: 200 }
+      )
+      await selectNodeWithPan(comfyPage, customNode)
+
+      const helpPage = await openSelectionToolboxHelp(comfyPage)
+      await expect(helpPage).toContainText('Custom fallback help')
+      await expect(helpPage).toContainText('Nonlocalized custom node docs.')
+      await expect(helpPage).not.toContainText(
+        'Custom node description fallback'
+      )
+    })
+
     test('Should handle network errors gracefully', async ({ comfyPage }) => {
       // Mock network error
       await comfyPage.page.route('**/docs/**/*.md', async (route) => {

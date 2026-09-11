@@ -119,7 +119,7 @@ vi.mock(import('../utils/outputAssetUtil'))
 const mockResolveOutputAssetItems = vi.mocked(resolveOutputAssetItems)
 
 const mockDeleteAsset = vi.hoisted(() =>
-  vi.fn<(id: AssetId) => Promise<void>>()
+  vi.fn<(id: AssetId) => Promise<boolean>>()
 )
 const mockCreateAssetExport = vi.hoisted(() =>
   vi.fn<
@@ -1616,7 +1616,7 @@ describe('useMediaAssetActions', () => {
     it('keeps a failed asset listed and removes it once a retry succeeds', async () => {
       mockDeleteAsset
         .mockRejectedValueOnce(new Error('503 Service Unavailable'))
-        .mockResolvedValueOnce(undefined)
+        .mockResolvedValueOnce(true)
       const actions = useMediaAssetActions()
       const asset = createMockAsset({ id: 'asset-503', name: 'retry.png' })
       mockInputAssets.items = [asset]
@@ -1650,6 +1650,7 @@ describe('useMediaAssetActions', () => {
     it('cleans up only the succeeded assets and clears every overlay when part of a batch fails', async () => {
       mockDeleteAsset.mockImplementation(async (id) => {
         if (id === 'asset-failed') throw new Error('503 Service Unavailable')
+        return true
       })
       const assets = [
         createMockAsset({ id: 'asset-first', name: 'first.png' }),

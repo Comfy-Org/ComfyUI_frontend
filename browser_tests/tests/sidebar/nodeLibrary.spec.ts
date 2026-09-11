@@ -177,6 +177,57 @@ test.describe('Node library sidebar', () => {
     await expectBookmarks(comfyPage, ['bar/'])
   })
 
+  test('Refuses slash and duplicate bookmark folder names without mutating', async ({
+    comfyPage
+  }) => {
+    await comfyPage.settings.setSetting(bookmarksSettingId, ['foo/', 'bar/'])
+    const tab = comfyPage.menu.nodeLibraryTab
+    await expect(tab.getFolder('foo')).toBeVisible()
+
+    await tab.getFolder('foo').click({ button: 'right' })
+    await comfyPage.page
+      .locator('.p-contextmenu-item-label:has-text("Rename")')
+      .click()
+    await renameInlineFolder(comfyPage, 'bad/name')
+
+    await expect(comfyPage.toast.toastErrors).toContainText(
+      'Folder name cannot contain "/"'
+    )
+    await expect(comfyPage.page.locator('.editable-text input')).toHaveCount(0)
+    await expectBookmarks(comfyPage, ['foo/', 'bar/'])
+
+    await comfyPage.toast.closeToasts()
+    await tab.getFolder('foo').click({ button: 'right' })
+    await comfyPage.page
+      .locator('.p-contextmenu-item-label:has-text("Rename")')
+      .click()
+    await renameInlineFolder(comfyPage, 'bar')
+
+    await expect(comfyPage.toast.toastErrors).toContainText(
+      'Folder name "bar/" already exists'
+    )
+    await expect(comfyPage.page.locator('.editable-text input')).toHaveCount(0)
+    await expectBookmarks(comfyPage, ['foo/', 'bar/'])
+  })
+
+  test('Closes the bookmark rename editor when the name is unchanged', async ({
+    comfyPage
+  }) => {
+    await comfyPage.settings.setSetting(bookmarksSettingId, ['foo/'])
+    const tab = comfyPage.menu.nodeLibraryTab
+    await expect(tab.getFolder('foo')).toBeVisible()
+
+    await tab.getFolder('foo').click({ button: 'right' })
+    await comfyPage.page
+      .locator('.p-contextmenu-item-label:has-text("Rename")')
+      .click()
+    await renameInlineFolder(comfyPage, 'foo')
+
+    await expect(comfyPage.page.locator('.editable-text input')).toHaveCount(0)
+    await expect(comfyPage.toast.visibleToasts).toHaveCount(0)
+    await expectBookmarks(comfyPage, ['foo/'])
+  })
+
   test('Can add bookmark by dragging node to bookmark folder', async ({
     comfyPage
   }) => {
