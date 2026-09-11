@@ -244,19 +244,26 @@ async function signOutFromMenu() {
           class="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm text-primary-comfy-canvas transition-colors hover:bg-primary-comfy-canvas/10"
           @click="menuOpen = false"
         >
-          <Coins class="size-5 text-primary-warm-gray" aria-hidden="true" />
-          <span class="flex flex-1 items-center gap-3">
+          <Coins
+            class="size-5 shrink-0 text-primary-warm-gray"
+            aria-hidden="true"
+          />
+          <span class="flex flex-1 items-center gap-3 whitespace-nowrap">
             {{ t('workshop.run.buyCredits', locale) }}
             <ExternalLink
-              class="size-5 text-primary-warm-gray"
+              class="size-5 shrink-0 text-primary-warm-gray"
               aria-hidden="true"
             />
           </span>
           <span
             v-if="balance.status === 'ok'"
-            class="text-sm font-bold text-primary-warm-white tabular-nums"
+            class="flex shrink-0 items-center gap-1.5 text-sm font-bold text-primary-warm-white tabular-nums"
           >
-            {{ formatCredits(balance.credits) }}
+            <Coins class="size-4 shrink-0" aria-hidden="true" />
+            {{ balance.credits.toLocaleString(locale) }}
+            <span class="sr-only">
+              {{ t('auth.header.credits', locale) }}
+            </span>
           </span>
         </a>
         <a
@@ -268,7 +275,10 @@ async function signOutFromMenu() {
           class="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm text-primary-comfy-canvas transition-colors hover:bg-primary-comfy-canvas/10"
           @click="menuOpen = false"
         >
-          <Settings class="size-5 text-primary-warm-gray" aria-hidden="true" />
+          <Settings
+            class="size-5 shrink-0 text-primary-warm-gray"
+            aria-hidden="true"
+          />
           {{ t('nav.workspaceSettings', locale) }}
         </a>
         <div class="m-1 h-px bg-transparency-white-t8" aria-hidden="true" />
