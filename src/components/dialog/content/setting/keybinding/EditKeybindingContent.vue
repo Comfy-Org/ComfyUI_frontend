@@ -14,7 +14,8 @@
       :aria-label="$t('g.enterYourKeybind')"
       autocomplete="off"
       autofocus
-      @keydown.stop.prevent="captureKeybinding"
+      data-comfy-keybinding-ignore
+      @keydown="captureKeybinding"
     />
     <div class="min-h-12">
       <p
@@ -57,9 +58,14 @@ const {
 }>()
 
 function captureKeybinding(event: KeyboardEvent) {
+  if (event.isComposing) return
+  if (event.key === 'Tab' && !event.ctrlKey && !event.altKey && !event.metaKey)
+    return
   if (!event.shiftKey && !event.altKey && !event.ctrlKey && !event.metaKey) {
     if (event.key === 'Escape') return
   }
-  onUpdateCombo(KeyComboImpl.fromEvent(event))
+  event.preventDefault()
+  const combo = KeyComboImpl.fromEvent(event)
+  if (!combo.isModifier) onUpdateCombo(combo)
 }
 </script>

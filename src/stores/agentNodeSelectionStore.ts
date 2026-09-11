@@ -1,11 +1,11 @@
-import { useEventListener } from '@vueuse/core'
+import { t } from '@/i18n'
+import { useRuntimeKeybindingStore } from '@/platform/keybindings/runtimeKeybindingStore'
 import { defineStore } from 'pinia'
-import { ref, watch } from 'vue'
+import { onScopeDispose, ref, watch } from 'vue'
 
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useDialogStore } from '@/stores/dialogStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 const ACTION_BARS_TRANSITION_MS = 300
@@ -63,7 +63,6 @@ function frameBounds(
 export const useAgentNodeSelectionStore = defineStore(
   'agentNodeSelection',
   () => {
-    const dialogStore = useDialogStore()
     const sidebarTabStore = useSidebarTabStore()
     const canvasStore = useCanvasStore()
     const settingStore = useSettingStore()
@@ -197,15 +196,15 @@ export const useAgentNodeSelectionStore = defineStore(
       isLoadingWorkflow.value = false
     }
 
-    useEventListener(window, 'keydown', (event: KeyboardEvent) => {
-      if (
-        isActive.value &&
-        event.key === 'Escape' &&
-        dialogStore.dialogStack.length === 0
-      ) {
-        exit()
-      }
-    })
+    onScopeDispose(
+      useRuntimeKeybindingStore().register({
+        id: 'Comfy.Agent.ExitNodeSelection',
+        label: () => t('keybindings.exitNodeSelection'),
+        binding: { combo: { key: 'Escape' } },
+        enabled: () => isActive.value,
+        run: exit
+      })
+    )
 
     return {
       isActive,

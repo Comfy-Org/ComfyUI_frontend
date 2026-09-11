@@ -123,8 +123,8 @@
 </template>
 
 <script setup lang="ts">
+import { useKeybinding } from '@/platform/keybindings/useKeybinding'
 import { computed } from 'vue'
-import { useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
   DropdownMenuContent,
@@ -140,7 +140,6 @@ import ButtonGroup from '@/components/ui/button-group/ButtonGroup.vue'
 import { useAppMode } from '@/composables/useAppMode'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAppModeStore } from '@/stores/appModeStore'
-import { useDialogStore } from '@/stores/dialogStore'
 import BuilderOpensAsPopover from './BuilderOpensAsPopover.vue'
 import { setWorkflowDefaultView } from './builderViewOptions'
 import ConnectOutputPopover from './ConnectOutputPopover.vue'
@@ -149,7 +148,6 @@ import { useBuilderSteps } from './useBuilderSteps'
 
 const { t } = useI18n()
 const appModeStore = useAppModeStore()
-const dialogStore = useDialogStore()
 const workflowStore = useWorkflowStore()
 const { isBuilderMode, setMode } = useAppMode()
 const { hasOutputs } = storeToRefs(appModeStore)
@@ -182,19 +180,12 @@ const isAppMode = computed(
   () => workflowStore.activeWorkflow?.initialMode !== 'graph'
 )
 
-useEventListener(window, 'keydown', (e: KeyboardEvent) => {
-  if (
-    e.key === 'Escape' &&
-    !e.ctrlKey &&
-    !e.altKey &&
-    !e.metaKey &&
-    dialogStore.dialogStack.length === 0 &&
-    isBuilderMode.value
-  ) {
-    e.preventDefault()
-    e.stopPropagation()
-    onExitBuilder()
-  }
+useKeybinding({
+  id: 'Comfy.Builder.Exit',
+  label: () => t('keybindings.exitBuilder'),
+  binding: { combo: { key: 'Escape' } },
+  enabled: () => isBuilderMode.value,
+  run: onExitBuilder
 })
 
 function onExitBuilder() {

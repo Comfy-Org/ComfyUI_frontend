@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+import { useKeybinding } from '@/platform/keybindings/useKeybinding'
+import { useAppMode } from '@/composables/useAppMode'
 import {
   useEventListener,
   useInfiniteScroll,
@@ -30,6 +33,8 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { cn } from '@comfyorg/tailwind-utils'
+
+const { t } = useI18n()
 
 const { outputs, allOutputs, selectFirstHistory, mayBeActiveWorkflowPending } =
   useOutputHistory()
@@ -284,18 +289,22 @@ const keyHandlers: Record<string, 1 | -1> = {
   ArrowLeft: -1,
   ArrowRight: 1
 }
-useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
-  if (
-    !(e.key in keyHandlers) ||
-    e.target instanceof HTMLTextAreaElement ||
-    e.target instanceof HTMLInputElement
-  )
-    return
-
-  e.preventDefault()
-  e.stopPropagation()
-  navigateToAdjacent(keyHandlers[e.key])
-})
+const { isAppMode } = useAppMode()
+for (const [key, direction] of Object.entries(keyHandlers)) {
+  useKeybinding({
+    id:
+      direction < 0
+        ? 'Comfy.OutputHistory.Previous'
+        : 'Comfy.OutputHistory.Next',
+    label: () =>
+      t(
+        direction < 0 ? 'keybindings.previousOutput' : 'keybindings.nextOutput'
+      ),
+    binding: { combo: { key }, allowRepeat: true },
+    enabled: () => isAppMode.value && selectableItems.value.length > 0,
+    run: () => navigateToAdjacent(direction)
+  })
+}
 </script>
 <template>
   <div

@@ -1,7 +1,7 @@
 <template>
   <div
     :class="cn('relative overflow-hidden rounded-2xl', sizeClasses)"
-    @keydown.esc.capture="handleEscape"
+    ref="layoutRoot"
   >
     <div
       class="grid size-full transition-[grid-template-columns] duration-300 ease-out"
@@ -135,8 +135,9 @@
 </template>
 
 <script setup lang="ts">
+import { useKeybinding } from '@/platform/keybindings/useKeybinding'
 import { useBreakpoints } from '@vueuse/core'
-import { computed, inject, ref, useSlots, watch } from 'vue'
+import { computed, inject, ref, useSlots, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -231,20 +232,16 @@ const toggleRightPanel = () => {
   isRightPanelOpen.value = !isRightPanelOpen.value
 }
 
-function handleEscape(event: KeyboardEvent) {
-  const target = event.target
-  if (!(target instanceof HTMLElement)) return
-  if (
-    target instanceof HTMLInputElement ||
-    target instanceof HTMLTextAreaElement ||
-    target instanceof HTMLSelectElement ||
-    target.isContentEditable
-  ) {
-    return
-  }
-  if (isRightPanelOpen.value) {
-    event.stopPropagation()
+const layoutRoot = useTemplateRef('layoutRoot')
+useKeybinding({
+  id: 'Comfy.Dialog.CloseRightPanel',
+  label: () => t('keybindings.closeDialogSidePanel'),
+  binding: { combo: { key: 'Escape' }, when: 'modalOpen' },
+  enabled: () =>
+    isRightPanelOpen.value &&
+    layoutRoot.value?.contains(document.activeElement) === true,
+  run: () => {
     isRightPanelOpen.value = false
   }
-}
+})
 </script>

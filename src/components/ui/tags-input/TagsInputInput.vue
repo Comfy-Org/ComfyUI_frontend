@@ -49,6 +49,6 @@ onUnmounted(() => {
         className
       )
     "
-    @keydown.escape.stop="handleEscape"
+    @keydown.escape.prevent="handleEscape"
   />
 </template>

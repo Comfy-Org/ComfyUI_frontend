@@ -2,7 +2,7 @@
   <div
     v-if="imageUrls.length > 0"
     class="video-preview flex size-full min-h-55 min-w-16 flex-col px-2"
-    @keydown="handleKeyDown"
+    ref="previewEl"
   >
     <!-- Video Wrapper -->
     <div
@@ -127,8 +127,10 @@
 <script setup lang="ts">
 import { useToast } from 'primevue'
 import Skeleton from 'primevue/skeleton'
-import { computed, ref, watch } from 'vue'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import { useKeybinding } from '@/platform/keybindings/useKeybinding'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -264,35 +266,47 @@ const getNavigationDotClass = (index: number) =>
       : 'bg-base-foreground/50 hover:bg-base-foreground/80'
   )
 
-const handleKeyDown = (event: KeyboardEvent) => {
-  if (props.imageUrls.length <= 1) return
-
-  switch (event.key) {
-    case 'ArrowLeft':
-      event.preventDefault()
+const previewEl = useTemplateRef('previewEl')
+for (const { key, id, label, run } of [
+  {
+    key: 'ArrowLeft',
+    id: 'Previous',
+    label: 'keybindings.previousPreviewVideo',
+    run: () =>
       setCurrentIndex(
-        currentIndex.value > 0
-          ? currentIndex.value - 1
-          : props.imageUrls.length - 1
+        (currentIndex.value + props.imageUrls.length - 1) %
+          props.imageUrls.length
       )
-      break
-    case 'ArrowRight':
-      event.preventDefault()
-      setCurrentIndex(
-        currentIndex.value < props.imageUrls.length - 1
-          ? currentIndex.value + 1
-          : 0
-      )
-      break
-    case 'Home':
-      event.preventDefault()
-      setCurrentIndex(0)
-      break
-    case 'End':
-      event.preventDefault()
-      setCurrentIndex(props.imageUrls.length - 1)
-      break
+  },
+  {
+    key: 'ArrowRight',
+    id: 'Next',
+    label: 'keybindings.nextPreviewVideo',
+    run: () =>
+      setCurrentIndex((currentIndex.value + 1) % props.imageUrls.length)
+  },
+  {
+    key: 'Home',
+    id: 'First',
+    label: 'keybindings.firstPreviewVideo',
+    run: () => setCurrentIndex(0)
+  },
+  {
+    key: 'End',
+    id: 'Last',
+    label: 'keybindings.lastPreviewVideo',
+    run: () => setCurrentIndex(props.imageUrls.length - 1)
   }
+]) {
+  useKeybinding({
+    id: `Comfy.VideoPreview.${id}`,
+    label: () => t(label),
+    binding: { combo: { key }, allowRepeat: true },
+    enabled: () =>
+      hasMultipleVideos.value &&
+      previewEl.value?.contains(document.activeElement) === true,
+    run
+  })
 }
 
 const getVideoFilename = (url: string): string => {

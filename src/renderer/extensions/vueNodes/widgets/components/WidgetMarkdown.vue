@@ -23,7 +23,7 @@
       @pointermove.capture.stop
       @pointerup.capture.stop
       @click.stop
-      @keydown.stop
+      data-comfy-keybinding-ignore
     />
   </div>
 </template>

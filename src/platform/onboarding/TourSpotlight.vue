@@ -149,8 +149,9 @@
 </template>
 
 <script setup lang="ts">
+import { useKeybinding } from '@/platform/keybindings/useKeybinding'
 import { cn } from '@comfyorg/tailwind-utils'
-import { useEventListener, useWindowSize } from '@vueuse/core'
+import { useWindowSize } from '@vueuse/core'
 import { ZIndex } from '@primeuix/utils/zindex'
 import { FocusScope } from 'reka-ui'
 import {
@@ -247,17 +248,15 @@ async function focusPrimary() {
   el?.focus()
 }
 
-useEventListener(
-  document,
-  'keydown',
-  (e: KeyboardEvent) => {
-    if (e.key !== 'Escape') return
-    e.preventDefault()
-    e.stopPropagation()
-    emit('skip')
-  },
-  { capture: true }
-)
+for (const when of [undefined, 'modalOpen']) {
+  useKeybinding({
+    id: 'Comfy.Onboarding.SkipTour',
+    label: () => t('keybindings.skipTour'),
+    binding: { combo: { key: 'Escape' }, when },
+    enabled: () => true,
+    run: () => emit('skip')
+  })
+}
 
 async function raiseOverlay() {
   await nextTick()

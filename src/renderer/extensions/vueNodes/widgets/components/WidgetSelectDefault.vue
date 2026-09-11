@@ -81,7 +81,7 @@
               'min-w-(--reka-combobox-trigger-width)'
             )
           "
-          @keydown.escape.stop="handleOpenChange(false)"
+          @escape-key-down.prevent="handleOpenChange(false)"
           @focus-outside="handleFocusOutside"
         >
           <div

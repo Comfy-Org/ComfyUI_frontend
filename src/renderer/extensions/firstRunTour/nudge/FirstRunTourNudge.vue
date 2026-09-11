@@ -53,7 +53,8 @@
 </template>
 
 <script setup lang="ts">
-import { useEventListener, useTimeoutFn } from '@vueuse/core'
+import { useKeybinding } from '@/platform/keybindings/useKeybinding'
+import { useTimeoutFn } from '@vueuse/core'
 import { computed, ref, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -99,8 +100,12 @@ const { start: scheduleAppearance, stop: cancelAppearance } = useTimeoutFn(
   { immediate: false }
 )
 
-useEventListener(document, 'keydown', (event: KeyboardEvent) => {
-  if (onScreen.value && event.key === 'Escape') dismissNudge()
+useKeybinding({
+  id: 'Comfy.Onboarding.DismissNudge',
+  label: () => t('keybindings.dismissNudge'),
+  binding: { combo: { key: 'Escape' } },
+  enabled: () => onScreen.value,
+  run: dismissNudge
 })
 
 /** The nudge sits below the modal stack, so it waits for a clear screen. */

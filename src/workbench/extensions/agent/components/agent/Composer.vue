@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useKeybinding } from '@/platform/keybindings/useKeybinding'
 import {
   DropdownMenuContent,
   DropdownMenuItem,
@@ -188,7 +189,7 @@ async function pickWorkflow(workflow: WorkflowReferenceOption): Promise<void> {
 }
 
 function onComposerKeydown(event: KeyboardEvent): void {
-  if (!handleMentionKeydown(event) && event.key === 'Enter') onEnter(event)
+  if (!event.defaultPrevented) handleMentionKeydown(event)
 }
 
 const mentionListRef = useTemplateRef<HTMLDivElement>('mentionListRef')
@@ -204,10 +205,19 @@ const placeholderHint = computed(() => {
   return { text, mentionNodes }
 })
 
-function onEnter(event: KeyboardEvent): void {
-  if (event.isComposing || event.shiftKey) return
-  event.preventDefault()
-  composer.submit()
+const composerInputRegion = useTemplateRef('composerInputRegion')
+for (const ctrl of [false, true]) {
+  for (const alt of [false, true]) {
+    useKeybinding({
+      id: 'Comfy.Agent.SendMessage',
+      label: () => t('keybindings.sendAgentMessage'),
+      binding: { combo: { key: 'Enter', ctrl, alt }, when: 'textInputFocus' },
+      enabled: () =>
+        !mentionVisible.value &&
+        composerInputRegion.value?.contains(document.activeElement) === true,
+      run: () => composer.submit()
+    })
+  }
 }
 
 const running = computed(() => streaming || submitting)
@@ -417,9 +427,10 @@ defineExpose({
           <span class="icon-[lucide--loader-circle] size-3 animate-spin" />
           {{ t('agent.savingWorkflow') }}
         </div>
-        <div class="relative min-h-7">
+        <div ref="composerInputRegion" class="relative min-h-7">
           <InlinePromptEditor
             ref="editorRef"
+            :data-comfy-keybinding-ignore="mentionVisible ? '' : undefined"
             :model-value="composer.prompt.value"
             :label="t('agent.placeholder')"
             :expanded="mentionVisible"

@@ -1,5 +1,8 @@
 // @vitest-environment jsdom
 
+import { useKeybindingService } from '@/platform/keybindings/keybindingService'
+import { useSettingStore } from '@/platform/settings/settingStore'
+
 import type {
   WorkflowReference,
   WorkflowReferenceMetadata,
@@ -8,7 +11,7 @@ import type {
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import type { DirectiveBinding } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
@@ -19,6 +22,8 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAgentRunModeStore } from '../../stores/agent/agentRunModeStore'
 import Composer from './Composer.vue'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
+
+vi.mock<unknown>(import('@/scripts/app'), () => ({ app: {} }))
 
 setupInlinePromptEditorDom()
 
@@ -71,6 +76,23 @@ function mount(
   })
   return { ...view, selectWorkflowReference }
 }
+
+let disposeDispatcher: () => void
+beforeEach(() => {
+  Object.defineProperty(HTMLElement.prototype, 'isContentEditable', {
+    configurable: true,
+    get(this: HTMLElement) {
+      const value = this.getAttribute('contenteditable')
+      return value === '' || value === 'true' || value === 'plaintext-only'
+    }
+  })
+  useSettingStore().settingValues['Comfy.Keybinding.CapturePhase'] = true
+  disposeDispatcher = useKeybindingService().install()
+})
+afterEach(() => {
+  disposeDispatcher()
+  Reflect.deleteProperty(HTMLElement.prototype, 'isContentEditable')
+})
 
 describe('Composer', () => {
   it.for(['@unmatched text', '@Nodes unmatched'])(

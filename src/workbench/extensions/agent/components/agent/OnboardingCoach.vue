@@ -1,10 +1,14 @@
 <script setup lang="ts">
-import { onKeyStroke, useWindowSize } from '@vueuse/core'
+import { useI18n } from 'vue-i18n'
+import { useKeybinding } from '@/platform/keybindings/useKeybinding'
+import { useWindowSize } from '@vueuse/core'
 import { nextTick, ref, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import type { CoachStep } from '../../composables/agent/useOnboarding'
 import { useOnboarding } from '../../composables/agent/useOnboarding'
+
+const { t } = useI18n()
 
 const { step, storageKey } = defineProps<{
   step: CoachStep
@@ -13,8 +17,12 @@ const { step, storageKey } = defineProps<{
 
 const { active, finish } = useOnboarding(storageKey)
 
-onKeyStroke('Escape', () => {
-  if (active.value) finish()
+useKeybinding({
+  id: 'Comfy.Agent.DismissCoach',
+  label: () => t('keybindings.dismissAgentCoach'),
+  binding: { combo: { key: 'Escape' } },
+  enabled: () => active.value,
+  run: finish
 })
 
 const { width, height } = useWindowSize()

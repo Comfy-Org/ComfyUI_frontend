@@ -8,7 +8,6 @@
         :aria-modal="!dialogOpen"
         :aria-label="t('gettingStarted.title')"
         tabindex="-1"
-        @keydown.escape.capture.prevent="dismissGettingStarted()"
       >
         <div class="m-auto flex w-full flex-col items-center gap-8 px-8 py-16">
           <div class="flex flex-col items-center gap-3">
@@ -120,6 +119,7 @@
 </template>
 
 <script setup lang="ts">
+import { useKeybinding } from '@/platform/keybindings/useKeybinding'
 import { take, uniqBy } from 'es-toolkit'
 import { FocusScope } from 'reka-ui'
 import { computed, nextTick, onMounted, ref, useTemplateRef } from 'vue'
@@ -252,4 +252,11 @@ async function onSelectTemplate(id: string) {
     detail: t('gettingStarted.templateFailed')
   })
 }
+useKeybinding({
+  id: 'Comfy.Onboarding.DismissGettingStarted',
+  label: () => t('keybindings.dismissGettingStarted'),
+  binding: { combo: { key: 'Escape' }, when: 'modalOpen' },
+  enabled: () => !dialogOpen.value,
+  run: dismissGettingStarted
+})
 </script>
