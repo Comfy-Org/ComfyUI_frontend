@@ -196,6 +196,23 @@ describe('useFeatureFlags', () => {
     })
   })
 
+  describe('hostedBillingWebEnabled', () => {
+    it('stays disabled when only the development URL is configured', () => {
+      vi.stubEnv('VITE_BILLING_WEB_URL', 'http://localhost:5174')
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.hostedBillingWebEnabled).toBe(false)
+      expect(api.getServerFeature).toHaveBeenCalledWith(
+        ServerFeatureFlag.HOSTED_BILLING_WEB_ENABLED,
+        false
+      )
+    })
+  })
+
   describe('linearToggleEnabled', () => {
     afterEach(() => {
       vi.mocked(distributionTypes).isNightly = false

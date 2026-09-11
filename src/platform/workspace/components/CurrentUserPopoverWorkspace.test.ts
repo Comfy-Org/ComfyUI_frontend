@@ -12,25 +12,37 @@ import enMessages from '@/locales/en/main.json'
 
 import CurrentUserPopoverWorkspace from './CurrentUserPopoverWorkspace.vue'
 
-const state = vi.hoisted(() => ({
-  isCloud: true,
-  billingStatus: 'paid',
-  canAccessSubscriptionFeatures: true,
-  isCancelled: false,
-  planSlug: 'pro-monthly' as string | null,
-  canTopUp: false,
-  canSubscribeSelfServe: false,
-  canManageSubscription: false,
-  canManageSubscriptionLifecycle: false,
-  canReactivate: false,
-  canReactivatePlan: false,
-  canOpenPricingSurface: false,
-  shouldUseWorkspaceBilling: true,
-  showCreateWorkspaceDialog: vi.fn(),
-  showTopUpCreditsDialog: vi.fn(),
-  showPricingTable: vi.fn(),
-  showSettingsDialog: vi.fn()
-}))
+const state = vi.hoisted(() => {
+  function initialPlanSlug(): string | null {
+    return 'pro-monthly'
+  }
+
+  function initialBillingWebUrl(): URL | null {
+    return new URL('http://localhost:5174')
+  }
+
+  return {
+    isCloud: true,
+    billingStatus: 'paid',
+    canAccessSubscriptionFeatures: true,
+    isCancelled: false,
+    planSlug: initialPlanSlug(),
+    canTopUp: false,
+    canSubscribeSelfServe: false,
+    canManageSubscription: false,
+    canManageSubscriptionLifecycle: false,
+    canReactivate: false,
+    canReactivatePlan: false,
+    canOpenPricingSurface: false,
+    shouldUseWorkspaceBilling: true,
+    hostedBillingWebEnabled: false,
+    billingWebUrl: initialBillingWebUrl(),
+    showCreateWorkspaceDialog: vi.fn(),
+    showTopUpCreditsDialog: vi.fn(),
+    showPricingTable: vi.fn(),
+    showSettingsDialog: vi.fn()
+  }
+})
 
 vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({
@@ -126,6 +138,20 @@ vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
   })
 }))
 
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
+  useFeatureFlags: () => ({
+    flags: {
+      get hostedBillingWebEnabled() {
+        return state.hostedBillingWebEnabled
+      }
+    }
+  })
+}))
+
+vi.mock<unknown>(import('@/config/billingWeb'), () => ({
+  getBillingWebUrl: () => state.billingWebUrl
+}))
+
 const WorkspaceSwitcherPopoverStub = defineComponent({
   emits: ['select', 'create'],
   template: `
@@ -193,6 +219,8 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.canOpenPricingSurface = false
     state.canReactivate = false
     state.shouldUseWorkspaceBilling = true
+    state.hostedBillingWebEnabled = false
+    state.billingWebUrl = new URL('http://localhost:5174')
   })
 
   it('toggles the workspace switcher panel from the selector row', async () => {
@@ -297,6 +325,51 @@ describe('CurrentUserPopoverWorkspace', () => {
     expect(
       screen.queryByTestId('manage-plan-menu-item')
     ).not.toBeInTheDocument()
+  })
+
+  it('keeps Plans & pricing in-app when hosted billing is disabled', async () => {
+    const user = userEvent.setup()
+    state.canOpenPricingSurface = true
+    renderComponent('team')
+
+    await user.click(screen.getByTestId('plans-pricing-menu-item'))
+
+    expect(state.showPricingTable).toHaveBeenCalledWith({
+      reason: 'avatar_menu_plans'
+    })
+  })
+
+  it('opens hosted billing when its feature flag is enabled', async () => {
+    const user = userEvent.setup()
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null)
+    state.canOpenPricingSurface = true
+    state.hostedBillingWebEnabled = true
+    renderComponent('team')
+
+    await user.click(screen.getByTestId('plans-pricing-menu-item'))
+
+    expect(open).toHaveBeenCalledWith(
+      'http://localhost:5174/',
+      '_blank',
+      'noopener,noreferrer'
+    )
+    expect(state.showPricingTable).not.toHaveBeenCalled()
+  })
+
+  it('keeps Plans & pricing in-app when the hosted URL is unavailable', async () => {
+    const user = userEvent.setup()
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null)
+    state.canOpenPricingSurface = true
+    state.hostedBillingWebEnabled = true
+    state.billingWebUrl = null
+    renderComponent('team')
+
+    await user.click(screen.getByTestId('plans-pricing-menu-item'))
+
+    expect(open).not.toHaveBeenCalled()
+    expect(state.showPricingTable).toHaveBeenCalledWith({
+      reason: 'avatar_menu_plans'
+    })
   })
 
   it('offers subscription when top-up is denied but self-serve is allowed', async () => {
@@ -530,6 +603,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.canManageSubscriptionLifecycle = true
     state.canReactivatePlan = true
     state.canOpenPricingSurface = true
+    state.hostedBillingWebEnabled = true
     renderComponent('team')
 
     expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()
