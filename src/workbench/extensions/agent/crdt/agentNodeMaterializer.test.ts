@@ -5,8 +5,6 @@ import {
   nodesMap
 } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog, WorkflowNode } from '@comfyorg/comfy-multi-player'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
@@ -51,7 +49,7 @@ import type { GraphOperation } from './graphOperations'
 import { attachMintPortWiring } from './mintPortWiring'
 import type { MintPortWiring } from './mintPortWiring'
 
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
 
@@ -208,7 +206,6 @@ function seedAgentAddedNode(graph: LGraph, id: number, type = 'dummy') {
 }
 
 beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   LiteGraph.registerNodeType('dummy', DummyNode)
   LiteGraph.registerNodeType('widget-node', WidgetNode)
   LiteGraph.registerNodeType('configure-capture', ConfigureCapturingWidgetNode)
@@ -1220,7 +1217,7 @@ describe('reconcileAgentAdapters', () => {
       // definition instead of binding to the half-configured attempt.
       expect(materialized).toEqual([toNodeId(2)])
       expect(graph.getNodeById(toNodeId(2))).toBeInstanceOf(DummyNode)
-      expect(graph.getNodeById(toNodeId(1))).toBeUndefined()
+      expect(graph.getNodeById(toNodeId(1))).toBeNull()
     })
 
     it('still reconciles root nodes when definition rollback lifecycle cleanup throws', () => {

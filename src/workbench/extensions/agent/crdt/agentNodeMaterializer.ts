@@ -233,7 +233,7 @@ function reconcile(
     const registeredType = LiteGraph.registered_node_types[node.type]
     return (
       !nodeStore.ownsNode(scope, node._state) ||
-      (registeredType !== undefined && !(node instanceof registeredType))
+      Object.getPrototypeOf(node).constructor !== registeredType
     )
   })
   const orphansById = new Map(orphans.map((node) => [node.id, node]))
