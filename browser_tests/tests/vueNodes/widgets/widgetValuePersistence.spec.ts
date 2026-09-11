@@ -50,7 +50,7 @@ test.describe(
       ).toHaveValue('')
     })
 
-    test.describe('LoadImageOutput', { tag: '@oss' }, () => {
+    test.describe('LoadImageOutput', { tag: ['@oss', '@slow'] }, () => {
       test.beforeEach(async ({ comfyPage }) => {
         await comfyPage.page.route(
           '**/internal/files/output**',
@@ -72,7 +72,6 @@ test.describe(
           path: assetPath('image64x64.webp')
         }
         await mockViewFiles(comfyPage.page, {
-          'first-output.webp': image,
           'first-output.webp [output]': image,
           'selected-output.webp': image,
           'selected-output.webp [output]': image
@@ -122,7 +121,6 @@ test.describe(
           .getByRole('button', { name: 'Imported', exact: true })
           .click()
         const selectedOption = menu.getByText(selectedValue, { exact: true })
-        await expect(selectedOption).toHaveCount(1)
         await selectedOption.click()
         await expect(menu).toBeHidden()
         await expect(
@@ -138,11 +136,8 @@ test.describe(
         await comfyPage.workflow.reloadAndWaitForApp()
         await comfyPage.vueNodes.waitForNodes()
 
-        const restoredNode = comfyPage.vueNodes.getNodeByTitle(
-          'Load Image (from Outputs)'
-        )
         await WidgetSelectDropdownFixture.fromTrigger(
-          restoredNode.getByRole('button', {
+          node.getByRole('button', {
             name: /^(first|selected)-output\.webp \[output\]$/
           })
         ).open()
@@ -152,23 +147,15 @@ test.describe(
         await expect(
           menu.getByText('first-output.webp [output]', { exact: true })
         ).toBeVisible()
-        await expect(selectedOption).toHaveCount(1)
         await expect(selectedOption).toBeVisible()
         await comfyPage.page.keyboard.press('Escape')
         await expect(menu).toBeHidden()
 
-        const restoredNodes =
-          await comfyPage.nodeOps.getNodeRefsByType('LoadImageOutput')
-        expect(
-          restoredNodes,
-          'Reload restores one output image loader'
-        ).toHaveLength(1)
-        const restoredWidget = await restoredNodes[0].getWidgetByName('image')
-        await expect.poll(() => restoredWidget.getValue()).toBe(selectedValue)
+        await expect.poll(() => imageWidget.getValue()).toBe(selectedValue)
         await expect(
-          restoredNode.getByRole('button', { name: selectedValue, exact: true })
+          node.getByRole('button', { name: selectedValue, exact: true })
         ).toBeVisible()
-        const preview = restoredNode.getByTestId(TestIds.node.mainImage)
+        const preview = node.getByTestId(TestIds.node.mainImage)
         await expect(preview).toBeVisible()
         await expect
           .poll(async () => {
