@@ -206,11 +206,18 @@ async function mockPasswordReset(page: Page) {
     async (route: Route) => {
       const url = route.request().url()
       if (!url.includes('accounts:sendOobCode')) return route.fallback()
-      const body = route.request().postDataJSON() as { email?: string }
+      const body: unknown = route.request().postDataJSON()
+      const email =
+        typeof body === 'object' &&
+        body !== null &&
+        'email' in body &&
+        typeof body.email === 'string'
+          ? body.email
+          : undefined
       return route.fulfill(
         jsonRoute({
           kind: 'identitytoolkit#GetOobConfirmationCodeResponse',
-          email: body.email
+          email
         })
       )
     }
