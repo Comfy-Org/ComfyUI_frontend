@@ -1,5 +1,8 @@
 # Shared Router rendering and model smoke tests
 
+For setup, account concurrency overrides and image-first test commands, see
+[Run the model-page generation tests](MODEL_TESTING.md).
+
 `src/config/router-render.ts` is the browser-safe execution boundary. The model
 page's Run button and `scripts/router-render.ts` use it. The script wrapper reads
 `COMFY_KEY`; browser callers pass a credential or an async credential getter.
@@ -180,4 +183,6 @@ The API account also imposes a shared Partner Node concurrency limit. A high loc
 worker count does not increase that entitlement. Choose `--concurrency` within
 the account's available slots, or raise its limit before a highly parallel sweep.
 A `concurrency_limit_exceeded` result means the model was not tested. See
+[the admin override instructions](MODEL_TESTING.md#give-your-account-maximum-concurrency)
+and
 [Comfy's concurrency documentation](https://docs.comfy.org/tutorials/partner-nodes/concurrency-limits).
