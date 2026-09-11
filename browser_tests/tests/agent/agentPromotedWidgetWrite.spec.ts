@@ -1,10 +1,6 @@
 import { expect, mergeTests } from '@playwright/test'
 import { applyOps, mint } from '@comfyorg/comfy-multi-player'
-import type {
-  Op,
-  WidgetCatalog,
-  WorkflowJSON
-} from '@comfyorg/comfy-multi-player'
+import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import fs from 'node:fs'
 import path from 'node:path'
 import * as Y from 'yjs'
@@ -14,8 +10,12 @@ import { webSocketFixture } from '@e2e/fixtures/ws'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
-import type { SubgraphNode } from '@/lib/litegraph/src/litegraph'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { WorkflowJSON04 } from '@/platform/workflow/validation/schemas/workflowSchema'
+import {
+  validateComfyWorkflow,
+  zComfyWorkflow,
+  zComfyWorkflow1
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { NodeId } from '@/types/nodeId'
 
 const test = mergeTests(agentTest, webSocketFixture)
@@ -80,18 +80,23 @@ function b64(u8: Uint8Array): string {
  *   seq 0: full mint state (system:mint)
  *   seq 1: delta with two set_widget ops on the host (agent:test:1)
  */
-type SubgraphDefinitions = {
-  subgraphs: { nodes: { id: number; widgets_values: unknown[] }[] }[]
-}
+function buildFrames(asset: WorkflowJSON04) {
+  const definition = asset.definitions?.subgraphs.find(
+    (subgraph) => subgraph.id === SUBGRAPH_TYPE
+  )
+  const promptValues = zComfyWorkflow1
+    .parse(definition)
+    .nodes.find((node) => node.id === 27)?.widgets_values
+  const interiorPrompt = Array.isArray(promptValues)
+    ? promptValues[0]
+    : undefined
+  if (typeof interiorPrompt !== 'string')
+    throw new Error('Fixture must contain subgraph prompt node 27')
 
-function buildFrames(asset: WorkflowJSON) {
-  const doc = mint(asset, CATALOG)
+  const doc = mint({ ...asset, extra: asset.extra ?? undefined }, CATALOG)
   const fullState = Y.encodeStateAsUpdate(doc)
   const vectorBefore = Y.encodeStateVector(doc)
 
-  const defs = asset.definitions as SubgraphDefinitions
-  const interiorPrompt = defs.subgraphs[0].nodes.find((n) => n.id === 27)
-    ?.widgets_values[0]
   const hostValues = [
     interiorPrompt,
     1024,
@@ -134,10 +139,14 @@ function buildFrames(asset: WorkflowJSON) {
       }
     }
   ]
-  applyOps(doc, ops, CATALOG)
+  expect(applyOps(doc, ops, CATALOG).outcomes).toEqual([
+    { op_id: 'op-1', outcome: 'applied' },
+    { op_id: 'op-2', outcome: 'applied' }
+  ])
   const delta = Y.encodeStateAsUpdate(doc, vectorBefore)
+  doc.destroy()
 
-  return { fullState, delta }
+  return { fullState, delta, interiorPrompt }
 }
 
 test.describe(
@@ -146,22 +155,17 @@ test.describe(
   () => {
     test.use({ connectWebSocketToServer: false })
 
-    test('set_widget on a subgraph host node updates promoted widgets and interior nodes', async ({
+    test('set_widget persists host promotions without changing interior defaults', async ({
       comfyPage,
       postedMessages,
       getWebSocket
-    }) => {
+    }, testInfo) => {
       test.setTimeout(60_000)
-      test.fail(
-        true,
-        'QAF-36 / gm-34: follower frame wipes host promoted widgets instead of updating them (see ADR-SUBGRAPH-PROMOTION-0009)'
-      )
       const page = comfyPage.page
 
       const rawAsset: unknown = JSON.parse(fs.readFileSync(ASSET_PATH, 'utf8'))
-      const { fullState, delta } = buildFrames(
-        structuredClone(rawAsset) as WorkflowJSON
-      )
+      const asset = zComfyWorkflow.parse(rawAsset)
+      const { fullState, delta, interiorPrompt } = buildFrames(asset)
 
       // agentPanelMocks stubs `/api/object_info` with `{}`. Routes match
       // last-registered-first, so registering the setup-API object_info route
@@ -170,20 +174,22 @@ test.describe(
       const unrouteObjectInfo = await routeObjectInfoFromSetupApi(page)
       try {
         await comfyPage.workflow.reloadAndWaitForApp()
-        await comfyPage.workflow.loadGraphData(rawAsset as ComfyWorkflowJSON)
+        await comfyPage.workflow.loadGraphData(asset)
+        await comfyPage.settings.setSetting('Comfy.Minimap.Visible', false)
 
         // Precondition: the host node exposes its promoted widgets before any
         // follower frame arrives. Guards against a silently-broken fixture load.
         const hostWidgetsBefore = await page.evaluate((id) => {
-          const host = window.app!.graph.getNodeById(id as NodeId) as
-            | SubgraphNode
-            | undefined
+          const host = window.app!.graph.getNodeById(id as NodeId)
           return (host?.widgets ?? []).map((w) => [w.name, w.value])
         }, HOST_NODE_ID)
         expect(hostWidgetsBefore).toEqual(
           expect.arrayContaining([['steps', 8]])
         )
         expect(hostWidgetsBefore.length).toBeGreaterThanOrEqual(7)
+        const hostNode = await comfyPage.nodeOps.getNodeRefById(HOST_NODE_ID)
+        await hostNode.centerOnNode()
+        await page.screenshot({ path: testInfo.outputPath('before.png') })
 
         const openButton = page.getByRole('button', { name: OPEN_AGENT_LABEL })
         await expect(openButton).toBeVisible()
@@ -251,18 +257,15 @@ test.describe(
 
         const readState = () =>
           page.evaluate((id) => {
-            const host = window.app!.graph.getNodeById(id as NodeId) as
-              | SubgraphNode
-              | undefined
-            const hostWidgets = (host?.widgets ?? []).map((w) => [
-              w.name,
-              w.value
-            ])
-            const interior = host?.subgraph
-            const prompt = interior?.getNodeById('27' as NodeId)?.widgets?.[0]
+            const host = window.app!.graph.getNodeById(id as NodeId)
+            if (!host?.isSubgraphNode())
+              throw new Error('Missing subgraph host')
+            const hostWidgets = host.widgets.map((w) => [w.name, w.value])
+            const interior = host.subgraph
+            const prompt = interior.getNodeById('27' as NodeId)?.widgets?.[0]
               ?.value
             const steps = interior
-              ?.getNodeById('3' as NodeId)
+              .getNodeById('3' as NodeId)
               ?.widgets?.find((w) => w.name === 'steps')?.value
             return { hostWidgets, prompt, steps }
           }, HOST_NODE_ID)
@@ -271,14 +274,26 @@ test.describe(
         await expect
           .poll(async () => {
             const s = await readState()
-            return s.hostWidgets.map((w) => w[1])
+            return s.hostWidgets
           })
-          .toEqual(expect.arrayContaining([NEW_PROMPT, NEW_STEPS]))
+          .toEqual(
+            expect.arrayContaining([
+              ['text', NEW_PROMPT],
+              ['steps', NEW_STEPS],
+              ['width', 1024]
+            ])
+          )
 
-        // And the interior nodes the promoted widgets proxy must follow.
         const state = await readState()
-        expect(state.prompt).toBe(NEW_PROMPT)
-        expect(state.steps).toBe(NEW_STEPS)
+        expect(state.prompt).toBe(interiorPrompt)
+        expect(state.steps).toBe(8)
+        const saved = await page.evaluate(() => window.app!.graph.serialize())
+        const validatedSave = await validateComfyWorkflow(saved)
+        if (!validatedSave) throw new Error('Invalid saved workflow')
+        await comfyPage.workflow.loadGraphData(validatedSave)
+        await expect.poll(readState).toEqual(state)
+        await hostNode.centerOnNode()
+        await page.screenshot({ path: testInfo.outputPath('after-reload.png') })
       } finally {
         await unrouteObjectInfo()
       }

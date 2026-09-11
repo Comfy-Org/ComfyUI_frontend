@@ -17,6 +17,7 @@ import {
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import {
+  createTestSubgraph,
   createTestSubgraphData,
   createTestSubgraphNode,
   enableSubgraphNodeCreation
@@ -885,6 +886,49 @@ describe('reconcileAgentAdapters', () => {
 
     afterEach(() => {
       disableSubgraphNodeCreation()
+    })
+
+    it('repairs incumbent promoted bindings after reconciliation without replaying stale values or layout', () => {
+      const subgraph = createTestSubgraph({
+        rootGraph: graph,
+        inputs: [{ name: 'value', type: 'INT' }]
+      })
+      const interior = new WidgetNode()
+      const input = interior.addInput('value', 'INT')
+      input.widget = { name: 'value' }
+      subgraph.add(interior)
+      subgraph.inputNode.slots[0].connect(input, interior)
+      const instance = createTestSubgraphNode(subgraph, { id: 57 })
+      const sibling = createTestSubgraphNode(subgraph, { id: 58 })
+      graph.add(instance)
+      graph.add(sibling)
+      const position = [...instance.pos]
+      const size = [...instance.size]
+      const mutations = remoteMutations(graphScopeOf(graph))
+      const payload = {
+        ...instance.serialize(),
+        widgets_values: { value: 17 },
+        pos: [900, 800],
+        size: [500, 400]
+      }
+      expect(instance.widgets[0].value).toBe(0)
+
+      mutations.batch(REMOTE, (batch) => batch.reconcileNode(payload))
+      expect(reconcileAgentAdapters(graph)).toEqual([])
+
+      expect(graph.getNodeById(toNodeId(57))).toBe(instance)
+      expect(instance.widgets).toMatchObject([{ name: 'value', value: 17 }])
+      expect(instance.serialize().widgets_values).toEqual([17])
+      expect([...instance.pos]).toEqual(position)
+      expect([...instance.size]).toEqual(size)
+      expect(interior.widgets?.[0].value).toBe(0)
+      expect(sibling.widgets[0].value).toBe(0)
+
+      mutations.setWidget(instance.id, 'value', 23, REMOTE)
+      reconcileAgentAdapters(graph)
+      expect(instance.widgets[0].value).toBe(23)
+      expect(instance.serialize().widgets_values).toEqual([23])
+      expect(reportError).not.toHaveBeenCalled()
     })
 
     /**
