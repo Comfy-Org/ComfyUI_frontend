@@ -1,0 +1,318 @@
+<script setup lang="ts">
+import { baseKeymap } from '@tiptap/pm/commands'
+import { closeHistory, history, redo, undo } from '@tiptap/pm/history'
+import { keymap } from '@tiptap/pm/keymap'
+import { EditorState, TextSelection } from '@tiptap/pm/state'
+import { EditorView } from '@tiptap/pm/view'
+import { onBeforeUnmount, onMounted, useTemplateRef, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import type { WorkflowReference } from '../../../types/workflowReference'
+import {
+  inlinePromptSchema,
+  promptDocument,
+  promptDocumentPosition,
+  promptDraft,
+  promptTextOffset
+} from './inlinePrompt'
+
+defineOptions({ inheritAttrs: false })
+const {
+  label,
+  expanded = false,
+  activeDescendant
+} = defineProps<{
+  label: string
+  expanded?: boolean
+  activeDescendant?: string
+}>()
+const model = defineModel<string>({ default: '' })
+const references = defineModel<WorkflowReference[]>('references', {
+  default: () => []
+})
+const emit = defineEmits<{
+  input: []
+  selectionChange: []
+  keydown: [event: KeyboardEvent]
+  keyup: [event: KeyboardEvent]
+  click: []
+  blur: []
+  openReferenceWorkflow: [id: string, name: string]
+  removeWorkflowReference: [id: string]
+}>()
+const { t } = useI18n()
+const host = useTemplateRef<HTMLDivElement>('host')
+let view: EditorView | undefined
+const insertions = new Set<{ from: number; to: number }>()
+const plugins = [
+  history(),
+  keymap({
+    'Mod-z': undo,
+    'Mod-Shift-z': redo,
+    'Mod-y': redo,
+    'Shift-Enter': (state, dispatch) => {
+      dispatch?.(state.tr.insertText('\n').scrollIntoView())
+      return true
+    }
+  }),
+  keymap(baseKeymap)
+]
+
+function createState(): EditorState {
+  return EditorState.create({
+    doc: promptDocument(model.value, references.value),
+    plugins
+  })
+}
+
+onMounted(() => {
+  if (!host.value) return
+  view = new EditorView(host.value, {
+    state: createState(),
+    attributes: () => ({
+      role: 'textbox',
+      'aria-label': label,
+      'aria-multiline': 'true',
+      'aria-expanded': String(expanded),
+      'aria-controls': 'agent-reference-menu',
+      ...(activeDescendant
+        ? { 'aria-activedescendant': activeDescendant }
+        : {}),
+      class:
+        'text-agent-fg min-h-7 w-full cursor-text font-inter text-[14px]/5 font-normal wrap-anywhere whitespace-pre-wrap outline-none [&_.ProseMirror-selectednode]:outline-1'
+    }),
+    dispatchTransaction(transaction) {
+      if (!view) return
+      const previousReferences = promptDraft(view.state.doc).references
+      const nextReferences = promptDraft(transaction.doc).references
+      if (
+        previousReferences.length !== nextReferences.length ||
+        previousReferences.some(
+          (reference, index) => reference.id !== nextReferences[index]?.id
+        )
+      )
+        closeHistory(transaction)
+      for (const insertion of insertions) {
+        const collapsed = insertion.from === insertion.to
+        insertion.from = transaction.mapping.map(insertion.from, 1)
+        insertion.to = Math.max(
+          insertion.from,
+          transaction.mapping.map(insertion.to, collapsed ? 1 : -1)
+        )
+      }
+      view.updateState(view.state.apply(transaction))
+      if (transaction.docChanged) {
+        const draft = promptDraft(view.state.doc)
+        model.value = draft.text
+        references.value = draft.references
+        for (const previous of previousReferences)
+          if (!draft.references.some(({ id }) => id === previous.id))
+            emit('removeWorkflowReference', previous.id)
+        emit('input')
+      }
+      if (transaction.selectionSet) emit('selectionChange')
+    },
+    handleKeyDown(editor, event) {
+      emit('keydown', event)
+      if (
+        !event.defaultPrevented &&
+        !event.isComposing &&
+        editor.state.selection.empty
+      ) {
+        const { $from, from } = editor.state.selection
+        const adjacent =
+          event.key === 'Backspace'
+            ? $from.nodeBefore
+            : event.key === 'Delete'
+              ? $from.nodeAfter
+              : null
+        if (adjacent?.type.name === 'workflow') {
+          const start =
+            event.key === 'Backspace' ? from - adjacent.nodeSize : from
+          editor.dispatch(
+            editor.state.tr
+              .delete(start, start + adjacent.nodeSize)
+              .scrollIntoView()
+          )
+          event.preventDefault()
+        }
+      }
+      return event.defaultPrevented
+    },
+    handleDOMEvents: {
+      dragenter: () => true,
+      dragover: () => true,
+      drop: () => true,
+      keyup: (_view, event) => {
+        emit('keyup', event)
+        return false
+      },
+      click: () => {
+        emit('click')
+        return false
+      },
+      blur: () => {
+        emit('blur')
+        return false
+      }
+    },
+    handlePaste(editor, event) {
+      const text = event.clipboardData?.getData('text/plain')
+      if (text === undefined) return false
+      editor.dispatch(editor.state.tr.insertText(text).scrollIntoView())
+      return true
+    },
+    clipboardTextSerializer: (slice) =>
+      slice.content.textBetween(0, slice.content.size, '', (node) =>
+        String(node.attrs.name ?? '')
+      ),
+    nodeViews: {
+      workflow(node, editor, getPos) {
+        const id: unknown = node.attrs.id
+        const name: unknown = node.attrs.name
+        const dom = document.createElement('span')
+        if (typeof id !== 'string' || typeof name !== 'string') return { dom }
+        dom.contentEditable = 'false'
+        dom.dataset.testid = 'workflow-reference-chip'
+        dom.className =
+          'group/workflow relative inline-flex max-w-full align-baseline'
+        const open = document.createElement('button')
+        open.type = 'button'
+        open.setAttribute('aria-label', t('agent.openWorkflowTab', { name }))
+        open.className =
+          'inline-flex min-w-0 cursor-pointer items-center gap-1 rounded-sm bg-primary-background/30 px-1 py-0.5 font-inter text-xs/[15px] font-normal text-primary-background-hover ring-1 ring-primary-background/30 transition-colors ring-inset hover:bg-primary-background/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background'
+        const icon = document.createElement('span')
+        icon.className = 'icon-[comfy--workflow] size-3 shrink-0'
+        const title = document.createElement('span')
+        title.className = 'max-w-40 truncate'
+        title.textContent = name
+        open.append(icon, title)
+        open.onclick = () => emit('openReferenceWorkflow', id, name)
+        const remove = document.createElement('button')
+        remove.type = 'button'
+        remove.setAttribute(
+          'aria-label',
+          t('agent.removeWorkflowReference', { name })
+        )
+        remove.className =
+          'text-agent-fg pointer-events-none absolute -top-2 -right-2 z-10 flex size-5 cursor-pointer items-center justify-center rounded-full p-0 opacity-0 transition-opacity group-focus-within/workflow:pointer-events-auto group-focus-within/workflow:opacity-100 group-hover/workflow:pointer-events-auto group-hover/workflow:opacity-100 focus-visible:outline-2 focus-visible:outline-primary-background touch:pointer-events-auto touch:opacity-100'
+        const badge = document.createElement('span')
+        badge.className =
+          'bg-agent-surface hover:bg-agent-surface-hover flex size-3 items-center justify-center rounded-full ring-1 ring-border-default'
+        const cross = document.createElement('span')
+        cross.className = 'icon-[lucide--x] size-2'
+        badge.append(cross)
+        remove.append(badge)
+        remove.onclick = () => {
+          const position = getPos()
+          if (position === undefined) return
+          editor.dispatch(
+            editor.state.tr.delete(position, position + node.nodeSize)
+          )
+        }
+        dom.append(open, remove)
+        return { dom, stopEvent: () => true, ignoreMutation: () => true }
+      }
+    }
+  })
+})
+
+watch(
+  [model, references],
+  () => {
+    if (
+      !view ||
+      view.state.doc.eq(promptDocument(model.value, references.value))
+    )
+      return
+    insertions.clear()
+    const state = createState()
+    const position = Math.min(view.state.selection.head, state.doc.content.size)
+    view.updateState(
+      state.apply(
+        state.tr.setSelection(TextSelection.create(state.doc, position))
+      )
+    )
+  },
+  { deep: true, flush: 'post' }
+)
+watch(
+  () => [label, expanded, activeDescendant],
+  () => view?.setProps({})
+)
+onBeforeUnmount(() => {
+  insertions.clear()
+  view?.destroy()
+  view = undefined
+})
+
+function selection() {
+  if (!view) return { start: 0, end: 0 }
+  return {
+    start: promptTextOffset(view.state.doc, view.state.selection.from),
+    end: promptTextOffset(view.state.doc, view.state.selection.to)
+  }
+}
+
+function replaceText(from: number, to: number, text: string): void {
+  if (!view) return
+  view.dispatch(
+    view.state.tr.insertText(
+      text,
+      promptDocumentPosition(view.state.doc, from),
+      promptDocumentPosition(view.state.doc, to)
+    )
+  )
+}
+
+function captureInsertion(from?: number, to?: number) {
+  const insertion = {
+    from: view
+      ? from === undefined
+        ? view.state.selection.from
+        : promptDocumentPosition(view.state.doc, from)
+      : 0,
+    to: view
+      ? to === undefined
+        ? view.state.selection.to
+        : promptDocumentPosition(view.state.doc, to)
+      : 0
+  }
+  insertions.add(insertion)
+  return {
+    insert(reference: WorkflowReference) {
+      if (!view || !insertions.delete(insertion)) return
+      const node = inlinePromptSchema.nodes.workflow.create({
+        id: reference.id,
+        name: reference.name
+      })
+      const transaction = view.state.tr.replaceWith(
+        insertion.from,
+        insertion.to,
+        node
+      )
+      const afterChip = insertion.from + node.nodeSize
+      if (!transaction.doc.nodeAt(afterChip)?.text?.startsWith(' '))
+        transaction.insertText(' ', afterChip)
+      view.dispatch(
+        transaction
+          .setSelection(TextSelection.create(transaction.doc, afterChip + 1))
+          .scrollIntoView()
+      )
+      view.focus()
+    },
+    cancel: () => insertions.delete(insertion)
+  }
+}
+
+defineExpose({
+  focus: () => view?.focus(),
+  selection,
+  replaceText,
+  captureInsertion
+})
+</script>
+
+<template>
+  <div ref="host" />
+</template>

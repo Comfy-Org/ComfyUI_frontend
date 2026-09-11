@@ -52,7 +52,7 @@ test.describe(
         .click()
       await expect(tabs).toHaveCount(1)
       workflowSelection.resumeWorkflowLookups()
-      await expect(composer).toHaveValue('Keep this interrupted draft')
+      await expect(composer).toHaveText('Keep this interrupted draft')
       await expect(
         panel.getByText(enMessages.agent.selectWorkflowForAgent)
       ).toBeVisible()
@@ -118,14 +118,16 @@ test.describe(
       await panel
         .getByRole('menuitem', { name: 'Unsaved Workflow', exact: true })
         .click()
-      await composer.fill('Use this workflow as inspiration')
+      await composer.pressSequentially('Use this workflow as inspiration')
       await expect(tabs).toHaveCount(1)
       await panel.getByRole('button', { name: enMessages.g.close }).click()
       await expect(panel).toHaveCount(0)
       await page
         .getByRole('button', { name: enMessages.agent.askComfyAgent })
         .click()
-      await expect(composer).toHaveValue('Use this workflow as inspiration')
+      await expect(composer).toHaveText(
+        'Unsaved Workflow Use this workflow as inspiration'
+      )
       await expect(targetPicker).toHaveText('Unsaved Workflow (2)')
       const chip = panel.getByTestId('workflow-reference-chip')
       const open = chip.getByRole('button', {
@@ -157,17 +159,19 @@ test.describe(
         page.locator('.workflow-tabs .p-togglebutton-checked')
       ).toHaveText('Unsaved Workflow')
       await expect(targetPicker).toHaveText('Unsaved Workflow (2)')
-      await expect(composer).toHaveValue('Use this workflow as inspiration')
+      await expect(composer).toHaveText(
+        'Unsaved Workflow Use this workflow as inspiration'
+      )
       await expect(chip).toBeVisible()
       expect(workflowSelection.postedMessages).toHaveLength(0)
 
-      await composer.click()
-      await composer.press('Shift+Tab')
+      await open.focus()
+      await open.press('Tab')
       await expect(remove).toBeFocused()
       await expect(remove).toHaveCSS('opacity', '1')
       await remove.press('Enter')
       await expect(chip).toHaveCount(0)
-      await expect(composer).toHaveValue('Use this workflow as inspiration')
+      await expect(composer).toHaveText('Use this workflow as inspiration')
       await expect(targetPicker).toHaveText('Unsaved Workflow (2)')
       await expect(
         page.locator('.workflow-tabs .p-togglebutton-checked')
@@ -330,7 +334,7 @@ test.describe(
       await expect(
         page.getByRole('menuitemradio', { checked: true })
       ).toHaveCount(0)
-      await expect(composer).toHaveValue('Find a workflow for skin upscaling')
+      await expect(composer).toHaveText('Find a workflow for skin upscaling')
       expect(workflowSelection.postedMessages).toHaveLength(0)
 
       const row = page.getByRole('menuitemradio', {
@@ -354,7 +358,7 @@ test.describe(
       await expect(
         panel.getByRole('button', { name: enMessages.agent.switchWorkflow })
       ).toHaveText('Unsaved Workflow')
-      await expect(composer).toHaveValue('Find a workflow for skin upscaling')
+      await expect(composer).toHaveText('Find a workflow for skin upscaling')
       expect(workflowSelection.postedMessages).toHaveLength(0)
 
       const editorTabs = page.getByTestId('workflow-tab')
@@ -495,7 +499,7 @@ test.describe(
       await expect(
         page.getByText(enMessages.shareWorkflow.saveFailedTitle)
       ).toBeVisible()
-      await expect(composer).toHaveValue('Keep this draft')
+      await expect(composer).toHaveText('Keep this draft')
       await row.click()
       await expect.poll(() => workflowSelection.savedPaths.length).toBe(2)
       workflowSelection.finishSave(true)

@@ -16,7 +16,7 @@ import { useI18n } from 'vue-i18n'
 
 import { buildAgentTooltipConfig } from '@/composables/useTooltipConfig'
 
-import Textarea from '@/components/ui/textarea/Textarea.vue'
+import InlinePromptEditor from './composer/InlinePromptEditor.vue'
 import type {
   MentionPickerEvent,
   MentionPickerState,
@@ -44,9 +44,8 @@ const {
   canOpenAssets = false,
   selectionTags = [],
   nodeReferenceDisabledReason,
-  workflowReferences = [],
   availableWorkflows = [],
-  selectWorkflowReference = async () => false,
+  selectWorkflowReference = async () => undefined,
   editableWorkflowId,
   hasWorkflowTarget = false,
   workflowSelecting = false,
@@ -58,11 +57,10 @@ const {
   canOpenAssets?: boolean
   selectionTags?: SelectedNode[]
   nodeReferenceDisabledReason?: string
-  workflowReferences?: WorkflowReference[]
   availableWorkflows?: WorkflowReferenceOption[]
   selectWorkflowReference?: (
     workflow: WorkflowReferenceOption
-  ) => Promise<boolean>
+  ) => Promise<WorkflowReference | undefined>
   editableWorkflowId?: string
   hasWorkflowTarget?: boolean
   workflowSelecting?: boolean
@@ -85,6 +83,10 @@ const emit = defineEmits<{
   openReferenceWorkflow: [workflowId: string, workflowName: string]
   workflowTargetRequired: []
 }>()
+const workflowReferences = defineModel<WorkflowReference[]>(
+  'workflowReferences',
+  { default: () => [] }
+)
 const { t } = useI18n()
 
 const assetDragActive = inject<Readonly<Ref<boolean>>>(
@@ -103,7 +105,7 @@ const mentionNodes = computed(() => {
   )
 })
 const eligibleWorkflows = computed(() => {
-  const selectedIds = new Set(workflowReferences.map(({ id }) => id))
+  const selectedIds = new Set(workflowReferences.value.map(({ id }) => id))
   return availableWorkflows.filter(
     ({ id }) =>
       id === undefined || (id !== editableWorkflowId && !selectedIds.has(id))
@@ -257,11 +259,9 @@ function firstMentionMatchIndex(
   )
 }
 
-function syncMention(event: Event): void {
-  const el = event.target
-  if (!(el instanceof HTMLTextAreaElement)) return
-  const caret = el.selectionStart ?? 0
-  const text = el.value
+function syncMention(): void {
+  const caret = editorRef.value?.selection().start ?? 0
+  const text = composer.draft.value
   const at = text.lastIndexOf('@', caret - 1)
   const atValid =
     at !== -1 && at < caret && (at === 0 || /\s/.test(text[at - 1]))
@@ -321,11 +321,11 @@ async function pickMention(match: MentionMatch): Promise<void> {
   const state = mention.value
   if (state.status === 'closed' || isMentionDisabled(match)) return
   if (match.kind === 'section') {
-    const before = composer.draft.value.slice(0, state.start + 1)
-    const after = composer.draft.value.slice(
-      state.start + 1 + state.query.length
+    editorRef.value?.replaceText(
+      state.start + 1,
+      state.start + 1 + state.query.length,
+      ''
     )
-    composer.draft.value = before + after
     dispatchMention({ type: 'sectionSelected', section: match.id })
     if (match.id === 'workflows') emit('requestWorkflowReferences')
     return
@@ -334,9 +334,22 @@ async function pickMention(match: MentionMatch): Promise<void> {
     dispatchMention({ type: 'back' })
     return
   }
+  if (match.kind === 'workflow') {
+    const insertion = editorRef.value?.captureInsertion(
+      state.start,
+      state.start + 1 + state.query.length
+    )
+    const reference = await selectWorkflowReference(match.workflow)
+    if (!reference) {
+      insertion?.cancel()
+      return
+    }
+    insertion?.insert(reference)
+    dispatchMention({ type: 'closed' })
+    return
+  }
   const draft = composer.draft.value
-  if (match.kind === 'node') emit('mentionPick', match.node)
-  else if (!(await selectWorkflowReference(match.workflow))) return
+  emit('mentionPick', match.node)
   const current = mention.value
   if (
     composer.draft.value !== draft ||
@@ -350,9 +363,9 @@ async function pickMention(match: MentionMatch): Promise<void> {
   let after = draft.slice(end)
   if (after.startsWith(' ') && (before === '' || before.endsWith(' ')))
     after = after.slice(1)
-  composer.draft.value = before + after
+  editorRef.value?.replaceText(state.start, draft.length - after.length, '')
   dispatchMention({ type: 'closed' })
-  textareaRef.value?.focus()
+  editorRef.value?.focus()
 }
 
 function onWorkflowSubmenuOpenChange(open: boolean): void {
@@ -361,7 +374,14 @@ function onWorkflowSubmenuOpenChange(open: boolean): void {
 
 async function pickWorkflow(workflow: WorkflowReferenceOption): Promise<void> {
   if (workflowSelecting) return
-  if (await selectWorkflowReference(workflow)) addMenuOpen.value = false
+  const insertion = editorRef.value?.captureInsertion()
+  const reference = await selectWorkflowReference(workflow)
+  if (!reference) {
+    insertion?.cancel()
+    return
+  }
+  insertion?.insert(reference)
+  addMenuOpen.value = false
 }
 
 function isMentionDisabled(match: MentionMatch): boolean {
@@ -401,21 +421,6 @@ function onComposerKeydown(event: KeyboardEvent): void {
       return
     }
   }
-  if (
-    event.key === 'Backspace' &&
-    !event.isComposing &&
-    workflowReferences.length > 0
-  ) {
-    const textarea = event.target as HTMLTextAreaElement
-    if (textarea.selectionStart === 0 && textarea.selectionEnd === 0) {
-      event.preventDefault()
-      emit(
-        'removeWorkflowReference',
-        workflowReferences[workflowReferences.length - 1].id
-      )
-      return
-    }
-  }
   if (event.key === 'Enter') onEnter(event)
 }
 
@@ -423,7 +428,7 @@ const CARET_KEYS = ['ArrowLeft', 'ArrowRight', 'Home', 'End']
 
 function onComposerKeyup(event: KeyboardEvent): void {
   if (mention.value.status === 'open' && CARET_KEYS.includes(event.key))
-    syncMention(event)
+    syncMention()
 }
 
 const mentionListRef = useTemplateRef<HTMLDivElement>('mentionListRef')
@@ -446,9 +451,29 @@ const composer = useComposer({
       emit('workflowTargetRequired')
       return
     }
-    if (workflowReferences.length > 0)
-      emit('send', text, attachments, [...workflowReferences])
-    else emit('send', text, attachments)
+    if (workflowReferences.value.length > 0) {
+      const draft = composer.draft.value
+      const offsets = workflowReferences.value.map(
+        (reference) => reference.textOffset ?? 0
+      )
+      const start = Math.min(
+        draft.length - draft.trimStart().length,
+        ...offsets
+      )
+      const end = Math.max(draft.trimEnd().length, ...offsets)
+      emit(
+        'send',
+        draft.slice(start, end),
+        attachments,
+        workflowReferences.value.map((reference) => ({
+          ...reference,
+          textOffset: Math.min(
+            end - start,
+            Math.max(0, (reference.textOffset ?? 0) - start)
+          )
+        }))
+      )
+    } else emit('send', text, attachments)
   },
   isStreaming: () => streaming,
   onStop: () => emit('stop')
@@ -472,16 +497,17 @@ function onPrimaryAction(): void {
   else composer.submit()
 }
 
-const textareaRef = useTemplateRef<InstanceType<typeof Textarea>>('textareaRef')
+const editorRef =
+  useTemplateRef<InstanceType<typeof InlinePromptEditor>>('editorRef')
 
 function insert(text: string): void {
   composer.insert(text)
-  textareaRef.value?.focus()
+  editorRef.value?.focus()
 }
 
 function replaceDraft(text: string): void {
   composer.draft.value = text
-  textareaRef.value?.focus()
+  editorRef.value?.focus()
 }
 
 defineExpose({
@@ -659,57 +685,24 @@ defineExpose({
 
       <div
         data-testid="composer-inline-input"
-        class="flex min-h-16 flex-wrap items-start gap-1 p-3"
+        class="max-h-100 min-h-16 overflow-x-hidden overflow-y-auto p-3"
       >
-        <span
-          v-for="workflow in workflowReferences"
-          :key="workflow.id"
-          data-testid="workflow-reference-chip"
-          class="group/workflow relative inline-flex max-w-full"
-        >
-          <button
-            type="button"
-            :aria-label="t('agent.openWorkflowTab', { name: workflow.name })"
-            class="inline-flex min-w-0 cursor-pointer items-center gap-1 rounded-sm bg-primary-background/30 px-1 py-0.5 font-inter text-xs/[15px] font-normal text-primary-background-hover ring-1 ring-primary-background/30 transition-colors ring-inset hover:bg-primary-background/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background"
-            @click="emit('openReferenceWorkflow', workflow.id, workflow.name)"
-          >
-            <span class="icon-[comfy--workflow] size-3 shrink-0" />
-            <span class="max-w-40 truncate">{{ workflow.name }}</span>
-          </button>
-          <button
-            type="button"
-            :aria-label="
-              t('agent.removeWorkflowReference', { name: workflow.name })
-            "
-            class="text-agent-fg pointer-events-none absolute -top-2 -right-2 z-10 flex size-5 cursor-pointer items-center justify-center rounded-full p-0 opacity-0 transition-opacity group-focus-within/workflow:pointer-events-auto group-focus-within/workflow:opacity-100 group-hover/workflow:pointer-events-auto group-hover/workflow:opacity-100 focus-visible:outline-2 focus-visible:outline-primary-background touch:pointer-events-auto touch:opacity-100"
-            @click.stop="emit('removeWorkflowReference', workflow.id)"
-          >
-            <span
-              class="bg-agent-surface hover:bg-agent-surface-hover flex size-3 items-center justify-center rounded-full ring-1 ring-border-default"
-            >
-              <span class="icon-[lucide--x] size-2" />
-            </span>
-          </button>
-        </span>
-
-        <span
+        <div
           v-if="workflowSelecting"
           role="status"
-          class="text-agent-fg-muted flex items-center gap-1 text-xs"
+          class="text-agent-fg-muted mb-1 flex items-center gap-1 text-xs"
         >
           <span class="icon-[lucide--loader-circle] size-3 animate-spin" />
           {{ t('agent.savingWorkflow') }}
-        </span>
-        <div class="relative min-h-7 min-w-32 flex-1">
-          <Textarea
-            ref="textareaRef"
+        </div>
+        <div class="relative min-h-7">
+          <InlinePromptEditor
+            ref="editorRef"
             v-model="composer.draft.value"
-            :aria-label="t('agent.placeholder')"
-            rows="1"
-            class="text-agent-fg field-sizing-content max-h-100 min-h-7 w-full min-w-0 resize-none overflow-x-hidden overflow-y-auto rounded-none bg-transparent p-0 font-inter text-[14px]/5 font-normal wrap-break-word whitespace-pre-wrap focus-visible:ring-0"
-            :aria-expanded="mentionVisible"
-            aria-controls="agent-reference-menu"
-            :aria-activedescendant="
+            v-model:references="workflowReferences"
+            :label="t('agent.placeholder')"
+            :expanded="mentionVisible"
+            :active-descendant="
               mentionVisible
                 ? `agent-reference-item-${mentionActive}`
                 : undefined
@@ -717,13 +710,18 @@ defineExpose({
             @keydown="onComposerKeydown"
             @keyup="onComposerKeyup"
             @input="syncMention"
+            @selection-change="syncMention"
             @click="syncMention"
             @blur="dispatchMention({ type: 'closed' })"
+            @open-reference-workflow="
+              (id, name) => emit('openReferenceWorkflow', id, name)
+            "
+            @remove-workflow-reference="emit('removeWorkflowReference', $event)"
           />
 
           <div
             v-if="!composer.draft.value && !workflowReferences.length"
-            class="text-agent-fg-muted pointer-events-none absolute inset-x-0 top-0 z-10 font-inter text-[14px]/[20px] font-normal"
+            class="text-agent-fg-muted pointer-events-none relative z-10 -mt-7 font-inter text-[14px]/[20px] font-normal"
           >
             <span>{{ placeholderHint.text }} </span>
             <AgentTooltip

@@ -1,3 +1,8 @@
+import type {
+  WorkflowReference,
+  WorkflowReferenceOption
+} from '../../types/workflowReference'
+import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -37,7 +42,12 @@ function mount(
   props: ComponentProps<typeof Composer> = {},
   attrs: Record<string, unknown> = {}
 ) {
-  const selectWorkflowReference = vi.fn(async () => true)
+  const selectWorkflowReference = vi.fn(
+    async (workflow: WorkflowReferenceOption) => ({
+      id: workflow.id ?? 'saved-scratch',
+      name: workflow.name
+    })
+  )
   const view = render(Composer, {
     props: { hasWorkflowTarget: true, selectWorkflowReference, ...props },
     attrs,
@@ -74,7 +84,7 @@ describe('Composer', () => {
     const { emitted } = mount({ submitting: true })
     const textbox = screen.getByRole('textbox')
     await userEvent.type(textbox, 'Next draft{Enter}')
-    expect(textbox).toHaveValue('Next draft')
+    expect(useAgentComposerStore().draft).toBe('Next draft')
     expect(emitted().send).toBeUndefined()
   })
 
@@ -157,7 +167,7 @@ describe('Composer', () => {
 
     await userEvent.type(box, 'hello')
 
-    expect((box as HTMLTextAreaElement).value).toBe('hello')
+    expect(useAgentComposerStore().draft).toBe('hello')
     expect(screen.queryByRole('button', { name: 'mention nodes' })).toBeNull()
   })
 
@@ -181,7 +191,7 @@ describe('Composer', () => {
     const { emitted, rerender } = mount({ workflowSelecting: true })
     const box = screen.getByRole('textbox')
     await userEvent.type(box, 'keep this draft{Enter}')
-    expect(box).toHaveValue('keep this draft')
+    expect(useAgentComposerStore().draft).toBe('keep this draft')
     expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled()
     expect(emitted().send).toBeUndefined()
 
@@ -234,7 +244,7 @@ describe('Composer', () => {
     await userEvent.type(box, '  make art  ')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     expect(emitted().send[0]).toEqual(['make art', []])
-    expect(box).toHaveValue('  make art  ')
+    expect(useAgentComposerStore().draft).toBe('  make art  ')
   })
 
   it('sends on Enter but not on Shift+Enter', async () => {
@@ -491,7 +501,6 @@ describe('Composer', () => {
 
     it('keeps type-to-filter behavior inside the selected reference type', async () => {
       const { emitted } = mount({ getMentionNodes: () => NODES })
-      const box = screen.getByRole('textbox')
 
       const menu = await openReferenceSection('Nodes', '@vae de')
       expect(within(menu).getAllByRole('menuitem')).toHaveLength(2)
@@ -502,7 +511,7 @@ describe('Composer', () => {
       await userEvent.keyboard('{Enter}')
       expect(emitted().mentionPick[0]).toEqual([NODES[2]])
       expect(emitted().send).toBeUndefined()
-      expect((box as HTMLTextAreaElement).value).toBe('')
+      expect(useAgentComposerStore().draft).toBe('')
     })
 
     it('navigates categories and submenu items with the keyboard', async () => {
@@ -544,7 +553,7 @@ describe('Composer', () => {
       )
 
       expect(selectWorkflowReference).toHaveBeenCalledWith(workflow)
-      expect(screen.getByRole('textbox')).toHaveValue('')
+      expect(useAgentComposerStore().draft).toBe(' ')
     })
 
     it('requests fresh workflow candidates when @ enters Workflows', async () => {
@@ -573,24 +582,53 @@ describe('Composer', () => {
 
     it('keeps a failed workflow mention retryable and consumes it only on success', async () => {
       const selectWorkflowReference = vi
-        .fn(async () => true)
-        .mockResolvedValueOnce(false)
+        .fn(
+          async (): Promise<WorkflowReference | undefined> => ({
+            id: 'saved-scratch',
+            name: 'Scratch'
+          })
+        )
+        .mockResolvedValueOnce(undefined)
       mount({
         availableWorkflows: [{ tabPath: 'scratch.json', name: 'Scratch' }],
         selectWorkflowReference
       })
       await openReferenceSection('Workflows', '@scratch')
       await userEvent.keyboard('{Enter}')
-      expect(screen.getByRole('textbox')).toHaveValue('@scratch')
+      expect(useAgentComposerStore().draft).toBe('@scratch')
       expect(
         screen.getByRole('menuitem', { name: 'Scratch Unsaved' })
       ).toBeVisible()
 
       await userEvent.keyboard('{Enter}')
       expect(selectWorkflowReference).toHaveBeenCalledTimes(2)
-      expect(screen.getByRole('textbox')).toHaveValue('')
+      expect(useAgentComposerStore().draft).toBe(' ')
       expect(screen.queryByRole('menu')).toBeNull()
     })
+
+    it.for(['', ' after'])(
+      'places the caret after one real space following a chip with suffix "%s"',
+      async (suffix) => {
+        mount({ availableWorkflows: [{ id: 'wf-water', name: 'Water world' }] })
+        const textbox = screen.getByRole('textbox')
+        await userEvent.type(textbox, `Before @${suffix}`)
+        if (suffix) await userEvent.keyboard(`{ArrowLeft>${suffix.length}/}`)
+        await userEvent.click(
+          screen.getByRole('menuitem', { name: 'Workflows' })
+        )
+        await userEvent.keyboard('{ArrowDown}{Enter}')
+        expect(useAgentComposerStore().draft).toBe(
+          `Before  ${suffix.trimStart()}`
+        )
+        await userEvent.keyboard('next ')
+        expect(useAgentComposerStore().draft).toBe(
+          `Before  next ${suffix.trimStart()}`
+        )
+        expect(textbox).toHaveTextContent(
+          `Before Water world next ${suffix.trimStart()}`.trim()
+        )
+      }
+    )
 
     it('removes the chosen mention while retaining the text on both sides', async () => {
       const { selectWorkflowReference } = mount({
@@ -606,7 +644,8 @@ describe('Composer', () => {
         id: 'wf-water',
         name: 'Water world'
       })
-      expect(textbox).toHaveValue('Compare with target')
+      expect(useAgentComposerStore().draft).toBe('Compare  with target')
+      expect(textbox).toHaveTextContent('Compare Water world with target')
       expect(screen.queryByRole('menu')).toBeNull()
     })
 
@@ -635,7 +674,32 @@ describe('Composer', () => {
       await userEvent.type(screen.getByRole('textbox'), 'use this workflow')
       await userEvent.click(screen.getByRole('button', { name: 'Send' }))
 
-      expect(emitted().send[0]).toEqual(['use this workflow', [], references])
+      expect(emitted().send[0]).toEqual([
+        'use this workflow',
+        [],
+        references.map((reference) => ({ ...reference, textOffset: 0 }))
+      ])
+    })
+
+    it('keeps spaces next to boundary chips when trimming a sent prompt', async () => {
+      useAgentComposerStore().draft = '  Copy  into  '
+      const { emitted } = mount({
+        workflowReferences: [
+          { id: 'a', name: 'A', textOffset: 7 },
+          { id: 'b', name: 'B', textOffset: 13 }
+        ]
+      })
+
+      await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+      expect(emitted().send[0]).toEqual([
+        'Copy  into ',
+        [],
+        [
+          { id: 'a', name: 'A', textOffset: 5 },
+          { id: 'b', name: 'B', textOffset: 11 }
+        ]
+      ])
     })
 
     it('excludes only the referenced id when node titles match', async () => {
@@ -688,7 +752,7 @@ describe('Composer', () => {
       await userEvent.keyboard('{Shift>}{Enter}{/Shift}')
       expect(emitted().mentionPick).toBeUndefined()
       expect(emitted().send).toBeUndefined()
-      expect((box as HTMLTextAreaElement).value).toBe('@k\n')
+      expect(useAgentComposerStore().draft).toBe('@k\n')
       expect(screen.queryByRole('menu')).toBeNull()
     })
 
@@ -710,9 +774,7 @@ describe('Composer', () => {
     first.unmount()
 
     mount()
-    expect(screen.getByRole<HTMLTextAreaElement>('textbox').value).toBe(
-      'keep me'
-    )
+    expect(useAgentComposerStore().draft).toBe('keep me')
   })
 
   async function openAddMenu() {
@@ -781,8 +843,8 @@ describe('Composer', () => {
   })
 
   it('preserves typing done while a reference selection is saving', async () => {
-    let resolve: (saved: boolean) => void = () => {}
-    const promise = new Promise<boolean>((done) => {
+    let resolve: (saved: WorkflowReference | undefined) => void = () => {}
+    const promise = new Promise<WorkflowReference | undefined>((done) => {
       resolve = done
     })
     mount({
@@ -796,10 +858,11 @@ describe('Composer', () => {
       screen.getByRole('menuitem', { name: 'Scratch Unsaved' })
     )
     await userEvent.type(textbox, ' more detail')
-    resolve(true)
+    resolve({ id: 'saved-scratch', name: 'Scratch' })
     await promise
     await nextTick()
-    expect(textbox).toHaveValue('Compare @ more detail')
+    expect(useAgentComposerStore().draft).toBe('Compare  more detail')
+    expect(textbox).toHaveTextContent('Compare Scratch more detail')
   })
 
   it.for(['pointer', 'keyboard'])(
@@ -821,7 +884,7 @@ describe('Composer', () => {
       expect(emitted().openReferenceWorkflow).toEqual([['wf-1', 'Water world']])
       expect(emitted().removeWorkflowReference).toBeUndefined()
       expect(emitted().send).toBeUndefined()
-      expect(textarea).toHaveValue('Keep this prompt')
+      expect(useAgentComposerStore().draft).toBe('Keep this prompt')
       expect(screen.getByTestId('composer-node-section')).toHaveTextContent(
         'KSampler'
       )
@@ -851,7 +914,7 @@ describe('Composer', () => {
       expect(emitted().removeWorkflowReference).toEqual([['wf-1']])
       expect(emitted().openReferenceWorkflow).toBeUndefined()
       expect(emitted().send).toBeUndefined()
-      expect(textarea).toHaveValue('Keep this prompt')
+      expect(useAgentComposerStore().draft).toBe('Keep this prompt')
     }
   )
 
@@ -870,13 +933,12 @@ describe('Composer', () => {
     expect(workflowChips).toHaveLength(2)
     expect(inlineInput).toContainElement(screen.getByRole('textbox'))
 
-    const textarea = screen.getByRole('textbox') as HTMLTextAreaElement
+    const textarea = screen.getByRole('textbox')
     await userEvent.type(textarea, 'keep me')
-    textarea.setSelectionRange(0, 0)
-    await userEvent.keyboard('{Backspace}')
+    await userEvent.keyboard('{ArrowLeft>7/}{Backspace}')
 
     expect(emitted().removeWorkflowReference).toEqual([['wf-2']])
-    expect(textarea).toHaveValue('keep me')
+    expect(useAgentComposerStore().draft).toBe('keep me')
   })
 
   it('keeps normal text deletion when the caret is not at the start', async () => {
@@ -884,12 +946,12 @@ describe('Composer', () => {
       workflowReferences: [{ id: 'wf-1', name: 'Water world' }]
     })
 
-    const textarea = screen.getByRole('textbox') as HTMLTextAreaElement
+    const textarea = screen.getByRole('textbox')
     await userEvent.type(textarea, 'text')
     await userEvent.keyboard('{Backspace}')
 
     expect(emitted().removeWorkflowReference).toBeUndefined()
-    expect(textarea).toHaveValue('tex')
+    expect(useAgentComposerStore().draft).toBe('tex')
   })
 
   it('keeps selected nodes in a dedicated section above the inline prompt', () => {
@@ -1136,7 +1198,7 @@ describe('Composer', () => {
       }
     }
 
-    it('inserts text and focuses without scheduling delayed UI state', async () => {
+    it('inserts text and focuses immediately', async () => {
       const { insert } = mountWithInsert()
       const textarea = screen.getByRole('textbox')
       const focusSpy = vi.spyOn(textarea, 'focus')
@@ -1144,10 +1206,9 @@ describe('Composer', () => {
       insert('foo')
       await nextTick()
 
-      expect(textarea).toHaveValue('foo')
+      expect(useAgentComposerStore().draft).toBe('foo')
       expect(textarea).toHaveFocus()
       expect(focusSpy).toHaveBeenCalledOnce()
-      expect(vi.getTimerCount()).toBe(0)
     })
   })
 })

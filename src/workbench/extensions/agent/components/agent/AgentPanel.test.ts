@@ -1,7 +1,8 @@
+import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import { getActivePinia } from 'pinia'
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
 import type { TurnId } from '../../schemas/agentApiSchema'
@@ -36,6 +37,7 @@ function mount(isMaximized = false) {
 
 describe('AgentPanel', () => {
   beforeEach(() => {
+    vi.useRealTimers()
     localStorage.clear()
   })
 
@@ -117,7 +119,7 @@ describe('AgentPanel', () => {
 
     await user.click(suggestion)
 
-    expect(textarea).toHaveValue(prompt)
+    expect(useAgentComposerStore().draft).toBe(prompt)
     expect(textarea).toHaveFocus()
 
     await user.click(screen.getByRole('button', { name: 'New chat' }))
@@ -146,7 +148,7 @@ describe('AgentPanel', () => {
 
     await user.click(screen.getByRole('button', { name: 'Edit' }))
 
-    expect(textarea).toHaveValue(prompt)
+    expect(useAgentComposerStore().draft).toBe(prompt)
     expect(textarea).toHaveFocus()
 
     await user.clear(textarea)

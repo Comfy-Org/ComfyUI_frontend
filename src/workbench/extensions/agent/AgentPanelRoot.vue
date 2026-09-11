@@ -402,12 +402,6 @@ const editableWorkflowId = computed(() => {
   return target ? cloudIdFor(target) : undefined
 })
 
-function addWorkflowReference(workflow: WorkflowReference): void {
-  if (workflow.id === editableWorkflowId.value) return
-  if (workflowReferences.value.some(({ id }) => id === workflow.id)) return
-  workflowReferences.value = [...workflowReferences.value, workflow]
-}
-
 function removeWorkflowReference(id: string): void {
   workflowReferences.value = workflowReferences.value.filter(
     (workflow) => workflow.id !== id
@@ -510,14 +504,18 @@ async function onSelectWorkflowTarget(path: string): Promise<boolean> {
 
 async function onSelectWorkflowReference(
   option: WorkflowReferenceOption
-): Promise<boolean> {
-  if (workflowSelection.value) return false
+): Promise<WorkflowReference | undefined> {
+  if (workflowSelection.value) return undefined
   if (option.id !== undefined) {
-    addWorkflowReference(option)
-    return true
+    if (
+      option.id === editableWorkflowId.value ||
+      workflowReferences.value.some(({ id }) => id === option.id)
+    )
+      return undefined
+    return option
   }
   const tab = workflowStore.getWorkflowByPath(option.tabPath)
-  if (!tab || !workflowStore.openWorkflows.includes(tab)) return false
+  if (!tab || !workflowStore.openWorkflows.includes(tab)) return undefined
   workflowSelection.value = { purpose: 'reference', workflow: tab }
   const generation = composerContextGeneration
   const isCurrent = () =>
@@ -525,19 +523,23 @@ async function onSelectWorkflowReference(
     workflowStore.openWorkflows.includes(tab)
   try {
     const workflowId = await prepareWorkflowSelection(tab, isCurrent)
-    if (workflowId === undefined || !isCurrent()) return false
+    if (workflowId === undefined || !isCurrent()) return undefined
+    if (
+      workflowId === editableWorkflowId.value ||
+      workflowReferences.value.some(({ id }) => id === workflowId)
+    )
+      return undefined
     bindingStore.bind(workflowId, tab.path)
-    addWorkflowReference({
+    return {
       id: workflowId,
       name: cloudWorkflowName(tab)
-    })
-    return true
+    }
   } catch (error) {
     if (isCurrent())
       warnWorkflowSelectionFailed(
         error instanceof Error ? error.message : undefined
       )
-    return false
+    return undefined
   } finally {
     workflowSelection.value = null
   }
@@ -1254,6 +1256,7 @@ function onPanelDrop(event: DragEvent): void {
     />
     <AgentPanel
       ref="panelRef"
+      v-model:workflow-references="workflowReferences"
       :entries
       :editable-turn-id="editableTurnId"
       :answering-ask-ids="answeringAskIds"
@@ -1268,7 +1271,6 @@ function onPanelDrop(event: DragEvent): void {
       :custom-title="history.titleFor(threadId)"
       :selection-tags="selectionTags"
       :node-reference-disabled-reason="nodeReferenceDisabledReason"
-      :workflow-references="workflowReferences"
       :select-workflow-reference="onSelectWorkflowReference"
       :saving-reference="savingReference"
       :available-workflows="availableWorkflowReferences"

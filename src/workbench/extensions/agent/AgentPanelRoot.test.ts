@@ -398,7 +398,10 @@ function renderWithSelectedTarget() {
 }
 
 async function sendFromComposer(text: string): Promise<void> {
-  await userEvent.type(screen.getByRole('textbox'), text)
+  const textbox = screen.getByRole('textbox')
+  await userEvent.click(textbox)
+  await userEvent.keyboard('{ArrowRight}')
+  await userEvent.keyboard(text)
   await userEvent.click(screen.getByRole('button', { name: 'Send' }))
   await screen.findByRole('button', { name: 'Stop' })
 }
@@ -1642,7 +1645,7 @@ describe('AgentPanelRoot canvas draft on send', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
 
     expect(messageBodies).toHaveLength(0)
-    expect(textbox).toHaveValue('hello')
+    expect(useAgentComposerStore().draft).toBe('hello')
   })
 })
 
@@ -2265,7 +2268,7 @@ describe('AgentPanelRoot workflow binding', () => {
       await screen.findByPlaceholderText(i18n.global.t('agent.searchWorkflows'))
     ).toHaveFocus()
     expect(screen.queryByRole('menuitemradio', { checked: true })).toBeNull()
-    expect(textbox).toHaveValue('build here')
+    expect(useAgentComposerStore().draft).toBe('build here')
     expect(bodies).toHaveLength(0)
     expect(workflowService.saveWorkflowAs).not.toHaveBeenCalled()
   })
@@ -2314,7 +2317,7 @@ describe('AgentPanelRoot workflow binding', () => {
         name: i18n.global.t('agent.switchWorkflow')
       })
     ).toHaveTextContent('scratch')
-    expect(textbox).toHaveValue('keep this prompt')
+    expect(useAgentComposerStore().draft).toBe('keep this prompt')
     expect(bodies).toHaveLength(0)
   })
 
@@ -2349,7 +2352,7 @@ describe('AgentPanelRoot workflow binding', () => {
       screen.getByRole('menuitemradio', { name: 'scratch' })
     ).not.toHaveAttribute('aria-disabled', 'true')
     expect(screen.queryByRole('status')).toBeNull()
-    expect(textbox).toHaveValue('keep draft')
+    expect(useAgentComposerStore().draft).toBe('keep draft')
     await userEvent.click(
       screen.getByRole('menuitemradio', { name: 'scratch' })
     )
@@ -2958,7 +2961,7 @@ describe('AgentPanelRoot workflow binding', () => {
       })
     )
     expect(workflowStore.activeWorkflow?.path).toBe(current.path)
-    expect(textbox).toHaveValue('keep this draft')
+    expect(useAgentComposerStore().draft).toBe('keep this draft')
     expect(screen.getByRole('menuitemradio', { name: 'current' })).toBeChecked()
   })
 
@@ -3239,7 +3242,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
 
     expect(bodies).toHaveLength(0)
-    expect(textbox).toHaveValue('do not lose this')
+    expect(useAgentComposerStore().draft).toBe('do not lose this')
     expect(
       screen.getByPlaceholderText(i18n.global.t('agent.searchWorkflows'))
     ).toBeVisible()
@@ -4047,7 +4050,7 @@ describe('AgentPanelRoot workflow binding', () => {
       await userEvent.click(
         await screen.findByRole('menuitem', { name: 'reference' })
       )
-      await userEvent.type(textbox, 'Keep this draft')
+      await userEvent.keyboard('Keep this draft')
       const workflowLookups = () =>
         vi
           .mocked(fetch)
@@ -4064,7 +4067,7 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(workflowStore.syncWorkflows).not.toHaveBeenCalled()
       expect(workflowLookups()).toBe(lookupsBeforeNavigation)
       expect(useAgentPanelStore().selectedWorkflow?.path).toBe(current.path)
-      expect(textbox).toHaveValue('Keep this draft')
+      expect(useAgentComposerStore().draft).toBe(' Keep this draft')
     }
   )
 
@@ -4135,11 +4138,12 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(workflowService.openWorkflow).not.toHaveBeenCalled()
     expect(workflowStore.activeWorkflow).toEqual(target)
     expect(useAgentPanelStore().selectedWorkflow).toEqual(target)
-    expect(screen.getByRole('textbox')).toHaveValue('Compare ')
+    expect(useAgentComposerStore().draft).toBe('Compare  ')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await vi.waitFor(() => expect(bodies).toHaveLength(1))
     expect(bodies[0]).toMatchObject({
       workflow_id: 'wf-current',
+      content: 'Compare ',
       workflow_references: [{ workflow_id: 'wf-scratch', name: 'scratch (2)' }]
     })
   })
@@ -4180,7 +4184,7 @@ describe('AgentPanelRoot workflow binding', () => {
           ])
         )
       )
-      expect(textbox).toHaveValue(
+      expect(useAgentComposerStore().draft).toBe(
         picker === 'mention' ? 'Compare @' : 'Compare'
       )
       expect(screen.queryByRole('button', { name: 'Open scratch' })).toBeNull()
@@ -4268,7 +4272,9 @@ describe('AgentPanelRoot workflow binding', () => {
         )
       }
       expect(useAgentComposerStore().workflowReferences).toEqual(
-        outcome === 'complete' ? [{ id: 'wf-scratch', name: 'scratch' }] : []
+        outcome === 'complete'
+          ? [{ id: 'wf-scratch', name: 'scratch', textOffset: 8 }]
+          : []
       )
       expect(workflowService.openWorkflow).not.toHaveBeenCalled()
       expect(workflowStore.activeWorkflow).toEqual(target)
@@ -4319,14 +4325,14 @@ describe('AgentPanelRoot workflow binding', () => {
       await userEvent.click(
         await screen.findByRole('menuitem', { name: 'reference' })
       )
-      await userEvent.type(screen.getByRole('textbox'), 'Keep this draft')
+      await userEvent.keyboard('Keep this draft')
       expect(
         screen.getByRole('button', { name: 'Open reference' })
       ).toBeVisible()
 
       first.unmount()
       const reopened = render(AgentPanelRoot, { global: { plugins: [i18n] } })
-      expect(screen.getByRole('textbox')).toHaveValue('Keep this draft')
+      expect(useAgentComposerStore().draft).toBe(' Keep this draft')
       expect(useAgentPanelStore().selectedWorkflow?.path).toBe(target.path)
       expect(
         within(screen.getByTestId('composer-inline-input')).getByRole(
@@ -4339,7 +4345,7 @@ describe('AgentPanelRoot workflow binding', () => {
         await userEvent.click(screen.getByRole('button', { name: 'Send' }))
         await vi.waitFor(() => expect(bodies).toHaveLength(1))
         expect(bodies[0]).toMatchObject({
-          content: 'Keep this draft',
+          content: ' Keep this draft',
           workflow_id: 'wf-current',
           workflow_references: [
             { workflow_id: 'wf-reference', name: 'reference' }
@@ -4388,7 +4394,7 @@ describe('AgentPanelRoot workflow binding', () => {
       await userEvent.click(
         await screen.findByRole('menuitem', { name: 'reference' })
       )
-      await userEvent.type(textbox, 'Keep this draft')
+      await userEvent.keyboard('Keep this draft')
       if (tabState === 'closed') await workflowStore.closeWorkflow(reference)
 
       await userEvent.click(
@@ -4401,7 +4407,7 @@ describe('AgentPanelRoot workflow binding', () => {
         workflowStore.openWorkflows.some((tab) => tab.path === reference.path)
       ).toBe(true)
       expect(useAgentPanelStore().selectedWorkflow?.path).toBe(current.path)
-      expect(textbox).toHaveValue('Keep this draft')
+      expect(useAgentComposerStore().draft).toBe(' Keep this draft')
       expect(
         screen.getByRole('button', { name: 'Open reference' })
       ).toBeVisible()
@@ -4448,7 +4454,7 @@ describe('AgentPanelRoot workflow binding', () => {
       await userEvent.click(
         await screen.findByRole('menuitem', { name: 'reference' })
       )
-      await userEvent.type(textbox, 'Keep this draft')
+      await userEvent.keyboard('Keep this draft')
       if (failure === 'false')
         workflowService.openWorkflow.mockResolvedValueOnce(false)
       else
@@ -4470,7 +4476,7 @@ describe('AgentPanelRoot workflow binding', () => {
       )
       expect(workflowStore.activeWorkflow?.path).toBe(current.path)
       expect(useAgentPanelStore().selectedWorkflow?.path).toBe(current.path)
-      expect(textbox).toHaveValue('Keep this draft')
+      expect(useAgentComposerStore().draft).toBe(' Keep this draft')
       expect(
         screen.getByRole('button', { name: 'Open reference' })
       ).toBeVisible()
@@ -4720,7 +4726,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(screen.getByText('#7')).toBeInTheDocument()
     await userEvent.keyboard('{ArrowDown}{ArrowDown}{Tab}')
 
-    expect(textbox).toHaveValue('')
+    expect(useAgentComposerStore().draft).toBe('')
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
     expect(screen.getAllByText('KSampler')).toHaveLength(1)
     expect(screen.getByText('#7')).toBeInTheDocument()
@@ -4742,7 +4748,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(screen.getByRole('menuitem', { name: 'Nodes' })).toBeVisible()
     expect(screen.getByRole('menuitem', { name: 'Workflows' })).toBeVisible()
     expect(screen.queryByText('Sunset.png')).not.toBeInTheDocument()
-    expect(textbox).toHaveValue('@')
+    expect(useAgentComposerStore().draft).toBe('@')
   })
 
   it('offers both open and closed Cloud-backed workflows', async () => {
@@ -5035,11 +5041,11 @@ describe('AgentPanelRoot workflow binding', () => {
       composer.attachments = [
         { id: 'upload-1', name: 'cat.png', ref: 'uploaded_cat.png' }
       ]
-      await userEvent.type(textbox, '  Keep this draft  ')
+      await userEvent.keyboard('  Keep this draft  ')
       await userEvent.click(screen.getByRole('button', { name: 'Send' }))
       await vi.waitFor(() => expect(bodies).toHaveLength(1))
       expect(screen.getByRole('button', { name: 'Stop' })).toBeVisible()
-      expect(textbox).toHaveValue('')
+      expect(useAgentComposerStore().draft).toBe('')
       expect(composer.attachments).toEqual([])
       expect(
         screen.queryByRole('button', { name: 'Open reference' })
@@ -5085,7 +5091,7 @@ describe('AgentPanelRoot workflow binding', () => {
         expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull()
       )
       if (nextAction === 'untouched') {
-        expect(textbox).toHaveValue('  Keep this draft  ')
+        expect(useAgentComposerStore().draft).toBe('   Keep this draft  ')
         expect(composer.attachments).toMatchObject([
           { ref: 'uploaded_cat.png' }
         ])
@@ -5099,7 +5105,7 @@ describe('AgentPanelRoot workflow binding', () => {
         await vi.waitFor(() => expect(bodies).toHaveLength(2))
         expect(bodies[1]).toMatchObject({
           workflow_id: 'wf-42',
-          content: 'Keep this draft',
+          content: '   Keep this draft',
           selection: { node_ids: ['12'] },
           attachments: ['uploaded_cat.png'],
           workflow_references: [
@@ -5107,8 +5113,12 @@ describe('AgentPanelRoot workflow binding', () => {
           ]
         })
       } else {
-        expect(textbox).toHaveValue(
-          nextAction === 'new-draft' ? 'New input' : ''
+        expect(useAgentComposerStore().draft).toBe(
+          nextAction === 'new-draft'
+            ? 'New input'
+            : nextAction === 'removed-reference'
+              ? ' '
+              : ''
         )
         expect(composer.attachments).toEqual([])
         expect(
@@ -5166,7 +5176,7 @@ describe('AgentPanelRoot workflow binding', () => {
     releasePreparation()
 
     await vi.waitFor(() =>
-      expect(screen.getByRole('textbox')).toHaveValue('build a graph')
+      expect(useAgentComposerStore().draft).toBe('build a graph')
     )
     expect(bodies).toHaveLength(0)
     expect(useAgentPanelStore().selectedWorkflow).toBeNull()

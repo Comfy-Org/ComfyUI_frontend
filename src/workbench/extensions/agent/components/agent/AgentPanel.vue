@@ -46,7 +46,6 @@ const {
   isMaximized = false,
   selectionTags = [],
   nodeReferenceDisabledReason,
-  workflowReferences = [],
   availableWorkflows = [],
   selectWorkflowReference,
   savingReference = false,
@@ -74,11 +73,10 @@ const {
   isMaximized?: boolean
   selectionTags?: SelectedNode[]
   nodeReferenceDisabledReason?: string
-  workflowReferences?: WorkflowReference[]
   availableWorkflows?: WorkflowReferenceOption[]
   selectWorkflowReference?: (
     workflow: WorkflowReferenceOption
-  ) => Promise<boolean>
+  ) => Promise<WorkflowReference | undefined>
   savingReference?: boolean
   editableWorkflowId?: string
   activeTab?: ActiveTab | null
@@ -95,6 +93,10 @@ const {
   editableTurnId?: TurnId | null
   answeringAskIds?: ReadonlySet<string>
 }>()
+const workflowReferences = defineModel<WorkflowReference[]>(
+  'workflowReferences',
+  { default: () => [] }
+)
 const emit = defineEmits<{
   send: [
     text: string,
@@ -367,13 +369,13 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           />
           <Composer
             ref="composerRef"
+            v-model:workflow-references="workflowReferences"
             :streaming="streaming"
             :submitting="submitting"
             :can-attach="canAttach"
             :can-open-assets="canOpenAssets"
             :selection-tags="selectionTags"
             :node-reference-disabled-reason="nodeReferenceDisabledReason"
-            :workflow-references="workflowReferences"
             :select-workflow-reference="selectWorkflowReference"
             :available-workflows="availableWorkflows"
             :editable-workflow-id="editableWorkflowId"

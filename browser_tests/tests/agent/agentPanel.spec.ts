@@ -72,9 +72,9 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
     const sendButton = panel.getByRole('button', { name: 'Send' })
 
-    await expect(composer).toHaveValue('')
+    await expect(composer).toHaveText('')
     await promptChip.click()
-    await expect(composer).toHaveValue(firstPrompt)
+    await expect(composer).toHaveText(firstPrompt)
     expect(
       postedMessages,
       'inserting a prompt must not POST a message'
@@ -84,7 +84,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await sendButton.click()
     await expect.poll(() => postedMessages.length).toBeGreaterThanOrEqual(1)
     expect(postedMessages[0]).toContain(firstPrompt)
-    await expect(composer).toHaveValue('')
+    await expect(composer).toHaveText('')
 
     pushEvent(ws, THINKING_EVENT)
     await expect(panel.getByText(THINKING_TEXT)).toBeVisible()
@@ -343,7 +343,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(editButton).toHaveCount(1)
     await editButton.click()
 
-    await expect(composer).toHaveValue(originalPrompt)
+    await expect(composer).toHaveText(originalPrompt)
     await expect(composer).toBeFocused()
 
     await composer.fill(revisedPrompt)
