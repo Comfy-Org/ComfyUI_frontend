@@ -51,36 +51,36 @@ accompanying this record already covers.
 
 ### D1 — One dispatcher
 
-`keybindingService.keybindHandler` is the only code that resolves a keydown
-against the store. The `processKey` lookup in `app.ts` is deleted.
-litegraph's own `processKey` is left untouched for now and remains the only
-canvas-phase keydown consumer (Space-to-pan, Escape cancels a link drag,
-`node.onKeyDown` fan-out) until phase 6 turns those behaviours into
-bindings.
+`keybindingService.keybindHandler` resolves keydowns on `window` in the
+capture phase. `GraphView` owns installation and disposal. The hidden
+`Comfy.Keybinding.CapturePhase` setting defaults to `true`; setting it to
+`false` replaces the listener with a bubble listener without reloading and
+releases all held actions. This is a rollback switch, not a second dispatcher.
 
-The dispatcher runs on the window. When it executes a command it calls
-`preventDefault()`; it never calls `stopPropagation()`, so every listener
-after it can see what was claimed. It skips a keydown whose default was
-already prevented, so a listener on an element, on the document, or in the
-capture phase can claim a key with `preventDefault()` instead of
-`stopPropagation()`.
+The dispatcher prevents the default for the winning binding unless its
+`preventDefault` option is false. It never stops propagation. Later listeners
+can observe `defaultPrevented`; they must check it before performing an action.
+Composition and already-claimed events are ignored. `allowRepeat: false`
+consumes repeat events without executing the command again. Hold bindings
+never repeat their press action.
 
-It is registered in the bubble phase today. Phase 4 moves it to the capture
-phase, dark behind a hidden setting with a kill switch, once the
-preconditions under Rollout hold. Bubble is the rollout position, not the
-end state: as long as the dispatcher runs last, the seven capture-phase
-listeners in the app and every extension listener still preempt it, and
-ordering stays a property of registration order rather than of the
-resolver.
+`LGraphCanvas.processKey` remains callable for extension wrappers. It updates
+modifier state and forwards unclaimed events to selected nodes' `onKeyDown`
+and `onKeyUp` callbacks. Canvas panning, link/ghost cancellation and built-in
+image navigation are registered commands. The shim does not resolve shortcuts
+or announce a graph change for every key; commands own their mutations and
+redraws.
 
 ### D2 — A binding is scoped to a dialog and conditioned on context keys
 
-`Keybinding` gains two optional fields.
+`dialogKey` and `when` determine where a binding is eligible.
 
 - `dialogKey`: the `dialogStore` key of the dialog the binding belongs to. A
   binding without one is a workspace binding, as before. A scoped binding is
   looked up first and fires only while its dialog is the active (top-most)
-  one; a workspace binding fires only while no modal is open.
+  one; a workspace binding is blocked by a modal unless its clause explicitly
+  requires `modalOpen`. Local overlays use that opt-in together with their own
+  active context and focus condition.
 - `when`: a conjunction of context keys, written `key && !otherKey`. The
   grammar is deliberately that small: no disjunction, grouping or comparison,
   so "same clause" is decidable by comparing canonical spellings and
@@ -128,41 +128,36 @@ reserved combo, whatever its clause says; a user who wants an extension's
 command there binds it themselves.
 
 The store keeps arrays keyed by binding identity (command, combo, target
-element, dialog key, clause) and derives the active set. The Edit Keybinding
+element, dialog key, clause and execution options) and derives the active set. The Edit Keybinding
 dialog carries scope and clause forward and reports a conflict only against
 an identical binding. Extension keybindings are validated at registration.
 `targetElementId` is unchanged and remains a dispatch-time containment check.
 
-### D3 — Guard policy is uniform and explicit
+### D3 — Native controls retain their own keyboard behavior
 
-| Guard                    | Window path before                                                                                  | `processKey` path before                                     | Now                                                                                                                                                                                                                         |
-| ------------------------ | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Which bindings           | all                                                                                                 | canvas-scoped, then `stopImmediatePropagation`               | all, one path, never stops propagation                                                                                                                                                                                      |
-| `event.defaultPrevented` | ignored                                                                                             | ignored                                                      | skipped                                                                                                                                                                                                                     |
-| `event.isComposing`      | ignored                                                                                             | ignored                                                      | skipped                                                                                                                                                                                                                     |
-| `event.repeat`           | dispatched                                                                                          | skipped, then fell through to the window path and dispatched | dispatched                                                                                                                                                                                                                  |
-| Modal open               | workspace bindings blocked, `preventDefault` if Ctrl                                                | not checked                                                  | unchanged for workspace bindings; bindings scoped to the active dialog run                                                                                                                                                  |
-| Text input focus         | reserved combos blocked on `INPUT`, `TEXTAREA`, `contentEditable === 'true'`, `SPAN.property_value` | dead check                                                   | same set, except `INPUT` types that do not edit text (range, checkbox, radio, button, submit, reset, color, file, image) and inherited `isContentEditable`; a clause naming `textInputFocus` opts a core or user binding in |
-| Escape ownership         | `[role="menu"]`                                                                                     | none                                                         | `[role="menu"]` and `[data-dismissable-layer]`                                                                                                                                                                              |
-| Unknown command          | throws after `preventDefault`                                                                       | throws                                                       | inert, console warning                                                                                                                                                                                                      |
-| `graph.change()`         | none                                                                                                | after the command                                            | litegraph's `processKey` still calls it before the command for canvas-targeted keydowns; every canvas command redraws on its own                                                                                            |
+Before resolving bindings, the dispatcher inspects the composed event path.
+Text inputs, inherited content-editable regions and IME composition keep
+native editing behavior. A core or user binding can explicitly require
+`textInputFocus`, as the agent composer and prompt-attention editor do.
+Extensions cannot opt reserved text-editing combinations into input fields.
 
-Behavior that changes for users as a result:
+Native activation on buttons, links and media controls, numeric/range
+navigation, and menu/listbox/combobox/tree/tab-list navigation stay local.
+Reka popovers and menus own Escape; a dialog's content can use scoped Escape
+bindings. This distinction uses the existing dismissable-layer and popper
+markers rather than maintaining a separate list of component names.
 
-- Escape while dragging a link cancels the drag without also exiting the
-  subgraph. litegraph prevents the default and the dispatcher now honours it.
-- Escape in a Vue node image gallery leaves the gallery without also exiting
-  the subgraph, for the same reason.
-- Escape inside a Reka popover, select, combobox or menu that has no local
-  `.stop` shield now dismisses the layer. Reka's dismissable layer listens on
-  the window in the bubble phase and defers when `defaultPrevented` is set,
-  so the dispatcher's own `preventDefault` used to suppress the dismiss.
-- Ctrl+Enter in the agent composer sends the message and no longer also
-  queues the workflow.
-- Bare-key shortcuts fire while a slider, checkbox or radio button has focus.
-  They already did while any non-input element had focus.
-- Ctrl+Enter in the batch-count input still queues; its handler now ignores
-  the Ctrl and Meta variants instead of preventing every Enter.
+A `data-comfy-keybinding-ignore` ancestor opts a complete native editor out.
+It is reserved for embedded editors (terminal and Markdown), active mention
+navigation, and the shortcut recorder. Command surfaces use bindings instead:
+bounding-box edits, preview navigation, asset selection, onboarding, popups,
+builder mode and layer-editor controls all register their actions.
+The recorder lets unmodified Tab move focus and Escape dismiss its dialog.
+
+When a modal blocks a matching workspace Ctrl shortcut, the dispatcher
+preserves the existing suppression of the browser default. An unavailable
+command is unclaimed and reported once; no lower-priority command executes
+in its place.
 
 ### D4 — Undo and redo are bindings
 
@@ -186,60 +181,87 @@ Consequences for users:
 - Ctrl+Z from an input with auto-queue in "change" mode no longer triggers
   graph undo; that exemption belonged to state capture, not to undo.
 
+### D5 — Runtime ownership and held actions
+
+`useKeybinding` contributes a stable command, a default binding and a derived
+`<command id>.active` context. It removes the active provider on unmount or
+KeepAlive deactivation. Defaults and command metadata remain registered, so
+user customizations survive reopening the surface. Multiple mounted instances
+share a command; the last enabled provider handles it. Context getters are
+owned by their registering subsystem and combined without replacing another
+live provider.
+
+A hold binding names a `releaseCommandId`. The dispatcher records the physical
+key (`event.code`, with a key fallback), the selected provider, and its release
+callback before calling the press action. Keyup, window blur, hidden document,
+focus/context changes, unregistration, remapping and dispatcher disposal all
+release the original provider exactly once. Release waits for an asynchronous
+press to settle, including when blur occurs synchronously during the press.
+A second press cannot overlap a release still in progress.
+
+### D6 — Versioned persistence
+
+`Comfy.Keybinding.SettingsV1` stores bindings, unsets and the selected preset
+with the schema version. It is authoritative when present; existing users
+are read from the legacy keys until the first save. Unknown unset entries are
+retained for commands registered later. The legacy keys receive only bindings
+whose meaning they can represent, so an older frontend cannot erase scoped or
+held shortcuts by rewriting a lossy view. Preset import/export and the shortcut
+editor preserve dialog, context, repeat, default-prevention and release fields.
+An explicit user choice is retained even if it matches a core default; it must
+continue to outrank an extension registered later.
+
+### D7 — Failure reporting
+
+Registration, stored-settings loading, context evaluation, dispatch, command
+execution and hold-release failures use the shared `reportError` sink. Stable
+`error_*_keybinding` types identify the operation; command/source/extension
+metadata identifies the contribution. Context failures use
+`error_evaluating_keybinding_context` and omit the failed key, so both positive
+and negated clauses fail closed. No keyboard event or typed key is included in
+telemetry. Repeated unavailable-command/dispatch warnings are bounded; normal
+focus, modal, composition and repeat exclusions are not errors. Execution
+failures also show a translated toast, and a failed command does not disable
+later dispatches.
+
 ## Invariants
 
-- A keydown executes at most one binding.
-- A scoped binding never fires outside its dialog; a workspace binding
-  never fires while a modal is open.
-- A combo reserved by text inputs never fires from a text-editing control
-  unless its clause names `textInputFocus`.
-- A clause naming an unregistered context key never matches.
-- A user binding is never outranked by a default with a narrower clause on
-  the same combo and scope.
-- An extension binding on a combo reserved by text inputs never fires from
-  a text-editing control.
-- The dispatcher calls `preventDefault()` in exactly two cases: when it
-  executes a command, and when a Ctrl combo that a workspace binding would
-  claim arrives while a modal is open, so the browser does not act on it.
-- `dialogStore.activeKey` is the most recently activated dialog that is
-  still open. `closeDialog` previously promoted the oldest entry, which made
-  a covered dialog "active" at depth three.
+- A keydown executes at most one binding and remains observable downstream.
+- Only the active dialog's scoped bindings are eligible; global modal actions
+  explicitly opt in through `modalOpen`.
+- Native text editing is preserved unless core/user context explicitly opts in.
+- An unregistered or failing context never satisfies a clause, even negated.
+- User bindings outrank extension and core defaults within the same scope.
+- Every claimed hold has one release, tied to the original provider.
+- Runtime disposal removes callbacks while retaining user customization.
+- A failed command or context cannot permanently stop keyboard dispatch.
 
 ## Rollout
 
-Phases are ordered by dependency. Each is its own change.
+The stack separates persistence, capture/hold infrastructure, canvas/editor
+migrations, and remaining component/native-control migrations. Capture is
+enabled in the final migration after those surfaces use the common dispatcher.
+The hidden phase switch provides a live fallback for ecosystem regressions.
 
-| Phase | What                                                                                                                                                                                                                | Status                       |
-| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
-| 1     | Context key store, `when` parser, `dialogKey`, extension-registered keys                                                                                                                                            | Done, preceding change       |
-| 2     | Store rework: several bindings per combo, a `source` on every binding, resolution by source tier (user, extension, core) before clause width, attributable conflict reporting                                       | Done, this change            |
-| 3     | One dispatcher with the guard matrix in D3                                                                                                                                                                          | Done, this change            |
-| 4     | Capture-phase dispatcher behind a hidden setting with a kill switch; `data-comfy-keybinding-ignore` escape hatch checked via `composedPath()`; `processKey` kept as a deprecated shim for one cycle                 | Pending; preconditions below |
-| 5     | Undo and redo as bindings (D4)                                                                                                                                                                                      | Done, following change       |
-| 6     | Hold bindings with press and release commands and guaranteed release on blur (Space-to-pan); canvas Escape variants as context-scoped bindings; a `useKeybinding` composable for component-local bindings           | Pending                      |
-| —     | Versioned settings key for scoped bindings, with the legacy `NewBindings` key kept as a lossy mirror, so an older frontend cannot strip `when` or `dialogKey` and re-persist the result; preset import shows a diff | Pending                      |
-| —     | Dispatch trace mode, context-key inspector, persistent conflict reporting in the shortcuts panel, keyboard accessibility of the Edit Keybinding dialog                                                              | Pending                      |
+Focused unit tests cover priority, persistence, unavailable commands, repeat
+policy, error recovery, composed-path guards, multiple providers and hold
+cleanup. Browser regressions cover capture ordering, native typing and menu
+activation, popover Escape inside a subgraph, image navigation, mask-editor
+undo/redo, and a pan remap that survives reload. The blur browser test injects
+a focus event; it does not claim an operating-system focus transition.
 
-Preconditions for phase 4. A capture-phase dispatcher runs before every
-local handler, so a `preventDefault()` claim no longer reaches it. Each of
-the following either raises a context key or carries the escape hatch
-before the flip: ghost placement Escape, Delete and Backspace; image-preview
-Escape; the bounding-box Delete; the asset-grid Ctrl+A; the tour Escape; the
-legacy popup Escape; and every Reka `.escape.stop` shield. Three e2e specs
-land first: Escape in a popover inside a subgraph, no double dispatch of a
-canvas-scoped binding, and Ctrl+Z in the mask editor. The flip is tested
-against rgthree-comfy and ComfyUI-Custom-Scripts, which patch `processKey`
-and listen on the window respectively.
+Extension authors should follow [the keyboard migration guide](../development/keybinding-migration.md).
+Dispatch tracing, a context inspector and a preset-import diff remain separate
+diagnostics/UI work; they are not prerequisites for capture dispatch.
 
 ## Alternatives considered
 
 **Bubble phase as the end state.** It delivers the guard unification and
-the dialog scoping in this change with no ecosystem exposure, and it is
-where the code stands today. As an end state it leaves the seven
+the dialog scoping in this change with no ecosystem exposure, and was the initial rollout position. As an end state it leaves the seven
 capture-phase listeners and every extension listener ahead of the
 dispatcher, so determinism stays conditional and every new surface keeps
 needing a shield. Rejected as the end state; adopted as the rollout position
-until the phase 4 preconditions hold.
+until native controls and local commands have been migrated.
 
 **`dialogKey` alone.** Shipped first and reviewed. It covered the mask
 editor and nothing else: an extension could scope only to a dialog it had
@@ -261,39 +283,24 @@ be rebound separately.
 
 ## Consequences
 
-### Positive
+One resolver decides command ownership. Editor shortcuts can be remapped
+without losing their scope or hold behavior, and runtime failures reach both
+telemetry sinks. Native controls keep local keyboard implementations for
+editing, activation and navigation, while modifier indicators and change
+tracking remain event observers.
 
-- One place decides whether a shortcut fires, with one documented guard set.
-- Local handlers claim keys with `preventDefault()`; `stopPropagation()`
-  shields are no longer required for correctness.
-- Same combo, different dialog, no conflict: extensions can bind inside
-  their own dialogs.
-- Same combo, same scope, different source, no conflict either: an
-  extension's binding coexists with core's and wins until the user rebinds,
-  and the panel says which extension owns it. Two extensions declaring the
-  identical binding still collide, and the toast names the one that got
-  there first.
-- Undo and redo behave like every other shortcut.
+Capture changes the ordering observed by extensions that patch `processKey`
+or listen on elements/window. Existing wrappers still receive events, but a
+late listener cannot override a core action by stopping propagation. Extensions
+that need priority should register commands and bindings with context keys;
+listeners that perform actions should honor `defaultPrevented`.
 
-### Negative
+DOM-only overlays do not join `dialogStore`; code mounting one above a scoped
+dialog must supply an appropriate active/focus context. Third-party overlays
+without dialog semantics remain outside the app's modal policy. The rollback
+switch is retained for those ecosystem boundaries.
 
-- Until the versioned settings key lands, version skew is lossy. An older
-  frontend drops `dialogKey` and `when`, drops unset entries for commands it
-  does not know and for combos that have no default there (warning at each
-  of its startups), and re-persists what it kept on the next keybinding
-  edit. A stripped binding for a command it lacks becomes a live workspace
-  shortcut that throws on that build. A user who customizes undo or
-  mask-editor undo and then edits keybindings on an older build loses that
-  customization.
-- A core binding hidden by an extension's shows nowhere in the shortcuts
-  panel until the extension is disabled; the persistent conflict report
-  that would explain the gap is diagnostics work still to come.
-- A DOM-only modal (legacy `.comfy-modal`, a native `<dialog>`, a hand-rolled
-  `aria-modal` overlay) raises the modal guard but never becomes the active
-  dialog, so a scoped binding under one would still fire. No such surface is
-  reachable from inside the mask editor today.
-- Escape inside any dismissable layer, including a dialog's own content, is
-  never dispatched, so a binding on bare Escape cannot be scoped to a dialog.
-- The three text surfaces that stop propagation for every key
-  (`WidgetMarkdown`, the markdown widget input, the bounding-box textarea)
-  should stop only unmodified keys; that is independent of this record.
+The shortcuts panel does not yet persistently explain every shadowed binding,
+and defaults contributed by a component appear after its first registration.
+Old frontends can edit the compatible mirror, but their edits do not replace
+an existing authoritative versioned configuration.

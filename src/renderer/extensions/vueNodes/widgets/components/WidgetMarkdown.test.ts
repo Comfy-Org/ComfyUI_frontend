@@ -7,6 +7,10 @@ import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
+import {
+  bindUnreservedShortcut,
+  installKeybindingDispatcher
+} from '@/platform/keybindings/__fixtures__/installKeybindingDispatcher'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetMarkdown from './WidgetMarkdown.vue'
@@ -165,7 +169,9 @@ describe('WidgetMarkdown Dual Mode Display', () => {
       expect(textarea.value).toBe('# Original Content')
     })
 
-    it('stops click and keydown event propagation in edit mode', async () => {
+    it('stops click propagation and keeps app shortcuts out of the editor in edit mode', async () => {
+      installKeybindingDispatcher()
+      const shortcut = bindUnreservedShortcut()
       const widget = createMarkdownWidget('# Test')
       const { container } = renderComponent(widget, '# Test')
 
@@ -173,18 +179,15 @@ describe('WidgetMarkdown Dual Mode Display', () => {
 
       const textarea = screen.getByRole('textbox')
       const clickSpy = vi.fn()
-      const keydownSpy = vi.fn()
 
       const rootEl = container.firstElementChild as HTMLElement
       rootEl.addEventListener('click', clickSpy)
-      rootEl.addEventListener('keydown', keydownSpy)
 
       await fireEvent.click(textarea)
-      await fireEvent.keyDown(textarea, { key: 'Enter' })
+      await fireEvent.keyDown(textarea, { key: 's', ctrlKey: true })
 
-      // Events should be stopped from propagating
       expect(clickSpy).not.toHaveBeenCalled()
-      expect(keydownSpy).not.toHaveBeenCalled()
+      expect(shortcut).not.toHaveBeenCalled()
     })
 
     describe('Pointer Event Propagation', () => {

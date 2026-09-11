@@ -32,11 +32,13 @@ export function useTerminal(element: Ref<HTMLElement | undefined>) {
 
   onMounted(async () => {
     if (element.value) {
+      element.value.setAttribute('data-comfy-keybinding-ignore', '')
       terminal.open(element.value)
     }
   })
 
   onUnmounted(() => {
+    element.value?.removeAttribute('data-comfy-keybinding-ignore')
     terminal.dispose()
   })
 

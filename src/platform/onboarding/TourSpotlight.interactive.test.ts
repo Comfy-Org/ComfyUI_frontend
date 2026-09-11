@@ -1,6 +1,8 @@
+import { useKeybindingService } from '@/platform/keybindings/keybindingService'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
@@ -56,6 +58,13 @@ function renderSpotlight(
     global: { plugins: [i18n] }
   })
 }
+
+let disposeDispatcher: () => void
+beforeEach(() => {
+  useSettingStore().settingValues['Comfy.Keybinding.CapturePhase'] = true
+  disposeDispatcher = useKeybindingService().install()
+})
+afterEach(() => disposeDispatcher())
 
 describe('TourSpotlight interactive and masked steps', () => {
   afterEach(() => {

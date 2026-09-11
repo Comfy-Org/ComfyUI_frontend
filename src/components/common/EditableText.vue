@@ -12,8 +12,8 @@
       class="h-full rounded-none p-0 focus-visible:ring-0"
       v-bind="inputAttrs"
       @blur="finishEditing"
-      @keydown.enter.capture.stop="inputRef?.blur()"
-      @keydown.escape.capture.stop="cancelEditing"
+      @keydown.enter.prevent="inputRef?.blur()"
+      @keydown.escape.prevent="cancelEditing"
       @click.stop
       @contextmenu.stop
       @pointerdown.stop.capture

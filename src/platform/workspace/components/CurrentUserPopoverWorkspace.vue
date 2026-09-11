@@ -52,7 +52,7 @@
               aria-controls="workspace-switcher-panel"
               data-testid="workspace-switcher-trigger"
               @click="toggleWorkspaceSwitcher"
-              @keydown.escape.stop="closeWorkspaceSwitcherFromKeyboard"
+              @keydown.escape.prevent="closeWorkspaceSwitcherFromKeyboard"
             >
               <div class="flex w-0 flex-1 items-center gap-2">
                 <WorkspaceProfilePic

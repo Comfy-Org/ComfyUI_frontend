@@ -26,6 +26,7 @@ import { useClipboard } from '@vueuse/core'
 vi.mock(import('firebase/auth'))
 
 import { i18n } from '@/i18n'
+import { installKeybindingDispatcher } from '@/platform/keybindings/__fixtures__/installKeybindingDispatcher'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { setupInlinePromptEditorDom } from './components/agent/composer/inlinePromptEditorTestSetup'
@@ -11660,6 +11661,7 @@ describe('AgentPanelRoot workflow binding', () => {
   })
 
   it('exits selection mode on Escape and keeps the selected-node chips', async () => {
+    installKeybindingDispatcher()
     makeTab()
     mockMessagesEndpoint('wf-42')
     const selection = await startVueNodeSelection()

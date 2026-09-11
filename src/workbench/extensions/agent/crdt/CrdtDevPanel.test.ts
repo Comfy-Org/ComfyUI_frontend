@@ -1,8 +1,9 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import { installKeybindingDispatcher } from '@/platform/keybindings/__fixtures__/installKeybindingDispatcher'
 import { i18n } from '@/i18n'
 
 import { toTurnId, zAgentWsEvent } from '../schemas/agentApiSchema'
@@ -108,6 +109,7 @@ describe('CrdtDevPanel', () => {
   })
 
   it('moves focus into the panel and restores it after Escape closes', async () => {
+    installKeybindingDispatcher()
     const user = userEvent.setup()
     renderPanel()
 
@@ -117,23 +119,25 @@ describe('CrdtDevPanel', () => {
     const closeButton = screen.getByTestId('crdt-dev-panel-close')
     expect(closeButton).toHaveFocus()
 
-    const escapedToWindow = vi.fn()
-    window.addEventListener('keydown', escapedToWindow)
+    const claimed: boolean[] = []
+    const record = (event: KeyboardEvent) =>
+      claimed.push(event.defaultPrevented)
+    window.addEventListener('keydown', record)
+    onTestFinished(() => window.removeEventListener('keydown', record))
 
     const verbosity = screen.getByTestId('crdt-dev-panel-verbosity')
     await user.click(verbosity)
     await user.keyboard('{Escape}')
     expect(sheet()).toBeTruthy()
-    expect(escapedToWindow).not.toHaveBeenCalled()
+    expect(claimed).toEqual([false])
 
     verbosity.blur()
 
     await user.keyboard('{Escape}')
-    window.removeEventListener('keydown', escapedToWindow)
+    expect(claimed).toEqual([false, true])
     expect(chip()).toBeTruthy()
     expect(sheet()).toBeNull()
     expect(chip()).toHaveFocus()
-    expect(escapedToWindow).not.toHaveBeenCalled()
   })
 
   it('focuses the close control when restoring an open panel', async () => {

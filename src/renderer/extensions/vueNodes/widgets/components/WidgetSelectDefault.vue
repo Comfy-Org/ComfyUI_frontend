@@ -82,7 +82,7 @@
               'max-w-(--reka-combobox-content-available-width) min-w-[min(var(--reka-combobox-trigger-width),var(--reka-combobox-content-available-width))]'
             )
           "
-          @keydown.escape.stop="handleOpenChange(false)"
+          @escape-key-down.prevent="handleOpenChange(false)"
           @focus-outside="handleFocusOutside"
         >
           <div
