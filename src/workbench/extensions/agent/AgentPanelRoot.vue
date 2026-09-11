@@ -20,6 +20,7 @@ import { useFocusNode } from '@/composables/canvas/useFocusNode'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { createGraphMutations } from '@/core/graph/graphMutations'
+import type { GraphMutations } from '@/core/graph/graphMutations'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -40,17 +41,18 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 // The composition root injects the renderer-owned layout port; follower core
 // stays independent of renderer and LiteGraph runtime values.
 // eslint-disable-next-line import-x/no-restricted-paths
+import { createAgentLayoutPort } from '@/renderer/core/layout/agentLayoutPort'
+// eslint-disable-next-line import-x/no-restricted-paths
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
-// eslint-disable-next-line import-x/no-restricted-paths
-import { LayoutSource } from '@/renderer/core/layout/types'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { blankGraph } from '@/scripts/defaultGraph'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useGraphDocumentStore } from '@/stores/graphDocumentStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
@@ -168,64 +170,86 @@ const agentTabGraph: ComfyWorkflowJSON = {
 }
 
 const canvasStore = useCanvasStore()
-const graphMutationsByWorkflow = new Map<
-  string,
-  ReturnType<typeof createGraphMutations>
->()
+const graphDocumentStore = useGraphDocumentStore()
+const graphMutationsByWorkflow = new Map<string, GraphMutations>()
+/**
+ * Resolve the live document for a workflow id. The bound tab's workflow owns
+ * its document identity, so the cloud address binds onto that document and
+ * agent writes advance the same revision the local save baseline reads.
+ * Never captured: a workflow id can be remapped to a new document after the
+ * previous one closes, so callers re-resolve per use.
+ */
+const resolveDocumentId = (workflowId: string) =>
+  graphDocumentStore.resolveOrBindWorkflowTarget(
+    workflowId,
+    boundTabFor(workflowId)?.documentId ?? null
+  )
+/**
+ * Record every successful write against the target's document so its
+ * revision advances (ADR-GRAPH-DOCUMENT-0024 dirty tracking). Each method resolves the
+ * document id when the write starts — not at wrapper creation (the workflow
+ * may have been rebound to a new document since) and not at success time
+ * (the write itself can synchronously trigger a rebind, and the mutation
+ * belongs to the document that was bound when the write began).
+ */
+const withMutationTracking = (
+  inner: GraphMutations,
+  workflowId: string
+): GraphMutations => {
+  const tracked = (write: () => boolean): boolean => {
+    const documentId = resolveDocumentId(workflowId)
+    const committed = write()
+    if (committed && documentId) graphDocumentStore.markMutated(documentId)
+    return committed
+  }
+  return {
+    batch: (context, define) => tracked(() => inner.batch(context, define)),
+    addNode: (payload, context) =>
+      tracked(() => inner.addNode(payload, context)),
+    setWidget: (nodeId, name, value, context) =>
+      tracked(() => inner.setWidget(nodeId, name, value, context)),
+    connect: (link, context) => tracked(() => inner.connect(link, context)),
+    deleteNode: (nodeId, removedLinkIds, context) =>
+      tracked(() => inner.deleteNode(nodeId, removedLinkIds, context)),
+    clearSemanticGraph: (context) =>
+      tracked(() => inner.clearSemanticGraph(context))
+  }
+}
 const graphMutations = (workflowId: string) => {
   const existing = graphMutationsByWorkflow.get(workflowId)
   if (existing) return existing
+  // Document identity is early-bound (ADR-GRAPH-DOCUMENT-0024): the registry entry is
+  // created when the target is first addressed, not at commit time. Commit
+  // scope resolution then records/refreshes the entry's scope, so a target
+  // whose tab is momentarily unresolved still commits into its own document.
+  resolveDocumentId(workflowId)
   const mutations = createGraphMutations({
     getScope() {
+      // No bound tab means no live scope: refuse the write instead of
+      // replaying it against the last remembered scope (the tab may have
+      // been closed, and its ids may be reused when the workflow reopens).
       const rootGraphId = boundTabFor(workflowId)?.activeState?.id
-      return rootGraphId
-        ? {
-            rootGraphId: toRootGraphId(rootGraphId),
-            owningGraphId: toOwningGraphId(rootGraphId)
-          }
+      if (!rootGraphId) return null
+      const documentId = resolveDocumentId(workflowId)
+      const registered = documentId
+        ? (graphDocumentStore.getDocument(documentId)?.scope ?? null)
         : null
-    },
-    layout: {
-      createNode(scope, nodeId, layout, context) {
-        const { position, size } = layout
-        layoutStore.applyOperation({
-          type: 'createNode',
-          graphId: scope.rootGraphId,
-          ownerGraphId: scope.owningGraphId,
-          nodeId,
-          layout: {
-            id: nodeId,
-            position,
-            size,
-            bounds: { x: position.x, y: position.y, ...size },
-            zIndex: layoutStore.allocateZIndex(),
-            visible: true
-          },
-          source: LayoutSource.AgentRemote,
-          actor: context.actor,
-          opId: context.opId,
-          timestamp: Date.now()
-        })
-      },
-      deleteNodes(scope, nodeIds, context) {
-        const timestamp = Date.now()
-        layoutStore.applyOperations(
-          nodeIds.map((nodeId) => ({
-            type: 'deleteNode',
-            graphId: scope.rootGraphId,
-            ownerGraphId: scope.owningGraphId,
-            nodeId,
-            source: LayoutSource.AgentRemote,
-            actor: context.actor,
-            opId: context.opId,
-            timestamp
-          }))
-        )
+      const scope = {
+        rootGraphId: toRootGraphId(rootGraphId),
+        owningGraphId: toOwningGraphId(rootGraphId)
       }
-    }
+      if (documentId) {
+        if (!registered) graphDocumentStore.hydrateDocument(documentId, scope)
+        else if (registered.rootGraphId !== scope.rootGraphId)
+          graphDocumentStore.rebindScope(documentId, scope)
+      }
+      return scope
+    },
+    layout: createAgentLayoutPort(layoutStore)
   })
-  graphMutationsByWorkflow.set(workflowId, mutations)
-  return mutations
+  const tracked = withMutationTracking(mutations, workflowId)
+  graphMutationsByWorkflow.set(workflowId, tracked)
+  return tracked
 }
 const { focusNodeInstance } = useFocusNode()
 
