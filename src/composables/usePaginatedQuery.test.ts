@@ -78,6 +78,29 @@ describe('usePaginatedQuery', () => {
     expect(api.items.value).toHaveLength(10)
   })
 
+  it('refresh reloads page 1, preserving the imperative compatibility contract', async () => {
+    const fetchPage = vi
+      .fn()
+      .mockImplementation(({ page, limit }) =>
+        Promise.resolve(buildResponse(page, limit, 25))
+      )
+    const api = runInScope(() =>
+      usePaginatedQuery({ key: 'a', initialLimit: 10, fetchPage })
+    )
+    await nextTick()
+
+    api.goToPage(2)
+    await nextTick()
+    await vi.waitFor(() => expect(api.page.value).toBe(2))
+
+    fetchPage.mockClear()
+    await api.refresh()
+
+    expect(fetchPage).toHaveBeenCalledWith({ key: 'a', page: 1, limit: 10 })
+    expect(api.page.value).toBe(1)
+    expect(api.first.value).toBe(0)
+  })
+
   it('resets to page 1 and refetches when key changes', async () => {
     const fetchPage = vi
       .fn()

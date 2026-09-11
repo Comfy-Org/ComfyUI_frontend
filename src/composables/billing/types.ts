@@ -128,7 +128,7 @@ export interface BillingContext extends BillingState, BillingActions {
    * log, should reload," so consumers watch this instead of each
    * re-deriving the same balance-transition check.
    */
-  usageLogsRefreshSignal: Ref<number>
+  usageLogsRefreshSignal: Readonly<Ref<number>>
   /**
    * True when the active team workspace is still on a pre-credit-slider
    * (legacy) per-member tier plan, which keeps the old team pricing table.
