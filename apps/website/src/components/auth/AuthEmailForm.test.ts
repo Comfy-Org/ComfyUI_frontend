@@ -1,9 +1,12 @@
 // @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
-import type { RenderOptions } from '@testing-library/vue'
-import { render as testingRender, screen, waitFor } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, onMounted } from 'vue'
+
+import type {
+  TurnstileApi,
+  TurnstileRenderOptions
+} from '@comfyorg/account/turnstileScript'
 
 import AuthEmailForm from './AuthEmailForm.vue'
 
@@ -11,32 +14,18 @@ const widgetBehavior = vi.hoisted(() => ({
   mode: 'silent' as 'silent' | 'unavailable' | 'token',
   reset: vi.fn()
 }))
-const turnstileWidgetStub = defineComponent({
-  name: 'TurnstileWidgetStub',
-  emits: ['update:token', 'update:unavailable'],
-  setup(_, { emit, expose }) {
-    expose({ reset: widgetBehavior.reset })
-    onMounted(() => {
-      if (widgetBehavior.mode === 'unavailable') {
-        emit('update:unavailable', true)
-      }
-      if (widgetBehavior.mode === 'token') {
-        emit('update:token', 'cf-token')
-      }
-    })
-    return () => h('div', { 'data-testid': 'turnstile-stub' })
-  }
-})
+const turnstileApi = vi.hoisted(
+  () =>
+    ({
+      render: vi.fn(),
+      reset: widgetBehavior.reset,
+      remove: vi.fn()
+    }) satisfies TurnstileApi
+)
 
-function render<C>(component: C, options?: RenderOptions<C>) {
-  return testingRender(component, {
-    ...options,
-    global: {
-      ...options?.global,
-      stubs: { TurnstileWidget: turnstileWidgetStub }
-    }
-  })
-}
+vi.mock(import('@comfyorg/account/turnstileScript'), () => ({
+  loadTurnstile: () => Promise.resolve(turnstileApi)
+}))
 
 vi.mock<unknown>(import('../../scripts/posthog'), async () => {
   const { ref } = await import('vue')
@@ -49,6 +38,17 @@ const submitButton = (name: RegExp) =>
 beforeEach(() => {
   widgetBehavior.mode = 'silent'
   widgetBehavior.reset.mockReset()
+  turnstileApi.render.mockImplementation(
+    (_container: string | HTMLElement, options: TurnstileRenderOptions) => {
+      if (widgetBehavior.mode === 'unavailable') {
+        options['error-callback']?.()
+      }
+      if (widgetBehavior.mode === 'token') {
+        options.callback?.('cf-token')
+      }
+      return 'widget-id'
+    }
+  )
 })
 
 describe('AuthEmailForm sign-in', () => {

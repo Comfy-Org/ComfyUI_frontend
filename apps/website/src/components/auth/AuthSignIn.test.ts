@@ -1,11 +1,13 @@
 // @vitest-environment happy-dom
-import type { RenderOptions } from '@testing-library/vue'
-import { render as testingRender, screen, waitFor } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, onMounted } from 'vue'
 
 import { AUTH_ERROR_MESSAGES } from '@comfyorg/account/firebaseAuthError'
+import type {
+  TurnstileApi,
+  TurnstileRenderOptions
+} from '@comfyorg/account/turnstileScript'
 
 import { removeAllToasts, useAuthToasts } from '../../config/auth-toast-state'
 import AuthSignIn from './AuthSignIn.vue'
@@ -49,24 +51,18 @@ vi.mock<unknown>(import('../../scripts/posthog'), async () => {
   }
 })
 
-const turnstileWidgetStub = defineComponent({
-  emits: ['update:token', 'update:unavailable'],
-  setup(_, { emit, expose }) {
-    expose({ reset: handles.turnstileReset })
-    onMounted(() => emit('update:token', 'cf-token'))
-    return () => h('div', { 'data-testid': 'turnstile' })
-  }
-})
+const turnstileApi = vi.hoisted(
+  () =>
+    ({
+      render: vi.fn(),
+      reset: handles.turnstileReset,
+      remove: vi.fn()
+    }) satisfies TurnstileApi
+)
 
-function render<C>(component: C, options?: RenderOptions<C>) {
-  return testingRender(component, {
-    ...options,
-    global: {
-      ...options?.global,
-      stubs: { TurnstileWidget: turnstileWidgetStub }
-    }
-  })
-}
+vi.mock(import('@comfyorg/account/turnstileScript'), () => ({
+  loadTurnstile: () => Promise.resolve(turnstileApi)
+}))
 
 vi.mock<unknown>(import('@comfyorg/account/webviewDetection'), () => ({
   isEmbeddedWebView: () => handles.embedded
@@ -148,6 +144,12 @@ beforeEach(() => {
   handles.emailSignUp.mockReset()
   handles.provision.mockReset().mockResolvedValue(undefined)
   handles.turnstileReset.mockReset()
+  turnstileApi.render.mockImplementation(
+    (_container: string | HTMLElement, options: TurnstileRenderOptions) => {
+      options.callback?.('cf-token')
+      return 'widget-id'
+    }
+  )
   handles.isProvisioningError.mockReset().mockReturnValue(false)
   handles.isNewUser.mockReset().mockReturnValue(false)
   handles.captureAuthCompleted.mockClear()
