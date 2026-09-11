@@ -224,25 +224,12 @@ describe('TelemetryRegistry', () => {
     expect(b.trackBillingEvent).toHaveBeenCalledExactlyOnceWith(event)
   })
 
-  function recordingJourneyProvider() {
-    const records: Array<{
-      event: CheckoutJourneyTelemetryEvent
-      eventId: string
-    }> = []
-    const provider: TelemetryProvider = {
-      trackCheckoutJourneyEvent(event, eventId) {
-        records.push({ event, eventId })
-      }
-    }
-    return { provider, records }
-  }
-
-  it('gives every provider the same event identity for one journey emission', () => {
-    const a = recordingJourneyProvider()
-    const b = recordingJourneyProvider()
+  it('dispatches the same checkout journey event to every provider', () => {
+    const a: TelemetryProvider = { trackCheckoutJourneyEvent: vi.fn() }
+    const b: TelemetryProvider = { trackCheckoutJourneyEvent: vi.fn() }
     const registry = new TelemetryRegistry()
-    registry.registerProvider(a.provider)
-    registry.registerProvider(b.provider)
+    registry.registerProvider(a)
+    registry.registerProvider(b)
 
     const event: CheckoutJourneyTelemetryEvent = {
       phase: 'entered',
@@ -253,31 +240,10 @@ describe('TelemetryRegistry', () => {
       entry_flow: 'initial_subscription',
       entry_source: 'pricing'
     }
-    registry.captureCheckoutJourneyEvent(event)
+    registry.trackCheckoutJourneyEvent(event)
 
-    expect(a.records[0].event).toBe(event)
-    expect(b.records[0].event).toBe(event)
-    expect(a.records[0].eventId).toBe(b.records[0].eventId)
-    expect(a.records[0].eventId).toEqual(expect.any(String))
-  })
-
-  it('mints a distinct event identity per journey emission', () => {
-    const { provider, records } = recordingJourneyProvider()
-    const registry = new TelemetryRegistry()
-    registry.registerProvider(provider)
-
-    const event: CheckoutJourneyTelemetryEvent = {
-      phase: 'submitted',
-      checkout_journey_id: 'journey-1',
-      checkout_entered_at: '2026-09-09T00:00:00.000Z',
-      assignment_status: 'unavailable',
-      entry_flow: 'topup',
-      entry_source: 'pricing'
-    }
-    registry.captureCheckoutJourneyEvent(event)
-    registry.captureCheckoutJourneyEvent(event)
-
-    expect(records[0].eventId).not.toBe(records[1].eventId)
+    expect(a.trackCheckoutJourneyEvent).toHaveBeenCalledExactlyOnceWith(event)
+    expect(b.trackCheckoutJourneyEvent).toHaveBeenCalledExactlyOnceWith(event)
   })
 
   it('dispatches trackWidgetFavoriteToggled to every registered provider', () => {

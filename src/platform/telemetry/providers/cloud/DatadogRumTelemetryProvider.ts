@@ -84,13 +84,10 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
     )
   }
 
-  trackCheckoutJourneyEvent(
-    event: CheckoutJourneyTelemetryEvent,
-    eventId: string
-  ): void {
+  trackCheckoutJourneyEvent(event: CheckoutJourneyTelemetryEvent): void {
     datadogRum.addAction(
       getCheckoutJourneyTelemetryEventName(event),
-      getCheckoutJourneyTelemetryEventPayload(event, eventId)
+      getCheckoutJourneyTelemetryEventPayload(event)
     )
   }
 

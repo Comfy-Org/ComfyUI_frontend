@@ -100,7 +100,7 @@ function emitPaymentJourneyPhase(phase: CheckoutJourneyPhaseEvent): void {
   if (isUnmounted) return
   const journey = getActiveCheckoutJourney()
   if (!journey) return
-  telemetry?.captureCheckoutJourneyEvent({
+  telemetry?.trackCheckoutJourneyEvent({
     ...toCheckoutJourneyContext(journey),
     ...phase
   })

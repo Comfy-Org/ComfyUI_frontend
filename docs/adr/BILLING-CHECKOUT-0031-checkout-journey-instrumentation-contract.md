@@ -58,9 +58,10 @@ must never be readable as a business success/failure/timeout. Phases:
 Every event carries a frozen `CheckoutJourneyContext`: `checkout_journey_id`,
 `checkout_entered_at` (UTC), `assignment_status`, optional `assigned_arm`,
 `entry_flow`, `entry_source`, and optional `checkout_attempt_id`/`billing_op_id`
-/`ui_mode`. `schema_version` and a per-emission `event_id` are stamped by the
-dispatcher so provider fan-out and retry preserve one logical identity across
-PostHog and Datadog RUM.
+/`ui_mode`. `schema_version` is stamped on every payload. Per-emission identity
+and cross-sink correlation rely on `checkout_journey_id`/`checkout_attempt_id`
+plus each provider's own native event id (PostHog event UUID, Datadog RUM
+`action.id`); the dispatcher does not mint a redundant shared id.
 
 ### 2. Assignment is frozen from the server response, never fabricated
 

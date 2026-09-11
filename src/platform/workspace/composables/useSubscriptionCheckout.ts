@@ -1208,7 +1208,7 @@ export function useSubscriptionCheckout(
     record: CheckoutJourneyRecord,
     phase: CheckoutJourneyPhaseEvent
   ): void {
-    telemetry?.captureCheckoutJourneyEvent({
+    telemetry?.trackCheckoutJourneyEvent({
       ...toCheckoutJourneyContext(record),
       ...phase
     })

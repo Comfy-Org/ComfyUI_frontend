@@ -342,7 +342,7 @@ function emitTopupJourneyPhase(
   record: CheckoutJourneyRecord,
   phase: CheckoutJourneyPhaseEvent
 ): void {
-  telemetry?.captureCheckoutJourneyEvent({
+  telemetry?.trackCheckoutJourneyEvent({
     ...toCheckoutJourneyContext(record),
     ...phase
   })

@@ -490,13 +490,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     )
   }
 
-  trackCheckoutJourneyEvent(
-    event: CheckoutJourneyTelemetryEvent,
-    eventId: string
-  ): void {
+  trackCheckoutJourneyEvent(event: CheckoutJourneyTelemetryEvent): void {
     this.trackEvent(
       getCheckoutJourneyTelemetryEventName(event),
-      getCheckoutJourneyTelemetryEventPayload(event, eventId)
+      getCheckoutJourneyTelemetryEventPayload(event)
     )
   }
 
