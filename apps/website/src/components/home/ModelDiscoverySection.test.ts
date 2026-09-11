@@ -16,7 +16,7 @@ describe('ModelDiscoverySection', () => {
   })
 
   it('sends every provider to the catalog filtered by that provider', () => {
-    render(ModelDiscoverySection)
+    render(ModelDiscoverySection, { props: { providers: discoveryProviders } })
 
     const bytedance = screen.getByRole('link', { name: /ByteDance/ })
     expect(bytedance.getAttribute('href')).toBe('/models?provider=ByteDance')
@@ -27,7 +27,7 @@ describe('ModelDiscoverySection', () => {
   })
 
   it('hides the looping copy of the row from assistive tech', () => {
-    render(ModelDiscoverySection)
+    render(ModelDiscoverySection, { props: { providers: discoveryProviders } })
 
     const visible = screen.getAllByRole('link', { name: /ByteDance/ })
     const all = screen.getAllByRole('link', {
@@ -42,7 +42,7 @@ describe('ModelDiscoverySection', () => {
 
   it('loads a provider preview only once its card is hovered', async () => {
     const user = userEvent.setup()
-    render(ModelDiscoverySection)
+    render(ModelDiscoverySection, { props: { providers: discoveryProviders } })
 
     expect(screen.queryByTestId('static-frame')).toBeNull()
     await user.hover(screen.getByRole('link', { name: /ByteDance/ }))
@@ -50,7 +50,9 @@ describe('ModelDiscoverySection', () => {
   })
 
   it('localizes copy while keeping the English-only Workshop route', () => {
-    render(ModelDiscoverySection, { props: { locale: 'zh-CN' } })
+    render(ModelDiscoverySection, {
+      props: { locale: 'zh-CN', providers: discoveryProviders }
+    })
 
     const browse = screen.getByRole('link', { name: '浏览全部模型' })
     expect(browse.getAttribute('href')).toBe('/models')
