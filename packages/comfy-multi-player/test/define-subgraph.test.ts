@@ -81,7 +81,7 @@ describe("define_subgraph application", () => {
     expect(Y.encodeStateAsUpdate(doc)).toEqual(before)
   })
 
-  it("does not revert an intervening interior edit when the exact op is replayed", () => {
+  it("does not revert an intervening interior edit when the definition is replayed with a new envelope", () => {
     const doc = empty()
     const op = define()
     applyOps(doc, [op], catalog)
@@ -90,10 +90,31 @@ describe("define_subgraph application", () => {
     ], catalog)
     const before = Y.encodeStateAsUpdate(doc)
 
-    expect(applyOps(doc, [op], catalog).outcomes[0]?.outcome).toBe("no-op")
-    expect(Y.encodeStateAsUpdate(doc)).toEqual(before)
+    expect(applyOps(doc, [{ ...op, ...envelope() }], catalog).outcomes[0]?.outcome).toBe("no-op")
+    expect(Y.encodeStateAsUpdate(doc)).not.toEqual(before) // the new op_id is consumed
     const projected = (project(doc, catalog).definitions as { subgraphs: Array<{ nodes: Array<{ widgets_values: unknown[] }> }> }).subgraphs[0]!
     expect(projected.nodes[0]!.widgets_values).toEqual([2])
+  })
+
+  it("converges when a definition replay and an interior edit arrive in either legal order", () => {
+    const seed = empty()
+    const original = define()
+    applyOps(seed, [original], catalog)
+    const snapshot = Y.encodeStateAsUpdate(seed)
+    const replay = { ...original, ...envelope() }
+    const edit = {
+      op: "set_widget", ...envelope(), node_id: 10, path: [subgraphId, "10"], inner_widget: "value", widget: "value", value: 7,
+    } as Op
+
+    const projections = [[replay, edit], [edit, replay]].map((ops) => {
+      const doc = new Y.Doc()
+      Y.applyUpdate(doc, snapshot)
+      for (const op of ops) applyOps(doc, [op], catalog)
+      return project(doc, catalog)
+    })
+
+    expect(projections[0]).toEqual(projections[1])
+    expect((projections[0]!.definitions as { subgraphs: Array<{ nodes: Array<{ widgets_values: unknown[] }> }> }).subgraphs[0]!.nodes[0]!.widgets_values).toEqual([7])
   })
 
   it("drops a losing definition conflict without changing the winner", () => {
@@ -180,6 +201,28 @@ describe("define_subgraph application", () => {
     expect(projected.definitions.subgraphs[0]!.nodes[0]!.widgets_values).toEqual([9])
   })
 
+  it("rejects a new root definition whose id collides with an existing nested definition", () => {
+    const nestedId = "abcdefab-cdef-4abc-8def-abcdefabcdef"
+    const doc = empty()
+    applyOps(doc, [{ ...define(), subgraph_definition: {
+      ...definition(), definitions: { subgraphs: [definition(nestedId, 4)] },
+    } }], catalog)
+
+    expect(rejectionCode(doc, define(nestedId, 9))).toBe("definition_conflict")
+    expect(rejectionCode(doc, define(nestedId, 4))).toBeUndefined()
+  })
+
+  it("rejects a nested definition whose id collides with an existing root definition", () => {
+    const newRootId = "abcdefab-cdef-4abc-8def-abcdefabcdef"
+    const doc = empty()
+    applyOps(doc, [define()], catalog)
+    const colliding = {
+      ...definition(newRootId), definitions: { subgraphs: [definition(subgraphId, 9)] },
+    }
+
+    expect(rejectionCode(doc, { ...define(newRootId), subgraph_definition: colliding })).toBe("definition_conflict")
+  })
+
   it("rejects a direct edit to a definition with multiple live instances", () => {
     const doc = empty()
     applyOps(doc, [define()], catalog)
@@ -224,6 +267,24 @@ describe("define_subgraph application", () => {
       ...definition(), definitions: { subgraphs: [definition(nestedId)] },
     } }], catalog)
     expect(JSON.stringify(project(doc, catalog))).not.toContain("__definition_digest")
+  })
+
+  it("never projects arbitrary private definition keys at any depth", () => {
+    const nestedId = "abcdefab-cdef-4abc-8def-abcdefabcdef"
+    const doc = empty()
+    const privateDefinition = {
+      ...definition(),
+      __other: "root-secret",
+      definitions: {
+        subgraphs: [{ ...definition(nestedId), __private_marker: { nested: "secret" } }],
+      },
+    }
+
+    expect(applyOps(doc, [{ ...define(), subgraph_definition: privateDefinition }], catalog).outcomes[0]?.outcome).toBe("applied")
+    const serialized = JSON.stringify(project(doc, catalog))
+    expect(serialized).not.toContain("__other")
+    expect(serialized).not.toContain("__private_marker")
+    expect(serialized).not.toContain("secret")
   })
 
   it("uses the same unknown-node outcome for UUID and non-UUID interior targets", () => {

@@ -498,6 +498,15 @@ function applyDefineSubgraph(
     }
     return "lww-dropped";
   }
+  const existingNested = resolveDefinition(doc, op.subgraph_id);
+  if (existingNested !== null) {
+    const existingDigest = sha256Hex(canonicalOp(projectDefinition(existingNested, catalog) as unknown as Op));
+    if (existingDigest === digest) return "no-op";
+    throw new OpRejectedError(
+      "definition_conflict",
+      `define_subgraph: definition id '${op.subgraph_id}' is already registered with different content`,
+    );
+  }
   assertDefinitionIdsAvailable(doc, op.subgraph_definition);
   let definition: Y.Map<unknown>;
   try {
@@ -535,8 +544,8 @@ function assertDefinitionIdsAvailable(doc: Y.Doc, definition: Record<string, unk
   };
   visit(definition, "subgraph_definition");
   for (const id of submitted) {
-    if (id !== String(definition.id) && resolveDefinition(doc, id)) {
-      throw new OpRejectedError("malformed_op", `define_subgraph: definition id '${id}' is already registered`);
+    if (resolveDefinition(doc, id)) {
+      throw new OpRejectedError("definition_conflict", `define_subgraph: definition id '${id}' is already registered`);
     }
   }
 }

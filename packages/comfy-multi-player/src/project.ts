@@ -223,7 +223,7 @@ function tryProjectNode(value: unknown, catalog: WidgetCatalog): WorkflowNode | 
 export function projectDefinition(dm: Y.Map<unknown>, catalog: WidgetCatalog): Record<string, unknown> {
   const out: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
   dm.forEach((v, k) => {
-    if (k === "node_order" || k === "link_order" || k === "__definition_digest") return; // internal registers
+    if (k === "node_order" || k === "link_order" || k.startsWith("__")) return; // internal registers
     if (k === "nodes" && v instanceof Y.Map) {
       const order = (dm.get("node_order") as string[] | undefined) ?? [...v.keys()].sort();
       out[k] = order
@@ -251,6 +251,16 @@ export function projectDefinition(dm: Y.Map<unknown>, catalog: WidgetCatalog): R
       out[k] = structuredClone(v);
     }
   });
+  return scrubPrivateKeys(out) as Record<string, unknown>;
+}
+
+function scrubPrivateKeys(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(scrubPrivateKeys);
+  if (typeof value !== "object" || value === null) return value;
+  const out: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
+  for (const [key, child] of Object.entries(value)) {
+    if (!key.startsWith("__")) out[key] = scrubPrivateKeys(child);
+  }
   return out;
 }
 
