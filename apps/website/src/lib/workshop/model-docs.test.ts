@@ -30,6 +30,13 @@ describe('modelDocsHref', () => {
     ).toBe(`${DOCS}#luma-2`)
   })
 
+  it('sends the special Router prefixes to their own sections', () => {
+    expect(modelDocsHref({ routerId: 'gemini-interactions/omni-1.1' })).toBe(
+      `${DOCS}#gemini-interactions`
+    )
+    expect(modelDocsHref({ routerId: 'vertexai/veo-3' })).toBe(`${DOCS}#google`)
+  })
+
   it('maps every provider in the Router index or lists it as undocumented', () => {
     const prefixes = new Set(
       routerIndex.map((entry) => entry.id.split('/')[0] ?? '')
