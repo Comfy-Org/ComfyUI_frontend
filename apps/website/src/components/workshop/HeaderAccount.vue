@@ -1,11 +1,23 @@
 <script setup lang="ts">
-import { Coins, ExternalLink, LogOut, Settings } from '@lucide/vue'
+import {
+  ArrowLeftRight,
+  Check,
+  Coins,
+  ExternalLink,
+  LogOut,
+  Settings
+} from '@lucide/vue'
 import { onClickOutside } from '@vueuse/core'
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 
-import { useWorkshopCredits } from '../../config/workshop-credits'
+import {
+  refreshWorkshopCredits,
+  useWorkshopCredits
+} from '../../config/workshop-credits'
 import { externalLinks } from '../../config/routes'
 import { platformTopUpHref } from '../../lib/workshop/buy-credits'
+import type { WorkspaceWithRole } from '../../lib/workshop/workspaces'
+import { listWorkspaces } from '../../lib/workshop/workspaces'
 import { runBeforeSignInLeave } from '../../config/workshop-return'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import type { Locale } from '../../i18n/translations'
@@ -17,7 +29,7 @@ const { locale = 'en' } = defineProps<{
 }>()
 
 const enabled = useWorkshopAuthFlag()
-const { user, session, sessionFailure, ensureFresh, signOut } =
+const { user, session, sessionFailure, ensureFresh, remint, signOut } =
   useWorkshopSession()
 const { balance } = useWorkshopCredits()
 
@@ -55,6 +67,55 @@ onClickOutside(menuRoot, () => {
   menuOpen.value = false
 })
 
+// Mar's switcher from #16556, on real rails: the list is the account's own
+// workspaces, the switch is a remint for the picked one, and the balance
+// re-reads for the wallet that just came into scope.
+const workspacesOpen = ref(false)
+const workspaces = ref<'loading' | 'error' | readonly WorkspaceWithRole[]>(
+  'loading'
+)
+const switching = ref<string | undefined>(undefined)
+
+async function toggleWorkspaces() {
+  workspacesOpen.value = !workspacesOpen.value
+  if (!workspacesOpen.value || !session.value) return
+  workspaces.value = 'loading'
+  try {
+    workspaces.value = await listWorkspaces(session.value.token)
+  } catch {
+    workspaces.value = 'error'
+  }
+}
+
+async function switchWorkspace(workspaceId: string) {
+  if (switching.value) return
+  if (workspaceId === session.value?.workspace.id) {
+    workspacesOpen.value = false
+    return
+  }
+  switching.value = workspaceId
+  try {
+    const result = await remint(undefined, { workspaceId })
+    if (result?.status === 'ok') {
+      await refreshWorkshopCredits({ force: true })
+      menuOpen.value = false
+    } else {
+      workspaces.value = 'error'
+    }
+  } finally {
+    switching.value = undefined
+  }
+}
+
+function initialsOf(name: string): string {
+  return name
+    .split(' ')
+    .map((part) => part[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase()
+}
+
 // The div is a menu in name, so it keeps the menu's keyboard promises:
 // focus enters on open, arrows rove the items, Escape hands focus back.
 const menuItems = () => [
@@ -62,6 +123,7 @@ const menuItems = () => [
 ]
 
 watch(menuOpen, (open) => {
+  if (!open) workspacesOpen.value = false
   if (open) void nextTick(() => menuItems()[0]?.focus())
 })
 
@@ -203,7 +265,7 @@ async function signOutFromMenu() {
         class="absolute right-0 z-50 mt-2 w-72 rounded-2xl border border-primary-comfy-canvas/15 bg-primary-comfy-ink p-2 shadow-lg"
       >
         <!-- The DES-1015 menu: workspace leads, actions follow, the person
-             signs off in the footer. Plan and role wait on session data. -->
+             signs off in the footer. Plan waits on session data. -->
         <div class="flex items-center gap-3 px-3 py-2">
           <img
             v-if="user?.photoURL"
@@ -219,14 +281,89 @@ async function signOutFromMenu() {
           >
             {{ initial }}
           </span>
-          <span class="min-w-0">
+          <span class="min-w-0 flex-1">
             <span
               class="block truncate text-sm font-bold text-primary-warm-white"
               data-testid="account-workspace"
             >
               {{ session.workspace.name }}
             </span>
+            <span
+              class="block text-[11px] font-bold tracking-wider text-primary-warm-gray uppercase"
+            >
+              {{ session.role }}
+            </span>
           </span>
+          <button
+            type="button"
+            role="menuitem"
+            :aria-label="t('nav.switchWorkspace', locale)"
+            :aria-expanded="workspacesOpen"
+            data-testid="account-switch-workspace"
+            class="grid size-8 shrink-0 cursor-pointer place-items-center rounded-lg text-primary-warm-gray transition-colors hover:bg-primary-comfy-canvas/10 hover:text-primary-warm-white"
+            @click="toggleWorkspaces"
+          >
+            <ArrowLeftRight class="size-4" aria-hidden="true" />
+          </button>
+        </div>
+        <div
+          v-if="workspacesOpen"
+          class="absolute top-0 right-full z-50 mr-2 w-72 rounded-2xl border border-primary-comfy-canvas/15 bg-primary-comfy-ink p-2 shadow-lg"
+          data-testid="account-workspaces"
+        >
+          <p
+            class="px-3 pt-1 pb-2 text-[11px] font-bold tracking-wider text-primary-warm-gray uppercase"
+          >
+            {{ t('nav.workspaces', locale) }}
+          </p>
+          <p
+            v-if="workspaces === 'loading'"
+            class="px-3 py-2 text-xs text-primary-comfy-canvas/55"
+          >
+            {{ t('nav.workspacesLoading', locale) }}
+          </p>
+          <p
+            v-else-if="workspaces === 'error'"
+            class="px-3 py-2 text-xs text-red-400"
+          >
+            {{ t('nav.workspacesError', locale) }}
+          </p>
+          <template v-else>
+            <button
+              v-for="workspace in workspaces"
+              :key="workspace.id"
+              type="button"
+              role="menuitem"
+              :disabled="switching !== undefined"
+              :data-testid="`account-workspace-${workspace.id}`"
+              class="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-left text-sm text-primary-comfy-canvas transition-colors hover:bg-primary-comfy-canvas/10 disabled:opacity-60"
+              @click="switchWorkspace(workspace.id)"
+            >
+              <span
+                class="grid size-9 shrink-0 place-items-center rounded-xl bg-transparency-white-t8 text-sm font-bold text-primary-warm-white"
+                aria-hidden="true"
+              >
+                {{ initialsOf(workspace.name) }}
+              </span>
+              <span class="min-w-0 flex-1">
+                <span class="block truncate">{{ workspace.name }}</span>
+                <span
+                  class="block text-[11px] font-bold tracking-wider text-primary-warm-gray uppercase"
+                >
+                  {{
+                    (workspace.subscription_tier ?? workspace.role)
+                      .split('_')
+                      .join(' ')
+                  }}
+                </span>
+              </span>
+              <Check
+                v-if="workspace.id === session.workspace.id"
+                class="text-primary-comfy-yellow size-4 shrink-0"
+                aria-hidden="true"
+              />
+            </button>
+          </template>
         </div>
         <p
           v-if="balance.status === 'error'"
