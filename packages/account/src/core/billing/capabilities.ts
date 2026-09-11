@@ -199,11 +199,19 @@ export function createCapabilitiesReader(
       return { status: 'error', code: 'MALFORMED_RESPONSE', httpStatus }
     }
 
-    // The server answering about a different workspace is a contract
-    // violation, not an answer about this one. It joins the transient bucket
-    // rather than being cached: caching it would attribute another
-    // workspace's affordances to this scope.
-    if (parsed.data.resolved_for.workspace_id !== scope.workspaceId) {
+    // Capabilities resolve per (user, workspace), so both halves have to
+    // match. Checking only the workspace would accept another member's answer
+    // for the workspace the caller is in and publish it as the caller's own —
+    // an actor with fewer or greater rights deciding what this one is offered.
+    // Either mismatch is a contract violation rather than an answer about this
+    // scope, so it joins the transient bucket instead of being cached. The
+    // ingest service makes the same two-part check against its own upstream
+    // before it forwards a response.
+    const resolved = parsed.data.resolved_for
+    if (
+      resolved.user_id !== scope.userId ||
+      resolved.workspace_id !== scope.workspaceId
+    ) {
       return { status: 'error', code: 'REQUEST_FAILED', httpStatus }
     }
 

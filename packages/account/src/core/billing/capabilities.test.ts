@@ -393,6 +393,32 @@ describe('createCapabilitiesReader', () => {
       expect(reader.getSnapshot()).toBeUndefined()
     })
 
+    it('refuses another member\u2019s answer for the caller\u2019s own workspace', async () => {
+      const { session } = fakeSession()
+      const { transport } = fakeTransport([
+        httpOk(
+          capabilitiesBody({
+            // The right workspace, the wrong actor. Capabilities resolve per
+            // (user, workspace), so this decides what a different member may
+            // be offered — publishing it would hand the caller someone else's
+            // rights.
+            resolved_for: { user_id: 'uid-other', workspace_id: 'ws-1' },
+            capabilities: { ...CAPABILITIES, can_cancel: true }
+          })
+        )
+      ])
+      const reader = createCapabilitiesReader({ transport, session })
+
+      const result = await reader.read()
+
+      expect(result).toEqual({
+        status: 'error',
+        code: 'REQUEST_FAILED',
+        httpStatus: 200
+      })
+      expect(reader.getSnapshot()).toBeUndefined()
+    })
+
     it('reports NOT_AUTHENTICATED without asking when nobody is signed in', async () => {
       const { session } = fakeSession(SIGNED_OUT)
       const { transport } = fakeTransport([httpOk(capabilitiesBody())])
