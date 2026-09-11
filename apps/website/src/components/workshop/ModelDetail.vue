@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Download } from '@lucide/vue'
+import { Download, ExternalLink } from '@lucide/vue'
 import { useMounted, useTimestamp } from '@vueuse/core'
 import { computed, onMounted, onUnmounted, ref, useSlots, watch } from 'vue'
 
@@ -37,6 +37,7 @@ import { createWorkshopUrlUploader } from '../../config/workshop-url-upload'
 import { WorkshopRouterError } from '../../config/workshop-router-errors'
 import { releaseRouterOutputs } from '../../config/workshop-response'
 import { retainRunHistory } from '../../config/workshop-run-history'
+import { modelDocsHref } from '../../lib/workshop/model-docs'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import { workshopIdempotencyKey } from '../../config/workshop-snippets'
 import type { Locale, TranslationKey } from '../../i18n/translations'
@@ -167,6 +168,7 @@ const authEnabled = useWorkshopAuthFlag()
 const authFlagSettled = useWorkshopAuthFlagSettled()
 const mounted = useMounted()
 const signInHref = useSignInHref(locale)
+const docsHref = modelDocsHref(model)
 const gate = computed(() => {
   if (
     model.incompleteReason ||
@@ -404,34 +406,49 @@ function useInCode() {
 <template>
   <div class="flex flex-col gap-10" data-testid="model-detail">
     <div
-      role="tablist"
-      :aria-label="t('workshop.title', locale)"
-      class="flex scrollbar-hide gap-8 overflow-x-auto border-b border-transparency-white-t8 max-sm:gap-5"
-      data-testid="model-tabs"
-      @keydown="onTabKeydown"
+      class="flex items-center gap-8 border-b border-transparency-white-t8 max-sm:gap-5"
     >
-      <button
-        v-for="section in sections"
-        :id="`tab-${section}`"
-        :key="section"
-        type="button"
-        role="tab"
-        :aria-selected="section === activeSection"
-        :aria-controls="`panel-${section}`"
-        :tabindex="section === activeSection ? 0 : -1"
-        :data-testid="`tab-${section}`"
-        :class="
-          cn(
-            'cursor-pointer border-b-2 pb-3 text-sm font-bold tracking-wider uppercase transition-colors',
-            section === activeSection
-              ? 'border-primary-comfy-yellow text-primary-warm-white'
-              : 'border-transparent text-primary-warm-gray hover:text-primary-warm-white'
-          )
-        "
-        @click="activeSection = section"
+      <div
+        role="tablist"
+        :aria-label="t('workshop.title', locale)"
+        class="flex scrollbar-hide min-w-0 gap-8 overflow-x-auto max-sm:gap-5"
+        data-testid="model-tabs"
+        @keydown="onTabKeydown"
       >
-        {{ t(sectionLabel[section], locale) }}
-      </button>
+        <button
+          v-for="section in sections"
+          :id="`tab-${section}`"
+          :key="section"
+          type="button"
+          role="tab"
+          :aria-selected="section === activeSection"
+          :aria-controls="`panel-${section}`"
+          :tabindex="section === activeSection ? 0 : -1"
+          :data-testid="`tab-${section}`"
+          :class="
+            cn(
+              'cursor-pointer border-b-2 pb-3 text-sm font-bold tracking-wider uppercase transition-colors',
+              section === activeSection
+                ? 'border-primary-comfy-yellow text-primary-warm-white'
+                : 'border-transparent text-primary-warm-gray hover:text-primary-warm-white'
+            )
+          "
+          @click="activeSection = section"
+        >
+          {{ t(sectionLabel[section], locale) }}
+        </button>
+      </div>
+      <a
+        v-if="docsHref"
+        :href="docsHref"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="hover:text-primary-comfy-yellow ml-auto inline-flex shrink-0 items-center gap-1.5 pb-3 text-sm font-bold tracking-wider whitespace-nowrap text-primary-warm-white uppercase transition-colors"
+        data-testid="model-docs-link"
+      >
+        {{ t('workshop.hub.docs', locale) }}
+        <ExternalLink class="size-4" aria-hidden="true" />
+      </a>
     </div>
 
     <section
