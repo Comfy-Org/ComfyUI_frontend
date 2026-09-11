@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, watch } from 'vue'
 
 import { BaseWidget, LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -15,10 +13,6 @@ import { graphScopeOf } from '@/types/graphScopeId'
 import { widgetId } from '@/types/widgetId'
 
 describe('Node Reactivity', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   function createTestGraph() {
     const graph = new LGraph()
     const node = new LGraphNode('test')
@@ -79,10 +73,6 @@ describe('Node Reactivity', () => {
 })
 
 describe('Widget input link reactivity', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   function createWidgetInputGraph() {
     const graph = new LGraph()
     const node = new LGraphNode('test')
@@ -103,8 +93,8 @@ describe('Widget input link reactivity', () => {
   it('exposes linked widget input slots through the live node inputs', () => {
     const { node } = createWidgetInputGraph()
 
-    expect(node.inputs?.[0]?.widget?.name).toBe('prompt')
-    expect(node.inputs?.[0]?.link).not.toBeNull()
+    expect(node.inputs[0].widget?.name).toBe('prompt')
+    expect(node.inputs[0].link).not.toBeNull()
   })
 
   it('marks a widget input slot as linked when connected to a SubgraphInput', () => {
@@ -119,7 +109,7 @@ describe('Widget input link reactivity', () => {
 
     expect(subgraph.inputNode.slots[0].connect(input, node)).not.toBeNull()
 
-    expect(node.inputs?.[0]?.link).not.toBeNull()
+    expect(node.inputs[0].link).not.toBeNull()
     expect(
       linkedWidgetedInputs(node.id, node.inputs, graphScopeOf(subgraph)).map(
         (s) => s.name
@@ -160,10 +150,6 @@ describe('Widget input link reactivity', () => {
 })
 
 describe('Nested promoted widget mapping', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('maps store identity to deepest concrete widget for two-layer promotions', () => {
     const subgraphA = createTestSubgraph({
       inputs: [{ name: 'a_input', type: '*' }]
@@ -233,10 +219,6 @@ describe('Nested promoted widget mapping', () => {
   })
 })
 describe('Promoted widget render state', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('registers plain render metadata for promoted widgets', () => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'ckpt_input', type: '*' }]

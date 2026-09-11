@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { chatgptImage25Page } from '../../data/chatgptImage25'
 import { flux3Page } from '../../data/flux3'
 import { geminiOmniPage } from '../../data/geminiOmni'
 import { ltxPage } from '../../data/ltx'
@@ -20,6 +21,7 @@ const pages: { name: string; page: ModelLaunchPage }[] = [
   { name: 'minimaxMusic3', page: minimaxMusic3Page },
   { name: 'minimaxLicense', page: minimaxLicensePage },
   { name: 'flux3', page: flux3Page },
+  { name: 'chatgptImage25', page: chatgptImage25Page },
   { name: 'seedance', page: seedancePage },
   { name: 'ltx', page: ltxPage },
   { name: 'geminiOmni', page: geminiOmniPage },
@@ -27,13 +29,13 @@ const pages: { name: string; page: ModelLaunchPage }[] = [
   { name: 'wan3', page: wan3Page }
 ]
 
-const VIDEO_URL = /^https:\/\/media\.comfy\.org\/.+\.(webm|mp4)$/
-const IMAGE_URL = /^https:\/\/media\.comfy\.org\/.+\.(webp|png|jpe?g)$/
+const VIDEO_URL =
+  /^(https:\/\/media\.comfy\.org\/|\/(?!\/))[\w./-]+\.(webm|mp4)$/
+const IMAGE_URL =
+  /^(https:\/\/media\.comfy\.org\/|\/(?!\/))[\w./-]+\.(webp|png|jpe?g)$/
 const AUDIO_URL = /^https:\/\/media\.comfy\.org\/.+\.(mp3|flac|m4a|ogg)$/
-// Hero stills may ship from public/ as a root-relative path; the hero video
-// must be on the CDN.
 const HERO_STILL_URL =
-  /^(https:\/\/media\.comfy\.org\/|\/)[\w./-]+\.(webp|png|jpe?g)$/
+  /^(https:\/\/media\.comfy\.org\/|\/(?!\/))[\w./-]+\.(webp|png|jpe?g)$/
 
 describe.for(pages)('$name launch page config', ({ page }) => {
   it('gives every gallery card a unique id', () => {

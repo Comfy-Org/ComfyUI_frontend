@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { effectScope, watchEffect } from 'vue'
 
@@ -73,7 +71,6 @@ describe('layoutStore node layout refs', () => {
   }
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     layoutStore.resetForTests()
   })
 
