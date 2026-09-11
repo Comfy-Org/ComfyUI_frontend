@@ -4,7 +4,10 @@ import type { RemoteMutationContext } from '@/types/graphMutationContext'
 
 import type { MaterializableGraph } from './agentNodeMaterializer'
 import { reconcileAgentAdapters } from './agentNodeMaterializer'
-import { readSubgraphDefinitions } from './agentSubgraphDefinitions'
+import {
+  readSubgraphDefinitionIds,
+  readSubgraphDefinitions
+} from './agentSubgraphDefinitions'
 import { recordDevEvent } from './devPanelLog'
 import type { DocUpdate } from './docFrameClient'
 import type { MutationsForTarget } from './ecsFollowerAdapter'
@@ -56,10 +59,15 @@ export class AgentCrdtProjection {
   reconcileLiveGraph(workflowId: string): void {
     const graph = this.getGraph()
     if (!graph) return
-    const nodeIds = reconcileAgentAdapters(
-      graph,
-      readSubgraphDefinitions(this.getFollowerDoc())
+    const followerDoc = this.getFollowerDoc()
+    const definitionIds = readSubgraphDefinitionIds(followerDoc)
+    const hasMissingDefinition = definitionIds.some(
+      (id) => !graph.rootGraph.subgraphs.has(id)
     )
+    const definitions = hasMissingDefinition
+      ? readSubgraphDefinitions(followerDoc)
+      : []
+    const nodeIds = reconcileAgentAdapters(graph, definitions)
     if (nodeIds.length > 0) {
       recordDevEvent('agent_node_adapters_materialized', {
         workflowId,

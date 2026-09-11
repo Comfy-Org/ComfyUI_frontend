@@ -235,14 +235,12 @@ export function useAgentCrdtFollower(
       return
     const context: RemoteMutationContext = {
       source: 'agent-remote',
-      actor: detail?.actor ?? 'agent-reset',
-      opId: `doc-reset:${detail?.seq ?? 'unknown'}`
+      actor: detail.actor ?? 'agent-reset',
+      opId: `doc-reset:${detail.seq ?? 'unknown'}`
     }
     // Store clear and live-graph sweep travel together; see
     // `AgentCrdtProjection.clearForReset` for why.
-    if (detail?.workflowId !== undefined) {
-      projection.clearForReset(detail.workflowId, context)
-    }
+    projection.clearForReset(detail.workflowId, context)
     connected.value = false
     updatesApplied.value = 0
     lastFrameType.value = event.type
@@ -332,7 +330,7 @@ export function useAgentCrdtFollower(
    * the retry timer owns the next attempt and its backoff.
    */
   const onSocketActivity: EventListener = () => {
-    if (subscribeRetryTimer !== null) return
+    if (lifecycle.hasPendingSubscribeRetry()) return
     bridge.reconcile()
   }
 

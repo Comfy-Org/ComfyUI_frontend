@@ -173,6 +173,10 @@ export class AgentCrdtDocLifecycle {
     }
   }
 
+  hasPendingSubscribeRetry(): boolean {
+    return this.subscribeRetryTimer !== null
+  }
+
   clearForRetarget(): void {
     this.clearSubscribeRetry()
     this.clearStaleProbe()
