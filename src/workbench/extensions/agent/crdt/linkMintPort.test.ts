@@ -12,7 +12,9 @@ import type {
 import { createMintSession } from './mintSession'
 import type { MintSession } from './mintSession'
 
-vi.mock('@/platform/telemetry/reportError', () => ({ reportError: vi.fn() }))
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 const ROOT_SCOPE: LinkScopeView = {
   rootGraphId: 'root-uuid',
