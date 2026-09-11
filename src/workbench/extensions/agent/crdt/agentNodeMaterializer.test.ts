@@ -1020,6 +1020,26 @@ describe('reconcileAgentAdapters', () => {
       }
     })
 
+    it('S3 preserves a widget value delivered with its promotion', () => {
+      const definition = promotedDefinition(
+        createTestSubgraphData({
+          nodes: [
+            { ...nodePayload(7, 'widget-node'), widgets_values: [42] }
+          ] as never
+        })
+      )
+      const { follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, definition.id)],
+        links: [],
+        definitions: { subgraphs: [definition] }
+      })
+
+      reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+
+      const host = graph.getNodeById(toNodeId(1)) as SubgraphNode
+      expect(host.widgets[0]?.value).toBe(42)
+    })
+
     it('S3 promotion replay is a no-op', () => {
       const definition = createTestSubgraphData({
         nodes: [nodePayload(7, 'widget-node')] as never
@@ -1039,6 +1059,67 @@ describe('reconcileAgentAdapters', () => {
 
       expect(host.widgets).toHaveLength(1)
       expect(host.widgets[0]).toBe(widget)
+    })
+
+    it('S3 skips duplicate declared boundary names incrementally and on replay', () => {
+      const definition = createTestSubgraphData({
+        nodes: [
+          nodePayload(7, 'widget-node'),
+          nodePayload(8, 'widget-node')
+        ] as never
+      })
+      const duplicate = {
+        ...promotedDefinition(definition),
+        inputs: [
+          ...promotedDefinition(definition).inputs,
+          {
+            id: '00000000-0000-4000-8000-000000000100',
+            name: 'value',
+            type: 'NUMBER',
+            linkIds: [100]
+          }
+        ],
+        links: [
+          ...promotedDefinition(definition).links,
+          {
+            id: 100,
+            origin_id: SUBGRAPH_INPUT_ID,
+            origin_slot: 1,
+            target_id: 8,
+            target_slot: 0,
+            type: 'NUMBER'
+          }
+        ]
+      }
+      const { follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, definition.id)],
+        links: [],
+        definitions: { subgraphs: [definition] }
+      })
+      reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+      reconcileAgentAdapters(graph, [duplicate])
+
+      const replayGraph = new LGraph()
+      const disableReplaySubgraphNodeCreation =
+        enableSubgraphNodeCreation(replayGraph)
+      const replay = seedDocument(replayGraph, {
+        nodes: [nodePayload(1, definition.id)],
+        links: [],
+        definitions: { subgraphs: [duplicate] }
+      })
+      reconcileAgentAdapters(
+        replayGraph,
+        readSubgraphDefinitions(replay.follower.doc)
+      )
+      disableReplaySubgraphNodeCreation()
+
+      const incrementalHost = graph.getNodeById(toNodeId(1)) as SubgraphNode
+      const replayHost = replayGraph.getNodeById(toNodeId(1)) as SubgraphNode
+      expect(incrementalHost.widgets.map(({ name }) => name)).toEqual([])
+      expect(replayHost.widgets.map(({ name }) => name)).toEqual([])
+      expect(incrementalHost.inputs.map(({ name }) => name)).toEqual(
+        replayHost.inputs.map(({ name }) => name)
+      )
     })
 
     it('S3 rejects an unknown promotion source without partial live state', () => {

@@ -25,6 +25,7 @@ import type { NodeState } from '@/types/nodeState'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetStateInit } from '@/types/widgetState'
 
+import { ambiguousInputNames } from './agentSubgraphHostSlots'
 import { runMintPortsSuppressed } from './mintPortWiring'
 
 export type MaterializableGraph = Pick<
@@ -58,13 +59,8 @@ export function reconcileAgentAdapters(
   subgraphDefinitions: ExportedSubgraph[] = []
 ): NodeId[] {
   return runMintPortsSuppressed(() => {
-    const existingDefinitions = new Set(graph.rootGraph.subgraphs.keys())
     const pending = registerSubgraphDefinitions(graph, subgraphDefinitions)
-    reconcileSubgraphPromotions(
-      graph.rootGraph,
-      subgraphDefinitions,
-      existingDefinitions
-    )
+    reconcileSubgraphPromotions(graph.rootGraph, subgraphDefinitions)
     return reconcile(graph, pending)
   })
 }
@@ -72,6 +68,7 @@ export function reconcileAgentAdapters(
 interface PromotionSource {
   node: LGraphNode
   widget: NonNullable<LGraphNode['widgets']>[number]
+  boundaryName: string
 }
 
 function promotionKey(node: LGraphNode, widget: PromotionSource['widget']) {
@@ -105,7 +102,9 @@ function resolvePromotionSources(
     })
   )
   const sources: PromotionSource[] = []
+  const ambiguous = ambiguousInputNames(definition)
   for (const input of definition.inputs ?? []) {
+    if (ambiguous.has(input.name)) continue
     for (const linkId of input.linkIds ?? []) {
       const link = links.get(linkId)
       if (!link || String(link.originId) !== SUBGRAPH_INPUT_ID) continue
@@ -117,13 +116,15 @@ function resolvePromotionSources(
           `Agent subgraph promotion source is unknown: ${definition.id}/${String(link.targetId)}/${input.name}`
         )
       }
-      sources.push({ node, widget })
+      sources.push({ node, widget, boundaryName: input.name })
     }
   }
   return sources
 }
 
-function currentPromotionSources(subgraph: Subgraph): PromotionSource[] {
+function currentPromotionSources(
+  subgraph: Subgraph
+): Pick<PromotionSource, 'node' | 'widget'>[] {
   return subgraph.inputs.flatMap((input) =>
     input.linkIds.flatMap((linkId) => {
       const link = subgraph.getLink(linkId)
@@ -153,15 +154,13 @@ const reportedPromotionFailures = new WeakMap<LGraph, Set<string>>()
 
 function reconcileSubgraphPromotions(
   rootGraph: LGraph,
-  definitions: ExportedSubgraph[],
-  existingDefinitions: ReadonlySet<string>
+  definitions: ExportedSubgraph[]
 ): void {
   const reported =
     reportedPromotionFailures.get(rootGraph) ??
     reportedPromotionFailures.set(rootGraph, new Set()).get(rootGraph)!
   const flattened = flattenDefinitions(definitions)
   for (const definition of topologicalSortSubgraphs(flattened)) {
-    if (!existingDefinitions.has(definition.id)) continue
     const live = rootGraph.subgraphs.get(definition.id)
     if (!live) continue
     const desired = resolvePromotionSources(live, definition)
@@ -186,7 +185,15 @@ function reconcileSubgraphPromotions(
         demoteWidget(node, widget, hosts)
       }
     }
-    for (const { node, widget } of desired) promoteWidget(node, widget, hosts)
+    for (const { node, widget, boundaryName } of desired) {
+      const sourceName = widget.name
+      widget.name = boundaryName
+      try {
+        promoteWidget(node, widget, hosts)
+      } finally {
+        widget.name = sourceName
+      }
+    }
   }
 }
 
@@ -236,7 +243,10 @@ function registerSubgraphDefinitions(
     reportedDefinitionFailures.set(rootGraph, new Set()).get(rootGraph)!
 
   for (const definition of topologicalSortSubgraphs(missing)) {
-    const failure = tryCreateSubgraph(rootGraph, definition)
+    const failure = tryCreateSubgraph(
+      rootGraph,
+      withoutAmbiguousBoundaryInputs(definition)
+    )
     if (failure === undefined) {
       pending.delete(definition.id)
       reported.delete(definition.id)
@@ -250,6 +260,27 @@ function registerSubgraphDefinitions(
     })
   }
   return pending
+}
+
+function withoutAmbiguousBoundaryInputs(
+  definition: ExportedSubgraph
+): ExportedSubgraph {
+  const ambiguous = ambiguousInputNames(definition)
+  if (ambiguous.size === 0) return definition
+  const omittedLinkIds = new Set(
+    (definition.inputs ?? [])
+      .filter((input) => ambiguous.has(input.name))
+      .flatMap((input) => input.linkIds ?? [])
+  )
+  return {
+    ...definition,
+    inputs: (definition.inputs ?? []).filter(
+      (input) => !ambiguous.has(input.name)
+    ),
+    links: (definition.links ?? []).filter(
+      (link) => !omittedLinkIds.has(link.id)
+    )
+  }
 }
 
 /**
