@@ -170,12 +170,6 @@ test.describe('Node Interaction', () => {
   })
 
   test.describe('Node Duplication', () => {
-    test.use({
-      initialSettings: {
-        'Comfy.UseNewMenu': 'Disabled'
-      }
-    })
-
     test('Can duplicate a regular node via Alt+drag', async ({ comfyPage }) => {
       const before = await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
       expect(
@@ -1068,8 +1062,7 @@ test.describe('Load duplicate workflow', () => {
 test.describe('Viewport settings', () => {
   test.use({
     initialSettings: {
-      'Comfy.UseNewMenu': 'Top',
-      'Comfy.Workflow.WorkflowTabsPosition': 'Topbar'
+      'Comfy.UseNewMenu': 'Top'
     }
   })
 

@@ -6,8 +6,6 @@ import { TestIds } from '@e2e/fixtures/selectors'
 
 const test = comfyPageFixture
 
-test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
-
 const BLUE_COLOR = 'rgb(51, 51, 85)'
 const RED_COLOR = 'rgb(85, 51, 51)'
 

@@ -76,7 +76,6 @@ testWithMockedObjectInfo.describe(
       locale: 'en-US',
       initialSettings: {
         'Comfy.UseNewMenu': 'Disabled',
-        'Comfy.NodeSearchBoxImpl': 'default',
         'Comfy.LinkRelease.Action': 'search box',
         'Comfy.LinkRelease.ActionShift': 'search box'
       }

@@ -14,8 +14,6 @@ async function waitForSearchInsertion(
     .toBe(initialNodeCount + 1)
 }
 
-test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
-
 test.describe('Node search box', { tag: '@node' }, () => {
   test.use({
     initialSettings: {

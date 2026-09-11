@@ -4,8 +4,6 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { openMoreOptionsMenu } from '@e2e/fixtures/utils/selectionToolboxMoreOptions'
 
-test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
-
 test.describe(
   'Selection Toolbox - More Options Submenus',
   { tag: '@ui' },

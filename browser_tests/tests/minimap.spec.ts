@@ -517,7 +517,6 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
 test.describe('Minimap mobile', { tag: ['@mobile', '@canvas'] }, () => {
   test.use({
     initialSettings: {
-      'Comfy.UseNewMenu': 'Top',
       'Comfy.Graph.CanvasMenu': true
     }
   })

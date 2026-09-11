@@ -5,8 +5,7 @@ import { assetPath } from '@e2e/fixtures/utils/paths'
 
 test.use({
   initialSettings: {
-    'Comfy.UseNewMenu': 'Disabled',
-    'Comfy.Canvas.BackgroundImage': ''
+    'Comfy.UseNewMenu': 'Disabled'
   }
 })
 

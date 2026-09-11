@@ -10,7 +10,6 @@ test.describe(
   () => {
     test.use({
       initialSettings: {
-        'Comfy.UseNewMenu': 'Top',
         'Comfy.Canvas.SelectionToolbox': true
       }
     })

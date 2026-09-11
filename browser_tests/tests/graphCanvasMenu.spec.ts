@@ -3,15 +3,10 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 
-test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
-
 test.describe('Graph Canvas Menu', { tag: ['@screenshot', '@canvas'] }, () => {
   test.use({
     initialSettings: {
       'Comfy.UseNewMenu': 'Disabled',
-      // Set link render mode to spline to make sure it's not affected by other tests'
-      // side effects.
-      'Comfy.LinkRenderMode': 2,
       // Enable canvas menu for all tests
       'Comfy.Graph.CanvasMenu': true
     }

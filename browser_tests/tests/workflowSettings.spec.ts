@@ -62,8 +62,6 @@ async function setupAutoSaveAfterDelay(
 
 test.describe('Workflow settings', { tag: '@canvas' }, () => {
   test.describe('Comfy.Workflow.AutoSave', () => {
-    test.use({ initialSettings: { 'Comfy.Workflow.AutoSave': 'off' } })
-
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.workflow.setupWorkflowsDirectory({})
     })
@@ -104,8 +102,6 @@ test.describe('Workflow settings', { tag: '@canvas' }, () => {
   })
 
   test.describe('Comfy.Workflow.AutoSaveDelay', () => {
-    test.use({ initialSettings: { 'Comfy.Workflow.AutoSave': 'off' } })
-
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.workflow.setupWorkflowsDirectory({})
     })

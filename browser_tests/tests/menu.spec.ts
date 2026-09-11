@@ -22,10 +22,6 @@ test.describe('Menu', { tag: '@ui' }, () => {
   })
 
   test.describe('Workflows topbar tabs', () => {
-    test.use({
-      initialSettings: { 'Comfy.Workflow.WorkflowTabsPosition': 'Topbar' }
-    })
-
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.workflow.setupWorkflowsDirectory({})
     })

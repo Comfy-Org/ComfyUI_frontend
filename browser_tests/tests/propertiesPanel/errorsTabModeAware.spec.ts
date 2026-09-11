@@ -58,7 +58,6 @@ async function expectReferenceBadge(group: Locator, count: number) {
 test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
   test.use({
     initialSettings: {
-      'Comfy.UseNewMenu': 'Top',
       'Comfy.RightSidePanel.ShowErrorsTab': true
     }
   })
@@ -884,7 +883,6 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
   test.describe('Workflow switching', () => {
     test.use({
       initialSettings: {
-        'Comfy.UseNewMenu': 'Top',
         'Comfy.RightSidePanel.ShowErrorsTab': true,
         'Comfy.Workflow.WorkflowTabsPosition': 'Sidebar'
       }

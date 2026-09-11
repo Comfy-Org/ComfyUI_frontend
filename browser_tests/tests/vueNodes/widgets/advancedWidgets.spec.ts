@@ -9,10 +9,6 @@ const HIDE_ADVANCED_INPUTS = 'Hide advanced inputs'
 const FLOAT_SOURCE_POSITION_LEFT_OF_NODE = { x: 100, y: 200 }
 
 test.describe('Advanced Widget Visibility', { tag: '@vue-nodes' }, () => {
-  test.use({
-    initialSettings: { 'Comfy.Node.AlwaysShowAdvancedWidgets': false }
-  })
-
   test.beforeEach(async ({ comfyPage }) => {
     // Add a ModelSamplingFlux node which has both advanced (max_shift,
     // base_shift) and non-advanced (width, height) widgets.

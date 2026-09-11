@@ -17,15 +17,6 @@ test.describe(
   'Template distribution filtering count',
   { tag: '@cloud' },
   () => {
-    test.use({
-      initialSettings: {
-        'Comfy.Templates.SelectedModels': [],
-        'Comfy.Templates.SelectedUseCases': [],
-        'Comfy.Templates.SelectedRunsOn': [],
-        'Comfy.Templates.SortBy': 'default'
-      }
-    })
-
     test('displayed count matches visible cards when distribution filter excludes templates', async ({
       comfyPage,
       templateApi

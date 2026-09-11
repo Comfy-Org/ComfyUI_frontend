@@ -4,8 +4,6 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Vue Nodes Zoom', { tag: '@vue-nodes' }, () => {
-  test.use({ initialSettings: { 'LiteGraph.Canvas.MinFontSizeForLOD': 8 } })
-
   test(
     'should not capture drag while zooming with ctrl+shift+drag',
     { tag: '@screenshot' },

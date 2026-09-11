@@ -18,9 +18,6 @@ const test = mergeTests(comfyPageFixture, templateApiFixture)
 test.describe('Template search sort', () => {
   test.use({
     initialSettings: {
-      'Comfy.Templates.SelectedModels': [],
-      'Comfy.Templates.SelectedUseCases': [],
-      'Comfy.Templates.SelectedRunsOn': [],
       'Comfy.Templates.SortBy': 'newest'
     }
   })

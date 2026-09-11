@@ -131,13 +131,6 @@ for (const vueEnabled of [false, true] as const) {
     : ['@screenshot', '@node']
 
   test.describe(`Node lifecycle badge (${renderer})`, { tag }, () => {
-    test.use({
-      initialSettings: {
-        'Comfy.UseNewMenu': 'Disabled',
-        'Comfy.Graph.CanvasInfo': false
-      }
-    })
-
     for (const mode of [NodeBadgeMode.ShowAll, NodeBadgeMode.None] as const) {
       test(`renders deprecated node with mode=${mode}`, async ({
         comfyPage
@@ -160,13 +153,6 @@ for (const vueEnabled of [false, true] as const) {
   })
 
   test.describe(`API pricing badge (${renderer})`, { tag }, () => {
-    test.use({
-      initialSettings: {
-        'Comfy.UseNewMenu': 'Disabled',
-        'Comfy.Graph.CanvasInfo': false
-      }
-    })
-
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.page.evaluate((type) => {
         const registered = window.LiteGraph!.registered_node_types[type] as {

@@ -6,7 +6,6 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 test.describe('Sidebar splitter width independence', () => {
   test.use({
     initialSettings: {
-      'Comfy.Sidebar.UnifiedWidth': true,
       'Comfy.NodeLibrary.NewDesign': false
     }
   })

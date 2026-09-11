@@ -3,8 +3,6 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Node library sidebar V2', () => {
-  test.use({ initialSettings: { 'Comfy.NodeLibrary.NewDesign': true } })
-
   test.beforeEach(async ({ comfyPage }) => {
     const tab = comfyPage.menu.nodeLibraryTabV2
     await tab.open()

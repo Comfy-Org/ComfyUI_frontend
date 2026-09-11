@@ -405,7 +405,6 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
     () => {
       test.use({
         initialSettings: {
-          'Comfy.UseNewMenu': 'Top',
           'Comfy.NodeSearchBoxImpl': 'v1 (legacy)'
         }
       })

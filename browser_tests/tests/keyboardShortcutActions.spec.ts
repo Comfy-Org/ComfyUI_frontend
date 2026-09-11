@@ -4,13 +4,6 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Keyboard shortcut actions', { tag: '@keyboard' }, () => {
-  test.use({
-    initialSettings: {
-      'Comfy.UseNewMenu': 'Top',
-      'Comfy.Workflow.WorkflowTabsPosition': 'Topbar'
-    }
-  })
-
   test.beforeEach(async ({ comfyPage }) => {
     // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()

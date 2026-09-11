@@ -14,8 +14,6 @@ test.describe(
       initialSettings: {
         'Comfy.Canvas.SelectionToolbox': true,
         'Comfy.Canvas.NavigationMode': 'standard',
-        'Comfy.Pointer.ClickDrift': 6,
-        'LiteGraph.Group.SelectChildrenOnClick': false,
         'Comfy.Graph.LiveSelection': false
       }
     })
@@ -179,7 +177,6 @@ test.describe(
         initialSettings: {
           'Comfy.Canvas.SelectionToolbox': true,
           'Comfy.Canvas.NavigationMode': 'standard',
-          'Comfy.Pointer.ClickDrift': 6,
           'LiteGraph.Group.SelectChildrenOnClick': true,
           'Comfy.Graph.LiveSelection': false
         }

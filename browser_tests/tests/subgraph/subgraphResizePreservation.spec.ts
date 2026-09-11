@@ -45,8 +45,6 @@ test.describe(
   'Subgraph node resize preservation',
   { tag: ['@subgraph', '@widget', '@vue-nodes'] },
   () => {
-    test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Top' } })
-
     test('Promoting a widget preserves a user-resized subgraph node', async ({
       comfyPage
     }) => {
@@ -178,8 +176,6 @@ test.describe(
   'Subgraph node resize preservation — nested subgraphs',
   { tag: ['@subgraph', '@widget', '@vue-nodes'] },
   () => {
-    test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Top' } })
-
     test('Demoting a nested promotion does not shrink a user-resized outer host', async ({
       comfyPage
     }) => {

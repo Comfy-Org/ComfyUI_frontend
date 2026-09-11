@@ -384,12 +384,6 @@ test.describe(
       'Vue Mode - Promoted Preview Content',
       { tag: '@vue-nodes' },
       () => {
-        test.use({
-          initialSettings: {
-            'Comfy.UseNewMenu': 'Disabled'
-          }
-        })
-
         test.beforeEach(async ({ comfyPage }) => {
           await comfyPage.workflow.loadWorkflow(
             'subgraphs/subgraph-with-preview-node'

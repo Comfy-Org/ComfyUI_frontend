@@ -41,10 +41,6 @@ async function runOnBackgroundTab(
 }
 
 test.describe('Workflow tab status indicator', () => {
-  test.use({
-    initialSettings: { 'Comfy.Workflow.WorkflowTabsPosition': 'Topbar' }
-  })
-
   test.beforeEach(async ({ comfyPage }) => {
     // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
