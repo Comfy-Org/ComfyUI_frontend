@@ -3,7 +3,6 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import { getGroupTitlePosition } from '@e2e/fixtures/utils/groupHelpers'
-import { toNodeId } from '@/types/nodeId'
 
 test.describe(
   'ECS migration: undo/redo',
@@ -148,19 +147,11 @@ test.describe(
       await comfyPage.menu.topbar.saveWorkflow('Undo Tab A')
       await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(0)
       const node = await comfyPage.nodeOps.getNodeRefById('3')
-      const initialPosition = await comfyPage.page.evaluate(
-        (nodeId) => [...window.app!.graph.getNodeById(nodeId)!.pos],
-        toNodeId('3')
-      )
+      const initialPosition = await node.getProperty<[number, number]>('pos')
 
       await node.dragBy({ x: 100, y: 50 })
       await expect
-        .poll(() =>
-          comfyPage.page.evaluate(
-            (nodeId) => [...window.app!.graph.getNodeById(nodeId)!.pos],
-            toNodeId('3')
-          )
-        )
+        .poll(() => node.getProperty<[number, number]>('pos'))
         .not.toEqual(initialPosition)
       await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(1)
 
@@ -184,21 +175,11 @@ test.describe(
       await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(7)
       await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(1)
       await expect
-        .poll(() =>
-          comfyPage.page.evaluate(
-            (nodeId) => [...window.app!.graph.getNodeById(nodeId)!.pos],
-            toNodeId('3')
-          )
-        )
+        .poll(() => node.getProperty<[number, number]>('pos'))
         .not.toEqual(initialPosition)
       await comfyPage.menu.topbar.triggerTopbarCommand(['Edit', 'Undo'])
       await expect
-        .poll(() =>
-          comfyPage.page.evaluate(
-            (nodeId) => [...window.app!.graph.getNodeById(nodeId)!.pos],
-            toNodeId('3')
-          )
-        )
+        .poll(() => node.getProperty<[number, number]>('pos'))
         .toEqual(initialPosition)
 
       await tabB.click()
