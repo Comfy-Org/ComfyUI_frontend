@@ -1,10 +1,22 @@
 import { render, screen } from '@testing-library/vue'
 import { defineComponent, markRaw } from 'vue'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
 import WidgetGrid from '@/renderer/extensions/vueNodes/components/WidgetGrid.vue'
 import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widgetGrid'
 import { toNodeId } from '@/types/nodeId'
+
+vi.mock(
+  import('@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'),
+  () => ({
+    useSlotLinkInteraction: () => ({
+      onClick: vi.fn(),
+      onDoubleClick: vi.fn(),
+      onPointerDown: vi.fn()
+    })
+  })
+)
 
 const WidgetStub = markRaw(
   defineComponent({
@@ -48,6 +60,83 @@ function widget(name: string, type: string, index: number): WidgetGridItem {
 }
 
 describe('WidgetGrid', () => {
+  it('shows socket-only labels and restores controls when disconnected', async () => {
+    const connectedWidgets = ['width', 'height', 'prompt'].map(
+      (name, index) => ({
+        ...widget(name, name === 'prompt' ? 'text' : 'number', index),
+        slotMetadata: {
+          index,
+          linked: true,
+          promoted: false,
+          type: name === 'prompt' ? 'STRING' : 'INT'
+        },
+        visible: false,
+        suppressedByConnection: true
+      })
+    )
+    const otherWidgets = [
+      { ...widget('seed', 'converted-widget', 3), visible: false },
+      {
+        ...widget('hidden_by_extension', 'number', 4),
+        visible: false
+      },
+      {
+        ...widget('hidden_no_slot', 'text', 5),
+        visible: false,
+        suppressedByConnection: true,
+        slotMetadata: undefined
+      },
+      widget('steps', 'number', 6)
+    ]
+    const { rerender } = render(WidgetGrid, {
+      props: {
+        nodeId: toNodeId(1),
+        nodeType: 'TestNode',
+        syncLayout: false,
+        processedWidgets: [...connectedWidgets, ...otherWidgets]
+      },
+      global: {
+        plugins: [
+          createI18n({
+            legacy: false,
+            locale: 'en',
+            messages: { en: { g: { inputTooltip: 'Input: {name}' } } }
+          })
+        ],
+        directives: { tooltip: {} },
+        stubs: { AppInput: AppInputStub }
+      }
+    })
+
+    for (const name of ['width', 'height', 'prompt', 'seed']) {
+      expect(screen.getByText(name)).toBeVisible()
+    }
+    expect(screen.queryByText('steps')).not.toBeInTheDocument()
+    expect(screen.queryByText('hidden_by_extension')).not.toBeInTheDocument()
+    expect(screen.queryByText('hidden_no_slot')).not.toBeInTheDocument()
+    expect(screen.getAllByTestId('slot-connection-dot')).toHaveLength(5)
+    expect(screen.getAllByTestId('widget-control')).toHaveLength(1)
+
+    await rerender({
+      processedWidgets: [
+        ...connectedWidgets.map((item) => ({
+          ...item,
+          slotMetadata: { ...item.slotMetadata, linked: false },
+          visible: true,
+          suppressedByConnection: false
+        })),
+        ...otherWidgets
+      ]
+    })
+
+    for (const name of ['width', 'height', 'prompt', 'steps']) {
+      expect(screen.queryByText(name)).not.toBeInTheDocument()
+    }
+    expect(screen.getByText('seed')).toBeVisible()
+    expect(screen.getAllByTestId('slot-connection-dot')).toHaveLength(5)
+    expect(screen.getAllByTestId('widget-control')).toHaveLength(4)
+  })
+
   it('renders hidden converted widgets as input sockets without controls', () => {
     render(WidgetGrid, {
       props: {
