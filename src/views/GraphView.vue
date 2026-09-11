@@ -326,7 +326,8 @@ onBeforeUnmount(() => {
   executionStore.unbindExecutionEvents()
 })
 
-useEventListener(window, 'keydown', useKeybindingService().keybindHandler)
+const disposeKeybindings = useKeybindingService().install()
+onBeforeUnmount(disposeKeybindings)
 
 const { wrapWithErrorHandling, wrapWithErrorHandlingAsync } = useErrorHandling()
 

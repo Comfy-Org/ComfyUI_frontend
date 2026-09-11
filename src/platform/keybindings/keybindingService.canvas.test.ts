@@ -1,7 +1,7 @@
+import { CORE_KEYBINDINGS } from '@/platform/keybindings/defaults'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { registerCoreKeybindingCommands } from '@/platform/keybindings/__fixtures__/registerCoreKeybindingCommands'
 import { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
@@ -57,7 +57,11 @@ describe('keybindingService - Canvas Keybindings', () => {
 
   beforeEach(() => {
     const commandStore = useCommandStore()
-    commandStore.execute = vi.fn()
+    commandStore.registerCommands(
+      [...new Set(CORE_KEYBINDINGS.map((binding) => binding.commandId))].map(
+        (id) => ({ id, function: vi.fn() })
+      )
+    )
 
     Object.assign(useDialogStore(), { dialogStack: [] })
 
@@ -67,7 +71,6 @@ describe('keybindingService - Canvas Keybindings', () => {
     canvasContainer.appendChild(canvasChild)
     document.body.appendChild(canvasContainer)
 
-    registerCoreKeybindingCommands()
     keybindingService = useKeybindingService()
     keybindingService.registerCoreKeybindings()
   })
@@ -83,9 +86,9 @@ describe('keybindingService - Canvas Keybindings', () => {
 
     await keybindingService.keybindHandler(event)
 
-    expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
-      'Comfy.Canvas.DeleteSelectedItems'
-    )
+    expect(
+      useCommandStore().getCommand('Comfy.Canvas.DeleteSelectedItems').function
+    ).toHaveBeenCalledOnce()
   })
 
   it('should execute DeleteSelectedItems for Backspace key on canvas', async () => {
@@ -95,9 +98,9 @@ describe('keybindingService - Canvas Keybindings', () => {
 
     await keybindingService.keybindHandler(event)
 
-    expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
-      'Comfy.Canvas.DeleteSelectedItems'
-    )
+    expect(
+      useCommandStore().getCommand('Comfy.Canvas.DeleteSelectedItems').function
+    ).toHaveBeenCalledOnce()
   })
 
   it('should not execute DeleteSelectedItems when typing in input field', async () => {
@@ -128,9 +131,9 @@ describe('keybindingService - Canvas Keybindings', () => {
 
     await keybindingService.keybindHandler(event)
 
-    expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
-      'Comfy.Canvas.SelectAll'
-    )
+    expect(
+      useCommandStore().getCommand('Comfy.Canvas.SelectAll').function
+    ).toHaveBeenCalledOnce()
   })
 
   it('should not intercept Ctrl+C to allow native copy event', async () => {
@@ -164,9 +167,10 @@ describe('keybindingService - Canvas Keybindings', () => {
 
     await keybindingService.keybindHandler(event)
 
-    expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
-      'Comfy.Canvas.PasteFromClipboardWithConnect'
-    )
+    expect(
+      useCommandStore().getCommand('Comfy.Canvas.PasteFromClipboardWithConnect')
+        .function
+    ).toHaveBeenCalledOnce()
   })
 
   it('should execute graph-canvas bindings by normalizing to graph-canvas-container', async () => {
@@ -177,9 +181,9 @@ describe('keybindingService - Canvas Keybindings', () => {
 
     await keybindingService.keybindHandler(event)
 
-    expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
-      'Comfy.Canvas.ZoomIn'
-    )
+    expect(
+      useCommandStore().getCommand('Comfy.Canvas.ZoomIn').function
+    ).toHaveBeenCalledOnce()
   })
 
   it('should not execute graph-canvas bindings when target is outside canvas', async () => {
