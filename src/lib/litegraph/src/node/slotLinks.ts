@@ -3,6 +3,7 @@ import type {
   LGraphNode,
   LLink
 } from '@/lib/litegraph/src/types/entityRegistry'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useLinkStore } from '@/stores/linkStore'
 import type { EndpointUpdateError } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
@@ -212,7 +213,10 @@ export function replaceNodeInputs(
       removals.map(({ link }) => link._state)
     )
     if (!result.ok) {
-      console.error('Failed to replace node inputs', result.error)
+      reportError(new Error(result.error.message), {
+        errorType: 'node_input_replace_rejected',
+        context: { nodeId: node.id, code: result.error.code }
+      })
       return result
     }
     node.inputs.splice(0, node.inputs.length, ...finalInputs)

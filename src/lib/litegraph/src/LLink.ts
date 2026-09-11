@@ -9,7 +9,7 @@ import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
-
+import { reportError } from '@/platform/telemetry/reportError'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
@@ -20,7 +20,7 @@ import { toLinkId } from '@/types/linkId'
 import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
 
-import type { EndpointPatch } from '@/stores/linkStore'
+import type { EndpointPatch, EndpointUpdateResult } from '@/stores/linkStore'
 import type { LinkId } from '@/types/linkId'
 import type { LinkTopology } from '@/types/linkTopology'
 import type { RerouteId } from '@/types/rerouteId'
@@ -194,10 +194,10 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
     this.updateEndpoints({ targetSlot: value })
   }
 
-  updateEndpoints(patch: EndpointPatch): void {
+  updateEndpoints(patch: EndpointPatch): EndpointUpdateResult<LinkTopology> {
     if (!this._graphScope) {
       Object.assign(this._state, patch)
-      return
+      return { ok: true, value: this._state }
     }
 
     const result = useLinkStore().updateEndpoint(
@@ -205,8 +205,13 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
       this._state,
       patch
     )
-    if (!result.ok)
-      console.error('Failed to update link endpoints', result.error)
+    if (!result.ok) {
+      reportError(new Error(result.error.message), {
+        errorType: 'link_endpoint_update_rejected',
+        context: { linkId: this.id, code: result.error.code, patch }
+      })
+    }
+    return result
   }
 
   get parentId() {
