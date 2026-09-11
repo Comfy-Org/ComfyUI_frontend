@@ -391,13 +391,12 @@ function closest(
     const videoResolution = field.options.some(
       (option) => typeof option === 'string' && /^(\d+p|f?hd)$/i.test(option)
     )
-    const ranked = field.options
-      .map((option) => ({
-        option,
-        distance: optionDistance(input, option, mapping, videoResolution)
-      }))
-      .sort((a, b) => a.distance - b.distance)
-    const nearest = ranked.at(0)
+    const nearest = field.options.reduce<
+      { option: Scalar; distance: number } | undefined
+    >((best, option) => {
+      const distance = optionDistance(input, option, mapping, videoResolution)
+      return !best || distance < best.distance ? { option, distance } : best
+    }, undefined)
     return nearest && Number.isFinite(nearest.distance)
       ? nearest.option
       : rejected(field.name)

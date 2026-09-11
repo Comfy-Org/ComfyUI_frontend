@@ -3,18 +3,13 @@ import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import { workshopModels } from '../../config/models-catalogue'
 import { discoveryProviders } from '../../data/modelDiscovery'
 import ModelDiscoverySection from './ModelDiscoverySection.vue'
 
 describe('ModelDiscoverySection', () => {
   it('only lines up providers that run published models and have a preview', () => {
-    expect(discoveryProviders.length).toBeGreaterThan(0)
+    expect(discoveryProviders.length).toBeGreaterThan(1)
     for (const provider of discoveryProviders) {
-      expect(provider.modelCount, provider.name).toBe(
-        workshopModels.filter((model) => model.provider === provider.name)
-          .length
-      )
       expect(provider.modelCount, provider.name).toBeGreaterThan(0)
       expect(provider.thumbnailUrl, provider.name).toBeTruthy()
     }

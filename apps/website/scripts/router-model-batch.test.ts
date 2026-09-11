@@ -1,6 +1,57 @@
-import { describe, expect, it } from 'vitest'
+import { setTimeout } from 'node:timers/promises'
+import { describe, expect, it, vi } from 'vitest'
 
-import { mapConcurrent } from './router-model-batch'
+import { createStartGate, mapConcurrent } from './router-model-batch'
+
+vi.mock(import('node:timers/promises'), { spy: true })
+
+describe('createStartGate', () => {
+  it('spaces concurrent starts at the configured rate', async () => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(1_000)
+    const second = Promise.withResolvers<void>()
+    const third = Promise.withResolvers<void>()
+    vi.mocked(setTimeout)
+      .mockReturnValueOnce(second.promise)
+      .mockReturnValueOnce(third.promise)
+    const wait = createStartGate(2)
+    const signal = new AbortController().signal
+    const starts: number[] = []
+    const pending = [0, 1, 2].map(async () => {
+      await wait(signal)
+      starts.push(Date.now())
+    })
+    await pending[0]
+    expect(starts).toEqual([1_000])
+    expect(setTimeout).toHaveBeenNthCalledWith(1, 500, undefined, { signal })
+    expect(setTimeout).toHaveBeenNthCalledWith(2, 1_000, undefined, { signal })
+    now.mockReturnValue(1_500)
+    second.resolve()
+    await pending[1]
+    expect(starts).toEqual([1_000, 1_500])
+    now.mockReturnValue(2_000)
+    third.resolve()
+    await Promise.all(pending)
+    expect(starts).toEqual([1_000, 1_500, 2_000])
+  })
+
+  it.for([0, -1, Infinity, NaN])('rejects rate %s', (rate) => {
+    expect(() => createStartGate(rate)).toThrow(
+      'Starts per second must be positive'
+    )
+  })
+
+  it('cancels a queued start without admitting it', async () => {
+    const wait = createStartGate(1)
+    const controller = new AbortController()
+    await wait(controller.signal)
+    const queued = wait(controller.signal)
+    controller.abort()
+    await expect(queued).rejects.toMatchObject({ name: 'AbortError' })
+    await expect(wait(controller.signal)).rejects.toMatchObject({
+      name: 'AbortError'
+    })
+  })
+})
 
 describe('mapConcurrent', () => {
   it('bounds simultaneous work and preserves input order', async () => {

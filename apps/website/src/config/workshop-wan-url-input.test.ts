@@ -4,6 +4,7 @@ import { prepareModelRouterRender, router_render } from './router-render'
 import { initialWorkshopPageState } from './workshop-page-state'
 import { getRouterWorkshopModelDetail } from './workshop-router-content'
 import { createWorkshopUrlUploader } from './workshop-url-upload'
+import { prepareWorkshopRouterInput } from './workshop-request'
 
 function setup(slug = 'wan--reference-to-video-3.0--animate-images') {
   const model = getRouterWorkshopModelDetail(slug)
@@ -47,6 +48,87 @@ function storage() {
 
 describe('Wan 3 source URL rehosting', () => {
   it.for([
+    'https://example.com/image@2x.png',
+    'http://127.0.0.1/private@revision.png',
+    'https://cdn.jsdelivr.net.evil/gh/Comfy-Org/workflow_templates@revision/image.png',
+    'https://cdn.jsdelivr.net/gh/other/repo@revision/image.png',
+    'https://cdn.jsdelivr.net/gh/Comfy-Org/workflow_templates/image.png'
+  ])('does not locally download an unapproved source: %s', async (source) => {
+    const { model, form } = setup('wan--image-to-video-3.0--animate-images')
+    const transport = storage()
+    const prepared = await prepareModelRouterRender(
+      model,
+      {},
+      {
+        form: {
+          schema: form.schema,
+          values: { ...form.values, image_url: source }
+        },
+        uploadFile: transport.uploadFile
+      }
+    )
+    expect(prepared.body).toHaveProperty('input.media.0.url', source)
+    expect(transport.requests).not.toHaveBeenCalled()
+  })
+
+  it('rejects a credential-bearing lookalike before any download', async () => {
+    const { model, form } = setup('wan--image-to-video-3.0--animate-images')
+    const transport = storage()
+    await expect(
+      prepareModelRouterRender(
+        model,
+        {},
+        {
+          form: {
+            schema: form.schema,
+            values: {
+              ...form.values,
+              image_url:
+                'https://cdn.jsdelivr.net@127.0.0.1/private@revision.png'
+            }
+          },
+          uploadFile: transport.uploadFile
+        }
+      )
+    ).rejects.toMatchObject({ reason: 'validation' })
+    expect(transport.requests).not.toHaveBeenCalled()
+  })
+
+  it('uses contract policy, not the Router model name, to enable rehosting', async () => {
+    const { model, form } = setup('wan--image-to-video-3.0--animate-images')
+    if (!model.execution) throw new Error('Missing contract')
+    const transport = storage()
+    const source =
+      'https://cdn.jsdelivr.net/gh/Comfy-Org/workflow_templates@revision/contract-policy.png'
+    const values = { ...form.values, image_url: source }
+    const signal = new AbortController().signal
+    const unchanged = await prepareWorkshopRouterInput(
+      { ...model.execution, rehostUrlInputs: false },
+      values,
+      signal,
+      undefined,
+      transport.uploadFile
+    )
+    expect(unchanged).toHaveProperty('input.media.0.url', source)
+    expect(transport.requests).not.toHaveBeenCalled()
+    const rehosted = await prepareWorkshopRouterInput(
+      { ...model.execution, id: 'fixture/custom', rehostUrlInputs: true },
+      values,
+      signal,
+      undefined,
+      transport.uploadFile
+    )
+    expect(rehosted).toHaveProperty(
+      'input.media.0.url',
+      'https://storage.example/image-1.png'
+    )
+    expect(transport.requests).toHaveBeenCalledWith(
+      source,
+      expect.objectContaining({ redirect: 'error', credentials: 'omit' })
+    )
+  })
+
+  it.for([
     'wan--reference-to-video-3.0--animate-images',
     'wan--reference-to-video-3.0-prime--animate-images'
   ])('preserves reference order and retry bodies for %s', async (slug) => {
@@ -55,8 +137,8 @@ describe('Wan 3 source URL rehosting', () => {
     const values = {
       ...form.values,
       prompt: 'Combine the references',
-      image_url: `https://example.com/${slug}@revision/first.png`,
-      image_url_2: `https://example.com/${slug}@revision/second.png`
+      image_url: `https://cdn.jsdelivr.net/gh/Comfy-Org/workflow_templates@revision/${slug}/first.png`,
+      image_url_2: `https://cdn.jsdelivr.net/gh/Comfy-Org/workflow_templates@revision/${slug}/second.png`
     }
     const options = {
       form: { schema: form.schema, values },
@@ -97,7 +179,8 @@ describe('Wan 3 source URL rehosting', () => {
     const transport = storage()
     const values = {
       ...form.values,
-      image_url: 'https://example.com/active@revision.png'
+      image_url:
+        'https://cdn.jsdelivr.net/gh/Comfy-Org/workflow_templates@revision/active.png'
     }
     const options = {
       form: { schema: form.schema, values },
@@ -114,7 +197,7 @@ describe('Wan 3 source URL rehosting', () => {
             schema: form.schema,
             values: {
               ...values,
-              image_url: `https://example.com/other-${i}@revision.png`
+              image_url: `https://cdn.jsdelivr.net/gh/Comfy-Org/workflow_templates@revision/other-${i}.png`
             }
           }
         }
@@ -177,7 +260,8 @@ describe('Wan 3 source URL rehosting', () => {
         schema: form.schema,
         values: {
           ...form.values,
-          image_url: 'https://example.com/failure@revision.png'
+          image_url:
+            'https://cdn.jsdelivr.net/gh/Comfy-Org/workflow_templates@revision/failure.png'
         }
       },
       uploadFile: transport.uploadFile
@@ -220,7 +304,8 @@ describe('Wan 3 source URL rehosting', () => {
             schema: form.schema,
             values: {
               ...form.values,
-              image_url: 'https://example.com/aborted@revision.png'
+              image_url:
+                'https://cdn.jsdelivr.net/gh/Comfy-Org/workflow_templates@revision/aborted.png'
             }
           }
         }

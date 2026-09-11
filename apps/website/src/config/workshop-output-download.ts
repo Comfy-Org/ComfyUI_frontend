@@ -52,13 +52,17 @@ export async function downloadOutput(
     return save(url, fileName)
   const attachment = attachmentUrl(url, fileName)
   if (attachment) return save(attachment, fileName, '_blank')
+  const fallback = window.open('about:blank', '_blank')
+  if (fallback) fallback.opener = null
   try {
     const response = await fetch(url, { credentials: 'omit' })
     if (!response.ok) throw new Error(`Download failed: ${response.status}`)
     const objectUrl = URL.createObjectURL(await response.blob())
     save(objectUrl, fileName)
     setTimeout(() => URL.revokeObjectURL(objectUrl), OBJECT_URL_LIFETIME_MS)
+    fallback?.close()
   } catch {
-    window.open(url, '_blank', 'noopener')
+    if (!fallback) save(url, fileName)
+    else if (!fallback.closed) fallback.location.replace(url)
   }
 }

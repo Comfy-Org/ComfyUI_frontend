@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { routerWorkshopModels } from './workshop-browse-content'
 import { getRouterWorkshopModelDetail } from './workshop-router-content'
@@ -116,30 +116,43 @@ describe('creator widgets to native Router requests', () => {
     let grants = 0
     vi.stubGlobal(
       'fetch',
-      vi.fn<typeof fetch>(async (url, init) => {
+      vi.fn<typeof fetch>(async (_url, init) => {
         if (init?.method === 'POST') {
-          expect(String(url)).toMatch(/\/customers\/storage$/)
-          expect(new Headers(init.headers).get('Authorization')).toBe(
-            'Bearer token'
-          )
           grants += 1
           return Response.json({
             upload_url: `https://storage.example/upload-${grants}`,
             download_url: `https://storage.example/image-${grants}.png`
           })
         }
-        expect(new Headers(init?.headers).has('Authorization')).toBe(false)
         if (init?.method === 'PUT') {
-          expect(String(url)).toMatch(/^https:\/\/storage\.example\/upload-/)
-          expect(init.body).toBeInstanceOf(File)
           return new Response(null)
         }
-        expect(String(url)).toContain('@')
         return new Response('image bytes', {
           headers: { 'Content-Type': 'image/png' }
         })
       })
     )
+  })
+
+  afterEach(() => {
+    for (const [url, init] of vi.mocked(fetch).mock.calls) {
+      if (init?.method === 'POST') {
+        expect(String(url)).toMatch(/\/customers\/storage$/)
+        expect(new Headers(init.headers).get('Authorization')).toBe(
+          'Bearer token'
+        )
+      } else {
+        expect(new Headers(init?.headers).has('Authorization')).toBe(false)
+        if (init?.method === 'PUT') {
+          expect(String(url)).toMatch(/^https:\/\/storage\.example\/upload-/)
+          expect(init.body).toBeInstanceOf(File)
+        } else {
+          expect(String(url)).toMatch(
+            /^https:\/\/cdn\.jsdelivr\.net\/gh\/Comfy-Org\/workflow_templates@/
+          )
+        }
+      }
+    }
   })
 
   it.for([
@@ -257,17 +270,6 @@ describe('creator widgets to native Router requests', () => {
         true
       )
       expect(body).not.toHaveProperty('model')
-      if (
-        (detail.execution.id === 'wan/wan3.0-video' ||
-          detail.execution.id === 'wan/wan3.0-video-prime') &&
-        typeof values.image_url === 'string' &&
-        values.image_url.includes('@')
-      ) {
-        expect(body).toHaveProperty(
-          'input.media.0.url',
-          'https://storage.example/image-1.png'
-        )
-      }
     }
   )
 

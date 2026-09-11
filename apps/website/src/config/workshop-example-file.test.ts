@@ -70,7 +70,6 @@ describe('example source images', () => {
       let grants = 0
       const transport = vi.fn<typeof fetch>(async (url, init) => {
         if (init?.method === 'POST') {
-          expect(String(url)).toMatch(/\/customers\/storage$/)
           grants += 1
           return Response.json({
             upload_url: `https://storage.example/upload-${grants}`,
@@ -78,14 +77,10 @@ describe('example source images', () => {
           })
         }
         if (init?.method === 'PUT') {
-          expect(String(url)).toBe(`https://storage.example/upload-${grants}`)
           if (!(init.body instanceof File)) throw new Error('Missing upload')
-          expect(init.body.type).toBe('image/png')
           uploaded.push(await init.body.text())
           return new Response(null)
         }
-        expect(init?.credentials).toBe('omit')
-        expect(sources).toContain(String(url))
         downloads.push(String(url))
         return new Response(String(url), {
           headers: { 'Content-Type': 'image/png' }
@@ -114,6 +109,20 @@ describe('example source images', () => {
       expect(downloads).toEqual(rehosted ? sources : [])
       expect(uploaded).toEqual(rehosted ? sources : [])
       expect(transport).toHaveBeenCalledTimes(rehosted ? 6 : 0)
+      let uploadIndex = 0
+      for (const [url, init] of transport.mock.calls) {
+        if (init?.method === 'POST')
+          expect(String(url)).toMatch(/\/customers\/storage$/)
+        else if (init?.method === 'PUT') {
+          expect(String(url)).toBe(
+            `https://storage.example/upload-${++uploadIndex}`
+          )
+          expect(init.body).toMatchObject({ type: 'image/png' })
+        } else {
+          expect(init?.credentials).toBe('omit')
+          expect(sources).toContain(String(url))
+        }
+      }
     }
   )
   it('preserves all reference images in a native multi-image request, not filenames or URLs as Base64', async () => {

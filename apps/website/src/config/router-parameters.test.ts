@@ -36,6 +36,24 @@ describe('normalized Router parameters', () => {
       duration: 4
     })
   })
+  it('ignores unrankable options and preserves the first nearest value on ties', () => {
+    const fields = [select('duration', [-1, 0, 4, 6, 'automatic'])]
+    expect(mapRouterParameters(fields, {}, { duration_seconds: 5 })).toEqual({
+      duration: 4
+    })
+    expect(() =>
+      mapRouterParameters(
+        [select('duration', [-1, 0, 'automatic'])],
+        {},
+        { duration_seconds: 5 }
+      )
+    ).toThrow(
+      expect.objectContaining({
+        reason: 'validation',
+        fieldErrors: { duration: 'rejected' }
+      })
+    )
+  })
   it('bins duration, dimensions, aspect ratio and resolution into native enum values', () => {
     const fields = [
       prompt,
@@ -135,11 +153,26 @@ describe('normalized Router parameters', () => {
         model_specific: { prompt: 'Native', duration: 10 }
       })
     ).toEqual({ prompt: 'Native', duration: 10 })
-    expect(() => router.resolve({ model_specific: { duration: 7 } })).toThrow()
-    expect(() => router.resolve({ model_specific: { duraton: 5 } })).toThrow()
+    expect(() => router.resolve({ model_specific: { duration: 7 } })).toThrow(
+      expect.objectContaining({
+        reason: 'validation',
+        fieldErrors: { duration: 'badOption' }
+      })
+    )
+    expect(() => router.resolve({ model_specific: { duraton: 5 } })).toThrow(
+      expect.objectContaining({
+        reason: 'validation',
+        fieldErrors: { duraton: 'rejected' }
+      })
+    )
     expect(() =>
       router.resolve({ model_specific: { prompt: undefined } })
-    ).toThrow()
+    ).toThrow(
+      expect.objectContaining({
+        reason: 'validation',
+        fieldErrors: { prompt: 'required' }
+      })
+    )
     expect(defaults).toEqual({ prompt: 'Page example', duration: 10 })
   })
 
@@ -155,10 +188,18 @@ describe('normalized Router parameters', () => {
         max: 100
       }
     ]
-    expect(() => mapRouterParameters(fields, {}, { seed: NaN })).toThrow()
-    expect(() =>
-      mapRouterParameters(fields, {}, { style: 'surreal' })
-    ).toThrow()
+    expect(() => mapRouterParameters(fields, {}, { seed: NaN })).toThrow(
+      expect.objectContaining({
+        reason: 'validation',
+        fieldErrors: { seed: 'rejected' }
+      })
+    )
+    expect(() => mapRouterParameters(fields, {}, { style: 'surreal' })).toThrow(
+      expect.objectContaining({
+        reason: 'validation',
+        fieldErrors: { style: 'rejected' }
+      })
+    )
   })
 })
 
@@ -241,7 +282,12 @@ describe('normalized Router media', () => {
         {},
         { source_images: ['data:image/png;base64,?'] }
       )
-    ).toThrow()
+    ).toThrow(
+      expect.objectContaining({
+        reason: 'validation',
+        fieldErrors: { image_url: 'badType' }
+      })
+    )
     expect(() =>
       mapRouterParameters(
         [upload],
@@ -252,14 +298,24 @@ describe('normalized Router media', () => {
           ]
         }
       )
-    ).toThrow()
+    ).toThrow(
+      expect.objectContaining({
+        reason: 'validation',
+        fieldErrors: { image: 'tooLarge' }
+      })
+    )
     expect(() =>
       mapRouterParameters(
         [upload],
         {},
         { source_images: [new Blob(['audio'], { type: 'audio/mpeg' })] }
       )
-    ).toThrow()
+    ).toThrow(
+      expect.objectContaining({
+        reason: 'validation',
+        fieldErrors: { image: 'badType' }
+      })
+    )
   })
 
   it('keeps source, reference, mask and last-frame inputs separate', () => {

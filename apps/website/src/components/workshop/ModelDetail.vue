@@ -15,7 +15,6 @@ import type {
   PlaygroundExample
 } from '../../config/workshop-playground'
 import {
-  exampleValues,
   isVideoUrl,
   restoreFormValues,
   schemaForModel,
@@ -24,6 +23,7 @@ import {
 } from '../../config/workshop-playground'
 import {
   initialWorkshopPageState,
+  workshopExampleState,
   workshopPageSchema
 } from '../../config/workshop-page-state'
 import type { RunOutput, RunRecord, RunState } from '../../config/workshop-run'
@@ -381,7 +381,7 @@ function openExample(example: PlaygroundExample) {
   if (!example.sampleOnly) {
     nativeJson.value = false
     activeExample.value = example.fields ? example : undefined
-    values.value = exampleValues(schema.value, example)
+    values.value = workshopExampleState(model, example).values
   }
   activeExampleId.value = example.id
   runState.value = { status: 'example', output: exampleOutput(example) }

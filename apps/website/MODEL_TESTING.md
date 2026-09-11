@@ -161,8 +161,10 @@ pnpm --filter @comfyorg/website test:router-models \
 
 The whole-case timeout defaults to 2,700 seconds, enough for the shared Router
 client's first request and three deadline collections at its 660-second
-per-request limit. Each downloaded artifact is limited to 256 MiB.
-`--timeout-seconds` and `--max-artifact-mb` adjust these. A timeout
+per-request limit. The shared client also caps the complete retry sequence,
+including `Retry-After` waits, at 2,700 seconds. Each downloaded artifact is
+limited to 256 MiB. `--timeout-seconds` and `--max-artifact-mb` adjust the tester's
+limits; they cannot extend the shared client's deadline. A timeout
 or Ctrl-C can leave an accepted provider job running and billable. Inspect its
 saved request ID and idempotency key before deciding whether to submit again.
 Use `pnpm --filter @comfyorg/website test:router-models --help` for all options.

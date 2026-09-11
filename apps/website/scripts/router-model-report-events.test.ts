@@ -11,6 +11,46 @@ const source = { revision: '1234567', dirty: true, runId: 'campaign-1' }
 const at = '2026-09-11T00:00:00.000Z'
 
 describe('public Router result events', () => {
+  it('reports caller cancellation without a provider failure', () => {
+    expect(
+      routerReportUpdate(model, 'prod', source, {
+        at,
+        phase: 'generation',
+        status: 'cancelled'
+      })?.live
+    ).toMatchObject({ status: 'cancelled', failure: 'cancelled' })
+  })
+
+  it.for(['preflight', 'generation'])(
+    'bounds %s field names and omits malformed request IDs',
+    (phase) => {
+      const update = routerReportUpdate(model, 'prod', source, {
+        at,
+        phase,
+        status: 'failed',
+        requestId: 'a'.repeat(36),
+        fieldErrors: Object.fromEntries(
+          Array.from({ length: 120 }, (_, i) => [`field_${i}`, 'rejected'])
+        )
+      })
+      const result = update?.preflight ?? update?.live
+      expect(result?.fields).toHaveLength(100)
+      expect(result).not.toHaveProperty('requestId')
+    }
+  )
+
+  it('retains a valid Router request ID', () => {
+    const requestId = '12345678-1234-4234-8234-123456789012'
+    expect(
+      routerReportUpdate(model, 'prod', source, {
+        at,
+        phase: 'generation',
+        status: 'failed',
+        requestId
+      })?.live
+    ).toHaveProperty('requestId', requestId)
+  })
+
   it('keeps private requests, URLs and provider bodies out of concurrency results', () => {
     const update = routerReportUpdate(model, 'prod', source, {
       at,

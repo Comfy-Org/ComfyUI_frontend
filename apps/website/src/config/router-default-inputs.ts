@@ -5,7 +5,7 @@ import { mapRouterParameters } from './router-parameters'
 import type { FieldSchema, FormValues } from './workshop-playground'
 
 const templateInputs =
-  'https://cdn.jsdelivr.net/gh/Comfy-Org/workflow_templates@main/input/'
+  'https://cdn.jsdelivr.net/gh/Comfy-Org/workflow_templates@aaac56dd5cc5497533d92cbe50edc35ea660e587/input/'
 const image = `${templateInputs}denim_girl.png`
 const portrait =
   'https://cdn.jsdelivr.net/gh/Comfy-Org/workflow_templates@1e272b544243e539b182da4ac26b6616224716f2/input/close_up_portrait.png'
@@ -126,15 +126,20 @@ function repairedValues(
   model: WorkshopModelDetail,
   values: FormValues
 ): FormValues {
+  const request = model.execution?.creator?.request
+  const example = model.execution?.inputSchema.example
   if (
-    model.routerId.startsWith('gemini-interactions/') &&
-    values.input === 'Reply with the single word: ok'
+    request?.kind === 'callback' &&
+    request.callback === 'gemini-video' &&
+    example !== null &&
+    typeof example === 'object' &&
+    !Array.isArray(example) &&
+    typeof example.input === 'string' &&
+    values.input === example.input
   )
     return {
       ...values,
-      input: model.slug.endsWith('--edit-videos')
-        ? videoEditPrompt
-        : videoPrompt
+      input: request.options.mode === 'edit' ? videoEditPrompt : videoPrompt
     }
   if (
     model.slug === 'bfl--flux-pro-expand--edit-images' &&

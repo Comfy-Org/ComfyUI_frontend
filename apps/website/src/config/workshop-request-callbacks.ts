@@ -419,10 +419,13 @@ export function prepareWorkshopRequestCallback(
     }
     case 'gemini-video': {
       const { input, image_url, last_frame_url } = values
+      const videos = files.video ?? []
+      if (request.options.mode === 'edit' && !videos.length)
+        throw new WorkshopRouterError('validation', null, { video: 'required' })
       const media = [
         ...(image_url ? [{ type: 'image', uri: image_url }] : []),
         ...(last_frame_url ? [{ type: 'image', uri: last_frame_url }] : []),
-        ...(files.video ?? []).map((file) => ({
+        ...videos.map((file) => ({
           type: 'video',
           data: file.data,
           mime_type: file.mimeType

@@ -3,6 +3,7 @@ import { expect, it, vi } from 'vitest'
 import { prepareModelRouterRender } from '../src/config/router-render'
 import { loadWorkshopExampleFile } from '../src/config/workshop-example-file'
 import { getRouterWorkshopModelDetail } from '../src/config/workshop-router-content'
+import { prepareWorkshopRequestCallback } from '../src/config/workshop-request-callbacks'
 
 vi.mock(
   import('../src/config/workshop-example-file'),
@@ -10,6 +11,27 @@ vi.mock(
     ...(await importOriginal()),
     loadWorkshopExampleFile: vi.fn()
   })
+)
+
+it.for([{}, { image_url: 'https://example.com/still.png' }])(
+  'rejects an edit without source video even when an image is present',
+  (images) => {
+    expect(() =>
+      prepareWorkshopRequestCallback(
+        {
+          kind: 'callback',
+          callback: 'gemini-video',
+          options: { mode: 'edit' }
+        },
+        { values: { input: 'Edit the scene', ...images }, files: {} }
+      )
+    ).toThrow(
+      expect.objectContaining({
+        reason: 'validation',
+        fieldErrors: { video: 'required' }
+      })
+    )
+  }
 )
 
 it.for([

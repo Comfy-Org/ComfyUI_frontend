@@ -9,6 +9,8 @@ import {
 
 const downloadedSources = new Map<string, FileValue>()
 const formSources = new WeakMap<FormValues, ReadonlyMap<string, FileValue>>()
+const REHOST_SOURCE =
+  /^https:\/\/cdn\.jsdelivr\.net\/gh\/Comfy-Org\/workflow_templates@[^/]+\//
 
 async function rehostUrlInputs(
   fields: readonly FieldSchema[],
@@ -19,7 +21,8 @@ async function rehostUrlInputs(
     const source = values[field.name]
     return urlUploadField(field) &&
       typeof source === 'string' &&
-      source.includes('@')
+      isHttpImageSource(source) &&
+      REHOST_SOURCE.test(source)
       ? [{ field, source }]
       : []
   })

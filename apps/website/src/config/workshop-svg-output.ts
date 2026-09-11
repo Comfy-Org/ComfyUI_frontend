@@ -12,9 +12,6 @@ async function browserRasterizer(svg: string, signal?: AbortSignal) {
 }
 
 async function downloadSvg(url: string, signal: AbortSignal): Promise<Blob> {
-  const parsed = new URL(url)
-  if (parsed.protocol !== 'https:' || parsed.username || parsed.password)
-    throw new Error('Unsafe SVG URL')
   const response = await fetch(url, {
     signal,
     credentials: 'omit',
@@ -51,15 +48,33 @@ export async function svgOutputs(
   signal?: AbortSignal,
   rasterize: WorkshopSvgRasterizer = browserRasterizer
 ): Promise<RunOutput[]> {
+  signal?.throwIfAborted()
+  if (typeof source === 'string') {
+    const parsed = URL.parse(source)
+    if (
+      !parsed ||
+      parsed.protocol !== 'https:' ||
+      parsed.username ||
+      parsed.password
+    )
+      throw new Error('Unsafe SVG URL')
+  }
   const requestSignal = AbortSignal.any([
     ...(signal ? [signal] : []),
     AbortSignal.timeout(10_000)
   ])
   requestSignal.throwIfAborted()
-  const svg =
-    typeof source === 'string'
-      ? await downloadSvg(source, requestSignal)
-      : source.slice(0, source.size, 'application/octet-stream')
+  let svg: Blob
+  try {
+    svg =
+      typeof source === 'string'
+        ? await downloadSvg(source, requestSignal)
+        : source.slice(0, source.size, 'application/octet-stream')
+  } catch (error) {
+    signal?.throwIfAborted()
+    if (typeof source !== 'string') throw error
+    return [{ kind: 'other', url: source, fileName }]
+  }
   if (svg.size > 4 * 1024 * 1024) throw new Error('SVG exceeds the byte limit')
   const original: RunOutput = {
     kind: 'other',
@@ -82,7 +97,7 @@ export async function svgOutputs(
       original
     ]
   } catch (error) {
-    if (requestSignal.aborted) {
+    if (signal?.aborted) {
       URL.revokeObjectURL(original.url)
       throw error
     }

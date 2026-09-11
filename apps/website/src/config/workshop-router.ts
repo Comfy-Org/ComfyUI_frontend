@@ -8,6 +8,7 @@ import { validateWorkshopInput } from './workshop-json-schema'
 import type { WorkshopSvgRasterizer } from './workshop-svg-output'
 
 const RUN_TIMEOUT_MS = 660_000
+const TOTAL_RUN_TIMEOUT_MS = 2_700_000
 const DEADLINE_COLLECTIONS = 3
 const IN_FLIGHT_RETRIES = 5
 const IN_FLIGHT_MAX_WAIT_MS = 10_000
@@ -21,10 +22,13 @@ function isParkedDeadline(response: Response): boolean {
 
 function inFlightWaitMs(response: Response): number | undefined {
   const retryAfter = response.headers.get('Retry-After')
-  if (response.status !== 409 || retryAfter === null) return
+  if (response.status !== 409 || !retryAfter?.trim()) return
   const seconds = Number(retryAfter)
-  if (!Number.isFinite(seconds) || seconds < 0) return
-  return Math.min(seconds * 1000, IN_FLIGHT_MAX_WAIT_MS)
+  const delay = Number.isFinite(seconds)
+    ? seconds * 1000
+    : Date.parse(retryAfter) - Date.now()
+  if (!Number.isFinite(delay) || delay < 0) return
+  return Math.min(delay, IN_FLIGHT_MAX_WAIT_MS)
 }
 
 function waitFor(ms: number, signal: AbortSignal): Promise<void> {
@@ -116,11 +120,17 @@ export async function runWorkshopRouter(options: {
   let requestId: string | null = null
   let deadlineCollections = 0
   let inFlightRetries = 0
+  const deadlineAt = Date.now() + TOTAL_RUN_TIMEOUT_MS
   try {
     for (;;) {
+      const remaining = deadlineAt - Date.now()
+      if (remaining <= 0) requestController.abort()
       signal.throwIfAborted()
       clearTimeout(timeout)
-      timeout = setTimeout(() => requestController.abort(), RUN_TIMEOUT_MS)
+      timeout = setTimeout(
+        () => requestController.abort(),
+        Math.min(RUN_TIMEOUT_MS, remaining)
+      )
       const response = await fetch(
         `${WORKSHOP_ROUTER_BASE_URL}/v2/models/${options.contract.id}`,
         {

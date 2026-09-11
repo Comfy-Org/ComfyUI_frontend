@@ -2,11 +2,17 @@
 import '@testing-library/jest-dom/vitest'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor, within } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { RunOutput, RunState } from '../../config/workshop-run'
 import { WORKSHOP_CLOUD_BASE_URL } from '../../config/workshop-env'
 import PlaygroundOutput from './PlaygroundOutput.vue'
+import { downloadOutput } from '../../config/workshop-output-download'
+
+vi.mock(import('../../config/workshop-output-download'), async (original) => ({
+  ...(await original()),
+  downloadOutput: vi.fn(async () => {})
+}))
 
 const output = (name: string): RunOutput => ({
   kind: 'image',
@@ -157,6 +163,32 @@ describe('PlaygroundOutput', () => {
     expect(
       screen.getByTestId('output-download').getAttribute('href')
     ).toContain('latest')
+  })
+
+  it('downloads the selected batch item and the selected earlier run', async () => {
+    const user = userEvent.setup()
+    render(PlaygroundOutput, {
+      props: {
+        state: succeeded({
+          ...output('latest'),
+          urls: ['https://example.com/a.webp', 'https://example.com/b.webp']
+        }),
+        earlier: [{ output: output('first'), attachments: [] }],
+        now: 2_000
+      }
+    })
+    await user.click(screen.getByTestId('output-thumb-1'))
+    await user.click(screen.getByTestId('output-download'))
+    expect(downloadOutput).toHaveBeenLastCalledWith(
+      'https://example.com/b.webp',
+      'latest.webp'
+    )
+    await user.click(screen.getByTestId('earlier-run-0'))
+    await user.click(screen.getByTestId('output-download'))
+    expect(downloadOutput).toHaveBeenLastCalledWith(
+      'https://example.com/first.webp',
+      'first.webp'
+    )
   })
 
   it('starts an earlier run at its own first output', async () => {

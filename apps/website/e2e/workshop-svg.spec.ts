@@ -145,6 +145,7 @@ test('the CLI renders in a bounded lazy browser and cancels queued work', async 
   let launches = 0
   let active = 0
   let peak = 0
+  const saturated = Promise.withResolvers<void>()
   chromium.launch = async (options) => {
     launches += 1
     const browser = await launch({ ...options, proxy })
@@ -156,6 +157,8 @@ test('the CLI renders in a bounded lazy browser and cancels queued work', async 
       page.on('close', () => {
         active -= 1
       })
+      if (active === 4) saturated.resolve()
+      await saturated.promise
       return page
     }
     return browser

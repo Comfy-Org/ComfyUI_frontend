@@ -115,8 +115,7 @@ export async function prepareWorkshopRouterInput(
     values,
     signal,
     uploadFile,
-    contract.id === 'wan/wan3.0-video' ||
-      contract.id === 'wan/wan3.0-video-prime'
+    contract.rehostUrlInputs === true
   )
   if (contract.creator) {
     const errors = validateForm(schema, values)

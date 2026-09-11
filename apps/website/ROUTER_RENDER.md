@@ -7,6 +7,9 @@ For setup, account concurrency overrides and image-first test commands, see
 page's Run button and `scripts/router-render.ts` use it. The script wrapper reads
 `COMFY_KEY`; browser callers pass a credential or an async credential getter.
 
+The public `router_render` / `router_for_model` / `router_get_*` names follow the
+requested shared API contract. Internal TypeScript helpers use camelCase.
+
 ```ts
 import { router_for_model, router_render } from './scripts/router-render'
 
@@ -184,7 +187,8 @@ During live execution, the Node tester sets Undici's header and body inactivity
 timeouts to `--timeout-seconds`, then restores the previous dispatcher and closes
 its connections. This avoids Node's default five-minute header timeout cutting
 off a paid generation early. The per-case abort deadline and the shared Router
-client's 660-second request limit still apply. Browser transport is unchanged.
+client's 660-second per-request limit still apply. All retries and waits share
+a 2,700-second total deadline, on both the website and the Node client.
 
 When Router's own deadline passes it answers HTTP 504 `deadline_exceeded` and
 parks a submitted generation. `runWorkshopRouter` then repeats the identical

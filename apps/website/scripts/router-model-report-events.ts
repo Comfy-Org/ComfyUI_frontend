@@ -68,9 +68,9 @@ export function routerReportUpdate(
 ): RouterModelReportUpdate | undefined {
   const event = eventSchema.parse(data)
   const base = { ...model, environment, inputMode: 'page-defaults' as const }
-  const fields = Object.keys(event.fieldErrors ?? {}).filter((name) =>
-    /^[A-Za-z_][A-Za-z0-9_.[\]-]{0,79}$/.test(name)
-  )
+  const fields = Object.keys(event.fieldErrors ?? {})
+    .filter((name) => /^[A-Za-z_][A-Za-z0-9_.[\]-]{0,79}$/.test(name))
+    .slice(0, 100)
   if (event.phase === 'preflight') {
     if (event.status !== 'ready' && event.status !== 'failed') return
     return {
@@ -79,12 +79,11 @@ export function routerReportUpdate(
     }
   }
   if (!['passed', 'failed', 'cancelled'].includes(event.status)) return
+  const requestId = z.string().uuid().safeParse(event.requestId)
   const common = {
     at: event.at,
     source,
-    ...(event.requestId && /^[\da-f-]{36}$/i.test(event.requestId)
-      ? { requestId: event.requestId }
-      : {}),
+    ...(requestId.success ? { requestId: requestId.data } : {}),
     ...(event.response ? { httpStatus: event.response.status } : {})
   }
   if (event.status === 'passed')

@@ -180,17 +180,24 @@ async function main() {
       appendFileSync(journal, `${JSON.stringify(dated)}\n`, { mode: 0o600 })
       const model = cases.find((item) => item.slug === event.slug)
       if (model && isMediaKind(model.modality)) {
-        const update = routerReportUpdate(
-          {
-            slug: model.slug,
-            routerId: model.routerId,
-            modality: model.modality
-          },
-          environment,
-          source,
-          dated
-        )
-        if (update) report.update(update)
+        try {
+          const update = routerReportUpdate(
+            {
+              slug: model.slug,
+              routerId: model.routerId,
+              modality: model.modality
+            },
+            environment,
+            source,
+            dated
+          )
+          if (update) report.update(update)
+        } catch {
+          process.stderr.write(
+            `Report update rejected for ${model.slug}; event retained in ${journal}\n`
+          )
+          process.exitCode = 1
+        }
       }
     }
     await writeFile(

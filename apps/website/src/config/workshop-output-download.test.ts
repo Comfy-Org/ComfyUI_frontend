@@ -64,7 +64,11 @@ describe('downloadOutput', () => {
   })
 
   it('saves output from a host that allows CORS under its file name', async () => {
+    vi.useFakeTimers()
     const clicks = recordClicks()
+    vi.spyOn(window, 'open').mockReturnValue(window)
+    const close = vi.spyOn(window, 'close').mockImplementation(() => {})
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
     vi.stubGlobal(
       'fetch',
       vi.fn<typeof globalThis.fetch>(
@@ -84,25 +88,96 @@ describe('downloadOutput', () => {
         target: ''
       }
     ])
+    expect(close).toHaveBeenCalledOnce()
+    expect(revoke).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(60_000)
+    expect(revoke).toHaveBeenCalledWith('blob:https://comfy.org/output')
   })
 
-  it('opens output from a host without CORS in a new tab instead of leaving the page', async () => {
+  it.for(['network', 403, 500])(
+    'keeps the output reachable after %s download failure',
+    async (failure) => {
+      const clicks = recordClicks()
+      const response = Promise.withResolvers<Response>()
+      const fetch = vi.fn<typeof globalThis.fetch>(() => response.promise)
+      vi.stubGlobal('fetch', fetch)
+      const open = vi.spyOn(window, 'open').mockReturnValue(window)
+      const navigate = vi
+        .spyOn(window.location, 'replace')
+        .mockImplementation(() => {})
+      const close = vi.spyOn(window, 'close').mockImplementation(() => {})
+      const blob = vi.spyOn(URL, 'createObjectURL')
+      const result = downloadOutput(
+        'https://gen.krea.ai/images/a.png',
+        'krea.png'
+      )
+
+      expect(open).toHaveBeenCalledWith('about:blank', '_blank')
+      expect(open.mock.invocationCallOrder[0]).toBeLessThan(
+        fetch.mock.invocationCallOrder[0]
+      )
+      expect(window.opener).toBeNull()
+      expect(navigate).not.toHaveBeenCalled()
+      if (typeof failure === 'string')
+        response.reject(new TypeError('Failed to fetch'))
+      else response.resolve(new Response('Access denied', { status: failure }))
+      await result
+
+      expect(navigate).toHaveBeenCalledWith('https://gen.krea.ai/images/a.png')
+      expect(open).toHaveBeenCalledOnce()
+      expect(close).not.toHaveBeenCalled()
+      expect(blob).not.toHaveBeenCalled()
+      expect(clicks).toEqual([])
+    }
+  )
+
+  it('does not reopen a fallback the user closed while the download was pending', async () => {
+    const response = Promise.withResolvers<Response>()
+    vi.stubGlobal('fetch', () => response.promise)
+    const open = vi.spyOn(window, 'open').mockReturnValue(window)
+    vi.spyOn(window, 'closed', 'get').mockReturnValue(true)
+    const navigate = vi
+      .spyOn(window.location, 'replace')
+      .mockImplementation(() => {})
+    const result = downloadOutput('https://cdn.example.com/a.png', 'a.png')
+    response.resolve(new Response(null, { status: 403 }))
+    await result
+    expect(navigate).not.toHaveBeenCalled()
+    expect(open).toHaveBeenCalledOnce()
+  })
+
+  it('retains a native download when the browser refused the fallback window', async () => {
     const clicks = recordClicks()
-    vi.stubGlobal(
-      'fetch',
-      vi.fn<typeof globalThis.fetch>(async () => {
-        throw new TypeError('Failed to fetch')
-      })
-    )
-    const open = vi.spyOn(window, 'open').mockReturnValue(null)
+    vi.spyOn(window, 'open').mockReturnValue(null)
+    vi.stubGlobal('fetch', async () => new Response(null, { status: 500 }))
+    await downloadOutput('https://cdn.example.com/a.png', 'a.png')
+    expect(clicks).toEqual([
+      { href: 'https://cdn.example.com/a.png', download: 'a.png', target: '' }
+    ])
+  })
 
-    await downloadOutput('https://gen.krea.ai/images/a.png', 'krea.png')
+  it.for(['blob:https://comfy.org/output', 'data:image/png;base64,AA=='])(
+    'downloads local output without a network request or popup: %s',
+    async (url) => {
+      const clicks = recordClicks()
+      const fetch = vi.fn<typeof globalThis.fetch>()
+      vi.stubGlobal('fetch', fetch)
+      const open = vi.spyOn(window, 'open')
+      await downloadOutput(url, 'output.png')
+      expect(clicks).toEqual([
+        { href: url, download: 'output.png', target: '' }
+      ])
+      expect(fetch).not.toHaveBeenCalled()
+      expect(open).not.toHaveBeenCalled()
+    }
+  )
 
-    expect(clicks).toEqual([])
-    expect(open).toHaveBeenCalledWith(
-      'https://gen.krea.ai/images/a.png',
-      '_blank',
-      'noopener'
+  it('preserves a fragment and sanitizes an empty download filename', () => {
+    expect(attachmentUrl(`${signed}#frame`, '')).toBe(
+      `${signed}&response-content-disposition=attachment%3B%20filename%3D%22output%22#frame`
     )
+    expect(
+      attachmentUrl(`${signed}&response-content-disposition=inline`, 'a.mp4')
+    ).toBeUndefined()
   })
 })

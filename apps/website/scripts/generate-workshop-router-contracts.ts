@@ -119,7 +119,9 @@ export function compileWorkshopContracts(
         advancedFields: [],
         output
       })
-      const record = { ...parsedRecord, ...adaptRouterModel(parsedRecord) }
+      const record = workshopContractRecordSchema.parse(
+        adaptRouterModel(parsedRecord)
+      )
       validatorFor(record.inputSchema)
       if (record.output.format !== 'binary' && record.output.schema)
         validatorFor(record.output.schema)

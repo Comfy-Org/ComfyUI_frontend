@@ -6,6 +6,7 @@ import { prepareModelRouterRender } from './router-render'
 import { routerWorkshopModels } from './workshop-browse-content'
 import { getRouterWorkshopModelDetail } from './workshop-router-content'
 import { validateForm } from './workshop-playground'
+import { applyRouterDefaultInputs } from './router-default-inputs'
 
 function modelFor(slug: string) {
   const model = getRouterWorkshopModelDetail(slug)
@@ -14,6 +15,45 @@ function modelFor(slug: string) {
 }
 
 describe('runnable page defaults', () => {
+  it('repairs the current Gemini contract example without matching literal prompt text', () => {
+    const model = modelFor('gemini--omni-1.1-flash--animate-images')
+    if (!model.execution) throw new Error('Missing Gemini contract')
+    const page = initialWorkshopPageState(model)
+    const updated = {
+      ...model,
+      execution: {
+        ...model.execution,
+        inputSchema: {
+          ...model.execution.inputSchema,
+          example: { input: 'An upstream replacement smoke-test prompt' }
+        }
+      }
+    }
+    const repaired = applyRouterDefaultInputs(updated, page.schema, {
+      ...page.values,
+      input: 'An upstream replacement smoke-test prompt'
+    })
+    expect(repaired.input).toBe(
+      'Generate a short video of a red fox walking through a sunlit forest. The camera follows smoothly as leaves move in the breeze.'
+    )
+    const authored = applyRouterDefaultInputs(updated, page.schema, {
+      ...page.values,
+      input: 'An editorial animation prompt'
+    })
+    expect(authored.input).toBe('An editorial animation prompt')
+  })
+
+  it.for([
+    'wavespeed--seedvr2-image--edit-images',
+    'beeble--switchx-video-edit--edit-videos'
+  ])('pins fallback source media for %s to a content commit', (slug) => {
+    const model = modelFor(slug)
+    const page = initialWorkshopPageState({ ...model, examples: [] })
+    expect(JSON.stringify(page.values)).toMatch(
+      /workflow_templates@[a-f0-9]{40}\/input\//
+    )
+    expect(JSON.stringify(page.values)).not.toContain('workflow_templates@main')
+  })
   it.for([
     'byteplus--seedance-2-5-first-last-frame--animate-images',
     'byteplus--seedance-2-fast-first-last-frame--animate-images'

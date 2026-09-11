@@ -27,6 +27,8 @@ function imageAndMask(): WorkshopMediaBinding[] {
 }
 
 export function adaptRouterModel(contract: WorkshopContract): WorkshopContract {
+  if (['wan/wan3.0-video', 'wan/wan3.0-video-prime'].includes(contract.id))
+    return { ...contract, rehostUrlInputs: true }
   if (['luma/photon-1', 'luma/photon-flash-1'].includes(contract.id)) {
     const output = contract.output
     if (output.format === 'binary' || !output.schema)

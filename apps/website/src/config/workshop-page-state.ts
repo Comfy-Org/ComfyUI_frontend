@@ -32,6 +32,21 @@ export interface InitialWorkshopPageState {
   readonly values: FormValues
 }
 
+export function workshopExampleState(
+  model: WorkshopModelDetail,
+  example: PlaygroundExample
+) {
+  const schema = workshopPageSchema(model, example)
+  return {
+    schema,
+    values: applyRouterDefaultInputs(
+      model,
+      schema,
+      exampleValues(schema, example)
+    )
+  }
+}
+
 /** The exact form state a model page presents before the visitor changes it. */
 export function initialWorkshopPageState(
   model: WorkshopModelDetail
@@ -41,15 +56,21 @@ export function initialWorkshopPageState(
   const activeExample =
     firstExample?.fields && !firstExample.sampleOnly ? firstExample : undefined
   const schema = workshopPageSchema(model, activeExample)
-  const values =
+  const state =
     firstExample && !firstExample.sampleOnly
-      ? exampleValues(schema, firstExample)
-      : defaultValues(schema, model.defaults)
+      ? workshopExampleState(model, firstExample)
+      : {
+          schema,
+          values: applyRouterDefaultInputs(
+            model,
+            schema,
+            defaultValues(schema, model.defaults)
+          )
+        }
   return {
     examples,
     firstExample,
     activeExample,
-    schema,
-    values: applyRouterDefaultInputs(model, schema, values)
+    ...state
   }
 }

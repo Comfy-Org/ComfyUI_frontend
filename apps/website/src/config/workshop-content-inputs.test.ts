@@ -210,20 +210,14 @@ describe('use-case input contracts', () => {
     const stored = 'https://storage.example/reference.png'
     const transport = vi.fn<typeof fetch>(async (url, init) => {
       if (init?.method === 'POST') {
-        expect(String(url)).toMatch(/\/customers\/storage$/)
         return Response.json({
           upload_url: 'https://storage.example/upload',
           download_url: stored
         })
       }
       if (init?.method === 'PUT') {
-        expect(String(url)).toBe('https://storage.example/upload')
-        if (!(init.body instanceof File)) throw new Error('Missing upload')
-        expect(init.body.type).toBe('image/png')
-        expect(await init.body.text()).toBe(source)
         return new Response(null)
       }
-      expect(String(url)).toBe(source)
       return new Response(String(url), {
         headers: { 'Content-Type': 'image/png' }
       })
@@ -241,6 +235,14 @@ describe('use-case input contracts', () => {
       }
     })
     expect(transport).toHaveBeenCalledTimes(3)
+    expect(transport.mock.calls[0][0]).toBe(source)
+    expect(String(transport.mock.calls[1][0])).toMatch(/\/customers\/storage$/)
+    expect(transport.mock.calls[2][0]).toBe('https://storage.example/upload')
+    const uploaded = transport.mock.calls[2][1]?.body
+    expect(uploaded).toBeInstanceOf(File)
+    if (!(uploaded instanceof File)) throw new Error('Missing upload')
+    expect(uploaded.type).toBe('image/png')
+    expect(await uploaded.text()).toBe(source)
     await expect(
       request(slug, { image_url: '' }, upload)
     ).rejects.toMatchObject({
