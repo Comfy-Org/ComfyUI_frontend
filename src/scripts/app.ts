@@ -12,6 +12,7 @@ import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConc
 import { setBackendNodeText, st, t } from '@/i18n'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { ChangeTracker } from '@/scripts/changeTracker'
+import { isApiJson, sanitizeNodeName } from '@/scripts/appUtil'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import { createMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'
 import {
@@ -190,19 +191,7 @@ function isMeshModelFile(file: File): boolean {
   return SUPPORTED_MESH_EXTENSIONS.has(name.slice(name.lastIndexOf('.')))
 }
 
-import {
-  isApiJson,
-  positionBatchLayout,
-  sanitizeNodeName,
-  stackNodesVertically
-} from './appUtil'
-
-export {
-  isApiJson,
-  positionBatchLayout,
-  sanitizeNodeName,
-  stackNodesVertically
-}
+export { isApiJson, sanitizeNodeName }
 
 function syncPromotedComboHostOptions(rootGraph: LGraph): void {
   const widgetValueStore = useWidgetValueStore()
@@ -2269,14 +2258,42 @@ export class ComfyApp {
     this.canvas.selectItems(videoNodes)
   }
 
+  /**
+   * Positions batched nodes in drag and drop
+   * @param nodes
+   * @param batchNode
+   */
   positionNodes(nodes: LGraphNode[]): void {
-    if (stackNodesVertically(nodes)) {
-      this.canvas.graph?.change()
-    }
+    if (nodes.length <= 1) return
+
+    const [x, y] = nodes[0].getBounding()
+    const nodeHeight = 150
+
+    nodes.forEach((node, index) => {
+      if (index > 0) {
+        node.pos = [x, y + nodeHeight * index + 25 * (index + 1)]
+      }
+    })
+
+    this.canvas.graph?.change()
   }
 
   positionBatchNodes(nodes: LGraphNode[], batchNode: LGraphNode): void {
-    positionBatchLayout(nodes, batchNode)
+    const [x, y, width] = nodes[0].getBounding()
+    batchNode.pos = [x + width + 100, y + 30]
+
+    // Retrieving Node Height is inconsistent
+    let height = 0
+    if (nodes[0].type === 'LoadImage') {
+      height = 344
+    }
+
+    nodes.forEach((node, index) => {
+      if (index > 0) {
+        node.pos = [x, y + height * index + 25 * (index + 1)]
+      }
+    })
+
     this.canvas.graph?.change()
   }
 
