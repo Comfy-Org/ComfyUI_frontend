@@ -13,21 +13,21 @@
     "shareTooltip": "Compartilhar fluxo de trabalho"
   },
   "agent": {
-    "addFromAssets": "Adicionar pelo painel de recursos",
-    "addNodesFromGraph": "Adicionar nós do grafo",
+    "addFromAssets": "Arraste um ativo do painel de ativos",
+    "addNodesFromGraph": "Mencionar nós do grafo",
     "addPromptToSend": "Adicionar um prompt para enviar",
     "addToPrompt": "Adicionar ao prompt",
     "alpha": "ALFA",
     "askComfyAgent": "Pergunte ao Comfy Agent",
     "assetNotAttachable": "Imagens, vídeos, áudios, modelos 3D e arquivos de texto podem ser anexados",
     "attach": "Anexar um arquivo",
-    "attachFiles": "Anexar imagens ou arquivos",
+    "attachFiles": "Envie imagens ou arquivos",
     "attachmentTooLarge": "{name} é maior que {limit}",
     "attachmentUploadFailed": "Não foi possível enviar {name}",
     "backToPreviousChat": "Voltar à conversa anterior",
     "caption": "O agente de IA pode cometer erros",
     "captionExpanded": "O agente de IA pode cometer erros. Verifique sua resposta novamente.",
-    "changeWorkflowForChat": "Alterar o fluxo de trabalho desta conversa",
+    "changeWorkflowForChat": "Altere o fluxo de trabalho que o agente pode editar",
     "chatOptions": "Opções de conversa",
     "chooseWorkflow": "Escolha um fluxo de trabalho",
     "chooseWorkflowForChat": "Escolha um fluxo de trabalho para este chat",
@@ -69,13 +69,26 @@
     "noNodesToMention": "Não há nós neste fluxo de trabalho",
     "nodeSelection": {
       "bannerSubtitle": "Selecione um ou mais nós para adicionar como referência",
-      "bannerTitle": "Adicionar nós do grafo",
+      "bannerTitle": "Mencionar nós do grafo",
       "exit": "Sair do modo",
       "selectNode": "Selecionar nó"
     },
     "notHelpful": "Não foi útil",
     "openWorkflowTab": "Abrir {name}",
-    "placeholder": "Descreva ideias, {'@'} para referenciar,\nadicione nós do grafo ou arraste recursos",
+    "paywall": {
+      "addCredits": "Adicionar créditos",
+      "body": {
+        "local": "Você gastou seu saldo de créditos. Adicione créditos para manter o agente em execução.",
+        "member": "Este espaço de trabalho usou todos os seus créditos. Peça ao proprietário do espaço de trabalho para adicionar mais.",
+        "salesManaged": "Este espaço de trabalho é faturado pela equipe da sua conta Comfy. Entre em contato com ela para adicionar créditos.",
+        "subscribed": "Este espaço de trabalho gastou seus créditos mensais e seu saldo de recarga. Adicione créditos para manter o agente em execução.",
+        "subscriptionRequired": "Você ficou sem créditos disponíveis."
+      },
+      "subscribe": "Assinar",
+      "title": "Sem créditos",
+      "upgradePlan": "Fazer upgrade do plano"
+    },
+    "placeholder": "Descreva ideias, {'@'} para referenciar,\nmencione nós do grafo ou arraste ativos",
     "ranToolCalls": "Executou {count} chamada de ferramenta | Executou {count} chamadas de ferramenta",
     "ranToolCallsTimed": "Executou {count} chamada de ferramenta por {seconds} segundos | Executou {count} chamadas de ferramenta por {seconds} segundos",
     "remove": "Remover",
@@ -2944,7 +2957,6 @@
     "Edit Subgraph Widgets": "Editar widgets do subgrafo",
     "Exit Subgraph": "Sair do subgrafo",
     "Experimental: Browse Model Assets": "Experimental: Navegar por ativos de modelo",
-    "Experimental: Enable AssetAPI": "Experimental: Ativar AssetAPI",
     "Experimental: Enable Nodes 2_0": "Experimental: Ativar Nodes 2.0",
     "Export": "Exportar",
     "Export (API)": "Exportar (API)",
@@ -4278,7 +4290,7 @@
     "additionalCredits": "Créditos adicionais",
     "additionalCreditsInUse": "Em uso",
     "additionalCreditsInfo": "Sobre créditos adicionais",
-    "additionalCreditsTooltip": "Créditos que você adiciona além do seu plano. Usados após o término dos créditos mensais. Cada um expira um ano após a compra.",
+    "additionalCreditsTooltip": "Créditos adicionados além do seu plano. Usados após os créditos do seu plano acabarem. Cada um expira um ano após a compra.",
     "benefits": {
       "benefit1": "$10 em créditos mensais para Partner Nodes — recarregue quando necessário",
       "benefit1FreeTier": "Mais créditos mensais, recarregue a qualquer momento",
@@ -4420,6 +4432,10 @@
       "ownerDescription": "Atualize seu método de pagamento para restaurar a assinatura do workspace e executar fluxos de trabalho.",
       "ownerRunLabel": "Atualize o pagamento para executar",
       "ownerRunTooltip": "Atualize o pagamento para restaurar esta assinatura",
+      "paymentFailedMemberDescription": "Peça ao proprietário do espaço de trabalho para atualizar a forma de pagamento do espaço de trabalho.",
+      "paymentFailedMemberTitle": "O pagamento deste espaço de trabalho não foi processado",
+      "paymentFailedOwnerDescription": "Atualize sua forma de pagamento para continuar executando fluxos de trabalho.",
+      "paymentFailedOwnerTitle": "Seu pagamento não foi processado",
       "title": "Assinatura pausada"
     },
     "perMonth": "/ mês",
@@ -4450,6 +4466,7 @@
       "billedEachMonth": "{amount} cobrados a cada mês. Cancele a qualquer momento.",
       "changePaymentMethod": "Alterar",
       "commitment": "compromisso",
+      "completePayment": "Conclua seu pagamento",
       "completeVerification": "Concluir verificação",
       "confirm": "Confirmar",
       "confirmChange": "Confirmar alteração",
@@ -4475,6 +4492,7 @@
       "hideFeatures": "Ocultar recursos",
       "newMonthlySubscription": "Nova assinatura mensal",
       "nextPaymentDue": "Próximo pagamento em {date}. Cancele a qualquer momento.",
+      "parkedCheckoutDetail": "Seu checkout anterior ainda está aguardando uma forma de pagamento. Conclua seu pagamento para ativar este plano.",
       "payAndSubscribe": "Pagar e assinar",
       "paymentMethod": "Método de pagamento",
       "paymentPopupBlocked": "Não foi possível abrir a página de pagamento — permita pop-ups e tente novamente.",
@@ -4591,7 +4609,7 @@
       "perkProjectAssets": "Gestão de projetos e ativos",
       "perkRolePermissions": "Permissões baseadas em função",
       "perkSharedPool": "Pool de créditos compartilhado para todos os membros",
-      "tagline": "Escolha sua própria assinatura mensal de créditos. Obtenha um desconto maior com uma assinatura de mais créditos.",
+      "tagline": "Escolha sua própria assinatura de créditos. Receba um desconto maior com uma assinatura de créditos maior.",
       "unavailable": "Este plano de equipe não está disponível no momento."
     },
     "teamPlanIncludes": "Seu plano inclui tudo do {plan}, além de:",
@@ -4634,6 +4652,7 @@
     "usdPerMonthPerMember": "USD / mês / membro",
     "usdPerYear": "USD / ano",
     "usedAfterMonthly": "Usado após o término dos créditos mensais",
+    "usedAfterYearly": "Usados após os créditos anuais acabarem",
     "videoEstimate": "Gera aproximadamente {count} vídeos de 5s*",
     "videoEstimateExplanation": "Essas estimativas são baseadas no template Wan 2.2 Image-to-Video usando as configurações padrão (5 segundos, 640x640, 16fps, amostragem de 4 etapas).",
     "videoEstimateHelp": "Mais detalhes sobre este template",
@@ -4646,7 +4665,12 @@
     "whatsIncluded": "O que está incluído:",
     "workspaceNotSubscribed": "Este espaço de trabalho não possui uma assinatura",
     "yearly": "Anual",
+    "yearlyCredits": "créditos por ano",
     "yearlyCreditsLabel": "Total de créditos anuais",
+    "yearlyCreditsPerMemberLabel": "Créditos anuais / membro",
+    "yearlyCreditsUsedUpTitle": "Os créditos anuais se esgotaram. Reposição em {date}",
+    "yearlyCreditsUsedUpTitleNoDate": "Os créditos anuais se esgotaram",
+    "yearlyUsageProgress": "{used} de {total} créditos anuais usados",
     "yourPlanIncludes": "Seu plano inclui:"
   },
   "tabMenu": {
@@ -4959,6 +4983,16 @@
       "linkToGlobalSeed": "Valor Global",
       "randomize": "Valor Aleatório",
       "randomizeDesc": "Embaralha o valor aleatoriamente após cada geração"
+    },
+    "vueOnly": {
+      "Chart": "Gráfico",
+      "Compositor": "Compositor",
+      "Fileupload": "Envio de arquivo",
+      "Galleria": "Galeria",
+      "ImageCompare": "Comparação de imagens",
+      "Markdown": "Markdown",
+      "MultiSelect": "Seleção múltipla",
+      "SelectButton": "Botão de seleção"
     }
   },
   "workflowService": {
@@ -5025,6 +5059,10 @@
         "body": "A assinatura deste workspace está pausada. Atualize o pagamento para retomar.",
         "memberBody": "A assinatura deste workspace está pausada. Os administradores do workspace precisam atualizar o método de pagamento.",
         "title": "Assinatura pausada"
+      },
+      "planChange": {
+        "body": "Seu plano atual permanece ativo até lá.",
+        "title": "Seu plano muda para {plan} em {date}"
       },
       "updatePayment": "Atualizar pagamento",
       "warning": {

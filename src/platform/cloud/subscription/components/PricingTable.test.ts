@@ -1,8 +1,9 @@
-import { createTestingPinia } from '@pinia/testing'
+import type * as DistributionModule from '@/platform/distribution/types'
+import { useAuthStore } from '@/stores/authStore'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, reactive, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import PricingTable from '@/platform/cloud/subscription/components/PricingTable.vue'
@@ -30,9 +31,9 @@ const mockAccessBillingPortal = vi.fn()
 const mockReportError = vi.fn()
 const mockTrackBeginCheckout = vi.fn()
 const mockTrackBillingEvent = vi.fn()
-const mockUserId = ref<string | undefined>('user-123')
+
 const mockGetAuthHeader = vi.fn(() =>
-  Promise.resolve({ Authorization: 'Bearer test-token' })
+  Promise.resolve({ Authorization: 'Bearer test-token' as const })
 )
 const mockGetCheckoutAttribution = vi.hoisted(() => vi.fn(() => ({})))
 const mockLocalStorage = vi.hoisted(() => {
@@ -65,7 +66,7 @@ Object.defineProperty(globalThis, 'localStorage', {
   writable: true
 })
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     canAccessSubscriptionFeatures: computed(
       () => mockCanAccessSubscriptionFeatures.value
@@ -89,14 +90,14 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
-vi.mock('@/composables/auth/useAuthActions', () => ({
+vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
   useAuthActions: () => ({
     accessBillingPortal: mockAccessBillingPortal,
     reportError: mockReportError
   })
 }))
 
-vi.mock('@/composables/useErrorHandling', () => ({
+vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({
     wrapWithErrorHandlingAsync: vi.fn(
       (fn, errorHandler) =>
@@ -114,35 +115,22 @@ vi.mock('@/composables/useErrorHandling', () => ({
   })
 }))
 
-vi.mock('@/stores/authStore', () => ({
-  useAuthStore: () =>
-    reactive({
-      getFirebaseAuthHeader: mockGetAuthHeader,
-      fetchWithCustomerRecovery: (input: string, init?: RequestInit) =>
-        fetch(input, init),
-      userId: computed(() => mockUserId.value)
-    }),
-  AuthStoreError: class extends Error {
-    readonly status: number | undefined
-    constructor(message: string, status?: number) {
-      super(message)
-      this.status = status
-    }
-  }
-}))
-
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackBeginCheckout: mockTrackBeginCheckout,
     trackBillingEvent: mockTrackBillingEvent
   })
 }))
 
-vi.mock('@/platform/telemetry/utils/checkoutAttribution', () => ({
-  getCheckoutAttribution: mockGetCheckoutAttribution
-}))
+vi.mock<unknown>(
+  import('@/platform/telemetry/utils/checkoutAttribution'),
+  () => ({
+    getCheckoutAttribution: mockGetCheckoutAttribution
+  })
+)
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
+  ...(await importOriginal<typeof DistributionModule>()),
   isCloud: true
 }))
 
@@ -164,7 +152,7 @@ const i18n = createI18n({
         subscribeTo: 'Subscribe to {plan}',
         changeTo: 'Change to {plan}',
         tierNameYearly: '{name} Yearly',
-        yearlyCreditsLabel: 'Yearly credits',
+        yearlyCreditsLabel: 'Total yearly credits',
         monthlyCreditsLabel: 'Monthly credits',
         maxDurationLabel: 'Max duration',
         gpuLabel: 'GPU',
@@ -208,7 +196,7 @@ function renderComponent() {
       // verify checkout-failure telemetry; without an app-level errorHandler,
       // Vue's dev-mode default handler re-throws it as an unhandled rejection.
       config: { errorHandler: () => {} },
-      plugins: [createTestingPinia({ createSpy: vi.fn }), i18n],
+      plugins: [i18n],
       components: {
         Button
       },
@@ -239,12 +227,22 @@ function renderComponent() {
 
 const onChooseTeamWorkspace = vi.fn()
 
+beforeEach(() => {
+  Object.assign(useAuthStore(), { userId: 'user-123' })
+  vi.mocked(useAuthStore().getFirebaseAuthHeader).mockImplementation(
+    mockGetAuthHeader
+  )
+  vi.mocked(useAuthStore().fetchWithCustomerRecovery).mockImplementation(
+    (input, init) => fetch(input, init)
+  )
+})
+
 describe('PricingTable', () => {
   beforeEach(() => {
     mockCanAccessSubscriptionFeatures.value = false
     mockSubscriptionTier.value = null
     mockSubscriptionDuration.value = 'MONTHLY'
-    mockUserId.value = 'user-123'
+    Object.assign(useAuthStore(), { userId: 'user-123' })
     mockAccessBillingPortal.mockResolvedValue(true)
     mockLocalStorage.__reset()
     vi.mocked(global.fetch).mockResolvedValue({
@@ -361,12 +359,12 @@ describe('PricingTable', () => {
     it('should use the latest userId value when it changes after mount', async () => {
       mockCanAccessSubscriptionFeatures.value = true
       mockSubscriptionTier.value = 'STANDARD'
-      mockUserId.value = 'user-early'
+      Object.assign(useAuthStore(), { userId: 'user-early' })
 
       renderComponent()
       await flushPromises()
 
-      mockUserId.value = 'user-late'
+      Object.assign(useAuthStore(), { userId: 'user-late' })
 
       const creatorButton = screen
         .getAllByRole('button')
@@ -523,6 +521,31 @@ describe('PricingTable', () => {
     })
   })
 
+  describe('credit allotment display', () => {
+    it('states the whole-year allotment and a matching video estimate on the yearly cycle', async () => {
+      renderComponent()
+      await flushPromises()
+
+      expect(screen.getAllByText('Total yearly credits')).toHaveLength(3)
+      expect(screen.getByText('50,400')).toBeTruthy()
+      expect(screen.getByText('~4,560')).toBeTruthy()
+      expect(screen.getByText('253,200')).toBeTruthy()
+      expect(screen.getByText('~22,980')).toBeTruthy()
+    })
+
+    it('states the monthly allotment on the monthly cycle', async () => {
+      renderComponent()
+      await flushPromises()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Monthly' }))
+      await nextTick()
+
+      expect(screen.getAllByText('Monthly credits')).toHaveLength(3)
+      expect(screen.getByText('4,200')).toBeTruthy()
+      expect(screen.getByText('~380')).toBeTruthy()
+    })
+  })
+
   describe('team workspace link', () => {
     it('should emit chooseTeamWorkspace when clicking "Need team workspace?" link', async () => {
       renderComponent()
@@ -539,3 +562,10 @@ describe('PricingTable', () => {
     })
   })
 })
+
+vi.mock(import('firebase/auth'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  setPersistence: vi.fn().mockResolvedValue(undefined),
+  onAuthStateChanged: vi.fn(),
+  onIdTokenChanged: vi.fn()
+}))

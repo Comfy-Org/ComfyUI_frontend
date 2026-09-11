@@ -54,6 +54,10 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 import AgentPanel from './components/agent/AgentPanel.vue'
 import OnboardingCoach from './components/agent/OnboardingCoach.vue'
@@ -82,11 +86,14 @@ import type {
 import { useAgentSession } from './composables/agent/useAgentSession'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import { createAgentRestClient } from './services/agent/agentRestClient'
+import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
+import { resolveAgentPaywallPresentation } from './services/agent/agentPaywallPresentation'
 import type {
   DraftSnapshot,
   OpenTabsSnapshot
 } from './services/agent/agentRestClient'
 import { createAgentEventSource } from './services/agent/agentEventSource'
+import { createStandaloneAgentEventSource } from './services/agent/standaloneAgentEventSource'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import {
@@ -102,6 +109,28 @@ const CrdtDevPanel = defineAsyncComponent(
 
 const { t } = useI18n()
 const toast = useToastStore()
+const { open: openAccountPrecondition } = useAccountPreconditionDialog()
+const { workspaceRole } = useWorkspaceUI()
+const { tier: subscriptionTier } = useBillingContext()
+const {
+  canTopUp,
+  canSubscribeSelfServe,
+  isReady: billingCapabilitiesReady
+} = useBillingCapabilities()
+const paywallPresentation = computed(() =>
+  resolveAgentPaywallPresentation({
+    role: workspaceRole.value,
+    tier: subscriptionTier.value,
+    // The initial false/false pair is not an authoritative sales-managed
+    // result while the shared capability source initializes in the background.
+    canTopUp: billingCapabilitiesReady.value
+      ? canTopUp.value
+      : workspaceRole.value === 'owner',
+    canSubscribeSelfServe: billingCapabilitiesReady.value
+      ? canSubscribeSelfServe.value
+      : workspaceRole.value === 'owner'
+  })
+)
 const sidebarTabStore = useSidebarTabStore()
 const { isBuilderMode } = useAppMode()
 
@@ -112,7 +141,14 @@ const userName = computed(
 
 const rest = createAgentRestClient()
 
-const events = createAgentEventSource(api)
+const events =
+  import.meta.env.VITE_AGENT_STANDALONE === 'true'
+    ? createStandaloneAgentEventSource()
+    : createAgentEventSource(api)
+
+function onPaywallAction(action: AgentPaywallAction): void {
+  openAccountPrecondition(action === 'addCredits' ? 'credits' : 'subscription')
+}
 
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
@@ -1070,6 +1106,7 @@ function onPanelDrop(event: DragEvent): void {
       :workflow-detached="workflowDetached"
       :get-mention-nodes="mentionableNodes"
       :get-mention-assets="mentionableAssets"
+      :paywall-presentation="paywallPresentation"
       @select-tab="onSelectTab"
       @clear-workflow="onClearWorkflow"
       @send="onSend"
@@ -1083,6 +1120,7 @@ function onPanelDrop(event: DragEvent): void {
       @feedback="onFeedback"
       @answer-ask="answerAsk"
       @open-workflow="onOpenApprovalWorkflow"
+      @paywall-action="onPaywallAction"
       @new-chat="onNewChat"
       @toggle-size="agentPanelStore.toggleMaximize()"
       @close="onClosePanel"

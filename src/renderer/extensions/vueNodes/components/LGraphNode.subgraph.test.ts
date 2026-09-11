@@ -1,10 +1,11 @@
 /**
  * Tests for NodeHeader subgraph functionality
  */
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { render, screen, fireEvent } from '@testing-library/vue'
+import type { Pinia } from 'pinia'
+import { getActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
 import { toNodeId } from '@/types/nodeId'
 import { nextTick } from 'vue'
@@ -26,11 +27,11 @@ const mockApp: {
   nodePreviewImages: Record<string, never>
 } = vi.hoisted(() => ({ nodeOutputs: {}, nodePreviewImages: {} }))
 // Mock dependencies
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: mockApp
 }))
 
-vi.mock('@/utils/graphTraversalUtil', async (importOriginal) => {
+vi.mock(import('@/utils/graphTraversalUtil'), async (importOriginal) => {
   const actual = (await importOriginal()) as Record<string, unknown>
   return {
     ...actual,
@@ -38,24 +39,13 @@ vi.mock('@/utils/graphTraversalUtil', async (importOriginal) => {
   }
 })
 
-vi.mock('@/composables/useErrorHandling', () => ({
+vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({
     toastErrorHandler: vi.fn()
   })
 }))
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: vi.fn((key) => key)
-  }),
-  createI18n: vi.fn(() => ({
-    global: {
-      t: vi.fn((key) => key)
-    }
-  }))
-}))
-
-vi.mock('@/i18n', () => ({
+vi.mock<unknown>(import('@/i18n'), () => ({
   st: vi.fn((key) => key),
   t: vi.fn((key) => key),
   i18n: {
@@ -65,9 +55,17 @@ vi.mock('@/i18n', () => ({
   }
 }))
 
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: {} },
+  missingWarn: false,
+  fallbackWarn: false
+})
+
 describe('Vue Node - Subgraph Functionality', () => {
   let rootGraph: LGraph
-  let pinia: ReturnType<typeof createTestingPinia>
+  let pinia: Pinia
 
   // Helper to setup common mocks
   const setupMocks = async (isSubgraph = true, hasGraph = true) => {
@@ -80,8 +78,7 @@ describe('Vue Node - Subgraph Functionality', () => {
   }
 
   beforeEach(() => {
-    pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
-    setActivePinia(pinia)
+    pinia = getActivePinia()!
     rootGraph = new LGraph()
   })
 
@@ -102,9 +99,8 @@ describe('Vue Node - Subgraph Functionality', () => {
     return render(LGraphNode, {
       props,
       global: {
-        plugins: [pinia],
+        plugins: [pinia, i18n],
         mocks: {
-          $t: vi.fn((key: string) => key),
           $primevue: { config: {} }
         }
       }
