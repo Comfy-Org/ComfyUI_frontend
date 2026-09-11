@@ -1,5 +1,8 @@
 import { DownloadStatus } from '@comfyorg/comfyui-electron-types'
-import type { DownloadProgressUpdate } from '@comfyorg/comfyui-electron-types'
+import type {
+  DownloadProgressUpdate,
+  DownloadState
+} from '@comfyorg/comfyui-electron-types'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 
 import { createElectronDownloadService } from './createElectronDownloadService'
@@ -7,12 +10,12 @@ import { createElectronDownloadService } from './createElectronDownloadService'
 let progressCallback: ((update: DownloadProgressUpdate) => void) | null = null
 
 const mockDownloadManager = {
-  getAllDownloads: vi.fn().mockResolvedValue([]),
-  startDownload: vi.fn().mockResolvedValue(true),
-  pauseDownload: vi.fn().mockResolvedValue(undefined),
-  resumeDownload: vi.fn().mockResolvedValue(undefined),
-  cancelDownload: vi.fn().mockResolvedValue(undefined),
-  deleteModel: vi.fn().mockResolvedValue(true),
+  getAllDownloads: vi.fn(async (): Promise<DownloadState[]> => []),
+  startDownload: vi.fn(async () => true),
+  pauseDownload: vi.fn(async () => undefined),
+  resumeDownload: vi.fn(async () => undefined),
+  cancelDownload: vi.fn(async () => undefined),
+  deleteModel: vi.fn(async () => true),
   onDownloadProgress: vi.fn((cb: (update: DownloadProgressUpdate) => void) => {
     progressCallback = cb
   })
@@ -33,7 +36,7 @@ describe('createElectronDownloadService', () => {
       {
         url: 'https://example.com/model.safetensors',
         filename: 'model.safetensors',
-        state: 'in_progress',
+        state: DownloadStatus.IN_PROGRESS,
         receivedBytes: 500,
         totalBytes: 1000,
         isPaused: false
