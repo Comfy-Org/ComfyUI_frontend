@@ -10,8 +10,7 @@
       class="z-1001 w-64 rounded-lg border border-border-default bg-base-background px-4 py-1 shadow-interface will-change-[transform,opacity] data-[side=bottom]:slide-in-from-top-2 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
       @open-auto-focus="onOpenAutoFocus"
       @close-auto-focus="onCloseAutoFocus"
-      @escape-key-down.prevent
-      @keydown.escape.stop="closeWithEscape"
+      @escape-key-down.prevent="closeWithEscape"
     >
       <ListboxRoot
         multiple

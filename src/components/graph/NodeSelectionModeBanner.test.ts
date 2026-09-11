@@ -4,6 +4,7 @@ import { getActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
+import { installKeybindingDispatcher } from '@/platform/keybindings/__fixtures__/installKeybindingDispatcher'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -32,6 +33,7 @@ describe('NodeSelectionModeBanner', () => {
   })
 
   it('leaves Escape to an open dialog, then exits picking when it closes', async () => {
+    installKeybindingDispatcher()
     const store = useCanvasStore()
     store.isPickingNodes = true
     render(NodeSelectionModeBanner, {

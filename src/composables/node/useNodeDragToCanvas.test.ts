@@ -1,3 +1,5 @@
+import { useKeybindingService } from '@/platform/keybindings/keybindingService'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
@@ -31,6 +33,13 @@ const { mockConvertEventToCanvasOffset, mockSelectItems, mockCanvas } =
 vi.mock(import('@/services/litegraphService'))
 
 vi.mock(import('@/i18n'))
+
+let disposeDispatcher: () => void
+beforeEach(() => {
+  useSettingStore().settingValues['Comfy.Keybinding.CapturePhase'] = true
+  disposeDispatcher = useKeybindingService().install()
+})
+afterEach(() => disposeDispatcher())
 
 describe('useNodeDragToCanvas', () => {
   const mockNodeDef = {
@@ -92,10 +101,6 @@ describe('useNodeDragToCanvas', () => {
         'pointerup',
         expect.any(Function),
         true
-      )
-      expect(addEventListenerSpy).toHaveBeenCalledWith(
-        'keydown',
-        expect.any(Function)
       )
     })
 
@@ -202,8 +207,12 @@ describe('useNodeDragToCanvas', () => {
 
       expect(isDragging.value).toBe(true)
 
-      const keyEvent = new KeyboardEvent('keydown', { key: 'Escape' })
-      document.dispatchEvent(keyEvent)
+      const keyEvent = new KeyboardEvent('keydown', {
+        key: 'Escape',
+        bubbles: true,
+        cancelable: true
+      })
+      document.body.dispatchEvent(keyEvent)
 
       expect(isDragging.value).toBe(false)
     })
@@ -213,7 +222,7 @@ describe('useNodeDragToCanvas', () => {
       startDrag(mockNodeDef)
 
       const keyEvent = new KeyboardEvent('keydown', { key: 'Enter' })
-      document.dispatchEvent(keyEvent)
+      document.body.dispatchEvent(keyEvent)
 
       expect(isDragging.value).toBe(true)
     })

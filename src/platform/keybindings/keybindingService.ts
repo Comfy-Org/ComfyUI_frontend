@@ -13,7 +13,6 @@ import { isModalOpen } from '@/utils/modalUtil'
 import type { ContextSnapshot } from './contextKeyStore'
 import { useContextKeyStore } from './contextKeyStore'
 import { CORE_KEYBINDINGS } from './defaults'
-import { consultEscapeOverride } from './escapeOverride'
 import { createHoldBindings } from './holdBindings'
 import { KeyComboImpl } from './keyCombo'
 import { KeybindingImpl } from './keybinding'
@@ -422,13 +421,6 @@ export function useKeybindingService() {
       return
     }
     if (blockedByModal(keybinding, keyCombo, context, event)) return
-    // A registered override (e.g. the agent composer owning Escape while a
-    // turn is running) wins over the workspace binding, but only after menus
-    // and dialogs have had first refusal above.
-    if (event.key === 'Escape' && consultEscapeOverride(event)) {
-      event.preventDefault()
-      return
-    }
     execute(keybinding, event)
   }
 

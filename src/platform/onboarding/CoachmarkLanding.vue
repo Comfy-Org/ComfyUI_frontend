@@ -72,7 +72,7 @@
 </template>
 
 <script setup lang="ts">
-import { useEventListener } from '@vueuse/core'
+import { useKeybinding } from '@/platform/keybindings/useKeybinding'
 import { useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -103,10 +103,12 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-// The global keybinding handler preventDefaults Escape before Reka's
-// DismissableLayer sees it, so Reka skips its own dismiss; do it explicitly.
-useEventListener(document, 'keydown', (e) => {
-  if (e.key === 'Escape') emit('skip')
+useKeybinding({
+  id: 'Comfy.Onboarding.DismissLanding',
+  label: () => t('keybindings.dismissOnboarding'),
+  binding: { combo: { key: 'Escape' }, when: 'modalOpen' },
+  enabled: () => true,
+  run: () => emit('skip')
 })
 
 const startButtonRef = useTemplateRef('startButtonRef')

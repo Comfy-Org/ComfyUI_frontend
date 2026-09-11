@@ -2,14 +2,10 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { autoUpdate, offset, shift, useFloating } from '@floating-ui/vue'
 import type { Middleware } from '@floating-ui/vue'
-import {
-  useElementBounding,
-  useEventListener,
-  useTimeoutFn,
-  useWindowSize
-} from '@vueuse/core'
+import { useElementBounding, useTimeoutFn, useWindowSize } from '@vueuse/core'
 import { FocusScope } from 'reka-ui'
 import { computed, nextTick, onBeforeUnmount, ref, useId, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 import Button from '@/components/ui/button/Button.vue'
@@ -19,6 +15,7 @@ import {
   clampSpotlight,
   unionRect
 } from '@/platform/onboarding/coachmarkLayout'
+import { useKeybinding } from '@/platform/keybindings/useKeybinding'
 import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
 import { useTelemetry } from '@/platform/telemetry'
 import type { AgentOnboardingAction } from '@/platform/telemetry/types'
@@ -231,17 +228,14 @@ const spotlightStyle = computed(() => {
   )
 })
 
-useEventListener(
-  document,
-  'keydown',
-  (event) => {
-    if (!active.value || !target.value || event.key !== 'Escape') return
-    event.preventDefault()
-    event.stopPropagation()
-    onSkip()
-  },
-  { capture: true }
-)
+const { t } = useI18n()
+useKeybinding({
+  id: 'Comfy.Agent.DismissCoach',
+  label: () => t('keybindings.dismissAgentCoach'),
+  binding: { combo: { key: 'Escape' }, when: 'modalOpen' },
+  enabled: () => active.value && target.value !== null,
+  run: onSkip
+})
 </script>
 
 <template>

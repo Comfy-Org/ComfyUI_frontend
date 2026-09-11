@@ -3,10 +3,12 @@
 import { render, screen, fireEvent } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { getActivePinia } from 'pinia'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useKeybindingService } from '@/platform/keybindings/keybindingService'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 
 import { downloadFile } from '@/base/common/downloadUtil'
@@ -59,6 +61,13 @@ const i18n = createI18n({
     }
   }
 })
+
+let disposeDispatcher: () => void
+beforeEach(() => {
+  useSettingStore().settingValues['Comfy.Keybinding.CapturePhase'] = true
+  disposeDispatcher = useKeybindingService().install()
+})
+afterEach(() => disposeDispatcher())
 
 describe('ImagePreview', () => {
   const defaultProps = {
