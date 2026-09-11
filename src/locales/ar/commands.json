@@ -278,9 +278,6 @@
   "Comfy_Subgraph_SetSearchAliases": {
     "label": "تعيين الأسماء المستعارة للبحث في الرسم البياني الفرعي"
   },
-  "Comfy_ToggleAssetAPI": {
-    "label": "تجريبي: تمكين AssetAPI"
-  },
   "Comfy_ToggleCanvasInfo": {
     "label": "أداء اللوحة"
   },

@@ -7,9 +7,11 @@ import {
   recordDevEvent,
   stringifyDevEvents
 } from './devPanelLog'
+import { setCrdtDebugEnabled } from './crdtDebugGate'
 
 describe('devPanelLog', () => {
   beforeEach(() => {
+    setCrdtDebugEnabled(true)
     clearDevEvents()
   })
 
@@ -92,5 +94,39 @@ describe('devPanelLog', () => {
       clamped: 'Uint8ClampedArray(3)',
       view: 'DataView(2)'
     })
+  })
+
+  it('keeps a value referenced twice from sibling positions', () => {
+    const shared = { id: 'node-7' }
+    recordDevEvent('doc_update', { added: shared, removed: shared })
+
+    const serialized = stringifyDevEvents(devEvents.value)
+    expect(serialized).not.toContain('[Circular]')
+    expect(serialized.match(/node-7/g)).toHaveLength(2)
+  })
+
+  it('survives a genuine cycle instead of throwing', () => {
+    const cyclic: Record<string, unknown> = { kind: 'self' }
+    cyclic.self = cyclic
+    recordDevEvent('doc_update', cyclic)
+
+    expect(() => stringifyDevEvents(devEvents.value)).not.toThrow()
+    expect(stringifyDevEvents(devEvents.value)).toContain('[Circular]')
+  })
+
+  it('carries the scope and level a consumer filters on', () => {
+    recordDevEvent('doc_update', null, { scope: 'wire', level: 'warn' })
+
+    const [event] = devEvents.value
+    expect(event.scope).toBe('wire')
+    expect(event.level).toBe('warn')
+  })
+
+  it('does not retain events while the debug instrument is disabled', () => {
+    setCrdtDebugEnabled(false)
+
+    recordDevEvent('doc_update', { seq: 1 })
+
+    expect(devEvents.value).toHaveLength(0)
   })
 })

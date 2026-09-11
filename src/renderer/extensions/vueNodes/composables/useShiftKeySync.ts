@@ -39,7 +39,8 @@ export function useShiftKeySync() {
 
     // Lazy-initialize canvas reference on first use
     if (!canvasEl) {
-      canvasEl = app.canvas?.canvas ?? null
+      const getCanvasElement = (): HTMLCanvasElement | null => app.canvas.canvas
+      canvasEl = getCanvasElement()
       if (!canvasEl) return // Canvas not ready yet
     }
 

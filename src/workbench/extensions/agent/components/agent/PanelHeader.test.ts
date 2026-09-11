@@ -7,12 +7,12 @@ import { i18n } from '@/i18n'
 
 import PanelHeader from './PanelHeader.vue'
 
-const tooltipBindings = new WeakMap<Element, DirectiveBinding['value']>()
+const tooltipBindings = new WeakMap<Element, unknown>()
 const tooltipDirectiveStub = {
-  mounted(element: Element, binding: DirectiveBinding) {
+  mounted(element: Element, binding: DirectiveBinding<unknown>) {
     tooltipBindings.set(element, binding.value)
   },
-  updated(element: Element, binding: DirectiveBinding) {
+  updated(element: Element, binding: DirectiveBinding<unknown>) {
     tooltipBindings.set(element, binding.value)
   }
 }
@@ -28,6 +28,14 @@ function mount(isMaximized = false) {
 }
 
 describe('PanelHeader', () => {
+  it('exposes the heading id the dock landmark labels', () => {
+    mount()
+
+    expect(
+      screen.getByRole('heading', { name: 'Comfy Agent' })
+    ).toHaveAttribute('id', 'agent-panel-title')
+  })
+
   it('passes the full tooltip config to the button directive', () => {
     mount()
 

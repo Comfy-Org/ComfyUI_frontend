@@ -32,7 +32,7 @@ function createDefaultCropState() {
   }
 }
 
-vi.mock('@/composables/useImageCrop', async () => {
+vi.mock<unknown>(import('@/composables/useImageCrop'), async () => {
   return {
     ASPECT_RATIOS: {
       '1:1': 1,
@@ -52,7 +52,7 @@ const upstreamHolder = vi.hoisted(() => ({
   ref: null as Ref<unknown> | null
 }))
 
-vi.mock('@/composables/useUpstreamValue', async () => {
+vi.mock<unknown>(import('@/composables/useUpstreamValue'), async () => {
   const { ref } = await import('vue')
   return {
     useUpstreamValue: () => {
@@ -125,7 +125,7 @@ function makeWidget(
     value: { x: 0, y: 0, width: 512, height: 512 },
     options: {},
     ...overrides
-  } as SimplifiedWidget<Bounds>
+  }
 }
 
 function renderWidget(
