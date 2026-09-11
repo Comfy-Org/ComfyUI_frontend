@@ -113,23 +113,31 @@ test.describe(
         .poll(() => comfyPage.nodeOps.getGraphNodesCount())
         .toBe(initialNodeCount + 1)
 
+      const expectState = async (
+        position: typeof initialPosition,
+        steps: string,
+        nodeCount: number
+      ) => {
+        await expect.poll(() => node.getBounding()).toEqual(position)
+        await expect(input).toHaveValue(steps)
+        await expect
+          .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+          .toBe(nodeCount)
+      }
+
       await comfyPage.keyboard.undo()
-      await expect
-        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-        .toBe(initialNodeCount)
+      await expectState(movedPosition, '31', initialNodeCount)
       await comfyPage.keyboard.undo()
-      await expect(input).toHaveValue(initialSteps)
+      await expectState(movedPosition, initialSteps, initialNodeCount)
       await comfyPage.keyboard.undo()
-      await expect.poll(() => node.getBounding()).toEqual(initialPosition)
+      await expectState(initialPosition, initialSteps, initialNodeCount)
 
       await comfyPage.keyboard.redo()
-      await expect.poll(() => node.getBounding()).toEqual(movedPosition)
+      await expectState(movedPosition, initialSteps, initialNodeCount)
       await comfyPage.keyboard.redo()
-      await expect(input).toHaveValue('31')
+      await expectState(movedPosition, '31', initialNodeCount)
       await comfyPage.keyboard.redo()
-      await expect
-        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-        .toBe(initialNodeCount + 1)
+      await expectState(movedPosition, '31', initialNodeCount + 1)
     })
 
     test('undo remains scoped to the edited workflow after switching tabs', async ({
