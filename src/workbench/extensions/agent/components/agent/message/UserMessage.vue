@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useClipboard } from '@vueuse/core'
-import { computed } from 'vue'
+import { useClipboard, useClipboardItems } from '@vueuse/core'
+import { computed, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -18,6 +18,10 @@ import { agentMessageText } from '../../../utils/agentMessageText'
 import { workflowReferenceParts } from '../../../utils/workflowReferenceParts'
 import AgentTooltip from '../AgentTooltip.vue'
 import ReplyAssetGroup from './ReplyAssetGroup.vue'
+import {
+  selectedUserMessageClipboard,
+  userMessageClipboard
+} from './userMessageClipboard'
 
 const {
   text,
@@ -44,7 +48,53 @@ const promptParts = computed(() =>
 const readableText = computed(() =>
   agentMessageText({ text, workflowReferences, tags, attachments })
 )
-const { copy, copied } = useClipboard({ copiedDuring: 2000, legacy: true })
+const bubble = useTemplateRef<HTMLElement>('bubble')
+const plainClipboard = useClipboard({ copiedDuring: 2000, legacy: true })
+const richClipboard = useClipboardItems({ copiedDuring: 2000 })
+const copied = computed(
+  () => plainClipboard.copied.value || richClipboard.copied.value
+)
+
+async function copyMessage(): Promise<void> {
+  if (
+    workflowReferences.length &&
+    richClipboard.isSupported.value &&
+    typeof ClipboardItem !== 'undefined'
+  ) {
+    const content = userMessageClipboard({
+      text,
+      workflowReferences,
+      tags,
+      attachments
+    })
+    try {
+      await richClipboard.copy([
+        new ClipboardItem({
+          'text/plain': new Blob([content.text], { type: 'text/plain' }),
+          'text/html': new Blob([content.html], { type: 'text/html' })
+        })
+      ])
+      return
+    } catch {
+      await plainClipboard.copy(content.text)
+      return
+    }
+  }
+  await plainClipboard.copy(readableText.value)
+}
+
+function copySelection(event: ClipboardEvent): void {
+  if (!bubble.value || !event.clipboardData) return
+  const content = selectedUserMessageClipboard(
+    bubble.value,
+    document.getSelection()
+  )
+  if (!content) return
+  event.clipboardData.setData('text/plain', content.text)
+  event.clipboardData.setData('text/html', content.html)
+  event.preventDefault()
+  event.stopPropagation()
+}
 
 function openReference(reference: WorkflowReference): void {
   if (reference.unavailable) return
@@ -90,7 +140,7 @@ const splitAttachments = computed(() => {
 </script>
 
 <template>
-  <div class="group flex flex-col items-end gap-2 pl-16">
+  <div class="group flex flex-col items-end gap-2 pl-16" @copy="copySelection">
     <div v-if="tags.length" class="flex flex-wrap justify-end gap-1">
       <span
         v-for="(tag, index) in tags"
@@ -129,6 +179,7 @@ const splitAttachments = computed(() => {
     </div>
     <div
       v-if="text || workflowReferences.length"
+      ref="bubble"
       data-testid="user-message-bubble"
       class="border-agent-border bg-agent-surface-raised text-agent-fg-muted w-fit max-w-full rounded-[10px] border px-2.5 py-1.5 text-sm/5 font-normal wrap-break-word whitespace-pre-wrap"
     >
@@ -145,6 +196,11 @@ const splitAttachments = computed(() => {
               : t('agent.openWorkflowTab', { name: part.reference.name })
           "
           data-testid="workflow-reference-chip"
+          data-comfy-workflow="1"
+          :data-workflow-id="part.reference.id"
+          :data-workflow-unavailable="
+            part.reference.unavailable ? 'true' : undefined
+          "
           :aria-disabled="part.reference.unavailable"
           :aria-description="
             part.reference.unavailable
@@ -192,7 +248,7 @@ const splitAttachments = computed(() => {
           type="button"
           :aria-label="copied ? t('agent.copied') : t('agent.copy')"
           class="hover:bg-agent-surface-hover hover:text-agent-fg flex size-6 cursor-pointer items-center justify-center rounded-lg p-1 transition-colors"
-          @click="copy(readableText)"
+          @click="copyMessage"
         >
           <span
             :class="

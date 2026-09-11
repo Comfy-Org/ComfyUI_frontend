@@ -28,6 +28,11 @@ vi.mock<unknown>(import('@vueuse/core'), () => ({
     isSupported: ref(true),
     text: ref('')
   }),
+  useClipboardItems: () => ({
+    copy: vi.fn(),
+    copied: ref(false),
+    isSupported: ref(false)
+  }),
   useDocumentVisibility: () => ref('visible'),
   useStorage: (_key: string, defaultValue: unknown) => ref(defaultValue)
 }))
