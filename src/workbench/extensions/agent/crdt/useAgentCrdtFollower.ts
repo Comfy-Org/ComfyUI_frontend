@@ -11,8 +11,7 @@ import {
   readSubgraphDefinitionIds,
   readSubgraphDefinitions
 } from './agentSubgraphDefinitions'
-import { recordDevEvent } from './devPanelLog'
-import { wireLog } from './crdtLog'
+import { docLog, wireLog } from './crdtLog'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import { readCrdtSnapshot } from './crdtSnapshot'
 import type { DocFrameTransport, DocUpdate } from './docFrameClient'
@@ -142,7 +141,7 @@ export const STALE_AFTER_MS = 30_000
  * (which counts Yjs merges, including frames this composable skips) so a
  * divergence between the two is visible instead of hidden behind one number.
  * No payload bodies or actor identifiers are recorded here — see
- * `recordDevEvent` call sites for the (dev-only) frame detail surface.
+ * `docLog` call sites for the (dev-only) frame detail surface.
  */
 export interface AgentCrdtOutcomeCounters {
   /** Every `doc_update` event the composable's listener was invoked with. */
@@ -270,7 +269,12 @@ export function useAgentCrdtFollower(
     tab: tabId,
     actor: () => `human:${userId() ?? 'anonymous'}:${tabId}`,
     baseVersion: () => bridge.lastSequence,
-    onBatchSettled: (outcome) => recordDevEvent('human_ops_settled', outcome)
+    onBatchSettled: (outcome) =>
+      docLog.debug(
+        'human_ops_settled',
+        'human operation batch settled',
+        outcome
+      )
   })
 
   // Dev-panel tap (poc-4): track the doc's node-id set so the panel can show
@@ -332,7 +336,7 @@ export function useAgentCrdtFollower(
     clearStaleProbe()
     staleProbeTimer = setTimeout(() => {
       staleProbeTimer = null
-      recordDevEvent('stale_probe', {
+      docLog.info('stale_probe', 'probing an idle subscription', {
         workflowId: subscribedWorkflowId.value
       })
       bridge.resubscribe()
@@ -359,7 +363,7 @@ export function useAgentCrdtFollower(
       subscribeRetryTimer = null
       // The desired doc changed while we waited — the watch owns that path.
       if (subscribedWorkflowId.value !== target) return
-      recordDevEvent('subscribe_retry', {
+      docLog.info('subscribe_retry', 'retrying subscription', {
         attempt: subscribeRetryAttempt,
         workflowId: target
       })
@@ -373,7 +377,7 @@ export function useAgentCrdtFollower(
     const ok = event.detail?.ok === true
     connected.value = ok
     lastFrameType.value = event.type
-    recordDevEvent('doc_subscribed', event.detail ?? null)
+    docLog.info('doc_subscribed', 'subscription result', event.detail ?? null)
     if (ok) {
       clearSubscribeRetry()
       armStaleProbe()
@@ -416,7 +420,7 @@ export function useAgentCrdtFollower(
       ? { ...outcomes.value, applied: outcomes.value.applied + 1 }
       : { ...outcomes.value, skipped: outcomes.value.skipped + 1 }
     if (applied) reconcileLiveGraph(update.workflowId)
-    recordDevEvent('doc_update', {
+    docLog.trace('doc_update', 'document update received', {
       workflowId: update.workflowId,
       seq: update.seq,
       actor: update.actor,
@@ -426,7 +430,10 @@ export function useAgentCrdtFollower(
     const added = [...ids].filter((id) => !knownDocNodeIds.has(id))
     const removed = [...knownDocNodeIds].filter((id) => !ids.has(id))
     if (added.length > 0 || removed.length > 0)
-      recordDevEvent('doc_nodes_changed', { added, removed })
+      docLog.debug('doc_nodes_changed', 'document node membership changed', {
+        added,
+        removed
+      })
     knownDocNodeIds = ids
   }
   const onOpsResult: EventListener = (event) => {
@@ -442,7 +449,11 @@ export function useAgentCrdtFollower(
       refreshPersistedDocId()
     }
     lastFrameType.value = event.type
-    recordDevEvent('doc_ops_result', event.detail ?? null)
+    docLog.debug(
+      'doc_ops_result',
+      'host operation result',
+      event.detail ?? null
+    )
   }
   const onDocReset: EventListener = (event) => {
     const detail =
@@ -475,8 +486,9 @@ export function useAgentCrdtFollower(
     lastFrameType.value = event.type
     clearStaleProbe()
     knownDocNodeIds = new Set()
-    recordDevEvent(
+    docLog.info(
       'doc_reset',
+      'document lineage reset',
       event instanceof CustomEvent ? (event.detail ?? null) : null
     )
   }
@@ -521,29 +533,32 @@ export function useAgentCrdtFollower(
     if (detail?.workflowId !== undefined)
       adapter.discardPending(detail.workflowId)
     outcomes.value = { ...outcomes.value, errored: outcomes.value.errored + 1 }
-    recordDevEvent(
+    docLog.warn(
       'schema_error',
+      'document schema rejected',
       event instanceof CustomEvent ? (event.detail ?? null) : null
     )
   }
   const onGap: EventListener = (event) => {
     outcomes.value = { ...outcomes.value, gap: outcomes.value.gap + 1 }
-    recordDevEvent(
+    docLog.info(
       'doc_gap',
+      'document sequence gap; requesting catch-up',
       event instanceof CustomEvent ? (event.detail ?? null) : null
     )
   }
   const onStale: EventListener = (event) => {
     outcomes.value = { ...outcomes.value, dropped: outcomes.value.dropped + 1 }
-    recordDevEvent(
+    docLog.trace(
       'doc_stale',
+      'stale document frame ignored',
       event instanceof CustomEvent ? (event.detail ?? null) : null
     )
   }
   const onReconnected: EventListener = () => {
     connected.value = false
     clearStaleProbe()
-    recordDevEvent('reconnected', null)
+    docLog.info('reconnected', 'transport reconnected', null)
     bridge.resubscribe()
   }
   /**
@@ -598,10 +613,14 @@ export function useAgentCrdtFollower(
     // else asks the canvas to paint the new links.
     graph.setDirtyCanvas(true, true)
     if (nodeIds.length > 0) {
-      recordDevEvent('agent_node_adapters_materialized', {
-        workflowId: docId,
-        nodeIds
-      })
+      docLog.debug(
+        'agent_node_adapters_materialized',
+        'live node adapters materialized',
+        {
+          workflowId: docId,
+          nodeIds
+        }
+      )
     }
   }
   // Readiness only. The other ordering -- graph ready first, target activated
@@ -652,7 +671,9 @@ export function useAgentCrdtFollower(
         const persisted = initialBind ? readPersistedDocId() : null
         initialBind = false
         if (persisted !== null) {
-          recordDevEvent('rebind', { workflowId: persisted })
+          docLog.info('rebind', 'restoring page-session binding', {
+            workflowId: persisted
+          })
           if (boundWorkflowId !== persisted) {
             if (boundWorkflowId !== null) adapter.unbind(boundWorkflowId)
             adapter.bind(persisted, bridge.follower)

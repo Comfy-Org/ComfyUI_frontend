@@ -17,6 +17,8 @@
  */
 import type { Op } from '@comfyorg/comfy-multi-player'
 
+import { isCrdtDebugEnabled } from './crdtDebugGate'
+import { docLog } from './crdtLog'
 import type { GraphOperation } from './graphOperations'
 import { chunkWireOps, mintWireOps } from './opEnvelope'
 
@@ -211,6 +213,19 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
         baseVersion: deps.baseVersion()
       })
       const workflowId = deps.workflowId()
+      if (isCrdtDebugEnabled()) {
+        docLog.debug('op_minted', 'human operation identities minted', {
+          workflowId,
+          ops: minted.map((op) => ({
+            op: op.op,
+            op_id: op.op_id,
+            actor: op.actor,
+            base_version: op.base_version,
+            stamp: [...op.stamp],
+            ...('node_id' in op && { node_id: op.node_id })
+          }))
+        })
+      }
       if (workflowId === null) {
         deps.onBatchSettled({ state: 'undeliverable', ops: minted })
         return

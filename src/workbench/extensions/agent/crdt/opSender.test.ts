@@ -2,6 +2,8 @@ import type { Op } from '@comfyorg/comfy-multi-player'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { GraphOperation } from './graphOperations'
+import { setCrdtDebugEnabled } from './crdtDebugGate'
+import { clearDevEvents, devEvents } from './devPanelLog'
 import { createOpSender } from './opSender'
 import type { BatchOutcome, OpsResultView } from './opSender'
 
@@ -65,6 +67,36 @@ describe('createOpSender', () => {
 
   afterEach(() => {
     sender.detach()
+  })
+
+  it('records mint metadata once even when transport retries the operation', () => {
+    setCrdtDebugEnabled(true)
+    clearDevEvents()
+    transportUp = false
+    sender.enqueue([addNode(7), addNode(9)])
+    const minted = devEvents.value.filter(({ kind }) => kind === 'op_minted')
+    expect(minted).toHaveLength(1)
+    expect(minted[0].detail).toEqual({
+      workflowId: WORKFLOW,
+      ops: [7, 9].map((nodeId) => ({
+        op: 'add_node',
+        op_id: expect.stringMatching(/^[0-9a-f]{32}$/),
+        actor: ACTOR,
+        base_version: 41,
+        stamp: [41, ACTOR],
+        node_id: nodeId
+      }))
+    })
+    transportUp = true
+    vi.advanceTimersByTime(500)
+    vi.advanceTimersByTime(10_000)
+    expect(sent).toHaveLength(2)
+    expect(
+      devEvents.value.filter(({ kind }) => kind === 'op_minted')
+    ).toHaveLength(1)
+    expect(JSON.stringify(minted[0].detail)).toContain(sent[0].ops[0].op_id)
+    expect(sent[1].ops).toEqual(sent[0].ops)
+    expect(JSON.stringify(minted[0].detail)).not.toContain('class_type')
   })
 
   it('mints once and sends a doc_ops batch with the wire envelope', () => {

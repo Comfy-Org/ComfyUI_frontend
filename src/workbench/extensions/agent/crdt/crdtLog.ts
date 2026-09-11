@@ -5,8 +5,8 @@
  * Before this module the two were wired independently — a handful of
  * `recordDevEvent` calls that never printed, and a handful of bare
  * `console.warn`s the panel never saw — so the console and the copied report
- * disagreed about what happened. New structured wire events use
- * {@link crdtLog}; existing document events remain in the shared ring buffer.
+ * disagreed about what happened. Wire and document events use
+ * {@link crdtLog} to share the debug gate and console level selection.
  */
 import type { CrdtLogLevel } from './crdtDebugGate'
 import {
@@ -85,3 +85,4 @@ function scopedCrdtLog(scope: CrdtLogScope) {
 }
 
 export const wireLog = scopedCrdtLog('wire')
+export const docLog = scopedCrdtLog('doc')
