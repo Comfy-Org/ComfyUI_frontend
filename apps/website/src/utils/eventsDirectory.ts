@@ -31,6 +31,10 @@ export const EVENT_ORGANIZERS: readonly EventOrganizer[] = [
 
 export type EventsDirectoryView = 'map' | 'cards' | 'calendar'
 
+/** Cards shown per LOAD MORE page in the past-events gallery; shared with the
+ * e2e spec so the test cannot drift from the component. */
+export const PAST_EVENTS_PAGE_SIZE = 4
+
 export type EventsDirectoryFilters = {
   query: string
   category: EventCategory | typeof DIRECTORY_FILTER_ALL
@@ -141,9 +145,7 @@ function mediaOf(event: ComfyEvent, locale: Locale): DirectoryRow['media'] {
   }
 }
 
-/** Mirrors the past-gallery cards: a recording opens its own /events/[slug]
- * page, anything else links out to the event's own page. An event with
- * neither gets no CTA rather than a link to a page that does not exist. */
+/** WATCH NOW for a recorded event's card or row; LEARN MORE otherwise. */
 export function pastCtaLabel(event: ComfyEvent, locale: Locale): string {
   return t(
     eventVideoId(event) ? 'events.past.watchNow' : 'events.past.learnMore',
@@ -162,7 +164,7 @@ function registerOf(
       label:
         event.ctaLabel?.[locale] ||
         event.ctaLabel?.en ||
-        t('events.past.learnMore', locale)
+        t('events.directory.learnMore', locale)
     }
   }
   // An upcoming livestream without an outbound link still has a public
@@ -173,12 +175,15 @@ function registerOf(
     return {
       href: href[locale] || href.en,
       newTab: true,
-      label: t('events.past.learnMore', locale)
+      label: t('events.directory.learnMore', locale)
     }
   }
   return undefined
 }
 
+/** Mirrors the past-gallery cards: a recording opens its own /events/[slug]
+ * page, anything else links out to the event's own page. An event with
+ * neither gets no CTA rather than a link to a page that does not exist. */
 function watchOf(event: ComfyEvent, locale: Locale): DirectoryRow['watch'] {
   const label = pastCtaLabel(event, locale)
   if (eventVideoId(event)) {

@@ -8,7 +8,10 @@ import type { CardArticleGalleryItem } from '../../components/blocks/CardArticle
 import { localizeHref } from '../../config/routes'
 import { eventPath, eventVideoId, pastEvents } from '../../data/events'
 import { t } from '../../i18n/translations'
-import { pastCtaLabel } from '../../utils/eventsDirectory'
+import {
+  PAST_EVENTS_PAGE_SIZE,
+  pastCtaLabel
+} from '../../utils/eventsDirectory'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -20,14 +23,16 @@ const CATEGORY_ORDER = [
   'conference'
 ] as const
 
-const PAGE_SIZE = 4
-
-// MM/DD/YYYY from the authored date part of the ISO string; slicing instead
-// of new Date() keeps the event-local calendar date regardless of the
-// viewer's timezone.
+// Numeric date in the locale's own field order, from the authored date part
+// of the ISO string; slicing instead of new Date() keeps the event-local
+// calendar date regardless of the viewer's timezone.
 function cardDate(iso: string): string {
-  const [year, month, day] = iso.slice(0, 10).split('-')
-  return `${month}/${day}/${year}`
+  return new Intl.DateTimeFormat(locale, {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    timeZone: 'UTC'
+  }).format(new Date(`${iso.slice(0, 10)}T00:00:00Z`))
 }
 
 const items = computed<CardArticleGalleryItem[]>(() =>
@@ -89,7 +94,7 @@ const tabs = computed(() =>
     title-clamp
     :tabs
     :all-label="t('events.past.filterAll', locale)"
-    :page-size="PAGE_SIZE"
+    :page-size="PAST_EVENTS_PAGE_SIZE"
     :load-more-label="t('events.past.loadMore', locale)"
   />
 </template>

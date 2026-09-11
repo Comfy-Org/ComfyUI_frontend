@@ -7071,6 +7071,7 @@ Enterprise`
   'events.directory.pastBadge': { en: 'Past', 'zh-CN': '已结束' },
   'events.directory.readMore': { en: 'Read more', 'zh-CN': '展开' },
   'events.directory.readLess': { en: 'Read less', 'zh-CN': '收起' },
+  'events.directory.learnMore': { en: 'LEARN MORE', 'zh-CN': '了解更多' },
   'events.directory.sortLabel': { en: 'Sort events', 'zh-CN': '活动排序' },
   'events.directory.sortLatest': { en: 'Latest', 'zh-CN': '最新' },
   'events.directory.sortOldest': { en: 'Oldest', 'zh-CN': '最早' },

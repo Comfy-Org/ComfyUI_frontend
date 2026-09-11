@@ -70,7 +70,7 @@ function pinHtml(count: number): string {
 // click on such a badge is confirmed still-coincident after flying in, its
 // ids move here and `rebuildPins` fans them into a small ring of individually
 // clickable pins instead of re-clustering them.
-const spiderfiedIds = ref<Set<string>>(new Set())
+let spiderfiedIds = new Set<string>()
 
 type PixelGroup = { point: Leaflet.Point; items: MapPinMarker[] }
 
@@ -181,7 +181,7 @@ function onClusterClick(items: MapPinMarker[]) {
           .distanceTo(anchor) < 48
     )
     if (!stillCoincident) return
-    for (const item of items) spiderfiedIds.value.add(item.id)
+    for (const item of items) spiderfiedIds.add(item.id)
     rebuildPins()
   })
   const framing: Leaflet.FitBoundsOptions = { padding: [60, 60], maxZoom: 7 }
@@ -196,15 +196,13 @@ function rebuildPins() {
   if (!L || !map || !pinLayer) return
   pinLayer.clearLayers()
 
-  const clusterable = markers.filter(
-    (item) => !spiderfiedIds.value.has(item.id)
-  )
+  const clusterable = markers.filter((item) => !spiderfiedIds.has(item.id))
   for (const group of groupByPixelDistance(map, clusterable)) {
     if (group.items.length > 1) addClusterMarker(L, group)
     else addLeafMarker(L, group.point, group.items[0])
   }
 
-  const spiderfied = markers.filter((item) => spiderfiedIds.value.has(item.id))
+  const spiderfied = markers.filter((item) => spiderfiedIds.has(item.id))
   for (const group of groupByPixelDistance(map, spiderfied)) {
     addSpiderfiedGroup(L, group)
   }
@@ -224,9 +222,11 @@ async function mountMap() {
   const [, imported, geoJson] = await Promise.all([
     loadStyles(),
     import('leaflet') as Promise<LeafletModule>,
-    fetch(worldCountriesUrl, { signal: disposal.signal }).then(
-      (res) => res.json() as Promise<WorldGeoJson>
-    )
+    fetch(worldCountriesUrl, { signal: disposal.signal }).then((res) => {
+      if (!res.ok)
+        throw new Error(`world-countries fetch failed: ${res.status}`)
+      return res.json() as Promise<WorldGeoJson>
+    })
   ])
   // Vue clears the template ref if the component unmounts while the imports
   // above are in flight; `L.map(null)` would then throw and stay blank.
@@ -264,7 +264,7 @@ async function mountMap() {
 watch(
   () => markers,
   () => {
-    spiderfiedIds.value = new Set()
+    spiderfiedIds = new Set()
     rebuildPins()
   }
 )

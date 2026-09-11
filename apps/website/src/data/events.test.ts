@@ -164,7 +164,7 @@ describe('event list derivation', () => {
   })
 
   it('lists the whole directory latest-first', () => {
-    expect(deriveDirectoryEvents(list, now).map((event) => event.id)).toEqual([
+    expect(deriveDirectoryEvents(list).map((event) => event.id)).toEqual([
       'later',
       'sooner',
       'done',

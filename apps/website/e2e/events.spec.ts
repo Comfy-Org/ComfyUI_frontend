@@ -13,7 +13,11 @@ import {
 } from '../src/data/events'
 import type { Locale } from '../src/i18n/translations'
 import { t } from '../src/i18n/translations'
-import { EVENT_CATEGORIES, pastCtaLabel } from '../src/utils/eventsDirectory'
+import {
+  EVENT_CATEGORIES,
+  PAST_EVENTS_PAGE_SIZE,
+  pastCtaLabel
+} from '../src/utils/eventsDirectory'
 import { test } from './fixtures/blockExternalMedia'
 
 const PATH_EN = '/events'
@@ -26,9 +30,6 @@ const LOCALES: ReadonlyArray<readonly [string, Locale]> = [
 
 // Every past event gets a card; the ones with no art get a gradient stand-in.
 const pastCardEvents = pastEvents
-
-// Mirrors PAGE_SIZE in PastEventsSection.vue.
-const PAST_PAGE_SIZE = 4
 
 function heroSection(page: Page, locale: Locale) {
   return page.locator('section').filter({
@@ -914,7 +915,7 @@ test.describe('Events page — desktop @smoke', () => {
 
       const cards = section.locator('[data-slot="card"]')
       await expect(cards).toHaveCount(
-        Math.min(PAST_PAGE_SIZE, pastCardEvents.length)
+        Math.min(PAST_EVENTS_PAGE_SIZE, pastCardEvents.length)
       )
 
       // LOAD MORE reveals another page per click and disappears once every
@@ -932,7 +933,7 @@ test.describe('Events page — desktop @smoke', () => {
             await loadMore.click()
           }
           await expect(cards).toHaveCount(
-            Math.min(shown + PAST_PAGE_SIZE, pastCardEvents.length),
+            Math.min(shown + PAST_EVENTS_PAGE_SIZE, pastCardEvents.length),
             { timeout: 1000 }
           )
         }).toPass()
@@ -976,21 +977,23 @@ test.describe('Events page — desktop @smoke', () => {
 
     // Retry until the island hydrates and the click lands. The count alone
     // cannot tell a filtered page from the unfiltered first page when both
-    // fill PAST_PAGE_SIZE, so the first card's title is the real signal.
+    // fill PAST_EVENTS_PAGE_SIZE, so the first card's title is the real signal.
     const cards = section.locator('[data-slot="card"]')
     await expect(async () => {
       await section
         .getByRole('button', { name: label.toLocaleUpperCase('en') })
         .click()
       await expect(cards).toHaveCount(
-        Math.min(PAST_PAGE_SIZE, expected.length),
+        Math.min(PAST_EVENTS_PAGE_SIZE, expected.length),
         { timeout: 1000 }
       )
-      await expect(cards.first()).toContainText(expected[0]!.title.en, {
+      await expect(cards.first()).toContainText(expected[0].title.en, {
         timeout: 1000
       })
     }).toPass()
-    for (const [i, event] of expected.slice(0, PAST_PAGE_SIZE).entries()) {
+    for (const [i, event] of expected
+      .slice(0, PAST_EVENTS_PAGE_SIZE)
+      .entries()) {
       await expect(cards.nth(i)).toContainText(event.title.en)
     }
 
@@ -999,7 +1002,7 @@ test.describe('Events page — desktop @smoke', () => {
       .getByRole('button', { name: t('events.past.filterAll', 'en') })
       .click()
     await expect(cards).toHaveCount(
-      Math.min(PAST_PAGE_SIZE, pastCardEvents.length)
+      Math.min(PAST_EVENTS_PAGE_SIZE, pastCardEvents.length)
     )
   })
 })
@@ -1082,7 +1085,7 @@ test.describe('Events page — mobile @mobile', () => {
     await section.scrollIntoViewIfNeeded()
     const cards = section.locator('[data-slot="card"]')
     await expect(cards).toHaveCount(
-      Math.min(PAST_PAGE_SIZE, pastCardEvents.length)
+      Math.min(PAST_EVENTS_PAGE_SIZE, pastCardEvents.length)
     )
 
     const viewport = page.viewportSize()

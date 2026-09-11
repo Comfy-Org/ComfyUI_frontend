@@ -100,11 +100,10 @@ const countLabel = computed(() => {
 const VIEWS: ReadonlyArray<{
   key: EventsDirectoryView
   icon: typeof Map
-  enabled: boolean
 }> = [
-  { key: 'map', icon: Map, enabled: true },
-  { key: 'cards', icon: LayoutGrid, enabled: true },
-  { key: 'calendar', icon: CalendarDays, enabled: true }
+  { key: 'map', icon: Map },
+  { key: 'cards', icon: LayoutGrid },
+  { key: 'calendar', icon: CalendarDays }
 ]
 
 const controlClass =
@@ -249,16 +248,13 @@ const caretClass =
           v-for="entry in VIEWS"
           :key="entry.key"
           type="button"
-          :disabled="!entry.enabled"
           :aria-pressed="view === entry.key"
           :class="
             cn(
               'flex h-8 cursor-pointer items-center gap-1.5 rounded-xl px-3 text-xs font-semibold whitespace-nowrap transition-colors',
               view === entry.key
                 ? 'bg-primary-comfy-yellow text-primary-comfy-ink'
-                : 'text-primary-comfy-canvas hover:bg-white/10',
-              !entry.enabled &&
-                'cursor-not-allowed opacity-40 hover:bg-transparent'
+                : 'text-primary-comfy-canvas hover:bg-white/10'
             )
           "
           @click="view = entry.key"

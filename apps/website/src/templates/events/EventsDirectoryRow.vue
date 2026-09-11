@@ -52,7 +52,7 @@ useResizeObserver(descEl, ([entry]) => {
     :aria-current="selected ? 'true' : undefined"
     :class="
       cn(
-        'relative flex gap-3 px-6 py-5 transition-colors',
+        'relative isolate flex gap-3 px-6 py-5 transition-colors',
         rowLink && 'hover:bg-white/5',
         selected &&
           'bg-primary-comfy-yellow/10 ring-primary-comfy-yellow/40 ring-1 ring-inset'

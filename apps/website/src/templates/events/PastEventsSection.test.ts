@@ -9,7 +9,7 @@ import type * as eventsModule from '../../data/events'
 
 import PastEventsSection from './PastEventsSection.vue'
 
-// Five past fixtures — one more than PAGE_SIZE, so the gallery has to
+// Five past fixtures — one more than PAST_EVENTS_PAGE_SIZE, so the gallery has to
 // paginate: a recorded livestream with image art, a recorded meetup with video
 // art, an unrecorded workshop with no art whose only destination is its
 // external page, an untranslated conference, and a destinationless meetup with
@@ -162,7 +162,7 @@ describe('PastEventsSection', () => {
   it('holds the overflowing card behind LOAD MORE and gives it no CTA', async () => {
     render(PastEventsSection)
 
-    // PAGE_SIZE is 4, so the fifth fixture waits behind the button.
+    // PAST_EVENTS_PAGE_SIZE is 4, so the fifth fixture waits behind the button.
     expect(screen.queryByText('Destinationless Meetup')).toBeNull()
 
     await userEvent.click(screen.getByRole('button', { name: 'LOAD MORE' }))
