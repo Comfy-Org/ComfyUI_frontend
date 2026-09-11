@@ -555,6 +555,61 @@ describe('Composer', () => {
       expect(emitted().requestWorkflowReferences).toHaveLength(1)
     })
 
+    it('reopens at the root after closing a filtered workflow submenu', async () => {
+      const { emitted } = mount({
+        getMentionNodes: () => NODES,
+        availableWorkflows: [{ id: 'wf-water', name: 'Water world' }]
+      })
+      await openReferenceSection('Workflows', '@water')
+      await userEvent.keyboard('{Escape}')
+      expect(screen.queryByRole('menu')).toBeNull()
+
+      await userEvent.clear(screen.getByRole('textbox'))
+      await userEvent.type(screen.getByRole('textbox'), '@{Enter}')
+      expect(screen.getByRole('menuitem', { name: 'VAE Decode' })).toBeVisible()
+      await userEvent.keyboard('{ArrowDown}{Enter}')
+      expect(emitted().mentionPick).toEqual([[NODES[0]]])
+    })
+
+    it('keeps a failed workflow mention retryable and consumes it only on success', async () => {
+      const selectWorkflowReference = vi
+        .fn(async () => true)
+        .mockResolvedValueOnce(false)
+      mount({
+        availableWorkflows: [{ tabPath: 'scratch.json', name: 'Scratch' }],
+        selectWorkflowReference
+      })
+      await openReferenceSection('Workflows', '@scratch')
+      await userEvent.keyboard('{Enter}')
+      expect(screen.getByRole('textbox')).toHaveValue('@scratch')
+      expect(
+        screen.getByRole('menuitem', { name: 'Scratch Unsaved' })
+      ).toBeVisible()
+
+      await userEvent.keyboard('{Enter}')
+      expect(selectWorkflowReference).toHaveBeenCalledTimes(2)
+      expect(screen.getByRole('textbox')).toHaveValue('')
+      expect(screen.queryByRole('menu')).toBeNull()
+    })
+
+    it('removes the chosen mention while retaining the text on both sides', async () => {
+      const { selectWorkflowReference } = mount({
+        availableWorkflows: [{ id: 'wf-water', name: 'Water world' }]
+      })
+      const textbox = screen.getByRole('textbox')
+      await userEvent.type(textbox, 'Compare @ with target')
+      await userEvent.keyboard('{ArrowLeft>12/}')
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
+      await userEvent.keyboard('{ArrowDown}{Enter}')
+
+      expect(selectWorkflowReference).toHaveBeenCalledWith({
+        id: 'wf-water',
+        name: 'Water world'
+      })
+      expect(textbox).toHaveValue('Compare with target')
+      expect(screen.queryByRole('menu')).toBeNull()
+    })
+
     it('returns from a reference submenu to the root menu', async () => {
       mount({ getMentionNodes: () => NODES })
       const menu = await openReferenceSection('Nodes')

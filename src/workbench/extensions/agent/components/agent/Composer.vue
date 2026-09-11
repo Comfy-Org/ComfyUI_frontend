@@ -17,6 +17,12 @@ import { useI18n } from 'vue-i18n'
 import { buildAgentTooltipConfig } from '@/composables/useTooltipConfig'
 
 import Textarea from '@/components/ui/textarea/Textarea.vue'
+import type {
+  MentionPickerEvent,
+  MentionPickerState,
+  MentionSection
+} from '../../composables/agent/mentionPickerState'
+import { transitionMentionPicker } from '../../composables/agent/mentionPickerState'
 import type { ComposerAttachment } from '../../composables/agent/useComposer'
 import { useComposer } from '../../composables/agent/useComposer'
 import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
@@ -113,13 +119,18 @@ function loadMentionNodes(): void {
   )
 }
 
-const mentionOpen = ref(false)
-const mentionSection = ref<'root' | 'nodes' | 'workflows'>('root')
+const mention = ref<MentionPickerState>({ status: 'closed' })
+const mentionSection = computed(() =>
+  mention.value.status === 'open' ? mention.value.section : 'root'
+)
+const mentionQuery = computed(() =>
+  mention.value.status === 'open' ? mention.value.query : null
+)
+const mentionActive = computed(() =>
+  mention.value.status === 'open' ? mention.value.activeIndex : 0
+)
 const workflowSubmenuOpen = ref(false)
 const addMenuOpen = ref(false)
-const mentionQuery = ref('')
-const mentionStart = ref(-1)
-const mentionActive = ref(0)
 
 type MentionMatch =
   | { kind: 'section'; id: 'nodes' | 'workflows'; label: string }
@@ -145,27 +156,29 @@ const stagedKeys = computed(
   () => new Set(selectionTags.map((tag) => selectedNodeKey(tag)))
 )
 
-const mentionMatches = computed<MentionMatch[]>(() => {
-  if (!mentionOpen.value) return []
-  const query = mentionQuery.value.toLowerCase()
-  if (mentionSection.value === 'root') {
+function getMentionMatches(
+  section: MentionSection,
+  query: string
+): MentionMatch[] {
+  const search = query.toLowerCase()
+  if (section === 'root') {
     const sections: MentionMatch[] = [
       { kind: 'section', id: 'nodes', label: t('agent.nodes') },
       { kind: 'section', id: 'workflows', label: t('agent.workflows') }
     ]
-    return sections.filter(({ label }) => label.toLowerCase().includes(query))
+    return sections.filter(({ label }) => label.toLowerCase().includes(search))
   }
 
   const back: MentionMatch = { kind: 'back', id: 'back', label: t('g.back') }
-  if (mentionSection.value === 'nodes') {
+  if (section === 'nodes') {
     return [
       back,
       ...mentionNodes.value
         .filter(
           (node) =>
             !stagedKeys.value.has(selectedNodeKey(node)) &&
-            (node.title.toLowerCase().includes(query) ||
-              node.id.includes(query))
+            (node.title.toLowerCase().includes(search) ||
+              node.id.includes(search))
         )
         .map(
           (node): MentionMatch => ({
@@ -181,7 +194,7 @@ const mentionMatches = computed<MentionMatch[]>(() => {
   return [
     back,
     ...eligibleWorkflows.value
-      .filter(({ name }) => name.toLowerCase().includes(query))
+      .filter(({ name }) => name.toLowerCase().includes(search))
       .map(
         (workflow): MentionMatch => ({
           kind: 'workflow',
@@ -191,11 +204,16 @@ const mentionMatches = computed<MentionMatch[]>(() => {
         })
       )
   ]
+}
+
+const mentionMatches = computed(() => {
+  const query = mentionQuery.value
+  return query === null ? [] : getMentionMatches(mentionSection.value, query)
 })
 
 const mentionVisible = computed(
   () =>
-    mentionOpen.value &&
+    mentionQuery.value !== null &&
     (mentionQuery.value === '' ||
       mentionMatches.value.some(
         (match) => match.kind !== 'back' && !isNodeReferenceDisabled(match)
@@ -226,49 +244,43 @@ watch(
   { immediate: true }
 )
 
-function closeMention(): void {
-  mentionOpen.value = false
-  mentionSection.value = 'root'
-  mentionQuery.value = ''
-  mentionStart.value = -1
-  mentionActive.value = 0
+function dispatchMention(event: MentionPickerEvent): void {
+  mention.value = transitionMentionPicker(mention.value, event)
 }
 
-function resetMentionActive(): void {
-  if (mentionSection.value !== 'root' && mentionQuery.value === '') {
-    mentionActive.value = 0
-    return
-  }
-  const first = mentionMatches.value.findIndex(
+function firstMentionMatchIndex(
+  section: MentionSection,
+  query: string
+): number {
+  return getMentionMatches(section, query).findIndex(
     (match) => match.kind !== 'back' && !isNodeReferenceDisabled(match)
   )
-  mentionActive.value = Math.max(0, first)
 }
 
 function syncMention(event: Event): void {
-  const el = event.target as HTMLTextAreaElement
+  const el = event.target
+  if (!(el instanceof HTMLTextAreaElement)) return
   const caret = el.selectionStart ?? 0
   const text = el.value
   const at = text.lastIndexOf('@', caret - 1)
   const atValid =
     at !== -1 && at < caret && (at === 0 || /\s/.test(text[at - 1]))
   if (!atValid) {
-    closeMention()
+    dispatchMention({ type: 'closed' })
     return
   }
   const query = text.slice(at + 1, caret)
   if (query.includes('\n')) {
-    closeMention()
+    dispatchMention({ type: 'closed' })
     return
   }
-  if (!mentionOpen.value) {
-    loadMentionNodes()
-    mentionSection.value = 'root'
-  }
-  mentionOpen.value = true
-  mentionStart.value = at
-  mentionQuery.value = query
-  resetMentionActive()
+  if (mention.value.status === 'closed') loadMentionNodes()
+  dispatchMention({
+    type: 'queryChanged',
+    start: at,
+    query,
+    firstMatchIndex: firstMentionMatchIndex(mentionSection.value, query)
+  })
 }
 
 function isNodeReferenceDisabled(match: MentionMatch): boolean {
@@ -291,56 +303,55 @@ watch(
   () => nodeReferenceDisabledReason,
   (reason) => {
     if (!reason) {
-      if (mentionOpen.value) loadMentionNodes()
+      if (mention.value.status === 'open') loadMentionNodes()
       return
     }
     graphNodes.value = []
-    if (mentionSection.value === 'nodes') {
-      mentionSection.value = 'root'
-      resetMentionActive()
+    if (mention.value.status === 'open' && mention.value.section === 'nodes') {
+      dispatchMention({
+        type: 'nodesUnavailable',
+        firstMatchIndex: firstMentionMatchIndex('root', mention.value.query)
+      })
     }
   },
   { flush: 'sync' }
 )
 
 async function pickMention(match: MentionMatch): Promise<void> {
-  if (isMentionDisabled(match)) return
+  const state = mention.value
+  if (state.status === 'closed' || isMentionDisabled(match)) return
   if (match.kind === 'section') {
-    mentionSection.value = match.id
-    const before = composer.draft.value.slice(0, mentionStart.value + 1)
+    const before = composer.draft.value.slice(0, state.start + 1)
     const after = composer.draft.value.slice(
-      mentionStart.value + 1 + mentionQuery.value.length
+      state.start + 1 + state.query.length
     )
     composer.draft.value = before + after
-    mentionQuery.value = ''
+    dispatchMention({ type: 'sectionSelected', section: match.id })
     if (match.id === 'workflows') emit('requestWorkflowReferences')
-    resetMentionActive()
     return
   }
   if (match.kind === 'back') {
-    mentionSection.value = 'root'
-    mentionActive.value = 0
+    dispatchMention({ type: 'back' })
     return
   }
   const draft = composer.draft.value
-  const start = mentionStart.value
-  const query = mentionQuery.value
   if (match.kind === 'node') emit('mentionPick', match.node)
   else if (!(await selectWorkflowReference(match.workflow))) return
+  const current = mention.value
   if (
     composer.draft.value !== draft ||
-    mentionStart.value !== start ||
-    mentionQuery.value !== query ||
-    !mentionOpen.value
+    current.status === 'closed' ||
+    current.start !== state.start ||
+    current.query !== state.query
   )
     return
-  const before = draft.slice(0, mentionStart.value)
-  const end = mentionStart.value + 1 + mentionQuery.value.length
+  const before = draft.slice(0, state.start)
+  const end = state.start + 1 + state.query.length
   let after = draft.slice(end)
   if (after.startsWith(' ') && (before === '' || before.endsWith(' ')))
     after = after.slice(1)
   composer.draft.value = before + after
-  closeMention()
+  dispatchMention({ type: 'closed' })
   textareaRef.value?.focus()
 }
 
@@ -361,31 +372,32 @@ function isMentionDisabled(match: MentionMatch): boolean {
 }
 
 function onComposerKeydown(event: KeyboardEvent): void {
-  if (mentionVisible.value && !event.isComposing && !event.shiftKey) {
+  const state = mention.value
+  if (
+    state.status === 'open' &&
+    mentionVisible.value &&
+    !event.isComposing &&
+    !event.shiftKey
+  ) {
     const matches = mentionMatches.value
-    if (event.key === 'ArrowDown') {
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       event.preventDefault()
-      do {
-        mentionActive.value = (mentionActive.value + 1) % matches.length
-      } while (isMentionDisabled(matches[mentionActive.value]))
-      return
-    }
-    if (event.key === 'ArrowUp') {
-      event.preventDefault()
-      do {
-        mentionActive.value =
-          (mentionActive.value - 1 + matches.length) % matches.length
-      } while (isMentionDisabled(matches[mentionActive.value]))
+      dispatchMention({
+        type: 'highlightMoved',
+        direction: event.key === 'ArrowDown' ? 1 : -1,
+        disabled: matches.map(isMentionDisabled)
+      })
       return
     }
     if (event.key === 'Enter' || event.key === 'Tab') {
       event.preventDefault()
-      pickMention(matches[mentionActive.value])
+      const match = matches[state.activeIndex]
+      if (match) void pickMention(match)
       return
     }
     if (event.key === 'Escape') {
       event.stopPropagation()
-      closeMention()
+      dispatchMention({ type: 'closed' })
       return
     }
   }
@@ -410,7 +422,8 @@ function onComposerKeydown(event: KeyboardEvent): void {
 const CARET_KEYS = ['ArrowLeft', 'ArrowRight', 'Home', 'End']
 
 function onComposerKeyup(event: KeyboardEvent): void {
-  if (mentionOpen.value && CARET_KEYS.includes(event.key)) syncMention(event)
+  if (mention.value.status === 'open' && CARET_KEYS.includes(event.key))
+    syncMention(event)
 }
 
 const mentionListRef = useTemplateRef<HTMLDivElement>('mentionListRef')
@@ -522,7 +535,7 @@ defineExpose({
               index === mentionActive && 'bg-agent-surface-hover'
             )
           "
-          @mouseenter="mentionActive = index"
+          @mouseenter="dispatchMention({ type: 'highlighted', index })"
           @click="pickMention(match)"
         >
           <span
@@ -705,7 +718,7 @@ defineExpose({
             @keyup="onComposerKeyup"
             @input="syncMention"
             @click="syncMention"
-            @blur="closeMention"
+            @blur="dispatchMention({ type: 'closed' })"
           />
 
           <div
