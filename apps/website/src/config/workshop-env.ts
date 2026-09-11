@@ -15,7 +15,7 @@ import type { FirebaseOptions } from 'firebase/app'
 import type { WorkshopCloudEnv } from './workshop-cloud-env'
 import { resolveWorkshopCloudEnv } from './workshop-cloud-env'
 
-const WORKSHOP_CLOUD_ENV: WorkshopCloudEnv = resolveWorkshopCloudEnv(
+export const WORKSHOP_CLOUD_ENV: WorkshopCloudEnv = resolveWorkshopCloudEnv(
   import.meta.env.PUBLIC_WORKSHOP_CLOUD_ENV
 )
 

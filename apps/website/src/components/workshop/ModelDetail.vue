@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Download, ExternalLink } from '@lucide/vue'
+import { Coins, Download, ExternalLink, Play } from '@lucide/vue'
 import { useMounted, useTimestamp } from '@vueuse/core'
 import { computed, onMounted, onUnmounted, ref, useSlots, watch } from 'vue'
 
@@ -30,13 +30,16 @@ import {
   refreshWorkshopCredits,
   useWorkshopCredits
 } from '../../config/workshop-credits'
-import { WORKSHOP_CREDITS_URL } from '../../config/workshop-env'
 import { runWorkshopRouter } from '../../config/workshop-router'
 import { prepareWorkshopRouterInput } from '../../config/workshop-request'
 import { createWorkshopUrlUploader } from '../../config/workshop-url-upload'
 import { WorkshopRouterError } from '../../config/workshop-router-errors'
 import { releaseRouterOutputs } from '../../config/workshop-response'
 import { retainRunHistory } from '../../config/workshop-run-history'
+import {
+  TOP_UP_ON_PLATFORM,
+  platformTopUpHref
+} from '../../lib/workshop/buy-credits'
 import { modelDocsHref } from '../../lib/workshop/model-docs'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import { workshopIdempotencyKey } from '../../config/workshop-snippets'
@@ -55,10 +58,12 @@ import ModelSupport from './ModelSupport.vue'
 const {
   model,
   locale = 'en',
+  priceEstimate,
   clone
 } = defineProps<{
   model: WorkshopModelDetail
   locale?: Locale
+  priceEstimate?: string
   clone?: { href: string }
   /** Names the form's groups as numbered steps and keeps the result in view
    * while they are filled in. The workflow pages ask for it; a model page has
@@ -527,27 +532,67 @@ function useInCode() {
           >
             {{ t('workshop.run.signIn', locale) }}
           </Button>
-          <Button
-            v-else-if="gate === 'noCredits'"
-            as="a"
-            :href="WORKSHOP_CREDITS_URL"
-            target="_blank"
-            rel="noopener noreferrer"
-            size="lg"
-            class="w-full px-5"
-            data-testid="run-button"
-            data-gate="noCredits"
-          >
-            {{ t('nav.buyCredits', locale) }}
-          </Button>
-          <Button
-            v-else-if="gate === 'memberNoCredits'"
-            size="lg"
-            class="w-full px-5"
-            @click="switchToPersonal"
-          >
-            {{ t('workshop.run.switchPersonal', locale) }}
-          </Button>
+          <!-- The MVP rail (DES-1015): buying happens on platform, in a new
+               tab, so this page and its inputs stay alive and the return is a
+               balance re-read. Naming the workspace is what makes topping up
+               the wrong wallet visible before it happens. -->
+          <template v-else-if="gate === 'noCredits'">
+            <div class="mb-2 flex flex-col gap-1" data-testid="gate-note">
+              <p class="text-sm font-bold text-primary-warm-white">
+                {{ t('workshop.error.creditsTitle', locale) }}
+              </p>
+              <p class="text-xs text-primary-warm-gray">
+                {{
+                  t(
+                    TOP_UP_ON_PLATFORM
+                      ? 'workshop.error.noCreditsPlatform'
+                      : 'workshop.error.noCreditsCloud',
+                    locale
+                  ).replace('{workspace}', () => session?.workspace.name ?? '')
+                }}
+              </p>
+            </div>
+            <Button
+              as="a"
+              :href="platformTopUpHref(session?.workspace.id)"
+              target="_blank"
+              rel="noopener"
+              size="lg"
+              class="w-full px-5"
+              data-testid="run-button"
+              data-gate="noCredits"
+            >
+              {{ t('workshop.run.buyCredits', locale) }}
+              <template #append>
+                <ExternalLink class="size-5" aria-hidden="true" />
+              </template>
+            </Button>
+          </template>
+          <template v-else-if="gate === 'memberNoCredits'">
+            <div class="mb-2 flex flex-col gap-1" data-testid="gate-note">
+              <p class="text-sm font-bold text-primary-warm-white">
+                {{ t('workshop.error.creditsTitle', locale) }}
+              </p>
+              <p class="text-xs text-primary-warm-gray">
+                {{
+                  t('workshop.error.memberNoCredits', locale).replace(
+                    '{workspace}',
+                    () => session?.workspace.name ?? ''
+                  )
+                }}
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="lg"
+              class="w-full px-5"
+              data-testid="run-button"
+              data-gate="memberNoCredits"
+              @click="switchToPersonal"
+            >
+              {{ t('workshop.run.switchPersonal', locale) }}
+            </Button>
+          </template>
           <Button
             v-else-if="gate === 'ready'"
             size="lg"
@@ -556,9 +601,21 @@ function useInCode() {
             data-gate="ready"
             @click="isRunning ? cancelRun() : run()"
           >
+            <template v-if="!isRunning" #prepend>
+              <Play class="size-5 fill-current" aria-hidden="true" />
+            </template>
             {{
               t(isRunning ? 'workshop.run.cancel' : 'workshop.run.run', locale)
             }}
+            <template v-if="!isRunning && priceEstimate" #append>
+              <span
+                class="ml-auto flex items-center gap-1.5 rounded-full bg-primary-comfy-ink/10 px-2.5 py-1 text-xs font-bold normal-case tabular-nums"
+                data-testid="run-price"
+              >
+                <Coins class="size-3.5" aria-hidden="true" />
+                {{ priceEstimate }}
+              </span>
+            </template>
           </Button>
           <Button
             v-else
@@ -579,20 +636,6 @@ function useInCode() {
               )
             }}
           </Button>
-          <p
-            v-if="gate === 'noCredits' || gate === 'memberNoCredits'"
-            role="status"
-            class="text-center text-sm text-primary-warm-gray"
-          >
-            {{
-              gate === 'memberNoCredits'
-                ? t('workshop.error.memberNoCredits', locale).replace(
-                    '{workspace}',
-                    session?.workspace.name ?? ''
-                  )
-                : t('workshop.error.noCredits', locale)
-            }}
-          </p>
         </div>
       </div>
 
@@ -610,6 +653,7 @@ function useInCode() {
           :member-workspace="
             session?.role === 'member' ? session.workspace.name : undefined
           "
+          :workspace-id="session?.workspace.id"
           @switch-personal="switchToPersonal"
           @retry="gate === 'ready' ? run() : reset()"
           @use-in-code="useInCode"
