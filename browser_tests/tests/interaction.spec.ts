@@ -239,27 +239,28 @@ test.describe('Node Interaction', () => {
     test('Repeated disconnect/connect leaves exactly one link', async ({
       comfyPage
     }) => {
-      const linkCount = () =>
-        comfyPage.page.evaluate(() => window.app!.graph.links.size)
-
-      const initial = await linkCount()
+      const checkpoint = await comfyPage.nodeOps.getNodeRefByType(
+        'CheckpointLoaderSimple'
+      )
+      const clipOutput = await checkpoint.getOutput(1)
+      const initial = await clipOutput.getLinkCount()
       expect(initial, 'default workflow should have links').toBeGreaterThan(0)
 
       for (let cycle = 0; cycle < 5; cycle++) {
         await comfyPage.canvasOps.disconnectEdge()
-        await expect.poll(linkCount).toBe(initial - 1)
+        await clipOutput.expectLinkCount(initial - 1)
         await comfyPage.canvasOps.connectEdge()
-        await expect.poll(linkCount).toBe(initial)
+        await clipOutput.expectLinkCount(initial)
       }
 
       // End disconnected so the reload assertion cannot pass by restoring a
       // pristine default instead of the edited draft.
       await comfyPage.canvasOps.disconnectEdge()
       await comfyPage.canvasOps.moveMouseToEmptyArea()
-      await expect.poll(linkCount).toBe(initial - 1)
+      await clipOutput.expectLinkCount(initial - 1)
 
       await comfyPage.workflow.reloadAndWaitForApp()
-      await expect.poll(linkCount).toBe(initial - 1)
+      await clipOutput.expectLinkCount(initial - 1)
     })
 
     test('Can move link', async ({ comfyPage }) => {
