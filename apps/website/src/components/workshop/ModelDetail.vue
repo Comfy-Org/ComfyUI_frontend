@@ -36,10 +36,6 @@ import { createWorkshopUrlUploader } from '../../config/workshop-url-upload'
 import { WorkshopRouterError } from '../../config/workshop-router-errors'
 import { releaseRouterOutputs } from '../../config/workshop-response'
 import { retainRunHistory } from '../../config/workshop-run-history'
-import {
-  TOP_UP_ON_PLATFORM,
-  platformTopUpHref
-} from '../../lib/workshop/buy-credits'
 import { modelDocsHref } from '../../lib/workshop/model-docs'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import { workshopIdempotencyKey } from '../../config/workshop-snippets'
@@ -50,6 +46,7 @@ import {
   useWorkshopAuthFlagSettled
 } from '../../scripts/posthog'
 import ApiTab from './ApiTab.vue'
+import BuyCreditsDialog from './BuyCreditsDialog.vue'
 import ExamplesTab from './ExamplesTab.vue'
 import PlaygroundForm from './PlaygroundForm.vue'
 import PlaygroundOutput from './PlaygroundOutput.vue'
@@ -174,6 +171,8 @@ const authFlagSettled = useWorkshopAuthFlagSettled()
 const mounted = useMounted()
 const signInHref = useSignInHref(locale)
 const docsHref = modelDocsHref(model)
+const buyCreditsOpen = ref(false)
+
 const gate = computed(() => {
   if (
     model.incompleteReason ||
@@ -543,29 +542,21 @@ function useInCode() {
               </p>
               <p class="text-xs text-primary-warm-gray">
                 {{
-                  t(
-                    TOP_UP_ON_PLATFORM
-                      ? 'workshop.error.noCreditsPlatform'
-                      : 'workshop.error.noCreditsCloud',
-                    locale
-                  ).replace('{workspace}', () => session?.workspace.name ?? '')
+                  t('workshop.error.noCreditsCloud', locale).replace(
+                    '{workspace}',
+                    () => session?.workspace.name ?? ''
+                  )
                 }}
               </p>
             </div>
             <Button
-              as="a"
-              :href="platformTopUpHref(session?.workspace.id)"
-              target="_blank"
-              rel="noopener"
               size="lg"
               class="w-full px-5"
               data-testid="run-button"
               data-gate="noCredits"
+              @click="buyCreditsOpen = true"
             >
               {{ t('workshop.run.buyCredits', locale) }}
-              <template #append>
-                <ExternalLink class="size-5" aria-hidden="true" />
-              </template>
             </Button>
           </template>
           <template v-else-if="gate === 'memberNoCredits'">
@@ -714,4 +705,5 @@ function useInCode() {
       <ApiTab :contract="model.execution" :values :locale />
     </section>
   </div>
+  <BuyCreditsDialog v-model:open="buyCreditsOpen" :locale />
 </template>

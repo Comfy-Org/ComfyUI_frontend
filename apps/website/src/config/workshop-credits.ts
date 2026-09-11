@@ -100,6 +100,87 @@ function start(): void {
   })
 }
 
+/**
+ * Stripe grants a top-up through its webhook seconds after the buyer pays,
+ * so the one refocus read usually races the grant and loses. While a
+ * checkout is in flight, keep re-reading until the balance moves or
+ * patience runs out — and let the dialog watch the outcome: waiting is its
+ * 4a card, landed carries the receipt's ledger, unresolved is the held
+ * state that names a support handle.
+ */
+const TOP_UP_POLL_MS = 5_000
+const TOP_UP_POLL_LIMIT = 24
+
+export type TopUpWatchState =
+  | { readonly status: 'idle' }
+  | { readonly status: 'waiting'; readonly previousCredits: number }
+  | {
+      readonly status: 'landed'
+      readonly previousCredits: number
+      readonly newCredits: number
+      readonly landedAt: number
+    }
+  | { readonly status: 'unresolved'; readonly previousCredits: number }
+
+const topUpWatch = ref<TopUpWatchState>({ status: 'idle' })
+let topUpPoll: ReturnType<typeof setInterval> | undefined
+
+export function clearTopUpWatch(): void {
+  if (topUpPoll) clearInterval(topUpPoll)
+  topUpPoll = undefined
+  topUpWatch.value = { status: 'idle' }
+}
+
+export function watchForTopUp(): void {
+  if (typeof window === 'undefined') return
+  clearTopUpWatch()
+  const { session } = useWorkshopSession()
+  // The checkout was made for this workspace; a balance from any other must
+  // never satisfy the watch, and switching away retires it.
+  const forWorkspace = session.value?.workspace.id
+  const previousCredits =
+    balance.value.status === 'ok' ? balance.value.credits : 0
+  topUpWatch.value = { status: 'waiting', previousCredits }
+  let ticks = 0
+  topUpPoll = setInterval(() => {
+    ticks += 1
+    // Only a definitely different workspace retires the watch: a snapshot
+    // mid-remint has no session for a beat, and that transient must not
+    // kill a checkout in flight.
+    const liveWorkspace = session.value?.workspace.id
+    if (liveWorkspace !== undefined && liveWorkspace !== forWorkspace) {
+      clearTopUpWatch()
+      return
+    }
+    if (
+      balance.value.status === 'ok' &&
+      balance.value.credits > previousCredits
+    ) {
+      const newCredits = balance.value.credits
+      if (topUpPoll) clearInterval(topUpPoll)
+      topUpPoll = undefined
+      topUpWatch.value = {
+        status: 'landed',
+        previousCredits,
+        newCredits,
+        landedAt: Date.now()
+      }
+      return
+    }
+    if (ticks > TOP_UP_POLL_LIMIT) {
+      if (topUpPoll) clearInterval(topUpPoll)
+      topUpPoll = undefined
+      topUpWatch.value = { status: 'unresolved', previousCredits }
+      return
+    }
+    void refreshWorkshopCredits({ force: true })
+  }, TOP_UP_POLL_MS)
+}
+
+export function useTopUpWatch() {
+  return computed(() => topUpWatch.value)
+}
+
 export function useWorkshopCredits() {
   start()
   const { session } = useWorkshopSession()

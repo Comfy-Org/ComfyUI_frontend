@@ -471,11 +471,8 @@ describe('ModelDetail', () => {
       'A red teapot'
     )
 
-    const buy = screen.getByRole('link', { name: 'Add credits' })
-    expect(buy.getAttribute('href')).toBe(
-      `${WORKSHOP_CLOUD_BASE_URL}/?settings=plan-credits`
-    )
-    expect(buy.getAttribute('target')).toBe('_blank')
+    const buy = screen.getByRole('button', { name: /Add credits/ })
+    expect(buy.getAttribute('data-gate')).toBe('noCredits')
     expect(screen.getByTestId('gate-note').textContent).toContain('Personal')
     expect(screen.queryByRole('button', { name: 'Run' })).toBeNull()
     expect(runWorkshopRouter).not.toHaveBeenCalled()
@@ -483,11 +480,24 @@ describe('ModelDetail', () => {
     credits.balance.value = { status: 'ok', credits: 100 }
     await nextTick()
     expect(screen.getByRole('button', { name: 'Run' })).toBeTruthy()
-    expect(screen.queryByRole('link', { name: 'Add credits' })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Add credits/ })).toBeNull()
     expect(screen.getByRole('textbox', { name: /Prompt/ })).toHaveProperty(
       'value',
       'A red teapot'
     )
+  })
+
+  it('opens the amount picker from the gate', async () => {
+    auth.session.value = credential
+    credits.balance.value = { status: 'ok', credits: 0 }
+    mountDetail({ model: runnable })
+    await nextTick()
+
+    expect(screen.queryByTestId('buy-credits-dialog')).toBeNull()
+    await user().click(screen.getByRole('button', { name: /Add credits/ }))
+
+    expect(screen.getByTestId('buy-credits-dialog')).toBeTruthy()
+    expect(screen.getByTestId('buy-credits-pack-25')).toBeTruthy()
   })
 
   it.for(['unknown', 'error'] as const)(
@@ -606,7 +616,7 @@ describe('ModelDetail', () => {
     expect(
       screen.getByTestId('playground-output').getAttribute('data-state')
     ).toBe('cancelled')
-    expect(screen.getByRole('link', { name: 'Add credits' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Add credits/ })).toBeTruthy()
     pending.resolve(routerResult)
     await vi.waitFor(() => expect(refreshWorkshopCredits).toHaveBeenCalled())
   })

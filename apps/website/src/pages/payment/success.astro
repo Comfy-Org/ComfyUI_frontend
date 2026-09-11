@@ -10,3 +10,13 @@ import PaymentStatusSection from '../../components/payment/PaymentStatusSection.
 >
   <PaymentStatusSection status="success" />
 </BaseLayout>
+
+<script>
+  // A checkout opened with window.open returns here when it finishes; the
+  // tab may close itself and hand focus back. Everywhere else close() is
+  // silently refused and the page reads as the ordinary landing it is.
+  if (window.opener) {
+    window.opener.focus()
+    window.close()
+  }
+</script>
