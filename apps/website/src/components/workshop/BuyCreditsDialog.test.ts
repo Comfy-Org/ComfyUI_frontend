@@ -12,11 +12,22 @@ const hoistedSession = vi.hoisted(() => ({
   session: undefined as { value: unknown } | undefined
 }))
 
-const credits = vi.hoisted(() => ({ watchForTopUp: vi.fn() }))
-
-vi.mock<unknown>(import('../../config/workshop-credits'), () => ({
-  watchForTopUp: credits.watchForTopUp
+const credits = vi.hoisted(() => ({
+  watchForTopUp: vi.fn(),
+  clearTopUpWatch: vi.fn(),
+  topUp: undefined as { value: unknown } | undefined
 }))
+
+vi.mock<unknown>(import('../../config/workshop-credits'), async () => {
+  const { ref, computed } = await import('vue')
+  const topUp = ref<unknown>({ status: 'idle' })
+  credits.topUp = topUp
+  return {
+    watchForTopUp: credits.watchForTopUp,
+    clearTopUpWatch: credits.clearTopUpWatch,
+    useTopUpWatch: () => computed(() => topUp.value)
+  }
+})
 
 vi.mock<unknown>(import('../../config/workshop-session-state'), async () => {
   const { ref } = await import('vue')
@@ -57,6 +68,42 @@ function renderOpenDialog() {
 describe('BuyCreditsDialog', () => {
   beforeEach(() => {
     hoistedSession.session!.value = credential
+    credits.topUp!.value = { status: 'idle' }
+    credits.watchForTopUp.mockReset()
+    credits.clearTopUpWatch.mockReset()
+  })
+
+  it('walks waiting to the landed receipt and closes on Done', async () => {
+    const user = userEvent.setup()
+    renderOpenDialog()
+
+    credits.topUp!.value = { status: 'waiting', previousCredits: 100 }
+    expect(await screen.findByTestId('buy-credits-polling')).toBeTruthy()
+
+    credits.topUp!.value = {
+      status: 'landed',
+      previousCredits: 100,
+      newCredits: 5375
+    }
+    const done = await screen.findByTestId('buy-credits-done')
+    expect(done.textContent).toContain('5,275 credits added')
+    expect(screen.getByTestId('buy-credits-ledger').textContent).toContain(
+      '5,375'
+    )
+
+    await user.click(screen.getByTestId('buy-credits-resume'))
+    expect(credits.clearTopUpWatch).toHaveBeenCalled()
+  })
+
+  it('holds with a support handle when the credits never arrive', async () => {
+    renderOpenDialog()
+
+    credits.topUp!.value = { status: 'unresolved', previousCredits: 100 }
+
+    expect(await screen.findByTestId('buy-credits-held')).toBeTruthy()
+    expect(
+      screen.getByTestId('buy-credits-support').getAttribute('href')
+    ).toBeTruthy()
   })
 
   it('offers the packs and clamps the custom stepper', async () => {
@@ -109,7 +156,7 @@ describe('BuyCreditsDialog', () => {
     })
     expect(JSON.parse(String(init.body))).toEqual({
       amount_cents: 5000,
-      return_url: `${window.location.origin}/models/checkout-complete`
+      return_url: `${window.location.origin}/payment/success`
     })
     expect(credits.watchForTopUp).toHaveBeenCalled()
   })
