@@ -16,7 +16,7 @@ describe('inline workflow prompt', () => {
       text: 'before 😀\nafter',
       references: [
         { id: 'a', name: 'A', textOffset: 0 },
-        { id: 'b', name: 'B', textOffset: 7 },
+        { id: 'b', name: 'B', textOffset: 7, unavailable: true },
         { id: 'c', name: 'C', textOffset: 7 },
         { id: 'd', name: 'D', textOffset: 15 }
       ]

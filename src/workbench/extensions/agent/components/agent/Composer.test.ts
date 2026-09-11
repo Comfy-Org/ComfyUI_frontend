@@ -918,6 +918,32 @@ describe('Composer', () => {
     }
   )
 
+  it('preserves unavailable references while editing and permits their removal', async () => {
+    const { emitted } = mount({
+      workflowReferences: [
+        { id: 'missing', name: 'Missing', textOffset: 0, unavailable: true }
+      ]
+    })
+    await userEvent.type(screen.getByRole('textbox'), 'Keep this prompt')
+    const chip = screen.getByRole('button', { name: 'Missing (unavailable)' })
+    expect(chip).toHaveAttribute('aria-disabled', 'true')
+    expect(chip).toHaveAttribute(
+      'aria-description',
+      i18n.global.t('agent.workflowReferenceUnavailableReason')
+    )
+    await userEvent.click(chip)
+    await userEvent.keyboard('{Enter} ')
+    expect(emitted().openReferenceWorkflow).toBeUndefined()
+    expect(useAgentComposerStore().workflowReferences).toEqual([
+      { id: 'missing', name: 'Missing', textOffset: 16, unavailable: true }
+    ])
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Remove Missing reference' })
+    )
+    expect(useAgentComposerStore().workflowReferences).toEqual([])
+    expect(useAgentComposerStore().draft).toBe('Keep this prompt')
+  })
+
   it.for(['pointer', 'keyboard'])(
     'removes only the chosen workflow with %s without navigating',
     async (interaction) => {

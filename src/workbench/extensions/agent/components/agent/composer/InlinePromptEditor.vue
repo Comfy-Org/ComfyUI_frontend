@@ -180,16 +180,33 @@ onMounted(() => {
         const open = document.createElement('span')
         open.setAttribute('role', 'button')
         open.tabIndex = 0
-        open.setAttribute('aria-label', t('agent.openWorkflowTab', { name }))
+        const unavailable = node.attrs.unavailable === true
+        open.setAttribute(
+          'aria-label',
+          t(
+            unavailable
+              ? 'agent.unavailableWorkflowReference'
+              : 'agent.openWorkflowTab',
+            { name }
+          )
+        )
+        if (unavailable) {
+          const reason = t('agent.workflowReferenceUnavailableReason')
+          open.setAttribute('aria-disabled', 'true')
+          open.setAttribute('aria-description', reason)
+          open.title = reason
+        }
         open.className =
-          'inline cursor-pointer rounded-sm bg-primary-background/30 box-decoration-clone px-1 py-0.5 font-inter text-xs/[15px] font-normal break-all whitespace-normal text-primary-background-hover ring-1 ring-primary-background/30 transition-colors ring-inset hover:bg-primary-background/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background'
+          'inline cursor-pointer rounded-sm bg-primary-background/30 box-decoration-clone px-1 py-0.5 font-inter text-xs/[15px] font-normal break-all whitespace-normal text-primary-background-hover ring-1 ring-primary-background/30 transition-colors ring-inset hover:bg-primary-background/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background aria-disabled:cursor-not-allowed aria-disabled:opacity-50'
         const icon = document.createElement('span')
         icon.className =
           'icon-[comfy--workflow] mr-1 inline-block size-3 align-middle'
         const title = document.createElement('span')
         title.textContent = name
         open.append(icon, title)
-        open.onclick = () => emit('openReferenceWorkflow', id, name)
+        open.onclick = () => {
+          if (!unavailable) emit('openReferenceWorkflow', id, name)
+        }
         open.onkeydown = (event) => {
           if (event.key === 'Enter' || event.key === ' ') event.preventDefault()
           if (event.key === 'Enter') open.click()

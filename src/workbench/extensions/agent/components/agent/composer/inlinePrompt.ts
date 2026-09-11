@@ -12,7 +12,7 @@ export const inlinePromptSchema = new Schema({
       group: 'inline',
       inline: true,
       atom: true,
-      attrs: { id: {}, name: {} },
+      attrs: { id: {}, name: {}, unavailable: { default: false } },
       toDOM: (node) => [
         'span',
         { 'data-workflow-id': node.attrs.id },
@@ -31,7 +31,8 @@ export function promptDocument(
       ? inlinePromptSchema.text(part.text)
       : inlinePromptSchema.nodes.workflow.create({
           id: part.reference.id,
-          name: part.reference.name
+          name: part.reference.name,
+          unavailable: part.reference.unavailable === true
         })
   )
   return inlinePromptSchema.nodes.doc.create(null, content)
@@ -46,9 +47,14 @@ export function promptDraft(doc: Node): {
   doc.forEach((node) => {
     if (node.isText) text += node.text
     else if (node.type.name === 'workflow') {
-      const { id, name } = node.attrs
+      const { id, name, unavailable } = node.attrs
       if (typeof id === 'string' && typeof name === 'string')
-        references.push({ id, name, textOffset: text.length })
+        references.push({
+          id,
+          name,
+          textOffset: text.length,
+          ...(unavailable === true ? { unavailable: true } : {})
+        })
     }
   })
   return { text, references }
