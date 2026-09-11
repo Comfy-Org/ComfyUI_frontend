@@ -39,10 +39,10 @@ class FakeCompositor implements Compositor {
   }
   freeTarget() {}
   targetTexture(): WebGLTexture {
-    return {} as WebGLTexture
+    return {}
   }
   upload(): WebGLTexture {
-    return {} as WebGLTexture
+    return {}
   }
   readback(): ImageData {
     return {
@@ -160,7 +160,7 @@ function fakeCanvas(w: number, h: number): HTMLCanvasElement {
   return c
 }
 
-const IMAGE_SIZES: Record<string, [number, number]> = {
+const IMAGE_SIZES: Partial<Record<string, [number, number]>> = {
   'a.png': [64, 48],
   'b.png': [32, 32],
   'c.png': [40, 80]
@@ -923,11 +923,11 @@ describe('useLayerEditorSession', () => {
       top.mask = mask
 
       session.flipLayer(top.id, 'v')
-      expect(top.mask?.contentId).not.toBe(maskContentId)
-      expect(session.content.get(top.mask?.contentId ?? '')?.width).toBe(32)
+      expect(top.mask.contentId).not.toBe(maskContentId)
+      expect(session.content.get(top.mask.contentId)?.width).toBe(32)
 
       session.undo()
-      expect(top.mask?.contentId).toBe(maskContentId)
+      expect(top.mask.contentId).toBe(maskContentId)
     })
 
     it('tracks flip parity per axis and layer, toggling back on double flip', async () => {

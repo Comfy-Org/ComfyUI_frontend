@@ -9,8 +9,8 @@ import type {
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
-import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
+import { mockCloudBootRoutes } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const THREAD_ID = 'd4c016c4-3b8c-44cf-97de-1ae27e43e718'
@@ -40,9 +40,9 @@ export const THINKING_EVENT: AgentWsEvent = {
 export const TOOL_CALL_EVENT: AgentWsEvent = {
   type: 'agent_tool_call',
   data: {
+    tool_call_id: 'call-set-widget',
     tool_name: 'set_widget',
-    status: 'ok',
-    args: ['workflow', 'set-widget', 'workflow.json'],
+    status: 'success',
     duration_ms: 1300,
     message_id: TURN_ID,
     thread_id: THREAD_ID
@@ -70,9 +70,9 @@ export const RESUMED_THINKING_EVENT: AgentWsEvent = {
 export const OPEN_TAB_TOOL_EVENT: AgentWsEvent = {
   type: 'agent_tool_call',
   data: {
+    tool_call_id: 'call-new-tab',
     tool_name: 'new_tab',
-    status: 'ok',
-    args: [],
+    status: 'success',
     duration_ms: 500,
     message_id: TURN_ID,
     thread_id: THREAD_ID
@@ -82,9 +82,9 @@ export const OPEN_TAB_TOOL_EVENT: AgentWsEvent = {
 export const RESIZE_IMAGE_TOOL_EVENT: AgentWsEvent = {
   type: 'agent_tool_call',
   data: {
+    tool_call_id: 'call-resize-image-node',
     tool_name: 'resize_image_node',
-    status: 'ok',
-    args: [],
+    status: 'success',
     duration_ms: 200,
     message_id: TURN_ID,
     thread_id: THREAD_ID
@@ -146,37 +146,13 @@ async function mockAgentBoot(
     r.fulfill(jsonRoute({ assets: [] }))
   )
 
-  await page.route('**/api/features', (r) =>
-    r.fulfill(jsonRoute(agentFeatures(agentFlag)))
-  )
-  await page.route('**/api/system_stats', (r) =>
-    r.fulfill(jsonRoute(mockSystemStats))
-  )
-  await page.route('**/api/users', (r) =>
-    r.fulfill(
-      jsonRoute({
-        storage: 'server',
-        migrated: true,
-        users: { 'test-user-e2e': 'E2E Test User' }
-      })
-    )
-  )
-  await page.route('**/api/settings', (r) =>
-    r.fulfill(
-      jsonRoute({
-        'Comfy.TutorialCompleted': true,
-        'Comfy.RightSidePanel.ShowErrorsTab': false
-      })
-    )
-  )
-  await page.route('**/api/userdata**', (r) => r.fulfill(jsonRoute([])))
-  await page.route('**/api/extensions', (r) => r.fulfill(jsonRoute([])))
-  await page.route('**/api/object_info', (r) => r.fulfill(jsonRoute({})))
-  await page.route('**/api/global_subgraphs', (r) => r.fulfill(jsonRoute({})))
-  await page.route('**/api/i18n', (r) => r.fulfill(jsonRoute({})))
-  await page.route('**/api/auth/session', (r) =>
-    r.fulfill(jsonRoute({ token: 'mock-workspace-token' }))
-  )
+  await mockCloudBootRoutes(page, {
+    features: agentFeatures(agentFlag),
+    settings: {
+      'Comfy.TutorialCompleted': true,
+      'Comfy.RightSidePanel.ShowErrorsTab': false
+    }
+  })
   await page.route('**/api/auth/token', (r) =>
     r.fulfill(
       jsonRoute({
@@ -188,7 +164,6 @@ async function mockAgentBoot(
       })
     )
   )
-  await page.route('**/releases**', (r) => r.fulfill(jsonRoute([])))
   await page.route('**/api/workspaces', (r) =>
     r.fulfill(
       jsonRoute({
@@ -236,6 +211,7 @@ type AgentFixtures = {
 
 export const agentTest = comfyPageFixture.extend<AgentFixtures>({
   agentFlagEnabled: [true, { option: true }],
+  // oxlint-disable-next-line no-empty-pattern -- Playwright requires an object pattern.
   postedMessages: async ({}, use) => {
     await use([])
   },

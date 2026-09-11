@@ -40,6 +40,24 @@ describe('toCalendarEvent', () => {
     })
   })
 
+  it('falls back to English for empty localized fields and links', () => {
+    const event: ComfyEvent = {
+      ...baseEvent,
+      title: { ...baseEvent.title, 'zh-CN': '' },
+      description: { ...baseEvent.description, 'zh-CN': '' },
+      location: { ...baseEvent.location!, 'zh-CN': '' },
+      link: {
+        href: { ...baseEvent.link!.href, 'zh-CN': '' }
+      }
+    }
+
+    expect(toCalendarEvent(event, 'zh-CN')).toMatchObject({
+      title: 'Test Event',
+      description: 'A livestream.\n\nhttps://comfy.org/launches',
+      location: 'Online'
+    })
+  })
+
   it('links events that have their own page to that page', () => {
     const event: ComfyEvent = { ...baseEvent, liveVideoId: 'abc123' }
 
@@ -226,6 +244,27 @@ describe('eventJsonLdNode', () => {
     expect(eventJsonLdNode(event, input)).toMatchObject({
       eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
       location: { '@type': 'Place', name: 'San Francisco' }
+    })
+  })
+
+  it('falls back to English for empty localized links and venue names', () => {
+    const onlineEvent: ComfyEvent = {
+      ...baseEvent,
+      link: { href: { ...baseEvent.link!.href, en: '/english', 'zh-CN': '' } }
+    }
+    const offlineEvent: ComfyEvent = {
+      ...baseEvent,
+      location: { en: 'San Francisco', 'zh-CN': '' }
+    }
+    const zhInput = { ...input, locale: 'zh-CN' as const }
+
+    expect(eventJsonLdNode(onlineEvent, zhInput).location).toMatchObject({
+      '@type': 'VirtualLocation',
+      url: 'https://comfy.org/english/'
+    })
+    expect(eventJsonLdNode(offlineEvent, zhInput).location).toMatchObject({
+      '@type': 'Place',
+      name: 'San Francisco'
     })
   })
 })
