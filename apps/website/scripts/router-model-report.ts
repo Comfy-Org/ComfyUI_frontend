@@ -12,6 +12,8 @@ import {
 import { dirname } from 'node:path'
 import { z } from 'zod'
 
+import { workshopModelAvailability } from '../src/config/workshop-model-availability'
+
 const kindSchema = z.enum(['image', 'video', 'audio'])
 const modalitySchema = z.enum([...kindSchema.options, '3d', 'text', 'other'])
 const dateSchema = z.string().datetime({ offset: true })
@@ -183,15 +185,25 @@ function revision(source: ReportSource | undefined): string {
   return `${source?.revision?.slice(0, 8) ?? 'unknown'}${source?.dirty ? ' + uncommitted changes' : ''}`
 }
 
+function disabledReason(slug: string): string | undefined {
+  const availability = workshopModelAvailability.get(slug)
+  return availability?.disabled ? availability.reason : undefined
+}
+
 function markdown(rows: readonly ReportRow[]): string {
   const statuses = ['passed', 'failed', 'blocked', 'cancelled', 'not-run']
   const counts = statuses.map(
     (status) =>
       `${status}: ${rows.filter((row) => (row.live?.status ?? 'not-run') === status).length}`
   )
+  const disabledPages = [...workshopModelAvailability.values()].filter(
+    (availability) => availability.disabled
+  ).length
   const lines = rows.map((row) => {
     const { live, preflight, lastSuccess } = row
+    const disabled = disabledReason(row.slug)
     const detail = [
+      disabled && `Disabled on the site: ${disabled}`,
       !live &&
         !kindSchema.safeParse(row.modality).success &&
         'Live verification is not supported for this output type',
@@ -220,7 +232,7 @@ function markdown(rows: readonly ReportRow[]): string {
         row.preflight?.status === 'failed'
           ? `Invalid inputs: ${(row.preflight.fields ?? []).join(', ')}`
           : failureLabels[row.live?.failure ?? 'unknown']
-      return `| ${cell(row.slug)} | ${row.environment} / ${row.inputMode} | ${cell(problem)} |`
+      return `| ${cell(row.slug)} | ${row.environment} / ${row.inputMode} | ${cell(problem)} | ${disabledReason(row.slug) ? 'Disabled' : 'Published'} |`
     })
   return [
     '# Model test results',
@@ -229,18 +241,18 @@ function markdown(rows: readonly ReportRow[]): string {
     '',
     'Each row identifies a model page, environment, and input mode. A live pass requires downloaded, decoded media of the expected type. Ready defaults are only a local validation result. Results describe the recorded revision and date, not a guarantee about a newer revision.',
     '',
-    'Blocked checks reflect account capacity or rate limits and do not establish that a model is broken. Custom-input checks do not verify the initial page defaults. Use failures to investigate and decide model availability; this report does not change availability automatically.',
+    'Blocked checks reflect account capacity or rate limits and do not establish that a model is broken. Custom-input checks do not verify the initial page defaults. A page is published unless [`src/data/workshop-model-availability.json`](src/data/workshop-model-availability.json) disables it; this report never changes availability itself.',
     '',
-    'See [Model testing](MODEL_TESTING.md) for running instructions and verification limits, including collection after an initial timeout.',
+    'See [Model testing](MODEL_TESTING.md) for running instructions, disabling and re-enabling pages, and verification limits, including collection after an initial timeout.',
     '',
-    `${rows.length} cases — ${counts.join('; ')}. Default preflight failures: ${rows.filter((row) => row.preflight?.status === 'failed' && row.inputMode === 'page-defaults').length}.`,
+    `${rows.length} cases — ${counts.join('; ')}. Default preflight failures: ${rows.filter((row) => row.preflight?.status === 'failed' && row.inputMode === 'page-defaults').length}. Pages disabled on the site: ${disabledPages}.`,
     '',
     ...(attention.length
       ? [
           '## Needs attention',
           '',
-          '| Model page | Environment / inputs | Problem |',
-          '| --- | --- | --- |',
+          '| Model page | Environment / inputs | Problem | Site |',
+          '| --- | --- | --- | --- |',
           ...attention,
           '',
           '## All results'

@@ -8,6 +8,7 @@ import {
   validateForm
 } from './workshop-playground'
 import type { FileValue, FormValues } from './workshop-playground'
+import type { WorkshopModelDetail } from './models-catalogue'
 import { prepareWorkshopRouterInput } from './workshop-request'
 import { validateWorkshopInput } from './workshop-json-schema'
 import creatorModels from '../data/workshop-creator-models.json'
@@ -26,12 +27,31 @@ function upload(type = 'image/png'): FileValue {
   return { file, name: file.name, size: file.size, type: file.type }
 }
 
+function unpublishedModel(id: string): WorkshopModelDetail {
+  const slug = id.replace('/', '--')
+  return {
+    slug,
+    name: id,
+    workflowCount: 0,
+    href: `/models/${slug}/`,
+    routerId: id,
+    capabilities: [],
+    fields: [],
+    defaults: {},
+    examples: []
+  }
+}
+
 function modelFor(id: string) {
   const model = getRouterWorkshopModelDetail(id.replace('/', '--'))
-  if (!model?.execution) throw new Error(`Missing Router contract: ${id}`)
   const contract = workshopContract(id)
   if (contract)
-    return { ...model, execution: contract, form: formForContract(contract) }
+    return {
+      ...(model ?? unpublishedModel(id)),
+      execution: contract,
+      form: formForContract(contract)
+    }
+  if (!model?.execution) throw new Error(`Missing Router contract: ${id}`)
   return { ...model, execution: model.execution }
 }
 

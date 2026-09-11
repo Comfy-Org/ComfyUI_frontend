@@ -7,6 +7,7 @@ import availability from '../data/workshop-router-availability.json'
 import { routerAliasById } from './workshop-browse-content'
 import { workshopContract } from './workshop-contract-catalog'
 import { workshopContentInputs } from './workshop-content-inputs'
+import { isWorkshopModelDisabled } from './workshop-model-availability'
 import { getRouterWorkshopModelDetail as getWorkshopModelDetail } from './workshop-router-content'
 import { schemaForModel } from './workshop-playground'
 import type { GeneratedField, WorkshopModel } from './models-catalogue'
@@ -310,7 +311,8 @@ describe('workshopModels', () => {
         return alias &&
           workshopContract(alias.routerId) &&
           !Object.hasOwn(availability, alias.routerId) &&
-          !workshopContentInputs.get(entry.id)?.unavailableReason
+          !workshopContentInputs.get(entry.id)?.unavailableReason &&
+          !isWorkshopModelDisabled(entry.slug)
           ? [alias.routerId]
           : []
       })

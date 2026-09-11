@@ -8,6 +8,39 @@ import { validateWorkshopInput } from './workshop-json-schema'
 import type { WorkshopSvgRasterizer } from './workshop-svg-output'
 
 const RUN_TIMEOUT_MS = 660_000
+const DEADLINE_COLLECTIONS = 3
+const IN_FLIGHT_RETRIES = 5
+const IN_FLIGHT_MAX_WAIT_MS = 10_000
+
+function isParkedDeadline(response: Response): boolean {
+  return (
+    response.status === 504 &&
+    response.headers.get('X-Comfy-Error-Type') === 'deadline_exceeded'
+  )
+}
+
+function inFlightWaitMs(response: Response): number | undefined {
+  const retryAfter = response.headers.get('Retry-After')
+  if (response.status !== 409 || retryAfter === null) return
+  const seconds = Number(retryAfter)
+  if (!Number.isFinite(seconds) || seconds < 0) return
+  return Math.min(seconds * 1000, IN_FLIGHT_MAX_WAIT_MS)
+}
+
+function waitFor(ms: number, signal: AbortSignal): Promise<void> {
+  signal.throwIfAborted()
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      signal.removeEventListener('abort', abort)
+      resolve()
+    }, ms)
+    function abort() {
+      clearTimeout(timer)
+      reject(signal.reason)
+    }
+    signal.addEventListener('abort', abort, { once: true })
+  })
+}
 
 async function failureDetails(response: Response) {
   const reader = response.body?.getReader()
@@ -63,6 +96,7 @@ export async function runWorkshopRouter(options: {
 }): Promise<{
   readonly outputs: RunOutput[]
   readonly requestId: string | null
+  readonly deadlineCollections: number
 }> {
   if (
     !options.token ||
@@ -77,46 +111,69 @@ export async function runWorkshopRouter(options: {
   const abortFromCaller = () => requestController.abort(options.signal.reason)
   options.signal.addEventListener('abort', abortFromCaller, { once: true })
   if (options.signal.aborted) abortFromCaller()
-  const timeout = setTimeout(() => requestController.abort(), RUN_TIMEOUT_MS)
+  let timeout: ReturnType<typeof setTimeout> | undefined
   const signal = requestController.signal
   let requestId: string | null = null
+  let deadlineCollections = 0
+  let inFlightRetries = 0
   try {
-    signal.throwIfAborted()
-    const response = await fetch(
-      `${WORKSHOP_ROUTER_BASE_URL}/v2/models/${options.contract.id}`,
-      {
-        method: 'POST',
-        credentials: 'omit',
-        redirect: 'error',
-        headers: {
-          Authorization: `Bearer ${options.token}`,
-          'Content-Type': 'application/json',
-          'Idempotency-Key': options.idempotencyKey
-        },
-        body,
-        signal
-      }
-    )
-    requestId = response.headers.get('X-Comfy-Request-Id')
-    options.onRequestId?.(requestId)
-    if (!response.ok)
-      throw new WorkshopRouterError(
-        failureFor(response),
-        requestId,
-        {},
-        await failureDetails(response)
-      )
-    const outputs = await parseRouterResponse(
-      options.contract,
-      response,
-      signal,
-      options.rasterizeSvg
-    )
-    if (signal.aborted) {
-      releaseRouterOutputs(outputs)
+    for (;;) {
       signal.throwIfAborted()
+      clearTimeout(timeout)
+      timeout = setTimeout(() => requestController.abort(), RUN_TIMEOUT_MS)
+      const response = await fetch(
+        `${WORKSHOP_ROUTER_BASE_URL}/v2/models/${options.contract.id}`,
+        {
+          method: 'POST',
+          credentials: 'omit',
+          redirect: 'error',
+          headers: {
+            Authorization: `Bearer ${options.token}`,
+            'Content-Type': 'application/json',
+            'Idempotency-Key': options.idempotencyKey
+          },
+          body,
+          signal
+        }
+      )
+      requestId = response.headers.get('X-Comfy-Request-Id')
+      options.onRequestId?.(requestId)
+      // Router parks a submitted generation at its synchronous deadline and
+      // hands it back to a request repeating the same key and body.
+      if (
+        isParkedDeadline(response) &&
+        deadlineCollections < DEADLINE_COLLECTIONS
+      ) {
+        deadlineCollections += 1
+        await response.body?.cancel().catch(() => {})
+        continue
+      }
+      const inFlightWait = inFlightWaitMs(response)
+      if (inFlightWait !== undefined && inFlightRetries < IN_FLIGHT_RETRIES) {
+        inFlightRetries += 1
+        await response.body?.cancel().catch(() => {})
+        await waitFor(inFlightWait, signal)
+        continue
+      }
+      if (!response.ok)
+        throw new WorkshopRouterError(
+          failureFor(response),
+          requestId,
+          {},
+          await failureDetails(response)
+        )
+      const outputs = await parseRouterResponse(
+        options.contract,
+        response,
+        signal,
+        options.rasterizeSvg
+      )
+      if (signal.aborted) {
+        releaseRouterOutputs(outputs)
+        signal.throwIfAborted()
+      }
+      return { outputs, requestId, deadlineCollections }
     }
-    return { outputs, requestId }
   } catch (error) {
     options.signal.throwIfAborted()
     if (signal.aborted) throw new WorkshopRouterError('timeout', requestId)

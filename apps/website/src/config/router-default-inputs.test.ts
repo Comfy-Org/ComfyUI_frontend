@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import defaultMedia from '../data/router-default-media.json'
 import { initialWorkshopPageState } from './workshop-page-state'
 import { prepareModelRouterRender } from './router-render'
+import { routerWorkshopModels } from './workshop-browse-content'
 import { getRouterWorkshopModelDetail } from './workshop-router-content'
 import { validateForm } from './workshop-playground'
 
@@ -115,12 +116,19 @@ describe('runnable page defaults', () => {
     expect(validateForm(fallback.schema, fallback.values)).toEqual({})
   })
 
-  it('leaves a provider video ID missing rather than inventing a completed job', () => {
-    const model = modelFor('kling--video-extend--edit-videos')
-    const page = initialWorkshopPageState(model)
-    expect(validateForm(page.schema, page.values)).toMatchObject({
-      video_id: 'required'
-    })
+  it('publishes only runnable pages whose first-render inputs validate', () => {
+    for (const { slug } of routerWorkshopModels) {
+      const model = modelFor(slug)
+      expect({ slug, runnable: Boolean(model.execution) }).toEqual({
+        slug,
+        runnable: true
+      })
+      const page = initialWorkshopPageState(model)
+      expect({ slug, errors: validateForm(page.schema, page.values) }).toEqual({
+        slug,
+        errors: {}
+      })
+    }
   })
 
   it('sends text lip sync through the text mode using the generic prompt', async () => {

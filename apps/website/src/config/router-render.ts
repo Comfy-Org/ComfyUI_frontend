@@ -57,6 +57,7 @@ export interface RouterRenderResult {
   readonly expectedKind: ResolvedRouterRender['expectedKind']
   readonly requestId: string | null
   readonly outputs: readonly RunOutput[]
+  readonly deadlineCollections: number
 }
 
 export function resolveModelRouterRender(

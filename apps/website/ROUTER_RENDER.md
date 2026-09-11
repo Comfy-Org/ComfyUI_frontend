@@ -183,6 +183,12 @@ timeouts to `--timeout-seconds`, then restores the previous dispatcher and close
 its connections. This avoids Node's default five-minute header timeout cutting
 off a paid generation early. The per-case abort deadline and the shared Router
 client's 660-second request limit still apply. Browser transport is unchanged.
+
+When Router's own deadline passes it answers HTTP 504 `deadline_exceeded` and
+parks a submitted generation. `runWorkshopRouter` then repeats the identical
+request with the same idempotency key, at most three times, and Router returns
+the original generation rather than starting a new one. Pages and the tester
+share this behaviour; `router_render` reports it as `deadlineCollections`.
 See [Node's custom dispatcher API](https://nodejs.org/api/globals.html#custom-dispatcher)
 and [Undici's timeout options](https://undici.nodejs.org/api/Client).
 

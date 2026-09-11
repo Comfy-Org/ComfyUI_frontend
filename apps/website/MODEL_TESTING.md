@@ -149,8 +149,8 @@ accepts fractions. Increasing the worker count does not raise account capacity.
 
 Every selected valid case under `--execute` submits a fresh generation request,
 including previously passing pages, and live calls can incur charges. There is
-no automatic retry, resume or skip-passed mode. To retest only selected pages,
-repeat `--slug` as needed:
+no resume or skip-passed mode. To retest only selected pages, repeat `--slug` as
+needed:
 
 ```sh
 pnpm --filter @comfyorg/website test:router-models \
@@ -159,23 +159,25 @@ pnpm --filter @comfyorg/website test:router-models \
   --slug vertexai--veo-3--animate-images
 ```
 
-The whole-case timeout defaults to 900 seconds and each downloaded artifact is
-limited to 256 MiB. `--timeout-seconds` and `--max-artifact-mb` adjust these;
-the shared Router client also has its own 660-second request limit. A timeout
+The whole-case timeout defaults to 2,700 seconds, enough for the shared Router
+client's first request and three deadline collections at its 660-second
+per-request limit. Each downloaded artifact is limited to 256 MiB.
+`--timeout-seconds` and `--max-artifact-mb` adjust these. A timeout
 or Ctrl-C can leave an accepted provider job running and billable. Inspect its
 saved request ID and idempotency key before deciding whether to submit again.
 Use `pnpm --filter @comfyorg/website test:router-models --help` for all options.
 
-Some asynchronous jobs finish after Router's synchronous deadline. Production
-logs can confirm that Router parked a particular job for collection. In that
-case, preserve the original key, authenticated scope, endpoint and exact compact
-request bytes; preparing inputs again or starting a new campaign can create a
-new job. The September 11 [backend investigation](reviews/2026-09-11-backend-model-failures.md)
-documents the verified recovery path and its expiry. A completion or billing log
-alone does not count as a pass: the recovered media must still be decoded.
-The grid labels these passes `Collected after initial timeout`; their saved
-`completion: "collected-after-timeout"` evidence distinguishes successful
-collection from successful completion within the initial page request.
+Some asynchronous jobs finish after Router's synchronous deadline (about nine
+minutes). Router then answers HTTP 504 `deadline_exceeded` and parks the
+submitted generation. The shared Router client, used by both the page's Run
+button and the tester, repeats the identical request with the same idempotency
+key up to three times; Router hands back the original generation instead of
+starting and billing another. It also waits out a `409` that carries
+`Retry-After` while the original request is still settling. Any other failure is
+reported without a retry. The September 11
+[backend investigation](reviews/2026-09-11-backend-model-failures.md) documents
+the parking behaviour. The grid labels passes that needed collection
+`Collected after initial timeout` (`completion: "collected-after-timeout"`).
 
 ## Results, separate campaigns and commits
 
@@ -188,6 +190,29 @@ The default public files update after each result:
 Partial runs preserve the other pages' live results. 3D and other unsupported
 output types remain listed as untested. Use the recorded failures to decide
 which pages to fix or disable; the tester does not change model availability.
+
+## Disable or re-enable a page
+
+A model page is published unless
+[`src/data/workshop-model-availability.json`](src/data/workshop-model-availability.json)
+disables it. Entries are keyed by page slug:
+
+```json
+"kling--video-extend--edit-videos": {
+  "disabled": true,
+  "reason": "Requires the provider ID of an earlier Kling generation, which a page cannot supply by default."
+}
+```
+
+A disabled page leaves the catalogue, search, its detail route and every
+legacy redirect, and the tester no longer selects it. The build fails if an
+entry names a page that does not exist. The grid keeps a disabled page's last
+result and marks it `Disabled` with the reason.
+
+Disable any page whose initial defaults do not produce a decoded artifact. To
+re-enable one, set `disabled` to `false` or delete its entry, run the tester for
+that slug with `--execute --slug <slug>`, and commit the manifest together with
+the updated grid only after the page passes.
 
 Private evidence goes into a new, ignored `temp/router-model-tests/<run-id>/`
 directory at repository root. It includes the manifest, append-only events,

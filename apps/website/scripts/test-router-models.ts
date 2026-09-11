@@ -31,14 +31,15 @@ pnpm --filter @comfyorg/website test:router-models [options]
   --modality KIND          Select image, video or audio pages
   --concurrency N          Simultaneous cases, 1–128 (default: 16)
   --starts-per-second N    Pace new requests; fractions allowed (default: 2)
-  --timeout-seconds N      Whole-case deadline (default: 900)
+  --timeout-seconds N      Whole-case deadline (default: 2700)
   --max-artifact-mb N      Limit each downloaded artifact (default: 256)
   --output PATH            New evidence directory (default: repo temp directory)
   --report PATH.md         Persistent public results grid (default: MODELS_TEST_RESULTS.md)
   --help                   Show this help
 
 --execute requires COMFY_KEY, PUBLIC_WORKSHOP_CLOUD_ENV=prod|staging|test,
-and ffprobe/ffmpeg on PATH. Requests are never automatically retried.
+and ffprobe/ffmpeg on PATH. A request is repeated only to collect a generation
+Router parked at its deadline, with the same key and body; nothing else retries.
 Preflight validates defaults without network calls; ready is not a generation pass.
 Each run writes manifest.json, append-only events.jsonl, summary.json and artifacts.
 Parsed outputs and full JSON/text attachments are saved before media verification.
@@ -113,7 +114,7 @@ async function main() {
   if (values.modality !== undefined && !isMediaKind(values.modality))
     throw new Error('--modality must be image, video or audio')
   if (concurrency > 128) throw new Error('Concurrency cannot exceed 128')
-  const timeoutMs = positiveInteger(values['timeout-seconds'], 900) * 1000
+  const timeoutMs = positiveInteger(values['timeout-seconds'], 2700) * 1000
   const maxBytes = positiveInteger(values['max-artifact-mb'], 256) * 1024 * 1024
   const token = process.env.COMFY_KEY ?? ''
   const runId = `${new Date().toISOString().replaceAll(':', '-')}-${randomUUID()}`
@@ -367,7 +368,12 @@ async function main() {
               )
             }
             status = 'passed'
-            result = { artifacts }
+            result = {
+              artifacts,
+              ...(rendered.deadlineCollections
+                ? { completion: 'collected-after-timeout' }
+                : {})
+            }
           } catch (error) {
             status = signal.aborted ? 'cancelled' : 'failed'
             const failure = failureEvidence(error, token)

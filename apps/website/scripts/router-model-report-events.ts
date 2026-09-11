@@ -12,6 +12,7 @@ const eventSchema = z.object({
   phase: z.enum(['preflight', 'generation']),
   status: z.string(),
   requestId: z.string().nullable().optional(),
+  completion: z.literal('collected-after-timeout').optional(),
   reason: z.string().optional(),
   fieldErrors: z.record(z.string(), z.unknown()).optional(),
   response: z
@@ -89,7 +90,12 @@ export function routerReportUpdate(
   if (event.status === 'passed')
     return {
       ...base,
-      live: { ...common, status: 'passed', artifacts: event.artifacts }
+      live: {
+        ...common,
+        status: 'passed',
+        ...(event.completion ? { completion: event.completion } : {}),
+        artifacts: event.artifacts
+      }
     }
   if (event.status === 'cancelled')
     return {

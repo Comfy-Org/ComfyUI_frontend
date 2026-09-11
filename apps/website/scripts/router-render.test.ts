@@ -25,11 +25,6 @@ vi.mock(
 describe('router_render', () => {
   it.for([
     {
-      slug: 'bfl--flux-3-video-continuation--edit-videos',
-      mode: 'v2v',
-      duration: 15
-    },
-    {
       slug: 'bfl--flux-3-text-to-video--generate-videos',
       mode: 't2v',
       duration: 20
@@ -54,10 +49,10 @@ describe('router_render', () => {
     })
   })
 
-  it('rejects an explicit unsupported continuation duration before generation', async () => {
+  it('rejects an explicit unsupported duration before generation', async () => {
     await expect(
-      prepareRouterRender('bfl--flux-3-video-continuation--edit-videos', {
-        model_specific: { duration: 16 }
+      prepareRouterRender('bfl--flux-3-text-to-video--generate-videos', {
+        model_specific: { duration: 21 }
       })
     ).rejects.toMatchObject({
       reason: 'validation',
@@ -204,6 +199,7 @@ describe('router_render', () => {
     vi.stubEnv('COMFY_KEY', 'comfyui-test-key')
     vi.mocked(runWorkshopRouter).mockResolvedValue({
       requestId: 'request-1',
+      deadlineCollections: 0,
       outputs: [
         {
           kind: 'image',

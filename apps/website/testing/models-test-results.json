@@ -1680,6 +1680,7 @@
           "dirty": true,
           "runId": "timeout-job-recovery-20260911"
         },
+        "completion": "collected-after-timeout",
         "artifacts": [
           {
             "kind": "video",
@@ -1700,6 +1701,7 @@
           "dirty": true,
           "runId": "timeout-job-recovery-20260911"
         },
+        "completion": "collected-after-timeout",
         "artifacts": [
           {
             "kind": "video",
@@ -4452,6 +4454,7 @@
           "dirty": true,
           "runId": "luma-selected-assets-replay-20260911"
         },
+        "completion": "collected-after-timeout",
         "artifacts": [
           {
             "kind": "image",
@@ -4472,6 +4475,7 @@
           "dirty": true,
           "runId": "luma-selected-assets-replay-20260911"
         },
+        "completion": "collected-after-timeout",
         "artifacts": [
           {
             "kind": "image",
@@ -4509,6 +4513,7 @@
           "dirty": true,
           "runId": "luma-selected-assets-replay-20260911"
         },
+        "completion": "collected-after-timeout",
         "artifacts": [
           {
             "kind": "image",
@@ -4529,6 +4534,7 @@
           "dirty": true,
           "runId": "luma-selected-assets-replay-20260911"
         },
+        "completion": "collected-after-timeout",
         "artifacts": [
           {
             "kind": "image",
@@ -7801,6 +7807,7 @@
           "dirty": true,
           "runId": "timeout-job-recovery-20260911"
         },
+        "completion": "collected-after-timeout",
         "artifacts": [
           {
             "kind": "image",
@@ -7821,6 +7828,7 @@
           "dirty": true,
           "runId": "timeout-job-recovery-20260911"
         },
+        "completion": "collected-after-timeout",
         "artifacts": [
           {
             "kind": "image",

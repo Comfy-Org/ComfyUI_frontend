@@ -150,7 +150,8 @@ const routerResult = {
       fileName: 'result.jpg'
     }
   ],
-  requestId: 'request-123'
+  requestId: 'request-123',
+  deadlineCollections: 0
 }
 
 function mountDetail(options?: {
@@ -962,6 +963,7 @@ describe('ModelDetail', () => {
     vi.mocked(runWorkshopRouter)
       .mockResolvedValueOnce({
         requestId: 'first',
+        deadlineCollections: 0,
         outputs: [
           {
             kind: 'image',
@@ -980,6 +982,7 @@ describe('ModelDetail', () => {
       })
       .mockResolvedValueOnce({
         requestId: 'second',
+        deadlineCollections: 0,
         outputs: [
           {
             kind: 'image',

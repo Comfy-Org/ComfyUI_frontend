@@ -1,10 +1,18 @@
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { RouterModelReportUpdate } from './router-model-report'
 import { openRouterModelReport } from './router-model-report'
+
+vi.mock(import('../src/config/workshop-model-availability'), () => ({
+  workshopModelAvailability: new Map([
+    ['test-disabled', { disabled: true, reason: 'Provider rejects defaults' }],
+    ['test-enabled', { disabled: false, reason: 'Fixed and retested' }]
+  ]),
+  isWorkshopModelDisabled: (slug: string) => slug === 'test-disabled'
+}))
 
 let directory: string
 let paths: { jsonPath: string; markdownPath: string }
@@ -56,6 +64,27 @@ const passed: RouterModelReportUpdate['live'] = {
 }
 
 describe('persistent model results', () => {
+  it('shows which failing pages are disabled on the site', () => {
+    const report = openReport()
+    const failed: RouterModelReportUpdate['live'] = {
+      status: 'failed',
+      at: nextDate,
+      failure: 'invalid-input'
+    }
+    report.update({ ...model, slug: 'test-disabled', live: failed })
+    report.update({ ...model, slug: 'test-enabled', live: failed })
+    const grid = readFileSync(paths.markdownPath, 'utf8')
+    expect(grid).toContain(
+      '| test-disabled | prod / page-defaults | Router rejected the mapped inputs | Disabled |'
+    )
+    expect(grid).toContain(
+      '| test-enabled | prod / page-defaults | Router rejected the mapped inputs | Published |'
+    )
+    expect(grid).toContain('Disabled on the site: Provider rejects defaults')
+    expect(grid).not.toContain('Fixed and retested')
+    expect(grid).toContain('Pages disabled on the site: 1.')
+  })
+
   it('preserves live passes and unrelated cases through partial preflight runs', () => {
     const report = openReport()
     report.update({ ...model, live: passed })

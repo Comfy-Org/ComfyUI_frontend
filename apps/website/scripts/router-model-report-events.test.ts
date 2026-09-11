@@ -57,6 +57,28 @@ describe('public Router result events', () => {
     expect(JSON.stringify(update)).not.toMatch(/private|signed/)
   })
 
+  it('marks a pass that Router completed only after its deadline', () => {
+    const update = routerReportUpdate(model, 'prod', source, {
+      at,
+      phase: 'generation',
+      status: 'passed',
+      completion: 'collected-after-timeout',
+      artifacts: [
+        {
+          kind: 'image',
+          bytes: 100,
+          sha256: 'a'.repeat(64),
+          width: 64,
+          height: 64
+        }
+      ]
+    })
+    expect(update?.live).toMatchObject({
+      status: 'passed',
+      completion: 'collected-after-timeout'
+    })
+  })
+
   it('does not interpret request preparation or admission as generation success', () => {
     for (const status of ['started', 'prepared', 'response'])
       expect(
