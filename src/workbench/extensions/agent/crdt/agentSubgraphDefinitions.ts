@@ -47,6 +47,33 @@ function plain(value: unknown): unknown {
   return structuredClone(value)
 }
 
+function withoutDefinitionBookkeeping(source: unknown): unknown {
+  if (typeof source !== 'object' || source === null || Array.isArray(source)) {
+    return source
+  }
+  return Object.fromEntries(
+    Object.entries(source).flatMap(([key, value]) => {
+      if (key === DEFINITION_DIGEST) return []
+      if (key !== 'definitions') return [[key, value]]
+      return [[key, withoutNestedDefinitionBookkeeping(value)]]
+    })
+  )
+}
+
+function withoutNestedDefinitionBookkeeping(source: unknown): unknown {
+  if (typeof source !== 'object' || source === null || Array.isArray(source)) {
+    return source
+  }
+  return Object.fromEntries(
+    Object.entries(source).map(([key, value]) => [
+      key,
+      key === 'subgraphs' && Array.isArray(value)
+        ? value.map(withoutDefinitionBookkeeping)
+        : value
+    ])
+  )
+}
+
 /**
  * Register entries that name a record, first occurrence only, matching what
  * LiteGraph keeps when it normalizes a definition.
@@ -105,6 +132,8 @@ function readDefinition(source: Y.Map<unknown>): ExportedSubgraph {
       definition.links = orderedKeys(source.get(LINK_ORDER), value).map((id) =>
         plain(value.get(id))
       )
+    } else if (key === 'definitions') {
+      definition.definitions = withoutNestedDefinitionBookkeeping(plain(value))
     } else {
       definition[key] = plain(value)
     }

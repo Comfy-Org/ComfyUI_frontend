@@ -143,6 +143,43 @@ describe('readSubgraphDefinitions', () => {
     expect(projected).not.toHaveProperty('__definition_digest')
   })
 
+  it('drops define_subgraph bookkeeping from nested definitions recursively', () => {
+    const deepest = createTestSubgraphData({
+      nodes: [interiorNode(1)] as never
+    })
+    const inner = createTestSubgraphData({
+      nodes: [interiorNode(2, deepest.id)] as never,
+      definitions: { subgraphs: [deepest] }
+    })
+    const outer = createTestSubgraphData({
+      nodes: [interiorNode(3, inner.id)] as never,
+      definitions: { subgraphs: [inner] }
+    })
+    const doc = seed(outer)
+    const stored = doc.getMap<Y.Map<unknown>>('definitions').get(outer.id)
+    stored?.set('definitions', {
+      subgraphs: [
+        {
+          ...inner,
+          __definition_digest: 'inner-digest',
+          definitions: {
+            subgraphs: [{ ...deepest, __definition_digest: 'deepest-digest' }]
+          }
+        }
+      ]
+    })
+
+    const [projected] = readSubgraphDefinitions(doc)
+
+    expect(projected).toEqual(outer)
+    expect(projected.definitions?.subgraphs?.[0]).not.toHaveProperty(
+      '__definition_digest'
+    )
+    expect(
+      projected.definitions?.subgraphs?.[0]?.definitions?.subgraphs?.[0]
+    ).not.toHaveProperty('__definition_digest')
+  })
+
   it('passes nested definitions through untouched', () => {
     const inner = createTestSubgraphData({ nodes: [interiorNode(1)] as never })
     const outer = createTestSubgraphData({
