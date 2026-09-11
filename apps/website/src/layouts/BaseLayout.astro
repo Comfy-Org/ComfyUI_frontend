@@ -265,12 +265,6 @@ const structuredData = shouldNoindex
     </main>
     {!minimal && <SiteFooter locale={locale} client:load />}
 
-    {
-      import.meta.env.DEV && (
-        <div id="agentation-root" transition:persist="agentation" />
-      )
-    }
-
     <Analytics />
 
     <script>
@@ -298,46 +292,6 @@ const structuredData = shouldNoindex
       document.addEventListener('astro:after-swap', () => {
         reifyMediaElements(document.body)
       })
-    </script>
-
-    <script>
-      import type { AgentationProps } from 'agentation'
-      import type { ComponentType } from 'react'
-
-      // Dev-only Agentation feedback toolbar, mounted straight through
-      // react-dom rather than an @astrojs/react island: the React
-      // integration's fast-refresh pass instruments anything named use*,
-      // which breaks this codebase's Vue composables during SSR. The
-      // import.meta.env.DEV guard is statically replaced at build time, so
-      // the dynamic imports (and React itself) are tree-shaken out of
-      // production bundles. transition:persist on #agentation-root keeps
-      // the mounted toolbar alive across ClientRouter swaps; the
-      // astro:page-load re-mount covers it being lost anyway (e.g. a page
-      // rendered without this layout's persisted node).
-      if (import.meta.env.DEV) {
-        const mountAgentation = async () => {
-          const root = document.getElementById('agentation-root')
-          // The flag is set synchronously, before any await, so a second
-          // call (initial run + astro:page-load) can't double-createRoot.
-          if (!root || root.dataset.agentationMounted) return
-          root.dataset.agentationMounted = 'true'
-          const [{ createElement }, { createRoot }, { Agentation }] =
-            await Promise.all([
-              import('react'),
-              import('react-dom/client'),
-              import('agentation')
-            ])
-          const Toolbar: ComponentType<AgentationProps> = Agentation
-          createRoot(root).render(
-            // Agent Sync endpoint: agentation-mcp's HTTP server (default
-            // port 4747). The toolbar degrades to copy-paste output when
-            // the server isn't running.
-            createElement(Toolbar, { endpoint: 'http://localhost:4747' })
-          )
-        }
-        void mountAgentation()
-        document.addEventListener('astro:page-load', mountAgentation)
-      }
     </script>
   </body>
 </html>
