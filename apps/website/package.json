@@ -70,6 +70,7 @@
     "@playwright/test": "catalog:",
     "@storybook/vue3-vite": "catalog:",
     "@tailwindcss/vite": "catalog:",
+    "@testing-library/jest-dom": "catalog:",
     "@testing-library/user-event": "catalog:",
     "@testing-library/vue": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
