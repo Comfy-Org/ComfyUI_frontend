@@ -14,6 +14,7 @@ const h = vi.hoisted(() => ({
   sessionFailure: undefined as { value: unknown } | undefined,
   balance: undefined as { value: unknown } | undefined,
   ensureFresh: vi.fn(),
+  remint: vi.fn(),
   signOut: vi.fn()
 }))
 
@@ -38,6 +39,7 @@ vi.mock<unknown>(import('../../config/workshop-session-state'), async () => {
       session,
       sessionFailure,
       ensureFresh: h.ensureFresh,
+      remint: h.remint,
       signOut: h.signOut
     })
   }
@@ -47,12 +49,16 @@ vi.mock<unknown>(import('../../config/workshop-credits'), async () => {
   const { ref } = await import('vue')
   const balance = ref<unknown>({ status: 'unknown' })
   h.balance = balance
-  return { useWorkshopCredits: () => ({ balance }) }
+  return {
+    useWorkshopCredits: () => ({ balance }),
+    refreshWorkshopCredits: vi.fn().mockResolvedValue(undefined)
+  }
 })
 
 const workspace = { id: 'ws', name: 'Personal', type: 'personal' as const }
 
 beforeEach(() => {
+  h.remint.mockReset()
   h.flag!.value = true
   h.user!.value = null
   h.session!.value = undefined
@@ -211,9 +217,7 @@ describe('HeaderAccount menu', () => {
     await userEvent.click(screen.getByRole('button', { name: /account/i }))
 
     const topUp = screen.getByTestId('account-add-credits')
-    expect(topUp.getAttribute('href')).toBe(
-      'https://platform.comfy.org/billing?workspace=ws'
-    )
+    expect(topUp.getAttribute('href')).toBe(platformTopUpHref(workspace.id))
     expect(topUp.getAttribute('target')).toBe('_blank')
     expect(
       screen.getByTestId('account-workspace-settings').getAttribute('href')
@@ -230,25 +234,123 @@ describe('HeaderAccount menu', () => {
     await waitFor(() =>
       // eslint-disable-next-line testing-library/no-node-access
       expect(document.activeElement).toBe(
-        screen.getByTestId('account-add-credits')
+        screen.getByTestId('account-switch-workspace')
       )
     )
 
     await user.keyboard('{ArrowDown}')
     // eslint-disable-next-line testing-library/no-node-access
     expect(document.activeElement).toBe(
-      screen.getByTestId('account-workspace-settings')
+      screen.getByTestId('account-add-credits')
     )
     await user.keyboard('{ArrowUp}')
     // eslint-disable-next-line testing-library/no-node-access
     expect(document.activeElement).toBe(
-      screen.getByTestId('account-add-credits')
+      screen.getByTestId('account-switch-workspace')
     )
 
     await user.keyboard('{Escape}')
     expect(screen.queryByRole('menu')).toBeNull()
     // eslint-disable-next-line testing-library/no-node-access
     expect(document.activeElement).toBe(trigger)
+  })
+})
+
+describe('HeaderAccount workspace switcher', () => {
+  function signIn() {
+    h.user!.value = { email: 'a@b.co', displayName: 'Ada' }
+    h.session!.value = { token: 'jwt', uid: 'user-1', workspace, role: 'owner' }
+    h.balance!.value = { status: 'ok', credits: 42 }
+  }
+
+  const listing = {
+    workspaces: [
+      {
+        id: 'ws',
+        name: 'Personal',
+        role: 'owner',
+        type: 'personal',
+        subscription_tier: 'PRO',
+        created_at: '2026-01-01T00:00:00Z',
+        joined_at: '2026-01-01T00:00:00Z'
+      },
+      {
+        id: 'team-1',
+        name: 'Comfy team',
+        role: 'member',
+        type: 'team',
+        created_at: '2026-02-01T00:00:00Z',
+        joined_at: '2026-02-01T00:00:00Z'
+      }
+    ]
+  }
+
+  it('lists the account workspaces with the current one checked', async () => {
+    signIn()
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(JSON.stringify(listing), { status: 200 })
+        )
+    )
+    onTestFinished(() => {
+      vi.unstubAllGlobals()
+    })
+    render(HeaderAccount)
+
+    await userEvent.click(screen.getByRole('button', { name: /account/i }))
+    await userEvent.click(screen.getByTestId('account-switch-workspace'))
+    expect(await screen.findByTestId('account-workspace-team-1')).toBeTruthy()
+    const current = screen.getByTestId('account-workspace-ws')
+    expect(current.textContent).toContain('Personal')
+    expect(current.textContent).toContain('PRO')
+  })
+
+  it('switches by reminting for the picked workspace', async () => {
+    signIn()
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(JSON.stringify(listing), { status: 200 })
+        )
+    )
+    onTestFinished(() => {
+      vi.unstubAllGlobals()
+    })
+    h.remint.mockResolvedValue({ status: 'ok' })
+    render(HeaderAccount)
+
+    await userEvent.click(screen.getByRole('button', { name: /account/i }))
+    await userEvent.click(screen.getByTestId('account-switch-workspace'))
+    await userEvent.click(await screen.findByTestId('account-workspace-team-1'))
+
+    await waitFor(() =>
+      expect(h.remint).toHaveBeenCalledWith(undefined, {
+        workspaceId: 'team-1'
+      })
+    )
+    await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+  })
+
+  it('shows the failure line when the list cannot load', async () => {
+    signIn()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(new Response('', { status: 500 }))
+    )
+    onTestFinished(() => {
+      vi.unstubAllGlobals()
+    })
+    render(HeaderAccount)
+
+    await userEvent.click(screen.getByRole('button', { name: /account/i }))
+    await userEvent.click(screen.getByTestId('account-switch-workspace'))
+
+    expect(await screen.findByText('Could not load workspaces.')).toBeTruthy()
   })
 })
 
