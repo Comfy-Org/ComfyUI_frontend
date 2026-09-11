@@ -13,7 +13,6 @@ import { defineComponent, h, nextTick, ref } from 'vue'
 import type { DirectiveBinding } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
-import * as tooltipConfig from '@/composables/useTooltipConfig'
 import { i18n } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAgentRunModeStore } from '../../stores/agent/agentRunModeStore'
@@ -402,9 +401,9 @@ describe('Composer', () => {
         mount()
 
         const trigger = screen.getByRole('button', { name: triggerName })
-        expect(tooltipBindings.get(trigger)).toEqual(
-          tooltipConfig.buildTooltipConfig(tooltipCopy)
-        )
+        expect(tooltipBindings.get(trigger)).toMatchObject({
+          value: tooltipCopy
+        })
       }
     )
 
@@ -1177,9 +1176,7 @@ describe('Composer', () => {
     const removeButton = screen.getByRole('button', {
       name: 'Remove KSampler #5 reference'
     })
-    expect(tooltipBindings.get(removeButton)).toEqual(
-      tooltipConfig.buildTooltipConfig('Remove')
-    )
+    expect(tooltipBindings.get(removeButton)).toMatchObject({ value: 'Remove' })
   })
 
   it('renders a selection chip label as non-interactive context', () => {

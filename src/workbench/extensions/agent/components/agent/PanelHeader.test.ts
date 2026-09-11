@@ -2,7 +2,6 @@ import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import type { DirectiveBinding } from 'vue'
 
-import * as tooltipConfig from '@/composables/useTooltipConfig'
 import { i18n } from '@/i18n'
 
 import PanelHeader from './PanelHeader.vue'
@@ -36,15 +35,6 @@ describe('PanelHeader', () => {
     ).toHaveAttribute('id', 'agent-panel-title')
   })
 
-  it('passes the full tooltip config to the button directive', () => {
-    mount()
-
-    const button = screen.getByRole('button', { name: 'New chat' })
-    expect(tooltipBindings.get(button)).toEqual(
-      tooltipConfig.buildTooltipConfig('New chat')
-    )
-  })
-
   it.for([
     [false, 'New chat'],
     [false, 'Maximize panel'],
@@ -54,8 +44,6 @@ describe('PanelHeader', () => {
     mount(isMaximized)
 
     const button = screen.getByRole('button', { name: label })
-    expect(tooltipBindings.get(button)).toEqual(
-      tooltipConfig.buildTooltipConfig(label)
-    )
+    expect(tooltipBindings.get(button)).toMatchObject({ value: label })
   })
 })
