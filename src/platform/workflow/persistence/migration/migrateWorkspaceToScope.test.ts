@@ -302,6 +302,66 @@ describe('migrateWorkspaceToScope', () => {
     })
   })
 
+  it('rejects a malformed restore pointer without publishing the destination', () => {
+    seedSourceWorkspace()
+    localStorage.setItem(
+      StorageKeys.lastOpenPaths(sourceWorkspaceId),
+      'not-json'
+    )
+
+    migrateWorkspaceToScope(sourceWorkspaceId, destinationScope)
+
+    expect(localStorage.getItem(StorageKeys.draftIndex(destinationScope))).toBe(
+      null
+    )
+    expect(readJson(StorageKeys.draftIndex(sourceWorkspaceId))).toEqual(
+      buildIndex()
+    )
+    expect(
+      localStorage.getItem(StorageKeys.lastOpenPaths(destinationScope))
+    ).toBe(null)
+  })
+
+  it('restores owned values without overwriting concurrent changes during rollback', () => {
+    seedSourceWorkspace()
+    const claimKey = StorageKeys.migrationClaim(sourceWorkspaceId)
+    const destinationIndexKey = StorageKeys.draftIndex(destinationScope)
+    const destinationPayloadKey = StorageKeys.draftPayload(
+      draftPath,
+      destinationScope
+    )
+    const previousIndex = { ...buildIndex(), updatedAt: 5 }
+    const previousPayload = { data: '{"nodes":[5]}', updatedAt: 5 }
+    const concurrentPayload = { data: '{"nodes":[20]}', updatedAt: 20 }
+    localStorage.setItem(destinationIndexKey, JSON.stringify(previousIndex))
+    localStorage.setItem(destinationPayloadKey, JSON.stringify(previousPayload))
+    const realSetItem = localStorage.setItem.bind(localStorage)
+    vi.spyOn(localStorage, 'setItem').mockImplementation(
+      (key: string, value: string) => {
+        realSetItem(key, value)
+        if (key === destinationIndexKey) {
+          realSetItem(destinationPayloadKey, JSON.stringify(concurrentPayload))
+          realSetItem(
+            claimKey,
+            JSON.stringify({
+              scope: competingScope,
+              sourceUpdatedAt: 10,
+              nonce: 'competing-tab'
+            })
+          )
+        }
+      }
+    )
+
+    migrateWorkspaceToScope(sourceWorkspaceId, destinationScope)
+
+    expect(readJson(destinationIndexKey)).toEqual(previousIndex)
+    expect(readJson(destinationPayloadKey)).toEqual(concurrentPayload)
+    expect(readJson(StorageKeys.draftIndex(sourceWorkspaceId))).toEqual(
+      buildIndex()
+    )
+  })
+
   it('keeps a restore pointer the scope already owns and still copies the missing one', () => {
     seedSourceWorkspace()
     const existingPointer = {
