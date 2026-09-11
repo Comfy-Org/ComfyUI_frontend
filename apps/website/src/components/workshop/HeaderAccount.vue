@@ -255,16 +255,6 @@ async function signOutFromMenu() {
               aria-hidden="true"
             />
           </span>
-          <span
-            v-if="balance.status === 'ok'"
-            class="flex shrink-0 items-center gap-1.5 text-sm font-bold text-primary-warm-white tabular-nums"
-          >
-            <Coins class="size-4 shrink-0" aria-hidden="true" />
-            {{ balance.credits.toLocaleString(locale) }}
-            <span class="sr-only">
-              {{ t('auth.header.credits', locale) }}
-            </span>
-          </span>
         </a>
         <a
           :href="externalLinks.cloud"
