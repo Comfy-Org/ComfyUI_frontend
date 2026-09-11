@@ -129,6 +129,80 @@ describe('readSubgraphDefinitions', () => {
     expect(projected.nodes?.[0]).not.toHaveProperty('__incarnation')
   })
 
+  it('drops define_subgraph bookkeeping from the projected definition', () => {
+    const definition = createTestSubgraphData({
+      nodes: [interiorNode(1)] as never
+    })
+    const doc = seed(definition)
+    const stored = doc.getMap<Y.Map<unknown>>('definitions').get(definition.id)
+    expect(stored).toBeDefined()
+    stored!.set('__definition_digest', 'cmp-owned-digest')
+
+    const [projected] = readSubgraphDefinitions(doc)
+
+    expect(projected).toEqual(definition)
+    expect(projected).not.toHaveProperty('__definition_digest')
+  })
+
+  it('drops define_subgraph bookkeeping from nested definitions recursively', () => {
+    const deepest = createTestSubgraphData({
+      nodes: [interiorNode(1)] as never
+    })
+    const inner = createTestSubgraphData({
+      nodes: [interiorNode(2, deepest.id)] as never,
+      definitions: { subgraphs: [deepest] }
+    })
+    const outer = createTestSubgraphData({
+      nodes: [interiorNode(3, inner.id)] as never,
+      definitions: { subgraphs: [inner] }
+    })
+    const doc = seed(outer)
+    const stored = doc.getMap<Y.Map<unknown>>('definitions').get(outer.id)
+    stored?.set('definitions', {
+      subgraphs: [
+        {
+          ...inner,
+          __definition_digest: 'inner-digest',
+          definitions: {
+            subgraphs: [{ ...deepest, __definition_digest: 'deepest-digest' }]
+          }
+        }
+      ]
+    })
+
+    const [projected] = readSubgraphDefinitions(doc)
+
+    expect(projected).toEqual(outer)
+    expect(projected.definitions?.subgraphs?.[0]).not.toHaveProperty(
+      '__definition_digest'
+    )
+    expect(
+      projected.definitions?.subgraphs?.[0]?.definitions?.subgraphs?.[0]
+    ).not.toHaveProperty('__definition_digest')
+  })
+
+  it('drops unknown private bookkeeping from every definition depth', () => {
+    const inner = createTestSubgraphData({ nodes: [interiorNode(1)] as never })
+    const outer = createTestSubgraphData({
+      nodes: [interiorNode(2, inner.id)] as never,
+      definitions: { subgraphs: [inner] }
+    })
+    const doc = seed(outer)
+    const stored = doc.getMap<Y.Map<unknown>>('definitions').get(outer.id)
+    expect(stored).toBeDefined()
+    stored!.set('__future_cmp_register', 'outer-private')
+    stored!.set('definitions', {
+      subgraphs: [{ ...inner, __future_cmp_register: 'inner-private' }]
+    })
+
+    const [projected] = readSubgraphDefinitions(doc)
+
+    expect(projected).not.toHaveProperty('__future_cmp_register')
+    expect(projected.definitions?.subgraphs?.[0]).not.toHaveProperty(
+      '__future_cmp_register'
+    )
+  })
+
   it('passes nested definitions through untouched', () => {
     const inner = createTestSubgraphData({ nodes: [interiorNode(1)] as never })
     const outer = createTestSubgraphData({
