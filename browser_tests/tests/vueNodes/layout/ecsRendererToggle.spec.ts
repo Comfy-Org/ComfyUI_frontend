@@ -16,13 +16,16 @@ test.describe(
     })
 
     test.afterEach(async ({ comfyPage }) => {
+      await comfyPage.workflow.setupWorkflowsDirectory({})
       await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
       await comfyPage.canvasOps.resetView()
     })
 
     test('preserves graph geometry and widget state through a renderer round trip', async ({
-      comfyPage
+      comfyPage,
+      comfyMouse
     }) => {
+      await comfyPage.workflow.setupWorkflowsDirectory({})
       const initialGraph = await comfyPage.page.evaluate(() => ({
         nodeCount: window.app!.graph.nodes.length,
         positions: window.app!.graph.nodes.map((node) => ({
@@ -43,6 +46,16 @@ test.describe(
       await comfyPage.vueNodes.waitForNodes(initialGraph.nodeCount)
       await expect(comfyPage.vueNodes.nodes).toHaveCount(initialGraph.nodeCount)
 
+      const kSampler = await comfyPage.nodeOps.getNodeRefById('3')
+      const initialPosition =
+        await kSampler.getProperty<[number, number]>('pos')
+      const fixture = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+      await comfyMouse.dragElementBy(fixture.title, { x: 120, y: 80 })
+      await expect
+        .poll(() => kSampler.getProperty<[number, number]>('pos'))
+        .not.toEqual(initialPosition)
+      const movedPosition = await kSampler.getProperty<[number, number]>('pos')
+
       const cfgWidget = comfyPage.vueNodes
         .getWidgetByName('KSampler', 'cfg')
         .first()
@@ -53,6 +66,10 @@ test.describe(
 
       await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
       await comfyPage.nextFrame()
+      await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
+
+      await comfyPage.menu.topbar.saveWorkflow('Renderer Round Trip')
+      await comfyPage.workflow.reloadAndWaitForApp()
       await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
 
       await expect
@@ -70,7 +87,9 @@ test.describe(
         )
         .toEqual({
           nodeCount: initialGraph.nodeCount,
-          positions: initialGraph.positions,
+          positions: initialGraph.positions.map((node) =>
+            String(node.id) === '3' ? { ...node, pos: movedPosition } : node
+          ),
           cfg: 7.5
         })
       await expect(comfyPage.toast.toastErrors).toHaveCount(0)
