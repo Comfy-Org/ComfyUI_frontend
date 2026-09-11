@@ -211,6 +211,27 @@ describe('UserMessage', () => {
     expect(clipboard.copy).toHaveBeenCalledWith('@[Workflow: Portrait]')
   })
 
+  it.for([true, false])(
+    'respects Edit eligibility for a workflow-reference-only message: %s',
+    async (editable) => {
+      const workflowReferences = [{ id: 'wf', name: 'Portrait', textOffset: 0 }]
+      const { emitted } = renderMessage({
+        text: '',
+        workflowReferences,
+        editable
+      })
+      if (!editable) {
+        expect(
+          screen.queryByRole('button', { name: t('g.edit') })
+        ).not.toBeInTheDocument()
+        return
+      }
+
+      await userEvent.click(screen.getByRole('button', { name: t('g.edit') }))
+      expect(emitted().edit).toEqual([[{ text: '', workflowReferences }]])
+    }
+  )
+
   it('reaches and triggers the copy action by keyboard alone', async () => {
     const user = userEvent.setup()
     renderMessage({ text: 'make it cinematic' })

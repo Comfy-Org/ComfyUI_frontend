@@ -174,7 +174,10 @@ const splitAttachments = computed(() => {
       v-if="readableText"
       class="text-agent-fg-subtle flex opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 touch:opacity-100"
     >
-      <AgentTooltip v-if="editable && text" :label="t('g.edit')">
+      <AgentTooltip
+        v-if="editable && (text || workflowReferences.length)"
+        :label="t('g.edit')"
+      >
         <button
           type="button"
           :aria-label="t('g.edit')"
