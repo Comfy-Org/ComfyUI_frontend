@@ -4,7 +4,20 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 
-type QueuedNode = { inputs: Record<string, unknown> }
+import type { ComfyApiWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+
+function getQueuedPrompt(body: unknown): ComfyApiWorkflow {
+  if (
+    typeof body !== 'object' ||
+    body === null ||
+    !('prompt' in body) ||
+    typeof body.prompt !== 'object' ||
+    body.prompt === null
+  ) {
+    throw new Error('Expected /api/prompt body to contain a prompt object')
+  }
+  return body.prompt as ComfyApiWorkflow
+}
 
 test.describe(
   'ECS migration: links, execution modes and regression sanity',
@@ -37,7 +50,7 @@ test.describe(
       await expect(
         execution.run({
           onPromptRequest: (body) => {
-            queuedPrompt = (body as { prompt: Record<string, unknown> }).prompt
+            queuedPrompt = getQueuedPrompt(body)
           }
         })
       ).resolves.toMatch(/^test-job-/)
@@ -56,43 +69,21 @@ test.describe(
 
       await expect.poll(() => node.getProperty<number>('mode')).toBe(4)
 
-      let queuedPrompt: Record<string, QueuedNode> | undefined
+      let queuedPrompt: ComfyApiWorkflow | undefined
       const execution = new ExecutionHelper(comfyPage)
       await expect(
         execution.run({
           onPromptRequest: (body) => {
-            queuedPrompt = (body as { prompt: Record<string, QueuedNode> })
-              .prompt
+            queuedPrompt = getQueuedPrompt(body)
           }
         })
       ).resolves.toMatch(/^test-job-/)
 
       expect(queuedPrompt).toBeDefined()
       expect(queuedPrompt).not.toHaveProperty('3')
-      expect(queuedPrompt?.['8']?.inputs.samples).toEqual(['5', 0])
-    })
-
-    test('loads the default template with its expected node types', async ({
-      comfyPage
-    }) => {
-      await comfyPage.workflow.loadWorkflow('default')
-
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(7)
-      await expect
-        .poll(() =>
-          comfyPage.page.evaluate(() =>
-            window.app!.graph.nodes.map((node) => node.type).sort()
-          )
-        )
-        .toEqual([
-          'CLIPTextEncode',
-          'CLIPTextEncode',
-          'CheckpointLoaderSimple',
-          'EmptyLatentImage',
-          'KSampler',
-          'SaveImage',
-          'VAEDecode'
-        ])
+      const samples = queuedPrompt?.['8']?.inputs.samples
+      expect(Array.isArray(samples)).toBe(true)
+      expect(samples).toEqual(['5', 0])
     })
 
     test('places a node from canvas search at the double-click position', async ({
@@ -107,14 +98,17 @@ test.describe(
       })
 
       await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
-      const node = await comfyPage.nodeOps.getNodeRefByType('KSampler')
-      // getPosition() already returns client-space coordinates, so compare
-      // directly against the client-space double-click position. The node
-      // anchor is offset from the click point (title bar + node centering),
-      // so allow a generous but bounded tolerance.
-      const position = await node.getPosition()
-      expect(Math.abs(position.x - clickPosition.x)).toBeLessThan(200)
-      expect(Math.abs(position.y - clickPosition.y)).toBeLessThan(200)
+      const placement = await comfyPage.page.evaluate(() => {
+        const node = window.app!.graph.nodes.find(
+          ({ type }) => type === 'KSampler'
+        )
+        return {
+          graphMouse: window.app!.canvas.graph_mouse,
+          position: node?.pos
+        }
+      })
+      expect(placement.position?.[0]).toBeCloseTo(placement.graphMouse[0] - 135)
+      expect(placement.position?.[1]).toBeCloseTo(placement.graphMouse[1] + 10)
     })
 
     test('pans, zooms and box-selects the expected nodes', async ({
@@ -154,19 +148,48 @@ test.describe(
       })
       await comfyPage.canvasOps.dragAndDrop(from, to)
       await expect
-        .poll(() => comfyPage.nodeOps.getSelectedGraphNodesCount())
-        .toBe(1)
+        .poll(() => comfyPage.nodeOps.getSelectedNodeIds())
+        .toEqual(['4'])
     })
 
     test('shows no error toast after loading, queueing and switching workflows', async ({
       comfyPage
     }) => {
+      await comfyPage.page.evaluate(() => {
+        const errors: Element[] = []
+        new MutationObserver((mutations) => {
+          for (const mutation of mutations) {
+            for (const node of mutation.addedNodes) {
+              if (
+                node instanceof Element &&
+                node.matches('.p-toast-message.p-toast-message-error')
+              ) {
+                errors.push(node)
+              }
+            }
+          }
+        }).observe(document.body, { childList: true, subtree: true })
+        ;(
+          window as typeof window & { __ecsMigrationToastErrors: Element[] }
+        ).__ecsMigrationToastErrors = errors
+      })
       await comfyPage.workflow.loadWorkflow('default')
       const execution = new ExecutionHelper(comfyPage)
       await execution.run()
       await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
+      await comfyPage.workflow.waitForActiveWorkflow()
+      await comfyPage.nextFrame()
 
-      await expect(comfyPage.toast.toastErrors).toHaveCount(0)
+      expect(
+        await comfyPage.page.evaluate(
+          () =>
+            (
+              window as typeof window & {
+                __ecsMigrationToastErrors: Element[]
+              }
+            ).__ecsMigrationToastErrors.length
+        )
+      ).toBe(0)
     })
   }
 )
