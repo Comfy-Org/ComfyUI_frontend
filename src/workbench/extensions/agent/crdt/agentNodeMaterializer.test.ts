@@ -1254,6 +1254,61 @@ describe('reconcileAgentAdapters', () => {
       expect(host.inputs).toHaveLength(0)
     })
 
+    it('S3 demotes every host when only one host input is connected', () => {
+      const definition = createTestSubgraphData({
+        nodes: [nodePayload(7, 'widget-node')] as never
+      })
+      const promoted = promotedDefinition(definition)
+      const { follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, definition.id), nodePayload(2, definition.id)],
+        links: [],
+        definitions: { subgraphs: [promoted] }
+      })
+      reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+      const connectedHost = graph.getNodeById(toNodeId(1)) as SubgraphNode
+      const unconnectedHost = graph.getNodeById(toNodeId(2)) as SubgraphNode
+      const source = new DummyNode()
+      source.addOutput('value', 'NUMBER')
+      graph.add(source)
+      source.connect(0, connectedHost, 0)
+
+      reconcileAgentAdapters(graph, [definition])
+
+      expect(connectedHost.inputs).toHaveLength(0)
+      expect(unconnectedHost.inputs).toHaveLength(0)
+      expect(connectedHost.widgets).toHaveLength(0)
+      expect(unconnectedHost.widgets).toHaveLength(0)
+    })
+
+    it('S3 reports a host promotion failure without throwing', () => {
+      const definition = createTestSubgraphData({
+        nodes: [nodePayload(7, 'widget-node')] as never
+      })
+      const { follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, definition.id)],
+        links: [],
+        definitions: { subgraphs: [definition] }
+      })
+      reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+      const interior = graph.subgraphs
+        .get(definition.id)
+        ?.getNodeById(toNodeId(7))
+      vi.spyOn(interior!, 'getSlotFromWidget').mockReturnValue(undefined)
+
+      expect(() =>
+        reconcileAgentAdapters(graph, [promotedDefinition(definition)])
+      ).not.toThrow()
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+        errorType: 'agent_subgraph_promotion_failed',
+        context: {
+          graphId: graph.id,
+          definitionId: definition.id,
+          hostId: toNodeId(1),
+          reason: 'missingSourceSlot'
+        }
+      })
+    })
+
     it('S3 promotes a widget through a nested definition host', () => {
       const inner = createTestSubgraphData({
         nodes: [nodePayload(7, 'widget-node')] as never

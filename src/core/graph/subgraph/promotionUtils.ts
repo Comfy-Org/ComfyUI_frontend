@@ -271,9 +271,14 @@ export function refreshPromotedWidgetRendering(parents: SubgraphNode[]): void {
   useCanvasStore().canvas?.setDirty(true, true)
 }
 
-type CanonicalPromotionResult =
+export type CanonicalPromotionResult =
   | { ok: true }
   | { ok: false; reason: 'missingSourceSlot' | 'connectFailed' }
+
+export interface WidgetPromotionFailure {
+  host: SubgraphNode
+  reason: Extract<CanonicalPromotionResult, { ok: false }>['reason']
+}
 
 export function promoteValueWidgetViaSubgraphInput(
   subgraphNode: SubgraphNode,
@@ -401,9 +406,10 @@ export function promoteWidget(
   node: PartialNode,
   widget: IBaseWidget,
   parents: SubgraphNode[]
-) {
+): WidgetPromotionFailure[] {
+  const failures: WidgetPromotionFailure[] = []
   const source = toPromotionSource(node, widget)
-  if (!(node instanceof LGraphNode)) return
+  if (!(node instanceof LGraphNode)) return failures
   for (const parent of parents) {
     if (isPreviewPseudoWidget(widget)) {
       promotePreviewViaExposure(parent, node, source.sourceWidgetName)
@@ -411,6 +417,7 @@ export function promoteWidget(
     }
     const result = promoteValueWidgetViaSubgraphInput(parent, node, widget)
     if (!result.ok) {
+      failures.push({ host: parent, reason: result.reason })
       addBreadcrumb({
         category: 'subgraph',
         level: 'warning',
@@ -424,32 +431,7 @@ export function promoteWidget(
     message: `Promoted widget "${source.sourceWidgetName}" on node ${node.id}`,
     level: 'info'
   })
-}
-
-/**
- * Removes the host input projecting a linked promotion identified by source.
- * Returns true when an input was found and demoted.
- */
-function demotePromotedInput(
-  subgraphNode: SubgraphNode,
-  source: PromotedWidgetSource
-): boolean {
-  const hostInput = findHostInputForPromotion(
-    subgraphNode,
-    source.sourceNodeId,
-    source.sourceWidgetName
-  )
-  const linkedInput = hostInput?._subgraphSlot
-  if (!linkedInput) return false
-  const hostWidgetId = hostInput.widgetId
-
-  if (subgraphNode.isInputConnected(subgraphNode.inputs.indexOf(hostInput))) {
-    linkedInput.disconnect()
-  } else {
-    subgraphNode.subgraph.removeInput(linkedInput)
-  }
-  if (hostWidgetId) useWidgetValueStore().deleteWidget(hostWidgetId)
-  return true
+  return failures
 }
 
 export function demoteWidget(
@@ -458,8 +440,26 @@ export function demoteWidget(
   parents: SubgraphNode[]
 ) {
   const source = toPromotionSource(node, widget)
+  const promotedInputs = parents.flatMap((parent) => {
+    const input = findHostInputForPromotion(
+      parent,
+      source.sourceNodeId,
+      source.sourceWidgetName
+    )
+    return input ? [{ parent, input }] : []
+  })
+  for (const { parent, input } of promotedInputs) {
+    const inputIndex = parent.inputs.indexOf(input)
+    if (parent.isInputConnected(inputIndex)) parent.disconnectInput(inputIndex)
+  }
+  const linkedInput = promotedInputs[0]?.input._subgraphSlot
+  if (linkedInput) promotedInputs[0].parent.subgraph.removeInput(linkedInput)
+  for (const { input } of promotedInputs) {
+    if (input.widgetId) useWidgetValueStore().deleteWidget(input.widgetId)
+  }
+
   for (const parent of parents) {
-    if (demotePromotedInput(parent, source)) continue
+    if (promotedInputs.some((entry) => entry.parent === parent)) continue
 
     if (isPreviewPseudoWidget(widget)) {
       const previewStore = usePreviewExposureStore()

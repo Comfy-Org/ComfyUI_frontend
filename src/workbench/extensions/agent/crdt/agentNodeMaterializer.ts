@@ -222,7 +222,20 @@ function reconcileSubgraphPromotions(
       const sourceName = widget.name
       widget.name = boundaryName
       try {
-        promoteWidget(node, widget, hosts)
+        for (const failure of promoteWidget(node, widget, hosts)) {
+          const error = new Error(
+            `Agent subgraph promotion failed: ${definition.id}/${String(failure.host.id)}/${boundaryName}/${failure.reason}`
+          )
+          reportError(error, {
+            errorType: 'agent_subgraph_promotion_failed',
+            context: {
+              graphId: rootGraph.id,
+              definitionId: definition.id,
+              hostId: failure.host.id,
+              reason: failure.reason
+            }
+          })
+        }
       } finally {
         widget.name = sourceName
       }
