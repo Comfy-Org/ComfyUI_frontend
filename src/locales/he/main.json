@@ -88,9 +88,7 @@
       "title": "אין קרדיטים",
       "upgradePlan": "שדרוג התוכנית"
     },
-    "placeholder": "תארו רעיונות, השתמשו ב-{'@'} להפניה,\nאזכרו צמתים מהגרף או גררו נכסים פנימה",
-    "ranToolCalls": "בוצעה {count} קריאת כלי | בוצעו {count} קריאות כלי",
-    "ranToolCallsTimed": "בוצעה {count} קריאת כלי במשך {seconds} שניות | בוצעו {count} קריאות כלי במשך {seconds} שניות",
+    "placeholder": "תארו רעיונות, {'@'} להפניה לתהליכי עבודה, גררו נכסי מדיה וקבצים, או\nציינו צמתים",
     "remove": "הסר",
     "removeNodeLabel": "הסר את ההפניה ל־{node}",
     "runApproval": {
@@ -138,15 +136,21 @@
     "switchWorkflow": "החלף תהליך עבודה",
     "targetNavigationUnavailable": "יעד זה של תהליך העבודה אינו זמין עוד.",
     "thinking": "חושב...",
-    "thought": "מחשבה",
-    "thoughtTimed": "חשב במשך {seconds} שניות",
     "title": "Comfy Agent",
+    "toolForgettingPreference": "שכחת העדפה",
     "toolForgotPreference": "נשכחה העדפה",
     "toolOpenedNewTab": "נפתחה לשונית חדשה",
+    "toolOpeningNewTab": "פתיחת לשונית חדשה",
     "toolSavedPreference": "נשמרה העדפה",
+    "toolSavingPreference": "שמירת העדפה",
     "toolSwitchedTabs": "הוחלפו לשוניות",
+    "toolSwitchingTabs": "מעבר בין לשוניות",
     "untitledChat": "ללא כותרת",
-    "uploading": "מעלה"
+    "uploading": "מעלה",
+    "worked": "בוצע",
+    "workedForMinutes": "עבד במשך {minutes}m {seconds}s",
+    "workedForSeconds": "עבד במשך {seconds} שניות",
+    "working": "מעבד..."
   },
   "apiNodesSignInDialog": {
     "message": "צומתי שותפים פועלים בשירותי צד שלישי ומשתמשים בקרדיטים מחשבונך. יש להתחבר כדי לקשר את חשבונך.",
@@ -385,9 +389,9 @@
       "auth/popup-closed-by-user": "חלון ההתחברות נסגר לפני שההתחברות הושלמה. נסה שוב.",
       "auth/too-many-requests": "יותר מדי ניסיונות התחברות. אנא המתן רגע ונסה שוב.",
       "auth/user-disabled": "חשבון זה הושבת. אנא פנה לתמיכה.",
-      "auth/user-not-found": "לא נמצא חשבון עם דוא\"ל זה. האם ברצונך ליצור חשבון חדש?",
+      "auth/user-not-found": "פרטי ההתחברות אינם תקינים. בדקו את כתובת הדוא״ל והסיסמה.",
       "auth/weak-password": "הסיסמה חלשה מדי. אנא השתמש בסיסמה חזקה יותר בת 6 תווים לפחות.",
-      "auth/wrong-password": "הסיסמה שהזנת שגויה. אנא נסה שוב.",
+      "auth/wrong-password": "פרטי ההתחברות אינם תקינים. בדקו את כתובת הדוא״ל והסיסמה.",
       "generic": "משהו השתבש במהלך ההתחברות שלך. אנא נסה שוב.",
       "signupBlocked": "לא הצלחנו ליצור את החשבון שלך כרגע. נסה שוב מאוחר יותר. אם הבעיה נמשכת, שלח מייל ל-support@comfy.org."
     },
@@ -1938,6 +1942,7 @@
     "recents": "אחרונים",
     "reconnected": "החיבור חודש",
     "reconnecting": "מתחבר מחדש",
+    "recordingFailedToStart": "לא ניתן היה להתחיל בהקלטה",
     "refresh": "רענון",
     "refreshNode": "רענון הצומת",
     "relativeTime": {
@@ -2508,6 +2513,7 @@
       "wireframe": "מסגרת חוטים (Wireframe)"
     },
     "menuBar": {
+      "animationClip": "קטע הנפשה",
       "bgColor": "צבע רקע",
       "bgImage": "תמונת רקע",
       "customUp": "למעלה מותאם אישית",
@@ -2519,6 +2525,7 @@
       "naturalUp": "למעלה טבעי",
       "originalMaterialOnly": "חומר מקורי בלבד",
       "panorama": "פנורמה",
+      "playbackSpeed": "מהירות הפעלה",
       "record": "הקלט",
       "recording": "בהקלטה",
       "removeBackground": "הסר רקע",
@@ -2846,6 +2853,7 @@
     "deleteHistoryOnly": "רק ההיסטוריה תושפע, הקבצים יישארו בדיסק",
     "deleteItems": "מחיקת פריטים אלה",
     "deletePermanent": "הם יוסרו לצמיתות.",
+    "deleteTombstone": "הם לא יוצגו עוד ב-ComfyUI, אך יישארו בדיסק",
     "deletingImportedFilesCloudOnly": "מחיקת קבצים מיובאים נתמכת רק בגרסת הענן",
     "deletionUnsupported": "הנכסים מופעלים, אך השרת אינו תומך במחיקה",
     "failedToCreateNode": "יצירת הצומת נכשלה",
@@ -4543,7 +4551,7 @@
     "pricingBlurbEnterprise": "שיחות Enterprise",
     "pricingBlurbQuestions": "שאלות",
     "pricingBlurbSeeDetails": "ראה פרטים",
-    "reactivatePlan": "הפעל מחדש את התוכנית",
+    "reactivatePlan": "חידוש המנוי",
     "reactivateToUseCredits": "הפעילו מחדש את התוכנית כדי להשתמש בקרדיטים אלו",
     "refillsDate": "מתמלא מחדש ב-{date}",
     "refillsNextCycle": "מתמלא מחדש במחזור הבא",
@@ -4562,7 +4570,7 @@
     "resubscribe": "הירשם מחדש",
     "resubscribeFailed": "נכשל ניסיון להפעיל מחדש את המנוי",
     "resubscribeSuccess": "המנוי הופעל מחדש בהצלחה",
-    "resubscribeTo": "הירשם מחדש ל-{plan}",
+    "resubscribeTo": "חידוש {plan}",
     "salesManagedRunBlockedDetail": "התוכנית של סביבת עבודה זו אינה פעילה עוד. פנו למנהל החשבון שלכם ב-Comfy כדי לשחזר את הגישה.",
     "salesManagedRunBlockedTitle": "התוכנית אינה פעילה",
     "saveYearly": "חסוך 20%",
@@ -5042,8 +5050,8 @@
     },
     "billingStatus": {
       "ending": {
-        "body": "החברים שומרים על גישה מלאה עד אז. הפעל מחדש כדי לשמור על הקרדיטים והמושבים המשותפים.",
-        "reactivate": "הפעל מחדש את התוכנית",
+        "body": "החברים ישמרו על גישה מלאה עד אז. חדשו את המנוי כדי לשמור על הקרדיטים והמושבים המשותפים שלכם.",
+        "reactivate": "חידוש המנוי",
         "title": "תוכנית הצוות שלך מסתיימת ב-{date}"
       },
       "outOfCredits": {
