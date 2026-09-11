@@ -561,7 +561,11 @@ describe('LLink ↔ linkStore integration', () => {
       expect.any(Error),
       expect.objectContaining({
         errorType: 'link_endpoint_update_rejected',
-        context: expect.objectContaining({ code: 'occupied-target' })
+        context: expect.objectContaining({
+          code: 'occupied-target',
+          linkId: first.id,
+          patch: { targetSlot: 1 }
+        })
       })
     )
     expect(first.target_slot).toBe(0)
