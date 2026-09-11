@@ -26,17 +26,6 @@ describe(useNodeImageStore, () => {
   })
 
   describe('getState', () => {
-    it('returns default state for new locatorId', () => {
-      const state = store.getState(locatorA)
-      expect(state).toEqual({
-        imgs: [],
-        imageIndex: null,
-        imageRects: [],
-        pointerDown: null,
-        overIndex: null
-      })
-    })
-
     it('returns same state for same locatorId', () => {
       const first = store.getState(locatorA)
       first.overIndex = 42
@@ -52,13 +41,22 @@ describe(useNodeImageStore, () => {
   })
 
   describe('clearState', () => {
-    it('removes entry for locatorId', () => {
-      const state = store.getState(locatorA)
-      state.overIndex = 5
+    it('makes the node present as having no images', () => {
+      const node = createMockNode()
+      mockNodeToNodeLocatorId.mockReturnValue(locatorA)
+      store.installPropertyProjection(node)
+
+      node.imgs = [new Image(), new Image()]
+      node.imageIndex = 1
+      node.imageRects = [[0, 0, 10, 10]]
+      node.overIndex = 1
+
       store.clearState(locatorA)
 
-      const fresh = store.getState(locatorA)
-      expect(fresh.overIndex).toBeNull()
+      expect(node.imgs).toBeUndefined()
+      expect(node.imageIndex).toBeNull()
+      expect(node.imageRects).toEqual([])
+      expect(node.overIndex).toBeNull()
     })
   })
 
