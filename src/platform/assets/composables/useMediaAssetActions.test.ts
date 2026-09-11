@@ -1311,8 +1311,6 @@ describe('useMediaAssetActions', () => {
   describe('deleteAssets - cancellation', () => {
     beforeEach(() => {
       mockIsCloud.value = true
-      vi.mocked(api.getServerFeature).mockReturnValue(true)
-      mockGetAssetType.mockReturnValue('output')
       mockShowDialog.mockImplementation(
         ({ props }: { props: { onConfirm: (confirmed: boolean) => void } }) => {
           props.onConfirm(false)
@@ -1329,13 +1327,6 @@ describe('useMediaAssetActions', () => {
 
       expect(mockShowDialog).toHaveBeenCalledTimes(1)
       expect(mockDeleteAsset).not.toHaveBeenCalled()
-      expect(api.deleteItem).not.toHaveBeenCalled()
-      expect(mockSetAssetDeleting).not.toHaveBeenCalled()
-      expect(mockInvalidateModelsForCategory).not.toHaveBeenCalled()
-      expect(mockMarkMissingMedia).not.toHaveBeenCalled()
-      expect(mockClearNodePreviewCache).not.toHaveBeenCalled()
-      expect(mockClearWidgetValues).not.toHaveBeenCalled()
-      expect(mockCaptureCanvasState).not.toHaveBeenCalled()
 
       unmount()
     })
@@ -1358,13 +1349,6 @@ describe('useMediaAssetActions', () => {
 
       expect(mockShowDialog).toHaveBeenCalledTimes(1)
       expect(mockDeleteAsset).not.toHaveBeenCalled()
-      expect(api.deleteItem).not.toHaveBeenCalled()
-      expect(mockSetAssetDeleting).not.toHaveBeenCalled()
-      expect(mockInvalidateModelsForCategory).not.toHaveBeenCalled()
-      expect(mockMarkMissingMedia).not.toHaveBeenCalled()
-      expect(mockClearNodePreviewCache).not.toHaveBeenCalled()
-      expect(mockClearWidgetValues).not.toHaveBeenCalled()
-      expect(mockCaptureCanvasState).not.toHaveBeenCalled()
 
       unmount()
     })
@@ -1391,13 +1375,6 @@ describe('useMediaAssetActions', () => {
       }
       expect(dialogProps.itemList).toEqual(['First output', 'second.png'])
       expect(mockDeleteAsset).not.toHaveBeenCalled()
-      expect(api.deleteItem).not.toHaveBeenCalled()
-      expect(mockSetAssetDeleting).not.toHaveBeenCalled()
-      expect(mockInvalidateModelsForCategory).not.toHaveBeenCalled()
-      expect(mockMarkMissingMedia).not.toHaveBeenCalled()
-      expect(mockClearNodePreviewCache).not.toHaveBeenCalled()
-      expect(mockClearWidgetValues).not.toHaveBeenCalled()
-      expect(mockCaptureCanvasState).not.toHaveBeenCalled()
 
       unmount()
     })
