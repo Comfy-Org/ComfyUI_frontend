@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
 import { shallowRef } from 'vue'
 
+import { reportError } from '@/platform/telemetry/reportError'
+
 export type ContextSnapshot = Readonly<Record<string, boolean>>
 
 /** Derived by the dispatcher on every keydown rather than set by anyone. */
@@ -17,6 +19,8 @@ export const useContextKeyStore = defineStore('contextKey', () => {
   const owners = new Map(
     BUILT_IN_CONTEXT_KEYS.map((key) => [key, CORE_CONTEXT_KEY_OWNER])
   )
+  const providers = shallowRef(new Map<string, ReadonlySet<() => boolean>>())
+  const failedProviders = new WeakSet<() => boolean>()
 
   function register(name: string, owner: string): boolean {
     if (!CONTEXT_KEY_PATTERN.test(name)) {
@@ -51,9 +55,42 @@ export const useContextKeyStore = defineStore('contextKey', () => {
     return owners.get(name)
   }
 
-  function snapshot(): ContextSnapshot {
-    return values.value
+  function snapshot(requestedKeys?: ReadonlySet<string>): ContextSnapshot {
+    const context = { ...values.value }
+    for (const [name, getters] of providers.value) {
+      if (requestedKeys && !requestedKeys.has(name)) continue
+      const results = [...getters].map((get) => {
+        try {
+          return get()
+        } catch (error) {
+          if (!failedProviders.has(get)) {
+            failedProviders.add(get)
+            reportError(error, {
+              errorType: 'error_evaluating_keybinding_context',
+              tags: { context_key: name, owner: owners.get(name) }
+            })
+          }
+          return undefined
+        }
+      })
+      if (results.includes(undefined)) delete context[name]
+      else context[name] = results.some(Boolean)
+    }
+    return context
   }
 
-  return { register, set, ownerOf, snapshot }
+  function provide(name: string, owner: string, get: () => boolean) {
+    if (!register(name, owner)) return () => {}
+    providers.value = new Map(providers.value).set(
+      name,
+      new Set([...(providers.value.get(name) ?? []), get])
+    )
+    return () => {
+      const remaining = new Set(providers.value.get(name))
+      remaining.delete(get)
+      providers.value = new Map(providers.value).set(name, remaining)
+    }
+  }
+
+  return { register, set, ownerOf, snapshot, provide }
 })

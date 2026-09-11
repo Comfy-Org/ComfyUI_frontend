@@ -1300,6 +1300,9 @@
     "cancel": "Cancel Download",
     "cancelled": "Cancelled"
   },
+  "keybindings": {
+    "releaseHold": "Release: {command}"
+  },
   "layerEditor": {
     "title": "Compositor",
     "webglUnavailable": "WebGL is unavailable - the canvas cannot render",
