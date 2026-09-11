@@ -171,6 +171,28 @@ describe('migrateWorkspaceToScope', () => {
     ).not.toBe(null)
   })
 
+  it('performs no storage mutations when a completed migration runs again', () => {
+    seedSourceWorkspace()
+    const firstOutcome = migrateWorkspaceToScope(
+      sourceWorkspaceId,
+      destinationScope
+    )
+    const setItemSpy = vi.spyOn(localStorage, 'setItem')
+    const removeItemSpy = vi.spyOn(localStorage, 'removeItem')
+
+    const secondOutcome = migrateWorkspaceToScope(
+      sourceWorkspaceId,
+      destinationScope
+    )
+
+    expect(secondOutcome).toBe(firstOutcome)
+    expect(setItemSpy).not.toHaveBeenCalled()
+    expect(removeItemSpy).not.toHaveBeenCalled()
+    expect(readJson(StorageKeys.draftIndex(destinationScope))).toEqual(
+      buildIndex()
+    )
+  })
+
   it('does nothing when the workspace has no draft index', () => {
     localStorage.setItem(
       StorageKeys.draftPayload(draftPath, sourceWorkspaceId),
