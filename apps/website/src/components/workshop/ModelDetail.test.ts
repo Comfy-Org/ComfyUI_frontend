@@ -156,6 +156,7 @@ function mountDetail(options?: {
   clone?: { href: string }
   details?: () => ReturnType<typeof h>
   model?: WorkshopModelDetail
+  priceEstimate?: string
 }) {
   return render(
     defineComponent({
@@ -163,7 +164,11 @@ function mountDetail(options?: {
         return () =>
           h(
             ModelDetail,
-            { model: options?.model ?? model, clone: options?.clone },
+            {
+              model: options?.model ?? model,
+              clone: options?.clone,
+              priceEstimate: options?.priceEstimate
+            },
             options?.details ? { details: options.details } : undefined
           )
       }
@@ -497,6 +502,20 @@ describe('ModelDetail', () => {
     }
   )
 
+  it('shows the estimated cost on the Run button when the page has one', async () => {
+    auth.session.value = credential
+    credits.balance.value = { status: 'ok', credits: 100 }
+    mountDetail({ model: runnable, priceEstimate: '14.8 credits/Run' })
+    await nextTick()
+
+    expect(screen.getByTestId('run-button').getAttribute('data-gate')).toBe(
+      'ready'
+    )
+    expect(screen.getByTestId('run-price').textContent).toContain(
+      '14.8 credits/Run'
+    )
+  })
+
   it('offers a personal-workspace switch instead of billing to a member with no credits', async () => {
     auth.session.value = {
       ...credential,
@@ -517,7 +536,10 @@ describe('ModelDetail', () => {
       screen.getByRole('textbox', { name: /Prompt/ }),
       'Keep me'
     )
-    expect(screen.getByText(/Studio has no credits left/)).toBeTruthy()
+    expect(screen.getByTestId('gate-note').textContent).toContain(
+      'Not enough credits'
+    )
+    expect(screen.getByText(/Studio has used all its credits/)).toBeTruthy()
     expect(screen.queryByRole('link', { name: 'Buy credits' })).toBeNull()
     await visitor.click(
       screen.getByRole('button', { name: 'Switch to personal workspace' })

@@ -9678,9 +9678,9 @@ Enterprise`
       '你有 {credits} 积分，本次运行需要 {n}。购买积分后继续，你的输入会保留。'
   },
   'workshop.error.memberNoCredits': {
-    en: '{workspace} has no credits left. Only the workspace owner can buy more; you can run this on your personal workspace instead.',
+    en: '{workspace} has used all its credits. Ask the workspace owner to add more, or run this on your personal workspace.',
     'zh-CN':
-      '{workspace} 的积分已用完。只有工作区所有者可以购买；你可以改用个人工作区运行。'
+      '{workspace} 的积分已用完。请工作区所有者添加积分，或在个人工作区运行。'
   },
   'workshop.run.memberNoCredits': {
     en: 'Ask the owner for credits',
@@ -9915,9 +9915,13 @@ Enterprise`
     en: 'Not enough credits',
     'zh-CN': '积分不足'
   },
-  'workshop.error.noCreditsPlatform': {
+  'workshop.error.noCreditsCloud': {
     en: 'Add credits to {workspace} to keep running models.',
     'zh-CN': '为 {workspace} 添加积分以继续运行模型。'
+  },
+  'workshop.error.noCreditsPlatform': {
+    en: 'Add credits to {workspace} on platform.comfy.org',
+    'zh-CN': '在 platform.comfy.org 上为 {workspace} 添加积分'
   },
   'workshop.hub.tryNow': { en: 'Try now', 'zh-CN': '立即试用' },
   'workshop.hub.tag.partnerNodes': {
