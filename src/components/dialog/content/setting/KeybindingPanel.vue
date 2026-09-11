@@ -115,7 +115,6 @@ import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useKeybindingPresetService } from '@/platform/keybindings/presetService'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -131,7 +130,6 @@ const searchQuery = ref('')
 const keybindingStore = useKeybindingStore()
 const keybindingService = useKeybindingService()
 const presetService = useKeybindingPresetService()
-const settingStore = useSettingStore()
 const commandStore = useCommandStore()
 const dialogStore = useDialogStore()
 const { t } = useI18n()
@@ -145,7 +143,7 @@ async function refreshPresetList() {
 
 async function initPresets() {
   await refreshPresetList()
-  const currentName = settingStore.get('Comfy.Keybinding.CurrentPreset')
+  const currentName = keybindingStore.currentPresetName
   if (currentName !== 'default') {
     const preset = await presetService.loadPreset(currentName)
     if (preset) {
