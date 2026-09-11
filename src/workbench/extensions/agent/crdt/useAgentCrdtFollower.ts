@@ -568,10 +568,11 @@ export function useAgentCrdtFollower(
    * nothing unless a refused subscribe has a scheduled retry. In that case,
    * the retry timer owns the next attempt and its backoff.
    */
-  const onSocketActivity: EventListener = () => {
+  const reconcileIfIdle = (): void => {
     if (subscribeRetryTimer !== null) return
     bridge.reconcile()
   }
+  const onSocketActivity: EventListener = () => reconcileIfIdle()
 
   bridge.addEventListener('doc_subscribed', onSubscribed)
   bridge.addEventListener('doc_update', onUpdate)
@@ -583,6 +584,10 @@ export function useAgentCrdtFollower(
   bridge.addEventListener('doc_stale', onStale)
   api.addEventListener('reconnected', onReconnected)
   api.addEventListener('status', onSocketActivity)
+  // A transport on a socket other than ComfyUI's (the standalone agent's)
+  // announces its own opens; without this a subscribe dropped while that
+  // socket was connecting waited for ComfyUI's next unrelated status frame.
+  const stopTransportConnected = baseTransport.onConnected?.(reconcileIfIdle)
 
   // FE-1902 (poc-3): distinguish the mount-time null (in-memory doc id died
   // with the previous mount — rebind from sessionStorage) from a later null
@@ -697,6 +702,7 @@ export function useAgentCrdtFollower(
       clearSubscribeRetry()
       clearStaleProbe()
       api.removeEventListener('reconnected', onReconnected)
+      stopTransportConnected?.()
       api.removeEventListener('status', onSocketActivity)
       bridge.removeEventListener('doc_subscribed', onSubscribed)
       bridge.removeEventListener('doc_update', onUpdate)

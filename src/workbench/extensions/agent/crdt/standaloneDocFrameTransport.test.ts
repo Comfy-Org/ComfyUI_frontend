@@ -11,11 +11,16 @@ import { createStandaloneDocFrameTransport } from './standaloneDocFrameTransport
 
 function fakeSource() {
   const listeners = new Set<(raw: unknown) => void>()
+  const statusListeners = new Set<(live: boolean) => void>()
   const send = vi.fn((_frame: string) => true)
   const source: StandaloneAgentEventSource = {
     subscribe(listener) {
       listeners.add(listener)
       return () => listeners.delete(listener)
+    },
+    onStatus(listener) {
+      statusListeners.add(listener)
+      return () => statusListeners.delete(listener)
     },
     send
   }
@@ -24,6 +29,9 @@ function fakeSource() {
     send,
     receive(frame: unknown) {
       listeners.forEach((listener) => listener(frame))
+    },
+    status(live: boolean) {
+      statusListeners.forEach((listener) => listener(live))
     },
     listenerCount: () => listeners.size
   }
@@ -76,6 +84,26 @@ describe('createStandaloneDocFrameTransport', () => {
     fake.receive({ type: 'agent_message_delta', data: { delta: 'hi' } })
 
     expect(seen).not.toHaveBeenCalled()
+  })
+
+  it('reports when the shared socket becomes usable, so a dropped subscribe can be re-driven', () => {
+    // A subscribe sent while the socket is still connecting is dropped by
+    // design. In the cloud the follower re-drives it off ComfyUI's own socket
+    // events; those never fire for the agent socket, so this transport has
+    // to say when ITS socket opened.
+    const fake = fakeSource()
+    const transport = createStandaloneDocFrameTransport(fake.source)
+    const connected = vi.fn()
+    transport.onConnected(connected)
+
+    fake.status(true)
+    expect(connected).toHaveBeenCalledTimes(1)
+
+    fake.status(false)
+    expect(connected).toHaveBeenCalledTimes(1)
+
+    fake.status(true)
+    expect(connected).toHaveBeenCalledTimes(2)
   })
 
   it('stops listening once destroyed', () => {

@@ -134,6 +134,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 
 import { STALE_AFTER_MS, useAgentCrdtFollower } from './useAgentCrdtFollower'
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
+import type { DocFrameTransport } from './docFrameClient'
 
 const graphMutations = {} as GraphMutations
 const DOC_ID_KEY = 'Comfy.Agent.CrdtDocId'
@@ -166,7 +167,8 @@ function writeRawRecord(overrides: {
 function mountFollower(
   initial: string | null = null,
   initiallyActive = true,
-  getGraph: () => MaterializableGraph | null = () => null
+  getGraph: () => MaterializableGraph | null = () => null,
+  baseTransport?: DocFrameTransport
 ): {
   unmount: () => void
   workflowId: Ref<string | null>
@@ -183,7 +185,8 @@ function mountFollower(
         graphMutations,
         () => null,
         isTargetActive,
-        getGraph
+        getGraph,
+        baseTransport
       )
       exposedStatus = () => status.value as AgentCrdtStatus
       return () => null
@@ -210,6 +213,33 @@ describe('useAgentCrdtFollower', () => {
     materializerState.reconcileAgentAdapters.mockReset().mockReturnValue([])
     definitionsState.readSubgraphDefinitionIds.mockClear()
     definitionsState.readSubgraphDefinitions.mockClear()
+  })
+
+  it('reconciles subscription intent when the transport reports its socket connected', () => {
+    // A subscribe sent while the transport's socket is still connecting is
+    // dropped. The cloud follower re-drives it off ComfyUI's own socket
+    // events; a transport on a different socket (the standalone agent's)
+    // must be able to say "I am usable now" and get the same reconcile.
+    let connectedListener: (() => void) | null = null
+    const stopConnected = vi.fn()
+    const transport: DocFrameTransport = {
+      send: vi.fn(() => false),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      onConnected: (listener) => {
+        connectedListener = listener
+        return stopConnected
+      }
+    }
+    const { unmount } = mountFollower('wf-1', true, () => null, transport)
+    expect(connectedListener).toBeTypeOf('function')
+    const before = bridge().reconcile.mock.calls.length
+
+    connectedListener!()
+
+    expect(bridge().reconcile.mock.calls.length).toBe(before + 1)
+    unmount()
+    expect(stopConnected).toHaveBeenCalledTimes(1)
   })
 
   it('subscribes immediately to a bound workflow and reports it in status', () => {

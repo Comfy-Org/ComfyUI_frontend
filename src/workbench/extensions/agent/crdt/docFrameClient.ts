@@ -101,6 +101,16 @@ export interface DocFrameTransport {
   send(frame: string): boolean
   addEventListener(type: string, listener: EventListener): void
   removeEventListener(type: string, listener: EventListener): void
+  /**
+   * Optional: notify when the transport's socket has (re)opened and can carry
+   * a frame. A subscribe sent while the socket was still connecting is dropped
+   * by design (`send` returned false), and the follower re-drives its intent
+   * on this signal. The cloud transport does not need it — ComfyUI's socket
+   * announces itself with `status` and `reconnected` events the follower
+   * already listens to — but a transport on a different socket must provide
+   * it, or a dropped subscribe waits for an unrelated trigger.
+   */
+  onConnected?(listener: () => void): () => void
 }
 
 interface WireData {
