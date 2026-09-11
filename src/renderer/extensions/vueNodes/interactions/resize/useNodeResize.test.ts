@@ -146,13 +146,13 @@ function startResizeAt(
   startResize: (event: PointerEvent, corner: CompassCorners) => void,
   handle: HTMLElement,
   corner: CompassCorners,
-  clientX = 500,
-  clientY = 500
+  { clientX = 500, clientY = 500, pointerId = 1 } = {}
 ) {
   const downEvent = createPointerEvent('pointerdown', {
     currentTarget: handle,
     clientX,
-    clientY
+    clientY,
+    pointerId
   })
   startResize(downEvent, corner)
 }
@@ -542,7 +542,7 @@ describe('useNodeResize', () => {
     it('releases every listener set when two corners are grabbed at once', () => {
       const handlesBeforeGesture = stopHandles.all.length
       startResizeAt(getStartResize(), handle, 'SE')
-      startResizeAt(getStartResize(), handle, 'SW')
+      startResizeAt(getStartResize(), handle, 'SW', { pointerId: 2 })
 
       for (const h of [...eventHandlers.pointerup])
         h(createPointerEvent('pointerup'))
@@ -556,7 +556,7 @@ describe('useNodeResize', () => {
     it('fires resizeCallback once per pointermove on next resize after a double grab', () => {
       // Simulate double grab: first corner, then second before first releases
       startResizeAt(getStartResize(), handle, 'SE')
-      startResizeAt(getStartResize(), handle, 'SW')
+      startResizeAt(getStartResize(), handle, 'SW', { pointerId: 2 })
 
       // Release first gesture
       for (const h of [...eventHandlers.pointerup])
