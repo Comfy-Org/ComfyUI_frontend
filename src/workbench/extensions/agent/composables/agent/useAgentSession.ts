@@ -387,9 +387,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return
     const answerOwnedGeneration = ownedGeneration
     const answerSessionGeneration = sessionGeneration
-    const generation = loadGeneration
-    const isCurrent = () =>
-      generation === loadGeneration && ownedGeneration === sessionGeneration
+    const isAnswerSessionLive = () =>
+      answerOwnedGeneration === ownedGeneration &&
+      answerSessionGeneration === sessionGeneration
+    const isAnswerThreadOnScreen = () =>
+      isAnswerSessionLive() && conversationStore.threadId === currentThreadId
     setAskAnswering(askId, true)
     try {
       await rest.answerAsk(currentThreadId, askId, [selection])
@@ -397,11 +399,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     } catch (error) {
       setAskAnswering(askId, false)
       if (error instanceof AgentApiError && error.status === 409) {
-        if (
-          answerOwnedGeneration !== ownedGeneration ||
-          answerSessionGeneration !== sessionGeneration
-        )
-          return
+        if (!isAnswerSessionLive()) return
         conversationStore.ingest({
           type: 'agent_ask_resolved',
           data: {
@@ -415,7 +413,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         return
       }
       reportError(error, { errorType: 'agent_ask_answer_failed' })
-      if (!isCurrent()) return
+      if (!isAnswerThreadOnScreen()) return
       pushError(error instanceof Error ? error.message : String(error))
     }
   }
