@@ -74,18 +74,25 @@ interface OpRecord {
   note: string
 }
 
+// Both persisted widget representations, paired in widget order.
+// widgets_values is positional, so only an ordered pairing exposes a value
+// restored into the wrong slot. Deliberately desynced entries drop from both.
 const normalizeReloadGraph = (
   serialized: ISerialisedGraph,
   mangled: Set<string>
 ) => ({
-  nodes: serialized.nodes.map((node) => ({
-    id: node.id,
-    widgets_values_named: Object.fromEntries(
-      Object.entries(node.widgets_values_named ?? {}).filter(
-        ([name]) => !mangled.has(`${node.id}:${name}`)
+  nodes: serialized.nodes.map((node) => {
+    const positional = node.widgets_values ?? []
+    return {
+      id: node.id,
+      widgets: Object.entries(node.widgets_values_named ?? {}).flatMap(
+        ([name, value], index) =>
+          mangled.has(`${node.id}:${name}`)
+            ? []
+            : [[name, value, positional[index]]]
       )
-    )
-  }))
+    }
+  })
 })
 
 const reloadGraph = (
@@ -566,8 +573,13 @@ export async function runPack(
   await op(
     'wReorder',
     () => {
-      const w = byType('KSampler')?.widgets
-      if (w && w.length > 1) w.splice(0, 0, w.splice(w.length - 1, 1)[0])
+      const k = byType('KSampler')
+      const w = k?.widgets
+      if (k && w && w.length > 1) {
+        const moved = w.splice(w.length - 1, 1)[0]
+        w.splice(0, 0, moved)
+        mangled.add(`${k.id}:${moved.name}`)
+      }
     },
     false
   )
