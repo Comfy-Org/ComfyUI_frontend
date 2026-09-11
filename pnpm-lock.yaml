@@ -235,7 +235,7 @@ catalogs:
       specifier: ^10.10.0
       version: 10.10.0
     fallow:
-      specifier: ^3.24.1
+      specifier: 3.24.1
       version: 3.24.1
     fast-check:
       specifier: ^4.5.3
