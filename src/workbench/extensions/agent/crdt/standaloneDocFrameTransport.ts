@@ -34,6 +34,7 @@ interface AgentFrame {
 }
 
 export interface StandaloneDocFrameTransport extends DocFrameTransport {
+  onConnected(listener: () => void): () => void
   destroy(): void
 }
 
@@ -64,6 +65,18 @@ export function createStandaloneDocFrameTransport(
     },
     removeEventListener(type, listener) {
       target.removeEventListener(type, listener)
+    },
+    /**
+     * Fires each time the shared socket opens. The chat stream's `onStatus`
+     * reports every open and close; only the opens matter here, because
+     * that is the moment a subscribe dropped while connecting can go out.
+     */
+    onConnected(listener) {
+      return (
+        source.onStatus?.((live) => {
+          if (live) listener()
+        }) ?? (() => {})
+      )
     },
     destroy() {
       unsubscribe?.()
