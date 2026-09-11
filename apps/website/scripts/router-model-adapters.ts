@@ -1,3 +1,5 @@
+import { z } from 'astro/zod'
+
 import type {
   WorkshopContract,
   WorkshopMediaBinding
@@ -23,6 +25,37 @@ function imageAndMask(): WorkshopMediaBinding[] {
 }
 
 export function adaptRouterModel(contract: WorkshopContract): WorkshopContract {
+  if (contract.id === 'bfl/flux-3-video') {
+    const slug = 'bfl--flux-3-video-continuation--edit-videos'
+    const continuation = contract.creatorVariants?.[slug]
+    if (!continuation) return contract
+    const properties = z
+      .record(z.string(), z.json())
+      .parse(continuation.parameters.properties)
+    return {
+      ...contract,
+      creatorVariants: {
+        ...contract.creatorVariants,
+        [slug]: {
+          ...continuation,
+          parameters: {
+            ...continuation.parameters,
+            properties: {
+              ...properties,
+              duration: {
+                default: 'auto',
+                oneOf: [
+                  { type: 'integer', minimum: 5, maximum: 15 },
+                  { type: 'string', const: 'auto' }
+                ],
+                enum: ['auto', ...Array.from({ length: 11 }, (_, i) => i + 5)]
+              }
+            }
+          }
+        }
+      }
+    }
+  }
   if (contract.id === 'bfl/vto-v1' && contract.inputs) {
     return {
       ...contract,

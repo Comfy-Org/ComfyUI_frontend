@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { loadWorkshopExampleFile } from '../src/config/workshop-example-file'
 import { runWorkshopRouter } from '../src/config/workshop-router'
 import { WorkshopRouterError } from '../src/config/workshop-router-errors'
 import {
@@ -13,7 +14,84 @@ vi.mock(import('../src/config/workshop-router'), async (importOriginal) => ({
   runWorkshopRouter: vi.fn()
 }))
 
+vi.mock(
+  import('../src/config/workshop-example-file'),
+  async (importOriginal) => ({
+    ...(await importOriginal()),
+    loadWorkshopExampleFile: vi.fn()
+  })
+)
+
 describe('router_render', () => {
+  it.for([
+    {
+      slug: 'bfl--flux-3-video-continuation--edit-videos',
+      mode: 'v2v',
+      duration: 15
+    },
+    {
+      slug: 'bfl--flux-3-text-to-video--generate-videos',
+      mode: 't2v',
+      duration: 20
+    },
+    {
+      slug: 'bfl--flux-3-image-to-video--animate-images',
+      mode: 'i2v',
+      duration: 20
+    }
+  ])('maps generic duration to the allowed range for $mode', async (model) => {
+    vi.mocked(loadWorkshopExampleFile).mockResolvedValue(
+      new File([new Uint8Array([0, 1, 255, 34])], 'source.png', {
+        type: 'image/png'
+      })
+    )
+    const prepared = await prepareRouterRender(model.slug, {
+      duration_seconds: 20
+    })
+    expect(prepared.body).toMatchObject({
+      mode: model.mode,
+      duration: model.duration
+    })
+  })
+
+  it('rejects an explicit unsupported continuation duration before generation', async () => {
+    await expect(
+      prepareRouterRender('bfl--flux-3-video-continuation--edit-videos', {
+        model_specific: { duration: 16 }
+      })
+    ).rejects.toMatchObject({
+      reason: 'validation',
+      fieldErrors: { duration: 'badOption' }
+    })
+    expect(runWorkshopRouter).not.toHaveBeenCalled()
+  })
+
+  it('encodes the initial Veo animation frame while keeping text generation prompt-only', async () => {
+    vi.mocked(loadWorkshopExampleFile).mockResolvedValue(
+      new File([new Uint8Array([0, 1, 255, 34])], 'source.png', {
+        type: 'image/png'
+      })
+    )
+
+    const animation = await prepareRouterRender(
+      'vertexai--veo-3--animate-images'
+    )
+    expect(animation.body).toMatchObject({
+      instances: [
+        {
+          image: { bytesBase64Encoded: 'AAH/Ig==', mimeType: 'image/png' }
+        }
+      ]
+    })
+
+    const text = await prepareRouterRender('vertexai--veo-3--generate-videos')
+    expect(text.body).not.toHaveProperty('instances.0.image')
+    expect(text.body).toHaveProperty(
+      'instances.0.prompt',
+      animation.values.prompt
+    )
+  })
+
   it.for([
     'openai--gpt-image-1--edit-images',
     'openai--gpt-image-1.5--edit-images',

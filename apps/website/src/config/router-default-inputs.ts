@@ -79,6 +79,7 @@ const defaults: Readonly<Partial<Record<string, RouterRenderParameters>>> = {
   },
   'luma--photon-1-image-modify--edit-images': sourceImage,
   'runway--gen4-turbo-image-to-video--animate-images': sourceImage,
+  'vertexai--veo-3--animate-images': { first_frame: image },
   'wan--happyhorse-image-to-video--animate-images': sourceImage,
   'wan--happyhorse-video-edit--edit-videos': sourceVideo,
   'wan--image-to-video--animate-images': sourceImage,
