@@ -11011,7 +11011,8 @@
     "display_name": "Carregar 3D (Avançado)",
     "inputs": {
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "Altura de renderização da viewport em pixels."
       },
       "model_file": {
         "name": "model_file"
@@ -11020,29 +11021,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "Largura de renderização da viewport em pixels."
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "Arquivo de modelo 3D carregado (glb/obj/stl/etc.)."
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "Posicionamento de cada modelo na cena: posição, rotação e escala (espaço mundial com Y para cima)."
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "Informações da câmera da viewport: posição, alvo de visualização, zoom e tipo."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "Largura de renderização da viewport em pixels."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "Altura de renderização da viewport em pixels."
       }
     }
   },
@@ -16384,7 +16386,7 @@
   },
   "OpenAIGPTImageNodeV2": {
     "description": "Gera imagens via endpoint GPT Image da OpenAI.",
-    "display_name": "OpenAI GPT Image 2",
+    "display_name": "OpenAI GPT Image 2.5",
     "inputs": {
       "control_after_generate": {
         "name": "controle após gerar"
@@ -16471,6 +16473,36 @@
       },
       "size": {
         "name": "tamanho"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenRouterImageNode": {
+    "description": "Gere ou edite imagens pelo OpenRouter com os modelos MAI-Image-2.6 da Microsoft: texto para imagem ou edição guiada por imagem com até cinco imagens de referência, em sete proporções de aspecto em 1K ou 1.5K.",
+    "display_name": "Imagem OpenRouter",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "O modelo de imagem OpenRouter usado para gerar a imagem."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "model_seed": {
+        "name": "seed"
       }
     },
     "outputs": {
@@ -17388,10 +17420,12 @@
     "display_name": "Visualizar 3D (Avançado)",
     "inputs": {
       "camera_info": {
-        "name": "info_câmera"
+        "name": "info_câmera",
+        "tooltip": "Informações da câmera da viewport: posição, alvo de visualização, zoom e tipo."
       },
       "height": {
-        "name": "altura"
+        "name": "altura",
+        "tooltip": "Altura de renderização da viewport em pixels."
       },
       "model_3d": {
         "name": "modelo_3d",
@@ -17404,29 +17438,30 @@
         "name": "estado_da_janela_de_visualização"
       },
       "width": {
-        "name": "largura"
+        "name": "largura",
+        "tooltip": "Largura de renderização da viewport em pixels."
       }
     },
     "outputs": {
       "0": {
         "name": "arquivo_modelo",
-        "tooltip": null
+        "tooltip": "Arquivo de modelo 3D (glb/obj/stl/etc.) de um nó 3D anterior."
       },
       "1": {
         "name": "info_câmera",
-        "tooltip": null
+        "tooltip": "Posicionamento de cada modelo na cena: posição, rotação e escala (espaço mundial com Y para cima)."
       },
       "2": {
         "name": "info_modelo_3d",
-        "tooltip": null
+        "tooltip": "Informações da câmera da viewport: posição, alvo de visualização, zoom e tipo."
       },
       "3": {
         "name": "largura",
-        "tooltip": null
+        "tooltip": "Largura de renderização da viewport em pixels."
       },
       "4": {
         "name": "altura",
-        "tooltip": null
+        "tooltip": "Altura de renderização da viewport em pixels."
       }
     }
   },
@@ -20765,48 +20800,52 @@
     "display_name": "Salvar 3D (Avançado)",
     "inputs": {
       "camera_info": {
-        "name": "camera_info"
+        "name": "camera_info",
+        "tooltip": "Informações da câmera da viewport: posição, alvo de visualização, zoom e tipo."
       },
       "filename_prefix": {
         "name": "filename_prefix"
       },
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "Altura de renderização da viewport em pixels."
       },
       "model_3d": {
         "name": "model_3d",
         "tooltip": "Arquivo de modelo 3D de um nó 3D upstream."
       },
       "model_3d_info": {
-        "name": "model_3d_info"
+        "name": "model_3d_info",
+        "tooltip": "Posicionamento de cada modelo na cena: posição, rotação e escala (espaço mundial com Y para cima)."
       },
       "viewport_state": {
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "Largura de renderização da viewport em pixels."
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "Arquivo de modelo 3D (glb/obj/stl/etc.) de um nó 3D anterior."
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "Posicionamento de cada modelo na cena: posição, rotação e escala (espaço mundial com Y para cima)."
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "Informações da câmera da viewport: posição, alvo de visualização, zoom e tipo."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "Largura de renderização da viewport em pixels."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "Altura de renderização da viewport em pixels."
       }
     }
   },

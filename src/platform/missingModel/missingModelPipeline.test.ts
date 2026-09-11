@@ -60,7 +60,7 @@ const { mockHandles } = vi.hoisted(() => {
         ) => undefined
       ),
       assetService: {
-        shouldUseAssetBrowser: vi.fn()
+        shouldUseWidgetAssetPicker: vi.fn()
       },
       api: {
         getFolderPaths: vi.fn()
@@ -85,8 +85,8 @@ vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
 
 vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
-    shouldUseAssetBrowser: (nodeType: string, widgetName: string) =>
-      mockHandles.assetService.shouldUseAssetBrowser(nodeType, widgetName)
+    shouldUseWidgetAssetPicker: (nodeType: string, widgetName: string) =>
+      mockHandles.assetService.shouldUseWidgetAssetPicker(nodeType, widgetName)
   }
 }))
 

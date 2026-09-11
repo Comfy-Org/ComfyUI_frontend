@@ -26,8 +26,11 @@ const EMBED_HOSTS = new Set([
   'www.youtube-nocookie.com',
   'demo.arcade.software'
 ])
-const MEDIA_PATTERN =
-  /^https:\/\/(media|comfy-hub-assets)\.comfy\.org\/.*\.(webp|webm|mp4|png|jpg|jpeg|gif|avif|vtt)(\?.*)?$/i
+const MEDIA_PATTERNS = [
+  /^https:\/\/(?:media|comfy-hub-assets)\.comfy\.org\/.*\.(?:webp|webm|mp4|png|jpg|jpeg|gif|avif|vtt)(?:\?.*)?$/i,
+  /^https:\/\/raw\.githubusercontent\.com\/Comfy-Org\/workflow_templates\/main\/templates\/.*\.(?:webp|webm|mp4|png|jpg|jpeg|gif|avif|vtt)(?:\?.*)?$/i,
+  /^https:\/\/cdn\.jsdelivr\.net\/gh\/Comfy-Org\/workflow_templates@main\/(?:input|output)\/.*\.(?:webp|webm|mp4|png|jpg|jpeg|gif|avif|vtt)(?:\?.*)?$/i
+]
 const NODE_IMAGE_HOSTS = new Set([
   'avatars.githubusercontent.com',
   'raw.githubusercontent.com'
@@ -93,7 +96,8 @@ export const test = base.extend({
             src: url(data:font/woff2;base64,${INTER_FONT}) format('woff2');
           }`
         })
-      if (MEDIA_PATTERN.test(url.href)) return fulfillMedia(route)
+      if (MEDIA_PATTERNS.some((pattern) => pattern.test(url.href)))
+        return fulfillMedia(route)
       if (
         NODE_IMAGE_HOSTS.has(url.hostname) &&
         route.request().resourceType() === 'image'
