@@ -19,6 +19,7 @@ test.describe(
     })
 
     test.afterEach(async ({ comfyPage }) => {
+      await comfyPage.workflow.setupWorkflowsDirectory({})
       await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
       await comfyPage.canvasOps.resetView()
     })
