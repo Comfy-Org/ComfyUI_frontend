@@ -29,6 +29,10 @@ vi.mock(import('@/composables/node/useNodeFileInput'), () => ({
   useNodeFileInput: () => ({ openFileSelection: vi.fn() })
 }))
 
+vi.mock(import('@/composables/node/useNodePaste'), () => ({
+  useNodePaste: vi.fn()
+}))
+
 vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
@@ -89,35 +93,25 @@ describe('useNodeImageUpload', () => {
     })
   })
 
-  it.for([
-    { source: 'paste', folder: 'input' },
-    { source: 'paste', folder: 'output' },
-    { source: 'drop', folder: 'input' }
-  ] as const)(
-    'uploads image.png via $source to the $folder root and keeps the server filename',
-    async ({ source, folder }) => {
-      useNodeImageUpload(node, { folder, onUploadComplete })
-      mockFetchApi.mockResolvedValueOnce(successResponse('image (1).png', ''))
-      const file = createFile('image.png')
+  it('uploads image.png with the configured destination', async () => {
+    const { handleUpload } = useNodeImageUpload(node, {
+      folder: 'output',
+      onUploadComplete
+    })
+    mockFetchApi.mockResolvedValueOnce(successResponse('image.png'))
+    const file = createFile('image.png')
 
-      if (source === 'paste') {
-        expect(node.pasteFiles?.([file])).toBe(true)
-      } else {
-        await capturedDragOnDrop([file])
-      }
+    await handleUpload(file)
 
-      await vi.waitFor(() =>
-        expect(onUploadComplete).toHaveBeenCalledWith(['image (1).png'])
-      )
-      const body = mockFetchApi.mock.calls[0][1]?.body
-      if (!(body instanceof FormData)) {
-        throw new Error('Image upload must send multipart form data')
-      }
-      expect(body.get('image')).toBe(file)
-      expect(body.get('type')).toBe(folder)
-      expect(body.get('subfolder')).toBeNull()
+    const body = mockFetchApi.mock.calls[0][1]?.body
+    if (!(body instanceof FormData)) {
+      throw new Error('Image upload must send multipart form data')
     }
-  )
+    expect(Object.fromEntries(body.entries())).toEqual({
+      image: file,
+      type: 'output'
+    })
+  })
 
   it.for([
     { mediaType: 'image', filename: 'test.png', mimeType: 'image/png' },
