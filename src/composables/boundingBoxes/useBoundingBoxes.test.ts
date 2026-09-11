@@ -1,5 +1,7 @@
+import { useKeybindingService } from '@/platform/keybindings/keybindingService'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { render } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Ref, ShallowRef } from 'vue'
 import { defineComponent, h, nextTick, ref, shallowRef } from 'vue'
 
@@ -58,7 +60,7 @@ function makeCanvas(): HTMLCanvasElement {
     y: 0,
     toJSON: () => ({})
   })
-  el.focus = () => {}
+  el.tabIndex = 0
   el.setPointerCapture = () => {}
   el.releasePointerCapture = () => {}
   return el
@@ -134,11 +136,15 @@ function setup(initial: BoundingBox[] = []) {
         modelValue
       })
       captured = { canvasEl, modelValue, ...api }
-      return () => h('div')
+      return () => h('div', [h('textarea', { ref: inlineEditorEl })])
     }
   })
   render(Harness)
-  captured!.canvasEl.value = makeCanvas()
+  const canvas = makeCanvas()
+  document.body.appendChild(canvas)
+  canvas.focus()
+  disposers.push(() => canvas.remove())
+  captured!.canvasEl.value = canvas
   return captured!
 }
 
@@ -159,7 +165,11 @@ function makeConnectedNode(): MockNode {
   }
 }
 
+let disposeDispatcher: () => void
+const disposers: (() => void)[] = []
 beforeEach(() => {
+  useSettingStore().settingValues['Comfy.Keybinding.CapturePhase'] = true
+  disposeDispatcher = useKeybindingService().install()
   outputStore = useNodeOutputStore()
   vi.mocked(outputStore.getNodeOutputs).mockImplementation(
     () => incomingOutputs
@@ -171,6 +181,11 @@ beforeEach(() => {
     return 1
   })
   vi.stubGlobal('cancelAnimationFrame', () => {})
+})
+
+afterEach(() => {
+  for (const dispose of disposers.splice(0)) dispose()
+  disposeDispatcher()
 })
 
 describe('useBoundingBoxes initialization', () => {
@@ -230,11 +245,13 @@ describe('useBoundingBoxes region editing', () => {
 
   it('deletes the active region on Delete', async () => {
     const c = setup([box()])
-    c.onCanvasKeyDown({
-      key: 'Delete',
-      preventDefault: () => {},
-      stopPropagation: () => {}
-    } as unknown as KeyboardEvent)
+    document.activeElement?.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Delete',
+        bubbles: true,
+        cancelable: true
+      })
+    )
     await flush()
     expect(modelBoxes(c)).toHaveLength(0)
   })
@@ -269,7 +286,13 @@ describe('useBoundingBoxes inline editor', () => {
     const c = setup([box()])
     c.onDoubleClick(pe(30, 30))
     await flush()
-    c.onInlineKeyDown({ key: 'Escape' } as KeyboardEvent)
+    document.activeElement?.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Escape',
+        bubbles: true,
+        cancelable: true
+      })
+    )
     expect(c.inlineEditor.value).toBeNull()
   })
 })

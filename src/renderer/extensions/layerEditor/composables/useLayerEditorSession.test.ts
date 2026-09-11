@@ -1,5 +1,10 @@
+import { markRaw } from 'vue'
+import { useKeybindingService } from '@/platform/keybindings/keybindingService'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useDialogStore } from '@/stores/dialogStore'
 import {
   afterAll,
+  afterEach,
   beforeAll,
   beforeEach,
   describe,
@@ -22,6 +27,8 @@ import type {
   ChannelData,
   RasterData
 } from '@/renderer/extensions/layerEditor/engine/node'
+
+import { LAYER_EDITOR_DIALOG_KEY } from './layerEditorDialog'
 
 import { reorderDropIndex } from './layerPanelDnd'
 import { useLayerEditorSession } from './useLayerEditorSession'
@@ -129,7 +136,15 @@ afterAll(() => {
   restore2d?.()
 })
 
+let disposeDispatcher: () => void
+const disposers: (() => void)[] = []
 beforeEach(() => {
+  useSettingStore().settingValues['Comfy.Keybinding.CapturePhase'] = true
+  disposeDispatcher = useKeybindingService().install()
+  useDialogStore().showDialog({
+    key: LAYER_EDITOR_DIALOG_KEY,
+    component: markRaw({ template: '<div />' })
+  })
   scaleCalls.length = 0
   drawImageCalls.length = 0
   const pending = new Map<number, FrameRequestCallback>()
@@ -147,6 +162,11 @@ beforeEach(() => {
   vi.stubGlobal('cancelAnimationFrame', (id: number) => {
     pending.delete(id)
   })
+})
+
+afterEach(() => {
+  for (const dispose of disposers.splice(0)) dispose()
+  disposeDispatcher()
 })
 
 function flushFrames(): Promise<void> {
@@ -181,6 +201,7 @@ function makeSession(
     },
     alphaSampler
   })
+  disposers.push(session.dispose)
   return { session, compositor }
 }
 
@@ -192,6 +213,10 @@ async function loadedSession() {
 
 function makeElements() {
   const viewport = document.createElement('div')
+  viewport.tabIndex = 0
+  document.body.appendChild(viewport)
+  viewport.focus()
+  disposers.push(() => viewport.remove())
   Object.defineProperty(viewport, 'clientWidth', {
     value: 800,
     configurable: true
@@ -226,17 +251,20 @@ function pointer(init: Partial<PointerEvent>): PointerEvent {
   } as unknown as PointerEvent
 }
 
-function key(init: Partial<KeyboardEvent>): KeyboardEvent {
-  return {
-    code: '',
-    key: '',
-    ctrlKey: false,
-    metaKey: false,
-    shiftKey: false,
-    target: null,
-    preventDefault: () => {},
+function key(
+  init: KeyboardEventInit,
+  type: 'keydown' | 'keyup' = 'keydown',
+  target: EventTarget = document.activeElement ?? document.body
+): KeyboardEvent {
+  const event = new KeyboardEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    key:
+      init.code === 'Space' ? ' ' : init.code?.replace('Key', '').toLowerCase(),
     ...init
-  } as unknown as KeyboardEvent
+  })
+  target.dispatchEvent(event)
+  return event
 }
 
 function rasterLayer(
@@ -425,9 +453,8 @@ describe('useLayerEditorSession', () => {
 
     it('never swallows Escape so the dialog close stays reachable', async () => {
       const { session } = await loadedSession()
-      const preventDefault = vi.fn()
-      session.onKeyDown(key({ key: 'Escape', preventDefault }))
-      expect(preventDefault).not.toHaveBeenCalled()
+      session.setElements(makeElements())
+      expect(key({ key: 'Escape' }).defaultPrevented).toBe(false)
     })
 
     it('exposes a fresh activeNode snapshot after each edit so bindings update', async () => {
@@ -452,13 +479,16 @@ describe('useLayerEditorSession', () => {
       await flushFrames()
       const before = parseFloat(els.container.style.left)
 
-      session.onKeyDown(key({ code: 'Space' }))
+      key({ code: 'Space' })
       expect(session.viewportCursor.value).toBe('grab')
       session.onPointerDown(pointer({ offsetX: 100, offsetY: 100 }))
       session.onPointerMove(pointer({ offsetX: 110, offsetY: 95 }))
       await flushFrames()
       session.onPointerUp(pointer({ offsetX: 110, offsetY: 95 }))
-      session.onKeyUp(key({ code: 'Space' }))
+      key({ code: 'Space' }, 'keyup')
+      await vi.waitFor(() =>
+        expect(session.viewportCursor.value).not.toBe('grab')
+      )
 
       expect(parseFloat(els.container.style.left)).toBeCloseTo(before + 10)
       expect(session.activeNodeId.value).toBe(session.imageLayers.value[1].id)
@@ -662,24 +692,24 @@ describe('useLayerEditorSession', () => {
       const { session } = await loadedSession()
       const id = session.imageLayers.value[0].id
       session.setOpacity(id, 0.5)
-      session.onKeyDown(key({ code: 'KeyZ', ctrlKey: true }))
+      key({ code: 'KeyZ', ctrlKey: true })
       expect(session.imageLayers.value[0].opacity).toBe(1)
-      session.onKeyDown(key({ code: 'KeyZ', ctrlKey: true, shiftKey: true }))
+      key({ code: 'KeyZ', ctrlKey: true, shiftKey: true })
       expect(session.imageLayers.value[0].opacity).toBe(0.5)
     })
 
     it('Enter and Escape are harmless without a pending transform', async () => {
       const { session } = await loadedSession()
       expect(session.editor.activeToolId()).toBe('transform')
-      session.onKeyDown(key({ key: 'Enter' }))
-      session.onKeyDown(key({ key: 'Escape' }))
+      key({ key: 'Enter' })
+      key({ key: 'Escape' })
       expect(session.editor.activeToolId()).toBe('transform')
       expect(session.canUndo.value).toBe(false)
     })
 
     it('Delete leaves layers untouched (no delete affordance)', async () => {
       const { session } = await loadedSession()
-      session.onKeyDown(key({ key: 'Delete' }))
+      key({ key: 'Delete' })
       expect(session.layers.value.map((n) => n.name)).toEqual([
         'Background',
         'A',
@@ -691,7 +721,7 @@ describe('useLayerEditorSession', () => {
     it('Ctrl+A selects all pixels and Ctrl+D drops the selection', async () => {
       const { session } = await loadedSession()
       session.setElements(makeElements())
-      session.onKeyDown(key({ code: 'KeyA', ctrlKey: true }))
+      key({ code: 'KeyA', ctrlKey: true })
       expect(session.editor.selectionBounds()).toEqual({
         x: 0,
         y: 0,
@@ -699,7 +729,7 @@ describe('useLayerEditorSession', () => {
         h: 48
       })
       await flushFrames()
-      session.onKeyDown(key({ code: 'KeyD', ctrlKey: true }))
+      key({ code: 'KeyD', ctrlKey: true })
       expect(session.editor.selectionBounds()).toBeNull()
     })
 
@@ -709,29 +739,28 @@ describe('useLayerEditorSession', () => {
       const cid = session.content.register(fakeCanvas(8, 8))
       session.editor.startFloating(cid, 8, 8, 'F')
       await flushFrames()
-      session.onKeyDown(key({ key: 'Enter' }))
+      key({ key: 'Enter' })
       expect(session.editor.floating()).toBeNull()
       expect(session.canUndo.value).toBe(true)
 
       const cid2 = session.content.register(fakeCanvas(8, 8))
       session.editor.startFloating(cid2, 8, 8, 'F2')
-      const preventDefault = vi.fn()
-      session.onKeyDown(key({ key: 'Escape', preventDefault }))
+      const event = key({ key: 'Escape' })
       expect(session.editor.floating()).not.toBeNull()
-      expect(preventDefault).not.toHaveBeenCalled()
+      expect(event.defaultPrevented).toBe(false)
     })
 
     it('ignores hotkeys while typing in an input', async () => {
       const { session } = await loadedSession()
       const id = session.imageLayers.value[0].id
       session.setOpacity(id, 0.5)
-      session.onKeyDown(
-        key({
-          code: 'KeyZ',
-          ctrlKey: true,
-          target: document.createElement('input')
-        })
-      )
+      const input = document.createElement('input')
+      document.body.appendChild(input)
+      disposers.push(() => input.remove())
+      input.focus()
+      expect(
+        key({ code: 'KeyZ', ctrlKey: true }, 'keydown', input).defaultPrevented
+      ).toBe(false)
       expect(session.imageLayers.value[0].opacity).toBe(0.5)
     })
   })

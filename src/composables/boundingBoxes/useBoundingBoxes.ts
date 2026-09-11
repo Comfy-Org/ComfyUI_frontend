@@ -1,3 +1,5 @@
+import { t } from '@/i18n'
+import { useKeybinding } from '@/platform/keybindings/useKeybinding'
 import { useElementSize } from '@vueuse/core'
 import { cloneDeep, isEqual } from 'es-toolkit'
 import { storeToRefs } from 'pinia'
@@ -555,13 +557,26 @@ export function useBoundingBoxes(
     })
   }
 
-  function onInlineKeyDown(e: KeyboardEvent) {
-    if (e.key === 'Escape') {
+  useKeybinding({
+    id: 'Comfy.BoundingBoxes.CancelText',
+    label: () => t('keybindings.cancelBoundingBoxText'),
+    binding: { combo: { key: 'Escape' }, when: 'textInputFocus' },
+    enabled: () =>
+      inlineEditor.value !== null &&
+      inlineEditorEl.value === document.activeElement,
+    run: () => {
       inlineEditor.value = null
-    } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-      commitInlineEditor()
     }
-  }
+  })
+  useKeybinding({
+    id: 'Comfy.BoundingBoxes.CommitText',
+    label: () => t('keybindings.commitBoundingBoxText'),
+    binding: { combo: { key: 'Enter', ctrl: true }, when: 'textInputFocus' },
+    enabled: () =>
+      inlineEditor.value !== null &&
+      inlineEditorEl.value === document.activeElement,
+    run: commitInlineEditor
+  })
 
   function commitInlineEditor() {
     const ed = inlineEditor.value
@@ -572,15 +587,20 @@ export function useBoundingBoxes(
     syncState()
   }
 
-  function onCanvasKeyDown(e: KeyboardEvent) {
-    if (drawing.value) return
-    const idx = activeIndex.value
-    if ((e.key === 'Delete' || e.key === 'Backspace') && idx >= 0) {
-      e.preventDefault()
-      e.stopPropagation()
-      removeRegion(idx)
-      syncState()
-    }
+  for (const key of ['Delete', 'Backspace']) {
+    useKeybinding({
+      id: 'Comfy.BoundingBoxes.DeleteRegion',
+      label: () => t('keybindings.deleteBoundingBox'),
+      binding: { combo: { key } },
+      enabled: () =>
+        canvasEl.value === document.activeElement &&
+        !drawing.value &&
+        activeIndex.value >= 0,
+      run: () => {
+        removeRegion(activeIndex.value)
+        syncState()
+      }
+    })
   }
 
   function removeRegion(i: number) {
@@ -767,8 +787,6 @@ export function useBoundingBoxes(
     onDocPointerUp,
     onPointerLeave,
     onDoubleClick,
-    onCanvasKeyDown,
-    onInlineKeyDown,
     commitInlineEditor,
     setActiveType,
     clearAll,

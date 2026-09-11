@@ -1,3 +1,6 @@
+import { t } from '@/i18n'
+import { useRuntimeKeybindingStore } from '@/platform/keybindings/runtimeKeybindingStore'
+import { LAYER_EDITOR_DIALOG_KEY } from './layerEditorDialog'
 import { clamp } from 'es-toolkit'
 import { computed, reactive, ref } from 'vue'
 
@@ -93,12 +96,6 @@ async function defaultLoadImage(url: string): Promise<HTMLCanvasElement> {
   canvas.height = img.naturalHeight || img.height
   canvas.getContext('2d')?.drawImage(img, 0, 0)
   return canvas
-}
-
-export function isTextEditingTarget(target: EventTarget | null): boolean {
-  const el = target as HTMLElement | null
-  const tag = el?.tagName
-  return tag === 'INPUT' || tag === 'TEXTAREA' || Boolean(el?.isContentEditable)
 }
 
 function sameTransform(a: Transform, b: Transform): boolean {
@@ -977,54 +974,96 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
     return hoverCursor.value
   })
 
-  function onKeyDown(e: KeyboardEvent): void {
-    if (isTextEditingTarget(e.target)) return
-    const ctrl = e.ctrlKey || e.metaKey
-    if (editor.floating()) {
-      if (e.key === 'Enter') {
-        e.preventDefault()
-        editor.anchorFloating()
-        return
+  const runtime = useRuntimeKeybindingStore()
+  const shortcutStops: (() => void)[] = []
+  const isViewportFocused = () =>
+    !disposed && viewportEl?.contains(document.activeElement) === true
+  for (const { id, label, combo, run, viewportOnly, allowRepeat } of [
+    {
+      id: 'Undo',
+      label: 'keybindings.layerEditorUndo',
+      combo: { key: 'z', ctrl: true },
+      run: undo,
+      viewportOnly: false,
+      allowRepeat: true
+    },
+    {
+      id: 'Redo',
+      label: 'keybindings.layerEditorRedo',
+      combo: { key: 'z', ctrl: true, shift: true },
+      run: redo,
+      viewportOnly: false,
+      allowRepeat: true
+    },
+    {
+      id: 'Redo',
+      label: 'keybindings.layerEditorRedo',
+      combo: { key: 'y', ctrl: true },
+      run: redo,
+      viewportOnly: false,
+      allowRepeat: true
+    },
+    {
+      id: 'ApplyTransform',
+      label: 'keybindings.layerEditorApply',
+      combo: { key: 'Enter' },
+      run: () => {
+        if (editor.floating()) editor.anchorFloating()
+        else editor.transformApply()
+      },
+      viewportOnly: true,
+      allowRepeat: false
+    },
+    {
+      id: 'SelectAll',
+      label: 'keybindings.layerEditorSelectAll',
+      combo: { key: 'a', ctrl: true },
+      run: () => {
+        editor.selectAll()
+      },
+      viewportOnly: true,
+      allowRepeat: false
+    },
+    {
+      id: 'SelectNone',
+      label: 'keybindings.layerEditorSelectNone',
+      combo: { key: 'd', ctrl: true },
+      run: () => {
+        editor.selectNone()
+      },
+      viewportOnly: true,
+      allowRepeat: false
+    }
+  ]) {
+    shortcutStops.push(
+      runtime.register({
+        id: `Comfy.LayerEditor.${id}`,
+        label: () => t(label),
+        binding: { combo, dialogKey: LAYER_EDITOR_DIALOG_KEY, allowRepeat },
+        enabled: viewportOnly ? isViewportFocused : () => !disposed,
+        run
+      })
+    )
+  }
+  shortcutStops.push(
+    runtime.register({
+      id: 'Comfy.LayerEditor.Pan',
+      label: () => t('keybindings.layerEditorPan'),
+      binding: { combo: { key: ' ' }, dialogKey: LAYER_EDITOR_DIALOG_KEY },
+      enabled: isViewportFocused,
+      run: () => {
+        spaceDown.value = true
+      },
+      release: () => {
+        spaceDown.value = false
+        panning.value = false
       }
-    }
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      editor.transformApply()
-      return
-    }
-    if (e.code === 'Space') {
-      spaceDown.value = true
-      e.preventDefault()
-      return
-    }
-    if (ctrl && e.code === 'KeyZ') {
-      e.preventDefault()
-      if (e.shiftKey) redo()
-      else undo()
-      return
-    }
-    if (ctrl && e.code === 'KeyY') {
-      e.preventDefault()
-      redo()
-      return
-    }
-    if (ctrl && e.code === 'KeyA') {
-      e.preventDefault()
-      editor.selectAll()
-      return
-    }
-    if (ctrl && e.code === 'KeyD') {
-      e.preventDefault()
-      editor.selectNone()
-    }
-  }
-
-  function onKeyUp(e: KeyboardEvent): void {
-    if (e.code === 'Space') spaceDown.value = false
-  }
+    })
+  )
 
   function dispose(): void {
     disposed = true
+    for (const stop of shortcutStops) stop()
     if (rafId != null) cancelAnimationFrame(rafId)
     if (overlayRafId != null) cancelAnimationFrame(overlayRafId)
     if (moveRaf != null) cancelAnimationFrame(moveRaf)
@@ -1088,8 +1127,6 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
     onPointerUp,
     onPointerLeave,
     onWheel,
-    onKeyDown,
-    onKeyUp,
     dispose
   }
 }
