@@ -7,6 +7,10 @@ import type {
   ComposerPrompt,
   ComposerReference
 } from '../../../types/composerPrompt'
+import {
+  assetReferenceText,
+  nodeReferenceText
+} from '../../../utils/agentMessageText'
 
 export const inlinePromptSchema = new Schema({
   nodes: {
@@ -52,7 +56,7 @@ export const inlinePromptSchema = new Schema({
       toDOM: (node) => [
         'span',
         { 'data-node-id': node.attrs.id },
-        `${node.attrs.name} #${node.attrs.id}`
+        nodeReferenceText(`${node.attrs.name} #${node.attrs.id}`)
       ]
     },
     asset: {
@@ -69,7 +73,7 @@ export const inlinePromptSchema = new Schema({
       toDOM: (node) => [
         'span',
         { 'data-asset-id': node.attrs.id },
-        node.attrs.name
+        assetReferenceText(node.attrs.name)
       ]
     }
   }
