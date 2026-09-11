@@ -55,11 +55,12 @@ a paid generation request.
 
 ## Schema refresh and insufficient-credit recovery
 
-Router source is now pinned to `9064b7d8748b2e5833be9a102f3ca36185137d86`:
-207 documents, 206 authored inputs, 157 published use-case pages for 113 Router
-IDs, and no published Incomplete entries. MiniMax H3 is withheld, not deleted
-from Rob's packed content. See `MODELS_ROUTER_COVERAGE.md` for the new contracts,
-form projection and identity evidence.
+At frontend commit `30a137ded6f`, Router source was pinned to
+`9064b7d8748b2e5833be9a102f3ca36185137d86`: 207 documents, 206 authored
+inputs, 157 published use-case pages for 113 Router IDs, and no published
+Incomplete entries. MiniMax H3 was withheld, not deleted from Rob's packed
+content. These are historical measurements; later use-case review withheld two
+more pages. See `MODELS_ROUTER_COVERAGE.md` for that later snapshot.
 
 A Router `noCredits` result now offers **Buy credits**, not **Try again**.
 It opens the real Cloud `/?settings=plan-credits` page in a new tab, retaining

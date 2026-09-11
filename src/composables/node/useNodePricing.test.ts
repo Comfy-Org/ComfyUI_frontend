@@ -1288,7 +1288,7 @@ describe('evaluateNodeDefPricing', () => {
     expect(result).toBe('10.6')
   })
 
-  it('should use "original" as fallback for dynamic COMBO without input', async () => {
+  it('does not invent a default for dynamic COMBO without input', async () => {
     const nodeDef = createMockNodeDef({
       name: 'DynamicComboNode',
       price_badge: {
@@ -1310,8 +1310,7 @@ describe('evaluateNodeDefPricing', () => {
       }
     })
     const result = await evaluateNodeDefPricing(nodeDef)
-    // Fallback to "original" = 0.05 USD
-    expect(result).toBe('10.6')
+    expect(result).toBe('')
   })
 
   it('should handle dynamic combo with options array', async () => {

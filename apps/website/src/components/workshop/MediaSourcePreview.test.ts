@@ -40,3 +40,16 @@ it('switches between remote examples and local uploads, revoking only its owned 
   unmount()
   expect(revoke).not.toHaveBeenCalledWith(props.src)
 })
+
+it('renders an audio source as an accessible audio element', () => {
+  render(MediaSourcePreview, {
+    props: {
+      kind: 'audio',
+      name: 'Input audio',
+      src: 'https://assets.example/source.mp3'
+    }
+  })
+  const element = screen.getByLabelText('Input audio')
+  expect(element).toBeInstanceOf(HTMLAudioElement)
+  expect(element.getAttribute('src')).toBe('https://assets.example/source.mp3')
+})

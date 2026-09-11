@@ -1,7 +1,10 @@
+import { z } from 'astro/zod'
+
 import type { Model } from './models'
 import type { WorkshopFormDefinition } from './workshop-form-definition'
 import type { WorkshopContract } from './workshop-contract'
 import type { WorkshopInputDefinition } from './workshop-input-definition'
+import { workshopInputDefinitionSchema } from './workshop-input-definition'
 import { OTHER_FORMAT_USE_CASES } from './workshop-sections'
 import {
   routerWorkshopModels,
@@ -153,124 +156,92 @@ export interface WorkshopModelDetail extends WorkshopModel {
   readonly examples: readonly GeneratedExample[]
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
-}
-
-function isString(value: unknown): value is string {
-  return typeof value === 'string'
-}
-
-function isFiniteNumber(value: unknown): value is number {
-  return typeof value === 'number' && Number.isFinite(value)
-}
-
-function isBoolean(value: unknown): value is boolean {
-  return typeof value === 'boolean'
-}
-
-function isFormValue(value: unknown): value is string | number | boolean {
-  return isString(value) || isFiniteNumber(value) || isBoolean(value)
-}
-
-function isFormValues(value: unknown): value is WorkshopExampleValues {
-  return (
-    isRecord(value) &&
-    Object.values(value).every(
-      (item) =>
-        isFormValue(item) || (Array.isArray(item) && item.every(isString))
-    )
-  )
-}
-
-const UPLOAD_ACCEPTS: ReadonlySet<unknown> = new Set([
-  'image',
-  'video',
-  'audio',
-  'file'
+const scalar = z.union([z.string(), z.number(), z.boolean()])
+const schemaObject = z.record(z.string(), z.json())
+const formValues = z.record(z.string(), z.union([scalar, z.array(z.string())]))
+const fieldBase = z.object({
+  name: z.string(),
+  label: z.string(),
+  hint: z.string().optional(),
+  advanced: z.boolean().optional(),
+  advancedIndex: z.number().int().nonnegative().optional(),
+  required: z.boolean().optional(),
+  inputSchema: schemaObject.optional(),
+  presentation: workshopInputDefinitionSchema.optional()
+})
+const generatedField = z.discriminatedUnion('kind', [
+  fieldBase.extend({
+    kind: z.literal('text'),
+    multiline: z.boolean(),
+    required: z.boolean(),
+    default: z.string().optional(),
+    valueType: z.enum(['string', 'json']).optional(),
+    jsonSchema: schemaObject.optional(),
+    suggestions: z.array(scalar).optional(),
+    minLength: z.number().int().nonnegative().optional(),
+    maxLength: z.number().int().nonnegative().optional()
+  }),
+  fieldBase.extend({
+    kind: z.literal('number'),
+    min: z.number().optional(),
+    max: z.number().optional(),
+    step: z.union([z.number().positive(), z.literal('any')]),
+    default: z.number().optional()
+  }),
+  fieldBase.extend({
+    kind: z.literal('select'),
+    options: z.array(scalar).min(1),
+    default: scalar.optional()
+  }),
+  fieldBase.extend({
+    kind: z.literal('toggle'),
+    default: z.boolean().optional()
+  }),
+  fieldBase.extend({
+    kind: z.literal('file'),
+    accept: z.enum(['image', 'video', 'audio', 'file']),
+    mimeTypes: z.array(z.string()).optional(),
+    required: z.boolean(),
+    multiple: z.boolean().optional(),
+    maxItems: z.number().int().positive().optional()
+  })
 ])
+const node = z.object({ id: z.string(), displayName: z.string() })
+const generatedExample = z.object({
+  name: z.string(),
+  title: z.string(),
+  description: z.string(),
+  tags: z.array(z.string()),
+  thumbnailUrl: z.string(),
+  mediaKind: z.enum(['image', 'video', 'audio']).optional(),
+  sampleOnly: z.boolean().optional(),
+  node: node.optional(),
+  fields: z.array(generatedField).optional(),
+  values: formValues
+})
+const generatedModel = z.object({
+  thumbnailUrl: z.string().optional(),
+  provider: z.string().optional(),
+  modality: z.enum(MODALITIES).optional(),
+  priceUsdFrom: z.number().nonnegative().optional(),
+  node: node.extend({ template: z.string() }).optional(),
+  fields: z.array(generatedField),
+  defaults: formValues,
+  examples: z.array(generatedExample)
+})
 
-function isGeneratedField(value: unknown): value is GeneratedField {
-  if (!isRecord(value) || !isString(value.name) || !isString(value.label))
-    return false
-  if (value.hint !== undefined && !isString(value.hint)) return false
-  if (value.advanced !== undefined && !isBoolean(value.advanced)) return false
-  if (value.advancedIndex !== undefined && !isFiniteNumber(value.advancedIndex))
-    return false
-  switch (value.kind) {
-    case 'text':
-      return (
-        isBoolean(value.multiline) &&
-        isBoolean(value.required) &&
-        (value.default === undefined || isString(value.default))
-      )
-    case 'number':
-      return (
-        (value.min === undefined || isFiniteNumber(value.min)) &&
-        (value.max === undefined || isFiniteNumber(value.max)) &&
-        (value.step === 'any' || isFiniteNumber(value.step)) &&
-        (value.default === undefined || isFiniteNumber(value.default))
-      )
-    case 'select':
-      return (
-        Array.isArray(value.options) &&
-        value.options.every(isFormValue) &&
-        (value.default === undefined || isFormValue(value.default))
-      )
-    case 'toggle':
-      return value.default === undefined || isBoolean(value.default)
-    case 'file':
-      return UPLOAD_ACCEPTS.has(value.accept) && isBoolean(value.required)
-    default:
-      return false
-  }
-}
-
-function isGeneratedExample(value: unknown): value is GeneratedExample {
-  return (
-    isRecord(value) &&
-    isString(value.name) &&
-    isString(value.title) &&
-    isString(value.description) &&
-    isString(value.thumbnailUrl) &&
-    Array.isArray(value.tags) &&
-    value.tags.every(isString) &&
-    isFormValues(value.values) &&
-    (value.sampleOnly === undefined || isBoolean(value.sampleOnly)) &&
-    (value.node === undefined ||
-      (isRecord(value.node) &&
-        isString(value.node.id) &&
-        isString(value.node.displayName))) &&
-    (value.fields === undefined ||
-      (Array.isArray(value.fields) && value.fields.every(isGeneratedField)))
-  )
-}
-
-function isGeneratedModel(value: unknown): value is GeneratedModel {
-  return (
-    isRecord(value) &&
-    Array.isArray(value.fields) &&
-    value.fields.every(isGeneratedField) &&
-    isFormValues(value.defaults) &&
-    Array.isArray(value.examples) &&
-    value.examples.every(isGeneratedExample)
-  )
-}
-
-// Records the generator wrote in a shape the catalog cannot render are
-// dropped here rather than crashing a model page.
 export function decodeGeneratedModels(
   manifest: unknown
 ): Record<string, GeneratedModel | undefined> {
-  if (typeof manifest !== 'object' || manifest === null) return {}
+  const parsed = z.record(z.string(), z.unknown()).safeParse(manifest)
+  if (!parsed.success) return {}
   return Object.fromEntries(
-    Object.entries(manifest).filter(
-      (entry): entry is [string, GeneratedModel] => isGeneratedModel(entry[1])
-    )
+    Object.entries(parsed.data).flatMap(([key, raw]) => {
+      const entry = generatedModel.safeParse(raw)
+      return entry.success ? [[key, entry.data]] : []
+    })
   )
 }
-
-// The task is the model's primary input to its output: a required upload
 // makes it image/video/audio-to-X, anything else is text-to-X.
 export function taskFor(
   fields: readonly GeneratedField[],

@@ -1,6 +1,12 @@
 # Image / 3D provider input sanity review
 
-Reviewed the current uncommitted tree in `/Users/ben/comfy/ws-16556-content-preview` read-only, using the repository sanity-review rubric as the authority. No paid generation, real upload, browser/render test, secret inspection, source edit, commit, push, or GitHub write was performed.
+Reviewed the uncommitted tree at HEAD
+`2a14a792dd720c72287d1ceba863bc1524842cd6` in
+`/Users/ben/comfy/ws-16556-content-preview` read-only. The frozen packed-file
+hashes are recorded in `MODELS_INPUT_SANITY_REVIEW.md`. I used the repository
+sanity-review rubric as the authority. No paid generation, real upload,
+browser/render test, secret inspection, source edit, commit, push, or GitHub
+write was performed.
 
 ## Findings
 
@@ -45,11 +51,12 @@ Reviewed the current uncommitted tree in `/Users/ben/comfy/ws-16556-content-prev
 
 **IDs/slugs/path.** `openai/gpt-image-1`, `openai/gpt-image-1.5`, `openai/gpt-image-2`; the three `openai--gpt-image-*--edit-images` pages; native `/quality`.
 
-**Expected / actual / impact.** The exact GPT Image choices should be `auto`, `low`, `medium`, and `high` as supported for the version (with pre-2 models documented as supporting up to `high`). All three contracts expose `low, medium, high, standard, hd`, omit `auto`, and accept/forward every listed value ([contracts:116](/Users/ben/comfy/ws-16556-content-preview/apps/website/src/content/workshop-router-contracts.json:116), [contracts:118](/Users/ben/comfy/ws-16556-content-preview/apps/website/src/content/workshop-router-contracts.json:118)). Fresh defaults are the valid `medium`, so generation remains available, but selecting two apparently supported choices can reach OpenAI with a bad option.
+**Expected / actual / impact.** The exact GPT Image quality choices for these three Router contracts should be `low`, `medium`, and `high`. All three contracts expose `low, medium, high, standard, hd` and accept/forward every listed value ([contracts:116](/Users/ben/comfy/ws-16556-content-preview/apps/website/src/content/workshop-router-contracts.json:116), [contracts:118](/Users/ben/comfy/ws-16556-content-preview/apps/website/src/content/workshop-router-contracts.json:118)). Fresh defaults are the valid `medium`, so generation remains available, but selecting two apparently supported choices can reach OpenAI with a bad option.
 
 **Reproduction.** After manually selecting the suspect dropdown choices, offline validation returned `{}` and preparation preserved `quality:"standard"`, `"hd"`, and `"standard"` for GPT Image 1, 1.5, and 2 respectively. The official image guide states that earlier GPT Image models support settings only up to `high`, and lists GPT Image 2 as `low`, `medium`, `high`, `auto`: https://developers.openai.com/api/docs/guides/image-generation#size-and-quality-options
 
-**Smallest correction.** Use model-version-specific enums, including `auto`, and remove DALL-E-style `standard`/`hd` from these three IDs.
+**Smallest correction.** Use `low`, `medium`, and `high` for these three IDs;
+remove DALL-E-style `standard`/`hd` and do not add `auto` to the quality enum.
 
 **Unknowns.** No live rejection was purchased, hence `probable`, but the composed values conflict with current first-party documentation.
 

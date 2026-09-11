@@ -1,4 +1,3 @@
-import { realpathSync } from 'node:fs'
 import { readFile, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { z } from 'astro/zod'
@@ -8,6 +7,7 @@ import {
   routerInputSchema
 } from '../src/config/workshop-router-openapi'
 import { validatorFor } from '../src/config/workshop-json-schema'
+import { isDirectExecution } from './script-entry-point'
 
 export function packRouterSchemas(
   input: unknown,
@@ -46,5 +46,4 @@ async function main() {
   )
 }
 
-if (process.argv[1] && realpathSync(process.argv[1]) === import.meta.filename)
-  await main()
+if (isDirectExecution(process.argv[1], import.meta.filename)) await main()

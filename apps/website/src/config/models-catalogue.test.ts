@@ -82,9 +82,9 @@ describe('filterWorkshopModels', () => {
   })
 
   it('also matches the use case in words', () => {
-    expect(filterWorkshopModels(fixture, { query: 'video' })).toEqual([
-      fixture[0]
-    ])
+    expect(filterWorkshopModels(fixture, { query: 'generate videos' })).toEqual(
+      [fixture[0]]
+    )
   })
 
   it('filters by use case and lists unplaced models only under all', () => {
@@ -108,6 +108,32 @@ describe('filterWorkshopModels', () => {
         useCase: 'generate-videos'
       })
     ).toEqual([])
+  })
+
+  it('groups text, 3d, and audio models under other formats', () => {
+    const formats: WorkshopModel[] = [
+      { ...fixture[0], slug: 'text', modality: 'text', task: 'text-to-text' },
+      { ...fixture[0], slug: '3d', modality: '3d', task: 'text-to-3d' },
+      {
+        ...fixture[0],
+        slug: 'audio',
+        modality: 'audio',
+        task: 'text-to-audio'
+      },
+      {
+        ...fixture[0],
+        slug: 'image',
+        modality: 'image',
+        task: 'text-to-image'
+      },
+      { ...fixture[0], slug: 'video', modality: 'video', task: 'text-to-video' }
+    ]
+
+    expect(
+      filterWorkshopModels(formats, { query: '', useCase: 'other' }).map(
+        (model) => model.slug
+      )
+    ).toEqual(['text', '3d', 'audio'])
   })
 })
 

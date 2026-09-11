@@ -80,6 +80,30 @@ function onCompareMove(event: PointerEvent) {
   )
 }
 
+function onCompareKeydown(event: KeyboardEvent) {
+  let nextPosition: number
+  switch (event.key) {
+    case 'ArrowLeft':
+    case 'ArrowDown':
+      nextPosition = comparePosition.value - 1
+      break
+    case 'ArrowRight':
+    case 'ArrowUp':
+      nextPosition = comparePosition.value + 1
+      break
+    case 'Home':
+      nextPosition = 0
+      break
+    case 'End':
+      nextPosition = 100
+      break
+    default:
+      return
+  }
+  event.preventDefault()
+  comparePosition.value = Math.min(100, Math.max(0, nextPosition))
+}
+
 onMounted(() =>
   compareRoot.value?.addEventListener('pointermove', onCompareMove)
 )
@@ -131,9 +155,18 @@ function openCard() {
           />
         </div>
         <div
-          class="absolute inset-y-0 w-1 cursor-ew-resize bg-white shadow-lg"
+          class="focus-visible:ring-primary-comfy-yellow absolute inset-y-0 w-1 cursor-ew-resize bg-white shadow-lg outline-none focus-visible:ring-2"
           :style="{ left: `${comparePosition}%` }"
-          aria-hidden="true"
+          role="slider"
+          tabindex="0"
+          :aria-label="`${template.title} image comparison`"
+          aria-orientation="horizontal"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          :aria-valuenow="Math.round(comparePosition)"
+          :aria-valuetext="`${Math.round(comparePosition)}%`"
+          @click.stop
+          @keydown="onCompareKeydown"
         />
       </div>
       <div

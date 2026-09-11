@@ -169,15 +169,49 @@ describe('example source images', () => {
     ).toBe(true)
   })
 
+  it('loads an extensionless media URL using its response content type', async () => {
+    const source = 'https://example.com/media?id=123'
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('image bytes', {
+        headers: { 'Content-Type': 'image/png' }
+      })
+    )
+    const value = workshopExampleFile(source)
+    expect(value).toMatchObject({
+      name: 'media',
+      type: 'application/octet-stream',
+      previewUrl: source,
+      sourceUrl: source
+    })
+    if (!value) throw new Error('Missing example')
+
+    const file = await loadWorkshopExampleFile(
+      value,
+      new AbortController().signal
+    )
+    expect(file.name).toBe('media')
+    expect(file.type).toBe('image/png')
+    await expect(file.text()).resolves.toBe('image bytes')
+  })
+
   it.for([
     {
+      reason: 'invalid content type',
+      error: 'Invalid example media type',
+      source: 'https://example.com/media?id=123',
       response: () =>
         new Response('not an image', {
           headers: { 'Content-Type': 'text/html' }
         })
     },
-    { response: () => new Response('missing', { status: 404 }) },
     {
+      reason: 'error status',
+      error: 'Example media unavailable or too large',
+      response: () => new Response('missing', { status: 404 })
+    },
+    {
+      reason: 'declared size',
+      error: 'Example media unavailable or too large',
       response: () =>
         new Response('too large', {
           headers: {
@@ -187,20 +221,22 @@ describe('example source images', () => {
         })
     },
     {
+      reason: 'actual size',
+      error: 'Example media too large',
       response: () =>
         new Response(new Uint8Array(8 * 1024 * 1024), {
           headers: { 'Content-Type': 'image/png' }
         })
     }
   ])(
-    'rejects invalid or oversized media before encoding',
-    async ({ response }) => {
+    'rejects invalid or oversized media before encoding: $reason',
+    async ({ response, error, source = 'https://example.com/source.png' }) => {
       vi.spyOn(globalThis, 'fetch').mockImplementation(async () => response())
-      const value = workshopExampleFile('https://example.com/source.png')
+      const value = workshopExampleFile(source)
       if (!value) throw new Error('Missing example')
       await expect(
         loadWorkshopExampleFile(value, new AbortController().signal)
-      ).rejects.toThrow()
+      ).rejects.toThrow(error)
     }
   )
 

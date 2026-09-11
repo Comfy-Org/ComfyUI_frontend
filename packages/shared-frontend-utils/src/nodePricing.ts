@@ -292,7 +292,7 @@ export const formatPricingResult = (
     const fmt = { ...defaults, ...(result.format ?? {}) }
     if (valueOnly) {
       const prefix = fmt.approximate ? '~' : ''
-      return `${prefix}${formatCreditsListValue(usdValues)}`
+      return `${prefix}${formatCreditsListValue(usdValues, fmt.separator)}`
     }
     return formatCreditsListLabel(usdValues, fmt)
   }
@@ -314,8 +314,10 @@ const compileRule = (rule: JsonataPricingRule): CompiledJsonataPricingRule => {
 // -----------------------------
 // Rule cache (per-node-type)
 // -----------------------------
-// Cache compiled rules by node type name to avoid recompiling on every evaluation.
-const compiledRulesCache = new Map<string, CompiledJsonataPricingRule | null>()
+const compiledRulesCache = new Map<
+  string,
+  { signature: string; rule: CompiledJsonataPricingRule }
+>()
 
 /**
  * Convert a PriceBadge from node definition to a JsonataPricingRule.
@@ -335,15 +337,13 @@ export const getCompiledRuleForNodeType = (
 ): CompiledJsonataPricingRule | null => {
   if (!priceBadge) return null
 
-  // Check cache first
-  if (compiledRulesCache.has(nodeName)) {
-    return compiledRulesCache.get(nodeName) ?? null
-  }
-
-  // Compile and cache
   const rule = priceBadgeToRule(priceBadge)
+  const signature = JSON.stringify(rule)
+  const cached = compiledRulesCache.get(nodeName)
+  if (cached?.signature === signature) return cached.rule
+
   const compiled = compileRule(rule)
-  compiledRulesCache.set(nodeName, compiled)
+  compiledRulesCache.set(nodeName, { signature, rule: compiled })
   return compiled
 }
 
@@ -407,7 +407,7 @@ function extractDefaultFromSpec(spec: unknown[]): unknown {
 /**
  * Evaluate pricing for a node definition using default widget values.
  * Used for NodePricingBadge where no LGraphNode instance exists.
- * Results are memoized by node name since they are deterministic.
+ * Results are memoized by the pricing rule and input definitions.
  */
 export const evaluateNodeDefPricing = memoize(
   async (nodeDef: ComfyNodeDef): Promise<string> => {
@@ -432,13 +432,10 @@ export const evaluateNodeDefPricing = memoize(
         let rawValue: unknown = null
         if (Array.isArray(spec)) {
           rawValue = extractDefaultFromSpec(spec)
-        } else if (dep.type.toUpperCase() === 'COMBO') {
-          // For dynamic COMBO widgets without input spec, use a common default
-          // that works with most pricing expressions (e.g., resolution selectors)
-          rawValue = 'original'
         }
         widgets[dep.name] = normalizeWidgetValue(rawValue, dep.type)
       }
+      if (Object.values(widgets).some((value) => value === null)) return ''
 
       // Build inputs context: assume all inputs are disconnected in preview
       const inputs: Record<string, { connected: boolean }> = {}
@@ -460,5 +457,8 @@ export const evaluateNodeDefPricing = memoize(
       return ''
     }
   },
-  { getCacheKey: (nodeDef: ComfyNodeDef) => nodeDef.name }
+  {
+    getCacheKey: (nodeDef: ComfyNodeDef) =>
+      JSON.stringify([nodeDef.name, nodeDef.price_badge, nodeDef.input])
+  }
 )

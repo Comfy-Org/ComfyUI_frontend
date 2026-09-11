@@ -2274,6 +2274,9 @@
       }
     },
     "openai/gpt-image-1": {
+      "quality": {
+        "options": ["low", "medium", "high"]
+      },
       "style": {
         "hidden": true
       },
@@ -2286,6 +2289,9 @@
       }
     },
     "openai/gpt-image-1.5": {
+      "quality": {
+        "options": ["low", "medium", "high"]
+      },
       "style": {
         "hidden": true
       },
@@ -2298,6 +2304,9 @@
       }
     },
     "openai/gpt-image-2": {
+      "quality": {
+        "options": ["low", "medium", "high"]
+      },
       "style": {
         "hidden": true
       },

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import rawCatalog from '../src/content/workshop-models.json'
 import rawDisplay from '../src/content/workshop-display.json'
+import rawRepairs from '../src/data/workshop-example-repairs.json'
 import { workshopDisplaySchema } from '../src/content/workshop-display.schema'
 import { workshopModelSchema } from '../src/content/workshop-models.schema'
 import { buildWorkshopDisplay } from './generate-workshop-display'
@@ -108,5 +109,88 @@ describe('Workshop display names', () => {
 
   it('round-trips the packed overlay without losing editorial content', () => {
     expect(buildWorkshopDisplay(display, catalog)).toEqual(display)
+  })
+
+  it('rejects a packed example without its paired sample', () => {
+    const entry = {
+      ...display[0],
+      media: {},
+      examples: [
+        {
+          title: 'Unpaired example',
+          description: '',
+          values: { prompt: 'A prompt without an output sample' }
+        }
+      ]
+    }
+
+    expect(() => buildWorkshopDisplay([entry], catalog)).toThrow(
+      'Examples and samples must remain paired by index'
+    )
+  })
+
+  it.for(rawRepairs.repairs)(
+    'restores $id from the durable source during a legacy import',
+    (repair) => {
+      const entry = display.find((candidate) => candidate.id === repair.id)
+      if (!entry) throw new Error(`Missing repair fixture: ${repair.id}`)
+      const examples = entry.examples.map((example) =>
+        example.title === repair.exampleTitle
+          ? { ...example, values: {} }
+          : example
+      )
+      const { id, slug, modelId, useCase, withheldContent, ...content } = entry
+
+      const result = buildWorkshopDisplay(
+        { [modelId]: { ...content, examples, useCases: [useCase] } },
+        catalog
+      )
+      const restored = result.find((candidate) => candidate.id === id)
+      const restoredExample = restored?.examples.find(
+        (example) => example.title === repair.exampleTitle
+      )
+
+      expect(slug).toBe(id)
+      expect(withheldContent).toBeUndefined()
+      expect(restoredExample?.values).toEqual(repair.values)
+    }
+  )
+
+  it('preserves packed repairs, editorial values, and changed samples', () => {
+    const repair = rawRepairs.repairs[0]
+    const entry = display.find((candidate) => candidate.id === repair.id)
+    if (!entry) throw new Error(`Missing repair fixture: ${repair.id}`)
+    const example = entry.examples.at(0)
+    const otherExamples = entry.examples.slice(1)
+    const samples = entry.media.samples ?? []
+    const sample = samples.at(0)
+    const otherSamples = samples.slice(1)
+    if (!example || !sample) throw new Error('Incomplete repair fixture')
+
+    expect(buildWorkshopDisplay([entry], catalog)).toEqual([entry])
+
+    const editorialValues = { prompt: 'Keep this editorial value' }
+    const edited = {
+      ...entry,
+      examples: [{ ...example, values: editorialValues }, ...otherExamples]
+    }
+    expect(
+      buildWorkshopDisplay([edited], catalog)[0].examples[0].values
+    ).toEqual(editorialValues)
+
+    const changedSample = {
+      ...entry,
+      media: {
+        ...entry.media,
+        samples: [
+          { ...sample, url: 'https://example.com/different-output.webp' },
+          ...otherSamples
+        ]
+      },
+      examples: [{ ...example, values: {} }, ...otherExamples]
+    }
+    expect(
+      buildWorkshopDisplay([changedSample], catalog)[0].examples[0].values
+    ).toEqual({})
   })
 })

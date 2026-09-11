@@ -8,59 +8,23 @@ import ModelSupport from '../../components/workshop/ModelSupport.vue'
 import SplitReveal from '../../components/workshop/SplitReveal.vue'
 import WorkshopModelCard from '../../components/workshop/WorkshopModelCard.vue'
 import { getRoutes } from '../../config/routes'
-import {
-  catalogSearch,
-  getWorkshopModel,
-  workshopModels
-} from '../../config/models-catalogue'
-import { getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
+import { catalogSearch } from '../../config/models-catalogue'
 import { routerWorkshopModelPaths } from '../../config/workshop-browse-content'
-import { relatedModels } from '../../config/workshop-related'
-import { estimateWorkshopNodePrice } from '../../config/workshop-node-pricing'
 import { t } from '../../i18n/translations'
+import { prepareModelPage } from './model-page'
 
 export const getStaticPaths: GetStaticPaths = () =>
   routerWorkshopModelPaths.map((slug) => ({ params: { slug } }))
 
-const { slug } = Astro.params
-const model = getRouterWorkshopModelDetail(slug as string)!
-if (slug !== model.slug) return Astro.redirect(model.href, 301)
-const related = relatedModels(model, workshopModels)
-// The provider heading only holds while every card under it is that provider's;
-// once the row is topped up from the rest of the catalogue it would be a lie.
-const relatedProvider =
-  related.length > 0 &&
-  related.every((other) => other.provider === model.provider)
-    ? model.provider
-    : undefined
-const relatedHeading = relatedProvider
-  ? t('workshop.model.relatedProvider').replace('{provider}', relatedProvider)
-  : t('workshop.model.related')
-// A phone has room for one line of each, so it gets the shorter wording. The
-// cards name their provider, so dropping it from the heading loses nothing.
-const relatedHeadingShort = t('workshop.model.relatedShort')
-const successor = model.successorSlug
-  ? getWorkshopModel(model.successorSlug)
-  : undefined
+const page = await prepareModelPage(Astro.params.slug)
+// Static output uses an immediate meta refresh, not an HTTP 301 response.
+// Pre-launch aliases stay noindex; hosting-level permanent redirects are a
+// separate deployment decision, not a reason to switch this site to SSR.
+if (page.kind === 'redirect') return Astro.redirect(page.href, 301)
+const { model, related, relatedHeading, relatedHeadingShort, successor, priceEstimate, modalityLabel, tags } = page
 const routes = getRoutes()
-const priceEstimate = await estimateWorkshopNodePrice(model)
-
-const modalityLabel = {
-  image: t('workshop.filter.image'),
-  video: t('workshop.filter.video'),
-  audio: t('workshop.filter.audio'),
-  '3d': t('workshop.filter.3d'),
-  text: t('workshop.filter.text')
-} as const
-
 const pillClass =
   'inline-flex h-7 items-center rounded-full border border-transparency-white-t20 px-3 text-xs leading-none text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow'
-
-// The provider already leads the hero, so the chip row is capabilities only.
-const tags = model.capabilities.map((capability) => ({
-  label: capability,
-  search: catalogSearch({ capabilities: [capability] })
-}))
 ---
 
 <BaseLayout

@@ -24,6 +24,7 @@ const mediaRoles: Readonly<Partial<Record<string, readonly string[]>>> = {
   image: ['image', 'first_frame', 'start_image'],
   images: ['image', 'reference_image'],
   media_image: ['image'],
+  media_mask: ['mask'],
   media_reference_image: ['reference_image'],
   reference_images: ['reference_image'],
   first_frame_url: ['first_frame', 'start_image', 'image'],
@@ -53,7 +54,6 @@ export function workshopExampleValues(
     Record<string, string | number | boolean | readonly string[]>
   > = {}
   for (const field of fields) {
-    if (field.kind === 'text' && field.valueType === 'json') continue
     const name = field.name.replace(
       /^(param_|setting_|config_|image_)(?=[A-Z_a-z])/,
       ''
@@ -77,10 +77,29 @@ export function workshopExampleValues(
       mediaValue
     ]
     for (const candidate of candidates) {
+      if (field.kind === 'text' && field.valueType === 'json') {
+        const value =
+          typeof candidate === 'string' ? candidate : JSON.stringify(candidate)
+        if (
+          value &&
+          !Object.hasOwn(
+            validateForm([field], { [field.name]: value }),
+            field.name
+          )
+        ) {
+          values[field.name] = value
+          break
+        }
+        continue
+      }
       if (field.kind === 'file') {
         const parsed = fileSources.safeParse(candidate)
         if (!parsed.success) continue
-        const files = workshopExampleFiles(parsed.data, field.multiple)
+        const files = workshopExampleFiles(
+          parsed.data,
+          field.multiple,
+          field.accept[0]
+        )
         if (
           files &&
           !Object.hasOwn(

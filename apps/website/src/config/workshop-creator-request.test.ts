@@ -176,11 +176,23 @@ describe('creator widgets to native Router requests', () => {
     async (model) => {
       const detail = modelFor(model.slug)
       const fields = schemaForModel(detail)
-      expect(
-        fields.some(
-          (field) => field.kind === 'text' && field.valueType === 'json'
-        )
-      ).toBe(false)
+      for (const field of fields.filter(
+        (field) => field.kind === 'text' && field.valueType === 'json'
+      )) {
+        const request = detail.execution.creator?.request
+        if (request?.kind === 'callback' && request.callback === 'dialogue') {
+          expect(field.name).toBe('inputs')
+          expect(field.presentation?.control).toBe('dialogue')
+        } else {
+          expect(request).toMatchObject({
+            kind: 'callback',
+            callback: 'ideogram',
+            options: { mode: 'json' }
+          })
+          expect(field.name).toBe('prompt')
+          expect(field.label).toBe('Structured prompt')
+        }
+      }
       expect(new Set(fields.map((field) => field.name)).size).toBe(
         fields.length
       )
@@ -196,8 +208,9 @@ describe('creator widgets to native Router requests', () => {
   it('composes dialogue widgets literally, preserving escaping and numeric types', async () => {
     expect(
       await prepare('elevenlabs/eleven_v3', {
-        text: hostilePrompt,
-        voice_id: 'voice-fixture',
+        inputs: JSON.stringify([
+          { text: hostilePrompt, voice_id: 'voice-fixture' }
+        ]),
         seed: 0
       })
     ).toEqual({
@@ -552,13 +565,27 @@ describe('creator widgets to native Router requests', () => {
   it('does not mutate inputs, accepts cancellation, and rejects oversized encoding before allocation', async () => {
     const id = 'vertexai/gemini-3-pro-image'
     const values = Object.freeze({ ...valuesFor(id), images: [upload()] })
-    const before = { ...values }
+    const before = structuredClone({
+      ...values,
+      images: values.images.map(({ name, size, type }) => ({
+        name,
+        size,
+        type
+      }))
+    })
     await prepareWorkshopRouterInput(
       modelFor(id).execution,
       values,
       new AbortController().signal
     )
-    expect(values).toEqual(before)
+    expect({
+      ...values,
+      images: values.images.map(({ name, size, type }) => ({
+        name,
+        size,
+        type
+      }))
+    }).toEqual(before)
     const abort = new AbortController()
     abort.abort()
     await expect(

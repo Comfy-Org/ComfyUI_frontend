@@ -36,6 +36,10 @@ The archive's handoff still quotes older coverage; the JSON contains:
 - No example seeds. Three models have fewer examples than the previous pack;
   the new arrays replace the old arrays together to preserve output pairing.
 
+The later use-case expansion turns those 268 legacy source entries into 288
+packed content/use-case records. The 268 figure is neither a model count nor the
+final packed-record count.
+
 Every delivered content value is retained, except duplicate catalogue context
 and normalization of absent media/examples. Existing use-case classifications,
 Router aliases/contracts, and the three editorial name overrides are preserved.

@@ -191,8 +191,15 @@ describe('PlaygroundOutput', () => {
       props: { state: succeeded(batch, true), now: 2_000 }
     })
     expect(screen.queryByRole('button', { name: 'Expand' })).toBeNull()
-    expect(screen.getByTestId('output-reveal')).toBeTruthy()
-    await user.click(screen.getByTestId('output-reveal'))
+    expect(
+      screen.queryByRole('img', { name: 'Output' })
+    ).not.toBeInTheDocument()
+    expect(screen.queryByTestId('output-download')).not.toBeInTheDocument()
+    const reveal = screen.getByRole('button', { name: /Click to reveal/ })
+    expect(reveal).toBeTruthy()
+    await user.click(reveal)
+    expect(screen.getByRole('img', { name: 'Output' })).toBeVisible()
+    expect(screen.getByTestId('output-download')).toBeVisible()
     await user.click(screen.getByTestId('output-thumb-1'))
     expect(
       screen.getByTestId('output-download').getAttribute('href')

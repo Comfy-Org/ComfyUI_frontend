@@ -15,6 +15,7 @@ import { workshopModelSchema } from '../src/content/workshop-models.schema'
 import { deriveWorkshopFields } from '../src/config/workshop-fields'
 import { workshopContract } from '../src/config/workshop-contract-catalog'
 import { splitWorkshopDisplay } from './workshop-display-use-cases'
+import { repairWorkshopExamples } from './workshop-example-repairs'
 
 /**
  * The display overlay, packed the same way as the catalog: one JSON array,
@@ -199,7 +200,7 @@ export function buildWorkshopDisplay(
         throw new Error(
           `Display overlay names model absent from catalog: ${entry.modelId}`
         )
-    return entries.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
+    return finalizeWorkshopDisplay(entries)
   }
   if (!isRecord(input)) {
     throw new Error(
@@ -241,9 +242,15 @@ export function buildWorkshopDisplay(
 
   // Sorted by model id, not by locale, so the committed file does not churn
   // with the generator host's locale.
-  return splitWorkshopDisplay(overlay).sort((a, b) =>
-    a.id < b.id ? -1 : a.id > b.id ? 1 : 0
-  )
+  return finalizeWorkshopDisplay(splitWorkshopDisplay(overlay))
+}
+
+function finalizeWorkshopDisplay(
+  entries: WorkshopDisplayEntry[]
+): WorkshopDisplayEntry[] {
+  return workshopDisplayEntriesSchema
+    .parse(repairWorkshopExamples(entries))
+    .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
 }
 
 async function catalogModels(): Promise<Map<string, WorkshopModelEntry>> {

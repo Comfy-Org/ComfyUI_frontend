@@ -4,10 +4,6 @@ import { render, screen } from '@testing-library/vue'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { useHubStore } from '../../composables/useHubStore'
-import {
-  workshopModels,
-  filterWorkshopModels
-} from '../../config/models-catalogue'
 import HubBrowse from './HubBrowse.vue'
 
 afterEach(() => {
@@ -85,11 +81,11 @@ describe('HubBrowse', () => {
     expect(screen.getByTestId('hub-showing').textContent).toContain('of 39')
 
     await user.click(screen.getByTestId('hub-tab-models'))
-    const models = filterWorkshopModels(workshopModels, { useCase: '3d' })
-    expect(screen.getAllByTestId('workshop-model-card')).toHaveLength(
-      models.length
-    )
-    expect(models.length).toBeGreaterThan(0)
+    expect(
+      screen.getAllByRole('link', { name: /Hunyuan3D/i })
+    ).not.toHaveLength(0)
+    expect(screen.getAllByRole('link', { name: /Meshy/i })).not.toHaveLength(0)
+    expect(screen.queryByRole('link', { name: /FLUX 2 Max/i })).toBeNull()
     expect(screen.queryByTestId('model-card-versions')).toBeNull()
   })
 

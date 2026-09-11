@@ -10,6 +10,7 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { API_PROVIDER_MAP } from './generate-models'
+import { sliceBalanced } from './python-source-parser'
 
 const TEMPLATES_DIR = fileURLToPath(
   new URL('../../../../workflow_templates/templates', import.meta.url)
@@ -122,39 +123,6 @@ interface GeneratedModel {
 }
 
 // ---------- Python source helpers ----------
-
-function sliceBalanced(source: string, openIndex: number): string {
-  const open = source[openIndex]
-  const close = open === '(' ? ')' : open === '[' ? ']' : '}'
-  let depth = 0
-  let inString: string | null = null
-  for (let i = openIndex; i < source.length; i++) {
-    const ch = source[i]
-    if (inString) {
-      if (ch === '\\') i++
-      else if (source.startsWith(inString, i)) {
-        i += inString.length - 1
-        inString = null
-      }
-      continue
-    }
-    if (source.startsWith('"""', i)) {
-      inString = '"""'
-      i += 2
-      continue
-    }
-    if (ch === '"' || ch === "'") {
-      inString = ch
-      continue
-    }
-    if (ch === open) depth++
-    else if (ch === close) {
-      depth--
-      if (depth === 0) return source.slice(openIndex + 1, i)
-    }
-  }
-  return source.slice(openIndex + 1)
-}
 
 function splitTopLevel(body: string): string[] {
   const elements: string[] = []

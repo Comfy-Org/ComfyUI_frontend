@@ -68,15 +68,40 @@ describe('native Router requests', () => {
       )
       if (!detail) throw new Error('Missing catalog model')
       const schema = schemaForModel(detail)
-      expect(validateForm(schema, defaultValues(schema))).toHaveProperty(
-        'prompt',
-        'required'
+      expect(validateForm(schema, defaultValues(schema))).toMatchObject(
+        contract.media.some((binding) => binding.required)
+          ? { media_image: 'required' }
+          : { prompt: 'required' }
       )
       const example = z
         .record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
         .parse(contract.inputSchema.example)
       const values = {
         ...defaultValues(schema, example),
+        ...Object.fromEntries(
+          contract.media.flatMap((binding) => {
+            const target = binding.targets[0].slice(1)
+            if (!Object.hasOwn(example, target)) return []
+            const encoded = example[target]
+            expect(binding).toMatchObject({
+              encoding: 'base64',
+              accept: 'image'
+            })
+            if (typeof encoded !== 'string')
+              throw new Error('Expected Base64 fixture')
+            const file = new File(
+              [Buffer.from(encoded, 'base64')],
+              `${target}.png`,
+              { type: 'image/png' }
+            )
+            return [
+              [
+                binding.name,
+                { file, name: file.name, type: file.type, size: file.size }
+              ]
+            ]
+          })
+        ),
         prompt: 'A watercolor fox',
         seed: 123456
       }
@@ -284,6 +309,64 @@ describe('native Router requests', () => {
     expect(await requests[0].json()).toEqual({ prompt: 'Test', seed: 42 })
     expect(result.requestId).toBe('request-123')
     expect(result.outputs[0].url).toBe('https://assets.example/result.jpg')
+  })
+
+  it('preserves caller cancellation while a Router request is pending', async () => {
+    const controller = new AbortController()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        (_url: string | URL | Request, init?: RequestInit) =>
+          new Promise<Response>((_resolve, reject) => {
+            init?.signal?.addEventListener(
+              'abort',
+              () => reject(init.signal?.reason),
+              { once: true }
+            )
+          })
+      )
+    )
+    const request = runWorkshopRouter({
+      contract: contractFor('bfl/flux-2-pro'),
+      body: { prompt: 'Test' },
+      token: 'test-token',
+      idempotencyKey: 'one-key',
+      signal: controller.signal
+    })
+    const reason = new DOMException('Cancelled by the caller', 'AbortError')
+
+    controller.abort(reason)
+
+    await expect(request).rejects.toBe(reason)
+  })
+
+  it('stops a Router request after the run timeout', async () => {
+    vi.useFakeTimers()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        (_url: string | URL | Request, init?: RequestInit) =>
+          new Promise<Response>((_resolve, reject) => {
+            init?.signal?.addEventListener(
+              'abort',
+              () => reject(init.signal?.reason),
+              { once: true }
+            )
+          })
+      )
+    )
+    await Promise.all([
+      expect(
+        runWorkshopRouter({
+          contract: contractFor('bfl/flux-2-pro'),
+          body: { prompt: 'Test' },
+          token: 'test-token',
+          idempotencyKey: 'one-key',
+          signal: new AbortController().signal
+        })
+      ).rejects.toMatchObject({ reason: 'timeout' }),
+      vi.advanceTimersByTimeAsync(660_000)
+    ])
   })
 
   it('checks the total base64 request size before reading files or sending a request', async () => {

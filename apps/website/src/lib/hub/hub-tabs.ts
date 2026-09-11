@@ -24,6 +24,7 @@ export interface ScopedBadge {
 export interface FacetedTemplate {
   readonly models?: readonly string[]
   readonly tags?: readonly string[]
+  readonly partner?: string
 }
 
 // Badges selected on one tab may have no option on the next; keep only the
@@ -36,7 +37,11 @@ export function badgesAvailableIn<B extends ScopedBadge>(
   if (badges.length === 0) return [...badges]
   const available = new Map<string, Set<string>>([
     ['model', new Set(scopedTemplates.flatMap((t) => t.models ?? []))],
-    ['tag', new Set(scopedTemplates.flatMap((t) => t.tags ?? []))]
+    ['tag', new Set(scopedTemplates.flatMap((t) => t.tags ?? []))],
+    [
+      'partner',
+      new Set(scopedTemplates.flatMap((t) => (t.partner ? [t.partner] : [])))
+    ]
   ])
   return badges.filter((b) => {
     const values = available.get(b.type)

@@ -21,6 +21,7 @@ import {
   isVideoUrl,
   restoreFormValues,
   schemaForModel,
+  urlUploadField,
   validateForm
 } from '../../config/workshop-playground'
 import type { RunOutput, RunRecord, RunState } from '../../config/workshop-run'
@@ -159,7 +160,7 @@ const attachments = computed(() =>
 )
 const revealed = ref(false)
 
-const { user, session, sessionFailure, settled, ensureFresh } =
+const { user, session, sessionFailure, settled, ensureFresh, remint } =
   useWorkshopSession()
 const { balance } = useWorkshopCredits()
 const authEnabled = useWorkshopAuthFlag()
@@ -183,13 +184,16 @@ const gate = computed(() => {
     balance.value.status === 'ok' &&
     balance.value.credits <= 0
   )
-    return 'noCredits'
+    return session.value.role === 'member' ? 'memberNoCredits' : 'noCredits'
   return 'ready'
 })
 const errors = computed<FieldErrors>(() =>
   runState.value.status === 'failed' ? runState.value.fieldErrors : {}
 )
 const isRunning = computed(() => runState.value.status === 'running')
+const hasFileInputs = computed(() =>
+  schema.value.some((field) => field.kind === 'file' || urlUploadField(field))
+)
 const requestId = ref<string | null>(null)
 let controller: AbortController | undefined
 let pendingRequest: { fingerprint: string; key: string } | undefined
@@ -201,6 +205,11 @@ function cancelRun() {
   controller?.abort()
   controller = undefined
   runState.value = transition(runState.value, { type: 'cancel' })
+}
+
+async function switchToPersonal() {
+  const result = await remint()
+  if (result?.status === 'ok') await refreshWorkshopCredits({ force: true })
 }
 
 onUnmounted(() => {
@@ -474,7 +483,14 @@ function useInCode() {
             :errors
             :locale
             :disabled="isRunning"
+            :file-uploads-disabled="!session"
           />
+          <p
+            v-if="hasFileInputs && gate === 'signedOut'"
+            class="text-sm text-primary-warm-gray"
+          >
+            {{ t('workshop.form.signInBeforeUpload', locale) }}
+          </p>
         </div>
 
         <!-- Run follows the form down the page, so a long list of inputs never
@@ -505,6 +521,14 @@ function useInCode() {
             data-gate="noCredits"
           >
             {{ t('nav.buyCredits', locale) }}
+          </Button>
+          <Button
+            v-else-if="gate === 'memberNoCredits'"
+            size="lg"
+            class="w-full px-5"
+            @click="switchToPersonal"
+          >
+            {{ t('workshop.run.switchPersonal', locale) }}
           </Button>
           <Button
             v-else-if="gate === 'ready'"
@@ -538,11 +562,18 @@ function useInCode() {
             }}
           </Button>
           <p
-            v-if="gate === 'noCredits'"
+            v-if="gate === 'noCredits' || gate === 'memberNoCredits'"
             role="status"
             class="text-center text-sm text-primary-warm-gray"
           >
-            {{ t('workshop.error.noCredits', locale) }}
+            {{
+              gate === 'memberNoCredits'
+                ? t('workshop.error.memberNoCredits', locale).replace(
+                    '{workspace}',
+                    session?.workspace.name ?? ''
+                  )
+                : t('workshop.error.noCredits', locale)
+            }}
           </p>
         </div>
       </div>
@@ -558,6 +589,10 @@ function useInCode() {
           :now
           :modality="model.modality"
           :locale
+          :member-workspace="
+            session?.role === 'member' ? session.workspace.name : undefined
+          "
+          @switch-personal="switchToPersonal"
           @retry="gate === 'ready' ? run() : reset()"
           @use-in-code="useInCode"
         />

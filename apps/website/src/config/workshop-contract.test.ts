@@ -1,7 +1,10 @@
 import { z } from 'astro/zod'
 import { describe, expect, it } from 'vitest'
 
-import { compileWorkshopContracts } from '../../scripts/generate-workshop-router-contracts'
+import {
+  compileWorkshopContracts,
+  countPackedRecords
+} from '../../scripts/generate-workshop-router-contracts'
 import packedContracts from '../content/workshop-router-contracts.json'
 import rawSnapshots from '../data/workshop-router-openapi.snapshot.json'
 import rawBindings from '../data/workshop-router-bindings.json'
@@ -41,6 +44,21 @@ function exampleValues(contract: (typeof contracts)[number]): FormValues {
     Object.entries(example)
       .filter(([name]) => !contract.inputs?.[name]?.hidden)
       .map(([name, value]) => {
+        const binding = contract.media.find((media) =>
+          media.targets.includes(`/${name}`)
+        )
+        if (binding) {
+          expect(binding).toMatchObject({ encoding: 'base64', accept: 'image' })
+          if (typeof value !== 'string')
+            throw new Error('Expected Base64 fixture')
+          const file = new File([Buffer.from(value, 'base64')], `${name}.png`, {
+            type: 'image/png'
+          })
+          return [
+            binding.name,
+            { file, name: file.name, size: file.size, type: file.type }
+          ]
+        }
         const field = fields.get(name)
         if (!field)
           throw new Error(`Example has no form field: ${contract.id}:${name}`)
@@ -54,6 +72,12 @@ function exampleValues(contract: (typeof contracts)[number]): FormValues {
 }
 
 describe('schema-driven Router coverage', () => {
+  it('counts generated records from the JSON array boundary', () => {
+    expect(countPackedRecords('[\n\n]\n')).toBe(0)
+    expect(countPackedRecords('[\n{"id":1},\n{"id":2}\n]\n')).toBe(2)
+    expect(() => countPackedRecords('{"id":1}\n')).toThrow()
+  })
+
   it.for(['not-a-pointer', '/bad~escape', '', '/images/*', '/__proto__/x'])(
     'returns a schema failure for an invalid media target: %s',
     (target) => {

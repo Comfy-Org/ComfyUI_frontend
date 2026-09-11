@@ -1,4 +1,3 @@
-import { realpathSync } from 'node:fs'
 import { readFile, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { z } from 'astro/zod'
@@ -21,8 +20,15 @@ import { workshopRouterIndexSchema } from '../src/config/workshop-router-index'
 import { curateWorkshopInputs } from './workshop-input-presentation'
 import { creatorFormFor, creatorVariantsFor } from './workshop-creator-forms'
 import availabilityOverrides from '../src/data/workshop-router-availability.json'
+import { isDirectExecution } from './script-entry-point'
 
 const jsonSchema = z.record(z.string(), z.json())
+const packedRecordsSchema = z.array(z.unknown())
+
+export function countPackedRecords(packed: string): number {
+  const parsed: unknown = JSON.parse(packed)
+  return packedRecordsSchema.parse(parsed).length
+}
 
 export function compileWorkshopContracts(
   rawSnapshots: unknown,
@@ -244,9 +250,8 @@ async function main() {
   if ((await readFile(indexPath, 'utf8').catch(() => '')) !== index)
     await writeFile(indexPath, index)
   process.stdout.write(
-    `Packed ${packed.trimEnd().split('\n').length - 2} authored Router contracts and ${index.trimEnd().split('\n').length - 2} catalog entries\n`
+    `Packed ${countPackedRecords(packed)} authored Router contracts and ${countPackedRecords(index)} catalog entries\n`
   )
 }
 
-if (process.argv[1] && realpathSync(process.argv[1]) === import.meta.filename)
-  await main()
+if (isDirectExecution(process.argv[1], import.meta.filename)) await main()

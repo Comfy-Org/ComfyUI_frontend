@@ -41,8 +41,15 @@ const models: WorkshopModel[] = [
   }
 ]
 
-const cardNames = () =>
-  screen.queryAllByTestId('workshop-model-card').map((card) => card.textContent)
+function cardNames() {
+  return screen.queryAllByRole('link').map((card) => card.textContent)
+}
+
+function search() {
+  return screen.getByRole('combobox', {
+    name: 'Search models, providers, categories...'
+  })
+}
 
 describe('WorkshopModelsGrid', () => {
   afterEach(() => {
@@ -54,27 +61,25 @@ describe('WorkshopModelsGrid', () => {
     render(WorkshopModelsGrid, { props: { models } })
     expect(cardNames()).toHaveLength(3)
 
-    await user.type(screen.getByTestId('workshop-search'), 'forest')
+    await user.type(search(), 'forest')
     expect(cardNames()).toEqual([expect.stringContaining('Flux')])
   })
 
   it('suggests popular models and narrows by a provider chip', async () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
-    expect(screen.queryByTestId('workshop-search-panel')).toBeNull()
-
-    await user.click(screen.getByTestId('workshop-search'))
     expect(
-      screen
-        .getAllByTestId('workshop-search-model')
-        .map((row) => row.textContent)
+      screen.queryByRole('button', { name: 'Flux Black Forest Labs' })
+    ).toBeNull()
+
+    await user.click(search())
+    expect(
+      screen.getAllByRole('button', {
+        name: /^(?:Kling AI Kling|Flux Black Forest Labs|Mystery Partner node)$/i
+      })
     ).toHaveLength(3)
 
-    await user.click(
-      screen
-        .getAllByTestId('workshop-search-provider')
-        .filter((chip) => chip.textContent.includes('Kling'))[0]
-    )
+    await user.click(screen.getByRole('button', { name: 'Kling 1' }))
     expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
   })
 
@@ -82,11 +87,9 @@ describe('WorkshopModelsGrid', () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
 
-    await user.click(screen.getByTestId('workshop-search'))
+    await user.click(search())
     await user.click(
-      screen
-        .getAllByTestId('workshop-search-model')
-        .filter((row) => row.textContent.includes('Flux'))[0]
+      screen.getByRole('button', { name: 'Flux Black Forest Labs' })
     )
     expect(cardNames()).toEqual([expect.stringContaining('Flux')])
   })
@@ -110,12 +113,14 @@ describe('WorkshopModelsGrid', () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
 
-    await user.click(screen.getByTestId('workshop-filter'))
-    await user.click(await screen.findByTestId('workshop-facet-capability'))
-    await user.click(await screen.findByTestId('filter-capability-Upscale'))
+    await user.click(screen.getByRole('button', { name: 'Filter' }))
+    await user.click(await screen.findByRole('tab', { name: 'Capabilities' }))
+    await user.click(await screen.findByRole('button', { name: 'Upscale 1' }))
     expect(cardNames()).toEqual([expect.stringContaining('Flux')])
 
-    await user.click(screen.getByTestId('workshop-filter-clear'))
+    await user.click(
+      screen.getAllByRole('button', { name: 'Clear filters' })[0]
+    )
     expect(cardNames()).toHaveLength(3)
   })
 
@@ -123,33 +128,37 @@ describe('WorkshopModelsGrid', () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
 
-    await user.click(screen.getByTestId('workshop-filter'))
-    await user.click(await screen.findByTestId('workshop-facet-provider'))
+    await user.click(screen.getByRole('button', { name: 'Filter' }))
+    await user.click(await screen.findByRole('tab', { name: 'Models' }))
     await user.type(
-      await screen.findByTestId('workshop-filter-provider-search'),
+      await screen.findByRole('searchbox', { name: 'Search…' }),
       'forest'
     )
-    expect(screen.queryByTestId('filter-provider-Kling')).toBeNull()
-    await user.click(screen.getByTestId('filter-provider-Black Forest Labs'))
+    expect(screen.queryByRole('button', { name: 'Kling 1' })).toBeNull()
+    await user.click(
+      screen.getByRole('button', { name: 'Black Forest Labs 1' })
+    )
     expect(cardNames()).toEqual([expect.stringContaining('Flux')])
   })
 
   it('sorts by example count by default and by name on request', async () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
-    await user.type(screen.getByTestId('workshop-search'), ' ')
+    await user.type(search(), ' ')
     expect(cardNames()[0]).toContain('Kling AI')
 
-    await user.click(screen.getByTestId('workshop-sort'))
-    await user.click(await screen.findByTestId('sort-name'))
+    await user.click(screen.getByRole('button', { name: 'Sort' }))
+    await user.click(
+      await screen.findByRole('menuitemradio', { name: 'Name A to Z' })
+    )
     expect(cardNames()[0]).toContain('Flux')
   })
 
   it('clears search and filters together from the empty state', async () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
-    await user.type(screen.getByTestId('workshop-search'), 'nothing')
-    expect(screen.getByTestId('workshop-empty')).toBeTruthy()
+    await user.type(search(), 'nothing')
+    expect(screen.getByText('No models match')).toBeTruthy()
 
     await user.click(screen.getByRole('button', { name: 'Clear filters' }))
     expect(cardNames()).toHaveLength(3)

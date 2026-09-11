@@ -11,9 +11,7 @@ describe('ModelStatus', () => {
 
   it('shows the supplied model status', () => {
     render(ModelStatus, { props: { variant: 'pill', status: 'deprecated' } })
-    expect(screen.getByTestId('model-status').textContent).toContain(
-      'Deprecated'
-    )
+    expect(screen.getByText('Deprecated')).toBeTruthy()
   })
 
   it('links a deprecated model to its successor in the banner', () => {

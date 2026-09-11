@@ -40,10 +40,12 @@ export async function runWorkshopRouter(options: {
   if (!validateWorkshopInput(options.body, options.contract.inputSchema))
     throw new WorkshopRouterError('validation')
   const body = serializeRouterInput(options.body)
-  const signal = AbortSignal.any([
-    options.signal,
-    AbortSignal.timeout(RUN_TIMEOUT_MS)
-  ])
+  const requestController = new AbortController()
+  const abortFromCaller = () => requestController.abort(options.signal.reason)
+  options.signal.addEventListener('abort', abortFromCaller, { once: true })
+  if (options.signal.aborted) abortFromCaller()
+  const timeout = setTimeout(() => requestController.abort(), RUN_TIMEOUT_MS)
+  const signal = requestController.signal
   let requestId: string | null = null
   try {
     signal.throwIfAborted()
@@ -76,5 +78,8 @@ export async function runWorkshopRouter(options: {
     if (signal.aborted) throw new WorkshopRouterError('timeout', requestId)
     if (error instanceof WorkshopRouterError) throw error
     throw new WorkshopRouterError('provider', requestId)
+  } finally {
+    clearTimeout(timeout)
+    options.signal.removeEventListener('abort', abortFromCaller)
   }
 }

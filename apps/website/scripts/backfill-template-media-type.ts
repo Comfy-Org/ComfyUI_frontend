@@ -8,6 +8,13 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
+import {
+  hubTemplateDetailsSchema,
+  hubTemplatesSchema
+} from '../src/lib/hub/types'
+import type { HubTemplate, HubTemplateDetails } from '../src/lib/hub/types'
+import { isDirectExecution } from './script-entry-point'
+
 const DATA = join(import.meta.dirname, '..', 'src', 'data')
 const INDEX = join(DATA, 'hubTemplates.json')
 const DETAILS = join(DATA, 'hubTemplateDetails.json')
@@ -49,41 +56,44 @@ const TAG_MEDIA: readonly [string, MediaType][] = [
   ['Video', 'video']
 ]
 
-interface IndexEntry {
-  name: string
-  mediaType: string
-  tags: string[]
-}
-interface DetailEntry {
-  outputs?: { mediaType?: string }[]
-}
-
-const index = JSON.parse(readFileSync(INDEX, 'utf8')) as IndexEntry[]
-const details = JSON.parse(readFileSync(DETAILS, 'utf8')) as Record<
-  string,
-  DetailEntry
->
-
-function mediaTypeOf(entry: IndexEntry): MediaType {
+function mediaTypeOf(
+  entry: HubTemplate,
+  details: HubTemplateDetails
+): MediaType {
   const declared = details[entry.name]?.outputs?.[0]?.mediaType
   if (isMediaType(declared)) return declared
   return TAG_MEDIA.find(([tag]) => entry.tags.includes(tag))?.[1] ?? 'image'
 }
 
-let changed = 0
-for (const entry of index) {
-  const mediaType = mediaTypeOf(entry)
-  if (mediaType !== entry.mediaType) changed++
-  entry.mediaType = mediaType
+export function backfillTemplateMediaTypes(
+  rawIndex: unknown,
+  rawDetails: unknown
+): { index: HubTemplate[]; changed: number } {
+  const index = hubTemplatesSchema.parse(rawIndex)
+  const details = hubTemplateDetailsSchema.parse(rawDetails)
+  let changed = 0
+  const updated = index.map((entry) => {
+    const mediaType = mediaTypeOf(entry, details)
+    if (mediaType !== entry.mediaType) changed++
+    return { ...entry, mediaType }
+  })
+  return { index: updated, changed }
 }
 
-writeFileSync(INDEX, `${JSON.stringify(index, null, 2)}\n`)
+function main() {
+  const rawIndex: unknown = JSON.parse(readFileSync(INDEX, 'utf8'))
+  const rawDetails: unknown = JSON.parse(readFileSync(DETAILS, 'utf8'))
+  const { index, changed } = backfillTemplateMediaTypes(rawIndex, rawDetails)
+  writeFileSync(INDEX, `${JSON.stringify(index, null, 2)}\n`)
 
-const counts = new Map<string, number>()
-for (const entry of index)
-  counts.set(entry.mediaType, (counts.get(entry.mediaType) ?? 0) + 1)
-process.stdout.write(
-  `Rewrote ${changed} of ${index.length} media types: ${JSON.stringify(
-    Object.fromEntries([...counts].sort(([a], [b]) => a.localeCompare(b)))
-  )}\n`
-)
+  const counts = new Map<string, number>()
+  for (const entry of index)
+    counts.set(entry.mediaType, (counts.get(entry.mediaType) ?? 0) + 1)
+  process.stdout.write(
+    `Rewrote ${changed} of ${index.length} media types: ${JSON.stringify(
+      Object.fromEntries([...counts].sort(([a], [b]) => a.localeCompare(b)))
+    )}\n`
+  )
+}
+
+if (isDirectExecution(process.argv[1], import.meta.filename)) main()

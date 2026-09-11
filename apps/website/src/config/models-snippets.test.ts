@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 
 import { buildSnippet } from './models-snippets'
 import type { SnippetFile } from './models-snippets'
+import { workshopContract } from './workshop-contract-catalog'
 
 const id = 'bfl/flux-2-pro'
 const key = 'one-intent-one-key'
@@ -46,6 +47,41 @@ describe('buildSnippet', () => {
       expect(args).toContain('Idempotency-Key: ' + key)
       expect(args).toContain('https://stagingapi.comfy.org/v2/models/' + id)
     }
+  })
+
+  it('prints responses and error bodies for an actual JSON contract', () => {
+    const contract = workshopContract('bfl/flux-2-pro')
+    if (!contract) throw new Error('Missing JSON contract')
+    expect(contract.output.format).toBe('json')
+
+    const snippet = buildSnippet('curl', contract.id, body, key)
+    const args = execFileSync(
+      'bash',
+      ['-c', 'curl() { printf \'%s\\0\' "$@"; }\n' + snippet],
+      { encoding: 'utf8' }
+    ).split('\0')
+
+    expect(args).not.toContain('--output')
+    expect(snippet).toContain('save a binary response')
+  })
+
+  it('keeps a binary-capable contract visible and explains how to save it', () => {
+    const contract = workshopContract('elevenlabs/eleven_sfx_v2')
+    if (!contract) throw new Error('Missing binary-capable contract')
+    expect(contract.output).toMatchObject({
+      format: 'auto',
+      contentTypes: ['*/*']
+    })
+
+    const snippet = buildSnippet('curl', contract.id, body, key)
+    const args = execFileSync(
+      'bash',
+      ['-c', 'curl() { printf \'%s\\0\' "$@"; }\n' + snippet],
+      { encoding: 'utf8' }
+    ).split('\0')
+
+    expect(args).not.toContain('--output')
+    expect(snippet).toContain('save a binary response')
   })
 
   it('executes TypeScript with the same body and no invented model or output envelope', () => {

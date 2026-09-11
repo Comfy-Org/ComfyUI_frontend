@@ -46,11 +46,15 @@ allowed and remains a sample, not a fabricated prefill.
 The guard checks exact URLs. Different URLs serving identical image/video bytes
 still require editorial review; URL uniqueness is not visual-uniqueness proof.
 
-## Current import
+## September 10 import snapshot
 
-- Source: `workshop-content-pack-2026-09-10.zip` from Downloads.
-- 288 content/use-case records in 290 lines, preserving all 268 source models.
-- 157 visible records map to 113 distinct Router models after the schema refresh.
+- Source: `workshop-content-pack-2026-09-10.zip` from Downloads, SHA-256
+  `914380ff6c273fc4afd829b4b9d57970d096a56ce7d1288cedc86aeac5d6e17a`.
+- The legacy source contains 268 entries across 127 catalogue models. Import
+  expands those entries into 288 content/use-case records in 290 lines.
+- At integration commit `30a137ded6f`, 157 records were visible and mapped to
+  113 distinct Router models. These are historical publication measurements,
+  not counts for the current branch head.
 - 234 source records retain an active thumbnail; 31 visible records use placeholders.
 - MiniMax H3's one record is withheld until Router authors its input schema.
 - 29 records retain withheld content: 27 thumbnail occurrences and 18 paired
@@ -62,7 +66,17 @@ The subsequent source-media repair adds verified input values to four previously
 empty examples (Bria green screen/background replacement, Runway Aleph 2 and
 FlashVSR). These are editorial updates to the packed file, not values present in
 Rob's original archive. Workflow revision, filenames and checks are recorded in
-`MODELS_FEEDBACK_2026-09-10.md`. Preserve these updates on the next content import.
+`MODELS_FEEDBACK_2026-09-10.md`. Their durable override source is
+`src/data/workshop-example-repairs.json`, pinned to workflow-template commit
+`f331af10934fdf0d773d5f26c1d00f33559ae09d`. During both legacy and packed-array
+imports, the generator applies an override only when the content ID, example
+title and sample URL all match and the incoming values are empty. Different
+samples and new editorial values are preserved.
+
+The repaired September 10 packed file had SHA-256
+`3e993cfe552a9e2b8b7b65515f32292c57b23513e47b631ed080a87983a093e9`.
+That hash is historical verification of the reviewed output, not the durable
+source of the repairs.
 
 These are the September 10 import measurements, not permanent schema limits.
 
@@ -81,10 +95,11 @@ records map to the same Router model. Keep `withheldContent` as reference until
 replacement material is reviewed; it is not published. Missing media uses the
 neutral placeholder, never a borrowed asset from a different use-case row.
 
-Return the updated array in the same one-object-per-line format. All 268 source
-model identities are retained in its 288 records, but only the 157 records with
-reviewed Router mappings and authored inputs appear in the catalogue. This content handoff
-does not claim that per-case parameter overrides are implemented; see below.
+Return the updated array in the same one-object-per-line format. All 268 legacy
+source entries across 127 catalogue models are retained in its 288 records. At
+the `30a137ded6f` snapshot, 157 records with reviewed Router mappings and
+authored inputs appeared in the catalogue. This content handoff does not claim
+that per-case parameter overrides are implemented; see below.
 
 ### Importing an updated file
 

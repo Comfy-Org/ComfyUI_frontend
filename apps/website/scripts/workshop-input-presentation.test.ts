@@ -474,7 +474,7 @@ describe('curated model inputs', () => {
     },
     {
       id: 'ideogram/ideogram-v4',
-      values: { text_prompt: 'A red cube' },
+      values: { prompt: 'A red cube' },
       expected: { rendering_speed: 'DEFAULT' },
       absent: ['resolution']
     },

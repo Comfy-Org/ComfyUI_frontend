@@ -2,11 +2,13 @@
 
 ## September 10 schema refresh and publication policy
 
+Frontend snapshot: `0d965bab7b9`.
+
 Backend source: `9064b7d8748b2e5833be9a102f3ca36185137d86`,
 `services/comfy-api/docs/router-schemas`. The full documents are retained in the
 packed snapshot; the generated contracts keep native whole-request validation.
 
-| Current population                 | Count |
+| Population at that snapshot        | Count |
 | ---------------------------------- | ----: |
 | Router schema documents            |   207 |
 | Authored input contracts           |   206 |

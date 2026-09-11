@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ChevronRight } from '@lucide/vue'
-import { computed } from 'vue'
+import { useMounted, usePreferredReducedMotion } from '@vueuse/core'
+import { computed, ref, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -35,6 +36,16 @@ const taskLabel = computed(() => taskLabelFor(model, locale))
 const thumbnailLabel = computed(() =>
   model.thumbnail ? model.thumbnailLabel : undefined
 )
+const video = ref<HTMLVideoElement | null>(null)
+const mounted = useMounted()
+const motionPreference = usePreferredReducedMotion()
+const autoplayVideo = computed(
+  () => mounted.value && motionPreference.value !== 'reduce'
+)
+
+watch(motionPreference, (preference) => {
+  if (preference === 'reduce') video.value?.pause()
+})
 
 const pillClass =
   'inline-flex h-6 w-fit shrink-0 items-center justify-center rounded-full bg-hub-surface px-4 py-1 text-xs font-normal whitespace-nowrap text-content'
@@ -70,13 +81,14 @@ const pillClass =
 
       <video
         v-if="model.thumbnail?.kind === 'video'"
+        ref="video"
         :src="model.thumbnail.url"
         :aria-label="model.name"
         class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
         muted
         loop
         playsinline
-        autoplay
+        :autoplay="autoplayVideo"
         preload="metadata"
       />
       <img

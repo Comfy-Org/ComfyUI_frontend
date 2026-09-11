@@ -8,6 +8,7 @@ export const workshopInputDefinitionSchema = z.object({
   control: z.enum([
     'text-box',
     'text-area',
+    'dialogue',
     'dropdown',
     'slider',
     'number',

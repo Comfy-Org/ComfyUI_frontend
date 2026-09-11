@@ -40,18 +40,22 @@ async function request(
 
 describe('use-case input contracts', () => {
   it('uses dropdowns for every exposed resolution and aspect-ratio control', () => {
+    let checked = 0
     for (const model of routerWorkshopModels) {
       for (const field of schemaForModel(detail(model.slug))) {
         if (
           /^(?:param_|setting_|image_)?(?:resolution|aspect_ratio|ratio|aspectRatio)$/.test(
             field.name
           )
-        )
+        ) {
+          checked += 1
           expect({ slug: model.slug, field }).toMatchObject({
             field: { kind: 'select' }
           })
+        }
       }
     }
+    expect(checked).toBeGreaterThan(0)
   })
 
   it('keeps Beeble’s output type tied to its image/video page', async () => {

@@ -42,4 +42,9 @@ describe('getHubWorkflowPage', () => {
     expect(page.inputs).toContainEqual({ name: 'n', type: 'int' })
     expect(page.outputs[0].type).toBe('png')
   })
+
+  it('includes the primary asset when detail metadata has no outputs', () => {
+    const page = getHubWorkflowPage('api_minimax_h3_max_flf2v')
+    expect(page?.outputs[0]).toEqual({ name: 'video', type: 'mp4' })
+  })
 })

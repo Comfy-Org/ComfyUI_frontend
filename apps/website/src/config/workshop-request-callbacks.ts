@@ -1,9 +1,12 @@
+import { z } from 'astro/zod'
+
 import type { WorkshopCreatorForm } from './workshop-creator-form'
 import type {
   EncodedWorkshopFile,
   WorkshopRequestInputs
 } from './workshop-creator-request'
 import { WorkshopRouterError } from './workshop-router-errors'
+import { prepareWorkshopDialogue } from './workshop-dialogue'
 
 type CallbackRequest = Extract<
   WorkshopCreatorForm['request'],
@@ -16,6 +19,32 @@ function prefixed(values: Values, prefix: string): Record<string, unknown> {
     Object.entries(values)
       .filter(([name]) => name.startsWith(prefix))
       .map(([name, value]) => [name.slice(prefix.length), value])
+  )
+}
+
+function indexedEntries(values: Values, prefix: string) {
+  const index = (name: string) =>
+    name === prefix ? 1 : Number(name.slice(prefix.length + 1))
+  return Object.entries(values)
+    .filter(
+      ([name]) =>
+        name === prefix ||
+        (name.startsWith(`${prefix}_`) &&
+          /^[1-9]\d*$/.test(name.slice(prefix.length + 1)))
+    )
+    .sort(([a], [b]) => index(a) - index(b))
+}
+
+function indexedUrls(values: Values, prefix: string): string[] {
+  return indexedEntries(values, prefix).flatMap(([, value]) =>
+    typeof value === 'string' && value ? [value] : []
+  )
+}
+
+function withoutIndexed(values: Values, prefix: string): Values {
+  const names = new Set(indexedEntries(values, prefix).map(([name]) => name))
+  return Object.fromEntries(
+    Object.entries(values).filter(([name]) => !names.has(name))
   )
 }
 
@@ -35,11 +64,7 @@ function seedance({
   files
 }: WorkshopRequestInputs): Record<string, unknown> {
   const { prompt, first_frame_url, last_frame_url, ...rest } = values
-  const body = Object.fromEntries(
-    Object.entries(rest).filter(
-      ([name]) => !name.startsWith('reference_image_url')
-    )
-  )
+  const body = withoutIndexed(rest, 'reference_image_url')
   const first = files.first_frame ?? []
   const last = files.last_frame ?? []
   const references = files.reference_images ?? []
@@ -53,7 +78,7 @@ function seedance({
   ]
   const referenceUrls = [
     ...references.map(dataUrl),
-    ...referenceImageUrls(values)
+    ...indexedUrls(values, 'reference_image_url')
   ]
   if (
     (lastUrls.length && !firstUrls.length) ||
@@ -79,14 +104,6 @@ function seedance({
       }))
     ]
   }
-}
-
-function referenceImageUrls(values: Values): string[] {
-  return Object.entries(values).flatMap(([name, value]) =>
-    name.startsWith('reference_image_url') && typeof value === 'string' && value
-      ? [value]
-      : []
-  )
 }
 
 function gemini({
@@ -187,14 +204,28 @@ export function prepareWorkshopRequestCallback(
   switch (request.callback) {
     case 'flat':
       return { ...values }
+    case 'ideogram': {
+      const { prompt, ...rest } = values
+      if (typeof prompt !== 'string' || !prompt.trim())
+        throw new WorkshopRouterError('validation', null, {
+          prompt: 'required'
+        })
+      if (request.options.mode !== 'json')
+        return { ...rest, text_prompt: prompt }
+      try {
+        return {
+          ...rest,
+          json_prompt: z.record(z.string(), z.json()).parse(JSON.parse(prompt))
+        }
+      } catch {
+        throw new WorkshopRouterError('validation', null, {
+          prompt: 'rejected'
+        })
+      }
+    }
     case 'dialogue':
       return {
-        inputs: [
-          {
-            text: requireInput(values, 'text'),
-            voice_id: requireInput(values, 'voice_id')
-          }
-        ],
+        inputs: prepareWorkshopDialogue(values.inputs),
         ...(values.seed !== undefined ? { seed: values.seed } : {})
       }
     case 'seedance':
@@ -225,9 +256,7 @@ export function prepareWorkshopRequestCallback(
             {
               role: 'user',
               content: [
-                ...['image_url', 'image_url_2', 'image_url_3'].flatMap(
-                  (name) => (values[name] ? [{ image: values[name] }] : [])
-                ),
+                ...indexedUrls(values, 'image_url').map((image) => ({ image })),
                 { text: values.prompt }
               ]
             }
@@ -336,12 +365,8 @@ export function prepareWorkshopRequestCallback(
       return { prompt: values.prompt, settings: prefixed(values, 'setting_') }
     case 'grok-video': {
       const { image_url, ...rest } = values
-      const body = Object.fromEntries(
-        Object.entries(rest).filter(
-          ([name]) => !name.startsWith('reference_image_url')
-        )
-      )
-      const references = referenceImageUrls(values)
+      const body = withoutIndexed(rest, 'reference_image_url')
+      const references = indexedUrls(values, 'reference_image_url')
       return {
         ...body,
         ...(image_url ? { image: { url: image_url } } : {}),

@@ -33,6 +33,7 @@ const {
   modality,
   earlier = [],
   attachments = [],
+  memberWorkspace,
   locale = 'en'
 } = defineProps<{
   state: RunState
@@ -40,6 +41,7 @@ const {
   modality?: Modality
   earlier?: readonly RunRecord[]
   attachments?: readonly RunOutput[]
+  memberWorkspace?: string
   locale?: Locale
 }>()
 
@@ -48,6 +50,7 @@ const revealed = defineModel<boolean>('revealed', { default: false })
 const emit = defineEmits<{
   retry: []
   useInCode: []
+  switchPersonal: []
 }>()
 
 const elapsed = computed(() =>
@@ -71,6 +74,15 @@ const failureKey: Record<RunFailure, TranslationKey> = {
 }
 
 const statusMessage = computed(() => {
+  if (
+    state.status === 'failed' &&
+    state.reason === 'noCredits' &&
+    memberWorkspace !== undefined
+  )
+    return t('workshop.error.memberNoCredits', locale).replace(
+      '{workspace}',
+      memberWorkspace
+    )
   if (state.status === 'failed') return t(failureKey[state.reason], locale)
   if (state.status === 'running') return t('workshop.run.running', locale)
   if (state.status === 'cancelled')
@@ -237,10 +249,18 @@ const earlierClass = (active: boolean) =>
       :data-reason="state.reason"
     >
       <p class="text-primary-comfy-red text-sm">
-        {{ t(failureKey[state.reason], locale) }}
+        {{ statusMessage }}
       </p>
       <Button
-        v-if="state.reason === 'noCredits'"
+        v-if="state.reason === 'noCredits' && memberWorkspace !== undefined"
+        variant="outline"
+        size="sm"
+        @click="emit('switchPersonal')"
+      >
+        {{ t('workshop.run.switchPersonal', locale) }}
+      </Button>
+      <Button
+        v-else-if="state.reason === 'noCredits'"
         as="a"
         :href="WORKSHOP_CREDITS_URL"
         target="_blank"
@@ -282,7 +302,7 @@ const earlierClass = (active: boolean) =>
             loop
           />
           <img
-            v-else-if="currentUrl && shown.kind === 'image'"
+            v-else-if="currentUrl && shown.kind === 'image' && !blurred"
             :src="currentUrl"
             :alt="t('workshop.output.title', locale)"
             class="size-full object-contain"
@@ -500,7 +520,7 @@ const earlierClass = (active: boolean) =>
           {{ t('workshop.output.useInCode', locale) }}
         </Button>
         <Button
-          v-if="currentUrl"
+          v-if="currentUrl && !blurred"
           as="a"
           :href="currentUrl"
           :download="shown.fileName"

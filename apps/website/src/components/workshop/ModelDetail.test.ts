@@ -493,6 +493,64 @@ describe('ModelDetail', () => {
     }
   )
 
+  it('offers a personal-workspace switch instead of billing to a member with no credits', async () => {
+    auth.session.value = {
+      ...credential,
+      role: 'member',
+      workspace: { id: 'team-1', name: 'Studio', type: 'team' }
+    }
+    credits.balance.value = { status: 'ok', credits: 0 }
+    auth.ensureFresh.mockImplementation(async () => {
+      auth.session.value = credential
+      return { status: 'ok', session: credential }
+    })
+    vi.mocked(refreshWorkshopCredits).mockImplementation(async () => {
+      credits.balance.value = { status: 'ok', credits: 100 }
+    })
+    mountDetail({ model: runnable })
+    const visitor = user()
+    await visitor.type(
+      screen.getByRole('textbox', { name: /Prompt/ }),
+      'Keep me'
+    )
+    expect(screen.getByText(/Studio has no credits left/)).toBeTruthy()
+    expect(screen.queryByRole('link', { name: 'Buy credits' })).toBeNull()
+    await visitor.click(
+      screen.getByRole('button', { name: 'Switch to personal workspace' })
+    )
+    expect(screen.getByRole('button', { name: 'Run' })).toBeTruthy()
+    expect(screen.getByRole('textbox', { name: /Prompt/ })).toHaveProperty(
+      'value',
+      'Keep me'
+    )
+    expect(runWorkshopRouter).not.toHaveBeenCalled()
+  })
+
+  it('does not offer an owner-only purchase after a member receives an insufficient-credit response', async () => {
+    auth.session.value = { ...credential, role: 'member' }
+    auth.ensureFresh.mockResolvedValue({
+      status: 'ok',
+      session: auth.session.value
+    })
+    vi.mocked(runWorkshopRouter).mockRejectedValue(
+      new WorkshopRouterError('noCredits')
+    )
+    mountDetail({ model: runnable })
+    const visitor = user()
+    await visitor.type(
+      screen.getByRole('textbox', { name: /Prompt/ }),
+      'Keep me'
+    )
+    await visitor.click(screen.getByRole('button', { name: 'Run' }))
+    expect(
+      await screen.findByRole('button', {
+        name: 'Switch to personal workspace'
+      })
+    ).toBeTruthy()
+    expect(screen.queryByRole('link', { name: 'Buy credits' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
+  })
+
   it('does not suggest buying credits to enable an unavailable model', () => {
     auth.session.value = credential
     credits.balance.value = { status: 'ok', credits: 0 }
@@ -717,7 +775,11 @@ describe('ModelDetail', () => {
     vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', undefined)
     auth.session.value = credential
     mountDetail({ model: runnable })
-    expect(screen.getByTestId('run-button').hasAttribute('disabled')).toBe(true)
+    expect(
+      screen.getByRole('button', {
+        name: 'Router execution is not enabled for this model yet.'
+      })
+    ).toHaveProperty('disabled', true)
     expect(runWorkshopRouter).not.toHaveBeenCalled()
   })
 
@@ -732,6 +794,77 @@ describe('ModelDetail', () => {
     )
   })
 
+  it.for<WorkshopModelDetail['fields'][number]>([
+    {
+      kind: 'file',
+      name: 'image',
+      label: 'Image',
+      accept: 'image',
+      required: true
+    },
+    {
+      kind: 'text',
+      name: 'image',
+      label: 'Image',
+      multiline: false,
+      required: true,
+      presentation: {
+        label: 'Image',
+        help: '',
+        hidden: false,
+        advanced: false,
+        control: 'text-box',
+        urlUpload: 'image'
+      }
+    }
+  ])(
+    'requires sign-in before selecting a local $kind upload while retaining the example and text draft',
+    async (field) => {
+      const mediaModel: WorkshopModelDetail = {
+        ...runnable,
+        fields: [prompt, field],
+        defaults: { image: 'https://example.com/example.png' }
+      }
+      const visitor = user()
+      const { unmount } = mountDetail({ model: mediaModel })
+      const file = new File(['pixels'], 'local.png', { type: 'image/png' })
+      const input = screen.getByLabelText('Image', {
+        selector: 'input[type="file"]'
+      })
+      expect(input).toHaveProperty('disabled', true)
+      expect(screen.getByRole('img', { name: 'example.png' })).toBeTruthy()
+      expect(screen.getByText(/Sign in before uploading files/)).toBeTruthy()
+      await visitor.type(
+        screen.getByRole('textbox', { name: /Prompt/ }),
+        'My image idea'
+      )
+      await visitor.upload(input, file)
+      expect(
+        screen.queryByRole('button', { name: 'Replace local.png' })
+      ).toBeNull()
+      unmount()
+
+      auth.session.value = credential
+      mountDetail({ model: mediaModel })
+      await nextTick()
+      expect(screen.getByRole('textbox', { name: /Prompt/ })).toHaveProperty(
+        'value',
+        'My image idea'
+      )
+      expect(screen.getByRole('img', { name: 'example.png' })).toBeTruthy()
+      const signedInInput = screen.getByLabelText('Image', {
+        selector: 'input[type="file"]'
+      })
+      expect(signedInInput).toHaveProperty('disabled', false)
+      await visitor.upload(signedInInput, file)
+      expect(
+        screen.getByRole('button', { name: 'Replace local.png' })
+      ).toBeTruthy()
+      expect(screen.queryByText(/Sign in before uploading files/)).toBeNull()
+      expect(runWorkshopRouter).not.toHaveBeenCalled()
+    }
+  )
+
   it.for(['run', 'auth', 'model'] as const)(
     'does not solicit sign-in when %s is unavailable',
     (disabled) => {
@@ -740,9 +873,11 @@ describe('ModelDetail', () => {
       if (disabled === 'auth') auth.enabled.value = false
       mountDetail({ model: disabled === 'model' ? model : runnable })
       expect(screen.queryByRole('link', { name: 'Sign in to run' })).toBeNull()
-      expect(screen.getByTestId('run-button').hasAttribute('disabled')).toBe(
-        true
-      )
+      expect(
+        screen.getByRole('button', {
+          name: 'Router execution is not enabled for this model yet.'
+        })
+      ).toHaveProperty('disabled', true)
     }
   )
 

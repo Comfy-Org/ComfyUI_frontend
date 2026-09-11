@@ -83,7 +83,7 @@
       "family": "flat"
     },
     "ideogram/ideogram-v4": {
-      "family": "flat"
+      "family": "ideogram"
     },
     "kling/kling-3.0-turbo": {
       "family": "nested-settings"

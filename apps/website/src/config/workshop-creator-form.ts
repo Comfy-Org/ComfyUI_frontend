@@ -28,6 +28,7 @@ export const workshopCreatorFormSchema = z
         callback: z.enum([
           'flat',
           'dialogue',
+          'ideogram',
           'bfl-video',
           'nested-settings',
           'grok-video',

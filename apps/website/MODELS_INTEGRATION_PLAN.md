@@ -16,9 +16,11 @@ before merging either PR; it has not been closed or modified by this preparation
 
 - Mar's Models layout, with Rob's packed model/use-case content and distinct
   record IDs. Source content remains 288 records covering 268 original IDs.
-- Verified content/Router/schema intersection: 155 published use-case pages,
-  113 Router IDs, zero published Incomplete entries. Unsupported source records
-  are retained in the content file but have no catalogue card or detail route.
+- At frontend commit `0d965bab7b9`, using the Router source state identified
+  below, the verified content/Router/schema intersection was 155 published
+  use-case pages, 113 Router IDs and zero published Incomplete entries. These
+  are historical measurements, not current-head counts. Unsupported source
+  records were retained without a catalogue card or detail route.
 - 207 pinned Router documents and 206 authored input contracts at cloud commit
   `9064b7d8748b2e5833be9a102f3ca36185137d86`. MiniMax H3 lacks authored input and
   is withheld. Full source and coverage evidence: `MODELS_ROUTER_COVERAGE.md`.

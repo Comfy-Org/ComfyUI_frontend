@@ -217,7 +217,8 @@ const selectLabel = (group: FacetGroupConfig) => {
 const sortLabel = computed(
   () =>
     sortOptions.find((option) => option.value === store.sortBy.value)?.label ??
-    sortOptions[0].label
+    sortOptions[0]?.label ??
+    ''
 )
 
 const controlClass =

@@ -16,12 +16,14 @@ const {
   schema,
   errors,
   locale = 'en',
-  disabled = false
+  disabled = false,
+  fileUploadsDisabled = false
 } = defineProps<{
   schema: readonly FieldSchema[]
   errors: FieldErrors
   locale?: Locale
   disabled?: boolean
+  fileUploadsDisabled?: boolean
 }>()
 
 const values = defineModel<FormValues>({ required: true })
@@ -63,6 +65,7 @@ function onAdvancedToggle(event: Event) {
         :errors
         :locale
         :disabled
+        :file-uploads-disabled
       />
     </div>
 
@@ -79,6 +82,7 @@ function onAdvancedToggle(event: Event) {
         :errors
         :locale
         :disabled
+        :file-uploads-disabled
       />
     </div>
 
@@ -107,6 +111,7 @@ function onAdvancedToggle(event: Event) {
           :errors
           :locale
           :disabled
+          :file-uploads-disabled
         />
       </div>
     </details>

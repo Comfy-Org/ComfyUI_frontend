@@ -90,4 +90,17 @@ describe('groupByFamily', () => {
 
     expect(families.map((family) => family.name)).toEqual(['Veo', 'Wan'])
   })
+
+  it('ranks a qualified release by its version number', () => {
+    const [family] = groupByFamily([
+      model('Veo 2', 'veo-2'),
+      model('Veo 3 Fast', 'veo-3-fast')
+    ])
+
+    expect(family.latest.name).toBe('Veo 3 Fast')
+    expect(family.versions.map((version) => version.name)).toEqual([
+      'Veo 3 Fast',
+      'Veo 2'
+    ])
+  })
 })

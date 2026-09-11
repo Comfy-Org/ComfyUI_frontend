@@ -157,8 +157,11 @@ until replaced; the enclosing model record stores this text as a JSON string):
 
 Implemented on September 9 in the local combined preview. The original audit
 found 151 JSON controls across 78 visible pages, including nine whole-body
-editors. All 78 now render ordinary widgets; the 114-page catalogue has zero
-raw JSON controls. The four missing-schema Incomplete models are unchanged.
+editors. Those 78 audited pages now render ordinary widgets instead of the raw
+JSON controls counted by that audit. This does not mean every page in the
+historical 114-page catalogue is free of JSON editors: composed root schemas
+and nested structured inputs still use JSON editing where no ordinary widget
+projection exists. The four missing-schema Incomplete models are unchanged.
 
 Source and runtime responsibilities:
 
@@ -454,6 +457,7 @@ definitions covering 195 native field names, plus model-specific overrides for
 rules merely to mark them reviewed. The native snapshot, identity joins, Rob's
 content and catalog membership are unchanged.
 
+At that same `411500bd8c93a97328cf1a927b40ad5b24c60026` snapshot,
 `pnpm generate:workshop-router-contracts` produces 198 contracts in 200 lines
 (`[` + one object per model + `]`). The resulting metadata has 540 Standard and
 667 Advanced definitions, including native media targets represented by upload

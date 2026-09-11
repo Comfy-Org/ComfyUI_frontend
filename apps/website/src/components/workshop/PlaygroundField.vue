@@ -17,17 +17,20 @@ import { workshopExampleFile } from '../../config/workshop-example-file'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import FileSourceInput from './FileSourceInput.vue'
+import DialogueInput from './DialogueInput.vue'
 
 const {
   field,
   errors,
   locale = 'en',
-  disabled = false
+  disabled = false,
+  fileUploadsDisabled = false
 } = defineProps<{
   field: FieldSchema
   errors: FieldErrors
   locale?: Locale
   disabled?: boolean
+  fileUploadsDisabled?: boolean
 }>()
 
 const values = defineModel<FormValues>({ required: true })
@@ -109,7 +112,7 @@ const selectedFiles = computed({
     const upload = urlUploadField(field)
     if (typeof value === 'string' && upload && isHttpImageSource(value)) {
       return (
-        workshopExampleFile(value) ?? {
+        workshopExampleFile(value, upload.accept[0]) ?? {
           name: new URL(value).pathname.split('/').at(-1) || field.label,
           type: upload.accept[0] ?? 'application/octet-stream',
           size: 0,
@@ -252,9 +255,21 @@ function booleanValue(fallback = false): boolean {
       v-model="selectedFiles"
       :field="uploadField"
       :locale
-      :disabled
+      :disabled="disabled || fileUploadsDisabled"
       :invalid="invalid()"
       :described-by="describedBy"
+    />
+    <DialogueInput
+      v-else-if="
+        field.kind === 'text' && field.presentation?.control === 'dialogue'
+      "
+      :name="field.name"
+      :label="field.label"
+      :model-value="stringValue()"
+      :locale
+      :disabled
+      :described-by="describedBy"
+      @update:model-value="set"
     />
     <textarea
       v-else-if="field.kind === 'text' && field.multiline"
@@ -263,6 +278,7 @@ function booleanValue(fallback = false): boolean {
       :placeholder="field.placeholder"
       :minlength="field.minLength"
       :disabled
+      :aria-required="field.required"
       :aria-invalid="invalid()"
       :aria-describedby="describedBy"
       :data-testid="`field-${field.name}`"
@@ -281,6 +297,7 @@ function booleanValue(fallback = false): boolean {
         field.suggestions?.length ? `suggestions-${field.name}` : undefined
       "
       :disabled
+      :aria-required="field.required"
       :aria-invalid="invalid()"
       :aria-describedby="describedBy"
       :data-testid="`field-${field.name}`"
@@ -293,6 +310,7 @@ function booleanValue(fallback = false): boolean {
         :id="`field-${field.name}`"
         :value="selectValue()"
         :disabled
+        :aria-required="field.required || undefined"
         :aria-invalid="invalid()"
         :aria-describedby="describedBy"
         :data-testid="`field-${field.name}`"
@@ -356,6 +374,7 @@ function booleanValue(fallback = false): boolean {
       :step="field.step"
       :value="numberValue()"
       :disabled
+      :aria-required="field.required || undefined"
       :aria-invalid="invalid()"
       :aria-describedby="describedBy"
       :data-testid="`field-${field.name}`"
@@ -397,6 +416,7 @@ function booleanValue(fallback = false): boolean {
       type="button"
       role="switch"
       :aria-checked="booleanValue(field.defaultValue)"
+      :aria-required="field.required || undefined"
       :aria-invalid="invalid()"
       :aria-describedby="describedBy"
       :disabled
@@ -426,7 +446,7 @@ function booleanValue(fallback = false): boolean {
       v-model="selectedFiles"
       :field
       :locale
-      :disabled
+      :disabled="disabled || fileUploadsDisabled"
       :invalid="invalid()"
       :described-by="describedBy"
     />

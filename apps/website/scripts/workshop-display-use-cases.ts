@@ -1,5 +1,7 @@
 import assignments from '../src/data/workshop-content-use-cases.json'
+import { z } from 'astro/zod'
 import {
+  WORKSHOP_USE_CASES,
   workshopContentSlug,
   workshopDisplaySchema,
   workshopDisplayEntriesSchema
@@ -9,7 +11,11 @@ import type {
   WorkshopDisplaySource
 } from '../src/content/workshop-display.schema'
 
-const mediaUseCases: Readonly<Record<string, string>> = assignments
+const mediaUseCases = new Map(
+  Object.entries(
+    z.record(z.string(), z.enum(WORKSHOP_USE_CASES)).parse(assignments)
+  )
+)
 
 export function splitWorkshopDisplay(
   sources: readonly WorkshopDisplaySource[]
@@ -17,10 +23,14 @@ export function splitWorkshopDisplay(
   const entries = sources.flatMap((source) => {
     const { id: modelId, useCases, ...content } = source
     const mediaUseCase =
-      useCases.length === 1 ? useCases[0] : mediaUseCases[modelId]
+      useCases.length === 1 ? useCases[0] : mediaUseCases.get(modelId)
     if (!mediaUseCase)
       throw new Error(`Choose a media use case before splitting ${modelId}`)
-    return [...new Set([...useCases, mediaUseCase])].map((useCase) => {
+    if (!useCases.includes(mediaUseCase))
+      throw new Error(
+        `Media use case ${mediaUseCase} is not declared for ${modelId}`
+      )
+    return useCases.map((useCase) => {
       const slug = workshopContentSlug(modelId, useCase)
       return {
         ...content,

@@ -68,6 +68,16 @@ export interface ModelBadge {
   readonly name: string
 }
 
+function resolveLogos(names: readonly string[]): ModelBadge[] {
+  const seen = new Set<string>()
+  return names.flatMap((name) => {
+    const src = getLogoPath(name)
+    if (!src || seen.has(src)) return []
+    seen.add(src)
+    return [{ src, name }]
+  })
+}
+
 // Structured `logos` first, then the model list; deduped by asset so alias
 // pairs like Google + Gemini yield one badge.
 export function resolveTemplateLogos(input: {
@@ -77,12 +87,8 @@ export function resolveTemplateLogos(input: {
   const providers = (input.logos ?? []).flatMap((l) =>
     Array.isArray(l.provider) ? l.provider : [l.provider]
   )
-  const names = providers.length > 0 ? providers : (input.models ?? [])
-  const seen = new Set<string>()
-  return names.flatMap((name) => {
-    const src = getLogoPath(name)
-    if (!src || seen.has(src)) return []
-    seen.add(src)
-    return [{ src, name }]
-  })
+  const providerBadges = resolveLogos(providers)
+  return providerBadges.length > 0
+    ? providerBadges
+    : resolveLogos(input.models ?? [])
 }

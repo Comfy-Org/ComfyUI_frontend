@@ -6,17 +6,12 @@ import type { curateWorkshopInputs } from './workshop-input-presentation'
 import { createCreatorFields, schemaAt } from './workshop-creator-fields'
 import { wanCreatorRequest } from './workshop-creator-wan'
 import { workshopContentInputs } from '../src/config/workshop-content-inputs'
+import { workshopCreatorDefinitionSchema } from './workshop-creator-definition'
 
 const object = z.record(z.string(), z.json())
 const definitions = z
   .object({
-    models: z.record(
-      z.string(),
-      z.object({
-        family: z.string(),
-        options: object.default({})
-      })
-    )
+    models: z.record(z.string(), workshopCreatorDefinitionSchema)
   })
   .parse(rawModels)
 
@@ -27,10 +22,10 @@ export function creatorFormFor(
 ): WorkshopCreatorForm | undefined {
   if (!Object.hasOwn(definitions.models, id)) return
   const definition = definitions.models[id]
-  const model = {
+  const model = workshopCreatorDefinitionSchema.parse({
     ...definition,
     options: { ...definition.options, ...options }
-  }
+  })
   const fields = createCreatorFields(id, curated)
   const {
     source,
@@ -107,10 +102,21 @@ export function creatorFormFor(
       request = { kind: 'callback', callback: 'flat', options: {} }
       break
     case 'dialogue':
-      prompt('inputs/[]/text', 'text')
-      add('voice_id', schemaAt(source, 'inputs/[]/voice_id'), {
-        required: true
-      })
+      add(
+        'inputs',
+        {
+          ...schemaAt(source, 'inputs'),
+          items: schemaAt(source, 'inputs/[]'),
+          default: object.parse(source.example).inputs
+        },
+        {
+          label: 'Dialogue',
+          help: 'Add speaking turns in order, using up to ten distinct voice IDs.',
+          control: 'dialogue',
+          advanced: false,
+          required: true
+        }
+      )
       add('seed', schemaAt(source, 'seed'), { advanced: true })
       request = { kind: 'callback', callback: 'dialogue', options: {} }
       break
@@ -312,7 +318,17 @@ export function creatorFormFor(
       url('audio_url', 'Audio', true, 'audio')
       request = { kind: 'callback', callback: 'kling-lip-sync', options: {} }
       break
-    case 'veo':
+    case 'veo': {
+      const params = object.parse(schemaAt(source, 'parameters').properties)
+      for (const name of [
+        'sampleCount',
+        'resolution',
+        'aspectRatio',
+        'durationSeconds'
+      ]) {
+        if (!Object.hasOwn(params, name))
+          throw new Error(`Missing creator parameter ${id}:parameters.${name}`)
+      }
       prompt('instances/[]/prompt')
       file('first_frame', 'First frame', 1, false, ['image/jpeg', 'image/png'])
       file('last_frame', 'Last frame', 1, false, ['image/jpeg', 'image/png'])
@@ -370,6 +386,7 @@ export function creatorFormFor(
       }
       request = { kind: 'callback', callback: 'veo', options: {} }
       break
+    }
     case 'bfl-video':
       addRoot()
       required.add('prompt')
@@ -406,15 +423,39 @@ export function creatorFormFor(
     case 'flat':
       addRoot(['multi_shot', 'shot_type', 'type'])
       if (Object.hasOwn(properties, 'prompt')) required.add('prompt')
-      if (id === 'ideogram/ideogram-v4') required.add('text_prompt')
       if (id === 'kling/kling-v1-5') required.add('image')
       request = { kind: 'callback', callback: 'flat', options: {} }
+      break
+    case 'ideogram':
+      addRoot(['text_prompt', 'json_prompt'])
+      add(
+        'prompt',
+        schemaAt(
+          source,
+          model.options.mode === 'json' ? 'json_prompt' : 'text_prompt'
+        ),
+        {
+          label: model.options.mode === 'json' ? 'Structured prompt' : 'Prompt',
+          help:
+            model.options.mode === 'json'
+              ? 'JSON layout and style instructions, sent as structured data.'
+              : '',
+          control: 'text-area',
+          advanced: false,
+          required: true
+        }
+      )
+      request = {
+        kind: 'callback',
+        callback: 'ideogram',
+        options: { mode: model.options.mode }
+      }
       break
     case 'wan-media':
       request = wanCreatorRequest(id, model.options, fields)
       break
     default:
-      throw new Error(`Unknown creator form family: ${model.family}`)
+      throw new Error('Unknown creator form family')
   }
   for (const [name, value] of Object.entries(
     object.parse(model.options.fixedValues ?? {})

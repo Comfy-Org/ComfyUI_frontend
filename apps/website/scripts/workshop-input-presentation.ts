@@ -102,6 +102,8 @@ function controlFor(
     case 'media':
       return 'media'
     case 'text':
+      if (field.valueType === 'json' && preferred === 'dialogue')
+        return 'dialogue'
       if (field.valueType === 'json') return 'text-area'
       if (preferred === 'text-box' || preferred === 'text-area')
         return preferred

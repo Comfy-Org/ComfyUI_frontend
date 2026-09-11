@@ -16,22 +16,26 @@ const MIME_TYPES = new Map([
 const files = new WeakMap<FileValue, File>()
 const MAX_BYTES = 7 * 1024 * 1024
 
-export function workshopExampleFile(source: string): FileValue | undefined {
+export function workshopExampleFile(
+  source: string,
+  fallbackType = 'application/octet-stream'
+): FileValue | undefined {
   if (!isHttpImageSource(source)) return
-  const name = new URL(source).pathname.split('/').at(-1)
-  const type = MIME_TYPES.get(name?.split('.').at(-1)?.toLowerCase() ?? '')
-  if (!name || !type) return
+  const name = new URL(source).pathname.split('/').at(-1) || 'example'
+  const type =
+    MIME_TYPES.get(name.split('.').at(-1)?.toLowerCase() ?? '') ?? fallbackType
   return { name, type, size: 0, previewUrl: source, sourceUrl: source }
 }
 
 export function workshopExampleFiles(
   source: string | readonly string[],
-  multiple = false
+  multiple = false,
+  fallbackType?: string
 ): FileValue | FileValue[] | undefined {
   const urls = typeof source === 'string' ? [source] : source
   const result: FileValue[] = []
   for (const url of urls) {
-    const file = workshopExampleFile(url)
+    const file = workshopExampleFile(url, fallbackType)
     if (!file) return
     result.push(file)
   }

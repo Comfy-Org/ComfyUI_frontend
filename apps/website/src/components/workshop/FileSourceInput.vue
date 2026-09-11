@@ -251,6 +251,7 @@ function fileType(file: FileValue): string {
       :accept="field.accept.join(',')"
       :disabled
       :aria-label="field.label"
+      :aria-required="field.required"
       :aria-invalid="invalid || !!rejection"
       :aria-describedby="description"
       :data-testid="`field-${field.name}`"

@@ -1,5 +1,67 @@
 [
   {
+    "id": "bfl/flux-pro-1.0-fill",
+    "routerId": "bfl/flux-pro-1.0-fill",
+    "omit": [],
+    "media": [
+      {
+        "name": "media_image",
+        "label": "Image",
+        "accept": "image",
+        "encoding": "base64",
+        "targets": ["/image"],
+        "required": true
+      },
+      {
+        "name": "media_mask",
+        "label": "Mask image (white edits, black keeps)",
+        "accept": "image",
+        "encoding": "base64",
+        "targets": ["/mask"],
+        "required": false
+      }
+    ],
+    "advancedFields": [],
+    "output": {
+      "format": "json",
+      "selectors": [
+        { "path": "/result/sample", "encoding": "url", "kind": "image" }
+      ],
+      "success": {
+        "path": "/status",
+        "values": ["ready"],
+        "caseInsensitive": true
+      }
+    }
+  },
+  {
+    "id": "bfl/flux-pro-1.0-expand",
+    "routerId": "bfl/flux-pro-1.0-expand",
+    "omit": [],
+    "media": [
+      {
+        "name": "media_image",
+        "label": "Image",
+        "accept": "image",
+        "encoding": "base64",
+        "targets": ["/image"],
+        "required": true
+      }
+    ],
+    "advancedFields": [],
+    "output": {
+      "format": "json",
+      "selectors": [
+        { "path": "/result/sample", "encoding": "url", "kind": "image" }
+      ],
+      "success": {
+        "path": "/status",
+        "values": ["ready"],
+        "caseInsensitive": true
+      }
+    }
+  },
+  {
     "id": "bfl/flux-2-pro",
     "routerId": "bfl/flux-2-pro",
     "omit": ["safety_tolerance"],

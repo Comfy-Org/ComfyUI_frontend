@@ -31,6 +31,20 @@ beforeEach(() => {
 })
 
 describe('HeaderMain workshop gating', () => {
+  it.for([
+    { workshopInBuild: false, modelsAvailable: false },
+    { workshopInBuild: true, modelsAvailable: true }
+  ])(
+    'renders Models availability as $modelsAvailable when workshopInBuild is $workshopInBuild',
+    ({ workshopInBuild, modelsAvailable }) => {
+      render(HeaderMain, { props: { workshopInBuild } })
+
+      expect(screen.queryByRole('link', { name: /^Models\b/i }) !== null).toBe(
+        modelsAvailable
+      )
+    }
+  )
+
   it('mounts no account island while the flag is off', () => {
     render(HeaderMain)
 

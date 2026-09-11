@@ -268,8 +268,11 @@ export function getHubWorkflowPage(name: string): HubWorkflowPage | undefined {
     defaults: {},
     examples: examplesFor(template)
   }
+  const declaredOutputs = detail.outputs?.length
+    ? detail.outputs
+    : [{ mediaType }]
   const outputs: HubIoRow[] = [
-    ...(detail.outputs ?? []).map((port, index) => ({
+    ...declaredOutputs.map((port, index) => ({
       name:
         index === 0
           ? (port.mediaType ?? 'output')

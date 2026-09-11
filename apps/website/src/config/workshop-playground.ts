@@ -115,19 +115,23 @@ export type FieldErrors = Readonly<Record<string, FieldErrorCode>>
 
 export const MAX_UPLOAD_BYTES = 25 * 1024 * 1024
 
-const URL_UPLOAD_ACCEPT = {
-  image: ['image/png', 'image/jpeg', 'image/webp'],
-  video: ['video/mp4', 'video/webm', 'video/quicktime'],
-  audio: ['audio/mpeg', 'audio/wav', 'audio/x-wav', 'audio/mp4'],
-  'image-or-video': [
-    'image/png',
-    'image/jpeg',
-    'image/webp',
-    'video/mp4',
-    'video/webm',
-    'video/quicktime'
-  ],
-  file: []
+const ACCEPT: Record<'image' | 'video' | 'audio' | 'file', readonly string[]> =
+  {
+    image: ['image/png', 'image/jpeg', 'image/webp'],
+    video: ['video/mp4', 'video/webm', 'video/quicktime'],
+    audio: ['audio/mpeg', 'audio/wav', 'audio/x-wav', 'audio/mp4'],
+    file: []
+  }
+
+const URL_UPLOAD_ACCEPT: Record<
+  NonNullable<WorkshopInputDefinition['urlUpload']>,
+  readonly string[]
+> = {
+  image: ACCEPT.image,
+  video: ACCEPT.video,
+  audio: ACCEPT.audio,
+  'image-or-video': [...ACCEPT.image, ...ACCEPT.video],
+  file: ACCEPT.file
 }
 
 export function urlUploadField(
@@ -196,16 +200,8 @@ export function groupPlaygroundFields(
   }
 }
 
-const ACCEPT: Record<'image' | 'video' | 'audio' | 'file', readonly string[]> =
-  {
-    image: ['image/png', 'image/jpeg', 'image/webp'],
-    video: ['video/mp4', 'video/webm', 'video/quicktime'],
-    audio: ['audio/mpeg', 'audio/wav', 'audio/x-wav', 'audio/mp4'],
-    file: []
-  }
-
 function fromGenerated(field: GeneratedField): FieldSchema {
-  const presentation =
+  const grouping =
     field.advanced === undefined
       ? {}
       : {
@@ -224,7 +220,7 @@ function fromGenerated(field: GeneratedField): FieldSchema {
         kind: 'text',
         name: field.name,
         label: field.label,
-        ...presentation,
+        ...grouping,
         ...contract,
         ...(field.hint ? { hint: field.hint } : {}),
         required: field.required,
@@ -241,7 +237,7 @@ function fromGenerated(field: GeneratedField): FieldSchema {
         kind: 'number',
         name: field.name,
         label: field.label,
-        ...presentation,
+        ...grouping,
         ...contract,
         ...(field.hint ? { hint: field.hint } : {}),
         min: field.min,
@@ -255,7 +251,7 @@ function fromGenerated(field: GeneratedField): FieldSchema {
         kind: 'select',
         name: field.name,
         label: field.label,
-        ...presentation,
+        ...grouping,
         ...contract,
         ...(field.hint ? { hint: field.hint } : {}),
         options: field.options,
@@ -267,7 +263,7 @@ function fromGenerated(field: GeneratedField): FieldSchema {
         kind: 'toggle',
         name: field.name,
         label: field.label,
-        ...presentation,
+        ...grouping,
         ...contract,
         ...(field.hint ? { hint: field.hint } : {}),
         required: field.required,
@@ -278,7 +274,7 @@ function fromGenerated(field: GeneratedField): FieldSchema {
         kind: 'file',
         name: field.name,
         label: field.label,
-        ...presentation,
+        ...grouping,
         ...contract,
         ...(field.hint ? { hint: field.hint } : {}),
         accept: field.mimeTypes ?? ACCEPT[field.accept],
@@ -374,7 +370,7 @@ export function defaultValues(
       const value =
         field.kind === 'file'
           ? typeof override === 'string' || typeof override === 'object'
-            ? workshopExampleFiles(override, field.multiple)
+            ? workshopExampleFiles(override, field.multiple, field.accept[0])
             : undefined
           : typeof override === 'object'
             ? undefined

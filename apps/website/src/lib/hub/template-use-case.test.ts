@@ -52,11 +52,9 @@ describe('partnerModelFor', () => {
     ).toBeUndefined()
   })
 
-  it('falls back to the generated join for a name-only template', () => {
+  it('does not send a Pro workflow to a Lite model through a provider-family guess', () => {
     const tmpl = { ...template(['API']), name: 'api_bytedance_text_to_video' }
-    expect(partnerModelFor(tmpl, workshopModels)?.slug).toBe(
-      'byteplus--seedance-1-0-lite-text-to-video--generate-videos'
-    )
+    expect(partnerModelFor(tmpl, workshopModels)).toBeUndefined()
   })
 
   it('has no join row for a workflow that disagreed on the medium', () => {
@@ -89,6 +87,48 @@ describe('partnerModelFor', () => {
   it('leaves a community workflow alone', () => {
     expect(
       partnerModelFor(template([], ['Kling O3']), [model('Kling O3')])
+    ).toBeUndefined()
+  })
+
+  it('does not pick the first of duplicate normalized names', () => {
+    expect(
+      partnerModelFor(template(['API'], ['Kling O3']), [
+        model('Kling O3'),
+        { ...model('Kling-o3'), slug: 'different-model' }
+      ])
+    ).toBeUndefined()
+  })
+
+  it('rejects conflicting task tags rather than choosing their order', () => {
+    expect(
+      partnerModelFor(
+        template(['API', 'Text to Video', 'Video Edit'], ['Demo']),
+        [model('Demo')]
+      )
+    ).toBeUndefined()
+  })
+
+  it('checks a generated target against the operation and requires a unique page', () => {
+    const create: WorkshopModel = {
+      ...model('Create'),
+      slug: 'create',
+      routerId: 'acme/shared',
+      useCases: ['generate-images']
+    }
+    const edit: WorkshopModel = {
+      ...create,
+      name: 'Edit',
+      slug: 'edit',
+      useCases: ['edit-images']
+    }
+    const tmpl = template(['API', 'Image Edit'])
+    expect(partnerModelFor(tmpl, [create, edit], 'create')).toBeUndefined()
+    expect(partnerModelFor(tmpl, [create, edit], 'edit')).toBe(edit)
+    expect(
+      partnerModelFor(tmpl, [edit, { ...edit, name: 'Duplicate slug' }], 'edit')
+    ).toBeUndefined()
+    expect(
+      partnerModelFor(template(['API', 'Text Generation']), [create], 'create')
     ).toBeUndefined()
   })
 })

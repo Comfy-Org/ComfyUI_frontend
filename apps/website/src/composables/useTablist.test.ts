@@ -40,3 +40,13 @@ it('supports Home, End, and wrapping arrows with matching focus and selection', 
     true
   )
 })
+
+it('leaves the selection unchanged for navigation keys on an empty tablist', () => {
+  const active = ref('unchanged')
+  const { onKeydown } = useTablist(() => [], active)
+
+  for (const key of ['Home', 'End', 'ArrowLeft', 'ArrowRight'])
+    onKeydown(new KeyboardEvent('keydown', { key }))
+
+  expect(active.value).toBe('unchanged')
+})

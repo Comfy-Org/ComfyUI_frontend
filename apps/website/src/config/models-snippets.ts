@@ -211,10 +211,10 @@ export function buildSnippet(
           ''
         ]
       : []),
+    '# To save a binary response, add --output output.bin to the command.',
     `curl --fail-with-body --max-time 660 --request POST ${quote(endpoint)} \\`,
     '  --header "X-API-Key: $COMFY_API_KEY" \\',
     '  --header "Content-Type: application/json" \\',
-    '  --output output.bin \\',
     `  --header ${quote(`Idempotency-Key: ${idempotencyKey}`)} \\`,
     `  --data ${quote(JSON.stringify(omitFiles(body, files, true) ?? {}, null, 2))}`
   ].join('\n')

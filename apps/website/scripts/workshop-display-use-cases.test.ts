@@ -115,4 +115,14 @@ describe('model-plus-use-case content identity', () => {
       splitWorkshopDisplay([{ ...source, id: 'new/model' }])
     ).toThrow('Choose a media use case before splitting new/model')
   })
+
+  it('rejects a media assignment outside the declared use cases', () => {
+    expect(() =>
+      splitWorkshopDisplay([
+        { ...source, useCases: ['generate-images', 'animate-images'] }
+      ])
+    ).toThrow(
+      'Media use case edit-images is not declared for byteplus/seedream-4'
+    )
+  })
 })

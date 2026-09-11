@@ -16,7 +16,7 @@ export interface ModelFamily {
 const VERSION_SUFFIX =
   /(?:[\s\-.]+v?[A-Za-z]?(\d+(?:\.\d+)*)|(\d+(?:\.\d+)*))$/i
 const QUALIFIER_SUFFIX =
-  /[\s-]+(pro|lite|flash|turbo|mini|max|ultra|plus|ai|3d)$/i
+  /[\s-]+(pro|lite|flash|fast|turbo|mini|max|ultra|plus|ai|3d)$/i
 
 function stripRelease(name: string): string {
   let stripped = name.trim()
@@ -43,7 +43,13 @@ function familyKeyOf(model: WorkshopModel): string {
 }
 
 function versionOf(model: WorkshopModel): string | undefined {
-  const match = VERSION_SUFFIX.exec(model.name)
+  let name = model.name.trim()
+  for (let pass = 0; pass < 3; pass += 1) {
+    const withoutQualifier = name.replace(QUALIFIER_SUFFIX, '').trim()
+    if (withoutQualifier === name) break
+    name = withoutQualifier
+  }
+  const match = VERSION_SUFFIX.exec(name)
   return match?.[1] ?? match?.[2]
 }
 

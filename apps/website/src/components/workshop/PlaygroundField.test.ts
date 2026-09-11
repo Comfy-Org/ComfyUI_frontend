@@ -45,6 +45,59 @@ function mountField(
 }
 
 describe('PlaygroundField', () => {
+  it.for<FieldSchema>([
+    {
+      kind: 'text',
+      name: 'input',
+      label: 'Input',
+      required: true,
+      multiline: false
+    },
+    {
+      kind: 'text',
+      name: 'input',
+      label: 'Input',
+      required: true,
+      multiline: true
+    },
+    {
+      kind: 'select',
+      name: 'input',
+      label: 'Input',
+      required: true,
+      options: ['a', 'b']
+    },
+    { kind: 'number', name: 'input', label: 'Input', required: true, step: 1 },
+    { kind: 'toggle', name: 'input', label: 'Input', required: true },
+    {
+      kind: 'file',
+      name: 'input',
+      label: 'Input',
+      required: true,
+      accept: ['image/png'],
+      maxBytes: MAX_UPLOAD_BYTES
+    }
+  ])(
+    'exposes the required state of a $kind input to assistive technology',
+    (field) => {
+      mountField(field)
+      const input =
+        field.kind === 'file'
+          ? screen.getByLabelText('Input', { selector: 'input[type="file"]' })
+          : screen.getByRole(
+              field.kind === 'text'
+                ? 'textbox'
+                : field.kind === 'number'
+                  ? 'spinbutton'
+                  : field.kind === 'toggle'
+                    ? 'switch'
+                    : 'combobox',
+              { name: 'Input' }
+            )
+      expect(input.getAttribute('aria-required')).toBe('true')
+    }
+  )
+
   it('retains a parent cross-field error when the unchanged field loses focus', async () => {
     mountField(
       {

@@ -1,4 +1,8 @@
 {
+  "ideogram--v4--generate-images": {
+    "routerId": "ideogram/ideogram-v4",
+    "options": { "mode": "json" }
+  },
   "beeble--switchx-video-edit--edit-videos": {
     "routerId": "beeble/switchx",
     "options": { "fixedValues": { "generation_type": "video" } }

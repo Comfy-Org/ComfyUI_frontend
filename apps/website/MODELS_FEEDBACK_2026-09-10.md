@@ -22,9 +22,10 @@ that every provider has completed a paid generation.
   input modes. Their supported use-case pages remain. Source data is preserved.
 - Kling Video Extend requires an existing generation `video_id`, not a generic
   file upload. Its minimal required control remains explicit.
-- Current publication: 155 use-case pages, 113 Router models, zero Incomplete
-  pages; 288 source records and 206 authored contracts retained. Generated
-  contracts remain packed and reproduce byte-for-byte.
+- At frontend commit `0d965bab7b9`, with Router source
+  `9064b7d8748b2e5833be9a102f3ca36185137d86`, publication contained 155
+  use-case pages for 113 Router models and zero Incomplete pages. All 288 packed
+  content/use-case records and 206 generated authored contracts were retained.
 
 ## Verification and handoff
 

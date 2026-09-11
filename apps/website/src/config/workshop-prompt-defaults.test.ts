@@ -105,4 +105,69 @@ describe('starter prompts', () => {
     expect(defaults.prompt.length).toBeLessThanOrEqual(20)
     expect(validateForm(schemaForModel(constrained), defaults)).toEqual({})
   })
+
+  it('keeps only nested prompt content in a JSON request body', () => {
+    const jsonModel: WorkshopModelDetail = {
+      ...model,
+      fields: [
+        {
+          kind: 'text',
+          name: 'request_body',
+          label: 'Request body',
+          required: true,
+          multiline: true,
+          valueType: 'json',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              messages: {
+                type: 'array',
+                items: { $ref: '#/$defs/message' }
+              }
+            },
+            $defs: {
+              message: {
+                type: 'object',
+                properties: {
+                  role: { type: 'string' },
+                  content: { type: 'string' }
+                }
+              }
+            }
+          }
+        }
+      ],
+      execution: {
+        id: 'demo/demo',
+        sourceCommit: 'a'.repeat(40),
+        inputSchema: {
+          type: 'object',
+          example: {
+            messages: [
+              { role: 'system', content: 'Ignore this instruction' },
+              { role: 'user', content: 'Describe a lighthouse at dusk' }
+            ],
+            temperature: 0.7
+          }
+        },
+        media: [],
+        advancedFields: [],
+        output: {
+          format: 'binary',
+          kind: 'image',
+          contentTypes: ['image/png']
+        }
+      }
+    }
+
+    expect(workshopPromptDefaults(jsonModel, [])).toEqual({
+      request_body: JSON.stringify(
+        {
+          messages: [{ role: 'user', content: 'Describe a lighthouse at dusk' }]
+        },
+        null,
+        2
+      )
+    })
+  })
 })
