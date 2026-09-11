@@ -1,7 +1,7 @@
-import { createTestingPinia } from '@pinia/testing'
-import type { TestingPinia } from '@pinia/testing'
-import { render, screen, within } from '@testing-library/vue'
+import { getActivePinia } from 'pinia'
+import type { Pinia } from 'pinia'
 import userEvent from '@testing-library/user-event'
+import { render, screen, within } from '@testing-library/vue'
 import { fromAny } from '@total-typescript/shoehorn'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -9,37 +9,52 @@ import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import RightSidePanel from '@/components/rightSidePanel/RightSidePanel.vue'
-import { useSettingStore } from '@/platform/settings/settingStore'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { MissingNodeType } from '@/types/comfy'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { toNodeId } from '@/types/nodeId'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 
 import TabErrors from './TabErrors.vue'
+vi.mock(import('@/services/comfyRegistryService'), async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    useComfyRegistryService: () => ({
+      ...actual.useComfyRegistryService(),
+      inferPackFromNodeName: vi.fn(async () => null),
+      listAllPacks: vi.fn(async () => ({ nodes: [] }))
+    })
+  }
+})
 
 const { mockFocusNode, mockRefreshMissingModels } = vi.hoisted(() => ({
   mockFocusNode: vi.fn(),
   mockRefreshMissingModels: vi.fn()
 }))
 
-vi.mock('@/scripts/app', () => ({
-  app: {
-    refreshMissingModels: mockRefreshMissingModels,
-    rootGraph: {
-      serialize: vi.fn(() => ({})),
-      getNodeById: vi.fn()
+vi.mock<unknown>(import('@/scripts/app'), () => {
+  const rootGraph = {
+    serialize: vi.fn(() => ({})),
+    getNodeById: vi.fn()
+  }
+  return {
+    app: {
+      refreshMissingModels: mockRefreshMissingModels,
+      rootGraph,
+      rootGraphOrUndefined: rootGraph
     }
   }
-}))
+})
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
   collectAllNodes: vi.fn(() => []),
   getNodeByExecutionId: vi.fn(),
   getActiveGraphNodeIds: vi.fn(() => new Set()),
@@ -48,30 +63,19 @@ vi.mock('@/utils/graphTraversalUtil', () => ({
   mapAllNodes: vi.fn(() => [])
 }))
 
-vi.mock('@/composables/useCopyToClipboard', () => ({
+vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: vi.fn(() => ({
     copyToClipboard: vi.fn()
   }))
 }))
 
-vi.mock('@/composables/canvas/useFocusNode', () => ({
+vi.mock<unknown>(import('@/composables/canvas/useFocusNode'), () => ({
   useFocusNode: vi.fn(() => ({
     focusNode: mockFocusNode
   }))
 }))
 
-// Its pack lookup resolves after the test file ends, and the console.warn on a
-// rejection lands while the worker's rpc is closing - an unhandled error that
-// fails the whole run with every test green. Mocked as the sibling suites do.
-vi.mock('@/stores/comfyRegistryStore', () => ({
-  useComfyRegistryStore: () => ({
-    inferPackFromNodeName: vi.fn(),
-    // TabErrors mounts the node-pack tree, which cancels this on unmount.
-    getPacksByIds: { call: vi.fn().mockResolvedValue([]), cancel: vi.fn() }
-  })
-}))
-
-vi.mock('@/platform/missingModel/missingModelDownload', () => ({
+vi.mock(import('@/platform/missingModel/missingModelDownload'), () => ({
   downloadModel: vi.fn(),
   fetchModelMetadata: vi.fn(async () => ({
     fileSize: null,
@@ -146,12 +150,9 @@ describe('TabErrors.vue', () => {
     })
   })
 
-  function renderComponent(seed?: (pinia: TestingPinia) => void) {
+  function renderComponent(seed?: (pinia: Pinia) => void) {
     const user = userEvent.setup()
-    const pinia = createTestingPinia({
-      createSpy: vi.fn,
-      stubActions: false
-    })
+    const pinia = getActivePinia()!
     seed?.(pinia)
     render(TabErrors, {
       global: {
@@ -170,11 +171,8 @@ describe('TabErrors.vue', () => {
     return { user }
   }
 
-  function renderRightSidePanel(seed: (pinia: TestingPinia) => void) {
-    const pinia = createTestingPinia({
-      createSpy: vi.fn,
-      stubActions: false
-    })
+  function renderRightSidePanel(seed: (pinia: Pinia) => void) {
+    const pinia = getActivePinia()!
     useSettingStore(pinia).settingValues['Comfy.RightSidePanel.ShowErrorsTab'] =
       true
     seed(pinia)
@@ -247,7 +245,7 @@ describe('TabErrors.vue', () => {
         NonNullable<ReturnType<typeof getNodeByExecutionId>>,
         unknown
       >({
-        title: titles[String(nodeId)] ?? ''
+        title: titles[nodeId] ?? ''
       })
     })
 
@@ -644,7 +642,7 @@ describe('TabErrors.vue', () => {
         NonNullable<ReturnType<typeof getNodeByExecutionId>>,
         unknown
       >({
-        title: titles[String(nodeId)] ?? ''
+        title: titles[nodeId] ?? ''
       })
     })
 
@@ -1034,7 +1032,7 @@ describe('TabErrors.vue', () => {
     const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
     vi.mocked(getNodeByExecutionId).mockImplementation((_, executionId) =>
       fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
-        id: String(executionId),
+        id: executionId,
         title: 'Node'
       })
     )
@@ -1098,7 +1096,7 @@ describe('TabErrors.vue', () => {
     const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
     vi.mocked(getNodeByExecutionId).mockImplementation((_, executionId) =>
       fromAny<NonNullable<ReturnType<typeof getNodeByExecutionId>>, unknown>({
-        id: String(executionId),
+        id: executionId,
         title: 'Node'
       })
     )

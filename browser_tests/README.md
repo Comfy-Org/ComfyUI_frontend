@@ -124,6 +124,51 @@ await comfyPage.setup({ mockReleases: false })
 
 See `tests/releaseNotifications.spec.ts` for release-specific tests.
 
+### Network isolation
+
+The shared fixtures allow HTTP and real WebSockets only to the configured
+frontend/backend origins: `PLAYWRIGHT_TEST_URL`, `PLAYWRIGHT_SETUP_API_URL`,
+`DEV_SERVER_COMFYUI_URL`, and Playwright's `baseURL`. Service workers are blocked.
+Other browser requests must have a local `route.fulfill()` or intentional
+`route.abort()` mock. An unmocked request is blocked and fails its owning test,
+even if the app catches the network error. Popup mocks belong on `context`,
+not `page`, so they cover the first navigation.
+
+Use `route.fallback()` for unmatched requests. `route.continue()` bypasses
+other handlers. Oxlint bans raw Playwright `test` imports and `continue()`
+outside `networkIsolationFixture.ts`. Extend that fixture for custom test roots.
+Keep auth mocks in the existing auth helpers; shared mocks
+only replace third-party scripts, model metadata lookups, and carousel media.
+Use scoped `test.use({ userAgent })` rather than `browser.newContext()` so
+custom user agents retain the fixture's isolation.
+
+Both `request` and `context.request` reject external URLs and disable automatic
+redirect following. Node networking, new standalone request/browser contexts,
+`route.fetch()`, and browser redirects can bypass fixture routing. For a full
+test-process network boundary, run the frontend, backend, and tests together
+in a Docker container with networking disabled:
+
+```bash
+pnpm install --frozen-lockfile
+VITE_USE_LEGACY_DEFAULT_GRAPH=true pnpm build
+docker pull ghcr.io/comfy-org/comfyui-ci-container:0.0.22
+scripts/test-browser-offline.sh --project=chromium errorDialog.spec.ts
+```
+
+Complete downloads and builds first. The offline runner never pulls an image
+or invokes the package manager. It requires a Linux-compatible `node_modules`
+and a cached CI image. `COMFYUI_TEST_IMAGE` selects a source-built image;
+`PLAYWRIGHT_OFFLINE_DIST` selects another built distribution, such as a cloud
+build for `--project=cloud` or `--project=mobile-safari`. Remote backend runs
+still use the regular test commands, not the offline runner.
+
+The container runs as root so the bundled backend can write to `/ComfyUI`.
+Generated reports are root-owned on the host. Before running tests outside the
+container, restore ownership of each generated output directory with
+`sudo chown -R "$(id -u):$(id -g)" test-results`, substituting
+`playwright-report`, `blob-report`, `coverage`, or your `--output` directory
+when used.
+
 ## Recording Tests (For Non-Developers)
 
 If you're a QA tester or non-developer, use the interactive recorder:
@@ -611,6 +656,49 @@ test.afterEach(async ({ comfyPage }) => {
 `comfyPage.debugAddMarker(pos)`, `debugAttachScreenshot(testInfo, name)`,
 `debugShowCanvasOverlay()`, `debugGetCanvasDataURL()` are for local debugging
 only. Never commit them.
+
+## Replay coverage for agent bug fixes
+
+### Playbook
+
+```bash
+DISTRIBUTION=cloud DEV_SERVER_COMFYUI_URL=http://127.0.0.1:8188 pnpm dev
+```
+
+```bash
+PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://localhost:5173 DISTRIBUTION=cloud pnpm exec playwright test agentConversation --project=cloud
+```
+
+Watch one: add `--headed -g <case id>`. Recorded gaps: `AGENT_REPLAY_TIMING=recorded`.
+
+When a fix changes how the agent's turns affect the app (graph edits,
+CRDT frames, panel state), add a conversation replay case alongside the
+fix so the bug stays fixed:
+
+1. **Record the conversation.** Reproduce the bug's turn with
+   `scripts/agentConversationRecord.ts` against the non-standalone local
+   stack (Postgres + doc host). In that mode the agent writes the per-op
+   audit rows (`agent_tool_calls` parent and child rows) to Postgres,
+   which is what a replay asserts; the doc host is a separate required
+   service and writes none of them. That one command records the turn and
+   writes the conversation JSON under
+   `browser_tests/fixtures/data/agent/conversations/`, marked
+   `response_side: 'recorded'`; see `fixtures/data/agent/README.md` for
+   the stack recipe, the command and the capture format. Never write
+   `graph_ops` by hand and never relabel a synthesized response as recorded.
+2. **Add the replay case.** Drive the fixture through the conversation
+   replay fixture (`agentConversationFixture`), asserting the
+   canvas-observable outcome the bug corrupted (graph end-state or
+   panel state - not mock call counts, not model text). Write what a
+   user sees for each turn (complete assistant text, tool rows in order)
+   into `agentConversationExpectations.ts`; the replay asserts those
+   literals and never predicts production rendering.
+3. **Prove it bites.** Before merging, run the case once against the
+   fix's parent commit (red) and once at the fix (green); paste both
+   run lines in the PR description. A replay case that never went red
+   against the bug does not count as regression coverage.
+
+Name the case after the behavior it protects (`agent-<behavior-slug>.json`, with the fix PR cited in the fixture's `source.note`). The recorder writes the provenance the replay keeps: `source.capture` (backend, thread id, export time), `turns[].message_id`, and `source.note` (row ids and the raw capture hash). A bad fixture is re-recorded, never edited.
 
 ## Test Data & Typed API Mocks
 

@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { AgentWsEvent } from '../../schemas/agentApiSchema'
 import { toTurnId, zAgentWsEvent } from '../../schemas/agentApiSchema'
 
 import type { AgentChatEvent } from './agentEventTransport'
@@ -16,7 +15,7 @@ import { createAssistantMessage } from './agentMessageParts'
 const fixtureText = import.meta.glob(
   '../../schemas/__fixtures__/agent/*.jsonl',
   { query: '?raw', import: 'default', eager: true }
-) as Record<string, string>
+)
 
 function fixtureFor(name: string): string {
   const path = Object.keys(fixtureText).find((p) => p.endsWith(`/${name}`))
@@ -36,21 +35,10 @@ function chatEventsFor(fixture: string, messageId: string): AgentChatEvent[] {
     const parsed = zAgentWsEvent.safeParse(frame)
     if (!parsed.success) continue
     const event = parsed.data
-    if (!isChatEvent(event)) continue
     if (event.data.message_id !== messageId) continue
     events.push(event)
   }
   return events
-}
-
-function isChatEvent(event: AgentWsEvent): event is AgentChatEvent {
-  return (
-    event.type === 'agent_thinking' ||
-    event.type === 'agent_tool_call' ||
-    event.type === 'agent_message_delta' ||
-    event.type === 'agent_message_done' ||
-    event.type === 'agent_active_tab'
-  )
 }
 
 const T = toTurnId('t1')
@@ -94,11 +82,58 @@ function delta(text: string): AgentChatEvent {
   }
 }
 
-function activeTab(workflow_id: string, name?: string): AgentChatEvent {
+function activeTab(
+  workflow_id: string,
+  name?: string,
+  node_locator_id?: string
+): AgentChatEvent {
   return {
     type: 'agent_active_tab',
-    data: { workflow_id, name, message_id: 'm', thread_id: 't' }
+    data: {
+      workflow_id,
+      name,
+      node_locator_id,
+      message_id: 'm',
+      thread_id: 't'
+    }
   }
+}
+
+function runApproval(askId = 'turn-1:call-1'): AgentChatEvent {
+  return zAgentWsEvent.parse({
+    type: 'agent_ask',
+    data: {
+      thread_id: 't',
+      message_id: 'm',
+      ask_id: askId,
+      kind: 'run_approval',
+      context: {
+        workflow_id: 'workflow-1',
+        workflow_name: 'Portrait workflow'
+      },
+      prompt: 'Run workflow “Portrait workflow”?',
+      options: [
+        { id: 'run', label: 'Run' },
+        { id: 'cancel', label: 'Cancel' }
+      ],
+      min_selections: 1,
+      max_selections: 1,
+      allow_other: false
+    }
+  })
+}
+
+function askResolved(askId = 'turn-1:call-1'): AgentChatEvent {
+  return zAgentWsEvent.parse({
+    type: 'agent_ask_resolved',
+    data: {
+      thread_id: 't',
+      message_id: 'm',
+      ask_id: askId,
+      status: 'answered',
+      selected: ['run']
+    }
+  })
 }
 
 const parts = (m: AssistantMessage) => m.parts
@@ -117,7 +152,7 @@ describe('agentEventTransport fixture replay', () => {
     )
     const replyText = events
       .filter((e) => e.type === 'agent_message_delta')
-      .map((e) => (e.type === 'agent_message_delta' ? e.data.delta : ''))
+      .map((e) => e.data.delta)
       .join('')
 
     const message = drive(events)
@@ -338,6 +373,44 @@ describe('agentEventTransport text and tool parts', () => {
   })
 })
 
+describe('agentEventTransport run approval', () => {
+  it('places the approval card at the decision point in transcript order', () => {
+    const message = drive([
+      delta('before'),
+      runApproval(),
+      delta('after the decision')
+    ])
+
+    expect(message.parts).toEqual([
+      { type: 'text', text: 'before', state: 'done' },
+      {
+        type: 'runApproval',
+        askId: 'turn-1:call-1',
+        workflowId: 'workflow-1',
+        workflowName: 'Portrait workflow'
+      },
+      { type: 'text', text: 'after the decision', state: 'streaming' }
+    ])
+  })
+
+  it('removes only the matching approval when the ask resolves', () => {
+    const message = drive([
+      runApproval('ask-1'),
+      runApproval('ask-2'),
+      askResolved('ask-1')
+    ])
+
+    expect(
+      message.parts.flatMap((part) =>
+        (part as { type: string }).type === 'runApproval'
+          ? [(part as { askId: string }).askId]
+          : []
+      )
+    ).toEqual(['ask-2'])
+    expect(message.streaming).toBe(true)
+  })
+})
+
 describe('agentEventTransport settle lifecycle', () => {
   it('settle mid-stream closes the open text part and clears streaming', () => {
     const message = createAssistantMessage(T)
@@ -383,10 +456,10 @@ describe('agentEventTransport settle lifecycle', () => {
     expect(toolParts(message)).toHaveLength(0)
   })
 
-  it('records an in-line tab link when the agent switches workflow tabs', () => {
+  it('records an explicitly targeted node link when the agent switches workflow tabs', () => {
     const message = drive([
       delta('opening it now'),
-      activeTab('wf-1', 'Portrait upscale'),
+      activeTab('wf-1', 'Portrait upscale', 'root-a:42'),
       delta('and here it is')
     ])
 
@@ -400,6 +473,7 @@ describe('agentEventTransport settle lifecycle', () => {
     expect(parts(message)[1]).toEqual({
       type: 'tabLink',
       workflowId: 'wf-1',
+      locatorId: 'root-a:42',
       name: 'Portrait upscale'
     })
   })
@@ -444,6 +518,20 @@ describe('agentEventTransport settle lifecycle', () => {
         part.type === 'tabLink' ? [part.workflowId] : []
       )
     ).toEqual(['wf-1'])
+  })
+
+  it('links distinct node targets within the same workflow', () => {
+    const message = drive([
+      activeTab('wf-1', 'First node', 'root-a:1'),
+      activeTab('wf-1', 'Second node', 'root-a:2'),
+      activeTab('wf-1', 'Second node', 'root-a:2')
+    ])
+
+    expect(
+      parts(message).flatMap((part) =>
+        part.type === 'tabLink' ? [part.locatorId] : []
+      )
+    ).toEqual(['root-a:1', 'root-a:2'])
   })
 
   it('links a tab again when the agent returns to it after switching away', () => {
