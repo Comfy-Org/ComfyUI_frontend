@@ -231,6 +231,39 @@ describe('WorkSummary', () => {
 })
 
 describe('step entrance', () => {
+  it('keeps the rows already on screen when a step arrives', async () => {
+    const { rerender } = render(ActivityTrace, {
+      props: {
+        parts: [
+          tool('c1', 'add_node', 'done', true, 100),
+          tool('c2', 'set_widget', 'done', true, 200)
+        ],
+        live: true
+      },
+      global: { plugins: [i18n] }
+    })
+
+    const before = screen.getAllByRole('listitem')
+    expect(before).toHaveLength(2)
+
+    await rerender({
+      parts: [
+        tool('c1', 'add_node', 'done', true, 100),
+        tool('c2', 'set_widget', 'done', true, 200),
+        tool('c3', 'ls_nodes', 'streaming')
+      ],
+      live: true
+    })
+
+    // The settled rows are the same nodes, so their entrance never replays.
+    // Only the arriving step is a new element, and only it animates.
+    const after = screen.getAllByRole('listitem')
+    expect(after).toHaveLength(3)
+    expect(after[0]).toBe(before[0])
+    expect(after[1]).toBe(before[1])
+    expect(before).not.toContain(after[2])
+  })
+
   it('marks a step as arriving while the turn runs', () => {
     render(ActivityTrace, {
       props: { parts: [tool('c1', 'add_node', 'streaming')], live: true },
