@@ -2,6 +2,8 @@ import type { WorkshopContract } from './workshop-contract'
 import { validateWorkshopInput } from './workshop-json-schema'
 import { valuesAtPointer } from './workshop-json-pointer'
 import type { RunOutput } from './workshop-run'
+import type { WorkshopSvgRasterizer } from './workshop-svg-output'
+import { svgOutputs } from './workshop-svg-output'
 import {
   discoverOutputMimes,
   inlineOutput,
@@ -39,7 +41,8 @@ function responseDocument(
 async function automaticOutputs(
   contract: WorkshopContract,
   data: unknown,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  rasterizeSvg?: WorkshopSvgRasterizer
 ): Promise<RunOutput[]> {
   const outputs: RunOutput[] = []
   const seen = new Set<string>()
@@ -91,8 +94,17 @@ async function automaticOutputs(
       signal
     )
     for (const [index, output] of outputs.entries()) {
-      const mime = discovered.get(output.url)
-      if (mime)
+      const mime = discovered.get(output.url) ?? outputMimeForUrl(output.url)
+      if (mime === 'image/svg+xml') {
+        const [preview, ...attachments] = await svgOutputs(
+          output.url,
+          fileName(contract.id, mime, index),
+          signal,
+          rasterizeSvg
+        )
+        outputs[index] = preview
+        outputs.push(...attachments)
+      } else if (discovered.has(output.url))
         outputs[index] = {
           ...output,
           kind: outputKind(mime),
@@ -123,8 +135,11 @@ async function automaticOutputs(
   }
 }
 
-async function responseBytes(response: Response): Promise<Uint8Array> {
-  if (Number(response.headers.get('Content-Length')) > MAX_RESPONSE_BYTES)
+async function responseBytes(
+  response: Response,
+  maxBytes: number
+): Promise<Uint8Array> {
+  if (Number(response.headers.get('Content-Length')) > maxBytes)
     throw new Error('Router output exceeds the limit')
   const reader = response.body?.getReader()
   if (!reader) throw new Error('Empty Router response')
@@ -135,8 +150,7 @@ async function responseBytes(response: Response): Promise<Uint8Array> {
       const { done, value } = await reader.read()
       if (done) break
       length += value.byteLength
-      if (length > MAX_RESPONSE_BYTES)
-        throw new Error('Router output exceeds the limit')
+      if (length > maxBytes) throw new Error('Router output exceeds the limit')
       chunks.push(value)
     }
   } catch (error) {
@@ -163,13 +177,17 @@ export function releaseRouterOutputs(outputs: readonly RunOutput[]): void {
 export async function parseRouterResponse(
   contract: WorkshopContract,
   response: Response,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  rasterizeSvg?: WorkshopSvgRasterizer
 ): Promise<RunOutput[]> {
   signal?.throwIfAborted()
-  const bytes = await responseBytes(response)
   const contentType =
     response.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase() ??
     ''
+  const bytes = await responseBytes(
+    response,
+    contentType === 'image/svg+xml' ? 4 * 1024 * 1024 : MAX_RESPONSE_BYTES
+  )
   const { output } = contract
   if (output.format === 'auto') {
     if (!bytes.length) throw new Error('Empty Router response')
@@ -186,7 +204,7 @@ export async function parseRouterResponse(
       const data: unknown = JSON.parse(new TextDecoder().decode(bytes))
       if (output.schema && !validateWorkshopInput(data, output.schema))
         throw new Error('Invalid Router response')
-      return automaticOutputs(contract, data, signal)
+      return automaticOutputs(contract, data, signal, rasterizeSvg)
     }
     if (contentType === 'text/plain' || contentType === 'text/event-stream')
       return [
@@ -197,6 +215,13 @@ export async function parseRouterResponse(
         )
       ]
     const kind = outputKind(contentType)
+    if (contentType === 'image/svg+xml')
+      return svgOutputs(
+        new Blob([new Uint8Array(bytes)]),
+        fileName(contract.id, contentType, 0),
+        signal,
+        rasterizeSvg
+      )
     return [
       {
         kind,
@@ -219,6 +244,13 @@ export async function parseRouterResponse(
       )
     )
       throw new Error('Unexpected Router output type')
+    if (contentType === 'image/svg+xml')
+      return svgOutputs(
+        new Blob([new Uint8Array(bytes)]),
+        fileName(contract.id, contentType, 0),
+        signal,
+        rasterizeSvg
+      )
     const source = blobSource(
       new Blob([new Uint8Array(bytes)], {
         type: isPassiveOutputMime(contentType)
@@ -263,7 +295,11 @@ export async function parseRouterResponse(
         if (value === null || value === undefined || value === '') continue
         const mime =
           selector.mimeType ??
-          (selector.kind === 'text' ? 'text/plain' : 'application/octet-stream')
+          (selector.encoding === 'url' && typeof value === 'string'
+            ? outputMimeForUrl(value)
+            : selector.kind === 'text'
+              ? 'text/plain'
+              : 'application/octet-stream')
         const name = fileName(contract.id, mime, outputs.length)
         if (selector.encoding === 'text' || selector.encoding === 'json') {
           if (selector.encoding === 'text' && typeof value !== 'string')
@@ -284,6 +320,22 @@ export async function parseRouterResponse(
         if (typeof value !== 'string') throw new Error('Invalid media output')
         let source: Pick<RunOutput, 'url' | 'byteLength'>
         if (selector.encoding === 'url') {
+          if (
+            mime === 'image/svg+xml' ||
+            outputMimeForUrl(value) === 'image/svg+xml'
+          ) {
+            outputs.push(
+              ...(
+                await svgOutputs(
+                  value,
+                  fileName(contract.id, 'image/svg+xml', outputs.length),
+                  signal,
+                  rasterizeSvg
+                )
+              ).map((output) => ({ ...output, nsfw }))
+            )
+            continue
+          }
           const parsed = new URL(value)
           if (
             parsed.protocol !== 'https:' ||

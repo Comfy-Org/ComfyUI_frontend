@@ -79,7 +79,11 @@ export async function discoverOutputMimes(
           ?.split(';')[0]
           .trim()
           .toLowerCase()
-        if (response.ok && mime && isPassiveOutputMime(mime))
+        if (
+          response.ok &&
+          mime &&
+          (isPassiveOutputMime(mime) || mime === 'image/svg+xml')
+        )
           discovered.set(url, mime)
         await response.body?.cancel()
       } catch {

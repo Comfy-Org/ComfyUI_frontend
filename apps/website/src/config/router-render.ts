@@ -17,6 +17,7 @@ import { WorkshopRouterError } from './workshop-router-errors'
 import type { RunOutput } from './workshop-run'
 import type { WorkshopUrlEncoder } from './workshop-url-input'
 import { createWorkshopUrlUploader } from './workshop-url-upload'
+import type { WorkshopSvgRasterizer } from './workshop-svg-output'
 
 const upload = createWorkshopUrlUploader()
 
@@ -33,6 +34,7 @@ export interface RouterRenderOptions {
   }
   readonly mappings?: RouterParameterMappings
   readonly uploadFile?: WorkshopUrlEncoder
+  readonly rasterizeSvg?: WorkshopSvgRasterizer
   readonly onRequestId?: (requestId: string | null) => void
   readonly onPrepared?: (prepared: PreparedRouterRender) => void | Promise<void>
 }
@@ -148,6 +150,7 @@ export async function router_render(
     token,
     idempotencyKey,
     signal,
+    rasterizeSvg: options.rasterizeSvg,
     ...(options.onRequestId ? { onRequestId: options.onRequestId } : {})
   })
   return {

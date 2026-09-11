@@ -20,6 +20,7 @@ import { openRouterModelReport } from './router-model-report'
 import { routerReportUpdate } from './router-model-report-events'
 import { openRouterModelTransport } from './router-model-transport'
 import { resolveRouterRender, router_render } from './router-render'
+import { openRouterSvgRasterizer } from './router-model-svg'
 
 const HELP = `Test every published image, video and audio page with its initial defaults.
 
@@ -259,6 +260,7 @@ async function main() {
       const campaign = new AbortController()
       const waitToStart = createStartGate(startsPerSecond)
       const closeTransport = openRouterModelTransport(timeoutMs)
+      const svgRasterizer = openRouterSvgRasterizer()
       function stop() {
         campaign.abort(new Error('Campaign interrupted'))
       }
@@ -301,6 +303,7 @@ async function main() {
                 token,
                 idempotencyKey,
                 signal,
+                rasterizeSvg: svgRasterizer.rasterize,
                 onPrepared: async (prepared) => {
                   const body = JSON.stringify(prepared.body, null, 2)
                   await writeFile(
@@ -393,6 +396,7 @@ async function main() {
       } finally {
         process.removeListener('SIGINT', stop)
         process.removeListener('SIGTERM', stop)
+        await svgRasterizer.close()
         await closeTransport()
       }
     }

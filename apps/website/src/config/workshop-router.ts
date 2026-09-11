@@ -5,6 +5,7 @@ import { parseRouterResponse, releaseRouterOutputs } from './workshop-response'
 import type { RunFailure, RunOutput } from './workshop-run'
 import { WorkshopRouterError } from './workshop-router-errors'
 import { validateWorkshopInput } from './workshop-json-schema'
+import type { WorkshopSvgRasterizer } from './workshop-svg-output'
 
 const RUN_TIMEOUT_MS = 660_000
 
@@ -58,6 +59,7 @@ export async function runWorkshopRouter(options: {
   readonly idempotencyKey: string
   readonly signal: AbortSignal
   readonly onRequestId?: (requestId: string | null) => void
+  readonly rasterizeSvg?: WorkshopSvgRasterizer
 }): Promise<{
   readonly outputs: RunOutput[]
   readonly requestId: string | null
@@ -107,7 +109,8 @@ export async function runWorkshopRouter(options: {
     const outputs = await parseRouterResponse(
       options.contract,
       response,
-      signal
+      signal,
+      options.rasterizeSvg
     )
     if (signal.aborted) {
       releaseRouterOutputs(outputs)

@@ -39,27 +39,39 @@ describe('Router output MIME discovery', () => {
   })
 
   it.for(['image/svg+xml', 'text/html', 'application/octet-stream'])(
-    'keeps extensionless %s output inert',
+    'keeps extensionless %s output inert when no preview can be rendered',
     async (mime) => {
       vi.stubGlobal(
         'fetch',
-        async () => new Response(null, { headers: { 'Content-Type': mime } })
+        async (_url: unknown, options: RequestInit) =>
+          new Response(options.method === 'HEAD' ? null : '<svg/>', {
+            headers: { 'Content-Type': mime }
+          })
       )
       const outputs = await parseRouterResponse(
         contract,
-        Response.json({ url: 'https://assets.example/generated' })
+        Response.json({ url: 'https://assets.example/generated' }),
+        undefined,
+        async () => {
+          throw new Error('Invalid SVG dimensions')
+        }
       )
       try {
         expect(outputs.map(({ kind }) => kind)).toEqual(['other', 'text'])
-        expect(outputs[0].fileName).toBe('fixture-native-1.bin')
+        expect(outputs[0].fileName).toBe(
+          mime === 'image/svg+xml'
+            ? 'fixture-native-1.svg'
+            : 'fixture-native-1.bin'
+        )
+        if (mime === 'image/svg+xml') expect(outputs[0].url).toMatch(/^blob:/)
       } finally {
         releaseRouterOutputs(outputs)
       }
     }
   )
 
-  it('preserves known media and rejects unsafe URLs without probing them', async () => {
-    const fetch = vi.fn()
+  it('preserves raster URLs, downloads known SVG, and never requests unsafe URLs', async () => {
+    const fetch = vi.fn(async () => new Response('<svg/>'))
     vi.stubGlobal('fetch', fetch)
     const outputs = await parseRouterResponse(
       contract,
@@ -68,7 +80,11 @@ describe('Router output MIME discovery', () => {
         svg: 'https://assets.example/generated.svg',
         authenticated: 'https://user:password@assets.example/generated',
         http: 'http://assets.example/generated'
-      })
+      }),
+      undefined,
+      async () => {
+        throw new Error('Invalid SVG dimensions')
+      }
     )
     try {
       expect(outputs.map(({ kind }) => kind)).toEqual([
@@ -76,7 +92,10 @@ describe('Router output MIME discovery', () => {
         'other',
         'text'
       ])
-      expect(fetch).not.toHaveBeenCalled()
+      expect(fetch).toHaveBeenCalledExactlyOnceWith(
+        'https://assets.example/generated.svg',
+        expect.objectContaining({ credentials: 'omit', redirect: 'error' })
+      )
     } finally {
       releaseRouterOutputs(outputs)
     }
