@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
@@ -13,13 +13,6 @@ vi.mock('@/i18n', () => ({
   t: (key: string, vars?: Record<string, unknown>) =>
     vars ? `${key}:${JSON.stringify(vars)}` : key
 }))
-
-let addToastMock: ReturnType<typeof useToastStore>['add']
-let addAlertMock: ReturnType<typeof useToastStore>['addAlert']
-beforeEach(() => {
-  addToastMock = useToastStore().add
-  addAlertMock = useToastStore().addAlert
-})
 
 vi.mock(import('@/lib/litegraph/src/litegraph'), async (importOriginal) => {
   const actual = await importOriginal()
@@ -117,14 +110,14 @@ describe('createExportMenuItems', () => {
       item.callback()
       await vi.waitFor(() => expect(exportModel).toHaveBeenCalledWith(value))
       await vi.waitFor(() =>
-        expect(addToastMock).toHaveBeenCalledWith(
+        expect(useToastStore().add).toHaveBeenCalledWith(
           expect.objectContaining({
             severity: 'success',
             summary: `toastMessages.exportSuccess:${JSON.stringify({ format: label })}`
           })
         )
       )
-      expect(addAlertMock).not.toHaveBeenCalled()
+      expect(useToastStore().addAlert).not.toHaveBeenCalled()
     }
   )
 
@@ -145,7 +138,7 @@ describe('createExportMenuItems', () => {
     glb.callback()
 
     await vi.waitFor(() =>
-      expect(addAlertMock).toHaveBeenCalledWith(
+      expect(useToastStore().addAlert).toHaveBeenCalledWith(
         `toastMessages.failedToExportModel:${JSON.stringify({ format: 'GLB' })}`
       )
     )
@@ -153,6 +146,6 @@ describe('createExportMenuItems', () => {
       'Export failed:',
       expect.any(Error)
     )
-    expect(addToastMock).not.toHaveBeenCalled()
+    expect(useToastStore().add).not.toHaveBeenCalled()
   })
 })

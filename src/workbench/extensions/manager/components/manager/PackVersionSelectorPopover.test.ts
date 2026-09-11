@@ -57,9 +57,6 @@ let mockInstallPack: MockInstance<
   ReturnType<typeof useComfyManagerStore>['installPack']['call']
 >
 const mockCheckNodeCompatibility = vi.fn()
-let mockIsPackInstalled: ReturnType<
-  typeof vi.mocked<ReturnType<typeof useComfyManagerStore>['isPackInstalled']>
->
 
 // Mock the registry service
 vi.mock<unknown>(import('@/services/comfyRegistryService'), () => ({
@@ -92,12 +89,13 @@ describe('PackVersionSelectorPopover', () => {
     const store = useComfyManagerStore()
     vi.mocked(store.getInstalledPackVersion).mockReturnValue('')
     mockInstallPack = vi.spyOn(store.installPack, 'call')
-    mockIsPackInstalled = vi.mocked(store.isPackInstalled)
     mockInstallPack.mockReset().mockResolvedValue(undefined)
     mockCheckNodeCompatibility
       .mockReset()
       .mockReturnValue({ hasConflict: false, conflicts: [] })
-    mockIsPackInstalled.mockReset().mockReturnValue(false)
+    vi.mocked(useComfyManagerStore().isPackInstalled)
+      .mockReset()
+      .mockReturnValue(false)
   })
 
   function renderComponent({
