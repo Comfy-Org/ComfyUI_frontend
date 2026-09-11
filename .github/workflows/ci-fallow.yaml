@@ -26,9 +26,10 @@ jobs:
         uses: ./.github/actions/setup-frontend
 
       - name: Audit new findings
-        uses: fallow-rs/fallow@e36026dfc0f00bfdf8dab889efc58ab86e5ec466 # v2.104.0
+        uses: fallow-rs/fallow@c2da9fcae5388226a87e986b1812f9c872d288c6 # v3.24.1
         with:
           command: audit
-          version: '2.104.0'
+          version: '3.24.1'
           format: json
+          branded-token: false
           changed-since: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
