@@ -27,31 +27,6 @@ export function modelsBuildRoutes(enabled: boolean) {
   ]
 }
 
-/**
- * Gates Models routes and removes the retired Workshop tree in every build.
- *
- * Workshop is unfinished, and `noindex` does not stop a page being deployed —
- * it only asks a crawler to stay away, while the page stays live at a URL
- * anyone can share. A deployed build must not contain those routes at all.
- *
- * Models routes are registered only when enabled, with the existing marketing
- * page retained at /models otherwise. The retired /workshop tree uses
- * `astro:build:done` to remove its emitted directory even when Models is on. The
- * earlier attempt filtered the route list at `astro:routes:resolved`, which
- * does not work: that hook reports the resolved routes, and mutating the
- * array does not stop them being generated. Deleting the output is
- * unambiguous. These checks cover route output, not shared CSS or translations.
- *
- * Preview builds are release builds too — a preview answers "what goes out if
- * we release right now?", so it excludes Models detail routes for the same reason.
- * Local development includes Models, as does any build asked for it explicitly. See
- * `config/workshop-release.ts` for the switch.
- *
- * A build that includes Models must also say which Cloud family
- * it talks to, and one its origin is allowed to reach; that is checked before
- * anything is generated, so a wrong family is a build error rather than a
- * preflight error in a visitor's browser.
- */
 export function workshopReleaseGate(): AstroIntegration {
   return {
     name: 'workshop-release-gate',

@@ -177,6 +177,9 @@ test.describe('Models catalog', () => {
     page
   }) => {
     await page.goto('/')
+    await page
+      .getByRole('link', { name: /Explore Seedance/i })
+      .scrollIntoViewIfNeeded()
     await expect(
       page.getByRole('link', { name: /Explore Seedance/i })
     ).toHaveAttribute(

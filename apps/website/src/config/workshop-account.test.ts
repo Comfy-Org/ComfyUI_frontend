@@ -7,12 +7,14 @@ import type { AccountUser, SessionClient } from '@comfyorg/account/session'
 
 const h = vi.hoisted(() => ({
   captureSucceeded: vi.fn(),
-  captureFailed: vi.fn()
+  captureFailed: vi.fn(),
+  identifyUser: vi.fn()
 }))
 
 vi.mock<unknown>(import('../scripts/posthog'), () => ({
   captureAuthRefreshSucceeded: h.captureSucceeded,
-  captureAuthRefreshFailed: h.captureFailed
+  captureAuthRefreshFailed: h.captureFailed,
+  identifyWorkshopUser: h.identifyUser
 }))
 
 const STORAGE_KEY = 'comfy.workshop.session.v1'
@@ -129,6 +131,9 @@ describe('auth refresh telemetry', () => {
 
     await vi.waitFor(() => expect(h.captureSucceeded).toHaveBeenCalledOnce())
     expect(h.captureFailed).not.toHaveBeenCalled()
+    expect(h.identifyUser).toHaveBeenLastCalledWith('uid-1')
+    fire(null)
+    expect(h.identifyUser).toHaveBeenLastCalledWith(null)
   })
 
   it('does not repeat the outcome for a cached read of the same token', async () => {

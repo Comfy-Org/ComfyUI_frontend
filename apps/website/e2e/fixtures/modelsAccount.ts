@@ -28,7 +28,10 @@ export const test = base.extend<{
         /\/(flags|decide)\//.test(route.request().url())
           ? route.fulfill(
               jsonRoute({
-                featureFlags: { 'workshop-auth': true },
+                featureFlags: {
+                  'workshop-auth': true,
+                  'workshop-enabled': true
+                },
                 featureFlagPayloads: {}
               })
             )

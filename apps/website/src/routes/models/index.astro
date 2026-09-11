@@ -1,17 +1,21 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro'
+import WorkshopGate from '../../components/workshop/WorkshopGate.vue'
+import ModelsShowcase from '../../components/models/ModelsShowcase.astro'
 import ModelsCatalogue from '../../components/workshop/ModelsCatalogue.vue'
 import { workshopModels } from '../../config/models-catalogue'
-import { t } from '../../i18n/translations'
 
 ---
 
 <BaseLayout
-  title={t('workshop.meta.title')}
-  description={t('workshop.meta.description')}
+  title="Models - Comfy"
+  description="Run the world's leading AI models in ComfyUI. Browse every supported model with community workflow templates ready to run."
   noindex
 >
+  <WorkshopGate client:load>
   <div class="mx-auto max-w-10xl px-6 py-16 max-sm:py-10 lg:px-8 lg:py-24 lg:short:pt-14">
     <ModelsCatalogue models={workshopModels} client:load />
   </div>
+    <ModelsShowcase slot="fallback" />
+  </WorkshopGate>
 </BaseLayout>

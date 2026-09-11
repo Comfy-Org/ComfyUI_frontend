@@ -8,6 +8,7 @@ import DeveloperPlatformSection from '../../components/home/DeveloperPlatformSec
 import IndustriesSection from '../../components/home/IndustriesSection.vue'
 import ModelReleaseSection from '../../components/home/ModelReleaseSection.vue'
 import ModelDiscoverySection from '../../components/home/ModelDiscoverySection.vue'
+import WorkshopGate from '../../components/workshop/WorkshopGate.vue'
 import ProductShowcaseSection from '../../components/home/ProductShowcaseSection.vue'
 import FeaturedWorkflowsSection from '../../components/home/FeaturedWorkflowsSection.vue'
 import CaseStudySpotlightSection from '../../components/home/CaseStudySpotlightSection.vue'
@@ -41,7 +42,7 @@ const { siteUrl } = pageContext(
   <DeveloperPlatformSection locale="zh-CN" client:visible />
   <MinimaxLicenseHeroSection locale="zh-CN" client:visible />
   <ModelReleaseSection locale="zh-CN" modelLinks={await modelReleaseLinks(isWorkshopInBuild())} client:visible />
-  {isWorkshopInBuild() && <ModelDiscoverySection locale="zh-CN" client:visible />}
+  {isWorkshopInBuild() && <WorkshopGate client:load><ModelDiscoverySection locale="zh-CN" client:visible /></WorkshopGate>}
   <FeaturedWorkflowsSection locale="zh-CN" client:load />
   <ProductShowcaseSection locale="zh-CN" client:load />
   <IndustriesSection locale="zh-CN" client:load />
