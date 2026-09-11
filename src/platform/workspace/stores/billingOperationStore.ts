@@ -788,7 +788,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       })
     } catch (error) {
       reportError(error, {
-        errorType: 'billing_success_handling_failed',
+        errorType: 'failure_handling_billing_operation_success',
         context: { billing_op_id: opId }
       })
       throw error
