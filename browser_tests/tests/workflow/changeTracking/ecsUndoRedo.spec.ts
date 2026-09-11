@@ -65,82 +65,87 @@ test.describe(
         .toEqual(initialPosition)
     })
 
-    test('changing a widget value can be undone and redone', async ({
-      comfyPage
-    }) => {
-      await comfyPage.workflow.loadWorkflow('default')
-      const node = await comfyPage.nodeOps.getNodeRefById('3')
-      const steps = await node.getWidget(2)
-      const initialValue = await steps.getValue()
+    test(
+      'changing a widget value can be undone and redone',
+      { tag: ['@widget'] },
+      async ({ comfyPage }) => {
+        await comfyPage.workflow.loadWorkflow('default')
+        const node = await comfyPage.nodeOps.getNodeRefById('3')
+        const steps = await node.getWidget(2)
+        const initialValue = await steps.getValue()
 
-      await steps.dragHorizontal(80)
-      await expect.poll(() => steps.getValue()).not.toBe(initialValue)
-      const changedValue = await steps.getValue()
+        await steps.dragHorizontal(80)
+        await expect.poll(() => steps.getValue()).not.toBe(initialValue)
+        const changedValue = await steps.getValue()
 
-      await comfyPage.keyboard.undo()
-      await expect.poll(() => steps.getValue()).toBe(initialValue)
+        await comfyPage.keyboard.undo()
+        await expect.poll(() => steps.getValue()).toBe(initialValue)
 
-      await comfyPage.keyboard.redo()
-      await expect.poll(() => steps.getValue()).toBe(changedValue)
-    })
+        await comfyPage.keyboard.redo()
+        await expect.poll(() => steps.getValue()).toBe(changedValue)
+      }
+    )
 
-    test('three mixed Vue Nodes edits can be undone and redone in order', async ({
-      comfyPage,
-      comfyMouse
-    }) => {
-      await comfyPage.workflow.loadWorkflow('default')
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-      await comfyPage.vueNodes.waitForNodes()
-      const node = await comfyPage.nodeOps.getNodeRefById('3')
-      const initialPosition = await node.getBounding()
-      const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+    test(
+      'three mixed Vue Nodes edits can be undone and redone in order',
+      {
+        tag: ['@vue-nodes', '@widget']
+      },
+      async ({ comfyPage, comfyMouse }) => {
+        await comfyPage.workflow.loadWorkflow('default')
+        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+        await comfyPage.vueNodes.waitForNodes()
+        const node = await comfyPage.nodeOps.getNodeRefById('3')
+        const initialPosition = await node.getBounding()
+        const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
 
-      await comfyMouse.dragElementBy(ksampler.title, { x: 100, y: 50 })
-      await expect.poll(() => node.getBounding()).not.toEqual(initialPosition)
-      const movedPosition = await node.getBounding()
+        await comfyMouse.dragElementBy(ksampler.title, { x: 100, y: 50 })
+        await expect.poll(() => node.getBounding()).not.toEqual(initialPosition)
+        const movedPosition = await node.getBounding()
 
-      const stepsWidget = comfyPage.vueNodes.getWidgetByName(
-        'KSampler',
-        'steps'
-      )
-      const { input } = comfyPage.vueNodes.getInputNumberControls(stepsWidget)
-      const initialSteps = await input.inputValue()
-      await input.fill('31')
-      await input.press('Enter')
-      await expect(input).toHaveValue('31')
+        const stepsWidget = comfyPage.vueNodes.getWidgetByName(
+          'KSampler',
+          'steps'
+        )
+        const { input } = comfyPage.vueNodes.getInputNumberControls(stepsWidget)
+        const initialSteps = await input.inputValue()
+        await input.fill('31')
+        await input.press('Enter')
+        await expect(input).toHaveValue('31')
 
-      const initialNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
-      await comfyPage.searchBoxV2.addNode('Note')
-      await expect
-        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-        .toBe(initialNodeCount + 1)
-
-      const expectState = async (
-        position: typeof initialPosition,
-        steps: string,
-        nodeCount: number
-      ) => {
-        await expect.poll(() => node.getBounding()).toEqual(position)
-        await expect(input).toHaveValue(steps)
+        const initialNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
+        await comfyPage.searchBoxV2.addNode('Note')
         await expect
           .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-          .toBe(nodeCount)
+          .toBe(initialNodeCount + 1)
+
+        const expectState = async (
+          position: typeof initialPosition,
+          steps: string,
+          nodeCount: number
+        ) => {
+          await expect.poll(() => node.getBounding()).toEqual(position)
+          await expect(input).toHaveValue(steps)
+          await expect
+            .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+            .toBe(nodeCount)
+        }
+
+        await comfyPage.keyboard.undo()
+        await expectState(movedPosition, '31', initialNodeCount)
+        await comfyPage.keyboard.undo()
+        await expectState(movedPosition, initialSteps, initialNodeCount)
+        await comfyPage.keyboard.undo()
+        await expectState(initialPosition, initialSteps, initialNodeCount)
+
+        await comfyPage.keyboard.redo()
+        await expectState(movedPosition, initialSteps, initialNodeCount)
+        await comfyPage.keyboard.redo()
+        await expectState(movedPosition, '31', initialNodeCount)
+        await comfyPage.keyboard.redo()
+        await expectState(movedPosition, '31', initialNodeCount + 1)
       }
-
-      await comfyPage.keyboard.undo()
-      await expectState(movedPosition, '31', initialNodeCount)
-      await comfyPage.keyboard.undo()
-      await expectState(movedPosition, initialSteps, initialNodeCount)
-      await comfyPage.keyboard.undo()
-      await expectState(initialPosition, initialSteps, initialNodeCount)
-
-      await comfyPage.keyboard.redo()
-      await expectState(movedPosition, initialSteps, initialNodeCount)
-      await comfyPage.keyboard.redo()
-      await expectState(movedPosition, '31', initialNodeCount)
-      await comfyPage.keyboard.redo()
-      await expectState(movedPosition, '31', initialNodeCount + 1)
-    })
+    )
 
     test('undo remains scoped to the edited workflow after switching tabs', async ({
       comfyPage
