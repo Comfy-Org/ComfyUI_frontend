@@ -163,7 +163,7 @@
     "defaultBanner": "default banner",
     "enableOrDisablePack": "Enable or disable pack",
     "openManager": "Open Manager",
-    "manageExtensions": "Manage extensions",
+    "manageExtensions": "Manage Custom Nodes",
     "gallery": "Gallery",
     "graphNavigation": "Graph navigation",
     "dropYourFileOr": "Drop your file or",
@@ -440,7 +440,7 @@
     "inf": "Inf"
   },
   "manager": {
-    "title": "Nodes Manager",
+    "title": "Custom Nodes",
     "survey": {
       "title": "Join the waitlist",
       "intro": "Installing custom nodes is coming soon to Comfy Cloud. Answer a few quick questions to join the waitlist and help shape this feature.",
@@ -469,7 +469,7 @@
     "dependencies": "Dependencies",
     "inWorkflow": "In Workflow",
     "nav": {
-      "allExtensions": "All Extensions",
+      "allExtensions": "All Custom Nodes",
       "notInstalled": "Not Installed",
       "installedSection": "INSTALLED",
       "allInstalled": "All installed",
@@ -1080,7 +1080,7 @@
     "github": "Github",
     "help": "Help & Support",
     "systemStatus": "System Status",
-    "managerExtension": "Manager Extension",
+    "managerExtension": "Custom Nodes",
     "more": "More...",
     "whatsNew": "What's New?",
     "clickToLearnMore": "Click to learn more →",
@@ -1134,7 +1134,7 @@
     "theme": "Theme",
     "dark": "Dark",
     "light": "Light",
-    "manageExtensions": "Extensions",
+    "manageExtensions": "Custom Nodes",
     "customNodesManager": "Custom Nodes Manager",
     "settings": "Settings",
     "help": "Help",
