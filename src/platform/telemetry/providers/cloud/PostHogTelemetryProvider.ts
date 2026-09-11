@@ -27,6 +27,7 @@ import type {
   BeginCheckoutMetadata,
   BillingTelemetryEvent,
   BootstrapCompleteMetadata,
+  CheckoutJourneyTelemetryEvent,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ExecutionErrorMetadata,
@@ -77,6 +78,8 @@ import {
   CANCELLATION_STAGE_EVENTS,
   getBillingTelemetryEventName,
   getBillingTelemetryEventPayload,
+  getCheckoutJourneyTelemetryEventName,
+  getCheckoutJourneyTelemetryEventPayload,
   OnboardingTourEvents,
   TelemetryEvents
 } from '../../types'
@@ -484,6 +487,13 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(
       getBillingTelemetryEventName(event),
       getBillingTelemetryEventPayload(event)
+    )
+  }
+
+  trackCheckoutJourneyEvent(event: CheckoutJourneyTelemetryEvent): void {
+    this.trackEvent(
+      getCheckoutJourneyTelemetryEventName(event),
+      getCheckoutJourneyTelemetryEventPayload(event)
     )
   }
 

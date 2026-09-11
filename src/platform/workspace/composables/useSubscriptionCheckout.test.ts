@@ -8,6 +8,10 @@ import { useAuthStore } from '@/stores/authStore'
 import { createI18n } from 'vue-i18n'
 
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import {
+  clearCheckoutJourney,
+  resolveCheckoutJourney
+} from '@/platform/workspace/utils/checkoutJourney'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import type {
   BillingStatus,
@@ -362,13 +366,15 @@ vi.mock<unknown>(
 
 const mockTrackResubscribeClicked = vi.hoisted(() => vi.fn())
 const mockTrackMonthlySubscriptionSucceeded = vi.hoisted(() => vi.fn())
+const mockTrackCheckoutJourneyEvent = vi.hoisted(() => vi.fn())
 
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackBillingEvent: mockTrackBillingEvent,
     trackResubscribeClicked: mockTrackResubscribeClicked,
     trackBeginCheckout: mockTrackBeginCheckout,
-    trackMonthlySubscriptionSucceeded: mockTrackMonthlySubscriptionSucceeded
+    trackMonthlySubscriptionSucceeded: mockTrackMonthlySubscriptionSucceeded,
+    trackCheckoutJourneyEvent: mockTrackCheckoutJourneyEvent
   })
 }))
 
@@ -520,7 +526,152 @@ describe('useSubscriptionCheckout', () => {
     }
     mockCanReactivatePlan.value = true
     mockSubscription.value = null
+    mockTrackCheckoutJourneyEvent.mockClear()
     sessionStorage.clear()
+    clearCheckoutJourney()
+  })
+
+  describe('checkout journey instrumentation', () => {
+    function journeyPhases() {
+      return mockTrackCheckoutJourneyEvent.mock.calls.map(
+        ([event]) => event.phase
+      )
+    }
+
+    it('emits entered, submitted, and operation_linked across a subscribe', async () => {
+      const checkout = await setup()
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'subscribed',
+        billing_op_id: 'op-1'
+      })
+      await checkout.handleConfirmTransition()
+
+      const phases = journeyPhases()
+      expect(phases).toContain('entered')
+      expect(phases).toContain('preview_ready')
+      expect(phases.indexOf('entered')).toBeLessThan(
+        phases.indexOf('submitted')
+      )
+      expect(phases.indexOf('submitted')).toBeLessThan(
+        phases.indexOf('operation_linked')
+      )
+
+      const events = mockTrackCheckoutJourneyEvent.mock.calls.map(
+        ([event]) => event
+      )
+      const opLinked = events.find(
+        (event) => event.phase === 'operation_linked'
+      )
+      expect(opLinked).toMatchObject({
+        billing_op_id: 'op-1',
+        assignment_status: 'unavailable'
+      })
+
+      // Every phase must share one journey identity.
+      const journeyIds = new Set(
+        events.map((event) => event.checkout_journey_id)
+      )
+      expect(journeyIds.size).toBe(1)
+    })
+
+    it('emits preview_ready once per accepted quote revision', async () => {
+      const quote = (version: number) => ({
+        allowed: true,
+        transition_type: 'new_subscription',
+        is_immediate: true,
+        requires_reactivation_confirmation: false,
+        quote_id: 'q1',
+        quote_version: version
+      })
+      // First revision, then the same revision again (suppressed), then a new
+      // accepted revision (emitted): two preview_ready across three installs.
+      mockPreviewSubscribe.mockResolvedValueOnce(quote(1))
+      mockPreviewSubscribe.mockResolvedValueOnce(quote(1))
+      mockPreviewSubscribe.mockResolvedValueOnce(quote(2))
+      const checkout = await setup()
+
+      for (let i = 0; i < 3; i++) {
+        await checkout.handleSubscribeClick({
+          tierKey: 'standard',
+          billingCycle: 'yearly'
+        })
+      }
+
+      const previews = journeyPhases().filter(
+        (phase) => phase === 'preview_ready'
+      )
+      expect(previews).toHaveLength(2)
+    })
+
+    it('does not re-enter when the same journey resumes', async () => {
+      const checkout = await setup()
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+
+      const entered = journeyPhases().filter((phase) => phase === 'entered')
+      expect(entered).toHaveLength(1)
+    })
+
+    it('does not link the operation to a journey that superseded the submitting one', async () => {
+      const checkout = await setup()
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+
+      mockSubscribe.mockImplementationOnce(async () => {
+        // A different intent starts a new journey while the request is in flight.
+        resolveCheckoutJourney({
+          actorUid: 'user-1',
+          workspaceId: 'ws-1',
+          entryFlow: 'initial_subscription',
+          entrySource: 'pricing',
+          intent: 'creator:yearly',
+          assignment: { status: 'unavailable' }
+        })
+        return { status: 'subscribed', billing_op_id: 'op-1' }
+      })
+      await checkout.handleConfirmTransition()
+
+      const events = mockTrackCheckoutJourneyEvent.mock.calls.map(
+        ([event]) => event
+      )
+      expect(events.some((event) => event.phase === 'operation_linked')).toBe(
+        false
+      )
+    })
+
+    it('records a correlated preview failure with no operation id', async () => {
+      await submitRejectedPreview('PREVIEW_FAILED')
+
+      const events = mockTrackCheckoutJourneyEvent.mock.calls.map(
+        ([event]) => event
+      )
+      const entered = events.find((event) => event.phase === 'entered')
+      const failed = events.find((event) => event.phase === 'preview_failed')
+      expect(entered).toBeDefined()
+      expect(failed).toBeDefined()
+      expect(events.some((event) => event.phase === 'operation_linked')).toBe(
+        false
+      )
+      // The failure must carry the entered journey's identity and no operation.
+      expect(failed.checkout_journey_id).toBe(entered.checkout_journey_id)
+      expect('billing_op_id' in failed).toBe(false)
+    })
   })
 
   describe('handleSubscribeClick', () => {

@@ -15,10 +15,13 @@ import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type {
+  CheckoutEntryFlow,
+  CheckoutJourneyPhaseEvent,
   PaymentIntentSource,
   SubscriptionCheckoutType
 } from '@/platform/telemetry/types'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
+import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import type {
   Plan,
@@ -33,6 +36,14 @@ import { useBillingCapabilities } from '@/platform/workspace/composables/useBill
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import {
+  bindOperationToCheckoutJourney,
+  getActiveCheckoutJourney,
+  resolveCheckoutAssignment,
+  resolveCheckoutJourney,
+  toCheckoutJourneyContext
+} from '@/platform/workspace/utils/checkoutJourney'
+import type { CheckoutJourneyRecord } from '@/platform/workspace/utils/checkoutJourney'
 import {
   clearPendingSubscriptionCheckoutIfTerminal,
   savePendingSubscriptionCheckout
@@ -163,6 +174,7 @@ export function useSubscriptionCheckout(
   let checkoutMutationSeq = 0
   let refreshStatusOnFocus = false
   let activeCheckoutAttemptStartedAt: number | undefined
+  let lastEmittedPreviewRevision: string | undefined
   useEventListener(window, 'focus', () => {
     if (!refreshStatusOnFocus) return
     refreshStatusOnFocus = false
@@ -267,6 +279,22 @@ export function useSubscriptionCheckout(
         preview.requires_reactivation_confirmation ?? true
     }
     quoteIsCurrent.value = true
+
+    const journey = getActiveCheckoutJourney()
+    if (journey) {
+      const revision = hasQuoteIdentity(preview)
+        ? `${preview.quote_id}:${preview.quote_version}`
+        : undefined
+      // Once per accepted revision: a re-render or refresh that reinstalls the
+      // same quote must not emit another preview_ready.
+      if (revision === undefined || revision !== lastEmittedPreviewRevision) {
+        lastEmittedPreviewRevision = revision
+        emitCheckoutJourneyPhase(journey, {
+          phase: 'preview_ready',
+          ...(revision !== undefined && { preview_revision: revision })
+        })
+      }
+    }
     return true
   }
 
@@ -714,6 +742,7 @@ export function useSubscriptionCheckout(
     loadingTier.value = tierKey
     selectedTierKey.value = tierKey
     selectedBillingCycle.value = billingCycle
+    enterCheckoutJourney(`${tierKey}:${billingCycle}`)
 
     try {
       let planSlug = getApiPlanSlug(tierKey, billingCycle)
@@ -740,6 +769,13 @@ export function useSubscriptionCheckout(
         : await previewSubscribe(planSlug)
 
       if (!response || !response.allowed) {
+        const journey = getActiveCheckoutJourney()
+        if (journey) {
+          emitCheckoutJourneyPhase(journey, {
+            phase: 'preview_failed',
+            failure_category: 'unknown'
+          })
+        }
         toast.add({
           severity: 'error',
           summary: 'Unable to subscribe',
@@ -755,6 +791,13 @@ export function useSubscriptionCheckout(
       checkoutStep.value = 'preview'
     } catch (error) {
       if (await recoverOutstandingPayment(error)) return
+      const journey = getActiveCheckoutJourney()
+      if (journey) {
+        emitCheckoutJourneyPhase(journey, {
+          phase: 'preview_failed',
+          failure_category: categorizeBillingApiError(error)
+        })
+      }
       const message =
         error instanceof Error
           ? error.message
@@ -796,6 +839,7 @@ export function useSubscriptionCheckout(
     selectedTierKey.value = null
     previewData.value = null
     quoteIsCurrent.value = false
+    enterCheckoutJourney(`team:${payload.stop.id}:${payload.billingCycle}`)
 
     if (!embeddedCheckoutEnabled) {
       const teamCreditStopId = payload.stop.id
@@ -979,6 +1023,10 @@ export function useSubscriptionCheckout(
       if (embeddedCheckoutEnabled && quote && !quoteIsCurrent.value) {
         throw new Error(t('subscription.preview.applyQuoteBeforeContinuing'))
       }
+      const submittingJourney = getActiveCheckoutJourney()
+      if (submittingJourney) {
+        emitCheckoutJourneyPhase(submittingJourney, { phase: 'submitted' })
+      }
       const response = await subscribe(planSlug, {
         ...(embeddedCheckoutEnabled &&
           buildPaymentOptions(quote, confirmationToken, promotionCode)),
@@ -993,6 +1041,10 @@ export function useSubscriptionCheckout(
       })
 
       if (response) {
+        linkSubmittingJourneyToOperation(
+          submittingJourney,
+          response.billing_op_id
+        )
         trackWorkspaceCheckoutStarted({
           tier: tierKey,
           cycle: billingCycle,
@@ -1141,6 +1193,63 @@ export function useSubscriptionCheckout(
      * subscribe call), not just the poll-observation window.
      */
     attemptStartedAt?: number
+  }
+
+  function currentSubscriptionEntryFlow(): CheckoutEntryFlow {
+    return subscription.value?.isActive && subscription.value.tier !== 'FREE'
+      ? 'paid_upgrade'
+      : 'initial_subscription'
+  }
+
+  function emitCheckoutJourneyPhase(
+    record: CheckoutJourneyRecord,
+    phase: CheckoutJourneyPhaseEvent
+  ): void {
+    telemetry?.trackCheckoutJourneyEvent({
+      ...toCheckoutJourneyContext(record),
+      ...phase
+    })
+  }
+
+  function enterCheckoutJourney(intent: string): CheckoutJourneyRecord | null {
+    const workspaceId = workspaceStore.activeWorkspaceId
+    const ownerUid = useAuthStore().userId
+    if (!workspaceId || !ownerUid) return null
+
+    const { record, resumed } = resolveCheckoutJourney({
+      actorUid: ownerUid,
+      workspaceId,
+      entryFlow: currentSubscriptionEntryFlow(),
+      entrySource: 'pricing',
+      intent,
+      uiMode: embeddedCheckoutEnabled ? 'embedded' : 'hosted',
+      assignment: resolveCheckoutAssignment(api.getServerFeatures())
+    })
+    if (!resumed) {
+      emitCheckoutJourneyPhase(record, { phase: 'entered' })
+    }
+    return record
+  }
+
+  function linkSubmittingJourneyToOperation(
+    submittingJourney: CheckoutJourneyRecord | null,
+    billingOpId: string
+  ): void {
+    // Bind only when the submitting journey is still active. A tier/cycle change
+    // mid-request starts a new journey that must not inherit this operation.
+    if (
+      !submittingJourney ||
+      getActiveCheckoutJourney()?.journey_id !== submittingJourney.journey_id
+    ) {
+      return
+    }
+    const linked = bindOperationToCheckoutJourney(billingOpId)
+    if (linked) {
+      emitCheckoutJourneyPhase(linked, {
+        phase: 'operation_linked',
+        billing_op_id: billingOpId
+      })
+    }
   }
 
   function trackSubscriptionStarted(
@@ -1439,6 +1548,10 @@ export function useSubscriptionCheckout(
       if (embeddedCheckoutEnabled && quote && !quoteIsCurrent.value) {
         throw new Error(t('subscription.preview.applyQuoteBeforeContinuing'))
       }
+      const submittingJourney = getActiveCheckoutJourney()
+      if (submittingJourney) {
+        emitCheckoutJourneyPhase(submittingJourney, { phase: 'submitted' })
+      }
       const response = await subscribe(planSlug, {
         ...(embeddedCheckoutEnabled &&
           buildPaymentOptions(quote, confirmationToken, promotionCode)),
@@ -1455,6 +1568,10 @@ export function useSubscriptionCheckout(
       })
 
       if (response) {
+        linkSubmittingJourneyToOperation(
+          submittingJourney,
+          response.billing_op_id
+        )
         trackWorkspaceCheckoutStarted({
           tier: 'team',
           cycle: billingCycle,

@@ -286,7 +286,7 @@
 
 <script setup lang="ts">
 import { useToast } from 'primevue/usetoast'
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { creditsToUsd, usdToCredits } from '@/base/credits/comfyCredits'
@@ -297,6 +297,7 @@ import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
 import { isCloud } from '@/platform/distribution/types'
+import type { CheckoutJourneyPhaseEvent } from '@/platform/telemetry/types'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -304,6 +305,18 @@ import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useHasSavedPaymentMethod } from '@/platform/workspace/composables/useHasSavedPaymentMethod'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import {
+  bindOperationToCheckoutJourney,
+  clearCheckoutJourney,
+  getActiveCheckoutJourney,
+  resolveCheckoutAssignment,
+  resolveCheckoutJourney,
+  toCheckoutJourneyContext
+} from '@/platform/workspace/utils/checkoutJourney'
+import type { CheckoutJourneyRecord } from '@/platform/workspace/utils/checkoutJourney'
+import { api } from '@/scripts/api'
+import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -322,7 +335,37 @@ const { fetchBalance, fetchStatus, manageSubscription, topup } =
 const { canTopUp } = useBillingCapabilities()
 
 const billingOperationStore = useBillingOperationStore()
+const workspaceStore = useTeamWorkspaceStore()
 const isAddingCredits = computed(() => billingOperationStore.isAddingCredits)
+
+function emitTopupJourneyPhase(
+  record: CheckoutJourneyRecord,
+  phase: CheckoutJourneyPhaseEvent
+): void {
+  telemetry?.trackCheckoutJourneyEvent({
+    ...toCheckoutJourneyContext(record),
+    ...phase
+  })
+}
+
+function enterTopupJourney(): void {
+  const workspaceId = workspaceStore.activeWorkspaceId
+  const ownerUid = useAuthStore().userId
+  if (!workspaceId || !ownerUid) return
+
+  const { record, resumed } = resolveCheckoutJourney({
+    actorUid: ownerUid,
+    workspaceId,
+    entryFlow: 'topup',
+    entrySource: 'settings_billing',
+    assignment: resolveCheckoutAssignment(api.getServerFeatures())
+  })
+  if (!resumed) {
+    emitTopupJourneyPhase(record, { phase: 'entered' })
+  }
+}
+
+onMounted(enterTopupJourney)
 const topupOperation = computed(
   () => billingOperationStore.topupActionOperation
 )
@@ -513,6 +556,11 @@ async function handleBuy() {
       operation_type: 'topup'
     })
 
+    const submittingJourney = getActiveCheckoutJourney()
+    if (submittingJourney) {
+      emitTopupJourneyPhase(submittingJourney, { phase: 'submitted' })
+    }
+
     const amountCents = payAmount.value * 100
     const response = await topup(amountCents)
     if (!response) {
@@ -535,7 +583,30 @@ async function handleBuy() {
       return
     }
 
+    // Only correlate the response to the journey that submitted it: the user
+    // may have closed this dialog and started another journey while the
+    // request was in flight, and that later journey must not be bound here.
+    const submittingJourneyStillActive =
+      submittingJourney !== null &&
+      getActiveCheckoutJourney()?.journey_id === submittingJourney.journey_id
+    if (submittingJourneyStillActive) {
+      const linkedJourney = bindOperationToCheckoutJourney(
+        response.billing_op_id
+      )
+      if (linkedJourney) {
+        emitTopupJourneyPhase(linkedJourney, {
+          phase: 'operation_linked',
+          billing_op_id: response.billing_op_id
+        })
+      }
+    }
+
     if (response.status === 'completed') {
+      if (
+        getActiveCheckoutJourney()?.billing_op_id === response.billing_op_id
+      ) {
+        clearCheckoutJourney()
+      }
       telemetry?.trackBillingEvent({
         operation: 'topup',
         stage: 'succeeded',
