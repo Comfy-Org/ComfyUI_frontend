@@ -679,6 +679,27 @@ describe('useRemoteWidget', () => {
       expect(refreshSpy).not.toHaveBeenCalled()
     })
 
+    it('does not apply a pending response after the owning widget is removed', async () => {
+      let resolveResponse!: (value: { data: string[] }) => void
+      const response = new Promise<{ data: string[] }>((resolve) => {
+        resolveResponse = resolve
+      })
+      vi.mocked(axios.get).mockReturnValueOnce(response)
+      const options = createMockOptions()
+      options.widget.value = 'saved'
+      const cleanup = vi.fn()
+      options.widget.onRemove = cleanup
+      const hook = useRemoteWidget(options)
+      hook.getValue()
+      options.widget.onRemove()
+      resolveResponse({ data: ['replacement'] })
+      await vi.waitFor(() =>
+        expect(hook.getCacheEntry()?.data).toEqual(['replacement'])
+      )
+      expect(options.widget.value).toBe('saved')
+      expect(cleanup).toHaveBeenCalledOnce()
+    })
+
     it('should cleanup event listener on node removal', async () => {
       let executionSuccessHandler: (() => void) | undefined
 

@@ -1,4 +1,7 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import axios from 'axios'
+import { api } from '@/scripts/api'
+
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -55,6 +58,78 @@ afterEach(() => {
 })
 
 describe('DynamicGroup widgets', () => {
+  it('removes remote combo controls and subscriptions with their row', () => {
+    vi.spyOn(axios, 'get').mockResolvedValue({ data: ['A', 'B'] })
+    const { graph, node, widget } = setup()
+    useLitegraphService().addNodeInput(node, {
+      name: 'remote',
+      type: 'COMFY_DYNAMICGROUP_V3',
+      isOptional: false,
+      min: 0,
+      max: 3,
+      template: {
+        required: {
+          model: [
+            'COMBO',
+            {
+              remote: {
+                route: '/test/dynamic-group-remote',
+                refresh_button: true
+              }
+            }
+          ]
+        }
+      }
+    })
+    widget('remote').value = 2
+    const first = widget('remote.0.model')
+    const survivor = widget('remote.1.model')
+    const firstRefresh = vi.spyOn(first, 'refresh').mockImplementation(() => {})
+    const survivorRefresh = vi
+      .spyOn(survivor, 'refresh')
+      .mockImplementation(() => {})
+    widget('remote.0.model.0').callback?.(true)
+    widget('remote.1.model.0').callback?.(true)
+    api.dispatchCustomEvent('execution_success', {
+      prompt_id: 'test',
+      timestamp: 0
+    })
+    expect(firstRefresh).toHaveBeenCalledTimes(1)
+    expect(survivorRefresh).toHaveBeenCalledTimes(1)
+
+    widget('remote.0').callback?.(undefined)
+    api.dispatchCustomEvent('execution_success', {
+      prompt_id: 'test',
+      timestamp: 0
+    })
+    expect(firstRefresh).toHaveBeenCalledTimes(1)
+    expect(survivorRefresh).toHaveBeenCalledTimes(2)
+    expect(widget('remote.0.model')).toBe(survivor)
+    expect(
+      node.widgets
+        ?.filter((w) => w.name.startsWith('remote.'))
+        .map((w) => w.name)
+    ).toEqual([
+      'remote.0',
+      'remote.0.model',
+      'remote.0.model.0',
+      'remote.0.model.1',
+      'remote.$add'
+    ])
+    widget('remote.0').callback?.(undefined)
+    expect(
+      node.widgets
+        ?.filter((w) => w.name.startsWith('remote.'))
+        .map((w) => w.name)
+    ).toEqual(['remote.$add'])
+    graph.remove(node)
+    api.dispatchCustomEvent('execution_success', {
+      prompt_id: 'test',
+      timestamp: 0
+    })
+    expect(survivorRefresh).toHaveBeenCalledTimes(2)
+  })
+
   it('keeps control widgets with their row through removal and restoration', () => {
     const { node, widget } = setup()
     useLitegraphService().addNodeInput(node, {

@@ -173,15 +173,19 @@ export function dynamicGroupWidget(
       for (const [field, spec] of Object.entries(fields ?? {})) {
         const name = `${inputName}.${index}.${field}`
         const refreshed = useNodeDefStore().getInputSpecForWidget(node, name)
+        const fieldStart = node.widgets?.length ?? 0
         addNodeInput(node, {
           ...(refreshed ??
             transformInputSpecV1ToV2(spec, { name, isOptional })),
           display_name: spec[1]?.display_name ?? field
         })
-        const fieldWidget = node.widgets?.find((widget) => widget.name === name)
-        fieldWidget?.linkedWidgets?.forEach((linked, index) => {
-          linked.name = `${name}.${index}`
-        })
+        node.widgets
+          ?.slice(fieldStart)
+          .filter((widget) => widget.name !== name)
+          .forEach((widget, index) => {
+            widget.label ??= widget.name
+            widget.name = `${name}.${index}`
+          })
       }
     }
     const addedInputs = node.inputs.splice(previous.inputs.length)
