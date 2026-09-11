@@ -132,6 +132,46 @@ describe('uploadService', () => {
       expect(result.error).toContain('exceeds maximum')
     })
 
+    it('uploads a file whose size equals maxSizeMB', async () => {
+      const boundaryFile = new File(['content'], 'boundary.png')
+      Object.defineProperty(boundaryFile, 'size', {
+        value: 100 * 1024 * 1024,
+        writable: false
+      })
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        createMockResponse(200, { name: 'boundary.png', subfolder: '' })
+      )
+
+      const result = await uploadMedia(
+        { source: boundaryFile },
+        { maxSizeMB: 100 }
+      )
+
+      expect(result.success).toBe(true)
+    })
+
+    it('returns a normalized failure when fetching a valid dataURL rejects', async () => {
+      const dataURL = 'data:image/png;base64,iVBORw0KGgo='
+      const fetchSpy = vi
+        .spyOn(global, 'fetch')
+        .mockRejectedValue(new Error('Network down'))
+
+      try {
+        const result = await uploadMedia({ source: dataURL })
+
+        expect(result).toEqual({
+          success: false,
+          path: '',
+          name: '',
+          subfolder: '',
+          error: 'Failed to convert data URL to file: Network down',
+          response: null
+        })
+      } finally {
+        fetchSpy.mockRestore()
+      }
+    })
+
     it('handles upload errors', async () => {
       const mockFile = new File(['content'], 'test.png')
       vi.mocked(api.fetchApi).mockResolvedValue({
