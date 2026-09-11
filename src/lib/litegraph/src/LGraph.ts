@@ -136,6 +136,7 @@ import { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import { SubgraphOutput } from './subgraph/SubgraphOutput'
 import { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
 import {
+  findUnresolvableSubgraphLink,
   findReleasableSubgraphs,
   findUsedSubgraphIds,
   getBoundaryLinks,
@@ -2369,9 +2370,28 @@ export class LGraph
   unpackSubgraph(
     subgraphNode: SubgraphNode,
     options?: { skipMissingNodes?: boolean }
-  ) {
+  ): boolean {
     if (!(subgraphNode instanceof SubgraphNode))
       throw new Error('Can only unpack Subgraph Nodes')
+
+    const malformedLink = findUnresolvableSubgraphLink(subgraphNode)
+    if (malformedLink) {
+      reportError(
+        new Error('Cannot unpack subgraph: unresolvable inner link'),
+        {
+          errorType: 'error_unpacking_subgraph_link',
+          context: {
+            subgraphNodeId: subgraphNode.id,
+            linkId: malformedLink.id,
+            originId: malformedLink.origin_id,
+            originSlot: malformedLink.origin_slot,
+            targetId: malformedLink.target_id,
+            targetSlot: malformedLink.target_slot
+          }
+        }
+      )
+      return false
+    }
 
     // Record state before unpacking for proper undo support
     this.beforeChange()
@@ -2382,6 +2402,7 @@ export class LGraph
       // Mark state change complete for proper undo support
       this.afterChange()
     }
+    return true
   }
 
   private _unpackSubgraphImpl(

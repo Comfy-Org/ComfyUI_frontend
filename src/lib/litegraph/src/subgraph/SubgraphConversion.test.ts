@@ -11,7 +11,11 @@ import {
 
 import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
 import { LGraphGroup } from '@/lib/litegraph/src/litegraph'
-import type { Positionable } from '@/lib/litegraph/src/litegraph'
+import type {
+  LGraph,
+  Positionable,
+  SubgraphNode
+} from '@/lib/litegraph/src/litegraph'
 import {
   createTestNode,
   createTestWidgetNode
@@ -19,6 +23,7 @@ import {
 import { useLinkStore } from '@/stores/linkStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { graphScopeOf } from '@/types/graphScopeId'
+import { toNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
 
 import {
@@ -33,6 +38,20 @@ beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
   resetSubgraphFixtureState()
 })
+
+function expectUnpackRejected(graph: LGraph, subgraphNode: SubgraphNode): void {
+  const before = JSON.stringify(graph.serialize())
+  const nodeCount = graph.nodes.length
+  const beforeChange = vi.spyOn(graph, 'beforeChange')
+  const afterChange = vi.spyOn(graph, 'afterChange')
+
+  expect(graph.unpackSubgraph(subgraphNode)).toBe(false)
+  expect(graph.getNodeById(subgraphNode.id)).toBeDefined()
+  expect(graph.nodes.length).toBe(nodeCount)
+  expect(JSON.stringify(graph.serialize())).toBe(before)
+  expect(beforeChange).not.toHaveBeenCalled()
+  expect(afterChange).not.toHaveBeenCalled()
+}
 
 describe('SubgraphConversion', () => {
   describe('Convert to Subgraph store integrity', () => {
@@ -238,6 +257,102 @@ describe('SubgraphConversion', () => {
 
       expect(graph.reroutes.size).toBe(2)
       expect(graph.groups.length).toBe(1)
+    })
+    it('Should leave the graph untouched when a subgraph link is malformed', () => {
+      const subgraph = createTestSubgraph()
+      const subgraphNode = createTestSubgraphNode(subgraph)
+      const graph = subgraphNode.graph!
+      graph.add(subgraphNode)
+
+      const innerNode1 = createTestNode(subgraph, [], ['number'])
+      const innerNode2 = createTestNode(subgraph, ['number'], [])
+      const innerLink = innerNode1.connect(0, innerNode2, 0)
+      assert(innerLink)
+
+      innerLink.target_id = toNodeId(9999)
+      expectUnpackRejected(graph, subgraphNode)
+    })
+    it('Should leave the graph untouched when a subgraph link has an invalid origin slot', () => {
+      const subgraph = createTestSubgraph()
+      const subgraphNode = createTestSubgraphNode(subgraph)
+      const graph = subgraphNode.graph!
+      graph.add(subgraphNode)
+
+      const innerNode1 = createTestNode(subgraph, [], ['number'])
+      const innerNode2 = createTestNode(subgraph, ['number'], [])
+      const innerLink = innerNode1.connect(0, innerNode2, 0)
+      assert(innerLink)
+
+      innerLink.origin_slot = 9999
+      expectUnpackRejected(graph, subgraphNode)
+    })
+    it('Should leave the graph untouched when a subgraph link has an invalid target slot', () => {
+      const subgraph = createTestSubgraph()
+      const subgraphNode = createTestSubgraphNode(subgraph)
+      const graph = subgraphNode.graph!
+      graph.add(subgraphNode)
+
+      const innerNode1 = createTestNode(subgraph, [], ['number'])
+      const innerNode2 = createTestNode(subgraph, ['number'], [])
+      const innerLink = innerNode1.connect(0, innerNode2, 0)
+      assert(innerLink)
+
+      innerLink.target_slot = 9999
+      expectUnpackRejected(graph, subgraphNode)
+    })
+    it.for([9999, 0.5])(
+      'Should leave the graph untouched when a subgraph input link has invalid boundary slot %s',
+      (invalidSlot) => {
+        const subgraph = createTestSubgraph({
+          inputs: [{ name: 'value', type: 'number' }]
+        })
+        const subgraphNode = createTestSubgraphNode(subgraph)
+        const graph = subgraphNode.graph!
+        graph.add(subgraphNode)
+
+        const innerNode = createTestNode(subgraph, ['number'])
+        const innerLink = subgraph.inputNode.slots[0].connect(
+          innerNode.inputs[0],
+          innerNode
+        )
+        assert(innerLink)
+        innerLink.origin_slot = invalidSlot
+        expectUnpackRejected(graph, subgraphNode)
+      }
+    )
+    it.for([9999, 0.5])(
+      'Should leave the graph untouched when a subgraph output link has invalid boundary slot %s',
+      (invalidSlot) => {
+        const subgraph = createTestSubgraph({
+          outputs: [{ name: 'value', type: 'number' }]
+        })
+        const subgraphNode = createTestSubgraphNode(subgraph)
+        const graph = subgraphNode.graph!
+        graph.add(subgraphNode)
+
+        const innerNode = createTestNode(subgraph, [], ['number'])
+        const innerLink = subgraph.outputNode.slots[0].connect(
+          innerNode.outputs[0],
+          innerNode
+        )
+        assert(innerLink)
+        innerLink.target_slot = invalidSlot
+        expectUnpackRejected(graph, subgraphNode)
+      }
+    )
+    it('Should report success when unpacking an intact subgraph', () => {
+      const subgraph = createTestSubgraph()
+      const subgraphNode = createTestSubgraphNode(subgraph)
+      const graph = subgraphNode.graph!
+      graph.add(subgraphNode)
+
+      const innerNode1 = createTestNode(subgraph, [], ['number'])
+      const innerNode2 = createTestNode(subgraph, ['number'], [])
+      assert(innerNode1.connect(0, innerNode2, 0))
+
+      expect(graph.unpackSubgraph(subgraphNode)).toBe(true)
+      expect(graph.getNodeById(subgraphNode.id)).toBeUndefined()
+      expect(graph.nodes.length).toBe(2)
     })
     it('Should map reroutes onto split outputs', () => {
       const subgraph = createTestSubgraph({
