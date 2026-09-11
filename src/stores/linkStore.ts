@@ -32,7 +32,7 @@ export interface EndpointUpdateError {
   message: string
 }
 
-type EndpointUpdateResult<T> =
+export type EndpointUpdateResult<T> =
   | { ok: true; value: T }
   | { ok: false; error: EndpointUpdateError }
 
