@@ -178,13 +178,25 @@ function cleanupSourceIfCurrent(
   ) {
     for (const [draftKey, sourceRaw] of sourcePayloads) {
       const key = payloadKey(workspaceId, draftKey)
-      if (localStorage.getItem(key) === sourceRaw) localStorage.removeItem(key)
+      removeStorageValueIfStable(key, sourceRaw)
     }
     for (const [key, sourceRaw] of sourceArtifacts) {
-      if (localStorage.getItem(key) === sourceRaw) localStorage.removeItem(key)
+      removeStorageValueIfStable(key, sourceRaw)
     }
   }
   releaseClaimIfOwned(claimKey, claim)
+}
+
+function removeStorageValueIfStable(
+  key: string,
+  expected: string | null
+): void {
+  if (
+    localStorage.getItem(key) === expected &&
+    localStorage.getItem(key) === expected
+  ) {
+    localStorage.removeItem(key)
+  }
 }
 
 function snapshotScopeArtifacts(
@@ -260,10 +272,10 @@ function restoreStorageSnapshot(
   migrationArtifacts: Map<string, string | null>
 ): void {
   for (const [key, value] of snapshot) {
+    if (value === null) continue
     const current = localStorage.getItem(key)
     if (current !== value && current !== migrationArtifacts.get(key)) continue
-    if (value === null) localStorage.removeItem(key)
-    else localStorage.setItem(key, value)
+    localStorage.setItem(key, value)
   }
 }
 

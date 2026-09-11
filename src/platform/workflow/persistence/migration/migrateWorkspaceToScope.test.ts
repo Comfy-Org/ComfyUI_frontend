@@ -226,7 +226,7 @@ describe('migrateWorkspaceToScope', () => {
     )
   })
 
-  it('removes every copied destination artifact when a restore pointer copy hits the quota', () => {
+  it('leaves harmless partial artifacts when a restore pointer copy hits the quota', () => {
     seedSourceWorkspace()
     const failingKey = StorageKeys.lastOpenPaths(destinationScope)
     const realSetItem = localStorage.setItem.bind(localStorage)
@@ -248,10 +248,10 @@ describe('migrateWorkspaceToScope', () => {
       localStorage.getItem(
         StorageKeys.draftPayload(draftPath, destinationScope)
       )
-    ).toBe(null)
+    ).not.toBe(null)
     expect(
       localStorage.getItem(StorageKeys.lastActivePath(destinationScope))
-    ).toBe(null)
+    ).not.toBe(null)
     expect(readJson(StorageKeys.draftIndex(sourceWorkspaceId))).toEqual(
       buildIndex()
     )
@@ -329,7 +329,7 @@ describe('migrateWorkspaceToScope', () => {
       localStorage.getItem(
         StorageKeys.draftPayload(draftPath, destinationScope)
       )
-    ).toBe(null)
+    ).not.toBe(null)
     expect(readJson(StorageKeys.draftIndex(sourceWorkspaceId))).toEqual(
       buildIndex()
     )
@@ -425,7 +425,7 @@ describe('migrateWorkspaceToScope', () => {
     expect(readJson(StorageKeys.draftIndex(competingScope))).toEqual(
       buildIndex()
     )
-    expect(readJson(destinationIndexKey)).toBe(null)
+    expect(readJson(destinationIndexKey)).toEqual(buildIndex())
     expect(readJson(StorageKeys.draftIndex(sourceWorkspaceId))).toBe(null)
   })
 
@@ -503,7 +503,10 @@ describe('migrateWorkspaceToScope', () => {
 
     migrateWorkspaceToScope(sourceWorkspaceId, destinationScope)
 
-    expect(readJson(destinationPayloadKey)).toBe(null)
+    expect(readJson(destinationPayloadKey)).toEqual({
+      data: '{"nodes":[]}',
+      updatedAt: 10
+    })
   })
 
   it('keeps artifacts committed by a same-scope migration winner', () => {
@@ -717,6 +720,69 @@ describe('migrateWorkspaceToScope', () => {
 
     expect(readJson(sourcePayloadKey)).toEqual(newerPayload)
     expect(readJson(sourceIndexKey)).toEqual(newerIndex)
+  })
+
+  it('preserves a source index written between comparison and removal', () => {
+    seedSourceWorkspace()
+    const sourceIndexKey = StorageKeys.draftIndex(sourceWorkspaceId)
+    const newerIndex = { ...buildIndex(), updatedAt: 20 }
+    const realGetItem = localStorage.getItem.bind(localStorage)
+    const realSetItem = localStorage.setItem.bind(localStorage)
+    let destinationPublished = false
+    let comparedSourceIndex = false
+    vi.spyOn(localStorage, 'getItem').mockImplementation((key: string) => {
+      const value = realGetItem(key)
+      if (
+        key === sourceIndexKey &&
+        destinationPublished &&
+        comparedSourceIndex
+      ) {
+        realSetItem(sourceIndexKey, JSON.stringify(newerIndex))
+      } else if (key === sourceIndexKey && destinationPublished) {
+        comparedSourceIndex = true
+      }
+      return value
+    })
+    vi.spyOn(localStorage, 'setItem').mockImplementation(
+      (key: string, value: string) => {
+        realSetItem(key, value)
+        if (key === StorageKeys.draftIndex(destinationScope)) {
+          destinationPublished = true
+        }
+      }
+    )
+
+    migrateWorkspaceToScope(sourceWorkspaceId, destinationScope)
+
+    expect(readJson(sourceIndexKey)).toEqual(newerIndex)
+  })
+
+  it('never removes a destination written while a migration loses its claim', () => {
+    seedSourceWorkspace()
+    const claimKey = StorageKeys.migrationClaim(sourceWorkspaceId)
+    const destinationIndexKey = StorageKeys.draftIndex(destinationScope)
+    const newerIndex = { ...buildIndex(), updatedAt: 20 }
+    const realSetItem = localStorage.setItem.bind(localStorage)
+    vi.spyOn(localStorage, 'setItem').mockImplementation(
+      (key: string, value: string) => {
+        realSetItem(key, value)
+        if (key === destinationIndexKey) {
+          realSetItem(destinationIndexKey, JSON.stringify(newerIndex))
+          realSetItem(
+            claimKey,
+            JSON.stringify({
+              scope: competingScope,
+              sourceUpdatedAt: 10,
+              nonce: 'competing-tab'
+            })
+          )
+        }
+      }
+    )
+
+    migrateWorkspaceToScope(sourceWorkspaceId, destinationScope)
+
+    expect(readJson(destinationIndexKey)).toEqual(newerIndex)
   })
 
   it('preserves a newer workspace when the committed destination claim is stale', () => {

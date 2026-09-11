@@ -116,10 +116,10 @@ becoming `null` cannot know which scope to clear.
 `migrateWorkspaceToScope(workspaceId, scope)` copies the workspace-keyed index,
 payloads and restore pointers to the scoped keys the first time a scope is
 resolved that has no index. The destination index is written last so a partial
-copy is never observed as complete. On failure every destination artifact the
-copy produced (payloads, restore pointers, index) is removed and the source is
-left intact, so a retry starts from the same state. On success the source
-payloads, index and restore pointers are removed. If the source index still
+copy is never observed as complete. On failure the source is left intact and
+partial destination artifacts are ignored until a retry overwrites them. A
+losing attempt never deletes destination data. On success the source payloads,
+index and restore pointers are removed. If the source index still
 exists but the destination index is already present, an earlier run committed
 and was interrupted before its source cleanup; the migration only finishes that
 cleanup and does not copy again, so the committed destination is never
