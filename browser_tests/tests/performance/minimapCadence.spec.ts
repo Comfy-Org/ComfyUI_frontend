@@ -1,7 +1,13 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import type { PerfMeasurement } from '@e2e/fixtures/helpers/PerformanceHelper'
 import { recordMeasurement } from '@e2e/fixtures/utils/perfReporter'
+
+function expectFramesToSpanMeasurementWindow(measurement: PerfMeasurement) {
+  const sampledMs = measurement.allFrameDurationsMs.reduce((a, b) => a + b, 0)
+  expect(sampledMs).toBeGreaterThan(measurement.durationMs / 2)
+}
 
 test.describe('Minimap change cadence performance', { tag: ['@perf'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -50,6 +56,7 @@ test.describe('Minimap change cadence performance', { tag: ['@perf'] }, () => {
       'minimap-progress-execution-cadence'
     )
     recordMeasurement(measurement)
+    expectFramesToSpanMeasurementWindow(measurement)
 
     const finalProgress = await comfyPage.page.evaluate(() => {
       const node = window.app?.graph.nodes[0]
@@ -84,6 +91,7 @@ test.describe('Minimap change cadence performance', { tag: ['@perf'] }, () => {
       'minimap-progress-geometry-cadence'
     )
     recordMeasurement(measurement)
+    expectFramesToSpanMeasurementWindow(measurement)
 
     const finalX = await comfyPage.page.evaluate(() => {
       const node = window.app?.graph.nodes[0]
@@ -134,6 +142,7 @@ test.describe('Minimap change cadence performance', { tag: ['@perf'] }, () => {
       'minimap-progress-topology-cadence'
     )
     recordMeasurement(measurement)
+    expectFramesToSpanMeasurementWindow(measurement)
 
     const finalCount = await comfyPage.page.evaluate(() => {
       const graph = window.app?.graph
