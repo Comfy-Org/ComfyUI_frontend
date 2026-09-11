@@ -39,6 +39,8 @@ jobs:
       contents: read
     env:
       ALIAS_HOST: comfy-website-preview-pr-${{ github.event.pull_request.number }}.vercel.app
+      WORKSHOP_LABELLED: ${{ contains(github.event.pull_request.labels.*.name, 'workshop') || contains(github.event.pull_request.labels.*.name, 'workshop-test') }}
+      WORKSHOP_TEST_LABELLED: ${{ contains(github.event.pull_request.labels.*.name, 'workshop-test') }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -62,8 +64,6 @@ jobs:
           WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
           WEBSITE_ASHBY_JOB_BOARD_NAME: ${{ secrets.WEBSITE_ASHBY_JOB_BOARD_NAME }}
           WEBSITE_CLOUD_API_KEY: ${{ secrets.WEBSITE_CLOUD_API_KEY }}
-          WORKSHOP_LABELLED: ${{ contains(github.event.pull_request.labels.*.name, 'workshop') || contains(github.event.pull_request.labels.*.name, 'workshop-test') }}
-          WORKSHOP_TEST_LABELLED: ${{ contains(github.event.pull_request.labels.*.name, 'workshop-test') }}
         # A preview has to answer "what goes out if we release right now?", so
         # by default it matches production and leaves the unreleased Workshop
         # feature out. Label a PR `workshop` to build it in and get a review URL
@@ -139,8 +139,6 @@ jobs:
         env:
           DEPLOY_URL: ${{ steps.deploy.outputs.url }}
           ALIAS_OK: ${{ steps.alias-set.outcome == 'success' }}
-          WORKSHOP_LABELLED: ${{ contains(github.event.pull_request.labels.*.name, 'workshop') || contains(github.event.pull_request.labels.*.name, 'workshop-test') }}
-          WORKSHOP_TEST_LABELLED: ${{ contains(github.event.pull_request.labels.*.name, 'workshop-test') }}
         run: |
           if [[ "$ALIAS_OK" == "true" ]]; then
             STABLE_URL="https://$ALIAS_HOST"

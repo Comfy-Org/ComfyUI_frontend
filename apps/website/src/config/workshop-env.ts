@@ -71,8 +71,8 @@ export const WORKSHOP_FIREBASE_OPTIONS: FirebaseOptions =
  * Public per-environment Turnstile sitekeys, the same constants the platform
  * app bakes in. Whether the widget renders is still governed by Cloudflare's
  * hostname allowlist; where it cannot, sign-up proceeds without a token and
- * the server's own policy decides. Test has no sitekey (testcloud reports
- * none), so the widget stays off there and the server's shadow policy applies.
+ * the server's own policy decides. Test has no sitekey in this mapping, so the
+ * widget stays off there.
  */
 // TODO(auth parity, E7): the cloud app overrides this live from remote config;
 // give the website a live source (PostHog flag payload) so a rotation needs no deploy.

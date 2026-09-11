@@ -1,6 +1,9 @@
 # Models review closeout — PR #17382
 
 Reviewed base: `8966fa1b20a79558c138bf62d1b791e7c61e40b7`.
+Review fixes: `7db24c32c1423bf728b0356b0bdb98b7881008ce`.
+Updated against `main` at `dd1867baa6`: the only textual conflict was the
+route table; both the incoming ChatGPT Images 2.5 route and Models routes remain.
 The verification below covers the integrated code committed with this ledger,
 not the agents' separate worktrees. CI and deployment must be checked on the
 pushed head; local results do not imply approval or a production release.
@@ -53,7 +56,7 @@ All commands ran from the repository root under Node 26.8.2
 
 | Check                                                                 | Result                                        |
 | --------------------------------------------------------------------- | --------------------------------------------- |
-| `pnpm --filter @comfyorg/website test:unit`                           | 300 files, 4,088 tests passed                 |
+| `pnpm --filter @comfyorg/website test:unit`                           | 302 files, 4,098 tests passed                 |
 | Root Vitest: shared `nodePricing`, `piiUtil`, editor `useNodePricing` | 3 files, 105 tests passed                     |
 | `pnpm typecheck`                                                      | Root and shared account passed                |
 | `pnpm typecheck:website`                                              | 0 errors/warnings; 7 existing hints           |
@@ -91,7 +94,7 @@ NODE_ENV=production VERCEL_ENV=preview WORKSHOP_IN_BUILD=0 \
 
 | Actual output            | Enabled |                    Disabled |
 | ------------------------ | ------: | --------------------------: |
-| HTML files on disk       |   1,132 |                         747 |
+| HTML files on disk       |   1,134 |                         749 |
 | HTML under `models/`     |     386 | 1 (existing marketing page) |
 | Retired `workshop/` tree |  Absent |                      Absent |
 
@@ -103,6 +106,12 @@ One failed browser attempt inherited `NODE_ENV=development` from the local
 shell: Vite compiled out PostHog initialization and the auth flag never settled.
 Rebuilding explicitly in production mode made the mocked sign-in flow pass.
 Both browser-build workflows and the test README now state that requirement.
+
+After updating from `main`, the full website unit suite, website/root/account
+typechecks, both builds, 17 browser checks and output validators were rerun.
+The incoming landing page accounts for the two additional HTML files; the
+Models page counts are unchanged. All 75 prepared review replies are posted
+with the fix commit as their evidence. Human review threads remain open.
 
 ## Not claimed complete
 
