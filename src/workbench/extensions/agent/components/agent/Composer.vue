@@ -17,12 +17,7 @@ import { useI18n } from 'vue-i18n'
 import { buildAgentTooltipConfig } from '@/composables/useTooltipConfig'
 
 import InlinePromptEditor from './composer/InlinePromptEditor.vue'
-import type {
-  MentionPickerEvent,
-  MentionPickerState,
-  MentionSection
-} from '../../composables/agent/mentionPickerState'
-import { transitionMentionPicker } from '../../composables/agent/mentionPickerState'
+import { useAgentMentionPicker } from '../../composables/agent/useAgentMentionPicker'
 import type { ComposerAttachment } from '../../composables/agent/useComposer'
 import { useComposer } from '../../composables/agent/useComposer'
 import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
@@ -97,353 +92,6 @@ const assetDragActive = inject<Readonly<Ref<boolean>>>(
 const duplicateIdClass =
   'shrink-0 rounded-[26px] bg-charcoal-400 px-1 py-0.5 font-mono text-xs/4 font-medium text-smoke-800'
 
-const graphNodes = ref<SelectedNode[]>([])
-const mentionNodes = computed(() => {
-  const referenced = new Set(selectionTags.map(selectedNodeKey))
-  return graphNodes.value.filter(
-    (node) => !referenced.has(selectedNodeKey(node))
-  )
-})
-const eligibleWorkflows = computed(() => {
-  const selectedIds = new Set(workflowReferences.value.map(({ id }) => id))
-  return availableWorkflows.filter(
-    ({ id }) =>
-      id === undefined || (id !== editableWorkflowId && !selectedIds.has(id))
-  )
-})
-function loadMentionNodes(): void {
-  if (nodeReferenceDisabledReason) {
-    graphNodes.value = []
-    return
-  }
-  graphNodes.value = getMentionNodes().toSorted((a, b) =>
-    a.title.localeCompare(b.title)
-  )
-}
-
-const mention = ref<MentionPickerState>({ status: 'closed' })
-const mentionSection = computed(() =>
-  mention.value.status === 'open' ? mention.value.section : 'root'
-)
-const mentionQuery = computed(() =>
-  mention.value.status === 'open' ? mention.value.query : null
-)
-const mentionActive = computed(() =>
-  mention.value.status === 'open' ? mention.value.activeIndex : 0
-)
-const workflowSubmenuOpen = ref(false)
-const addMenuOpen = ref(false)
-
-type MentionMatch =
-  | { kind: 'section'; id: 'nodes' | 'workflows'; label: string }
-  | { kind: 'back'; id: 'back'; label: string }
-  | { kind: 'node'; id: string; label: string; node: SelectedNode }
-  | {
-      kind: 'workflow'
-      id: string
-      label: string
-      workflow: WorkflowReferenceOption
-    }
-
-/**
- * Nodes already in the basket, hidden from the picker - re-picking one is a
- * no-op and only makes the list harder to scan.
- *
- * Filtered here rather than out of `mentionNodes`, because that list also
- * feeds `graphDupes`: dropping a staged node from it would stop its chip
- * showing the `#id` that disambiguates it from a same-titled node still in
- * the graph.
- */
-const stagedKeys = computed(
-  () => new Set(selectionTags.map((tag) => selectedNodeKey(tag)))
-)
-
-function getMentionMatches(
-  section: MentionSection,
-  query: string
-): MentionMatch[] {
-  const search = query.toLowerCase()
-  if (section === 'root') {
-    const sections: MentionMatch[] = [
-      { kind: 'section', id: 'nodes', label: t('agent.nodes') },
-      { kind: 'section', id: 'workflows', label: t('agent.workflows') }
-    ]
-    return sections.filter(({ label }) => label.toLowerCase().includes(search))
-  }
-
-  const back: MentionMatch = { kind: 'back', id: 'back', label: t('g.back') }
-  if (section === 'nodes') {
-    return [
-      back,
-      ...mentionNodes.value
-        .filter(
-          (node) =>
-            !stagedKeys.value.has(selectedNodeKey(node)) &&
-            (node.title.toLowerCase().includes(search) ||
-              node.id.includes(search))
-        )
-        .map(
-          (node): MentionMatch => ({
-            kind: 'node',
-            id: selectedNodeKey(node),
-            label: node.title,
-            node
-          })
-        )
-    ]
-  }
-
-  return [
-    back,
-    ...eligibleWorkflows.value
-      .filter(({ name }) => name.toLowerCase().includes(search))
-      .map(
-        (workflow): MentionMatch => ({
-          kind: 'workflow',
-          id: workflow.id ?? workflow.tabPath,
-          label: workflow.name,
-          workflow
-        })
-      )
-  ]
-}
-
-const mentionMatches = computed(() => {
-  const query = mentionQuery.value
-  return query === null ? [] : getMentionMatches(mentionSection.value, query)
-})
-
-const mentionVisible = computed(
-  () =>
-    mentionQuery.value !== null &&
-    (mentionQuery.value === '' ||
-      mentionMatches.value.some(
-        (match) => match.kind !== 'back' && !isNodeReferenceDisabled(match)
-      ))
-)
-const mentionHasResults = computed(
-  () => mentionSection.value === 'root' || mentionMatches.value.length > 1
-)
-
-function duplicatedTitles(nodes: SelectedNode[]): Set<string> {
-  const seen = new Set<string>()
-  const dupes = new Set<string>()
-  for (const node of nodes) {
-    if (seen.has(node.title)) dupes.add(node.title)
-    else seen.add(node.title)
-  }
-  return dupes
-}
-
-const graphDupes = computed(() => duplicatedTitles(graphNodes.value))
-const tagDupes = computed(() => duplicatedTitles(selectionTags))
-
-watch(
-  () => selectionTags,
-  (tags) => {
-    if (tags.length) loadMentionNodes()
-  },
-  { immediate: true }
-)
-
-function dispatchMention(event: MentionPickerEvent): void {
-  mention.value = transitionMentionPicker(mention.value, event)
-}
-
-function firstMentionMatchIndex(
-  section: MentionSection,
-  query: string
-): number {
-  return getMentionMatches(section, query).findIndex(
-    (match) => match.kind !== 'back' && !isNodeReferenceDisabled(match)
-  )
-}
-
-function syncMention(): void {
-  const caret = editorRef.value?.selection().start ?? 0
-  const text = composer.draft.value
-  const at = text.lastIndexOf('@', caret - 1)
-  const atValid =
-    at !== -1 && at < caret && (at === 0 || /\s/.test(text[at - 1]))
-  if (!atValid) {
-    dispatchMention({ type: 'closed' })
-    return
-  }
-  const query = text.slice(at + 1, caret)
-  if (query.includes('\n')) {
-    dispatchMention({ type: 'closed' })
-    return
-  }
-  if (mention.value.status === 'closed') loadMentionNodes()
-  dispatchMention({
-    type: 'queryChanged',
-    start: at,
-    query,
-    firstMatchIndex: firstMentionMatchIndex(mentionSection.value, query)
-  })
-}
-
-function isNodeReferenceDisabled(match: MentionMatch): boolean {
-  return (
-    !!nodeReferenceDisabledReason &&
-    (match.kind === 'node' ||
-      (match.kind === 'section' && match.id === 'nodes'))
-  )
-}
-
-function onSelectNodes(event: Event): void {
-  if (nodeReferenceDisabledReason) {
-    event.preventDefault()
-    return
-  }
-  emit('selectNodes')
-}
-
-watch(
-  () => nodeReferenceDisabledReason,
-  (reason) => {
-    if (!reason) {
-      if (mention.value.status === 'open') loadMentionNodes()
-      return
-    }
-    graphNodes.value = []
-    if (mention.value.status === 'open' && mention.value.section === 'nodes') {
-      dispatchMention({
-        type: 'nodesUnavailable',
-        firstMatchIndex: firstMentionMatchIndex('root', mention.value.query)
-      })
-    }
-  },
-  { flush: 'sync' }
-)
-
-async function pickMention(match: MentionMatch): Promise<void> {
-  const state = mention.value
-  if (state.status === 'closed' || isMentionDisabled(match)) return
-  if (match.kind === 'section') {
-    editorRef.value?.replaceText(
-      state.start + 1,
-      state.start + 1 + state.query.length,
-      ''
-    )
-    dispatchMention({ type: 'sectionSelected', section: match.id })
-    if (match.id === 'workflows') emit('requestWorkflowReferences')
-    return
-  }
-  if (match.kind === 'back') {
-    dispatchMention({ type: 'back' })
-    return
-  }
-  if (match.kind === 'workflow') {
-    const insertion = editorRef.value?.captureInsertion(
-      state.start,
-      state.start + 1 + state.query.length
-    )
-    const reference = await selectWorkflowReference(match.workflow)
-    if (!reference) {
-      insertion?.cancel()
-      return
-    }
-    insertion?.insert(reference)
-    dispatchMention({ type: 'closed' })
-    return
-  }
-  const draft = composer.draft.value
-  emit('mentionPick', match.node)
-  const current = mention.value
-  if (
-    composer.draft.value !== draft ||
-    current.status === 'closed' ||
-    current.start !== state.start ||
-    current.query !== state.query
-  )
-    return
-  const before = draft.slice(0, state.start)
-  const end = state.start + 1 + state.query.length
-  let after = draft.slice(end)
-  if (after.startsWith(' ') && (before === '' || before.endsWith(' ')))
-    after = after.slice(1)
-  editorRef.value?.replaceText(state.start, draft.length - after.length, '')
-  dispatchMention({ type: 'closed' })
-  editorRef.value?.focus()
-}
-
-function onWorkflowSubmenuOpenChange(open: boolean): void {
-  if (open && !workflowSelecting) emit('requestWorkflowReferences')
-}
-
-async function pickWorkflow(workflow: WorkflowReferenceOption): Promise<void> {
-  if (workflowSelecting) return
-  const insertion = editorRef.value?.captureInsertion()
-  const reference = await selectWorkflowReference(workflow)
-  if (!reference) {
-    insertion?.cancel()
-    return
-  }
-  insertion?.insert(reference)
-  addMenuOpen.value = false
-}
-
-function isMentionDisabled(match: MentionMatch): boolean {
-  return (
-    isNodeReferenceDisabled(match) ||
-    (match.kind === 'workflow' && workflowSelecting)
-  )
-}
-
-function onComposerKeydown(event: KeyboardEvent): void {
-  const state = mention.value
-  if (
-    state.status === 'open' &&
-    mentionVisible.value &&
-    !event.isComposing &&
-    !event.shiftKey
-  ) {
-    const matches = mentionMatches.value
-    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-      event.preventDefault()
-      dispatchMention({
-        type: 'highlightMoved',
-        direction: event.key === 'ArrowDown' ? 1 : -1,
-        disabled: matches.map(isMentionDisabled)
-      })
-      return
-    }
-    if (event.key === 'Enter' || event.key === 'Tab') {
-      event.preventDefault()
-      const match = matches[state.activeIndex]
-      if (match) void pickMention(match)
-      return
-    }
-    if (event.key === 'Escape') {
-      event.stopPropagation()
-      dispatchMention({ type: 'closed' })
-      return
-    }
-  }
-  if (event.key === 'Enter') onEnter(event)
-}
-
-const CARET_KEYS = ['ArrowLeft', 'ArrowRight', 'Home', 'End']
-
-function onComposerKeyup(event: KeyboardEvent): void {
-  if (mention.value.status === 'open' && CARET_KEYS.includes(event.key))
-    syncMention()
-}
-
-const mentionListRef = useTemplateRef<HTMLDivElement>('mentionListRef')
-watch(mentionActive, async () => {
-  await nextTick()
-  mentionListRef.value
-    ?.querySelector('[data-active="true"]')
-    ?.scrollIntoView?.({ block: 'nearest' })
-})
-
-const placeholderHint = computed(() => {
-  const [text = '', mentionNodes = ''] = t('agent.placeholder').split('\n')
-  return { text, mentionNodes }
-})
-
 const composer = useComposer({
   onSend: (text, attachments) => {
     if (workflowSelecting || submitting) return
@@ -479,6 +127,69 @@ const composer = useComposer({
   onStop: () => emit('stop')
 })
 
+const editorRef =
+  useTemplateRef<InstanceType<typeof InlinePromptEditor>>('editorRef')
+
+const workflowSubmenuOpen = ref(false)
+const addMenuOpen = ref(false)
+
+const {
+  eligibleWorkflows,
+  mentionSection,
+  mentionActive,
+  mentionMatches,
+  mentionVisible,
+  mentionHasResults,
+  graphDupes,
+  tagDupes,
+  syncMention,
+  pickMention,
+  pickWorkflow: selectWorkflow,
+  isNodeReferenceDisabled,
+  isMentionDisabled,
+  onSelectNodes,
+  onWorkflowSubmenuOpenChange,
+  onComposerKeydown: handleMentionKeydown,
+  onComposerKeyup,
+  close: closeMention,
+  highlight: highlightMention
+} = useAgentMentionPicker({
+  draft: () => composer.draft.value,
+  editor: () => editorRef.value,
+  selectionTags: () => selectionTags,
+  references: () => workflowReferences.value,
+  workflows: () => availableWorkflows,
+  editableWorkflowId: () => editableWorkflowId,
+  nodeReferenceDisabledReason: () => nodeReferenceDisabledReason,
+  workflowSelecting: () => workflowSelecting,
+  getMentionNodes: () => getMentionNodes(),
+  selectWorkflowReference: (workflow) => selectWorkflowReference(workflow),
+  pickNode: (node) => emit('mentionPick', node),
+  selectNodes: () => emit('selectNodes'),
+  requestWorkflows: () => emit('requestWorkflowReferences')
+})
+
+async function pickWorkflow(workflow: WorkflowReferenceOption): Promise<void> {
+  if (await selectWorkflow(workflow)) addMenuOpen.value = false
+}
+
+function onComposerKeydown(event: KeyboardEvent): void {
+  if (!handleMentionKeydown(event) && event.key === 'Enter') onEnter(event)
+}
+
+const mentionListRef = useTemplateRef<HTMLDivElement>('mentionListRef')
+watch(mentionActive, async () => {
+  await nextTick()
+  mentionListRef.value
+    ?.querySelector('[data-active="true"]')
+    ?.scrollIntoView?.({ block: 'nearest' })
+})
+
+const placeholderHint = computed(() => {
+  const [text = '', mentionNodes = ''] = t('agent.placeholder').split('\n')
+  return { text, mentionNodes }
+})
+
 function onEnter(event: KeyboardEvent): void {
   if (event.isComposing || event.shiftKey) return
   event.preventDefault()
@@ -496,9 +207,6 @@ function onPrimaryAction(): void {
   if (running.value) emit('stop')
   else composer.submit()
 }
-
-const editorRef =
-  useTemplateRef<InstanceType<typeof InlinePromptEditor>>('editorRef')
 
 function insert(text: string): void {
   composer.insert(text)
@@ -561,7 +269,7 @@ defineExpose({
               index === mentionActive && 'bg-agent-surface-hover'
             )
           "
-          @mouseenter="dispatchMention({ type: 'highlighted', index })"
+          @mouseenter="highlightMention(index)"
           @click="pickMention(match)"
         >
           <span
@@ -712,7 +420,7 @@ defineExpose({
             @input="syncMention"
             @selection-change="syncMention"
             @click="syncMention"
-            @blur="dispatchMention({ type: 'closed' })"
+            @blur="closeMention()"
             @open-reference-workflow="
               (id, name) => emit('openReferenceWorkflow', id, name)
             "
