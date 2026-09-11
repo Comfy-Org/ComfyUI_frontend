@@ -138,7 +138,7 @@ function definitionLinkKey(ln: unknown, index: number): string {
   return `#${String(index)}`;
 }
 
-function mintDefinition(sg: SubgraphDef, catalog: WidgetCatalog): Y.Map<unknown> {
+export function mintDefinition(sg: SubgraphDef, catalog: WidgetCatalog): Y.Map<unknown> {
   const dm = new Y.Map<unknown>();
   for (const [k, v] of Object.entries(sg)) {
     if (k === "nodes" && Array.isArray(v)) {

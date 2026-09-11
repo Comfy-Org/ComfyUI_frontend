@@ -56,6 +56,7 @@ function touchedNodes(op: WireOp): string[] {
     case "clear":
     case "delete_node":
     case "reset_doc":
+    case "define_subgraph":
       // Graph-wide / unbounded ops. `reorderableWindows` treats them as window
       // breakers and never calls this helper for them; listed explicitly so
       // the guard below is a guard and not a catch-all (#21).

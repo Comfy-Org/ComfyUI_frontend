@@ -45,8 +45,8 @@ const PRECONDITIONS = [
   "interior-or-inputcount",
   "promoted-or-autogrow",
 ] as const;
-const PAIR_EXECUTIONS = 150_528;
-const SAMPLED_RUNS = 24_736;
+const PAIR_EXECUTIONS = 196_608;
+const SAMPLED_RUNS = 1_696;
 const SAMPLED_EXECUTIONS = SAMPLED_RUNS * 2;
 const TOTAL_EXECUTIONS = PAIR_EXECUTIONS + SAMPLED_EXECUTIONS;
 const SAMPLE_SEED = 0x4f70504;
@@ -215,6 +215,17 @@ function makeOp(
       return { ...env, op: "delete_node", node_id: side === 0 ? 10 : 20, removed_links: [80, 100, 101] };
     case "clear":
       return { ...env, op: "clear", removed_nodes: side === 0 ? [10, 40, 57] : [20, 40, 57] };
+    case "define_subgraph":
+      return {
+        ...env,
+        op: "define_subgraph",
+        subgraph_id: `12345678-1234-4123-8123-123456789ab${side}`,
+        subgraph_definition: {
+          id: `12345678-1234-4123-8123-123456789ab${side}`,
+          nodes: [],
+          links: [],
+        },
+      };
     case "reset_doc":
       return { ...env, op: "reset_doc", workflow: { nodes: [], links: [] } };
   }

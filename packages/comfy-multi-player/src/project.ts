@@ -223,7 +223,7 @@ function tryProjectNode(value: unknown, catalog: WidgetCatalog): WorkflowNode | 
 function projectDefinition(dm: Y.Map<unknown>, catalog: WidgetCatalog): Record<string, unknown> {
   const out: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
   dm.forEach((v, k) => {
-    if (k === "node_order" || k === "link_order") return; // internal order registers
+    if (k === "node_order" || k === "link_order" || k === "__definition_digest") return; // internal registers
     if (k === "nodes" && v instanceof Y.Map) {
       const order = (dm.get("node_order") as string[] | undefined) ?? [...v.keys()].sort();
       out[k] = order

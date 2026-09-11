@@ -88,6 +88,7 @@ import {
   arrayItemRefusal,
   countDefinitionInstances,
   createNodeMap,
+  definitionsMap,
   linksMap,
   mapValueRefusal,
   mdel,
@@ -107,6 +108,7 @@ import {
   MAX_PAYLOAD_DEPTH,
   opBoundsRefusal,
 } from "./limits.js";
+import { mintDefinition } from "./mint.js";
 import { codePointCompare, compareStampKeys, stampKey, stampTargetKey, widgetTargetKey } from "./stamps.js";
 import {
   DEFERRED_OPS,
@@ -118,6 +120,7 @@ import {
   type ApplyResult,
   type ConnectOp,
   type DeleteNodeOp,
+  type DefineSubgraphOp,
   type DisconnectOp,
   type GrowConnectOp,
   type GrowSpec,
@@ -395,6 +398,12 @@ function validateEnvelope(op: WireOp): void {
   if (!(FROZEN_OPS as readonly string[]).includes(op.op)) {
     throw new OpRejectedError("unknown_op", `unknown op '${op.op}'`);
   }
+  if (op.op !== "define_subgraph") {
+    const ordinary = op as WireOp & Record<string, unknown>;
+    if ("subgraph_definition" in ordinary || "definitions" in ordinary || "subgraph_id" in ordinary) {
+      throw new OpRejectedError("malformed_op", `${op.op}: definition payloads and subgraph_id targets are only valid on define_subgraph`);
+    }
+  }
   if (typeof op.op_id !== "string" || op.op_id.length === 0) {
     throw new OpRejectedError("malformed_op", `${op.op}: missing op_id`);
   }
@@ -431,6 +440,8 @@ function dispatch(doc: Y.Doc, op: Op, catalog?: WidgetCatalog): SuccessfulOutcom
       return applyDeleteNode(doc, op);
     case "clear":
       return applyClear(doc, op);
+    case "define_subgraph":
+      return applyDefineSubgraph(doc, op, catalog);
     default:
       // Exhaustiveness guard (issue #21): with every `Op` member cased above,
       // `op` is `never` here. Add a sixth IMPLEMENTED kind to `Op` and this
@@ -447,6 +458,50 @@ function dispatch(doc: Y.Doc, op: Op, catalog?: WidgetCatalog): SuccessfulOutcom
       // (`validateEnvelope`), pinned by `test/exhaustiveness.test.ts`.
       return assertNever(op, "applier.dispatch");
   }
+}
+
+function applyDefineSubgraph(
+  doc: Y.Doc,
+  op: DefineSubgraphOp,
+  catalog?: WidgetCatalog,
+): SuccessfulOutcome {
+  if (
+    typeof op.subgraph_id !== "string" ||
+    op.subgraph_id.length === 0 ||
+    typeof op.subgraph_definition !== "object" ||
+    op.subgraph_definition === null ||
+    String(op.subgraph_definition.id) !== op.subgraph_id
+  ) {
+    throw new OpRejectedError(
+      "malformed_op",
+      "define_subgraph: subgraph_id must be a non-empty string matching subgraph_definition.id",
+    );
+  }
+  if (!catalog) {
+    throw new OpRejectedError("catalog_required", "define_subgraph: the pinned catalog is required to encode interior nodes");
+  }
+  const digest = sha256Hex(canonicalOp(op.subgraph_definition as unknown as Op));
+  const definitions = definitionsMap(doc);
+  const existing = definitions.get(op.subgraph_id);
+  if (existing !== undefined) {
+    if (existing.get("__definition_digest") === digest) return "no-op";
+    throw new OpRejectedError(
+      "malformed_op",
+      `define_subgraph: definition '${op.subgraph_id}' already exists with different content`,
+    );
+  }
+  let definition: Y.Map<unknown>;
+  try {
+    definition = mintDefinition(op.subgraph_definition, catalog);
+  } catch (error) {
+    throw new OpRejectedError(
+      "malformed_op",
+      `define_subgraph(${op.subgraph_id}): ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+  mset(definition, "__definition_digest", digest);
+  mset(definitions, op.subgraph_id, definition);
+  return "applied";
 }
 
 // ---------------------------------------------------------------------------
@@ -514,6 +569,13 @@ function applyAddNode(doc: Y.Doc, op: AddNodeOp, catalog?: WidgetCatalog): Succe
   // key) otherwise resolves to a prototype object and is mistaken for a real
   // catalog entry (#13).
   const entry = catalogEntry(catalog, op.node.type);
+  if (
+    entry === undefined &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(op.node.type) &&
+    !resolveDefinition(doc, op.node.type)
+  ) {
+    throw new OpRejectedError("invalid_node_payload", `add_node: unknown subgraph definition '${op.node.type}'`);
+  }
   const order = entry?.widget_order;
   // No catalog AT ALL: the host cannot tell an unknown class from a known one,
   // so it cannot decide between name-decomposition and opaque storage — reject
@@ -990,9 +1052,34 @@ function projectedWidgetsLength(node: Y.Map<unknown>, order: readonly string[]):
  */
 function resolveInteriorNode(doc: Y.Doc, path: string[], catalog?: WidgetCatalog): Y.Map<unknown> | null {
   const head = nodesMap(doc).get(path[0]!);
-  if (!head) return null;
+  if (!head) {
+    const definition = resolveDefinition(doc, path[0]!);
+    if (!definition && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(path[0]!)) {
+      throw new OpRejectedError("not_a_subgraph", `subgraph definition '${path[0]}' not found`);
+    }
+    if (!definition) return null;
+    const innerNodes = definition.get("nodes");
+    const inner = innerNodes instanceof Y.Map ? innerNodes.get(path[1]!) : undefined;
+    if (!(inner instanceof Y.Map)) {
+      throw new OpRejectedError(
+        "interior_node_not_found",
+        `interior node ${path[1]} not found in subgraph ${path[0]}`,
+      );
+    }
+    if (path.length === 2) return inner;
+    return resolveInteriorDescendants(doc, inner, path.slice(2), catalog);
+  }
+  return resolveInteriorDescendants(doc, head, path.slice(1), catalog);
+}
+
+function resolveInteriorDescendants(
+  doc: Y.Doc,
+  head: Y.Map<unknown>,
+  path: string[],
+  catalog?: WidgetCatalog,
+): Y.Map<unknown> {
   let cur: Y.Map<unknown> = head;
-  for (const seg of path.slice(1)) {
+  for (const seg of path) {
     const curType = String(cur.get("type") ?? "");
     const def = resolveDefinition(doc, curType);
     if (!def) {
