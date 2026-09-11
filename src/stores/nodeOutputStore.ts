@@ -3,7 +3,11 @@ import { mapKeys } from 'es-toolkit'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-import type { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import type {
+  LGraph,
+  LGraphNode,
+  SubgraphNode
+} from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type {
@@ -407,10 +411,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     app.nodePreviewImages = clone(nodePreviewImages.value)
   }
 
-  function revokeSubgraphPreviews(subgraphNode: SubgraphNode) {
-    const { graph } = subgraphNode
-    if (!graph) return
-
+  function revokeSubgraphPreviews(subgraphNode: SubgraphNode, graph: LGraph) {
     revokePreviewsByLocatorId(
       createNodeLocatorId(graph.isRootGraph ? null : graph.id, subgraphNode.id)
     )
