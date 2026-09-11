@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import { ArrowUpDown, ChevronDown, ChevronLeft } from '@lucide/vue'
+import {
+  ArrowUpDown,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight
+} from '@lucide/vue'
 import {
   DropdownMenuContent,
   DropdownMenuPortal,
@@ -83,10 +88,6 @@ const sortLabelKey: Record<SortOrder, TranslationKey> = {
   priceDesc: 'workshop.sort.priceDesc'
 }
 
-function selectRail(value: UseCase | 'all' | 'other') {
-  useCase.value = value
-}
-
 // A facet answers "what else is in here", so it counts what the category
 // holds rather than what the whole catalogue holds.
 const withinSection = computed(() =>
@@ -152,15 +153,15 @@ const isFiltered = computed(
 
 // Willie's browseable listing: rows per use case until the visitor narrows
 // down, then the flat grid takes over.
-const browsing = computed(() => !isFiltered.value)
-// The browsing rows are the use cases, each with its name and its count, so a
-// row of chips saying the same six words would be the same list twice. V1.1
-// leaves a category the way it entered one, through its own header.
-const inSection = computed(() => useCase.value !== 'all')
+const browseAll = defineModel<boolean>('browseAll', { default: false })
+const browsing = computed(() => !isFiltered.value && !browseAll.value)
+const inSection = computed(() => useCase.value !== 'all' || browseAll.value)
 const sectionTitleKey = computed<TranslationKey>(() =>
-  useCase.value === 'other'
-    ? 'workshop.sections.otherFormats'
-    : useCaseLabelKey[useCase.value]
+  useCase.value === 'all'
+    ? 'workshop.sections.allModels'
+    : useCase.value === 'other'
+      ? 'workshop.sections.otherFormats'
+      : useCaseLabelKey[useCase.value]
 )
 
 // A category names the screen it opens, so the page heading above it would say
@@ -193,7 +194,12 @@ function openSection(value: UseCase | 'other') {
   useCase.value = value
 }
 
-function clearFilters() {
+function leaveSection() {
+  browseAll.value = false
+  useCase.value = 'all'
+}
+
+function resetFilters() {
   query.value = ''
   useCase.value = 'all'
   modalities.value = []
@@ -201,6 +207,12 @@ function clearFilters() {
   providers.value = []
 }
 
+function clearFilters() {
+  browseAll.value = false
+  resetFilters()
+}
+
+watch(browseAll, (on) => on && resetFilters())
 const menuItemClass =
   'flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm text-primary-comfy-canvas outline-none select-none data-[highlighted]:bg-transparency-white-t4'
 </script>
@@ -211,7 +223,7 @@ const menuItemClass =
       v-if="browsing && featured.length"
       :models="featured"
       :locale
-      class="mb-10"
+      class="short:mb-6 mb-10"
     />
 
     <div class="min-w-0">
@@ -220,7 +232,7 @@ const menuItemClass =
         type="button"
         class="hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 -ml-1 inline-flex cursor-pointer items-center gap-1 rounded-lg px-1 text-sm font-medium text-primary-warm-gray opacity-60 transition hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-3"
         data-testid="section-back"
-        @click="selectRail('all')"
+        @click="leaveSection"
       >
         <ChevronLeft class="size-4" aria-hidden="true" />
         {{ t('workshop.sections.back', locale) }}
@@ -314,14 +326,28 @@ const menuItemClass =
         </div>
       </div>
 
-      <WorkshopSections
-        v-if="browsing"
-        :models
-        :label-key="useCaseLabelKey"
-        :sort
-        :locale
-        @open="openSection"
-      />
+      <template v-if="browsing">
+        <WorkshopSections
+          :models
+          :label-key="useCaseLabelKey"
+          :sort
+          :locale
+          @open="openSection"
+        />
+
+        <button
+          type="button"
+          class="group hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 mx-auto mt-12 flex w-fit cursor-pointer items-center justify-center gap-2 rounded-2xl border border-transparency-white-t8 px-8 py-4 text-sm font-medium text-primary-comfy-canvas transition-colors outline-none focus-visible:ring-3 max-sm:w-full"
+          data-testid="browse-all-end"
+          @click="browseAll = true"
+        >
+          {{ t('workshop.sections.browseAll', locale) }}
+          <ChevronRight
+            class="size-4 transition-transform group-hover:translate-x-0.5"
+            aria-hidden="true"
+          />
+        </button>
+      </template>
 
       <template v-else>
         <div v-if="visible.length">

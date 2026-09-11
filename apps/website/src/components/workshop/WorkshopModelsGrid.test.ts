@@ -105,7 +105,7 @@ describe('WorkshopModelsGrid', () => {
     expect(cardNames()).toEqual([expect.stringContaining('Flux')])
 
     await user.click(screen.getByRole('button', { name: /Back to/ }))
-    await user.click(screen.getByRole('button', { name: 'Generate videos 1' }))
+    await user.click(screen.getByRole('button', { name: 'Text to video 1' }))
     expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
   })
 
@@ -162,5 +162,24 @@ describe('WorkshopModelsGrid', () => {
 
     await user.click(screen.getByRole('button', { name: 'Clear filters' }))
     expect(cardNames()).toHaveLength(3)
+  })
+
+  describe('browsing rows', () => {
+    it('leaves the rows for the whole catalogue and back', async () => {
+      const user = userEvent.setup()
+      render(WorkshopModelsGrid, { props: { models } })
+      expect(screen.getByTestId('workshop-sections')).toBeTruthy()
+
+      await user.click(screen.getByTestId('browse-all-end'))
+
+      expect(screen.queryByTestId('workshop-sections')).toBeNull()
+      expect(cardNames()).toHaveLength(models.length)
+      expect(screen.getByRole('heading', { level: 1 }).textContent).toContain(
+        'All models'
+      )
+
+      await user.click(screen.getByTestId('section-back'))
+      expect(screen.getByTestId('workshop-sections')).toBeTruthy()
+    })
   })
 })

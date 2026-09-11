@@ -67,6 +67,7 @@ test.describe('Models catalog', () => {
       .getByRole('heading', { level: 2 })
       .innerText()
     const promisedCount = Number(rowHeading.match(/(\d+)\s*$/)?.[1])
+    const rowLabel = rowHeading.replace(/\s*\d+\s*$/, '').trim()
     expect(promisedCount).toBeGreaterThan(0)
     await videos.getByTestId('section-generate-videos-open').click()
     const cards = page
@@ -76,13 +77,34 @@ test.describe('Models catalog', () => {
     await expect(cards).toHaveCount(promisedCount)
     await expect(page.getByTestId('workshop-hero')).toHaveCount(0)
     await expect(page.getByRole('heading', { level: 1 })).toContainText(
-      'Generate videos'
+      rowLabel
     )
     await page
       .getByRole('button', { name: 'Back to all categories', exact: true })
       .click()
     await expect(sections).toBeVisible()
     await expect(page.getByTestId('workshop-hero')).toBeVisible()
+  })
+
+  test('the rows listing opens the whole catalogue', async ({ page }) => {
+    await page.goto('/models/')
+    await page.getByTestId('browse-all').click()
+
+    await expect(page.getByTestId('workshop-sections')).toHaveCount(0)
+    const heading = page.getByRole('heading', { level: 1 })
+    await expect(heading).toContainText('All models')
+    const promisedCount = Number(
+      (await heading.innerText()).match(/(\d+)\s*$/)?.[1]
+    )
+    expect(promisedCount).toBeGreaterThan(0)
+    await expect(
+      page
+        .getByTestId('workshop-models-grid')
+        .getByTestId('workshop-model-card')
+    ).toHaveCount(promisedCount)
+
+    await page.getByTestId('section-back').click()
+    await expect(page.getByTestId('workshop-sections')).toBeVisible()
   })
 
   test('cards open canonical model pages with related models', async ({
@@ -286,5 +308,44 @@ test.describe('Model playground', () => {
     await expect(
       page.getByRole('textbox', { name: 'Prompt', exact: true })
     ).not.toHaveValue('')
+  })
+})
+
+test.describe('Filter sheet @mobile', () => {
+  test('the handle pulls the sheet up and lets it go', async ({ page }) => {
+    await page.goto('/models/')
+    await page.getByTestId('workshop-filter').click()
+
+    const sheet = page.getByTestId('workshop-filter-menu')
+    await expect(sheet).toBeVisible()
+    const resting = await sheet.boundingBox()
+    if (!resting) throw new Error('Filter sheet has no visible bounds')
+
+    const handle = page.getByTestId('workshop-filter-grabber')
+    const grip = await handle.boundingBox()
+    if (!grip) throw new Error('Filter handle has no visible bounds')
+    const from = { x: grip.x + grip.width / 2, y: grip.y + grip.height / 2 }
+
+    await page.mouse.move(from.x, from.y)
+    await page.mouse.down()
+    await page.mouse.move(from.x, from.y - 260, { steps: 8 })
+    await page.mouse.up()
+
+    await expect
+      .poll(async () => (await sheet.boundingBox())?.height ?? 0)
+      .toBeGreaterThan(resting.height)
+
+    const grown = await handle.boundingBox()
+    if (!grown) throw new Error('Expanded filter handle has no visible bounds')
+    await page.mouse.move(grown.x + grown.width / 2, grown.y + grown.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(
+      grown.x + grown.width / 2,
+      grown.y + grown.height / 2 + 500,
+      { steps: 8 }
+    )
+    await page.mouse.up()
+
+    await expect(sheet).toHaveCount(0)
   })
 })
