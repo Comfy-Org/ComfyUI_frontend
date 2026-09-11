@@ -16,7 +16,8 @@ vi.hoisted(() => {
 })
 
 import { i18n } from '@/i18n'
-import type { TurnId } from '../../schemas/agentApiSchema'
+import { toTurnId } from '../../schemas/agentApiSchema'
+import type { WorkflowReference } from '../../types/workflowReference'
 
 import AgentPanel from './AgentPanel.vue'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
@@ -133,7 +134,7 @@ describe('AgentPanel', () => {
 
     await user.click(suggestion)
 
-    expect(useAgentComposerStore().draft).toBe(prompt)
+    expect(textarea).toHaveTextContent(prompt)
     expect(textarea).toHaveFocus()
 
     await user.click(screen.getByRole('button', { name: 'New chat' }))
@@ -141,34 +142,77 @@ describe('AgentPanel', () => {
     expect(textarea).not.toHaveFocus()
   })
 
-  it('replaces and focuses the composer draft when editing the eligible prompt', async () => {
-    const user = userEvent.setup()
-    const pinia = getActivePinia()!
-    const prompt = 'Generate a yellow duck with a hockey mask'
-    const { emitted } = render(AgentPanel, {
-      props: {
-        editableTurnId: 'msg-1' as TurnId,
-        entries: [{ id: 'msg-1' as TurnId, role: 'user', text: prompt }],
-        historyGroups
-      },
-      global: {
-        plugins: [pinia, i18n],
-        directives: { tooltip: {} },
-        stubs: { WorkflowSelectorChip: true }
-      }
-    })
-    const textarea = screen.getByRole('textbox')
-    await user.type(textarea, 'unfinished draft')
+  it.for([true, false])(
+    'restores the edited prompt and its references (references: %s)',
+    async (hasReferences) => {
+      const user = userEvent.setup()
+      const pinia = getActivePinia()!
+      const prompt = 'Compare  with  please.'
+      const turnId = toTurnId('msg-1')
+      const references: WorkflowReference[] = hasReferences
+        ? [
+            { id: 'wf-b', name: 'Flow B', textOffset: 8 },
+            { id: 'wf-a', name: 'Flow A', textOffset: 14 }
+          ]
+        : []
+      const { emitted } = render(AgentPanel, {
+        props: {
+          editableTurnId: turnId,
+          entries: [
+            {
+              id: turnId,
+              role: 'user',
+              text: prompt,
+              workflowReferences: references
+            }
+          ],
+          workflowReferences: [
+            { id: 'stale', name: 'Stale draft reference', textOffset: 0 }
+          ],
+          historyGroups
+        },
+        global: {
+          plugins: [pinia, i18n],
+          directives: { tooltip: {} },
+          stubs: { WorkflowSelectorChip: true }
+        }
+      })
+      const textarea = screen.getByRole('textbox')
+      useAgentComposerStore().draft = 'unfinished draft'
 
-    await user.click(screen.getByRole('button', { name: 'Edit' }))
+      await user.click(screen.getByRole('button', { name: 'Edit' }))
 
-    expect(useAgentComposerStore().draft).toBe(prompt)
-    expect(textarea).toHaveFocus()
+      expect(textarea).toHaveTextContent(
+        hasReferences
+          ? 'Compare Flow B with Flow A please.'
+          : 'Compare with please.'
+      )
+      expect(
+        within(textarea).queryByText('Stale draft reference')
+      ).not.toBeInTheDocument()
+      expect(textarea).toHaveFocus()
 
-    await user.clear(textarea)
-    await user.type(textarea, 'Generate a yellow duck at sunrise')
-    await user.click(screen.getByRole('button', { name: 'Send' }))
+      await user.pointer({ target: textarea, offset: 0, keys: '[MouseLeft]' })
+      await user.keyboard('Updated. ')
+      expect(screen.getByTestId('user-message-bubble')).toHaveTextContent(
+        hasReferences
+          ? 'Compare Flow B with Flow A please.'
+          : 'Compare with please.'
+      )
+      await user.click(screen.getByRole('button', { name: 'Send' }))
 
-    expect(emitted().send[0]).toEqual(['Generate a yellow duck at sunrise', []])
-  })
+      expect(emitted().send[0]).toEqual(
+        hasReferences
+          ? [
+              `Updated. ${prompt}`,
+              [],
+              references.map((reference) => ({
+                ...reference,
+                textOffset: (reference.textOffset ?? 0) + 9
+              }))
+            ]
+          : [`Updated. ${prompt}`, []]
+      )
+    }
+  )
 })

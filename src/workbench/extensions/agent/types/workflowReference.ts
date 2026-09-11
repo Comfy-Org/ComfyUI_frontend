@@ -6,6 +6,11 @@ export interface WorkflowReference {
   textOffset?: number
 }
 
+export interface PromptSnapshot {
+  text: string
+  workflowReferences: WorkflowReference[]
+}
+
 export type WorkflowReferenceOption =
   | { id: string; name: string }
   | { id?: undefined; name: string; tabPath: string }

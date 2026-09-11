@@ -9,7 +9,10 @@ import { api } from '@/scripts/api'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 import type { UserAttachment } from '../../../stores/agent/agentConversationStore'
-import type { WorkflowReference } from '../../../types/workflowReference'
+import type {
+  PromptSnapshot,
+  WorkflowReference
+} from '../../../types/workflowReference'
 import type { ReplyAsset } from '../../../utils/replyAssets'
 import { workflowReferenceParts } from '../../../utils/workflowReferenceParts'
 import AgentTooltip from '../AgentTooltip.vue'
@@ -29,7 +32,7 @@ const {
   editable?: boolean
 }>()
 const emit = defineEmits<{
-  edit: [text: string]
+  edit: [prompt: PromptSnapshot]
   openReferenceWorkflow: [workflowId: string, workflowName: string]
 }>()
 
@@ -163,7 +166,7 @@ const splitAttachments = computed(() => {
           type="button"
           :aria-label="t('g.edit')"
           class="hover:bg-agent-surface-hover hover:text-agent-fg flex size-6 cursor-pointer items-center justify-center rounded-lg p-1 transition-colors"
-          @click="emit('edit', text)"
+          @click="emit('edit', { text, workflowReferences })"
         >
           <span class="icon-[lucide--pencil] size-3" />
         </button>

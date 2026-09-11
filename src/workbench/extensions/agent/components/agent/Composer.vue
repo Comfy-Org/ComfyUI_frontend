@@ -23,6 +23,7 @@ import { useComposer } from '../../composables/agent/useComposer'
 import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
 import { selectedNodeKey } from '../../composables/agent/useCanvasSelection'
 import type {
+  PromptSnapshot,
   WorkflowReference,
   WorkflowReferenceOption
 } from '../../types/workflowReference'
@@ -213,8 +214,12 @@ function insert(text: string): void {
   editorRef.value?.focus()
 }
 
-function replaceDraft(text: string): void {
+function replaceDraft({
+  text,
+  workflowReferences: references
+}: PromptSnapshot): void {
   composer.draft.value = text
+  workflowReferences.value = references.map((reference) => ({ ...reference }))
   editorRef.value?.focus()
 }
 

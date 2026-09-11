@@ -215,7 +215,7 @@ describe('UserMessage', () => {
     ).toHaveTextContent(t('g.edit'))
     await user.click(editButton)
 
-    expect(emitted().edit).toEqual([[prompt]])
+    expect(emitted().edit).toEqual([[{ text: prompt, workflowReferences: [] }]])
   })
 
   it('does not offer edit for a settled prompt without edit eligibility', () => {
