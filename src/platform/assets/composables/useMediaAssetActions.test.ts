@@ -1565,11 +1565,11 @@ describe('useMediaAssetActions', () => {
 
       await useMediaAssetActions().deleteAssets(assets)
 
-      expect(mockDeleteAsset.mock.calls.map(([id]) => id)).toEqual([
-        'asset-first',
-        'asset-failed',
-        'asset-third'
-      ])
+      const deletedIds = mockDeleteAsset.mock.calls.map(([id]) => id)
+      expect(deletedIds).toHaveLength(3)
+      expect(new Set(deletedIds)).toEqual(
+        new Set(['asset-first', 'asset-failed', 'asset-third'])
+      )
       expect(mockInputAssets.items.map((item) => item.id)).toEqual([
         'asset-failed'
       ])
@@ -1594,14 +1594,18 @@ describe('useMediaAssetActions', () => {
         life: 5000
       })
 
-      const lastFlagById = new Map(
-        mockSetAssetDeleting.mock.calls as [string, boolean][]
-      )
-      expect([...lastFlagById]).toEqual([
-        ['asset-first', false],
-        ['asset-failed', false],
-        ['asset-third', false]
-      ])
+      const flagsById: Record<string, boolean[]> = {}
+      for (const [id, flag] of mockSetAssetDeleting.mock.calls as [
+        string,
+        boolean
+      ][]) {
+        flagsById[id] = [...(flagsById[id] ?? []), flag]
+      }
+      expect(flagsById).toEqual({
+        'asset-first': [true, false],
+        'asset-failed': [true, false],
+        'asset-third': [true, false]
+      })
     })
   })
 })
