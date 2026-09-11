@@ -128,15 +128,19 @@ describe('SetupSection', () => {
     ).toBeTruthy()
   })
 
-  it('captures connection tab analytics once per selection', async () => {
+  it('captures connection tab analytics once per consecutive selection', async () => {
     renderSetup()
 
     await selectTab(/Local ComfyUI/)
     await selectTab(/Local ComfyUI/)
     await selectTab(/Comfy Cloud/)
     await selectTab(/Comfy Cloud/)
+    await selectTab(/Local ComfyUI/)
 
-    expect(connectionSpy.mock.calls).toEqual([['local'], ['cloud']])
+    // Returning to a connection is a fresh selection, not a repeat: the
+    // dedupe drops reka-ui's re-emit for the tab that is already active,
+    // not every later visit to the same tab.
+    expect(connectionSpy.mock.calls).toEqual([['local'], ['cloud'], ['local']])
   })
 
   it('captures client tab analytics once per selection', async () => {
