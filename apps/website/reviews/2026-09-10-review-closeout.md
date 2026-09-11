@@ -15,9 +15,10 @@ pushed head; local results do not imply approval or a production release.
 - Parent integrates substantive fixes; three Sol High worktrees supplied isolated
   tests, accessibility fixes and generator/documentation cleanup.
 - Preserve the user's independent generation ledger/testing artifacts.
-- No paid generation or payment was performed. The initial review tests used
-  mocked Firebase/session/balance services; the navigation follow-up below was
-  also reproduced with the user's real signed-in preview session.
+- The initial review tests used mocked Firebase/session/balance services and
+  made no paid generation or payment requests. Later user-requested Krea and
+  Recraft runs used the real signed-in TEST preview; their outcomes and deferred
+  fixes are recorded below. No payment was performed.
 - Human review threads remain for the reviewer. Verified automated threads can
   be resolved after the code and evidence are pushed.
 
@@ -130,15 +131,25 @@ reported 466 passing tests and two failures:
   pricing FAQ copy from `main`; the few remaining product-card pixels are
   rounded-edge antialiasing, not content changes.
 
-Visual tests now load the real PP Formula Light file under a test-only family
+The first attempted repair loaded the real PP Formula Light file under a test-only family
 with blocking display, await it explicitly, and apply it only to the existing
-Formula/light combination. Production CSS is unchanged. A delayed-response
+Formula/light combination. Production CSS was unchanged. A delayed-response
 regression proves the face is applied; disabling its selector makes the test
 fail. The integrated desktop run passed all 35 tests with no retries, but Linux
 run `34563718277` subsequently failed 16 visual snapshots after that helper was
 applied broadly. The earlier fallback-font classification was not established
-by the pixel comparison. That visual-test issue remains open and was paused for
-the Run-button regression below.
+by the pixel comparison. That visual-test issue was paused for the Run-button
+regression below, then corrected in the follow-up below.
+
+### Font override correction
+
+The helper now waits for the page's existing `PP Formula` face and font readiness;
+it injects no font family or selector. The delayed-font regression now also
+checks that independently inherited text retains its width. With the old helper,
+that assertion fails (90.109375 pixels instead of 80.078125); with the correction
+it passes. All 35 Models/homepage/header/font browser tests pass without retries.
+No production CSS or screenshot baseline changed in this correction. The full
+Linux screenshot result must still be checked on the pushed head.
 
 ## Signed-in Models navigation regression
 
@@ -176,12 +187,28 @@ input alone would miss this bug. It failed before this follow-up and passes
 after it. All 62 ModelDetail/FileSourceInput unit tests and 14 Models browser
 tests pass; no backend upload or generation is submitted by that regression.
 
+## Deferred generation fixes
+
+The user requested committing the current work before changing generation/output
+behavior. Evidence is preserved without further paid runs:
+
+- [Krea](2026-09-10-krea-generation.md): three variants plus one explicitly
+  requested retry returned TEST Router HTTP 502 `provider_error`. The selected
+  input schemas accept the captured bodies. Backend correlation is still needed.
+- [Recraft](2026-09-10-recraft-generation.md): V4 Pro generated a verified WebP,
+  but our extension-based classifier labels its extensionless URL as `.bin` and
+  renders a file icon. The captured response supports an offline regression and
+  shared output-classification fix next.
+
+The reports link packed, sanitized attempt records. No claim is made about other
+variants, full model coverage, or whether a failed attempt was charged.
+
 ## Not claimed complete
 
 - Real production-origin authentication/deployment: the Cloud prerequisites in
   the PR ledger still need production rollout and a real sign-in/balance check.
-- The full Linux browser run: 16 visual failures remain after the font helper;
-  the updater's earlier pass is not proof that the follow-up run is green.
+- The full Linux browser run after the font override correction; the updater's
+  earlier pass is not proof that the follow-up run is green.
 - HTTP 301 alias responses (3984457892): Astro static output serves an immediate
   meta-refresh document with HTTP 200. The call site states this and a browser
   test verifies the canonical destination. Hosting-level permanent redirects

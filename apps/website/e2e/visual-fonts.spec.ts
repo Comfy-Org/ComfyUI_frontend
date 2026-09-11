@@ -3,13 +3,13 @@ import { fileURLToPath } from 'node:url'
 import { expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
-import { stabilizePpFormulaLight } from './fixtures/visualFonts'
+import { waitForPpFormulaLight } from './fixtures/visualFonts'
 
 const ppFormulaLightPath = fileURLToPath(
   new URL('../public/fonts/PPFormula-Light.woff2', import.meta.url)
 )
 
-test('stabilizes PP Formula Light while its response is delayed', async ({
+test('waits for the page font without overriding other text', async ({
   context,
   page
 }) => {
@@ -28,25 +28,39 @@ test('stabilizes PP Formula Light while its response is delayed', async ({
     route.fulfill({
       contentType: 'text/html',
       body: `
-        <span class="font-formula font-light" style="font-size: 48px; font-weight: 300">$16</span>
-        <span data-testid="fallback" style="font: 300 48px sans-serif">$16</span>
+        <style>
+          @font-face {
+            font-family: 'PP Formula';
+            src: url('/fonts/PPFormula-Light.woff2') format('woff2');
+            font-weight: 300;
+            font-display: block;
+          }
+          body { font: 300 48px sans-serif; }
+          .price { font-family: 'PP Formula', sans-serif; }
+        </style>
+        <span data-testid="price" class="price font-formula font-light">$16</span>
+        <span data-testid="fallback">$16</span>
+        <span data-testid="inherited" class="font-formula font-light">$16</span>
       `
     })
   )
 
-  await page.goto('/__visual-font-test')
-  const stabilization = stabilizePpFormulaLight(page)
+  await page.goto('/__visual-font-test', { waitUntil: 'domcontentloaded' })
+  const stabilization = waitForPpFormulaLight(page)
   await fontRequested.promise
   releaseFont.resolve()
   await stabilization
 
   const formulaWidth = await page
-    .getByText('$16', { exact: true })
-    .first()
+    .getByTestId('price')
     .evaluate((element) => element.getBoundingClientRect().width)
   const fallbackWidth = await page
     .getByTestId('fallback')
     .evaluate((element) => element.getBoundingClientRect().width)
 
   expect(formulaWidth).toBeGreaterThan(fallbackWidth)
+  const inheritedWidth = await page
+    .getByTestId('inherited')
+    .evaluate((element) => element.getBoundingClientRect().width)
+  expect(inheritedWidth).toBe(fallbackWidth)
 })
