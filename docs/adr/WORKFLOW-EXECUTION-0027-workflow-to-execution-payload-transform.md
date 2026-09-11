@@ -32,8 +32,8 @@ in the same schema file; sent via `api.queuePrompt()` in `src/scripts/api.ts`.
 
 ### Where the transform lives today
 
-`graphToPrompt()` in `src/utils/executionUtil.ts` (lines 26–161) is the
-primary conversion function. It runs in this order:
+`graphToPrompt()` in `src/utils/executionUtil.ts` is the primary conversion
+function. It runs in this order:
 
 1. **Virtual node application** — calls `node.applyToGraph()` on all virtual
    nodes in execution order, mutating the live graph.
