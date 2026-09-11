@@ -171,6 +171,15 @@ describe('workflow reference clipboard', () => {
     await user.click(editor)
     await user.keyboard('{Control>}a{/Control}')
     const clipboard = await user.copy()
+    clipboard?.setData(
+      'text/html',
+      clipboard
+        .getData('text/html')
+        .replace(
+          'data-workflow-id="workflow-B"',
+          'data-workflow-id=" workflow-B "'
+        )
+    )
     target.value = 'workflow-B'
     store.replaceDraft({ text: '', workflowReferences: [], attachments: [] })
     await waitFor(() => expect(editor.textContent).toBe(''))
@@ -195,6 +204,15 @@ describe('workflow reference clipboard', () => {
     await user.click(editor)
     await user.keyboard('{Control>}a{/Control}')
     const clipboard = await user.copy()
+    clipboard?.setData(
+      'text/html',
+      clipboard
+        .getData('text/html')
+        .replace(
+          'data-workflow-id="workflow-B"',
+          'data-workflow-id=" workflow-B "'
+        )
+    )
     const caret = document.createRange()
     caret.selectNodeContents(editor)
     caret.collapse(false)
@@ -211,7 +229,9 @@ describe('workflow reference clipboard', () => {
     await user.keyboard('{Control>}a{/Control}')
     await user.paste(clipboard)
     expect(editor.textContent).toBe('Use Reference B')
-    expect(store.workflowReferences).toHaveLength(1)
+    expect(store.workflowReferences).toEqual([
+      { id: 'workflow-B', name: 'Reference B', textOffset: 4 }
+    ])
   })
 
   it.for([

@@ -26,9 +26,9 @@ export const inlinePromptSchema = new Schema({
         {
           tag: 'span[data-comfy-workflow="1"]',
           getAttrs(element) {
-            const id = element.getAttribute('data-workflow-id')
+            const id = element.getAttribute('data-workflow-id')?.trim()
             const name = element.textContent
-            return id?.trim() && name.trim()
+            return id && name.trim()
               ? {
                   id,
                   name,
