@@ -1,5 +1,5 @@
 import type { Mock } from 'vitest'
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { afterEach, describe, expect, it, vi, beforeEach } from 'vitest'
 
 import { createBrowserDownloadService } from './createBrowserDownloadService'
 
@@ -12,6 +12,10 @@ describe('createBrowserDownloadService', () => {
     clickSpy = vi.fn<() => void>()
     anchorElement.click = clickSpy
     vi.spyOn(document, 'createElement').mockReturnValue(anchorElement)
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
   })
 
   it('configures the anchor before clicking it', async () => {
