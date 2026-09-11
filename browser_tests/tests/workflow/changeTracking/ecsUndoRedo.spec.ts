@@ -14,7 +14,6 @@ test.describe(
         'Comfy.Workflow.WorkflowTabsPosition',
         'Topbar'
       )
-      await comfyPage.workflow.loadWorkflow('default')
     })
 
     test.afterEach(async ({ comfyPage }) => {
@@ -26,6 +25,7 @@ test.describe(
     test('moving a node can be undone and a second redo is a no-op', async ({
       comfyPage
     }) => {
+      await comfyPage.workflow.loadWorkflow('default')
       const node = await comfyPage.nodeOps.getNodeRefById('3')
       const initialPosition = await node.getBounding()
 
@@ -68,6 +68,7 @@ test.describe(
     test('changing a widget value can be undone and redone', async ({
       comfyPage
     }) => {
+      await comfyPage.workflow.loadWorkflow('default')
       const node = await comfyPage.nodeOps.getNodeRefById('3')
       const steps = await node.getWidget(2)
       const initialValue = await steps.getValue()
@@ -87,6 +88,7 @@ test.describe(
       comfyPage,
       comfyMouse
     }) => {
+      await comfyPage.workflow.loadWorkflow('default')
       await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
       await comfyPage.vueNodes.waitForNodes()
       const node = await comfyPage.nodeOps.getNodeRefById('3')
@@ -143,6 +145,7 @@ test.describe(
     test('undo remains scoped to the edited workflow after switching tabs', async ({
       comfyPage
     }) => {
+      await comfyPage.workflow.loadWorkflow('default')
       await comfyPage.workflow.setupWorkflowsDirectory({})
       await comfyPage.menu.topbar.saveWorkflow('Undo Tab A')
       await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(0)
