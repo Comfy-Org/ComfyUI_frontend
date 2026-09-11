@@ -7,6 +7,7 @@ import { until } from '@vueuse/core'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
+import { createCancelToken } from '@/utils/createCancelToken'
 import { generateErrorReport } from '@/utils/errorReportUtil'
 
 import type { ErrorCardData } from './types'
@@ -16,7 +17,7 @@ const FALLBACK_EXCEPTION_TYPE = 'Runtime Error'
 
 export function useErrorReport(cardSource: MaybeRefOrGetter<ErrorCardData>) {
   const systemStatsStore = useSystemStatsStore()
-  const enrichedDetails = reactive<Record<number, string>>({})
+  const enrichedDetails = reactive<Partial<Record<number, string>>>({})
 
   const displayedDetailsMap = computed(() => {
     const card = toValue(cardSource)
@@ -31,10 +32,8 @@ export function useErrorReport(cardSource: MaybeRefOrGetter<ErrorCardData>) {
   watch(
     () => toValue(cardSource),
     async (card, _, onCleanup) => {
-      let cancelled = false
-      onCleanup(() => {
-        cancelled = true
-      })
+      const { cancel, isCancelled } = createCancelToken()
+      onCleanup(cancel)
 
       for (const key of Object.keys(enrichedDetails)) {
         delete enrichedDetails[key as unknown as number]
@@ -58,12 +57,12 @@ export function useErrorReport(cardSource: MaybeRefOrGetter<ErrorCardData>) {
           }
         }
       }
-      if (!systemStatsStore.systemStats || cancelled) return
+      if (!systemStatsStore.systemStats || isCancelled()) return
 
       const logs = await api
         .getLogs()
         .catch(() => 'Failed to retrieve server logs')
-      if (cancelled) return
+      if (isCancelled()) return
 
       const workflow = (() => {
         try {

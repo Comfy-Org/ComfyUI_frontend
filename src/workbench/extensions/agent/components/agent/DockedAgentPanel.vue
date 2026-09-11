@@ -4,60 +4,97 @@
     data-testid="docked-agent-panel"
     role="complementary"
     aria-labelledby="agent-panel-title"
-    class="pointer-events-auto relative h-full w-1/3 max-w-[420px] shrink-0 overflow-hidden"
+    class="docked-agent-panel pointer-events-auto relative h-full shrink-0 overflow-hidden [anchor-name:--docked-agent-panel]"
+    :style="{ width: `${width}px` }"
   >
     <div
-      class="size-full border-l border-interface-stroke bg-base-background p-2"
+      data-testid="agent-panel-resize-handle"
+      class="agent-resize-handle absolute top-0 left-0 z-10 h-full w-[5px] cursor-col-resize"
+      :data-resizing="isResizing"
+      @pointerdown="onResizeStart"
+      @lostpointercapture="isResizing = false"
+    />
+    <div
+      data-testid="docked-agent-panel-shell"
+      class="bg-agent-surface size-full border-l border-interface-stroke p-2"
     >
       <div
         class="size-full overflow-hidden rounded-lg border border-interface-stroke"
       >
-        <div v-if="loadFailed" class="size-full bg-base-background p-3">
-          <h2 id="agent-panel-title" class="sr-only">
-            {{ t('agent.title') }}
-          </h2>
-          <p class="text-sm text-base-foreground">
-            {{ t('agent.loadFailed') }}
-          </p>
-        </div>
-        <Suspense v-else>
-          <AgentPanelRoot />
-          <template #fallback>
-            <div class="size-full bg-base-background">
-              <h2 id="agent-panel-title" class="sr-only">
-                {{ t('agent.title') }}
-              </h2>
-            </div>
-          </template>
-        </Suspense>
+        <AgentPanelRoot />
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, defineAsyncComponent, ref } from 'vue'
+import { computed, defineAsyncComponent, defineComponent, h, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { reportError } from '@/platform/telemetry/reportError'
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agentPanelStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/agentRunModeStore'
 
-const loadFailed = ref(false)
+const AgentPanelLoadError = defineComponent({
+  name: 'AgentPanelLoadError',
+  setup() {
+    const { t } = useI18n()
+    return () =>
+      h('div', { class: 'size-full bg-base-background p-3' }, [
+        h(
+          'h2',
+          { id: 'agent-panel-title', class: 'sr-only' },
+          t('agent.title')
+        ),
+        h('p', { class: 'text-sm text-base-foreground' }, t('agent.loadFailed'))
+      ])
+  }
+})
+
 // Only a failed chunk load is a load failure; runtime errors inside the
 // resolved panel keep their normal propagation.
-const AgentPanelRoot = defineAsyncComponent(() =>
-  import('@/workbench/extensions/agent/components/agent/AgentPanelRoot.vue').catch(
-    (error: unknown) => {
-      reportError(error, { errorType: 'agent_panel_load_failure' })
-      loadFailed.value = true
-      throw error
-    }
-  )
-)
+const AgentPanelRoot = defineAsyncComponent({
+  loader: () => import('@/workbench/extensions/agent/AgentPanelRoot.vue'),
+  errorComponent: AgentPanelLoadError,
+  onError: (error, _retry, fail) => {
+    reportError(error, { errorType: 'agent_panel_load_failure' })
+    fail()
+  }
+})
 
-const { t } = useI18n()
 const agentPanelStore = useAgentPanelStore()
-const { isOpen, enabled } = storeToRefs(agentPanelStore)
+const agentRunModeStore = useAgentRunModeStore()
+const { isOpen, enabled, width } = storeToRefs(agentPanelStore)
 const docked = computed(() => enabled.value && isOpen.value)
+
+void agentRunModeStore.load().catch((error: unknown) => {
+  reportError(error, { errorType: 'agent_run_mode_load_failure' })
+})
+
+const isResizing = ref(false)
+let resizeStartX = 0
+let resizeStartWidth = 0
+
+function onResizeStart(e: PointerEvent): void {
+  isResizing.value = true
+  resizeStartX = e.clientX
+  resizeStartWidth = agentPanelStore.width
+  ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+  e.preventDefault()
+}
+
+useEventListener(document, 'pointermove', (e: PointerEvent) => {
+  if (!isResizing.value) return
+  agentPanelStore.setWidth(resizeStartWidth + (resizeStartX - e.clientX))
+})
 </script>
+
+<style scoped>
+.agent-resize-handle:hover,
+.agent-resize-handle[data-resizing='true'] {
+  transition: background-color 0.2s ease 300ms;
+  background-color: var(--p-primary-color);
+}
+</style>

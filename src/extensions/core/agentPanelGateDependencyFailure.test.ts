@@ -1,7 +1,7 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agentPanelStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { registerAgentPanelExtension } from './agentPanel'
 
 const registered = vi.hoisted(() => ({
   setup: null as (() => Promise<void> | void) | null
@@ -19,6 +19,19 @@ vi.mock('@/workbench/extensions/agent/utils/postHogFlagSource', () => {
   throw new Error('flag source chunk failed to load')
 })
 
+vi.mock('@/utils/graphTraversalUtil', () => ({
+  getNodeByLocatorId: vi.fn()
+}))
+
+vi.mock('@/utils/litegraphUtil', () => ({
+  isLGraphNode: () => false
+}))
+
+vi.mock(
+  '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker',
+  () => ({ registerWorkflowTabActivityTracker: vi.fn() })
+)
+
 vi.mock('@/services/extensionService', () => ({
   useExtensionService: () => ({
     registerExtension: (extension: { setup?: () => Promise<void> | void }) => {
@@ -29,14 +42,14 @@ vi.mock('@/services/extensionService', () => ({
 
 describe('the agent panel gate under a dependency-chunk failure', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     reportErrorMock.mockClear()
+    useAgentPanelStore().enabled = false
+    useAgentPanelStore().gateSettled = false
   })
 
   it('settles fail-closed, reports, and resolves the setup promise', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.stubGlobal('__DISTRIBUTION__', 'cloud')
-    vi.resetModules()
-    const { registerAgentPanelExtension } = await import('./agentPanel')
     registerAgentPanelExtension()
 
     // The gate promise is HANDED BACK to the extension service - a
@@ -50,5 +63,6 @@ describe('the agent panel gate under a dependency-chunk failure', () => {
     expect(reportErrorMock).toHaveBeenCalledWith(expect.any(Error), {
       errorType: 'agent_flag_gate_load_failure'
     })
+    expect(consoleError).not.toHaveBeenCalled()
   })
 })

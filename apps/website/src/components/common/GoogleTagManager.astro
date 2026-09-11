@@ -1,0 +1,51 @@
+---
+/**
+ * The one Google Tag Manager bootstrap for every layout. Rendered twice per
+ * page because the snippet spans two places: `head` carries the resource
+ * hints and the loader, `noscript` the iframe fallback inside `<body>`.
+ */
+interface Props {
+  part: 'head' | 'noscript'
+}
+
+const { part } = Astro.props
+
+const gtmId = 'GTM-NP9JM6K7'
+const gtmEnabled = import.meta.env.PROD
+---
+
+{
+  part === 'head' && (
+    <>
+      <link rel="preconnect" href="https://www.googletagmanager.com" />
+      <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+      {gtmEnabled && (
+        <script is:inline define:vars={{ gtmId }}>
+          ;(function (w, d, s, l, i) {
+            w[l] = w[l] || []
+            w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' })
+            var f = d.getElementsByTagName(s)[0],
+              j = d.createElement(s),
+              dl = l != 'dataLayer' ? '&l=' + l : ''
+            j.async = true
+            j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl
+            f.parentNode.insertBefore(j, f)
+          })(window, document, 'script', 'dataLayer', gtmId)
+        </script>
+      )}
+    </>
+  )
+}
+
+{
+  part === 'noscript' && gtmEnabled && (
+    <noscript>
+      <iframe
+        src={`https://www.googletagmanager.com/ns.html?id=${gtmId}`}
+        height="0"
+        width="0"
+        style="display:none;visibility:hidden"
+      ></iframe>
+    </noscript>
+  )
+}

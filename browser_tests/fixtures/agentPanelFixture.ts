@@ -4,10 +4,10 @@ import type { ListAssetsResponse } from '@comfyorg/ingest-types'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
-import { cloudAppFixture, waitForCloudApp } from './cloudAppFixture'
-import { mockBilling } from './utils/cloudBillingMocks'
-import { bootCloud, mockCloudBoot } from './utils/cloudBootMocks'
-import { jsonRoute } from './utils/jsonRoute'
+import { cloudAppFixture, waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
+import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
+import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
@@ -23,16 +23,29 @@ function agentFeatures(agentFlag: boolean): RemoteConfig {
   }
 }
 
+interface BootAgentAppOptions {
+  /** Extra `/api/settings` entries layered over the panel defaults. */
+  settings?: Record<string, unknown>
+  /** `'server'` loads real node definitions instead of the empty catalog. */
+  objectInfo?: 'server'
+}
+
 async function mockAgentBoot(
   page: Page,
-  { agentFlag }: { agentFlag: boolean }
+  {
+    agentFlag,
+    settings,
+    objectInfo
+  }: { agentFlag: boolean } & BootAgentAppOptions
 ): Promise<void> {
   await mockCloudBoot(page, {
     features: agentFeatures(agentFlag),
     settings: {
       'Comfy.TutorialCompleted': true,
-      'Comfy.RightSidePanel.ShowErrorsTab': false
-    }
+      'Comfy.RightSidePanel.ShowErrorsTab': false,
+      ...settings
+    },
+    objectInfo
   })
   await mockBilling(page)
   const emptyAssets: ListAssetsResponse = {
@@ -65,9 +78,15 @@ export const agentTest = cloudAppFixture.extend<AgentFixtures>({
 
 export async function bootAgentApp(
   page: Page,
-  agentFlag: boolean
+  agentFlag: boolean,
+  options: BootAgentAppOptions = {}
 ): Promise<void> {
-  await mockAgentBoot(page, { agentFlag })
+  // The shell's onboarding coach is a modal; pre-seed its dismissal so the
+  // panel chrome is interactable, as the canonical agent suite does.
+  await page.addInitScript(() => {
+    localStorage.setItem('Comfy.AgentPanel.onboarded', 'true')
+  })
+  await mockAgentBoot(page, { agentFlag, ...options })
   await bootCloud(page)
   await page.goto(APP_URL)
   await waitForCloudApp(page)
