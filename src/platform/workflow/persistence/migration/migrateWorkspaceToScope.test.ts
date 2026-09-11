@@ -466,6 +466,47 @@ describe('migrateWorkspaceToScope', () => {
     expect(readJson(destinationIndexKey)).toEqual(newerIndex)
   })
 
+  it('rolls back partial copies when same-scope completion belongs to an older source generation', () => {
+    seedSourceWorkspace()
+    const claimKey = StorageKeys.migrationClaim(sourceWorkspaceId)
+    const completionKey = StorageKeys.migrationCompletion(sourceWorkspaceId)
+    const destinationPayloadKey = StorageKeys.draftPayload(
+      draftPath,
+      destinationScope
+    )
+    localStorage.setItem(
+      completionKey,
+      JSON.stringify({
+        scope: destinationScope,
+        sourceUpdatedAt: 5,
+        nonce: 'old-migration',
+        completedAt: Date.now()
+      })
+    )
+    const realSetItem = localStorage.setItem.bind(localStorage)
+    let claimTaken = false
+    vi.spyOn(localStorage, 'setItem').mockImplementation(
+      (key: string, value: string) => {
+        realSetItem(key, value)
+        if (key === destinationPayloadKey && !claimTaken) {
+          claimTaken = true
+          realSetItem(
+            claimKey,
+            JSON.stringify({
+              scope: competingScope,
+              sourceUpdatedAt: 10,
+              nonce: 'competing-tab'
+            })
+          )
+        }
+      }
+    )
+
+    migrateWorkspaceToScope(sourceWorkspaceId, destinationScope)
+
+    expect(readJson(destinationPayloadKey)).toBe(null)
+  })
+
   it('keeps artifacts committed by a same-scope migration winner', () => {
     seedSourceWorkspace()
     const claimKey = StorageKeys.migrationClaim(sourceWorkspaceId)
