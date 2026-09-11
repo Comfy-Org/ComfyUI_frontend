@@ -743,11 +743,33 @@ function onCopyMarkdown(id: string): void {
   else toast.add({ severity: 'info', summary: t('agent.copyUnavailable') })
 }
 
-const coachStep: CoachStep = {
-  target: '#agent-panel-root',
-  title: t('agent.coachTitle'),
-  body: t('agent.coachBody')
-}
+const coachSteps = computed<CoachStep[]>(() => [
+  {
+    target: '#agent-panel-root',
+    placement: 'left-center',
+    title: t('agent.coachTitle'),
+    body: t('agent.coachBody')
+  },
+  {
+    target: '#agent-composer',
+    placement: 'left-end',
+    title: t('agent.coachWorkflowTitle'),
+    body: t('agent.coachWorkflowBody')
+  },
+  {
+    target: '.graph-canvas-panel',
+    placement: 'graph-bottom',
+    toolbarTarget: '.graph-canvas-panel [role="toolbar"]',
+    title: t('agent.coachGraphTitle'),
+    body: t('agent.coachGraphBody')
+  },
+  {
+    target: '#agent-chat-history',
+    placement: 'left-start',
+    title: t('agent.coachHistoryTitle'),
+    body: t('agent.coachHistoryBody')
+  }
+])
 
 function onSend(text: string, attachments: ComposerAttachment[]): void {
   exitNodeSelectionMode()
@@ -1136,7 +1158,8 @@ function onPanelDrop(event: DragEvent): void {
       </template>
     </AgentPanel>
     <OnboardingCoach
-      :step="coachStep"
+      v-if="!canvasStore.linearMode"
+      :steps="coachSteps"
       storage-key="Comfy.AgentPanel.onboarded"
     />
   </div>

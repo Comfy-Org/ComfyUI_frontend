@@ -6,7 +6,7 @@ import type {
   AgentThreadSummary,
   SubscriptionTier
 } from '@comfyorg/ingest-types'
-import { render, screen, within } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Mocked } from 'vitest'
@@ -295,6 +295,7 @@ beforeEach(() => {
   URL.createObjectURL = vi.fn(() => 'blob:mock-url')
   URL.revokeObjectURL = vi.fn()
   localStorage.clear()
+  localStorage.setItem('Comfy.AgentPanel.onboarded', 'true')
   getServerFeature.mockReset()
   getServerFeature.mockImplementation(
     (_name: string, defaultValue?: unknown) => defaultValue
@@ -401,6 +402,81 @@ function addTab(
   workflowStore.openWorkflowsInBackground({ right: [tab.path] })
   return tab
 }
+
+describe('AgentPanelRoot onboarding', () => {
+  it('defers the tour in App Mode without completing it or blocking the composer', async () => {
+    localStorage.removeItem('Comfy.AgentPanel.onboarded')
+    canvasStore.linearMode = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    await userEvent.type(screen.getByRole('textbox'), 'Explain this app')
+    expect(screen.getByRole('textbox')).toHaveValue('Explain this app')
+    expect(localStorage.getItem('Comfy.AgentPanel.onboarded')).not.toBe('true')
+    expect(canvasStore.linearMode).toBe(true)
+
+    canvasStore.linearMode = false
+    expect(
+      await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
+    ).toBeInTheDocument()
+    expect(localStorage.getItem('Comfy.AgentPanel.onboarded')).not.toBe('true')
+  })
+
+  it('walks through the four cards and leaves the composer usable after Done', async () => {
+    localStorage.removeItem('Comfy.AgentPanel.onboarded')
+    render(
+      defineComponent({
+        setup: () => () =>
+          h('div', [
+            h('section', { class: 'graph-canvas-panel' }, [
+              h('div', { role: 'toolbar' })
+            ]),
+            h(AgentPanelRoot)
+          ])
+      }),
+      { global: { plugins: [i18n] } }
+    )
+
+    for (const [index, { title, description }] of [
+      {
+        title: 'Meet your Comfy Agent',
+        description:
+          'Describe your ideas, ask it to build and run workflows. It sees your canvas and files.'
+      },
+      {
+        title: 'Select a workflow for your agent to edit',
+        description:
+          'The agent edits only the workflow you choose. You can also upload reference files or mention other workflows.'
+      },
+      {
+        title: 'Let the agent run while you edit',
+        description:
+          'You can still edit the graph or switch tabs while the agent is working.'
+      },
+      {
+        title: 'Pick up where you left off',
+        description:
+          'Previous chats are saved here. Open one to review it or continue working with the agent.'
+      }
+    ].entries()) {
+      const dialog = await screen.findByRole('dialog', { name: title })
+      expect(dialog).toHaveAccessibleDescription(description)
+      await waitFor(() =>
+        expect(within(dialog).getByText(`${index + 1} of 4`)).toBeVisible()
+      )
+      await userEvent.click(
+        within(dialog).getByRole('button', {
+          name: index === 3 ? 'Done' : 'Next'
+        })
+      )
+    }
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(localStorage.getItem('Comfy.AgentPanel.onboarded')).toBe('true')
+    await userEvent.type(screen.getByRole('textbox'), 'Build an image workflow')
+    expect(screen.getByRole('textbox')).toHaveValue('Build an image workflow')
+  })
+})
 
 describe('AgentPanelRoot paywall actions', () => {
   beforeEach(() => {
@@ -1608,7 +1684,6 @@ describe('AgentPanelRoot canvas draft on send', () => {
 describe('AgentPanelRoot history', () => {
   beforeEach(() => {
     ws.clear()
-    localStorage.clear()
   })
 
   async function renderWithActiveThread(): Promise<void> {
