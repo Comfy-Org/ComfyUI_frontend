@@ -7,14 +7,17 @@
   "type": "module",
   "exports": {
     "./core": {
+      "development": "./src/core/index.ts",
       "types": "./dist/core/index.d.ts",
       "import": "./dist/core/index.js"
     },
     "./firebase": {
+      "development": "./src/firebase/index.ts",
       "types": "./dist/firebase/index.d.ts",
       "import": "./dist/firebase/index.js"
     },
     "./vue": {
+      "development": "./src/vue/index.ts",
       "types": "./dist/vue/index.d.ts",
       "import": "./dist/vue/index.js"
     }

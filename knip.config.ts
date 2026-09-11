@@ -40,7 +40,6 @@ const config: KnipConfig = {
       project: ['src/**/*.{js,ts}']
     },
     'packages/account': {
-      entry: ['src/core/index.ts', 'src/vue/index.ts'],
       project: ['src/**/*.{js,ts}']
     },
     'apps/website': {
