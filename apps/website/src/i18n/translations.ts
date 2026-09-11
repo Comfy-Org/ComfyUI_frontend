@@ -9926,6 +9926,14 @@ Enterprise`
     en: 'Not enough credits',
     'zh-CN': '积分不足'
   },
+  'workshop.error.checkoutFailed': {
+    en: 'Checkout could not start. Try again.',
+    'zh-CN': '无法启动结账，请重试。'
+  },
+  'workshop.error.noCreditsCheckout': {
+    en: 'Add credits to {workspace} through Stripe checkout.',
+    'zh-CN': '通过 Stripe 结账为 {workspace} 添加积分。'
+  },
   'workshop.error.noCreditsCloud': {
     en: 'Add credits to {workspace} to keep running models.',
     'zh-CN': '为 {workspace} 添加积分以继续运行模型。'
