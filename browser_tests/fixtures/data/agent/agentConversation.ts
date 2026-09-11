@@ -1,22 +1,17 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
-import {
-  FROZEN_OPS,
-  applyOps,
-  mint,
-  project
-} from '@comfyorg/comfy-multi-player'
+import { FROZEN_OPS } from '@comfyorg/comfy-multi-player'
 import type { OpBase } from '@comfyorg/comfy-multi-player'
 import { z } from 'zod'
 
-import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
-import { mintWireOps } from '@/workbench/extensions/agent/crdt/opEnvelope'
 import { zAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+
+import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 
 // A recording keeps every production field except the two ids the replay
 // mints per run (agentConversationFixture stampTurn).
-const mintedIds: { thread_id: true; message_id: true } = {
+export const mintedIds: { thread_id: true; message_id: true } = {
   thread_id: true,
   message_id: true
 }
@@ -51,7 +46,7 @@ const OP_ENVELOPE: Record<keyof OpBase, true> = {
   base_version: true,
   stamp: true
 }
-const OP_ENVELOPE_KEYS = Object.keys(OP_ENVELOPE)
+export const OP_ENVELOPE_KEYS = Object.keys(OP_ENVELOPE)
 
 // Only the vocabulary and the absence of the envelope are checked here; a
 // recorded op stays structural. Nothing in this fixture parses the semantic
@@ -104,14 +99,14 @@ const zWidgetCatalog = z
   })
   .strict()
 
-const zAgentConversationWorkflow = z.object({
+export const zAgentConversationWorkflow = z.object({
   id: z.string().uuid(),
   name: z.string().min(1),
   catalog: zWidgetCatalog,
   seed: zWorkflowJson
 })
 
-const zAgentConversationRequest = z.object({
+export const zAgentConversationRequest = z.object({
   content: z.string().min(1)
 })
 
@@ -236,34 +231,33 @@ function missingValue(value: unknown, path: string): string | null {
   return null
 }
 
-// Applies every recorded op to a document minted from the recording's seed
-// and catalog. This is application, not parsing: it shows the applier accepts
-// each op against that document and that the projection it leaves carries a
-// value everywhere, which is what the replay needs and all it proves.
-export function assertOpsApply(conversation: AgentConversation): void {
-  const { seed, catalog } = conversation.workflow
-  const doc = mint(seed, catalog)
-  let version = 1
+// Applies every recorded op through the fixture's own host, minted from the
+// recording's seed and catalog. This is application, not parsing: it shows
+// the applier accepts each op against that document and that the projection
+// it leaves carries a value everywhere. The returned host holds the applied
+// document for whoever needs to compare against it.
+export function assertOpsApply(conversation: AgentConversation): HostDoc {
+  const { workflow } = conversation
+  const host = new HostDoc(workflow.id, workflow.seed, workflow.catalog)
   for (const [turnIndex, turn] of conversation.turns.entries())
     for (const [entryIndex, entry] of turn.response.entries()) {
       if (entry.kind !== 'graph_ops') continue
       const label = `turn ${turnIndex} entry ${entryIndex}`
-      const ops = mintWireOps(entry.ops as GraphOperation[], {
-        actor: 'agent:comfy:host',
-        baseVersion: version
-      })
-      version += 1
-      const rejected = applyOps(doc, ops, catalog).outcomes.filter(
-        (outcome) => outcome.outcome !== 'applied'
-      )
-      if (rejected.length > 0)
+      let projection: unknown
+      try {
+        host.apply(entry.ops)
+        projection = host.projection()
+      } catch (error) {
         throw new Error(
-          `${label}: the applier rejected ${JSON.stringify(rejected)}`
+          `${label}: ${error instanceof Error ? error.message : String(error)}`,
+          { cause: error }
         )
-      const hole = missingValue(project(doc, catalog), 'projection')
+      }
+      const hole = missingValue(projection, 'projection')
       if (hole !== null)
         throw new Error(`${label}: the projection carries no value at ${hole}`)
     }
+  return host
 }
 
 export function loadAgentConversation(caseId: string): AgentConversation {
