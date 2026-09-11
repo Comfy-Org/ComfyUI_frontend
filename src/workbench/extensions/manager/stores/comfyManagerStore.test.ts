@@ -612,7 +612,6 @@ describe('useComfyManagerStore', () => {
 
     it('does not re-notify already-notified failures when history is replayed', async () => {
       const store = useComfyManagerStore()
-      // First failure triggers notification
       setTaskHistory(store, { a: errorTask('a') })
       await nextTick()
       await vi.runAllTimersAsync()
@@ -620,15 +619,12 @@ describe('useComfyManagerStore', () => {
 
       toastAddMock.mockClear()
 
-      // Simulate server state replay: resetTaskState clears local state,
-      // then history is re-populated with the same failed task
       store.resetTaskState()
       await nextTick()
       setTaskHistory(store, { a: errorTask('a') })
       await nextTick()
       await vi.runAllTimersAsync()
 
-      // Should notify again after reset (fresh session)
       expect(toastAddMock).toHaveBeenCalledTimes(1)
     })
 
@@ -641,12 +637,10 @@ describe('useComfyManagerStore', () => {
 
       toastAddMock.mockClear()
 
-      // Re-assign same history (simulating server push with same data)
       setTaskHistory(store, { a: errorTask('a') })
       await nextTick()
       await vi.runAllTimersAsync()
 
-      // Should NOT re-notify - already notified about this ID
       expect(toastAddMock).not.toHaveBeenCalled()
     })
   })

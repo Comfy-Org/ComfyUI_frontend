@@ -114,7 +114,6 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     { deep: true }
   )
 
-  // Track install failures we've already notified about to prevent replay
   const notifiedFailedInstallIds = ref<Set<string>>(new Set())
   const pendingFailureCount = ref(0)
 
@@ -130,20 +129,17 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     })
   }, 300)
 
-  // Watch taskHistory for newly completed install failures.
-  // Only fires toast for tasks where kind === 'install' and status is error/skip.
-  // Tracks notified IDs to prevent replay when server state reintroduces history.
+  const isUnnotifiedInstallFailure = (task: TaskHistoryItem) =>
+    task.kind === 'install' &&
+    task.status?.status_str !== 'success' &&
+    !notifiedFailedInstallIds.value.has(task.ui_id)
+
   watch(
     taskHistory,
     (history) => {
       let newFailures = 0
       for (const task of Object.values(history)) {
-        // Only notify for install tasks, not update/uninstall/enable/disable/etc.
-        if (task.kind !== 'install') continue
-        // Only notify for failures (error or skip status)
-        if (task.status?.status_str === 'success') continue
-        // Skip if we've already notified about this task
-        if (notifiedFailedInstallIds.value.has(task.ui_id)) continue
+        if (!isUnnotifiedInstallFailure(task)) continue
 
         notifiedFailedInstallIds.value.add(task.ui_id)
         newFailures++
@@ -381,10 +377,7 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
   }
 
   const resetTaskState = () => {
-    // Clear all task-related reactive state for fresh start after restart.
-    // Also clear pendingFailureCount so any in-flight debounced failure
-    // toast (which reads this value before firing) becomes a no-op.
-    // Clear notifiedFailedInstallIds so we start fresh tracking.
+    // Clear all task-related reactive state for fresh start after restart
     pendingFailureCount.value = 0
     notifiedFailedInstallIds.value.clear()
     taskLogs.value = []
