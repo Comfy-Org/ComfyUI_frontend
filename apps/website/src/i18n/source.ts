@@ -9622,8 +9622,8 @@ Enterprise`
       '数据在美国的 Google Cloud 上处理。Enterprise 包含 99.5% 工作流执行可用性 SLA。'
   },
   'enterprise.faq.heading': {
-    en: 'FAQs',
-    'zh-CN': '常见问题'
+    en: 'Enterprise, answered.',
+    'zh-CN': '关于 Enterprise 的常见问题。'
   },
   'enterprise.closing.heading': {
     en: 'Bring the open standard for visual AI\nto your organization.',

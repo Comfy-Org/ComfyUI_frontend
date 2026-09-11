@@ -910,7 +910,7 @@
   "enterprise.faq.capacity-and-support.question": "What production capacity and support are available?",
   "enterprise.faq.commercial-models.answer": "On Cloud, every model is licensed for commercial use. On local, licenses vary by provider and commercial terms are available on request. Comfy is also an official reseller for MiniMax commercial licenses.",
   "enterprise.faq.commercial-models.question": "Can we use models commercially?",
-  "enterprise.faq.heading": "FAQs",
+  "enterprise.faq.heading": "Enterprise, answered.",
   "enterprise.faq.security.answer": "SSO and a DPA are available. Comfy does not train on customer data, and our SOC 2 Type II audit is in progress. Review current controls in the [Comfy Trust Center]({url}).",
   "enterprise.faq.security.question": "How does Comfy support security review?",
   "enterprise.faq.team-plan.answer": "Yes. Team is a self-serve Comfy Cloud plan with member invites, concurrent workflow runs, a shared credit pool with centralized billing, and role-based permissions. Shared workflows, assets, and projects are coming soon.",
