@@ -57,7 +57,7 @@ async function renderView(): Promise<{ router: Router }> {
 
 describe('CloudForgotPasswordView', () => {
   it('sends the reset for the entered email and confirms it', async () => {
-    mockSendPasswordReset.mockResolvedValue(undefined)
+    mockSendPasswordReset.mockResolvedValue(true)
     const user = userEvent.setup()
     await renderView()
 
@@ -78,7 +78,8 @@ describe('CloudForgotPasswordView', () => {
   })
 
   it('shows the error copy and keeps the form usable when the reset fails', async () => {
-    mockSendPasswordReset.mockRejectedValue(new Error('auth/user-not-found'))
+    // The action swallows its errors and resolves undefined on failure, never rejects.
+    mockSendPasswordReset.mockResolvedValue(undefined)
     const user = userEvent.setup()
     await renderView()
 
@@ -108,7 +109,7 @@ describe('CloudForgotPasswordView', () => {
 
   it('returns to login a few seconds after a successful reset', async () => {
     vi.useFakeTimers()
-    mockSendPasswordReset.mockResolvedValue(undefined)
+    mockSendPasswordReset.mockResolvedValue(true)
     const user = userEvent.setup({
       advanceTimers: (ms) => vi.advanceTimersByTime(ms)
     })

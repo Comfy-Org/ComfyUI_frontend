@@ -164,6 +164,8 @@ export const useAuthActions = () => {
         detail: t('auth.login.passwordResetSentDetail'),
         life: 5000
       })
+      // undefined on a handled failure; a caller with its own success UI keys off this.
+      return true
     },
     reportAuthFlowError('password_reset')
   )
