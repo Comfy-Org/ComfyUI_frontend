@@ -8,7 +8,7 @@ const mounted = useMounted()
 </script>
 
 <template>
-  <div v-show="mounted && enabled">
+  <div v-show="mounted && enabled" :aria-hidden="!mounted || !enabled">
     <slot />
   </div>
   <div v-if="!mounted || !enabled">
