@@ -169,15 +169,6 @@ const authFlagSettled = useWorkshopAuthFlagSettled()
 const mounted = useMounted()
 const signInHref = useSignInHref(locale)
 const docsHref = modelDocsHref(model)
-// The gate blocks only on a balance it has actually read: unknown or errored
-// reads fail open to the run, whose server-side refusal is the real guard.
-const shortOfCredits = computed(
-  () =>
-    balance.value.status === 'ok' &&
-    model.creditsPerRun !== undefined &&
-    balance.value.credits < model.creditsPerRun
-)
-
 const gate = computed(() => {
   if (
     model.incompleteReason ||
@@ -194,7 +185,7 @@ const gate = computed(() => {
   if (
     runState.value.status !== 'running' &&
     balance.value.status === 'ok' &&
-    (balance.value.credits <= 0 || shortOfCredits.value)
+    balance.value.credits <= 0
   )
     return session.value.role === 'member' ? 'memberNoCredits' : 'noCredits'
   return 'ready'
@@ -610,17 +601,15 @@ function useInCode() {
             }}
           </Button>
           <p
-            v-if="gate === 'noCredits' || gate === 'memberNoCredits'"
+            v-if="gate === 'memberNoCredits'"
             role="status"
             class="text-center text-sm text-primary-warm-gray"
           >
             {{
-              gate === 'memberNoCredits'
-                ? t('workshop.error.memberNoCredits', locale).replace(
-                    '{workspace}',
-                    session?.workspace.name ?? ''
-                  )
-                : t('workshop.error.noCredits', locale)
+              t('workshop.error.memberNoCredits', locale).replace(
+                '{workspace}',
+                () => session?.workspace.name ?? ''
+              )
             }}
           </p>
         </div>
@@ -640,6 +629,7 @@ function useInCode() {
           :member-workspace="
             session?.role === 'member' ? session.workspace.name : undefined
           "
+          :workspace-id="session?.workspace.id"
           @switch-personal="switchToPersonal"
           @retry="gate === 'ready' ? run() : reset()"
           @use-in-code="useInCode"

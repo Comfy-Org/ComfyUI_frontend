@@ -3,7 +3,7 @@ import { onClickOutside } from '@vueuse/core'
 import { computed, ref, useTemplateRef } from 'vue'
 
 import { useWorkshopCredits } from '../../config/workshop-credits'
-import { WORKSHOP_CREDITS_URL } from '../../config/workshop-env'
+import { platformTopUpHref } from '../../lib/workshop/buy-credits'
 import { runBeforeSignInLeave } from '../../config/workshop-return'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import type { Locale } from '../../i18n/translations'
@@ -179,7 +179,7 @@ async function signOutFromMenu() {
           {{ t('auth.header.balanceError', locale) }}
         </p>
         <a
-          :href="WORKSHOP_CREDITS_URL"
+          :href="platformTopUpHref(session.workspace.id)"
           data-testid="account-add-credits"
           target="_blank"
           rel="noopener noreferrer"

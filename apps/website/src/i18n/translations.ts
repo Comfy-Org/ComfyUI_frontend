@@ -9916,8 +9916,8 @@ Enterprise`
     'zh-CN': '积分不足'
   },
   'workshop.error.noCreditsPlatform': {
-    en: 'Add credits to {workspace} on platform.comfy.org',
-    'zh-CN': '在 platform.comfy.org 上为 {workspace} 添加积分'
+    en: 'Add credits to {workspace} to keep running models.',
+    'zh-CN': '为 {workspace} 添加积分以继续运行模型。'
   },
   'workshop.hub.tryNow': { en: 'Try now', 'zh-CN': '立即试用' },
   'workshop.hub.tag.partnerNodes': {

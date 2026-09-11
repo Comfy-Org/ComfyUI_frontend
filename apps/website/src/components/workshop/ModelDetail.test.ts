@@ -96,7 +96,6 @@ const model: WorkshopModelDetail = {
   provider: 'Demo',
   modality: 'image',
   task: 'text-to-image',
-  creditsPerRun: 8,
   nodeDisplayName: 'Demo Text to Image',
   fields: [prompt],
   defaults: {},
@@ -467,18 +466,19 @@ describe('ModelDetail', () => {
       'A red teapot'
     )
 
-    const buy = screen.getByRole('link', { name: 'Buy credits' })
+    const buy = screen.getByRole('link', { name: 'Add credits' })
     expect(buy.getAttribute('href')).toBe(
       `${WORKSHOP_CLOUD_BASE_URL}/?settings=plan-credits`
     )
     expect(buy.getAttribute('target')).toBe('_blank')
+    expect(screen.getByTestId('gate-note').textContent).toContain('Personal')
     expect(screen.queryByRole('button', { name: 'Run' })).toBeNull()
     expect(runWorkshopRouter).not.toHaveBeenCalled()
 
     credits.balance.value = { status: 'ok', credits: 100 }
     await nextTick()
     expect(screen.getByRole('button', { name: 'Run' })).toBeTruthy()
-    expect(screen.queryByRole('link', { name: 'Buy credits' })).toBeNull()
+    expect(screen.queryByRole('link', { name: 'Add credits' })).toBeNull()
     expect(screen.getByRole('textbox', { name: /Prompt/ })).toHaveProperty(
       'value',
       'A red teapot'
@@ -584,7 +584,7 @@ describe('ModelDetail', () => {
     expect(
       screen.getByTestId('playground-output').getAttribute('data-state')
     ).toBe('cancelled')
-    expect(screen.getByRole('link', { name: 'Buy credits' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Add credits' })).toBeTruthy()
     pending.resolve(routerResult)
     await vi.waitFor(() => expect(refreshWorkshopCredits).toHaveBeenCalled())
   })
@@ -1166,36 +1166,4 @@ describe('ModelDetail', () => {
       expect(runWorkshopRouter).not.toHaveBeenCalled()
     }
   )
-  it('blocks a run the balance cannot cover, with a button that promises nothing', async () => {
-    credits.balance.value = { status: 'ok', credits: 2 }
-    auth.session.value = credential
-    mountDetail({ model: runnable })
-    await nextTick()
-
-    const gate = screen.getByTestId('run-button')
-    expect(gate.getAttribute('data-gate')).toBe('noCredits')
-    expect(gate.getAttribute('href')).toContain(
-      'platform.comfy.org/billing?workspace='
-    )
-    expect(gate.getAttribute('target')).toBe('_blank')
-    expect(screen.getByTestId('gate-note').textContent).toContain(
-      'platform.comfy.org'
-    )
-    credits.balance.value = { status: 'ok', credits: 1_000 }
-    await nextTick()
-    expect(screen.getByTestId('run-button').getAttribute('data-gate')).toBe(
-      'ready'
-    )
-  })
-
-  it('fails open while the balance read has not settled', async () => {
-    credits.balance.value = { status: 'unknown' }
-    auth.session.value = credential
-    mountDetail({ model: runnable })
-    await nextTick()
-    expect(screen.getByTestId('run-button').getAttribute('data-gate')).toBe(
-      'ready'
-    )
-    credits.balance.value = { status: 'ok', credits: 1_000 }
-  })
 })

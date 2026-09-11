@@ -23,7 +23,7 @@ import type {
   RunState
 } from '../../config/workshop-run'
 import { formatElapsed, isExpired } from '../../config/workshop-run'
-import { WORKSHOP_CREDITS_URL } from '../../config/workshop-env'
+import { platformTopUpHref } from '../../lib/workshop/buy-credits'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
@@ -34,6 +34,7 @@ const {
   earlier = [],
   attachments = [],
   memberWorkspace,
+  workspaceId,
   locale = 'en'
 } = defineProps<{
   state: RunState
@@ -42,6 +43,7 @@ const {
   earlier?: readonly RunRecord[]
   attachments?: readonly RunOutput[]
   memberWorkspace?: string
+  workspaceId?: string
   locale?: Locale
 }>()
 
@@ -262,7 +264,7 @@ const earlierClass = (active: boolean) =>
       <Button
         v-else-if="state.reason === 'noCredits'"
         as="a"
-        :href="WORKSHOP_CREDITS_URL"
+        :href="platformTopUpHref(workspaceId)"
         target="_blank"
         rel="noopener noreferrer"
         variant="outline"

@@ -1,3 +1,8 @@
+import {
+  WORKSHOP_CLOUD_ENV,
+  WORKSHOP_CREDITS_URL
+} from '../../config/workshop-env'
+
 /**
  * The MVP rail (DES-1015): buying happens on platform.comfy.org, in a new
  * tab so the model page and its inputs stay alive. The workspace travels as
@@ -6,14 +11,14 @@
  * The parameter name is the shape agreed for platform's deep-link work, not
  * yet its confirmed contract.
  *
- * Always the production origin, even though staging/test previews mint
- * workspace ids platform cannot resolve: no lower-environment platform
- * origin is modeled in this app yet. Resolve alongside the deep-link
- * contract before the Workshop ships against prod Cloud.
+ * Platform billing exists only against production Cloud. The lower families
+ * keep the visitor on their own cloud's credits page, so a preview can never
+ * hand a staging workspace id to production billing.
  */
 const PLATFORM_ORIGIN = 'https://platform.comfy.org'
 
 export function platformTopUpHref(workspaceId?: string): string {
+  if (WORKSHOP_CLOUD_ENV !== 'prod') return WORKSHOP_CREDITS_URL
   const url = new URL('/billing', PLATFORM_ORIGIN)
   if (workspaceId) url.searchParams.set('workspace', workspaceId)
   return url.toString()
