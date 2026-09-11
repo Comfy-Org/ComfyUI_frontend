@@ -21,7 +21,8 @@ import {
   THINKING_TEXT,
   TOOL_CALL_EVENT,
   WORKFLOW_ID,
-  agentTest
+  agentTest,
+  selectAgentWorkflow
 } from '@e2e/tests/agent/agentPanelMocks'
 
 const test = mergeTests(agentTest, webSocketFixture)
@@ -129,6 +130,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
 
     const panel = page.locator('#agent-panel-root')
     await expect(panel).toBeVisible()
+    await selectAgentWorkflow(page)
 
     await expect(panel.getByText(/^Hello/)).toBeVisible()
     await expect(panel.getByText('What do you want to make?')).toBeVisible()
@@ -139,9 +141,9 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
     const sendButton = panel.getByRole('button', { name: 'Send' })
 
-    await expect(composer).toHaveValue('')
+    await expect(composer).toHaveText('')
     await promptChip.click()
-    await expect(composer).toHaveValue(firstPrompt)
+    await expect(composer).toHaveText(firstPrompt)
     expect(
       postedMessages,
       'inserting a prompt must not POST a message'
@@ -151,7 +153,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await sendButton.click()
     await expect.poll(() => postedMessages.length).toBeGreaterThanOrEqual(1)
     expect(postedMessages[0]).toContain(firstPrompt)
-    await expect(composer).toHaveValue('')
+    await expect(composer).toHaveText('')
 
     pushEvent(ws, THINKING_EVENT)
     await expect(panel.getByText(THINKING_TEXT)).toBeVisible()
@@ -320,7 +322,10 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
   })
 
   test.describe('composer sizing', () => {
-    test.use({ viewport: { width: 1920, height: 1080 } })
+    test.use({
+      viewport: { width: 1920, height: 1080 },
+      permissions: ['clipboard-read', 'clipboard-write']
+    })
 
     test('caps long text at 400px and scrolls internally', async ({
       comfyPage
@@ -330,20 +335,28 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
 
       const panel = page.locator('#agent-panel-root')
       const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
+      const input = panel.getByTestId('composer-inline-input')
 
-      await composer.fill('A growing prompt line\n'.repeat(14))
+      await page.evaluate(() =>
+        navigator.clipboard.writeText('A growing prompt line\n'.repeat(14))
+      )
+      await composer.press('ControlOrMeta+v')
       await expect
         .poll(() =>
-          composer.evaluate((element) =>
+          input.evaluate((element) =>
             Math.round(element.getBoundingClientRect().height)
           )
         )
         .toBeGreaterThan(200)
 
-      await composer.fill('An overflowing prompt line\n'.repeat(60))
+      await page.evaluate(() =>
+        navigator.clipboard.writeText('An overflowing prompt line\n'.repeat(60))
+      )
+      await composer.press('ControlOrMeta+a')
+      await composer.press('ControlOrMeta+v')
       await expect
         .poll(() =>
-          composer.evaluate((element) => ({
+          input.evaluate((element) => ({
             height: Math.round(element.getBoundingClientRect().height),
             scrolls: element.scrollHeight > element.clientHeight
           }))
@@ -358,7 +371,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         .click()
       await expect
         .poll(() =>
-          composer.evaluate((element) => ({
+          input.evaluate((element) => ({
             height: Math.round(element.getBoundingClientRect().height),
             scrolls: element.scrollHeight > element.clientHeight
           }))
@@ -441,13 +454,13 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     const page = comfyPage.page
     await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
 
+    await selectAgentWorkflow(page)
+
     const panel = page.locator('#agent-panel-root')
     await panel
       .getByRole('button', { name: enMessages.agent.addToPrompt })
       .click()
-    await page
-      .getByRole('menuitem', { name: enMessages.agent.addNodesFromGraph })
-      .click()
+    await page.getByRole('menuitem', { name: enMessages.agent.nodes }).click()
     const selectionBanner = page.getByTestId('node-selection-mode-banner')
     await expect(selectionBanner).toBeVisible()
 
@@ -463,6 +476,8 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
   }) => {
     const page = comfyPage.page
     await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+
+    await selectAgentWorkflow(page)
 
     const panel = page.locator('#agent-panel-root')
     const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
@@ -486,7 +501,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(editButton).toHaveCount(1)
     await editButton.click()
 
-    await expect(composer).toHaveValue(originalPrompt)
+    await expect(composer).toHaveText(originalPrompt)
     await expect(composer).toBeFocused()
 
     await composer.fill(revisedPrompt)

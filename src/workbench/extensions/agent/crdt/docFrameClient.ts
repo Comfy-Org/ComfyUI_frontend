@@ -2,7 +2,7 @@ import type { Op } from '@comfyorg/comfy-multi-player'
 
 import { reportError } from '@/platform/telemetry/reportError'
 
-const DOC_PROTOCOL_VERSION = 1
+export const DOC_PROTOCOL_VERSION = 1
 /** Keep this encoded-field cap aligned with cloud's `MaxDocFrameB64Len`. */
 const MAX_DOC_UPDATE_B64_LENGTH = 8 << 20
 const MAX_WORKFLOW_ID_LENGTH = 128
@@ -92,9 +92,10 @@ interface RawDocFrameData {
 }
 
 /**
- * What the server actually puts on the socket. `ServerDocFrame` is the
- * normalized form this module hands on; anything producing frames -- a test
- * double standing in for the server, most of all -- is writing this one.
+ * A frame as it travels the wire, before {@link parseServerDocFrame} reads it.
+ * `ServerDocFrame` is the normalized form this module hands on; anything
+ * producing frames -- a test double standing in for the server, most of all --
+ * is writing this one.
  */
 export type RawServerDocFrame =
   | {

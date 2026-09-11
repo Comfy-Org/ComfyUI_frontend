@@ -10,6 +10,7 @@ An Architecture Decision Record captures an important architectural decision mad
 
 | ADR                                                                                                              | Title                                                                              | Status   | Date       |
 | ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | -------- | ---------- |
+| [AGENT-CONTEXT-0028](AGENT-CONTEXT-0028-separate-workflow-references-from-editor-tabs.md)                        | Separate Workflow References from Editor Tabs                                      | Proposed | 2026-09-07 |
 | [AUTH-BILLING-0014](AUTH-BILLING-0014-billing-attempt-context-and-workspace-scope.md)                            | Billing Attempt Context and Workspace Scope                                        | Proposed | 2026-07-28 |
 | [AUTH-CREDENTIALS-0011](AUTH-CREDENTIALS-0011-cloud-credential-lifecycle-invariants.md)                          | Cloud Credential Lifecycle Invariants                                              | Proposed | 2026-07-09 |
 | [AUTH-IDENTITY-0028](AUTH-IDENTITY-0028-account-package-firebase-entry-delivers-cloud-identity.md)               | The Account Package's Firebase Entry Delivers Identity to the Cloud Session Client | Proposed | 2026-09-09 |
@@ -42,6 +43,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | [TELEMETRY-ROUTING-0013](TELEMETRY-ROUTING-0013-telemetry-routing-across-consumers.md)                           | Telemetry Routing Across Consumers                                                 | Accepted | 2026-07-28 |
 | [TELEMETRY-STARTUP-0030](TELEMETRY-STARTUP-0030-production-startup-telemetry.md)                                 | Production Startup Telemetry                                                       | Proposed | 2026-09-08 |
 | [TESTING-E2E-0027](TESTING-E2E-0027-coverage-measurement-and-test-selection.md)                                  | E2E Coverage Measurement and Test Selection                                        | Proposed | 2026-09-01 |
+| [WEBSITE-REQUESTS-0030](WEBSITE-REQUESTS-0030-creator-widgets-and-router-request-composition.md)                 | Creator widgets and Router request composition                                     | Proposed | 2026-09-09 |
 | [WIDGET-SERIALIZATION-0006](WIDGET-SERIALIZATION-0006-preserve-primitive-widget-values-across-copy-and-paste.md) | PrimitiveNode Widget Restoration Lifecycle                                         | Accepted | 2026-02-22 |
 
 ## Creating a New ADR
