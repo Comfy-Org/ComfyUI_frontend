@@ -1,8 +1,12 @@
 import { Schema } from '@tiptap/pm/model'
 import type { Node } from '@tiptap/pm/model'
 
-import type { WorkflowReference } from '../../../types/workflowReference'
-import { workflowReferenceParts } from '../../../utils/workflowReferenceParts'
+import { isNodeLocatorId } from '@/types/nodeIdentification'
+import type {
+  ComposerInsertionPoint,
+  ComposerPrompt,
+  ComposerReference
+} from '../../../types/composerPrompt'
 
 export const inlinePromptSchema = new Schema({
   nodes: {
@@ -39,43 +43,129 @@ export const inlinePromptSchema = new Schema({
           }
         }
       ]
+    },
+    node: {
+      group: 'inline',
+      inline: true,
+      atom: true,
+      attrs: { id: {}, name: {}, scope: {}, locatorId: { default: null } },
+      toDOM: (node) => [
+        'span',
+        { 'data-node-id': node.attrs.id },
+        `${node.attrs.name} #${node.attrs.id}`
+      ]
+    },
+    asset: {
+      group: 'inline',
+      inline: true,
+      atom: true,
+      attrs: {
+        id: {},
+        name: {},
+        ref: {},
+        previewUrl: { default: null },
+        uploading: { default: false }
+      },
+      toDOM: (node) => [
+        'span',
+        { 'data-asset-id': node.attrs.id },
+        node.attrs.name
+      ]
     }
   }
 })
 
-export function promptDocument(
-  text: string,
-  references: WorkflowReference[]
-): Node {
-  const content = workflowReferenceParts(text, references).map((part) =>
-    part.type === 'text'
-      ? inlinePromptSchema.text(part.text)
-      : inlinePromptSchema.nodes.workflow.create({
-          id: part.reference.id,
-          name: part.reference.name,
-          unavailable: part.reference.unavailable === true
-        })
-  )
+export function promptReferenceNode(reference: ComposerReference): Node {
+  switch (reference.kind) {
+    case 'workflow':
+      return inlinePromptSchema.nodes.workflow.create({
+        id: reference.id,
+        name: reference.name,
+        unavailable: reference.unavailable === true
+      })
+    case 'node':
+      return inlinePromptSchema.nodes.node.create({
+        id: reference.node.id,
+        name: reference.node.title,
+        locatorId: reference.node.locatorId,
+        scope: reference.scope
+      })
+    case 'asset':
+      return inlinePromptSchema.nodes.asset.create({ ...reference.attachment })
+  }
+}
+
+export function promptDocument(prompt: ComposerPrompt): Node {
+  const content: Node[] = []
+  let offset = 0
+  for (const reference of prompt.references) {
+    const next = Math.max(
+      offset,
+      Math.min(prompt.text.length, reference.textOffset)
+    )
+    if (next > offset)
+      content.push(inlinePromptSchema.text(prompt.text.slice(offset, next)))
+    content.push(promptReferenceNode(reference))
+    offset = next
+  }
+  if (offset < prompt.text.length)
+    content.push(inlinePromptSchema.text(prompt.text.slice(offset)))
   return inlinePromptSchema.nodes.doc.create(null, content)
 }
 
-export function promptDraft(doc: Node): {
-  text: string
-  references: WorkflowReference[]
-} {
+export function promptNodeReference(
+  node: Node,
+  textOffset: number
+): ComposerReference | undefined {
+  const { id, name } = node.attrs
+  if (typeof id !== 'string' || typeof name !== 'string') return
+  if (node.type.name === 'workflow')
+    return {
+      kind: 'workflow',
+      id,
+      name,
+      textOffset,
+      ...(node.attrs.unavailable === true ? { unavailable: true } : {})
+    }
+  if (node.type.name === 'node') {
+    const { scope, locatorId } = node.attrs
+    if (typeof scope !== 'string') return
+    return {
+      kind: 'node',
+      scope,
+      textOffset,
+      node: {
+        id,
+        title: name,
+        ...(isNodeLocatorId(locatorId) ? { locatorId } : {})
+      }
+    }
+  }
+  if (node.type.name === 'asset') {
+    const { ref, previewUrl, uploading } = node.attrs
+    if (typeof ref !== 'string') return
+    return {
+      kind: 'asset',
+      textOffset,
+      attachment: {
+        id,
+        name,
+        ref,
+        ...(typeof previewUrl === 'string' ? { previewUrl } : {}),
+        ...(uploading === true ? { uploading: true } : {})
+      }
+    }
+  }
+}
+
+export function promptDraft(doc: Node): ComposerPrompt {
   let text = ''
-  const references: WorkflowReference[] = []
+  const references: ComposerReference[] = []
   doc.forEach((node) => {
     if (node.isText) text += node.text
-    else if (node.type.name === 'workflow') {
-      const { id, name, unavailable } = node.attrs
-      if (typeof id === 'string' && typeof name === 'string')
-        references.push({
-          id,
-          name,
-          textOffset: text.length,
-          ...(unavailable === true ? { unavailable: true } : {})
-        })
+    else {
+      const reference = promptNodeReference(node, text.length)
+      if (reference) references.push(reference)
     }
   })
   return { text, references }
@@ -83,6 +173,17 @@ export function promptDraft(doc: Node): {
 
 export function promptTextOffset(doc: Node, position: number): number {
   return doc.textBetween(0, position, '', '').length
+}
+
+export function promptInsertionPoint(
+  doc: Node,
+  position: number
+): ComposerInsertionPoint {
+  let referenceIndex = 0
+  doc.forEach((node, offset) => {
+    if (!node.isText && offset < position) referenceIndex++
+  })
+  return { textOffset: promptTextOffset(doc, position), referenceIndex }
 }
 
 export function promptDocumentPosition(doc: Node, textOffset: number): number {

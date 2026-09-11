@@ -28,8 +28,10 @@ describe('useComposer', () => {
 
     composer.submit()
 
-    expect(onSend).toHaveBeenCalledWith('make a cat', [attachment])
-    expect(composer.draft.value).toBe('  make a cat  ')
+    expect(onSend).toHaveBeenCalledWith('make a cat  @[Image: cat.png]', [
+      attachment
+    ])
+    expect(composer.draft.value).toBe('  make a cat   ')
     expect(composer.attachments.value).toEqual([attachment])
   })
 
@@ -86,7 +88,7 @@ describe('useComposer', () => {
     expect(composer.canSend.value).toBe(true)
     composer.submit()
 
-    expect(onSend).toHaveBeenCalledWith('', [
+    expect(onSend).toHaveBeenCalledWith('@[Image: cat.png]', [
       { id: 'a1', name: 'cat.png', ref: 'r' }
     ])
   })
@@ -127,14 +129,14 @@ describe('useComposer', () => {
     first.addAttachment({ id: 'a1', name: 'cat.png', ref: 'r' })
 
     const { composer: second, onSend } = setup()
-    expect(second.draft.value).toBe('still here')
+    expect(second.draft.value).toBe('still here ')
     expect(second.attachments.value.map((a) => a.id)).toEqual(['a1'])
 
     second.submit()
-    expect(onSend).toHaveBeenCalledWith('still here', [
+    expect(onSend).toHaveBeenCalledWith('still here@[Image: cat.png]', [
       { id: 'a1', name: 'cat.png', ref: 'r' }
     ])
-    expect(first.draft.value).toBe('still here')
+    expect(first.draft.value).toBe('still here ')
     expect(first.attachments.value.map((attachment) => attachment.id)).toEqual([
       'a1'
     ])
