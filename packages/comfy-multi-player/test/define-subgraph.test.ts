@@ -10,6 +10,7 @@ import {
   type WidgetCatalog,
   type WorkflowJSON,
 } from "../src/index.js"
+import { definitionsMap } from "../src/doc.js"
 
 const catalog: WidgetCatalog = {
   types: {
@@ -80,13 +81,80 @@ describe("define_subgraph application", () => {
     expect(Y.encodeStateAsUpdate(doc)).toEqual(before)
   })
 
+  it("does not revert an intervening interior edit when the exact op is replayed", () => {
+    const doc = empty()
+    const op = define()
+    applyOps(doc, [op], catalog)
+    applyOps(doc, [
+      { op: "set_widget", ...envelope(), node_id: 10, path: [subgraphId, "10"], inner_widget: "value", widget: "value", value: 2 },
+    ], catalog)
+    const before = Y.encodeStateAsUpdate(doc)
+
+    expect(applyOps(doc, [op], catalog).outcomes[0]?.outcome).toBe("no-op")
+    expect(Y.encodeStateAsUpdate(doc)).toEqual(before)
+    const projected = (project(doc, catalog).definitions as { subgraphs: Array<{ nodes: Array<{ widgets_values: unknown[] }> }> }).subgraphs[0]!
+    expect(projected.nodes[0]!.widgets_values).toEqual([2])
+  })
+
   it("rejects same definition id with different content without changing the original", () => {
     const doc = empty()
     applyOps(doc, [define()], catalog)
     const before = Y.encodeStateAsUpdate(doc)
-    expect(rejectionCode(doc, define(subgraphId, 2))).toBe("malformed_op")
+    expect(rejectionCode(doc, define(subgraphId, 2))).toBe("definition_conflict")
     expect(Y.encodeStateAsUpdate(doc)).toEqual(before)
     expect((project(doc, catalog).definitions as { subgraphs: unknown[] }).subgraphs).toEqual([definition()])
+  })
+
+  it.each([
+    ["missing nodes", { ...definition(), nodes: undefined }],
+    ["invalid definition id", definition("not-a-uuid")],
+    ["duplicate normalized node ids", { ...definition(), nodes: [{ id: 1, type: "Inner" }, { id: "1", type: "Inner" }] }],
+    ["duplicate normalized nested definition ids", {
+      ...definition(),
+      definitions: {
+        subgraphs: [
+          definition("abcdefab-cdef-4abc-8def-abcdefabcdef"),
+          definition("abcdefab-cdef-4abc-8def-abcdefabcdef"),
+        ],
+      },
+    }],
+  ])("rejects %s without creating a partial definition", (_name, malformed) => {
+    const doc = empty()
+    const before = Y.encodeStateAsUpdate(doc)
+    const op = { ...define(), subgraph_id: String(malformed.id), subgraph_definition: malformed } as DefineSubgraphOp
+
+    expect(rejectionCode(doc, op)).toBe("malformed_op")
+    expect(Y.encodeStateAsUpdate(doc)).toEqual(before)
+    expect(definitionsMap(doc).size).toBe(0)
+  })
+
+  it("projects nested definitions", () => {
+    const nestedId = "abcdefab-cdef-4abc-8def-abcdefabcdef"
+    const nested = definition(nestedId, 4)
+    const outer = { ...definition(), definitions: { subgraphs: [nested] } }
+    const doc = empty()
+
+    expect(applyOps(doc, [{ ...define(), subgraph_definition: outer }], catalog).outcomes[0]?.outcome).toBe("applied")
+    const projected = (project(doc, catalog).definitions as { subgraphs: Array<Record<string, unknown>> }).subgraphs[0]!
+    expect(projected.definitions).toEqual({ subgraphs: [nested] })
+  })
+
+  it("uses a key-order-independent definition digest", () => {
+    const doc = empty()
+    const first = definition()
+    const reordered = {
+      links: first.links,
+      nodes: first.nodes,
+      outputs: first.outputs,
+      inputs: first.inputs,
+      name: first.name,
+      id: first.id,
+    }
+
+    expect(applyOps(doc, [{ ...define(), subgraph_definition: first }], catalog).outcomes[0]?.outcome).toBe("applied")
+    const digest = definitionsMap(doc).get(subgraphId)?.get("__definition_digest")
+    expect(applyOps(doc, [{ ...define(), subgraph_definition: reordered }], catalog).outcomes[0]?.outcome).toBe("no-op")
+    expect(definitionsMap(doc).get(subgraphId)?.get("__definition_digest")).toBe(digest)
   })
 
   it("applies define, interior edit, then instance in one batch", () => {

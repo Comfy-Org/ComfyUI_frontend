@@ -555,9 +555,9 @@ export interface WorkflowJSON {
 }
 
 export interface SubgraphDefinition extends Record<string, unknown> {
-  id?: unknown;
-  nodes?: unknown[];
-  links?: unknown[];
+  id: string;
+  nodes: unknown[];
+  links: unknown[];
 }
 
 // ---------------------------------------------------------------------------

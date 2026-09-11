@@ -465,18 +465,13 @@ function applyDefineSubgraph(
   op: DefineSubgraphOp,
   catalog?: WidgetCatalog,
 ): SuccessfulOutcome {
-  if (
-    typeof op.subgraph_id !== "string" ||
-    op.subgraph_id.length === 0 ||
-    typeof op.subgraph_definition !== "object" ||
-    op.subgraph_definition === null ||
-    String(op.subgraph_definition.id) !== op.subgraph_id
-  ) {
+  if (!isUuid(op.subgraph_id) || !isPlainRecord(op.subgraph_definition) || op.subgraph_definition.id !== op.subgraph_id) {
     throw new OpRejectedError(
       "malformed_op",
-      "define_subgraph: subgraph_id must be a non-empty string matching subgraph_definition.id",
+      "define_subgraph: subgraph_id must be a UUID matching subgraph_definition.id",
     );
   }
+  validateSubgraphDefinition(op.subgraph_definition, "subgraph_definition");
   if (!catalog) {
     throw new OpRejectedError("catalog_required", "define_subgraph: the pinned catalog is required to encode interior nodes");
   }
@@ -486,7 +481,7 @@ function applyDefineSubgraph(
   if (existing !== undefined) {
     if (existing.get("__definition_digest") === digest) return "no-op";
     throw new OpRejectedError(
-      "malformed_op",
+      "definition_conflict",
       `define_subgraph: definition '${op.subgraph_id}' already exists with different content`,
     );
   }
@@ -502,6 +497,70 @@ function applyDefineSubgraph(
   mset(definition, "__definition_digest", digest);
   mset(definitions, op.subgraph_id, definition);
   return "applied";
+}
+
+function isUuid(value: unknown): value is string {
+  return typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
+
+function validateSubgraphDefinition(definition: Record<string, unknown>, path: string): void {
+  if (!isUuid(definition.id) || !Array.isArray(definition.nodes) || !Array.isArray(definition.links)) {
+    throw new OpRejectedError("malformed_op", `define_subgraph: ${path} needs a UUID id plus nodes and links arrays`);
+  }
+  assertUniqueNormalizedIds(definition.nodes, `${path}.nodes`);
+  assertUniqueNormalizedIds(definition.links, `${path}.links`);
+  validateSerializableValue(definition, path);
+
+  const nested = definition.definitions;
+  if (nested === undefined) return;
+  if (!isPlainRecord(nested) || !Array.isArray(nested.subgraphs)) {
+    throw new OpRejectedError("malformed_op", `define_subgraph: ${path}.definitions.subgraphs must be an array`);
+  }
+  const nestedIds = new Set<string>();
+  nested.subgraphs.forEach((candidate, index) => {
+    const nestedPath = `${path}.definitions.subgraphs[${index}]`;
+    if (!isPlainRecord(candidate) || !isUuid(candidate.id)) {
+      throw new OpRejectedError("malformed_op", `define_subgraph: ${nestedPath} must be a definition with a UUID id`);
+    }
+    if (nestedIds.has(candidate.id)) {
+      throw new OpRejectedError("malformed_op", `define_subgraph: duplicate definition id '${candidate.id}' at ${nestedPath}`);
+    }
+    nestedIds.add(candidate.id);
+    validateSubgraphDefinition(candidate, nestedPath);
+  });
+}
+
+function assertUniqueNormalizedIds(values: unknown[], path: string): void {
+  const ids = new Set<string>();
+  values.forEach((value, index) => {
+    const id = Array.isArray(value) ? value[0] : isPlainRecord(value) ? value.id : undefined;
+    if (id === undefined || id === null) return;
+    const normalized = String(id);
+    if (ids.has(normalized)) {
+      throw new OpRejectedError("malformed_op", `define_subgraph: duplicate normalized id '${normalized}' at ${path}[${index}]`);
+    }
+    ids.add(normalized);
+  });
+}
+
+function validateSerializableValue(value: unknown, path: string): void {
+  if (value === null || typeof value === "string" || typeof value === "boolean") return;
+  if (typeof value === "number" && Number.isFinite(value)) return;
+  if (Array.isArray(value)) {
+    value.forEach((child, index) => validateSerializableValue(child, `${path}[${index}]`));
+    return;
+  }
+  if (isPlainRecord(value)) {
+    Object.entries(value).forEach(([key, child]) => validateSerializableValue(child, `${path}.${key}`));
+    return;
+  }
+  throw new OpRejectedError("malformed_op", `define_subgraph: ${path} is not JSON-serializable`);
 }
 
 // ---------------------------------------------------------------------------
