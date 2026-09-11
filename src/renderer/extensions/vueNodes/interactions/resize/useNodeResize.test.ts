@@ -616,6 +616,10 @@ describe('useNodeResize', () => {
       callback.mockClear()
       simulateMove(20, 20)
       expect(callback).not.toHaveBeenCalled()
+
+      startResizeAt(getStartResize(), handle, 'SE')
+      simulateMove(30, 30)
+      expect(callback).toHaveBeenCalledTimes(1)
     })
   })
 })
