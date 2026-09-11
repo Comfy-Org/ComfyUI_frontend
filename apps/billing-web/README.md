@@ -30,6 +30,21 @@ pnpm --filter @comfyorg/billing-web test:unit
 pnpm --filter @comfyorg/billing-web build
 ```
 
+## Path-prefixed hosting
+
+`VITE_BILLING_WEB_URL` may point at a path prefix, such as
+`https://host/billing/`. The router takes its history base from
+`import.meta.env.BASE_URL`, which Vite fills in from `base`, so a prefixed
+deployment needs nothing beyond the build-time value:
+
+```bash
+pnpm --filter @comfyorg/billing-web build --base=/billing/
+```
+
+Built assets and history routes then resolve under the same prefix. Which
+prefix a deployment uses belongs to the hosting-provider decision deferred in
+`docs/adr/BILLING-WEB-0031-static-spa-boundary.md`.
+
 `pnpm dev:cloud:billing-web` runs the Cloud frontend on port 5173 and this app
 on port 5174. The command supplies `VITE_BILLING_WEB_URL` to the Cloud frontend.
 The hosted entry remains disabled until the server flag is enabled or a
