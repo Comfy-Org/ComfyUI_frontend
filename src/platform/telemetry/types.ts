@@ -1040,7 +1040,6 @@ type CheckoutJourneyAssignment =
  */
 export type CheckoutJourneyContext = {
   checkout_journey_id: string
-  checkout_attempt_id?: string
   /** UTC ISO-8601 timestamp captured at common intent, preserved across reload. */
   checkout_entered_at: string
   ui_mode?: CheckoutUiMode
@@ -1116,9 +1115,6 @@ export function getCheckoutJourneyTelemetryEventPayload(
     assignment_status: event.assignment_status,
     entry_flow: event.entry_flow,
     entry_source: event.entry_source,
-    ...(event.checkout_attempt_id !== undefined && {
-      checkout_attempt_id: event.checkout_attempt_id
-    }),
     ...(event.assigned_arm !== undefined && {
       assigned_arm: event.assigned_arm
     }),
@@ -1367,21 +1363,6 @@ export const TelemetryEvents = {
     'billing.downgrade_to_personal.succeeded',
   BILLING_DOWNGRADE_TO_PERSONAL_FAILED: 'billing.downgrade_to_personal.failed',
 
-  // Checkout journey lifecycle (embedded-checkout rollout)
-  BILLING_CHECKOUT_ENTERED: 'billing.checkout.entered',
-  BILLING_CHECKOUT_PREVIEW_READY: 'billing.checkout.preview_ready',
-  BILLING_CHECKOUT_PREVIEW_FAILED: 'billing.checkout.preview_failed',
-  BILLING_CHECKOUT_PAYMENT_ELEMENT_READY:
-    'billing.checkout.payment_element_ready',
-  BILLING_CHECKOUT_PAYMENT_ELEMENT_FAILED:
-    'billing.checkout.payment_element_failed',
-  BILLING_CHECKOUT_PAYMENT_SUBMIT_ATTEMPTED:
-    'billing.checkout.payment_submit_attempted',
-  BILLING_CHECKOUT_PAYMENT_SUBMIT_FAILED:
-    'billing.checkout.payment_submit_failed',
-  BILLING_CHECKOUT_SUBMITTED: 'billing.checkout.submitted',
-  BILLING_CHECKOUT_OPERATION_LINKED: 'billing.checkout.operation_linked',
-
   // Onboarding Survey
   USER_SURVEY_OPENED: 'app:user_survey_opened',
   USER_SURVEY_SUBMITTED: 'app:user_survey_submitted',
@@ -1481,7 +1462,8 @@ export const TelemetryEvents = {
 } as const
 
 export type TelemetryEventName =
-  (typeof TelemetryEvents)[keyof typeof TelemetryEvents]
+  | (typeof TelemetryEvents)[keyof typeof TelemetryEvents]
+  | CheckoutJourneyTelemetryEventName
 
 export const OnboardingTourEvents: Record<
   OnboardingTourStage,

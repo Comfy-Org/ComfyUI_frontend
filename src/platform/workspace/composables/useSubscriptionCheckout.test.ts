@@ -8,7 +8,10 @@ import { useAuthStore } from '@/stores/authStore'
 import { createI18n } from 'vue-i18n'
 
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
-import { clearCheckoutJourney } from '@/platform/workspace/utils/checkoutJourney'
+import {
+  clearCheckoutJourney,
+  resolveCheckoutJourney
+} from '@/platform/workspace/utils/checkoutJourney'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import type {
   BillingStatus,
@@ -620,6 +623,36 @@ describe('useSubscriptionCheckout', () => {
 
       const entered = journeyPhases().filter((phase) => phase === 'entered')
       expect(entered).toHaveLength(1)
+    })
+
+    it('does not link the operation to a journey that superseded the submitting one', async () => {
+      const checkout = await setup()
+
+      await checkout.handleSubscribeClick({
+        tierKey: 'standard',
+        billingCycle: 'yearly'
+      })
+
+      mockSubscribe.mockImplementationOnce(async () => {
+        // A different intent starts a new journey while the request is in flight.
+        resolveCheckoutJourney({
+          actorUid: 'user-1',
+          workspaceId: 'ws-1',
+          entryFlow: 'initial_subscription',
+          entrySource: 'pricing',
+          intent: 'creator:yearly',
+          assignment: { status: 'unavailable' }
+        })
+        return { status: 'subscribed', billing_op_id: 'op-1' }
+      })
+      await checkout.handleConfirmTransition()
+
+      const events = mockTrackCheckoutJourneyEvent.mock.calls.map(
+        ([event]) => event
+      )
+      expect(events.some((event) => event.phase === 'operation_linked')).toBe(
+        false
+      )
     })
 
     it('records a correlated preview failure with no operation id', async () => {

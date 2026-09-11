@@ -602,7 +602,9 @@ async function handleBuy() {
     }
 
     if (response.status === 'completed') {
-      if (submittingJourneyStillActive) {
+      if (
+        getActiveCheckoutJourney()?.billing_op_id === response.billing_op_id
+      ) {
         clearCheckoutJourney()
       }
       telemetry?.trackBillingEvent({

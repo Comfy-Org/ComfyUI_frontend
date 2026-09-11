@@ -1041,13 +1041,10 @@ export function useSubscriptionCheckout(
       })
 
       if (response) {
-        const linked = bindOperationToCheckoutJourney(response.billing_op_id)
-        if (linked) {
-          emitCheckoutJourneyPhase(linked, {
-            phase: 'operation_linked',
-            billing_op_id: response.billing_op_id
-          })
-        }
+        linkSubmittingJourneyToOperation(
+          submittingJourney,
+          response.billing_op_id
+        )
         trackWorkspaceCheckoutStarted({
           tier: tierKey,
           cycle: billingCycle,
@@ -1225,12 +1222,34 @@ export function useSubscriptionCheckout(
       entryFlow: currentSubscriptionEntryFlow(),
       entrySource: 'pricing',
       intent,
+      uiMode: embeddedCheckoutEnabled ? 'embedded' : 'hosted',
       assignment: resolveCheckoutAssignment(api.getServerFeatures())
     })
     if (!resumed) {
       emitCheckoutJourneyPhase(record, { phase: 'entered' })
     }
     return record
+  }
+
+  function linkSubmittingJourneyToOperation(
+    submittingJourney: CheckoutJourneyRecord | null,
+    billingOpId: string
+  ): void {
+    // Bind only when the submitting journey is still active. A tier/cycle change
+    // mid-request starts a new journey that must not inherit this operation.
+    if (
+      !submittingJourney ||
+      getActiveCheckoutJourney()?.journey_id !== submittingJourney.journey_id
+    ) {
+      return
+    }
+    const linked = bindOperationToCheckoutJourney(billingOpId)
+    if (linked) {
+      emitCheckoutJourneyPhase(linked, {
+        phase: 'operation_linked',
+        billing_op_id: billingOpId
+      })
+    }
   }
 
   function trackSubscriptionStarted(
@@ -1549,13 +1568,10 @@ export function useSubscriptionCheckout(
       })
 
       if (response) {
-        const linked = bindOperationToCheckoutJourney(response.billing_op_id)
-        if (linked) {
-          emitCheckoutJourneyPhase(linked, {
-            phase: 'operation_linked',
-            billing_op_id: response.billing_op_id
-          })
-        }
+        linkSubmittingJourneyToOperation(
+          submittingJourney,
+          response.billing_op_id
+        )
         trackWorkspaceCheckoutStarted({
           tier: 'team',
           cycle: billingCycle,
