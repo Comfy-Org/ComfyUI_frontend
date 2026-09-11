@@ -61,6 +61,26 @@ export default defineConfig({
   globalTeardown: './browser_tests/globalTeardown.ts',
 
   projects: [
+    ...(process.env.PLAYWRIGHT_CLOUD_LIVE === '1'
+      ? [
+          {
+            name: 'cloud-live',
+            testMatch: '**/tests/liveCloud/**/*.spec.ts',
+            testIgnore: [],
+            fullyParallel: false,
+            retries: 0,
+            timeout: 120_000,
+            expect: { timeout: 30_000 },
+            use: {
+              ...devices['Desktop Chrome'],
+              locale: 'en-US',
+              trace: 'off' as const,
+              video: 'off' as const,
+              screenshot: 'off' as const
+            }
+          }
+        ]
+      : []),
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },

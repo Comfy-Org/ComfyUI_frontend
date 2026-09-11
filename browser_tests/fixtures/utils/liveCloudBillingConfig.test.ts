@@ -6,47 +6,72 @@ import {
 } from '@e2e/fixtures/utils/liveCloudBillingConfig'
 
 const sandboxConfig = {
-  baseURL: 'https://testcloud.comfy.org',
-  storageState: '/private/cloud-billing-auth.json',
-  workspaceId: '12345678-1234-4234-8234-123456789abc',
-  resetScript: '/private/reset-cloud-billing',
-  allowedOrigins: ['https://checkout.stripe.com']
+  PLAYWRIGHT_TEST_URL: 'http://localhost:5173',
+  PLAYWRIGHT_SETUP_API_URL: 'https://testcloud.comfy.org',
+  CLOUD_ACCOUNT_EMAIL: 'billing-e2e@example.com',
+  CLOUD_ACCOUNT_PASSWORD: 'test-password',
+  SMOKE_DB_DSN: 'postgresql://localhost/sandbox',
+  SMOKE_STRIPE_TEST_KEY: 'sk_test_example',
+  TEMPORAL_ADDRESS: 'localhost:7233',
+  TEMPORAL_NAMESPACE: 'default'
 }
 
-describe('Live Cloud billing target validation', () => {
+describe('Live Cloud billing prerequisites', () => {
   it.for([
     'https://cloud.comfy.org',
     'https://testcloud.comfy.org.example.com',
     'https://testcloud.comfy.org/redirect',
     'http://testcloud.comfy.org',
     'not-a-url'
-  ])('rejects an unsafe target: %s', (baseURL) => {
-    expect(
-      liveCloudBillingConfigSchema.safeParse({ ...sandboxConfig, baseURL })
-        .success
-    ).toBe(false)
-  })
-
-  it('rejects production Cloud as an allowed dependency', () => {
+  ])('rejects an unsafe backend: %s', (PLAYWRIGHT_SETUP_API_URL) => {
     expect(
       liveCloudBillingConfigSchema.safeParse({
         ...sandboxConfig,
-        allowedOrigins: ['https://cloud.comfy.org']
+        PLAYWRIGHT_SETUP_API_URL
       }).success
     ).toBe(false)
   })
 
-  it('accepts an isolated preview deployment', () => {
+  it('rejects a production frontend even with sandbox cleanup credentials', () => {
     expect(
       liveCloudBillingConfigSchema.safeParse({
         ...sandboxConfig,
-        baseURL: 'https://pr-8978.testenvs.comfy.org'
+        PLAYWRIGHT_TEST_URL: 'https://cloud.comfy.org'
+      }).success
+    ).toBe(false)
+  })
+
+  it('rejects a live Stripe key', () => {
+    expect(
+      liveCloudBillingConfigSchema.safeParse({
+        ...sandboxConfig,
+        SMOKE_STRIPE_TEST_KEY: 'sk_live_example'
+      }).success
+    ).toBe(false)
+  })
+
+  it('accepts a local frontend backed by test Cloud', () => {
+    expect(liveCloudBillingConfigSchema.safeParse(sandboxConfig).success).toBe(
+      true
+    )
+  })
+
+  it('accepts an isolated preview deployment', () => {
+    const target = 'https://pr-8978.testenvs.comfy.org'
+    expect(
+      liveCloudBillingConfigSchema.safeParse({
+        ...sandboxConfig,
+        PLAYWRIGHT_TEST_URL: target,
+        PLAYWRIGHT_SETUP_API_URL: target
       }).success
     ).toBe(true)
   })
 
-  it('fails when sandbox configuration is missing', () => {
-    vi.stubEnv('CLOUD_BILLING_CONFIG', undefined)
-    expect(loadLiveCloudBillingConfig).toThrow('Set CLOUD_BILLING_CONFIG')
+  it('reports missing prerequisites without leaking credentials', () => {
+    vi.stubEnv('CLOUD_ACCOUNT_PASSWORD', 'private-value')
+    vi.stubEnv('SMOKE_STRIPE_TEST_KEY', 'sk_live_private-value')
+    vi.stubEnv('CLOUD_ACCOUNT_EMAIL', undefined)
+    expect(loadLiveCloudBillingConfig).toThrow('CLOUD_ACCOUNT_EMAIL')
+    expect(loadLiveCloudBillingConfig).not.toThrow('private-value')
   })
 })
