@@ -250,6 +250,7 @@ defineExpose({
 
 <template>
   <div
+    id="agent-composer"
     class="relative flex flex-col rounded-lg border border-border-default bg-base-background"
   >
     <div
