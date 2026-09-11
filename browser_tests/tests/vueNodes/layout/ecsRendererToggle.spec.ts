@@ -5,7 +5,7 @@ import {
 
 test.describe(
   'ECS migration: renderer toggle and zoom legibility',
-  { tag: ['@canvas', '@node', '@vue-nodes', '@widget'] },
+  { tag: ['@canvas', '@node', '@widget'] },
   () => {
     test.describe.configure({ timeout: 60_000 })
 
