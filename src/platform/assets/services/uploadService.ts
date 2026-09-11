@@ -1,5 +1,6 @@
 import { z } from 'zod'
 
+import { reportError } from '@/platform/telemetry/reportError'
 import type { ResultItemType } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import type { ImageRef } from '@/stores/maskEditorDataStore'
@@ -124,6 +125,13 @@ export async function uploadMedia(
     })
 
     if (resp.status !== 200) {
+      reportError(
+        new Error(`Upload rejected: ${resp.status} - ${resp.statusText}`),
+        {
+          errorType: 'failure_uploading_media',
+          tags: { endpoint, status: resp.status }
+        }
+      )
       return {
         success: false,
         path: '',
@@ -136,6 +144,11 @@ export async function uploadMedia(
 
     const parsedResponse = uploadApiResponseSchema.safeParse(await resp.json())
     if (!parsedResponse.success) {
+      reportError(new Error('Upload response failed schema validation'), {
+        errorType: 'failure_parsing_upload_response',
+        tags: { endpoint },
+        context: { issues: parsedResponse.error.issues }
+      })
       return {
         success: false,
         path: '',
@@ -157,6 +170,10 @@ export async function uploadMedia(
       response: data
     }
   } catch (error) {
+    reportError(error, {
+      errorType: 'failure_uploading_media',
+      tags: { endpoint }
+    })
     return {
       success: false,
       path: '',

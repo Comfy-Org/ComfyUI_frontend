@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 
 import { uploadMedia, uploadMediaBatch } from './uploadService'
@@ -8,6 +9,10 @@ vi.mock('@/scripts/api', () => ({
   api: {
     fetchApi: vi.fn()
   }
+}))
+
+vi.mock('@/platform/telemetry/reportError', () => ({
+  reportError: vi.fn()
 }))
 
 function createMockResponse(
@@ -290,6 +295,60 @@ describe('uploadService', () => {
         ?.body as FormData
       const uploadedFile = formData.get('image') as File
       expect(uploadedFile.name).toBe('custom.png')
+    })
+  })
+
+  describe('telemetry', () => {
+    it('reports a non-200 upload once', async () => {
+      vi.mocked(api.fetchApi).mockResolvedValue({
+        status: 500,
+        statusText: 'Internal Server Error'
+      } as unknown as Response)
+
+      await uploadMedia({ source: new File(['content'], 'test.png') })
+
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          message: 'Upload rejected: 500 - Internal Server Error'
+        }),
+        expect.objectContaining({ errorType: 'failure_uploading_media' })
+      )
+    })
+
+    it('reports a malformed upload response once', async () => {
+      vi.mocked(api.fetchApi).mockResolvedValue(createMockResponse(200))
+
+      await uploadMedia({ source: new File(['content'], 'test.png') })
+
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(
+        expect.anything(),
+        expect.objectContaining({
+          errorType: 'failure_parsing_upload_response'
+        })
+      )
+    })
+
+    it('reports a thrown upload exception once', async () => {
+      vi.mocked(api.fetchApi).mockRejectedValue(new Error('Network error'))
+
+      await uploadMedia({ source: new File(['content'], 'test.png') })
+
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ message: 'Network error' }),
+        expect.objectContaining({ errorType: 'failure_uploading_media' })
+      )
+    })
+
+    it('does not report a file rejected by the size limit', async () => {
+      const largeFile = new File(['content'], 'large.png')
+      Object.defineProperty(largeFile, 'size', {
+        value: 200 * 1024 * 1024,
+        writable: false
+      })
+
+      await uploadMedia({ source: largeFile }, { maxSizeMB: 100 })
+
+      expect(reportError).not.toHaveBeenCalled()
     })
   })
 
