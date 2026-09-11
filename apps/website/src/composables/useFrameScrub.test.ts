@@ -21,7 +21,11 @@ vi.mock('./useReducedMotion', () => ({
   prefersReducedMotion: () => false
 }))
 
-function renderFrameScrub(canvas: HTMLCanvasElement, urls: string[]) {
+function renderFrameScrub(
+  canvas: HTMLCanvasElement,
+  urls: string[],
+  errorHandler?: (error: unknown) => void
+) {
   return render(
     defineComponent({
       setup() {
@@ -31,7 +35,8 @@ function renderFrameScrub(canvas: HTMLCanvasElement, urls: string[]) {
         })
         return () => null
       }
-    })
+    }),
+    { global: { config: { errorHandler } } }
   )
 }
 
@@ -94,6 +99,55 @@ describe('useFrameScrub', () => {
     unmount()
     expect(bitmaps[0].close).toHaveBeenCalledOnce()
     expect(bitmaps[1].close).toHaveBeenCalledOnce()
+  })
+
+  it('releases decoded frames when a sibling frame in the batch fails to load', async () => {
+    const canvas = document.createElement('canvas')
+    stubCanvas(canvas)
+    const bitmaps = [
+      { width: 416, height: 416, close: vi.fn() },
+      { width: 416, height: 416, close: vi.fn() }
+    ] as unknown as ImageBitmap[]
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) =>
+        url === 'frame-3'
+          ? new Response(null, { status: 404 })
+          : new Response(new Blob(['frame']), { status: 200 })
+      )
+    )
+    const pending = [...bitmaps]
+    vi.stubGlobal(
+      'createImageBitmap',
+      vi.fn(async () => pending.shift()!)
+    )
+    const errorHandler = vi.fn()
+
+    renderFrameScrub(canvas, ['frame-1', 'frame-2', 'frame-3'], errorHandler)
+
+    await waitFor(() => expect(errorHandler).toHaveBeenCalledOnce())
+    expect(bitmaps[0].close).toHaveBeenCalledOnce()
+    expect(bitmaps[1].close).toHaveBeenCalledOnce()
+    expect(gsapMocks.to).not.toHaveBeenCalled()
+  })
+
+  it('does not start the animation when a frame image fails to decode', async () => {
+    const canvas = document.createElement('canvas')
+    const draw = stubCanvas(canvas)
+    const image = new Image()
+    function ImageMock() {
+      return image
+    }
+    vi.stubGlobal('Image', ImageMock)
+    vi.stubGlobal('createImageBitmap', undefined)
+    const errorHandler = vi.fn()
+
+    renderFrameScrub(canvas, ['frame-1'], errorHandler)
+    image.onerror?.(new Event('error'))
+
+    await waitFor(() => expect(errorHandler).toHaveBeenCalledOnce())
+    expect(draw.drawImage).not.toHaveBeenCalled()
+    expect(gsapMocks.to).not.toHaveBeenCalled()
   })
 
   it('falls back to browser image decoding when image bitmaps are unavailable', async () => {
