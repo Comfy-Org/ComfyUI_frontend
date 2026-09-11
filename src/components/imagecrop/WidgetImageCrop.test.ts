@@ -211,6 +211,31 @@ describe('WidgetImageCrop', () => {
     })
   })
 
+  describe('Aspect ratio lock', () => {
+    it('toggles the lock from the toolbar button', async () => {
+      const isLockEnabled = ref(false)
+      primeCropState({ isLockEnabled })
+      renderWidget()
+      const user = userEvent.setup()
+
+      await user.click(
+        screen.getByRole('button', { name: 'Lock aspect ratio' })
+      )
+      expect(isLockEnabled.value).toBe(true)
+      expect(
+        screen.getByRole('button', { name: 'Unlock aspect ratio' })
+      ).toBeInTheDocument()
+
+      await user.click(
+        screen.getByRole('button', { name: 'Unlock aspect ratio' })
+      )
+      expect(isLockEnabled.value).toBe(false)
+      expect(
+        screen.getByRole('button', { name: 'Lock aspect ratio' })
+      ).toBeInTheDocument()
+    })
+  })
+
   describe('Bounds delegation', () => {
     it('forwards v-model to the bounding box child', () => {
       renderWidget(undefined, { x: 5, y: 10, width: 100, height: 200 })
