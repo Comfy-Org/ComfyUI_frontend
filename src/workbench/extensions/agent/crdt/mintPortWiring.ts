@@ -151,7 +151,7 @@ interface RestoreSnapshot {
 
 function snapshotGraph(graph: MintableGraph): RestoreSnapshot {
   const nodes = new Map<string, WorkflowNode>()
-  for (const node of graph._nodes ?? []) {
+  for (const node of graph._nodes) {
     const serialized = serializeForMint(node)
     if (serialized) nodes.set(String(node.id), serialized)
   }
@@ -165,7 +165,7 @@ function snapshotGraph(graph: MintableGraph): RestoreSnapshot {
 function widgetValuesOf(node: WorkflowNode): Record<string, unknown> {
   const values = node.widgets_values
   return values != null && typeof values === 'object' && !Array.isArray(values)
-    ? (values as Record<string, unknown>)
+    ? values
     : {}
 }
 
