@@ -15,7 +15,16 @@ export default defineConfig({
     unstubEnvs: true,
     unstubGlobals: true,
     fakeTimers: { shouldAdvanceTime: true },
-    environment: 'node',
+    environment: 'happy-dom',
+    environmentOptions: {
+      happyDOM: {
+        settings: {
+          disableIframePageLoading: true,
+          disableCSSFileLoading: true,
+          disableJavaScriptFileLoading: true
+        }
+      }
+    },
     include: ['src/**/*.{test,spec}.ts', 'scripts/**/*.{test,spec}.ts'],
     globals: false,
     setupFiles: ['../../vitest.timer.setup.ts', './src/test/setup.ts'],

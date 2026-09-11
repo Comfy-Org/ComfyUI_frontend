@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import { fromPartial } from '@total-typescript/shoehorn'
 import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
@@ -6,15 +5,6 @@ import userEvent from '@testing-library/user-event'
 import { defineComponent, nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useIntersectionObserver } from '@vueuse/core'
-
-// jsdom lacks ResizeObserver, which the asset-preview import chain references.
-vi.hoisted(() => {
-  globalThis.ResizeObserver = class {
-    observe(): void {}
-    unobserve(): void {}
-    disconnect(): void {}
-  }
-})
 
 const intersectionCallbacks = vi.hoisted(
   () => [] as ((entries: { isIntersecting: boolean }[]) => void)[]
