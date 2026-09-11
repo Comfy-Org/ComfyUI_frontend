@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -23,7 +21,6 @@ describe(useNodeImageStore, () => {
   const locatorB = 'abc-123:42' as NodeLocatorId
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useNodeImageStore()
     setNodeLocatorResolver(mockNodeToNodeLocatorId)
   })
@@ -228,7 +225,7 @@ describe(useNodeImageStore, () => {
       expect(node.imgs?.length).toBeUndefined()
 
       node.imgs = [new Image(), new Image()]
-      expect(node.imgs?.length).toBe(2)
+      expect(node.imgs).toHaveLength(2)
     })
   })
 
