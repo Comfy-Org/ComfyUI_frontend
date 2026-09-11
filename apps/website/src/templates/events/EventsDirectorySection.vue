@@ -219,20 +219,26 @@ const caretClass =
         <ChevronDown :class="caretClass" aria-hidden="true" />
       </div>
 
-      <label for="events-directory-sort" class="sr-only">
-        {{ t('events.directory.sortLabel', locale) }}
-      </label>
-      <div class="relative">
-        <select id="events-directory-sort" v-model="sort" :class="selectClass">
-          <option value="latest">
-            {{ t('events.directory.sortLatest', locale) }}
-          </option>
-          <option value="oldest">
-            {{ t('events.directory.sortOldest', locale) }}
-          </option>
-        </select>
-        <ChevronDown :class="caretClass" aria-hidden="true" />
-      </div>
+      <template v-if="view !== 'calendar'">
+        <label for="events-directory-sort" class="sr-only">
+          {{ t('events.directory.sortLabel', locale) }}
+        </label>
+        <div class="relative">
+          <select
+            id="events-directory-sort"
+            v-model="sort"
+            :class="selectClass"
+          >
+            <option value="latest">
+              {{ t('events.directory.sortLatest', locale) }}
+            </option>
+            <option value="oldest">
+              {{ t('events.directory.sortOldest', locale) }}
+            </option>
+          </select>
+          <ChevronDown :class="caretClass" aria-hidden="true" />
+        </div>
+      </template>
 
       <div
         role="group"
