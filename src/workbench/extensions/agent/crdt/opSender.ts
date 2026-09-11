@@ -112,8 +112,29 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   // beats mis-attribution: a swallowed own-result only costs the idempotent
   // resend cycle, while a mis-attributed settle poisons everything
   // downstream of this seam.
-  let staleAnonymousBudget = 0
+  const staleAnonymousBudgets = new Map<string, number>()
   const lastMintedVersion = new Map<string, number>()
+
+  function addStaleAnonymousBudget(workflowId: string, count: number): void {
+    if (count === 0) return
+    staleAnonymousBudgets.set(
+      workflowId,
+      (staleAnonymousBudgets.get(workflowId) ?? 0) + count
+    )
+  }
+
+  function consumeStaleAnonymousBudget(workflowId: string): boolean {
+    const budget = staleAnonymousBudgets.get(workflowId) ?? 0
+    if (budget === 0) return false
+    if (budget === 1) staleAnonymousBudgets.delete(workflowId)
+    else staleAnonymousBudgets.set(workflowId, budget - 1)
+    return true
+  }
+
+  function consumeAnyStaleAnonymousBudget(): void {
+    const workflowId = staleAnonymousBudgets.keys().next().value
+    if (workflowId !== undefined) consumeStaleAnonymousBudget(workflowId)
+  }
 
   function settle(outcome: BatchOutcome): void {
     if (inFlight?.timer) clearTimeout(inFlight.timer)
@@ -159,7 +180,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     batch.timer = setTimeout(() => {
       if (inFlight !== batch) return
       if (batch.resent) {
-        staleAnonymousBudget += 2
+        addStaleAnonymousBudget(batch.workflowId, 2)
         settle({ state: 'unacknowledged', ops: batch.ops })
         return
       }
@@ -186,30 +207,36 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   }
 
   const unsubscribe = deps.onOpsResult((result) => {
-    if (
-      !inFlight ||
-      (result.workflowId !== undefined &&
-        result.workflowId !== inFlight.workflowId)
-    ) {
+    if (!inFlight) {
       // A late result with no batch waiting, or addressed to another workflow
       // than the in-flight batch: drain a credit if one is outstanding so it
       // cannot swallow a future batch's own result.
-      if (staleAnonymousBudget > 0) staleAnonymousBudget--
+      if (result.workflowId !== undefined) {
+        consumeStaleAnonymousBudget(result.workflowId)
+      } else consumeAnyStaleAnonymousBudget()
       return
     }
+    if (
+      result.workflowId !== undefined &&
+      result.workflowId !== inFlight.workflowId
+    ) {
+      consumeStaleAnonymousBudget(result.workflowId)
+      return
+    }
+    const workflowId = inFlight.workflowId
     const identified = [...result.applied, ...result.skipped]
     if (result.failure?.op_id) identified.push(result.failure.op_id)
     if (identified.length > 0) {
-      if (!identified.some((opId) => inFlight!.opIds.has(opId))) return
+      if (!identified.some((opId) => inFlight!.opIds.has(opId))) {
+        consumeStaleAnonymousBudget(workflowId)
+        return
+      }
       settle({ state: 'acknowledged', ops: inFlight.ops, result })
       return
     }
     // Anonymous failure (empty lists, no failure op_id): only attribute it
     // to the in-flight batch once no stale credit could explain it.
-    if (staleAnonymousBudget > 0) {
-      staleAnonymousBudget--
-      return
-    }
+    if (consumeStaleAnonymousBudget(workflowId)) return
     settle({ state: 'acknowledged', ops: inFlight.ops, result })
   })
 
@@ -248,7 +275,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       const canceled: Op[][] = []
       if (inFlight?.workflowId === workflowId) {
         if (inFlight.timer) clearTimeout(inFlight.timer)
-        staleAnonymousBudget += inFlight.successfulTransmits
+        addStaleAnonymousBudget(workflowId, inFlight.successfulTransmits)
         canceled.push(inFlight.ops)
         inFlight = null
       }

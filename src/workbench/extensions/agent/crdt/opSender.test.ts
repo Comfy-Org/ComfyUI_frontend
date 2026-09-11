@@ -25,6 +25,7 @@ describe('createOpSender', () => {
   let resultListener: ((result: OpsResultView) => void) | null
   let transportUp: boolean
   let boundWorkflow: string | null
+  let actor: string
   let baseVersion: number
   let sender: ReturnType<typeof createOpSender>
 
@@ -44,6 +45,7 @@ describe('createOpSender', () => {
     resultListener = null
     transportUp = true
     boundWorkflow = WORKFLOW
+    actor = ACTOR
     baseVersion = 41
     sender = createOpSender({
       sendOps: (workflowId, tab, ops) => {
@@ -59,7 +61,7 @@ describe('createOpSender', () => {
       },
       workflowId: () => boundWorkflow,
       tab: TAB,
-      actor: () => ACTOR,
+      actor: () => actor,
       baseVersion: () => baseVersion,
       onBatchSettled: (outcome) => settled.push(outcome)
     })
@@ -111,6 +113,29 @@ describe('createOpSender', () => {
 
     expect(sent[1].ops[0].base_version).toBe(41)
     expect(sent[1].ops[0].stamp).toEqual([41, ACTOR])
+  })
+
+  it('advances an actor clock when the observed version increases', () => {
+    sender.enqueue([addNode(1)])
+    ackInFlight()
+
+    baseVersion = 42
+    sender.enqueue([addNode(2)])
+
+    expect(sent[1].ops[0].base_version).toBe(42)
+    expect(sent[1].ops[0].stamp).toEqual([42, ACTOR])
+  })
+
+  it('keeps actor clocks independent within a workflow', () => {
+    sender.enqueue([addNode(1)])
+    ackInFlight()
+
+    actor = 'human:other-user:tab-1'
+    baseVersion = 3
+    sender.enqueue([addNode(2)])
+
+    expect(sent[1].ops[0].base_version).toBe(3)
+    expect(sent[1].ops[0].stamp).toEqual([3, actor])
   })
 
   it('resetClock lets a new lineage mint at a lower base_version after a doc_reset', () => {
@@ -191,6 +216,65 @@ describe('createOpSender', () => {
     expect(sent).toHaveLength(2)
     expect(sent[1].workflowId).toBe('wf-2')
     expect(sender.pending()).toBe(1)
+  })
+
+  it('does not consume another workflow result with reset credits', () => {
+    sender.enqueue([addNode(1)])
+    boundWorkflow = 'wf-2'
+    sender.enqueue([addNode(2)])
+
+    sender.resetClock(WORKFLOW)
+    resultListener?.({
+      workflowId: 'wf-2',
+      ok: false,
+      applied: [],
+      skipped: []
+    })
+
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'undeliverable',
+      'acknowledged'
+    ])
+  })
+
+  it('consumes reset credit when an identified stale result arrives', () => {
+    sender.enqueue([addNode(1)])
+    const staleOpId = sent[0].ops[0].op_id
+    sender.resetClock(WORKFLOW)
+    sender.enqueue([addNode(2)])
+
+    resultListener?.({
+      workflowId: WORKFLOW,
+      ok: true,
+      applied: [staleOpId],
+      skipped: []
+    })
+    resultListener?.({
+      workflowId: WORKFLOW,
+      ok: false,
+      applied: [],
+      skipped: []
+    })
+
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'undeliverable',
+      'acknowledged'
+    ])
+  })
+
+  it('does not reserve a stale result for a batch that was never sent', () => {
+    transportUp = false
+    sender.enqueue([addNode(1)])
+    sender.resetClock(WORKFLOW)
+
+    transportUp = true
+    sender.enqueue([addNode(2)])
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'undeliverable',
+      'acknowledged'
+    ])
   })
 
   it('retries a down transport with the SAME minted ops and never re-mints', () => {

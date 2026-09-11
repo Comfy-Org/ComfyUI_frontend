@@ -8,7 +8,7 @@
  * dropping the tail, reordering across a `clear` flush, or splitting one op
  * early and silently halving throughput.
  *
- * Four properties hold for EVERY input:
+ * Four properties hold for every generated input:
  *
  *   TOTALITY   — `chunkWireOps(ops).flat()` is `ops`: same ops, same order,
  *                nothing dropped, nothing duplicated. This is the one that
@@ -80,9 +80,17 @@ function clear(ids: number[]): GraphOperation {
   return { op: 'clear', removed_nodes: ids }
 }
 
+function readWidget(doc: Y.Doc): unknown {
+  const node = nodesMap(doc).get('1')
+  if (!(node instanceof Y.Map)) return undefined
+  const widgets = node.get('widgets')
+  return widgets instanceof Y.Map ? widgets.get('text') : undefined
+}
+
 /**
- * Operations spanning every kind and a payload-size range that straddles the
- * byte cap: tiny, ~1/3 cap (so three fit but four do not), and over-cap alone.
+ * Small operations spanning the common write kinds. Separate fixtures below
+ * exercise the operation and byte caps without putting multi-megabyte strings
+ * through the shrinker.
  */
 const operationArb: fc.Arbitrary<GraphOperation> = fc.oneof(
   { arbitrary: fc.integer({ min: 0, max: 40 }).map(addNode), weight: 4 },
@@ -146,7 +154,9 @@ describe('chunkWireOps (property)', () => {
     fc.assert(
       fc.property(operationsArb, (operations) => {
         for (const batch of chunkWireOps(mintWireOps(operations, MINT))) {
-          if (batch.some((op) => !BATCHABLE_OPS.includes(op.op as never))) {
+          if (
+            batch.some((op) => !BATCHABLE_OPS.some((kind) => kind === op.op))
+          ) {
             expect(batch).toHaveLength(1)
           }
         }
@@ -195,8 +205,8 @@ describe('chunkWireOps (property)', () => {
           const head = next[0]
           // A clear on either side legitimately forces the boundary.
           if (
-            batch.some((op) => !BATCHABLE_OPS.includes(op.op as never)) ||
-            !BATCHABLE_OPS.includes(head.op as never)
+            batch.some((op) => !BATCHABLE_OPS.some((kind) => kind === op.op)) ||
+            !BATCHABLE_OPS.some((kind) => kind === head.op)
           ) {
             continue
           }
@@ -243,11 +253,7 @@ describe('mintWireOps (property)', () => {
             expect(op.actor).toBe(actor)
             expect(op.base_version).toBe(baseVersion)
             expect(op.stamp).toEqual([baseVersion, actor])
-            // Every field of the semantic op survives verbatim; minting is
-            // additive only.
-            for (const [key, value] of Object.entries(original)) {
-              expect(op[key as keyof Op]).toEqual(value)
-            }
+            expect(op).toMatchObject(original)
           }
         }
       ),
@@ -278,13 +284,6 @@ describe('minted stamps (property) — order-independent LWW', () => {
     applyOps(doc, seed)
     for (const op of order) applyOps(doc, [op])
     return doc
-  }
-
-  function readWidget(doc: Y.Doc): unknown {
-    const node = nodesMap(doc).get('1')
-    if (!(node instanceof Y.Map)) return undefined
-    const widgets = node.get('widgets')
-    return widgets instanceof Y.Map ? widgets.get('text') : undefined
   }
 
   it('converges to the max-stamp winner regardless of arrival order', () => {
@@ -332,9 +331,9 @@ describe('minted stamps (property) — order-independent LWW', () => {
           const winner = [...ops].sort((a, b) =>
             compareStampKeys(stampKey(a), stampKey(b))
           )[ops.length - 1]
-          expect(forward).toEqual(
-            (winner as Extract<Op, { op: 'set_widget' }>).value
-          )
+          expect(winner.op).toBe('set_widget')
+          if (winner.op !== 'set_widget') return
+          expect(forward).toEqual(winner.value)
         }
       ),
       FC_OPTIONS
@@ -402,11 +401,8 @@ describe('minted stamps — DQ-11 actor-incarnation gap at this pin', () => {
     applyOps(doc, live)
     applyOps(doc, stale)
 
-    const node = nodesMap(doc).get('1') as Y.Map<unknown>
-    const widgets = node.get('widgets') as Y.Map<unknown>
-
     // DQ-11 says this SHOULD be 'life-2-live'. At this pin it is not, because
     // the stamp carries no incarnation to order the two lives by.
-    expect(widgets.get('text')).toBe('life-1-stale')
+    expect(readWidget(doc)).toBe('life-1-stale')
   })
 })
