@@ -163,14 +163,26 @@ function tryCreateSubgraph(
 /**
  * Each definition plus every definition nested under its `definitions`, with
  * the nesting stripped so each one registers on its own.
+ *
+ * Shallowest first, so that `uniqueDefinitions` resolves an id carried both at
+ * the top level and inside another definition in favour of the top-level copy.
+ * A depth-first walk would hand that decision to the order the CRDT happens to
+ * yield the definitions root in, which is stable neither across a fresh
+ * state-vector catch-up nor an incremental frame sequence.
  */
 function flattenDefinitions(
   definitions: ExportedSubgraph[]
 ): ExportedSubgraph[] {
-  return definitions.flatMap((definition) => [
-    { ...definition, definitions: undefined },
-    ...flattenDefinitions(definition.definitions?.subgraphs ?? [])
-  ])
+  const flattened: ExportedSubgraph[] = []
+  for (let level = definitions; level.length > 0;) {
+    flattened.push(
+      ...level.map((definition) => ({ ...definition, definitions: undefined }))
+    )
+    level = level.flatMap(
+      (definition) => definition.definitions?.subgraphs ?? []
+    )
+  }
+  return flattened
 }
 
 /** Keep the first occurrence, matching LiteGraph's definition normalization. */

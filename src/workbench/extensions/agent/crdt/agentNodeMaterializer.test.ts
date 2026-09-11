@@ -1077,6 +1077,31 @@ describe('reconcileAgentAdapters', () => {
       expect(reportError).not.toHaveBeenCalled()
     })
 
+    it('prefers the top-level copy of a definition over a nested one', () => {
+      const shared = createTestSubgraphData({
+        nodes: [nodePayload(30), nodePayload(31)]
+      })
+      const outer = createTestSubgraphData({
+        nodes: [nodePayload(20, shared.id)],
+        definitions: {
+          subgraphs: [{ ...shared, nodes: [nodePayload(30)] }]
+        }
+      })
+      // `outer` first, so a depth-first flatten reaches the nested copy of
+      // `shared` before the top-level one. Which copy wins must not depend on
+      // the order the CRDT happens to hand the definitions root back in.
+      const { follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, shared.id)],
+        links: [],
+        definitions: { subgraphs: [outer, shared] }
+      })
+
+      reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+
+      expect(graph.subgraphs.get(shared.id)?.nodes).toHaveLength(2)
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
     it('keeps a registered definition when a later frame nests a copy of it', () => {
       const inner = createTestSubgraphData({
         nodes: [nodePayload(30, 'widget-node')]
