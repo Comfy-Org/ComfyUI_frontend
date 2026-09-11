@@ -1,3 +1,5 @@
+import { cloneDeep } from 'es-toolkit'
+
 import type {
   ISerialisableNodeInput,
   ISerialisableNodeOutput,
@@ -687,6 +689,14 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           if (mutation.kind === 'reconcileNode' && existing) {
             if (existing.type === state.type) {
               state.inputs = reconcileInputSlots(existing, state)
+              if (!widgetsAuthoritative && state.lastSerialization) {
+                state.lastSerialization.widgets_values = cloneDeep(
+                  existing.lastSerialization?.widgets_values
+                )
+                state.lastSerialization.widgets_values_named = cloneDeep(
+                  existing.lastSerialization?.widgets_values_named
+                )
+              }
               nodeStore.updateNode(scope, state.id, state, context)
             } else {
               nodeStore.deleteNode(scope, existing, context)

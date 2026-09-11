@@ -456,24 +456,86 @@ describe('reconcileAgentAdapters', () => {
       expect(reportError).not.toHaveBeenCalled()
     })
 
-    it('applies the serialised widget values to the new node', () => {
-      const graph = new LGraph()
-      const scope = graphScopeOf(graph)
-      remoteMutations(scope).addNode(
-        { ...nodePayload(1, 'widget-node'), widgets_values: { value: 7 } },
-        REMOTE
-      )
+    it.for([{ value: 7 }, [7]])(
+      'retains %j through a partial reconcile before materializing',
+      (widgets_values) => {
+        const graph = new LGraph()
+        const scope = graphScopeOf(graph)
+        const mutations = remoteMutations(scope)
+        mutations.addNode(
+          { ...nodePayload(1, 'widget-node'), widgets_values: { value: 3 } },
+          REMOTE
+        )
+        expect(
+          mutations.batch(REMOTE, (batch) => {
+            batch.reconcileNode({
+              ...nodePayload(1, 'widget-node'),
+              widgets_values
+            })
+            batch.reconcileNode({
+              ...nodePayload(1, 'widget-node'),
+              pos: [10, 20]
+            })
+          })
+        ).toBe(true)
 
-      reconcileAgentAdapters(graph)
+        reconcileAgentAdapters(graph)
 
-      const node = graph.getNodeById(toNodeId(1))
-      expect(node?.widgets?.[0].value).toBe(7)
-      expect(
-        useWidgetValueStore().getWidget(
-          widgetId(scope.rootGraphId, toNodeId(1), 'value')
-        )?.value
-      ).toBe(7)
-    })
+        const node = graph.getNodeById(toNodeId(1))
+        expect(node?.widgets?.[0].value).toBe(7)
+        expect(
+          useWidgetValueStore().getWidget(
+            widgetId(scope.rootGraphId, toNodeId(1), 'value')
+          )?.value
+        ).toBe(7)
+      }
+    )
+
+    it.for([{ emptyValues: [] }, { emptyValues: {} }])(
+      'preserves missing-node values on save and reload until cleared with $emptyValues',
+      ({ emptyValues }) => {
+        const graph = new LGraph()
+        const mutations = remoteMutations(graphScopeOf(graph))
+        const payload = nodePayload(1, 'unregistered-widget-node')
+        graph.configure({
+          ...graph.asSerialisable(),
+          nodes: [
+            {
+              ...new LGraphNode('Missing').serialize(),
+              id: 1,
+              type: payload.type,
+              widgets_values: [4],
+              widgets_values_named: { seed: 4 }
+            }
+          ]
+        })
+
+        expect(
+          mutations.batch(REMOTE, (batch) =>
+            batch.reconcileNode({ ...payload, pos: [10, 20] })
+          )
+        ).toBe(true)
+        const saved = graph.serialize()
+        expect(saved.nodes[0]).toMatchObject({
+          widgets_values: [4],
+          widgets_values_named: { seed: 4 }
+        })
+        graph.configure(saved)
+        expect(graph.serialize().nodes[0]).toMatchObject({
+          widgets_values: [4],
+          widgets_values_named: { seed: 4 }
+        })
+
+        expect(
+          mutations.batch(REMOTE, (batch) => {
+            batch.reconcileNode({ ...payload, widgets_values: emptyValues })
+            batch.reconcileNode(payload)
+          })
+        ).toBe(true)
+        expect(graph.serialize().nodes[0].widgets_values).toEqual(emptyValues)
+        expect(graph.serialize().nodes[0].widgets_values_named).toBeUndefined()
+      }
+    )
 
     it('is idempotent once the node is live', () => {
       const graph = new LGraph()
