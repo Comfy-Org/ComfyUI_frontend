@@ -1312,6 +1312,81 @@ describe('useMediaAssetActions', () => {
     })
   })
 
+  describe('deleteAssets - cancellation', () => {
+    beforeEach(() => {
+      mockIsCloud.value = true
+      mockShowDialog.mockImplementation(
+        ({ props }: { props: { onConfirm: (confirmed: boolean) => void } }) => {
+          props.onConfirm(false)
+        }
+      )
+    })
+
+    it('deletes nothing when the confirmation is declined', async () => {
+      const { actions, unmount } = mountMediaActions()
+
+      await expect(
+        actions.deleteAssets(createMockAsset({ id: 'asset-1' }))
+      ).resolves.toBe(false)
+
+      expect(mockShowDialog).toHaveBeenCalledTimes(1)
+      expect(mockDeleteAsset).not.toHaveBeenCalled()
+
+      unmount()
+    })
+
+    it('deletes nothing when the dialog is dismissed without an answer', async () => {
+      mockShowDialog.mockImplementation(
+        ({
+          dialogComponentProps
+        }: {
+          dialogComponentProps: { onClose: () => void }
+        }) => {
+          dialogComponentProps.onClose()
+        }
+      )
+      const { actions, unmount } = mountMediaActions()
+
+      await expect(
+        actions.deleteAssets(createMockAsset({ id: 'asset-1' }))
+      ).resolves.toBe(false)
+
+      expect(mockShowDialog).toHaveBeenCalledTimes(1)
+      expect(mockDeleteAsset).not.toHaveBeenCalled()
+
+      unmount()
+    })
+
+    it('names every grouped output in the dialog it then cancels', async () => {
+      mockGetOutputAssetMetadata.mockReturnValue({
+        allOutputs: [
+          {
+            assetId: 'output-1',
+            display_name: 'First output',
+            filename: 'first.png'
+          },
+          { assetId: 'output-2', filename: 'second.png' }
+        ]
+      })
+      const { actions, unmount } = mountMediaActions()
+
+      await expect(
+        actions.deleteAssets(createMockAsset({ id: 'job-cover' }))
+      ).resolves.toBe(false)
+
+      expect(mockShowDialog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          props: expect.objectContaining({
+            itemList: ['First output', 'second.png']
+          })
+        })
+      )
+      expect(mockDeleteAsset).not.toHaveBeenCalled()
+
+      unmount()
+    })
+  })
+
   describe('deleteAssets - confirmation dialog item names', () => {
     beforeEach(() => {
       mockIsCloud.value = true
