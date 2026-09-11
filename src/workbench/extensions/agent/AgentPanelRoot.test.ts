@@ -1008,7 +1008,7 @@ describe('AgentPanelRoot attach flow', () => {
     expect(useToastStore().messagesToAdd).toContainEqual(
       expect.objectContaining({
         severity: 'warn',
-        detail: 'movie.mp4 is larger than 24MB'
+        detail: 'movie.mp4 is larger than 24 MB'
       })
     )
     expect(screen.queryByText('movie.mp4')).not.toBeInTheDocument()
@@ -1108,6 +1108,55 @@ describe('AgentPanelRoot attach flow', () => {
     await vi.waitFor(() => expect(refresh).toHaveBeenCalled())
   })
 
+  it('refreshes the input asset library once for a dropped batch', async () => {
+    // Overlapping refreshes coalesce into the in-flight query without a
+    // trailing run, so an asset committing mid-refresh would be dropped.
+    const uploaded = stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+    const refresh = vi
+      .spyOn(useAssetsStore().inputAssets, 'loadNew')
+      .mockResolvedValue(undefined)
+
+    dispatchDrag(screen.getByRole('textbox'), 'drop', {
+      files: [
+        new File(['x'], 'a.png', { type: 'image/png' }),
+        new File(['x'], 'b.png', { type: 'image/png' }),
+        new File(['x'], 'c.png', { type: 'image/png' })
+      ]
+    })
+
+    await vi.waitFor(() => expect(uploaded).toHaveLength(3))
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalled())
+    expect(refresh).toHaveBeenCalledOnce()
+  })
+
+  it('aborts an upload when its chip is removed', async () => {
+    const signals: AbortSignal[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        if (!String(input).includes('/upload/'))
+          return json(200, agentThreadList())
+        if (init?.signal) signals.push(init.signal)
+        return new Promise<Response>(() => {})
+      })
+    )
+    renderWithSelectedTarget()
+    await nextTick()
+
+    dispatchDrag(screen.getByRole('textbox'), 'drop', {
+      files: [new File(['x'], 'cat.png', { type: 'image/png' })]
+    })
+    await vi.waitFor(() => expect(signals).toHaveLength(1))
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: i18n.global.t('agent.remove') })
+    )
+
+    expect(signals[0].aborted).toBe(true)
+  })
+
   it('uses the server limit for audio rejection copy', async () => {
     getServerFeature.mockReturnValue(24 * 1024 * 1024)
     const uploaded = stubUploadFetch()
@@ -1122,7 +1171,7 @@ describe('AgentPanelRoot attach flow', () => {
     expect(useToastStore().messagesToAdd).toContainEqual(
       expect.objectContaining({
         severity: 'warn',
-        detail: 'big.mp3 is larger than 24MB'
+        detail: 'big.mp3 is larger than 24 MB'
       })
     )
   })

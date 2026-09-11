@@ -57,7 +57,7 @@ import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import AgentPanel from './components/agent/AgentPanel.vue'
 import OnboardingCoach from './components/agent/OnboardingCoach.vue'
 import {
-  MAX_ATTACHMENT_BYTES,
+  resolveAttachmentLimit,
   useAttachment
 } from './composables/agent/useAttachment'
 import type { ActiveTab } from './types/activeTab'
@@ -916,12 +916,15 @@ const assetsStore = useAssetsStore()
 const attachment = useAttachment({
   upload: async (file, signal) => {
     const uploaded = await rest.uploadImage(file, file.name, signal)
-    // The library caches input assets; without this refresh a just-uploaded
-    // file is neither listed in the Assets tab nor mentionable this session.
-    void assetsStore.inputAssets.loadNew()
     return { ref: uploaded.name }
   },
-  maxBytes: () => api.getServerFeature('max_upload_size', MAX_ATTACHMENT_BYTES),
+  // The library caches input assets; without this refresh a just-uploaded file
+  // is neither listed in the Assets tab nor mentionable this session. One run
+  // per settled batch, because the query queue coalesces an overlapping refresh
+  // into the in-flight one instead of scheduling a trailing pass.
+  onUploaded: () => void assetsStore.inputAssets.loadNew(),
+  maxBytes: () =>
+    resolveAttachmentLimit(api.getServerFeature('max_upload_size')),
   // A rejected file is the user's problem to fix, not an agent failure, so it
   // must not raise the server-error overlay.
   onError: (message) =>
@@ -930,6 +933,8 @@ const attachment = useAttachment({
   update: (id, patch) => panelRef.value?.updateAttachment(id, patch),
   remove: (id) => panelRef.value?.removeAttachment(id)
 })
+
+onBeforeUnmount(() => attachment.cancelAllUploads())
 
 function onAttach(): void {
   exitNodeSelectionMode()
@@ -1105,6 +1110,7 @@ function onPanelDrop(event: DragEvent): void {
       @open-assets="onOpenAssets"
       @select-nodes="onSelectNodes"
       @remove-tag="onRemoveSelectionTag"
+      @remove-attachment="attachment.cancelUpload"
       @mention-pick="onMentionPick"
       @request-workflow-references="onRequestWorkflowReferences"
       @remove-workflow-reference="composerStore.removeWorkflowReference"
