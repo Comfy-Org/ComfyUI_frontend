@@ -2362,6 +2362,51 @@ describe('billingOperationStore', () => {
     })
   })
 
+  describe('retention operations', () => {
+    it('refreshes billing without marking the subscription canceled or showing a payment toast', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'save-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+      const terminal = useBillingOperationStore().startOperation(
+        'save-1',
+        'retention',
+        { workspaceId: 'workspace-1' }
+      )
+      await vi.advanceTimersByTimeAsync(0)
+      expect((await terminal).status).toBe('succeeded')
+      expect(mockFetchStatus).toHaveBeenCalled()
+      expect(
+        useTeamWorkspaceStore().updateActiveWorkspace
+      ).not.toHaveBeenCalledWith({ isSubscribed: false })
+      expect(useToastStore().add).not.toHaveBeenCalled()
+      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operation_type: 'retention',
+          stage: 'succeeded'
+        })
+      )
+    })
+
+    it('keeps the operation bound to the original workspace after a switch', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'save-1',
+        status: 'pending',
+        started_at: new Date().toISOString()
+      })
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-2'
+      })
+      const store = useBillingOperationStore()
+      void store.startOperation('save-1', 'retention', {
+        workspaceId: 'workspace-1'
+      })
+      expect(store.getOperation('save-1')?.workspaceId).toBe('workspace-1')
+      expect(useToastStore().add).not.toHaveBeenCalled()
+    })
+  })
+
   describe('cancel operations', () => {
     it('does not show a processing toast for cancel operations', () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({

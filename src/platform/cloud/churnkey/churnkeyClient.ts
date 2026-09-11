@@ -1,9 +1,19 @@
-import type { ChurnkeyAuthResponse } from '@comfyorg/ingest-types'
+import type {
+  ChurnkeyAuthResponse,
+  ChurnkeyFlowResponse
+} from '@comfyorg/ingest-types'
 import { createScriptLoader } from '@comfyorg/shared-frontend-utils/loadExternalScript'
+
+import { z } from 'zod'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { reportError } from '@/platform/telemetry/reportError'
+import {
+  workspaceApi,
+  WorkspaceApiError
+} from '@/platform/workspace/api/workspaceApi'
+import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { toError } from '@/utils/errorUtil'
 
 import type {
@@ -34,6 +44,8 @@ function churnkeyError(error: unknown, type?: string): Error {
 }
 
 export interface ChurnkeyShowOptions {
+  workspaceId?: string
+  isWorkspaceCurrent?: () => boolean
   handleCancel: (
     surveyResponse?: string | null,
     freeformFeedback?: string | null
@@ -50,69 +62,264 @@ function rejectUnsupportedOffer(): Promise<never> {
   )
 }
 
+const discountSchema = z.object({
+  percentOff: z.literal(30),
+  duration: z.literal('repeating'),
+  durationInMonths: z.literal(3),
+  amountOff: z.union([z.literal(0), z.null()]).optional()
+})
+
+const stepSchema = z.object({
+  stepType: z.string(),
+  offer: z.object({ offerType: z.string() }).optional()
+})
+
+type SessionCredentials =
+  | { provider: 'stripe'; auth: ChurnkeyAuthResponse; appId: string }
+  | { provider: 'direct'; flow: ChurnkeyFlowResponse; appId: string }
+
 function createSession(
   init: ChurnkeyInit,
-  auth: ChurnkeyAuthResponse,
-  configuredAppId: string
+  credentials: SessionCredentials
 ): ChurnkeySession {
   return {
     show: (options) =>
       new Promise<ChurnkeySessionResults>((resolve, reject) => {
         let settled = false
-        let pendingCancellation: Promise<ChurnkeyHandlerResult> | null = null
+        let closing = false
+        let outcome: ChurnkeySessionResults['outcome']
+        let action:
+          | {
+              kind: 'cancel' | 'discount'
+              promise: Promise<ChurnkeyHandlerResult>
+            }
+          | undefined
+        let lastAction: Promise<ChurnkeyHandlerResult> | undefined
+        let redemptionAttempted = false
+        const recorded = new Set<string>()
 
-        function settle(fn: () => void) {
-          if (settled) return
-          settled = true
-          fn()
-          window.churnkey?.clearState?.()
+        function runAction(
+          kind: 'cancel' | 'discount',
+          run: () => Promise<ChurnkeyHandlerResult>
+        ) {
+          if (action?.kind === kind) return action.promise
+          if (closing || settled || action || outcome) {
+            return Promise.reject(
+              new Error(t('subscription.cancelDialog.retentionBusy'))
+            )
+          }
+          const promise = Promise.resolve()
+            .then(() => {
+              if (options.isWorkspaceCurrent?.() === false)
+                return Promise.reject(
+                  new Error(t('subscription.cancelDialog.workspaceChanged'))
+                )
+              return run()
+            })
+            .then((result) => {
+              outcome = kind === 'discount' ? 'retained' : 'canceled'
+              return result
+            })
+            .catch((error) => {
+              reportError(error, {
+                errorType: 'churnkey_billing_action_failed',
+                tags: { action: kind }
+              })
+              return Promise.reject(error)
+            })
+            .finally(() => {
+              action = undefined
+            })
+          action = { kind, promise }
+          lastAction = promise
+          return promise
         }
 
-        const config: ChurnkeyInitConfig = {
-          appId: configuredAppId,
-          authHash: auth.auth_hash,
-          customerId: auth.customer_id,
-          provider: 'stripe',
-          mode: auth.mode,
-          handleCancel: (_customer, surveyResponse, freeformFeedback) => {
-            pendingCancellation = options.handleCancel(
-              surveyResponse,
-              freeformFeedback
-            )
-            return pendingCancellation
-          },
-          handlePause: rejectUnsupportedOffer,
-          handleDiscount: rejectUnsupportedOffer,
-          handleTrialExtension: rejectUnsupportedOffer,
-          handlePlanChange: rejectUnsupportedOffer,
-          handleRebate: rejectUnsupportedOffer,
-          handleRedirect: rejectUnsupportedOffer,
-          onClose: (results) => {
-            if (!pendingCancellation) {
-              settle(() => resolve(results))
-              return
-            }
-            void pendingCancellation.then(
-              () => settle(() => resolve(results)),
-              (error) => settle(() => reject(toError(error)))
-            )
-          },
-          onError: (error, type) => {
-            if (settled) return
+        async function finish(results?: ChurnkeySessionResults, error?: Error) {
+          if (closing || settled) return
+          closing = true
+          try {
+            await lastAction
+            if (error && !outcome) throw error
             settled = true
-            window.churnkey?.hide?.()
-            reject(churnkeyError(error, type))
-            queueMicrotask(() => window.churnkey?.clearState?.())
+            resolve({
+              ...results,
+              ...(outcome ? { outcome, aborted: false } : {})
+            })
+          } catch (cause) {
+            settled = true
+            reject(toError(cause))
+          } finally {
+            window.churnkey?.clearState?.()
           }
         }
 
+        function onError(error: unknown, type?: string) {
+          if (closing || settled) return
+          window.churnkey?.hide?.()
+          void finish(undefined, churnkeyError(error, type))
+        }
+
+        function record(event: 'flow_opened' | 'offer_shown') {
+          if (
+            credentials.provider !== 'direct' ||
+            !credentials.flow.experiment_variant ||
+            recorded.has(event)
+          )
+            return
+          if (options.isWorkspaceCurrent?.() === false) return
+          recorded.add(event)
+          void workspaceApi
+            .recordChurnkeyFlowEvent({
+              session_id: credentials.flow.session_id,
+              event
+            })
+            .catch((error) => {
+              recorded.delete(event)
+              reportError(error, {
+                errorType: 'churnkey_flow_event_failed',
+                tags: { event }
+              })
+            })
+        }
+
+        const base = {
+          appId: credentials.appId,
+          authHash:
+            credentials.provider === 'direct'
+              ? credentials.flow.auth_hash
+              : credentials.auth.auth_hash,
+          mode:
+            credentials.provider === 'direct'
+              ? credentials.flow.mode
+              : credentials.auth.mode,
+          handleCancel: (
+            _customer: unknown,
+            survey?: string | null,
+            feedback?: string | null
+          ) =>
+            runAction('cancel', () => options.handleCancel(survey, feedback)),
+          onClose: (results: ChurnkeySessionResults) => {
+            void finish(results)
+          },
+          onError
+        }
+        let config: ChurnkeyInitConfig
+        if (credentials.provider === 'stripe') {
+          config = {
+            ...base,
+            provider: 'stripe',
+            customerId: credentials.auth.customer_id,
+            handlePause: rejectUnsupportedOffer,
+            handleDiscount: rejectUnsupportedOffer,
+            handleTrialExtension: rejectUnsupportedOffer,
+            handlePlanChange: rejectUnsupportedOffer,
+            handleRebate: rejectUnsupportedOffer,
+            handleRedirect: rejectUnsupportedOffer
+          }
+        } else {
+          const { flow } = credentials
+          const sub = flow.subscription
+          config = {
+            ...base,
+            provider: 'direct',
+            customer: { id: flow.customer_id },
+            subscriptions: [
+              {
+                id: sub.id,
+                start: new Date(sub.started_at * 1000),
+                status: {
+                  name: 'active',
+                  currentPeriod: {
+                    start: new Date(sub.period_start * 1000),
+                    end: new Date(sub.period_end * 1000)
+                  }
+                },
+                items: [
+                  {
+                    price: {
+                      id: sub.price_id,
+                      amount: {
+                        value: sub.unit_amount,
+                        currency: sub.currency
+                      },
+                      interval: sub.interval,
+                      intervalCount: sub.interval_count
+                    },
+                    quantity: sub.quantity
+                  }
+                ]
+              }
+            ],
+            onStepChange: (step) => {
+              const parsed = stepSchema.safeParse(step)
+              if (!parsed.success) return
+              record('flow_opened')
+              if (
+                flow.allowed_offer &&
+                parsed.data.stepType === 'OFFER' &&
+                parsed.data.offer?.offerType === 'DISCOUNT'
+              )
+                record('offer_shown')
+            },
+            ...(flow.allowed_offer
+              ? {
+                  handleDiscount: (_customer: unknown, coupon: unknown) =>
+                    runAction('discount', async () => {
+                      if (!discountSchema.safeParse(coupon).success)
+                        return rejectUnsupportedOffer()
+                      if (
+                        !redemptionAttempted &&
+                        Date.now() >= flow.expires_at * 1000
+                      )
+                        return Promise.reject(
+                          new Error(
+                            t('subscription.cancelDialog.retentionExpired')
+                          )
+                        )
+                      if (!options.workspaceId)
+                        return Promise.reject(
+                          new Error(
+                            t('subscription.cancelDialog.workspaceChanged')
+                          )
+                        )
+                      redemptionAttempted = true
+                      const accepted =
+                        await workspaceApi.acceptChurnkeyRetention(
+                          flow.session_id
+                        )
+                      const operation =
+                        await useBillingOperationStore().startOperation(
+                          accepted.billing_op_id,
+                          'retention',
+                          {
+                            workspaceId: options.workspaceId,
+                            suppressProcessingToast: true
+                          }
+                        )
+                      if (operation.status !== 'succeeded') {
+                        return Promise.reject(
+                          new Error(
+                            t(
+                              operation.status === 'failed'
+                                ? 'subscription.cancelDialog.retentionFailed'
+                                : 'subscription.cancelDialog.retentionPending'
+                            )
+                          )
+                        )
+                      }
+                      return {
+                        message: t('subscription.cancelDialog.retentionSuccess')
+                      }
+                    })
+                }
+              : {})
+          }
+        }
         try {
-          init('show', config)
+          void Promise.resolve(init('show', config)).catch(onError)
         } catch (error) {
-          settle(() => {
-            window.churnkey?.hide?.()
-            reject(churnkeyError(error))
-          })
+          onError(error)
         }
       })
   }
@@ -122,8 +329,21 @@ export async function prepareChurnkey(): Promise<ChurnkeySession | null> {
   const configuredAppId = useFeatureFlags().flags.churnkeyAppId
   if (!configuredAppId) return null
 
-  const auth = await workspaceApi.getChurnkeyAuth()
-
-  const init = await loadChurnkey(configuredAppId)
-  return createSession(init, auth, configuredAppId)
+  let credentials: SessionCredentials
+  try {
+    const flow = await workspaceApi.prepareChurnkeyFlow()
+    credentials = { provider: 'direct', flow, appId: flow.app_id }
+  } catch (error) {
+    if (
+      !(error instanceof WorkspaceApiError) ||
+      !(
+        error.status === 404 ||
+        (error.status === 503 && error.code === 'CHURNKEY_NOT_CONFIGURED')
+      )
+    )
+      throw error
+    const auth = await workspaceApi.getChurnkeyAuth()
+    credentials = { provider: 'stripe', auth, appId: configuredAppId }
+  }
+  return createSession(await loadChurnkey(credentials.appId), credentials)
 }

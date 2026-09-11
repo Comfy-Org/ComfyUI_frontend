@@ -1125,3 +1125,27 @@ export type {
   WorkspaceSummary,
   WorkspaceWithRole
 } from './types.gen'
+
+export type {
+  ChurnkeyRetentionSubscription,
+  ChurnkeyRetentionOffer,
+  ChurnkeyFlowResponse,
+  ChurnkeyRetentionAcceptance,
+  ChurnkeyFlowEventRequest,
+  ChurnkeyRetentionRequest,
+  PrepareChurnkeyFlowData,
+  PrepareChurnkeyFlowErrors,
+  PrepareChurnkeyFlowError,
+  PrepareChurnkeyFlowResponses,
+  PrepareChurnkeyFlowResponse,
+  AcceptChurnkeyRetentionData,
+  AcceptChurnkeyRetentionErrors,
+  AcceptChurnkeyRetentionError,
+  AcceptChurnkeyRetentionResponses,
+  AcceptChurnkeyRetentionResponse,
+  RecordChurnkeyFlowEventData,
+  RecordChurnkeyFlowEventErrors,
+  RecordChurnkeyFlowEventError,
+  RecordChurnkeyFlowEventResponses,
+  RecordChurnkeyFlowEventResponse
+} from './types.gen'

@@ -20,7 +20,8 @@ const mocks = vi.hoisted(() => ({
   billingRail: 'stripe' as BillingRail | null,
   cancelSubscription: vi.fn(),
   prepare: vi.fn(),
-  trackCancellation: vi.fn()
+  trackCancellation: vi.fn(),
+  reportError: vi.fn()
 }))
 
 vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
@@ -45,6 +46,10 @@ vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackSubscriptionCancellation: mocks.trackCancellation
   })
+}))
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: mocks.reportError
 }))
 
 import { launchCancellationFlow } from './launchCancellationFlow'
@@ -163,7 +168,6 @@ describe('launchCancellationFlow', () => {
 
   it('falls back when preparation or the provider fails', async () => {
     const preparationError = new Error('blocked by browser')
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     mocks.prepare.mockRejectedValueOnce(preparationError)
     const preparationFallback = vi.fn()
 
@@ -171,10 +175,9 @@ describe('launchCancellationFlow', () => {
 
     expect(preparationFallback).toHaveBeenCalledWith()
     expect(mocks.trackCancellation).not.toHaveBeenCalled()
-    expect(warn).toHaveBeenCalledWith(
-      'Failed to prepare Churnkey cancellation flow:',
-      preparationError
-    )
+    expect(mocks.reportError).toHaveBeenCalledWith(preparationError, {
+      errorType: 'churnkey_preparation_failed'
+    })
 
     mocks.prepare.mockResolvedValueOnce(
       session(async () => {
@@ -208,7 +211,7 @@ describe('launchCancellationFlow', () => {
 
     await launchCancellationFlow({ showFallback })
 
-    expect(mocks.trackCancellation).toHaveBeenCalledWith(
+    expect(mocks.trackCancellation).not.toHaveBeenCalledWith(
       'confirmed',
       expect.anything()
     )

@@ -2853,7 +2853,12 @@
       "confirmCancel": "Cancel subscription",
       "failed": "Failed to cancel subscription",
       "workspaceChanged": "Your active workspace changed. Switch back and try again.",
-      "offerUnavailable": "This option isn't available. Please choose another option."
+      "offerUnavailable": "This option isn't available. Please choose another option.",
+      "retentionSuccess": "Your 30% discount is applied for the next three monthly renewals. Your subscription remains active.",
+      "retentionFailed": "We could not confirm the discount. You can retry this offer or continue cancelling.",
+      "retentionPending": "Your discount is still being confirmed. Check billing before trying another change, or contact support.",
+      "retentionBusy": "A billing change is already being processed. Please wait for it to finish.",
+      "retentionExpired": "This offer has expired. Close this window and reopen cancellation to refresh it."
     },
     "downgrade": {
       "title": "Change to {plan} plan?",

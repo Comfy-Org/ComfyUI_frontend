@@ -4500,3 +4500,67 @@ export const zGetViewCompatAliasQuery = z.object({
 export const zGetWebsocketQuery = z.object({
   clientId: z.string().optional()
 })
+
+export const zChurnkeyRetentionSubscription = z.object({
+  started_at: z.number().int().lte(9007199254740991),
+  id: z.string(),
+  price_id: z.string(),
+  currency: z.string(),
+  unit_amount: z.number().int().lte(9007199254740991),
+  quantity: z.number().int().lte(9007199254740991),
+  period_start: z.number().int().lte(9007199254740991),
+  period_end: z.number().int().lte(9007199254740991),
+  interval: z.enum(['month', 'year']),
+  interval_count: z.number().int().lte(9007199254740991)
+})
+
+export const zChurnkeyRetentionOffer = z.object({
+  id: z.enum(['save_30_next_3_v1']),
+  percent_off: z.literal(30),
+  renewals: z.literal(3)
+})
+
+export const zChurnkeyFlowResponse = z.object({
+  app_id: z.string(),
+  customer_id: z.string(),
+  auth_hash: z.string(),
+  mode: z.enum(['live', 'test']),
+  session_id: z.string().uuid(),
+  expires_at: z.number().int().lte(9007199254740991),
+  experiment_variant: z.enum(['control', 'treatment']).optional(),
+  allowed_offer: zChurnkeyRetentionOffer.optional(),
+  subscription: zChurnkeyRetentionSubscription
+})
+
+export const zChurnkeyRetentionAcceptance = z.object({
+  billing_op_id: z.string(),
+  status: z.enum(['pending', 'succeeded'])
+})
+
+export const zChurnkeyFlowEventRequest = z.object({
+  session_id: z.string().uuid(),
+  event: z.enum(['flow_opened', 'offer_shown'])
+})
+
+export const zChurnkeyRetentionRequest = z.object({
+  session_id: z.string().uuid()
+})
+
+/**
+ * Success
+ */
+export const zPrepareChurnkeyFlowResponse = zChurnkeyFlowResponse
+
+export const zAcceptChurnkeyRetentionBody = zChurnkeyRetentionRequest
+
+/**
+ * Success
+ */
+export const zAcceptChurnkeyRetentionResponse = zChurnkeyRetentionAcceptance
+
+export const zRecordChurnkeyFlowEventBody = zChurnkeyFlowEventRequest
+
+/**
+ * Success
+ */
+export const zRecordChurnkeyFlowEventResponse = z.void()

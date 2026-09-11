@@ -10,6 +10,10 @@ import type {
   CancelSubscriptionRequest,
   CancelSubscriptionResponse,
   ChurnkeyAuthResponse,
+  ChurnkeyFlowResponse,
+  ChurnkeyFlowEventRequest,
+  ChurnkeyRetentionAcceptance,
+  ChurnkeyRetentionRequest,
   CreateInviteRequest,
   CreateTopupRequest,
   CreateTopupResponse,
@@ -39,6 +43,10 @@ import type {
   WorkspaceWithRole
 } from '@comfyorg/ingest-types'
 import axios from 'axios'
+import {
+  zChurnkeyFlowResponse,
+  zChurnkeyRetentionAcceptance
+} from '@comfyorg/ingest-types/zod'
 
 import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
 import { churnkeyAuthResponseSchema } from '@/platform/cloud/churnkey/churnkeyAuthSchema'
@@ -610,6 +618,51 @@ export const workspaceApi = {
         { headers }
       )
       return churnkeyAuthResponseSchema.parse(response.data)
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  async prepareChurnkeyFlow(): Promise<ChurnkeyFlowResponse> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.post<unknown>(
+        workspaceApiUrl('/billing/churnkey/prepare'),
+        {},
+        { headers }
+      )
+      return zChurnkeyFlowResponse.parse(response.data)
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  async acceptChurnkeyRetention(
+    sessionId: string
+  ): Promise<ChurnkeyRetentionAcceptance> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.post<unknown>(
+        workspaceApiUrl('/billing/churnkey/accept'),
+        { session_id: sessionId } satisfies ChurnkeyRetentionRequest,
+        { headers }
+      )
+      return zChurnkeyRetentionAcceptance.parse(response.data)
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  async recordChurnkeyFlowEvent(
+    request: ChurnkeyFlowEventRequest
+  ): Promise<void> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      await workspaceApiClient.post(
+        workspaceApiUrl('/billing/churnkey/events'),
+        request,
+        { headers }
+      )
     } catch (err) {
       handleAxiosError(err)
     }

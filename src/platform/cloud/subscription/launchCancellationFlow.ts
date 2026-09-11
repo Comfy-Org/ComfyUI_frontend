@@ -3,6 +3,7 @@ import { t } from '@/i18n'
 import { prepareChurnkey } from '@/platform/cloud/churnkey/churnkeyClient'
 import { getSubscriptionCancellationMetadata } from '@/platform/cloud/subscription/utils/subscriptionCancellationTelemetry'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { getErrorMessage } from '@/utils/errorUtil'
 
@@ -17,7 +18,18 @@ interface LaunchCancellationFlowOptions {
   ) => void | Promise<unknown>
 }
 
-export async function launchCancellationFlow({
+let activeFlow: Promise<void> | undefined
+
+export function launchCancellationFlow(
+  options: LaunchCancellationFlowOptions
+): Promise<void> {
+  activeFlow ??= runCancellationFlow(options).finally(() => {
+    activeFlow = undefined
+  })
+  return activeFlow
+}
+
+async function runCancellationFlow({
   cancelAt,
   showFallback
 }: LaunchCancellationFlowOptions): Promise<void> {
@@ -38,7 +50,7 @@ export async function launchCancellationFlow({
   }
 
   const session = await prepareChurnkey().catch((error) => {
-    console.warn('Failed to prepare Churnkey cancellation flow:', error)
+    reportError(error, { errorType: 'churnkey_preparation_failed' })
     return null
   })
   if (!session) {
@@ -59,13 +71,15 @@ export async function launchCancellationFlow({
 
   try {
     const results = await session.show({
+      workspaceId: launchWorkspaceId,
+      isWorkspaceCurrent: isLaunchWorkspaceCurrent,
       handleCancel: async () => {
         if (!isLaunchWorkspaceCurrent()) {
           throw new Error(t('subscription.cancelDialog.workspaceChanged'))
         }
-        telemetry?.trackSubscriptionCancellation('confirmed', metadata)
         try {
           await billing.cancelSubscription()
+          telemetry?.trackSubscriptionCancellation('confirmed', metadata)
           return { message: t('subscription.cancelSuccess') }
         } catch (error) {
           throw new Error(
@@ -76,7 +90,7 @@ export async function launchCancellationFlow({
       }
     })
 
-    if (results.aborted === true) {
+    if (results.aborted === true && !results.outcome) {
       telemetry?.trackSubscriptionCancellation('abandoned', metadata)
     }
   } catch (error) {

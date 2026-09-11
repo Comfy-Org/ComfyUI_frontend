@@ -890,7 +890,7 @@ type BillingOperationBillingEvent = {
   operation: 'operation'
   /** Absent when the initiating call itself failed, before the backend returned one to poll. */
   billing_op_id?: string
-  operation_type: 'subscription' | 'topup' | 'cancel'
+  operation_type: 'subscription' | 'topup' | 'cancel' | 'retention'
   tier?: SubscriptionCheckoutTier
   cycle?: BillingCycle
   checkout_type?: SubscriptionCheckoutType

@@ -12724,3 +12724,237 @@ export type GetWebsocketErrors = {
    */
   401: unknown
 }
+
+export type ChurnkeyRetentionSubscription = {
+  /**
+   * Unix seconds of subscription creation, for accurate subscription age.
+   */
+  started_at: number
+  id: string
+  price_id: string
+  currency: string
+  /**
+   * Recurring unit price in the currency's smallest unit.
+   */
+  unit_amount: number
+  quantity: number
+  /**
+   * Unix seconds.
+   */
+  period_start: number
+  /**
+   * Unix seconds of the current renewal boundary.
+   */
+  period_end: number
+  interval: 'month' | 'year'
+  interval_count: number
+}
+
+export type ChurnkeyRetentionOffer = {
+  id: 'save_30_next_3_v1'
+  percent_off: 30
+  renewals: 3
+}
+
+export type ChurnkeyFlowResponse = {
+  /**
+   * Separate Churnkey Direct-mode application, with no native Stripe billing actions.
+   */
+  app_id: string
+  /**
+   * Workspace identity in the Direct-mode application.
+   */
+  customer_id: string
+  /**
+   * HMAC for this workspace in the Direct-mode application only.
+   */
+  auth_hash: string
+  mode: 'live' | 'test'
+  session_id: string
+  /**
+   * Unix seconds; the offer must be refreshed after expiry.
+   */
+  expires_at: number
+  /**
+   * Absent for ineligible workspaces or an unavailable assignment. Never treat absence as control.
+   */
+  experiment_variant?: 'control' | 'treatment'
+  allowed_offer?: ChurnkeyRetentionOffer
+  subscription: ChurnkeyRetentionSubscription
+}
+
+export type ChurnkeyRetentionAcceptance = {
+  billing_op_id: string
+  /**
+   * Only succeeded authorizes Churnkey to display successful application. Poll the billing operation otherwise.
+   */
+  status: 'pending' | 'succeeded'
+}
+
+export type ChurnkeyFlowEventRequest = {
+  session_id: string
+  /**
+   * flow_opened is reported at the same point for both assigned variants.
+   */
+  event: 'flow_opened' | 'offer_shown'
+}
+
+export type ChurnkeyRetentionRequest = {
+  /**
+   * Server-issued session; contains no client-selected coupon or variant.
+   */
+  session_id: string
+}
+
+export type PrepareChurnkeyFlowData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/billing/churnkey/prepare'
+}
+
+export type PrepareChurnkeyFlowErrors = {
+  /**
+   * Invalid request
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Owner permission or offer assignment required
+   */
+  403: ErrorResponse
+  /**
+   * Session stale or a billing operation conflicts
+   */
+  409: ErrorResponse
+  /**
+   * Subscription does not support this flow
+   */
+  422: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+  /**
+   * Cancellation offers unavailable
+   */
+  503: ErrorResponse
+}
+
+export type PrepareChurnkeyFlowError =
+  PrepareChurnkeyFlowErrors[keyof PrepareChurnkeyFlowErrors]
+
+export type PrepareChurnkeyFlowResponses = {
+  /**
+   * Success
+   */
+  200: ChurnkeyFlowResponse
+}
+
+export type PrepareChurnkeyFlowResponse =
+  PrepareChurnkeyFlowResponses[keyof PrepareChurnkeyFlowResponses]
+
+export type AcceptChurnkeyRetentionData = {
+  body: ChurnkeyRetentionRequest
+  path?: never
+  query?: never
+  url: '/api/billing/churnkey/accept'
+}
+
+export type AcceptChurnkeyRetentionErrors = {
+  /**
+   * Invalid request
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Owner permission or offer assignment required
+   */
+  403: ErrorResponse
+  /**
+   * Session stale or a billing operation conflicts
+   */
+  409: ErrorResponse
+  /**
+   * Subscription does not support this flow
+   */
+  422: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+  /**
+   * Cancellation offers unavailable
+   */
+  503: ErrorResponse
+}
+
+export type AcceptChurnkeyRetentionError =
+  AcceptChurnkeyRetentionErrors[keyof AcceptChurnkeyRetentionErrors]
+
+export type AcceptChurnkeyRetentionResponses = {
+  /**
+   * Success
+   */
+  202: ChurnkeyRetentionAcceptance
+}
+
+export type AcceptChurnkeyRetentionResponse =
+  AcceptChurnkeyRetentionResponses[keyof AcceptChurnkeyRetentionResponses]
+
+export type RecordChurnkeyFlowEventData = {
+  body: ChurnkeyFlowEventRequest
+  path?: never
+  query?: never
+  url: '/api/billing/churnkey/events'
+}
+
+export type RecordChurnkeyFlowEventErrors = {
+  /**
+   * Invalid request
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * Owner permission or offer assignment required
+   */
+  403: ErrorResponse
+  /**
+   * Session stale or a billing operation conflicts
+   */
+  409: ErrorResponse
+  /**
+   * Subscription does not support this flow
+   */
+  422: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+  /**
+   * Cancellation offers unavailable
+   */
+  503: ErrorResponse
+}
+
+export type RecordChurnkeyFlowEventError =
+  RecordChurnkeyFlowEventErrors[keyof RecordChurnkeyFlowEventErrors]
+
+export type RecordChurnkeyFlowEventResponses = {
+  /**
+   * Success
+   */
+  204: void
+}
+
+export type RecordChurnkeyFlowEventResponse =
+  RecordChurnkeyFlowEventResponses[keyof RecordChurnkeyFlowEventResponses]

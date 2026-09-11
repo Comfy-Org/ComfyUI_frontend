@@ -54,7 +54,7 @@ const UNMOVED_INTENT_STATUSES: ReadonlySet<PaymentIntent.Status> = new Set([
   'canceled'
 ])
 
-type OperationType = 'subscription' | 'topup' | 'cancel'
+type OperationType = 'subscription' | 'topup' | 'cancel' | 'retention'
 type OperationStatus =
   | 'pending'
   | 'succeeded'
@@ -63,6 +63,8 @@ type OperationStatus =
   | 'reconciliation_needed'
 
 export interface StartOperationMetadata {
+  workspaceId?: string
+
   tier?: SubscriptionCheckoutTier
   cycle?: BillingCycle
   checkoutType?: SubscriptionCheckoutType
@@ -200,7 +202,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   // do here" next to the verification prompt the same state renders.
   function showProgressToast(
     opId: string,
-    type: Exclude<OperationType, 'cancel'>,
+    type: Exclude<OperationType, 'cancel' | 'retention'>,
     actionRequired: boolean
   ) {
     const toastStore = useToastStore()
@@ -253,7 +255,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       isAuthenticating: false,
       canRetryAuthentication: false,
       authenticationRequiredSeen: actionUrl !== null,
-      workspaceId: workspaceStore.activeWorkspaceId,
+      workspaceId: metadata?.workspaceId ?? workspaceStore.activeWorkspaceId,
       tier: metadata?.tier,
       cycle: metadata?.cycle,
       checkoutType: metadata?.checkoutType,
@@ -276,7 +278,11 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       })
     }
 
-    if (type !== 'cancel' && !metadata?.suppressProcessingToast) {
+    if (
+      type !== 'cancel' &&
+      type !== 'retention' &&
+      !metadata?.suppressProcessingToast
+    ) {
       showProgressToast(opId, type, operation.actionUrl !== null)
     }
 
@@ -426,7 +432,11 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
   function hasTimedOut(operation: BillingOperation): boolean {
     const elapsed = Date.now() - operation.startedAt
-    if (operation.type !== 'cancel' && operation.authenticationRequiredSeen) {
+    if (
+      operation.type !== 'cancel' &&
+      operation.type !== 'retention' &&
+      operation.authenticationRequiredSeen
+    ) {
       return elapsed > AUTHENTICATION_TIMEOUT_MS
     }
     return operation.type === 'subscription'
@@ -661,7 +671,11 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     // when that answer changes, or a dismissed toast would return every poll.
     const wasActionRequired = operation.actionUrl !== null
     const isActionRequired = actionUrl !== null
-    if (operation.type !== 'cancel' && wasActionRequired !== isActionRequired) {
+    if (
+      operation.type !== 'cancel' &&
+      operation.type !== 'retention' &&
+      wasActionRequired !== isActionRequired
+    ) {
       showProgressToast(opId, operation.type, isActionRequired)
     }
   }
@@ -762,6 +776,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
           capabilities.refresh()
         ])
       }
+
+      if (operation.type === 'retention') return
 
       if (operation.type === 'cancel') {
         useTeamWorkspaceStore().updateActiveWorkspace({ isSubscribed: false })
@@ -873,7 +889,11 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       })
     }
 
-    if (operation.type !== 'cancel' && !superseded) {
+    if (
+      operation.type !== 'cancel' &&
+      operation.type !== 'retention' &&
+      !superseded
+    ) {
       useToastStore().add({
         severity: 'error',
         summary: defaultMessage,
@@ -1012,7 +1032,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       })
     }
 
-    if (operation.type !== 'cancel') {
+    if (operation.type !== 'cancel' && operation.type !== 'retention') {
       useToastStore().add({
         severity: 'error',
         summary: message
@@ -1036,7 +1056,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     errorMessage: string | null,
     isZeroPaymentOperation: boolean
   ): BillingFailure['failure_category'] {
-    if (type === 'cancel' || isZeroPaymentOperation) return 'api_rejected'
+    if (type === 'cancel' || type === 'retention' || isZeroPaymentOperation)
+      return 'api_rejected'
 
     if (errorMessage && /network|connection|unreachable/i.test(errorMessage)) {
       return 'network'
@@ -1046,6 +1067,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   }
 
   function failureMessage(type: OperationType) {
+    if (type === 'retention')
+      return t('subscription.cancelDialog.retentionFailed')
     if (type === 'subscription') return t('billingOperation.subscriptionFailed')
     if (type === 'topup') return t('billingOperation.topupFailed')
     return t('billingOperation.cancelFailed')
@@ -1100,6 +1123,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   }
 
   function timeoutMessage(type: OperationType) {
+    if (type === 'retention')
+      return t('subscription.cancelDialog.retentionPending')
     if (type === 'subscription')
       return t('billingOperation.subscriptionTimeout')
     if (type === 'topup') return t('billingOperation.topupTimeout')

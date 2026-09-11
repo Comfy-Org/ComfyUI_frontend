@@ -8,34 +8,66 @@ export interface ChurnkeyHandlerResult {
 
 export interface ChurnkeySessionResults {
   aborted?: boolean
+  outcome?: 'retained' | 'canceled'
 }
 
-type ChurnkeyUnsupportedHandler = (
+type ChurnkeyOfferHandler = (
   ...args: unknown[]
 ) => Promise<ChurnkeyHandlerResult>
 
-export interface ChurnkeyInitConfig {
+interface ChurnkeyBaseConfig {
   appId: string
   authHash: string
-  customerId: string
-  provider: 'stripe'
   mode: ChurnkeyMode
   handleCancel: (
     customer: unknown,
     surveyResponse?: string | null,
     freeformFeedback?: string | null
   ) => Promise<ChurnkeyHandlerResult>
-  handlePause: ChurnkeyUnsupportedHandler
-  handleDiscount: ChurnkeyUnsupportedHandler
-  handleTrialExtension: ChurnkeyUnsupportedHandler
-  handlePlanChange: ChurnkeyUnsupportedHandler
-  handleRebate: ChurnkeyUnsupportedHandler
-  handleRedirect: ChurnkeyUnsupportedHandler
   onClose: (results: ChurnkeySessionResults) => void
   onError: (error: unknown, type?: string) => void
 }
 
-export type ChurnkeyInit = (action: 'show', config: ChurnkeyInitConfig) => void
+interface ChurnkeyStripeConfig extends ChurnkeyBaseConfig {
+  provider: 'stripe'
+  customerId: string
+  handlePause: ChurnkeyOfferHandler
+  handleDiscount: ChurnkeyOfferHandler
+  handleTrialExtension: ChurnkeyOfferHandler
+  handlePlanChange: ChurnkeyOfferHandler
+  handleRebate: ChurnkeyOfferHandler
+  handleRedirect: ChurnkeyOfferHandler
+}
+
+interface ChurnkeyDirectConfig extends ChurnkeyBaseConfig {
+  provider: 'direct'
+  customer: { id: string }
+  subscriptions: {
+    id: string
+    start: Date
+    status: {
+      name: 'active'
+      currentPeriod: { start: Date; end: Date }
+    }
+    items: {
+      price: {
+        id: string
+        amount: { value: number; currency: string }
+        interval: 'month' | 'year'
+        intervalCount: number
+      }
+      quantity: number
+    }[]
+  }[]
+  handleDiscount?: ChurnkeyOfferHandler
+  onStepChange: (step: unknown) => void
+}
+
+export type ChurnkeyInitConfig = ChurnkeyStripeConfig | ChurnkeyDirectConfig
+export type ChurnkeyInit = (
+  action: 'show',
+  config: ChurnkeyInitConfig
+) => void | Promise<void>
 
 interface ChurnkeyWindow {
   created?: boolean
