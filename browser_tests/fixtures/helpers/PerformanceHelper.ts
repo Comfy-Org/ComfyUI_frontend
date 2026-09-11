@@ -350,6 +350,16 @@ export class PerformanceHelper {
       return 0
     }
 
+    function monotonicDelta(
+      key: Exclude<keyof PerfSnapshot, 'cdpMetrics'>,
+      scale = 1
+    ): number {
+      const value = delta(key, scale)
+      if (value >= 0) return value
+      failureReasons.push(`non-monotonic CDP metric: ${key}`)
+      return 0
+    }
+
     const taskAccounting = computeCdpTaskAccounting(
       before.cdpMetrics,
       after.cdpMetrics
@@ -357,10 +367,10 @@ export class PerformanceHelper {
     const rafIntervalsMs = rafCollection?.intervalsMs ?? []
     const measurement: PerfMeasurement = {
       name,
-      durationMs: delta('Timestamp', 1000),
-      styleRecalcs: delta('RecalcStyleCount'),
+      durationMs: monotonicDelta('Timestamp', 1000),
+      styleRecalcs: monotonicDelta('RecalcStyleCount'),
       styleRecalcDurationMs: delta('RecalcStyleDuration', 1000),
-      layouts: delta('LayoutCount'),
+      layouts: monotonicDelta('LayoutCount'),
       layoutDurationMs: delta('LayoutDuration', 1000),
       taskDurationMs: delta('TaskDuration', 1000),
       ...taskAccounting,

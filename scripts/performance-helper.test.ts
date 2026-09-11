@@ -223,6 +223,41 @@ describe('PerformanceHelper', () => {
     })
   })
 
+  it('rejects reset cumulative CDP counters', async () => {
+    installPageGlobals()
+    const raf = installControlledRaf()
+    let snapshotCount = 0
+    const page = createPage(async (method) => {
+      if (method !== 'Performance.getMetrics') return {}
+      snapshotCount++
+      return {
+        metrics: REQUIRED_METRICS.map((name) => ({
+          name,
+          value:
+            name === 'RecalcStyleCount' && snapshotCount === 2
+              ? 0
+              : snapshotCount
+        }))
+      }
+    })
+    const helper = new PerformanceHelper(page)
+    await helper.init()
+
+    const start = helper.startMeasuring()
+    await raf.runNext(0)
+    await start
+    await raf.runNext(16.7)
+    const stop = helper.stopMeasuring('reset-counter')
+    await raf.runNext(33.4)
+
+    await expect(stop).resolves.toMatchObject({
+      kind: 'rejected',
+      reason: expect.stringContaining(
+        'non-monotonic CDP metric: RecalcStyleCount'
+      )
+    })
+  })
+
   it('disconnects the long-task observer on disposal', async () => {
     const observer = installPageGlobals()
     const raf = installControlledRaf()

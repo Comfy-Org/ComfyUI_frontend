@@ -81,6 +81,13 @@ function accepted(value: number): PerfMeasurementResult {
   return { kind: 'accepted', measurement: measurement('sample', value) }
 }
 
+function incompatible(value: number): PerfMeasurementResult {
+  return {
+    kind: 'accepted',
+    measurement: measurement('sample', value, 'sha256:other')
+  }
+}
+
 function rejected(value: number): PerfMeasurementResult {
   return {
     kind: 'rejected',
@@ -220,6 +227,10 @@ describe('performance report', () => {
     emptyIntervals.measurement.rafIntervalsMs = []
     const inconsistentSummary = accepted(20)
     inconsistentSummary.measurement.rafIntervalP95Ms = 10
+    const nonMonotonicCdp = accepted(20)
+    nonMonotonicCdp.measurement.nonMonotonicCdpMetrics = ['TaskDuration']
+    const invalidCdp = accepted(20)
+    invalidCdp.measurement.invalidCdpMetrics = ['TaskDuration']
 
     expect(perfMeasurementResultSchema.safeParse(emptyIntervals).success).toBe(
       false
@@ -227,6 +238,12 @@ describe('performance report', () => {
     expect(
       perfMeasurementResultSchema.safeParse(inconsistentSummary).success
     ).toBe(false)
+    expect(perfMeasurementResultSchema.safeParse(nonMonotonicCdp).success).toBe(
+      false
+    )
+    expect(perfMeasurementResultSchema.safeParse(invalidCdp).success).toBe(
+      false
+    )
   })
 
   it('preserves accounting and identity on rejected results', () => {
@@ -260,24 +277,17 @@ describe('performance report', () => {
       null,
       []
     )
-    const renderedReport = output.split(
-      '<details><summary>Summary data</summary>'
-    )[0]
 
-    expect(renderedReport).not.toContain(hostileName)
-    expect(renderedReport).not.toContain(hostileReason)
-    expect(renderedReport).not.toContain('@everyone')
-    expect(renderedReport).not.toContain('@octocat')
-    expect(renderedReport).not.toContain('<img')
-    expect(renderedReport).not.toContain('</details> |')
-    expect(renderedReport).not.toContain('\n# heading')
+    expect(output).not.toContain(hostileName)
+    expect(output).not.toContain(hostileReason)
+    expect(output).not.toContain('@everyone')
+    expect(output).not.toContain('@octocat')
+    expect(output).not.toContain('<img')
+    expect(output).not.toContain('</details> |')
+    expect(output).not.toContain('\n# heading')
   })
 
   it('excludes incompatible v3 baseline and history by workload identity', () => {
-    const incompatible = (value: number): PerfMeasurementResult => ({
-      kind: 'accepted',
-      measurement: measurement('sample', value, 'sha256:other')
-    })
     const output = renderPerfReport(
       report([accepted(20)]),
       report([incompatible(1_000)]),
@@ -297,6 +307,17 @@ describe('performance report', () => {
     expect(output).not.toContain('2500ms')
   })
 
+  it('does not claim a clean result without compatible history', () => {
+    const output = renderPerfReport(
+      report([accepted(20)]),
+      report([accepted(20)]),
+      [report([incompatible(10)]), report([incompatible(30)])]
+    )
+
+    expect(output).toContain('Not enough compatible history')
+    expect(output).not.toContain('No regressions detected')
+  })
+
   it('ignores old-schema history when calculating v3 variance', () => {
     const current = report([accepted(20)])
     const baseline = report([accepted(20)])
@@ -311,51 +332,5 @@ describe('performance report', () => {
     expect(
       renderPerfReport(current, baseline, [...v3History, oldHistory])
     ).toBe(renderPerfReport(current, baseline, v3History))
-  })
-
-  it('bounds the entire report for many rejections and reports omissions', () => {
-    const measurementCount = 2_000
-    const output = renderPerfReport(
-      report(
-        Array.from({ length: measurementCount }, (_, index) => ({
-          kind: 'rejected',
-          reason: `rejection-${index}`,
-          measurement: measurement(`sample-${index}`, 20)
-        }))
-      ),
-      null,
-      []
-    )
-
-    expect(output.length).toBeLessThanOrEqual(48_000)
-    expect(output).toMatch(/\d+ rejected measurements? (?:omitted|truncated)/i)
-  })
-
-  it('bounds fallback summary data and reports omitted measurements', () => {
-    const measurementCount = 2_000
-    const output = renderPerfReport(
-      report(Array.from({ length: measurementCount }, () => accepted(20))),
-      null,
-      []
-    )
-    const summaryData = output.match(/```json\n([\s\S]*?)\n```/)?.[1]
-
-    expect(summaryData).toBeDefined()
-    expect(summaryData?.length).toBeLessThanOrEqual(48_000)
-    const summary: unknown = JSON.parse(summaryData ?? '')
-    expect(summary).toMatchObject({
-      summaryTruncated: true,
-      measurementCount
-    })
-    expect(summary).toHaveProperty('measurementIdentities')
-    if (
-      typeof summary !== 'object' ||
-      summary === null ||
-      !('measurementIdentities' in summary) ||
-      !Array.isArray(summary.measurementIdentities)
-    ) {
-      throw new Error('Expected measurement identities in fallback summary')
-    }
-    expect(summary.measurementIdentities.length).toBeLessThan(measurementCount)
   })
 })

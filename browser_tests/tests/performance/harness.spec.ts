@@ -48,11 +48,17 @@ test.describe('Performance measurement controls', { tag: ['@perf'] }, () => {
     comfyPage
   }) => {
     await comfyPage.perf.startMeasuring()
-    await comfyPage.page.evaluate(() => {
-      const end = performance.now() + 100
-      let now = performance.now()
-      while (now < end) now = performance.now()
-    })
+    await comfyPage.page.evaluate(
+      () =>
+        new Promise<void>((resolve) => {
+          setTimeout(() => {
+            const end = performance.now() + 100
+            let now = performance.now()
+            while (now < end) now = performance.now()
+            resolve()
+          })
+        })
+    )
     const result = await comfyPage.perf.stopMeasuring(
       'raf-collector-busy-control'
     )
@@ -62,6 +68,8 @@ test.describe('Performance measurement controls', { tag: ['@perf'] }, () => {
     const measurement = result.measurement
 
     expect(measurement.rafIntervalsOver50Ms).toBeGreaterThanOrEqual(1)
+    expect(measurement.totalBlockingTimeMs).toBeGreaterThan(0)
+    expect(measurement.taskDurationMs).toBeGreaterThan(0)
     // rAF timestamps are display-aligned, so a 100ms task may surface as a
     // slightly shorter multiple of the refresh interval at either boundary.
     expect(measurement.rafIntervalMaxMs).toBeGreaterThan(50)

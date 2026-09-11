@@ -44,8 +44,12 @@ const perfMeasurementSchema = perfMeasurementV2Schema.extend({
   workloadIdentity: perfWorkloadIdentitySchema
 })
 
-const acceptedPerfMeasurementSchema = perfMeasurementSchema.superRefine(
-  (measurement, context) => {
+const acceptedPerfMeasurementSchema = perfMeasurementSchema
+  .extend({
+    nonMonotonicCdpMetrics: z.array(z.string()).length(0),
+    invalidCdpMetrics: z.array(z.string()).length(0)
+  })
+  .superRefine((measurement, context) => {
     if (
       measurement.rafIntervalsMs.length === 0 ||
       measurement.rafIntervalsMs.some(
@@ -69,8 +73,7 @@ const acceptedPerfMeasurementSchema = perfMeasurementSchema.superRefine(
         })
       }
     }
-  }
-)
+  })
 
 export type PerfMeasurement = z.infer<typeof acceptedPerfMeasurementSchema>
 

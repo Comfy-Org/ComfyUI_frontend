@@ -24,7 +24,6 @@ import {
 const CURRENT_PATH = 'test-results/perf-metrics.json'
 const BASELINE_PATH = 'temp/perf-baseline/perf-metrics.json'
 const HISTORY_DIR = 'temp/perf-history'
-const COMMENT_DATA_LIMIT = 48_000
 
 type MetricKey =
   | 'styleRecalcs'
@@ -59,6 +58,15 @@ interface MetricDef {
   unit: string
   /** Minimum absolute delta to consider meaningful (effect size gate) */
   minAbsDelta?: number
+}
+
+interface MetricAnalysis {
+  testName: string
+  metric: MetricDef
+  currentValue: number
+  baselineValue: number | null
+  history: number[]
+  stats: MetricStats
 }
 
 function escapeMarkdown(value: string): string {
@@ -195,47 +203,6 @@ function loadHistoricalReports(): PerfReport[] {
   return reports
 }
 
-function getHistoricalStats(
-  reports: PerfReportV3[],
-  testName: string,
-  metric: MetricKey,
-  reference: PerfMeasurement
-): MetricStats {
-  const values: number[] = []
-  for (const r of reports) {
-    const group = groupByName(acceptedMeasurements(r))
-    const samples = filterComparableWorkloads(
-      reference,
-      group.get(testName) ?? []
-    )
-    const mean = meanMetric(samples, metric)
-    if (mean !== null) values.push(mean)
-  }
-  return computeStats(values)
-}
-
-function getHistoricalTimeSeries(
-  reports: PerfReportV3[],
-  testName: string,
-  metric: MetricKey,
-  reference: PerfMeasurement
-): number[] {
-  const sorted = [...reports].sort(
-    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-  )
-  const values: number[] = []
-  for (const r of sorted) {
-    const group = groupByName(acceptedMeasurements(r))
-    const samples = filterComparableWorkloads(
-      reference,
-      group.get(testName) ?? []
-    )
-    const mean = meanMetric(samples, metric)
-    if (mean !== null) values.push(mean)
-  }
-  return values
-}
-
 function computeCV(stats: MetricStats): number {
   return stats.mean > 0 ? (stats.stddev / stats.mean) * 100 : 0
 }
@@ -283,6 +250,52 @@ function medianMetric(
     : values[mid]
 }
 
+function analyzeMetrics(
+  prGroups: Map<string, PerfMeasurement[]>,
+  baseline: PerfReportV3 | null,
+  historical: PerfReportV3[]
+): MetricAnalysis[] {
+  const baselineGroups = baseline
+    ? groupByName(acceptedMeasurements(baseline))
+    : new Map<string, PerfMeasurement[]>()
+  const historicalGroups = [...historical]
+    .sort(
+      (a, b) =>
+        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    )
+    .map((report) => groupByName(acceptedMeasurements(report)))
+  const analyses: MetricAnalysis[] = []
+
+  for (const [testName, prSamples] of prGroups) {
+    const reference = prSamples[0]
+    const baselineSamples = filterComparableWorkloads(
+      reference,
+      baselineGroups.get(testName) ?? []
+    )
+    const historicalSamples = historicalGroups.map((groups) =>
+      filterComparableWorkloads(reference, groups.get(testName) ?? [])
+    )
+
+    for (const metric of REPORTED_METRICS) {
+      const currentValue = medianMetric(prSamples, metric.key)
+      if (currentValue === null) continue
+      const history = historicalSamples.flatMap((samples) => {
+        const value = meanMetric(samples, metric.key)
+        return value === null ? [] : [value]
+      })
+      analyses.push({
+        testName,
+        metric,
+        currentValue,
+        baselineValue: medianMetric(baselineSamples, metric.key),
+        history,
+        stats: computeStats(history)
+      })
+    }
+  }
+  return analyses
+}
+
 function formatBytes(bytes: number): string {
   if (Math.abs(bytes) < 1024) return `${bytes} B`
   if (Math.abs(bytes) < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
@@ -322,12 +335,10 @@ function renderHeadlineSummary(
 }
 
 function renderFullReport(
-  prGroups: Map<string, PerfMeasurement[]>,
-  baseline: PerfReportV3,
-  historical: PerfReportV3[]
+  analyses: MetricAnalysis[],
+  historicalCount: number
 ): string[] {
   const lines: string[] = []
-  const baselineGroups = groupByName(acceptedMeasurements(baseline))
   const tableHeader = [
     '| Metric | Baseline | PR (median) | Δ | Sig |',
     '|--------|----------|----------|---|-----|'
@@ -335,51 +346,41 @@ function renderFullReport(
 
   const flaggedRows: string[] = []
   const allRows: string[] = []
+  let hasComparableHistory = false
 
-  for (const [testName, prSamples] of prGroups) {
+  for (const {
+    testName,
+    metric,
+    currentValue,
+    baselineValue,
+    stats
+  } of analyses) {
     const displayName = escapeMarkdown(testName)
-    const reference = prSamples[0]
-    const baseSamples = filterComparableWorkloads(
-      reference,
-      baselineGroups.get(testName) ?? []
-    )
+    const { label, unit, minAbsDelta } = metric
 
-    for (const { key, label, unit, minAbsDelta } of REPORTED_METRICS) {
-      // Use median for PR values — robust to outlier runs in CI
-      const prVal = medianMetric(prSamples, key)
-      if (prVal === null) continue
-      const histStats = getHistoricalStats(historical, testName, key, reference)
-      const cv = computeCV(histStats)
+    if (baselineValue === null) {
+      allRows.push(
+        `| ${displayName}: ${label} | — | ${formatValue(currentValue, unit)} | new | — |`
+      )
+      continue
+    }
 
-      if (!baseSamples.length) {
-        allRows.push(
-          `| ${displayName}: ${label} | — | ${formatValue(prVal, unit)} | new | — |`
-        )
-        continue
-      }
+    const absDelta = currentValue - baselineValue
+    const deltaPct =
+      baselineValue === 0
+        ? currentValue === 0
+          ? 0
+          : null
+        : ((currentValue - baselineValue) / baselineValue) * 100
+    const cv = computeCV(stats)
+    const z = zScore(currentValue, stats)
+    const significance = classifyChange(z, cv, absDelta, minAbsDelta)
+    hasComparableHistory ||= stats.n >= 2
 
-      const baseVal = medianMetric(baseSamples, key)
-      if (baseVal === null) {
-        allRows.push(
-          `| ${displayName}: ${label} | — | ${formatValue(prVal, unit)} | new | — |`
-        )
-        continue
-      }
-      const absDelta = prVal - baseVal
-      const deltaPct =
-        baseVal === 0
-          ? prVal === 0
-            ? 0
-            : null
-          : ((prVal - baseVal) / baseVal) * 100
-      const z = zScore(prVal, histStats)
-      const sig = classifyChange(z, cv, absDelta, minAbsDelta)
-
-      const row = `| ${displayName}: ${label} | ${formatValue(baseVal, unit)} | ${formatValue(prVal, unit)} | ${formatDelta(deltaPct)} | ${formatSignificance(sig, z)} |`
-      allRows.push(row)
-      if (isNoteworthy(sig)) {
-        flaggedRows.push(row)
-      }
+    const row = `| ${displayName}: ${label} | ${formatValue(baselineValue, unit)} | ${formatValue(currentValue, unit)} | ${formatDelta(deltaPct)} | ${formatSignificance(significance, z)} |`
+    allRows.push(row)
+    if (isNoteworthy(significance)) {
+      flaggedRows.push(row)
     }
   }
 
@@ -395,8 +396,13 @@ function renderFullReport(
       '</details>',
       ''
     )
-  } else {
+  } else if (hasComparableHistory) {
     lines.push('✅ No regressions detected.', '')
+  } else {
+    lines.push(
+      '> ℹ️ Not enough compatible history to calculate significance.',
+      ''
+    )
   }
 
   lines.push(
@@ -410,51 +416,36 @@ function renderFullReport(
   )
 
   lines.push(
-    `<details><summary>Historical variance (last ${historical.length} runs)</summary>`,
+    `<details><summary>Historical variance (last ${historicalCount} runs)</summary>`,
     '',
     '| Metric | μ | σ | CV |',
     '|--------|---|---|-----|'
   )
-  for (const [testName, prSamples] of prGroups) {
+  for (const { testName, metric, stats } of analyses) {
     const displayName = escapeMarkdown(testName)
-    const reference = prSamples[0]
-    for (const { key, label, unit } of REPORTED_METRICS) {
-      const stats = getHistoricalStats(historical, testName, key, reference)
-      if (stats.n < 2) continue
-      const cv = computeCV(stats)
-      lines.push(
-        `| ${displayName}: ${label} | ${formatValue(stats.mean, unit)} | ${formatValue(stats.stddev, unit)} | ${cv.toFixed(1)}% |`
-      )
-    }
+    if (stats.n < 2) continue
+    const cv = computeCV(stats)
+    lines.push(
+      `| ${displayName}: ${metric.label} | ${formatValue(stats.mean, metric.unit)} | ${formatValue(stats.stddev, metric.unit)} | ${cv.toFixed(1)}% |`
+    )
   }
   lines.push('', '</details>')
 
   const trendRows: string[] = []
-  for (const [testName, prSamples] of prGroups) {
+  for (const { testName, metric, history } of analyses) {
     const displayName = escapeMarkdown(testName)
-    const reference = prSamples[0]
-    for (const { key, label, unit } of REPORTED_METRICS) {
-      const series = getHistoricalTimeSeries(
-        historical,
-        testName,
-        key,
-        reference
-      )
-      if (series.length < 3) continue
-      const dir = trendDirection(series)
-      const arrow = trendArrow(dir)
-      const spark = sparkline(series)
-      const last = series[series.length - 1]
-      trendRows.push(
-        `| ${displayName}: ${label} | ${spark} | ${arrow} | ${formatValue(last, unit)} |`
-      )
-    }
+    if (history.length < 3) continue
+    const direction = trendDirection(history)
+    const last = history[history.length - 1]
+    trendRows.push(
+      `| ${displayName}: ${metric.label} | ${sparkline(history)} | ${trendArrow(direction)} | ${formatValue(last, metric.unit)} |`
+    )
   }
 
   if (trendRows.length > 0) {
     lines.push(
       '',
-      `<details><summary>Trend (last ${historical.length} commits on main)</summary>`,
+      `<details><summary>Trend (last ${historicalCount} commits on main)</summary>`,
       '',
       '| Metric | Trend | Dir | Latest |',
       '|--------|-------|-----|--------|',
@@ -468,12 +459,10 @@ function renderFullReport(
 }
 
 function renderColdStartReport(
-  prGroups: Map<string, PerfMeasurement[]>,
-  baseline: PerfReportV3,
+  analyses: MetricAnalysis[],
   historicalCount: number
 ): string[] {
   const lines: string[] = []
-  const baselineGroups = groupByName(acceptedMeasurements(baseline))
   lines.push(
     `> ℹ️ Collecting baseline variance data (${historicalCount}/15 runs). Significance will appear after 2 main branch runs.`,
     '',
@@ -483,50 +472,32 @@ function renderColdStartReport(
     '|--------|----------|-----|---|'
   )
 
-  for (const [testName, prSamples] of prGroups) {
+  for (const { testName, metric, currentValue, baselineValue } of analyses) {
     const displayName = escapeMarkdown(testName)
-    const baseSamples = filterComparableWorkloads(
-      prSamples[0],
-      baselineGroups.get(testName) ?? []
-    )
+    const { label, unit } = metric
 
-    for (const { key, label, unit } of REPORTED_METRICS) {
-      const prVal = medianMetric(prSamples, key)
-      if (prVal === null) continue
-
-      if (!baseSamples.length) {
-        lines.push(
-          `| ${displayName}: ${label} | — | ${formatValue(prVal, unit)} | new |`
-        )
-        continue
-      }
-
-      const baseVal = medianMetric(baseSamples, key)
-      if (baseVal === null) {
-        lines.push(
-          `| ${displayName}: ${label} | — | ${formatValue(prVal, unit)} | new |`
-        )
-        continue
-      }
-      const deltaPct =
-        baseVal === 0
-          ? prVal === 0
-            ? 0
-            : null
-          : ((prVal - baseVal) / baseVal) * 100
+    if (baselineValue === null) {
       lines.push(
-        `| ${displayName}: ${label} | ${formatValue(baseVal, unit)} | ${formatValue(prVal, unit)} | ${formatDelta(deltaPct)} |`
+        `| ${displayName}: ${label} | — | ${formatValue(currentValue, unit)} | new |`
       )
+      continue
     }
+    const deltaPct =
+      baselineValue === 0
+        ? currentValue === 0
+          ? 0
+          : null
+        : ((currentValue - baselineValue) / baselineValue) * 100
+    lines.push(
+      `| ${displayName}: ${label} | ${formatValue(baselineValue, unit)} | ${formatValue(currentValue, unit)} | ${formatDelta(deltaPct)} |`
+    )
   }
 
   lines.push('', '</details>')
   return lines
 }
 
-function renderNoBaselineReport(
-  prGroups: Map<string, PerfMeasurement[]>
-): string[] {
+function renderNoBaselineReport(analyses: MetricAnalysis[]): string[] {
   const lines: string[] = []
   lines.push(
     '> ℹ️ No baseline found — significance unavailable.',
@@ -536,13 +507,10 @@ function renderNoBaselineReport(
     '| Metric | Value |',
     '|--------|-------|'
   )
-  for (const [testName, prSamples] of prGroups) {
-    const displayName = escapeMarkdown(testName)
-    for (const { key, label, unit } of REPORTED_METRICS) {
-      const prVal = medianMetric(prSamples, key)
-      if (prVal === null) continue
-      lines.push(`| ${displayName}: ${label} | ${formatValue(prVal, unit)} |`)
-    }
+  for (const { testName, metric, currentValue } of analyses) {
+    lines.push(
+      `| ${escapeMarkdown(testName)}: ${metric.label} | ${formatValue(currentValue, metric.unit)} |`
+    )
   }
   lines.push('', '</details>')
   return lines
@@ -571,56 +539,6 @@ function renderRejectedMeasurements(report: PerfReportV3): string[] {
   ]
 }
 
-function serializeCommentData(current: PerfReportV3): string {
-  const commentData = {
-    ...current,
-    measurements: current.measurements.map((result) => {
-      const { rafIntervalsMs: _, ...measurement } = result.measurement
-      return { ...result, measurement }
-    })
-  }
-  const serializedCommentData = JSON.stringify(commentData, null, 2)
-  if (serializedCommentData.length <= COMMENT_DATA_LIMIT) {
-    return serializedCommentData
-  }
-
-  const measurementIdentities = current.measurements.map((result) => ({
-    name: result.measurement.name,
-    rejectedRunReason: result.kind === 'rejected' ? result.reason : null,
-    workloadIdentity: result.measurement.workloadIdentity
-  }))
-  const fallbackData = {
-    schemaVersion: current.schemaVersion,
-    timestamp: current.timestamp,
-    gitSha: current.gitSha,
-    branch: current.branch,
-    summaryTruncated: true,
-    fullArtifact: CURRENT_PATH,
-    measurementCount: current.measurements.length
-  }
-  const serializeFallback = (identityCount: number) =>
-    JSON.stringify(
-      {
-        ...fallbackData,
-        measurementIdentities: measurementIdentities.slice(0, identityCount)
-      },
-      null,
-      2
-    )
-
-  let lowerBound = 0
-  let upperBound = measurementIdentities.length
-  while (lowerBound < upperBound) {
-    const candidate = Math.ceil((lowerBound + upperBound) / 2)
-    if (serializeFallback(candidate).length <= COMMENT_DATA_LIMIT) {
-      lowerBound = candidate
-    } else {
-      upperBound = candidate - 1
-    }
-  }
-  return serializeFallback(lowerBound)
-}
-
 export function renderPerfReport(
   current: PerfReportV3,
   baseline: PerfReport | null,
@@ -644,6 +562,11 @@ export function renderPerfReport(
 
   const compatibleBaseline =
     baseline?.schemaVersion === current.schemaVersion ? baseline : null
+  const analyses = analyzeMetrics(
+    prGroups,
+    compatibleBaseline,
+    compatibleHistory
+  )
 
   if (prGroups.size === 0) {
     lines.push(
@@ -655,65 +578,15 @@ export function renderPerfReport(
       `> ℹ️ Baseline schema v${baseline.schemaVersion ?? 1} is not comparable with current schema v${current.schemaVersion}. Starting a new measurement epoch.`,
       ''
     )
-    lines.push(...renderNoBaselineReport(prGroups))
+    lines.push(...renderNoBaselineReport(analyses))
   } else if (compatibleBaseline && compatibleHistory.length >= 2) {
-    lines.push(
-      ...renderFullReport(prGroups, compatibleBaseline, compatibleHistory)
-    )
+    lines.push(...renderFullReport(analyses, compatibleHistory.length))
   } else if (compatibleBaseline) {
-    lines.push(
-      ...renderColdStartReport(
-        prGroups,
-        compatibleBaseline,
-        compatibleHistory.length
-      )
-    )
+    lines.push(...renderColdStartReport(analyses, compatibleHistory.length))
   } else {
-    lines.push(...renderNoBaselineReport(prGroups))
+    lines.push(...renderNoBaselineReport(analyses))
   }
-
-  lines.push('\n<details><summary>Summary data</summary>\n')
-  lines.push('```json')
-  lines.push(serializeCommentData(current).replaceAll('`', '\\u0060'))
-  lines.push('```')
-  lines.push('\n</details>')
-
-  const output = lines.join('\n') + '\n'
-  if (output.length <= COMMENT_DATA_LIMIT) return output
-
-  const rejectedCount = current.measurements.filter(
-    (result) => result.kind === 'rejected'
-  ).length
-  const fallbackData = JSON.stringify(
-    {
-      schemaVersion: current.schemaVersion,
-      timestamp: current.timestamp,
-      gitSha: current.gitSha,
-      branch: current.branch,
-      summaryTruncated: true,
-      fullArtifact: CURRENT_PATH,
-      measurementCount: current.measurements.length,
-      measurementIdentities: []
-    },
-    null,
-    2
-  )
-  return [
-    '## ⚡ Performance Report',
-    '',
-    '> ⚠️ Detailed performance output exceeded the PR comment limit. Review the full perf-metrics artifact.',
-    '',
-    `${rejectedCount} rejected measurements truncated; ${current.measurements.length} total measurements.`,
-    '',
-    '<details><summary>Summary data</summary>',
-    '',
-    '```json',
-    fallbackData.replaceAll('`', '\\u0060'),
-    '```',
-    '',
-    '</details>',
-    ''
-  ].join('\n')
+  return lines.join('\n') + '\n'
 }
 
 function main() {
