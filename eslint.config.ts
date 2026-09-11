@@ -172,6 +172,8 @@ export default defineConfig([
       'components.d.ts',
       'coverage/*',
       'dist/*',
+      'apps/*/dist/**',
+      'apps/*/.astro/**',
       'packages/registry-types/src/comfyRegistryTypes.ts',
       'playwright-report/*',
       'scripts/registry-census/detection-proof/**',

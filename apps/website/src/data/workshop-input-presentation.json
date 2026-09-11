@@ -1,0 +1,3376 @@
+{
+  "common": [
+    {
+      "names": ["prompt", "text_prompt", "prompt_text", "promptText", "Prompt"],
+      "label": "Prompt",
+      "help": "",
+      "advanced": false,
+      "control": "text-area"
+    },
+    {
+      "names": ["negative_prompt"],
+      "label": "Negative prompt",
+      "help": "",
+      "advanced": true,
+      "control": "text-area"
+    },
+    {
+      "names": ["text"],
+      "label": "Text",
+      "help": "",
+      "advanced": false,
+      "control": "text-area"
+    },
+    {
+      "names": ["input", "inputs", "content", "instances"],
+      "label": "Inputs",
+      "help": "Provide the prompt and reference inputs in the structure required by this model.",
+      "advanced": false,
+      "control": "text-area"
+    },
+    {
+      "names": ["contents"],
+      "label": "Conversation",
+      "help": "Provide text and media as conversation turns, each with a list of parts.",
+      "advanced": false,
+      "control": "text-area"
+    },
+    {
+      "names": ["messages"],
+      "label": "Conversation",
+      "help": "Provide the conversation messages for the model to respond to.",
+      "advanced": false,
+      "control": "text-area"
+    },
+    {
+      "names": ["system", "system_prompt", "instructions", "instruction"],
+      "label": "Instructions",
+      "help": "",
+      "advanced": true,
+      "control": "text-area"
+    },
+    {
+      "names": ["systemInstruction"],
+      "label": "System instructions",
+      "help": "Set the model's behavior using text parts in an instructions object.",
+      "advanced": true,
+      "control": "text-area"
+    },
+    {
+      "names": ["n", "count", "num_images", "sampleCount"],
+      "label": "Output count",
+      "help": "",
+      "advanced": false,
+      "fixed": 1
+    },
+    {
+      "names": ["size", "canvas_size"],
+      "label": "Resolution",
+      "help": "",
+      "advanced": false,
+      "defaultCandidates": ["1024x1024", "1024*1024", "1024", "auto", 1024]
+    },
+    {
+      "names": ["width"],
+      "label": "Width",
+      "help": "",
+      "advanced": false,
+      "unit": "pixels",
+      "defaultCandidates": [1024, 768, 512]
+    },
+    {
+      "names": ["height"],
+      "label": "Height",
+      "help": "",
+      "advanced": false,
+      "unit": "pixels",
+      "defaultCandidates": [1024, 768, 512]
+    },
+    {
+      "names": ["aspect_ratio", "ratio"],
+      "label": "Aspect ratio",
+      "help": "",
+      "advanced": false,
+      "defaultCandidates": [
+        "1:1",
+        "16:9",
+        "adaptive",
+        "auto",
+        "1024:1024",
+        "1280:720"
+      ]
+    },
+    {
+      "names": ["resolution", "target_resolution", "max_resolution"],
+      "label": "Resolution",
+      "help": "",
+      "advanced": false,
+      "defaultCandidates": ["720p", "1K", "1k", "1024", "hd", "1080p", 1024]
+    },
+    {
+      "names": ["duration", "duration_seconds"],
+      "label": "Duration",
+      "help": "",
+      "advanced": false,
+      "unit": "seconds",
+      "defaultCandidates": [5, "5", 6, "6", 4, "4", 10, "10"]
+    },
+    {
+      "names": ["fps"],
+      "label": "Frame rate",
+      "help": "",
+      "advanced": true,
+      "unit": "fps",
+      "defaultCandidates": [24, 25, 30]
+    },
+    {
+      "names": ["seed"],
+      "label": "Seed",
+      "help": "Reuse a seed with the same inputs to make results more repeatable.",
+      "advanced": true,
+      "control": "number",
+      "defaultPolicy": "required-only",
+      "defaultCandidates": [42]
+    },
+    {
+      "names": ["steps", "steps_num"],
+      "label": "Steps",
+      "help": "Adjust the number of generation steps. More steps can take longer.",
+      "advanced": true,
+      "defaultCandidates": [28, 30, 20, 50]
+    },
+    {
+      "names": ["guidance", "guidance_scale", "cfg_scale"],
+      "label": "Guidance",
+      "help": "Adjust how closely the result follows your prompt.",
+      "advanced": true,
+      "defaultCandidates": [3.5, 7, 5, 1]
+    },
+    {
+      "names": ["creativity", "creativity_strength"],
+      "label": "Creativity",
+      "help": "Adjust how much freedom the model has to vary the result.",
+      "advanced": true,
+      "defaultCandidates": [0.5, 0.3]
+    },
+    {
+      "names": [
+        "prompt_upsampling",
+        "prompt_expansion_mode",
+        "refine_prompt",
+        "prompt_expansion"
+      ],
+      "label": "Prompt enhancement",
+      "help": "Let the model expand or refine your prompt before generation.",
+      "advanced": true,
+      "defaultCandidates": [true, "auto"]
+    },
+    {
+      "names": ["quality"],
+      "label": "Quality",
+      "help": "",
+      "advanced": true,
+      "defaultCandidates": ["medium", "standard", "high"]
+    },
+    {
+      "names": ["output_format", "convert_format_only"],
+      "label": "Output format",
+      "help": "",
+      "advanced": true,
+      "defaultCandidates": ["png", "mp4", "glb", "webp", "jpeg"]
+    },
+    {
+      "names": ["output_container_and_codec"],
+      "label": "Video format",
+      "help": "",
+      "advanced": true,
+      "defaultCandidates": ["mp4_h264"]
+    },
+    {
+      "names": ["output_compression"],
+      "label": "Compression",
+      "help": "Set compression for JPEG or WebP output, from 0 to 100.",
+      "advanced": true,
+      "defaultCandidates": [90],
+      "control": "number"
+    },
+    {
+      "names": ["generate_audio", "sound", "audio"],
+      "label": "Generate audio",
+      "help": "",
+      "advanced": false,
+      "defaultCandidates": [true]
+    },
+    {
+      "names": ["preserve_audio"],
+      "label": "Keep original audio",
+      "help": "",
+      "advanced": true,
+      "defaultCandidates": [true]
+    },
+    {
+      "names": ["return_last_frame"],
+      "label": "Include last frame",
+      "help": "Return the final video frame as an image for a follow-up generation.",
+      "advanced": true,
+      "defaultCandidates": [false]
+    },
+    {
+      "names": ["watermark", "watermark_info"],
+      "label": "Watermark",
+      "help": "",
+      "advanced": true,
+      "defaultCandidates": [false]
+    },
+    {
+      "names": ["voice_id", "voice", "voice_list"],
+      "label": "Voice",
+      "help": "",
+      "advanced": false,
+      "control": "text-box"
+    },
+    {
+      "names": ["language", "language_code", "locale"],
+      "label": "Language",
+      "help": "",
+      "advanced": false,
+      "control": "text-box",
+      "defaultCandidates": ["auto", "en", "en-US"]
+    },
+    {
+      "names": ["speed"],
+      "label": "Speech speed",
+      "help": "",
+      "advanced": true,
+      "defaultCandidates": [1]
+    },
+    {
+      "names": [
+        "image",
+        "Image",
+        "input_image",
+        "image_ref",
+        "reference_image_uri",
+        "reference_images",
+        "referenceImages",
+        "image_list",
+        "images",
+        "promptImage",
+        "image_prompt"
+      ],
+      "label": "Reference image",
+      "help": "Provide the reference image or images used to guide the result.",
+      "advanced": false,
+      "control": "text-box"
+    },
+    {
+      "names": [
+        "video",
+        "input_video",
+        "videoUri",
+        "video_list",
+        "start_video"
+      ],
+      "label": "Input video",
+      "help": "Provide the video to transform, extend, or use as a reference.",
+      "advanced": false,
+      "control": "text-box",
+      "urlUpload": "video"
+    },
+    {
+      "names": ["image_url"],
+      "label": "Reference image",
+      "help": "",
+      "advanced": false,
+      "control": "text-box",
+      "imageSource": "url",
+      "urlUpload": "image"
+    },
+    {
+      "names": ["video_url"],
+      "label": "Input video",
+      "help": "",
+      "advanced": false,
+      "control": "text-box",
+      "urlUpload": "video"
+    },
+    {
+      "names": ["mask", "static_mask", "dynamic_masks", "mask_type"],
+      "label": "Mask",
+      "help": "Specify the part of the image or video to edit.",
+      "advanced": false,
+      "control": "text-box"
+    },
+    {
+      "names": ["model_url", "File3D"],
+      "label": "3D model",
+      "help": "Provide the 3D model to process.",
+      "advanced": false,
+      "control": "text-box"
+    },
+    {
+      "names": [
+        "File",
+        "source_uri",
+        "source",
+        "references",
+        "input_task_id",
+        "audio_id",
+        "sound_file",
+        "video_id",
+        "rig_task_id"
+      ],
+      "label": "Source input",
+      "help": "Provide the source asset or existing task to use as input.",
+      "advanced": false,
+      "control": "text-box"
+    },
+    {
+      "names": ["keyframes", "image_tail"],
+      "label": "Keyframes",
+      "help": "Provide frames that guide the beginning, end, or motion of the video.",
+      "advanced": false
+    },
+    {
+      "names": ["image_style_references"],
+      "label": "Style images",
+      "help": "Provide up to 10 image references as JSON entries with url and strength.",
+      "advanced": true,
+      "control": "text-area"
+    },
+    {
+      "names": ["moodboards"],
+      "label": "Moodboard",
+      "help": "Provide one moodboard as a JSON list with its id and optional strength.",
+      "advanced": true,
+      "control": "text-area"
+    },
+    {
+      "names": ["styles"],
+      "label": "Style models",
+      "help": "Provide style IDs and strengths as a JSON list.",
+      "advanced": true,
+      "control": "text-area"
+    },
+    {
+      "names": ["style_ref", "style_id"],
+      "label": "Style references",
+      "help": "Provide the style references or an existing style ID to use.",
+      "advanced": true
+    },
+    {
+      "names": ["style"],
+      "label": "Style",
+      "help": "",
+      "advanced": true,
+      "defaultCandidates": ["natural", "realistic_image", "auto"]
+    },
+    {
+      "names": ["camera_control"],
+      "label": "Camera movement",
+      "help": "Choose a camera preset or configure the direction and amount of movement.",
+      "advanced": true,
+      "control": "text-area"
+    },
+    {
+      "names": ["controls"],
+      "label": "Detailed controls",
+      "help": "Adjust model-specific camera, timing, or composition settings.",
+      "advanced": true
+    },
+    {
+      "names": ["videoMetadata"],
+      "label": "Video clip",
+      "help": "Set start and end offsets to use a section of the input video.",
+      "advanced": true,
+      "control": "text-area"
+    },
+    {
+      "names": [
+        "parameters",
+        "inference_params",
+        "settings",
+        "options",
+        "audio_config",
+        "post_process"
+      ],
+      "label": "Additional settings",
+      "help": "Adjust specialist settings supported by this model.",
+      "advanced": true
+    },
+    {
+      "names": ["tools"],
+      "label": "Tools",
+      "help": "Configure tools the model may use while generating its response.",
+      "advanced": true
+    },
+    {
+      "names": ["tool_choice"],
+      "label": "Tool selection",
+      "help": "Choose which tool the model should use.",
+      "advanced": true
+    },
+    {
+      "names": ["parallel_tool_calls"],
+      "label": "Parallel tool calls",
+      "help": "Allow the model to request more than one tool at a time.",
+      "advanced": true,
+      "defaultCandidates": [true]
+    },
+    {
+      "names": ["web_search"],
+      "label": "Web search",
+      "help": "",
+      "advanced": true,
+      "defaultCandidates": [false]
+    },
+    {
+      "names": ["temperature"],
+      "label": "Temperature",
+      "help": "Adjust the randomness of generated text.",
+      "advanced": true,
+      "defaultCandidates": [1, 0.7]
+    },
+    {
+      "names": ["top_p"],
+      "label": "Nucleus sampling",
+      "help": "Limit text sampling to the most likely candidates.",
+      "advanced": true,
+      "defaultCandidates": [1]
+    },
+    {
+      "names": ["max_tokens"],
+      "label": "Maximum output tokens",
+      "help": "Limit the length of the generated text.",
+      "advanced": true,
+      "defaultCandidates": [1024]
+    },
+    {
+      "names": ["max_output_tokens"],
+      "label": "Maximum output tokens",
+      "help": "Limit generated tokens, including any tokens used for reasoning.",
+      "advanced": true,
+      "defaultCandidates": [1024],
+      "control": "number"
+    },
+    {
+      "names": ["reasoning"],
+      "label": "Reasoning",
+      "help": "Configure the model's reasoning behavior when supported.",
+      "advanced": true
+    },
+    {
+      "names": ["truncation"],
+      "label": "Context overflow",
+      "help": "Choose whether to shorten earlier context when the conversation is too long.",
+      "advanced": true,
+      "defaultCandidates": ["disabled"],
+      "control": "dropdown"
+    },
+    {
+      "names": ["sequential_image_generation"],
+      "label": "Generation mode",
+      "help": "Choose how the model handles this generation.",
+      "advanced": true,
+      "defaultCandidates": ["disabled", "auto"]
+    },
+    {
+      "names": ["safety_tolerance"],
+      "label": "Safety tolerance",
+      "help": "Adjust the provider's content-filtering tolerance within its allowed limits.",
+      "advanced": true,
+      "defaultCandidates": [2]
+    },
+    {
+      "names": ["enable_safety_checker"],
+      "label": "Content checks",
+      "help": "Apply the provider's safety or copyright checks.",
+      "advanced": true,
+      "defaultCandidates": [true]
+    },
+    {
+      "names": ["prompt_content_moderation"],
+      "label": "Check prompt content",
+      "help": "Apply the provider's content checks to the prompt.",
+      "advanced": true,
+      "defaultCandidates": [true],
+      "control": "toggle"
+    },
+    {
+      "names": ["visual_input_content_moderation"],
+      "label": "Check input media",
+      "help": "Apply the provider's content checks to input images and masks.",
+      "advanced": true,
+      "defaultCandidates": [true],
+      "control": "toggle"
+    },
+    {
+      "names": ["visual_output_content_moderation"],
+      "label": "Check output media",
+      "help": "Apply the provider's content checks to generated images.",
+      "advanced": true,
+      "defaultCandidates": [true],
+      "control": "toggle"
+    },
+    {
+      "names": ["enable_copyright_detection"],
+      "label": "Copyright checks",
+      "help": "Check generated images for potential likeness or logo matches.",
+      "advanced": true,
+      "defaultCandidates": [true],
+      "control": "toggle"
+    },
+    {
+      "names": ["moderation"],
+      "label": "Content moderation",
+      "help": "Choose the provider's content moderation mode.",
+      "advanced": true,
+      "defaultCandidates": ["auto"]
+    },
+    {
+      "names": ["background"],
+      "label": "Background",
+      "help": "",
+      "advanced": true,
+      "defaultCandidates": ["opaque"]
+    },
+    {
+      "names": ["background_color"],
+      "label": "Background color",
+      "help": "",
+      "advanced": true,
+      "defaultCandidates": ["Transparent"]
+    },
+    {
+      "names": ["green_shade"],
+      "label": "Screen color",
+      "help": "",
+      "advanced": true,
+      "defaultCandidates": ["chroma_green"]
+    },
+    {
+      "names": ["flavor"],
+      "label": "Enhancement style",
+      "help": "Choose the style of image enhancement.",
+      "advanced": true,
+      "defaultCandidates": ["photo"]
+    },
+    {
+      "names": ["shot_type"],
+      "label": "Shot planning",
+      "help": "Choose automatic or custom planning when multiple shots are enabled.",
+      "advanced": true,
+      "defaultCandidates": []
+    },
+    {
+      "names": ["origin_at"],
+      "label": "Model origin",
+      "help": "Choose where the 3D model's origin is placed.",
+      "advanced": true,
+      "defaultCandidates": ["bottom"]
+    },
+    {
+      "names": ["control_type"],
+      "label": "Motion control",
+      "help": "Choose how reference motion guides the output.",
+      "advanced": true,
+      "defaultCandidates": ["motion_control"]
+    },
+    {
+      "names": ["FaceLevel"],
+      "label": "Mesh detail",
+      "help": "Choose the amount of detail in the output mesh.",
+      "advanced": true,
+      "defaultCandidates": ["medium"]
+    },
+    {
+      "names": ["PolygonType"],
+      "label": "Polygon type",
+      "help": "Choose the polygon layout for the output mesh.",
+      "advanced": true,
+      "defaultCandidates": ["triangle"]
+    },
+    {
+      "names": ["alpha_mode"],
+      "label": "Transparency mode",
+      "help": "Choose how transparency is determined for the input.",
+      "advanced": true,
+      "defaultCandidates": ["auto"]
+    },
+    {
+      "names": ["generation_type"],
+      "label": "Output type",
+      "help": "",
+      "advanced": false,
+      "defaultCandidates": ["image"]
+    },
+    {
+      "names": ["preserve_alpha"],
+      "label": "Keep transparency",
+      "help": "Retain transparent areas from the input image.",
+      "advanced": true,
+      "defaultCandidates": [true]
+    },
+    {
+      "names": ["desired_increase", "scale_factor", "upscale_factor"],
+      "label": "Upscale factor",
+      "help": "",
+      "advanced": false,
+      "defaultCandidates": [2]
+    },
+    {
+      "names": ["prompt_influence"],
+      "label": "Prompt influence",
+      "help": "Adjust how closely the sound follows your prompt.",
+      "advanced": true,
+      "defaultCandidates": [0.3]
+    },
+    {
+      "names": ["loop"],
+      "label": "Loop video",
+      "help": "Make the end of the video connect to its beginning.",
+      "advanced": true,
+      "defaultCandidates": [false]
+    },
+    {
+      "names": ["EnablePBR"],
+      "label": "PBR textures",
+      "help": "Generate physically based textures when supported by the input mode.",
+      "advanced": true,
+      "defaultCandidates": [false]
+    },
+    {
+      "names": ["action_id"],
+      "label": "Animation action ID",
+      "help": "Enter the existing animation action to apply to the 3D model.",
+      "advanced": false,
+      "control": "number"
+    },
+    {
+      "names": [
+        "callback_url",
+        "webhook_url",
+        "webhook_secret",
+        "external_task_id",
+        "idempotency_key",
+        "execution_expires_after",
+        "service_tier",
+        "store",
+        "user",
+        "usage",
+        "include",
+        "stream",
+        "sync",
+        "sync_mode",
+        "uploadImagesToStorage",
+        "response_format",
+        "enable_base64_output",
+        "model",
+        "model_name",
+        "model_id",
+        "model_version"
+      ],
+      "label": "Integration setting",
+      "help": "Managed by the application rather than exposed as a generation input.",
+      "hidden": true,
+      "advanced": false
+    },
+    {
+      "names": ["element_list"],
+      "label": "Reference elements",
+      "help": "Provide saved element IDs to guide characters or objects in the result.",
+      "advanced": false,
+      "control": "text-area"
+    },
+    {
+      "names": ["multi_shot"],
+      "label": "Multiple shots",
+      "help": "Generate a sequence of shots; the main prompt is ignored while this is enabled.",
+      "advanced": true,
+      "control": "toggle"
+    },
+    {
+      "names": ["multi_prompt"],
+      "label": "Shot prompts",
+      "help": "Set each shot's prompt and duration when shot planning is customize.",
+      "advanced": true,
+      "control": "text-area"
+    },
+    {
+      "names": ["character_ref"],
+      "label": "Character reference",
+      "help": "Provide identity0 with image URLs that define the character's appearance.",
+      "advanced": false,
+      "control": "text-area"
+    },
+    {
+      "names": ["modify_image_ref"],
+      "label": "Image to modify",
+      "help": "Provide the image URL and an optional weight to guide the edit.",
+      "advanced": false,
+      "control": "text-area"
+    },
+    {
+      "names": ["input_image_2"],
+      "label": "Reference image 2",
+      "help": "Add a base64-encoded reference image.",
+      "advanced": false,
+      "control": "text-box"
+    },
+    {
+      "names": ["input_image_3"],
+      "label": "Reference image 3",
+      "help": "Add a base64-encoded reference image.",
+      "advanced": false,
+      "control": "text-box"
+    },
+    {
+      "names": ["input_image_4"],
+      "label": "Reference image 4",
+      "help": "Add a base64-encoded reference image.",
+      "advanced": false,
+      "control": "text-box"
+    },
+    {
+      "names": ["input_image_5"],
+      "label": "Reference image 5",
+      "help": "Add a base64-encoded reference image.",
+      "advanced": false,
+      "control": "text-box"
+    },
+    {
+      "names": ["input_image_6"],
+      "label": "Reference image 6",
+      "help": "Add a base64-encoded reference image.",
+      "advanced": false,
+      "control": "text-box"
+    },
+    {
+      "names": ["input_image_7"],
+      "label": "Reference image 7",
+      "help": "Add a base64-encoded reference image.",
+      "advanced": false,
+      "control": "text-box"
+    },
+    {
+      "names": ["input_image_8"],
+      "label": "Reference image 8",
+      "help": "Add a base64-encoded reference image.",
+      "advanced": false,
+      "control": "text-box"
+    },
+    {
+      "names": ["input_image_9"],
+      "label": "Reference image 9",
+      "help": "Add a base64-encoded reference image.",
+      "advanced": false,
+      "control": "text-box"
+    },
+    {
+      "names": ["control_image"],
+      "label": "Control image",
+      "help": "Provide a base64 image to guide the result's structure.",
+      "advanced": false,
+      "control": "text-box"
+    },
+    {
+      "names": ["sharpen"],
+      "label": "Sharpness",
+      "help": "Adjust edge definition and clarity.",
+      "advanced": true,
+      "control": "slider"
+    },
+    {
+      "names": ["smart_grain"],
+      "label": "Grain",
+      "help": "Adjust the amount of fine texture added to the image.",
+      "advanced": true,
+      "control": "slider"
+    },
+    {
+      "names": ["ip_signal"],
+      "label": "IP warnings",
+      "help": "Flag possible intellectual property references in the edit instructions.",
+      "advanced": true,
+      "control": "toggle"
+    },
+    {
+      "names": ["target_polycount"],
+      "label": "Target polygon count",
+      "help": "",
+      "advanced": true,
+      "control": "slider"
+    },
+    {
+      "names": ["topology"],
+      "label": "Mesh topology",
+      "help": "Choose triangles or quads for the mesh.",
+      "advanced": true,
+      "control": "dropdown"
+    },
+    {
+      "names": ["generationConfig"],
+      "label": "Generation settings",
+      "help": "Set output limits, sampling, or image settings supported by this model.",
+      "advanced": true,
+      "control": "text-area"
+    },
+    {
+      "names": ["safetySettings"],
+      "label": "Content filters",
+      "help": "Set category-specific thresholds for filtering generated content.",
+      "advanced": true,
+      "control": "text-area"
+    },
+    {
+      "names": ["previous_response_id"],
+      "label": "Previous response ID",
+      "help": "Continue a conversation using the context of an earlier response.",
+      "advanced": true,
+      "control": "text-box"
+    }
+  ],
+  "models": {
+    "beeble/switchx": {
+      "alpha_mode": {
+        "advanced": false
+      },
+      "alpha_uri": {
+        "label": "Alpha matte",
+        "urlUpload": "image",
+        "help": "Provide a matte URI when Transparency mode is custom or select.",
+        "advanced": false,
+        "control": "text-box"
+      },
+      "max_resolution": {
+        "options": [720, 1080]
+      },
+      "prompt": {
+        "help": "Describe the result, or provide a Style reference."
+      },
+      "reference_image_uri": {
+        "label": "Style reference",
+        "urlUpload": "image",
+        "help": "Provide a reference image URI to guide the style; Prompt can be left empty."
+      },
+      "source_uri": {
+        "label": "Source image or video",
+        "urlUpload": "image-or-video",
+        "help": "Provide the image or video to transform as a URL, upload URI or data URI."
+      }
+    },
+    "bfl/erase-v1": {
+      "dilate_pixels": {
+        "label": "Mask expansion",
+        "help": "Expand the removal mask to cover the object's edges.",
+        "advanced": true,
+        "control": "slider",
+        "unit": "pixels"
+      },
+      "mask": {
+        "help": "Provide a same-size mask: white removes, black keeps."
+      }
+    },
+    "bfl/flux-2-pro": {
+      "safety_tolerance": {
+        "hidden": true
+      }
+    },
+    "bfl/flux-3-video": {
+      "duration": {
+        "options": [
+          "auto",
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20
+        ]
+      },
+      "aspect_ratio": {
+        "options": ["auto", "21:9", "2:1", "16:9", "4:3", "1:1", "3:4", "9:16"]
+      },
+      "draft": {
+        "label": "Draft preview",
+        "help": "Generate a fast preview with a cache for later enhancement.",
+        "advanced": true,
+        "control": "toggle"
+      },
+      "keyframes": {
+        "label": "Image keyframes",
+        "help": "For image continuation, provide images or timed image pairs in JSON.",
+        "advanced": false,
+        "control": "text-area"
+      },
+      "mode": {
+        "label": "Generation mode",
+        "help": "Generate from text, continue from images, or continue a video.",
+        "advanced": false,
+        "control": "dropdown",
+        "options": ["t2v", "i2v", "v2v"],
+        "default": "t2v"
+      },
+      "start_video": {
+        "label": "Video to continue",
+        "help": "For video continuation, provide an MP4 URL or base64 video."
+      },
+      "version": {
+        "hidden": true
+      }
+    },
+    "bfl/flux-kontext-max": {
+      "aspect_ratio": {
+        "help": "Leave unset to match the input image.",
+        "options": ["1:1", "4:3", "3:4", "16:9", "9:16", "21:9", "9:21"],
+        "defaultCandidates": []
+      }
+    },
+    "bfl/flux-kontext-pro": {
+      "aspect_ratio": {
+        "help": "Leave unset to match the input image.",
+        "options": ["1:1", "4:3", "3:4", "16:9", "9:16", "21:9", "9:21"],
+        "defaultCandidates": []
+      }
+    },
+    "bfl/flux-pro-1.0-canny": {
+      "canny_high_threshold": {
+        "label": "Strong-edge threshold",
+        "help": "Set the threshold that identifies strong edges.",
+        "advanced": true,
+        "control": "slider"
+      },
+      "canny_low_threshold": {
+        "label": "Weak-edge threshold",
+        "help": "Set the lower threshold for edges connected to strong edges.",
+        "advanced": true,
+        "control": "slider"
+      },
+      "output_format": {
+        "options": ["jpeg", "png"]
+      },
+      "preprocessed_image": {
+        "label": "Edge map",
+        "help": "Provide a base64 edge map to skip edge detection.",
+        "advanced": false,
+        "control": "text-box"
+      }
+    },
+    "bfl/flux-pro-1.0-depth": {
+      "output_format": {
+        "options": ["jpeg", "png"]
+      },
+      "preprocessed_image": {
+        "label": "Depth map",
+        "help": "Provide a base64 depth map to skip depth estimation.",
+        "advanced": false,
+        "control": "text-box"
+      }
+    },
+    "bfl/flux-pro-1.0-expand": {
+      "bottom": {
+        "label": "Expand bottom",
+        "help": "Add pixels below the image.",
+        "advanced": false,
+        "control": "slider",
+        "unit": "pixels"
+      },
+      "left": {
+        "label": "Expand left",
+        "help": "Add pixels to the left of the image.",
+        "advanced": false,
+        "control": "slider",
+        "unit": "pixels"
+      },
+      "output_format": {
+        "options": ["jpeg", "png"]
+      },
+      "right": {
+        "label": "Expand right",
+        "help": "Add pixels to the right of the image.",
+        "advanced": false,
+        "control": "slider",
+        "unit": "pixels"
+      },
+      "top": {
+        "label": "Expand top",
+        "help": "Add pixels above the image.",
+        "advanced": false,
+        "control": "slider",
+        "unit": "pixels"
+      }
+    },
+    "bfl/flux-pro-1.0-fill": {
+      "mask": {
+        "help": "Use a same-size mask: white edits, black keeps. Omit when the image has an alpha mask."
+      },
+      "output_format": {
+        "options": ["jpeg", "png"]
+      }
+    },
+    "bfl/flux-pro-1.1-ultra": {
+      "aspect_ratio": {
+        "options": ["1:1", "4:3", "3:4", "16:9", "9:16", "21:9", "9:21"]
+      },
+      "image_prompt_strength": {
+        "label": "Image influence",
+        "help": "Blend from prompt only (0) to reference image only (1).",
+        "advanced": true,
+        "control": "slider"
+      },
+      "raw": {
+        "label": "Natural appearance",
+        "help": "Generate a less processed, more natural look.",
+        "advanced": true,
+        "control": "toggle"
+      }
+    },
+    "bfl/video-upscale-v1": {
+      "creativity": {
+        "label": "Creative detail",
+        "help": "0 sharpens faithfully; 1 can change details such as faces or products.",
+        "options": [0, 1]
+      }
+    },
+    "bfl/vto-v1": {
+      "garment": {
+        "label": "Garment image",
+        "help": "Provide an image of the garments to try on.",
+        "advanced": false,
+        "control": "text-box"
+      },
+      "person": {
+        "label": "Person image",
+        "help": "Provide the person to dress.",
+        "advanced": false,
+        "control": "text-box"
+      }
+    },
+    "bria/fibo": {
+      "images": {
+        "help": "Provide a JSON list containing one image URL or base64 image."
+      },
+      "instruction": {
+        "label": "Edit instructions",
+        "help": "Describe the edit, or use a Structured edit.",
+        "advanced": false,
+        "control": "text-area"
+      },
+      "mask": {
+        "help": "Provide a mask: white areas are edited and black areas are kept."
+      },
+      "structured_instruction": {
+        "label": "Structured edit",
+        "help": "Provide a JSON edit instruction as text, instead of Edit instructions.",
+        "advanced": true,
+        "control": "text-area"
+      }
+    },
+    "bria/image-edit-erase": {
+      "mask": {
+        "help": "Provide a mask: white removes, black keeps."
+      },
+      "mask_type": {
+        "label": "Mask type",
+        "help": "Choose how the removal mask was created.",
+        "advanced": true,
+        "options": ["manual", "automatic"],
+        "default": "manual"
+      }
+    },
+    "bria/image-edit-expand": {
+      "aspect_ratio": {
+        "help": "Set a ratio, or clear it before setting canvas dimensions and image placement."
+      },
+      "canvas_size": {
+        "label": "Canvas dimensions",
+        "help": "Set [width, height] in pixels when Aspect ratio is empty.",
+        "control": "text-area"
+      },
+      "original_image_location": {
+        "label": "Image position",
+        "help": "Set the top-left [x, y] position in pixels when Aspect ratio is empty.",
+        "advanced": true,
+        "control": "text-area"
+      },
+      "original_image_size": {
+        "label": "Placed image dimensions",
+        "help": "Set the image's [width, height] in pixels when Aspect ratio is empty.",
+        "advanced": true,
+        "control": "text-area"
+      }
+    },
+    "bria/image-edit-gen-fill": {
+      "mask": {
+        "help": "Provide a mask: white fills, black keeps."
+      }
+    },
+    "bria/image-edit-increase-resolution": {
+      "image": {
+        "label": "Source image",
+        "help": "",
+        "urlUpload": "image"
+      },
+      "desired_increase": {
+        "options": [2, 4]
+      }
+    },
+    "bria/image-edit-remove-background": {
+      "image": {
+        "label": "Source image",
+        "help": "",
+        "urlUpload": "image"
+      }
+    },
+    "bria/structured-instruction": {
+      "images": {
+        "help": "Provide a JSON list containing one image URL or base64 image."
+      },
+      "instruction": {
+        "label": "Edit instructions",
+        "help": "Describe the edit to turn into a structured instruction.",
+        "advanced": false,
+        "control": "text-area"
+      },
+      "mask": {
+        "help": "Provide a mask: white areas are edited and black areas are kept."
+      }
+    },
+    "bria/video-edit-green-screen": {
+      "green_shade": {
+        "default": "broadcast_green"
+      }
+    },
+    "bria/video-edit-remove-background": {
+      "background_color": {
+        "help": "Choose a fill color, or Transparent with a format that keeps an alpha channel."
+      },
+      "output_container_and_codec": {
+        "help": "Transparent output needs webm_vp9, mov_proresks or mkv_vp9.",
+        "default": "webm_vp9"
+      }
+    },
+    "bria/video-edit-replace-background": {
+      "background_url": {
+        "label": "Background image or video",
+        "urlUpload": "image-or-video",
+        "help": "Provide a background URL with the same aspect ratio as the input video.",
+        "advanced": false,
+        "control": "text-box"
+      }
+    },
+    "byteplus/dreamina-seedance-2-0-260128": {
+      "duration": {
+        "options": [-1, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+        "help": ""
+      },
+      "resolution": {
+        "options": ["480p", "720p"],
+        "default": "720p"
+      },
+      "ratio": {
+        "default": "adaptive"
+      },
+      "output_format": {
+        "hidden": true
+      },
+      "seed": {
+        "default": -1
+      }
+    },
+    "byteplus/dreamina-seedance-2-0-fast-260128": {
+      "duration": {
+        "options": [-1, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+        "help": ""
+      },
+      "resolution": {
+        "options": ["480p", "720p"],
+        "default": "720p"
+      },
+      "ratio": {
+        "default": "adaptive"
+      },
+      "output_format": {
+        "hidden": true
+      },
+      "seed": {
+        "default": -1
+      }
+    },
+    "byteplus/dreamina-seedance-2-0-mini": {
+      "output_format": {
+        "hidden": true
+      },
+      "seed": {
+        "default": -1
+      }
+    },
+    "byteplus/dreamina-seedance-2-5-260628": {
+      "duration": {
+        "options": [
+          -1, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+          22, 23, 24, 25, 26, 27, 28, 29, 30
+        ],
+        "help": "Video editing requires Auto."
+      },
+      "resolution": {
+        "options": ["480p", "720p", "1080p"],
+        "default": "720p"
+      },
+      "ratio": {
+        "default": "adaptive"
+      },
+      "seed": {
+        "default": -1
+      }
+    },
+    "byteplus/seed-audio-1.0": {
+      "text_prompt": {
+        "label": "Speech prompt",
+        "help": "Enter speech text or instructions; refer to audio samples as @Audio1, @Audio2, or @Audio3."
+      },
+      "references": {
+        "label": "Voice or image references",
+        "help": "Use up to three voice or audio references, or one image reference; do not mix them."
+      },
+      "audio_config": {
+        "label": "Audio settings",
+        "help": "Set format, sample rate, speech speed, pitch, volume, or subtitles."
+      }
+    },
+    "byteplus/seed-audio-1.0-multilingual": {
+      "text_prompt": {
+        "label": "Speech prompt",
+        "help": "Enter speech text or instructions; refer to audio samples as @Audio1, @Audio2, or @Audio3."
+      },
+      "references": {
+        "label": "Voice or image references",
+        "help": "Use up to three voice or audio references, or one image reference; do not mix them."
+      },
+      "audio_config": {
+        "label": "Audio settings",
+        "help": "Set format, sample rate, speech speed, pitch, volume, or subtitles."
+      }
+    },
+    "byteplus/seedance-1-0-lite-i2v-250428": {
+      "duration": {
+        "options": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+      },
+      "resolution": {
+        "options": ["480p", "720p", "1080p"],
+        "default": "720p"
+      },
+      "ratio": {
+        "default": "16:9"
+      },
+      "output_format": {
+        "hidden": true
+      },
+      "generate_audio": {
+        "hidden": true
+      },
+      "content": {
+        "label": "Video inputs",
+        "help": "Provide a text item and an image_url item containing the image to animate.",
+        "advanced": false,
+        "control": "text-area"
+      },
+      "seed": {
+        "default": -1
+      }
+    },
+    "byteplus/seedance-1-0-lite-t2v-250428": {
+      "duration": {
+        "options": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+      },
+      "resolution": {
+        "options": ["480p", "720p", "1080p"],
+        "default": "720p"
+      },
+      "ratio": {
+        "default": "16:9"
+      },
+      "output_format": {
+        "hidden": true
+      },
+      "generate_audio": {
+        "hidden": true
+      },
+      "content": {
+        "label": "Video prompt",
+        "help": "Provide a text item describing the video; this model uses text-only input.",
+        "advanced": false,
+        "control": "text-area"
+      },
+      "seed": {
+        "default": -1
+      }
+    },
+    "byteplus/seedance-1-0-pro-250528": {
+      "duration": {
+        "options": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+      },
+      "resolution": {
+        "options": ["480p", "720p", "1080p"],
+        "default": "1080p"
+      },
+      "ratio": {
+        "default": "16:9"
+      },
+      "output_format": {
+        "hidden": true
+      },
+      "generate_audio": {
+        "hidden": true
+      },
+      "seed": {
+        "default": -1
+      }
+    },
+    "byteplus/seedance-1-0-pro-fast-251015": {
+      "duration": {
+        "options": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+      },
+      "resolution": {
+        "options": ["480p", "720p", "1080p"],
+        "default": "1080p"
+      },
+      "ratio": {
+        "default": "16:9"
+      },
+      "output_format": {
+        "hidden": true
+      },
+      "generate_audio": {
+        "hidden": true
+      },
+      "seed": {
+        "default": -1
+      }
+    },
+    "byteplus/seedance-1-5-pro-251215": {
+      "duration": {
+        "options": [-1, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+        "help": ""
+      },
+      "resolution": {
+        "options": ["480p", "720p", "1080p"],
+        "default": "720p"
+      },
+      "ratio": {
+        "default": "adaptive"
+      },
+      "output_format": {
+        "hidden": true
+      },
+      "seed": {
+        "default": -1
+      }
+    },
+    "byteplus/seededit-3-0-i2i-250628": {
+      "layer_decomposition": {
+        "hidden": true
+      },
+      "output_format": {
+        "hidden": true
+      },
+      "sequential_image_generation": {
+        "hidden": true
+      },
+      "guidance_scale": {
+        "default": 5.5
+      },
+      "image": {
+        "label": "Image to edit",
+        "help": "Provide one image URL or base64 image."
+      },
+      "size": {
+        "help": "Use adaptive sizing to follow the input image.",
+        "options": ["adaptive"],
+        "default": "adaptive"
+      }
+    },
+    "byteplus/seedream-3-0-t2i-250415": {
+      "layer_decomposition": {
+        "hidden": true
+      },
+      "output_format": {
+        "hidden": true
+      },
+      "sequential_image_generation": {
+        "hidden": true
+      },
+      "guidance_scale": {
+        "default": 2.5
+      },
+      "image": {
+        "hidden": true
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": ["1024x1024", "1536x1024", "1024x1536", "2048x2048"],
+        "default": "1024x1024"
+      }
+    },
+    "byteplus/seedream-4-0-250828": {
+      "layer_decomposition": {
+        "hidden": true
+      },
+      "output_format": {
+        "hidden": true
+      },
+      "guidance_scale": {
+        "hidden": true
+      },
+      "optimize_prompt_options": {
+        "label": "Prompt enhancement",
+        "help": "Set mode to standard for quality or fast for speed.",
+        "advanced": true,
+        "control": "text-area"
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": ["1K", "2K", "4K"],
+        "default": "2K"
+      },
+      "sequential_image_generation": {
+        "fixed": "disabled"
+      },
+      "sequential_image_generation_options": {
+        "hidden": true
+      }
+    },
+    "byteplus/seedream-4-5-251128": {
+      "layer_decomposition": {
+        "hidden": true
+      },
+      "output_format": {
+        "hidden": true
+      },
+      "guidance_scale": {
+        "hidden": true
+      },
+      "optimize_prompt_options": {
+        "label": "Prompt enhancement",
+        "help": "Use standard mode to improve the prompt.",
+        "advanced": true,
+        "control": "text-area"
+      },
+      "sequential_image_generation": {
+        "fixed": "disabled"
+      },
+      "sequential_image_generation_options": {
+        "hidden": true
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": ["2K", "4K"],
+        "default": "2K"
+      }
+    },
+    "byteplus/seedream-5-0-260128": {
+      "layer_decomposition": {
+        "hidden": true
+      },
+      "guidance_scale": {
+        "hidden": true
+      },
+      "optimize_prompt_options": {
+        "label": "Prompt enhancement",
+        "help": "Use standard mode to improve the prompt.",
+        "advanced": true,
+        "control": "text-area"
+      },
+      "sequential_image_generation": {
+        "fixed": "disabled"
+      },
+      "sequential_image_generation_options": {
+        "hidden": true
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": ["2K", "3K"],
+        "default": "2K"
+      }
+    },
+    "byteplus/seedream-5-0-pro-260628": {
+      "sequential_image_generation": {
+        "hidden": true
+      },
+      "guidance_scale": {
+        "hidden": true
+      },
+      "optimize_prompt_options": {
+        "label": "Prompt enhancement",
+        "help": "Use standard mode to improve the prompt.",
+        "advanced": true,
+        "control": "text-area"
+      },
+      "layer_decomposition": {
+        "label": "Separate layers",
+        "help": "Split one input image into a base image and separate layers.",
+        "advanced": true,
+        "control": "toggle"
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": ["1K", "2K"],
+        "default": "1K"
+      }
+    },
+    "elevenlabs/eleven_sfx_v2": {
+      "loop": {
+        "hidden": true
+      },
+      "text": {
+        "label": "Sound prompt",
+        "help": ""
+      }
+    },
+    "elevenlabs/eleven_v3": {
+      "apply_text_normalization": {
+        "label": "Text normalization",
+        "help": "Choose whether to normalize the text before speaking it.",
+        "advanced": true,
+        "control": "dropdown"
+      },
+      "inputs": {
+        "label": "Dialogue",
+        "help": "Provide each line of text with its voice ID; use up to ten distinct voices."
+      },
+      "language_code": {
+        "help": "Set a two-letter language code, or leave empty for the model to choose.",
+        "defaultCandidates": []
+      },
+      "pronunciation_dictionary_locators": {
+        "label": "Pronunciation dictionaries",
+        "help": "Provide up to three dictionary IDs and version IDs, in the order to apply them.",
+        "advanced": true,
+        "control": "text-area"
+      },
+      "settings": {
+        "label": "Voice settings",
+        "help": "Set stability to balance vocal variation against a more consistent delivery.",
+        "control": "text-area"
+      }
+    },
+    "fal/h3-max": {
+      "aspect_ratio": {
+        "options": ["21:9", "16:9", "4:3", "1:1", "3:4", "9:16"]
+      },
+      "prompt_expansion_mode": {
+        "label": "Prompt expansion",
+        "help": "Choose the effort used to expand your video prompt.",
+        "advanced": true,
+        "options": ["balanced", "quality"],
+        "default": "balanced"
+      },
+      "resolution": {
+        "options": ["480P", "768P"]
+      }
+    },
+    "fal/h3-max-turbo": {
+      "aspect_ratio": {
+        "options": ["21:9", "16:9", "4:3", "1:1", "3:4", "9:16"]
+      },
+      "prompt_expansion_mode": {
+        "label": "Prompt expansion",
+        "help": "Choose the effort used to expand your video prompt.",
+        "advanced": true,
+        "options": ["balanced", "quality"],
+        "default": "balanced"
+      },
+      "resolution": {
+        "options": ["480P", "768P"]
+      }
+    },
+    "fal/patina": {
+      "image_url": {
+        "label": "Surface image",
+        "help": "Provide a photograph or render to turn into material maps."
+      },
+      "maps": {
+        "label": "Material maps",
+        "help": "List basecolor, normal, roughness, metalness or height maps as JSON.",
+        "advanced": true,
+        "control": "text-area"
+      },
+      "output_format": {
+        "options": ["jpeg", "png", "webp"]
+      }
+    },
+    "freepik/ai-image-upscaler-precision-v2": {
+      "ultra_detail": {
+        "label": "Fine detail",
+        "help": "Adjust how much intricate detail to add.",
+        "advanced": true,
+        "control": "slider"
+      }
+    },
+    "freepik/ai-skin-enhancer-faithful": {
+      "skin_detail": {
+        "label": "Skin detail",
+        "help": "Adjust the amount of skin texture enhancement.",
+        "advanced": true,
+        "control": "slider"
+      }
+    },
+    "freepik/ai-skin-enhancer-flexible": {
+      "optimized_for": {
+        "label": "Enhancement target",
+        "help": "Choose which aspect of the image to improve.",
+        "advanced": false,
+        "control": "dropdown"
+      }
+    },
+    "heygen/starfish": {
+      "input_type": {
+        "label": "Text format",
+        "help": "Choose plain text or SSML markup for the speech input.",
+        "advanced": true,
+        "control": "dropdown",
+        "options": ["text", "ssml"],
+        "default": "text"
+      },
+      "language": {
+        "help": "Set a base language code, such as en; leave empty for automatic detection.",
+        "defaultCandidates": []
+      },
+      "locale": {
+        "label": "Locale",
+        "help": "Set a locale such as en-US; this also determines the base language.",
+        "defaultCandidates": []
+      },
+      "text": {
+        "label": "Speech text",
+        "help": "Enter the words to speak, using SSML markup only when that format is selected."
+      },
+      "voice_id": {
+        "label": "Voice ID",
+        "help": "Enter a voice ID that supports the Starfish speech engine."
+      }
+    },
+    "ideogram/ideogram-v3": {
+      "aspect_ratio": {
+        "options": [
+          "1x3",
+          "3x1",
+          "1x2",
+          "2x1",
+          "9x16",
+          "16x9",
+          "10x16",
+          "16x10",
+          "2x3",
+          "3x2",
+          "3x4",
+          "4x3",
+          "4x5",
+          "5x4",
+          "1x1"
+        ],
+        "default": "1x1"
+      },
+      "resolution": {
+        "hidden": true
+      },
+      "rendering_speed": {
+        "label": "Rendering speed",
+        "help": "Balance rendering speed and image quality.",
+        "advanced": true,
+        "control": "dropdown"
+      }
+    },
+    "ideogram/ideogram-v4": {
+      "json_prompt": {
+        "label": "Structured prompt",
+        "help": "Provide structured JSON instead of Prompt; automatic prompt expansion is disabled.",
+        "advanced": true,
+        "control": "text-area"
+      },
+      "rendering_speed": {
+        "label": "Rendering speed",
+        "help": "Balance rendering speed and image quality.",
+        "advanced": true,
+        "control": "dropdown"
+      },
+      "resolution": {
+        "help": "Choose output dimensions, or leave empty for automatic framing.",
+        "options": [
+          "2048x2048",
+          "1440x2880",
+          "2880x1440",
+          "1664x2496",
+          "2496x1664",
+          "1792x2240",
+          "2240x1792",
+          "1440x2560",
+          "2560x1440",
+          "1600x2560",
+          "2560x1600",
+          "1728x2304",
+          "2304x1728",
+          "1296x3168",
+          "3168x1296",
+          "1152x2944",
+          "2944x1152",
+          "1248x3328",
+          "3328x1248",
+          "1280x3072",
+          "3072x1280"
+        ],
+        "defaultCandidates": []
+      },
+      "text_prompt": {
+        "help": "Describe the image, or leave empty when using Structured prompt."
+      }
+    },
+    "ideogram/p-image-ideogram": {
+      "aspect_ratio": {
+        "options": [
+          "1x3",
+          "3x1",
+          "1x2",
+          "2x1",
+          "9x16",
+          "16x9",
+          "10x16",
+          "16x10",
+          "2x3",
+          "3x2",
+          "3x4",
+          "4x3",
+          "4x5",
+          "5x4",
+          "1x1"
+        ],
+        "default": "1x1"
+      },
+      "prompt_upsampling": {
+        "options": ["AUTO", "ON", "OFF"],
+        "default": "AUTO"
+      },
+      "quality": {
+        "options": ["VERY_LOW", "LOW", "MEDIUM", "HIGH"],
+        "default": "MEDIUM"
+      },
+      "resolution": {
+        "options": ["1K", "2K"],
+        "default": "1K"
+      }
+    },
+    "kling/kling-3.0-turbo": {
+      "options": {
+        "hidden": true
+      },
+      "settings": {
+        "label": "Video settings",
+        "help": "Set resolution, aspect ratio, and duration for the generated clip.",
+        "advanced": false
+      },
+      "prompt": {
+        "help": "Describe the video, or list shots as 'shot n, duration, description;'."
+      }
+    },
+    "kling/kling-image-o1": {
+      "result_type": {
+        "fixed": "single"
+      },
+      "series_amount": {
+        "hidden": true
+      }
+    },
+    "kling/kling-v1": {
+      "mode": {
+        "label": "Generation quality",
+        "help": "Choose standard for lower cost or pro for higher quality.",
+        "advanced": true,
+        "control": "dropdown"
+      },
+      "sound": {
+        "hidden": true
+      }
+    },
+    "kling/kling-v1-5": {
+      "mode": {
+        "label": "Generation quality",
+        "help": "Choose standard for lower cost or pro for higher quality.",
+        "advanced": true,
+        "control": "dropdown"
+      },
+      "sound": {
+        "hidden": true
+      },
+      "image": {
+        "label": "Starting image",
+        "help": "",
+        "imageSource": "url",
+        "urlUpload": "image"
+      },
+      "image_tail": {
+        "label": "End frame",
+        "imageSource": "url",
+        "urlUpload": "image",
+        "help": "Provide the ending image; omit camera controls and motion masks when using it."
+      },
+      "dynamic_masks": {
+        "label": "Motion paths",
+        "help": "Pair mask images with point paths to guide motion in selected areas.",
+        "advanced": true
+      },
+      "static_mask": {
+        "label": "Motion mask",
+        "help": "Provide a motion-brush mask with the same proportions as the input image.",
+        "advanced": true
+      },
+      "voice_list": {
+        "hidden": true
+      }
+    },
+    "kling/kling-v1-6": {
+      "mode": {
+        "label": "Generation quality",
+        "help": "Choose standard for lower cost or pro for higher quality.",
+        "advanced": true,
+        "control": "dropdown"
+      },
+      "sound": {
+        "hidden": true
+      }
+    },
+    "kling/kling-v2-1": {
+      "mode": {
+        "label": "Generation quality",
+        "help": "Choose standard for lower cost or pro for higher quality.",
+        "advanced": true,
+        "control": "dropdown"
+      },
+      "sound": {
+        "hidden": true
+      },
+      "image": {
+        "label": "Starting image",
+        "help": "Provide an image URL or base64 image without a data:image prefix."
+      },
+      "image_tail": {
+        "label": "End frame",
+        "help": "Provide the ending image; omit camera controls and motion masks when using it."
+      },
+      "dynamic_masks": {
+        "label": "Motion paths",
+        "help": "Pair mask images with point paths to guide motion in selected areas.",
+        "advanced": true
+      },
+      "static_mask": {
+        "label": "Motion mask",
+        "help": "Provide a motion-brush mask with the same proportions as the input image.",
+        "advanced": true
+      },
+      "voice_list": {
+        "hidden": true
+      }
+    },
+    "kling/kling-v2-1-master": {
+      "mode": {
+        "label": "Generation quality",
+        "help": "Choose standard for lower cost or pro for higher quality.",
+        "advanced": true,
+        "control": "dropdown"
+      },
+      "sound": {
+        "hidden": true
+      }
+    },
+    "kling/kling-v2-5-turbo": {
+      "mode": {
+        "label": "Generation quality",
+        "help": "Choose standard for lower cost or pro for higher quality.",
+        "advanced": true,
+        "control": "dropdown"
+      },
+      "sound": {
+        "hidden": true
+      }
+    },
+    "kling/kling-v2-6": {
+      "mode": {
+        "label": "Generation quality",
+        "help": "Choose standard for lower cost or pro for higher quality.",
+        "advanced": true,
+        "control": "dropdown"
+      }
+    },
+    "kling/kling-v2-master": {
+      "mode": {
+        "label": "Generation quality",
+        "help": "Choose standard for lower cost or pro for higher quality.",
+        "advanced": true,
+        "control": "dropdown"
+      },
+      "sound": {
+        "hidden": true
+      }
+    },
+    "kling/kling-v3": {
+      "mode": {
+        "label": "Generation quality",
+        "help": "Choose standard for lower cost or pro for higher quality.",
+        "advanced": true,
+        "control": "dropdown"
+      }
+    },
+    "kling/kling-v3-omni": {
+      "mode": {
+        "label": "Generation quality",
+        "help": "Choose standard for lower cost or pro for higher quality.",
+        "advanced": true,
+        "control": "dropdown"
+      },
+      "duration": {
+        "help": "Choose the clip length; video editing keeps the input video's duration."
+      },
+      "video_list": {
+        "label": "Video reference",
+        "help": "Provide a video URL with refer_type set to base for editing or feature for guidance."
+      }
+    },
+    "kling/kling-video-o1": {
+      "mode": {
+        "label": "Generation quality",
+        "help": "Choose standard for lower cost or pro for higher quality.",
+        "advanced": true,
+        "control": "dropdown"
+      },
+      "duration": {
+        "help": "Choose the clip length; video editing keeps the input video's duration."
+      },
+      "video_list": {
+        "label": "Video reference",
+        "help": "Provide a video URL with refer_type set to base for editing or feature for guidance."
+      }
+    },
+    "kling/videos-avatar-image2video": {
+      "mode": {
+        "label": "Generation quality",
+        "help": "Choose standard for lower cost or pro for higher quality.",
+        "advanced": true,
+        "control": "dropdown"
+      },
+      "image": {
+        "label": "Avatar image",
+        "help": "Provide the image of the avatar to animate."
+      },
+      "audio_id": {
+        "label": "Audio ID",
+        "help": "Use an existing Kling audio ID, or supply an audio file instead."
+      },
+      "sound_file": {
+        "label": "Audio file",
+        "help": "Provide an audio URL or base64 audio; omit Audio ID when using this input."
+      },
+      "prompt": {
+        "label": "Avatar direction",
+        "help": "Describe the avatar's actions, expression, and camera movement."
+      }
+    },
+    "kling/videos-lip-sync": {
+      "input": {
+        "label": "Lip-sync inputs",
+        "help": "Provide the video plus speech text and a voice ID, or an audio source."
+      }
+    },
+    "kling/videos-video-extend": {
+      "video_id": {
+        "label": "Video ID",
+        "help": "Enter the Kling video ID to extend."
+      },
+      "prompt": {
+        "help": "Describe what happens next in the extended video."
+      }
+    },
+    "ltx/ltx-2-5-fast": {
+      "resolution": {
+        "default": "1280x720"
+      }
+    },
+    "ltx/ltx-2-5-pro": {
+      "resolution": {
+        "options": ["1280x720", "720x1280", "1920x1080", "1080x1920"],
+        "default": "1280x720"
+      }
+    },
+    "luma/photon-1": {
+      "style_ref": {
+        "help": "Provide style image URLs with optional influence weights."
+      }
+    },
+    "luma/photon-flash-1": {
+      "style_ref": {
+        "help": "Provide style image URLs with optional influence weights."
+      }
+    },
+    "luma/ray-2": {
+      "duration": {
+        "options": ["5s", "9s"],
+        "default": "5s",
+        "control": "dropdown"
+      },
+      "resolution": {
+        "options": ["540p", "720p", "1080p", "4k"],
+        "control": "dropdown"
+      },
+      "keyframes": {
+        "help": "Set frame0 or frame1 to an image URL or a completed generation reference."
+      }
+    },
+    "luma/ray-flash-2": {
+      "duration": {
+        "options": ["5s", "9s"],
+        "default": "5s",
+        "control": "dropdown"
+      },
+      "resolution": {
+        "options": ["540p", "720p", "1080p", "4k"],
+        "control": "dropdown"
+      },
+      "keyframes": {
+        "help": "Set frame0 or frame1 to an image URL or a completed generation reference."
+      }
+    },
+    "luma_2/uni-1": {
+      "type": {
+        "options": ["image", "image_edit"],
+        "default": "image",
+        "label": "Image task",
+        "help": "Create a new image or edit a source image.",
+        "advanced": false
+      },
+      "video": {
+        "hidden": true
+      },
+      "source": {
+        "label": "Source image",
+        "help": "Provide an image source as a URL, inline data, or generation reference."
+      }
+    },
+    "luma_2/uni-1-max": {
+      "type": {
+        "options": ["image", "image_edit"],
+        "default": "image",
+        "label": "Image task",
+        "help": "Create a new image or edit a source image.",
+        "advanced": false
+      },
+      "video": {
+        "hidden": true
+      },
+      "source": {
+        "label": "Source image",
+        "help": "Provide an image source as a URL, inline data, or generation reference."
+      }
+    },
+    "meshy/animations": {
+      "post_process": {
+        "label": "Animation processing",
+        "help": "Convert animation, change frame rate, or extract the rig using JSON settings."
+      },
+      "rig_task_id": {
+        "label": "Rigging task ID",
+        "help": "Provide the ID of a completed rigging task to animate."
+      }
+    },
+    "meshy/remesh": {
+      "convert_format_only": {
+        "label": "Convert format only",
+        "help": "Only convert the file format; skip remeshing and resizing."
+      },
+      "input_task_id": {
+        "label": "Source task ID",
+        "help": "Use a completed 3D generation task, or provide a model URL."
+      },
+      "model_url": {
+        "help": "Provide a GLB, glTF, OBJ, FBX or STL URL/data URI instead of a task ID."
+      },
+      "resize_height": {
+        "label": "Height (m)",
+        "help": "Set the model height in meters; 0 keeps its current size.",
+        "advanced": true,
+        "control": "number"
+      },
+      "target_formats": {
+        "label": "Output formats",
+        "help": "List export formats as JSON: glb, fbx, obj, usdz, blend or stl.",
+        "advanced": true,
+        "control": "text-area"
+      }
+    },
+    "meshy/rigging": {
+      "height_meters": {
+        "label": "Character height (m)",
+        "help": "Set the character's approximate height in meters.",
+        "advanced": true,
+        "control": "number"
+      },
+      "input_task_id": {
+        "label": "Source task ID",
+        "help": "Provide the source task ID, or use a humanoid model URL."
+      },
+      "model_url": {
+        "label": "Humanoid model",
+        "help": "Provide a textured humanoid GLB URL or data URI instead of a task ID."
+      },
+      "texture_image_url": {
+        "label": "Base color texture",
+        "help": "Provide the UV-unwrapped PNG texture as a URL or data URI.",
+        "advanced": false,
+        "control": "text-box"
+      }
+    },
+    "moonvalley/text-to-image": {
+      "inference_params": {
+        "label": "Generation settings",
+        "help": "Set dimensions, guidance, steps, seed, and an optional negative prompt."
+      }
+    },
+    "moonvalley/text-to-video": {
+      "inference_params": {
+        "label": "Generation settings",
+        "help": "Set dimensions, guidance, steps, seed, and an optional negative prompt."
+      }
+    },
+    "moonvalley/video-to-video": {
+      "control_type": {
+        "label": "Motion guidance",
+        "help": "Choose whether to follow the reference video's motion or pose.",
+        "advanced": false
+      },
+      "inference_params": {
+        "label": "Generation settings",
+        "help": "Adjust motion intensity, guidance, steps, seed, and an optional negative prompt."
+      }
+    },
+    "openai/gpt-4.1": {
+      "text": {
+        "label": "Output structure",
+        "help": "Set the response format, including a schema for structured output.",
+        "advanced": true,
+        "control": "text-area"
+      }
+    },
+    "openai/gpt-4.1-mini": {
+      "text": {
+        "label": "Output structure",
+        "help": "Set the response format, including a schema for structured output.",
+        "advanced": true,
+        "control": "text-area"
+      }
+    },
+    "openai/gpt-4.1-nano": {
+      "text": {
+        "label": "Output structure",
+        "help": "Set the response format, including a schema for structured output.",
+        "advanced": true,
+        "control": "text-area"
+      }
+    },
+    "openai/gpt-4o": {
+      "text": {
+        "label": "Output structure",
+        "help": "Set the response format, including a schema for structured output.",
+        "advanced": true,
+        "control": "text-area"
+      }
+    },
+    "openai/gpt-5": {
+      "text": {
+        "label": "Output structure",
+        "help": "Set the response format, including a schema for structured output.",
+        "advanced": true,
+        "control": "text-area"
+      }
+    },
+    "openai/gpt-5-mini": {
+      "text": {
+        "label": "Output structure",
+        "help": "Set the response format, including a schema for structured output.",
+        "advanced": true,
+        "control": "text-area"
+      }
+    },
+    "openai/gpt-5-nano": {
+      "text": {
+        "label": "Output structure",
+        "help": "Set the response format, including a schema for structured output.",
+        "advanced": true,
+        "control": "text-area"
+      }
+    },
+    "openai/gpt-5.5": {
+      "text": {
+        "label": "Output structure",
+        "help": "Set the response format, including a schema for structured output.",
+        "advanced": true,
+        "control": "text-area"
+      }
+    },
+    "openai/gpt-5.5-pro": {
+      "text": {
+        "label": "Output structure",
+        "help": "Set the response format, including a schema for structured output.",
+        "advanced": true,
+        "control": "text-area"
+      }
+    },
+    "openai/gpt-5.6-luna": {
+      "text": {
+        "label": "Output structure",
+        "help": "Set the response format, including a schema for structured output.",
+        "advanced": true,
+        "control": "text-area"
+      }
+    },
+    "openai/gpt-5.6-sol": {
+      "text": {
+        "label": "Output structure",
+        "help": "Set the response format, including a schema for structured output.",
+        "advanced": true,
+        "control": "text-area"
+      }
+    },
+    "openai/gpt-5.6-terra": {
+      "text": {
+        "label": "Output structure",
+        "help": "Set the response format, including a schema for structured output.",
+        "advanced": true,
+        "control": "text-area"
+      }
+    },
+    "openai/gpt-6-astra": {
+      "text": {
+        "label": "Output structure",
+        "help": "Set the response format, including a schema for structured output.",
+        "advanced": true,
+        "control": "text-area"
+      }
+    },
+    "openai/gpt-image-1": {
+      "quality": {
+        "options": ["low", "medium", "high"]
+      },
+      "style": {
+        "hidden": true
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": ["1024x1024", "1536x1024", "1024x1536", "auto"],
+        "default": "1024x1024"
+      }
+    },
+    "openai/gpt-image-1.5": {
+      "quality": {
+        "options": ["low", "medium", "high"]
+      },
+      "style": {
+        "hidden": true
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": ["1024x1024", "1536x1024", "1024x1536", "auto"],
+        "default": "1024x1024"
+      }
+    },
+    "openai/gpt-image-2": {
+      "quality": {
+        "options": ["low", "medium", "high"]
+      },
+      "style": {
+        "hidden": true
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": ["1024x1024", "1536x1024", "1024x1536", "auto"],
+        "default": "1024x1024"
+      }
+    },
+    "openai/gpt-image-2.5-flare": {
+      "style": {
+        "hidden": true
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": ["1024x1024", "1536x1024", "1024x1536", "auto"],
+        "default": "1024x1024"
+      }
+    },
+    "openai/gpt-image-2.5-sunburst": {
+      "style": {
+        "hidden": true
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": ["1024x1024", "1536x1024", "1024x1536", "auto"],
+        "default": "1024x1024"
+      }
+    },
+    "openai/o1": {
+      "temperature": {
+        "hidden": true
+      },
+      "text": {
+        "label": "Output structure",
+        "help": "Set the response format, including a schema for structured output.",
+        "advanced": true,
+        "control": "text-area"
+      },
+      "top_p": {
+        "hidden": true
+      }
+    },
+    "openai/o1-pro": {
+      "temperature": {
+        "hidden": true
+      },
+      "text": {
+        "label": "Output structure",
+        "help": "Set the response format, including a schema for structured output.",
+        "advanced": true,
+        "control": "text-area"
+      },
+      "top_p": {
+        "hidden": true
+      }
+    },
+    "openai/o3": {
+      "temperature": {
+        "hidden": true
+      },
+      "text": {
+        "label": "Output structure",
+        "help": "Set the response format, including a schema for structured output.",
+        "advanced": true,
+        "control": "text-area"
+      },
+      "top_p": {
+        "hidden": true
+      }
+    },
+    "openai/o4-mini": {
+      "temperature": {
+        "hidden": true
+      },
+      "text": {
+        "label": "Output structure",
+        "help": "Set the response format, including a schema for structured output.",
+        "advanced": true,
+        "control": "text-area"
+      },
+      "top_p": {
+        "hidden": true
+      }
+    },
+    "qwen/qwen-image-3.0": {
+      "input": {
+        "label": "Prompt and images",
+        "help": "Provide one user message with a text prompt and up to three reference images."
+      },
+      "parameters": {
+        "label": "Image settings",
+        "help": "Set image count, size, negative prompt, seed, or prompt rewriting."
+      }
+    },
+    "qwen/qwen-image-3.0-pro": {
+      "input": {
+        "label": "Prompt and images",
+        "help": "Provide one user message with a text prompt and up to three reference images."
+      },
+      "parameters": {
+        "label": "Image settings",
+        "help": "Set image count, size, negative prompt, seed, or prompt rewriting."
+      }
+    },
+    "recraft/recraftv2": {
+      "controls": {
+        "label": "Image controls",
+        "help": "Set colors, background color, artistic level or text layout in JSON.",
+        "advanced": true,
+        "control": "text-area"
+      },
+      "style": {
+        "label": "Style name",
+        "help": "Enter a supported style name, or use a Style ID.",
+        "defaultCandidates": []
+      },
+      "style_id": {
+        "label": "Style ID",
+        "help": "Use an existing Recraft style ID instead of Style name.",
+        "advanced": true,
+        "control": "text-box"
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": [
+          "1024x1024",
+          "1820x1024",
+          "1024x1820",
+          "1536x1024",
+          "1024x1536"
+        ],
+        "default": "1024x1024"
+      }
+    },
+    "recraft/recraftv3": {
+      "controls": {
+        "label": "Image controls",
+        "help": "Set colors, background color, artistic level or text layout in JSON.",
+        "advanced": true,
+        "control": "text-area"
+      },
+      "style": {
+        "label": "Style name",
+        "help": "Enter a supported style name, or use a Style ID.",
+        "defaultCandidates": []
+      },
+      "style_id": {
+        "label": "Style ID",
+        "help": "Use an existing Recraft style ID instead of Style name.",
+        "advanced": true,
+        "control": "text-box"
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": [
+          "1024x1024",
+          "1820x1024",
+          "1024x1820",
+          "1536x1024",
+          "1024x1536"
+        ],
+        "default": "1024x1024"
+      }
+    },
+    "recraft/recraftv4": {
+      "controls": {
+        "label": "Image controls",
+        "help": "Set colors, background color, artistic level or text layout in JSON.",
+        "advanced": true,
+        "control": "text-area"
+      },
+      "style": {
+        "label": "Style name",
+        "help": "Enter a supported style name, or use a Style ID.",
+        "defaultCandidates": []
+      },
+      "style_id": {
+        "label": "Style ID",
+        "help": "Use an existing Recraft style ID instead of Style name.",
+        "advanced": true,
+        "control": "text-box"
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": [
+          "1024x1024",
+          "1344x768",
+          "768x1344",
+          "1280x832",
+          "832x1280"
+        ],
+        "default": "1024x1024"
+      }
+    },
+    "recraft/recraftv4_1": {
+      "controls": {
+        "label": "Image controls",
+        "help": "Set colors, background color, artistic level or text layout in JSON.",
+        "advanced": true,
+        "control": "text-area"
+      },
+      "style": {
+        "label": "Style name",
+        "help": "Enter a supported style name, or use a Style ID.",
+        "defaultCandidates": []
+      },
+      "style_id": {
+        "label": "Style ID",
+        "help": "Use an existing Recraft style ID instead of Style name.",
+        "advanced": true,
+        "control": "text-box"
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": [
+          "1024x1024",
+          "1344x768",
+          "768x1344",
+          "1280x832",
+          "832x1280"
+        ],
+        "default": "1024x1024"
+      }
+    },
+    "recraft/recraftv4_1_pro": {
+      "controls": {
+        "label": "Image controls",
+        "help": "Set colors, background color, artistic level or text layout in JSON.",
+        "advanced": true,
+        "control": "text-area"
+      },
+      "style": {
+        "label": "Style name",
+        "help": "Enter a supported style name, or use a Style ID.",
+        "defaultCandidates": []
+      },
+      "style_id": {
+        "label": "Style ID",
+        "help": "Use an existing Recraft style ID instead of Style name.",
+        "advanced": true,
+        "control": "text-box"
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": [
+          "2048x2048",
+          "2688x1536",
+          "1536x2688",
+          "2560x1664",
+          "1664x2560"
+        ],
+        "default": "2048x2048"
+      }
+    },
+    "recraft/recraftv4_1_pro_vector": {
+      "controls": {
+        "label": "Image controls",
+        "help": "Set colors, background color, artistic level or text layout in JSON.",
+        "advanced": true,
+        "control": "text-area"
+      },
+      "style": {
+        "label": "Style name",
+        "help": "Enter a supported style name, or use a Style ID.",
+        "defaultCandidates": []
+      },
+      "style_id": {
+        "label": "Style ID",
+        "help": "Use an existing Recraft style ID instead of Style name.",
+        "advanced": true,
+        "control": "text-box"
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": ["1:1", "16:9", "9:16", "3:2", "2:3", "4:3", "3:4"],
+        "default": "1:1"
+      }
+    },
+    "recraft/recraftv4_1_utility": {
+      "controls": {
+        "label": "Image controls",
+        "help": "Set colors, background color, artistic level or text layout in JSON.",
+        "advanced": true,
+        "control": "text-area"
+      },
+      "style": {
+        "label": "Style name",
+        "help": "Enter a supported style name, or use a Style ID.",
+        "defaultCandidates": []
+      },
+      "style_id": {
+        "label": "Style ID",
+        "help": "Use an existing Recraft style ID instead of Style name.",
+        "advanced": true,
+        "control": "text-box"
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": [
+          "1024x1024",
+          "1344x768",
+          "768x1344",
+          "1280x832",
+          "832x1280"
+        ],
+        "default": "1024x1024"
+      }
+    },
+    "recraft/recraftv4_1_utility_pro": {
+      "controls": {
+        "label": "Image controls",
+        "help": "Set colors, background color, artistic level or text layout in JSON.",
+        "advanced": true,
+        "control": "text-area"
+      },
+      "style": {
+        "label": "Style name",
+        "help": "Enter a supported style name, or use a Style ID.",
+        "defaultCandidates": []
+      },
+      "style_id": {
+        "label": "Style ID",
+        "help": "Use an existing Recraft style ID instead of Style name.",
+        "advanced": true,
+        "control": "text-box"
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": [
+          "2048x2048",
+          "2688x1536",
+          "1536x2688",
+          "2560x1664",
+          "1664x2560"
+        ],
+        "default": "2048x2048"
+      }
+    },
+    "recraft/recraftv4_1_utility_pro_vector": {
+      "controls": {
+        "label": "Image controls",
+        "help": "Set colors, background color, artistic level or text layout in JSON.",
+        "advanced": true,
+        "control": "text-area"
+      },
+      "style": {
+        "label": "Style name",
+        "help": "Enter a supported style name, or use a Style ID.",
+        "defaultCandidates": []
+      },
+      "style_id": {
+        "label": "Style ID",
+        "help": "Use an existing Recraft style ID instead of Style name.",
+        "advanced": true,
+        "control": "text-box"
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": ["1:1", "16:9", "9:16", "3:2", "2:3", "4:3", "3:4"],
+        "default": "1:1"
+      }
+    },
+    "recraft/recraftv4_1_utility_vector": {
+      "controls": {
+        "label": "Image controls",
+        "help": "Set colors, background color, artistic level or text layout in JSON.",
+        "advanced": true,
+        "control": "text-area"
+      },
+      "style": {
+        "label": "Style name",
+        "help": "Enter a supported style name, or use a Style ID.",
+        "defaultCandidates": []
+      },
+      "style_id": {
+        "label": "Style ID",
+        "help": "Use an existing Recraft style ID instead of Style name.",
+        "advanced": true,
+        "control": "text-box"
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": ["1:1", "16:9", "9:16", "3:2", "2:3", "4:3", "3:4"],
+        "default": "1:1"
+      }
+    },
+    "recraft/recraftv4_1_vector": {
+      "controls": {
+        "label": "Image controls",
+        "help": "Set colors, background color, artistic level or text layout in JSON.",
+        "advanced": true,
+        "control": "text-area"
+      },
+      "style": {
+        "label": "Style name",
+        "help": "Enter a supported style name, or use a Style ID.",
+        "defaultCandidates": []
+      },
+      "style_id": {
+        "label": "Style ID",
+        "help": "Use an existing Recraft style ID instead of Style name.",
+        "advanced": true,
+        "control": "text-box"
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": ["1:1", "16:9", "9:16", "3:2", "2:3", "4:3", "3:4"],
+        "default": "1:1"
+      }
+    },
+    "recraft/recraftv4_pro": {
+      "controls": {
+        "label": "Image controls",
+        "help": "Set colors, background color, artistic level or text layout in JSON.",
+        "advanced": true,
+        "control": "text-area"
+      },
+      "style": {
+        "label": "Style name",
+        "help": "Enter a supported style name, or use a Style ID.",
+        "defaultCandidates": []
+      },
+      "style_id": {
+        "label": "Style ID",
+        "help": "Use an existing Recraft style ID instead of Style name.",
+        "advanced": true,
+        "control": "text-box"
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": [
+          "2048x2048",
+          "2688x1536",
+          "1536x2688",
+          "2560x1664",
+          "1664x2560"
+        ],
+        "default": "2048x2048"
+      }
+    },
+    "recraft/recraftv4_styles": {
+      "controls": {
+        "label": "Image controls",
+        "help": "Set colors, background color, artistic level or text layout in JSON.",
+        "advanced": true,
+        "control": "text-area"
+      },
+      "style": {
+        "hidden": true
+      },
+      "style_id": {
+        "label": "Style ID",
+        "help": "Provide an existing Recraft style ID; this model requires one.",
+        "advanced": false,
+        "control": "text-box"
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": [
+          "1024x1024",
+          "1344x768",
+          "768x1344",
+          "1280x832",
+          "832x1280"
+        ],
+        "default": "1024x1024"
+      }
+    },
+    "recraft/recraftv4_styles_pro": {
+      "controls": {
+        "label": "Image controls",
+        "help": "Set colors, background color, artistic level or text layout in JSON.",
+        "advanced": true,
+        "control": "text-area"
+      },
+      "style": {
+        "hidden": true
+      },
+      "style_id": {
+        "label": "Style ID",
+        "help": "Provide an existing Recraft style ID; this model requires one.",
+        "advanced": false,
+        "control": "text-box"
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": [
+          "2048x2048",
+          "2688x1536",
+          "1536x2688",
+          "2560x1664",
+          "1664x2560"
+        ],
+        "default": "2048x2048"
+      }
+    },
+    "recraft/recraftv4_styles_pro_vector": {
+      "controls": {
+        "label": "Image controls",
+        "help": "Set colors, background color, artistic level or text layout in JSON.",
+        "advanced": true,
+        "control": "text-area"
+      },
+      "style": {
+        "hidden": true
+      },
+      "style_id": {
+        "label": "Style ID",
+        "help": "Provide an existing Recraft style ID; this model requires one.",
+        "advanced": false,
+        "control": "text-box"
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": ["1:1", "16:9", "9:16", "3:2", "2:3", "4:3", "3:4"],
+        "default": "1:1"
+      }
+    },
+    "recraft/recraftv4_styles_vector": {
+      "controls": {
+        "label": "Image controls",
+        "help": "Set colors, background color, artistic level or text layout in JSON.",
+        "advanced": true,
+        "control": "text-area"
+      },
+      "style": {
+        "hidden": true
+      },
+      "style_id": {
+        "label": "Style ID",
+        "help": "Provide an existing Recraft style ID; this model requires one.",
+        "advanced": false,
+        "control": "text-box"
+      },
+      "size": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": ["1:1", "16:9", "9:16", "3:2", "2:3", "4:3", "3:4"],
+        "default": "1:1"
+      }
+    },
+    "runway/aleph2": {
+      "contentModeration": {
+        "label": "Content checks",
+        "help": "Set how strictly recognizable public figures are filtered.",
+        "advanced": true,
+        "control": "text-area"
+      },
+      "keyframes": {
+        "label": "Timed guidance images",
+        "help": "Provide image URIs with seconds timestamps or relative positions from 0 to 1."
+      },
+      "promptImage": {
+        "label": "Positioned guidance images",
+        "help": "Provide each guidance image URI with its position in the video."
+      },
+      "videoUri": {
+        "help": "Provide the video to edit as an HTTPS, Runway upload, or data URI."
+      }
+    },
+    "runway/gen4_image": {
+      "ratio": {
+        "label": "Output dimensions",
+        "help": "Choose the image width and height in pixels."
+      }
+    },
+    "runway/gen4_turbo": {
+      "ratio": {
+        "label": "Output dimensions",
+        "help": "Choose the video width and height in pixels."
+      },
+      "promptImage": {
+        "label": "Starting image",
+        "help": "Provide a first-frame image URI, or image objects with position set to first."
+      }
+    },
+    "tencent/hunyuan-3d-part": {
+      "File": {
+        "label": "3D model file",
+        "help": "Provide JSON with Type set to FBX and Url set to the model URL."
+      }
+    },
+    "tencent/hunyuan-3d-smart-topology": {
+      "FaceLevel": {
+        "label": "Polygon reduction",
+        "help": "Choose the level of polygon reduction."
+      },
+      "File3D": {
+        "help": "Provide JSON with Type set to OBJ or GLB and Url set to the model URL."
+      }
+    },
+    "tencent/hunyuan-3d-texture-edit": {
+      "EnablePBR": {
+        "help": "Create PBR textures when using Texture prompt."
+      },
+      "File3D": {
+        "help": "Provide JSON with Type set to FBX and Url set to the model URL."
+      },
+      "Image": {
+        "label": "Texture reference",
+        "help": "Provide image JSON with Url or Base64 instead of Texture prompt."
+      },
+      "Prompt": {
+        "label": "Texture prompt",
+        "help": "Describe the texture to apply, or provide a Texture reference."
+      }
+    },
+    "tencent/hunyuan-3d-uv": {
+      "File": {
+        "label": "3D model file",
+        "help": "Provide JSON with Type set to FBX, OBJ or GLB and Url set to the model URL."
+      }
+    },
+    "veo/veo-2.0-generate-001": {
+      "instances": {
+        "label": "Video inputs",
+        "help": "Provide a prompt and optional starting image for a silent video."
+      },
+      "parameters": {
+        "label": "Video settings",
+        "help": "Set a duration of 5 to 8 seconds, aspect ratio, and output count.",
+        "advanced": false
+      }
+    },
+    "veo/veo-3.0-fast-generate-001": {
+      "instances": {
+        "label": "Video inputs",
+        "help": "Provide an input object containing the prompt and optional reference media."
+      },
+      "parameters": {
+        "label": "Video settings",
+        "help": "Set duration, aspect ratio, output count, and other video settings.",
+        "advanced": false
+      }
+    },
+    "veo/veo-3.0-generate-001": {
+      "instances": {
+        "label": "Video inputs",
+        "help": "Provide an input object containing the prompt and optional reference media."
+      },
+      "parameters": {
+        "label": "Video settings",
+        "help": "Set duration, aspect ratio, output count, and other video settings.",
+        "advanced": false
+      }
+    },
+    "veo/veo-3.1-fast-generate-001": {
+      "instances": {
+        "label": "Video inputs",
+        "help": "Provide an input object containing the prompt and optional reference media."
+      },
+      "parameters": {
+        "label": "Video settings",
+        "help": "Set duration, aspect ratio, output count, and other video settings.",
+        "advanced": false
+      }
+    },
+    "veo/veo-3.1-generate-001": {
+      "instances": {
+        "label": "Video inputs",
+        "help": "Provide an input object containing the prompt and optional reference media."
+      },
+      "parameters": {
+        "label": "Video settings",
+        "help": "Set duration, aspect ratio, output count, and other video settings.",
+        "advanced": false
+      }
+    },
+    "veo/veo-3.1-lite-generate-001": {
+      "instances": {
+        "label": "Video inputs",
+        "help": "Provide an input object containing the prompt and optional reference media."
+      },
+      "parameters": {
+        "label": "Video settings",
+        "help": "Set duration, aspect ratio, output count, and other video settings.",
+        "advanced": false
+      }
+    },
+    "vertexai/imagen-3.0-fast-generate-001": {
+      "instances": {
+        "label": "Image prompts",
+        "help": "Provide a list of image requests, each containing a prompt."
+      },
+      "parameters": {
+        "label": "Image settings",
+        "help": "Set image count, aspect ratio, prompt enhancement, or output format."
+      }
+    },
+    "vertexai/imagen-3.0-generate-001": {
+      "instances": {
+        "label": "Image prompts",
+        "help": "Provide a list of image requests, each containing a prompt."
+      },
+      "parameters": {
+        "label": "Image settings",
+        "help": "Set image count, aspect ratio, prompt enhancement, or output format."
+      }
+    },
+    "vertexai/imagen-3.0-generate-002": {
+      "instances": {
+        "label": "Image prompts",
+        "help": "Provide a list of image requests, each containing a prompt."
+      },
+      "parameters": {
+        "label": "Image settings",
+        "help": "Set image count, aspect ratio, prompt enhancement, or output format."
+      }
+    },
+    "wan/happyhorse-1.0-i2v": {
+      "parameters": {
+        "label": "Video settings",
+        "help": "Include size or resolution, then set duration and optional audio.",
+        "advanced": false
+      }
+    },
+    "wan/happyhorse-1.0-r2v": {
+      "parameters": {
+        "label": "Video settings",
+        "help": "Include size or resolution, then set duration and optional audio.",
+        "advanced": false
+      }
+    },
+    "wan/happyhorse-1.0-t2v": {
+      "parameters": {
+        "label": "Video settings",
+        "help": "Include size or resolution, then set duration and optional audio.",
+        "advanced": false
+      }
+    },
+    "wan/happyhorse-1.0-video-edit": {
+      "parameters": {
+        "label": "Video settings",
+        "help": "Include size or resolution, then set duration and optional audio.",
+        "advanced": false
+      }
+    },
+    "wan/happyhorse-1.1-i2v": {
+      "parameters": {
+        "label": "Video settings",
+        "help": "Include size or resolution, then set duration and optional audio.",
+        "advanced": false
+      }
+    },
+    "wan/happyhorse-1.1-r2v": {
+      "parameters": {
+        "label": "Video settings",
+        "help": "Include size or resolution, then set duration and optional audio.",
+        "advanced": false
+      }
+    },
+    "wan/happyhorse-1.1-t2v": {
+      "parameters": {
+        "label": "Video settings",
+        "help": "Include size or resolution, then set duration and optional audio.",
+        "advanced": false
+      }
+    },
+    "wan/wan2.5-i2i-preview": {
+      "parameters": {
+        "label": "Image settings",
+        "help": "Set output size, count, seed, and watermark options.",
+        "advanced": false
+      },
+      "input": {
+        "label": "Image inputs",
+        "help": "Provide a prompt and one or two source image URLs."
+      }
+    },
+    "wan/wan2.5-i2v-preview": {
+      "parameters": {
+        "label": "Video settings",
+        "help": "Include size or resolution, then set duration and optional audio.",
+        "advanced": false
+      },
+      "input": {
+        "label": "Image and video prompt",
+        "help": "Provide prompt and img_url for the starting image; add audio_url if needed."
+      }
+    },
+    "wan/wan2.5-t2i-preview": {
+      "parameters": {
+        "label": "Image settings",
+        "help": "Set output size, count, seed, and watermark options.",
+        "advanced": false
+      },
+      "input": {
+        "label": "Image prompt",
+        "help": "Provide prompt and an optional negative_prompt in the input object."
+      }
+    },
+    "wan/wan2.5-t2v-preview": {
+      "parameters": {
+        "label": "Video settings",
+        "help": "Set size as width*height, plus duration and optional audio.",
+        "advanced": false
+      }
+    },
+    "wan/wan2.6-i2v": {
+      "parameters": {
+        "label": "Video settings",
+        "help": "Include size or resolution, then set duration and optional audio.",
+        "advanced": false
+      },
+      "input": {
+        "label": "Image and video prompt",
+        "help": "Provide prompt and img_url for the starting image; add audio_url if needed."
+      }
+    },
+    "wan/wan2.6-r2v": {
+      "parameters": {
+        "label": "Video settings",
+        "help": "Include size or resolution, then set duration and optional audio.",
+        "advanced": false
+      },
+      "input": {
+        "label": "Video references and prompt",
+        "help": "Provide prompt and one to three reference_video_urls; omit audio_url."
+      }
+    },
+    "wan/wan2.6-t2v": {
+      "parameters": {
+        "label": "Video settings",
+        "help": "Set size as width*height, plus duration and optional audio.",
+        "advanced": false
+      }
+    },
+    "wan/wan2.7-i2v": {
+      "parameters": {
+        "label": "Video settings",
+        "help": "Include size or resolution, then set duration and optional audio.",
+        "advanced": false
+      },
+      "input": {
+        "label": "Image and video prompt",
+        "help": "Provide prompt and media entries for first_frame, last_frame, or driving_audio."
+      }
+    },
+    "wan/wan2.7-r2v": {
+      "parameters": {
+        "label": "Video settings",
+        "help": "Include size or resolution, then set duration and optional audio.",
+        "advanced": false
+      },
+      "input": {
+        "label": "Media references and prompt",
+        "help": "Provide prompt and media entries with reference_image or reference_video types."
+      }
+    },
+    "wan/wan2.7-t2v": {
+      "parameters": {
+        "label": "Video settings",
+        "help": "Include size or resolution, then set duration and optional audio.",
+        "advanced": false
+      }
+    },
+    "wan/wan2.7-videoedit": {
+      "parameters": {
+        "label": "Video settings",
+        "help": "Include size or resolution, then set duration and optional audio.",
+        "advanced": false
+      },
+      "input": {
+        "label": "Video editing inputs",
+        "help": "Provide prompt and media entries for the video and optional reference images."
+      }
+    },
+    "wan/wan3.0-video": {
+      "parameters": {
+        "label": "Video settings",
+        "help": "Include size or resolution, then set duration and optional audio.",
+        "advanced": false
+      },
+      "input": {
+        "label": "Video inputs",
+        "help": "Provide prompt and media entries; refer to assets as Image 1, Video 1, or Audio 1."
+      }
+    },
+    "wan/wan3.0-video-prime": {
+      "parameters": {
+        "label": "Video settings",
+        "help": "Include size or resolution, then set duration and optional audio.",
+        "advanced": false
+      }
+    },
+    "wavespeed/flashvsr": {
+      "duration": {
+        "help": "Set the duration to upscale, in seconds.",
+        "control": "number",
+        "defaultCandidates": []
+      },
+      "video": {
+        "label": "Video to upscale",
+        "help": "Provide the video as a URL or base64-encoded data."
+      }
+    },
+    "wavespeed/seedvr2": {
+      "image": {
+        "label": "Image to upscale",
+        "help": "",
+        "imageSource": "url",
+        "urlUpload": "image"
+      }
+    },
+    "wavespeed/ultimate-image-upscaler": {
+      "image": {
+        "label": "Image to upscale",
+        "help": "",
+        "imageSource": "url",
+        "urlUpload": "image"
+      }
+    },
+    "xai/grok-imagine-image": {
+      "size": {
+        "hidden": true
+      },
+      "style": {
+        "hidden": true
+      },
+      "quality": {
+        "hidden": true
+      }
+    },
+    "xai/grok-imagine-image-2.0": {
+      "size": {
+        "hidden": true
+      },
+      "style": {
+        "hidden": true
+      },
+      "quality": {
+        "help": "Choose the image quality and price tier.",
+        "options": ["low", "medium"],
+        "default": "medium"
+      }
+    },
+    "xai/grok-imagine-image-pro": {
+      "size": {
+        "hidden": true
+      },
+      "style": {
+        "hidden": true
+      },
+      "quality": {
+        "hidden": true
+      }
+    },
+    "xai/grok-imagine-image-quality": {
+      "size": {
+        "hidden": true
+      },
+      "style": {
+        "hidden": true
+      },
+      "quality": {
+        "hidden": true
+      }
+    },
+    "xai/grok-imagine-video": {
+      "output": {
+        "hidden": true
+      },
+      "image": {
+        "label": "Image input",
+        "help": "Provide an object with the source image URL; omit Reference images."
+      },
+      "reference_images": {
+        "label": "Reference images",
+        "help": "Provide image URL objects to guide the video; omit Image input."
+      },
+      "resolution": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": ["480p", "720p"],
+        "default": "720p"
+      },
+      "size": {
+        "hidden": true
+      }
+    },
+    "xai/grok-imagine-video-1.5": {
+      "output": {
+        "hidden": true
+      },
+      "image": {
+        "label": "Image input",
+        "help": "Provide an object with the source image URL; omit Reference images."
+      },
+      "reference_images": {
+        "label": "Reference images",
+        "help": "Provide image URL objects to guide the video; omit Image input."
+      },
+      "resolution": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": ["480p", "720p", "1080p"],
+        "default": "720p"
+      },
+      "size": {
+        "hidden": true
+      }
+    },
+    "xai/grok-imagine-video-1.5-preview": {
+      "output": {
+        "hidden": true
+      },
+      "image": {
+        "label": "Image input",
+        "help": "Provide an object with the source image URL; omit Reference images."
+      },
+      "reference_images": {
+        "label": "Reference images",
+        "help": "Provide image URL objects to guide the video; omit Image input."
+      },
+      "resolution": {
+        "label": "Resolution",
+        "help": "",
+        "advanced": false,
+        "options": ["480p", "720p"],
+        "default": "720p"
+      },
+      "size": {
+        "hidden": true
+      }
+    }
+  }
+}
