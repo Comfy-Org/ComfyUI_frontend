@@ -34,6 +34,11 @@ type CreateCustomerResponse =
 const test = comfyPageFixture.extend<{ cloudAuth: CloudAuthHelper }>({
   page: async ({ page }, use) => {
     await mockCloudBoot(page, { features: {} })
+    // Pre-select the server user, so the post-auth root guard lands on the app
+    // instead of redirecting to /user-select the way an unselected profile does.
+    await page.addInitScript(() =>
+      localStorage.setItem('Comfy.userId', 'test-user-e2e')
+    )
     await page.route('**/customers', (route) => {
       if (route.request().method() !== 'POST') return route.fallback()
       return route.fulfill({
