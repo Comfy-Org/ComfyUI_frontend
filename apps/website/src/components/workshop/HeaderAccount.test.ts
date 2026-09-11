@@ -199,6 +199,61 @@ describe('HeaderAccount', () => {
   })
 })
 
+describe('HeaderAccount menu', () => {
+  function signIn() {
+    h.user!.value = { email: 'a@b.co', displayName: 'Ada' }
+    h.session!.value = { token: 'jwt', uid: 'user-1', workspace, role: 'owner' }
+    h.balance!.value = { status: 'ok', credits: 42 }
+  }
+
+  it('links Add credits to platform for this workspace and settings to Cloud', async () => {
+    signIn()
+    render(HeaderAccount)
+
+    await userEvent.click(screen.getByRole('button', { name: /account/i }))
+
+    const topUp = screen.getByTestId('account-add-credits')
+    expect(topUp.getAttribute('href')).toBe(
+      'https://platform.comfy.org/billing?workspace=ws'
+    )
+    expect(topUp.getAttribute('target')).toBe('_blank')
+    expect(
+      screen.getByTestId('account-workspace-settings').getAttribute('href')
+    ).toBe('https://cloud.comfy.org')
+  })
+
+  it('opens with focus on the first item, roves with arrows, and Escape returns to the trigger', async () => {
+    const user = userEvent.setup()
+    signIn()
+    render(HeaderAccount)
+
+    const trigger = screen.getByRole('button', { name: /account/i })
+    await user.click(trigger)
+    await waitFor(() =>
+      // eslint-disable-next-line testing-library/no-node-access
+      expect(document.activeElement).toBe(
+        screen.getByTestId('account-add-credits')
+      )
+    )
+
+    await user.keyboard('{ArrowDown}')
+    // eslint-disable-next-line testing-library/no-node-access
+    expect(document.activeElement).toBe(
+      screen.getByTestId('account-workspace-settings')
+    )
+    await user.keyboard('{ArrowUp}')
+    // eslint-disable-next-line testing-library/no-node-access
+    expect(document.activeElement).toBe(
+      screen.getByTestId('account-add-credits')
+    )
+
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('menu')).toBeNull()
+    // eslint-disable-next-line testing-library/no-node-access
+    expect(document.activeElement).toBe(trigger)
+  })
+})
+
 describe('HeaderAccount sign-in link', () => {
   it('runs the registered stashes before leaving for sign-in', async () => {
     const assign = vi.fn()
