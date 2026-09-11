@@ -4,6 +4,8 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 
+type QueuedNode = { inputs: Record<string, unknown> }
+
 test.describe(
   'ECS migration: links, execution modes and regression sanity',
   { tag: ['@canvas', '@workflow'] },
@@ -29,11 +31,19 @@ test.describe(
       await comfyPage.keyboard.press('Control+KeyM')
 
       await expect.poll(() => node.getProperty<number>('mode')).toBe(2)
-      const prompt = await comfyPage.workflow.getExportedWorkflow({ api: true })
-      expect(prompt).not.toHaveProperty('3')
 
+      let queuedPrompt: Record<string, unknown> | undefined
       const execution = new ExecutionHelper(comfyPage)
-      await expect(execution.run()).resolves.toMatch(/^test-job-/)
+      await expect(
+        execution.run({
+          onPromptRequest: (body) => {
+            queuedPrompt = (body as { prompt: Record<string, unknown> }).prompt
+          }
+        })
+      ).resolves.toMatch(/^test-job-/)
+
+      expect(queuedPrompt).toBeDefined()
+      expect(queuedPrompt).not.toHaveProperty('3')
     })
 
     test('bypassing a middle node preserves downstream API links before queueing', async ({
@@ -45,12 +55,21 @@ test.describe(
       await comfyPage.keyboard.press('Control+KeyB')
 
       await expect.poll(() => node.getProperty<number>('mode')).toBe(4)
-      const prompt = await comfyPage.workflow.getExportedWorkflow({ api: true })
-      expect(prompt).not.toHaveProperty('3')
-      expect(prompt['8']?.inputs.samples).toEqual(['5', 0])
 
+      let queuedPrompt: Record<string, QueuedNode> | undefined
       const execution = new ExecutionHelper(comfyPage)
-      await expect(execution.run()).resolves.toMatch(/^test-job-/)
+      await expect(
+        execution.run({
+          onPromptRequest: (body) => {
+            queuedPrompt = (body as { prompt: Record<string, QueuedNode> })
+              .prompt
+          }
+        })
+      ).resolves.toMatch(/^test-job-/)
+
+      expect(queuedPrompt).toBeDefined()
+      expect(queuedPrompt).not.toHaveProperty('3')
+      expect(queuedPrompt?.['8']?.inputs.samples).toEqual(['5', 0])
     })
 
     test('loads the default template with its expected node types', async ({
@@ -81,17 +100,21 @@ test.describe(
     }) => {
       await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
       await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
-      await comfyPage.canvasOps.doubleClick()
-      await expect(comfyPage.searchBox.input).toBeVisible()
-      await comfyPage.searchBox.fillAndSelectFirstNode('KSampler', {
-        exact: true
+      await comfyPage.searchBoxV2.ensureV2Search()
+      const clickPosition = { x: 200, y: 200 }
+      await comfyPage.searchBoxV2.addNode('KSampler', {
+        position: clickPosition
       })
 
       await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
       const node = await comfyPage.nodeOps.getNodeRefByType('KSampler')
+      // getPosition() already returns client-space coordinates, so compare
+      // directly against the client-space double-click position. The node
+      // anchor is offset from the click point (title bar + node centering),
+      // so allow a generous but bounded tolerance.
       const position = await node.getPosition()
-      expect(position.x).toBeGreaterThan(0)
-      expect(position.y).toBeGreaterThan(0)
+      expect(Math.abs(position.x - clickPosition.x)).toBeLessThan(200)
+      expect(Math.abs(position.y - clickPosition.y)).toBeLessThan(200)
     })
 
     test('pans, zooms and box-selects the expected nodes', async ({
