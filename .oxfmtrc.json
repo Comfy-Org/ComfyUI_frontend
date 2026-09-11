@@ -15,6 +15,13 @@
     "src/locales/**/*.json",
     "**/__fixtures__/**/*.json",
     "apps/website/src/content/**/*.mdx",
-    "apps/website/src/content/workshop-models.json"
+    "apps/website/src/content/workshop-display.json",
+    "apps/website/src/content/workshop-models.json",
+    "apps/website/src/content/workshop-router-contracts.json",
+    "apps/website/src/content/workshop-router-index.json",
+    "apps/website/src/content/workshop-router-aliases.json",
+    "apps/website/src/data/workshop-router-identity-audit.json",
+    "apps/website/src/data/workshop-router-openapi.snapshot.json",
+    "apps/website/src/data/workshop-node-pricing.json"
   ]
 }

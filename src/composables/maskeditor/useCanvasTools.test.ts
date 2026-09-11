@@ -1,61 +1,25 @@
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { ColorComparisonMethod } from '@/extensions/core/maskeditor/types'
+import {
+  ColorComparisonMethod,
+  MaskBlendMode
+} from '@/extensions/core/maskeditor/types'
 
 import { useCanvasTools } from '@/composables/maskeditor/useCanvasTools'
 
-// Mock store interface matching the real store's nullable fields
-interface MockMaskEditorStore {
-  maskCtx: CanvasRenderingContext2D | null
-  imgCtx: CanvasRenderingContext2D | null
-  maskCanvas: HTMLCanvasElement | null
-  imgCanvas: HTMLCanvasElement | null
-  rgbCtx: CanvasRenderingContext2D | null
-  rgbCanvas: HTMLCanvasElement | null
-  maskColor: { r: number; g: number; b: number }
-  paintBucketTolerance: number
-  fillOpacity: number
-  colorSelectTolerance: number
-  colorComparisonMethod: ColorComparisonMethod
-  selectionOpacity: number
-  applyWholeImage: boolean
-  maskBoundary: boolean
-  maskTolerance: number
-  canvasHistory: { saveState: ReturnType<typeof vi.fn> }
-}
+let mockCanvasHistory: ReturnType<typeof useMaskEditorStore>['canvasHistory']
 
-const mockCanvasHistory = {
-  saveState: vi.fn()
-}
-
-const mockStore: MockMaskEditorStore = {
-  maskCtx: null,
-  imgCtx: null,
-  maskCanvas: null,
-  imgCanvas: null,
-  rgbCtx: null,
-  rgbCanvas: null,
-  maskColor: { r: 255, g: 255, b: 255 },
-  paintBucketTolerance: 10,
-  fillOpacity: 100,
-  colorSelectTolerance: 30,
-  colorComparisonMethod: ColorComparisonMethod.Simple,
-  selectionOpacity: 100,
-  applyWholeImage: false,
-  maskBoundary: false,
-  maskTolerance: 10,
-  canvasHistory: mockCanvasHistory
-}
-
-vi.mock<unknown>(import('@/stores/maskEditorStore'), () => ({
-  useMaskEditorStore: vi.fn(() => mockStore)
-}))
+let mockStore: ReturnType<typeof useMaskEditorStore>
 
 describe('useCanvasTools', () => {
   let mockMaskImageData: ImageData
   let mockImgImageData: ImageData
 
   beforeEach(() => {
+    mockStore = useMaskEditorStore()
+    mockCanvasHistory = mockStore.canvasHistory
+    vi.spyOn(mockCanvasHistory, 'saveState').mockImplementation(() => {})
     mockMaskImageData = {
       data: new Uint8ClampedArray(100 * 100 * 4),
       width: 100,
@@ -93,24 +57,27 @@ describe('useCanvasTools', () => {
     mockStore.rgbCtx = partialRgbCtx as CanvasRenderingContext2D
 
     const partialMaskCanvas: Partial<HTMLCanvasElement> = {
+      getContext: vi.fn().mockImplementation(() => mockStore.maskCtx),
       width: 100,
       height: 100
     }
     mockStore.maskCanvas = partialMaskCanvas as HTMLCanvasElement
 
     const partialImgCanvas: Partial<HTMLCanvasElement> = {
+      getContext: vi.fn().mockImplementation(() => mockStore.imgCtx),
       width: 100,
       height: 100
     }
     mockStore.imgCanvas = partialImgCanvas as HTMLCanvasElement
 
     const partialRgbCanvas: Partial<HTMLCanvasElement> = {
+      getContext: vi.fn().mockImplementation(() => mockStore.rgbCtx),
       width: 100,
       height: 100
     }
     mockStore.rgbCanvas = partialRgbCanvas as HTMLCanvasElement
 
-    mockStore.maskColor = { r: 255, g: 255, b: 255 }
+    mockStore.maskBlendMode = MaskBlendMode.White
     mockStore.paintBucketTolerance = 10
     mockStore.fillOpacity = 100
     mockStore.colorSelectTolerance = 30
@@ -203,7 +170,7 @@ describe('useCanvasTools', () => {
     })
 
     it('should apply mask color', () => {
-      mockStore.maskColor = { r: 128, g: 64, b: 32 }
+      Object.assign(mockStore, { maskColor: { r: 128, g: 64, b: 32 } })
 
       const tools = useCanvasTools()
 

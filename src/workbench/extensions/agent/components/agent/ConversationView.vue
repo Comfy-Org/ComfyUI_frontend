@@ -14,6 +14,7 @@ import type {
 } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
 import type { TurnId } from '../../schemas/agentApiSchema'
+import type { PromptSnapshot } from '../../types/workflowReference'
 
 import AgentMessage from './message/AgentMessage.vue'
 import UserMessage from './message/UserMessage.vue'
@@ -31,9 +32,10 @@ const {
 }>()
 const emit = defineEmits<{
   feedback: [turnId: string, vote: 'up' | 'down' | null]
-  editPrompt: [text: string]
+  editPrompt: [prompt: PromptSnapshot]
   answerAsk: [askId: string, selection: 'run' | 'cancel']
   openWorkflow: [workflowId: string, workflowName?: string]
+  openReferenceWorkflow: [workflowId: string, workflowName: string]
   paywallAction: [action: AgentPaywallAction]
 }>()
 
@@ -95,8 +97,13 @@ watch(
               :text="entry.text"
               :attachments="entry.attachments"
               :tags="entry.tags"
+              :workflow-references="entry.workflowReferences"
               :editable="entry.id === editableTurnId"
               @edit="emit('editPrompt', $event)"
+              @open-reference-workflow="
+                (workflowId: string, workflowName: string) =>
+                  emit('openReferenceWorkflow', workflowId, workflowName)
+              "
             />
             <AgentMessage
               v-else

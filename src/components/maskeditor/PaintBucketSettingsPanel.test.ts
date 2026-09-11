@@ -1,20 +1,12 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import PaintBucketSettingsPanel from '@/components/maskeditor/PaintBucketSettingsPanel.vue'
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
-const mockStore = vi.hoisted(() => ({
-  paintBucketTolerance: 5,
-  fillOpacity: 100,
-  setPaintBucketTolerance: vi.fn(),
-  setFillOpacity: vi.fn()
-}))
-
-vi.mock<unknown>(import('@/stores/maskEditorStore'), () => ({
-  useMaskEditorStore: () => mockStore
-}))
+let mockStore: ReturnType<typeof useMaskEditorStore>
 
 vi.mock<unknown>(
   import('@/components/maskeditor/controls/SliderControl.vue'),
@@ -47,8 +39,8 @@ const renderPanel = () =>
 
 describe('PaintBucketSettingsPanel', () => {
   beforeEach(() => {
-    mockStore.paintBucketTolerance = 5
-    mockStore.fillOpacity = 100
+    mockStore = useMaskEditorStore()
+    mockStore.$patch({ paintBucketTolerance: 5, fillOpacity: 100 })
   })
 
   it('should bind tolerance slider to store value', () => {

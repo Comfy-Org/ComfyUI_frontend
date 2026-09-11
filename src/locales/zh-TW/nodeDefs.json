@@ -6451,14 +6451,8 @@
       "model_max_output_tokens": {
         "name": "max_output_tokens"
       },
-      "model_temperature": {
-        "name": "temperature"
-      },
       "model_thinking_level": {
         "name": "thinking_level"
-      },
-      "model_top_p": {
-        "name": "top_p"
       },
       "prompt": {
         "name": "prompt",
@@ -11011,7 +11005,8 @@
     "display_name": "載入 3D（進階）",
     "inputs": {
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "視窗的渲染高度（像素）。"
       },
       "model_file": {
         "name": "model_file"
@@ -11020,29 +11015,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "視窗的渲染寬度（像素）。"
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "已載入的 3D 模型檔案（glb/obj/stl 等）。"
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "場景中各模型的擺放資訊：位置、旋轉與縮放（Y 軸朝上的世界空間）。"
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "視窗攝影機資訊：位置、注視目標、縮放及類型。"
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "視窗的渲染寬度（像素）。"
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "視窗的渲染高度（像素）。"
       }
     }
   },
@@ -16384,7 +16380,7 @@
   },
   "OpenAIGPTImageNodeV2": {
     "description": "透過 OpenAI 的 GPT Image 端點生成圖像。",
-    "display_name": "OpenAI GPT 圖像 2",
+    "display_name": "OpenAI GPT Image 2.5",
     "inputs": {
       "control_after_generate": {
         "name": "生成後控制"
@@ -16471,6 +16467,36 @@
       },
       "size": {
         "name": "size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenRouterImageNode": {
+    "description": "透過 OpenRouter 使用 Microsoft 的 MAI-Image-2.6 模型生成或編輯圖像：文字轉圖像，或使用最多五張參考圖像進行圖像引導編輯，支援七種長寬比與 1K 或 1.5K 解析度。",
+    "display_name": "OpenRouter 圖像",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於生成圖像的 OpenRouter 圖像模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "長寬比"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_seed": {
+        "name": "種子"
       }
     },
     "outputs": {
@@ -17388,10 +17414,12 @@
     "display_name": "3D 預覽（進階）",
     "inputs": {
       "camera_info": {
-        "name": "camera_info"
+        "name": "camera_info",
+        "tooltip": "視窗攝影機資訊：位置、注視目標、縮放及類型。"
       },
       "height": {
-        "name": "高度"
+        "name": "高度",
+        "tooltip": "視窗的渲染高度（像素）。"
       },
       "model_3d": {
         "name": "model_3d",
@@ -17404,29 +17432,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "寬度"
+        "name": "寬度",
+        "tooltip": "視窗的渲染寬度（像素）。"
       }
     },
     "outputs": {
       "0": {
         "name": "model_file",
-        "tooltip": null
+        "tooltip": "來自上游 3D 節點的 3D 模型檔案（glb/obj/stl 等）。"
       },
       "1": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "場景中各模型的擺放資訊：位置、旋轉與縮放（Y 軸朝上的世界空間）。"
       },
       "2": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "視窗攝影機資訊：位置、注視目標、縮放及類型。"
       },
       "3": {
         "name": "寬度",
-        "tooltip": null
+        "tooltip": "視窗的渲染寬度（像素）。"
       },
       "4": {
         "name": "高度",
-        "tooltip": null
+        "tooltip": "視窗的渲染高度（像素）。"
       }
     }
   },
@@ -20765,48 +20794,52 @@
     "display_name": "儲存 3D（進階）",
     "inputs": {
       "camera_info": {
-        "name": "camera_info"
+        "name": "camera_info",
+        "tooltip": "視窗攝影機資訊：位置、注視目標、縮放及類型。"
       },
       "filename_prefix": {
         "name": "filename_prefix"
       },
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "視窗的渲染高度（像素）。"
       },
       "model_3d": {
         "name": "model_3d",
         "tooltip": "來自上游 3D 節點的 3D 模型檔案。"
       },
       "model_3d_info": {
-        "name": "model_3d_info"
+        "name": "model_3d_info",
+        "tooltip": "場景中各模型的擺放資訊：位置、旋轉與縮放（Y 軸朝上的世界空間）。"
       },
       "viewport_state": {
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "視窗的渲染寬度（像素）。"
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "來自上游 3D 節點的 3D 模型檔案（glb/obj/stl 等）。"
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "場景中各模型的擺放資訊：位置、旋轉與縮放（Y 軸朝上的世界空間）。"
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "視窗攝影機資訊：位置、注視目標、縮放及類型。"
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "視窗的渲染寬度（像素）。"
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "視窗的渲染高度（像素）。"
       }
     }
   },
@@ -23990,7 +24023,7 @@
     }
   },
   "TripoImageToModelNode": {
-    "display_name": "Tripo：圖像轉模型",
+    "display_name": "Tripo：影像轉模型（舊版）",
     "inputs": {
       "auto_size": {
         "name": "auto_size",
@@ -24063,6 +24096,75 @@
       "3": {
         "name": "FBX",
         "tooltip": "僅在啟用 quad 時才會填入。"
+      }
+    }
+  },
+  "TripoImageToModelNodeV2": {
+    "display_name": "Tripo：影像轉模型",
+    "inputs": {
+      "auto_size": {
+        "name": "自動尺寸",
+        "tooltip": "將有紋理的模型按其以公尺為單位的真實尺寸縮放。Tripo 將尺寸儲存為模型的場景變換，並在模型轉換、綁定骨架或重定向時套用；未啟用紋理時會忽略。"
+      },
+      "face_limit": {
+        "name": "面數上限",
+        "tooltip": "最大面數。-1 讓 Tripo 自動選擇（v3.x standard 約 140 萬面，detailed 為 200 萬面）。Tripo 會自動限制：v2.5 為 500,000，四邊形網格為 150,000。"
+      },
+      "geometry_quality": {
+        "name": "幾何品質"
+      },
+      "image": {
+        "name": "影像"
+      },
+      "model_seed": {
+        "name": "模型種子"
+      },
+      "model_version": {
+        "name": "模型版本",
+        "tooltip": "用於生成的模型版本"
+      },
+      "orientation": {
+        "name": "方向"
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "PBR 材質貼圖（基礎色、金屬度、粗糙度、法線）。需要啟用紋理。"
+      },
+      "quad": {
+        "name": "四邊形網格",
+        "tooltip": "四邊形網格輸出。Tripo 會以 FBX 提供四邊形網格，因此結果會出現在 FBX 輸出，GLB 輸出會保持空白。"
+      },
+      "smart_low_poly": {
+        "name": "智慧低多邊形",
+        "tooltip": "具有乾淨、手工製作風格拓撲的低多邊形網格（500-20,000 面，四邊形網格 500-10,000 面）。最適合簡單主體；複雜主體可能會失敗。"
+      },
+      "texture": {
+        "name": "紋理",
+        "tooltip": "生成紋理貼圖。關閉時會傳回純幾何模型並忽略 pbr。"
+      },
+      "texture_alignment": {
+        "name": "紋理對齊"
+      },
+      "texture_quality": {
+        "name": "紋理品質",
+        "tooltip": "detailed = HD 紋理，extreme = 8K Ultra 紋理。"
+      },
+      "texture_seed": {
+        "name": "紋理種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型 task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "啟用四邊形網格時為空白。"
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "僅在啟用四邊形網格時填入。"
       }
     }
   },
@@ -24394,7 +24496,7 @@
       },
       "animation": {
         "name": "animation",
-        "tooltip": "preset:* 動畫可搭配兩種骨架模型使用；preset:biped:* 動畫需要使用 model v1.0-20240301 建立的骨架。"
+        "tooltip": "preset:* 動畫可搭配兩種骨架模型使用。preset:biped:* 動畫專為模型 v1.0-20240301 的骨架製作；v2.5 骨架僅接受 chop、climb、dive、fall、hurt、idle、jump、run、shoot、slash、turn 和 walk。"
       },
       "export_with_geometry": {
         "name": "export_with_geometry",
@@ -24558,6 +24660,48 @@
       }
     }
   },
+  "TripoSmartSegmentNode": {
+    "description": "將模型分割為具語意意義的部件並為其命名。若輸入影像，Tripo 會先生成模型。分割 task_id 可傳入 Tripo：完成網格部件、Tripo：重新拓撲、Tripo：紋理模型和 Tripo：轉換模型，其效果如同 Tripo：分割模型的結果。",
+    "display_name": "Tripo：智慧分割",
+    "inputs": {
+      "source": {
+        "name": "來源",
+        "tooltip": "分割現有模型，或從影像生成模型後再分割。"
+      },
+      "source_granularity": {
+        "name": "粒度"
+      },
+      "source_hint": {
+        "name": "提示"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "分割 task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "模型 task_id",
+        "tooltip": "已分割的模型（從影像生成或匯入）。"
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "part_names",
+        "tooltip": "以逗號分隔的零件名稱。"
+      },
+      "4": {
+        "name": "零件",
+        "tooltip": "Tripo 對其找到的零件所提供的描述。"
+      },
+      "5": {
+        "name": "遮罩",
+        "tooltip": null
+      }
+    }
+  },
   "TripoSplatConditioning": {
     "description": "使用 DINOv3 與 Flux2 VAE 將圖像編碼為 TripoSplat 正/負條件，並為 KSampler 建立固定大小的噪聲目標（latent + 相機）。",
     "display_name": "TripoSplat 條件編碼",
@@ -24654,7 +24798,7 @@
     }
   },
   "TripoTextToModelNode": {
-    "display_name": "Tripo：文字轉模型",
+    "display_name": "Tripo：文字轉模型（舊版）",
     "inputs": {
       "auto_size": {
         "name": "auto_size",
@@ -24730,8 +24874,77 @@
       }
     }
   },
+  "TripoTextToModelNodeV2": {
+    "display_name": "Tripo：文字轉模型",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "將有紋理的模型依其真實世界尺寸（公尺）進行縮放。Tripo 會將尺寸儲存為模型的場景轉換，並在模型轉換、綁定骨架或重定向時將其烘焙；未啟用 texture 時會忽略。"
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "最大面數。-1 讓 Tripo 自動選擇（v3.x standard 約 140 萬面，detailed 為 200 萬面）。Tripo 會無提示地限制：v2.5 為 500,000，四邊形網格為 150,000。"
+      },
+      "geometry_quality": {
+        "name": "geometry_quality"
+      },
+      "image_seed": {
+        "name": "image_seed"
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "model_version": {
+        "name": "model_version"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "最多 255 個字元。"
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "PBR 材質貼圖（基礎色、金屬度、粗糙度、法線）。需要啟用 texture。"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "四邊形網格輸出。Tripo 會以 FBX 格式提供四邊形網格，因此結果會出現在 FBX 輸出，而 GLB 輸出會維持空白。"
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "具備乾淨手工風格拓撲的低多邊形網格（500 至 20,000 面，quad 為 500 至 10,000 面）。最適合簡單主體；複雜主體可能會失敗。"
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "產生紋理貼圖。關閉時會傳回純幾何體並忽略 pbr。"
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = HD 紋理，extreme = 8K Ultra 紋理。"
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型 task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "啟用 quad 時為空白。"
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "僅在啟用 quad 時填入。"
+      }
+    }
+  },
   "TripoTextureNode": {
-    "display_name": "Tripo：紋理模型",
+    "display_name": "Tripo：模型貼圖（舊版）",
     "inputs": {
       "model_task_id": {
         "name": "模型任務ID"
@@ -24791,6 +25004,62 @@
       "3": {
         "name": "FBX",
         "tooltip": "Tripo 會為四邊形網格與 FBX 匯入回傳 FBX；否則為空。"
+      }
+    }
+  },
+  "TripoTextureNodeV2": {
+    "display_name": "Tripo：模型貼圖",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      },
+      "model_version": {
+        "name": "模型版本",
+        "tooltip": "紋理模型：v3.0 適用於以 v3.x 產生的網格，v2.5 適用於以 v2.5 產生的網格。"
+      },
+      "part_names": {
+        "name": "零件名稱",
+        "tooltip": "要貼圖的 Tripo: Segment Model 零件名稱，以逗號分隔。留空則為所有零件貼圖。"
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "PBR 材質貼圖（基礎色、金屬度、粗糙度、法線）；關閉時會產生純色紋理。"
+      },
+      "reference": {
+        "name": "參考影像",
+        "tooltip": "用於引導紋理的參考影像。無法與 texture_prompt 或 style_image 搭配使用。"
+      },
+      "style_image": {
+        "name": "風格影像",
+        "tooltip": "用於紋理藝術風格的參考影像。僅與 texture_prompt 一起使用。"
+      },
+      "texture_alignment": {
+        "name": "紋理對齊"
+      },
+      "texture_prompt": {
+        "name": "紋理提示詞",
+        "tooltip": "用於貼圖的可選文字引導。對於匯入的模型（Tripo: Import Model），實務上必須提供，因為其沒有可用來推斷顏色的來源影像。無法與參考影像搭配使用。"
+      },
+      "texture_quality": {
+        "name": "紋理品質",
+        "tooltip": "detailed = HD 紋理，extreme = 8K Ultra 紋理。"
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型 task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "當來源為四邊形網格或 FBX 匯入時為空白。"
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Tripo 會為四邊形網格和 FBX 匯入傳回 FBX；否則為空白。"
       }
     }
   },

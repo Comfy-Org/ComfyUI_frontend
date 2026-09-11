@@ -1,29 +1,14 @@
-import { describe, expect, it, vi } from 'vitest'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import * as utils from '@/scripts/utils'
 import { useWorkflowActionsService } from './workflowActionsService'
 
 const mockPrompt = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({ prompt: mockPrompt })
 }))
-
-const mockGetSetting = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: () => ({ get: mockGetSetting })
-}))
-
-const mockDownloadBlob = vi.hoisted(() => vi.fn())
-vi.mock(import('@/scripts/utils'), () => ({
-  downloadBlob: mockDownloadBlob
-}))
-
-vi.mock<unknown>(
-  import('@/platform/workflow/management/stores/workflowStore'),
-  () => ({
-    useWorkflowStore: () => ({ createTemporary: vi.fn() })
-  })
-)
 
 vi.mock<unknown>(
   import('@/platform/workflow/core/services/workflowService'),
@@ -40,41 +25,45 @@ const minimalWorkflow: ComfyWorkflowJSON = {
   links: []
 }
 
+beforeEach(() => {
+  vi.spyOn(utils, 'downloadBlob').mockImplementation(() => {})
+})
+
 describe('workflowActionsService.exportWorkflowAction', () => {
   it('returns { cancelled: true } when the user dismisses the filename prompt', async () => {
-    mockGetSetting.mockReturnValue(true)
+    useSettingStore().settingValues['Comfy.PromptFilename'] = true
     mockPrompt.mockResolvedValue(null)
     const { exportWorkflowAction } = useWorkflowActionsService()
 
     const result = await exportWorkflowAction(minimalWorkflow, 'wf.json')
 
     expect(result).toEqual({ success: false, cancelled: true })
-    expect(mockDownloadBlob).not.toHaveBeenCalled()
+    expect(utils.downloadBlob).not.toHaveBeenCalled()
   })
 
   it('downloads with the prompted filename and returns success', async () => {
-    mockGetSetting.mockReturnValue(true)
+    useSettingStore().settingValues['Comfy.PromptFilename'] = true
     mockPrompt.mockResolvedValue('custom')
     const { exportWorkflowAction } = useWorkflowActionsService()
 
     const result = await exportWorkflowAction(minimalWorkflow, 'wf.json')
 
     expect(result).toEqual({ success: true })
-    expect(mockDownloadBlob).toHaveBeenCalledWith(
+    expect(utils.downloadBlob).toHaveBeenCalledWith(
       'custom.json',
       expect.any(Blob)
     )
   })
 
   it('skips the prompt and uses the default filename when the setting is off', async () => {
-    mockGetSetting.mockReturnValue(false)
+    useSettingStore().settingValues['Comfy.PromptFilename'] = false
     const { exportWorkflowAction } = useWorkflowActionsService()
 
     const result = await exportWorkflowAction(minimalWorkflow, 'default.json')
 
     expect(result).toEqual({ success: true })
     expect(mockPrompt).not.toHaveBeenCalled()
-    expect(mockDownloadBlob).toHaveBeenCalledWith(
+    expect(utils.downloadBlob).toHaveBeenCalledWith(
       'default.json',
       expect.any(Blob)
     )
@@ -89,6 +78,6 @@ describe('workflowActionsService.exportWorkflowAction', () => {
       success: false,
       error: 'No workflow data available'
     })
-    expect(mockDownloadBlob).not.toHaveBeenCalled()
+    expect(utils.downloadBlob).not.toHaveBeenCalled()
   })
 })

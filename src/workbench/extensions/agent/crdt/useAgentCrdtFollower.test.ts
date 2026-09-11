@@ -6,7 +6,6 @@
  * the FE-1901 bounded subscribe retry, the FE-1902 sessionStorage rebind,
  * the frame-handler status surface, and total teardown.
  */
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref, shallowRef } from 'vue'
 import type { Ref } from 'vue'
@@ -132,9 +131,6 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({ api: apiState.api }))
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { graph: null, canvas: null }
 }))
-vi.mock<unknown>(import('@/stores/authStore'), () => ({
-  useAuthStore: () => ({ userId: 'user-1' })
-}))
 
 import { STALE_AFTER_MS, useAgentCrdtFollower } from './useAgentCrdtFollower'
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
@@ -209,7 +205,6 @@ function dispatchFrame(type: string, detail: unknown): void {
 
 describe('useAgentCrdtFollower', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     sessionStorage.clear()
     bridgeState.current = null
     materializerState.reconcileAgentAdapters.mockReset().mockReturnValue([])
@@ -691,7 +686,8 @@ describe('useAgentCrdtFollower', () => {
     // distinct reference the composable hands through.
     const { fakeDefinitions } = definitionsState
     const fakeGraph = {
-      rootGraph: { subgraphs: new Map() }
+      rootGraph: { subgraphs: new Map() },
+      setDirtyCanvas: vi.fn()
     } as unknown as MaterializableGraph
 
     it('reconciles the live graph after every applied frame', () => {
@@ -704,6 +700,9 @@ describe('useAgentCrdtFollower', () => {
         fakeGraph,
         fakeDefinitions
       )
+      // A frame that only connects nodes changes no layout, so the repaint
+      // has to come from here or the new wire stays invisible until a pan.
+      expect(fakeGraph.setDirtyCanvas).toHaveBeenCalledWith(true, true)
       // Definitions come from the doc the bridge currently follows, so a
       // doc_reset remint (which swaps the FollowerDoc) is read fresh.
       expect(definitionsState.readSubgraphDefinitions).toHaveBeenCalledWith(
@@ -716,7 +715,8 @@ describe('useAgentCrdtFollower', () => {
       const registeredGraph = {
         rootGraph: {
           subgraphs: new Map([[fakeDefinitions[0].id, {}]])
-        }
+        },
+        setDirtyCanvas: vi.fn()
       } as unknown as MaterializableGraph
       const { unmount } = mountFollower('wf-1', true, () => registeredGraph)
 

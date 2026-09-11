@@ -6451,14 +6451,8 @@
       "model_max_output_tokens": {
         "name": "max_output_tokens"
       },
-      "model_temperature": {
-        "name": "temperatura"
-      },
       "model_thinking_level": {
         "name": "nível_de_raciocínio"
-      },
-      "model_top_p": {
-        "name": "top_p"
       },
       "prompt": {
         "name": "prompt",
@@ -11011,7 +11005,8 @@
     "display_name": "Carregar 3D (Avançado)",
     "inputs": {
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "Altura de renderização da viewport em pixels."
       },
       "model_file": {
         "name": "model_file"
@@ -11020,29 +11015,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "Largura de renderização da viewport em pixels."
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "Arquivo de modelo 3D carregado (glb/obj/stl/etc.)."
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "Posicionamento de cada modelo na cena: posição, rotação e escala (espaço mundial com Y para cima)."
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "Informações da câmera da viewport: posição, alvo de visualização, zoom e tipo."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "Largura de renderização da viewport em pixels."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "Altura de renderização da viewport em pixels."
       }
     }
   },
@@ -16384,7 +16380,7 @@
   },
   "OpenAIGPTImageNodeV2": {
     "description": "Gera imagens via endpoint GPT Image da OpenAI.",
-    "display_name": "OpenAI GPT Image 2",
+    "display_name": "OpenAI GPT Image 2.5",
     "inputs": {
       "control_after_generate": {
         "name": "controle após gerar"
@@ -16471,6 +16467,36 @@
       },
       "size": {
         "name": "tamanho"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenRouterImageNode": {
+    "description": "Gere ou edite imagens pelo OpenRouter com os modelos MAI-Image-2.6 da Microsoft: texto para imagem ou edição guiada por imagem com até cinco imagens de referência, em sete proporções de aspecto em 1K ou 1.5K.",
+    "display_name": "Imagem OpenRouter",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "O modelo de imagem OpenRouter usado para gerar a imagem."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "model_seed": {
+        "name": "seed"
       }
     },
     "outputs": {
@@ -17388,10 +17414,12 @@
     "display_name": "Visualizar 3D (Avançado)",
     "inputs": {
       "camera_info": {
-        "name": "info_câmera"
+        "name": "info_câmera",
+        "tooltip": "Informações da câmera da viewport: posição, alvo de visualização, zoom e tipo."
       },
       "height": {
-        "name": "altura"
+        "name": "altura",
+        "tooltip": "Altura de renderização da viewport em pixels."
       },
       "model_3d": {
         "name": "modelo_3d",
@@ -17404,29 +17432,30 @@
         "name": "estado_da_janela_de_visualização"
       },
       "width": {
-        "name": "largura"
+        "name": "largura",
+        "tooltip": "Largura de renderização da viewport em pixels."
       }
     },
     "outputs": {
       "0": {
         "name": "arquivo_modelo",
-        "tooltip": null
+        "tooltip": "Arquivo de modelo 3D (glb/obj/stl/etc.) de um nó 3D anterior."
       },
       "1": {
         "name": "info_câmera",
-        "tooltip": null
+        "tooltip": "Posicionamento de cada modelo na cena: posição, rotação e escala (espaço mundial com Y para cima)."
       },
       "2": {
         "name": "info_modelo_3d",
-        "tooltip": null
+        "tooltip": "Informações da câmera da viewport: posição, alvo de visualização, zoom e tipo."
       },
       "3": {
         "name": "largura",
-        "tooltip": null
+        "tooltip": "Largura de renderização da viewport em pixels."
       },
       "4": {
         "name": "altura",
-        "tooltip": null
+        "tooltip": "Altura de renderização da viewport em pixels."
       }
     }
   },
@@ -20765,48 +20794,52 @@
     "display_name": "Salvar 3D (Avançado)",
     "inputs": {
       "camera_info": {
-        "name": "camera_info"
+        "name": "camera_info",
+        "tooltip": "Informações da câmera da viewport: posição, alvo de visualização, zoom e tipo."
       },
       "filename_prefix": {
         "name": "filename_prefix"
       },
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "Altura de renderização da viewport em pixels."
       },
       "model_3d": {
         "name": "model_3d",
         "tooltip": "Arquivo de modelo 3D de um nó 3D upstream."
       },
       "model_3d_info": {
-        "name": "model_3d_info"
+        "name": "model_3d_info",
+        "tooltip": "Posicionamento de cada modelo na cena: posição, rotação e escala (espaço mundial com Y para cima)."
       },
       "viewport_state": {
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "Largura de renderização da viewport em pixels."
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "Arquivo de modelo 3D (glb/obj/stl/etc.) de um nó 3D anterior."
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "Posicionamento de cada modelo na cena: posição, rotação e escala (espaço mundial com Y para cima)."
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "Informações da câmera da viewport: posição, alvo de visualização, zoom e tipo."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "Largura de renderização da viewport em pixels."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "Altura de renderização da viewport em pixels."
       }
     }
   },
@@ -23990,7 +24023,7 @@
     }
   },
   "TripoImageToModelNode": {
-    "display_name": "Tripo: Imagem para Modelo",
+    "display_name": "Tripo: Imagem para Modelo (Legado)",
     "inputs": {
       "auto_size": {
         "name": "auto_size",
@@ -24063,6 +24096,75 @@
       "3": {
         "name": "FBX",
         "tooltip": "Preenchido apenas quando quad está ativado."
+      }
+    }
+  },
+  "TripoImageToModelNodeV2": {
+    "display_name": "Tripo: Imagem para Modelo",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Dimensiona modelos texturizados para seu tamanho real em metros. O Tripo armazena o tamanho como a transformação de cena do modelo e o incorpora quando o modelo é convertido, recebe rig ou é redirecionado; ignorado sem texture."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "Contagem máxima de faces. -1 permite que o Tripo escolha adaptativamente (cerca de 1,4 M de faces no padrão v3.x, 2 M em detailed). O Tripo limita silenciosamente: v2.5 em 500.000, malhas quad em 150.000."
+      },
+      "geometry_quality": {
+        "name": "geometry_quality"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "A versão do modelo a ser usada para geração"
+      },
+      "orientation": {
+        "name": "orientation"
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "Mapas de material PBR (cor base, metálico, rugosidade, normal). Requer texture."
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "Saída de malha quad. O Tripo fornece malhas quad como FBX, portanto o resultado chega na saída FBX e a saída GLB permanece vazia."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "Malha low-poly com topologia limpa em estilo artesanal (500–20.000 faces, quad 500–10.000). Ideal para objetos simples; os complexos podem falhar."
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "Gera mapas de textura. Desativado retorna a geometria sem textura e ignora pbr."
+      },
+      "texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = texturas HD, extreme = texturas Ultra 8K."
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "task_id do modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Vazio quando quad está ativado."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Preenchido somente quando quad está ativado."
       }
     }
   },
@@ -24394,7 +24496,7 @@
       },
       "animation": {
         "name": "animação",
-        "tooltip": "As animações preset:* funcionam com ambos os modelos de rig; as animações preset:biped:* exigem um rig criado com o modelo v1.0-20240301."
+        "tooltip": "Animações preset:* funcionam com ambos os modelos com rig. As animações preset:biped:* são feitas para rigs do modelo v1.0-20240301; um rig v2.5 aceita somente chop, climb, dive, fall, hurt, idle, jump, run, shoot, slash, turn e walk."
       },
       "export_with_geometry": {
         "name": "export_with_geometry",
@@ -24558,6 +24660,48 @@
       }
     }
   },
+  "TripoSmartSegmentNode": {
+    "description": "Divide um modelo em partes semanticamente relevantes e as nomeia. A partir de uma imagem, o Tripo primeiro gera o modelo. O task_id de segmentação alimenta Tripo: Complete Mesh Parts, Tripo: Retopology, Tripo: Texture model e Tripo: Convert model como um resultado de Tripo: Segment Model.",
+    "display_name": "Tripo: Segmentação Inteligente",
+    "inputs": {
+      "source": {
+        "name": "source",
+        "tooltip": "Segmente um modelo existente ou gere um modelo a partir de uma imagem e segmente-o."
+      },
+      "source_granularity": {
+        "name": "granularity"
+      },
+      "source_hint": {
+        "name": "hint"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "task_id de segmentação",
+        "tooltip": null
+      },
+      "1": {
+        "name": "task_id do modelo",
+        "tooltip": "O modelo que foi segmentado (gerado a partir da imagem ou importado)."
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "part_names",
+        "tooltip": "Nomes das partes separados por vírgulas."
+      },
+      "4": {
+        "name": "parts",
+        "tooltip": "Descrição do Tripo das partes encontradas."
+      },
+      "5": {
+        "name": "máscara",
+        "tooltip": null
+      }
+    }
+  },
   "TripoSplatConditioning": {
     "description": "Codifica a imagem com DINOv3 e o Flux2 VAE em condicionamento positivo/negativo TripoSplat, e cria o alvo de ruído de tamanho fixo (latent + câmera) para o KSampler",
     "display_name": "Condicionamento TripoSplat",
@@ -24654,7 +24798,7 @@
     }
   },
   "TripoTextToModelNode": {
-    "display_name": "Tripo: Texto para Modelo",
+    "display_name": "Tripo: Texto para modelo (Legado)",
     "inputs": {
       "auto_size": {
         "name": "auto_size",
@@ -24730,8 +24874,77 @@
       }
     }
   },
+  "TripoTextToModelNodeV2": {
+    "display_name": "Tripo: Texto para modelo",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Redimensiona modelos texturizados para seu tamanho real em metros. O Tripo armazena o tamanho como a transformação de cena do modelo e o incorpora quando o modelo é convertido, recebe rig ou retargeting; ignorado sem texture."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "Contagem máxima de faces. -1 permite que o Tripo escolha adaptativamente (cerca de 1,4 milhão de faces no padrão v3.x, 2 milhões no detailed). O Tripo limita silenciosamente: v2.5 a 500.000, malhas quad a 150.000."
+      },
+      "geometry_quality": {
+        "name": "geometry_quality"
+      },
+      "image_seed": {
+        "name": "image_seed"
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "model_version": {
+        "name": "model_version"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Até 255 caracteres."
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "Mapas de material PBR (cor base, metálico, rugosidade, normal). Requer texture."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "Saída de malha quad. O Tripo fornece malhas quad como FBX, portanto o resultado chega na saída FBX e a saída GLB permanece vazia."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "Malha low-poly com topologia limpa, em estilo criado manualmente (500–20.000 faces, quad 500–10.000). Ideal para temas simples; os complexos podem falhar."
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "Gera mapas de textura. Desativado retorna geometria sem textura e ignora pbr."
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = texturas HD, extreme = texturas Ultra 8K."
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "task_id do modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Vazio quando quad está ativado."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Preenchido somente quando quad está ativado."
+      }
+    }
+  },
   "TripoTextureNode": {
-    "display_name": "Tripo: Modelo de Textura",
+    "display_name": "Tripo: Aplicar textura ao modelo (Legado)",
     "inputs": {
       "model_task_id": {
         "name": "model_task_id"
@@ -24791,6 +25004,62 @@
       "3": {
         "name": "FBX",
         "tooltip": "O Tripo retorna FBX para malhas de quadriláteros e importações FBX; vazio caso contrário."
+      }
+    }
+  },
+  "TripoTextureNodeV2": {
+    "display_name": "Tripo: Aplicar textura ao modelo",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "Modelo de textura: v3.0 para malhas geradas com v3.x, v2.5 para malhas geradas com v2.5."
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "Nomes das partes separados por vírgulas de Tripo: Segment Model para texturizar. Vazio texturiza todas as partes."
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "Mapas de material PBR (cor base, metálico, rugosidade, normal); desativado fornece uma textura de cor simples."
+      },
+      "reference": {
+        "name": "reference",
+        "tooltip": "Imagens de referência que orientam as texturas. Não podem ser combinadas com texture_prompt ou style_image."
+      },
+      "style_image": {
+        "name": "style_image",
+        "tooltip": "Imagem de referência para o estilo artístico das texturas. Usada apenas junto com texture_prompt."
+      },
+      "texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "Orientação textual opcional para texturização. Na prática, necessária para modelos importados (Tripo: Import Model), que não possuem imagem de origem para inferir as cores. Não pode ser combinada com imagens de referência."
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = texturas HD, extreme = texturas Ultra 8K."
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "task_id do modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Vazio quando a origem é uma malha de quads ou uma importação FBX."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "O Tripo retorna FBX para malhas de quads e importações FBX; vazio caso contrário."
       }
     }
   },

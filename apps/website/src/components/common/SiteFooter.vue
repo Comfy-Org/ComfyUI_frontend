@@ -57,6 +57,10 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
       { label: t('footer.ltx', locale), href: routes.ltx },
       { label: t('footer.geminiOmni', locale), href: routes.geminiOmni },
       { label: t('footer.wan3', locale), href: routes.wan3 },
+      {
+        label: t('footer.chatgptImage25', locale),
+        href: routes.chatgptImage25
+      },
       { label: t('footer.flux3', locale), href: routes.flux3 }
     ]
   },

@@ -6451,14 +6451,8 @@
       "model_max_output_tokens": {
         "name": "الحد الأقصى للرموز الناتجة"
       },
-      "model_temperature": {
-        "name": "درجة العشوائية"
-      },
       "model_thinking_level": {
         "name": "مستوى التفكير"
-      },
-      "model_top_p": {
-        "name": "top_p"
       },
       "prompt": {
         "name": "المطالبة",
@@ -11011,7 +11005,8 @@
     "display_name": "تحميل ثلاثي الأبعاد (متقدم)",
     "inputs": {
       "height": {
-        "name": "الارتفاع"
+        "name": "الارتفاع",
+        "tooltip": "ارتفاع تصيير منطقة العرض بالبكسل."
       },
       "model_file": {
         "name": "model_file"
@@ -11020,29 +11015,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "العرض"
+        "name": "العرض",
+        "tooltip": "عرض تصيير منطقة العرض بالبكسل."
       }
     },
     "outputs": {
       "0": {
         "name": "نموذج ثلاثي الأبعاد",
-        "tooltip": null
+        "tooltip": "ملف نموذج ثلاثي الأبعاد محمّل (glb/obj/stl/etc.)."
       },
       "1": {
         "name": "معلومات النموذج ثلاثي الأبعاد",
-        "tooltip": null
+        "tooltip": "تموضع كل نموذج في المشهد: الموضع والدوران والمقياس (فضاء عالمي بمحور Y للأعلى)."
       },
       "2": {
         "name": "معلومات الكاميرا",
-        "tooltip": null
+        "tooltip": "معلومات كاميرا منطقة العرض: الموضع وهدف النظر والتكبير والنوع."
       },
       "3": {
         "name": "العرض",
-        "tooltip": null
+        "tooltip": "عرض تصيير منطقة العرض بالبكسل."
       },
       "4": {
         "name": "الارتفاع",
-        "tooltip": null
+        "tooltip": "ارتفاع تصيير منطقة العرض بالبكسل."
       }
     }
   },
@@ -16384,7 +16380,7 @@
   },
   "OpenAIGPTImageNodeV2": {
     "description": "توليد الصور عبر نقطة نهاية GPT Image من OpenAI.",
-    "display_name": "OpenAI GPT Image 2",
+    "display_name": "صورة OpenAI GPT 2.5",
     "inputs": {
       "control_after_generate": {
         "name": "التحكم بعد التوليد"
@@ -16471,6 +16467,36 @@
       },
       "size": {
         "name": "size"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenRouterImageNode": {
+    "description": "أنشئ الصور أو حررها عبر OpenRouter باستخدام نماذج MAI-Image-2.6 من Microsoft: من النص إلى الصورة، أو تحرير موجّه بالصور باستخدام ما يصل إلى خمس صور مرجعية، بسبع نسب أبعاد وبدقة 1K أو 1.5K.",
+    "display_name": "صورة OpenRouter",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "نموذج الصور من OpenRouter المستخدم لإنشاء الصورة."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
       }
     },
     "outputs": {
@@ -17388,10 +17414,12 @@
     "display_name": "معاينة ثلاثية الأبعاد (متقدم)",
     "inputs": {
       "camera_info": {
-        "name": "camera_info"
+        "name": "camera_info",
+        "tooltip": "معلومات كاميرا منطقة العرض: الموضع وهدف النظر والتكبير والنوع."
       },
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "ارتفاع تصيير منطقة العرض بالبكسل."
       },
       "model_3d": {
         "name": "نموذج ثلاثي الأبعاد",
@@ -17404,29 +17432,30 @@
         "name": "حالة نافذة العرض"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "عرض تصيير منطقة العرض بالبكسل."
       }
     },
     "outputs": {
       "0": {
         "name": "model_file",
-        "tooltip": null
+        "tooltip": "ملف نموذج ثلاثي الأبعاد (glb/obj/stl/etc.) من عقدة ثلاثية الأبعاد سابقة."
       },
       "1": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "تموضع كل نموذج في المشهد: الموضع والدوران والمقياس (فضاء عالمي بمحور Y للأعلى)."
       },
       "2": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "معلومات كاميرا منطقة العرض: الموضع وهدف النظر والتكبير والنوع."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "عرض تصيير منطقة العرض بالبكسل."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "ارتفاع تصيير منطقة العرض بالبكسل."
       }
     }
   },
@@ -20765,48 +20794,52 @@
     "display_name": "حفظ ثلاثي الأبعاد (متقدم)",
     "inputs": {
       "camera_info": {
-        "name": "معلومات الكاميرا"
+        "name": "معلومات الكاميرا",
+        "tooltip": "معلومات كاميرا منطقة العرض: الموضع وهدف النظر والتكبير والنوع."
       },
       "filename_prefix": {
         "name": "بادئة اسم الملف"
       },
       "height": {
-        "name": "الارتفاع"
+        "name": "الارتفاع",
+        "tooltip": "ارتفاع تصيير منطقة العرض بالبكسل."
       },
       "model_3d": {
         "name": "نموذج ثلاثي الأبعاد",
         "tooltip": "ملف نموذج ثلاثي الأبعاد من عقدة ثلاثية الأبعاد في الأعلى."
       },
       "model_3d_info": {
-        "name": "معلومات النموذج ثلاثي الأبعاد"
+        "name": "معلومات النموذج ثلاثي الأبعاد",
+        "tooltip": "تموضع كل نموذج في المشهد: الموضع والدوران والمقياس (فضاء عالمي بمحور Y للأعلى)."
       },
       "viewport_state": {
         "name": "حالة منفذ العرض"
       },
       "width": {
-        "name": "العرض"
+        "name": "العرض",
+        "tooltip": "عرض تصيير منطقة العرض بالبكسل."
       }
     },
     "outputs": {
       "0": {
         "name": "نموذج ثلاثي الأبعاد",
-        "tooltip": null
+        "tooltip": "ملف نموذج ثلاثي الأبعاد (glb/obj/stl/etc.) من عقدة ثلاثية الأبعاد سابقة."
       },
       "1": {
         "name": "معلومات النموذج ثلاثي الأبعاد",
-        "tooltip": null
+        "tooltip": "تموضع كل نموذج في المشهد: الموضع والدوران والمقياس (فضاء عالمي بمحور Y للأعلى)."
       },
       "2": {
         "name": "معلومات الكاميرا",
-        "tooltip": null
+        "tooltip": "معلومات كاميرا منطقة العرض: الموضع وهدف النظر والتكبير والنوع."
       },
       "3": {
         "name": "العرض",
-        "tooltip": null
+        "tooltip": "عرض تصيير منطقة العرض بالبكسل."
       },
       "4": {
         "name": "الارتفاع",
-        "tooltip": null
+        "tooltip": "ارتفاع تصيير منطقة العرض بالبكسل."
       }
     }
   },
@@ -23990,7 +24023,7 @@
     }
   },
   "TripoImageToModelNode": {
-    "display_name": "Tripo: الصورة إلى نموذج",
+    "display_name": "Tripo: من صورة إلى نموذج (قديم)",
     "inputs": {
       "auto_size": {
         "name": "auto_size",
@@ -24063,6 +24096,75 @@
       "3": {
         "name": "FBX",
         "tooltip": "يُملأ فقط عند تفعيل quad."
+      }
+    }
+  },
+  "TripoImageToModelNodeV2": {
+    "display_name": "Tripo: من صورة إلى نموذج",
+    "inputs": {
+      "auto_size": {
+        "name": "الحجم التلقائي",
+        "tooltip": "تحجيم النماذج ذات النسيج إلى حجمها الحقيقي بالأمتار. يخزّن Tripo الحجم كتحويل مشهد للنموذج ويضمّنه عند تحويل النموذج أو تجهيزه بهيكل عظمي أو إعادة استهدافه؛ ويُتجاهل بدون نسيج."
+      },
+      "face_limit": {
+        "name": "حد الأوجه",
+        "tooltip": "العدد الأقصى للأوجه. تتيح القيمة -1 لـ Tripo الاختيار التكيفي (نحو 1.4M وجه في v3.x standard و2M في detailed). يقيّد Tripo القيم بصمت: v2.5 عند 500,000، والشبكات الرباعية عند 150,000."
+      },
+      "geometry_quality": {
+        "name": "جودة الهندسة"
+      },
+      "image": {
+        "name": "صورة"
+      },
+      "model_seed": {
+        "name": "بذرة النموذج"
+      },
+      "model_version": {
+        "name": "إصدار النموذج",
+        "tooltip": "إصدار النموذج المراد استخدامه للتوليد"
+      },
+      "orientation": {
+        "name": "الاتجاه"
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "خرائط مواد PBR (اللون الأساسي، المعدني، الخشونة، العادي). تتطلب النسيج."
+      },
+      "quad": {
+        "name": "رباعي",
+        "tooltip": "إخراج شبكة رباعية. يسلّم Tripo الشبكات الرباعية بصيغة FBX، لذا تصل النتيجة عبر مخرج FBX ويبقى مخرج GLB فارغًا."
+      },
+      "smart_low_poly": {
+        "name": "متعدد الأضلاع منخفض ذكي",
+        "tooltip": "شبكة منخفضة الأضلاع ذات طوبولوجيا نظيفة بأسلوب مصمم يدويًا (500-20,000 وجه، ورباعي 500-10,000). الأفضل للمواضيع البسيطة؛ وقد تفشل المواضيع المعقدة."
+      },
+      "texture": {
+        "name": "النسيج",
+        "tooltip": "إنشاء خرائط النسيج. يؤدي إيقافه إلى إرجاع هندسة مجردة ويتجاهل pbr."
+      },
+      "texture_alignment": {
+        "name": "محاذاة النسيج"
+      },
+      "texture_quality": {
+        "name": "جودة النسيج",
+        "tooltip": "detailed = أنسجة HD، extreme = أنسجة Ultra 8K."
+      },
+      "texture_seed": {
+        "name": "بذرة النسيج"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "task_id النموذج",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "فارغ عند تمكين quad."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "يتم ملؤه فقط عند تمكين quad."
       }
     }
   },
@@ -24394,7 +24496,7 @@
       },
       "animation": {
         "name": "الرسوم_المتحركة",
-        "tooltip": "تعمل الرسوم المتحركة preset:* مع كلا نموذجي الهيكل العظمي؛ تتطلب الرسوم المتحركة preset:biped:* هيكلًا عظميًا تم إنشاؤه باستخدام النموذج v1.0-20240301."
+        "tooltip": "تعمل رسوم preset:* المتحركة مع كلا نموذجي الهيكل العظمي. صُممت رسوم preset:biped:* المتحركة للهياكل العظمية من النموذج v1.0-20240301؛ ولا يقبل هيكل v2.5 إلا chop وclimb وdive وfall وhurt وidle وjump وrun وshoot وslash وturn وwalk."
       },
       "export_with_geometry": {
         "name": "export_with_geometry",
@@ -24558,6 +24660,48 @@
       }
     }
   },
+  "TripoSmartSegmentNode": {
+    "description": "يقسّم نموذجًا إلى أجزاء ذات دلالة معنوية ويسميها. من صورة، ينشئ Tripo النموذج أولًا. يمرر segment task_id إلى Tripo: Complete Mesh Parts وTripo: Retopology وTripo: Texture model وTripo: Convert model كما لو كان نتيجة Tripo: Segment Model.",
+    "display_name": "Tripo: التقسيم الذكي",
+    "inputs": {
+      "source": {
+        "name": "المصدر",
+        "tooltip": "قسّم نموذجًا موجودًا، أو أنشئ نموذجًا من صورة ثم قسّمه."
+      },
+      "source_granularity": {
+        "name": "مستوى التفصيل"
+      },
+      "source_hint": {
+        "name": "تلميح"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "segment task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "task_id النموذج",
+        "tooltip": "النموذج الذي تم تقسيمه (المُنشأ من الصورة أو المستورد)."
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "part_names",
+        "tooltip": "أسماء الأجزاء مفصولة بفواصل."
+      },
+      "4": {
+        "name": "الأجزاء",
+        "tooltip": "وصف Tripo للأجزاء التي عثر عليها."
+      },
+      "5": {
+        "name": "قناع",
+        "tooltip": null
+      }
+    }
+  },
   "TripoSplatConditioning": {
     "description": "ترميز الصورة باستخدام DINOv3 وFlux2 VAE إلى تهيئة إيجابية/سلبية لـ TripoSplat، وإنشاء هدف الضوضاء ذو الحجم الثابت (latent + camera) لـ KSampler",
     "display_name": "تهيئة TripoSplat",
@@ -24654,7 +24798,7 @@
     }
   },
   "TripoTextToModelNode": {
-    "display_name": "Tripo: النص إلى نموذج",
+    "display_name": "Tripo: تحويل النص إلى نموذج (قديم)",
     "inputs": {
       "auto_size": {
         "name": "auto_size",
@@ -24730,8 +24874,77 @@
       }
     }
   },
+  "TripoTextToModelNodeV2": {
+    "display_name": "Tripo: تحويل النص إلى نموذج",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "تحجيم النماذج ذات الخامات إلى حجمها الحقيقي بالمتر. يخزّن Tripo الحجم كتحويل مشهد للنموذج ويثبّته عند تحويل النموذج أو تزويده بهيكل عظمي أو إعادة استهدافه؛ يُتجاهل دون texture."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "الحد الأقصى لعدد الوجوه. تتيح القيمة -1 لـ Tripo الاختيار تكيفيًا (نحو 1.4M وجهًا في v3.x القياسي، و2M في detailed). يقيّد Tripo العدد بصمت: v2.5 عند 500,000، والشبكات الرباعية عند 150,000."
+      },
+      "geometry_quality": {
+        "name": "geometry_quality"
+      },
+      "image_seed": {
+        "name": "image_seed"
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "model_version": {
+        "name": "model_version"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "حتى 255 حرفًا."
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "خرائط مواد PBR (اللون الأساسي، المعدني، الخشونة، العادي). تتطلب texture."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "إخراج شبكة رباعية. يسلّم Tripo الشبكات الرباعية بتنسيق FBX، لذا تصل النتيجة إلى مخرج FBX ويبقى مخرج GLB فارغًا."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "شبكة منخفضة المضلعات بطوبولوجيا نظيفة بأسلوب مصنوع يدويًا (500-20,000 وجه، وquad 500-10,000). الأفضل للموضوعات البسيطة؛ قد تفشل الموضوعات المعقدة."
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "إنشاء خرائط الخامات. يؤدي إيقافه إلى إرجاع هندسة مجردة وتجاهل pbr."
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = خامات HD، extreme = خامات Ultra بدقة 8K."
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "معرّف مهمة النموذج",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "فارغ عند تمكين quad."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "يُملأ فقط عند تمكين quad."
+      }
+    }
+  },
   "TripoTextureNode": {
-    "display_name": "Tripo: نموذج الملمس",
+    "display_name": "Tripo: إكساء النموذج (قديم)",
     "inputs": {
       "model_task_id": {
         "name": "معرف_مهمة_النموذج"
@@ -24791,6 +25004,62 @@
       "3": {
         "name": "FBX",
         "tooltip": "يعيد Tripo ملف FBX للشبكات الرباعية وعمليات استيراد FBX؛ ويكون فارغًا بخلاف ذلك."
+      }
+    }
+  },
+  "TripoTextureNodeV2": {
+    "display_name": "Tripo: إكساء النموذج",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "نموذج الخامات: v3.0 للشبكات المُنشأة باستخدام v3.x، وv2.5 للشبكات المُنشأة باستخدام v2.5."
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "أسماء الأجزاء المفصولة بفواصل من Tripo: Segment Model لإكسائها. عند تركه فارغًا، تُكسى جميع الأجزاء."
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "خرائط مواد PBR (اللون الأساسي، المعدني، الخشونة، العادي)؛ يؤدي إيقافه إلى خامة بلون عادي."
+      },
+      "reference": {
+        "name": "reference",
+        "tooltip": "صور مرجعية لتوجيه الخامات. لا يمكن دمجها مع texture_prompt أو style_image."
+      },
+      "style_image": {
+        "name": "style_image",
+        "tooltip": "صورة مرجعية للنمط الفني للخامات. تُستخدم فقط مع texture_prompt."
+      },
+      "texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "إرشاد نصي اختياري للإكساء. مطلوب عمليًا للنماذج المستوردة (Tripo: Import Model)، إذ لا تحتوي على صورة مصدر لاستنتاج الألوان منها. لا يمكن دمجه مع صور مرجعية."
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = خامات HD، extreme = خامات 8K فائقة."
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "فارغ عندما يكون المصدر شبكة رباعية أو استيراد FBX."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "يعيد Tripo ‏FBX للشبكات الرباعية وواردات FBX؛ ويكون فارغًا في غير ذلك."
       }
     }
   },

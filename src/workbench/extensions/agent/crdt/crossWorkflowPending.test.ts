@@ -1,5 +1,4 @@
 import type { Op } from '@comfyorg/comfy-multi-player'
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
@@ -177,7 +176,6 @@ function dispatchOpsResult(detail: unknown): void {
 
 describe('R-73 cross-workflow pending operation characterization', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     bridgeState.current = null
     bridgeState.transport.up = true
     clientState.transportUp = true
