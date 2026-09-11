@@ -10,7 +10,9 @@ import {
   normalizePath,
   parseLlmsTxtLinks
 } from '../lib/llms-txt'
+import { isNoindexPathname } from './indexing'
 import { getRoutes } from './routes'
+import { modelsBuildRoutes } from '../integrations/workshop-release-gate'
 
 const websiteRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const llmsTxt = readFileSync(join(websiteRoot, 'public', 'llms.txt'), 'utf8')
@@ -30,15 +32,40 @@ const vercelRedirectSources = new Set<string>(
  */
 const EXCLUDED_PAGES = new Set([
   '/404',
+  '/agent', // unlisted agent beta waitlist page, noindex
   '/booking-confirmation', // post-form confirmation, no standalone content
+  '/forgot-password', // auth surface, noindex
   '/individual-submission', // gallery submission form
+  '/login', // auth surface, noindex
+  '/signup', // auth surface, noindex
   '/payment/failed', // checkout return page
   '/payment/success', // checkout return page
   '/case-studies', // "Coming Soon" placeholder
   '/videos', // "Coming Soon" placeholder
   '/demos', // index is a "Coming Soon" placeholder; the demo pages are listed
-  '/platform/serverless-animation' // noindex temporary motion study, not a real page
+  '/platform/serverless-animation', // noindex temporary motion study, not a real page
+  '/workshop', // build-gated; static public/llms.txt cannot vary by build shape
+  '/video-sitemap.xml' // machine-readable sitemap output, not a page for agents to read
 ])
+
+const LLMS_TXT_NOINDEX_EXCEPTIONS = new Set([
+  '/privacy-policy',
+  '/terms-of-service'
+])
+
+/**
+ * A page kept out of search indexes has no business in llms.txt either, so
+ * the noindex policy in ./indexing is the second source of exclusions.
+ * Deriving it rather than restating it means a launch that lifts noindex
+ * also starts requiring the page here, instead of leaving a second list to
+ * remember.
+ */
+function isExcludedPage(page: string): boolean {
+  return (
+    EXCLUDED_PAGES.has(page) ||
+    (isNoindexPathname(page) && !LLMS_TXT_NOINDEX_EXCEPTIONS.has(page))
+  )
+}
 
 /**
  * Files the build emits outside src/pages: the sitemap integration writes
@@ -103,6 +130,7 @@ describe('llms.txt', () => {
   const links = parseLlmsTxtLinks(llmsTxt)
   const internalPaths = internalLinks(links).map(({ path }) => path)
   const { static: staticPages, dynamic } = pageMatchers(pagesDir)
+  for (const route of modelsBuildRoutes(false)) staticPages.add(route.pattern)
   const zhCN = pageMatchers(join(pagesDir, 'zh-CN'))
 
   it('follows the llms.txt shape: one H1, a summary blockquote, Optional last', () => {
@@ -153,7 +181,7 @@ describe('llms.txt', () => {
   it('covers every static page in src/pages', () => {
     const linked = new Set(internalPaths)
     const missing = [...staticPages]
-      .filter((page) => !EXCLUDED_PAGES.has(page) && !linked.has(page))
+      .filter((page) => !isExcludedPage(page) && !linked.has(page))
       .sort()
     expect(missing).toEqual([])
   })
@@ -162,15 +190,12 @@ describe('llms.txt', () => {
     const linked = new Set(internalPaths)
     const missing = Object.values(getRoutes('en'))
       .map(normalizePath)
-      .filter((route) => !EXCLUDED_PAGES.has(route) && !linked.has(route))
+      .filter((route) => !isExcludedPage(route) && !linked.has(route))
     expect(missing).toEqual([])
   })
 
   it('does not list excluded pages by accident', () => {
-    const linked = new Set(internalPaths)
-    const listedButExcluded = [...EXCLUDED_PAGES].filter((page) =>
-      linked.has(page)
-    )
+    const listedButExcluded = internalPaths.filter(isExcludedPage)
     expect(listedButExcluded).toEqual([])
   })
 

@@ -165,7 +165,7 @@ for (const vueEnabled of [false, true] as const) {
         const registered = window.LiteGraph!.registered_node_types[type] as {
           nodeData?: { price_badge?: unknown }
         }
-        if (!registered?.nodeData) throw new Error(`No nodeData for ${type}`)
+        if (!registered.nodeData) throw new Error(`No nodeData for ${type}`)
         registered.nodeData.price_badge = {
           engine: 'jsonata',
           expr: "{'type': 'text', 'text': '99.9 credits/Run'}",

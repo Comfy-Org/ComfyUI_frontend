@@ -1,49 +1,35 @@
 /* eslint-disable testing-library/no-container, testing-library/no-node-access -- layer rows have unlabeled checkboxes and the blend-mode select has no role-friendly label */
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { reactive } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { useToolManager } from '@/composables/maskeditor/useToolManager'
 import ImageLayerSettingsPanel from '@/components/maskeditor/ImageLayerSettingsPanel.vue'
+import type { useToolManager } from '@/composables/maskeditor/useToolManager'
 import { MaskBlendMode, Tools } from '@/extensions/core/maskeditor/types'
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
 type ToolManager = ReturnType<typeof useToolManager>
 
-const initialMock = () =>
-  reactive({
-    maskOpacity: 0.8,
-    maskBlendMode: MaskBlendMode.Black,
-    activeLayer: 'mask' as 'mask' | 'rgb',
-    currentTool: Tools.MaskPen,
-    image: { src: 'https://example.com/base.png' } as { src: string } | null,
-    maskCanvas: null as HTMLCanvasElement | null,
-    rgbCanvas: null as HTMLCanvasElement | null,
-    imgCanvas: null as HTMLCanvasElement | null,
-    setMaskOpacity: vi.fn()
-  })
-
-let mockStore: ReturnType<typeof initialMock>
+let mockStore: ReturnType<typeof useMaskEditorStore>
 const mockUpdateMaskColor = vi.fn().mockResolvedValue(undefined)
 const mockSetActiveLayer = vi.fn()
 
-vi.mock('@/stores/maskEditorStore', () => ({
-  useMaskEditorStore: () => mockStore
-}))
-
-vi.mock('@/composables/maskeditor/useCanvasManager', () => ({
+vi.mock<unknown>(import('@/composables/maskeditor/useCanvasManager'), () => ({
   useCanvasManager: () => ({ updateMaskColor: mockUpdateMaskColor })
 }))
 
-vi.mock('@/components/maskeditor/controls/SliderControl.vue', () => ({
-  default: {
-    name: 'SliderControlStub',
-    props: ['label', 'min', 'max', 'step', 'modelValue'],
-    emits: ['update:modelValue'],
-    template: `<button data-slider="true" @click="$emit('update:modelValue', 0.3)">{{ modelValue }}</button>`
-  }
-}))
+vi.mock<unknown>(
+  import('@/components/maskeditor/controls/SliderControl.vue'),
+  () => ({
+    default: {
+      name: 'SliderControlStub',
+      props: ['label', 'min', 'max', 'step', 'modelValue'],
+      emits: ['update:modelValue'],
+      template: `<button data-slider="true" @click="$emit('update:modelValue', 0.3)">{{ modelValue }}</button>`
+    }
+  })
+)
 
 const i18n = createI18n({
   legacy: false,
@@ -77,7 +63,9 @@ const makeCanvas = (): HTMLCanvasElement => document.createElement('canvas')
 
 describe('ImageLayerSettingsPanel', () => {
   beforeEach(() => {
-    mockStore = initialMock()
+    mockStore = useMaskEditorStore()
+    mockStore.image = new Image()
+    mockStore.image.src = 'https://example.com/base.png'
   })
 
   describe('mask opacity slider', () => {
@@ -265,7 +253,8 @@ describe('ImageLayerSettingsPanel', () => {
 
   describe('base image preview', () => {
     it('should render base image src from store', () => {
-      mockStore.image = { src: 'https://example.com/img.png' }
+      mockStore.image = new Image()
+      mockStore.image.src = 'https://example.com/img.png'
       renderPanel()
       const img = screen.getByAltText('Base layer preview')
 

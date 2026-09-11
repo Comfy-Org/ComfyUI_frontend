@@ -23,10 +23,8 @@ type InstallPackParams = components['schemas']['InstallPackParams']
 type InstalledPacksResponse = components['schemas']['InstalledPacksResponse']
 type ManagerPackInfo = components['schemas']['ManagerPackInfo']
 type ManagerPackInstalled = components['schemas']['ManagerPackInstalled']
-type ManagerTaskHistory = Record<
-  string,
-  components['schemas']['TaskHistoryItem']
->
+type TaskHistoryItem = components['schemas']['TaskHistoryItem']
+type ManagerTaskHistory = Record<string, TaskHistoryItem>
 type ManagerTaskQueue = components['schemas']['TaskStateMessage']
 type UpdateAllPacksParams = components['schemas']['UpdateAllPacksParams']
 
@@ -66,7 +64,7 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     app.api,
     'cm-task-completed',
     (event: CustomEvent<{ ui_id?: string }>) => {
-      const taskId = event.detail?.ui_id
+      const taskId = event.detail.ui_id
       if (taskId && taskIdToPackId.value.has(taskId)) {
         const packId = taskIdToPackId.value.get(taskId)!
         installingPacksIds.value.delete(packId)
@@ -207,8 +205,8 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
 
       const { enabled } = pack
 
-      if (enabled === true) enabledIds.add(id)
-      else if (enabled === false) disabledIds.add(id)
+      if (enabled) enabledIds.add(id)
+      else disabledIds.add(id)
 
       // If pack in both (has a disabled and enabled version), remove from disabled
       const inBothSets = enabledIds.has(id) && disabledIds.has(id)
@@ -289,7 +287,7 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
       if (installedPacksIds.value.has(params.id)) {
         const installedPack = installedPacks.value[params.id]
 
-        if (installedPack && installedPack.ver !== params.selected_version) {
+        if (installedPack.ver !== params.selected_version) {
           actionDescription = t('manager.changingVersion', {
             from: installedPack.ver,
             to: params.selected_version
@@ -375,7 +373,7 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
 
   const getInstalledPackVersion = (packId: NodePackId) => {
     const pack = installedPacks.value[packId]
-    return pack?.ver
+    return pack.ver
   }
 
   const clearLogs = () => {
