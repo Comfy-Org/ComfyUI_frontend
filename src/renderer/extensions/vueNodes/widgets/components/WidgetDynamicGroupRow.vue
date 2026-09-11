@@ -8,7 +8,7 @@
       class="size-6"
       :disabled="widget.options?.disabled"
       :aria-label="t('dynamicGroup.remove', { row: widget.label })"
-      @click="widget.callback?.(undefined)"
+      @click="removeRow"
     >
       <i class="icon-[lucide--x] size-4" />
     </Button>
@@ -23,4 +23,11 @@ import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 const { widget } = defineProps<{ widget: SimplifiedWidget }>()
 const { t } = useI18n()
+const emit = defineEmits<{ removed: [name: string] }>()
+
+function removeRow() {
+  const name = widget.name
+  widget.callback?.(undefined)
+  emit('removed', name)
+}
 </script>
