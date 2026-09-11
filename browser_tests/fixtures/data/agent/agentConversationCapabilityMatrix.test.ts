@@ -31,6 +31,68 @@ const hasOp = (conversation: AgentConversation, op: string) =>
     )
   )
 
+type Turn = AgentConversation['turns'][number]
+
+const turnHasGraphOps = (turn: Turn) =>
+  turn.response.some((entry) => entry.kind === 'graph_ops')
+
+const graphOps = (turn: Turn): Record<string, unknown>[] =>
+  turn.response.flatMap((entry) =>
+    entry.kind === 'graph_ops'
+      ? entry.ops.map((op) => op as Record<string, unknown>)
+      : []
+  )
+
+const addedNodeId = (op: Record<string, unknown>): string | undefined => {
+  if (op.op !== 'add_node') return undefined
+  const node = op.node
+  if (typeof node !== 'object' || node === null) return undefined
+  const id = (node as Record<string, unknown>).id
+  return id === undefined ? undefined : String(id)
+}
+
+const referencedNodeIds = (op: Record<string, unknown>): string[] =>
+  ['node_id', 'from_node', 'to_node'].flatMap((key) =>
+    op[key] === undefined ? [] : [String(op[key])]
+  )
+
+/** A later turn's ops reference a node that an earlier turn added. */
+const laterTurnReferencesEarlierAddedNode = (
+  conversation: AgentConversation
+) => {
+  const seen = new Set<string>()
+  for (const turn of conversation.turns) {
+    const ops = graphOps(turn)
+    if (ops.some((op) => referencedNodeIds(op).some((id) => seen.has(id)))) {
+      return true
+    }
+    for (const op of ops) {
+      const id = addedNodeId(op)
+      if (id !== undefined) seen.add(id)
+    }
+  }
+  return false
+}
+
+const urlsIn = (text: string): string[] =>
+  text.match(/https?:\/\/[^\s)\]]+/g) ?? []
+
+const MEDIA_EXTENSION = /\.(png|jpe?g|gif|webp|mp4|webm|mp3|wav|ogg|glb|obj)$/i
+
+/** Mirrors classifyAssetUrl: a media filename in the query or pathname. */
+const isMediaAssetUrl = (url: string) => {
+  try {
+    const parsed = new URL(url)
+    const candidate =
+      parsed.searchParams.get('filename') ??
+      parsed.pathname.split('/').pop() ??
+      ''
+    return MEDIA_EXTENSION.test(candidate)
+  } catch {
+    return false
+  }
+}
+
 describe('agentConversationCapabilityMatrix', () => {
   it('names at least one recording for every supported capability', () => {
     expect(
@@ -73,22 +135,25 @@ describe('agentConversationCapabilityMatrix', () => {
         (event) =>
           event.type === 'agent_tool_call' && event.data.status === 'error'
       ),
+    // The agent answered the first prompt with text only and edited the graph
+    // on a later turn once the user answered.
     clarifying_question: (c) =>
-      c.turns.length > 1 &&
-      !c.turns[0].response.some((entry) => entry.kind === 'graph_ops'),
+      !turnHasGraphOps(c.turns[0]) && c.turns.slice(1).some(turnHasGraphOps),
     cancelled_turn: (c) =>
       c.turns.some((turn) => turn.cancel_after !== undefined),
+    // A later turn edits the graph and depends on an earlier turn: either it
+    // targets a node the earlier turn added, or the earlier turn was the
+    // text-only half of a clarifying exchange.
     multi_turn_dependent_edit: (c) =>
-      c.turns
-        .slice(1)
-        .some((turn) =>
-          turn.response.some((entry) => entry.kind === 'graph_ops')
-        ),
+      c.turns.slice(1).some(turnHasGraphOps) &&
+      (laterTurnReferencesEarlierAddedNode(c) || !turnHasGraphOps(c.turns[0])),
+    // The reply text carries a link to a media asset, identified the way the
+    // reply renderer does: by a media filename in the query or path.
     asset_url_in_reply_text: (c) =>
       events(c).some(
         (event) =>
           event.type === 'agent_message_delta' &&
-          /https?:\/\//.test(event.data.delta)
+          urlsIn(event.data.delta).some(isMediaAssetUrl)
       )
   }
 
