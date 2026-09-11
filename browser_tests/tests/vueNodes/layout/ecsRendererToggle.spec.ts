@@ -122,66 +122,42 @@ test.describe(
       await expect(comfyPage.toast.toastErrors).toHaveCount(0)
     })
 
-    test('keeps widgets interactive and Vue node titles legible at 50% zoom', async ({
-      comfyPage
-    }) => {
-      await comfyPage.canvasOps.resetView()
-      await comfyPage.canvasOps.setScale(0.5)
-      await comfyPage.page.evaluate(() => {
-        window.app!.canvas.centerOnNode(
-          window.app!.graph.nodes.find((node) => String(node.id) === '3')!
-        )
+    for (const { label, scale } of [
+      { label: '50%', scale: 0.5 },
+      { label: '200%', scale: 2 }
+    ]) {
+      test(`keeps Vue widget labels and titles usable at ${label} zoom`, async ({
+        comfyPage
+      }) => {
+        await comfyPage.canvasOps.resetView()
+        await comfyPage.canvasOps.setScale(scale)
+        const kSampler = await comfyPage.nodeOps.getNodeRefById('3')
+        await kSampler.centerOnNode()
+        await expect
+          .poll(() => comfyPage.canvasOps.getScale())
+          .toBeCloseTo(scale, 2)
+
+        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+        await comfyPage.vueNodes.waitForNodes()
+        await expect
+          .poll(() => comfyPage.canvasOps.getScale())
+          .toBeCloseTo(scale, 2)
+
+        const vueNode = comfyPage.vueNodes.getNodeByTitle('KSampler')
+        const title = vueNode.getByTestId('node-title')
+        await expect(title).toBeVisible()
+        await expect(title).toHaveText('KSampler')
+
+        const cfgWidget = comfyPage.vueNodes
+          .getWidgetByName('KSampler', 'cfg')
+          .first()
+        await expect(cfgWidget).toBeVisible()
+        await expect(cfgWidget).toContainText('cfg')
+        const { input } = comfyPage.vueNodes.getInputNumberControls(cfgWidget)
+        await input.fill('7.5')
+        await input.blur()
+        await expect(input).toHaveValue('7.5')
       })
-      await comfyPage.nextFrame()
-      await expect
-        .poll(() => comfyPage.canvasOps.getScale())
-        .toBeCloseTo(0.5, 2)
-
-      const kSampler = await comfyPage.nodeOps.getNodeRefById('3')
-      const controlWidget = await kSampler.getWidgetByName(
-        'control_after_generate'
-      )
-      await controlWidget.click()
-      await comfyPage.page.getByRole('menuitem', { name: 'fixed' }).click()
-      await expect.poll(() => controlWidget.getValue()).toBe('fixed')
-
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-      await comfyPage.vueNodes.waitForNodes()
-      const title = comfyPage.vueNodes
-        .getNodeByTitle('KSampler')
-        .getByTestId('node-title')
-      await expect(title).toBeVisible()
-      await expect(title).not.toHaveText('')
-    })
-
-    test('keeps widgets interactive and Vue node titles legible at 200% zoom', async ({
-      comfyPage
-    }) => {
-      await comfyPage.canvasOps.resetView()
-      await comfyPage.canvasOps.setScale(2)
-      await comfyPage.page.evaluate(() => {
-        window.app!.canvas.centerOnNode(
-          window.app!.graph.nodes.find((node) => String(node.id) === '3')!
-        )
-      })
-      await comfyPage.nextFrame()
-      await expect.poll(() => comfyPage.canvasOps.getScale()).toBeCloseTo(2, 2)
-
-      const kSampler = await comfyPage.nodeOps.getNodeRefById('3')
-      const controlWidget = await kSampler.getWidgetByName(
-        'control_after_generate'
-      )
-      await controlWidget.click()
-      await comfyPage.page.getByRole('menuitem', { name: 'fixed' }).click()
-      await expect.poll(() => controlWidget.getValue()).toBe('fixed')
-
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-      await comfyPage.vueNodes.waitForNodes()
-      const title = comfyPage.vueNodes
-        .getNodeByTitle('KSampler')
-        .getByTestId('node-title')
-      await expect(title).toBeVisible()
-      await expect(title).not.toHaveText('')
-    })
+    }
   }
 )
