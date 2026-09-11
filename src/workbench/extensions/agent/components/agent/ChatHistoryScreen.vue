@@ -148,7 +148,7 @@ function onRenameKeydown(session: ChatSession, event: KeyboardEvent): void {
         {{ t('agent.historyEmpty') }}
       </p>
 
-      <section v-for="[key, label, items] in sections" :key="key" class="mb-3">
+      <section v-for="[key, label, items] in sections" :key class="mb-3">
         <p class="my-0 px-2 py-1 text-xs font-medium text-muted-foreground">
           {{ label }}
         </p>

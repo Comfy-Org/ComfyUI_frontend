@@ -111,7 +111,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
     ref="selectorRoot"
     class="flex w-full items-center justify-between gap-1.5"
   >
-    <DropdownMenuRoot :open="open" @update:open="onOpenChange">
+    <DropdownMenuRoot :open @update:open="onOpenChange">
       <AccessibleTooltip
         :label="workflowTooltipText"
         side="top"
@@ -125,7 +125,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
           <DropdownMenuTrigger as-child>
             <button
               type="button"
-              :disabled="disabled"
+              :disabled
               :aria-label="t('agent.switchWorkflow')"
               :class="
                 cn(

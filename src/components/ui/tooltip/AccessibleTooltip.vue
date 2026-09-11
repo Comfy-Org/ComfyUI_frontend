@@ -65,9 +65,9 @@ const contentClass = computed(() =>
 
 <template>
   <TooltipProvider
-    :delay-duration="delayDuration"
-    :skip-delay-duration="skipDelayDuration"
-    :disable-hoverable-content="disableHoverableContent"
+    :delay-duration
+    :skip-delay-duration
+    :disable-hoverable-content
   >
     <TooltipRoot v-model:open="open" :disabled :disable-closing-trigger>
       <TooltipTrigger as-child>

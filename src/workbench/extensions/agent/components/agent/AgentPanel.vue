@@ -232,7 +232,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
     class="@container flex h-full flex-col overflow-hidden bg-base-background text-base-foreground"
   >
     <PanelHeader
-      :is-maximized="isMaximized"
+      :is-maximized
       @new-chat="onNewChat"
       @toggle-size="emit('toggleSize')"
       @close="emit('close')"
@@ -330,15 +330,15 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       <div class="min-h-0 flex-1">
         <EmptyState
           v-if="!entries.length"
-          :user-name="userName"
+          :user-name
           @insert="composerRef?.insert($event)"
         />
         <ConversationView
           v-else
-          :entries="entries"
-          :editable-turn-id="editableTurnId"
-          :answering-ask-ids="answeringAskIds"
-          :paywall-presentation="paywallPresentation"
+          :entries
+          :editable-turn-id
+          :answering-ask-ids
+          :paywall-presentation
           @edit-prompt="composerRef?.replaceDraft($event)"
           @feedback="(id, vote) => emit('feedback', id, vote)"
           @answer-ask="
@@ -367,18 +367,18 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           />
           <Composer
             ref="composerRef"
-            :streaming="streaming"
-            :submitting="submitting"
-            :can-attach="canAttach"
-            :can-open-assets="canOpenAssets"
-            :selection-tags="selectionTags"
-            :node-reference-disabled-reason="nodeReferenceDisabledReason"
-            :select-workflow-reference="selectWorkflowReference"
-            :available-workflows="availableWorkflows"
-            :editable-workflow-id="editableWorkflowId"
+            :streaming
+            :submitting
+            :can-attach
+            :can-open-assets
+            :selection-tags
+            :node-reference-disabled-reason
+            :select-workflow-reference
+            :available-workflows
+            :editable-workflow-id
             :has-workflow-target="!workflowDetached"
             :workflow-selecting="selectingTabPath !== null || savingReference"
-            :get-mention-nodes="getMentionNodes"
+            :get-mention-nodes
             @send="onComposerSend"
             @stop="emit('stop')"
             @attach="emit('attach')"
@@ -397,11 +397,11 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             <template #header>
               <WorkflowSelectorChip
                 ref="workflowSelectorRef"
-                :active-tab="activeTab"
+                :active-tab
                 :tabs="workflowTabs"
-                :visible-tab-path="visibleTabPath"
-                :selecting-tab-path="selectingTabPath"
-                :select-tab="selectTab"
+                :visible-tab-path
+                :selecting-tab-path
+                :select-tab
                 :detached="workflowDetached"
                 :disabled="streaming || submitting || savingReference"
               />

@@ -108,8 +108,8 @@ watch(
             <AgentMessage
               v-else
               :message="entry"
-              :answering-ask-ids="answeringAskIds"
-              :paywall-presentation="paywallPresentation"
+              :answering-ask-ids
+              :paywall-presentation
               @feedback="emit('feedback', entry.id, $event)"
               @answer-ask="
                 (askId: string, selection: 'run' | 'cancel') =>
