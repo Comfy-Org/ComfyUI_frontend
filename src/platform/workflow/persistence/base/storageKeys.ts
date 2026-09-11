@@ -54,7 +54,7 @@ export function resolveStorageScope(
 /**
  * Storage key generators for V2 workflow persistence.
  *
- * localStorage keys are scoped by workspaceId.
+ * localStorage keys are scoped by storage scope.
  * sessionStorage keys are scoped by clientId.
  */
 export const StorageKeys = {
@@ -62,17 +62,17 @@ export const StorageKeys = {
    * Draft index key for localStorage.
    * Contains LRU order and metadata for all drafts.
    */
-  draftIndex(workspaceId: string): string {
-    return `Comfy.Workflow.DraftIndex.v2:${workspaceId}`
+  draftIndex(scope: string): string {
+    return `Comfy.Workflow.DraftIndex.v2:${scope}`
   },
 
   /**
    * Individual draft payload key for localStorage.
    * @param path - Workflow path (will be hashed to create key)
    */
-  draftPayload(path: string, workspaceId: string): string {
+  draftPayload(path: string, scope: string): string {
     const draftKey = hashPath(path)
-    return `Comfy.Workflow.Draft.v2:${workspaceId}:${draftKey}`
+    return `Comfy.Workflow.Draft.v2:${scope}:${draftKey}`
   },
 
   /**
@@ -103,12 +103,12 @@ export const StorageKeys = {
    * sessionStorage is per-tab (correct for in-session use) but lost
    * on browser restart; these keys preserve the last-written state.
    */
-  lastActivePath(workspaceId: string): string {
-    return `Comfy.Workflow.LastActivePath:${workspaceId}`
+  lastActivePath(scope: string): string {
+    return `Comfy.Workflow.LastActivePath:${scope}`
   },
 
-  lastOpenPaths(workspaceId: string): string {
-    return `Comfy.Workflow.LastOpenPaths:${workspaceId}`
+  lastOpenPaths(scope: string): string {
+    return `Comfy.Workflow.LastOpenPaths:${scope}`
   },
 
   migrationClaim(workspaceId: string): string {

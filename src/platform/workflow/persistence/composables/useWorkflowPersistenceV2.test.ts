@@ -7,11 +7,30 @@ import { createI18n } from 'vue-i18n'
 
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { DraftPayloadV2 } from '../base/draftTypes'
 import { hashPath } from '../base/hashUtil'
 import { StorageKeys } from '../base/storageKeys'
 import * as storageIO from '../base/storageIO'
 import { useWorkflowDraftStoreV2 } from '../stores/workflowDraftStoreV2'
 import { useWorkflowPersistenceV2 } from './useWorkflowPersistenceV2'
+
+function readDraftPayload(key: string): DraftPayloadV2 {
+  const raw = localStorage.getItem(key)
+  expect(raw).not.toBeNull()
+  if (raw === null) throw new Error(`Missing draft payload: ${key}`)
+
+  const payload: unknown = JSON.parse(raw)
+  if (typeof payload !== 'object' || payload === null) {
+    throw new Error(`Invalid draft payload: ${key}`)
+  }
+  if (!('data' in payload) || typeof payload.data !== 'string') {
+    throw new Error(`Invalid draft payload: ${key}`)
+  }
+  if (!('updatedAt' in payload) || typeof payload.updatedAt !== 'number') {
+    throw new Error(`Invalid draft payload: ${key}`)
+  }
+  return { data: payload.data, updatedAt: payload.updatedAt }
+}
 
 const mockToastAdd = vi.fn()
 vi.mock<unknown>(
@@ -708,7 +727,7 @@ describe('useWorkflowPersistenceV2', () => {
 
     window.dispatchEvent(new PageTransitionEvent('pagehide'))
 
-    const payload = JSON.parse(localStorage.getItem(payloadKey)!)
+    const payload = readDraftPayload(payloadKey)
     expect(JSON.parse(payload.data)).toEqual({
       nodes: [],
       extra: { marker: 'final-edit' }
@@ -780,9 +799,7 @@ describe('useWorkflowPersistenceV2', () => {
       workflow.path,
       `user-a:${destinationWorkspaceId}`
     )
-    const payloadBeforeTransition = JSON.parse(
-      localStorage.getItem(sourcePayloadKey)!
-    )
+    const payloadBeforeTransition = readDraftPayload(sourcePayloadKey)
     expect(JSON.parse(payloadBeforeTransition.data)).toEqual({ initial: true })
 
     const cancelTransition = storageIO.prepareWorkflowWorkspaceTransition()
@@ -797,7 +814,7 @@ describe('useWorkflowPersistenceV2', () => {
     mocks.state.graphChangedHandler?.()
     await vi.runAllTimersAsync()
 
-    const sourcePayload = JSON.parse(localStorage.getItem(sourcePayloadKey)!)
+    const sourcePayload = readDraftPayload(sourcePayloadKey)
     expect(JSON.parse(sourcePayload.data)).toEqual({
       nodes: [],
       extra: { marker: 'workspace-a-final-edit' }
@@ -993,7 +1010,7 @@ describe('useWorkflowPersistenceV2', () => {
     onUserResolved({ id: 'user-b' })
     await vi.runAllTimersAsync()
 
-    const userAPayload = JSON.parse(localStorage.getItem(userAPayloadKey)!)
+    const userAPayload = readDraftPayload(userAPayloadKey)
     expect(JSON.parse(userAPayload.data)).toEqual({ marker: 'user-a-edit' })
     expect(localStorage.getItem(userBPayloadKey)).toBeNull()
 
@@ -1003,10 +1020,8 @@ describe('useWorkflowPersistenceV2', () => {
     mocks.state.graphChangedHandler?.()
     await vi.runAllTimersAsync()
 
-    expect(JSON.parse(localStorage.getItem(userAPayloadKey)!).data).toBe(
-      userAPayload.data
-    )
-    const userBPayload = JSON.parse(localStorage.getItem(userBPayloadKey)!)
+    expect(readDraftPayload(userAPayloadKey).data).toBe(userAPayload.data)
+    const userBPayload = readDraftPayload(userBPayloadKey)
     expect(JSON.parse(userBPayload.data)).toEqual({ marker: 'user-b-edit' })
   })
 
@@ -1152,10 +1167,8 @@ describe('useWorkflowPersistenceV2', () => {
       localStorage.getItem(StorageKeys.draftIndex('user-a:workspace-a'))
     ).not.toBeNull()
     expect(
-      JSON.parse(
-        localStorage.getItem(
-          StorageKeys.draftPayload('Legacy.json', 'user-a:workspace-a')
-        )!
+      readDraftPayload(
+        StorageKeys.draftPayload('Legacy.json', 'user-a:workspace-a')
       ).data
     ).toBe('{"marker":"legacy"}')
     expect(useWorkflowDraftStoreV2().getDraft('Legacy.json')?.data).toBe(
@@ -1163,7 +1176,7 @@ describe('useWorkflowPersistenceV2', () => {
     )
   })
 
-  it('removes stale workspace drafts even when the user scope already has an index', async () => {
+  it('preserves unclaimed workspace drafts when the user scope already has an index', async () => {
     distributionMocks.isCloud = true
     sessionStorage.setItem(
       WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
@@ -1192,8 +1205,8 @@ describe('useWorkflowPersistenceV2', () => {
     Object.assign(useTeamWorkspaceStore(), { initState: 'ready' })
     await nextTick()
 
-    expect(localStorage.getItem(workspaceIndexKey)).toBeNull()
-    expect(localStorage.getItem(workspacePayloadKey)).toBeNull()
+    expect(localStorage.getItem(workspaceIndexKey)).not.toBeNull()
+    expect(localStorage.getItem(workspacePayloadKey)).not.toBeNull()
     expect(localStorage.getItem(scopedIndexKey)).toBe(scopedIndex)
   })
 
