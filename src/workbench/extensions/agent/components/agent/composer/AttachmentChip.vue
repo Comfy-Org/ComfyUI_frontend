@@ -27,12 +27,12 @@ const kindIconClass = computed(() =>
 
 <template>
   <span
-    class="text-agent-fg inline-flex h-7 items-center gap-1 rounded-lg border border-white/15 bg-white/4.5 px-2.5 text-xs/4 font-medium"
+    class="inline-flex h-7 items-center gap-1 rounded-lg border border-border-default bg-secondary-background px-2.5 text-xs/4 font-medium text-base-foreground"
   >
     <span
       v-if="uploading"
       :aria-label="$t('agent.uploading')"
-      class="text-agent-fg-subtle icon-[lucide--loader-circle] size-3.5 animate-spin"
+      class="icon-[lucide--loader-circle] size-3.5 animate-spin text-muted-foreground"
     />
     <!-- Only an image kind renders its preview: a server thumbnail for an
          audio or 3D asset would repaint the broken-image chip this fixed. -->
@@ -47,7 +47,7 @@ const kindIconClass = computed(() =>
     <button
       type="button"
       :aria-label="$t('agent.remove')"
-      class="text-agent-fg-muted hover:text-agent-fg flex size-3.5 shrink-0 cursor-pointer items-center justify-center p-0 transition-colors"
+      class="flex size-3.5 shrink-0 cursor-pointer items-center justify-center p-0 text-muted-foreground transition-colors hover:text-base-foreground"
       @click="emit('remove')"
     >
       <span class="icon-[lucide--x] size-3.5 shrink-0" />

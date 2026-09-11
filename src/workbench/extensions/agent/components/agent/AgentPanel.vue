@@ -10,7 +10,8 @@ import {
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { buildAgentTooltipConfig } from '@/composables/useTooltipConfig'
+import Input from '@/components/ui/input/Input.vue'
+import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 
 import type { ActiveTab } from '../../types/activeTab'
 import type {
@@ -159,7 +160,7 @@ const sessionTitle = computed(() => {
 
 const renaming = ref(false)
 const renameDraft = ref('')
-const renameInput = ref<HTMLInputElement>()
+const renameInput = ref<InstanceType<typeof Input>>()
 const titleButton = ref<HTMLButtonElement>()
 
 async function startRename(): Promise<void> {
@@ -228,7 +229,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
 
 <template>
   <section
-    class="bg-agent-surface text-agent-fg @container flex h-full flex-col overflow-hidden"
+    class="@container flex h-full flex-col overflow-hidden bg-base-background text-base-foreground"
   >
     <PanelHeader
       :is-maximized="isMaximized"
@@ -252,21 +253,21 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
     <template v-else>
       <div class="flex h-10 shrink-0 items-center px-2">
         <button
-          v-tooltip.bottom="buildAgentTooltipConfig(t('agent.showChatHistory'))"
+          v-tooltip.bottom="buildTooltipConfig(t('agent.showChatHistory'))"
           type="button"
           :aria-label="t('agent.showChatHistory')"
-          class="text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg focus-visible:ring-agent-accent flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm transition-colors focus-visible:ring-2 focus-visible:outline-none"
+          class="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-secondary-background-hover hover:text-base-foreground focus-visible:ring-2 focus-visible:ring-primary-background focus-visible:outline-none"
           @click="onOpenHistory"
         >
           <span class="icon-[lucide--history] size-4 shrink-0" />
         </button>
         <template v-if="renaming">
-          <input
+          <Input
             ref="renameInput"
             v-model="renameDraft"
             type="text"
             :aria-label="t('g.rename')"
-            class="text-agent-fg border-agent-accent h-6 min-w-0 flex-1 rounded-lg border px-2 py-1 text-xs outline-none"
+            class="h-6 flex-1 px-2 py-1 text-xs"
             @keydown="onRenameKeydown"
             @blur="commitRename"
           />
@@ -281,7 +282,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             ref="titleButton"
             type="button"
             :disabled="sessionId === null"
-            class="text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg disabled:hover:text-agent-fg-muted focus-visible:ring-agent-accent flex h-6 min-w-0 cursor-pointer items-center rounded-sm px-2 py-1 text-left text-xs transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:cursor-default disabled:hover:bg-transparent"
+            class="flex h-6 min-w-0 cursor-pointer items-center rounded-sm px-2 py-1 text-left text-xs text-muted-foreground transition-colors hover:bg-secondary-background-hover hover:text-base-foreground focus-visible:ring-2 focus-visible:ring-primary-background focus-visible:outline-none disabled:cursor-default disabled:hover:bg-transparent disabled:hover:text-muted-foreground"
             @click="startRename"
           >
             <span class="min-w-0 truncate">{{
@@ -290,9 +291,9 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           </button>
           <DropdownMenuRoot v-if="sessionId">
             <DropdownMenuTrigger
-              v-tooltip.bottom="buildAgentTooltipConfig(t('agent.chatOptions'))"
+              v-tooltip.bottom="buildTooltipConfig(t('agent.chatOptions'))"
               :aria-label="t('agent.chatOptions')"
-              class="text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm transition-colors"
+              class="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-secondary-background-hover hover:text-base-foreground"
             >
               <span class="icon-[lucide--chevron-down] size-3" />
             </DropdownMenuTrigger>
@@ -301,20 +302,20 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
                 side="bottom"
                 align="start"
                 :side-offset="4"
-                class="agent-scope rounded-agent bg-agent-surface-raised z-1100 flex h-16 w-32 flex-col gap-1 p-1 shadow-lg"
+                class="agent-scope z-1100 flex h-16 w-32 flex-col gap-1 rounded-xl bg-secondary-background p-1 shadow-lg"
               >
                 <DropdownMenuItem
-                  class="text-agent-fg data-highlighted:bg-agent-surface-hover flex h-6 w-full shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs outline-none"
+                  class="flex h-6 w-full shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
                   @select="startRename"
                 >
                   <span class="icon-[lucide--pencil] size-4 shrink-0" />
                   <span class="truncate">{{ t('g.rename') }}</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator
-                  class="before:bg-agent-border relative h-0 w-full shrink-0 before:absolute before:inset-x-0 before:top-0 before:h-px"
+                  class="relative h-0 w-full shrink-0 before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-component-node-border"
                 />
                 <DropdownMenuItem
-                  class="text-agent-fg data-highlighted:bg-agent-surface-hover data-highlighted:text-agent-danger flex h-6 w-full shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs outline-none"
+                  class="flex h-6 w-full shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs text-base-foreground outline-none data-highlighted:bg-secondary-background-hover data-highlighted:text-destructive-background"
                   @select="onDeleteChat"
                 >
                   <span class="icon-[lucide--trash-2] size-4 shrink-0" />
@@ -406,7 +407,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
               />
             </template>
           </Composer>
-          <p class="text-agent-fg-muted -mt-1.5 mb-0 text-center text-xs">
+          <p class="-mt-1.5 mb-0 text-center text-xs text-muted-foreground">
             {{ t(isMaximized ? 'agent.captionExpanded' : 'agent.caption') }}
           </p>
         </div>

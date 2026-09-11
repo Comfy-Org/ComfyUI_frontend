@@ -82,7 +82,7 @@ onMounted(() => {
         ? { 'aria-activedescendant': activeDescendant }
         : {}),
       class:
-        'text-agent-fg min-h-7 w-full cursor-text font-inter text-[14px]/5 font-normal wrap-anywhere whitespace-pre-wrap outline-none [&_.ProseMirror-selectednode]:outline-1'
+        'text-base-foreground min-h-7 w-full cursor-text font-inter text-[14px]/5 font-normal wrap-anywhere whitespace-pre-wrap outline-none [&_.ProseMirror-selectednode]:outline-1'
     }),
     dispatchTransaction(transaction) {
       if (!view) return
@@ -225,10 +225,10 @@ onMounted(() => {
           t('agent.removeWorkflowReference', { name })
         )
         remove.className =
-          'text-agent-fg pointer-events-none absolute -top-2 -right-2 z-10 flex size-5 cursor-pointer items-center justify-center rounded-full p-0 opacity-0 transition-opacity group-focus-within/workflow:pointer-events-auto group-focus-within/workflow:opacity-100 group-hover/workflow:pointer-events-auto group-hover/workflow:opacity-100 focus-visible:outline-2 focus-visible:outline-primary-background touch:pointer-events-auto touch:opacity-100'
+          'text-base-foreground pointer-events-none absolute -top-2 -right-2 z-10 flex size-5 cursor-pointer items-center justify-center rounded-full p-0 opacity-0 transition-opacity group-focus-within/workflow:pointer-events-auto group-focus-within/workflow:opacity-100 group-hover/workflow:pointer-events-auto group-hover/workflow:opacity-100 focus-visible:outline-2 focus-visible:outline-primary-background touch:pointer-events-auto touch:opacity-100'
         const badge = document.createElement('span')
         badge.className =
-          'bg-agent-surface hover:bg-agent-surface-hover flex size-3 items-center justify-center rounded-full ring-1 ring-border-default'
+          'bg-base-background hover:bg-secondary-background-hover flex size-3 items-center justify-center rounded-full ring-1 ring-border-default'
         const cross = document.createElement('span')
         cross.className = 'icon-[lucide--x] size-2'
         badge.append(cross)

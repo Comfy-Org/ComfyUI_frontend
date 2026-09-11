@@ -36,16 +36,14 @@ const label = computed(() => {
 <template>
   <CollapsibleRoot>
     <CollapsibleTrigger
-      class="group text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg flex h-8 w-full cursor-pointer items-center gap-2 rounded-lg px-2 text-sm leading-none font-normal transition-colors"
+      class="group flex h-8 w-full cursor-pointer items-center gap-2 rounded-lg px-2 text-sm leading-none font-normal text-muted-foreground transition-colors hover:bg-secondary-background-hover hover:text-base-foreground"
     >
       <span class="text-left">{{ label }}</span>
       <span
         class="icon-[lucide--chevron-down] size-4 shrink-0 transition-transform group-data-[state=open]:rotate-180"
       />
     </CollapsibleTrigger>
-    <CollapsibleContent
-      class="data-[state=closed]:animate-agent-collapsible-up data-[state=open]:animate-agent-collapsible-down overflow-hidden"
-    >
+    <CollapsibleContent class="agent-work-summary overflow-hidden">
       <ActivityTrace :parts />
     </CollapsibleContent>
   </CollapsibleRoot>

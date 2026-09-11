@@ -158,7 +158,7 @@ function stopPreview(event: Event): void {
         :class="
           cn(
             'relative cursor-pointer overflow-hidden rounded-lg border-none p-0',
-            multi && 'bg-agent-surface-hover aspect-square',
+            multi && 'aspect-square bg-secondary-background-hover',
             !multi && asset.kind === '3D' && 'justify-self-end'
           )
         "
@@ -195,11 +195,13 @@ function stopPreview(event: Event): void {
           :class="
             cn(
               'flex items-center justify-center',
-              multi ? 'size-full' : 'bg-agent-surface-hover aspect-square w-40'
+              multi
+                ? 'size-full'
+                : 'aspect-square w-40 bg-secondary-background-hover'
             )
           "
         >
-          <span class="text-agent-fg-muted icon-[lucide--box] size-6" />
+          <span class="icon-[lucide--box] size-6 text-muted-foreground" />
         </span>
       </button>
     </div>
@@ -207,7 +209,7 @@ function stopPreview(event: Event): void {
     <button
       v-if="collapsible"
       type="button"
-      class="border-agent-border text-agent-fg hover:bg-agent-surface-hover flex cursor-pointer items-center gap-1 self-center rounded-full border px-3 py-1 text-xs"
+      class="flex cursor-pointer items-center gap-1 self-center rounded-full border border-component-node-border px-3 py-1 text-xs text-base-foreground hover:bg-secondary-background-hover"
       @click="expanded = !expanded"
     >
       {{ expanded ? t('agent.showLess') : t('agent.showMore') }}
@@ -228,7 +230,7 @@ function stopPreview(event: Event): void {
       <button
         v-if="audioCollapsible"
         type="button"
-        class="border-agent-border text-agent-fg hover:bg-agent-surface-hover flex cursor-pointer items-center gap-1 self-center rounded-full border px-3 py-1 text-xs"
+        class="flex cursor-pointer items-center gap-1 self-center rounded-full border border-component-node-border px-3 py-1 text-xs text-base-foreground hover:bg-secondary-background-hover"
         @click="audioExpanded = !audioExpanded"
       >
         {{ audioExpanded ? t('agent.showLess') : t('agent.showMore') }}

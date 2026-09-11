@@ -73,20 +73,15 @@ watch(
     :aria-label="step.title"
     class="fixed inset-0 z-50"
   >
-    <div class="absolute inset-0 bg-black/40" />
+    <div class="absolute inset-0 bg-coach-scrim" />
     <div
       :style="cardStyle ?? undefined"
-      class="rounded-agent border-agent-border bg-agent-surface-raised text-agent-fg absolute border p-3 shadow-xl"
+      class="absolute rounded-xl border border-component-node-border bg-secondary-background p-3 text-base-foreground shadow-xl"
     >
       <p class="text-sm font-semibold">{{ step.title }}</p>
-      <p class="text-agent-fg-muted mt-2 text-xs">{{ step.body }}</p>
+      <p class="mt-2 text-xs text-muted-foreground">{{ step.body }}</p>
       <div class="mt-4 flex justify-end">
-        <Button
-          variant="primary"
-          size="md"
-          class="text-agent-accent-fg hover:bg-agent-accent/90 focus-visible:ring-agent-accent rounded-xl px-3 text-sm focus-visible:ring-2"
-          @click="finish"
-        >
+        <Button variant="primary" size="md" @click="finish">
           {{ $t('agent.gotIt') }}
         </Button>
       </div>

@@ -41,7 +41,7 @@ describe('PanelHeader', () => {
 
     const button = screen.getByRole('button', { name: 'New chat' })
     expect(tooltipBindings.get(button)).toEqual(
-      tooltipConfig.buildAgentTooltipConfig('New chat')
+      tooltipConfig.buildTooltipConfig('New chat')
     )
   })
 
@@ -55,7 +55,7 @@ describe('PanelHeader', () => {
 
     const button = screen.getByRole('button', { name: label })
     expect(tooltipBindings.get(button)).toEqual(
-      tooltipConfig.buildAgentTooltipConfig(label)
+      tooltipConfig.buildTooltipConfig(label)
     )
   })
 })
