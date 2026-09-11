@@ -3,7 +3,6 @@ import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
-import { platformTopUpHref } from '../../lib/workshop/buy-credits'
 import HeaderAccount from './HeaderAccount.vue'
 
 const h = vi.hoisted(() => ({
@@ -139,15 +138,15 @@ describe('HeaderAccount', () => {
       h.balance!.value = { status: 'ok', credits }
       render(HeaderAccount)
 
-      await userEvent
-        .setup()
-        .click(screen.getByRole('button', { name: /account/i }))
+      const user = userEvent.setup()
+      await user.click(screen.getByRole('button', { name: /account/i }))
       const buy = await screen.findByRole('menuitem', {
         name: /add credits/i
       })
-      expect(buy.getAttribute('href')).toBe(platformTopUpHref(workspace.id))
-      expect(buy.getAttribute('target')).toBe('_blank')
       expect(screen.getByRole('menuitem', { name: /log out/i })).toBeTruthy()
+
+      await user.click(buy)
+      expect(await screen.findByTestId('buy-credits-dialog')).toBeTruthy()
     }
   )
 
@@ -211,19 +210,23 @@ describe('HeaderAccount menu', () => {
     h.balance!.value = { status: 'ok', credits: 42 }
   }
 
-  it('links Add credits to platform for this workspace and settings to Cloud', async () => {
+  it('opens the amount picker from Add credits and links settings to Cloud', async () => {
     signIn()
     const user = userEvent.setup()
     render(HeaderAccount)
 
     await user.click(screen.getByTestId('header-account'))
 
-    const topUp = await screen.findByTestId('account-add-credits')
-    expect(topUp.getAttribute('href')).toBe(platformTopUpHref(workspace.id))
-    expect(topUp.getAttribute('target')).toBe('_blank')
     expect(
-      screen.getByTestId('account-workspace-settings').getAttribute('href')
+      (await screen.findByTestId('account-workspace-settings')).getAttribute(
+        'href'
+      )
     ).toBe('https://cloud.comfy.org')
+    expect(screen.queryByTestId('buy-credits-dialog')).toBeNull()
+
+    await user.click(screen.getByTestId('account-add-credits'))
+
+    expect(await screen.findByTestId('buy-credits-dialog')).toBeTruthy()
   })
 
   it('hides the top-up row from a member', async () => {

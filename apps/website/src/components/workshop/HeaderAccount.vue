@@ -27,7 +27,6 @@ import {
   useWorkshopCredits
 } from '../../config/workshop-credits'
 import { externalLinks } from '../../config/routes'
-import { platformTopUpHref } from '../../lib/workshop/buy-credits'
 import type { WorkspaceWithRole } from '../../lib/workshop/workspaces'
 import { listWorkspaces } from '../../lib/workshop/workspaces'
 import { runBeforeSignInLeave } from '../../config/workshop-return'
@@ -35,6 +34,7 @@ import { useWorkshopSession } from '../../config/workshop-session-state'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { useWorkshopAuthFlag } from '../../scripts/posthog'
+import BuyCreditsDialog from './BuyCreditsDialog.vue'
 
 const { locale = 'en' } = defineProps<{
   locale?: Locale
@@ -73,6 +73,7 @@ function goToSignIn(event: MouseEvent): void {
 }
 
 const menuOpen = ref(false)
+const buyingCredits = ref(false)
 
 // Mar's switcher from #16556, on real rails: the list is the account's own
 // workspaces, the switch is a remint for the picked one, and the balance
@@ -358,23 +359,16 @@ const surfaceClass =
             {{ t('auth.header.balanceError', locale) }}
           </p>
 
-          <DropdownMenuItem v-if="canTopUp" as-child>
-            <a
-              :href="platformTopUpHref(session.workspace.id)"
-              target="_blank"
-              rel="noopener noreferrer"
-              :class="itemClass"
-              data-testid="account-add-credits"
-            >
-              <Coins class="size-5 text-primary-warm-gray" aria-hidden="true" />
-              <span class="flex flex-1 items-center gap-3">
-                {{ t('workshop.run.buyCredits', locale) }}
-                <ExternalLink
-                  class="size-5 text-primary-warm-gray"
-                  aria-hidden="true"
-                />
-              </span>
-            </a>
+          <DropdownMenuItem
+            v-if="canTopUp"
+            :class="itemClass"
+            data-testid="account-add-credits"
+            @select="buyingCredits = true"
+          >
+            <Coins class="size-5 text-primary-warm-gray" aria-hidden="true" />
+            <span class="flex-1">{{
+              t('workshop.run.buyCredits', locale)
+            }}</span>
           </DropdownMenuItem>
 
           <DropdownMenuItem as-child>
@@ -428,5 +422,7 @@ const surfaceClass =
         </DropdownMenuContent>
       </DropdownMenuPortal>
     </DropdownMenuRoot>
+
+    <BuyCreditsDialog v-model:open="buyingCredits" :locale />
   </div>
 </template>
