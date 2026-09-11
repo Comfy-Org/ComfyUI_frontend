@@ -1,8 +1,12 @@
-import type { SubscriptionTier } from '@comfyorg/ingest-types'
-import { render, screen } from '@testing-library/vue'
+import type {
+  ScheduledPlanChange,
+  SubscriptionTier
+} from '@comfyorg/ingest-types'
+import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
+import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -14,6 +18,7 @@ interface MockSubscription {
   tier: SubscriptionTier | null
   isCancelled?: boolean
   duration?: string
+  scheduledChange?: ScheduledPlanChange
 }
 
 interface MockTeamStop {
@@ -218,6 +223,137 @@ describe('UnifiedPricingTable plan CTA labels', () => {
       screen.queryByRole('button', { name: 'Change to Standard Yearly' })
     ).toBeNull()
     expect(screen.getByRole('button', { name: 'Current plan' })).toBeDisabled()
+  })
+})
+
+describe('UnifiedPricingTable scheduled plan change', () => {
+  beforeEach(() => {
+    mockSubscription.value = {
+      tier: 'CREATOR',
+      duration: 'ANNUAL',
+      scheduledChange: {
+        plan_slug: 'standard-monthly',
+        effective_at: '2026-10-01T00:00:00Z',
+        team_credit_stop: null
+      }
+    }
+    mockSubscriptionStatus.value = null
+    mockCurrentPlanSlug.value = null
+    mockCurrentTeamCreditStop.value = null
+    mockIsTeamPlan.value = false
+    mockCanManageSubscription.value = false
+    mockCanDowngradeToPersonal.value = false
+    mockCanChangeSeats.value = false
+    mockRawCanReactivate.value = false
+    mockSnapshotAuthoritative.value = true
+    mockPermissions.value = {
+      canManageSubscription: true,
+      canManageSubscriptionLifecycle: true,
+      canDowngradeToPersonal: true
+    }
+    mockDistributionTypes.isCloud = true
+    mockApiPlans.value = [
+      apiPlan('STANDARD', 'MONTHLY', 42_000),
+      apiPlan('STANDARD', 'ANNUAL', 504_000),
+      apiPlan('CREATOR', 'MONTHLY', 74_000),
+      apiPlan('CREATOR', 'ANNUAL', 888_000)
+    ]
+  })
+
+  it('shows a scheduled monthly destination only on the monthly cycle', async () => {
+    const user = userEvent.setup()
+    renderWithCycleToggle()
+
+    expect(screen.getByRole('button', { name: 'Current Plan' })).toBeDisabled()
+    expect(screen.queryByRole('button', { name: /Scheduled for/ })).toBeNull()
+    expect(
+      screen.getByRole('button', { name: 'Change to Pro Yearly' })
+    ).toBeDisabled()
+
+    await user.click(screen.getByRole('button', { name: 'Monthly' }))
+    await nextTick()
+
+    expect(
+      screen.getByRole('button', { name: 'Scheduled for Oct 1, 2026' })
+    ).toBeDisabled()
+    expect(screen.queryByRole('button', { name: 'Current Plan' })).toBeNull()
+  })
+
+  it('replaces the footnote with a link-less status notice', () => {
+    renderComponent()
+
+    const notice = screen.getByRole('status')
+    expect(notice).toHaveTextContent(
+      'Your plan changes to Standard on Oct 1, 2026.'
+    )
+    expect(within(notice).queryByRole('button')).toBeNull()
+    expect(screen.queryByText(/Based on this template/)).toBeNull()
+  })
+
+  it('shows the notice and disables the team action on the team tab', () => {
+    renderComponent({ initialPlanMode: 'team' })
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Your plan changes to Standard on Oct 1, 2026.'
+    )
+    expect(
+      screen.getByRole('button', { name: 'Subscribe to Team Yearly' })
+    ).toBeDisabled()
+  })
+
+  it('shows a cadence change only when viewing its destination cycle', async () => {
+    const user = userEvent.setup()
+    mockSubscription.value = {
+      tier: 'CREATOR',
+      duration: 'MONTHLY',
+      scheduledChange: {
+        plan_slug: 'creator-annual',
+        effective_at: '2026-10-01T00:00:00Z',
+        team_credit_stop: null
+      }
+    }
+    mockCurrentPlanSlug.value = 'creator-monthly'
+
+    renderWithCycleToggle()
+
+    expect(
+      screen.getByRole('button', { name: 'Scheduled for Oct 1, 2026' })
+    ).toBeDisabled()
+
+    await user.click(screen.getByRole('button', { name: 'Monthly' }))
+    await nextTick()
+
+    expect(screen.getByRole('button', { name: 'Current Plan' })).toBeDisabled()
+    expect(screen.queryByRole('button', { name: /Scheduled for/ })).toBeNull()
+  })
+
+  it('suppresses an incomplete scheduled change', () => {
+    mockApiPlans.value = []
+
+    renderComponent()
+
+    expect(screen.queryByRole('status')).toBeNull()
+    expect(screen.getByText(/Based on this template/)).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /Scheduled for/ })).toBeNull()
+  })
+
+  it('suppresses a scheduled change on a cancelled subscription', () => {
+    mockSubscription.value = {
+      tier: 'CREATOR',
+      duration: 'ANNUAL',
+      scheduledChange: {
+        plan_slug: 'standard-monthly',
+        effective_at: '2026-10-01T00:00:00Z',
+        team_credit_stop: null
+      },
+      isCancelled: true
+    }
+
+    renderComponent()
+
+    expect(screen.queryByRole('status')).toBeNull()
+    expect(screen.getByText(/Based on this template/)).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /Scheduled for/ })).toBeNull()
   })
 })
 
@@ -544,6 +680,98 @@ describe('UnifiedPricingTable outside Cloud', () => {
     expect(
       screen.queryByRole('button', { name: 'Change to Standard Yearly' })
     ).toBeNull()
+  })
+})
+
+const cycleToggleStub = {
+  props: ['options'],
+  emits: ['update:modelValue'],
+  template: `<div><button
+      v-for="option in options"
+      :key="option.value"
+      :data-testid="'cycle-' + option.value"
+      @click="$emit('update:modelValue', option.value)"
+    >{{ option.label }}</button></div>`
+}
+
+function renderWithCycleToggle(
+  props: Partial<ComponentProps<typeof UnifiedPricingTable>> = {}
+) {
+  return render(UnifiedPricingTable, {
+    props,
+    global: {
+      plugins: [i18n],
+      components: { Button },
+      stubs: {
+        SelectButton: cycleToggleStub,
+        CreditSlider: { template: '<div />' }
+      }
+    }
+  })
+}
+
+describe('UnifiedPricingTable credit allotment copy', () => {
+  beforeEach(() => {
+    mockSubscription.value = null
+    mockSubscriptionStatus.value = null
+    mockCurrentPlanSlug.value = null
+    mockCurrentTeamCreditStop.value = null
+    mockIsTeamPlan.value = false
+    mockCanManageSubscription.value = true
+    mockCanDowngradeToPersonal.value = true
+    mockDistributionTypes.isCloud = true
+  })
+
+  it('shows the catalog grant in preference to twelve static months', () => {
+    mockApiPlans.value = [apiPlan('STANDARD', 'ANNUAL', 60_000)]
+
+    renderComponent()
+
+    expect(screen.getByText('60,000')).toBeTruthy()
+    expect(screen.queryByText('50,400')).toBeNull()
+    expect(screen.getByText(/~5,429/)).toBeTruthy()
+    expect(screen.getByText('88,800')).toBeTruthy()
+  })
+
+  it('states the whole-year allotment for personal tiers on the yearly cycle', () => {
+    renderWithCycleToggle()
+
+    expect(screen.getAllByText('credits per year')).toHaveLength(3)
+    expect(screen.queryAllByText('monthly credits')).toHaveLength(0)
+    expect(screen.getByText('50,400')).toBeTruthy()
+    expect(screen.getByText('253,200')).toBeTruthy()
+    expect(screen.queryByText('4,200')).toBeNull()
+    expect(screen.getByText('Generates ~4,560 5s videos*')).toBeTruthy()
+  })
+
+  it('states the monthly allotment for personal tiers on the monthly cycle', async () => {
+    const user = userEvent.setup()
+    renderWithCycleToggle()
+
+    await user.click(screen.getByRole('button', { name: 'Monthly' }))
+    await nextTick()
+
+    expect(screen.getAllByText('monthly credits')).toHaveLength(3)
+    expect(screen.queryAllByText('credits per year')).toHaveLength(0)
+    expect(screen.getByText('4,200')).toBeTruthy()
+    expect(screen.getByText('21,100')).toBeTruthy()
+    expect(screen.getByText('Generates ~380 5s videos*')).toBeTruthy()
+  })
+
+  it('scales the team allotment with the billing cycle', async () => {
+    const user = userEvent.setup()
+    renderWithCycleToggle({ initialPlanMode: 'team' })
+
+    expect(screen.getByText('credits per year')).toBeTruthy()
+    expect(screen.getByText('1,772,400')).toBeTruthy()
+    expect(screen.getByText('Generates ~160,860 5s videos*')).toBeTruthy()
+
+    await user.click(screen.getByRole('button', { name: 'Monthly' }))
+    await nextTick()
+
+    expect(screen.getByText('monthly credits')).toBeTruthy()
+    expect(screen.getByText('147,700')).toBeTruthy()
+    expect(screen.getByText('Generates ~13,405 5s videos*')).toBeTruthy()
   })
 })
 
