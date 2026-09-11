@@ -165,6 +165,34 @@ describe('createOpSender', () => {
     expect(sent[1].ops[0].base_version).toBe(41)
   })
 
+  it('resetClock leaves an in-flight batch for a different workflow untouched', () => {
+    boundWorkflow = 'wf-2'
+    sender.enqueue([addNode(1)])
+    expect(sent[0].workflowId).toBe('wf-2')
+
+    sender.resetClock(WORKFLOW)
+
+    expect(settled).toHaveLength(0)
+    expect(sender.pending()).toBe(1)
+
+    ackInFlight()
+    expect(settled.map((outcome) => outcome.state)).toEqual(['acknowledged'])
+  })
+
+  it('resetClock resumes retained work for a different workflow', () => {
+    sender.enqueue([addNode(1)])
+    boundWorkflow = 'wf-2'
+    sender.enqueue([addNode(2)])
+    expect(sender.pending()).toBe(2)
+
+    sender.resetClock(WORKFLOW)
+
+    expect(settled.map((outcome) => outcome.state)).toEqual(['undeliverable'])
+    expect(sent).toHaveLength(2)
+    expect(sent[1].workflowId).toBe('wf-2')
+    expect(sender.pending()).toBe(1)
+  })
+
   it('retries a down transport with the SAME minted ops and never re-mints', () => {
     transportUp = false
     sender.enqueue([addNode(1)])
