@@ -41,8 +41,14 @@ interface RestLine {
 
 describe('agentApiSchema fixture gate', () => {
   describe('ws frames: every line is a valid agent event or a recognized-foreign frame', () => {
-    it('the ws fixture glob finds at least one capture', () => {
-      expect(wsPaths.length).toBeGreaterThan(0)
+    it('loads and validates a captured websocket event frame', () => {
+      const [captured] = jsonlLines(
+        './__fixtures__/agent/ws-turn-cancelled.jsonl'
+      ) as WsLine[]
+
+      expect(zAgentWsEvent.parse(captured.frame)).toMatchObject({
+        type: 'agent_thinking'
+      })
     })
 
     it.for(wsPaths)('%s', (path) => {

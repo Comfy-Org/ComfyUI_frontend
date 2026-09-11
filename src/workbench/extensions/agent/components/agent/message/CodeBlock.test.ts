@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
+import { codeToHtml } from 'shiki'
 
 import { i18n } from '@/i18n'
 
@@ -32,8 +33,45 @@ describe('CodeBlock', () => {
       global: { plugins: [i18n] }
     })
 
-    await new Promise((resolve) => setTimeout(resolve, 50))
+    await waitFor(() =>
+      expect(codeToHtml).toHaveBeenCalledWith(
+        'mystery',
+        expect.objectContaining({ lang: 'nope' })
+      )
+    )
     expect(screen.queryByText('HL:mystery')).not.toBeInTheDocument()
     expect(screen.getByText('mystery')).toBeInTheDocument()
+  })
+
+  // Slice #16210 10-T5, reproduced on main@00b9c69ad; remove `.fails` when oversized blocks bypass Shiki.
+  it.fails('leaves oversized blocks plain without invoking Shiki', async () => {
+    vi.useFakeTimers()
+    const code = 'x'.repeat(50_001)
+    try {
+      render(CodeBlock, {
+        props: { code, lang: 'text' },
+        global: { plugins: [i18n] }
+      })
+
+      expect(screen.getByText(code)).toBeInTheDocument()
+      await vi.advanceTimersByTimeAsync(120)
+      expect(codeToHtml).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  // Slice #16210 10-T6, reproduced on main@00b9c69ad; remove `.fails` when rerenders clear stale highlights.
+  it.fails('never displays a highlight for a stale code snapshot', async () => {
+    const { rerender } = render(CodeBlock, {
+      props: { code: 'old', lang: 'text' },
+      global: { plugins: [i18n] }
+    })
+
+    expect(await screen.findByText('HL:old')).toBeInTheDocument()
+    await rerender({ code: 'new', lang: 'text' })
+    expect(screen.queryByText('HL:old')).not.toBeInTheDocument()
+    expect(screen.getByText('new')).toBeInTheDocument()
+    expect(await screen.findByText('HL:new')).toBeInTheDocument()
   })
 })
