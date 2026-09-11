@@ -6,6 +6,12 @@ import {
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import { useKeybindingService } from '@/platform/keybindings/keybindingService'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import {
+  registerCanvasKeybindings,
+  unregisterCanvasKeybindings
+} from '@/renderer/core/canvas/canvasKeybindings'
 import { createTestCanvasElement } from '@/utils/__tests__/canvasTestUtils'
 
 export type Modifiers = Partial<
@@ -87,13 +93,42 @@ export function loseCapture(element: Element, pointerId = 1): void {
   element.dispatchEvent(new PointerEvent('lostpointercapture', { pointerId }))
 }
 
-export function keyEvent(
-  type: 'keydown' | 'keyup',
-  key: string
-): KeyboardEvent {
-  const event = new KeyboardEvent(type, { key })
-  Object.defineProperty(event, 'target', { value: { localName: 'div' } })
-  return event
+/**
+ * Routes keyboard input to a canvas the way the app does: the canvas sits
+ * focused in `#graph-canvas-container`, its shortcuts are registered and the
+ * keybinding dispatcher listens on the window.
+ */
+export function attachKeyboard(canvas: LGraphCanvas) {
+  const element = canvas.canvas
+  const container = document.createElement('div')
+  container.id = 'graph-canvas-container'
+  document.body.append(container)
+  container.append(element)
+  element.tabIndex = 0
+  element.focus()
+  useSettingStore().settingValues['Comfy.Keybinding.CapturePhase'] = true
+  registerCanvasKeybindings(canvas, () => canvas['_autoPan'])
+  const uninstall = useKeybindingService().install()
+
+  function send(type: 'keydown' | 'keyup', key: string) {
+    const event = new KeyboardEvent(type, {
+      key,
+      bubbles: true,
+      cancelable: true
+    })
+    element.dispatchEvent(event)
+    return event
+  }
+
+  return {
+    press: (key: string) => send('keydown', key),
+    release: (key: string) => send('keyup', key),
+    dispose: () => {
+      uninstall()
+      unregisterCanvasKeybindings(canvas)
+      container.remove()
+    }
+  }
 }
 
 export function selectedTitles(canvas: LGraphCanvas): string[] {
