@@ -1,3 +1,4 @@
+import type { IncomingMessage } from 'http'
 import { sentryVitePlugin } from '@sentry/vite-plugin'
 import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'

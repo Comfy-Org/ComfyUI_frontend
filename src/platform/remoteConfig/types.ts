@@ -117,7 +117,6 @@ export type RemoteConfig = {
   node_library_essentials_enabled?: boolean
   supports_model_type_tags?: boolean
   free_tier_credits?: number
-  free_tier_job_allowance_enabled?: boolean
   free_tier_balance?: {
     allowance: number
     used: number
