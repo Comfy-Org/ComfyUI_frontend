@@ -35,6 +35,21 @@ const groups = [
 ]
 
 describe('FacetSheet', () => {
+  it('toggles the sheet height from the keyboard', async () => {
+    const user = userEvent.setup()
+    render(FacetSheet, { props: { groups, labels, resultCount: 2 } })
+
+    const grabber = screen.getByRole('button', { name: 'Resize filters' })
+    expect(grabber.getAttribute('aria-expanded')).toBe('false')
+
+    grabber.focus()
+    await user.keyboard('{Enter}')
+    expect(grabber.getAttribute('aria-expanded')).toBe('true')
+
+    await user.keyboard(' ')
+    expect(grabber.getAttribute('aria-expanded')).toBe('false')
+  })
+
   it('filters options and shows the empty result', async () => {
     const user = userEvent.setup()
     render(FacetSheet, { props: { groups, labels, resultCount: 2 } })
