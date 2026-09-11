@@ -25,6 +25,10 @@ const { model, related, relatedHeading, relatedHeadingShort, successor, priceEst
 const routes = getRoutes()
 const pillClass =
   'inline-flex h-7 items-center rounded-full border border-transparency-white-t20 px-3 text-xs leading-none text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow'
+const TAGS_SHOWN = 3
+const shownTags = tags.slice(0, TAGS_SHOWN)
+const restTags = tags.slice(TAGS_SHOWN)
+const restTagCount = restTags.length
 ---
 
 <BaseLayout
@@ -82,21 +86,6 @@ const pillClass =
         </div>
 
         <div class="flex flex-col gap-4 lg:items-end">
-          <ul
-            class="flex scrollbar-hide items-center gap-2 max-sm:overflow-x-auto sm:flex-wrap lg:justify-end"
-            data-testid="model-tags"
-          >
-            {tags.map((tag) => (
-              <li>
-                <a
-                  href={`${routes.workshop}${tag.search}`}
-                  class="inline-flex h-7 shrink-0 items-center rounded-full bg-transparency-white-t8 px-3 text-xs leading-none whitespace-nowrap text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t20 hover:text-primary-comfy-yellow"
-                >
-                  {tag.label}
-                </a>
-              </li>
-            ))}
-          </ul>
           <p
             class="flex items-baseline gap-2 text-sm text-primary-comfy-canvas/60"
             data-testid="model-price"
@@ -109,6 +98,34 @@ const pillClass =
             <p class="text-xs text-primary-warm-gray">
               {t('workshop.model.nodePriceDefaults')}
             </p>
+          )}
+          {shownTags.length > 0 && (
+            <ul
+              class="flex scrollbar-hide items-center gap-2 max-sm:overflow-x-auto sm:flex-wrap lg:justify-end"
+              data-testid="model-tags"
+            >
+              {shownTags.map((tag) => (
+                <li>
+                  <a
+                    href={`${routes.workshop}${tag.search}`}
+                    class="inline-flex h-7 shrink-0 items-center rounded-full bg-transparency-white-t8 px-3 text-xs leading-none whitespace-nowrap text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t20 hover:text-primary-comfy-yellow"
+                  >
+                    {tag.label}
+                  </a>
+                </li>
+              ))}
+              {restTagCount > 0 && (
+                <li>
+                  <span
+                    class="inline-flex h-7 shrink-0 items-center rounded-full bg-transparency-white-t8 px-3 text-xs leading-none whitespace-nowrap text-primary-comfy-canvas/70"
+                    title={restTags.map((tag) => tag.label).join(', ')}
+                    data-testid="model-tags-rest"
+                  >
+                    +{restTagCount}
+                  </span>
+                </li>
+              )}
+            </ul>
           )}
         </div>
       </div>

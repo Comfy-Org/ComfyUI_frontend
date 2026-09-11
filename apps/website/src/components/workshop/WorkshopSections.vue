@@ -98,7 +98,7 @@ const unplaced = computed(() =>
                 {{ section.total }}
               </span>
               <ChevronRight
-                class="size-5 transition-transform group-hover:translate-x-0.5"
+                class="size-5 self-center transition-transform group-hover:translate-x-0.5"
                 aria-hidden="true"
               />
             </button>
@@ -134,7 +134,7 @@ const unplaced = computed(() =>
                 {{ otherFormats.length }}
               </span>
               <ChevronRight
-                class="size-5 transition-transform group-hover:translate-x-0.5"
+                class="size-5 self-center transition-transform group-hover:translate-x-0.5"
                 aria-hidden="true"
               />
             </button>

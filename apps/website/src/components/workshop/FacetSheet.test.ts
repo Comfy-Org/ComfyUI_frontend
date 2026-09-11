@@ -12,7 +12,8 @@ const labels = {
   applied: '{n} applied',
   clearAll: 'Clear all',
   show: 'Show {n}',
-  close: 'Close'
+  close: 'Close',
+  resize: 'Resize filters'
 }
 
 const groups = [

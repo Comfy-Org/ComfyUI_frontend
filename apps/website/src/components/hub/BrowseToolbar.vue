@@ -75,6 +75,7 @@ export interface ToolbarLabels {
   readonly typeAll: string
   readonly showResults: string
   readonly showModels: string
+  readonly resize: string
 }
 
 const {
@@ -270,7 +271,8 @@ const sheetLabels = computed(() => ({
   applied: labels.selected,
   clearAll: labels.clearAll,
   show: showLabel.value,
-  close: labels.filter
+  close: labels.filter,
+  resize: labels.resize
 }))
 
 function phoneToggle(key: string, value: string) {
@@ -427,7 +429,7 @@ function phoneToggle(key: string, value: string) {
       <div
         v-if="filterOpen"
         ref="panel"
-        class="bg-site-dropdown z-40 flex scrollbar-thin flex-col gap-7 overflow-y-auto border border-white/10 shadow-2xl max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:max-h-[85vh] max-sm:gap-4 max-sm:rounded-t-3xl max-sm:p-5 sm:absolute sm:top-full sm:right-0 sm:mt-3 sm:max-h-[75vh] sm:w-full sm:max-w-4xl sm:rounded-3xl sm:p-8"
+        class="bg-site-dropdown z-40 flex scrollbar-thin flex-col gap-7 overflow-y-auto border border-white/10 shadow-2xl max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:gap-4 max-sm:rounded-t-3xl max-sm:p-5 sm:absolute sm:top-full sm:right-0 sm:mt-3 sm:max-h-[75vh] sm:w-full sm:max-w-4xl sm:rounded-3xl sm:p-8"
         data-testid="hub-filter-menu"
       >
         <FacetSheet

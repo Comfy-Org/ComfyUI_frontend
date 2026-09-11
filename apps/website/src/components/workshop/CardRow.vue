@@ -41,7 +41,7 @@ useMutationObserver(row, measure, { childList: true, subtree: true })
 
 const arrowClass = (spent: boolean) =>
   cn(
-    'focus-visible:ring-primary-comfy-yellow/50 grid size-9 place-items-center rounded-full border border-transparency-white-t20 text-primary-warm-white transition-colors outline-none focus-visible:ring-3',
+    'focus-visible:ring-primary-comfy-yellow/50 grid size-9 place-items-center rounded-xl border border-transparency-white-t20 text-primary-warm-white transition-colors outline-none focus-visible:ring-3',
     spent
       ? 'cursor-default opacity-30'
       : 'hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow cursor-pointer'
@@ -50,7 +50,7 @@ const arrowClass = (spent: boolean) =>
 
 <template>
   <div>
-    <div class="mb-5 flex items-center justify-between gap-4">
+    <div class="mb-5 flex items-baseline justify-between gap-4">
       <slot name="heading" />
       <div class="flex items-center gap-3">
         <slot name="actions" />
