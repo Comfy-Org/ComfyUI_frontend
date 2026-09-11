@@ -1289,3 +1289,60 @@ test('Floating reroutes', { tag: '@vue-nodes' }, async ({ comfyPage }) => {
     )
     .toBe(false)
 })
+
+test(
+  'Extends a floating reroute chain',
+  { tag: '@vue-nodes' },
+  async ({ comfyPage }) => {
+    await comfyPage.nodeOps.clearGraph()
+    await comfyPage.searchBoxV2.addNode('Int', {
+      position: { x: 800, y: 200 }
+    })
+    const primitiveNode = await comfyPage.vueNodes.getFixtureByTitle('Int')
+
+    await primitiveNode
+      .getSlot('INT')
+      .first()
+      .dragTo(comfyPage.canvas, {
+        targetPosition: { x: 700, y: 400 }
+      })
+    await comfyPage.contextMenu.clickLitegraphMenuItem('Add Reroute')
+
+    const rerouteOutputSlotOffset = 17
+    const reroutePosition = await comfyPage.page.evaluate((slotOffset) => {
+      const reroute = [...window.app!.graph.reroutes.values()][0]
+      const [x, y] = window.app!.canvasPosToClientPos([
+        reroute.pos[0] + slotOffset,
+        reroute.pos[1]
+      ])
+      return { x, y }
+    }, rerouteOutputSlotOffset)
+    await comfyPage.page.mouse.move(reroutePosition.x, reroutePosition.y)
+    await comfyPage.nextFrame()
+    await comfyPage.canvasOps.dragAndDrop(reroutePosition, {
+      x: reroutePosition.x - 120,
+      y: reroutePosition.y + 80
+    })
+    await comfyPage.contextMenu.clickLitegraphMenuItem('Add Reroute')
+
+    await expect
+      .poll(() =>
+        comfyPage.page.evaluate(() => {
+          const graph = window.app!.graph
+          const reroutes = [...graph.reroutes.values()]
+          const tip = reroutes.find((reroute) => reroute.floating)
+          const link = [...graph.floatingLinks.values()][0]
+          return {
+            rerouteCount: reroutes.length,
+            floatingLinkCount: graph.floatingLinks.size,
+            linkEndsAtTip: link.parentId === tip?.id
+          }
+        })
+      )
+      .toEqual({
+        rerouteCount: 2,
+        floatingLinkCount: 1,
+        linkEndsAtTip: true
+      })
+  }
+)
