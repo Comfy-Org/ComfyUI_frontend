@@ -1,4 +1,5 @@
 import type { Locator, Page } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 import { TOUR_SEEN_SETTING } from '@/platform/onboarding/onboardingTours'
 
@@ -30,7 +31,7 @@ export class OnboardingCoachmarks {
       exact: true
     })
     this.spotlight = page.getByTestId('coach-spotlight')
-    this.card = page.getByRole('dialog').filter({ hasText: /Step \d+ of \d+/ })
+    this.card = page.getByTestId('coach-card')
     this.cardNextButton = this.card.getByRole('button', { name: 'Next' })
     this.cardDoneButton = this.card.getByRole('button', { name: 'Done' })
   }
@@ -43,6 +44,28 @@ export class OnboardingCoachmarks {
   /** The spotlight card while it is showing the given step number. */
   cardForStep(step: number): Locator {
     return this.card.filter({ hasText: new RegExp(`Step ${step} of `) })
+  }
+
+  async stepCount(): Promise<number> {
+    await expect(this.card).toContainText(/Step \d+ of \d+/)
+    const label = await this.card.textContent()
+    return Number(/Step \d+ of (\d+)/.exec(label ?? '')?.[1])
+  }
+
+  async walkToStep(title: string): Promise<number> {
+    const target = this.card.getByText(title)
+    const totalSteps = await this.stepCount()
+
+    for (let step = 1; step < totalSteps; step++) {
+      await expect(this.card).toContainText(`Step ${step} of ${totalSteps}`)
+      await expect(this.card).toHaveAttribute('aria-busy', 'false')
+      if (await target.isVisible()) break
+      await this.cardNextButton.click()
+    }
+
+    await expect(target).toBeVisible()
+    await expect(this.card).toHaveAttribute('aria-busy', 'false')
+    return totalSteps
   }
 
   /**

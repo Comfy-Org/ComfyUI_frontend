@@ -351,13 +351,14 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
 
   test.describe('without a subscription', () => {
     test.beforeEach(async ({ page }) => {
+      await page.clock.install()
       await mockBilling(page)
       await page.route('**/api/billing/status', (route) =>
         route.fulfill(jsonRoute(INACTIVE_SUBSCRIPTION))
       )
     })
 
-    test('leaves the nudge until the upgrade dialog closes', async ({
+    test('does not show a recommendation when the paywall prevents a run', async ({
       comfyPage
     }) => {
       test.slow()
@@ -378,10 +379,11 @@ test.describe('First-run tour', { tag: ['@cloud', '@ui'] }, () => {
       await page.keyboard.press('Escape')
 
       await expect(upgradeDialog).toBeHidden()
+      await page.clock.runFor(5000)
       await expect(
         nudge,
-        'the tour ended, so the user still needs somewhere to go next'
-      ).toBeVisible({ timeout: 10_000 })
+        'closing the paywall does not produce a successful generation'
+      ).toBeHidden()
     })
   })
 
