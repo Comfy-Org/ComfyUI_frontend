@@ -67,6 +67,28 @@ describe('uploadService', () => {
       }
     })
 
+    it('preserves the mime type of a non-PNG dataURL', async () => {
+      const dataURL = 'data:image/jpeg;base64,/9j/4AAQSkZJRg=='
+      const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue({
+        blob: () =>
+          Promise.resolve(new Blob(['content'], { type: 'image/jpeg' }))
+      } as Response)
+
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        createMockResponse(200, { name: 'upload-789.jpg', subfolder: '' })
+      )
+
+      try {
+        await uploadMedia({ source: dataURL, filename: 'photo.jpg' })
+      } finally {
+        fetchSpy.mockRestore()
+      }
+
+      const formData = vi.mocked(api.fetchApi).mock.calls[0][1]
+        ?.body as FormData
+      expect((formData.get('image') as File).type).toBe('image/jpeg')
+    })
+
     it('rejects invalid dataURL', async () => {
       const invalidURL = 'not-a-data-url'
 

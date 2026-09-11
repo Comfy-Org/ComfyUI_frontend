@@ -63,7 +63,7 @@ async function convertToFile(
   try {
     const blob = await fetch(source).then((r) => r.blob())
     const name = filename || `upload-${Date.now()}.png`
-    return new File([blob], name, { type: mimeType })
+    return new File([blob], name, { type: blob.type || mimeType })
   } catch (error) {
     // uploadMedia converts this internal failure into an UploadResult.
     // eslint-disable-next-line comfy/no-new-error-throw
