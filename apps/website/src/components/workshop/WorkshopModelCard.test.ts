@@ -185,7 +185,7 @@ describe('WorkshopModelCard', () => {
   )
 
   it.for([false, true])(
-    'keeps incomplete status alongside the ribbon (hub: %s)',
+    'keeps incomplete status alongside the variant label (hub: %s)',
     (providerBadge) => {
       render(WorkshopModelCard, {
         props: {
