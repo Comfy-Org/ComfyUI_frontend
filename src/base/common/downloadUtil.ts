@@ -141,13 +141,30 @@ export function extractFilenameFromContentDisposition(
 }
 
 /**
+ * Origin and path of a URL, without the query string or userinfo that carry
+ * the signature and credentials of a signed cloud asset URL. Errors and toasts
+ * built from a URL must use this, not the URL itself: RUM collects
+ * `console.error`, so a raw URL in an error message is retained telemetry.
+ */
+function redactUrlCredentials(url: string): string {
+  try {
+    const { origin, pathname } = new URL(url, window.location.origin)
+    return `${origin}${pathname}`
+  } catch {
+    return '<malformed url>'
+  }
+}
+
+/**
  * Fetch a URL and return its body as a Blob.
  * Shared by download and open-in-new-tab cloud paths.
  */
 async function fetchAsBlob(url: string): Promise<Response> {
   const response = await fetch(url)
   if (!response.ok) {
-    throw new Error(`Failed to fetch ${url}: ${response.status}`)
+    throw new Error(
+      `Failed to fetch ${redactUrlCredentials(url)}: ${response.status}`
+    )
   }
   return response
 }

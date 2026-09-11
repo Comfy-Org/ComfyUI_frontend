@@ -349,6 +349,25 @@ describe('downloadUtil', () => {
       expect(createObjectURLSpy).not.toHaveBeenCalled()
     })
 
+    it('keeps signing credentials out of the cloud fetch failure', async () => {
+      mockIsCloud.value = true
+      const signedUrl =
+        'https://storage.googleapis.com/bucket/output.png?X-Goog-Credential=svc%40proj.iam.gserviceaccount.com&X-Goog-Expires=900&X-Goog-Signature=7f1d0deadbeef'
+      fetchMock.mockResolvedValue(
+        fromPartial<Response>({ ok: false, status: 403, blob: vi.fn() })
+      )
+
+      const rejection = await downloadFileAsync(signedUrl).then(
+        () => undefined,
+        (error: unknown) => error
+      )
+
+      expect(rejection).toBeInstanceOf(Error)
+      expect(rejection instanceof Error ? rejection.message : '').toBe(
+        'Failed to fetch https://storage.googleapis.com/bucket/output.png: 403'
+      )
+    })
+
     it('resolves immediately for non-cloud downloads', async () => {
       mockIsCloud.value = false
       const testUrl = 'https://example.com/image.png'
