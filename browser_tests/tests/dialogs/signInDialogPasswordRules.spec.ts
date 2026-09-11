@@ -50,7 +50,6 @@ test.describe('Sign In dialog — password requirements checklist', () => {
     await dialog.signUpLink.click()
 
     await dialog.signUpEmailInput.fill('weak-password@test.comfy.org')
-    // Fails only the uppercase rule, so the disabled button is attributable to it.
     await dialog.signUpPasswordInput.fill('alllowercase1!')
     await dialog.signUpConfirmPasswordInput.fill('alllowercase1!')
 

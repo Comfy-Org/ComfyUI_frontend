@@ -104,7 +104,6 @@ test.describe('Sign In dialog — live auth', () => {
     const email = 'orphan-rollback@test.comfy.org'
     await comfyPage.cloudAuth.mockLiveEmailSignUp(email)
     await comfyPage.cloudAuth.mockLiveEmailSignUpProvisioningFailure(500)
-    // The rollback re-deletes via the identitytoolkit REST surface too.
     await comfyPage.page.route(
       '**/identitytoolkit.googleapis.com/**',
       async (route) => {
@@ -123,8 +122,6 @@ test.describe('Sign In dialog — live auth', () => {
     await dialog.signUpEmailInput.fill(email)
     await dialog.signUpPasswordInput.fill('Sup3r-secret-pass!')
     await dialog.signUpConfirmPasswordInput.fill('Sup3r-secret-pass!')
-    // Settle provisioning + rollback first; Current user is absent pre-submit,
-    // so a bare check could pass while the flow was still in flight.
     const provisioningFailed = comfyPage.page.waitForResponse(
       (response) =>
         response.url().includes('/customers') &&
@@ -184,7 +181,6 @@ test.describe('Sign In dialog — live auth', () => {
     await dialog.open()
 
     await dialog.emailInput.fill(CLOUD_SELF_EMAIL)
-    // Let the aborted request fail first; the bug is a success toast shown before it returns.
     const resetFailed = comfyPage.page.waitForEvent('requestfailed', {
       predicate: (request) => request.url().includes('accounts:sendOobCode')
     })

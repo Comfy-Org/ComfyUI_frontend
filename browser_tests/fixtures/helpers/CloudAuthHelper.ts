@@ -402,9 +402,6 @@ export class CloudAuthHelper {
       })
     )
 
-    // Both hosts call POST /customers right after account creation to
-    // provision the billing record. A 201 keeps the sign-up flow from
-    // rolling the just-created Firebase user back out.
     await this.page.route('**/customers', (route) => {
       if (route.request().method() !== 'POST') return route.fallback()
       return route.fulfill({

@@ -107,7 +107,6 @@ const handleSubmit = async () => {
   errorMessage.value = ''
   successMessage.value = ''
 
-  // Resolves undefined on a handled failure; only true means the email was sent.
   const sent = await authActions.sendPasswordReset(email.value)
   loading.value = false
 
@@ -120,6 +119,5 @@ const handleSubmit = async () => {
   redirectTimer = setTimeout(navigateToLogin, 3000)
 }
 
-// A view unmounted inside the 3s window must not navigate after disposal.
 onUnmounted(() => clearTimeout(redirectTimer))
 </script>

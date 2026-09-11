@@ -78,7 +78,6 @@ describe('CloudForgotPasswordView', () => {
   })
 
   it('shows the error copy and keeps the form usable when the reset fails', async () => {
-    // The action swallows its errors and resolves undefined on failure, never rejects.
     mockSendPasswordReset.mockResolvedValue(undefined)
     const user = userEvent.setup()
     await renderView()

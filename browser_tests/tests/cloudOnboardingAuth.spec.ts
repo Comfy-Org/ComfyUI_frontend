@@ -11,8 +11,6 @@ import {
 import { mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
-// The guarded app root: the router bounces a signed-out visitor to /cloud/login,
-// so reaching it proves auth — and excludes the transitional /cloud/user-check.
 const APP_ROOT = new RegExp(
   `^${APP_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/?(\\?.*)?$`
 )
@@ -34,8 +32,6 @@ type CreateCustomerResponse =
 const test = comfyPageFixture.extend<{ cloudAuth: CloudAuthHelper }>({
   page: async ({ page }, use) => {
     await mockCloudBoot(page, { features: {} })
-    // Pre-select the server user, so the post-auth root guard lands on the app
-    // instead of redirecting to /user-select the way an unselected profile does.
     await page.addInitScript(() =>
       localStorage.setItem('Comfy.userId', 'test-user-e2e')
     )
@@ -146,9 +142,6 @@ test.describe('Cloud onboarding — live auth', { tag: '@cloud' }, () => {
     await cloudAuth.mockLiveEmailSignUp()
     await mockCloudBoot(page, { features: { signup_turnstile: 'enforce' } })
     await page.addInitScript(() => {
-      // A stub Turnstile global that never calls back, so the widget stays
-      // "loaded but unsolved" — the state a real challenge is in until a
-      // person completes it.
       window.turnstile = {
         render: () => 'stub-widget-id',
         reset: () => {},
@@ -192,7 +185,6 @@ test.describe('Cloud onboarding — live auth', { tag: '@cloud' }, () => {
     await cloudAuth.mockLivePasswordResetTransportFailure()
     await openForgotPasswordForm(page)
 
-    // Let the aborted request fail first; the bug is a success shown before it returns.
     const resetFailed = page.waitForEvent('requestfailed', {
       predicate: (request) => request.url().includes('accounts:sendOobCode')
     })
