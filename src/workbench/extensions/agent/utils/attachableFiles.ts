@@ -10,7 +10,7 @@ const MEDIA_ATTACHABLE_KINDS = new Set<MediaType>(AGENT_ATTACH_MEDIA_KINDS)
 
 /* Non-media formats approved for agent attach (Jo, FE-1323); extended as the
    backend grows support. */
-export const AGENT_ATTACH_EXTENSIONS = [
+const AGENT_ATTACH_EXTENSIONS = [
   'mp4',
   'm4a',
   'mov',
