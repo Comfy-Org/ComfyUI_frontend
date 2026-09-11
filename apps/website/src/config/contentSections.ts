@@ -46,7 +46,7 @@ function inferBlockType(
   //
   // `hasKey` is safe without it: every dictionary carries the same keys, so it
   // reads whichever one is loaded.
-  const value = hasKey(bp) ? t(bp as never, locale) : ''
+  const value = hasKey(bp) ? t(bp, locale) : ''
   if (value.includes('\n')) return 'list'
   return 'paragraph'
 }

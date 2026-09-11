@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import { DEFAULT_LOCALE, type Locale } from '../../config/locales'
+import type { Locale } from '../../config/locales'
+import { DEFAULT_LOCALE } from '../../config/locales'
 import type { TranslationKey } from '../../i18n/translations'
 
 import { useHeroAnimation } from '../../composables/useHeroAnimation'

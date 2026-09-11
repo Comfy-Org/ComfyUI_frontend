@@ -140,7 +140,7 @@ export function markdownTwins(): AstroIntegration {
   return {
     name: 'comfy:markdown-twins',
     hooks: {
-      'astro:build:done': async ({ dir, logger }) => {
+      'astro:build:done': async ({ dir, pages, logger }) => {
         const root = fileURLToPath(dir)
         // Read the pages off DISK rather than from Astro's `pages` list.
         //
@@ -153,7 +153,28 @@ export function markdownTwins(): AstroIntegration {
         // `isExcludedFromSitemap` still decides what deserves a twin, so a
         // held-back locale gains none: Japanese pages are built but unpublished,
         // and a twin of an English page at a /ja/ URL is not content.
-        const report = await writeMarkdownTwins(root, await builtPages(root))
+        //
+        // Astro's list is still unioned in, for the opposite blind spot: a page
+        // emitted as a flat file rather than a directory — `404.html`, not
+        // `404/index.html` — is invisible to a walk that looks for
+        // `index.html`, so /404 went without a twin. Taking the union rather
+        // than every flat `.html` on disk is deliberate: `public/` holds real
+        // HTML that is not a page, like a search-engine verification file, and
+        // Astro never lists those.
+        //
+        // Disk entries win a tie, so a page found both ways keeps the exact
+        // pathname it already had and its twin's canonical URL is unchanged.
+        const discovered = await builtPages(root)
+        const walked = new Set(
+          discovered.map((pathname) => pathname.replace(/\/+$/, ''))
+        )
+        const routes = [
+          ...discovered,
+          ...pages
+            .map((page) => page.pathname)
+            .filter((pathname) => !walked.has(pathname.replace(/\/+$/, '')))
+        ].sort()
+        const report = await writeMarkdownTwins(root, routes)
         // Section indexes and llms-full.txt need every twin that actually
         // exists on disk, not just the ones this build freshly wrote — a
         // twin a page endpoint already wrote (report.existing) is just as

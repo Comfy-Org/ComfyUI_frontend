@@ -5,7 +5,11 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { workshopReleaseGate } from './workshop-release-gate'
+import { DEFAULT_LOCALE, LOCALE_CODES } from '../config/locales'
+import { modelsBuildRoutes, workshopReleaseGate } from './workshop-release-gate'
+
+/** Derived, so adding a locale extends this test rather than slipping past it. */
+const LOCALIZED = LOCALE_CODES.filter((locale) => locale !== DEFAULT_LOCALE)
 
 let root: string
 const logger: AstroIntegrationLogger = {
@@ -27,6 +31,15 @@ beforeEach(async () => {
   await mkdir(join(root, 'workshop'), { recursive: true })
   await writeFile(join(root, 'workshop/index.html'), 'Workshop')
   await writeFile(join(root, 'index.html'), 'Home')
+  // A locale serves Workshop from its own prefix, so the fixture has to hold
+  // those trees too. Building only the English one is what let 538 localized
+  // pages ship from a release build while the gate reported success.
+  for (const locale of LOCALIZED) {
+    await mkdir(join(root, locale, 'workshop/models'), { recursive: true })
+    await writeFile(join(root, locale, 'workshop/index.html'), 'Workshop')
+    await writeFile(join(root, locale, 'workshop/models/index.html'), 'Model')
+    await writeFile(join(root, locale, 'index.html'), 'Home')
+  }
 })
 afterEach(async () => {
   await rm(root, { recursive: true, force: true })
@@ -44,6 +57,49 @@ async function buildDone() {
 }
 
 describe('Workshop release output', () => {
+  it('rejects an invalid Cloud family before building', () => {
+    vi.stubEnv('VERCEL_ENV', 'preview')
+    vi.stubEnv('WORKSHOP_IN_BUILD', '1')
+    vi.stubEnv('PUBLIC_WORKSHOP_CLOUD_ENV', 'prod')
+
+    const hook = workshopReleaseGate().hooks['astro:build:start']
+    if (!hook) throw new Error('Missing build start hook')
+
+    expect(() => hook({ logger, setPrerenderer: vi.fn() })).toThrow(
+      /may only reach staging or test Cloud/
+    )
+  })
+
+  it('registers the original marketing entry when disabled and only approved Models routes when enabled', () => {
+    expect(modelsBuildRoutes(false)).toEqual([
+      {
+        pattern: '/models',
+        entrypoint: expect.stringContaining('/routes/models/showcase.astro')
+      }
+    ])
+    const enabled = modelsBuildRoutes(true)
+    expect(enabled.map((route) => route.pattern)).toEqual([
+      '/models',
+      '/models/[slug]',
+      '/models/showcase'
+    ])
+    expect(enabled[0].entrypoint).toContain('/routes/models/index.astro')
+    for (const route of enabled) expect(existsSync(route.entrypoint)).toBe(true)
+  })
+
+  it('preserves the established Models page and rejects ungated detail routes', async () => {
+    vi.stubEnv('WORKSHOP_IN_BUILD', '0')
+    await mkdir(join(root, 'models'), { recursive: true })
+    await writeFile(join(root, 'models/index.html'), 'Models marketing')
+    await buildDone()
+    expect(await readFile(join(root, 'models/index.html'), 'utf8')).toBe(
+      'Models marketing'
+    )
+    await mkdir(join(root, 'models/leaked-detail'))
+    await writeFile(join(root, 'models/leaked-detail/index.html'), 'Run')
+    await expect(buildDone()).rejects.toThrow('ungated Models route')
+  })
+
   it('removes only Workshop output when disabled, including repeated builds', async () => {
     vi.stubEnv('WORKSHOP_IN_BUILD', '0')
     await buildDone()
@@ -52,12 +108,33 @@ describe('Workshop release output', () => {
     await expect(buildDone()).resolves.toBeUndefined()
   })
 
-  it('preserves all output when enabled', async () => {
-    vi.stubEnv('WORKSHOP_IN_BUILD', '1')
+  it("removes every locale's Workshop tree, not only the English one", async () => {
+    vi.stubEnv('WORKSHOP_IN_BUILD', '0')
     await buildDone()
-    expect(await readFile(join(root, 'workshop/index.html'), 'utf8')).toBe(
-      'Workshop'
+    for (const locale of LOCALIZED) {
+      expect(
+        existsSync(join(root, locale, 'workshop')),
+        `/${locale}/workshop/ shipped in a release build`
+      ).toBe(false)
+      // The locale itself survives: the gate takes Workshop, not the tree.
+      expect(await readFile(join(root, locale, 'index.html'), 'utf8')).toBe(
+        'Home'
+      )
+    }
+  })
+
+  it('retires legacy Workshop output even when Models is enabled', async () => {
+    vi.stubEnv('WORKSHOP_IN_BUILD', '1')
+    await mkdir(join(root, 'models/example'), { recursive: true })
+    await writeFile(
+      join(root, 'models/example/index.html'),
+      'Models playground'
     )
+    await buildDone()
+    expect(existsSync(join(root, 'workshop'))).toBe(false)
+    expect(
+      await readFile(join(root, 'models/example/index.html'), 'utf8')
+    ).toBe('Models playground')
     expect(await readFile(join(root, 'index.html'), 'utf8')).toBe('Home')
   })
 })

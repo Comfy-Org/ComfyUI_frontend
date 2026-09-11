@@ -89,7 +89,13 @@ function activateLastIfAtBottom() {
   if (lastId) activeSection.value = lastId
 }
 
-onMounted(activateLastIfAtBottom)
+onMounted(() => {
+  const hashSection = sections.find(
+    ({ id }) => `#${id}` === window.location.hash
+  )
+  if (hashSection) activeSection.value = hashSection.id
+  activateLastIfAtBottom()
+})
 useEventListener('scroll', activateLastIfAtBottom, { passive: true })
 
 function scrollToSection(id: string) {

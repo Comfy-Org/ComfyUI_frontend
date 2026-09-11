@@ -204,7 +204,13 @@ export function tPlural(
  */
 export const translationKeys = Object.keys(keySpace()) as TranslationKey[]
 
-export function hasKey(key: string): boolean {
+/**
+ * A type predicate, so a caller that has checked a constructed key can pass it
+ * to `t()` without asserting. `contentSections.ts` builds keys like
+ * `${prefix}.${id}.block.${i}` and had to cast; the check it already performs is
+ * the proof, so it may as well narrow.
+ */
+export function hasKey(key: string): key is TranslationKey {
   return key in keySpace()
 }
 

@@ -75,7 +75,14 @@ describe('per-locale dictionary budget', () => {
   // enterprise pair whose sections are now keyed rather than hardcoded English.
   // Japanese is 346,305 raw and 92 KB gzipped against English's 81 KB, so the
   // extra a Japanese reader pays over an English one is still about 11 KB.
-  const BUDGET_BYTES = 360_000
+  //
+  // Raised again from 360,000 on 2026-09-11, again for copy this branch did not
+  // write: merging main brought 472 keys, most of them the Workshop catalogue
+  // (324) and the auth surfaces (86), the rest a launch page and assorted nav
+  // and validation strings. Japanese is 375,933 raw and 100 KB gzipped against
+  // English's 89 KB, so the extra a Japanese reader pays is about 11 KB, the
+  // same gap as the last two raises.
+  const BUDGET_BYTES = 390_000
 
   it.for(LOCALE_CODES)('keeps %s within budget', (locale) => {
     const file = join(i18nDir, 'resolved', `${locale}.json`)

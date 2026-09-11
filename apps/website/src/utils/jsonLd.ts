@@ -1,9 +1,5 @@
-import {
-  DEFAULT_LOCALE,
-  isLocale,
-  localePrefix,
-  type Locale
-} from '../config/locales'
+import type { Locale } from '../config/locales'
+import { DEFAULT_LOCALE, isLocale, localePrefix } from '../config/locales'
 import { externalLinks } from '../config/routes'
 import { canonicalPath } from '../lib/hreflang'
 

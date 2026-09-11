@@ -64,6 +64,7 @@ coverage/
 /blob-report/
 /playwright/.cache/
 browser_tests/**/*-win32.png
+browser_tests/**/*-darwin.png
 browser_tests/local/
 browser_tests/tests/_recording-session.spec.ts
 browser_tests/tests/_recorded-code.txt
@@ -123,3 +124,6 @@ apps/website/src/i18n/pending/
 # Staged raw model output, before review and enforcement. Only what passes
 # both reaches src/i18n/content, so this is a scratch area, not a source.
 apps/website/src/i18n/incoming/
+
+# Raw recorder sidecars (frames, rows, identifiers); only the sanitized conversation JSON is tracked
+browser_tests/fixtures/data/agent/conversations/recordings/

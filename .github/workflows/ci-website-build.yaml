@@ -77,6 +77,12 @@ jobs:
       #
       # Hence both halves of the assertion. The directory must be gone AND the
       # build must succeed.
+      #
+      # Searched rather than named: this step used to test `dist/workshop`
+      # alone and passed while /ja/workshop/ and /zh-CN/workshop/ shipped 538
+      # pages, reachable and not even noindexed. A locale serves Workshop from
+      # its own prefix, so the assertion has to cover any depth, including a
+      # locale added after this was written.
       - name: Build the release shape, with Workshop excluded
         env:
           WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
@@ -84,8 +90,9 @@ jobs:
           WORKSHOP_IN_BUILD: '0'
         run: |
           pnpm --filter @comfyorg/website build
-          if [ -d apps/website/dist/workshop ]; then
-            echo "::error title=Workshop leaked into a release build::apps/website/dist/workshop exists with WORKSHOP_IN_BUILD=0. Workshop is unreleased and must not deploy. See apps/website/src/integrations/workshop-release-gate.ts."
+          leaked=$(find apps/website/dist -type d -name workshop | sort | tr '\n' ' ')
+          if [ -n "$leaked" ]; then
+            echo "::error title=Workshop leaked into a release build::Workshop output exists with WORKSHOP_IN_BUILD=0: $leaked. Workshop is unreleased and must not deploy. See apps/website/src/integrations/workshop-release-gate.ts."
             exit 1
           fi
-          echo "Release build has no Workshop output."
+          echo "Release build has no Workshop output, in any locale."

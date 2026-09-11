@@ -3,11 +3,14 @@ import { ClientRouter } from 'astro:transitions'
 import Analytics from '@vercel/analytics/astro'
 import '../styles/global.css'
 import SiteFooter from '../components/common/SiteFooter.vue'
+import GoogleTagManager from '../components/common/GoogleTagManager.astro'
 import HeaderMain from '../components/common/HeaderMain/HeaderMain.vue'
 import AnnouncementBanner from '../templates/drops/AnnouncementBanner.vue'
 import { LOCALE_PREFIXES } from '../config/locales'
 import { bannerConfig, getBannerData } from '../config/banner'
+import { getRoutes } from '../config/routes'
 import { isNoindexPathname } from '../config/indexing'
+import { isWorkshopInBuild } from '../config/workshop-release'
 import {
   canonicalPath,
   hreflangAlternates,
@@ -39,6 +42,7 @@ interface Props {
   breadcrumbs?: Crumb[]
   mainEntityId?: string
   extraJsonLd?: (JsonLdNode | null | undefined)[]
+  minimal?: boolean
 }
 
 const {
@@ -51,6 +55,7 @@ const {
   breadcrumbs,
   mainEntityId,
   extraJsonLd,
+  minimal = false,
 } = Astro.props
 
 const keywordsContent = keywords && keywords.length > 0 ? keywords.join(', ') : undefined
@@ -98,9 +103,6 @@ const bannerVisible =
     now: new Date(),
   }) && !isHrefActive(bannerData.link?.href ?? '', Astro.originPathname)
 const bannerVersion = createBannerVersion(bannerData, locale)
-
-const gtmId = 'GTM-NP9JM6K7'
-const gtmEnabled = import.meta.env.PROD
 
 const structuredData = shouldNoindex
   ? undefined
@@ -189,8 +191,12 @@ const structuredData = shouldNoindex
         />
       ))
     }
-    <link rel="preconnect" href="https://www.googletagmanager.com" />
-    <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+    />
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
@@ -219,21 +225,7 @@ const structuredData = shouldNoindex
     {structuredData && <JsonLdGraph graph={structuredData} />}
     <slot name="head" />
 
-    <!-- Google Tag Manager -->
-    {gtmEnabled && (
-      <script is:inline define:vars={{ gtmId }}>
-        ;(function (w, d, s, l, i) {
-          w[l] = w[l] || []
-          w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' })
-          var f = d.getElementsByTagName(s)[0],
-            j = d.createElement(s),
-            dl = l != 'dataLayer' ? '&l=' + l : ''
-          j.async = true
-          j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl
-          f.parentNode.insertBefore(j, f)
-        })(window, document, 'script', 'dataLayer', gtmId)
-      </script>
-    )}
+    <GoogleTagManager part="head" />
 
     <ClientRouter />
 
@@ -269,18 +261,9 @@ const structuredData = shouldNoindex
     )}
   </head>
   <body class="bg-primary-comfy-ink text-white font-formula antialiased overflow-x-clip">
-    {gtmEnabled && (
-      <noscript>
-        <iframe
-          src={`https://www.googletagmanager.com/ns.html?id=${gtmId}`}
-          height="0"
-          width="0"
-          style="display:none;visibility:hidden"
-        ></iframe>
-      </noscript>
-    )}
+    <GoogleTagManager part="noscript" />
 
-    {bannerVisible && (
+    {bannerVisible && !minimal && (
       <AnnouncementBanner
         data={bannerData}
         version={bannerVersion}
@@ -288,7 +271,15 @@ const structuredData = shouldNoindex
         client:load
       />
     )}
-    <HeaderMain locale={locale} github-stars={githubStars} client:load />
+    {minimal ? (
+      <div class="mx-auto max-w-7xl px-6 py-8 lg:px-8">
+        <a href={getRoutes(locale).home} class="inline-block" aria-label="Comfy">
+          <img src="/icons/logo.svg" alt="Comfy" class="h-9 w-auto" />
+        </a>
+      </div>
+    ) : (
+      <HeaderMain locale={locale} github-stars={githubStars} workshop-in-build={isWorkshopInBuild()} client:load />
+    )}
     <!-- Horizontal clip lives here (not on <html>, which must stay overflow:
          visible for reka-ui's dialog scroll lock). <body>'s clip does not
          contain overflow once <html> is visible, because the root propagates
@@ -297,8 +288,9 @@ const structuredData = shouldNoindex
     <main class="overflow-x-clip">
       <slot />
     </main>
-    <SiteFooter locale={locale}
-        alternates={alternates} client:load />
+    {!minimal && (
+      <SiteFooter locale={locale} alternates={alternates} client:load />
+    )}
 
     <Analytics />
     {/*

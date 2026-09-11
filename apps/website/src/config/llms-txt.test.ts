@@ -13,6 +13,7 @@ import {
 import { isNoindexPathname } from './indexing'
 import { LOCALE_PREFIXES, LOCALIZED_CODES, localePrefix } from './locales'
 import { getRoutes } from './routes'
+import { modelsBuildRoutes } from '../integrations/workshop-release-gate'
 
 const websiteRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const llmsTxt = readFileSync(join(websiteRoot, 'public', 'llms.txt'), 'utf8')
@@ -34,7 +35,10 @@ const EXCLUDED_PAGES = new Set([
   '/404',
   '/agent', // unlisted agent beta waitlist page, noindex
   '/booking-confirmation', // post-form confirmation, no standalone content
+  '/forgot-password', // auth surface, noindex
   '/individual-submission', // gallery submission form
+  '/login', // auth surface, noindex
+  '/signup', // auth surface, noindex
   '/payment/failed', // checkout return page
   '/payment/success', // checkout return page
   '/case-studies', // "Coming Soon" placeholder
@@ -139,6 +143,10 @@ describe('llms.txt', () => {
   const links = parseLlmsTxtLinks(llmsTxt)
   const internalPaths = internalLinks(links).map(({ path }) => path)
   const { static: staticPages, dynamic } = pageMatchers(pagesDir)
+  // Gated Models routes are legitimate llms.txt targets even when excluded from
+  // the build, so they count as known pages here.
+  for (const route of modelsBuildRoutes(false)) staticPages.add(route.pattern)
+
   /**
    * One matcher per localized locale, keyed by its URL prefix.
    *

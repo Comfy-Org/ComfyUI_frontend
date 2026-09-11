@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { DEFAULT_LOCALE, type Locale } from '../../config/locales'
+import type { Locale } from '../../config/locales'
+import { DEFAULT_LOCALE } from '../../config/locales'
 import { localizeHref } from '../../config/routes'
 import type { GridPack } from '../../data/cloudNodes'
 

@@ -31,8 +31,8 @@ const stubs = {
   VideoPlayer: { template: '<div data-testid="hosted-video" />' }
 }
 
-/** The embed's accessible title, read from the iframe a reader would land on. */
-const embedTitle = () => document.querySelector('iframe')?.getAttribute('title')
+/** The embed a reader would land on, found by the accessible title it carries. */
+const embed = (title: string) => screen.getByTitle(title)
 
 function renderWatchPage(tutorial: LearningTutorial, locale: Locale = 'en') {
   render(LearningWatchPage, {
@@ -45,7 +45,7 @@ describe('LearningWatchPage', () => {
   it('embeds the YouTube player for tutorials with a youtubeId', () => {
     renderWatchPage(youtubeTutorial)
 
-    expect(document.querySelector('iframe')).toBeTruthy()
+    expect(embed(youtubeTutorial.title.en)).toBeTruthy()
     expect(screen.queryByTestId('hosted-video')).toBeNull()
   })
 
@@ -71,7 +71,7 @@ describe('LearningWatchPage', () => {
       'ja'
     )
 
-    expect(embedTitle()).toBe('ノードの基本')
+    expect(embed('ノードの基本')).toBeTruthy()
   })
 
   it('titles the embed in English when the locale has no translation', () => {
@@ -80,6 +80,6 @@ describe('LearningWatchPage', () => {
       'ja'
     )
 
-    expect(embedTitle()).toBe('Node graph basics')
+    expect(embed('Node graph basics')).toBeTruthy()
   })
 })

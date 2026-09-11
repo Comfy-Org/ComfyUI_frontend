@@ -7,12 +7,18 @@
  * `loadStories` selects by a `<locale>/` id prefix, so a Japanese story is a
  * new file in a new folder and no page changes.
  *
- * All-or-nothing, and here that is not a nicety. The locale fallback is
- * per-collection: once ANY Japanese story exists, `/ja/customers` lists only
- * Japanese ones. Writing nine of eleven would not leave two in English, it
- * would remove them from the page.
+ * A partial set is written. That used to be refused, because the fallback was
+ * per-collection: once ANY Japanese story existed, `/ja/customers` listed only
+ * Japanese ones, so writing nine of eleven removed two from the page rather
+ * than leaving them in English. `loadStories` merges per story now, so the two
+ * show in English and the nine in Japanese, and holding back all eleven for one
+ * missing translation only keeps Japanese readers on an English page for longer.
  *
- * So a rejected plan writes nothing, and a write that fails partway is rolled
+ * A story whose translation is gone is withdrawn — `enforce` rejected it, or
+ * the English changed and dropped it as stale. Leaving the file published would
+ * make enforcement cosmetic for anything already written.
+ *
+ * A rejected plan writes nothing, and a write that fails partway is rolled
  * back — files this run created are removed, files it changed are restored.
  * What that does not survive is the process being killed mid-loop; a guarantee
  * there needs an on-disk journal, which is more than a re-runnable script
@@ -80,26 +86,22 @@ function main(): void {
   const planned: Planned[] = []
   const untranslated: string[] = []
   const skipped: string[] = []
+  const withdrawn: { slug: string; file: string }[] = []
 
   for (const story of english) {
     const prefix = `story.${story.slug}`
-    const title = machine[`${prefix}.title`]
-    const category = machine[`${prefix}.category`]
-    const description = machine[`${prefix}.description`]
-    if (
-      title === undefined ||
-      category === undefined ||
-      description === undefined
-    ) {
-      untranslated.push(story.slug)
-      continue
-    }
 
+    // Asked first, so a person's story is left alone whatever the machine
+    // layer holds — it is never overwritten, and never withdrawn.
     const already = existing.get(story.slug)
     if (already && !already.machineWritten) {
       skipped.push(story.slug)
       continue
     }
+
+    const title = machine[`${prefix}.title`]
+    const category = machine[`${prefix}.category`]
+    const description = machine[`${prefix}.description`]
 
     // Every section must have a translation. A missing one would fall back to
     // English inside an otherwise Japanese story, which reads worse than the
@@ -129,8 +131,18 @@ function main(): void {
     const missing = sectionsRequiringTranslation(story).filter(
       (id) => !Object.hasOwn(sectionBodies, id)
     )
-    if (missing.length > 0) {
+
+    const file = path.join(CUSTOMERS_DIR, TARGET, `${story.slug}.mdx`)
+    if (
+      title === undefined ||
+      category === undefined ||
+      description === undefined ||
+      missing.length > 0
+    ) {
       untranslated.push(story.slug)
+      // The machine wrote this file from a translation that is now gone, so it
+      // is no longer justified. The story falls back to English on the page.
+      if (already) withdrawn.push({ slug: story.slug, file })
       continue
     }
 
@@ -144,31 +156,27 @@ function main(): void {
     })
     planned.push({
       slug: story.slug,
-      file: path.join(CUSTOMERS_DIR, TARGET, `${story.slug}.mdx`),
+      file,
       contents,
       problems: verifyStory(story, contents)
     })
   }
 
-  if (planned.length === 0) {
+  if (planned.length === 0 && withdrawn.length === 0) {
     process.stdout.write(
       '[i18n] no Japanese for any story yet — run `pnpm i18n:translate` first.\n'
     )
     return
   }
 
-  // Partial coverage removes stories from the page rather than falling back.
-  const wanted = english.length - skipped.length
-  if (planned.length < wanted) {
-    process.stderr.write(
-      `[i18n] only ${planned.length} of ${wanted} stories are translated: ` +
-        `${untranslated.join(', ')}\n`
+  if (untranslated.length > 0) {
+    process.stdout.write(
+      `[i18n] ${untranslated.length} of ${english.length - skipped.length} ` +
+        `stories have no complete Japanese: ${untranslated.join(', ')}\n`
     )
-    process.stderr.write(
-      '[i18n] writing a partial set would drop the rest from /ja/customers. ' +
-        'Nothing written.\n'
+    process.stdout.write(
+      '[i18n] each falls back to English on /ja/customers.\n'
     )
-    process.exit(1)
   }
 
   const broken = planned.filter((entry) => entry.problems.length > 0)
@@ -188,10 +196,16 @@ function main(): void {
   for (const slug of skipped) {
     process.stdout.write(`[i18n] ${slug}: left alone, a person wrote it\n`)
   }
+  for (const entry of withdrawn) {
+    process.stdout.write(
+      `[i18n] ${entry.slug}: withdrawn, its translation is gone\n`
+    )
+  }
 
   if (dryRun) {
     process.stdout.write(
-      `[i18n] dry run: ${planned.length} story/stories to write. Nothing written.\n`
+      `[i18n] dry run: ${planned.length} story/stories to write, ` +
+        `${withdrawn.length} to withdraw. Nothing written.\n`
     )
     return
   }
@@ -215,8 +229,14 @@ function main(): void {
     }
   )
 
+  // After the writes, so a failed commit rolls back to a page that still has
+  // every story it had before this run.
+  for (const entry of withdrawn) fs.rmSync(entry.file, { force: true })
+
   process.stdout.write(
-    `[i18n] wrote ${planned.length} Japanese story/stories.\n`
+    `[i18n] wrote ${planned.length} Japanese story/stories` +
+      (withdrawn.length > 0 ? `, withdrew ${withdrawn.length}` : '') +
+      '.\n'
   )
 }
 

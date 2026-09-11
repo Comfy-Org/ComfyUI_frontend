@@ -1,5 +1,7 @@
 import type { Page } from '@playwright/test'
-import { expect, test } from '@playwright/test'
+import { expect } from '@playwright/test'
+
+import { test } from './fixtures/blockExternalMedia'
 
 /**
  * Crossing locales must be a real page load.

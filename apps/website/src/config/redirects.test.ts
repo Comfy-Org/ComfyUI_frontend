@@ -1,11 +1,123 @@
-import { readdirSync, statSync } from 'node:fs'
+import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { dirname, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { describe, expect, it } from 'vitest'
+import { z } from 'zod'
 
 import { DEFAULT_LOCALE, LOCALE_CODES, localePrefix } from './locales'
-import { fallbackCollisions, redirects } from './redirects'
+import { fallbackCollisions, redirects as astroRedirects } from './redirects'
+import { getRoutes } from './routes'
+
+const appDir = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
+
+const VercelRedirectSchema = z.object({
+  source: z.string(),
+  destination: z.string(),
+  permanent: z.boolean().optional(),
+  statusCode: z.number().optional()
+})
+
+const VercelConfigSchema = z.object({
+  redirects: z.array(VercelRedirectSchema)
+})
+
+type VercelRedirect = z.infer<typeof VercelRedirectSchema>
+
+const { redirects } = VercelConfigSchema.parse(
+  JSON.parse(readFileSync(join(appDir, 'vercel.json'), 'utf8'))
+)
+
+function findRedirect(source: string): VercelRedirect | undefined {
+  return redirects.find((redirect) => redirect.source === source)
+}
+
+const minimaxCanonical = `${getRoutes('en').minimax}/`
+const minimaxZhCanonical = `${getRoutes('zh-CN').minimax}/`
+
+describe('legacy MiniMax H3 redirects', () => {
+  it.for([
+    { source: '/minimax', destination: minimaxCanonical },
+    { source: '/minimax/', destination: minimaxCanonical },
+    { source: '/zh-CN/minimax', destination: minimaxZhCanonical },
+    { source: '/zh-CN/minimax/', destination: minimaxZhCanonical }
+  ])(
+    'sends $source to $destination with a temporary status',
+    ({ source, destination }) => {
+      const redirect = findRedirect(source)
+
+      if (!redirect) {
+        throw new Error(`${source} is missing from vercel.json`)
+      }
+
+      expect(redirect.destination).toBe(destination)
+      expect(redirect.permanent, `${source} must be a temporary redirect`).toBe(
+        false
+      )
+    }
+  )
+
+  it.for([
+    getRoutes('en').minimax,
+    minimaxCanonical,
+    getRoutes('zh-CN').minimax,
+    minimaxZhCanonical
+  ])('leaves the new canonical path %s unredirected', (canonicalPath) => {
+    expect(findRedirect(canonicalPath)).toBeUndefined()
+  })
+})
+
+/**
+ * Astro renders a stub page for each entry in its redirect map, and that stub's
+ * canonical is the destination string verbatim. Every real page self-canonicalizes
+ * with a trailing slash via `absoluteUrl()`, so a slash-less destination points
+ * the stub's canonical one hop short of the page it redirects to.
+ *
+ * #14390 fixed exactly this once already and it regressed, which is why it is a
+ * test now rather than a convention.
+ */
+describe('astro redirect destinations', () => {
+  const destinations = Object.values(astroRedirects).map((entry) =>
+    typeof entry === 'string' ? entry : entry.destination
+  )
+
+  it('every destination ends with a trailing slash', () => {
+    const slashless = destinations.filter(
+      // A dynamic destination names a route rather than a URL, and Astro
+      // rejects it outright when it carries a trailing slash.
+      (destination) => !destination.includes('[') && !destination.endsWith('/')
+    )
+    expect(
+      slashless,
+      'these canonicalize one hop short of their target'
+    ).toEqual([])
+  })
+})
+
+describe('legacy Enterprise redirects', () => {
+  it.for([
+    '/cloud/enterprise',
+    '/cloud/enterprise/',
+    '/zh-CN/cloud/enterprise',
+    '/zh-CN/cloud/enterprise/'
+  ])('sends %s to the canonical Enterprise route permanently', (source) => {
+    const redirect = findRedirect(source)
+
+    if (!redirect) {
+      throw new Error(`${source} is missing from vercel.json`)
+    }
+
+    expect(redirect.destination).toBe('/enterprise/')
+    expect(redirect.permanent).toBe(true)
+  })
+
+  it('leaves the canonical Enterprise routes unredirected', () => {
+    expect(findRedirect('/enterprise')).toBeUndefined()
+    expect(findRedirect('/enterprise/')).toBeUndefined()
+    expect(findRedirect('/enterprise/managed-builds')).toBeUndefined()
+    expect(findRedirect('/enterprise/managed-builds/')).toBeUndefined()
+  })
+})
 
 const pagesDir = join(dirname(dirname(fileURLToPath(import.meta.url))), 'pages')
 
@@ -60,7 +172,7 @@ describe('redirects cannot collide with the i18n fallback', () => {
 
   it('declares no localized redirect whose English route exists', () => {
     expect(
-      fallbackCollisions(Object.keys(redirects), english, prefixes)
+      fallbackCollisions(Object.keys(astroRedirects), english, prefixes)
     ).toEqual([])
   })
 })
@@ -105,43 +217,31 @@ describe('fallbackCollisions', () => {
 })
 
 /**
- * Asserted as invariants rather than as a table of every source and
+ * Asserted as an invariant rather than as a table of every source and
  * destination. A table restating the config would fail on any deliberate edit
- * while catching none of the mistakes that actually cost anything, which is
- * what `AGENTS.md` means by a change-detector test. These two are the shapes a
- * redirect gets wrong in ways nobody notices.
+ * while catching none of the mistakes that cost anything, which is what
+ * `AGENTS.md` means by a change-detector test.
+ *
+ * The trailing-slash shape is covered by `astro redirect destinations` above.
  */
 describe('the redirect table holds together', () => {
-  const destinationOf = (entry: (typeof redirects)[keyof typeof redirects]) =>
-    typeof entry === 'string' ? entry : entry.destination
-
   /**
    * A destination that is also a source costs the reader two round trips, and
    * search engines discount a chained redirect. Easy to introduce by retargeting
    * one entry without noticing another already points at it.
    */
   it('sends nobody through two redirects', () => {
+    const destinationOf = (
+      entry: (typeof astroRedirects)[keyof typeof astroRedirects]
+    ) => (typeof entry === 'string' ? entry : entry.destination)
     const sources = new Set(
-      Object.keys(redirects).map((s) => s.replace(/\/$/, ''))
+      Object.keys(astroRedirects).map((s) => s.replace(/\/$/, ''))
     )
-    const chained = Object.entries(redirects)
+    const chained = Object.entries(astroRedirects)
       .map(([from, entry]) => [from, destinationOf(entry)] as const)
       .filter(([, to]) => sources.has(to.replace(/\/$/, '')))
       .map(([from, to]) => `${from} -> ${to}, which is itself a redirect`)
 
     expect(chained).toEqual([])
-  })
-
-  /**
-   * The site serves directory URLs, so a destination without the trailing slash
-   * lands on Astro's own normalising redirect and the reader pays a second hop
-   * for a link that looked right in review.
-   */
-  it('points every destination at a directory URL', () => {
-    const bare = Object.values(redirects)
-      .map(destinationOf)
-      .filter((to) => !to.endsWith('/'))
-
-    expect(bare).toEqual([])
   })
 })

@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs'
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -33,11 +34,12 @@ async function page(path: string, html: string) {
   await writeFile(join(dir, 'index.html'), html, 'utf8')
 }
 
-async function run() {
+async function run(pages: { pathname: string }[] = []) {
   const hook = markdownTwins().hooks['astro:build:done']
   if (!hook) throw new Error('the integration registered no build:done hook')
   await hook({
     dir: pathToFileURL(`${root}/`),
+    pages,
     logger
   } as unknown as Parameters<NonNullable<typeof hook>>[0])
 }
@@ -84,6 +86,46 @@ describe('the markdown-twins build hook', () => {
     const full = await readFile(join(root, 'llms-full.txt'), 'utf8')
     expect(full).toContain('Who we are.')
     expect(full).toContain('What it costs.')
+  })
+
+  /**
+   * `404.html` sits beside `index.html` rather than in a directory of its own,
+   * so the walk that looks for `index.html` cannot see it and it went without a
+   * twin. Astro's own page list has it, which is why the two are unioned.
+   */
+  it('twins a page emitted as a flat file, which the disk walk cannot see', async () => {
+    await page('about', article('About Comfy', 'Who we are.'))
+    await writeFile(
+      join(root, '404.html'),
+      article('Not found', 'No such page.'),
+      'utf8'
+    )
+
+    await run([{ pathname: '404' }])
+
+    expect(await readFile(join(root, '404.md'), 'utf8')).toContain(
+      'No such page.'
+    )
+  })
+
+  /**
+   * The reason the fix unions Astro's list rather than twinning every flat
+   * `.html` on disk: a search-engine verification file is real HTML in the
+   * output and is not a page. Astro never lists it, so it gets no twin.
+   */
+  it('leaves a public asset alone, since it is not a page', async () => {
+    await page('about', article('About Comfy', 'Who we are.'))
+    await writeFile(
+      join(root, 'baidu_verify_codeva-SdpTW0h62C.html'),
+      '<html><body>verification</body></html>',
+      'utf8'
+    )
+
+    await run([])
+
+    expect(existsSync(join(root, 'baidu_verify_codeva-SdpTW0h62C.md'))).toBe(
+      false
+    )
   })
 
   it('reports what it did, so a silent drop to zero is visible', async () => {
