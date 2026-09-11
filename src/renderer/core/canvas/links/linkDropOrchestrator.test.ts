@@ -20,7 +20,7 @@ import {
 const NODE_ID = toNodeId('node-1')
 const getGraphSlotLayout = vi.hoisted(() => vi.fn())
 
-vi.mock('@/renderer/core/canvas/litegraph/slotCalculations', () => ({
+vi.mock(import('@/renderer/core/canvas/litegraph/slotCalculations'), () => ({
   getGraphSlotLayout
 }))
 

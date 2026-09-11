@@ -33,7 +33,7 @@ export function resolvePromotedWidgetSource(
   node: LGraphNode,
   widget: IBaseWidget
 ): ResolvedPromotedWidgetSource | undefined {
-  if (!node.isSubgraphNode?.()) return undefined
+  if (!node.isSubgraphNode()) return undefined
 
   const input = inputForWidget(node, widget)
   if (!hasWidgetId(input)) return undefined

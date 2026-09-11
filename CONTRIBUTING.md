@@ -115,6 +115,13 @@ python main.py --comfy-api-base https://stagingapi.comfy.org --verbose
 
 Then run `pnpm dev` as usual. This keeps the frontend in local mode but routes backend API calls through staging.
 
+#### Local Agent Integration
+
+To develop the frontend, the in-workspace multi-player package, and the local agent
+backend together with HMR, use the
+[local agent integration environment](docs/testing/agent-integration-development.md).
+It includes the Playwright entrypoint and teardown procedure.
+
 #### Access dev server on touch devices
 
 Enable remote access to the dev server by setting `VITE_REMOTE_DEV` in `.env` to `true`.
@@ -264,7 +271,7 @@ For detailed instructions and code examples, see [packages/design-system/src/ico
 
 ## Working with litegraph.js
 
-Since Aug 5, 2025, litegraph.js is now integrated directly into this repository. It was merged using git subtree to preserve the complete commit history ([PR #4667](https://github.com/Comfy-Org/ComfyUI_frontend/pull/4667), [ADR](docs/adr/0001-merge-litegraph-into-frontend.md)).
+Since Aug 5, 2025, litegraph.js is now integrated directly into this repository. It was merged using git subtree to preserve the complete commit history ([PR #4667](https://github.com/Comfy-Org/ComfyUI_frontend/pull/4667), [ADR](docs/adr/DEPS-LITEGRAPH-0001-integrate-litegraph-into-the-frontend.md)).
 
 ### Important Notes
 

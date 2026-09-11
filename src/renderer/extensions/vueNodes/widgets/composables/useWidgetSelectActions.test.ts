@@ -1,6 +1,7 @@
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { computed, ref } from 'vue'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'
@@ -9,23 +10,7 @@ import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 const mockCaptureCanvasState = vi.hoisted(() => vi.fn())
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
-  const actual = await vi.importActual(
-    '@/platform/workflow/management/stores/workflowStore'
-  )
-  return {
-    ...actual,
-    useWorkflowStore: () => ({
-      activeWorkflow: {
-        changeTracker: {
-          captureCanvasState: mockCaptureCanvasState
-        }
-      }
-    })
-  }
-})
-
-vi.mock('@/scripts/api')
+vi.mock<unknown>(import('@/scripts/api'))
 
 function createItems(...names: string[]): FormDropdownItem[] {
   return names.map((name, i) => ({
@@ -35,6 +20,12 @@ function createItems(...names: string[]): FormDropdownItem[] {
     preview_url: ''
   }))
 }
+
+beforeEach(() => {
+  useWorkflowStore().activeWorkflow = fromPartial({
+    changeTracker: { captureCanvasState: mockCaptureCanvasState }
+  })
+})
 
 describe('useWidgetSelectActions', () => {
   describe('updateSelectedItems', () => {

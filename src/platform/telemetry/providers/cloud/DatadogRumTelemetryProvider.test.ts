@@ -4,14 +4,25 @@ import type { BillingTelemetryEvent } from '../../types'
 import { TelemetryEvents } from '../../types'
 import { DatadogRumTelemetryProvider } from './DatadogRumTelemetryProvider'
 
-const { addAction, addDurationVital, getInternalContext } = vi.hoisted(() => ({
+const {
+  addAction,
+  addDurationVital,
+  addFeatureFlagEvaluation,
+  getInternalContext
+} = vi.hoisted(() => ({
   addAction: vi.fn(),
   addDurationVital: vi.fn(),
+  addFeatureFlagEvaluation: vi.fn(),
   getInternalContext: vi.fn()
 }))
 
-vi.mock('@datadog/browser-rum', () => ({
-  datadogRum: { addAction, addDurationVital, getInternalContext }
+vi.mock<unknown>(import('@datadog/browser-rum'), () => ({
+  datadogRum: {
+    addAction,
+    addDurationVital,
+    addFeatureFlagEvaluation,
+    getInternalContext
+  }
 }))
 
 const workflowExecutionIntent = {
@@ -19,6 +30,23 @@ const workflowExecutionIntent = {
 } as const
 
 describe('DatadogRumTelemetryProvider', () => {
+  it('records fetch timeouts as RUM actions', () => {
+    new DatadogRumTelemetryProvider().trackFetchTimeout({
+      route: '/userdata/:resource',
+      method: 'GET',
+      timeout_ms: 60_000
+    })
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.FETCH_TIMEOUT,
+      {
+        route: '/userdata/:resource',
+        method: 'GET',
+        timeout_ms: 60_000
+      }
+    )
+  })
+
   it('records terminal unified auth retry outcomes without request data', () => {
     new DatadogRumTelemetryProvider().trackUnifiedAuthRetry({
       transport: 'axios',
@@ -58,6 +86,22 @@ describe('DatadogRumTelemetryProvider', () => {
     expect(addAction).toHaveBeenCalledExactlyOnceWith(
       TelemetryEvents.IMAGE_LOAD_FAILED,
       { source: 'node_image_preview' }
+    )
+  })
+
+  it.for([
+    ['extension.manager:supports-v4', 'extension_manager_supports_v4'],
+    ['rollout(beta)[staff]', 'rollout_beta__staff_'],
+    [
+      'a+b=c&&d||e>f<g!h{i}^j"k“l”~m*n?o\\p',
+      'a_b_c__d__e_f_g_h_i__j_k_l__m_n_o_p'
+    ]
+  ])('normalizes feature flag key %s', ([key, normalizedKey]) => {
+    new DatadogRumTelemetryProvider().trackFeatureFlagEvaluation(key, true)
+
+    expect(addFeatureFlagEvaluation).toHaveBeenCalledExactlyOnceWith(
+      normalizedKey,
+      true
     )
   })
 
