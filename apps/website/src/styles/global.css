@@ -534,3 +534,11 @@ video::-webkit-media-controls-panel {
     animation: backdrop-drift 48s ease-in-out infinite alternate;
   }
 }
+
+/* WebKit shows its own play button on .cloud-hero-video when autoplay is
+   refused (iOS Low Power Mode); the UA rule only yields to !important. */
+.cloud-hero-video::-webkit-media-controls-start-playback-button,
+.cloud-hero-video::-webkit-media-controls-panel {
+  display: none !important;
+  appearance: none;
+}

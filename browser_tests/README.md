@@ -657,6 +657,49 @@ test.afterEach(async ({ comfyPage }) => {
 `debugShowCanvasOverlay()`, `debugGetCanvasDataURL()` are for local debugging
 only. Never commit them.
 
+## Replay coverage for agent bug fixes
+
+### Playbook
+
+```bash
+DISTRIBUTION=cloud DEV_SERVER_COMFYUI_URL=http://127.0.0.1:8188 pnpm dev
+```
+
+```bash
+PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://localhost:5173 DISTRIBUTION=cloud pnpm exec playwright test agentConversation --project=cloud
+```
+
+Watch one: add `--headed -g <case id>`. Recorded gaps: `AGENT_REPLAY_TIMING=recorded`.
+
+When a fix changes how the agent's turns affect the app (graph edits,
+CRDT frames, panel state), add a conversation replay case alongside the
+fix so the bug stays fixed:
+
+1. **Record the conversation.** Reproduce the bug's turn with
+   `scripts/agentConversationRecord.ts` against the non-standalone local
+   stack (Postgres + doc host). In that mode the agent writes the per-op
+   audit rows (`agent_tool_calls` parent and child rows) to Postgres,
+   which is what a replay asserts; the doc host is a separate required
+   service and writes none of them. That one command records the turn and
+   writes the conversation JSON under
+   `browser_tests/fixtures/data/agent/conversations/`, marked
+   `response_side: 'recorded'`; see `fixtures/data/agent/README.md` for
+   the stack recipe, the command and the capture format. Never write
+   `graph_ops` by hand and never relabel a synthesized response as recorded.
+2. **Add the replay case.** Drive the fixture through the conversation
+   replay fixture (`agentConversationFixture`), asserting the
+   canvas-observable outcome the bug corrupted (graph end-state or
+   panel state - not mock call counts, not model text). Write what a
+   user sees for each turn (complete assistant text, tool rows in order)
+   into `agentConversationExpectations.ts`; the replay asserts those
+   literals and never predicts production rendering.
+3. **Prove it bites.** Before merging, run the case once against the
+   fix's parent commit (red) and once at the fix (green); paste both
+   run lines in the PR description. A replay case that never went red
+   against the bug does not count as regression coverage.
+
+Name the case after the behavior it protects (`agent-<behavior-slug>.json`, with the fix PR cited in the fixture's `source.note`). The recorder writes the provenance the replay keeps: `source.capture` (backend, thread id, export time), `turns[].message_id`, and `source.note` (row ids and the raw capture hash). A bad fixture is re-recorded, never edited.
+
 ## Test Data & Typed API Mocks
 
 Mock data in `fixtures/data/` exports **typed** objects that conform to
