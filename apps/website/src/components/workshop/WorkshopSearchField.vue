@@ -141,6 +141,7 @@ const clearButtonClass =
         :aria-controls="`${inputId}-panel`"
         :aria-expanded="open"
         @focus="open = true"
+        @input="open = true"
         @keydown.escape="open = false"
       />
       <button

@@ -110,6 +110,10 @@ function drag(event: PointerEvent) {
   dragged.value = Math.min(Math.max(from.height + travelled, 0), viewport.value)
 }
 
+function toggleRest() {
+  rest.value = rest.value === 'expanded' ? 'collapsed' : 'expanded'
+}
+
 function endDrag() {
   const from = grab.value
   grab.value = null
@@ -119,8 +123,7 @@ function endDrag() {
   // A tap counts only on the handle itself; on the title it would fire while
   // the thumb is reaching for the close button beside it.
   if (!from.moved) {
-    if (from.fromHandle)
-      rest.value = rest.value === 'expanded' ? 'collapsed' : 'expanded'
+    if (from.fromHandle) toggleRest()
     return
   }
   const settled = restAt(reached / viewport.value)
@@ -162,6 +165,8 @@ function visibleOptions(group: FacetSheetGroup) {
         :aria-expanded="rest === 'expanded'"
         class="mx-auto flex h-6 w-16 cursor-grab items-center justify-center"
         data-testid="workshop-filter-grabber"
+        @keydown.enter.prevent="toggleRest"
+        @keydown.space.prevent="toggleRest"
       >
         <span class="h-1 w-10 rounded-full bg-white/20" aria-hidden="true" />
       </button>
@@ -180,7 +185,7 @@ function visibleOptions(group: FacetSheetGroup) {
       </div>
     </div>
 
-    <TabsRoot v-model="activeKey" class="flex min-h-0 flex-col">
+    <TabsRoot v-model="activeKey" class="flex min-h-0 flex-col max-sm:flex-1">
       <TabsList
         class="flex scrollbar-hide items-center gap-1 overflow-x-auto border-b border-white/10 p-2 max-sm:px-4 max-sm:pb-3"
       >
@@ -206,7 +211,7 @@ function visibleOptions(group: FacetSheetGroup) {
         v-for="group in groups"
         :key="group.key"
         :value="group.key"
-        class="flex min-h-0 flex-col outline-none"
+        class="flex min-h-0 flex-col outline-none max-sm:flex-1"
       >
         <div class="border-b border-white/10 p-2 max-sm:px-4 max-sm:py-3">
           <input
