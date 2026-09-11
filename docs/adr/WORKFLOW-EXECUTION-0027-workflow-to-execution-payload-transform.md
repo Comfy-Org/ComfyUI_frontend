@@ -1,4 +1,4 @@
-# 27. Workflow-to-execution-payload transform
+# ADR-WORKFLOW-EXECUTION-0027: Workflow-to-Execution-Payload Transform
 
 Date: 2026-08-23
 
@@ -109,7 +109,8 @@ API.
    - Dynamic prompt seeds or substitution results are optionally embedded so
      reproductions are deterministic.
    - Promoted widget values are carried by the host node's serialized state, not
-     by interior subgraph nodes (consistent with ADR 0009).
+     by interior subgraph nodes (consistent with
+     [ADR-SUBGRAPH-PROMOTION-0009](SUBGRAPH-PROMOTION-0009-represent-promoted-widgets-as-linked-inputs.md)).
 
    Caveat: the workflow JSON does not currently contain everything
    `graphToPrompt()` consumes. Some `widget.serializeValue` hooks produce
@@ -138,7 +139,9 @@ payload is never edited directly; it is always regenerated from the workflow.
 ### What this ADR is not deciding
 
 - The wire format of the API v2 prompt endpoint (FE-1577).
-- Whether subgraph definitions should be changed (ADR 0009 governs that).
+- Whether subgraph definitions should be changed
+  ([ADR-SUBGRAPH-PROMOTION-0009](SUBGRAPH-PROMOTION-0009-represent-promoted-widgets-as-linked-inputs.md)
+  governs that).
 - How extensions register custom transforms after this centralization — that
   registration contract is deferred pending the centralized implementation.
 
