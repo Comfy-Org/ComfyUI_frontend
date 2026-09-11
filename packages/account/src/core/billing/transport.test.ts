@@ -7,16 +7,19 @@ import { createSessionBillingTransport } from './transport.js'
 
 const BASE = 'https://cloud.test/api'
 
-function credential(overrides: Partial<AccountCredential> = {}) {
-  return {
-    token: 'workspace-jwt',
-    expiresAt: Date.now() + 60 * 60 * 1000,
-    uid: 'uid-1',
-    workspace: { id: 'ws-1', name: 'Personal', type: 'personal' },
-    role: 'owner',
-    permissions: ['workspace:read'],
-    ...overrides
-  } as AccountCredential
+const PERSONAL_CREDENTIAL = {
+  token: 'workspace-jwt',
+  expiresAt: Date.now() + 60 * 60 * 1000,
+  uid: 'uid-1',
+  workspace: { id: 'ws-1', name: 'Personal', type: 'personal' },
+  role: 'owner',
+  permissions: ['workspace:read']
+} satisfies AccountCredential
+
+function credential(
+  overrides: Partial<AccountCredential> = {}
+): AccountCredential {
+  return { ...PERSONAL_CREDENTIAL, ...overrides }
 }
 
 const SIGNED_OUT: SessionSnapshot = {
@@ -34,9 +37,13 @@ function authenticated(session: AccountCredential): SessionSnapshot {
 }
 
 /**
- * Only the three members the transport uses are real; anything else it
- * reaches for is a bug this fake should fail on rather than answer.
+ * The three members the transport is allowed to reach for. Reaching past
+ * them is a bug, and this fake keeps it one: the single widening assertion
+ * below leaves every other member undefined at runtime rather than
+ * quietly answering it.
  */
+type SessionFake = Pick<SessionClient, 'ensureFresh' | 'remint' | 'getSnapshot'>
+
 function fakeSession(options: {
   ensureFresh?: SessionResult | undefined
   remint?: SessionResult | undefined
@@ -51,12 +58,8 @@ function fakeSession(options: {
         ? authenticated(options.ensureFresh.session)
         : SIGNED_OUT)
   )
-  const session = {
-    ensureFresh,
-    remint,
-    getSnapshot
-  } as unknown as SessionClient
-  return { session, ensureFresh, remint, getSnapshot }
+  const fake: SessionFake = { ensureFresh, remint, getSnapshot }
+  return { session: fake as SessionClient, ensureFresh, remint, getSnapshot }
 }
 
 function jsonResponse(
@@ -76,7 +79,7 @@ function makeTransport(
     remint?: SessionResult | undefined
     snapshot?: SessionSnapshot
     responses?: Response[]
-    fetchImpl?: typeof fetch
+    fetchImpl?: MockedFunction<typeof fetch>
     workspaceId?: () => string | undefined
   } = {}
 ) {
@@ -90,10 +93,9 @@ function makeTransport(
     ...(options.snapshot === undefined ? {} : { snapshot: options.snapshot })
   })
   const queue = [...(options.responses ?? [jsonResponse(200, { ok: true })])]
-  const fetchImpl = (options.fetchImpl ??
-    vi.fn(
-      async () => queue.shift() ?? jsonResponse(200, {})
-    )) as unknown as MockedFunction<typeof fetch>
+  const fetchImpl =
+    options.fetchImpl ??
+    vi.fn<typeof fetch>(async () => queue.shift() ?? jsonResponse(200, {}))
   const transport = createSessionBillingTransport({
     session: session.session,
     resolveUrl: (route) => `${BASE}${route}`,
@@ -105,10 +107,12 @@ function makeTransport(
   return { transport, fetchImpl, ...session }
 }
 
-function requestInit(fetchImpl: MockedFunction<typeof fetch>, call = 0) {
-  return fetchImpl.mock.calls[call]?.[1] as RequestInit & {
-    headers: Record<string, string>
-  }
+/** The headers of one recorded call, read through the platform object. */
+function sentHeaders(
+  fetchImpl: MockedFunction<typeof fetch>,
+  call = 0
+): Headers {
+  return new Headers(fetchImpl.mock.calls[call]?.[1]?.headers)
 }
 
 describe('createSessionBillingTransport', () => {
@@ -119,7 +123,7 @@ describe('createSessionBillingTransport', () => {
 
     expect(result).toMatchObject({ status: 'ok' })
     expect(fetchImpl.mock.calls[0]?.[0]).toBe(`${BASE}/billing/status`)
-    expect(requestInit(fetchImpl).headers.Authorization).toBe(
+    expect(sentHeaders(fetchImpl).get('Authorization')).toBe(
       'Bearer workspace-jwt'
     )
   })
@@ -169,7 +173,7 @@ describe('createSessionBillingTransport', () => {
     const result = await transport({ method: 'GET', route: '/billing/balance' })
 
     expect(remint).toHaveBeenCalledTimes(1)
-    expect(requestInit(fetchImpl, 1).headers.Authorization).toBe(
+    expect(sentHeaders(fetchImpl, 1).get('Authorization')).toBe(
       'Bearer fresh-jwt'
     )
     expect(result).toMatchObject({
@@ -204,7 +208,7 @@ describe('createSessionBillingTransport', () => {
       idempotencyKey: 'key-1'
     })
 
-    expect(requestInit(fetchImpl, 1).headers['Idempotency-Key']).toBe('key-1')
+    expect(sentHeaders(fetchImpl, 1).get('Idempotency-Key')).toBe('key-1')
     expect(result).toMatchObject({ status: 'ok', value: { httpStatus: 200 } })
   })
 
@@ -245,9 +249,9 @@ describe('createSessionBillingTransport', () => {
 
   it('treats a request that produced no response as the transient failure', async () => {
     const { transport } = makeTransport({
-      fetchImpl: vi.fn(async () => {
+      fetchImpl: vi.fn<typeof fetch>(async () => {
         throw new TypeError('network down')
-      }) as unknown as typeof fetch
+      })
     })
 
     const result = await transport({ method: 'GET', route: '/billing/status' })
@@ -269,14 +273,73 @@ describe('createSessionBillingTransport', () => {
 
   it('reads an empty or non-JSON body as no body at all', async () => {
     const { transport } = makeTransport({
-      responses: [new Response('', { status: 204 })]
+      responses: [
+        new Response('', { status: 204 }),
+        new Response('<html>gateway error</html>', {
+          status: 502,
+          headers: { 'Content-Type': 'text/html' }
+        })
+      ]
     })
+
+    const empty = await transport({ method: 'GET', route: '/billing/status' })
+    const html = await transport({ method: 'GET', route: '/billing/status' })
+
+    expect(empty).toMatchObject({
+      status: 'ok',
+      value: { httpStatus: 204, body: undefined }
+    })
+    expect(html).toMatchObject({
+      status: 'ok',
+      value: { httpStatus: 502, body: undefined }
+    })
+  })
+
+  it('cancels a request whose caller signal was already aborted', async () => {
+    const { transport } = makeTransport({
+      fetchImpl: vi.fn<typeof fetch>(async (_input, init) => {
+        if (init?.signal?.aborted === true) {
+          throw new DOMException('Aborted', 'AbortError')
+        }
+        return jsonResponse(200, {})
+      })
+    })
+
+    const result = await transport({
+      method: 'GET',
+      route: '/billing/status',
+      signal: AbortSignal.abort()
+    })
+
+    expect(result).toEqual({ status: 'error', code: 'REQUEST_FAILED' })
+  })
+
+  it('reads the body while the request timeout is still armed', async () => {
+    // A stalled body has to time out like a stalled connect, so the read
+    // cannot happen after the attempt's timer is cleared.
+    const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout')
+    let clearedBeforeBodyRead: boolean | undefined
+    const stalling = new Response(
+      new ReadableStream<Uint8Array>({
+        pull: (controller) => {
+          clearedBeforeBodyRead = clearTimeoutSpy.mock.calls.length > 0
+          controller.enqueue(new TextEncoder().encode('{"ok":true}'))
+          controller.close()
+        }
+      }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    )
+    const { transport } = makeTransport({ responses: [stalling] })
+    // Guards the assertion below against a body that was already drained
+    // when the response was built, which would prove nothing.
+    expect(clearedBeforeBodyRead).toBeUndefined()
 
     const result = await transport({ method: 'GET', route: '/billing/status' })
 
+    expect(clearedBeforeBodyRead).toBe(false)
     expect(result).toMatchObject({
       status: 'ok',
-      value: { httpStatus: 204, body: undefined }
+      value: { body: { ok: true } }
     })
   })
 })

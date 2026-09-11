@@ -116,16 +116,30 @@ export function createSessionBillingTransport(
     const replayable =
       request.method === 'GET' || request.idempotencyKey !== undefined
 
-    const send = async (token: string): Promise<Response> => {
+    /**
+     * One attempt, body included. The body is read here rather than by the
+     * caller because the timeout has to stay armed through that read, the way
+     * `exchange.ts` keeps it armed: headers arriving does not bound the body,
+     * and a server that stalls mid-body would otherwise hang a caller that
+     * can neither time out nor abort.
+     */
+    const send = async (token: string): Promise<BillingHttpResponse> => {
       const controller = new AbortController()
       const abort = () => controller.abort()
-      request.signal?.addEventListener('abort', abort, { once: true })
+      // An `abort` listener never fires for a signal that is already
+      // aborted, so a caller who cancelled before this point would
+      // otherwise get a live request.
+      if (request.signal?.aborted === true) {
+        controller.abort()
+      } else {
+        request.signal?.addEventListener('abort', abort, { once: true })
+      }
       const timeout = setTimeout(
         () => controller.abort(),
         request.timeoutMs ?? defaultTimeoutMs
       )
       try {
-        return await fetchImpl(resolveUrl(request.route), {
+        const response = await fetchImpl(resolveUrl(request.route), {
           method: request.method,
           headers: {
             Authorization: `Bearer ${token}`,
@@ -139,20 +153,25 @@ export function createSessionBillingTransport(
             : { body: JSON.stringify(request.body) }),
           signal: controller.signal
         })
+        return {
+          httpStatus: response.status,
+          body: await readBody(response),
+          header: (name) => response.headers.get(name)
+        }
       } finally {
         clearTimeout(timeout)
         request.signal?.removeEventListener('abort', abort)
       }
     }
 
-    let response: Response
+    let response: BillingHttpResponse
     try {
       response = await send(minted.session.token)
     } catch {
       return { status: 'error', code: 'REQUEST_FAILED' }
     }
 
-    if (response.status === 401 && replayable) {
+    if (response.httpStatus === 401 && replayable) {
       const reminted = await session.remint(undefined, mintOptions)
       if (reminted?.status === 'ok') {
         try {
@@ -167,13 +186,6 @@ export function createSessionBillingTransport(
       return { status: 'error', code: 'SUPERSEDED' }
     }
 
-    return {
-      status: 'ok',
-      value: {
-        httpStatus: response.status,
-        body: await readBody(response),
-        header: (name) => response.headers.get(name)
-      }
-    }
+    return { status: 'ok', value: response }
   }
 }
