@@ -82,13 +82,31 @@ function readInteriorNode(source: unknown): Record<string, unknown> | null {
   return node
 }
 
-function isExportedSubgraph(value: unknown): value is ExportedSubgraph {
+/**
+ * Validate a projected definition and hand back what the schema produced, not
+ * what went in: `zProjectedSubgraphDefinition` coerces string slot indices to
+ * numbers, and it is the coerced value that has to reach
+ * `LGraph.createSubgraph()`. The schema leaves `definitions.subgraphs` opaque,
+ * so each nested definition is parsed here and its own parsed value kept.
+ */
+function parseDefinition(value: unknown): ExportedSubgraph | null {
   const result = zProjectedSubgraphDefinition.safeParse(value)
-  if (!result.success) return false
-  return (
-    result.data.definitions === undefined ||
-    result.data.definitions.subgraphs.every(isExportedSubgraph)
-  )
+  if (!result.success) return null
+  const nesting = result.data.definitions
+  // The schema stays wider than `ExportedSubgraph` by one union member:
+  // `zDataType` admits a `string[]` slot type for the custom nodes that ship
+  // one (rgthree's Context Big), and `ISlotType` does not model it. Narrowing
+  // it here would reject those documents outright, so the widening is asserted
+  // rather than validated away.
+  const definition = result.data as unknown as ExportedSubgraph
+  if (nesting === undefined) return definition
+  const subgraphs: ExportedSubgraph[] = []
+  for (const nested of nesting.subgraphs) {
+    const parsed = parseDefinition(nested)
+    if (parsed === null) return null
+    subgraphs.push(parsed)
+  }
+  return { ...definition, definitions: { subgraphs } }
 }
 
 function readDefinition(source: Y.Map<unknown>): ExportedSubgraph | null {
@@ -110,7 +128,7 @@ function readDefinition(source: Y.Map<unknown>): ExportedSubgraph | null {
       definition[key] = plain(value)
     }
   })
-  return isExportedSubgraph(definition) ? definition : null
+  return parseDefinition(definition)
 }
 
 function readField(source: unknown, key: string): unknown {

@@ -168,6 +168,28 @@ describe('readSubgraphDefinitions', () => {
     expect(projected.definitions).toEqual({ subgraphs: [inner] })
   })
 
+  it('normalizes string slot indices at every nesting level', () => {
+    const inner = createTestSubgraphData({ nodes: [interiorNode(1)] })
+    const outer = createTestSubgraphData({
+      nodes: [interiorNode(2, inner.id)]
+    })
+    const doc = seed(outer)
+    const stored = expectYMap(doc.getMap<unknown>('definitions').get(outer.id))
+    stored.set('links', [{ ...interiorLink(9, 2, 2), origin_slot: '3' }])
+    stored.set('definitions', {
+      subgraphs: [
+        { ...inner, links: [{ ...interiorLink(4, 1, 1), target_slot: '5' }] }
+      ]
+    })
+
+    const [projected] = readSubgraphDefinitions(doc)
+
+    expect(projected.links?.[0]).toMatchObject({ origin_slot: 3 })
+    expect(projected.definitions?.subgraphs?.[0]?.links?.[0]).toMatchObject({
+      target_slot: 5
+    })
+  })
+
   it('rejects a definition with malformed nested definitions', () => {
     const definition = createTestSubgraphData()
     const doc = seed(definition)
