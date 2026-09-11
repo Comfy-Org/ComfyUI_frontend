@@ -1370,10 +1370,13 @@ describe('useMediaAssetActions', () => {
         actions.deleteAssets(createMockAsset({ id: 'job-cover' }))
       ).resolves.toBe(false)
 
-      const dialogProps = mockShowDialog.mock.calls[0][0].props as {
-        itemList: string[]
-      }
-      expect(dialogProps.itemList).toEqual(['First output', 'second.png'])
+      expect(mockShowDialog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          props: expect.objectContaining({
+            itemList: ['First output', 'second.png']
+          })
+        })
+      )
       expect(mockDeleteAsset).not.toHaveBeenCalled()
 
       unmount()
