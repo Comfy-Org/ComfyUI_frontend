@@ -72,17 +72,20 @@ test.describe(
             const node = window.app!.graph.nodes.find(
               (node) => String(node.id) === '2'
             )
-            return node?.inputs.find((input) => input.widget?.name === 'seed')
-              ?.link
+            return (
+              node?.inputs.find((input) => input.widget?.name === 'seed')
+                ?.link == null
+            )
           })
         )
-        .toBeNull()
+        .toBe(true)
       await expect.poll(() => seedWidget.getValue()).toBe(originalValue)
     })
 
     test('keeps a cleared text widget empty after save and reload', async ({
       comfyPage
     }) => {
+      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
       await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
       await comfyPage.workflow.loadWorkflow('inputs/string_input')
       const textBox = comfyPage.vueNodes.getWidgetByName(
@@ -107,6 +110,7 @@ test.describe(
     test('keeps a combo selection after save and reload', async ({
       comfyPage
     }) => {
+      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
       await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
       const ksamplerNode = await comfyPage.nodeOps.getNodeRefById(3)
       const samplerWidget = await ksamplerNode.getWidgetByName('sampler_name')
@@ -128,13 +132,14 @@ test.describe(
     test('keeps multiline text with special characters after save and reload', async ({
       comfyPage
     }) => {
+      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
       await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-      await comfyPage.workflow.loadWorkflow('inputs/string_input')
+      await comfyPage.workflow.loadWorkflow('widgets/multiline_single_node')
       const prompt =
         'first line: [subject]\nsecond line: café & tea\nthird line: <end> #100%'
       const textBox = comfyPage.vueNodes.getWidgetByName(
-        'Node With String Input',
-        'string_input'
+        'CLIP Text Encode (Prompt)',
+        'text'
       )
       await textBox.fill(prompt)
       await comfyPage.menu.topbar.saveWorkflow('ecs-multiline-text')
@@ -142,10 +147,7 @@ test.describe(
       await comfyPage.workflow.reloadAndWaitForApp()
 
       await expect(
-        comfyPage.vueNodes.getWidgetByName(
-          'Node With String Input',
-          'string_input'
-        )
+        comfyPage.vueNodes.getWidgetByName('CLIP Text Encode (Prompt)', 'text')
       ).toHaveValue(prompt)
     })
 
