@@ -429,6 +429,45 @@ describe('migrateWorkspaceToScope', () => {
     expect(readJson(StorageKeys.draftIndex(sourceWorkspaceId))).toBe(null)
   })
 
+  it('keeps artifacts committed by a same-scope migration winner', () => {
+    seedSourceWorkspace()
+    const claimKey = StorageKeys.migrationClaim(sourceWorkspaceId)
+    const destinationPayloadKey = StorageKeys.draftPayload(
+      draftPath,
+      destinationScope
+    )
+    const realSetItem = localStorage.setItem.bind(localStorage)
+    let claimTaken = false
+    vi.spyOn(localStorage, 'setItem').mockImplementation(
+      (key: string, value: string) => {
+        realSetItem(key, value)
+        if (key === destinationPayloadKey && !claimTaken) {
+          claimTaken = true
+          realSetItem(
+            claimKey,
+            JSON.stringify({
+              scope: destinationScope,
+              sourceUpdatedAt: 10,
+              nonce: 'same-scope-tab'
+            })
+          )
+          migrateWorkspaceToScope(sourceWorkspaceId, destinationScope)
+        }
+      }
+    )
+
+    migrateWorkspaceToScope(sourceWorkspaceId, destinationScope)
+
+    expect(readJson(StorageKeys.draftIndex(destinationScope))).toEqual(
+      buildIndex()
+    )
+    expect(readJson(destinationPayloadKey)).toEqual({
+      data: '{"nodes":[]}',
+      updatedAt: 10
+    })
+    expect(readJson(StorageKeys.draftIndex(sourceWorkspaceId))).toBe(null)
+  })
+
   it('preserves a newer source generation written while committing the destination index', () => {
     seedSourceWorkspace()
     const sourceIndexKey = StorageKeys.draftIndex(sourceWorkspaceId)

@@ -115,6 +115,10 @@ export const StorageKeys = {
     return `Comfy.Workflow.MigrationClaim:${workspaceId}`
   },
 
+  migrationCompletion(workspaceId: string): string {
+    return `Comfy.Workflow.MigrationCompletion:${workspaceId}`
+  },
+
   /**
    * Prefix patterns for cleanup operations.
    */
@@ -125,6 +129,7 @@ export const StorageKeys = {
     openPaths: 'Comfy.Workflow.OpenPaths:',
     lastActivePath: 'Comfy.Workflow.LastActivePath:',
     lastOpenPaths: 'Comfy.Workflow.LastOpenPaths:',
-    migrationClaim: 'Comfy.Workflow.MigrationClaim:'
+    migrationClaim: 'Comfy.Workflow.MigrationClaim:',
+    migrationCompletion: 'Comfy.Workflow.MigrationCompletion:'
   }
 } as const

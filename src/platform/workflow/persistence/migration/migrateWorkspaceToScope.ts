@@ -39,6 +39,7 @@ export function migrateWorkspaceToScope(
   if (!index) return
 
   const claimKey = StorageKeys.migrationClaim(workspaceId)
+  const completionKey = StorageKeys.migrationCompletion(workspaceId)
   const existingClaim = readLocalPointer(claimKey, isValidClaim)
   if (existingClaim && existingClaim.scope !== scope) return
 
@@ -88,9 +89,18 @@ export function migrateWorkspaceToScope(
   const copied = published && ownsClaim(claimKey, claim)
 
   if (copied) {
+    writeStorage(localStorage, completionKey, JSON.stringify(claim))
     cleanupSourceIfCurrent(workspaceId, draftKeys, claimKey, claim)
   } else {
-    restoreStorageSnapshot(destinationSnapshot)
+    const currentClaim = readLocalPointer(claimKey, isValidClaim)
+    const completion = readLocalPointer(completionKey, isValidClaim)
+    const sameScopePeer =
+      currentClaim?.scope === scope
+        ? currentClaim.nonce !== claim.nonce
+        : completion?.scope === scope && completion.nonce !== claim.nonce
+    if (!sameScopePeer) {
+      restoreStorageSnapshot(destinationSnapshot)
+    }
     releaseClaimIfOwned(claimKey, claim)
   }
 }
