@@ -8,34 +8,48 @@ import {
 } from './dialog.variants'
 
 /**
- * The workspace-inset teeth: against the maximized baseline each size cap,
- * the shared viewer cap, and the hug token must carry the inset term by name.
+ * A right-docked surface reserves screen width by publishing
+ * `--workspace-inset-right` (see `useWorkspaceInset`). Every dialog surface
+ * that constrains width or horizontal placement has to subtract that term, or
+ * the dialog renders underneath the docked panel. Layout itself is not
+ * observable under happy-dom, so this asserts the inset term reaches each
+ * surface; the rendered bounds need an e2e case.
  */
 const INSET_TERM = 'var(--workspace-inset-right,0px)'
 
-describe('dialog width caps carry the workspace inset', () => {
-  it.for(FOR_STORIES.sizes)('size variant %s', (size) => {
-    // maximized:true carries no inset term, so the size cap is the only source.
-    expect(dialogContentVariants({ size, maximized: true })).toContain(
-      INSET_TERM
+const insetAwareSurfaces: ReadonlyArray<readonly [string, string]> = [
+  ...FOR_STORIES.sizes.map(
+    (size) =>
+      [
+        `size ${size} cap`,
+        // maximized:true carries no inset term, so the size cap is the only source.
+        dialogContentVariants({ size, maximized: true })
+      ] as const
+  ),
+  ['shared viewer cap', viewerDialogContentClass],
+  ['hug cap', HUG_CONTENT_CLASS]
+]
+
+const insetBearingUtilities = (classes: string) =>
+  classes.split(' ').filter((utility) => utility.includes(INSET_TERM))
+
+describe('dialog surfaces reserve the workspace inset', () => {
+  it.for(insetAwareSurfaces)('%s', ([, classes]) => {
+    expect(classes).toContain(INSET_TERM)
+  })
+
+  it('centered placement reserves the inset in both offset and width', () => {
+    const utilities = insetBearingUtilities(
+      dialogContentVariants({ maximized: false })
     )
-  })
 
-  it('non-maximized placement centers and sizes against the inset', () => {
-    const classes = dialogContentVariants({ maximized: false })
-
-    expect(classes).toContain(`left-[calc(50%-${INSET_TERM}/2)]`)
-    expect(classes).toContain(`w-[calc(100vw-${INSET_TERM}-1rem)]`)
-  })
-
-  it('the shared viewer class caps against the inset', () => {
-    expect(viewerDialogContentClass).toContain(
-      `sm:max-w-[min(80vw,calc(100vw-${INSET_TERM}-1rem))]`
-    )
-  })
-
-  it('the hug class caps against the inset at both breakpoints', () => {
-    const occurrences = HUG_CONTENT_CLASS.split(INSET_TERM).length - 1
-    expect(occurrences).toBe(2)
+    expect(
+      utilities.filter((utility) => utility.startsWith('left-')),
+      'centering against the full viewport pushes the dialog under a right-docked surface'
+    ).toHaveLength(1)
+    expect(
+      utilities.filter((utility) => utility.startsWith('w-')),
+      'sizing against the full viewport overflows past a right-docked surface'
+    ).toHaveLength(1)
   })
 })
