@@ -12,7 +12,7 @@ const meta: Meta<typeof PanelHeader> = {
   decorators: [
     () => ({
       template:
-        '<div class="agent-scope bg-agent-surface-raised w-100 overflow-hidden rounded-xl"><story /></div>'
+        '<div class="agent-scope bg-secondary-background w-100 overflow-hidden rounded-xl"><story /></div>'
     })
   ]
 }

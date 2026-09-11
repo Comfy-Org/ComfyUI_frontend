@@ -21,7 +21,7 @@ const { t } = useI18n()
 
 const rows = computed(() => foldActivity(parts))
 
-const LABEL = 'text-agent-fg-muted min-w-0 text-sm/5'
+const LABEL = 'text-muted-foreground min-w-0 text-sm/5'
 const LABEL_STREAMING = `${LABEL} agent-shimmer-text`
 
 function labelClass(state: PartState): string {
@@ -55,12 +55,12 @@ function rowSignature(row: ActivityRow): string {
       <div class="flex w-4 shrink-0 flex-col items-center">
         <span
           :class="
-            cn('text-agent-fg-subtle mt-0.5 size-4 shrink-0', glyphOf(row))
+            cn('mt-0.5 size-4 shrink-0 text-muted-foreground', glyphOf(row))
           "
         />
         <span
           v-if="index < rows.length - 1"
-          class="bg-agent-border mt-1 w-px flex-1"
+          class="mt-1 w-px flex-1 bg-component-node-border"
         />
       </div>
       <div class="flex min-w-0 flex-1 items-start gap-2 pb-3">
@@ -77,13 +77,13 @@ function rowSignature(row: ActivityRow): string {
           }}</span>
           <span
             v-if="row.count > 1"
-            class="text-agent-fg-subtle mt-0.5 shrink-0 text-xs"
+            class="mt-0.5 shrink-0 text-xs text-muted-foreground"
             >×{{ row.count }}</span
           >
         </template>
         <span
           v-if="row.durationMs !== undefined"
-          class="text-agent-fg-subtle mt-0.5 ml-auto shrink-0 font-mono text-xs/4"
+          class="mt-0.5 ml-auto shrink-0 font-mono text-xs/4 text-muted-foreground"
           >{{ formatDurationCompact(row.durationMs) }}</span
         >
       </div>

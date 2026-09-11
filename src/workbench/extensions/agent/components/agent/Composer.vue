@@ -14,7 +14,9 @@ import { computed, inject, nextTick, ref, useTemplateRef, watch } from 'vue'
 import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { buildAgentTooltipConfig } from '@/composables/useTooltipConfig'
+import Button from '@/components/ui/button/Button.vue'
+import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
+import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 
 import InlinePromptEditor from './composer/InlinePromptEditor.vue'
 import { useAgentMentionPicker } from '../../composables/agent/useAgentMentionPicker'
@@ -33,7 +35,6 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import AttachmentChip from './composer/AttachmentChip.vue'
 import RunModePopover from './composer/RunModePopover.vue'
-import AgentTooltip from './AgentTooltip.vue'
 
 const {
   streaming = false,
@@ -89,7 +90,7 @@ const assetDragActive = inject<Readonly<Ref<boolean>>>(
 )
 
 const duplicateIdClass =
-  'shrink-0 rounded-[26px] bg-charcoal-400 px-1 py-0.5 font-mono text-xs/4 font-medium text-smoke-800'
+  'shrink-0 rounded-full bg-interface-menu-keybind-surface-default px-1 py-0.5 font-mono text-xs/4 font-medium text-base-foreground'
 
 const composer = useComposer({
   onSend: (text, attachments) => {
@@ -243,7 +244,7 @@ defineExpose({
 
 <template>
   <div
-    class="border-agent-border-strong bg-agent-surface relative flex flex-col rounded-[10px] border"
+    class="relative flex flex-col rounded-lg border border-border-default bg-base-background"
   >
     <div
       v-if="mentionVisible"
@@ -252,74 +253,81 @@ defineExpose({
       data-testid="agent-reference-menu"
       role="menu"
       :aria-label="t('agent.addToPrompt')"
-      class="bg-agent-surface-raised absolute inset-x-0 bottom-full z-1100 mb-[-35px] max-h-64 overflow-y-auto rounded-[10px] border border-white/10 p-1 font-inter shadow-md"
+      class="absolute inset-x-0 bottom-full z-1100 mb-[-35px] max-h-64 overflow-y-auto rounded-lg border border-border-subtle bg-secondary-background p-1 font-inter shadow-md"
       @mousedown.prevent
     >
       <div
         v-if="mentionSection === 'root'"
-        class="text-agent-fg-muted flex h-6 items-center px-1.5 py-1 text-xs/4"
+        class="flex h-6 items-center px-1.5 py-1 text-xs/4 text-muted-foreground"
       >
         {{ t('agent.reference') }}
       </div>
-      <AgentTooltip
+      <AccessibleTooltip
         v-for="(match, index) in mentionMatches"
         :key="`${match.kind}:${match.id}`"
         :label="nodeReferenceDisabledReason ?? ''"
         :disabled="!isNodeReferenceDisabled(match)"
+        :skip-delay-duration="0"
+        disable-hoverable-content
+        :collision-padding="8"
       >
-        <div
-          :id="`agent-reference-item-${index}`"
-          :aria-disabled="isMentionDisabled(match) || undefined"
-          :aria-description="
-            isNodeReferenceDisabled(match)
-              ? nodeReferenceDisabledReason
-              : undefined
-          "
-          role="menuitem"
-          :data-active="index === mentionActive"
-          :class="
-            cn(
-              'text-agent-fg flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs font-normal outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50',
-              index === mentionActive && 'bg-agent-surface-hover'
-            )
-          "
-          @mouseenter="highlightMention(index)"
-          @click="pickMention(match)"
-        >
-          <span
-            v-if="match.kind === 'section' && match.id === 'nodes'"
-            class="icon-[comfy--node] size-3.5 shrink-0"
-          />
-          <span
-            v-else-if="match.kind === 'section' && match.id === 'workflows'"
-            class="icon-[comfy--workflow] size-3.5 shrink-0"
-          />
-          <span
-            v-else-if="match.kind === 'back'"
-            class="icon-[lucide--chevron-left] size-4 shrink-0"
-          />
-          <span class="min-w-0 flex-1 truncate">{{ match.label }}</span>
-          <span
-            v-if="match.kind === 'workflow' && match.workflow.id === undefined"
-            class="text-agent-fg-muted text-xs"
-            >{{ t('agent.unsavedWorkflow') }}</span
+        <template #trigger>
+          <div
+            :id="`agent-reference-item-${index}`"
+            :aria-disabled="isMentionDisabled(match) || undefined"
+            :aria-description="
+              isNodeReferenceDisabled(match)
+                ? nodeReferenceDisabledReason
+                : undefined
+            "
+            role="menuitem"
+            :data-active="index === mentionActive"
+            :class="
+              cn(
+                'flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs font-normal text-base-foreground outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50',
+                index === mentionActive && 'bg-secondary-background-hover'
+              )
+            "
+            @mouseenter="highlightMention(index)"
+            @click="pickMention(match)"
           >
-          <span
-            v-if="match.kind === 'node' && graphDupes.has(match.node.title)"
-            :class="cn(duplicateIdClass, 'ml-auto')"
-          >
-            #{{ match.node.id }}
-          </span>
-          <span
-            v-if="match.kind === 'section'"
-            class="icon-[lucide--chevron-right] size-4 shrink-0"
-          />
-        </div>
-      </AgentTooltip>
+            <span
+              v-if="match.kind === 'section' && match.id === 'nodes'"
+              class="icon-[comfy--node] size-3.5 shrink-0"
+            />
+            <span
+              v-else-if="match.kind === 'section' && match.id === 'workflows'"
+              class="icon-[comfy--workflow] size-3.5 shrink-0"
+            />
+            <span
+              v-else-if="match.kind === 'back'"
+              class="icon-[lucide--chevron-left] size-4 shrink-0"
+            />
+            <span class="min-w-0 flex-1 truncate">{{ match.label }}</span>
+            <span
+              v-if="
+                match.kind === 'workflow' && match.workflow.id === undefined
+              "
+              class="text-xs text-muted-foreground"
+              >{{ t('agent.unsavedWorkflow') }}</span
+            >
+            <span
+              v-if="match.kind === 'node' && graphDupes.has(match.node.title)"
+              :class="cn(duplicateIdClass, 'ml-auto')"
+            >
+              #{{ match.node.id }}
+            </span>
+            <span
+              v-if="match.kind === 'section'"
+              class="icon-[lucide--chevron-right] size-4 shrink-0"
+            />
+          </div>
+        </template>
+      </AccessibleTooltip>
       <div
         v-if="!mentionHasResults"
         role="status"
-        class="text-agent-fg-muted px-2 py-1 text-xs"
+        class="px-2 py-1 text-xs text-muted-foreground"
       >
         {{
           mentionSection === 'workflows'
@@ -331,7 +339,7 @@ defineExpose({
 
     <div
       v-if="$slots.header"
-      class="bg-agent-surface flex h-11 shrink-0 items-center rounded-t-[10px] px-2"
+      class="flex h-11 shrink-0 items-center rounded-t-lg bg-base-background px-2"
     >
       <slot name="header" />
     </div>
@@ -341,15 +349,15 @@ defineExpose({
         cn(
           'relative flex flex-col border transition-colors',
           assetDragActive
-            ? 'border-agent-border h-28 rounded-lg border-dashed bg-charcoal-500'
-            : 'bg-agent-surface-raised focus-within:border-agent-fg-muted min-h-28 rounded-[10px] border-white/15'
+            ? 'h-28 rounded-lg border-dashed border-component-node-border bg-secondary-background'
+            : 'min-h-28 rounded-lg border-border-default bg-secondary-background focus-within:border-muted-foreground'
         )
       "
     >
       <div
         v-if="assetDragActive"
         role="status"
-        class="absolute inset-px z-20 flex flex-col items-center justify-center gap-2 rounded-[7px] bg-charcoal-500 font-inter text-[14px] leading-[normal] font-normal text-smoke-600"
+        class="absolute inset-px z-20 flex flex-col items-center justify-center gap-2 rounded-lg bg-secondary-background font-inter text-[14px] leading-[normal] font-normal text-muted-foreground"
       >
         <span
           aria-hidden="true"
@@ -365,10 +373,10 @@ defineExpose({
         <span
           v-for="tag in selectionTags"
           :key="selectedNodeKey(tag)"
-          class="bg-agent-surface-hover text-agent-fg inline-flex h-7 items-center gap-1 rounded-lg border border-border-default px-2.5 text-xs/4 font-medium transition-colors hover:bg-tertiary-background-hover"
+          class="inline-flex h-7 items-center gap-1 rounded-lg border border-border-default bg-secondary-background-hover px-2.5 text-xs/4 font-medium text-base-foreground transition-colors hover:bg-tertiary-background-hover"
         >
           <span class="flex items-center gap-1">
-            <span class="text-agent-fg-muted icon-[comfy--node] size-3.5" />
+            <span class="icon-[comfy--node] size-3.5 text-muted-foreground" />
             <span class="max-w-40 truncate">{{ tag.title }}</span>
             <span
               v-if="graphDupes.has(tag.title) || tagDupes.has(tag.title)"
@@ -377,12 +385,12 @@ defineExpose({
             >
           </span>
           <button
-            v-tooltip.top="buildAgentTooltipConfig(t('agent.remove'))"
+            v-tooltip.top="buildTooltipConfig(t('agent.remove'))"
             type="button"
             :aria-label="
               t('agent.removeNodeLabel', { node: `${tag.title} #${tag.id}` })
             "
-            class="text-agent-fg-muted hover:text-agent-fg flex size-3.5 cursor-pointer items-center justify-center transition-colors"
+            class="flex size-3.5 cursor-pointer items-center justify-center text-muted-foreground transition-colors hover:text-base-foreground"
             @click.stop="emit('removeTag', selectedNodeKey(tag))"
           >
             <span class="icon-[lucide--x] size-3.5 shrink-0" />
@@ -412,7 +420,7 @@ defineExpose({
         <div
           v-if="workflowSelecting"
           role="status"
-          class="text-agent-fg-muted mb-1 flex items-center gap-1 text-xs"
+          class="mb-1 flex items-center gap-1 text-xs text-muted-foreground"
         >
           <span class="icon-[lucide--loader-circle] size-3 animate-spin" />
           {{ t('agent.savingWorkflow') }}
@@ -443,28 +451,34 @@ defineExpose({
 
           <div
             v-if="!composer.draft.value && !workflowReferences.length"
-            class="text-agent-fg-muted pointer-events-none relative z-10 -mt-7 font-inter text-[14px]/[20px] font-normal"
+            class="pointer-events-none relative z-10 -mt-7 font-inter text-[14px]/[20px] font-normal text-muted-foreground"
           >
             <span>{{ placeholderHint.text }} </span>
-            <AgentTooltip
+            <AccessibleTooltip
               :label="nodeReferenceDisabledReason ?? ''"
               :disabled="!nodeReferenceDisabledReason"
+              :skip-delay-duration="0"
+              disable-hoverable-content
+              :collision-padding="8"
             >
-              <button
-                type="button"
-                :aria-disabled="!!nodeReferenceDisabledReason || undefined"
-                :aria-description="nodeReferenceDisabledReason"
-                class="text-agent-fg-muted hover:text-agent-fg focus-visible:text-agent-fg focus-visible:outline-agent-fg pointer-events-auto -ml-1 inline-flex h-[20px] shrink-0 cursor-pointer items-center gap-[4px] rounded-[8px] px-[4px] align-top text-[14px]/[20px] transition-colors focus-visible:outline-1 aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
-                @click="onSelectNodes"
-              >
-                <span
-                  class="icon-[lucide--mouse-pointer-click] size-[14px] shrink-0"
-                />
-                <span class="underline decoration-dashed underline-offset-2">{{
-                  placeholderHint.mentionNodes
-                }}</span>
-              </button>
-            </AgentTooltip>
+              <template #trigger>
+                <button
+                  type="button"
+                  :aria-disabled="!!nodeReferenceDisabledReason || undefined"
+                  :aria-description="nodeReferenceDisabledReason"
+                  class="pointer-events-auto -ml-1 inline-flex h-[20px] shrink-0 cursor-pointer items-center gap-[4px] rounded-lg px-[4px] align-top text-[14px]/[20px] text-muted-foreground transition-colors hover:text-base-foreground focus-visible:text-base-foreground focus-visible:outline-1 focus-visible:outline-base-foreground aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+                  @click="onSelectNodes"
+                >
+                  <span
+                    class="icon-[lucide--mouse-pointer-click] size-[14px] shrink-0"
+                  />
+                  <span
+                    class="underline decoration-dashed underline-offset-2"
+                    >{{ placeholderHint.mentionNodes }}</span
+                  >
+                </button>
+              </template>
+            </AccessibleTooltip>
           </div>
         </div>
       </div>
@@ -472,9 +486,9 @@ defineExpose({
       <div class="flex items-center justify-between px-3 py-2">
         <DropdownMenuRoot v-model:open="addMenuOpen">
           <DropdownMenuTrigger
-            v-tooltip.top="buildAgentTooltipConfig(t('agent.addToPrompt'))"
+            v-tooltip.top="buildTooltipConfig(t('agent.addToPrompt'))"
             :aria-label="t('agent.addToPrompt')"
-            class="rounded-agent text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg flex size-8 cursor-pointer items-center justify-center transition-colors"
+            class="flex size-8 cursor-pointer items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-secondary-background-hover hover:text-base-foreground"
           >
             <span class="icon-[lucide--plus] size-4" />
           </DropdownMenuTrigger>
@@ -483,30 +497,35 @@ defineExpose({
               side="top"
               align="start"
               :side-offset="4"
-              class="agent-scope bg-agent-surface-raised z-1100 box-border w-max min-w-[186px] rounded-[10px] border border-white/10 p-1 font-inter shadow-lg"
+              class="agent-scope z-1100 box-border w-max min-w-[186px] rounded-lg border border-border-subtle bg-secondary-background p-1 font-inter shadow-lg"
             >
-              <AgentTooltip
+              <AccessibleTooltip
                 :label="nodeReferenceDisabledReason ?? ''"
                 :disabled="!nodeReferenceDisabledReason"
+                :skip-delay-duration="0"
+                disable-hoverable-content
+                :collision-padding="8"
               >
-                <DropdownMenuItem
-                  :disabled="!!nodeReferenceDisabledReason"
-                  :aria-description="nodeReferenceDisabledReason"
-                  class="text-agent-fg data-highlighted:bg-agent-surface-hover mb-0.5 box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
-                  @select="onSelectNodes"
-                >
-                  <span class="icon-[comfy--node] size-4 shrink-0" />
-                  <span class="whitespace-nowrap">
-                    {{ t('agent.nodes') }}
-                  </span>
-                </DropdownMenuItem>
-              </AgentTooltip>
+                <template #trigger>
+                  <DropdownMenuItem
+                    :disabled="!!nodeReferenceDisabledReason"
+                    :aria-description="nodeReferenceDisabledReason"
+                    class="mb-0.5 box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50 data-highlighted:bg-secondary-background-hover"
+                    @select="onSelectNodes"
+                  >
+                    <span class="icon-[comfy--node] size-4 shrink-0" />
+                    <span class="whitespace-nowrap">
+                      {{ t('agent.nodes') }}
+                    </span>
+                  </DropdownMenuItem>
+                </template>
+              </AccessibleTooltip>
               <DropdownMenuSub
                 v-model:open="workflowSubmenuOpen"
                 @update:open="onWorkflowSubmenuOpenChange"
               >
                 <DropdownMenuSubTrigger
-                  class="text-agent-fg data-highlighted:bg-agent-surface-hover mb-0.5 box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal outline-none"
+                  class="mb-0.5 box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
                 >
                   <span class="icon-[comfy--workflow] size-4 shrink-0" />
                   <span class="flex-1 text-left whitespace-nowrap">
@@ -517,10 +536,10 @@ defineExpose({
                 <DropdownMenuPortal>
                   <DropdownMenuSubContent
                     :side-offset="4"
-                    class="agent-scope bg-agent-surface-raised z-1100 box-border max-h-64 min-w-[186px] overflow-y-auto rounded-[10px] border border-white/10 p-1 font-inter shadow-lg"
+                    class="agent-scope z-1100 box-border max-h-64 min-w-[186px] overflow-y-auto rounded-lg border border-border-subtle bg-secondary-background p-1 font-inter shadow-lg"
                   >
                     <DropdownMenuItem
-                      class="text-agent-fg data-highlighted:bg-agent-surface-hover mb-0.5 box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal outline-none"
+                      class="mb-0.5 box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
                       @select.prevent="workflowSubmenuOpen = false"
                     >
                       <span
@@ -532,20 +551,20 @@ defineExpose({
                       v-for="workflow in eligibleWorkflows"
                       :key="workflow.id ?? workflow.tabPath"
                       :disabled="workflowSelecting"
-                      class="text-agent-fg data-highlighted:bg-agent-surface-hover box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal outline-none"
+                      class="box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
                       @select.prevent="pickWorkflow(workflow)"
                     >
                       <span class="icon-[comfy--workflow] size-4 shrink-0" />
                       <span class="max-w-64 truncate">{{ workflow.name }}</span>
                       <span
                         v-if="workflow.id === undefined"
-                        class="text-agent-fg-muted text-xs"
+                        class="text-xs text-muted-foreground"
                         >{{ t('agent.unsavedWorkflow') }}</span
                       >
                     </DropdownMenuItem>
                     <div
                       v-if="eligibleWorkflows.length === 0"
-                      class="text-agent-fg-muted px-2 py-1 text-xs"
+                      class="px-2 py-1 text-xs text-muted-foreground"
                     >
                       {{ t('agent.noWorkflowsToReference') }}
                     </div>
@@ -554,7 +573,7 @@ defineExpose({
               </DropdownMenuSub>
               <DropdownMenuItem
                 v-if="canOpenAssets"
-                class="text-agent-fg data-highlighted:bg-agent-surface-hover box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal outline-none"
+                class="box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
                 @select="emit('openAssets')"
               >
                 <span class="icon-[comfy--image-ai-edit] size-4 shrink-0" />
@@ -564,11 +583,11 @@ defineExpose({
               </DropdownMenuItem>
               <DropdownMenuSeparator
                 v-if="canAttach && canOpenAssets"
-                class="mt-0 mb-px h-px bg-white/10"
+                class="mt-0 mb-px h-px bg-border-subtle"
               />
               <DropdownMenuItem
                 v-if="canAttach"
-                class="text-agent-fg data-highlighted:bg-agent-surface-hover box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal outline-none"
+                class="box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
                 @select="emit('attach')"
               >
                 <span class="icon-[lucide--paperclip] size-4 shrink-0" />
@@ -582,35 +601,37 @@ defineExpose({
 
         <div class="flex items-center gap-1">
           <RunModePopover />
-          <AgentTooltip :label="primaryActionTooltip" :disabled="running">
-            <button
-              type="button"
-              :aria-label="running ? t('agent.stop') : t('agent.send')"
-              :disabled="
-                !running && (workflowSelecting || !composer.canSend.value)
-              "
-              :class="
-                cn(
-                  'flex size-8 items-center justify-center rounded-xl transition-colors',
-                  running
-                    ? 'bg-agent-surface-hover text-agent-fg hover:bg-agent-border cursor-pointer'
-                    : 'bg-agent-fg text-agent-surface hover:bg-agent-fg/90 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50'
-                )
-              "
-              @click="onPrimaryAction"
-            >
-              <span
-                :class="
-                  cn(
-                    'size-4',
-                    running
-                      ? 'icon-[lucide--square]'
-                      : 'icon-[lucide--arrow-up]'
-                  )
+          <AccessibleTooltip
+            :label="primaryActionTooltip"
+            :disabled="running"
+            :skip-delay-duration="0"
+            disable-hoverable-content
+            :collision-padding="8"
+          >
+            <template #trigger>
+              <Button
+                type="button"
+                :variant="running ? 'secondary' : 'inverted'"
+                size="icon"
+                :aria-label="running ? t('agent.stop') : t('agent.send')"
+                :disabled="
+                  !running && (workflowSelecting || !composer.canSend.value)
                 "
-              />
-            </button>
-          </AgentTooltip>
+                @click="onPrimaryAction"
+              >
+                <span
+                  :class="
+                    cn(
+                      'size-4',
+                      running
+                        ? 'icon-[lucide--square]'
+                        : 'icon-[lucide--arrow-up]'
+                    )
+                  "
+                />
+              </Button>
+            </template>
+          </AccessibleTooltip>
         </div>
       </div>
     </div>

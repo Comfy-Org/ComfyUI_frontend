@@ -13,7 +13,6 @@ import { defineComponent, h, nextTick, ref } from 'vue'
 import type { DirectiveBinding } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
-import * as tooltipConfig from '@/composables/useTooltipConfig'
 import { i18n } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAgentRunModeStore } from '../../stores/agent/agentRunModeStore'
@@ -91,6 +90,14 @@ describe('Composer', () => {
   })
   beforeEach(() => {
     vi.useRealTimers()
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      }
+    )
   })
 
   it('preserves new input on Enter while a previous send is submitting', async () => {
@@ -394,9 +401,9 @@ describe('Composer', () => {
         mount()
 
         const trigger = screen.getByRole('button', { name: triggerName })
-        expect(tooltipBindings.get(trigger)).toEqual(
-          tooltipConfig.buildAgentTooltipConfig(tooltipCopy)
-        )
+        expect(tooltipBindings.get(trigger)).toMatchObject({
+          value: tooltipCopy
+        })
       }
     )
 
@@ -782,7 +789,10 @@ describe('Composer', () => {
       await userEvent.type(box, '@k')
       expect(screen.getByRole('menu')).toBeInTheDocument()
 
-      await userEvent.keyboard('{Home}')
+      const selection = window.getSelection()
+      selection?.selectAllChildren(box)
+      selection?.collapseToStart()
+      document.dispatchEvent(new Event('selectionchange'))
       await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
     })
   })
@@ -1166,9 +1176,7 @@ describe('Composer', () => {
     const removeButton = screen.getByRole('button', {
       name: 'Remove KSampler #5 reference'
     })
-    expect(tooltipBindings.get(removeButton)).toEqual(
-      tooltipConfig.buildAgentTooltipConfig('Remove')
-    )
+    expect(tooltipBindings.get(removeButton)).toMatchObject({ value: 'Remove' })
   })
 
   it('renders a selection chip label as non-interactive context', () => {
