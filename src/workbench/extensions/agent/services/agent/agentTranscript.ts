@@ -1,5 +1,6 @@
 import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
 import type { WorkflowReference } from '../../types/workflowReference'
+import { parseWorkflowReferences } from '../../utils/workflowReferenceText'
 import type { AssistantMessage } from './agentMessageParts'
 import { createAssistantMessage } from './agentMessageParts'
 
@@ -64,8 +65,11 @@ export function normalizeAgentTranscript(
               ]
             : []
         })
-        if (references.length > 0)
-          userWorkflowReferences.set(turnId, references)
+        if (references.length > 0) {
+          const prompt = parseWorkflowReferences(text, references)
+          userTexts.set(turnId, prompt.text)
+          userWorkflowReferences.set(turnId, prompt.references)
+        }
       }
     }
     if (row.role === 'assistant') {

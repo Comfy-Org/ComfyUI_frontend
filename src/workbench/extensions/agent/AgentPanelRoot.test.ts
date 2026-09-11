@@ -4143,7 +4143,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await vi.waitFor(() => expect(bodies).toHaveLength(1))
     expect(bodies[0]).toMatchObject({
       workflow_id: 'wf-current',
-      content: 'Compare ',
+      content: 'Compare [scratch (2)](workflow://wf-scratch)',
       workflow_references: [{ workflow_id: 'wf-scratch', name: 'scratch (2)' }]
     })
   })
@@ -4345,7 +4345,7 @@ describe('AgentPanelRoot workflow binding', () => {
         await userEvent.click(screen.getByRole('button', { name: 'Send' }))
         await vi.waitFor(() => expect(bodies).toHaveLength(1))
         expect(bodies[0]).toMatchObject({
-          content: ' Keep this draft',
+          content: '[reference](workflow://wf-reference) Keep this draft',
           workflow_id: 'wf-current',
           workflow_references: [
             { workflow_id: 'wf-reference', name: 'reference' }
@@ -5105,7 +5105,7 @@ describe('AgentPanelRoot workflow binding', () => {
         await vi.waitFor(() => expect(bodies).toHaveLength(2))
         expect(bodies[1]).toMatchObject({
           workflow_id: 'wf-42',
-          content: '   Keep this draft',
+          content: '[reference](workflow://wf-reference)   Keep this draft',
           selection: { node_ids: ['12'] },
           attachments: ['uploaded_cat.png'],
           workflow_references: [

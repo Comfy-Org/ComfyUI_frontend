@@ -881,6 +881,34 @@ describe('useAgentSession (v1 composition root)', () => {
     })
   })
 
+  it('sends inline workflow identities in sentence order while retaining the local chip draft', async () => {
+    const rest = fakeRest()
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    const references = [
+      { id: 'wf-a', name: 'A', textOffset: 5 },
+      { id: 'wf-b', name: 'B', textOffset: 11 }
+    ]
+    session.start()
+
+    await session.sendMessage('Copy  into .', undefined, undefined, references)
+
+    expect(rest.postMessage).toHaveBeenCalledWith(
+      'new',
+      expect.objectContaining({
+        content: 'Copy [A](workflow://wf-a) into [B](workflow://wf-b).',
+        workflowReferences: [
+          { workflow_id: 'wf-a', name: 'A' },
+          { workflow_id: 'wf-b', name: 'B' }
+        ]
+      })
+    )
+    expect(useAgentConversationStore().entries[0]).toMatchObject({
+      role: 'user',
+      text: 'Copy  into .',
+      workflowReferences: references
+    })
+  })
+
   it('(h4) the turn post never carries a draft field (upload retired)', async () => {
     const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
       thread_id: 'th-1',

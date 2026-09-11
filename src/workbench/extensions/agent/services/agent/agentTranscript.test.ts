@@ -20,6 +20,24 @@ const row = (
 })
 
 describe('normalizeAgentTranscript', () => {
+  it('restores inline reference positions from the persisted message text', () => {
+    const message = row(1, 'user', 'turn-a', '', 'row-1')
+    message.content = {
+      text: 'Copy [A](workflow://wf-a) into [B](workflow://wf-b).',
+      workflow_references: [
+        { workflow_id: 'wf-a', name: 'A' },
+        { workflow_id: 'wf-b', name: 'B', unavailable: true }
+      ]
+    }
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.userTexts.get('turn-a' as TurnId)).toBe('Copy  into .')
+    expect(transcript.userWorkflowReferences.get('turn-a' as TurnId)).toEqual([
+      { id: 'wf-a', name: 'A', textOffset: 5 },
+      { id: 'wf-b', name: 'B', unavailable: true, textOffset: 11 }
+    ])
+  })
+
   it('ignores empty workflow ids when restoring the latest target', () => {
     const target = {
       ...row(1, 'user', 'turn-a', 'Edit A', 'row-1'),

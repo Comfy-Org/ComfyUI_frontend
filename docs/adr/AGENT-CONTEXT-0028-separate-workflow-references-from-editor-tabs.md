@@ -27,6 +27,13 @@ Unavailable references retain their client-supplied IDs/names with an unavailabl
 marker so the Agent can acknowledge missing context. This does not grant access
 or reveal workflow contents; saved history retains the same reference intent.
 
+Inline references are represented in message `content` as
+`[name](workflow://encoded-id)` links, preserving sentence order and identifying
+workflows with matching names. The frontend restores these links as chips only
+when their IDs appear in the persisted reference metadata. The links are prose;
+`workflow_references` still owns context selection and authorization. Older
+messages without inline links retain their separate reference presentation.
+
 We considered marking individual open tabs as selected. A separate field keeps
 view state and prompt intent independently owned and permits referencing a saved
 workflow without requiring it to remain open. Renaming or repurposing `open_tabs`

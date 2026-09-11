@@ -19,6 +19,7 @@ import type {
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
 import type { WorkflowReference } from '../../types/workflowReference'
+import { serializeWorkflowReferences } from '../../utils/workflowReferenceText'
 
 export interface AgentEventSource {
   subscribe(listener: (raw: unknown) => void): () => void
@@ -274,7 +275,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
           draft !== undefined &&
           (threadId === 'new' || wfContext?.id !== undefined)
         const input = {
-          content: text,
+          content: serializeWorkflowReferences(text, workflowReferences ?? []),
           tabs,
           workflowReferences: (workflowReferences ?? [])
             .filter((reference) => reference.id !== wfContext?.id)
