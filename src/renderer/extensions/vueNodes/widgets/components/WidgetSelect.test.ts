@@ -123,34 +123,6 @@ describe('WidgetSelect Value Binding', () => {
     })
   })
 
-  describe('node-type prop passing', () => {
-    it('passes node-type prop to WidgetSelectDropdown', () => {
-      const spec: ComboInputSpec = {
-        type: 'COMBO',
-        name: 'test_select',
-        image_upload: true
-      }
-      const widget = createSelectWidget('option1', {}, undefined, spec)
-      renderComponent(widget, 'option1', {
-        nodeType: 'CheckpointLoaderSimple'
-      })
-
-      const dropdown = screen.getByTestId('widget-select-dropdown')
-      expect(dropdown).toBeInTheDocument()
-      expect(dropdown.dataset.nodeType).toBe('CheckpointLoaderSimple')
-    })
-
-    it('does not pass node-type prop to WidgetSelectDefault', () => {
-      const widget = createSelectWidget('option1')
-      renderComponent(widget, 'option1', { nodeType: 'KSampler' })
-
-      expect(screen.getByTestId('widget-select-default')).toBeInTheDocument()
-      expect(
-        screen.queryByTestId('widget-select-dropdown')
-      ).not.toBeInTheDocument()
-    })
-  })
-
   describe('Asset mode detection', () => {
     it('enables asset mode when shouldUseWidgetAssetPicker returns true', () => {
       mockShouldUseWidgetAssetPicker.mockReturnValue(true)

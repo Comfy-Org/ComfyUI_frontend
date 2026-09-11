@@ -102,7 +102,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
       case 'inputs':
         return assetsStore.inputAssets
       case 'outputs':
-        return assetsStore.outputAssets
+        return assetsStore.flatOutputAssets
       default:
         return assetsStore.allAssets ?? assetsStore.inputAssets
     }
