@@ -207,9 +207,41 @@ describe('useWidgetSelectActions', () => {
       expect(modelValue.value).toBe('original.png')
 
       const toastStore = useToastStore()
-      expect(toastStore.addAlert).toHaveBeenCalledWith(
+      expect(toastStore.addAlert).toHaveBeenCalledExactlyOnceWith(
         '500 - Internal Server Error'
       )
+    })
+
+    it('reports one alert per failed file when every upload fails', async () => {
+      const { api } = await import('@/scripts/api')
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        fromPartial<Response>({
+          status: 500,
+          statusText: 'Internal Server Error'
+        })
+      )
+
+      const modelValue = ref<string | undefined>('original.png')
+      const { handleFilesUpdate } = useWidgetSelectActions({
+        modelValue,
+        dropdownItems: computed(() => []),
+        widget: () =>
+          fromPartial<SimplifiedWidget<string | undefined>>({
+            name: 'test',
+            type: 'combo',
+            options: { values: [] }
+          }),
+        uploadFolder: () => 'input',
+        uploadSubfolder: () => undefined
+      })
+
+      await handleFilesUpdate([
+        new File(['a'], 'a.png'),
+        new File(['b'], 'b.png')
+      ])
+
+      const toastStore = useToastStore()
+      expect(toastStore.addAlert).toHaveBeenCalledTimes(2)
     })
   })
 })

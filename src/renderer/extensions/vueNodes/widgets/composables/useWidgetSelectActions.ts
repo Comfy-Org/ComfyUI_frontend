@@ -77,10 +77,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
 
       const uploadedPaths = await uploadFiles(files)
 
-      if (uploadedPaths.length === 0) {
-        toastStore.addAlert(t('toastMessages.fileUploadFailed'))
-        return
-      }
+      if (uploadedPaths.length === 0) return
 
       const widget = toValue(options.widget)
       const values = widget.options?.values
