@@ -5,14 +5,11 @@ import { api } from '@/scripts/api'
 
 import { uploadMedia, uploadMediaBatch } from './uploadService'
 
-vi.mock('@/scripts/api', () => ({
-  api: {
-    fetchApi: vi.fn()
-  }
-}))
+vi.mock<unknown>(import('@/scripts/api'))
 
-vi.mock('@/platform/telemetry/reportError', () => ({
-  reportError: vi.fn()
+const mockReportError = vi.hoisted(() => vi.fn())
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: mockReportError
 }))
 
 function createMockResponse(

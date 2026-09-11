@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { uploadMedia } from '@/platform/assets/services/uploadService'
@@ -39,10 +37,6 @@ describe('Load3dUtils.mapSceneLightIntensityToHdri', () => {
 })
 
 describe('Load3dUtils.uploadFile', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('returns the uploaded path on success', async () => {
     vi.mocked(uploadMedia).mockResolvedValue({
       success: true,
@@ -107,10 +101,6 @@ describe('Load3dUtils.uploadFile', () => {
 })
 
 describe('Load3dUtils.uploadTempImage', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('returns the upload response on success', async () => {
     const response = { name: 'thumb_123.png', subfolder: 'threed' }
     vi.mocked(uploadMedia).mockResolvedValue({
@@ -153,10 +143,6 @@ describe('Load3dUtils.uploadTempImage', () => {
 })
 
 describe('Load3dUtils.uploadMultipleFiles', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('filters out failed uploads', async () => {
     vi.mocked(uploadMedia)
       .mockResolvedValueOnce({
