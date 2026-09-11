@@ -276,6 +276,58 @@ describe('useModelStore', () => {
       expect(called).toContain('hovered.safetensors')
       expect(called).not.toContain('background.safetensors')
     })
+
+    it('keeps a shared load alive while another caller still needs it', async () => {
+      const { models, holders, called, resolvers } =
+        await seedSaturatedLimiter('shared.safetensors')
+      const model = models['0/shared.safetensors']
+
+      const unmounting = new AbortController()
+      const staying = new AbortController()
+      const unmountingLoad = model.load({ signal: unmounting.signal })
+      const stayingLoad = model.load({ signal: staying.signal })
+      await flush()
+      expect(called).toEqual(holders)
+
+      // One leaf unmounts while a second leaf still has the model on screen.
+      unmounting.abort()
+      resolvers.get(holders[0])!({})
+      await flush()
+
+      expect(called).toContain('shared.safetensors')
+      resolvers.get('shared.safetensors')!({
+        'modelspec.title': 'Shared title'
+      })
+      await Promise.all([unmountingLoad, stayingLoad])
+
+      expect(model.has_loaded_metadata).toBe(true)
+      expect(model.title).toBe('Shared title')
+    })
+
+    it('drops the shared load once the last caller leaves', async () => {
+      const { models, holders, called, resolvers } = await seedSaturatedLimiter(
+        'shared.safetensors',
+        'next.safetensors'
+      )
+      const model = models['0/shared.safetensors']
+
+      const first = new AbortController()
+      const second = new AbortController()
+      void model.load({ signal: first.signal })
+      void model.load({ signal: second.signal })
+      void models['0/next.safetensors'].load()
+      await flush()
+      expect(called).toEqual(holders)
+
+      first.abort()
+      second.abort()
+      resolvers.get(holders[0])!({})
+      await flush()
+
+      expect(called).not.toContain('shared.safetensors')
+      expect(called).toContain('next.safetensors')
+      expect(model.is_load_requested).toBe(false)
+    })
   })
 
   it('should cache model information', async () => {

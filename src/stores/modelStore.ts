@@ -152,6 +152,16 @@ export class ComfyModelDef {
   searchable: string = ''
   /** In-flight metadata read, shared so repeat callers de-dupe onto one load */
   private metadataLoadPromise: Promise<void> | null = null
+  /**
+   * Cancels the shared read. Owned by the read itself rather than by whichever
+   * caller happened to start it, so one leaf unmounting cannot cancel a load
+   * the leaves still on screen are waiting on.
+   */
+  private metadataLoadController: AbortController | null = null
+  /** Callers of the shared read that can still withdraw. */
+  private readonly metadataLoadCallers = new Set<AbortSignal>()
+  /** Callers of the shared read that passed no signal and so never withdraw. */
+  private permanentMetadataLoadCallers = 0
   /** Jumps this model's still-queued load ahead of background loads (hover) */
   private promoteMetadataLoad: (() => void) | null = null
 
@@ -187,15 +197,16 @@ export class ComfyModelDef {
 
   /**
    * Loads the model metadata from the server, filling in this object if data is
-   * available. Concurrent callers share one in-flight read. `signal` cancels a
-   * still-queued or in-flight load when the requesting leaf unmounts. `priority`
-   * marks a user-initiated (hover) read so it jumps ahead of background loads.
+   * available. Concurrent callers share one in-flight read, which is cancelled
+   * only once every caller's `signal` has aborted. `priority` marks a
+   * user-initiated (hover) read so it jumps ahead of background loads.
    */
   load(options: MetadataLoadOptions = {}): Promise<void> {
     if (this.has_loaded_metadata) {
       return Promise.resolve()
     }
     if (this.metadataLoadPromise) {
+      this.trackMetadataLoadCaller(options.signal)
       if (options.priority) {
         this.promoteMetadataLoad?.()
       }
@@ -206,14 +217,51 @@ export class ComfyModelDef {
     if (isCloud) {
       return Promise.resolve()
     }
-    this.metadataLoadPromise = this.loadMetadata(options)
+    this.metadataLoadController = new AbortController()
+    this.trackMetadataLoadCaller(options.signal)
+    this.metadataLoadPromise = this.loadMetadata(
+      this.metadataLoadController.signal,
+      options.priority ?? false
+    )
     return this.metadataLoadPromise
   }
 
-  private async loadMetadata({
-    signal,
-    priority = false
-  }: MetadataLoadOptions): Promise<void> {
+  private trackMetadataLoadCaller(signal?: AbortSignal): void {
+    const controller = this.metadataLoadController
+    if (!controller) return
+    if (!signal) {
+      this.permanentMetadataLoadCallers++
+      return
+    }
+    if (signal.aborted) {
+      this.releaseMetadataLoadCaller(controller, signal)
+      return
+    }
+    if (this.metadataLoadCallers.has(signal)) return
+    this.metadataLoadCallers.add(signal)
+    signal.addEventListener(
+      'abort',
+      () => this.releaseMetadataLoadCaller(controller, signal),
+      { once: true }
+    )
+  }
+
+  private releaseMetadataLoadCaller(
+    controller: AbortController,
+    signal: AbortSignal
+  ): void {
+    if (this.metadataLoadController !== controller) return
+    this.metadataLoadCallers.delete(signal)
+    if (this.metadataLoadCallers.size || this.permanentMetadataLoadCallers) {
+      return
+    }
+    controller.abort(signal.reason)
+  }
+
+  private async loadMetadata(
+    signal: AbortSignal,
+    priority: boolean
+  ): Promise<void> {
     this.is_load_requested = true
     const slot = acquireMetadataSlot(signal)
     this.promoteMetadataLoad = slot.promote
@@ -225,7 +273,7 @@ export class ComfyModelDef {
       await slot.acquired
       slotAcquired = true
       const timeout = AbortSignal.timeout(METADATA_LOAD_TIMEOUT_MS)
-      const readSignal = signal ? AbortSignal.any([signal, timeout]) : timeout
+      const readSignal = AbortSignal.any([signal, timeout])
       const metadata = await api.viewMetadata(
         this.directory,
         this.file_name,
@@ -277,7 +325,7 @@ export class ComfyModelDef {
       // clear the request flag so a later load() can retry. An abort from the
       // requesting leaf unmounting is expected, so it is not logged.
       this.is_load_requested = false
-      if (!signal?.aborted) {
+      if (!signal.aborted) {
         console.error(
           'Error loading model metadata',
           this.file_name,
@@ -288,6 +336,9 @@ export class ComfyModelDef {
     } finally {
       this.promoteMetadataLoad = null
       this.metadataLoadPromise = null
+      this.metadataLoadController = null
+      this.metadataLoadCallers.clear()
+      this.permanentMetadataLoadCallers = 0
       if (slotAcquired) {
         releaseMetadataSlot()
       }
