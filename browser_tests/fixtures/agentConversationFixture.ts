@@ -358,13 +358,15 @@ class AgentConversationHarness {
     before: PanelCounts
   ): Promise<void> {
     const expected = this.expectations[turn]
+    const apiBase = new URL('/api', this.page.url()).href.replace(/\/+$/, '')
+    const text = expected.text.replaceAll('{apiBase}', apiBase)
     await expect
       .poll(async () =>
         collapse(
           (await this.streams.allInnerTexts()).slice(before.streams).join(' ')
         )
       )
-      .toBe(expected.text)
+      .toBe(text)
 
     // A finished turn folds its tool calls into one closed summary; the
     // thinking rows it lists between them are not part of the recording.
