@@ -333,11 +333,17 @@ const structuredData = shouldNoindex
               import('react-dom/client'),
               import('agentation')
             ])
+          // Agentation types its component with an optional props object,
+          // which createElement's overloads refuse to infer through; the
+          // cast pins the one prop this mount passes.
+          const Toolbar = Agentation as unknown as (props: {
+            endpoint?: string
+          }) => null
           createRoot(root).render(
             // Agent Sync endpoint: agentation-mcp's HTTP server (default
             // port 4747). The toolbar degrades to copy-paste output when
             // the server isn't running.
-            createElement(Agentation, { endpoint: 'http://localhost:4747' })
+            createElement(Toolbar, { endpoint: 'http://localhost:4747' })
           )
         }
         void mountAgentation()

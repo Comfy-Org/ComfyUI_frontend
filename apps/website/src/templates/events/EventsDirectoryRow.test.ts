@@ -20,10 +20,10 @@ vi.mock(import('@vueuse/core'), async (importOriginal) => {
   const actual = await importOriginal<typeof import('@vueuse/core')>()
   return {
     ...actual,
-    useResizeObserver: vi.fn((_el, cb) => {
+    useResizeObserver: vi.fn((_el: unknown, cb: unknown) => {
       resizeCallbacks.push(cb as (typeof resizeCallbacks)[number])
       return { stop: () => {} }
-    })
+    }) as unknown as typeof actual.useResizeObserver
   }
 })
 

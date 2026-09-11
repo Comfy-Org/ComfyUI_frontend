@@ -59,6 +59,8 @@
     "@testing-library/user-event": "catalog:",
     "@testing-library/vue": "catalog:",
     "@types/leaflet": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
     "agentation": "catalog:",
     "astro": "catalog:",
