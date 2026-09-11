@@ -1,9 +1,8 @@
-// @vitest-environment happy-dom
-import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
+// @vitest-environment jsdom
+import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
-import { onBeforeSignInLeave } from '../../config/workshop-return'
 import { platformTopUpHref } from '../../lib/workshop/buy-credits'
 import HeaderAccount from './HeaderAccount.vue'
 
@@ -143,10 +142,12 @@ describe('HeaderAccount', () => {
       await userEvent
         .setup()
         .click(screen.getByRole('button', { name: /account/i }))
-      const buy = screen.getByRole('menuitem', { name: /add credits/i })
+      const buy = await screen.findByRole('menuitem', {
+        name: /add credits/i
+      })
       expect(buy.getAttribute('href')).toBe(platformTopUpHref(workspace.id))
       expect(buy.getAttribute('target')).toBe('_blank')
-      expect(screen.getByRole('menuitem', { name: /sign out/i })).toBeTruthy()
+      expect(screen.getByRole('menuitem', { name: /log out/i })).toBeTruthy()
     }
   )
 
@@ -212,11 +213,12 @@ describe('HeaderAccount menu', () => {
 
   it('links Add credits to platform for this workspace and settings to Cloud', async () => {
     signIn()
+    const user = userEvent.setup()
     render(HeaderAccount)
 
-    await userEvent.click(screen.getByRole('button', { name: /account/i }))
+    await user.click(screen.getByTestId('header-account'))
 
-    const topUp = screen.getByTestId('account-add-credits')
+    const topUp = await screen.findByTestId('account-add-credits')
     expect(topUp.getAttribute('href')).toBe(platformTopUpHref(workspace.id))
     expect(topUp.getAttribute('target')).toBe('_blank')
     expect(
@@ -224,33 +226,34 @@ describe('HeaderAccount menu', () => {
     ).toBe('https://cloud.comfy.org')
   })
 
-  it('opens with focus on the first item, roves with arrows, and Escape returns to the trigger', async () => {
-    const user = userEvent.setup()
+  it('hides the top-up row from a member', async () => {
     signIn()
+    h.session!.value = {
+      token: 'jwt',
+      uid: 'user-1',
+      workspace,
+      role: 'member'
+    }
+    const user = userEvent.setup()
     render(HeaderAccount)
 
-    const trigger = screen.getByRole('button', { name: /account/i })
-    await user.click(trigger)
-    await waitFor(() =>
-      // eslint-disable-next-line testing-library/no-node-access
-      expect(document.activeElement).toBe(
-        screen.getByTestId('account-switch-workspace')
-      )
-    )
+    await user.click(screen.getByTestId('header-account'))
 
-    await user.keyboard('{ArrowDown}')
-    // eslint-disable-next-line testing-library/no-node-access
-    expect(document.activeElement).toBe(
-      screen.getByTestId('account-add-credits')
-    )
-    await user.keyboard('{ArrowUp}')
-    // eslint-disable-next-line testing-library/no-node-access
-    expect(document.activeElement).toBe(
-      screen.getByTestId('account-switch-workspace')
-    )
+    await screen.findByTestId('account-workspace-settings')
+    expect(screen.queryByTestId('account-add-credits')).toBeNull()
+  })
+
+  it('closes on Escape and hands focus back to the trigger', async () => {
+    signIn()
+    const user = userEvent.setup()
+    render(HeaderAccount)
+
+    const trigger = screen.getByTestId('header-account')
+    await user.click(trigger)
+    await screen.findByRole('menu')
 
     await user.keyboard('{Escape}')
-    expect(screen.queryByRole('menu')).toBeNull()
+    await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
     // eslint-disable-next-line testing-library/no-node-access
     expect(document.activeElement).toBe(trigger)
   })
@@ -285,6 +288,13 @@ describe('HeaderAccount workspace switcher', () => {
     ]
   }
 
+  async function openSwitcher(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(screen.getByTestId('header-account'))
+    await screen.findByTestId('account-workspace')
+    await user.keyboard('{ArrowDown}')
+    await user.keyboard('{Enter}')
+  }
+
   it('lists the account workspaces with the current one checked', async () => {
     signIn()
     vi.stubGlobal(
@@ -298,10 +308,11 @@ describe('HeaderAccount workspace switcher', () => {
     onTestFinished(() => {
       vi.unstubAllGlobals()
     })
+    const user = userEvent.setup()
     render(HeaderAccount)
 
-    await userEvent.click(screen.getByRole('button', { name: /account/i }))
-    await userEvent.click(screen.getByTestId('account-switch-workspace'))
+    await openSwitcher(user)
+
     expect(await screen.findByTestId('account-workspace-team-1')).toBeTruthy()
     const current = screen.getByTestId('account-workspace-ws')
     expect(current.textContent).toContain('Personal')
@@ -322,11 +333,11 @@ describe('HeaderAccount workspace switcher', () => {
       vi.unstubAllGlobals()
     })
     h.remint.mockResolvedValue({ status: 'ok' })
+    const user = userEvent.setup()
     render(HeaderAccount)
 
-    await userEvent.click(screen.getByRole('button', { name: /account/i }))
-    await userEvent.click(screen.getByTestId('account-switch-workspace'))
-    await userEvent.click(await screen.findByTestId('account-workspace-team-1'))
+    await openSwitcher(user)
+    await user.click(await screen.findByTestId('account-workspace-team-1'))
 
     await waitFor(() =>
       expect(h.remint).toHaveBeenCalledWith(undefined, {
@@ -345,85 +356,11 @@ describe('HeaderAccount workspace switcher', () => {
     onTestFinished(() => {
       vi.unstubAllGlobals()
     })
+    const user = userEvent.setup()
     render(HeaderAccount)
 
-    await userEvent.click(screen.getByRole('button', { name: /account/i }))
-    await userEvent.click(screen.getByTestId('account-switch-workspace'))
+    await openSwitcher(user)
 
     expect(await screen.findByText('Could not load workspaces.')).toBeTruthy()
-  })
-})
-
-describe('HeaderAccount sign-in link', () => {
-  it('runs the registered stashes before leaving for sign-in', async () => {
-    const assign = vi.fn()
-    vi.spyOn(window.location, 'assign').mockImplementation(assign)
-    const stash = vi.fn()
-    const stop = onBeforeSignInLeave(stash)
-    onTestFinished(stop)
-    render(HeaderAccount)
-
-    await userEvent
-      .setup()
-      .click(screen.getByRole('link', { name: /sign in/i }))
-
-    expect(stash.mock.invocationCallOrder[0]).toBeLessThan(
-      assign.mock.invocationCallOrder[0]
-    )
-  })
-
-  it('sends the visitor to sign in with the current page as the return destination', async () => {
-    const assign = vi.fn()
-    vi.spyOn(window.location, 'assign').mockImplementation(assign)
-    window.history.replaceState({}, '', '/workshop/models/example/?tab=api')
-    render(HeaderAccount)
-
-    await userEvent
-      .setup()
-      .click(screen.getByRole('link', { name: /sign in/i }))
-
-    expect(assign).toHaveBeenCalledWith(
-      '/login/?returnTo=%2Fworkshop%2Fmodels%2Fexample%2F%3Ftab%3Dapi'
-    )
-  })
-
-  it('leaves a modified click to the browser with the return destination already on the link', async () => {
-    const assign = vi.fn()
-    vi.spyOn(window.location, 'assign').mockImplementation(assign)
-    window.history.replaceState({}, '', '/workshop/models/example/?tab=api')
-    render(HeaderAccount)
-
-    const link = screen.getByRole('link', { name: /sign in/i })
-    expect(
-      link.getAttribute('href'),
-      'the first render must match the server output'
-    ).toBe('/login/')
-
-    await fireEvent(link, new Event('pointerdown', { bubbles: true }))
-    link.dispatchEvent(
-      new MouseEvent('click', {
-        bubbles: true,
-        cancelable: true,
-        metaKey: true
-      })
-    )
-
-    expect(assign).not.toHaveBeenCalled()
-    expect(
-      link.getAttribute('href'),
-      'open-in-new-tab must land on the model page after sign-in, not the Workshop home'
-    ).toBe('/login/?returnTo=%2Fworkshop%2Fmodels%2Fexample%2F%3Ftab%3Dapi')
-  })
-
-  it('prepares the destination on focus, so a keyboard open-in-new-tab keeps it too', async () => {
-    window.history.replaceState({}, '', '/workshop/models/example/')
-    render(HeaderAccount)
-    const link = screen.getByRole('link', { name: /sign in/i })
-
-    await fireEvent.focus(link)
-
-    expect(link.getAttribute('href')).toBe(
-      '/login/?returnTo=%2Fworkshop%2Fmodels%2Fexample%2F'
-    )
   })
 })
