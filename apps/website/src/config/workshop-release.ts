@@ -79,9 +79,10 @@ function allowedFamiliesFor(
  * without Workshop in it has nothing to point anywhere and is left alone — so
  * production builds are untouched until the day Workshop launches, when
  * `PUBLIC_WORKSHOP_CLOUD_ENV=prod` goes in alongside `WORKSHOP_IN_BUILD=1`.
- * A misspelt value fails every build, deployed or not.
  */
 export function assertWorkshopCloudEnvForBuild(): void {
+  if (!isWorkshopInBuild()) return
+
   const raw = process.env.PUBLIC_WORKSHOP_CLOUD_ENV
   const family = raw === undefined || raw === '' ? undefined : raw
   if (family !== undefined && !isWorkshopCloudEnv(family)) {
@@ -89,8 +90,6 @@ export function assertWorkshopCloudEnvForBuild(): void {
       `PUBLIC_WORKSHOP_CLOUD_ENV=${JSON.stringify(family)} is not one of ${WORKSHOP_CLOUD_ENVS.join(', ')}.`
     )
   }
-  if (!isWorkshopInBuild()) return
-
   const vercelEnv = process.env.VERCEL_ENV ?? ''
   const allowed = allowedFamiliesFor(vercelEnv)
   if (!allowed) return
