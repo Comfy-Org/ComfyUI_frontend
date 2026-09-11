@@ -1,9 +1,5 @@
 import { defineConfig, devices } from '@playwright/test'
 
-import { loadLiveCloudBillingConfig } from './browser_tests/fixtures/utils/liveCloudBillingConfig'
-
-const sandbox = loadLiveCloudBillingConfig()
-
 Object.assign(globalThis, {
   __DISTRIBUTION__: 'cloud',
   __IS_NIGHTLY__: false
@@ -20,8 +16,6 @@ export default defineConfig({
   reporter: 'list',
   use: {
     ...devices['Desktop Chrome'],
-    baseURL: sandbox.baseURL,
-    storageState: sandbox.storageState,
     locale: 'en-US',
     trace: 'off',
     screenshot: 'off',
