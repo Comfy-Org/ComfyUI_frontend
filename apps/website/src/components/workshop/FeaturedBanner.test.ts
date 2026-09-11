@@ -59,7 +59,7 @@ describe('FeaturedBanner', () => {
     render(FeaturedBanner, { props: { models: [base, kling] } })
     expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Flux')
     expect(screen.getByText('Text to Image')).toBeTruthy()
-    expect(screen.getByTestId('featured-slide').getAttribute('href')).toBe(
+    expect(screen.getByTestId('featured-slide-link').getAttribute('href')).toBe(
       '/models/flux/'
     )
   })
@@ -72,8 +72,21 @@ describe('FeaturedBanner', () => {
 
     expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Kling')
     expect(screen.getByText(kling.summary ?? '')).toBeTruthy()
-    expect(screen.getByTestId('featured-slide').getAttribute('href')).toBe(
+    expect(screen.getByTestId('featured-slide-link').getAttribute('href')).toBe(
       '/models/kling/'
+    )
+  })
+
+  it('keeps a name whose task label only matches mid-word', () => {
+    const midWord: WorkshopModel = {
+      ...base,
+      name: 'Context-to-Image',
+      slug: 'context',
+      href: '/models/context/'
+    }
+    render(FeaturedBanner, { props: { models: [midWord] } })
+    expect(screen.getByRole('heading', { level: 2 }).textContent).toBe(
+      'Context-to-Image'
     )
   })
 

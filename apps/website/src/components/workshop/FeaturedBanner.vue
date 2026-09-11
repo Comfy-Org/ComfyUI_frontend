@@ -7,6 +7,7 @@ import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { bannerName } from '../../lib/workshop/banner-name'
+import { modelDocsHref } from '../../lib/workshop/model-docs'
 import { taskLabelFor } from '../../lib/workshop/task-label'
 import Badge from '../ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -88,16 +89,21 @@ const fill = computed(() =>
     class="rounded-4.5xl relative isolate overflow-hidden border border-transparency-white-t8"
     data-testid="section-featured"
   >
-    <a
-      :href="active.model.href"
-      class="group short:h-57 sm:short:h-60 block h-100"
+    <div
+      class="group short:h-57 sm:short:h-60 relative block h-100"
       data-testid="featured-slide"
     >
+      <a
+        :href="active.model.href"
+        :aria-label="active.name"
+        class="absolute inset-0"
+        data-testid="featured-slide-link"
+      ></a>
       <video
         v-if="active.model.thumbnail?.kind === 'video'"
         :key="active.model.slug"
         :src="active.model.thumbnail.url"
-        class="absolute inset-0 size-full object-cover"
+        class="pointer-events-none absolute inset-0 size-full object-cover"
         aria-hidden="true"
         muted
         loop
@@ -111,16 +117,16 @@ const fill = computed(() =>
         :key="active.model.slug"
         :src="active.model.thumbnailUrl"
         alt=""
-        class="absolute inset-0 size-full object-cover"
+        class="pointer-events-none absolute inset-0 size-full object-cover"
         decoding="async"
       />
       <div
-        class="from-page via-page/85 to-page/20 sm:via-page/80 absolute inset-0 bg-linear-to-t sm:bg-linear-to-r sm:to-transparent"
+        class="from-page via-page/85 to-page/20 sm:via-page/80 pointer-events-none absolute inset-0 bg-linear-to-t sm:bg-linear-to-r sm:to-transparent"
         aria-hidden="true"
       />
 
       <div
-        class="short:gap-3 short:pt-5 short:pb-14 relative flex h-full flex-col justify-end gap-4 p-8 pt-6 pb-16 max-sm:gap-3 max-sm:p-6 max-sm:pb-14 sm:max-w-2xl sm:justify-center lg:p-12 lg:pt-8 lg:pb-18"
+        class="short:gap-3 short:pt-5 short:pb-14 pointer-events-none relative flex h-full flex-col justify-end gap-4 p-8 pt-6 pb-16 max-sm:gap-3 max-sm:p-6 max-sm:pb-14 sm:max-w-2xl sm:justify-center lg:p-12 lg:pt-8 lg:pb-18"
       >
         <div class="flex flex-wrap items-center gap-2">
           <Badge variant="subtle" size="md" class="text-primary-comfy-canvas">
@@ -150,11 +156,25 @@ const fill = computed(() =>
           {{ active.model.summary }}
         </p>
 
-        <Button as="span" class="w-fit">
-          {{ t('workshop.hub.tryNow', locale) }}
-        </Button>
+        <div class="pointer-events-auto flex w-fit items-center gap-3">
+          <Button as="a" :href="active.model.href" class="w-fit">
+            {{ t('workshop.hub.tryNow', locale) }}
+          </Button>
+          <Button
+            v-if="modelDocsHref(active.model)"
+            as="a"
+            variant="outline"
+            :href="modelDocsHref(active.model)"
+            target="_blank"
+            rel="noopener"
+            class="w-fit"
+            data-testid="featured-docs-link"
+          >
+            {{ t('workshop.hub.docs', locale) }}
+          </Button>
+        </div>
       </div>
-    </a>
+    </div>
 
     <div
       v-if="slides.length > 1"

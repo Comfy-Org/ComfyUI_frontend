@@ -9910,6 +9910,7 @@ Enterprise`
   'workshop.hub.facets.noResults': { en: 'No matches', 'zh-CN': '无匹配' },
   'workshop.hub.models': { en: 'Model', 'zh-CN': '模型' },
   'workshop.hub.categories': { en: 'CATEGORIES', 'zh-CN': '分类' },
+  'workshop.hub.docs': { en: 'Read docs', 'zh-CN': '阅读文档' },
   'workshop.hub.tryNow': { en: 'Try now', 'zh-CN': '立即试用' },
   'workshop.hub.tag.partnerNodes': {
     en: 'Partner Nodes',
