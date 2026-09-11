@@ -118,6 +118,7 @@ export type TopUpWatchState =
       readonly status: 'landed'
       readonly previousCredits: number
       readonly newCredits: number
+      readonly landedAt: number
     }
   | { readonly status: 'unresolved'; readonly previousCredits: number }
 
@@ -133,12 +134,20 @@ export function clearTopUpWatch(): void {
 export function watchForTopUp(): void {
   if (typeof window === 'undefined') return
   clearTopUpWatch()
+  const { session } = useWorkshopSession()
+  // The checkout was made for this workspace; a balance from any other must
+  // never satisfy the watch, and switching away retires it.
+  const forWorkspace = session.value?.workspace.id
   const previousCredits =
     balance.value.status === 'ok' ? balance.value.credits : 0
   topUpWatch.value = { status: 'waiting', previousCredits }
   let ticks = 0
   topUpPoll = setInterval(() => {
     ticks += 1
+    if (session.value?.workspace.id !== forWorkspace) {
+      clearTopUpWatch()
+      return
+    }
     if (
       balance.value.status === 'ok' &&
       balance.value.credits > previousCredits
@@ -146,7 +155,12 @@ export function watchForTopUp(): void {
       const newCredits = balance.value.credits
       if (topUpPoll) clearInterval(topUpPoll)
       topUpPoll = undefined
-      topUpWatch.value = { status: 'landed', previousCredits, newCredits }
+      topUpWatch.value = {
+        status: 'landed',
+        previousCredits,
+        newCredits,
+        landedAt: Date.now()
+      }
       return
     }
     if (ticks > TOP_UP_POLL_LIMIT) {
