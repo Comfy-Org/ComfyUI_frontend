@@ -537,7 +537,6 @@ describe('ModelDetail', () => {
     const buy = screen.getByRole('button', { name: /Add credits/ })
     expect(buy.getAttribute('data-gate')).toBe('noCredits')
     expect(screen.getByTestId('gate-note').textContent).toContain('Personal')
-    expect(screen.getByTestId('gate-note').textContent).toContain('Stripe')
     expect(screen.queryByRole('button', { name: 'Run' })).toBeNull()
     expect(runWorkshopRouter).not.toHaveBeenCalled()
 
@@ -551,75 +550,17 @@ describe('ModelDetail', () => {
     )
   })
 
-  it('creates a Stripe checkout session and sends the buyer to it', async () => {
+  it('opens the amount picker from the gate', async () => {
     auth.session.value = credential
     credits.balance.value = { status: 'ok', credits: 0 }
-    const tab = { location: { assign: vi.fn() }, close: vi.fn() }
-    const open = vi
-      .spyOn(window, 'open')
-      .mockReturnValue(tab as unknown as Window)
-    const fetchCheckout = vi
-      .fn()
-      .mockResolvedValue(
-        new Response(
-          JSON.stringify({ checkout_url: 'https://checkout.stripe.com/c/s_1' }),
-          { status: 200 }
-        )
-      )
-    vi.stubGlobal('fetch', fetchCheckout)
-    onTestFinished(() => {
-      open.mockRestore()
-      vi.unstubAllGlobals()
-    })
-
     mountDetail({ model: runnable })
     await nextTick()
+
+    expect(screen.queryByTestId('buy-credits-dialog')).toBeNull()
     await user().click(screen.getByRole('button', { name: /Add credits/ }))
 
-    await vi.waitFor(() =>
-      expect(tab.location.assign).toHaveBeenCalledWith(
-        'https://checkout.stripe.com/c/s_1'
-      )
-    )
-    const [target, init] = fetchCheckout.mock.calls[0] as [URL, RequestInit]
-    expect(String(target)).toBe(
-      `${WORKSHOP_CLOUD_BASE_URL}/api/billing/topup/checkout`
-    )
-    expect(init.headers).toMatchObject({
-      Authorization: 'Bearer workspace-jwt'
-    })
-    expect(JSON.parse(String(init.body))).toEqual({
-      amount_cents: 1000,
-      return_url: `${WORKSHOP_CLOUD_BASE_URL}/?settings=plan-credits`
-    })
-  })
-
-  it('falls back to the platform rail while the checkout flag is dark', async () => {
-    auth.session.value = credential
-    credits.balance.value = { status: 'ok', credits: 0 }
-    const tab = { location: { assign: vi.fn() }, close: vi.fn() }
-    const open = vi
-      .spyOn(window, 'open')
-      .mockReturnValue(tab as unknown as Window)
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue(new Response('', { status: 404 }))
-    )
-    onTestFinished(() => {
-      open.mockRestore()
-      vi.unstubAllGlobals()
-    })
-
-    mountDetail({ model: runnable })
-    await nextTick()
-    await user().click(screen.getByRole('button', { name: /Add credits/ }))
-
-    await vi.waitFor(() =>
-      expect(tab.location.assign).toHaveBeenCalledWith(
-        platformTopUpHref('workspace-1')
-      )
-    )
-    expect(screen.queryByTestId('checkout-error')).toBeNull()
+    expect(screen.getByTestId('buy-credits-dialog')).toBeTruthy()
+    expect(screen.getByTestId('buy-credits-pack-25')).toBeTruthy()
   })
 
   it.for(['unknown', 'error'] as const)(

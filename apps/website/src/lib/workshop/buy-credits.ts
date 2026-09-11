@@ -37,8 +37,6 @@ export function platformTopUpHref(workspaceId?: string): string {
  * resurfaces on the cloud credits page and the model page re-reads its
  * balance on refocus.
  */
-export const TOP_UP_AMOUNT_CENTS = 1_000
-
 export class TopUpCheckoutError extends Error {
   constructor(readonly status: number) {
     super('Top-up checkout failed with status ' + String(status))
