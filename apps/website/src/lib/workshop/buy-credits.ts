@@ -104,7 +104,15 @@ export async function createTopUpCheckout(
   try {
     return await requestCheckout(token, amountCents, ownReturn)
   } catch (error) {
-    if (error instanceof TopUpCheckoutError && error.status === 400)
+    // A rejected return host may come back as 400 or 404 depending on the
+    // ingest build, and a plain 404 also means the feature flag is dark -
+    // indistinguishable from here. Retry once with the Cloud return either
+    // way: it answers the allowlist rejection, and a genuinely dark flag
+    // 404s again and surfaces as itself.
+    if (
+      error instanceof TopUpCheckoutError &&
+      (error.status === 400 || error.status === 404)
+    )
       return requestCheckout(token, amountCents, WORKSHOP_CREDITS_URL)
     throw error
   }
