@@ -192,6 +192,12 @@ test.describe('Sign In dialog — live auth', () => {
     await resetFailed
 
     await expect(
+      comfyPage.page.getByText(
+        'Network error. Please check your connection and try again.'
+      ),
+      'a dropped connection must surface the network error, not a silent failure'
+    ).toBeVisible()
+    await expect(
       comfyPage.page.getByText('Password reset email sent'),
       'a real transport failure must not show the success confirmation'
     ).toBeHidden()
