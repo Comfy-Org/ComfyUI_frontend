@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { routerWorkshopModels } from './workshop-browse-content'
 import { getRouterWorkshopModelDetail } from './workshop-router-content'
@@ -13,6 +13,7 @@ import { validateWorkshopInput } from './workshop-json-schema'
 import creatorModels from '../data/workshop-creator-models.json'
 import { workshopContract } from './workshop-contract-catalog'
 import { formForContract } from './workshop-contract'
+import { createWorkshopUrlUploader } from './workshop-url-upload'
 
 const imageUrl = 'https://example.invalid/source.png'
 const videoUrl = 'https://example.invalid/source.mp4'
@@ -76,10 +77,13 @@ function valuesFor(id: string): FormValues {
 }
 
 function prepare(id: string, values: FormValues = {}) {
+  const uploader = createWorkshopUrlUploader()
   return prepareWorkshopRouterInput(
     modelFor(id).execution,
     { ...valuesFor(id), ...values },
-    new AbortController().signal
+    new AbortController().signal,
+    undefined,
+    (file, signal) => uploader(file, 'token', 'owner:workspace', signal)
   )
 }
 
@@ -88,6 +92,36 @@ const models = routerWorkshopModels.filter(
 )
 
 describe('creator widgets to native Router requests', () => {
+  beforeEach(() => {
+    let grants = 0
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>(async (url, init) => {
+        if (init?.method === 'POST') {
+          expect(String(url)).toMatch(/\/customers\/storage$/)
+          expect(new Headers(init.headers).get('Authorization')).toBe(
+            'Bearer token'
+          )
+          grants += 1
+          return Response.json({
+            upload_url: `https://storage.example/upload-${grants}`,
+            download_url: `https://storage.example/image-${grants}.png`
+          })
+        }
+        expect(new Headers(init?.headers).has('Authorization')).toBe(false)
+        if (init?.method === 'PUT') {
+          expect(String(url)).toMatch(/^https:\/\/storage\.example\/upload-/)
+          expect(init.body).toBeInstanceOf(File)
+          return new Response(null)
+        }
+        expect(String(url)).toContain('@')
+        return new Response('image bytes', {
+          headers: { 'Content-Type': 'image/png' }
+        })
+      })
+    )
+  })
+
   it.for([
     ...new Map(
       routerWorkshopModels.map((model) => [model.routerId, model])
@@ -196,12 +230,24 @@ describe('creator widgets to native Router requests', () => {
       expect(new Set(fields.map((field) => field.name)).size).toBe(
         fields.length
       )
-      expect(validateForm(fields, valuesFor(model.slug))).toEqual({})
-      const body = await prepare(model.slug)
+      const values = valuesFor(model.slug)
+      expect(validateForm(fields, values)).toEqual({})
+      const body = await prepare(model.slug, values)
       expect(validateWorkshopInput(body, detail.execution.inputSchema)).toBe(
         true
       )
       expect(body).not.toHaveProperty('model')
+      if (
+        (detail.execution.id === 'wan/wan3.0-video' ||
+          detail.execution.id === 'wan/wan3.0-video-prime') &&
+        typeof values.image_url === 'string' &&
+        values.image_url.includes('@')
+      ) {
+        expect(body).toHaveProperty(
+          'input.media.0.url',
+          'https://storage.example/image-1.png'
+        )
+      }
     }
   )
 

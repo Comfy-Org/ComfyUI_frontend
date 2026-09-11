@@ -418,11 +418,15 @@ export function prepareWorkshopRequestCallback(
       }
     }
     case 'gemini-video': {
-      const { input, image_url, last_frame_url, video_url } = values
+      const { input, image_url, last_frame_url } = values
       const media = [
         ...(image_url ? [{ type: 'image', uri: image_url }] : []),
         ...(last_frame_url ? [{ type: 'image', uri: last_frame_url }] : []),
-        ...(video_url ? [{ type: 'video', uri: video_url }] : [])
+        ...(files.video ?? []).map((file) => ({
+          type: 'video',
+          data: file.data,
+          mime_type: file.mimeType
+        }))
       ]
       return {
         input: media.length ? [{ type: 'text', text: input }, ...media] : input,

@@ -1,5 +1,7 @@
 import { z } from 'astro/zod'
 
+import { valuesAtPointer } from '../src/config/workshop-json-pointer'
+
 import type {
   WorkshopContract,
   WorkshopMediaBinding
@@ -25,6 +27,24 @@ function imageAndMask(): WorkshopMediaBinding[] {
 }
 
 export function adaptRouterModel(contract: WorkshopContract): WorkshopContract {
+  if (['luma/photon-1', 'luma/photon-flash-1'].includes(contract.id)) {
+    const output = contract.output
+    if (output.format === 'binary' || !output.schema)
+      throw new Error('Missing Luma image response schema')
+    return {
+      ...contract,
+      output: {
+        format: 'json',
+        schema: output.schema,
+        success: {
+          path: '/state',
+          values: ['completed'],
+          caseInsensitive: false
+        },
+        selectors: [{ path: '/assets/image', encoding: 'url', kind: 'image' }]
+      }
+    }
+  }
   if (contract.id === 'bfl/flux-3-video') {
     const slug = 'bfl--flux-3-video-continuation--edit-videos'
     const continuation = contract.creatorVariants?.[slug]
@@ -113,6 +133,31 @@ export function adaptRouterModel(contract: WorkshopContract): WorkshopContract {
     }
   }
   const media = mediaBindings[contract.id]
+  const output = contract.output
+  if (
+    contract.id === 'bria/image-edit-gen-fill' &&
+    output.format !== 'binary' &&
+    output.schema
+  ) {
+    const schema = structuredClone(output.schema)
+    const [refinedPrompt] = valuesAtPointer(
+      schema,
+      '/components/schemas/BriaStatusResponse/properties/result/properties/refined_prompt'
+    )
+    if (
+      !refinedPrompt ||
+      typeof refinedPrompt !== 'object' ||
+      !('type' in refinedPrompt) ||
+      refinedPrompt.type !== 'string'
+    )
+      throw new Error('Unexpected Bria refined_prompt schema')
+    refinedPrompt.type = ['string', 'null']
+    return {
+      ...contract,
+      output: { ...output, schema },
+      media: [...contract.media, ...(media ?? [])]
+    }
+  }
   return media
     ? { ...contract, media: [...contract.media, ...media] }
     : contract

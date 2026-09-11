@@ -110,7 +110,14 @@ export async function prepareWorkshopRouterInput(
     return nativeBody
   }
   const schema = schemaForModel({ fields: [], form: formForContract(contract) })
-  values = await resolveWorkshopUrlInputs(schema, values, signal, uploadFile)
+  values = await resolveWorkshopUrlInputs(
+    schema,
+    values,
+    signal,
+    uploadFile,
+    contract.id === 'wan/wan3.0-video' ||
+      contract.id === 'wan/wan3.0-video-prime'
+  )
   if (contract.creator) {
     const errors = validateForm(schema, values)
     if (Object.keys(errors).length)

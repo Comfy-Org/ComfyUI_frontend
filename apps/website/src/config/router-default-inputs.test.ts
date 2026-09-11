@@ -14,6 +14,69 @@ function modelFor(slug: string) {
 
 describe('runnable page defaults', () => {
   it.for([
+    'byteplus--seedance-2-5-first-last-frame--animate-images',
+    'byteplus--seedance-2-fast-first-last-frame--animate-images'
+  ])('sends both displayed endpoint frames for %s', async (slug) => {
+    const model = modelFor(slug)
+    const page = initialWorkshopPageState(model)
+    expect(validateForm(page.schema, page.values)).toEqual({})
+    expect(page.values.first_frame_url).toBeTruthy()
+    expect(page.values.last_frame_url).toBeTruthy()
+    expect(page.values.first_frame_url).not.toBe(page.values.last_frame_url)
+    const request = await prepareModelRouterRender(model)
+    expect(request.body.content).toEqual([
+      { type: 'text', text: page.values.prompt },
+      {
+        type: 'image_url',
+        role: 'first_frame',
+        image_url: { url: page.values.first_frame_url }
+      },
+      {
+        type: 'image_url',
+        role: 'last_frame',
+        image_url: { url: page.values.last_frame_url }
+      }
+    ])
+  })
+
+  it('sends the displayed reference and preserves generic overrides', async () => {
+    const model = modelFor(
+      'byteplus--seedance-2-fast-reference--generate-videos'
+    )
+    const page = initialWorkshopPageState(model)
+    const request = await prepareModelRouterRender(model)
+    expect(request.body.content).toEqual([
+      { type: 'text', text: page.values.prompt },
+      {
+        type: 'image_url',
+        role: 'reference_image',
+        image_url: { url: page.values.reference_image_url }
+      }
+    ])
+
+    const custom = await prepareModelRouterRender(model, {
+      prompt: 'Animate the two reference objects.',
+      reference_images: [
+        'https://example.com/first.png',
+        'https://example.com/second.png'
+      ]
+    })
+    expect(custom.body.content).toEqual([
+      { type: 'text', text: 'Animate the two reference objects.' },
+      {
+        type: 'image_url',
+        role: 'reference_image',
+        image_url: { url: 'https://example.com/first.png' }
+      },
+      {
+        type: 'image_url',
+        role: 'reference_image',
+        image_url: { url: 'https://example.com/second.png' }
+      }
+    ])
+  })
+
+  it.for([
     'bfl--flux-erase--edit-images',
     'bria--eraser--edit-images',
     'bria--generative-fill--edit-images'
@@ -29,7 +92,10 @@ describe('runnable page defaults', () => {
       const request = await prepareModelRouterRender(model)
       expect(request.body).toMatchObject({
         image: defaultMedia.image,
-        mask: defaultMedia.mask
+        mask:
+          slug === 'bria--generative-fill--edit-images'
+            ? defaultMedia.partialMask
+            : defaultMedia.mask
       })
     }
   )
@@ -58,10 +124,24 @@ describe('runnable page defaults', () => {
   })
 
   it('sends text lip sync through the text mode using the generic prompt', async () => {
-    const request = await prepareModelRouterRender(
-      modelFor('kling--lip-sync-text-to-video--edit-videos'),
-      { prompt: 'Hello from the playground.' }
-    )
+    const model = modelFor('kling--lip-sync-text-to-video--edit-videos')
+    const page = initialWorkshopPageState(model)
+    const initial = await prepareModelRouterRender(model)
+    expect(initial.body).toEqual({
+      input: {
+        mode: 'text2video',
+        video_url: page.values.video_url,
+        text: 'Welcome to Comfy Cloud. Let us bring your creative ideas to life today.',
+        voice_id: 'genshin_vindi2',
+        voice_language: 'en',
+        voice_speed: 1
+      }
+    })
+    expect(initial.body.input).toMatchObject({ text: page.values.text })
+
+    const request = await prepareModelRouterRender(model, {
+      prompt: 'Hello from the playground.'
+    })
     expect(request.body).toEqual({
       input: {
         mode: 'text2video',

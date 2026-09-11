@@ -19,6 +19,35 @@ const maskedImage = {
 }
 const videoPrompt =
   'Generate a short video of a red fox walking through a sunlit forest. The camera follows smoothly as leaves move in the breeze.'
+const videoEditPrompt =
+  'Turn this video into a colorful animated scene. Keep the original motion and camera framing.'
+const robotInputs =
+  'https://cdn.jsdelivr.net/gh/Comfy-Org/workflow_templates@f331af10934fdf0d773d5f26c1d00f33559ae09d/input/'
+const robotFirstFrame = `${robotInputs}pink_robot_front.png`
+const robotLastFrame = `${robotInputs}pink_robot_back.png`
+const robotTurn: RouterRenderParameters = {
+  prompt:
+    'The pink toy robot smoothly turns from the front view in the first frame to the back view in the last frame. Keep its design and the warm orange studio background consistent.',
+  first_frame: robotFirstFrame,
+  last_frame: robotLastFrame,
+  duration_seconds: 5
+}
+const pageDefaults: Readonly<Partial<Record<string, RouterRenderParameters>>> =
+  {
+    'byteplus--seedance-2-5-first-last-frame--animate-images': robotTurn,
+    'byteplus--seedance-2-fast-first-last-frame--animate-images': robotTurn,
+    'byteplus--seedance-2-fast-reference--generate-videos': {
+      prompt:
+        'The pink toy robot from the reference image performs a cheerful dance in a warm orange studio. Keep its design and colors consistent as it waves and takes a small step.',
+      reference_images: [robotFirstFrame],
+      duration_seconds: 5
+    },
+    'kling--lip-sync-text-to-video--edit-videos': {
+      prompt:
+        'Welcome to Comfy Cloud. Let us bring your creative ideas to life today.',
+      source_videos: ['https://assets.sync.so/docs/example-video.mp4']
+    }
+  }
 
 const defaults: Readonly<Partial<Record<string, RouterRenderParameters>>> = {
   'beeble--switchx-image-edit--edit-images': {
@@ -43,7 +72,10 @@ const defaults: Readonly<Partial<Record<string, RouterRenderParameters>>> = {
   },
   'bria--eraser--edit-images': maskedImage,
   'bria--expand-image--edit-images': sourceImage,
-  'bria--generative-fill--edit-images': maskedImage,
+  'bria--generative-fill--edit-images': {
+    ...maskedImage,
+    mask_image: `data:image/png;base64,${defaultMedia.partialMask}`
+  },
   'bria--remove-video-background--edit-videos': sourceVideo,
   'byteplus--seedance-1-0-lite-first-last-frame--animate-images': {
     first_frame: image
@@ -74,9 +106,6 @@ const defaults: Readonly<Partial<Record<string, RouterRenderParameters>>> = {
     source_videos: ['https://assets.sync.so/docs/example-video.mp4'],
     source_audio: [audio]
   },
-  'kling--lip-sync-text-to-video--edit-videos': {
-    source_videos: ['https://assets.sync.so/docs/example-video.mp4']
-  },
   'luma--photon-1-image-modify--edit-images': sourceImage,
   'runway--gen4-turbo-image-to-video--animate-images': sourceImage,
   'vertexai--veo-3--animate-images': { first_frame: image },
@@ -101,7 +130,12 @@ function repairedValues(
     model.routerId.startsWith('gemini-interactions/') &&
     values.input === 'Reply with the single word: ok'
   )
-    return { ...values, input: videoPrompt }
+    return {
+      ...values,
+      input: model.slug.endsWith('--edit-videos')
+        ? videoEditPrompt
+        : videoPrompt
+    }
   if (
     model.slug === 'bfl--flux-pro-expand--edit-images' &&
     ['top', 'bottom', 'left', 'right'].every((name) => values[name] === 0)
@@ -116,6 +150,8 @@ export function applyRouterDefaultInputs(
   values: FormValues
 ): FormValues {
   const repaired = repairedValues(model, values)
+  const authored = pageDefaults[model.slug]
+  if (authored) return mapRouterParameters(schema, repaired, authored)
   const parameters = defaults[model.slug]
   if (!parameters) return repaired
   const mapped = mapRouterParameters(schema, repaired, parameters)
