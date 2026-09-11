@@ -16,7 +16,7 @@ import { i18n } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IWidget } from '@/lib/litegraph/src/types/widgets'
 import { MediaAssetKey } from '@/platform/assets/schemas/mediaAssetSchema'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetId, AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
 import { api } from '@/scripts/api'
 import { resolveOutputAssetItems } from '../utils/outputAssetUtil'
@@ -51,7 +51,9 @@ vi.mock<unknown>(
 const mockShowDialog = vi.hoisted(() => vi.fn())
 
 const mockInvalidateModelsForCategory = vi.hoisted(() => vi.fn())
-const mockSetAssetDeleting = vi.hoisted(() => vi.fn())
+const mockSetAssetDeleting = vi.hoisted(() =>
+  vi.fn<(assetId: AssetId, isDeleting: boolean) => void>()
+)
 const mockHasCategory = vi.hoisted(() => vi.fn())
 const mockInputAssets = vi.hoisted(() => ({ items: [] as AssetItem[] }))
 
@@ -116,7 +118,9 @@ vi.mock<unknown>(import('../schemas/assetMetadataSchema'), () => ({
 vi.mock(import('../utils/outputAssetUtil'))
 const mockResolveOutputAssetItems = vi.mocked(resolveOutputAssetItems)
 
-const mockDeleteAsset = vi.hoisted(() => vi.fn())
+const mockDeleteAsset = vi.hoisted(() =>
+  vi.fn<(id: AssetId) => Promise<void>>()
+)
 const mockCreateAssetExport = vi.hoisted(() =>
   vi.fn<
     (
@@ -1547,7 +1551,7 @@ describe('useMediaAssetActions', () => {
     })
 
     it('cleans up only the succeeded assets and clears every overlay when part of a batch fails', async () => {
-      mockDeleteAsset.mockImplementation(async (id: string) => {
+      mockDeleteAsset.mockImplementation(async (id) => {
         if (id === 'asset-failed') throw new Error('503 Service Unavailable')
       })
       const assets = [
@@ -1595,10 +1599,7 @@ describe('useMediaAssetActions', () => {
       })
 
       const flagsById: Record<string, boolean[]> = {}
-      for (const [id, flag] of mockSetAssetDeleting.mock.calls as [
-        string,
-        boolean
-      ][]) {
+      for (const [id, flag] of mockSetAssetDeleting.mock.calls) {
         flagsById[id] = [...(flagsById[id] ?? []), flag]
       }
       expect(flagsById).toEqual({
