@@ -80,6 +80,7 @@
   "dependencies": {
     "@alloc/quick-lru": "catalog:",
     "@atlaskit/pragmatic-drag-and-drop": "^1.3.1",
+    "@comfyorg/account": "file:../../.concept-poc/account-layer-refactor/07-poc/comfyorg-account-0.0.0-poc.tgz",
     "@comfyorg/comfy-multi-player": "0.2.1",
     "@comfyorg/comfyui-desktop-bridge-types": "catalog:",
     "@comfyorg/comfyui-electron-types": "catalog:",

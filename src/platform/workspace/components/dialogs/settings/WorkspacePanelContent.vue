@@ -44,6 +44,11 @@
       <BillingStatusBanner class="mt-4" />
 
       <TabsContent value="plan" class="mt-4">
+        <AccountLayerBillingPoc
+          v-if="accountLayerPocEnabled"
+          host="settings"
+          class="mb-4"
+        />
         <SubscriptionPanelContentWorkspace />
       </TabsContent>
       <TabsContent value="members" class="mt-4">
@@ -55,7 +60,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, defineAsyncComponent, ref } from 'vue'
 import { whenever } from '@vueuse/core'
 
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
@@ -75,6 +80,12 @@ const tabTriggerActive =
   'bg-interface-menu-component-surface-hovered text-text-primary font-bold'
 const tabTriggerInactive =
   'bg-transparent text-text-secondary hover:bg-button-hover-surface focus:bg-button-hover-surface'
+const accountLayerPocEnabled = import.meta.env.VITE_ACCOUNT_LAYER_POC === 'true'
+const AccountLayerBillingPoc = accountLayerPocEnabled
+  ? defineAsyncComponent(
+      () => import('@/platform/account/AccountLayerBillingPoc.vue')
+    )
+  : null
 
 const { defaultTab = 'plan' } = defineProps<{
   defaultTab?: string

@@ -1,4 +1,8 @@
 {
+  "accountLayerPoc": {
+    "subscribe": "Subscribe",
+    "topUp": "Top up credits"
+  },
   "g": {
     "shortcutSuffix": " ({shortcut})",
     "user": "User",
