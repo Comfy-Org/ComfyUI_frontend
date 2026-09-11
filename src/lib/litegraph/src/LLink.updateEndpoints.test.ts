@@ -43,7 +43,8 @@ describe('LLink.updateEndpoints rejection handling', () => {
         errorType: 'link_endpoint_update_rejected',
         context: expect.objectContaining({
           code: 'occupied-target',
-          linkId: first.id
+          linkId: first.id,
+          patch: { targetSlot: 1 }
         })
       })
     )
