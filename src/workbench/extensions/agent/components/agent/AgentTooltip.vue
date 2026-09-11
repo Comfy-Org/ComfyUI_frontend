@@ -42,7 +42,7 @@ const {
           :class="AGENT_REKA_TOOLTIP_CONTENT_CLASS"
         >
           {{ label }}
-          <span v-if="shortcut" class="ml-1 text-[#fafafa]/50">{{
+          <span v-if="shortcut" class="text-agent-fg-muted ml-1">{{
             shortcut
           }}</span>
         </TooltipContent>
