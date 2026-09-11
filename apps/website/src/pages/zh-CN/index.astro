@@ -15,7 +15,6 @@ import GetStartedSection from '../../components/home/GetStartedSection.vue'
 import { t } from '../../i18n/translations'
 import { isWorkshopInBuild } from '../../config/workshop-release'
 import { modelReleaseLinks } from '../../config/model-release-links'
-import { discoveryProviders } from '../../data/modelDiscovery'
 import {
   comfyUiApplicationNode,
   comfyUiSoftwareId,
@@ -28,6 +27,10 @@ const { siteUrl } = pageContext(
   Astro.url.pathname,
   Astro.currentLocale,
 )
+
+const discoveryProviders = isWorkshopInBuild()
+  ? (await import('../../data/modelDiscovery')).discoveryProviders
+  : []
 ---
 
 <BaseLayout

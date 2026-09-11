@@ -1,4 +1,5 @@
-import type { AstroIntegrationLogger } from 'astro'
+import type { AstroIntegrationLogger, HookParameters } from 'astro'
+import { validateConfig } from 'astro/config'
 import { existsSync } from 'node:fs'
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -44,6 +45,36 @@ async function buildDone() {
 }
 
 describe('Workshop release output', () => {
+  it('registers the catalogue client boundary during Astro setup', async () => {
+    vi.stubEnv('WORKSHOP_IN_BUILD', '0')
+    const config = await validateConfig({}, root, 'build')
+    const updateConfig = vi.fn<
+      HookParameters<'astro:config:setup'>['updateConfig']
+    >(() => config)
+    const hook = workshopReleaseGate().hooks['astro:config:setup']
+    if (!hook) throw new Error('Missing config setup hook')
+    await hook({
+      config,
+      command: 'build',
+      isRestart: false,
+      updateConfig,
+      injectRoute: vi.fn(),
+      injectScript: vi.fn(),
+      addRenderer: vi.fn(),
+      addWatchFile: vi.fn(),
+      addClientDirective: vi.fn(),
+      addDevToolbarApp: vi.fn(),
+      addMiddleware: vi.fn(),
+      createCodegenDir: () => pathToFileURL(`${root}/.astro/`),
+      logger
+    })
+    expect(updateConfig).toHaveBeenCalledWith({
+      vite: {
+        plugins: [expect.objectContaining({ name: 'workshop-client-boundary' })]
+      }
+    })
+  })
+
   it('rejects an invalid Cloud family before building', () => {
     vi.stubEnv('VERCEL_ENV', 'preview')
     vi.stubEnv('WORKSHOP_IN_BUILD', '1')

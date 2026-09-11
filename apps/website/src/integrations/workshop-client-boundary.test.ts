@@ -12,6 +12,7 @@ beforeEach(async () => {
   root = await mkdtemp(join(tmpdir(), 'workshop-client-boundary-'))
   await mkdir(join(root, 'src/config'), { recursive: true })
   await mkdir(join(root, 'src/content'), { recursive: true })
+  await mkdir(join(root, 'src/data'), { recursive: true })
   await writeFile(
     join(root, 'src/config/models-catalogue.ts'),
     'export const models = [{ name: "Unreleased model" }]'
@@ -60,6 +61,42 @@ describe('disabled Workshop client boundary', () => {
   it('allows the server to resolve catalogue data', async () => {
     await expect(
       compile('export { models } from "./src/config/models-catalogue"', true)
+    ).resolves.toBeDefined()
+  })
+
+  it.for([
+    'data/workshop-router-display-names.json',
+    'data/workshop-thumbnail-labels.json',
+    'data/workshop-node-pricing.json',
+    'data/workshop-content-inputs.json',
+    'data/workshop-router-openapi.snapshot.json',
+    'data/workshop-router-identity-audit.json',
+    'content/workshop-router-aliases.json',
+    'data/workshop-future-generated.json',
+    'content/workshop-future-generated.json'
+  ])('rejects sibling catalogue data imported directly: %s', async (path) => {
+    await writeFile(join(root, 'src', path), '[{"name":"Unreleased model"}]')
+    await expect(
+      compile(`import data from "./src/${path}"; console.log(data)`)
+    ).rejects.toThrow(/Workshop is disabled, but .* contains .*\/workshop-/)
+  })
+
+  it('rejects sibling catalogue data in a lazy chunk', async () => {
+    await writeFile(
+      join(root, 'src/data/workshop-thumbnail-labels.json'),
+      '{"unreleased-model":"Turbo"}'
+    )
+    await expect(
+      compile(
+        'import("./src/data/workshop-thumbnail-labels.json").then(({default: labels}) => console.log(labels))'
+      )
+    ).rejects.toThrow(/Workshop is disabled, but .* contains .*\/workshop-/)
+  })
+
+  it('allows ordinary site JSON outside the catalogue boundary', async () => {
+    await writeFile(join(root, 'src/data/site-copy.json'), '{"title":"Models"}')
+    await expect(
+      compile('import copy from "./src/data/site-copy.json"; console.log(copy)')
     ).resolves.toBeDefined()
   })
 

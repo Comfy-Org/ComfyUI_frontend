@@ -16,7 +16,6 @@ import GetStartedSection from "../components/home/GetStartedSection.vue";
 import { getCollection } from "astro:content";
 import { isWorkshopInBuild } from "../config/workshop-release";
 import { modelReleaseLinks } from "../config/model-release-links";
-import { discoveryProviders } from "../data/modelDiscovery";
 import { resolveHomepageWorkshopModels } from "../config/workshop-homepage";
 import { t } from "../i18n/translations";
 import {
@@ -31,6 +30,10 @@ const { siteUrl } = pageContext(
   Astro.url.pathname,
   Astro.currentLocale,
 );
+
+const discoveryProviders = isWorkshopInBuild()
+  ? (await import("../data/modelDiscovery")).discoveryProviders
+  : [];
 
 // The same switch that decides whether Workshop is built at all. A release
 // build has no Workshop routes, so the homepage must not link to them; one
