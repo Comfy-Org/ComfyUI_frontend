@@ -170,7 +170,7 @@ export interface SessionClient<TUser extends AccountUser = AccountUser> {
   subscribe: (
     listener: (snapshot: SessionSnapshot<TUser>) => void
   ) => () => void
-  /** The current credential's token, uid-guarded. No freshness promise. */
+  /** The current credential's token, uid-guarded and withheld once expired (zero margin); no `freshMarginMs` or proactive-refresh promise. */
   getToken: () => string | undefined
   /**
    * The valid-on-read entry point: resolves with a session that has more
