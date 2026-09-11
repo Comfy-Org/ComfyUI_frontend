@@ -137,9 +137,6 @@ describe('SetupSection', () => {
     await selectTab(/Comfy Cloud/)
     await selectTab(/Local ComfyUI/)
 
-    // Returning to a connection is a fresh selection, not a repeat: the
-    // dedupe drops reka-ui's re-emit for the tab that is already active,
-    // not every later visit to the same tab.
     expect(connectionSpy.mock.calls).toEqual([['local'], ['cloud'], ['local']])
   })
 
