@@ -498,6 +498,32 @@ describe('migrateWorkspaceToScope', () => {
     expect(readJson(destinationIndexKey)).toEqual(newerIndex)
   })
 
+  it('preserves a source payload written before its newer index', () => {
+    seedSourceWorkspace()
+    const sourceIndexKey = StorageKeys.draftIndex(sourceWorkspaceId)
+    const sourcePayloadKey = StorageKeys.draftPayload(
+      draftPath,
+      sourceWorkspaceId
+    )
+    const newerPayload = { data: '{"nodes":[1]}', updatedAt: 20 }
+    const newerIndex = { ...buildIndex(), updatedAt: 20 }
+    const realGetItem = localStorage.getItem.bind(localStorage)
+    const realSetItem = localStorage.setItem.bind(localStorage)
+    let sourceIndexReads = 0
+    vi.spyOn(localStorage, 'getItem').mockImplementation((key: string) => {
+      if (key === sourceIndexKey && ++sourceIndexReads === 2) {
+        realSetItem(sourcePayloadKey, JSON.stringify(newerPayload))
+      }
+      return realGetItem(key)
+    })
+
+    migrateWorkspaceToScope(sourceWorkspaceId, destinationScope)
+    realSetItem(sourceIndexKey, JSON.stringify(newerIndex))
+
+    expect(readJson(sourcePayloadKey)).toEqual(newerPayload)
+    expect(readJson(sourceIndexKey)).toEqual(newerIndex)
+  })
+
   it('preserves a newer workspace when the committed destination claim is stale', () => {
     seedSourceWorkspace()
     localStorage.setItem(

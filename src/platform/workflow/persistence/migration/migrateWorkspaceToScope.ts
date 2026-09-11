@@ -1,5 +1,4 @@
 import {
-  deletePayloads,
   getPayloadKeys,
   readIndex,
   readLocalPointer,
@@ -44,6 +43,7 @@ export function migrateWorkspaceToScope(
   if (existingClaim && existingClaim.scope !== scope) return
 
   const draftKeys = getPayloadKeys(workspaceId)
+  const sourcePayloads = snapshotPayloads(workspaceId, draftKeys)
   const destinationIndex = readIndex(scope)
 
   if (destinationIndex) {
@@ -66,7 +66,7 @@ export function migrateWorkspaceToScope(
     existingClaim !== null &&
     index.updatedAt <= existingClaim.sourceUpdatedAt
   ) {
-    cleanupSourceIfCurrent(workspaceId, draftKeys, claimKey, claim)
+    cleanupSourceIfCurrent(workspaceId, sourcePayloads, claimKey, claim)
     return
   }
 
@@ -80,7 +80,14 @@ export function migrateWorkspaceToScope(
   )
 
   const artifactsCopied =
-    draftKeys.every((draftKey) => copyPayload(draftKey, workspaceId, scope)) &&
+    draftKeys.every((draftKey) =>
+      copyPayload(
+        draftKey,
+        workspaceId,
+        scope,
+        sourcePayloads.get(draftKey) ?? null
+      )
+    ) &&
     missingPointerKeys.every((keyFor) =>
       copyRestorePointer(keyFor, workspaceId, scope)
     )
@@ -90,7 +97,7 @@ export function migrateWorkspaceToScope(
 
   if (copied) {
     writeStorage(localStorage, completionKey, JSON.stringify(claim))
-    cleanupSourceIfCurrent(workspaceId, draftKeys, claimKey, claim)
+    cleanupSourceIfCurrent(workspaceId, sourcePayloads, claimKey, claim)
   } else {
     const currentClaim = readLocalPointer(claimKey, isValidClaim)
     const completion = readLocalPointer(completionKey, isValidClaim)
@@ -122,7 +129,7 @@ function releaseClaimIfOwned(claimKey: string, claim: MigrationClaim): void {
 
 function cleanupSourceIfCurrent(
   workspaceId: string,
-  draftKeys: string[],
+  sourcePayloads: Map<string, string | null>,
   claimKey: string,
   claim: MigrationClaim
 ): void {
@@ -133,21 +140,16 @@ function cleanupSourceIfCurrent(
     currentSource.updatedAt <= claim.sourceUpdatedAt &&
     ownsClaim(claimKey, claim)
   ) {
-    removeScopeArtifacts(workspaceId, draftKeys, restorePointerKeys)
+    for (const [draftKey, sourceRaw] of sourcePayloads) {
+      const key = payloadKey(workspaceId, draftKey)
+      if (localStorage.getItem(key) === sourceRaw) localStorage.removeItem(key)
+    }
+    removeStorageKeys(localStorage, [
+      ...restorePointerKeys.map((keyFor) => keyFor(workspaceId)),
+      StorageKeys.draftIndex(workspaceId)
+    ])
   }
   releaseClaimIfOwned(claimKey, claim)
-}
-
-function removeScopeArtifacts(
-  scope: string,
-  draftKeys: string[],
-  pointerKeys: ((scope: string) => string)[]
-): void {
-  deletePayloads(scope, draftKeys)
-  removeStorageKeys(localStorage, [
-    StorageKeys.draftIndex(scope),
-    ...pointerKeys.map((keyFor) => keyFor(scope))
-  ])
 }
 
 function snapshotScopeArtifacts(
@@ -157,12 +159,26 @@ function snapshotScopeArtifacts(
 ): Map<string, string | null> {
   const keys = [
     StorageKeys.draftIndex(scope),
-    ...draftKeys.map(
-      (draftKey) => `${StorageKeys.prefixes.draftPayload}${scope}:${draftKey}`
-    ),
+    ...draftKeys.map((draftKey) => payloadKey(scope, draftKey)),
     ...pointerKeys.map((keyFor) => keyFor(scope))
   ]
   return new Map(keys.map((key) => [key, localStorage.getItem(key)]))
+}
+
+function snapshotPayloads(
+  scope: string,
+  draftKeys: string[]
+): Map<string, string | null> {
+  return new Map(
+    draftKeys.map((draftKey) => [
+      draftKey,
+      localStorage.getItem(payloadKey(scope, draftKey))
+    ])
+  )
+}
+
+function payloadKey(scope: string, draftKey: string): string {
+  return `${StorageKeys.prefixes.draftPayload}${scope}:${draftKey}`
 }
 
 function restoreStorageSnapshot(snapshot: Map<string, string | null>): void {
@@ -175,10 +191,16 @@ function restoreStorageSnapshot(snapshot: Map<string, string | null>): void {
 function copyPayload(
   draftKey: string,
   workspaceId: string,
-  scope: string
+  scope: string,
+  sourceRaw: string | null
 ): boolean {
+  if (sourceRaw === null) return false
   const payload = readPayload(workspaceId, draftKey)
-  if (!payload) return false
+  if (
+    !payload ||
+    localStorage.getItem(payloadKey(workspaceId, draftKey)) !== sourceRaw
+  )
+    return false
   return writePayload(scope, draftKey, payload)
 }
 
