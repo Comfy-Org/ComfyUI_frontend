@@ -849,12 +849,23 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
-    it('reconciles after a follower_replaced clear', () => {
+    it('reconciles a follower_replaced clear against the replacement document', () => {
+      // The bridge mints a new `Y.Doc` for the replacement, so the reconcile
+      // has to re-read `bridge.follower.doc` rather than the doc it saw at
+      // construction — otherwise it keeps projecting the destroyed one.
       const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
+      const replacementDoc = { getMap: () => ({ toJSON: () => ({}) }) }
+      bridge().follower = { updatesApplied: 0, doc: replacementDoc }
 
       dispatchFrame('follower_replaced', { workflowId: 'wf-1' })
 
       expect(adapterState.clearForReset).toHaveBeenCalled()
+      expect(
+        definitionsState.readSubgraphDefinitionIds
+      ).toHaveBeenLastCalledWith(replacementDoc)
+      expect(definitionsState.readSubgraphDefinitions).toHaveBeenLastCalledWith(
+        replacementDoc
+      )
       expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
         fakeGraph,
         fakeDefinitions
