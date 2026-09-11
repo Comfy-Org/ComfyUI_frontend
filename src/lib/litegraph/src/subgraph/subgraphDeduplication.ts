@@ -537,7 +537,6 @@ export function topologicalSortSubgraphs(
   subgraphs: ExportedSubgraph[]
 ): ExportedSubgraph[] {
   const subgraphIds = new Set(subgraphs.map((sg) => sg.id))
-  const byId = new Map(subgraphs.map((sg) => [sg.id, sg]))
 
   // Build adjacency: dependency → set of dependents (parents that use it).
   // Edges go from leaf to parent so Kahn's emits leaves first.
@@ -549,15 +548,15 @@ export function topologicalSortSubgraphs(
   }
 
   for (const sg of subgraphs) {
-    // Count each dependency once: a parent that instantiates the same leaf
-    // several times still has a single edge from that leaf.
-    const dependencies = new Set<string>()
     for (const node of sg.nodes ?? []) {
-      if (subgraphIds.has(node.type)) dependencies.add(node.type)
-    }
-    for (const dependency of dependencies) {
-      // sg depends on dependency → edge from dependency to sg.id
-      dependents.get(dependency)!.add(sg.id)
+      if (!subgraphIds.has(node.type)) continue
+      // sg depends on node.type → edge from node.type to sg.id. Counted once
+      // per distinct edge, so neither a parent instantiating the same leaf
+      // several times nor a duplicated definition inflates the in-degree past
+      // what the emitting loop can decrement back to zero.
+      const dependentsOfType = dependents.get(node.type)!
+      if (dependentsOfType.has(sg.id)) continue
+      dependentsOfType.add(sg.id)
       inDegree.set(sg.id, (inDegree.get(sg.id) ?? 0) + 1)
     }
   }
@@ -568,10 +567,10 @@ export function topologicalSortSubgraphs(
     if (degree === 0) queue.push(id)
   }
 
-  const sorted: ExportedSubgraph[] = []
+  const rankById = new Map<string, number>()
   while (queue.length > 0) {
     const id = queue.shift()!
-    sorted.push(byId.get(id)!)
+    rankById.set(id, rankById.size)
     for (const dependent of dependents.get(id) ?? []) {
       const newDegree = (inDegree.get(dependent) ?? 1) - 1
       inDegree.set(dependent, newDegree)
@@ -579,10 +578,15 @@ export function topologicalSortSubgraphs(
     }
   }
 
-  // Cycle fallback: return original order
-  if (sorted.length !== subgraphs.length) return subgraphs
+  // Cycle fallback: return original order. Measured against the id count, not
+  // the input length -- ids are ranked once each, so an input carrying the same
+  // id twice can never match its own length and would always land here.
+  if (rankById.size !== subgraphIds.size) return subgraphs
 
-  return sorted
+  // Stable, so copies of one id keep their relative order.
+  return [...subgraphs].sort(
+    (a, b) => rankById.get(a.id)! - rankById.get(b.id)!
+  )
 }
 
 /** Patches legacy proxyWidgets in root-level SubgraphNode instances. */

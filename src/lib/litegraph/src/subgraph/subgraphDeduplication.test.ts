@@ -230,6 +230,15 @@ describe('topologicalSortSubgraphs', () => {
 
     expect(topologicalSortSubgraphs([b, a])).toEqual([b, a])
   })
+
+  it('still sorts leaves first when an id appears twice in the input', () => {
+    const inner = makeSubgraph('inner', ['StringConcat'])
+    const outer = makeSubgraph('outer', ['inner'])
+
+    const result = topologicalSortSubgraphs([outer, inner, outer])
+
+    expect(result.map((s) => s.id)).toEqual(['inner', 'outer', 'outer'])
+  })
 })
 
 function reroute(
