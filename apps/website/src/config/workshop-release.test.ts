@@ -68,8 +68,10 @@ describe('assertWorkshopCloudEnvForBuild', () => {
     { name: 'a local build needs no family' },
     { name: 'a local build may name one', family: 'test' },
     {
-      name: 'a production build without Workshop ignores the family',
-      vercelEnv: 'production'
+      name: 'a disabled production build ignores an invalid family',
+      vercelEnv: 'production',
+      inBuild: '0',
+      family: 'production'
     },
     {
       name: 'a preview without Workshop ignores the family',
@@ -104,7 +106,9 @@ describe('assertWorkshopCloudEnvForBuild', () => {
 
   it.for([
     {
-      name: 'a misspelt family fails every build',
+      name: 'a Workshop build rejects a misspelt family',
+      vercelEnv: 'preview',
+      inBuild: '1',
       family: 'production',
       message: /not one of prod, staging, test/
     },
