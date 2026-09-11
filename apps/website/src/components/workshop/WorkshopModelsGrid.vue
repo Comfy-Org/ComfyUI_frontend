@@ -65,10 +65,6 @@ onMounted(() => {
   modalities.value = [...(initial.modalities ?? [])]
 })
 
-// A row title clicked far down the page opens a much shorter screen, which
-// would otherwise leave the viewport parked on the footer.
-watch(useCase, () => void nextTick(() => window.scrollTo({ top: 0 })))
-
 const useCaseLabelKey: Record<UseCase | 'all' | 'other', TranslationKey> = {
   all: 'workshop.useCase.all',
   other: 'workshop.sections.otherFormats',
@@ -154,6 +150,12 @@ const isFiltered = computed(
 // Willie's browseable listing: rows per use case until the visitor narrows
 // down, then the flat grid takes over.
 const browseAll = defineModel<boolean>('browseAll', { default: false })
+// A row title clicked far down the page opens a much shorter screen, which
+// would otherwise leave the viewport parked on the footer.
+watch(
+  [useCase, browseAll],
+  () => void nextTick(() => window.scrollTo({ top: 0 }))
+)
 const browsing = computed(() => !isFiltered.value && !browseAll.value)
 const inSection = computed(() => useCase.value !== 'all' || browseAll.value)
 const sectionTitleKey = computed<TranslationKey>(() =>
