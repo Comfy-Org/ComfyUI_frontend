@@ -99,7 +99,9 @@ the resulting PNG and offers the original SVG as an inert download. The CLI
 starts one Playwright Chromium browser when needed, with at most four rendering
 pages. SVG documents are limited to 4 MiB and 16 megapixels, with cancellation
 and a ten-second processing limit. Scripts and external document resources do
-not execute in the image renderer. See [the output decision](../../docs/adr/WEBSITE-OUTPUTS-0032-raster-previews-for-vector-generation.md).
+not execute in the image renderer. SVG never enters the page DOM: an SVG
+document can carry active content, so inline SVG and iframe previews are not
+used.
 
 No component should grow a provider-specific execution branch. A model needing a
 previous provider job ID (currently Kling video extension) still needs an explicit
