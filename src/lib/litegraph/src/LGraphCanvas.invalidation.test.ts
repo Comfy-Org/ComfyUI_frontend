@@ -1,11 +1,9 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
-vi.mock('@/renderer/core/layout/store/layoutStore')
+vi.mock(import('@/renderer/core/layout/store/layoutStore'))
 
 interface DirtyRequest {
   foreground: boolean
@@ -107,7 +105,6 @@ describe('LGraphCanvas invalidation scheduling baseline', () => {
   let probe: InvalidationProbe
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     ;({ canvas, graph } = createCanvas())
     canvas.draw()
     probe = new InvalidationProbe(canvas)

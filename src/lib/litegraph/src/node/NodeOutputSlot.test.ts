@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromAny } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -24,7 +22,6 @@ describe('NodeOutputSlot deprecated links getter', () => {
   const onWarning = vi.fn()
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     onWarning.mockClear()
     LiteGraph.onDeprecationWarning = [onWarning]
     LiteGraph.alwaysRepeatWarnings = true
@@ -125,7 +122,6 @@ describe('NodeOutputSlot deprecated links getter', () => {
     const slot = source.outputs[0]
     slot.links = []
     const links = slot.links
-    if (!links) throw new Error('Expected retained output links')
     const first = source.connect(0, target, 0)!
 
     expect(links).toEqual([first.id])
@@ -140,7 +136,6 @@ describe('NodeOutputSlot deprecated links getter', () => {
     slot.links = []
     expect(slot.links).toEqual([])
     const links = slot.links
-    if (!links) throw new Error('Expected assigned output links')
     expect(() => links.push(toLinkId(404))).not.toThrow()
     expect(slot.links).toEqual([])
   })

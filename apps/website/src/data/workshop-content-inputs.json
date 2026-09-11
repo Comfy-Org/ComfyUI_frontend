@@ -1,0 +1,142 @@
+{
+  "ideogram--v4--generate-images": {
+    "routerId": "ideogram/ideogram-v4",
+    "options": { "mode": "json" }
+  },
+  "beeble--switchx-video-edit--edit-videos": {
+    "routerId": "beeble/switchx",
+    "options": { "fixedValues": { "generation_type": "video" } }
+  },
+  "beeble--switchx-image-edit--edit-images": {
+    "routerId": "beeble/switchx",
+    "options": { "fixedValues": { "generation_type": "image" } }
+  },
+  "bfl--flux-3-image-to-video--animate-images": {
+    "routerId": "bfl/flux-3-video",
+    "options": { "mode": "i2v" }
+  },
+  "bfl--flux-3-text-to-video--generate-videos": {
+    "routerId": "bfl/flux-3-video",
+    "options": { "mode": "t2v" }
+  },
+  "bfl--flux-3-video-continuation--edit-videos": {
+    "routerId": "bfl/flux-3-video",
+    "options": { "mode": "v2v" }
+  },
+  "byteplus--seedance-1-0-lite-first-last-frame--animate-images": {
+    "routerId": "byteplus/seedance-1-0-lite-i2v-250428",
+    "options": { "mode": "first-last", "urlMedia": true }
+  },
+  "byteplus--seedance-1-0-lite-image-reference--animate-images": {
+    "routerId": "byteplus/seedance-1-0-lite-i2v-250428",
+    "options": { "mode": "reference", "urlMedia": true }
+  },
+  "byteplus--seedance-1-0-lite-image-to-video--animate-images": {
+    "routerId": "byteplus/seedance-1-0-lite-i2v-250428",
+    "options": { "mode": "image", "urlMedia": true }
+  },
+  "byteplus--seedance-2-fast-first-last-frame--animate-images": {
+    "routerId": "byteplus/dreamina-seedance-2-0-fast-260128",
+    "options": { "mode": "first-last", "urlMedia": true }
+  },
+  "byteplus--seedance-2-fast-reference--generate-videos": {
+    "routerId": "byteplus/dreamina-seedance-2-0-fast-260128",
+    "options": { "mode": "reference", "urlMedia": true }
+  },
+  "byteplus--seedance-2-fast-text-to-video--generate-videos": {
+    "routerId": "byteplus/dreamina-seedance-2-0-fast-260128",
+    "options": { "mode": "text", "urlMedia": true }
+  },
+  "byteplus--seedance-2-5-first-last-frame--animate-images": {
+    "routerId": "byteplus/dreamina-seedance-2-5-260628",
+    "options": { "mode": "first-last", "urlMedia": true }
+  },
+  "gemini--omni-1.1-flash--animate-images": {
+    "routerId": "gemini-interactions/gemini-omni-1.1-flash",
+    "options": { "mode": "image_to_video" }
+  },
+  "gemini--omni-1.1-flash--edit-videos": {
+    "routerId": "gemini-interactions/gemini-omni-1.1-flash",
+    "options": { "mode": "edit" }
+  },
+  "gemini--omni-1.1-flash--generate-videos": {
+    "routerId": "gemini-interactions/gemini-omni-1.1-flash",
+    "options": { "mode": "text_to_video" }
+  },
+  "gemini--omni-flash-preview--animate-images": {
+    "routerId": "gemini-interactions/gemini-omni-flash-preview",
+    "options": { "mode": "image_to_video" }
+  },
+  "gemini--omni-flash-preview--edit-videos": {
+    "routerId": "gemini-interactions/gemini-omni-flash-preview",
+    "options": { "mode": "edit" }
+  },
+  "gemini--omni-flash-preview--generate-videos": {
+    "routerId": "gemini-interactions/gemini-omni-flash-preview",
+    "options": { "mode": "text_to_video" }
+  },
+  "kling--v3--animate-images": {
+    "routerId": "kling/kling-v3",
+    "unavailableReason": "The current Router route exposes Kling text-to-video only; it has no image input."
+  },
+  "luma--ray-2-image-to-video--animate-images": {
+    "routerId": "luma/ray-2",
+    "options": { "mode": "image" }
+  },
+  "luma--photon-1-image-modify--edit-images": {
+    "routerId": "luma/photon-1",
+    "options": { "mode": "edit" }
+  },
+  "luma--photon-flash-1-image-modify--edit-images": {
+    "routerId": "luma/photon-flash-1",
+    "options": { "mode": "edit" }
+  },
+  "luma_2--uni-1-image-edit--edit-images": {
+    "routerId": "luma_2/uni-1",
+    "options": { "mode": "edit" }
+  },
+  "luma_2--uni-1-max-image-edit--edit-images": {
+    "routerId": "luma_2/uni-1-max",
+    "options": { "mode": "edit" }
+  },
+  "luma--ray-flash-2-image-to-video--animate-images": {
+    "routerId": "luma/ray-flash-2",
+    "options": { "mode": "image" }
+  },
+  "wan--image-to-video-3.0--animate-images": {
+    "routerId": "wan/wan3.0-video",
+    "options": { "mode": "image" }
+  },
+  "wan--image-to-video-3.0-prime--animate-images": {
+    "routerId": "wan/wan3.0-video-prime",
+    "options": { "mode": "image" }
+  },
+  "wan--reference-to-video-3.0--animate-images": {
+    "routerId": "wan/wan3.0-video",
+    "options": { "mode": "reference" }
+  },
+  "wan--reference-to-video-3.0-prime--animate-images": {
+    "routerId": "wan/wan3.0-video-prime",
+    "options": { "mode": "reference" }
+  },
+  "wan--reference-video--animate-images": {
+    "routerId": "wan/wan2.6-r2v",
+    "unavailableReason": "This Router model takes reference videos, not source images. Its Edit videos entry remains available."
+  },
+  "xai--grok-imagine-video--animate-images": {
+    "routerId": "xai/grok-imagine-video",
+    "options": { "mode": "image" }
+  },
+  "xai--grok-imagine-video-1.5--animate-images": {
+    "routerId": "xai/grok-imagine-video-1.5",
+    "options": { "mode": "image" }
+  },
+  "xai--grok-imagine-video-reference--animate-images": {
+    "routerId": "xai/grok-imagine-video",
+    "options": { "mode": "reference" }
+  },
+  "xai--grok-imagine-video-1.5-reference--animate-images": {
+    "routerId": "xai/grok-imagine-video-1.5",
+    "options": { "mode": "reference" }
+  }
+}

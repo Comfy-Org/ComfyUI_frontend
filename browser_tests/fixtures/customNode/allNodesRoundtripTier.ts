@@ -300,12 +300,13 @@ export async function assertRoundtripTier({
       ),
       entry.pack
     )
-    const allowedValueIndices = Object.fromEntries(
-      Object.keys(rawValueIndices).map((node) => [
-        node,
-        rawValueIndices[node].split(',').map(Number)
-      ])
-    )
+    const allowedValueIndices: Partial<Record<string, number[]>> =
+      Object.fromEntries(
+        Object.keys(rawValueIndices).map((node) => [
+          node,
+          rawValueIndices[node].split(',').map(Number)
+        ])
+      )
     const rawValueKeys = packLedgerFor(
       rendererLedgerFor(
         vueNodesEnabled,
@@ -314,12 +315,13 @@ export async function assertRoundtripTier({
       ),
       entry.pack
     )
-    const allowedValueKeys = Object.fromEntries(
-      Object.keys(rawValueKeys).map((node) => [
-        node,
-        rawValueKeys[node].split(',')
-      ])
-    )
+    const allowedValueKeys: Partial<Record<string, string[]>> =
+      Object.fromEntries(
+        Object.keys(rawValueKeys).map((node) => [
+          node,
+          rawValueKeys[node].split(',')
+        ])
+      )
     const observedValueDrift = new Map<string, Set<number>>()
     const observedKeyDrift = new Map<string, Set<string>>()
     const expectedNodeLosses = packLedgerFor(
@@ -446,14 +448,24 @@ export async function assertRoundtripTier({
               JSON.stringify(afterNormalized)
             )
           }
-          const widgetNamesById = () =>
+          const namesByIdWhere = (
+            keep: (widget: { serialize?: boolean }) => boolean
+          ) =>
             new Map(
               window.app!.graph.nodes.map((node) => [
                 String(node.id),
-                (node.widgets ?? []).map((widget) => widget.name)
+                (node.widgets ?? []).filter(keep).map((widget) => widget.name)
               ])
             )
+          // Live topology wants every widget; anything indexing positional
+          // widgets_values wants only the ones the serializer keeps, since it
+          // omits serialize === false and the full list misaligns after the
+          // first omission.
+          const widgetNamesById = () => namesByIdWhere(() => true)
+          const serializedWidgetNamesById = () =>
+            namesByIdWhere((widget) => widget.serialize !== false)
           let namesBefore = new Map<string, string[]>()
+          let serializedNamesBefore = new Map<string, string[]>()
           let firstPass: ReturnType<
             NonNullable<typeof window.app>['graph']['serialize']
           > | null = null
@@ -482,16 +494,16 @@ export async function assertRoundtripTier({
             },
             snapshotAndConfigure() {
               namesBefore = widgetNamesById()
+              serializedNamesBefore = serializedWidgetNamesById()
               firstPass = window.app!.graph.serialize()
               window.app!.graph.configure(firstPass)
             },
             compare(label: string, strict: boolean) {
               const secondPass = window.app!.graph.serialize()
               const namesAfter = widgetNamesById()
+              const serializedNamesAfter = serializedWidgetNamesById()
               const byId = (pass: NonNullable<typeof firstPass>) =>
-                new Map(
-                  (pass.nodes ?? []).map((node) => [String(node.id), node])
-                )
+                new Map(pass.nodes.map((node) => [String(node.id), node]))
               const beforeNodes = byId(firstPass!)
               const afterNodes = byId(secondPass)
               for (const [id, expected] of created) {
@@ -509,7 +521,7 @@ export async function assertRoundtripTier({
                 }
                 if (after.type !== before.type)
                   problems.push(
-                    `${expected.type}: type became ${String(after.type)} on ${label} reload`
+                    `${expected.type}: type became ${after.type} on ${label} reload`
                   )
                 const widgets = (restored.widgets ?? []).length
                 if (expected.widgetCount === null) {
@@ -613,16 +625,75 @@ export async function assertRoundtripTier({
                   if (relevantChanges.every((key) => allowedKeys.includes(key)))
                     continue
                 }
-                const comparedBeforeValues =
-                  !strict && Array.isArray(before.widgets_values)
+                // widgets_values is a union of a positional array and a
+                // name-keyed record, and packs may rewrite their own nodes to
+                // the record form in onSerialize. Both sides carry the same
+                // values, so when only the shape differs they are keyed by
+                // widget name before comparing; otherwise a legal reshape
+                // reports drift on every widget of the node.
+                const asNamedValues = (
+                  values: unknown,
+                  names: readonly string[]
+                ): unknown => {
+                  const named = Array.isArray(values)
+                    ? Object.fromEntries(
+                        values.flatMap((value, index) => {
+                          const name = names.at(index)
+                          return name === undefined ? [] : [[name, value]]
+                        })
+                      )
+                    : values
+                  // The non-strict positional path drops frontend-only
+                  // widgets, so the reshaped record drops them too - otherwise
+                  // a pack that both reshapes and canonicalizes a UI-only
+                  // value reports drift while every declared input stuck.
+                  if (
+                    strict ||
+                    typeof named !== 'object' ||
+                    named === null ||
+                    Array.isArray(named)
+                  )
+                    return named
+                  return Object.fromEntries(
+                    Object.entries(named).filter(([name]) =>
+                      declaredNames.has(name)
+                    )
+                  )
+                }
+                // Only an array/record pair, never array vs absent: an empty
+                // array and a missing value already mean the same thing to
+                // preserves(), and reshaping [] into {} would strip that.
+                const isNamedShape = (value: unknown) =>
+                  typeof value === 'object' &&
+                  value !== null &&
+                  !Array.isArray(value)
+                const shapesDiffer =
+                  (Array.isArray(before.widgets_values) &&
+                    isNamedShape(after.widgets_values)) ||
+                  (isNamedShape(before.widgets_values) &&
+                    Array.isArray(after.widgets_values))
+                const comparedBeforeValues = shapesDiffer
+                  ? asNamedValues(
+                      before.widgets_values,
+                      serializedNamesBefore.get(id) ?? []
+                    )
+                  : !strict && Array.isArray(before.widgets_values)
                     ? before.widgets_values.filter((_, index) =>
-                        declaredNames.has(beforeNames[index] ?? '')
+                        declaredNames.has(
+                          (serializedNamesBefore.get(id) ?? [])[index] ?? ''
+                        )
                       )
                     : before.widgets_values
-                const comparedAfterValues =
-                  !strict && Array.isArray(after.widgets_values)
+                const comparedAfterValues = shapesDiffer
+                  ? asNamedValues(
+                      after.widgets_values,
+                      serializedNamesAfter.get(id) ?? []
+                    )
+                  : !strict && Array.isArray(after.widgets_values)
                     ? after.widgets_values.filter((_, index) =>
-                        declaredNames.has(afterNames[index] ?? '')
+                        declaredNames.has(
+                          (serializedNamesAfter.get(id) ?? [])[index] ?? ''
+                        )
                       )
                     : after.widgets_values
                 if (!preserves(comparedBeforeValues, comparedAfterValues))
@@ -646,7 +717,7 @@ export async function assertRoundtripTier({
                 if (!nodeType) continue
                 const mutableNames = new Set(declaredInputNames[nodeType] ?? [])
                 const mutations = (node.widgets ?? []).flatMap((widget) => {
-                  if (!SETTABLE.has(String(widget.type))) return []
+                  if (!SETTABLE.has(widget.type)) return []
                   if (!mutableNames.has(widget.name)) return []
                   if (`${nodeType}.${widget.name}` in packManaged) return []
                   const options = (
@@ -667,7 +738,7 @@ export async function assertRoundtripTier({
                       if (options?.max === undefined || up <= options.max)
                         return up
                       const down = widget.value - step
-                      if (options?.min === undefined || down >= options.min)
+                      if (options.min === undefined || down >= options.min)
                         return down
                       return undefined
                     }
@@ -693,7 +764,7 @@ export async function assertRoundtripTier({
                 })
                 for (const { target, widget } of mutations) {
                   if (!node.widgets?.includes(widget)) continue
-                  widget.value = target as typeof widget.value
+                  widget.value = target
                   widget.callback?.(widget.value)
                 }
               }
@@ -758,7 +829,7 @@ export async function assertRoundtripTier({
                       (widget) => widget.name === signal.widget
                     )?.value
                   } else if (signal.predicate === 'inputs-absent') {
-                    values[type] = node?.inputs?.map((input) => input.name)
+                    values[type] = node?.inputs.map((input) => input.name)
                   } else {
                     values[type] = node
                       ? Reflect.get(node, signal.property)

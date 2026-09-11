@@ -12,11 +12,21 @@
  * 3. Check dist/assets/*.js files contain no tracking code
  */
 
+import {
+  AUTH_TELEMETRY_EVENT,
+  SESSION_TELEMETRY_EVENT
+} from '@comfyorg/account/telemetry'
+import type {
+  AuthErrorMetadata,
+  AuthFlowAction,
+  AuthMethod
+} from '@comfyorg/account/telemetry'
+
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { AppMode } from '@/utils/appMode'
 
-export type AuthMethod = 'email' | 'google' | 'github'
+export type { AuthMethod }
 
 export type PaymentIntentSource =
   | 'subscription_required'
@@ -52,22 +62,7 @@ export interface AuthMetadata {
   utm_campaign?: string
 }
 
-export type AuthFlowAction =
-  | 'email_sign_in'
-  | 'email_sign_up'
-  | 'google_sign_in'
-  | 'google_sign_up'
-  | 'github_sign_in'
-  | 'github_sign_up'
-  | 'password_reset'
-
-/**
- * Metadata for failed authentication attempts
- */
-export interface AuthErrorMetadata {
-  error_code: string
-  auth_action: AuthFlowAction
-}
+export type { AuthErrorMetadata, AuthFlowAction }
 
 export type UnifiedAuthRetryFailureReason =
   | 'missing_bearer'
@@ -89,6 +84,8 @@ export type UnifiedAuthRefreshOutcome =
   | 'retry_scheduled'
   | 'retries_exhausted'
   | 'permanent_failure'
+  /** Retries ran out and the token reached its expiry; the session ended. */
+  | 'expired'
 
 /**
  * Outcome of one proactive unified Cloud-JWT refresh attempt. This lifecycle
@@ -102,6 +99,33 @@ export interface UnifiedAuthRefreshMetadata {
 
 export interface ImageLoadFailureMetadata {
   source: 'node_image_preview'
+}
+
+/**
+ * One row per session describing how long startup took and where the time
+ * went. `total_ms` is measured from navigation start, so it is directly
+ * comparable to what a user experiences and can be percentiled across sessions
+ * without joining per-phase events.
+ *
+ * `outcome` keeps the bad sessions in the data:
+ * - `completed` — the loading screen came down normally.
+ * - `failed` — startup threw; the loading screen came down anyway.
+ * - `timed_out` — startup was still running at the watchdog deadline. Emitted
+ *   *in addition to* whichever terminal row eventually follows, so a load that
+ *   hangs is counted even when it never finishes. `pending` names the phases
+ *   still open, which is where the session is stuck.
+ *
+ * Without the `timed_out` row the sessions users complain about are precisely
+ * the ones absent from the data.
+ */
+export interface BootstrapCompleteMetadata {
+  total_ms: number
+  outcome: 'completed' | 'failed' | 'timed_out'
+  phase_count: number
+  /** Per-phase durations, keyed `<namespace>/<phase>` (e.g. `bootstrap/object-info`). */
+  phases: Record<string, number>
+  /** Phases still running when this row was emitted. Only set for `timed_out`. */
+  pending?: string[]
 }
 
 /**
@@ -970,11 +994,19 @@ export function getBillingTelemetryEventPayload(event: BillingTelemetryEvent) {
   }
 }
 
+export interface FetchTimeoutMetadata {
+  route: string
+  method: string
+  timeout_ms: number
+}
+
 /**
  * Telemetry provider interface for individual providers.
  * All methods are optional - providers only implement what they need.
  */
 export interface TelemetryProvider {
+  trackFeatureFlagEvaluation?(key: string, value: unknown): void
+
   // Authentication flow events
   trackSignupOpened?(): void
   trackAuth?(metadata: AuthMetadata): void
@@ -983,6 +1015,7 @@ export interface TelemetryProvider {
   trackUnifiedAuthRefresh?(metadata: UnifiedAuthRefreshMetadata): void
   trackImageLoadFailed?(metadata: ImageLoadFailureMetadata): void
   trackUserLoggedIn?(): void
+  trackBootstrapComplete?(metadata: BootstrapCompleteMetadata): void
 
   // Subscription flow events
   trackSubscription?(
@@ -1108,6 +1141,9 @@ export interface TelemetryProvider {
 
   // Page view tracking
   trackPageView?(pageName: string, properties?: PageViewMetadata): void
+
+  // Network error events
+  trackFetchTimeout?(metadata: FetchTimeoutMetadata): void
 }
 
 /**
@@ -1126,15 +1162,16 @@ export type TelemetryDispatcher = Required<TelemetryProvider>
  */
 export const TelemetryEvents = {
   // Authentication Flow
-  USER_SIGN_UP_OPENED: 'app:user_sign_up_opened',
-  USER_AUTH_COMPLETED: 'app:user_auth_completed',
-  USER_AUTH_FAILED: 'app:user_auth_failed',
+  USER_SIGN_UP_OPENED: AUTH_TELEMETRY_EVENT.signUpOpened,
+  USER_AUTH_COMPLETED: AUTH_TELEMETRY_EVENT.authCompleted,
+  USER_AUTH_FAILED: AUTH_TELEMETRY_EVENT.authFailed,
   USER_LOGGED_IN: 'app:user_logged_in',
   UNIFIED_AUTH_RETRY_SUCCEEDED: 'auth.unified.request_retry.succeeded',
   UNIFIED_AUTH_RETRY_FAILED: 'auth.unified.request_retry.failed',
-  UNIFIED_AUTH_REFRESH_SUCCEEDED: 'auth.unified.refresh.succeeded',
-  UNIFIED_AUTH_REFRESH_FAILED: 'auth.unified.refresh.failed',
+  UNIFIED_AUTH_REFRESH_SUCCEEDED: SESSION_TELEMETRY_EVENT.refreshSucceeded,
+  UNIFIED_AUTH_REFRESH_FAILED: SESSION_TELEMETRY_EVENT.refreshFailed,
   IMAGE_LOAD_FAILED: 'app:image_load_failed',
+  BOOTSTRAP_COMPLETE: 'app:bootstrap_complete',
 
   // Subscription Flow
   RUN_BUTTON_CLICKED: 'app:run_button_click',
@@ -1269,7 +1306,10 @@ export const TelemetryEvents = {
   LINK_DEDUP_DROP: 'app:link_dedup_drop',
 
   // Page View
-  PAGE_VIEW: 'app:page_view'
+  PAGE_VIEW: 'app:page_view',
+
+  // Network
+  FETCH_TIMEOUT: 'app:fetch_timeout'
 } as const
 
 export type TelemetryEventName =
@@ -1326,6 +1366,7 @@ export type TelemetryEventProperties =
   | UnifiedAuthRetryMetadata
   | UnifiedAuthRefreshMetadata
   | ImageLoadFailureMetadata
+  | BootstrapCompleteMetadata
   | SurveyResponses
   | TemplateMetadata
   | ExecutionContext
@@ -1363,3 +1404,4 @@ export type TelemetryEventProperties =
   | SubscriptionSuccessMetadata
   | WorkspaceInviteFailedMetadata
   | BillingTelemetryEvent
+  | FetchTimeoutMetadata

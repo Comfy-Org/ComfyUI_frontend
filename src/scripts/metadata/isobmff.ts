@@ -8,9 +8,8 @@ import {
   ComfyMetadataTags,
   type IsobmffBoxContentRange
 } from '@/types/metadataTypes'
+import { readFileAsArrayBuffer } from '@/utils/fileUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
-
-import { readFileAsArrayBuffer } from './readFile'
 
 // Set max read high, as atoms are stored near end of file
 // while search is made to be efficient.
