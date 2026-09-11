@@ -1,4 +1,4 @@
-import type { AgentEventSource } from '../../composables/agent/useAgentSession'
+import type { AgentEventSource } from './agentEventSource'
 
 interface StandaloneAgentEventSourceOptions {
   createSocket?: (url: string) => WebSocket
