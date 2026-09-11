@@ -103,6 +103,36 @@ beforeEach(() => {
 
 describe('useRemoteWidget', () => {
   describe('initialization', () => {
+    it('preserves a saved non-first option and initializes its callback once', async () => {
+      const options = createMockOptions({ control_after_refresh: 'first' })
+      options.widget.callback = vi.fn()
+      const hook = useRemoteWidget(options)
+      options.widget.value = 'optionB'
+      mockAxiosResponse(['optionA', 'optionB'])
+
+      await getResolvedValue(hook)
+      await getResolvedValue(hook)
+
+      expect(options.widget.value).toBe('optionB')
+      expect(options.widget.callback).toHaveBeenCalledWith('optionB')
+      expect(options.widget.callback).toHaveBeenCalledTimes(1)
+    })
+
+    it('selects the first option when the saved value is unavailable', async () => {
+      const options = createMockOptions()
+      options.widget = createMockWidget({
+        value: 'unavailable',
+        callback: vi.fn()
+      })
+      const hook = useRemoteWidget(options)
+      mockAxiosResponse(['optionA', 'optionB'])
+
+      await getResolvedValue(hook)
+
+      expect(options.widget.value).toBe('optionA')
+      expect(options.widget.callback).toHaveBeenCalledWith('optionA')
+    })
+
     it('should create hook with default values', () => {
       const hook = useRemoteWidget(createMockOptions())
       expect(hook.getCachedValue()).toBeUndefined()
@@ -167,8 +197,15 @@ describe('useRemoteWidget', () => {
     })
 
     it('should handle empty array responses', async () => {
-      const { result } = await setupHookWithResponse([])
+      const options = createMockOptions()
+      options.widget.value = 'unavailable'
+      const hook = useRemoteWidget(options)
+      mockAxiosResponse([])
+
+      const result = await getResolvedValue(hook)
+
       expect(result).toEqual([])
+      expect(options.widget.value).toBe(DEFAULT_VALUE)
     })
 
     it('should handle malformed response data', async () => {
