@@ -1,8 +1,19 @@
+// @vitest-environment jsdom
+
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import { getActivePinia } from 'pinia'
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+// The node preview constructs its observer at import time; jsdom omits this API.
+vi.hoisted(() => {
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+})
 
 import { i18n } from '@/i18n'
 import type { TurnId } from '../../schemas/agentApiSchema'

@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 import type {
   WorkflowReference,
   WorkflowReferenceOption
@@ -597,7 +599,7 @@ describe('Composer', () => {
       await userEvent.keyboard('{Enter}')
       expect(useAgentComposerStore().draft).toBe('@scratch')
       expect(
-        screen.getByRole('menuitem', { name: 'Scratch Unsaved' })
+        screen.getByRole('menuitem', { name: /^Scratch\s*Unsaved$/ })
       ).toBeVisible()
 
       await userEvent.keyboard('{Enter}')
@@ -612,7 +614,11 @@ describe('Composer', () => {
         mount({ availableWorkflows: [{ id: 'wf-water', name: 'Water world' }] })
         const textbox = screen.getByRole('textbox')
         await userEvent.type(textbox, `Before @${suffix}`)
-        if (suffix) await userEvent.keyboard(`{ArrowLeft>${suffix.length}/}`)
+        await userEvent.pointer({
+          keys: '[MouseLeft]',
+          target: textbox,
+          offset: 'Before @'.length
+        })
         await userEvent.click(
           screen.getByRole('menuitem', { name: 'Workflows' })
         )
@@ -636,7 +642,11 @@ describe('Composer', () => {
       })
       const textbox = screen.getByRole('textbox')
       await userEvent.type(textbox, 'Compare @ with target')
-      await userEvent.keyboard('{ArrowLeft>12/}')
+      await userEvent.pointer({
+        keys: '[MouseLeft]',
+        target: textbox,
+        offset: 'Compare @'.length
+      })
       await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
       await userEvent.keyboard('{ArrowDown}{Enter}')
 
@@ -669,9 +679,9 @@ describe('Composer', () => {
 
     it('includes selected workflow references in the send snapshot', async () => {
       const references = [{ id: 'wf-water', name: 'Water world' }]
+      useAgentComposerStore().draft = 'use this workflow'
       const { emitted } = mount({ workflowReferences: references })
 
-      await userEvent.type(screen.getByRole('textbox'), 'use this workflow')
       await userEvent.click(screen.getByRole('button', { name: 'Send' }))
 
       expect(emitted().send[0]).toEqual([
@@ -855,7 +865,7 @@ describe('Composer', () => {
     await userEvent.type(textbox, 'Compare @')
     await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
     await userEvent.click(
-      screen.getByRole('menuitem', { name: 'Scratch Unsaved' })
+      screen.getByRole('menuitem', { name: /^Scratch\s*Unsaved$/ })
     )
     await userEvent.type(textbox, ' more detail')
     resolve({ id: 'saved-scratch', name: 'Scratch' })
@@ -919,6 +929,7 @@ describe('Composer', () => {
   )
 
   it('removes the workflow reference before the text caret with Backspace', async () => {
+    useAgentComposerStore().draft = 'keep me'
     const { emitted } = mount({
       workflowReferences: [
         { id: 'wf-1', name: 'Water world' },
@@ -933,9 +944,14 @@ describe('Composer', () => {
     expect(workflowChips).toHaveLength(2)
     expect(inlineInput).toContainElement(screen.getByRole('textbox'))
 
-    const textarea = screen.getByRole('textbox')
-    await userEvent.type(textarea, 'keep me')
-    await userEvent.keyboard('{ArrowLeft>7/}{Backspace}')
+    const textbox = screen.getByRole('textbox')
+    await userEvent.click(textbox)
+    const caret = document.createRange()
+    caret.setStartAfter(workflowChips[1])
+    caret.collapse(true)
+    document.getSelection()?.removeAllRanges()
+    document.getSelection()?.addRange(caret)
+    await userEvent.keyboard('{Backspace}')
 
     expect(emitted().removeWorkflowReference).toEqual([['wf-2']])
     expect(useAgentComposerStore().draft).toBe('keep me')
