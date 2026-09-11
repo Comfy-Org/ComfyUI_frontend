@@ -13,15 +13,12 @@ const readDiff = () => {
   const diffFile = readArgument('--diff-file')
   if (diffFile) return readFileSync(diffFile, 'utf8')
 
+  const baseSha = readArgument('--base-sha') ?? 'origin/main'
+  const headSha = readArgument('--head-sha') ?? 'HEAD'
+
   return execFileSync(
     'git',
-    [
-      'diff',
-      '--unified=0',
-      `${readArgument('--base-sha') ?? 'origin/main'}...HEAD`,
-      '--',
-      'browser_tests'
-    ],
+    ['diff', '--unified=0', `${baseSha}...${headSha}`, '--', 'browser_tests'],
     { encoding: 'utf8' }
   )
 }
