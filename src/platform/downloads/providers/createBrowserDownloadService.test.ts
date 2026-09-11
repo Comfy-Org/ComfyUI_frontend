@@ -1,19 +1,32 @@
+import type { Mock } from 'vitest'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 
 import { createBrowserDownloadService } from './createBrowserDownloadService'
 
 describe('createBrowserDownloadService', () => {
-  let clickSpy: ReturnType<typeof vi.fn>
+  let anchorElement: HTMLAnchorElement
+  let clickSpy: Mock<() => void>
 
   beforeEach(() => {
-    clickSpy = vi.fn()
-    vi.spyOn(document, 'createElement').mockReturnValue({
-      set href(_: string) {},
-      set download(_: string) {},
-      set target(_: string) {},
-      set rel(_: string) {},
-      click: clickSpy
-    } as unknown as HTMLAnchorElement)
+    anchorElement = document.createElement('a')
+    clickSpy = vi.fn<() => void>()
+    anchorElement.click = clickSpy
+    vi.spyOn(document, 'createElement').mockReturnValue(anchorElement)
+  })
+
+  it('configures the anchor before clicking it', async () => {
+    const service = createBrowserDownloadService()
+
+    await service.start({
+      url: 'https://example.com/model.safetensors',
+      savePath: '/models/checkpoints',
+      filename: 'model.safetensors'
+    })
+
+    expect(anchorElement.href).toBe('https://example.com/model.safetensors')
+    expect(anchorElement.download).toBe('model.safetensors')
+    expect(anchorElement.target).toBe('_blank')
+    expect(anchorElement.rel).toBe('noopener noreferrer')
   })
 
   it('returns a completed entry after triggering a browser download', async () => {
