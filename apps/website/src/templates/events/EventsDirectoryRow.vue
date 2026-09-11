@@ -66,7 +66,7 @@ useResizeObserver(descEl, ([entry]) => {
       :target="rowLink.newTab ? '_blank' : undefined"
       :rel="rowLink.newTab ? resolveRel({ target: '_blank' }) : undefined"
       :aria-label="`${row.title} — ${rowLink.label}`"
-      class="focus-visible:ring-primary-comfy-yellow absolute inset-0 z-10 focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none"
+      class="focus-visible:ring-primary-comfy-yellow absolute inset-0 z-10 focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset"
     />
     <!-- A video's poster stands in here; a <video> is not worth it at this
     size. Hidden on phones, where the row runs the full page width and the
