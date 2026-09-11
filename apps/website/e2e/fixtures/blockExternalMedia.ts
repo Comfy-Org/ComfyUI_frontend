@@ -83,7 +83,10 @@ export const test = base.extend({
         return route.abort('blockedbyclient')
       if (EMBED_HOSTS.has(url.hostname))
         return route.fulfill({ contentType: 'text/html', body: '' })
-      if (url.hostname === 'js-na2.hsforms.net')
+      if (
+        url.hostname === 'js-na2.hsforms.net' ||
+        url.hostname === 'apis.google.com'
+      )
         return route.fulfill({ contentType: 'text/javascript', body: '' })
       if (url.hostname === 'fonts.googleapis.com')
         return route.fulfill({
