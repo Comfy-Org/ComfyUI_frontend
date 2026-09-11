@@ -30,13 +30,13 @@ import {
   refreshWorkshopCredits,
   useWorkshopCredits
 } from '../../config/workshop-credits'
-import { WORKSHOP_CREDITS_URL } from '../../config/workshop-env'
 import { runWorkshopRouter } from '../../config/workshop-router'
 import { prepareWorkshopRouterInput } from '../../config/workshop-request'
 import { createWorkshopUrlUploader } from '../../config/workshop-url-upload'
 import { WorkshopRouterError } from '../../config/workshop-router-errors'
 import { releaseRouterOutputs } from '../../config/workshop-response'
 import { retainRunHistory } from '../../config/workshop-run-history'
+import { platformTopUpHref } from '../../lib/workshop/buy-credits'
 import { modelDocsHref } from '../../lib/workshop/model-docs'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import { workshopIdempotencyKey } from '../../config/workshop-snippets'
@@ -169,6 +169,15 @@ const authFlagSettled = useWorkshopAuthFlagSettled()
 const mounted = useMounted()
 const signInHref = useSignInHref(locale)
 const docsHref = modelDocsHref(model)
+// The gate blocks only on a balance it has actually read: unknown or errored
+// reads fail open to the run, whose server-side refusal is the real guard.
+const shortOfCredits = computed(
+  () =>
+    balance.value.status === 'ok' &&
+    model.creditsPerRun !== undefined &&
+    balance.value.credits < model.creditsPerRun
+)
+
 const gate = computed(() => {
   if (
     model.incompleteReason ||
@@ -185,7 +194,7 @@ const gate = computed(() => {
   if (
     runState.value.status !== 'running' &&
     balance.value.status === 'ok' &&
-    balance.value.credits <= 0
+    (balance.value.credits <= 0 || shortOfCredits.value)
   )
     return session.value.role === 'member' ? 'memberNoCredits' : 'noCredits'
   return 'ready'
@@ -527,19 +536,40 @@ function useInCode() {
           >
             {{ t('workshop.run.signIn', locale) }}
           </Button>
-          <Button
-            v-else-if="gate === 'noCredits'"
-            as="a"
-            :href="WORKSHOP_CREDITS_URL"
-            target="_blank"
-            rel="noopener noreferrer"
-            size="lg"
-            class="w-full px-5"
-            data-testid="run-button"
-            data-gate="noCredits"
-          >
-            {{ t('nav.buyCredits', locale) }}
-          </Button>
+          <!-- The MVP rail (DES-1015): buying happens on platform, in a new
+               tab, so this page and its inputs stay alive and the return is a
+               balance re-read. Naming the workspace is what makes topping up
+               the wrong wallet visible before it happens. -->
+          <template v-else-if="gate === 'noCredits'">
+            <div class="mb-2 flex flex-col gap-1" data-testid="gate-note">
+              <p class="text-sm font-bold text-primary-warm-white">
+                {{ t('workshop.error.creditsTitle', locale) }}
+              </p>
+              <p class="text-xs text-primary-warm-gray">
+                {{
+                  t('workshop.error.noCreditsPlatform', locale).replace(
+                    '{workspace}',
+                    () => session?.workspace.name ?? ''
+                  )
+                }}
+              </p>
+            </div>
+            <Button
+              as="a"
+              :href="platformTopUpHref(session?.workspace.id)"
+              target="_blank"
+              rel="noopener"
+              size="lg"
+              class="w-full px-5"
+              data-testid="run-button"
+              data-gate="noCredits"
+            >
+              {{ t('workshop.run.buyCredits', locale) }}
+              <template #append>
+                <ExternalLink class="size-5" aria-hidden="true" />
+              </template>
+            </Button>
+          </template>
           <Button
             v-else-if="gate === 'memberNoCredits'"
             size="lg"

@@ -1166,4 +1166,36 @@ describe('ModelDetail', () => {
       expect(runWorkshopRouter).not.toHaveBeenCalled()
     }
   )
+  it('blocks a run the balance cannot cover, with a button that promises nothing', async () => {
+    credits.balance.value = { status: 'ok', credits: 2 }
+    auth.session.value = credential
+    mountDetail({ model: runnable })
+    await nextTick()
+
+    const gate = screen.getByTestId('run-button')
+    expect(gate.getAttribute('data-gate')).toBe('noCredits')
+    expect(gate.getAttribute('href')).toContain(
+      'platform.comfy.org/billing?workspace='
+    )
+    expect(gate.getAttribute('target')).toBe('_blank')
+    expect(screen.getByTestId('gate-note').textContent).toContain(
+      'platform.comfy.org'
+    )
+    credits.balance.value = { status: 'ok', credits: 1_000 }
+    await nextTick()
+    expect(screen.getByTestId('run-button').getAttribute('data-gate')).toBe(
+      'ready'
+    )
+  })
+
+  it('fails open while the balance read has not settled', async () => {
+    credits.balance.value = { status: 'unknown' }
+    auth.session.value = credential
+    mountDetail({ model: runnable })
+    await nextTick()
+    expect(screen.getByTestId('run-button').getAttribute('data-gate')).toBe(
+      'ready'
+    )
+    credits.balance.value = { status: 'ok', credits: 1_000 }
+  })
 })

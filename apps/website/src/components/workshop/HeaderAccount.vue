@@ -180,6 +180,7 @@ async function signOutFromMenu() {
         </p>
         <a
           :href="WORKSHOP_CREDITS_URL"
+          data-testid="account-add-credits"
           target="_blank"
           rel="noopener noreferrer"
           role="menuitem"

@@ -9911,6 +9911,14 @@ Enterprise`
   'workshop.hub.models': { en: 'Model', 'zh-CN': '模型' },
   'workshop.hub.categories': { en: 'CATEGORIES', 'zh-CN': '分类' },
   'workshop.hub.docs': { en: 'Read docs', 'zh-CN': '阅读文档' },
+  'workshop.error.creditsTitle': {
+    en: 'Not enough credits',
+    'zh-CN': '积分不足'
+  },
+  'workshop.error.noCreditsPlatform': {
+    en: 'Add credits to {workspace} on platform.comfy.org',
+    'zh-CN': '在 platform.comfy.org 上为 {workspace} 添加积分'
+  },
   'workshop.hub.tryNow': { en: 'Try now', 'zh-CN': '立即试用' },
   'workshop.hub.tag.partnerNodes': {
     en: 'Partner Nodes',
