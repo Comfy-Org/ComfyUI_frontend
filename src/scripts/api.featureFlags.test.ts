@@ -180,6 +180,20 @@ describe('API Feature Flags', () => {
       expect(mockWebSocket.close).toHaveBeenCalledOnce()
       expect(api.serverFeatureFlagsReceived.value).toBe(true)
     })
+
+    it('settles feature flags when a socket that never delivered them keeps reconnecting', async () => {
+      api.init()
+
+      for (let attempt = 0; attempt < 3; attempt++) {
+        wsEventHandlers['open'](new Event('open'))
+        await vi.advanceTimersByTimeAsync(1_000)
+        wsEventHandlers['close'](new Event('close'))
+        await vi.advanceTimersByTimeAsync(300)
+      }
+
+      expect(api.serverFeatureFlags.value).toEqual({})
+      expect(api.serverFeatureFlagsReceived.value).toBe(true)
+    })
   })
 
   describe('Feature checking methods', () => {
