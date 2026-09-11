@@ -5,11 +5,17 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { DEFAULT_LOCALE, LOCALE_CODES } from '../config/locales'
+import { DEFAULT_LOCALE, LOCALE_CODES, localePrefix } from '../config/locales'
 import { modelsBuildRoutes, workshopReleaseGate } from './workshop-release-gate'
 
-/** Derived, so adding a locale extends this test rather than slipping past it. */
-const LOCALIZED = LOCALE_CODES.filter((locale) => locale !== DEFAULT_LOCALE)
+/**
+ * The prefixes the gate reads, minus English's empty one, so adding a locale
+ * extends this test rather than slipping past it. Directories, so no leading
+ * slash.
+ */
+const LOCALIZED = LOCALE_CODES.filter(
+  (locale) => locale !== DEFAULT_LOCALE
+).map((locale) => localePrefix(locale).replace(/^\//, ''))
 
 let root: string
 const logger: AstroIntegrationLogger = {

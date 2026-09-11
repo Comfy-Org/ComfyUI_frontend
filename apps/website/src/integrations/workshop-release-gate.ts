@@ -7,14 +7,19 @@ import { readdir, rm } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
 
-import { DEFAULT_LOCALE, LOCALE_CODES } from '../config/locales'
+import { LOCALE_CODES, localePrefix } from '../config/locales'
 import {
   assertWorkshopCloudEnvForBuild,
   isWorkshopInBuild
 } from '../config/workshop-release'
 
-/** Every locale that serves from a prefix, so each has its own output tree. */
-const LOCALIZED = LOCALE_CODES.filter((locale) => locale !== DEFAULT_LOCALE)
+/**
+ * Where each locale's output sits, read from the locale's configured prefix
+ * rather than its code — they match today, but the prefix is what decides the
+ * URL, so it is what decides the directory. English's prefix is empty, which
+ * makes `dist/workshop` fall out of the same expression as the rest.
+ */
+const WORKSHOP_OUTPUTS = LOCALE_CODES.map(localePrefix)
 
 export function modelsBuildRoutes(enabled: boolean) {
   const entry = (name: string) =>
@@ -75,10 +80,8 @@ export function workshopReleaseGate(): AstroIntegration {
       'astro:build:done': async ({ dir, logger }) => {
         const root = fileURLToPath(dir)
         let removed = 0
-        for (const output of [
-          join(root, 'workshop'),
-          ...LOCALIZED.map((locale) => join(root, locale, 'workshop'))
-        ]) {
+        for (const prefix of WORKSHOP_OUTPUTS) {
+          const output = join(root, prefix, 'workshop')
           // Counted off disk rather than off Astro's route list, which omits
           // the pages the i18n fallback generates — the list reported 269 while
           // 807 were on disk, and a gate that under-reports what it removed is
