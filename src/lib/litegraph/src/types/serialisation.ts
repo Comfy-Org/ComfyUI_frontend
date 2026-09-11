@@ -91,6 +91,7 @@ export interface ISerialisedNode {
   title?: string
   id: SerializedNodeId
   type: string
+  node_incarnation?: string
   pos: Point
   size: Size
   flags: INodeFlags

@@ -79,6 +79,41 @@ describe('graphMutations', () => {
     )
   })
 
+  it('stores node incarnation as durable semantic state', () => {
+    const graph = mutations()
+    expect(
+      graph.addNode({ ...node(7), nodeIncarnation: 'incarnation-7' }, context)
+    ).toBe(true)
+
+    expect(useNodeDataStore().getNode('root', toNodeId(7))).toMatchObject({
+      nodeIncarnation: 'incarnation-7'
+    })
+
+    expect(
+      graph.batch({ ...context, opId: 'op-2' }, (batch) => {
+        batch.reconcileNode({
+          ...node(7),
+          nodeIncarnation: 'incarnation-7-reconciled'
+        })
+      })
+    ).toBe(true)
+    expect(useNodeDataStore().getNode('root', toNodeId(7))).toMatchObject({
+      nodeIncarnation: 'incarnation-7-reconciled'
+    })
+  })
+
+  it('caches the serialization under the key `configure()` reads', () => {
+    const graph = mutations()
+    graph.addNode({ ...node(7), nodeIncarnation: 'incarnation-7' }, context)
+
+    const cached = useNodeDataStore().getNode(
+      'root',
+      toNodeId(7)
+    )?.lastSerialization
+    expect(cached?.node_incarnation).toBe('incarnation-7')
+    expect(cached).not.toHaveProperty('nodeIncarnation')
+  })
+
   it('retains supplied link ids and atomically displaces the target occupant', () => {
     const graph = mutations()
     graph.batch(context, (batch) => {

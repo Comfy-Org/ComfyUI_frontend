@@ -51,6 +51,7 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
 import { blankGraph } from '@/scripts/defaultGraph'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useGraphDocumentStore } from '@/stores/graphDocumentStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
@@ -168,6 +169,28 @@ const agentTabGraph: ComfyWorkflowJSON = {
 }
 
 const canvasStore = useCanvasStore()
+const graphDocumentStore = useGraphDocumentStore()
+
+function bindWorkflowTab(workflowId: string, tab: ComfyWorkflow): void {
+  bindingStore.bind(workflowId, tab.path)
+  const rootGraphId = tab.activeState?.id
+  if (!rootGraphId) return
+
+  const documentId =
+    graphDocumentStore.resolveWorkflowTarget(workflowId)?.documentId ??
+    graphDocumentStore.createDocument({ workflowId })
+  if (documentId === null) return
+
+  const scope = {
+    rootGraphId: toRootGraphId(rootGraphId),
+    owningGraphId: toOwningGraphId(rootGraphId)
+  }
+  const registered = graphDocumentStore.getDocument(documentId)?.scope ?? null
+  if (!registered) graphDocumentStore.hydrateDocument(documentId, scope)
+  else if (registered.rootGraphId !== scope.rootGraphId)
+    graphDocumentStore.rebindScope(documentId, scope)
+}
+
 const graphMutationsByWorkflow = new Map<
   string,
   ReturnType<typeof createGraphMutations>
@@ -175,15 +198,25 @@ const graphMutationsByWorkflow = new Map<
 const graphMutations = (workflowId: string) => {
   const existing = graphMutationsByWorkflow.get(workflowId)
   if (existing) return existing
+  // Document identity is early-bound (ADR-GRAPH-DOCUMENT-0024): the registry
+  // entry is
+  // created when the target is first addressed, not at commit time. Tab
+  // binding records the scope, so a target whose tab is momentarily
+  // unresolved still commits into its own document.
+  const documentId =
+    graphDocumentStore.resolveWorkflowTarget(workflowId)?.documentId ??
+    graphDocumentStore.createDocument({ workflowId })
   const mutations = createGraphMutations({
     getScope() {
-      const rootGraphId = boundTabFor(workflowId)?.activeState?.id
-      return rootGraphId
-        ? {
-            rootGraphId: toRootGraphId(rootGraphId),
-            owningGraphId: toOwningGraphId(rootGraphId)
-          }
+      const registered = documentId
+        ? (graphDocumentStore.getDocument(documentId)?.scope ?? null)
         : null
+      const rootGraphId = boundTabFor(workflowId)?.activeState?.id
+      if (!rootGraphId) return registered
+      return {
+        rootGraphId: toRootGraphId(rootGraphId),
+        owningGraphId: toOwningGraphId(rootGraphId)
+      }
     },
     layout: {
       createNode(scope, nodeId, layout, context) {
@@ -631,7 +664,7 @@ async function onAgentActiveTab(
       if (stale()) return
       // boundTabFor can resolve by cloud name, which leaves no binding behind
       // for everything downstream that only reads tabPathFor.
-      bindingStore.bind(data.workflow_id, bound.path)
+      bindWorkflowTab(data.workflow_id, bound)
       if (status.value !== 'idle') tabActivity.setEditing(bound.path)
       bindWorkflow(data.workflow_id)
       useTelemetry()?.trackAgentWorkflowApplied({
@@ -672,7 +705,7 @@ async function onAgentActiveTab(
       return
     }
     if (status.value !== 'idle') tabActivity.setEditing(tab.path)
-    bindingStore.bind(data.workflow_id, tab.path)
+    bindWorkflowTab(data.workflow_id, tab)
     bindWorkflow(data.workflow_id)
     useTelemetry()?.trackAgentWorkflowApplied({
       workflow_id: data.workflow_id,

@@ -159,6 +159,7 @@ export const useNodeDataStore = defineStore('nodeData', () => {
       boxcolor: undefined,
       color: undefined,
       lastSerialization: undefined,
+      nodeIncarnation: undefined,
       resizable: undefined,
       shape: undefined,
       showAdvanced: undefined,

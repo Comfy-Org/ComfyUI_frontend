@@ -110,6 +110,31 @@ describe('useNodeDataStore', () => {
     expect(store.getGraphNodesFor(rootA, rootA)).toEqual([registered])
   })
 
+  it('replaces the incarnation a node was carrying', () => {
+    const store = useNodeDataStore()
+    const scope = graphScope(rootA, rootA)
+    store.registerNode(scope, { ...node(1), nodeIncarnation: 'stale' })
+
+    expect(
+      store.updateNode(scope, toNodeId(1), {
+        ...node(1),
+        nodeIncarnation: 'fresh'
+      })
+    ).toBe(true)
+
+    expect(store.getNode(rootA, toNodeId(1))?.nodeIncarnation).toBe('fresh')
+  })
+
+  it('clears the incarnation when the authoritative payload has none', () => {
+    const store = useNodeDataStore()
+    const scope = graphScope(rootA, rootA)
+    store.registerNode(scope, { ...node(1), nodeIncarnation: 'stale' })
+
+    expect(store.updateNode(scope, toNodeId(1), node(1))).toBe(true)
+
+    expect(store.getNode(rootA, toNodeId(1))?.nodeIncarnation).toBeUndefined()
+  })
+
   it('reuses a deleted node id for a replacement node', () => {
     const store = useNodeDataStore()
     const first = node(1)

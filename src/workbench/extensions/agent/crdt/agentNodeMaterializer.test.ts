@@ -35,6 +35,7 @@ import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { GraphScope } from '@/types/graphScopeId'
 import { graphScopeOf } from '@/types/graphScopeId'
+import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toLinkId } from '@/types/linkId'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
@@ -102,6 +103,22 @@ class ThrowsOnAddedNode extends LGraphNode {
   // `LGraphNode.onRemoved` is optional, so it is absent from the prototype and
   // cannot be spied on otherwise.
   override onRemoved(): void {}
+}
+
+/**
+ * Distinct from {@link ThrowsOnConfigureNode}, which throws from `onConfigure`
+ * after `configure()` has already imported the serialized fields. This one
+ * replaces `configure()` outright, so nothing is ever imported from
+ * `lastSerialization` — the only way identity survives is shell adoption.
+ */
+class ThrowsInConfigureNode extends LGraphNode {
+  constructor() {
+    super('throws-in-configure')
+  }
+
+  override configure(): void {
+    throw new Error('extension code blew up in configure')
+  }
 }
 
 const REMOTE: RemoteMutationContext = {
@@ -204,6 +221,7 @@ beforeEach(() => {
   LiteGraph.registerNodeType('configure-capture', ConfigureCapturingWidgetNode)
   LiteGraph.registerNodeType('throws-on-configure', ThrowsOnConfigureNode)
   LiteGraph.registerNodeType('throws-on-added', ThrowsOnAddedNode)
+  LiteGraph.registerNodeType('throws-in-configure', ThrowsInConfigureNode)
   configuredWidgetValues.length = 0
   configureShouldThrow = false
 })
@@ -351,6 +369,80 @@ describe('reconcileAgentAdapters', () => {
       // `serialiseStoredNodes()` shows up here.
       expect(graph.serialize().nodes).toHaveLength(1)
       expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it.for([
+      ['a registered type', 'dummy'],
+      ['the unknown-node fallback', 'never-registered']
+    ])(
+      'keeps the committed incarnation through materialize, save, and reload for %s',
+      ([, type]) => {
+        const graph = new LGraph()
+        const scope = graphScopeOf(graph)
+        remoteMutations(scope).addNode(
+          { ...nodePayload(1, type), nodeIncarnation: 'life-2' },
+          REMOTE
+        )
+
+        reconcileAgentAdapters(graph)
+
+        expect(
+          useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))
+            ?.nodeIncarnation
+        ).toBe('life-2')
+        const savedJson = JSON.stringify(graph.asSerialisable())
+        expect(
+          (JSON.parse(savedJson) as SerialisableGraph).nodes?.[0]
+            ?.node_incarnation
+        ).toBe('life-2')
+
+        const reloaded = new LGraph()
+        reloaded.configure(JSON.parse(savedJson) as SerialisableGraph)
+
+        const reloadedNode = reloaded.getNodeById(toNodeId(1))
+        expect(reloadedNode?._state.nodeIncarnation).toBe('life-2')
+        expect(reloadedNode?.serialize().node_incarnation).toBe('life-2')
+      }
+    )
+
+    it('keeps the committed incarnation when configure fails after attach', () => {
+      const graph = new LGraph()
+      const scope = graphScopeOf(graph)
+      remoteMutations(scope).addNode(
+        {
+          ...nodePayload(1, 'throws-in-configure'),
+          nodeIncarnation: 'life-2'
+        },
+        REMOTE
+      )
+
+      reconcileAgentAdapters(graph)
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          errorType: 'agent_node_materialize_configure_failed'
+        })
+      )
+      expect(graph.getNodeById(toNodeId(1))?._state.nodeIncarnation).toBe(
+        'life-2'
+      )
+      expect(graph.asSerialisable().nodes[0]?.node_incarnation).toBe('life-2')
+    })
+
+    it('leaves a legacy record with no incarnation without one', () => {
+      const graph = new LGraph()
+      const scope = graphScopeOf(graph)
+      remoteMutations(scope).addNode(nodePayload(1), REMOTE)
+
+      reconcileAgentAdapters(graph)
+
+      expect(
+        useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))
+      ).not.toHaveProperty('nodeIncarnation')
+      expect(graph.asSerialisable().nodes[0]).not.toHaveProperty(
+        'node_incarnation'
+      )
     })
 
     it('applies the serialised widget values to the new node', () => {
