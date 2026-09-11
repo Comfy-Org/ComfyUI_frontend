@@ -81,4 +81,15 @@ describe('AuthToast', () => {
     expect(alert.getAttribute('aria-live')).toBe('assertive')
     expect(alert.getAttribute('aria-atomic')).toBe('true')
   })
+
+  it('does not autofocus the close button', async () => {
+    render(AuthToast)
+    addToast({ severity: 'error', summary: 'S', detail: 'D' })
+    const button = await screen.findByRole('button', { name: 'Close' })
+
+    expect(
+      button.hasAttribute('autofocus'),
+      'autofocus would steal focus from the email/password field on every async toast; the assertive live region announces the message instead'
+    ).toBe(false)
+  })
 })
