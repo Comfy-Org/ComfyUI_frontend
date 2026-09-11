@@ -83,7 +83,7 @@ import type { Reroute, RerouteId } from './Reroute'
 import { getNodeInputOnPos, getNodeOutputOnPos } from './canvas/measureSlots'
 import type { IDrawBoundingOptions } from './draw'
 import { NullGraphError } from './infrastructure/NullGraphError'
-import { realignInputLinkSlots } from './linkDeduplication'
+import { realignDynamicChildInputLinkSlots } from './linkDeduplication'
 import type { ReadOnlyRectangle } from './infrastructure/Rectangle'
 import { Rectangle } from './infrastructure/Rectangle'
 import type {
@@ -1082,27 +1082,6 @@ export class LGraphNode
   _internalConfigureAfterSlots?(): void
 
   /**
-   * Dynamic group children are named `<groupWidget>.<key>` and exist only for
-   * the group widget's current value. Ordinary slots are deliberately excluded:
-   * their cross-node slot contention is unsettled until every node configures.
-   */
-  private realignDynamicChildInputLinkSlots(info: ISerialisedNode): void {
-    if (!this.graph || !this.widgets?.length) return
-
-    const widgetNames = new Set(this.widgets.map(({ name }) => name))
-    const dynamicChildInputs = info.inputs?.filter(({ name }) => {
-      if (typeof name !== 'string') return false
-      const separator = name.lastIndexOf('.')
-      return separator > 0 && widgetNames.has(name.slice(0, separator))
-    })
-    if (!dynamicChildInputs?.length) return
-
-    realignInputLinkSlots(this.graph, [
-      [this.id, { id: info.id, inputs: dynamicChildInputs }]
-    ])
-  }
-
-  /**
    * configure a node from an object containing the serialized info
    */
   configure(info: ISerialisedNode): void {
@@ -1189,7 +1168,7 @@ export class LGraphNode
 
     // Must precede widget values: setting a DynamicCombo value swaps its child
     // input slots, destroying any link still sitting on a discarded slot.
-    this.realignDynamicChildInputLinkSlots(info)
+    realignDynamicChildInputLinkSlots(this, info)
 
     const restoration = createWidgetRestorationState(
       info,

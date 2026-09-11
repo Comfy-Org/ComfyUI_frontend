@@ -7,6 +7,7 @@ import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import cloneDeep from 'es-toolkit/compat/cloneDeep'
 import type { LGraph } from './LGraph'
+import type { LGraphNode } from './LGraphNode'
 import type { LinkId, LLink, SerialisedLLinkArray } from './LLink'
 import type {
   ExportedSubgraph,
@@ -314,4 +315,34 @@ export function realignInputLinkSlots(
       }
     }
   }
+}
+
+/**
+ * Realigns only the links of serialised inputs named `<widgetName>.<key>` — a
+ * deliberate superset of dynamic group children, which is harmless because
+ * name-based realignment is what the whole-graph pass does anyway. Autogrow
+ * groups do not match: no widget carries their bare group name.
+ *
+ * Ordinary slots are left to the whole-graph pass, whose cross-node slot
+ * contention is unsettled until every node has configured.
+ */
+export function realignDynamicChildInputLinkSlots(
+  node: LGraphNode,
+  info: ISerialisedNode
+): void {
+  if (!node.graph || !node.widgets?.length) return
+
+  const widgetNames = new Set(node.widgets.map(({ name }) => name))
+  const dynamicChildInputs = info.inputs?.filter(({ name }) => {
+    // Workflow JSON is untrusted: a non-string name would throw out of
+    // configure and abort the whole load rather than degrading.
+    if (typeof name !== 'string') return false
+    const separator = name.lastIndexOf('.')
+    return separator > 0 && widgetNames.has(name.slice(0, separator))
+  })
+  if (!dynamicChildInputs?.length) return
+
+  realignInputLinkSlots(node.graph, [
+    [node.id, { id: info.id, inputs: dynamicChildInputs }]
+  ])
 }

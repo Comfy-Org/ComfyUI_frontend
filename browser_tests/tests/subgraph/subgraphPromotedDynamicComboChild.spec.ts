@@ -1,7 +1,6 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { getPromotedWidgetNames } from '@e2e/fixtures/utils/promotedWidgets'
 import { toNodeId } from '@/types/nodeId'
 
 // Regression fixture for FE-258: `resize_type.multiplier` is a child widget of
@@ -22,40 +21,32 @@ test.describe(
     }) => {
       await comfyPage.workflow.loadWorkflow(WORKFLOW)
 
-      // Settle-wait only. This resolves the *interior* widget name, which the
-      // duplicate host input also maps to, so it holds either way.
+      // Polled as one snapshot: a dropped promotion link leaves the input
+      // rendering as a bare slot and makes auto-promotion mint a duplicate
+      // `<name>_1`, so asserting these separately could read a half-built node.
       await expect
-        .poll(() => getPromotedWidgetNames(comfyPage, HOST_NODE_ID))
-        .toContain(PROMOTED_INPUT)
-
-      const inputs = await comfyPage.page.evaluate((id) => {
-        const node = window.app?.graph.getNodeById(id)
-        if (!node) throw new Error(`Expected subgraph host node ${id}`)
-        return node.inputs.map((input) => ({
-          name: input.name,
-          rendersAsWidget: Boolean(input.widget)
-        }))
-      }, toNodeId(HOST_NODE_ID))
-
-      expect(inputs).toContainEqual({
-        name: PROMOTED_INPUT,
-        rendersAsWidget: true
-      })
-
-      // A dropped promotion link makes auto-promotion mint a second, uniquely
-      // named input for the same interior widget and append it to the node.
-      expect(inputs.map(({ name }) => name)).not.toContain(
-        `${PROMOTED_INPUT}_1`
-      )
-
-      const promotedValue = await comfyPage.page.evaluate(
-        ({ id, name }) => {
-          const node = window.app?.graph.getNodeById(id)
-          return node?.widgets?.find((w) => w.name === name)?.value
-        },
-        { id: toNodeId(HOST_NODE_ID), name: PROMOTED_INPUT }
-      )
-      expect(promotedValue).toBe(4)
+        .poll(() =>
+          comfyPage.page.evaluate(
+            ({ id, name }) => {
+              const node = window.app?.graph.getNodeById(id)
+              if (!node) return undefined
+              const names = node.inputs.map((input) => input.name)
+              return {
+                rendersAsWidget: node.inputs.some(
+                  (input) => input.name === name && Boolean(input.widget)
+                ),
+                hasDuplicate: names.includes(`${name}_1`),
+                promotedValue: node.widgets?.find((w) => w.name === name)?.value
+              }
+            },
+            { id: toNodeId(HOST_NODE_ID), name: PROMOTED_INPUT }
+          )
+        )
+        .toEqual({
+          rendersAsWidget: true,
+          hasDuplicate: false,
+          promotedValue: 4
+        })
     })
   }
 )

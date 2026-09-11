@@ -8,6 +8,7 @@ import {
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import {
   normalizeConfiguredTopology,
+  realignDynamicChildInputLinkSlots,
   realignInputLinkSlots
 } from '@/lib/litegraph/src/linkDeduplication'
 import type {
@@ -782,5 +783,70 @@ describe('realignInputLinkSlots', () => {
     realignInputLinkSlots(graph, [[target.id, nodeData]])
 
     expect(movable.target_slot).toBe(4)
+  })
+})
+
+describe('realignDynamicChildInputLinkSlots', () => {
+  function setup(widgetName: string, childInputNames: [string, string]) {
+    const graph = new LGraph()
+    const source = new LGraphNode('Source')
+    source.addOutput('out', 'number')
+    const target = new LGraphNode('Target')
+    target.widgets = []
+    target.addWidget('number', widgetName, 0, () => {})
+    for (const name of childInputNames) target.addInput(name, 'number')
+    graph.add(source)
+    graph.add(target)
+    const link = source.connect(0, target, 0)!
+    const nodeData = target.serialize()
+    nodeData.inputs = [
+      { ...nodeData.inputs![0], link: null },
+      { ...nodeData.inputs![1], link: link.id }
+    ]
+    return { graph, target, link, nodeData }
+  }
+
+  it('moves a dynamic child link onto its serialised name', () => {
+    const { target, link, nodeData } = setup('resize_type', [
+      'resize_type.width',
+      'resize_type.multiplier'
+    ])
+
+    realignDynamicChildInputLinkSlots(target, nodeData)
+
+    expect(link.target_slot).toBe(1)
+  })
+
+  it('ignores children whose group prefix is not a widget on the node', () => {
+    // Autogrow: `model` IS a widget, but the group is `model.reference_images`,
+    // which is not -- so matching on the first separator would wrongly claim it.
+    const { target, link, nodeData } = setup('model', [
+      'model.reference_images.image_1',
+      'model.reference_images.image_2'
+    ])
+
+    realignDynamicChildInputLinkSlots(target, nodeData)
+
+    expect(link.target_slot).toBe(0)
+  })
+
+  it('ignores names with no group prefix before the separator', () => {
+    const { target, link, nodeData } = setup('', ['.first', '.second'])
+
+    realignDynamicChildInputLinkSlots(target, nodeData)
+
+    expect(link.target_slot).toBe(0)
+  })
+
+  it('is a no-op for a node without widgets', () => {
+    const { target, link, nodeData } = setup('resize_type', [
+      'resize_type.width',
+      'resize_type.multiplier'
+    ])
+    target.widgets = []
+
+    realignDynamicChildInputLinkSlots(target, nodeData)
+
+    expect(link.target_slot).toBe(0)
   })
 })
