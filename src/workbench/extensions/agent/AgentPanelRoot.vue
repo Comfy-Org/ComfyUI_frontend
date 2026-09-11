@@ -1017,33 +1017,18 @@ let assetDragDepth = 0
 provide('agentAssetDragActive', readonly(assetDragActive))
 let selectingNodes = false
 let nodeSelectionCanvas: LGraphCanvas | undefined
-let selectedGraphNodes = new Map<string, LGraphNode>()
 let restoreAllowDragNodes: boolean | undefined
 let restoreSelectOnly: boolean | undefined
 
 watch(
   () => canvasStore.selectedItems,
   (items) => {
-    const nodes = items.filter(isLGraphNode)
     if (agentNodeSelectionStore.restoredNodeIds !== null) {
       if (canReferenceNodes.value) {
-        selectedGraphNodes = new Map(
-          nodes.map(
-            (node) => [workflowStore.nodeToNodeLocatorId(node), node] as const
-          )
-        )
-        replaceSelectionTags(nodes.map(toSelectedNode))
+        replaceSelectionTags(items.filter(isLGraphNode).map(toSelectedNode))
       }
       agentNodeSelectionStore.finishWorkflowLoad()
-      return
     }
-    if (!selectingNodes || agentNodeSelectionStore.isLoadingWorkflow) return
-    const currentNodes = new Map<string, LGraphNode>(
-      nodes.map(
-        (node) => [workflowStore.nodeToNodeLocatorId(node), node] as const
-      )
-    )
-    selectedGraphNodes = currentNodes
   },
   { immediate: true }
 )
@@ -1058,7 +1043,6 @@ function exitNodeSelectionMode(): void {
   nodeSelectionCanvas = undefined
   restoreAllowDragNodes = undefined
   restoreSelectOnly = undefined
-  selectedGraphNodes.clear()
   selectingNodes = false
   if (agentNodeSelectionStore.isActive) agentNodeSelectionStore.exit()
   if (canvas) {
@@ -1071,18 +1055,6 @@ watch(
   () => agentNodeSelectionStore.isActive,
   (active) => {
     if (!active) exitNodeSelectionMode()
-  }
-)
-
-watch(
-  () => agentNodeSelectionStore.restoredNodeIds,
-  (nodeIds) => {
-    if (nodeIds === null) return
-    selectedGraphNodes = new Map(
-      [...(app.canvas?.selectedItems ?? [])]
-        .filter(isLGraphNode)
-        .map((node) => [workflowStore.nodeToNodeLocatorId(node), node] as const)
-    )
   }
 )
 
@@ -1122,7 +1094,6 @@ function onSelectNodes(): void {
     const node = getNodeByLocatorId(app.rootGraph, key)
     if (node) merged.set(key, node)
   }
-  selectedGraphNodes = merged
   if (merged.size) {
     canvas.selectItems([...merged.values()])
     canvasStore.updateSelectedItems()
