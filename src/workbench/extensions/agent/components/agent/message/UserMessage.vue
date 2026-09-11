@@ -134,7 +134,7 @@ const splitAttachments = computed(() => {
               ? t('agent.targetNavigationUnavailable')
               : undefined
           "
-          class="inline-flex max-w-40 cursor-pointer items-center gap-1 rounded-sm border-0 bg-primary-background/30 px-1 py-0.5 align-middle font-inter text-xs/[15px] font-normal text-primary-background-hover ring-1 ring-primary-background/30 ring-inset disabled:cursor-not-allowed disabled:opacity-50"
+          class="inline-flex max-w-28 cursor-pointer items-center gap-1 rounded-sm border-0 bg-primary-background/30 px-1 py-0.5 align-middle font-inter text-xs/[15px] font-normal text-primary-background-hover ring-1 ring-primary-background/30 ring-inset disabled:cursor-not-allowed disabled:opacity-50"
           @click="
             emit(
               'openReferenceWorkflow',

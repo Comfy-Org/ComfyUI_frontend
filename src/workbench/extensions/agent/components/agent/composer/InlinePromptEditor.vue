@@ -180,11 +180,11 @@ onMounted(() => {
         open.type = 'button'
         open.setAttribute('aria-label', t('agent.openWorkflowTab', { name }))
         open.className =
-          'inline-flex min-w-0 cursor-pointer items-center gap-1 rounded-sm bg-primary-background/30 px-1 py-0.5 font-inter text-xs/[15px] font-normal text-primary-background-hover ring-1 ring-primary-background/30 transition-colors ring-inset hover:bg-primary-background/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background'
+          'inline-flex min-w-0 max-w-28 cursor-pointer items-center gap-1 rounded-sm bg-primary-background/30 px-1 py-0.5 font-inter text-xs/[15px] font-normal text-primary-background-hover ring-1 ring-primary-background/30 transition-colors ring-inset hover:bg-primary-background/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background'
         const icon = document.createElement('span')
         icon.className = 'icon-[comfy--workflow] size-3 shrink-0'
         const title = document.createElement('span')
-        title.className = 'max-w-40 truncate'
+        title.className = 'min-w-0 truncate'
         title.textContent = name
         open.append(icon, title)
         open.onclick = () => emit('openReferenceWorkflow', id, name)
