@@ -14,17 +14,12 @@ import {
   eventJsonLdNode,
   eventVideoId,
   pastEvents,
-  toCalendarEvent,
-  youtubeWatchHref
+  toCalendarEvent
 } from '../../data/events'
+import { eventPageThumbnail, eventVideoJsonLd } from './eventPageMetadata'
 import { t } from '../../i18n/translations'
 import type { JsonLdNode } from '../../utils/jsonLd'
-import {
-  absoluteUrl,
-  jsonLdId,
-  pageContext,
-  videoObjectNode
-} from '../../utils/jsonLd'
+import { absoluteUrl, pageContext } from '../../utils/jsonLd'
 
 interface Props {
   event: ComfyEvent
@@ -44,23 +39,17 @@ const description = event.description[locale] || event.description.en
 // with the section rendered behind the dialog.
 const isPast = pastEvents.includes(event)
 
-const videoJsonLd: JsonLdNode | undefined =
-  isPast && event.recordingVideoId && event.media
-    ? videoObjectNode({
-        siteUrl,
-        id: jsonLdId(url, 'video'),
-        pageUrl: url,
-        name: title,
-        description,
-        thumbnailUrl: event.media.src,
-        contentUrl:
-          youtubeWatchHref(event.recordingVideoId)[locale] ||
-          youtubeWatchHref(event.recordingVideoId).en,
-        embedUrl: `https://www.youtube-nocookie.com/embed/${event.recordingVideoId}`,
-        uploadDate: event.startDateTime,
-        locale
-      })
-    : undefined
+const mediaThumbnail = eventPageThumbnail(event)
+
+const videoJsonLd: JsonLdNode | undefined = eventVideoJsonLd({
+  event,
+  isPast,
+  siteUrl,
+  url,
+  title,
+  description,
+  locale
+})
 
 const eventJsonLd: JsonLdNode | undefined = isPast
   ? undefined
@@ -84,7 +73,7 @@ const breadcrumbs = [
 <BaseLayout
   title={`${title} - Comfy`}
   description={description}
-  ogImage={event.media?.src}
+  ogImage={mediaThumbnail}
   mainEntityId={typeof mainEntityId === 'string' ? mainEntityId : undefined}
   breadcrumbs={breadcrumbs}
   extraJsonLd={[videoJsonLd, eventJsonLd]}

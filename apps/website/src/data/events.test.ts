@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { ComfyEvent } from './events'
 import {
   deriveFeaturedEvents,
+  eventMediaThumbnail,
   derivePastEvents,
   deriveUpcomingEvents,
   eventJsonLdNode,
@@ -274,5 +275,73 @@ describe('site event data', () => {
     const ids = [...upcomingEvents, ...pastEvents].map((event) => event.id)
 
     expect(new Set(ids).size).toBe(ids.length)
+  })
+})
+
+describe('eventMediaThumbnail', () => {
+  it('uses the src of image media', () => {
+    expect(
+      eventMediaThumbnail({
+        type: 'image',
+        src: 'https://media.comfy.org/a.jpg',
+        alt: { en: 'A', 'zh-CN': 'A' }
+      })
+    ).toBe('https://media.comfy.org/a.jpg')
+  })
+
+  it('uses the poster of video media, never the video src', () => {
+    expect(
+      eventMediaThumbnail({
+        type: 'video',
+        src: 'https://media.comfy.org/a.mp4',
+        alt: { en: 'A', 'zh-CN': 'A' },
+        poster: 'https://media.comfy.org/a.jpg'
+      })
+    ).toBe('https://media.comfy.org/a.jpg')
+  })
+
+  it('has no thumbnail for video media without a poster', () => {
+    expect(
+      eventMediaThumbnail({
+        type: 'video',
+        src: 'https://media.comfy.org/a.mp4',
+        alt: { en: 'A', 'zh-CN': 'A' }
+      })
+    ).toBeUndefined()
+  })
+
+  it('has no thumbnail when the event carries no media', () => {
+    expect(eventMediaThumbnail(undefined)).toBeUndefined()
+  })
+})
+
+describe('site event media', () => {
+  it('never exposes a video file as an event thumbnail', () => {
+    const thumbnails = [...upcomingEvents, ...pastEvents].flatMap((event) => {
+      const thumbnail = eventMediaThumbnail(event.media)
+      return thumbnail ? [thumbnail] : []
+    })
+
+    expect(thumbnails.filter((src) => src.endsWith('.mp4'))).toEqual([])
+  })
+
+  it('gives the H3 sync event its video with a poster still', () => {
+    const event = [...upcomingEvents, ...pastEvents].find(
+      (candidate) => candidate.id === 'h3-sync-sound-challenge'
+    )
+
+    expect(event?.media).toMatchObject({
+      type: 'video',
+      src: 'https://media.comfy.org/website/events/09.02-comfy-h3-sync.mp4',
+      poster: 'https://media.comfy.org/website/events/09.02-comfy-h3-sync.jpg'
+    })
+    expect(event?.featured?.media).toMatchObject({
+      type: 'video',
+      src: 'https://media.comfy.org/website/events/09.02-comfy-h3-sync.mp4',
+      poster: 'https://media.comfy.org/website/events/09.02-comfy-h3-sync.jpg'
+    })
+    expect(eventMediaThumbnail(event?.media)).toBe(
+      'https://media.comfy.org/website/events/09.02-comfy-h3-sync.jpg'
+    )
   })
 })
