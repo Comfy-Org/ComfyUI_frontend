@@ -24,6 +24,7 @@ import type { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
 import type { AssetKind } from '@/types/widgetTypes'
+import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { isPaged, pagedItems, WrappedList } from '@/utils/pagedList'
 import type { MaybePaged } from '@/utils/pagedList'
 
@@ -45,6 +46,11 @@ function getMediaUrl(
   const params = new URLSearchParams({ filename, type })
   appendCloudResParam(params, filename)
   return `/api/view?${params}`
+}
+function assetRoot(asset: AssetItem): 'input' | 'output' | 'temp' | undefined {
+  for (const testTag of ['input', 'output', 'temp'] as const) {
+    if (asset.tags.includes(testTag)) return testTag
+  }
 }
 
 export interface UseWidgetSelectItemsOptions {
@@ -146,16 +152,21 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
     }
   })
 
-  const assetItems = computed<FormDropdownItem[]>(() => {
-    if (!toValue(options.isAssetMode) || !assetData) return []
-    return assetData.assets.value.map((asset) => ({
+  function assetToForm(asset: AssetItem): FormDropdownItem {
+    const type = assetRoot(asset)
+    const name = getAssetFilename(asset)
+    return {
       id: asset.id,
-      name: getAssetFilename(asset),
+      name: createAnnotatedPath(name, { rootFolder: type }),
       label: getAssetDisplayName(asset),
       preview_url: asset.preview_url,
       is_immutable: asset.is_immutable,
       base_models: getAssetBaseModels(asset)
-    }))
+    }
+  }
+  const assetItems = computed<FormDropdownItem[]>(() => {
+    if (!toValue(options.isAssetMode) || !assetData) return []
+    return assetData.assets.value.map(assetToForm)
   })
 
   const filteredAssetItems = computed<FormDropdownItem[]>(() =>
@@ -172,17 +183,16 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
     missingValueItem.value ? [missingValueItem.value] : []
   )
 
-  function filterByKind(asset: AssetItem) {
-    return asset.metadata?.kind === toValue(options.assetKind)
-  }
-
   const dropdownItems = computed<MaybePaged<FormDropdownItem>>(() => {
     if (toValue(options.isAssetMode) && assetData) {
       return [...missingItems.value, ...filteredAssetItems.value]
     }
+    const targetKind = toValue(options.assetKind)
+    const kindFilter = (asset: AssetItem) => asset.metadata?.kind === targetKind
+
     const base = baseAssets.value
-    const baseItems: readonly AssetItem[] = pagedItems(base)
-    const mapped = [...missingItems.value, ...baseItems.filter(filterByKind)]
+    const baseItems = pagedItems(base).filter(kindFilter).map(assetToForm)
+    const mapped = [...missingItems.value, ...baseItems]
     return isPaged(base) ? new WrappedList(base, () => mapped) : mapped
   })
 
