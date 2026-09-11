@@ -9,6 +9,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { api } from '@/scripts/api'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import WorkflowTabs from './WorkflowTabs.vue'
@@ -194,6 +195,7 @@ describe('WorkflowTabs feedback button', () => {
 describe('WorkflowTabs agent entry button', () => {
   beforeEach(() => {
     useAgentPanelStore().enabled = true
+    api.serverFeatureFlagsSettled.value = false
   })
 
   it('does not render the entry button in the legacy tab bar even with the flag on', () => {
@@ -265,6 +267,24 @@ describe('WorkflowTabs agent entry button', () => {
     await nextTick()
 
     expect(actions).toHaveAttribute('data-agent-gate-settled', 'true')
+  })
+
+  it('exposes the flags-settled signal without gating the entry button on it', async () => {
+    renderComponent()
+
+    const actions = screen.getByTestId('integrated-tab-bar-actions')
+    expect(actions).not.toHaveAttribute('data-agent-flags-settled')
+    expect(
+      screen.getAllByRole('button', { name: enMessages.agent.askComfyAgent })
+    ).toHaveLength(1)
+
+    api.serverFeatureFlagsSettled.value = true
+    await nextTick()
+
+    expect(actions).toHaveAttribute('data-agent-flags-settled', 'true')
+    expect(
+      screen.getAllByRole('button', { name: enMessages.agent.askComfyAgent })
+    ).toHaveLength(1)
   })
 })
 
