@@ -1,5 +1,5 @@
 import { zComfyNodeDef, zPriceBadge } from '@comfyorg/object-info-parser'
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import {
   evaluateNodeDefPricing,
@@ -7,6 +7,8 @@ import {
   formatPricingResult,
   getCompiledRuleForNodeType
 } from './nodePricing'
+import type { NodePricingFailure } from './nodePricingFailure'
+import { setNodePricingFailureReporter } from './nodePricingFailure'
 
 const context = { widgets: {}, inputs: {}, inputGroups: {} }
 
@@ -97,6 +99,68 @@ describe('evaluatePricingContext', () => {
       ).toBe('')
     }
   )
+})
+
+describe('pricing failure reporting', () => {
+  let failures: NodePricingFailure[]
+
+  beforeEach(() => {
+    failures = []
+    setNodePricingFailureReporter((failure) => failures.push(failure))
+  })
+
+  afterEach(() => {
+    setNodePricingFailureReporter(null)
+  })
+
+  it('forwards the compile error with the rule that produced it', () => {
+    const badge = zPriceBadge.parse({ expr: '{{{' })
+
+    expect(getCompiledRuleForNodeType('BrokenCompile', badge)?._compiled).toBe(
+      null
+    )
+    expect(failures).toHaveLength(1)
+    expect(failures[0]).toMatchObject({
+      operation: 'compile',
+      nodeType: 'BrokenCompile',
+      expr: '{{{'
+    })
+    expect(failures[0].cause).toMatchObject({ code: 'S0203' })
+  })
+
+  it('forwards the evaluation error with the rule that produced it', async () => {
+    const badge = zPriceBadge.parse({ expr: '$error("pricing failure")' })
+
+    expect(await evaluatePricingContext('BrokenEval', badge, context)).toBe('')
+    expect(failures).toHaveLength(1)
+    expect(failures[0]).toMatchObject({
+      operation: 'evaluate',
+      nodeType: 'BrokenEval',
+      expr: '$error("pricing failure")'
+    })
+    expect(failures[0].cause).toMatchObject({
+      code: 'D3137',
+      message: 'pricing failure'
+    })
+  })
+
+  it('skips an empty expression instead of reporting a compile failure', () => {
+    const badge = zPriceBadge.parse({ expr: '' })
+
+    expect(getCompiledRuleForNodeType('EmptyExpr', badge)).toBe(null)
+    expect(failures).toEqual([])
+  })
+
+  it('survives a reporter that throws', () => {
+    setNodePricingFailureReporter(() => {
+      throw new Error('reporter exploded')
+    })
+    const badge = zPriceBadge.parse({ expr: '{{{' })
+
+    expect(() =>
+      getCompiledRuleForNodeType('ReporterThrows', badge)
+    ).not.toThrow()
+  })
 })
 
 describe('default node pricing', () => {
