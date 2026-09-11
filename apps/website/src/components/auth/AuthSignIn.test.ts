@@ -1,7 +1,9 @@
 // @vitest-environment happy-dom
-import { render, screen, waitFor } from '@testing-library/vue'
+import type { RenderOptions } from '@testing-library/vue'
+import { render as testingRender, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, h, onMounted } from 'vue'
 
 import { AUTH_ERROR_MESSAGES } from '@comfyorg/account/firebaseAuthError'
 
@@ -47,20 +49,24 @@ vi.mock<unknown>(import('../../scripts/posthog'), async () => {
   }
 })
 
-vi.mock<unknown>(import('@comfyorg/account/vue'), async (importOriginal) => {
-  const { defineComponent, h, onMounted } = await import('vue')
-  return {
-    ...(await (importOriginal as () => Promise<object>)()),
-    TurnstileWidget: defineComponent({
-      emits: ['update:token', 'update:unavailable'],
-      setup(_, { emit, expose }) {
-        expose({ reset: handles.turnstileReset })
-        onMounted(() => emit('update:token', 'cf-token'))
-        return () => h('div', { 'data-testid': 'turnstile' })
-      }
-    })
+const turnstileWidgetStub = defineComponent({
+  emits: ['update:token', 'update:unavailable'],
+  setup(_, { emit, expose }) {
+    expose({ reset: handles.turnstileReset })
+    onMounted(() => emit('update:token', 'cf-token'))
+    return () => h('div', { 'data-testid': 'turnstile' })
   }
 })
+
+function render<C>(component: C, options?: RenderOptions<C>) {
+  return testingRender(component, {
+    ...options,
+    global: {
+      ...options?.global,
+      stubs: { TurnstileWidget: turnstileWidgetStub }
+    }
+  })
+}
 
 vi.mock<unknown>(import('@comfyorg/account/webviewDetection'), () => ({
   isEmbeddedWebView: () => handles.embedded

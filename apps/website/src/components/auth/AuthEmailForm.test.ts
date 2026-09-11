@@ -1,8 +1,9 @@
 // @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
-import { render, screen, waitFor } from '@testing-library/vue'
+import type { RenderOptions } from '@testing-library/vue'
+import { render as testingRender, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent } from 'vue'
+import { defineComponent, h, onMounted } from 'vue'
 
 import AuthEmailForm from './AuthEmailForm.vue'
 
@@ -10,28 +11,32 @@ const widgetBehavior = vi.hoisted(() => ({
   mode: 'silent' as 'silent' | 'unavailable' | 'token',
   reset: vi.fn()
 }))
-vi.mock<unknown>(import('@comfyorg/account/vue'), async (importOriginal) => {
-  const { h, onMounted } = await import('vue')
-  return {
-    ...(await (importOriginal as () => Promise<object>)()),
-    TurnstileWidget: defineComponent({
-      name: 'TurnstileWidgetStub',
-      emits: ['update:token', 'update:unavailable'],
-      setup(_, { emit, expose }) {
-        expose({ reset: widgetBehavior.reset })
-        onMounted(() => {
-          if (widgetBehavior.mode === 'unavailable') {
-            emit('update:unavailable', true)
-          }
-          if (widgetBehavior.mode === 'token') {
-            emit('update:token', 'cf-token')
-          }
-        })
-        return () => h('div', { 'data-testid': 'turnstile-stub' })
+const turnstileWidgetStub = defineComponent({
+  name: 'TurnstileWidgetStub',
+  emits: ['update:token', 'update:unavailable'],
+  setup(_, { emit, expose }) {
+    expose({ reset: widgetBehavior.reset })
+    onMounted(() => {
+      if (widgetBehavior.mode === 'unavailable') {
+        emit('update:unavailable', true)
+      }
+      if (widgetBehavior.mode === 'token') {
+        emit('update:token', 'cf-token')
       }
     })
+    return () => h('div', { 'data-testid': 'turnstile-stub' })
   }
 })
+
+function render<C>(component: C, options?: RenderOptions<C>) {
+  return testingRender(component, {
+    ...options,
+    global: {
+      ...options?.global,
+      stubs: { TurnstileWidget: turnstileWidgetStub }
+    }
+  })
+}
 
 vi.mock<unknown>(import('../../scripts/posthog'), async () => {
   const { ref } = await import('vue')

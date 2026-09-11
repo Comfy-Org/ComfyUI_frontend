@@ -13,6 +13,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import {
+  remoteConfigErrorStatus,
+  remoteConfigState
+} from '@/platform/remoteConfig/remoteConfig'
 
 import WorkspaceAuthGate from './WorkspaceAuthGate.vue'
 
@@ -43,25 +47,6 @@ const mockRefreshRemoteConfig = vi.fn()
 vi.mock(import('@/platform/remoteConfig/refreshRemoteConfig'), () => ({
   refreshRemoteConfig: (options: unknown) => mockRefreshRemoteConfig(options)
 }))
-
-const mockRemoteConfigState = vi.hoisted(() => ({
-  value: 'authenticated' as
-    | 'uninitialized'
-    | 'anonymous'
-    | 'authenticated'
-    | 'error'
-}))
-const mockRemoteConfigErrorStatus = vi.hoisted(() => ({
-  value: null as number | null
-}))
-vi.mock<unknown>(
-  import('@/platform/remoteConfig/remoteConfig'),
-  async (importOriginal) => ({
-    ...(await (importOriginal as () => Promise<object>)()),
-    remoteConfigState: mockRemoteConfigState,
-    remoteConfigErrorStatus: mockRemoteConfigErrorStatus
-  })
-)
 
 const mockUnifiedCloudAuthEnabled = vi.hoisted(() => ({ value: false }))
 vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
@@ -114,8 +99,8 @@ describe('WorkspaceAuthGate', () => {
     Object.assign(useAuthStore(), { currentUser: null })
     Object.assign(useApiKeyAuthStore(), { isAuthenticated: false })
     mockUnifiedCloudAuthEnabled.value = false
-    mockRemoteConfigState.value = 'authenticated'
-    mockRemoteConfigErrorStatus.value = null
+    remoteConfigState.value = 'authenticated'
+    remoteConfigErrorStatus.value = null
     Object.assign(useTeamWorkspaceStore(), { initState: 'uninitialized' })
     Object.assign(useTeamWorkspaceStore(), {
       activeWorkspaceId: 'workspace-123'
@@ -463,7 +448,7 @@ describe('WorkspaceAuthGate', () => {
     })
 
     it('shows a recoverable error when authenticated config is unavailable', async () => {
-      mockRemoteConfigState.value = 'error'
+      remoteConfigState.value = 'error'
 
       mountComponent()
       await flushPromises()
@@ -476,8 +461,8 @@ describe('WorkspaceAuthGate', () => {
 
     it('requires sign out when authenticated config rejects the credential', async () => {
       const user = userEvent.setup()
-      mockRemoteConfigState.value = 'error'
-      mockRemoteConfigErrorStatus.value = 401
+      remoteConfigState.value = 'error'
+      remoteConfigErrorStatus.value = 401
 
       mountComponent()
       await flushPromises()
