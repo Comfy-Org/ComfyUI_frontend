@@ -101,6 +101,7 @@ import {
 } from './crdt/crdtDebugGate'
 import { attachMintPortWiring } from './crdt/mintPortWiring'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
+import AgentSyncStatus from './crdt/AgentSyncStatus.vue'
 
 const CrdtDevPanel = defineAsyncComponent(
   () => import('./crdt/CrdtDevPanel.vue')
@@ -487,6 +488,7 @@ const isBoundWorkflowActive = computed(() => {
 // workflow's serialized activeState has hydrated the transient stores.
 const {
   status: crdtStatus,
+  syncStatus: crdtSyncStatus,
   debugSnapshot: crdtDebugSnapshot,
   enqueueHumanOperations
 } = useAgentCrdtFollower(
@@ -1135,8 +1137,13 @@ function onPanelDrop(event: DragEvent): void {
       @rename-chat="onRenameChat"
       @copy-history="onCopyMarkdown"
     >
-      <template v-if="isCrdtDevPanelEnabled" #instrument>
-        <CrdtDevPanel :status="crdtStatus" :snapshot="crdtDebugSnapshot" />
+      <template #instrument>
+        <AgentSyncStatus :status="crdtSyncStatus" />
+        <CrdtDevPanel
+          v-if="isCrdtDevPanelEnabled"
+          :status="crdtStatus"
+          :snapshot="crdtDebugSnapshot"
+        />
       </template>
     </AgentPanel>
     <OnboardingCoach

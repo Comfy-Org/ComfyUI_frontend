@@ -127,6 +127,8 @@ function clearPersistedDocId(): void {
  */
 export const STALE_AFTER_MS = 30_000
 
+export type AgentSyncStatus = 'checking' | 'recovering' | 'failed' | null
+
 /**
  * s5-metrics-1: per-outcome counters for every `doc_update` the composable's
  * listeners observe, replacing the single overloaded `updatesApplied`
@@ -206,6 +208,7 @@ export function useAgentCrdtFollower(
   getGraph: () => MaterializableGraph | null = () => null
 ) {
   const connected = ref(false)
+  const syncStatus = ref<AgentSyncStatus>(null)
   const updatesApplied = ref(0)
   const lastFrameType = ref<string | null>(null)
   const subscribedWorkflowId = ref<string | null>(null)
@@ -335,6 +338,7 @@ export function useAgentCrdtFollower(
       recordDevEvent('stale_probe', {
         workflowId: subscribedWorkflowId.value
       })
+      if (syncStatus.value === null) syncStatus.value = 'checking'
       bridge.resubscribe()
       armStaleProbe()
     }, STALE_AFTER_MS)
@@ -350,9 +354,13 @@ export function useAgentCrdtFollower(
 
   const scheduleSubscribeRetry = (): void => {
     if (subscribeRetryTimer !== null) return
-    if (subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS) return
     const target = subscribedWorkflowId.value
     if (target === null) return
+    if (subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS) {
+      syncStatus.value = 'failed'
+      return
+    }
+    syncStatus.value = bridge.lastSchemaError ? 'failed' : 'recovering'
     const delay = SUBSCRIBE_RETRY_BASE_MS * 2 ** subscribeRetryAttempt
     subscribeRetryAttempt += 1
     subscribeRetryTimer = setTimeout(() => {
@@ -376,6 +384,7 @@ export function useAgentCrdtFollower(
     recordDevEvent('doc_subscribed', event.detail ?? null)
     if (ok) {
       clearSubscribeRetry()
+      syncStatus.value = bridge.lastSchemaError ? 'failed' : null
       armStaleProbe()
       // FE-1902 (poc-3): only a CONFIRMED binding is worth rebinding to after
       // a remount — persist on ok, not on intent.
@@ -471,6 +480,7 @@ export function useAgentCrdtFollower(
     // -- until some later frame happens to arrive.
     reconcileLiveGraph(detail.workflowId)
     connected.value = false
+    syncStatus.value = 'recovering'
     updatesApplied.value = 0
     lastFrameType.value = event.type
     clearStaleProbe()
@@ -512,6 +522,7 @@ export function useAgentCrdtFollower(
     // nothing was projected. Surface it as its own status rather than as a
     // generic "disconnected", which is indistinguishable from "never connected".
     connected.value = false
+    syncStatus.value = 'failed'
     lastFrameType.value = event.type
     clearStaleProbe()
     const detail =
@@ -527,6 +538,7 @@ export function useAgentCrdtFollower(
     )
   }
   const onGap: EventListener = (event) => {
+    syncStatus.value = 'recovering'
     outcomes.value = { ...outcomes.value, gap: outcomes.value.gap + 1 }
     recordDevEvent(
       'doc_gap',
@@ -542,6 +554,8 @@ export function useAgentCrdtFollower(
   }
   const onReconnected: EventListener = () => {
     connected.value = false
+    if (subscribedWorkflowId.value !== null)
+      syncStatus.value = bridge.lastSchemaError ? 'failed' : 'recovering'
     clearStaleProbe()
     recordDevEvent('reconnected', null)
     bridge.resubscribe()
@@ -622,6 +636,8 @@ export function useAgentCrdtFollower(
   const retarget = (next: string | null): void => {
     if (next === null) bridge.unsubscribe()
     else bridge.subscribe(next)
+    syncStatus.value =
+      next === null ? null : bridge.lastSchemaError ? 'failed' : 'checking'
     sender.abortIfUnbound()
   }
   watch(
@@ -728,6 +744,7 @@ export function useAgentCrdtFollower(
 
   return {
     status: readonly(status),
+    syncStatus: readonly(syncStatus),
     debugSnapshot,
     enqueueHumanOperations: (operations: GraphOperation[]) =>
       sender.enqueue(operations)

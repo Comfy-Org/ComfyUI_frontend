@@ -29,6 +29,7 @@ const bridgeState = vi.hoisted(() => {
     sendHumanOps = vi.fn()
     subscribedWorkflowId: string | null = 'wf-1'
     lastSequence = 41
+    lastSchemaError: Error | null = null
     follower = {
       updatesApplied: 0,
       doc: {
@@ -133,7 +134,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 }))
 
 import { STALE_AFTER_MS, useAgentCrdtFollower } from './useAgentCrdtFollower'
-import type { AgentCrdtStatus } from './useAgentCrdtFollower'
+import type { AgentCrdtStatus, AgentSyncStatus } from './useAgentCrdtFollower'
 
 const graphMutations = {} as GraphMutations
 const DOC_ID_KEY = 'Comfy.Agent.CrdtDocId'
@@ -172,25 +173,34 @@ function mountFollower(
   workflowId: Ref<string | null>
   isTargetActive: Ref<boolean>
   status: () => AgentCrdtStatus
+  syncStatus: () => AgentSyncStatus
 } {
   const workflowId = ref<string | null>(initial)
   const isTargetActive = ref(initiallyActive)
   let exposedStatus!: () => AgentCrdtStatus
+  let exposedSyncStatus!: () => AgentSyncStatus
   const host = defineComponent({
     setup() {
-      const { status } = useAgentCrdtFollower(
+      const follower = useAgentCrdtFollower(
         workflowId,
         graphMutations,
         () => null,
         isTargetActive,
         getGraph
       )
-      exposedStatus = () => status.value as AgentCrdtStatus
+      exposedStatus = () => follower.status.value as AgentCrdtStatus
+      exposedSyncStatus = () => follower.syncStatus.value
       return () => null
     }
   })
   const { unmount } = render(host)
-  return { unmount, workflowId, isTargetActive, status: exposedStatus }
+  return {
+    unmount,
+    workflowId,
+    isTargetActive,
+    status: exposedStatus,
+    syncStatus: exposedSyncStatus
+  }
 }
 
 function bridge(): InstanceType<(typeof bridgeState)['FakeBridge']> {
@@ -1042,6 +1052,92 @@ describe('useAgentCrdtFollower', () => {
 
     vi.advanceTimersByTime(STALE_AFTER_MS)
     expect(bridge().resubscribe).toHaveBeenCalledTimes(2)
+    unmount()
+  })
+
+  it('shows checking, never a warning, for quiet intervals without a probe response', () => {
+    vi.useFakeTimers()
+    const { unmount, syncStatus } = mountFollower('wf-1')
+    expect(syncStatus()).toBe('checking')
+    dispatchFrame('doc_subscribed', { ok: true })
+    expect(syncStatus()).toBeNull()
+    vi.advanceTimersByTime(STALE_AFTER_MS - 1)
+    expect(syncStatus()).toBeNull()
+    vi.advanceTimersByTime(1)
+    expect(syncStatus()).toBe('checking')
+    vi.advanceTimersByTime(STALE_AFTER_MS * 3)
+    expect(syncStatus()).toBe('checking')
+    dispatchFrame('doc_ops_result', { workflowId: 'wf-1' })
+    expect(syncStatus()).toBe('checking')
+    dispatchFrame('doc_subscribed', { ok: true })
+    expect(syncStatus()).toBeNull()
+    expect(adapterState.clearForReset).not.toHaveBeenCalled()
+    unmount()
+  })
+
+  it('warns only after the last retry is refused, not while its response is pending', () => {
+    vi.useFakeTimers()
+    const { unmount, syncStatus } = mountFollower('wf-1')
+    for (let attempt = 0; attempt < 6; attempt++) {
+      dispatchFrame('doc_subscribed', { ok: false })
+      expect(syncStatus()).toBe('recovering')
+      vi.advanceTimersByTime(500 * 2 ** attempt)
+    }
+    vi.advanceTimersByTime(STALE_AFTER_MS * 2)
+    expect(syncStatus()).toBe('recovering')
+    dispatchFrame('doc_subscribed', { ok: false })
+    expect(syncStatus()).toBe('failed')
+    dispatchFrame('doc_subscribed', { ok: true })
+    expect(syncStatus()).toBeNull()
+    unmount()
+  })
+
+  it('shows recovery for a gap or reconnect and clears it on confirmation', () => {
+    const { unmount, syncStatus } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+    dispatchFrame('doc_gap', { workflowId: 'wf-1', expected: 2, received: 4 })
+    expect(syncStatus()).toBe('recovering')
+    dispatchFrame('doc_subscribed', { ok: true })
+    expect(syncStatus()).toBeNull()
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    expect(syncStatus()).toBe('recovering')
+    expect(adapterState.clearForReset).not.toHaveBeenCalled()
+    unmount()
+  })
+
+  it('keeps a schema failure visible across acknowledgements and reconnects', () => {
+    const { unmount, syncStatus } = mountFollower('wf-1')
+    bridge().lastSchemaError = new Error('unreadable')
+    dispatchFrame('schema_error', { workflowId: 'wf-1' })
+    expect(syncStatus()).toBe('failed')
+    dispatchFrame('doc_subscribed', { ok: true })
+    expect(syncStatus()).toBe('failed')
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    expect(syncStatus()).toBe('failed')
+    unmount()
+  })
+
+  it('drops status on detach or suspension and starts a new check on retarget', async () => {
+    const { unmount, workflowId, isTargetActive, syncStatus } = mountFollower()
+    expect(syncStatus()).toBeNull()
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    expect(syncStatus()).toBeNull()
+    workflowId.value = 'wf-1'
+    await nextTick()
+    expect(syncStatus()).toBe('checking')
+    dispatchFrame('schema_error', { workflowId: 'wf-1' })
+    isTargetActive.value = false
+    await nextTick()
+    expect(syncStatus()).toBeNull()
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    expect(syncStatus()).toBeNull()
+    isTargetActive.value = true
+    workflowId.value = 'wf-2'
+    await nextTick()
+    expect(syncStatus()).toBe('checking')
+    workflowId.value = null
+    await nextTick()
+    expect(syncStatus()).toBeNull()
     unmount()
   })
 
