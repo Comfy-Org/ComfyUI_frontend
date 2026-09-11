@@ -44,6 +44,19 @@ async function buildDone() {
 }
 
 describe('Workshop release output', () => {
+  it('rejects an invalid Cloud family before building', () => {
+    vi.stubEnv('VERCEL_ENV', 'preview')
+    vi.stubEnv('WORKSHOP_IN_BUILD', '1')
+    vi.stubEnv('PUBLIC_WORKSHOP_CLOUD_ENV', 'prod')
+
+    const hook = workshopReleaseGate().hooks['astro:build:start']
+    if (!hook) throw new Error('Missing build start hook')
+
+    expect(() => hook({ logger, setPrerenderer: vi.fn() })).toThrow(
+      /may only reach staging or test Cloud/
+    )
+  })
+
   it('registers the original marketing entry when disabled and only approved Models routes when enabled', () => {
     expect(modelsBuildRoutes(false)).toEqual([
       {
@@ -60,6 +73,7 @@ describe('Workshop release output', () => {
     expect(enabled[0].entrypoint).toContain('/routes/models/index.astro')
     for (const route of enabled) expect(existsSync(route.entrypoint)).toBe(true)
   })
+
   it('preserves the established Models page and rejects ungated detail routes', async () => {
     vi.stubEnv('WORKSHOP_IN_BUILD', '0')
     await mkdir(join(root, 'models'), { recursive: true })
@@ -72,6 +86,7 @@ describe('Workshop release output', () => {
     await writeFile(join(root, 'models/leaked-detail/index.html'), 'Run')
     await expect(buildDone()).rejects.toThrow('ungated Models route')
   })
+
   it('removes only Workshop output when disabled, including repeated builds', async () => {
     vi.stubEnv('WORKSHOP_IN_BUILD', '0')
     await buildDone()

@@ -7,7 +7,11 @@ import { readdir, rm } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
 
-import { isWorkshopInBuild, isWorkshopRoute } from '../config/workshop-release'
+import {
+  assertWorkshopCloudEnvForBuild,
+  isWorkshopInBuild,
+  isWorkshopRoute
+} from '../config/workshop-release'
 
 export function modelsBuildRoutes(enabled: boolean) {
   const entry = (name: string) =>
@@ -42,6 +46,11 @@ export function modelsBuildRoutes(enabled: boolean) {
  * we release right now?", so it excludes Workshop for the same reason. Local
  * development keeps it, and so does any build asked for it explicitly. See
  * `config/workshop-release.ts` for the switch.
+ *
+ * A build that does ship with Workshop in it must also say which Cloud family
+ * it talks to, and one its origin is allowed to reach; that is checked before
+ * anything is generated, so a wrong family is a build error rather than a
+ * preflight error in a visitor's browser.
  */
 export function workshopReleaseGate(): AstroIntegration {
   return {
@@ -50,6 +59,9 @@ export function workshopReleaseGate(): AstroIntegration {
       'astro:config:setup': ({ injectRoute }) => {
         for (const route of modelsBuildRoutes(isWorkshopInBuild()))
           injectRoute(route)
+      },
+      'astro:build:start': () => {
+        assertWorkshopCloudEnvForBuild()
       },
       'astro:build:done': async ({ dir, pages, logger }) => {
         if (isWorkshopInBuild()) return
