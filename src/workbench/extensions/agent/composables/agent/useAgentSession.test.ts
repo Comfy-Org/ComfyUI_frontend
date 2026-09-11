@@ -6,6 +6,14 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 
+const telemetryState = vi.hoisted(() => ({
+  trackAgentError: vi.fn()
+}))
+
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
+  useTelemetry: () => ({ trackAgentError: telemetryState.trackAgentError })
+}))
+
 import type {
   AgentAnswerAccepted,
   AgentCancelAccepted,
@@ -18,9 +26,13 @@ import type {
 } from '../../schemas/agentApiSchema'
 import {
   zAgentAdmissionError,
+  zAgentTurnAccepted,
   zAgentWsEvent
 } from '../../schemas/agentApiSchema'
-import { AgentApiError } from '../../services/agent/agentRestClient'
+import {
+  AgentApiError,
+  AgentResponseUnreadableError
+} from '../../services/agent/agentRestClient'
 import type {
   AgentRestClient,
   PostMessageInput
@@ -2109,5 +2121,490 @@ describe('thread resume (B17)', () => {
     const threads = await session.listThreads()
     expect(threads).toHaveLength(1)
     expect(threads[0]).toMatchObject({ id: 'th-9', title: 'build a duck' })
+  })
+})
+
+describe('app:agent_error telemetry (TEL-8)', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    telemetryState.trackAgentError.mockClear()
+    vi.mocked(reportError).mockClear()
+  })
+
+  it('reports unexpected agent failures to the unified error sinks', async () => {
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({
+        getMessages: vi.fn(async () => {
+          throw new Error('history boom')
+        }),
+        cancelMessage: vi.fn(async () => {
+          throw new AgentApiError('cancel boom', 500, null)
+        })
+      }),
+      events: source
+    })
+    session.start()
+    await session.loadThread('th-9')
+    await session.sendMessage('go')
+    await session.stopTurn()
+    emit({ type: 'agent_message_done', data: { thread_id: 'th-1' } })
+
+    const errorTypes = vi
+      .mocked(reportError)
+      .mock.calls.map(([, options]) => options.errorType)
+    expect(errorTypes).toEqual([
+      'agent_history_load_failed',
+      'agent_cancel_turn_failed',
+      'agent_malformed_stream_event'
+    ])
+  })
+
+  it('dedupes a background turn malformed frame under that turn, not the active one', async () => {
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+      .mockResolvedValueOnce({ thread_id: 'th-2', message_id: 'msg-2' })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: source
+    })
+    session.start()
+    await session.sendMessage('first')
+    await session.loadThread('th-2')
+    await session.sendMessage('second')
+    telemetryState.trackAgentError.mockClear()
+
+    emit({ type: 'agent_message_done', data: { message_id: 'msg-1' } })
+    emit({ type: 'agent_message_delta', data: { wrong: 'shape' } })
+
+    expect(telemetryState.trackAgentError).toHaveBeenCalledTimes(2)
+  })
+
+  it('groups malformed frames under one Sentry issue, detail in context', async () => {
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest: fakeRest(), events: source })
+    session.start()
+
+    emit({ type: 'agent_message_done', data: { thread_id: 'th-1' } })
+
+    const [error, options] = vi.mocked(reportError).mock.calls[0]
+    expect((error as Error).message).toBe('Malformed agent stream event')
+    expect(options.tags?.event_type).toBe('agent_message_done')
+    expect(options.context?.issues).toEqual(expect.any(Array))
+  })
+
+  it('reports a rejected send to the unified error sinks', async () => {
+    const rest = fakeRest({
+      postMessage: vi.fn(async () => {
+        throw new AgentApiError('boom', 500, null)
+      })
+    })
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    session.start()
+
+    await session.sendMessage('make me a cat')
+
+    expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
+      errorType: 'agent_send_message_failed'
+    })
+  })
+
+  it('keeps the expected 404 history and 409 cancel races out of the sinks', async () => {
+    const session = useAgentSession({
+      rest: fakeRest({
+        getMessages: vi.fn(async () => {
+          throw new AgentApiError('gone', 404, null)
+        }),
+        cancelMessage: vi.fn(async () => {
+          throw new AgentApiError('already done', 409, null)
+        })
+      }),
+      events: fakeEvents().source
+    })
+    session.start()
+    await session.loadThread('th-gone')
+    await session.sendMessage('go')
+    await session.stopTurn()
+
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('tracks a pre-acceptance request failure from a rejected postMessage', async () => {
+    const rest = fakeRest({
+      postMessage: vi.fn(async () => {
+        throw new AgentApiError('boom', 500, null)
+      })
+    })
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    session.start()
+
+    const ok = await session.sendMessage('make me a cat')
+
+    expect(ok).toBe(false)
+    expect(telemetryState.trackAgentError).toHaveBeenCalledWith({
+      error_class: 'request_failed',
+      failure_stage: 'pre_acceptance',
+      retryable: true,
+      turn_accepted: false,
+      ui_treatment: 'inline_notice'
+    })
+  })
+
+  it('marks a deterministic send rejection unretryable', async () => {
+    const rest = fakeRest({
+      postMessage: vi.fn(async () => {
+        throw new AgentApiError('unprocessable', 422, null)
+      })
+    })
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    session.start()
+
+    await session.sendMessage('make me a cat')
+
+    expect(telemetryState.trackAgentError).toHaveBeenCalledWith({
+      error_class: 'request_failed',
+      failure_stage: 'pre_acceptance',
+      retryable: false,
+      turn_accepted: false,
+      ui_treatment: 'inline_notice'
+    })
+  })
+
+  it('classifies a failure after the ack as post-acceptance and unretryable', async () => {
+    const rest = fakeRest()
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    session.start()
+    const setItem = vi
+      .spyOn(globalThis.localStorage, 'setItem')
+      .mockImplementation(() => {
+        throw new DOMException('quota', 'QuotaExceededError')
+      })
+
+    try {
+      const ok = await session.sendMessage('make me a cat')
+      expect(ok).toBe(false)
+    } finally {
+      setItem.mockRestore()
+    }
+
+    expect(rest.postMessage).toHaveBeenCalledTimes(1)
+    expect(telemetryState.trackAgentError).toHaveBeenCalledWith({
+      error_class: 'request_failed',
+      failure_stage: 'post_acceptance',
+      retryable: false,
+      turn_accepted: true,
+      ui_treatment: 'inline_notice'
+    })
+  })
+
+  it('treats an unreadable ack body as an accepted turn', async () => {
+    const rest = fakeRest({
+      postMessage: vi.fn(async () => {
+        // What a 2xx with an unexpected body raises past `response.ok`.
+        return zAgentTurnAccepted.parse({ thread_id: 'th-1' })
+      })
+    })
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    session.start()
+
+    await session.sendMessage('make me a cat')
+
+    expect(telemetryState.trackAgentError).toHaveBeenCalledWith({
+      error_class: 'request_failed',
+      failure_stage: 'post_acceptance',
+      retryable: false,
+      turn_accepted: true,
+      ui_treatment: 'inline_notice'
+    })
+  })
+
+  it('treats an ack body the client could not read as an accepted turn', async () => {
+    const rest = fakeRest({
+      postMessage: vi.fn(async () => {
+        throw new AgentResponseUnreadableError(
+          '/agent/threads/new/messages',
+          new SyntaxError('Unexpected end of JSON input')
+        )
+      })
+    })
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    session.start()
+
+    await session.sendMessage('make me a cat')
+
+    expect(telemetryState.trackAgentError).toHaveBeenCalledWith({
+      error_class: 'request_failed',
+      failure_stage: 'post_acceptance',
+      retryable: false,
+      turn_accepted: true,
+      ui_treatment: 'inline_notice'
+    })
+  })
+
+  it('reports a stashed live turn when the resume history load fails', async () => {
+    const getMessages = vi
+      .fn<AgentRestClient['getMessages']>()
+      .mockRejectedValue(new Error('history boom'))
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: fakeEvents().source
+    })
+    session.start()
+    await session.sendMessage('go')
+    expect(useAgentConversationStore().activeTurnId).not.toBeNull()
+
+    await session.loadThread('th-other')
+
+    expect(telemetryState.trackAgentError).toHaveBeenCalledWith({
+      error_class: 'history_load_failed',
+      failure_stage: 'pre_acceptance',
+      retryable: true,
+      turn_accepted: true,
+      ui_treatment: 'error_overlay'
+    })
+  })
+
+  it('does not count a busy-state double-submit as an agent error', async () => {
+    let resolvePost: (value: AgentTurnAccepted) => void = () => undefined
+    const rest = fakeRest({
+      postMessage: vi.fn(
+        () =>
+          new Promise<AgentTurnAccepted>((resolve) => {
+            resolvePost = resolve
+          })
+      )
+    })
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    session.start()
+
+    const first = session.sendMessage('first')
+    const ok = await session.sendMessage('second')
+
+    expect(ok).toBe(false)
+    expect(telemetryState.trackAgentError).not.toHaveBeenCalled()
+    resolvePost({ thread_id: 'th-1', message_id: 'msg-1' })
+    await first
+  })
+
+  it('tracks a post-acceptance cancel failure', async () => {
+    const rest = fakeRest({
+      cancelMessage: vi.fn(async () => {
+        throw new AgentApiError('cancel boom', 500, null)
+      })
+    })
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    session.start()
+    await session.sendMessage('go')
+
+    await session.stopTurn()
+
+    expect(telemetryState.trackAgentError).toHaveBeenCalledWith({
+      error_class: 'cancel_failed',
+      failure_stage: 'post_acceptance',
+      retryable: true,
+      turn_accepted: true,
+      ui_treatment: 'error_overlay'
+    })
+  })
+
+  it('does not track a 409 cancel race as an error', async () => {
+    const rest = fakeRest({
+      cancelMessage: vi.fn(async () => {
+        throw new AgentApiError('already done', 409, null)
+      })
+    })
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    session.start()
+    await session.sendMessage('go')
+
+    await session.stopTurn()
+
+    expect(telemetryState.trackAgentError).not.toHaveBeenCalled()
+  })
+
+  it('tracks a post-acceptance malformed stream event for the active turn', async () => {
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest: fakeRest(), events: source })
+    session.start()
+    await session.sendMessage('go')
+
+    emit({ type: 'agent_message_done', data: { thread_id: 'th-1' } })
+
+    expect(telemetryState.trackAgentError).toHaveBeenCalledWith({
+      error_class: 'malformed_stream_event',
+      failure_stage: 'post_acceptance',
+      retryable: false,
+      turn_accepted: true,
+      ui_treatment: 'error_overlay'
+    })
+  })
+
+  it('does not claim an accepted turn for a malformed frame on an idle session', async () => {
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest: fakeRest(), events: source })
+    session.start()
+
+    emit({ type: 'agent_message_done', data: { thread_id: 'th-1' } })
+
+    expect(telemetryState.trackAgentError).toHaveBeenCalledWith({
+      error_class: 'malformed_stream_event',
+      failure_stage: 'pre_acceptance',
+      retryable: false,
+      turn_accepted: false,
+      ui_treatment: 'error_overlay'
+    })
+  })
+
+  it('bounds a repeating malformed stream to one report per turn', async () => {
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest: fakeRest(), events: source })
+    session.start()
+    await session.sendMessage('go')
+
+    for (let i = 0; i < 20; i++)
+      emit({ type: 'agent_message_done', data: { thread_id: 'th-1' } })
+
+    // The aborted turn, then the idle session the other nineteen arrived into.
+    expect(telemetryState.trackAgentError).toHaveBeenCalledTimes(2)
+  })
+
+  it('tracks malformed frames of event types that never reach the user', async () => {
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest: fakeRest(), events: source })
+    session.start()
+    await session.sendMessage('go')
+
+    emit({ type: 'agent_message_delta', data: { thread_id: 'th-1' } })
+
+    expect(telemetryState.trackAgentError).toHaveBeenCalledWith({
+      error_class: 'malformed_stream_event',
+      failure_stage: 'post_acceptance',
+      retryable: false,
+      turn_accepted: true,
+      ui_treatment: 'none'
+    })
+    expect(session.notices.value).toEqual([])
+  })
+
+  it('still reports the frame that escalates to the user after a silent one', async () => {
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest: fakeRest(), events: source })
+    session.start()
+    await session.sendMessage('go')
+
+    emit({ type: 'agent_message_delta', data: { thread_id: 'th-1' } })
+    emit({ type: 'agent_message_done', data: { thread_id: 'th-1' } })
+
+    expect(telemetryState.trackAgentError).toHaveBeenCalledTimes(2)
+    expect(telemetryState.trackAgentError).toHaveBeenLastCalledWith({
+      error_class: 'malformed_stream_event',
+      failure_stage: 'post_acceptance',
+      retryable: false,
+      turn_accepted: true,
+      ui_treatment: 'error_overlay'
+    })
+  })
+
+  it('tracks a pre-acceptance thread-history load failure', async () => {
+    const rest = fakeRest({
+      getMessages: vi.fn(async () => {
+        throw new Error('history boom')
+      })
+    })
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    session.start()
+
+    await session.loadThread('th-9')
+
+    expect(telemetryState.trackAgentError).toHaveBeenCalledWith({
+      error_class: 'history_load_failed',
+      failure_stage: 'pre_acceptance',
+      retryable: true,
+      turn_accepted: false,
+      ui_treatment: 'error_overlay'
+    })
+  })
+
+  it('tracks a failed ask answer, which leaves the running turn blocked', async () => {
+    const answerAsk = vi
+      .fn<AgentRestClient['answerAsk']>()
+      .mockRejectedValue(new AgentApiError('ask boom', 500, null))
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ answerAsk }),
+      events: source
+    })
+    session.start()
+    await session.sendMessage('build it')
+    emit(runApproval('msg-1'))
+    telemetryState.trackAgentError.mockClear()
+
+    await session.answerAsk('turn-1:call-1', 'run')
+
+    expect(telemetryState.trackAgentError).toHaveBeenCalledWith({
+      error_class: 'ask_answer_failed',
+      failure_stage: 'post_acceptance',
+      retryable: true,
+      turn_accepted: true,
+      ui_treatment: 'error_overlay'
+    })
+  })
+
+  it('does not track a 409 stale ask answer as an error', async () => {
+    const answerAsk = vi
+      .fn<AgentRestClient['answerAsk']>()
+      .mockRejectedValue(new AgentApiError('already answered', 409, undefined))
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ answerAsk }),
+      events: source
+    })
+    session.start()
+    await session.sendMessage('build it')
+    emit(runApproval('msg-1'))
+    telemetryState.trackAgentError.mockClear()
+
+    await session.answerAsk('turn-1:call-1', 'cancel')
+
+    expect(telemetryState.trackAgentError).not.toHaveBeenCalled()
+  })
+
+  it('derives history-load retryability from the status, as request_failed does', async () => {
+    const rest = fakeRest({
+      getMessages: vi.fn(async () => {
+        throw new AgentApiError('access denied', 403, null)
+      })
+    })
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    session.start()
+
+    await session.loadThread('th-9')
+
+    expect(telemetryState.trackAgentError).toHaveBeenCalledWith({
+      error_class: 'history_load_failed',
+      failure_stage: 'pre_acceptance',
+      retryable: false,
+      turn_accepted: false,
+      ui_treatment: 'error_overlay'
+    })
+  })
+
+  it('does not track a 404 thread-not-found history load as an error', async () => {
+    const rest = fakeRest({
+      getMessages: vi.fn(async () => {
+        throw new AgentApiError('gone', 404, null)
+      })
+    })
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    session.start()
+
+    await session.loadThread('th-gone')
+
+    expect(telemetryState.trackAgentError).not.toHaveBeenCalled()
+    expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBeNull()
   })
 })
