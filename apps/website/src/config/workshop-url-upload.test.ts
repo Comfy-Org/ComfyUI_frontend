@@ -91,23 +91,45 @@ describe('URL upload transport', () => {
     expect(requests).toHaveBeenCalledTimes(6)
   })
 
-  it.for([undefined, 'invalid'])(
-    'does not cache a grant with unknown expiry: %s',
-    async (expires_at) => {
-      const requests = vi.fn<typeof fetch>(async (_, init) =>
-        init?.method === 'POST'
-          ? Response.json({ ...grant, expires_at })
-          : new Response(null, { status: 200 })
+  it('reuses the backend two-field grant for its documented 24-hour lifetime', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-09-10T10:00:00Z'))
+    const requests = vi.fn<typeof fetch>(async (_, init) =>
+      init?.method === 'POST'
+        ? Response.json({
+            upload_url: grant.upload_url,
+            download_url: grant.download_url
+          })
+        : new Response(null, { status: 200 })
+    )
+    vi.stubGlobal('fetch', requests)
+    const upload = createWorkshopUrlUploader()
+    const file = new File(['image'], 'image.png')
+    const signal = new AbortController().signal
+    await upload(file, 'token', 'scope', signal)
+    vi.setSystemTime(new Date('2026-09-11T09:58:59Z'))
+    await upload(file, 'token', 'scope', signal)
+    expect(requests).toHaveBeenCalledTimes(2)
+    vi.setSystemTime(new Date('2026-09-11T09:59:00Z'))
+    await upload(file, 'token', 'scope', signal)
+    expect(requests).toHaveBeenCalledTimes(4)
+  })
+
+  it('rejects an invalid explicit expiry before uploading', async () => {
+    const requests = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(Response.json({ ...grant, expires_at: 'invalid' }))
+    vi.stubGlobal('fetch', requests)
+    await expect(
+      createWorkshopUrlUploader()(
+        new File(['private'], 'image.png'),
+        'token',
+        'scope',
+        new AbortController().signal
       )
-      vi.stubGlobal('fetch', requests)
-      const upload = createWorkshopUrlUploader()
-      const file = new File(['image'], 'image.png')
-      const signal = new AbortController().signal
-      await upload(file, 'token', 'scope', signal)
-      await upload(file, 'token', 'scope', signal)
-      expect(requests).toHaveBeenCalledTimes(4)
-    }
-  )
+    ).rejects.toThrow('Invalid upload expiry')
+    expect(requests).toHaveBeenCalledTimes(1)
+  })
 
   it('rejects an already-expired grant before sending private bytes', async () => {
     const requests = vi

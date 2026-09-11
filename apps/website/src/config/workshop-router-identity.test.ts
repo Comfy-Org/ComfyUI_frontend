@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { compileWorkshopAliases } from '../../scripts/generate-workshop-router-aliases'
 import rawAudit from '../data/workshop-router-identity-audit.json'
+import availability from '../data/workshop-router-availability.json'
 import rawSnapshots from '../data/workshop-router-openapi.snapshot.json'
 import catalog from '../content/workshop-models.json'
 import display from '../content/workshop-display.json'
@@ -92,7 +93,7 @@ describe('legacy content identity repairs', () => {
       const match = record.matches[0]
       expect(alias?.routerId).toBe(match.routerId)
       const contract = workshopContract(match.routerId)
-      if (!contract) {
+      if (!contract || Object.hasOwn(availability, match.routerId)) {
         expect(detail).toBeUndefined()
         expect(routerWorkshopModelPaths).not.toContain(old.slug)
         return
@@ -125,8 +126,10 @@ describe('legacy content identity repairs', () => {
 
   it('publishes only verified Router joins with one distinct card per content record', () => {
     const nativeIds = new Set(rawSnapshots.map((entry) => entry.id))
-    const publishedAliases = aliases.filter((alias) =>
-      workshopContract(alias.routerId)
+    const publishedAliases = aliases.filter(
+      (alias) =>
+        workshopContract(alias.routerId) &&
+        !Object.hasOwn(availability, alias.routerId)
     )
     const joinedIds = new Set(publishedAliases.map((alias) => alias.routerId))
     expect(new Set(workshopModels.map((model) => model.routerId))).toEqual(
@@ -164,6 +167,18 @@ describe('legacy content identity repairs', () => {
     expect(
       getRouterWorkshopModelDetail('bria--image-edit-erase')?.execution?.id
     ).toBe('bria/image-edit-erase')
+  })
+
+  it('keeps disabled models in the authored content without publishing their URLs', () => {
+    expect(aliasesById.get('ideogram/p-image')?.routerId).toBe(
+      'ideogram/p-image-ideogram'
+    )
+    expect(workshopContract('ideogram/p-image-ideogram')).toBeDefined()
+    expect(display.some((entry) => entry.modelId === 'ideogram/p-image')).toBe(
+      true
+    )
+    expect(getRouterWorkshopModelDetail('ideogram--p-image')).toBeUndefined()
+    expect(routerWorkshopModelPaths).not.toContain('ideogram--p-image')
   })
 
   it('withholds missing input contracts and every associated URL without deleting content', () => {

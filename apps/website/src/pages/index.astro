@@ -15,6 +15,7 @@ import CaseStudySpotlightSection from "../components/home/CaseStudySpotlightSect
 import GetStartedSection from "../components/home/GetStartedSection.vue";
 import { getCollection } from "astro:content";
 import { isWorkshopInBuild } from "../config/workshop-release";
+import { modelReleaseLinks } from "../config/model-release-links";
 import { resolveHomepageWorkshopModels } from "../config/workshop-homepage";
 import { t } from "../i18n/translations";
 import {
@@ -72,5 +73,5 @@ const workshopModels = await resolveHomepageWorkshopModels(
   <GetStartedSection />
   <ProductCardsSection />
   <CaseStudySpotlightSection client:load />
-  <ModelReleaseSection client:visible />
+  <ModelReleaseSection modelLinks={await modelReleaseLinks(isWorkshopInBuild())} client:visible />
 </BaseLayout>

@@ -15,6 +15,7 @@ export type RunFailure =
 export interface RunOutput {
   readonly kind: Modality | 'other'
   readonly url: string
+  readonly byteLength?: number
   readonly text?: string
   readonly truncated?: boolean
   readonly urls?: readonly string[]

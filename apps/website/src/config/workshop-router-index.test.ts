@@ -22,6 +22,50 @@ const missing = snapshots.filter(
 )
 
 describe('Router catalog completeness', () => {
+  it('withholds an authored contract whose pinned Router dispatch is disabled', () => {
+    const index = workshopRouterIndexSchema.parse(packedIndex)
+    const disabled = index.find(
+      (record) => record.id === 'ideogram/p-image-ideogram'
+    )
+    expect(disabled?.incompleteReason).toBeUndefined()
+    expect(disabled?.unavailableReason).toBe('router-not-enabled')
+    expect(
+      workshopModels.some((model) => model.routerId === disabled?.id)
+    ).toBe(false)
+    expect(
+      getRouterWorkshopModelDetail('ideogram--p-image-ideogram')
+    ).toBeUndefined()
+    expect(
+      routerWorkshopModelPaths.some((slug) => slug.includes('p-image-ideogram'))
+    ).toBe(false)
+  })
+
+  it('requires rechecking an availability override when its Router snapshot changes', () => {
+    const updated = rawSnapshots.map((snapshot) =>
+      snapshot.id === 'ideogram/p-image-ideogram'
+        ? { ...snapshot, sourceCommit: '0'.repeat(40) }
+        : snapshot
+    )
+    expect(() => compileWorkshopIndex(updated, packedContracts)).toThrow(
+      'Recheck Router availability'
+    )
+  })
+
+  it('preserves full descriptions instead of cutting them mid-sentence', () => {
+    const description = 'A complete Router model description. '.repeat(20)
+    const original = snapshots[0]
+    const contract = packedContracts.find((entry) => entry.id === original.id)
+    if (!contract) throw new Error('Missing authored fixture contract')
+    const updated = {
+      ...contract,
+      inputSchema: { ...contract.inputSchema, description }
+    }
+    const [record] = workshopRouterIndexSchema.parse(
+      JSON.parse(compileWorkshopIndex([original], [updated]))
+    )
+    expect(record.description).toBe(description)
+  })
+
   it('packs every known Router ID deterministically, including missing schemas', () => {
     const packed = compileWorkshopIndex(rawSnapshots, packedContracts)
     const index = workshopRouterIndexSchema.parse(JSON.parse(packed))

@@ -22,6 +22,12 @@ const storageUrls: z.ZodType<StorageUrls> = z.object({
   expires_at: z.string().optional()
 })
 
+// The pinned comfy_api_svc.go storage handler signs GET URLs for 24 hours;
+// its two-field response does not yet include expires_at. Start conservatively
+// before requesting the grant, then leave a margin for clock/network skew.
+const LEGACY_DOWNLOAD_TTL_MS = 24 * 60 * 60 * 1000
+const EXPIRY_MARGIN_MS = 60_000
+
 export function createWorkshopUrlUploader() {
   const completed = new WeakMap<
     File,
@@ -49,6 +55,7 @@ export function createWorkshopUrlUploader() {
       file_name: `${crypto.randomUUID()}-${basename}`,
       content_type: contentType
     } satisfies operations['createCustomerStorageResource']['requestBody']['content']['application/json']
+    const grantRequestedAt = Date.now()
     const response = await fetch(
       `${WORKSHOP_ROUTER_BASE_URL}/customers/storage`,
       {
@@ -65,7 +72,11 @@ export function createWorkshopUrlUploader() {
     )
     if (!response.ok) throw new Error('Upload authorization failed')
     const urls = storageUrls.parse(await response.json())
-    const expiresAt = Date.parse(urls.expires_at ?? '')
+    const expiresAt =
+      urls.expires_at === undefined
+        ? grantRequestedAt + LEGACY_DOWNLOAD_TTL_MS
+        : Date.parse(urls.expires_at)
+    if (!Number.isFinite(expiresAt)) throw new Error('Invalid upload expiry')
     if (expiresAt <= Date.now()) throw new Error('Upload grant expired')
     signal.throwIfAborted()
     const uploaded = await fetch(urls.upload_url, {
@@ -81,8 +92,7 @@ export function createWorkshopUrlUploader() {
     completed.set(file, {
       scope,
       url: urls.download_url,
-      // Missing/invalid expiry must not invent a lifetime for a signed URL.
-      expiresAt: Number.isFinite(expiresAt) ? expiresAt - 60_000 : 0
+      expiresAt: expiresAt - EXPIRY_MARGIN_MS
     })
     return urls.download_url
   }

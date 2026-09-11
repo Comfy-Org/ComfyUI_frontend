@@ -16,6 +16,7 @@ import {
 import { getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
 import { routerWorkshopModelPaths } from '../../config/workshop-browse-content'
 import { relatedModels } from '../../config/workshop-related'
+import { estimateWorkshopNodePrice } from '../../config/workshop-node-pricing'
 import { t } from '../../i18n/translations'
 
 export const getStaticPaths: GetStaticPaths = () =>
@@ -42,6 +43,7 @@ const successor = model.successorSlug
   ? getWorkshopModel(model.successorSlug)
   : undefined
 const routes = getRoutes()
+const priceEstimate = await estimateWorkshopNodePrice(model)
 
 const modalityLabel = {
   image: t('workshop.filter.image'),
@@ -50,11 +52,6 @@ const modalityLabel = {
   '3d': t('workshop.filter.3d'),
   text: t('workshop.filter.text')
 } as const
-
-const price =
-  model.creditsPerRun !== undefined
-    ? `${model.creditsPerRun} ${t('nav.credits')}`
-    : undefined
 
 const pillClass =
   'inline-flex h-7 items-center rounded-full border border-transparency-white-t20 px-3 text-xs leading-none text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow'
@@ -115,7 +112,7 @@ const tags = model.capabilities.map((capability) => ({
           <h1 class="text-3xl font-bold text-primary-comfy-canvas lg:text-4xl">
             <SplitReveal text={model.name} client:load />
           </h1>
-          {model.incompleteReason && model.summary && (
+          {model.summary && (
             <p class="text-sm leading-relaxed text-primary-warm-gray">{model.summary}</p>
           )}
         </div>
@@ -140,17 +137,15 @@ const tags = model.capabilities.map((capability) => ({
             class="flex items-baseline gap-2 text-sm text-primary-comfy-canvas/60"
             data-testid="model-price"
           >
-            {
-              price ? (
-                <>
-                  <span class="text-lg font-bold text-primary-warm-white">{price}</span>
-                  {t('workshop.model.perRun')}
-                </>
-              ) : (
-                t('workshop.card.priceOnPage')
-              )
-            }
+            {priceEstimate
+              ? t('workshop.model.estimatedPrice').replace('{price}', priceEstimate)
+              : t('workshop.model.variablePrice')}
           </p>
+          {priceEstimate && (
+            <p class="text-xs text-primary-warm-gray">
+              {t('workshop.model.nodePriceDefaults')}
+            </p>
+          )}
         </div>
       </div>
 

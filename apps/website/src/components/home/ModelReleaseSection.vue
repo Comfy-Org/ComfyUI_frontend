@@ -1,21 +1,19 @@
 <script setup lang="ts">
 import { getRoutes } from '../../config/routes'
-import { getWorkshopModel } from '../../config/models-catalogue'
 import { modelReleaseSlides } from '../../data/modelRelease'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import FeaturedCarousel02 from '../blocks/FeaturedCarousel02.vue'
 import type { FeaturedSplitSlide } from '../blocks/FeaturedCarousel02.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale = 'en', modelLinks = {} } = defineProps<{
+  locale?: Locale
+  modelLinks?: Readonly<Partial<Record<string, string>>>
+}>()
 const routes = getRoutes(locale)
 
-function workshopHref(slug: string | undefined): string | undefined {
-  return slug ? getWorkshopModel(slug)?.href : undefined
-}
-
 const slides: FeaturedSplitSlide[] = modelReleaseSlides.map((slide) => {
-  const workshopUrl = workshopHref(slide.workshopSlug)
+  const workshopUrl = modelLinks[slide.id]
   return {
     id: slide.id,
     media: {

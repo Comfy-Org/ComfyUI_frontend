@@ -4,6 +4,16 @@ import { routerWorkshopModels } from './workshop-browse-content'
 import { getRouterWorkshopModelDetail } from './workshop-router-content'
 
 describe('canonical model display names', () => {
+  it('does not publish editorial prices as exact Router charges', () => {
+    expect(routerWorkshopModels.length).toBeGreaterThan(0)
+    for (const model of routerWorkshopModels) {
+      expect(model.creditsPerRun).toBeUndefined()
+      expect(
+        getRouterWorkshopModelDetail(model.slug)?.creditsPerRun
+      ).toBeUndefined()
+    }
+  })
+
   it('does not expose Router slugs as catalogue or detail titles', () => {
     for (const model of routerWorkshopModels) {
       expect(model.name.trim()).not.toBe('')

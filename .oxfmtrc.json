@@ -21,6 +21,7 @@
     "apps/website/src/content/workshop-router-index.json",
     "apps/website/src/content/workshop-router-aliases.json",
     "apps/website/src/data/workshop-router-identity-audit.json",
-    "apps/website/src/data/workshop-router-openapi.snapshot.json"
+    "apps/website/src/data/workshop-router-openapi.snapshot.json",
+    "apps/website/src/data/workshop-node-pricing.json"
   ]
 }

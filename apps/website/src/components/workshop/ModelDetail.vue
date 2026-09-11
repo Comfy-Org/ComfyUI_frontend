@@ -35,6 +35,7 @@ import { prepareWorkshopRouterInput } from '../../config/workshop-request'
 import { createWorkshopUrlUploader } from '../../config/workshop-url-upload'
 import { WorkshopRouterError } from '../../config/workshop-router-errors'
 import { releaseRouterOutputs } from '../../config/workshop-response'
+import { retainRunHistory } from '../../config/workshop-run-history'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import { workshopIdempotencyKey } from '../../config/workshop-snippets'
 import type { Locale, TranslationKey } from '../../i18n/translations'
@@ -295,7 +296,14 @@ async function run() {
     requestId.value = result.requestId
     const [output, ...attachments] = result.outputs
     if (!output) throw new WorkshopRouterError('provider', result.requestId)
-    runs.value = [{ output, attachments }, ...runs.value]
+    const { retained, discarded } = retainRunHistory([
+      { output, attachments },
+      ...runs.value
+    ])
+    runs.value = retained
+    releaseRouterOutputs(
+      discarded.flatMap((run) => [run.output, ...run.attachments])
+    )
     runState.value = transition(runState.value, {
       type: 'complete',
       at: Date.now(),

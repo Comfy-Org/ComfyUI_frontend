@@ -95,12 +95,18 @@ describe('Workshop release output', () => {
     await expect(buildDone()).resolves.toBeUndefined()
   })
 
-  it('preserves all output when enabled', async () => {
+  it('retires legacy Workshop output even when Models is enabled', async () => {
     vi.stubEnv('WORKSHOP_IN_BUILD', '1')
-    await buildDone()
-    expect(await readFile(join(root, 'workshop/index.html'), 'utf8')).toBe(
-      'Workshop'
+    await mkdir(join(root, 'models/example'), { recursive: true })
+    await writeFile(
+      join(root, 'models/example/index.html'),
+      'Models playground'
     )
+    await buildDone()
+    expect(existsSync(join(root, 'workshop'))).toBe(false)
+    expect(
+      await readFile(join(root, 'models/example/index.html'), 'utf8')
+    ).toBe('Models playground')
     expect(await readFile(join(root, 'index.html'), 'utf8')).toBe('Home')
   })
 })

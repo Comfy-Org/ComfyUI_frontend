@@ -324,6 +324,39 @@ describe('native Router requests', () => {
     expect(fetch).not.toHaveBeenCalled()
   })
 
+  it.for([
+    { status: 400, bucket: 'content_policy_violation', reason: 'policy' },
+    { status: 403, bucket: 'not_enabled', reason: 'unavailable' },
+    { status: 403, bucket: 'forbidden', reason: 'unavailable' },
+    { status: 403, bucket: '', reason: 'unavailable' },
+    { status: 402, bucket: 'not_enabled', reason: 'unavailable' },
+    { status: 400, bucket: 'insufficient_credits', reason: 'noCredits' }
+  ])(
+    'classifies $status / $bucket by the Router error bucket',
+    async ({ status, bucket, reason }) => {
+      const requests = vi.fn<typeof fetch>().mockResolvedValue(
+        new Response(null, {
+          status,
+          headers: {
+            'X-Comfy-Error-Type': bucket,
+            'X-Comfy-Request-Id': 'rejected'
+          }
+        })
+      )
+      vi.stubGlobal('fetch', requests)
+      await expect(
+        runWorkshopRouter({
+          contract: contractFor('bfl/flux-2-pro'),
+          body: { prompt: 'Test' },
+          token: 'test-token',
+          idempotencyKey: 'one-key',
+          signal: new AbortController().signal
+        })
+      ).rejects.toMatchObject({ reason, requestId: 'rejected' })
+      expect(requests).toHaveBeenCalledTimes(1)
+    }
+  )
+
   it('reports errors without silently retrying a paid request', async () => {
     const fetch = vi.fn().mockResolvedValue(
       new Response(null, {

@@ -20,6 +20,7 @@ import {
 import { workshopRouterIndexSchema } from '../src/config/workshop-router-index'
 import { curateWorkshopInputs } from './workshop-input-presentation'
 import { creatorFormFor, creatorVariantsFor } from './workshop-creator-forms'
+import availabilityOverrides from '../src/data/workshop-router-availability.json'
 
 const jsonSchema = z.record(z.string(), z.json())
 
@@ -57,17 +58,11 @@ export function compileWorkshopContracts(
         inputSchema,
         binding?.omit
       )
-      const response =
-        snapshot.document.paths[`/v2/models/${snapshot.id}`].post.responses[
-          '200'
-        ]
-      if (
-        !Object.hasOwn(
-          snapshot.document.paths[`/v2/models/${snapshot.id}`].post.responses,
-          '200'
-        )
-      )
+      const responses =
+        snapshot.document.paths[`/v2/models/${snapshot.id}`].post.responses
+      if (!Object.hasOwn(responses, '200'))
         throw new Error(`Missing Router response: ${snapshot.id}`)
+      const response = responses['200']
       const outputSchema = response.content?.['application/json']?.schema
       const schema = outputSchema
         ? {
@@ -147,8 +142,22 @@ export function compileWorkshopContracts(
 
 export function compileWorkshopIndex(
   rawSnapshots: unknown,
-  rawContracts: unknown
+  rawContracts: unknown,
+  rawAvailability: unknown = availabilityOverrides
 ): string {
+  const availability = new Map(
+    Object.entries(
+      z
+        .record(
+          z.string(),
+          z.object({
+            sourceCommit: z.string().regex(/^[a-f0-9]{40}$/),
+            reason: z.literal('router-not-enabled')
+          })
+        )
+        .parse(rawAvailability)
+    )
+  )
   const snapshots = z
     .array(z.unknown())
     .parse(rawSnapshots)
@@ -165,6 +174,11 @@ export function compileWorkshopIndex(
   const records = workshopRouterIndexSchema
     .parse(
       snapshots.map((snapshot) => {
+        const override = availability.get(snapshot.id)
+        if (override && override.sourceCommit !== snapshot.sourceCommit)
+          throw new Error(
+            `Recheck Router availability against the new snapshot: ${snapshot.id}`
+          )
         const contract = byId.get(snapshot.id)
         if (
           Boolean(contract) !==
@@ -184,9 +198,8 @@ export function compileWorkshopIndex(
         return {
           id: snapshot.id,
           catalogId: contract?.catalogId ?? snapshot.id,
-          ...(typeof description === 'string'
-            ? { description: description.slice(0, 240) }
-            : {}),
+          ...(typeof description === 'string' ? { description } : {}),
+          ...(override ? { unavailableReason: override.reason } : {}),
           ...(!contract ? { incompleteReason: 'missing-input-schema' } : {})
         }
       })
@@ -231,7 +244,7 @@ async function main() {
   if ((await readFile(indexPath, 'utf8').catch(() => '')) !== index)
     await writeFile(indexPath, index)
   process.stdout.write(
-    `Packed ${packed.trimEnd().split('\n').length - 2} executable Router contracts and ${index.trimEnd().split('\n').length - 2} catalog entries\n`
+    `Packed ${packed.trimEnd().split('\n').length - 2} authored Router contracts and ${index.trimEnd().split('\n').length - 2} catalog entries\n`
   )
 }
 

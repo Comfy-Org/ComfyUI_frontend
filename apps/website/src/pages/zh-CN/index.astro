@@ -14,6 +14,7 @@ import CaseStudySpotlightSection from '../../components/home/CaseStudySpotlightS
 import GetStartedSection from '../../components/home/GetStartedSection.vue'
 import { t } from '../../i18n/translations'
 import { isWorkshopInBuild } from '../../config/workshop-release'
+import { modelReleaseLinks } from '../../config/model-release-links'
 import {
   comfyUiApplicationNode,
   comfyUiSoftwareId,
@@ -39,7 +40,7 @@ const { siteUrl } = pageContext(
   <SocialProofBarSection />
   <DeveloperPlatformSection locale="zh-CN" client:visible />
   <MinimaxLicenseHeroSection locale="zh-CN" client:visible />
-  <ModelReleaseSection locale="zh-CN" client:visible />
+  <ModelReleaseSection locale="zh-CN" modelLinks={await modelReleaseLinks(isWorkshopInBuild())} client:visible />
   {isWorkshopInBuild() && <ModelDiscoverySection locale="zh-CN" client:visible />}
   <FeaturedWorkflowsSection locale="zh-CN" client:load />
   <ProductShowcaseSection locale="zh-CN" client:load />

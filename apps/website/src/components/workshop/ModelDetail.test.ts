@@ -272,8 +272,7 @@ describe('ModelDetail', () => {
       init?.method === 'POST'
         ? Response.json({
             upload_url: 'https://storage.example/upload',
-            download_url: 'https://storage.example/image.png',
-            expires_at: new Date(Date.now() + 3_600_000).toISOString()
+            download_url: 'https://storage.example/image.png'
           })
         : new Response(null, { status: 200 })
     )
@@ -810,6 +809,56 @@ describe('ModelDetail', () => {
     await visitor.click(screen.getByTestId('earlier-run-0'))
     await visitor.click(screen.getByRole('button', { name: 'response.json' }))
     expect(screen.getByText('{"id":"one"}')).toBeTruthy()
+  })
+
+  it('evicts old blob outputs and attachments when the retained byte budget is reached', async () => {
+    auth.session.value = credential
+    const revoke = vi.spyOn(URL, 'revokeObjectURL')
+    vi.mocked(runWorkshopRouter)
+      .mockResolvedValueOnce({
+        requestId: 'first',
+        outputs: [
+          {
+            kind: 'image',
+            url: 'blob:first',
+            urls: ['blob:first-extra'],
+            fileName: 'first.png',
+            byteLength: 30 * 1024 * 1024
+          },
+          {
+            kind: 'text',
+            url: 'blob:first-metadata',
+            fileName: 'first.json',
+            byteLength: 40 * 1024 * 1024
+          }
+        ]
+      })
+      .mockResolvedValueOnce({
+        requestId: 'second',
+        outputs: [
+          {
+            kind: 'image',
+            url: 'blob:second',
+            fileName: 'second.png',
+            byteLength: 1024
+          }
+        ]
+      })
+    const { unmount } = mountDetail({ model: runnable })
+    const visitor = user()
+    await visitor.type(
+      screen.getByRole('textbox', { name: /Prompt/ }),
+      'A mountain'
+    )
+    await visitor.click(screen.getByRole('button', { name: 'Run' }))
+    expect(revoke).not.toHaveBeenCalled()
+    await visitor.click(screen.getByRole('button', { name: 'Run' }))
+    expect(screen.queryByTestId('earlier-runs')).toBeNull()
+    for (const url of ['blob:first', 'blob:first-extra', 'blob:first-metadata'])
+      expect(revoke).toHaveBeenCalledWith(url)
+    expect(revoke).not.toHaveBeenCalledWith('blob:second')
+    unmount()
+    expect(revoke).toHaveBeenCalledWith('blob:second')
   })
 
   it('does not simulate a paid run after real authentication', async () => {

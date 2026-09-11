@@ -10,13 +10,13 @@ const RUN_TIMEOUT_MS = 660_000
 
 function failureFor(response: Response): RunFailure {
   const bucket = response.headers.get('X-Comfy-Error-Type')
-  if (response.status === 402 || bucket === 'insufficient_credits')
-    return 'noCredits'
+  if (bucket === 'insufficient_credits') return 'noCredits'
+  if (bucket === 'content_policy_violation') return 'policy'
+  if (bucket === 'not_enabled' || bucket === 'forbidden') return 'unavailable'
+  if (response.status === 402) return 'noCredits'
   if (response.status === 429) return 'rateLimit'
-  if (bucket === 'content_policy_violation' || response.status === 403)
-    return 'policy'
   if (response.status === 400 || response.status === 422) return 'validation'
-  if (response.status === 401 || response.status === 404) return 'unavailable'
+  if ([401, 403, 404].includes(response.status)) return 'unavailable'
   if (response.status === 504) return 'timeout'
   return 'provider'
 }

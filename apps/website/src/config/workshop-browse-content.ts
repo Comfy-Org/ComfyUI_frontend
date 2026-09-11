@@ -81,7 +81,7 @@ const contentSources = display.flatMap((overlay) => {
   const record = routerIndex.find((record) => record.id === alias.routerId)
   if (!entry || !record)
     throw new Error(`Invalid Router content join: ${overlay.id}`)
-  if (record.incompleteReason) return []
+  if (record.incompleteReason || record.unavailableReason) return []
   const input = workshopContentInputs.get(overlay.id)
   if (input && input.routerId !== record.id)
     throw new Error(`Wrong Router model for content inputs: ${overlay.id}`)
@@ -135,9 +135,6 @@ const browseModels: readonly WorkshopModel[] = contentSources.map(
       task: taskForUseCases(useCases),
       useCases,
       capabilities: entry.tags,
-      ...(overlay.pricing && entry.id === record.id
-        ? { creditsPerRun: overlay.pricing.creditsPerRun }
-        : {}),
       ...(thumbnail
         ? {
             thumbnailUrl: thumbnail.url,

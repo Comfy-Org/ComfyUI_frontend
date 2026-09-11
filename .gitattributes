@@ -14,3 +14,4 @@ apps/website/src/content/workshop-router-index.json linguist-generated=true
 apps/website/src/content/workshop-router-aliases.json linguist-generated=true
 apps/website/src/data/workshop-router-identity-audit.json linguist-generated=true
 apps/website/src/data/workshop-router-openapi.snapshot.json linguist-generated=true
+apps/website/src/data/workshop-node-pricing.json linguist-generated=true

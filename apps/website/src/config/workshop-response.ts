@@ -12,6 +12,10 @@ import {
 
 const MAX_RESPONSE_BYTES = 128 * 1024 * 1024
 
+function blobSource(blob: Blob) {
+  return { url: URL.createObjectURL(blob), byteLength: blob.size }
+}
+
 function fileName(id: string, mime: string, index: number): string {
   return `${id.replaceAll('/', '-')}-${index + 1}.${outputExtension(mime)}`
 }
@@ -26,7 +30,7 @@ function responseDocument(
     kind: 'text',
     text: text.slice(0, 65_536),
     truncated: text.length > 65_536,
-    url: URL.createObjectURL(new Blob([text], { type: safeMime })),
+    ...blobSource(new Blob([text], { type: safeMime })),
     fileName: `${id.replaceAll('/', '-')}-response.${outputExtension(safeMime)}`
   }
 }
@@ -37,6 +41,7 @@ function automaticOutputs(
 ): RunOutput[] {
   const outputs: RunOutput[] = []
   const seen = new Set<string>()
+  const extracted = new Map<string, string>()
   function visit(value: unknown, depth: number, mimeHint?: string) {
     if (depth > 64 || outputs.length >= 256) return
     if (typeof value === 'string' && !seen.has(value)) {
@@ -53,13 +58,15 @@ function automaticOutputs(
       } else {
         const inline = inlineOutput(value, mimeHint)
         if (!inline) return
+        const name = fileName(contract.id, inline.mime, outputs.length)
         outputs.push({
           kind: outputKind(inline.mime),
-          url: URL.createObjectURL(
+          ...blobSource(
             new Blob([new Uint8Array(inline.bytes)], { type: inline.mime })
           ),
-          fileName: fileName(contract.id, inline.mime, outputs.length)
+          fileName: name
         })
+        extracted.set(value, name)
         seen.add(value)
       }
     } else if (value !== null && typeof value === 'object') {
@@ -77,7 +84,23 @@ function automaticOutputs(
   }
   try {
     visit(data, 0)
-    outputs.push(responseDocument(contract.id, JSON.stringify(data, null, 2)))
+    const text = JSON.stringify(
+      data,
+      (_key, value: unknown) =>
+        typeof value === 'string' && extracted.has(value)
+          ? `[media saved as ${extracted.get(value)}]`
+          : value,
+      2
+    )
+    const document = responseDocument(contract.id, text)
+    outputs.push(
+      extracted.size
+        ? {
+            ...document,
+            fileName: `${contract.id.replaceAll('/', '-')}-metadata.json`
+          }
+        : document
+    )
     return outputs
   } catch (error) {
     releaseRouterOutputs(outputs)
@@ -118,7 +141,7 @@ async function responseBytes(response: Response): Promise<Uint8Array> {
 
 export function releaseRouterOutputs(outputs: readonly RunOutput[]): void {
   for (const output of outputs)
-    for (const url of output.urls ?? [output.url])
+    for (const url of new Set([output.url, ...(output.urls ?? [])]))
       if (url.startsWith('blob:')) URL.revokeObjectURL(url)
 }
 
@@ -160,7 +183,7 @@ export async function parseRouterResponse(
     return [
       {
         kind,
-        url: URL.createObjectURL(
+        ...blobSource(
           new Blob([new Uint8Array(bytes)], {
             type: kind === 'other' ? 'application/octet-stream' : contentType
           })
@@ -179,7 +202,7 @@ export async function parseRouterResponse(
       )
     )
       throw new Error('Unexpected Router output type')
-    const url = URL.createObjectURL(
+    const source = blobSource(
       new Blob([new Uint8Array(bytes)], {
         type: isPassiveOutputMime(contentType)
           ? contentType
@@ -189,7 +212,7 @@ export async function parseRouterResponse(
     return [
       {
         kind: isPassiveOutputMime(contentType) ? output.kind : 'other',
-        url,
+        ...source,
         fileName: fileName(contract.id, contentType, 0)
       }
     ]
@@ -242,7 +265,7 @@ export async function parseRouterResponse(
           continue
         }
         if (typeof value !== 'string') throw new Error('Invalid media output')
-        let url: string
+        let source: Pick<RunOutput, 'url' | 'byteLength'>
         if (selector.encoding === 'url') {
           const parsed = new URL(value)
           if (
@@ -251,7 +274,7 @@ export async function parseRouterResponse(
             parsed.password
           )
             throw new Error('Unsafe media URL')
-          url = parsed.href
+          source = { url: parsed.href }
         } else {
           if (!selector.mimeType || !isPassiveOutputMime(selector.mimeType))
             throw new Error('Missing inline media type')
@@ -259,11 +282,11 @@ export async function parseRouterResponse(
             character.charCodeAt(0)
           )
           if (!decoded.length) throw new Error('Empty inline media')
-          url = URL.createObjectURL(new Blob([decoded], { type: mime }))
+          source = blobSource(new Blob([decoded], { type: mime }))
         }
         outputs.push({
           kind: mime === 'image/svg+xml' ? 'other' : selector.kind,
-          url,
+          ...source,
           fileName: name,
           nsfw
         })

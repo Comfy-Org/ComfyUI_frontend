@@ -161,6 +161,25 @@ describe('schema-driven Router coverage', () => {
     expect(() => compileWorkshopContracts([snapshot, snapshot])).toThrow(
       'Duplicate'
     )
+    expect(() =>
+      compileWorkshopContracts([
+        {
+          ...snapshot,
+          document: {
+            ...snapshot.document,
+            paths: {
+              '/v2/models/fixture/native-model': {
+                post: {
+                  ...snapshot.document.paths['/v2/models/fixture/native-model']
+                    .post,
+                  responses: { '403': {} }
+                }
+              }
+            }
+          }
+        }
+      ])
+    ).toThrow('Missing Router response: fixture/native-model')
     expect(
       JSON.parse(
         compileWorkshopContracts([

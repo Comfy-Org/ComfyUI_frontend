@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import generatedModels from './workshop-models.generated.json'
 import catalog from '../content/workshop-models.json'
 import display from '../content/workshop-display.json'
+import availability from '../data/workshop-router-availability.json'
 import { routerAliasById } from './workshop-browse-content'
 import { workshopContract } from './workshop-contract-catalog'
 import { workshopContentInputs } from './workshop-content-inputs'
@@ -276,12 +277,13 @@ describe('countByUseCase', () => {
 })
 
 describe('workshopModels', () => {
-  it('publishes the content/input-schema intersection with unique use-case links', () => {
+  it('publishes the available content/input-schema intersection with unique use-case links', () => {
     const ids = new Set(
       display.flatMap((entry) => {
         const alias = routerAliasById.get(entry.modelId)
         return alias &&
           workshopContract(alias.routerId) &&
+          !Object.hasOwn(availability, alias.routerId) &&
           !workshopContentInputs.get(entry.id)?.unavailableReason
           ? [alias.routerId]
           : []

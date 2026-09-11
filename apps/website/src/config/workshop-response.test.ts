@@ -126,9 +126,15 @@ describe('native Router output handling', () => {
       expect(new Uint8Array(await image.arrayBuffer())).toEqual(
         Uint8Array.from(atob(png), (char) => char.charCodeAt(0))
       )
-      expect(JSON.parse(outputs.at(-1)?.text ?? '')).toEqual(response)
+      const metadata = {
+        ...response,
+        data: [{ b64_json: `[media saved as ${outputs[0].fileName}]` }]
+      }
+      expect(outputs.at(-1)?.fileName).toBe('fixture-native-metadata.json')
+      expect(outputs.at(-1)?.text).not.toContain(png)
+      expect(JSON.parse(outputs.at(-1)?.text ?? '')).toEqual(metadata)
       expect(await (await fetch(outputs.at(-1)?.url ?? '')).json()).toEqual(
-        response
+        metadata
       )
     } finally {
       releaseRouterOutputs(outputs)

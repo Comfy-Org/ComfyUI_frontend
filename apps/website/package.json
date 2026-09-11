@@ -23,6 +23,7 @@
     "generate:workshop-router-contracts": "tsx ./scripts/generate-workshop-router-contracts.ts",
     "generate:workshop-router-aliases": "tsx ./scripts/generate-workshop-router-aliases.ts",
     "generate:workshop-router-snapshot": "tsx ./scripts/generate-workshop-router-snapshot.ts",
+    "generate:workshop-node-pricing": "tsx ./scripts/generate-workshop-node-pricing.ts",
     "validate:jsonld": "tsx ./scripts/validate-jsonld.ts",
     "check:hreflang": "tsx ./scripts/check-hreflang.ts",
     "validate:llms-txt-links": "tsx ./scripts/validate-llms-txt-links.ts",
