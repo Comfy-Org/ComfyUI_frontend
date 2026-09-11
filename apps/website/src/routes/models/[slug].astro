@@ -10,6 +10,7 @@ import WorkshopModelCard from '../../components/workshop/WorkshopModelCard.vue'
 import { getRoutes } from '../../config/routes'
 import { catalogSearch } from '../../config/models-catalogue'
 import { routerWorkshopModelPaths } from '../../config/workshop-browse-content'
+import TagOverflow from '../../components/workshop/TagOverflow.vue'
 import { t } from '../../i18n/translations'
 import { prepareModelPage } from './model-page'
 
@@ -56,7 +57,7 @@ const restTagCount = restTags.length
       </ol>
     </nav>
     <header class="mb-12 sm:mx-8 lg:mx-10" data-testid="model-hero">
-      <div class="flex flex-col gap-6 pr-8 lg:flex-row lg:items-end lg:justify-between lg:pr-10">
+      <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
         <div class="flex max-w-2xl flex-col gap-4">
           <div class="flex flex-wrap items-center gap-3">
             <p
@@ -116,13 +117,13 @@ const restTagCount = restTags.length
               ))}
               {restTagCount > 0 && (
                 <li>
-                  <span
-                    class="inline-flex h-7 shrink-0 items-center rounded-full bg-transparency-white-t8 px-3 text-xs leading-none whitespace-nowrap text-primary-comfy-canvas/70"
-                    title={restTags.map((tag) => tag.label).join(', ')}
-                    data-testid="model-tags-rest"
-                  >
-                    +{restTagCount}
-                  </span>
+                  <TagOverflow
+                    client:visible
+                    tags={restTags.map((tag) => ({
+                      label: tag.label,
+                      href: `${routes.workshop}${tag.search}`
+                    }))}
+                  />
                 </li>
               )}
             </ul>
