@@ -288,27 +288,20 @@ Seedance 2.5, Seedream 5.0 Pro, FLUX 3 Video, Veo 3.1 and Qwen Image 3.0.
 All 114 visible models now have a nonempty display name distinct from their raw
 Router slug; card/detail names agree. Rob's explicit overrides still win.
 
-### Shared-thumbnail ribbons
+### Shared-thumbnail variant labels
 
 `src/data/workshop-thumbnail-labels.json` holds short editorial labels keyed by
 canonical Router ID, separate from Rob's generated content. The shared card
-renders a diagonal upper-right ribbon only when two distinct models use the same
+renders the label as a rounded pill only when two distinct models use the same
 thumbnail URL and media kind. Labels are resolved against the full catalogue,
 so filtering does not remove them; unique artwork and missing images stay plain.
 The current data covers 56 models sharing 21 assets, including video thumbnails.
 Labels are at most 12 characters and distinct within each shared-art group.
-Ribbon text steps down from 16px (up to six characters), to 12px (seven to nine),
-to 9px (ten to twelve), expressed in rem so browser text scaling still applies.
-The ribbon uses a heavy sans-serif face (800 weight), rather than inheriting
-PP Formula. The stripe is 40px thick, up from the initial 24px; its centre stays
-in the same corner position. Its dimensions stay fixed across label lengths,
-and labels are never truncated.
+The pill is warm-white text on the dropdown surface with a hairline border,
+in the site's own type. It sits top-right on hub cards and bottom-left on
+grid cards, near the model name, and slides away while the card is hovered
+or focused so it never blocks the artwork being compared.
 Full names, links, image/video sources and Router requests remain unchanged.
-Verified with 27 focused card/catalogue/Hub/homepage tests, website Vue typecheck,
-scoped type-aware lint and the enabled build. Browser checks cover six model
-groups at 1440px plus 390px/320px layouts: labels remain on filtered cards,
-text stays inside each thumbnail, video frames decode and no paid requests run.
-Probe and screenshots: `temp/scripts/thumbnail-ribbon.JNFijc/` at repository root.
 
 Catalogue search follow-up, observed during this check: `krea turbo` returns no
 results while `Krea 2 Medium Turbo` matches. `filterWorkshopModels` still uses a
