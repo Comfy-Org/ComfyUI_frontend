@@ -100,6 +100,36 @@ function start(): void {
   })
 }
 
+/**
+ * Stripe grants a top-up through its webhook seconds after the buyer pays,
+ * so the one refocus read usually races the grant and loses. While a
+ * checkout is in flight, keep re-reading until the balance moves or
+ * patience runs out.
+ */
+const TOP_UP_POLL_MS = 5_000
+const TOP_UP_POLL_LIMIT = 24
+
+let topUpPoll: ReturnType<typeof setInterval> | undefined
+
+export function watchForTopUp(): void {
+  if (typeof window === 'undefined') return
+  if (topUpPoll) clearInterval(topUpPoll)
+  const before = balance.value
+  let ticks = 0
+  topUpPoll = setInterval(() => {
+    ticks += 1
+    const landed =
+      balance.value.status === 'ok' &&
+      (before.status !== 'ok' || balance.value.credits > before.credits)
+    if (landed || ticks > TOP_UP_POLL_LIMIT) {
+      clearInterval(topUpPoll)
+      topUpPoll = undefined
+      return
+    }
+    void refreshWorkshopCredits({ force: true })
+  }, TOP_UP_POLL_MS)
+}
+
 export function useWorkshopCredits() {
   start()
   const { session } = useWorkshopSession()

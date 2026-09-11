@@ -12,6 +12,12 @@ const hoistedSession = vi.hoisted(() => ({
   session: undefined as { value: unknown } | undefined
 }))
 
+const credits = vi.hoisted(() => ({ watchForTopUp: vi.fn() }))
+
+vi.mock<unknown>(import('../../config/workshop-credits'), () => ({
+  watchForTopUp: credits.watchForTopUp
+}))
+
 vi.mock<unknown>(import('../../config/workshop-session-state'), async () => {
   const { ref } = await import('vue')
   const session = ref<unknown>(undefined)
@@ -103,6 +109,35 @@ describe('BuyCreditsDialog', () => {
     })
     expect(JSON.parse(String(init.body))).toEqual({
       amount_cents: 5000,
+      return_url: `${window.location.origin}/models/checkout-complete`
+    })
+    expect(credits.watchForTopUp).toHaveBeenCalled()
+  })
+
+  it('returns through Cloud while this origin is outside the allowlist', async () => {
+    const user = userEvent.setup()
+    const tab = claimTab()
+    const fetchCheckout = vi
+      .fn()
+      .mockResolvedValueOnce(new Response('', { status: 400 }))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ checkout_url: 'https://checkout.stripe.com/c/s_2' }),
+          { status: 200 }
+        )
+      )
+    vi.stubGlobal('fetch', fetchCheckout)
+    renderOpenDialog()
+
+    await user.click(await screen.findByTestId('buy-credits-continue'))
+
+    await vi.waitFor(() =>
+      expect(tab.location.assign).toHaveBeenCalledWith(
+        'https://checkout.stripe.com/c/s_2'
+      )
+    )
+    const retry = fetchCheckout.mock.calls[1] as [URL, RequestInit]
+    expect(JSON.parse(String(retry[1].body))).toMatchObject({
       return_url: `${WORKSHOP_CLOUD_BASE_URL}/?settings=plan-credits`
     })
   })

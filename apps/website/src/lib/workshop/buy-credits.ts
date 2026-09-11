@@ -45,9 +45,10 @@ export class TopUpCheckoutError extends Error {
 
 const zTopUpCheckout = z.object({ checkout_url: z.string().url() })
 
-export async function createTopUpCheckout(
+async function requestCheckout(
   token: string,
-  amountCents: number
+  amountCents: number,
+  returnUrl: string
 ): Promise<string> {
   const response = await fetch(
     new URL('/api/billing/topup/checkout', WORKSHOP_CLOUD_BASE_URL),
@@ -59,7 +60,7 @@ export async function createTopUpCheckout(
       },
       body: JSON.stringify({
         amount_cents: amountCents,
-        return_url: WORKSHOP_CREDITS_URL
+        return_url: returnUrl
       })
     }
   )
@@ -68,4 +69,29 @@ export async function createTopUpCheckout(
   const parsed = zTopUpCheckout.safeParse(body)
   if (!parsed.success) throw new TopUpCheckoutError(response.status)
   return parsed.data.checkout_url
+}
+
+/**
+ * The buyer should land on this site's own close-yourself page, which hands
+ * focus back to the tab they came from. Ingest allowlists return hosts and
+ * admits only Cloud's today; a 400 means this origin is not on the list yet,
+ * and the buyer returns through Cloud's credits page instead.
+ */
+export async function createTopUpCheckout(
+  token: string,
+  amountCents: number
+): Promise<string> {
+  if (typeof window === 'undefined')
+    return requestCheckout(token, amountCents, WORKSHOP_CREDITS_URL)
+  const ownReturn = new URL(
+    '/models/checkout-complete',
+    window.location.origin
+  ).toString()
+  try {
+    return await requestCheckout(token, amountCents, ownReturn)
+  } catch (error) {
+    if (error instanceof TopUpCheckoutError && error.status === 400)
+      return requestCheckout(token, amountCents, WORKSHOP_CREDITS_URL)
+    throw error
+  }
 }

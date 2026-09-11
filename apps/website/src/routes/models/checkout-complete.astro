@@ -1,0 +1,29 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import { t } from '../../i18n/translations'
+---
+
+<BaseLayout
+  title="Checkout complete - Comfy"
+  description="Your credit top-up checkout has finished."
+>
+  <main class="grid min-h-[60vh] place-items-center px-6">
+    <div class="max-w-md text-center">
+      <h1 class="text-2xl font-bold text-primary-warm-white">
+        {t('workshop.credits.returnTitle')}
+      </h1>
+      <p class="mt-3 text-primary-warm-gray">
+        {t('workshop.credits.returnBody')}
+      </p>
+    </div>
+  </main>
+</BaseLayout>
+
+<script>
+  // A tab opened by window.open may close itself; the page it came from is
+  // refocused by the browser and re-reads its balance. The text above only
+  // matters when a blocker forced same-tab navigation, where close() is
+  // silently refused.
+  window.opener?.focus()
+  window.close()
+</script>

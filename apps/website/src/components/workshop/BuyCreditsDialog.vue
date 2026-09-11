@@ -12,6 +12,7 @@ import {
   clampTopUp,
   usdToCredits
 } from '../../config/credits'
+import { watchForTopUp } from '../../config/workshop-credits'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -56,6 +57,7 @@ async function continueToCheckout() {
     const url = await createTopUpCheckout(forWorkspace.token, usd.value * 100)
     state.value = 'amount'
     open.value = false
+    watchForTopUp()
     if (tab) tab.location.assign(url)
     else window.location.assign(url)
   } catch (error) {
@@ -63,6 +65,7 @@ async function continueToCheckout() {
       state.value = 'amount'
       open.value = false
       const fallback = platformTopUpHref(forWorkspace.workspace.id)
+      watchForTopUp()
       if (tab) tab.location.assign(fallback)
       else window.location.assign(fallback)
       return

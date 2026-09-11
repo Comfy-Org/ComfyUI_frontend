@@ -9400,6 +9400,14 @@ Enterprise`
     'zh-CN': '返回模型'
   },
   'workshop.credits.close': { en: 'Close', 'zh-CN': '关闭' },
+  'workshop.credits.returnTitle': {
+    en: 'All done here',
+    'zh-CN': '这里已完成'
+  },
+  'workshop.credits.returnBody': {
+    en: 'You can close this tab — your balance updates on the page you came from.',
+    'zh-CN': '可以关闭此标签页——你来时的页面会自动更新余额。'
+  },
   'workshop.media.label': {
     en: 'Browse by output',
     'zh-CN': '按输出浏览'
