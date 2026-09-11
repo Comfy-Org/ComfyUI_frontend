@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { applyEdits, planJapanese, verifyWrite } from './data'
+import { applyEdits, planLocale, verifyWrite } from './data'
 
 /**
  * The check that stands between a translation run and 18 hand-written source
@@ -29,7 +29,7 @@ describe('verifyWrite', () => {
   }
 
   const good = () => {
-    const edits = planJapanese(FILE, SOURCE, JAPANESE)
+    const edits = planLocale('ja', FILE, SOURCE, JAPANESE)
     return { edits, written: applyEdits(SOURCE, edits) }
   }
 
@@ -40,7 +40,7 @@ describe('verifyWrite', () => {
   })
 
   /**
-   * A file may already hold Japanese a person wrote, unmarked. `planJapanese`
+   * A file may already hold Japanese a person wrote, unmarked. `planLocale`
    * correctly leaves it alone, so it reads back as approved — and the verifier
    * demanded `approved.ja` be ABSENT rather than unchanged, which turned a
    * preserved human translation into a reported write fault and refused the run.
@@ -53,7 +53,7 @@ describe('verifyWrite', () => {
       `      'zh-CN': 'ComfyUI 直播',
       ja: 'ComfyUI ライブ配信'`
     )
-    const edits = planJapanese(FILE, withHuman, JAPANESE)
+    const edits = planLocale('ja', FILE, withHuman, JAPANESE)
     const written = applyEdits(withHuman, edits)
 
     expect(verifyWrite(FILE, withHuman, written, edits)).toEqual([])
@@ -91,7 +91,7 @@ describe('verifyWrite', () => {
     // A value written without the marker would be treated as human-approved and
     // never refreshed again. That is the bug the marker exists to prevent, so
     // the verifier has to notice it rather than trust the writer.
-    const edits = planJapanese(FILE, SOURCE, JAPANESE)
+    const edits = planLocale('ja', FILE, SOURCE, JAPANESE)
     const unmarked = applyEdits(SOURCE, edits).replaceAll(' /* machine */', '')
 
     expect(verifyWrite(FILE, SOURCE, unmarked, edits).join(' ')).toContain(

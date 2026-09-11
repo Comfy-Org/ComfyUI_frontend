@@ -1,5 +1,5 @@
 /**
- * write-data-japanese — mirrors the machine's Japanese into `src/data/*.ts`.
+ * write-data — mirrors one locale's machine translations into `src/data/*.ts`.
  *
  * Run: `pnpm i18n:write-data [--dry-run]` (no API key needed).
  *
@@ -29,20 +29,22 @@ import path from 'node:path'
 import {
   applyEdits,
   dataAdapter,
-  planJapanese,
+  planLocale,
   verifyWrite
 } from '../../src/i18n/pipeline/adapters/data'
 import { readTranslationLayer } from '../../src/i18n/pipeline/artifacts'
 import { commitAll } from '../../src/i18n/pipeline/commit'
+import { targetLocale } from './target-locale'
 import type { TranslationLayer } from '../../src/i18n/pipeline/types'
 
+const TARGET = targetLocale()
 const DATA_DIR = path.join(process.cwd(), 'src', 'data')
 const MACHINE_FILE = path.join(
   process.cwd(),
   'src',
   'i18n',
   'content',
-  'ja.json'
+  `${TARGET}.json`
 )
 
 /**
@@ -74,14 +76,14 @@ function main(): void {
   const machine = readMachineLayer()
   const ownedKeys = new Set(dataAdapter.read().map((entry) => entry.key))
 
-  const japanese: Record<string, string> = {}
+  const translated: Record<string, string> = {}
   for (const [key, value] of Object.entries(machine)) {
-    if (ownedKeys.has(key)) japanese[key] = value
+    if (ownedKeys.has(key)) translated[key] = value
   }
 
-  if (Object.keys(japanese).length === 0) {
+  if (Object.keys(translated).length === 0) {
     process.stdout.write(
-      '[i18n] no Japanese for any data key yet — run `pnpm i18n:translate` first.\n'
+      `[i18n] no ${TARGET} for any data key yet — run \`pnpm i18n:translate\` first.\n`
     )
     return
   }
@@ -94,7 +96,7 @@ function main(): void {
   const planned: Planned[] = []
   for (const file of files) {
     const original = fs.readFileSync(path.join(DATA_DIR, file), 'utf8')
-    const edits = planJapanese(file, original, japanese)
+    const edits = planLocale(TARGET, file, original, translated)
     if (edits.length === 0) continue
 
     const written = applyEdits(original, edits)

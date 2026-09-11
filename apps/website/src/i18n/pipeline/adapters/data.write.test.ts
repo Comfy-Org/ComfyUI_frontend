@@ -1,16 +1,16 @@
 import { describe, expect, it } from 'vitest'
 
-import { applyEdits, entriesFromSource, planJapanese } from './data'
+import { applyEdits, entriesFromSource, planLocale } from './data'
 
 /**
  * The writer edits hand-written TypeScript, which is the riskiest thing in this
  * phase. It is split so the risk is structural rather than tested-for:
- * `planJapanese` decides *where* and *what*, and `applyEdits` can only rebuild
+ * `planLocale` decides *where* and *what*, and `applyEdits` can only rebuild
  * the file from slices of the original with new text between them. The only
  * bytes it can drop are the ones a plan explicitly names, and a plan only ever
  * names a string literal the pipeline itself wrote.
  */
-describe('planJapanese', () => {
+describe('planLocale', () => {
   const FILE = 'd.ts'
   const SOURCE = `export const d = {
   title: {
@@ -24,7 +24,7 @@ describe('planJapanese', () => {
 `
 
   it('plans one edit per translated key and none for the rest', () => {
-    const plan = planJapanese(FILE, SOURCE, { 'd.title': 'ライブ' })
+    const plan = planLocale('ja', FILE, SOURCE, { 'd.title': 'ライブ' })
 
     expect(plan).toHaveLength(1)
     expect(plan[0].length).toBe(0)
@@ -34,13 +34,31 @@ describe('planJapanese', () => {
     // Without the marker a machine value reads back as approved, and approved
     // values are never re-sent to the model — so the next English edit would
     // leave Japanese frozen at the old wording, silently.
-    const [edit] = planJapanese(FILE, SOURCE, { 'd.title': 'ライブ' })
+    const [edit] = planLocale('ja', FILE, SOURCE, { 'd.title': 'ライブ' })
 
     expect(edit.text).toBe(",\n    ja: 'ライブ' /* machine */")
   })
 
+  /**
+   * The writer used to hardcode `ja`. Every locale the pipeline fills reaches
+   * the same data files, so the property it inserts has to be the one it was
+   * asked for — and `zh-CN` is not a valid identifier, so it has to be quoted
+   * or the file it writes will not parse.
+   */
+  it('writes the locale it was given', () => {
+    const [edit] = planLocale('fr', FILE, SOURCE, { 'd.note': 'Bientôt' })
+
+    expect(edit.text).toBe(",\n    fr: 'Bientôt' /* machine */")
+  })
+
+  it('quotes a locale that is not a valid identifier', () => {
+    const [edit] = planLocale('zh-CN', FILE, SOURCE, { 'd.note': '即将推出' })
+
+    expect(edit.text).toBe(",\n    'zh-CN': '即将推出' /* machine */")
+  })
+
   it('indents to match the property it follows', () => {
-    const [edit] = planJapanese(FILE, SOURCE, { 'd.note': 'まもなく' })
+    const [edit] = planLocale('ja', FILE, SOURCE, { 'd.note': 'まもなく' })
 
     expect(edit.text).toBe(",\n    ja: 'まもなく' /* machine */")
   })
@@ -51,7 +69,7 @@ describe('planJapanese', () => {
     // diff — and a `//` marker here would comment out the closing brace.
     const inline = `export const d = { t: { en: 'A', 'zh-CN': 'B' } }\n`
 
-    const [edit] = planJapanese(FILE, inline, { 'd.t': 'あ' })
+    const [edit] = planLocale('ja', FILE, inline, { 'd.t': 'あ' })
 
     expect(edit.text).toBe(", ja: 'あ' /* machine */")
   })
@@ -61,7 +79,7 @@ describe('planJapanese', () => {
   title: { en: 'Live', 'zh-CN': '直播', ja: 'ライブ' }
 }
 `
-    expect(planJapanese(FILE, human, { 'd.title': 'べつ' })).toEqual([])
+    expect(planLocale('ja', FILE, human, { 'd.title': 'べつ' })).toEqual([])
   })
 
   it('replaces its own earlier output when the English moved on', () => {
@@ -73,7 +91,7 @@ describe('planJapanese', () => {
   }
 }
 `
-    const [edit] = planJapanese(FILE, mine, { 'd.title': 'あたらしい' })
+    const [edit] = planLocale('ja', FILE, mine, { 'd.title': 'あたらしい' })
 
     // Only the string literal's own bytes are named for replacement.
     expect(mine.slice(edit.offset, edit.offset + edit.length)).toBe("'ふるい'")
@@ -85,15 +103,15 @@ describe('planJapanese', () => {
   title: { en: 'Live', 'zh-CN': '直播', ja: 'ライブ' /* machine */ }
 }
 `
-    expect(planJapanese(FILE, mine, { 'd.title': 'ライブ' })).toEqual([])
+    expect(planLocale('ja', FILE, mine, { 'd.title': 'ライブ' })).toEqual([])
   })
 
   it('plans nothing for a key the file does not contain', () => {
-    expect(planJapanese(FILE, SOURCE, { 'd.missing': 'x' })).toEqual([])
+    expect(planLocale('ja', FILE, SOURCE, { 'd.missing': 'x' })).toEqual([])
   })
 
   it('escapes a backslash and a newline', () => {
-    const [edit] = planJapanese(FILE, SOURCE, {
+    const [edit] = planLocale('ja', FILE, SOURCE, {
       'd.note': 'a \\ back\nslash'
     })
 
@@ -105,13 +123,13 @@ describe('planJapanese', () => {
   it('switches to double quotes rather than escape an apostrophe', () => {
     // What oxfmt does anyway. Matching it keeps `pnpm format` a no-op on the
     // writer's output, so the diff a reviewer reads is the diff we made.
-    const [edit] = planJapanese(FILE, SOURCE, { 'd.note': "it's here" })
+    const [edit] = planLocale('ja', FILE, SOURCE, { 'd.note': "it's here" })
 
     expect(edit.text).toBe(`,\n    ja: "it's here" /* machine */`)
   })
 
   it('escapes the quote it chose when the value contains both kinds', () => {
-    const [edit] = planJapanese(FILE, SOURCE, {
+    const [edit] = planLocale('ja', FILE, SOURCE, {
       'd.note': `it's a "quote"`
     })
 
@@ -171,7 +189,7 @@ describe('a written file re-reads as the same file plus Japanese', () => {
       'events.live.description': '毎週の配信'
     }
 
-    const written = applyEdits(SOURCE, planJapanese(FILE, SOURCE, japanese))
+    const written = applyEdits(SOURCE, planLocale('ja', FILE, SOURCE, japanese))
 
     const before = entriesFromSource(FILE, SOURCE)
     const after = entriesFromSource(FILE, written)
@@ -193,7 +211,7 @@ describe('a written file re-reads as the same file plus Japanese', () => {
     // refreshed when its English changed.
     const written = applyEdits(
       SOURCE,
-      planJapanese(FILE, SOURCE, {
+      planLocale('ja', FILE, SOURCE, {
         'events.live.title': 'ComfyUI ライブ'
       })
     )
@@ -226,7 +244,7 @@ describe('a translation the pipeline has withdrawn', () => {
    * cosmetic for anything already written.
    */
   it('removes the machine-written Japanese it can no longer justify', () => {
-    const plan = planJapanese(FILE, WRITTEN, {})
+    const plan = planLocale('ja', FILE, WRITTEN, {})
 
     expect(plan).toHaveLength(1)
     expect(applyEdits(WRITTEN, plan)).not.toContain('ライブ')
@@ -238,7 +256,7 @@ describe('a translation the pipeline has withdrawn', () => {
   it('leaves a hand-written Japanese translation alone', () => {
     const HUMAN = WRITTEN.replace(' /* machine */', '')
 
-    expect(planJapanese(FILE, HUMAN, {})).toEqual([])
+    expect(planLocale('ja', FILE, HUMAN, {})).toEqual([])
   })
 
   it('still writes nothing for a key that never had Japanese', () => {
@@ -249,7 +267,7 @@ describe('a translation the pipeline has withdrawn', () => {
 }
 `
 
-    expect(planJapanese(FILE, BARE, {})).toEqual([])
+    expect(planLocale('ja', FILE, BARE, {})).toEqual([])
   })
 })
 
@@ -260,7 +278,7 @@ describe('a translation the pipeline has withdrawn', () => {
  */
 describe('a withdrawn property leaves no comma behind', () => {
   const withdraw = (source: string) =>
-    applyEdits(source, planJapanese('d.ts', source, {}))
+    applyEdits(source, planLocale('ja', 'd.ts', source, {}))
 
   it('when it is last', () => {
     expect(

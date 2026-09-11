@@ -218,7 +218,7 @@ export interface Edit {
  * Rebuild the file from slices of the original with new text between them.
  *
  * This is the safety argument for the writer. The only bytes that can go
- * missing are the ones an edit explicitly names, and `planJapanese` only ever
+ * missing are the ones an edit explicitly names, and `planLocale` only ever
  * names a string literal the pipeline itself wrote. Everything else is carried
  * across untouched by construction rather than by a test that has to keep
  * proving it.
@@ -350,16 +350,19 @@ function commentedEnd(
  * - a marked `ja` whose text has moved on — replace just the literal
  * - anything else — leave it alone, because a person wrote it
  */
-export function planJapanese(
+export function planLocale(
+  locale: Locale,
   fileName: string,
   sourceText: string,
-  japanese: Readonly<Partial<Record<string, string>>>
+  translated: Readonly<Partial<Record<string, string>>>
 ): Edit[] {
   const edits: Edit[] = []
+  // `zh-CN` is not a valid identifier, so it has to be written as a quoted key.
+  const property = /^[A-Za-z_$][\w$]*$/.test(locale) ? locale : `'${locale}'`
 
   forEachLocalizedText(fileName, sourceText, ({ key, node }) => {
-    const value = japanese[key]
-    const existing = findProperty(node, 'ja')
+    const value = translated[key]
+    const existing = findProperty(node, locale)
 
     // Withdrawn: `enforce` dropped this key, so the machine text already in the
     // file is no longer justified and has to come out. Skipping it left the
@@ -396,7 +399,7 @@ export function planJapanese(
       .slice(node.getStart(), node.end)
       .includes('\n')
 
-    const written = `ja: ${quote(value)}${MACHINE_MARKER}`
+    const written = `${property}: ${quote(value)}${MACHINE_MARKER}`
     edits.push({
       offset: last.end,
       length: 0,

@@ -1,7 +1,9 @@
 /**
- * write-faq-japanese — writes the machine's Japanese FAQ answers as `.mdx`.
+ * write-faq — writes the machine's FAQ answers for one locale as `.mdx`.
  *
- * Run: `pnpm i18n:write-faq [--dry-run]` (no API key needed).
+ * Run: `WEBSITE_I18N_LOCALE=ja pnpm i18n:write-faq [--dry-run]` (no API key
+ * needed). The locale is required: this used to be Japanese-only, so a second
+ * locale got dictionaries and no answers.
  *
  * `PricingFaq.astro` already selects entries by a `<category>/<locale>/` id
  * prefix, so a Japanese answer is simply a new file in a new folder. No page or
@@ -32,9 +34,10 @@ import {
 import type { FaqDocument } from '../../src/i18n/pipeline/adapters/faq'
 import { readTranslationLayer } from '../../src/i18n/pipeline/artifacts'
 import { commitAll } from '../../src/i18n/pipeline/commit'
+import { targetLocale } from './target-locale'
 import type { TranslationLayer } from '../../src/i18n/pipeline/types'
 
-const TARGET = 'ja'
+const TARGET = targetLocale()
 const FAQ_DIR = path.join(process.cwd(), 'src', 'content', 'faq')
 const MACHINE_FILE = path.join(
   process.cwd(),
@@ -125,7 +128,7 @@ function main(): void {
 
   if (planned.length === 0 && withdrawn.length === 0) {
     process.stdout.write(
-      '[i18n] no Japanese for any FAQ answer yet — run `pnpm i18n:translate` first.\n'
+      `[i18n] no ${TARGET} for any FAQ answer yet — run \`pnpm i18n:translate\` first.\n`
     )
     return
   }
@@ -186,7 +189,7 @@ function main(): void {
   for (const entry of withdrawn) fs.rmSync(entry.file, { force: true })
 
   process.stdout.write(
-    `[i18n] wrote ${planned.length} Japanese FAQ answer(s)` +
+    `[i18n] wrote ${planned.length} ${TARGET} FAQ answer(s)` +
       (withdrawn.length > 0 ? `, withdrew ${withdrawn.length}` : '') +
       `.\n`
   )

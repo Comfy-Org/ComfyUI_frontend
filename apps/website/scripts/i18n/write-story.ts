@@ -1,8 +1,9 @@
 /**
- * write-story-japanese — writes the machine's Japanese customer stories as
- * `.mdx`.
+ * write-story — writes the machine's customer stories for one locale as `.mdx`.
  *
- * Run: `pnpm i18n:write-story [--dry-run]` (no API key needed).
+ * Run: `WEBSITE_I18N_LOCALE=ja pnpm i18n:write-story [--dry-run]` (no API key
+ * needed). The locale is required: this used to be Japanese-only, so a second
+ * locale got dictionaries and no stories.
  *
  * `loadStories` selects by a `<locale>/` id prefix, so a Japanese story is a
  * new file in a new folder and no page changes.
@@ -40,9 +41,10 @@ import {
 import type { Story } from '../../src/i18n/pipeline/adapters/story'
 import { readTranslationLayer } from '../../src/i18n/pipeline/artifacts'
 import { commitAll } from '../../src/i18n/pipeline/commit'
+import { targetLocale } from './target-locale'
 import type { TranslationLayer } from '../../src/i18n/pipeline/types'
 
-const TARGET = 'ja'
+const TARGET = targetLocale()
 const CUSTOMERS_DIR = path.join(process.cwd(), 'src', 'content', 'customers')
 const MACHINE_FILE = path.join(
   process.cwd(),
@@ -104,7 +106,7 @@ function main(): void {
     const description = machine[`${prefix}.description`]
 
     // Every section must have a translation. A missing one would fall back to
-    // English inside an otherwise Japanese story, which reads worse than the
+    // English inside an otherwise translated story, which reads worse than the
     // whole page falling back.
     const sections: Record<string, string> = {}
     const sectionBodies: Record<string, string> = {}
@@ -123,7 +125,7 @@ function main(): void {
     }
 
     // A section without a translation would leave English inside an otherwise
-    // Japanese story, which reads worse than the page falling back whole.
+    // translated story, which reads worse than the page falling back whole.
     //
     // Asked of the body rather than the frontmatter list: a section declared in
     // frontmatter but never opened in the body has no text to translate, so
@@ -164,7 +166,7 @@ function main(): void {
 
   if (planned.length === 0 && withdrawn.length === 0) {
     process.stdout.write(
-      '[i18n] no Japanese for any story yet — run `pnpm i18n:translate` first.\n'
+      `[i18n] no ${TARGET} for any story yet — run \`pnpm i18n:translate\` first.\n`
     )
     return
   }
@@ -172,10 +174,10 @@ function main(): void {
   if (untranslated.length > 0) {
     process.stdout.write(
       `[i18n] ${untranslated.length} of ${english.length - skipped.length} ` +
-        `stories have no complete Japanese: ${untranslated.join(', ')}\n`
+        `stories have no complete ${TARGET}: ${untranslated.join(', ')}\n`
     )
     process.stdout.write(
-      '[i18n] each falls back to English on /ja/customers.\n'
+      `[i18n] each falls back to English on /${TARGET}/customers.\n`
     )
   }
 
@@ -234,7 +236,7 @@ function main(): void {
   for (const entry of withdrawn) fs.rmSync(entry.file, { force: true })
 
   process.stdout.write(
-    `[i18n] wrote ${planned.length} Japanese story/stories` +
+    `[i18n] wrote ${planned.length} ${TARGET} story/stories` +
       (withdrawn.length > 0 ? `, withdrew ${withdrawn.length}` : '') +
       '.\n'
   )
