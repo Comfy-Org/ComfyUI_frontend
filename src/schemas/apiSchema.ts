@@ -396,6 +396,7 @@ const zSettings = z.object({
   'Comfy.Keybinding.NewBindings': z.array(zKeybinding),
   'Comfy.Keybinding.CurrentPreset': z.string(),
   'Comfy.Keybinding.SettingsV1': zKeybindingSettings.nullable(),
+  'Comfy.Keybinding.CapturePhase': z.boolean(),
   'Comfy.Extension.Disabled': z.array(z.string()),
   'Comfy.LinkRenderMode': z.number(),
   'Comfy.Node.AutoSnapLinkToSlot': z.boolean(),
