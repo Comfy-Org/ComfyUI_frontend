@@ -35,10 +35,7 @@ describe('API Feature Flags', () => {
       Object.assign(this, mockWebSocket)
     })
 
-    // Reset API state. socket must be cleared too: createSocket() early-
-    // returns when a socket already exists, which otherwise silently skips
-    // arming a fresh settle timer for a test that expects one (the previous
-    // test's socket is never closed here since WebSocket is fully mocked).
+    // Reset API state
     api.socket = null
     api.serverFeatureFlags.value = {}
     api.serverFeatureFlagsSettled.value = false
@@ -53,12 +50,6 @@ describe('API Feature Flags', () => {
 
   describe('Feature flags negotiation', () => {
     it('marks feature flags stale without clearing them when resetting the socket identity', async () => {
-      // Clearing the map here (rather than just the received latch) would
-      // open a capability-downgrade window: every consumer of
-      // getServerFeature()/serverSupportsFeature() would see "server
-      // supports nothing" until the new socket delivers -- up to the 5s
-      // settle fallback, or indefinitely if it never opens. See:
-      // https://github.com/Comfy-Org/ComfyUI_frontend/pull/16301#discussion_r3909242419
       const resettingApi = new ComfyApi()
       resettingApi.serverFeatureFlags.value = { account_a_feature: true }
       resettingApi.serverFeatureFlagsSettled.value = true
