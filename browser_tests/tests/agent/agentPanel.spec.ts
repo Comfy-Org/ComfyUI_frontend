@@ -250,6 +250,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
   }) => {
     const page = comfyPage.page
     await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+    await selectAgentWorkflow(page)
 
     const panel = page.locator('#agent-panel-root')
     const ws = await getWebSocket()
