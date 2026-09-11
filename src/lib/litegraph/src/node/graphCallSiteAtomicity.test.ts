@@ -8,9 +8,7 @@
  * docs/architecture/ecs/ecs-extension-compatibility-audit.md under
  * "Declared-non-atomic edge cases".
  */
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { realignInputLinkSlots } from '@/lib/litegraph/src/linkDeduplication'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -41,8 +39,6 @@ function connectedPair() {
 // ---------------------------------------------------------------------------
 
 describe('attachNodeToStores – LGraph.add() atomicity', () => {
-  beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
-
   it('resolves an id collision by re-minting before mutating graph arrays', () => {
     // Pre-plant a node so its id is already taken in the store.
     const graph = new LGraph()
@@ -81,8 +77,6 @@ describe('attachNodeToStores – LGraph.add() atomicity', () => {
 // ---------------------------------------------------------------------------
 
 describe('replaceLinkTopology – LGraphNode.connect() atomicity', () => {
-  beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
-
   it('leaves the graph unchanged when the store rejects replaceLink', () => {
     const { source, target, link } = connectedPair()
     const graph = source.graph!
@@ -163,8 +157,6 @@ describe('replaceLinkTopology – LGraphNode.connect() atomicity', () => {
 // ---------------------------------------------------------------------------
 
 describe('updateEndpoints – replaceNodeInputs() atomicity', () => {
-  beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
-
   it('does not splice node.inputs when updateEndpoints is rejected', () => {
     const graph = new LGraph()
     const source = new LGraphNode('S')
@@ -233,8 +225,6 @@ describe('updateEndpoints – replaceNodeInputs() atomicity', () => {
 // ---------------------------------------------------------------------------
 
 describe('updateEndpoints – realignInputLinkSlots() atomicity', () => {
-  beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
-
   it('keeps the original connection when updateEndpoints is rejected', () => {
     const graph = new LGraph()
     const source = new LGraphNode('S')
