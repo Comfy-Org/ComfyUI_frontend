@@ -93,22 +93,8 @@
     }
   ],
   "links": [
-    {
-      "id": 1,
-      "origin_id": 1,
-      "origin_slot": 0,
-      "target_id": 66,
-      "target_slot": 0,
-      "type": "IMAGE"
-    },
-    {
-      "id": 2,
-      "origin_id": 66,
-      "origin_slot": 0,
-      "target_id": 67,
-      "target_slot": 0,
-      "type": "IMAGE"
-    }
+    [1, 1, 0, 66, 0, "IMAGE"],
+    [2, 66, 0, 67, 0, "IMAGE"]
   ],
   "groups": [],
   "definitions": {

@@ -21,6 +21,7 @@ import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
+import type { LinkId } from '@/lib/litegraph/src/LLink'
 import type { NodeId } from '@/types/nodeId'
 
 const DEFINITION_ORDER = ['in_a', 'in_b', 'in_c']
@@ -44,6 +45,54 @@ class SourceNode extends LGraphNode {
   constructor(title?: string) {
     super(title ?? 'Source')
     this.addOutput('out', 'number')
+  }
+}
+
+/**
+ * Mirrors the two app behaviours FE-258 needs: `ComfyNode.configure` rewrites
+ * `data.inputs` into node-definition order and appends the serialized inputs
+ * the definition lacks, and a dynamic combo rebuilds its child inputs when its
+ * value is applied. Records the link on the child's slot at that moment.
+ */
+class GroupWidgetTargetNode extends LGraphNode {
+  static readonly DEFINITION_INPUTS = ['image', 'resize_type.width']
+  childLinkIdOnValueApply?: LinkId
+
+  constructor(title?: string) {
+    super(title ?? 'GroupWidgetTarget')
+    for (const name of GroupWidgetTargetNode.DEFINITION_INPUTS)
+      this.addInput(name, 'number')
+    const widget = this.addWidget(
+      'combo',
+      'resize_type',
+      'scale dimensions',
+      () => {},
+      { values: ['scale dimensions', 'scale by multiplier'] }
+    )
+    let value = widget.value
+    Object.defineProperty(widget, 'value', {
+      get: () => value,
+      set: (next: string) => {
+        value = next
+        const slot = this.inputs.findIndex(
+          (input) => input.name === 'resize_type.multiplier'
+        )
+        this.childLinkIdOnValueApply = this.getInputLink(slot)?.id
+      }
+    })
+  }
+
+  override configure(data: ISerialisedNode): void {
+    const serialized = data.inputs ?? []
+    const defined = this.inputs.map(
+      (input) => serialized.find((entry) => entry.name === input.name) ?? input
+    )
+    const definedNames = new Set(this.inputs.map((input) => input.name))
+    data.inputs = [
+      ...defined,
+      ...serialized.filter((entry) => !definedNames.has(entry.name))
+    ]
+    super.configure(data)
   }
 }
 
@@ -830,7 +879,35 @@ describe('realignGroupWidgetChildLinks (FE-258)', () => {
     ).toBe(link.id)
   })
 
-  it('leaves inputs that no group widget owns', () => {
+  it('moves an ordinary input link that holds a child destination slot', () => {
+    const { source, target } = groupWidgetSetup(
+      [
+        'image',
+        'resize_type.width',
+        'resize_type',
+        'roll',
+        'resize_type.multiplier'
+      ],
+      'resize_type'
+    )
+    const child = source.connect(0, target, 1)!
+    const ordinary = source.connect(0, target, 4)!
+
+    realignGroupWidgetChildLinks(target, {
+      id: target.id,
+      inputs: serializedInputs(target, {
+        'resize_type.multiplier': child.id,
+        roll: ordinary.id
+      })
+    })
+
+    expect({
+      child: child.target_slot,
+      ordinary: ordinary.target_slot
+    }).toEqual({ child: 4, ordinary: 3 })
+  })
+
+  it('leaves a node that has no group widget child input', () => {
     const { source, target } = groupWidgetSetup(
       ['first', 'second', 'resize_type'],
       'resize_type'
@@ -845,24 +922,88 @@ describe('realignGroupWidgetChildLinks (FE-258)', () => {
     expect(link.target_slot).toBe(0)
   })
 
-  it('leaves the children of a group nested inside a group widget', () => {
+  it('leaves the links of a group nested inside a group widget', () => {
     const { source, target } = groupWidgetSetup(
       [
         'model.reference_images.image_1',
-        'other',
-        'model.reference_images.mask'
+        'model.generate_audio',
+        'model.reference_images.image_2'
       ],
       'model'
     )
-    const link = source.connect(0, target, 1)!
+    const nested = source.connect(0, target, 0)!
 
     realignGroupWidgetChildLinks(target, {
       id: target.id,
       inputs: serializedInputs(target, {
-        'model.reference_images.image_1': link.id
+        'model.reference_images.image_2': nested.id
       })
     })
 
-    expect(link.target_slot).toBe(1)
+    expect(nested.target_slot).toBe(0)
+  })
+})
+
+describe('LGraphNode.configure realignment ordering (FE-258)', () => {
+  beforeEach(() => {
+    LiteGraph.registerNodeType('test/RealignSource', SourceNode)
+    LiteGraph.registerNodeType('test/GroupWidgetTarget', GroupWidgetTargetNode)
+  })
+
+  it('realigns a child link before the group widget value is applied', () => {
+    const graph = new LGraph()
+    const workflow: SerialisableGraph = {
+      id: 'ab000000-0000-4000-8000-000000000004',
+      version: 1,
+      revision: 0,
+      state: { lastNodeId: 2, lastLinkId: 1, lastGroupId: 0, lastRerouteId: 0 },
+      nodes: [
+        {
+          id: 1,
+          type: 'test/RealignSource',
+          pos: [0, 0],
+          size: [140, 60],
+          flags: {},
+          order: 0,
+          mode: 0,
+          inputs: [],
+          outputs: [{ name: 'out', type: 'number', links: [1] }],
+          properties: {}
+        },
+        {
+          id: 2,
+          type: 'test/GroupWidgetTarget',
+          pos: [300, 0],
+          size: [140, 80],
+          flags: {},
+          order: 1,
+          mode: 0,
+          inputs: [
+            { name: 'image', type: 'number', link: null },
+            { name: 'resize_type.multiplier', type: 'number', link: 1 }
+          ],
+          outputs: [],
+          properties: {},
+          widgets_values: ['scale by multiplier']
+        }
+      ],
+      links: [
+        {
+          id: toLinkId(1),
+          origin_id: 1,
+          origin_slot: 0,
+          target_id: 2,
+          target_slot: 1,
+          type: 'number'
+        }
+      ]
+    }
+    graph.configure(workflow)
+
+    const target = graph.getNodeById(toNodeId(2))
+    expect(target).toBeInstanceOf(GroupWidgetTargetNode)
+    expect((target as GroupWidgetTargetNode).childLinkIdOnValueApply).toBe(
+      toLinkId(1)
+    )
   })
 })

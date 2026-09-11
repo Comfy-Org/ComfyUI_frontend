@@ -38,5 +38,23 @@ test.describe(
         .poll(() => getPromotedWidgetNames(comfyPage, HOST_NODE_ID))
         .toEqual([PROMOTED_INPUT_NAME])
     })
+
+    test('keeps the links of the nodes around it', async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow(WORKFLOW)
+      await comfyPage.vueNodes.waitForNodes()
+
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() =>
+            [...window.app!.graph.links.values()]
+              .map(
+                (link) =>
+                  `${link.origin_id}:${link.origin_slot}->${link.target_id}:${link.target_slot}`
+              )
+              .sort()
+          )
+        )
+        .toEqual(['1:0->66:0', '66:0->67:0'])
+    })
   }
 )
