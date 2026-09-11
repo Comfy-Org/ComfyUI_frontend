@@ -2343,6 +2343,46 @@
     "monotone_cubic": "Smooth",
     "linear": "Linear"
   },
+  "cameraAngle": {
+    "cameraView": "Camera",
+    "objectView": "Object",
+    "cameraViewTooltip": "Move the camera around the subject",
+    "objectViewTooltip": "Look through the camera and turn the subject",
+    "horizontalLabel": "Horizontal angle",
+    "verticalLabel": "Vertical angle",
+    "zoomLabel": "Shot size",
+    "preview": "Preview",
+    "showPreview": "Show shot preview",
+    "hidePreview": "Hide shot preview",
+    "horizontal": {
+      "front": "Front",
+      "frontRight": "Front right",
+      "right": "Right side",
+      "backRight": "Back right",
+      "back": "Back",
+      "backLeft": "Back left",
+      "left": "Left side",
+      "frontLeft": "Front left"
+    },
+    "vertical": {
+      "lowAngle": "Low angle",
+      "eyeLevel": "Eye level",
+      "elevated": "Elevated",
+      "highAngle": "High angle"
+    },
+    "zoom": {
+      "wide": "Wide shot",
+      "medium": "Medium shot",
+      "closeUp": "Close-up"
+    },
+    "faces": {
+      "back": "BACK",
+      "left": "LEFT",
+      "right": "RIGHT",
+      "top": "TOP",
+      "bottom": "BOTTOM"
+    }
+  },
   "boundingBoxes": {
     "clearAll": "Clear all",
     "clickRegionToEdit": "Click a region to edit it.",
@@ -2470,6 +2510,7 @@
     "failedToConvertToSubgraph": "Failed to convert items to subgraph",
     "failedToInitializeLoad3dViewer": "Failed to initialize 3D Viewer",
     "failedToInitializeCameraInfoViewer": "Failed to initialize Camera Info viewer. Try reloading the page.",
+    "failedToInitializeCameraAngleViewer": "Failed to initialize Camera Angle viewer. Try reloading the page.",
     "failedToLoadBackgroundImage": "Failed to load background image",
     "failedToLoadModel": "Failed to load 3D model",
     "modelLoadedSuccessfully": "3D model loaded successfully",

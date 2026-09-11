@@ -21,9 +21,12 @@ import {
   pointToPitchAngle,
   pointToYawAngle
 } from './handles/orbitDragMath'
+import { PointerInteraction } from './handles/pointerInteraction'
+import type { PointerPosition } from './handles/pointerInteraction'
 import { pointToRollAngle } from './handles/rollDragMath'
 import { dollySubjectByWheel, rotateSubjectByDrag } from './lookThroughDragMath'
 import type { LookThroughResult } from './lookThroughDragMath'
+import { fitCameraAspect, renderInsetPreview } from './subjectCameraPreview'
 import { DEFAULT_CAMERA_INFO_STATE } from './types'
 import type {
   CameraInfoFieldName,
@@ -31,10 +34,6 @@ import type {
   CameraInfoState
 } from './types'
 
-const PREVIEW_WIDTH = 200
-const PREVIEW_HEIGHT = 150
-const PREVIEW_PADDING = 8
-const PREVIEW_BORDER_COLOR = 0x2a2a2a
 const LOOK_THROUGH_SENSITIVITY = 0.005
 
 type DragHandleType = OrbitHandleType | 'roll'
@@ -55,13 +54,6 @@ export interface CameraInfoViewportOptions extends Load3DOptions {
   onHandleDrag?: (fieldName: CameraInfoFieldName, value: number) => void
 }
 
-interface DragState {
-  type: DragHandleType
-  pointerId: number
-}
-
-type PointerPosition = Pick<PointerEvent, 'clientX' | 'clientY'>
-
 export class CameraInfoViewport {
   readonly viewport: Viewport3d
   readonly overlay: CameraInfoOverlay
@@ -74,21 +66,9 @@ export class CameraInfoViewport {
   private readonly disposePostRender: () => void
   private readonly onHandleDrag?: CameraInfoViewportOptions['onHandleDrag']
   private readonly raycaster = new THREE.Raycaster()
-  private readonly pointer = new THREE.Vector2()
-
-  private dragState: DragState | null = null
-  private lookThroughDrag: {
-    pointerId: number
-    lastX: number
-    lastY: number
-  } | null = null
-  private pendingRotation: { dx: number; dy: number } | null = null
-  private pendingDolly: number | null = null
-  private pendingDragPointer: PointerPosition | null = null
-  private pendingHoverPointer: PointerPosition | null = null
-  private inputFrame: number | null = null
+  private readonly pointerNdc = new THREE.Vector2()
   private readonly dragPoint = new THREE.Vector3()
-  private hoveredHandle: DragHandleType | null = null
+  private readonly input: PointerInteraction<DragHandleType>
   private gizmosOn = true
   private lookingThrough = false
   private transformGizmoMode: TransformGizmoMode = 'none'
@@ -140,7 +120,33 @@ export class CameraInfoViewport {
     this.cameraHandle.attach(this.viewport.sceneManager.scene)
     this.syncCameraHandleSubject(initialState)
 
-    this.attachPointerHandlers()
+    this.input = new PointerInteraction<DragHandleType>({
+      canvas: this.canvas,
+      pickHandle: (position) => this.pickHandle(position),
+      dragHandle: (type, position) => this.dragHandle(type, position),
+      hoverChanged: (type) => {
+        this.orbitHandles.setHovered(type === 'roll' ? null : type)
+        this.rollHandle.setHovered(type === 'roll')
+        this.viewport.forceRender()
+      },
+      handleDragChanged: (dragging) => {
+        this.viewport.controlsManager.controls.enabled = !dragging
+      },
+      freeDragEnabled: () => this.lookingThrough,
+      freeDrag: (dx, dy) =>
+        this.applyResult(
+          rotateSubjectByDrag(
+            this.overlay.getState(),
+            -dx * LOOK_THROUGH_SENSITIVITY,
+            -dy * LOOK_THROUGH_SENSITIVITY
+          )
+        ),
+      wheelEnabled: () => this.lookingThrough,
+      wheel: (deltaY) =>
+        this.applyResult(dollySubjectByWheel(this.overlay.getState(), deltaY)),
+      idleCursor: () => (this.input.hoveredHandle ? 'grab' : '')
+    })
+    this.input.attach()
 
     this.disposePreRender = this.viewport.addPreRenderCallback(() => {
       if (this.lookingThrough) this.fitSubjectAspect()
@@ -180,9 +186,7 @@ export class CameraInfoViewport {
   setLookThrough(on: boolean): void {
     if (this.lookingThrough === on) return
     this.lookingThrough = on
-    this.lookThroughDrag = null
-    this.cancelInputFrame()
-    this.canvas.style.cursor = ''
+    this.input.cancel()
     this.refreshGizmoVisibility()
     if (on) this.fitSubjectAspect()
     this.viewport.setExternalActiveCamera(
@@ -192,8 +196,8 @@ export class CameraInfoViewport {
   }
 
   remove(): void {
-    this.detachPointerHandlers()
-    this.cancelInputFrame()
+    this.input.detach()
+    this.input.cancel()
     this.canvas.style.cursor = ''
     this.disposePreRender()
     this.disposePostRender()
@@ -277,43 +281,10 @@ export class CameraInfoViewport {
     return this.viewport.domElement
   }
 
-  private attachPointerHandlers(): void {
-    const canvas = this.canvas
-    canvas.addEventListener('pointerdown', this.onPointerDown)
-    canvas.addEventListener('pointermove', this.onPointerMove)
-    canvas.addEventListener('pointerup', this.onPointerUp)
-    canvas.addEventListener('pointercancel', this.onPointerUp)
-    canvas.addEventListener('pointerleave', this.onPointerLeave)
-    canvas.addEventListener('wheel', this.onWheel, { passive: false })
-  }
-
-  private detachPointerHandlers(): void {
-    const canvas = this.canvas
-    canvas.removeEventListener('pointerdown', this.onPointerDown)
-    canvas.removeEventListener('pointermove', this.onPointerMove)
-    canvas.removeEventListener('pointerup', this.onPointerUp)
-    canvas.removeEventListener('pointercancel', this.onPointerUp)
-    canvas.removeEventListener('pointerleave', this.onPointerLeave)
-    canvas.removeEventListener('wheel', this.onWheel)
-  }
-
-  private readonly onPointerLeave = (): void => {
-    if (this.dragState || this.lookThroughDrag) return
-    this.pendingHoverPointer = null
-    this.setHoveredHandle(null)
-  }
-
-  private readonly onWheel = (event: WheelEvent): void => {
-    if (!this.lookingThrough) return
-    event.preventDefault()
-    event.stopPropagation()
-    this.queueDolly(event.deltaY)
-  }
-
   private updatePointer({ clientX, clientY }: PointerPosition): void {
     const rect = this.canvas.getBoundingClientRect()
-    this.pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1
-    this.pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1
+    this.pointerNdc.x = ((clientX - rect.left) / rect.width) * 2 - 1
+    this.pointerNdc.y = -((clientY - rect.top) / rect.height) * 2 + 1
   }
 
   private pickableTargetsFor(mode: CameraInfoMode): THREE.Object3D[] {
@@ -334,169 +305,34 @@ export class CameraInfoViewport {
     this.updatePointer(position)
     return pickHandleAtPointer<DragHandleType>(
       this.raycaster,
-      this.pointer,
+      this.pointerNdc,
       this.viewport.cameraManager.activeCamera,
       targets,
       this.canvas
     )
   }
 
-  private setHoveredHandle(type: DragHandleType | null): void {
-    if (this.hoveredHandle === type) return
-    this.hoveredHandle = type
-    this.orbitHandles.setHovered(type === 'roll' ? null : type)
-    this.rollHandle.setHovered(type === 'roll')
-    this.canvas.style.cursor = type ? 'grab' : ''
-    this.viewport.forceRender()
-  }
-
-  private readonly onPointerDown = (event: PointerEvent): void => {
-    if (event.button !== 0) return
-
-    if (this.lookingThrough) {
-      this.lookThroughDrag = {
-        pointerId: event.pointerId,
-        lastX: event.clientX,
-        lastY: event.clientY
-      }
-      this.canvas.setPointerCapture(event.pointerId)
-      this.canvas.style.cursor = 'grabbing'
-      event.stopPropagation()
-      return
-    }
-
-    const type = this.pickHandle(event)
-    if (!type) return
-    this.pendingHoverPointer = null
-
-    this.setHoveredHandle(type)
-    this.dragState = { type, pointerId: event.pointerId }
-    this.canvas.setPointerCapture(event.pointerId)
-    this.canvas.style.cursor = 'grabbing'
-    this.viewport.controlsManager.controls.enabled = false
-    event.stopPropagation()
-  }
-
-  private readonly onPointerMove = (event: PointerEvent): void => {
-    if (this.lookThroughDrag) {
-      if (event.pointerId !== this.lookThroughDrag.pointerId) return
-      const dx = event.clientX - this.lookThroughDrag.lastX
-      const dy = event.clientY - this.lookThroughDrag.lastY
-      this.lookThroughDrag.lastX = event.clientX
-      this.lookThroughDrag.lastY = event.clientY
-      this.queueRotation(dx, dy)
-      return
-    }
-
-    if (!this.dragState) {
-      this.pendingHoverPointer = {
-        clientX: event.clientX,
-        clientY: event.clientY
-      }
-      this.scheduleInputFrame()
-      return
-    }
-    if (event.pointerId !== this.dragState.pointerId) return
-
-    this.pendingDragPointer = { clientX: event.clientX, clientY: event.clientY }
-    this.scheduleInputFrame()
-  }
-
-  private processDragMove(position: PointerPosition): void {
-    if (!this.dragState) return
+  private dragHandle(type: DragHandleType, position: PointerPosition): void {
     this.updatePointer(position)
     this.raycaster.setFromCamera(
-      this.pointer,
+      this.pointerNdc,
       this.viewport.cameraManager.activeCamera
     )
 
     const state = this.overlay.getState()
     const plane =
-      this.dragState.type === 'roll'
+      type === 'roll'
         ? this.rollHandle.dragPlane(state)
-        : this.orbitHandles.dragPlaneFor(this.dragState.type, state)
+        : this.orbitHandles.dragPlaneFor(type, state)
     if (!this.raycaster.ray.intersectPlane(plane, this.dragPoint)) return
 
     const { fieldName, value, nextState } = computeNextState(
-      this.dragState.type,
+      type,
       state,
       this.dragPoint
     )
     this.applyState(nextState)
     this.onHandleDrag?.(fieldName, value)
-  }
-
-  private readonly onPointerUp = (event: PointerEvent): void => {
-    if (this.lookThroughDrag) {
-      if (event.pointerId !== this.lookThroughDrag.pointerId) return
-      if (this.canvas.hasPointerCapture(event.pointerId)) {
-        this.canvas.releasePointerCapture(event.pointerId)
-      }
-      this.lookThroughDrag = null
-      this.flushInput()
-      this.cancelInputFrame()
-      this.canvas.style.cursor = ''
-      return
-    }
-
-    if (!this.dragState || event.pointerId !== this.dragState.pointerId) return
-    this.flushInput()
-    this.cancelInputFrame()
-    if (this.canvas.hasPointerCapture(event.pointerId)) {
-      this.canvas.releasePointerCapture(event.pointerId)
-    }
-    this.dragState = null
-    this.viewport.controlsManager.controls.enabled = true
-    this.canvas.style.cursor = this.hoveredHandle ? 'grab' : ''
-  }
-
-  private queueRotation(dx: number, dy: number): void {
-    this.pendingRotation = {
-      dx: (this.pendingRotation?.dx ?? 0) + dx,
-      dy: (this.pendingRotation?.dy ?? 0) + dy
-    }
-    this.scheduleInputFrame()
-  }
-
-  private queueDolly(deltaY: number): void {
-    this.pendingDolly = (this.pendingDolly ?? 0) + deltaY
-    this.scheduleInputFrame()
-  }
-
-  private scheduleInputFrame(): void {
-    if (this.inputFrame !== null) return
-    this.inputFrame = requestAnimationFrame(() => {
-      this.inputFrame = null
-      this.flushInput()
-    })
-  }
-
-  private flushInput(): void {
-    const rotation = this.pendingRotation
-    const dolly = this.pendingDolly
-    const dragPointer = this.pendingDragPointer
-    const hoverPointer = this.pendingHoverPointer
-    this.pendingRotation = null
-    this.pendingDolly = null
-    this.pendingDragPointer = null
-    this.pendingHoverPointer = null
-    if (dragPointer) {
-      this.processDragMove(dragPointer)
-    } else if (hoverPointer && !this.dragState) {
-      this.setHoveredHandle(this.pickHandle(hoverPointer))
-    }
-    if (rotation) {
-      this.applyResult(
-        rotateSubjectByDrag(
-          this.overlay.getState(),
-          -rotation.dx * LOOK_THROUGH_SENSITIVITY,
-          -rotation.dy * LOOK_THROUGH_SENSITIVITY
-        )
-      )
-    }
-    if (dolly !== null) {
-      this.applyResult(dollySubjectByWheel(this.overlay.getState(), dolly))
-    }
   }
 
   private applyResult(result: LookThroughResult | null): void {
@@ -507,127 +343,31 @@ export class CameraInfoViewport {
     }
   }
 
-  private cancelInputFrame(): void {
-    if (this.inputFrame !== null) {
-      cancelAnimationFrame(this.inputFrame)
-      this.inputFrame = null
-    }
-    this.pendingRotation = null
-    this.pendingDolly = null
-    this.pendingDragPointer = null
-    this.pendingHoverPointer = null
-  }
-
   private fitSubjectAspect(): void {
     const canvas = this.viewport.domElement
-    const aspect = canvas.width / canvas.height
-    if (!Number.isFinite(aspect) || aspect <= 0) return
-    const cam = this.overlay.getSubjectCamera()
-    if (cam instanceof THREE.PerspectiveCamera) {
-      if (Math.abs(cam.aspect - aspect) < 1e-4) return
-      cam.aspect = aspect
-      cam.updateProjectionMatrix()
-      return
-    }
-    if (cam instanceof THREE.OrthographicCamera) {
-      const half = (cam.top - cam.bottom) / 2 || 1
-      const left = -half * aspect
-      const right = half * aspect
-      if (
-        Math.abs(cam.left - left) < 1e-4 &&
-        Math.abs(cam.right - right) < 1e-4
-      )
-        return
-      cam.left = left
-      cam.right = right
-      cam.updateProjectionMatrix()
-    }
+    fitCameraAspect(
+      this.overlay.getSubjectCamera(),
+      canvas.width / canvas.height
+    )
   }
 
   private renderSubjectCameraPreview(): void {
-    const renderer = this.viewport.renderer
-    const canvas = this.viewport.domElement
-    const canvasWidth = canvas.width
-    const canvasHeight = canvas.height
-    if (
-      canvasWidth < PREVIEW_WIDTH + PREVIEW_PADDING * 2 ||
-      canvasHeight < PREVIEW_HEIGHT + PREVIEW_PADDING * 2
-    ) {
-      return
-    }
-
-    const cam = this.overlay.getSubjectCamera()
-    const aspect = PREVIEW_WIDTH / PREVIEW_HEIGHT
-    let savedAspect: number | undefined
-    let savedOrtho:
-      | {
-          left: number
-          right: number
-          top: number
-          bottom: number
-        }
-      | undefined
-
-    if (cam instanceof THREE.PerspectiveCamera) {
-      savedAspect = cam.aspect
-      cam.aspect = aspect
-      cam.updateProjectionMatrix()
-    } else if (cam instanceof THREE.OrthographicCamera) {
-      savedOrtho = {
-        left: cam.left,
-        right: cam.right,
-        top: cam.top,
-        bottom: cam.bottom
-      }
-      const half = (cam.top - cam.bottom) / 2 || 1
-      cam.left = -half * aspect
-      cam.right = half * aspect
-      cam.top = half
-      cam.bottom = -half
-      cam.updateProjectionMatrix()
-    }
-
-    this.overlay.setHelperVisible(false)
-    const handlesWereVisible = this.orbitHandles.isVisible()
-    const rollWasVisible = this.rollHandle.isVisible()
-    const targetWasVisible = this.targetHandle.isVisible()
-    const cameraWasVisible = this.cameraHandle.isVisible()
-    this.orbitHandles.setVisible(false)
-    this.rollHandle.setVisible(false)
-    this.targetHandle.setVisible(false)
-    this.cameraHandle.setVisible(false)
-
-    const x = canvasWidth - PREVIEW_WIDTH - PREVIEW_PADDING
-    const y = PREVIEW_PADDING
-
-    renderer.setViewport(x - 1, y - 1, PREVIEW_WIDTH + 2, PREVIEW_HEIGHT + 2)
-    renderer.setScissor(x - 1, y - 1, PREVIEW_WIDTH + 2, PREVIEW_HEIGHT + 2)
-    renderer.setScissorTest(true)
-    renderer.setClearColor(PREVIEW_BORDER_COLOR)
-    renderer.clear()
-
-    renderer.setViewport(x, y, PREVIEW_WIDTH, PREVIEW_HEIGHT)
-    renderer.setScissor(x, y, PREVIEW_WIDTH, PREVIEW_HEIGHT)
-    renderer.setClearColor(0x0a0a0a)
-    renderer.clear()
-    renderer.render(this.viewport.sceneManager.scene, cam)
-
-    this.overlay.setHelperVisible(true)
-    if (handlesWereVisible) this.orbitHandles.setVisible(true)
-    if (rollWasVisible) this.rollHandle.setVisible(true)
-    if (targetWasVisible) this.targetHandle.setVisible(true)
-    if (cameraWasVisible) this.cameraHandle.setVisible(true)
-
-    if (savedAspect !== undefined && cam instanceof THREE.PerspectiveCamera) {
-      cam.aspect = savedAspect
-      cam.updateProjectionMatrix()
-    } else if (savedOrtho && cam instanceof THREE.OrthographicCamera) {
-      cam.left = savedOrtho.left
-      cam.right = savedOrtho.right
-      cam.top = savedOrtho.top
-      cam.bottom = savedOrtho.bottom
-      cam.updateProjectionMatrix()
-    }
+    renderInsetPreview({
+      renderer: this.viewport.renderer,
+      canvas: this.viewport.domElement,
+      scene: this.viewport.sceneManager.scene,
+      camera: this.overlay.getSubjectCamera(),
+      hidden: [
+        {
+          isVisible: () => this.overlay.isHelperVisible(),
+          setVisible: (visible) => this.overlay.setHelperVisible(visible)
+        },
+        this.orbitHandles,
+        this.rollHandle,
+        this.targetHandle,
+        this.cameraHandle
+      ]
+    })
   }
 }
 
