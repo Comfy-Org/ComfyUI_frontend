@@ -1,28 +1,28 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { AuthStoreError } from '@/stores/authStore'
+import { useDialogStore } from '@/stores/dialogStore'
 
 import TopUpCreditsDialogContentLegacy from './TopUpCreditsDialogContentLegacy.vue'
 
 const mockPurchaseCreditsDirect = vi.fn()
 const mockShowSettings = vi.fn()
 const mockToastAdd = vi.fn()
-const mockCloseDialog = vi.fn()
 const mockTrackTopUpPurchase = vi.fn()
 const mockTrackBillingEvent = vi.fn()
 const mockIsSubscriptionEnabled = vi.fn(() => true)
 const mockShouldUseWorkspaceBilling = vi.hoisted(() => ({ value: false }))
 
-vi.mock('@/composables/auth/useAuthActions', () => ({
+vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
   useAuthActions: () => ({
     purchaseCreditsDirect: (amount: number) => mockPurchaseCreditsDirect(amount)
   })
 }))
 
-vi.mock('@/composables/billing/useBillingRouting', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
   useBillingRouting: () => ({
     shouldUseWorkspaceBilling: {
       get value() {
@@ -32,21 +32,23 @@ vi.mock('@/composables/billing/useBillingRouting', () => ({
   })
 }))
 
-vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
-  useSubscription: () => ({
-    isSubscriptionEnabled: mockIsSubscriptionEnabled
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useSubscription'),
+  () => ({
+    useSubscription: () => ({
+      isSubscriptionEnabled: mockIsSubscriptionEnabled
+    })
   })
-}))
+)
 
-vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
-  useSettingsDialog: () => ({ show: mockShowSettings })
-}))
+vi.mock<unknown>(
+  import('@/platform/settings/composables/useSettingsDialog'),
+  () => ({
+    useSettingsDialog: () => ({ show: mockShowSettings })
+  })
+)
 
-vi.mock('@/stores/dialogStore', () => ({
-  useDialogStore: () => ({ closeDialog: mockCloseDialog })
-}))
-
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackApiCreditTopupButtonPurchaseClicked: mockTrackTopUpPurchase,
     trackBillingEvent: mockTrackBillingEvent
@@ -54,22 +56,26 @@ vi.mock('@/platform/telemetry', () => ({
 }))
 
 const mockClearPendingTopup = vi.hoisted(() => vi.fn())
-vi.mock('@/composables/billing/usePendingTopup', () => ({
+vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
   usePendingTopup: () => ({ clearPendingTopup: mockClearPendingTopup })
 }))
 
-vi.mock('@/composables/useExternalLink', () => ({
+vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
   useExternalLink: () => ({
     buildDocsUrl: () => 'https://docs.comfy.org',
     docsPaths: { partnerNodesPricing: '' }
   })
 }))
 
-vi.mock('primevue/usetoast', () => ({
-  useToast: () => ({ add: mockToastAdd })
-}))
+vi.mock<unknown>(
+  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
 
-vi.mock('@/base/credits/comfyCredits', () => ({
+  () => ({
+    useToast: () => ({ add: mockToastAdd })
+  })
+)
+
+vi.mock(import('@/base/credits/comfyCredits'), () => ({
   creditsToUsd: (credits: number) => credits,
   usdToCredits: (usd: number) => usd
 }))
@@ -137,7 +143,7 @@ describe('TopUpCreditsDialogContentLegacy', () => {
     await clickBuyCredits()
 
     expect(mockPurchaseCreditsDirect).toHaveBeenCalledWith(50)
-    expect(mockCloseDialog).toHaveBeenCalled()
+    expect(vi.mocked(useDialogStore().closeDialog)).toHaveBeenCalled()
     expect(mockShowSettings).toHaveBeenCalledWith('workspace')
     expect(mockClearPendingTopup).not.toHaveBeenCalled()
   })
@@ -148,7 +154,7 @@ describe('TopUpCreditsDialogContentLegacy', () => {
     await user.click(screen.getByRole('button', { name: 'Close' }))
 
     expect(mockClearPendingTopup).toHaveBeenCalled()
-    expect(mockCloseDialog).toHaveBeenCalled()
+    expect(vi.mocked(useDialogStore().closeDialog)).toHaveBeenCalled()
   })
 
   it('shows Plan & Credits when no billing rail is active', async () => {

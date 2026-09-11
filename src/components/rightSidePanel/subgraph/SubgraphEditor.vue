@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
-import { storeToRefs } from 'pinia'
-import { computed, onMounted, shallowRef, watch } from 'vue'
+import { computed, onMounted, ref, shallowRef, watch } from 'vue'
 
 import DraggableList from '@/components/common/DraggableList.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -36,7 +35,7 @@ import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore
 } from '@/stores/previewExposureStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { deriveWidgetVisibility } from '@/types/widgetVisibility'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import SubgraphNodeWidget from './SubgraphNodeWidget.vue'
@@ -57,8 +56,7 @@ type ActiveRow = PromotedRow | PreviewRow
 
 const canvasStore = useCanvasStore()
 const previewExposureStore = usePreviewExposureStore()
-const rightSidePanelStore = useRightSidePanelStore()
-const { searchQuery } = storeToRefs(rightSidePanelStore)
+const searchQuery = ref('')
 const { shouldRenderVueNodes } = useVueFeatureFlags()
 
 const activeNode = computed(() => {
@@ -185,11 +183,13 @@ const candidateWidgets = computed<WidgetItem[]>(() => {
   const promotedSourceKeys = new Set(activeRows.value.map(activeRowSourceKey))
   return interiorWidgets.value
     .filter(([n, w]) => !promotedSourceKeys.has(`${n.id}:${w.name}`))
-    .filter(
-      ([, w]) =>
-        w.name.startsWith('$$') ||
-        !(w.options.canvasOnly && shouldRenderVueNodes.value)
-    )
+    .filter(([, widget]) => {
+      const visibility = widget.visibility ?? deriveWidgetVisibility(widget)
+      return (
+        widget.name.startsWith('$$') ||
+        !(shouldRenderVueNodes.value && visibility.surfaces.vueNode === 'never')
+      )
+    })
 })
 const filteredCandidates = computed<WidgetItem[]>(() => {
   const query = searchQuery.value.toLowerCase()
