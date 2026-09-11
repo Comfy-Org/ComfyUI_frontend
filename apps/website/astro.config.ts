@@ -40,6 +40,7 @@ export default defineConfig({
   vite: {
     plugins: [tailwindcss()],
     server: {
+      allowedHosts: process.env.AMP_ORB ? true : undefined,
       watch: {
         ignored: ['**/playwright-report/**']
       }
