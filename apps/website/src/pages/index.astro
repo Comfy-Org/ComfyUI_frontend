@@ -64,7 +64,7 @@ const workshopModels = await resolveHomepageWorkshopModels(
   <SocialProofBarSection />
   <DeveloperPlatformSection client:visible />
   <MinimaxLicenseHeroSection client:visible />
-  <ModelDiscoverySection client:visible />
+  {isWorkshopInBuild() && <ModelDiscoverySection client:visible />}
   <FeaturedWorkflowsSection client:load />
   {workshopModels.length > 0 && <WorkshopSection models={workshopModels} />}
   <ProductShowcaseSection client:load />

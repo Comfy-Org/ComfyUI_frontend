@@ -23,7 +23,7 @@ import {
   schemaForModel,
   validateForm
 } from '../../config/workshop-playground'
-import type { RunOutput, RunState } from '../../config/workshop-run'
+import type { RunOutput, RunRecord, RunState } from '../../config/workshop-run'
 import { IDLE, transition } from '../../config/workshop-run'
 import { refreshWorkshopCredits } from '../../config/workshop-credits'
 import { runWorkshopRouter } from '../../config/workshop-router'
@@ -35,6 +35,10 @@ import { useWorkshopSession } from '../../config/workshop-session-state'
 import { workshopIdempotencyKey } from '../../config/workshop-snippets'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import {
+  useWorkshopAuthFlag,
+  useWorkshopAuthFlagSettled
+} from '../../scripts/posthog'
 import ApiTab from './ApiTab.vue'
 import ExamplesTab from './ExamplesTab.vue'
 import PlaygroundForm from './PlaygroundForm.vue'
@@ -141,24 +145,34 @@ const runState = ref<RunState>(
     ? { status: 'example', output: exampleOutput(firstExample) }
     : IDLE
 )
-const runs = ref<RunOutput[]>([])
+const runs = ref<RunRecord[]>([])
 const earlier = computed(() => runs.value.slice(1))
+const attachments = computed(() =>
+  runState.value.status === 'succeeded'
+    ? (runs.value[0]?.attachments ?? [])
+    : []
+)
 const revealed = ref(false)
 
-const { session, ensureFresh } = useWorkshopSession()
+const { user, session, sessionFailure, settled, ensureFresh } =
+  useWorkshopSession()
+const authEnabled = useWorkshopAuthFlag()
+const authFlagSettled = useWorkshopAuthFlagSettled()
 const signInHref = useSignInHref(locale)
-const gate = computed(() =>
-  model.incompleteReason
-    ? 'unavailable'
-    : !session.value
-      ? 'signedOut'
-      : import.meta.env.PUBLIC_WORKSHOP_ROUTER_RUN === '1' &&
-          model.execution &&
-          !activeExample.value?.fields &&
-          !clone
-        ? 'ready'
-        : 'unavailable'
-)
+const gate = computed(() => {
+  if (
+    model.incompleteReason ||
+    import.meta.env.PUBLIC_WORKSHOP_ROUTER_RUN !== '1' ||
+    !model.execution ||
+    activeExample.value?.fields ||
+    clone
+  )
+    return 'unavailable'
+  if (!authFlagSettled.value) return 'pending'
+  if (!authEnabled.value || sessionFailure.value) return 'unavailable'
+  if (!settled.value || (user.value && !session.value)) return 'pending'
+  return session.value ? 'ready' : 'signedOut'
+})
 const errors = computed<FieldErrors>(() =>
   runState.value.status === 'failed' ? runState.value.fieldErrors : {}
 )
@@ -178,7 +192,9 @@ function cancelRun() {
 
 onUnmounted(() => {
   cancelRun()
-  releaseRouterOutputs(runs.value)
+  releaseRouterOutputs(
+    runs.value.flatMap((run) => [run.output, ...run.attachments])
+  )
 })
 watch(
   () => session.value?.uid,
@@ -265,9 +281,9 @@ async function run() {
     }
     pendingRequest = undefined
     requestId.value = result.requestId
-    runs.value = [...result.outputs, ...runs.value]
-    const output = result.outputs[0]
+    const [output, ...attachments] = result.outputs
     if (!output) throw new WorkshopRouterError('provider', result.requestId)
+    runs.value = [{ output, attachments }, ...runs.value]
     runState.value = transition(runState.value, {
       type: 'complete',
       at: Date.now(),
@@ -479,9 +495,11 @@ function useInCode() {
           >
             {{
               t(
-                model.incompleteReason
-                  ? 'workshop.model.notSupported'
-                  : 'workshop.run.mappingUnavailable',
+                gate === 'pending'
+                  ? 'workshop.run.preparingSession'
+                  : model.incompleteReason
+                    ? 'workshop.model.notSupported'
+                    : 'workshop.run.mappingUnavailable',
                 locale
               )
             }}
@@ -496,6 +514,7 @@ function useInCode() {
           v-model:revealed="revealed"
           :state="runState"
           :earlier
+          :attachments
           :now
           :modality="model.modality"
           :locale

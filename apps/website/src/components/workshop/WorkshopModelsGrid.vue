@@ -8,13 +8,9 @@ import {
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
-import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
-
-import { useMediaQuery } from '@vueuse/core'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
-import { useSlidingUnderline } from '../../composables/useSlidingUnderline'
 import { groupModels } from '../../config/model-family'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -28,15 +24,11 @@ import {
   SORT_ORDERS,
   parseCatalogSearch,
   MODALITIES,
-  USE_CASES,
   countByFacet,
   countByModality,
-  countByUseCase,
-  modalityOf,
   filterWorkshopModels,
   sortWorkshopModels
 } from '../../config/models-catalogue'
-import { OTHER_FORMAT_USE_CASES } from '../../config/workshop-sections'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import type { FacetMenuOption } from './WorkshopFilterMenu.vue'
@@ -58,7 +50,6 @@ const modalities = ref<string[]>([])
 const capabilities = ref<string[]>([])
 const providers = ref<string[]>([])
 const sort = ref<SortOrder>('popular')
-const { version, showFeatured } = usePrototypeTweaks()
 
 onMounted(() => {
   const initial = parseCatalogSearch(location.search)
@@ -91,50 +82,6 @@ const sortLabelKey: Record<SortOrder, TranslationKey> = {
   priceAsc: 'workshop.sort.priceAsc',
   priceDesc: 'workshop.sort.priceDesc'
 }
-
-// V1 keeps the row of tabs it shipped with; V1.2 is the same listing with the
-// categories moved into a rail beside the grid.
-const railBeside = computed(() => version.value === 'v1.2')
-
-const railLabel: TranslationKey = 'workshop.launch.label'
-
-// The same shelves the browsing rows show, in the catalogue's own reading
-// order: text, 3D and audio share one "Other formats" entry, and a use case
-// nothing falls into drops out. All is not a seventh category, it is no
-// category selected, which is why the rows are what it renders.
-const rail = computed(() => {
-  const counts = countByUseCase(models)
-  const otherCount = OTHER_FORMAT_USE_CASES.reduce(
-    (total, value) => total + counts[value],
-    0
-  )
-  return [
-    { value: 'all' as const, count: models.length },
-    ...USE_CASES.filter(
-      (value) => !OTHER_FORMAT_USE_CASES.includes(value) && counts[value] > 0
-    ).map((value) => ({ value, count: counts[value] })),
-    ...(otherCount > 0 ? [{ value: 'other' as const, count: otherCount }] : [])
-  ].map((entry) => ({
-    ...entry,
-    label: t(useCaseLabelKey[entry.value], locale),
-    current: useCase.value === entry.value
-  }))
-})
-
-const onPhone = useMediaQuery('(max-width: 639px)')
-
-const useCaseOptions = computed<FacetMenuOption[]>(() =>
-  rail.value.map(({ value, label, count }) => ({ value, label, count }))
-)
-
-const chosenUseCase = computed<string[]>({
-  get: () => (useCase.value === 'all' ? [] : [useCase.value]),
-  set: (values) => {
-    const last = values.at(-1)
-    const match = rail.value.find((entry) => entry.value === last)
-    selectRail(match?.value ?? 'all')
-  }
-})
 
 function selectRail(value: UseCase | 'all' | 'other') {
   useCase.value = value
@@ -179,9 +126,6 @@ const modalityLabelKey: Record<
   other: 'workshop.filter.other'
 }
 
-const inModality = (model: WorkshopModel) =>
-  modalities.value.length === 0 || modalities.value.includes(modalityOf(model))
-
 const visible = computed(() =>
   groupModels(
     sortWorkshopModels(
@@ -189,8 +133,9 @@ const visible = computed(() =>
         query: query.value,
         useCase: useCase.value,
         providers: providers.value,
-        capabilities: capabilities.value
-      }).filter(inModality),
+        capabilities: capabilities.value,
+        modalities: modalities.value
+      }),
       sort.value
     )
   )
@@ -207,14 +152,11 @@ const isFiltered = computed(
 
 // Willie's browseable listing: rows per use case until the visitor narrows
 // down, then the flat grid takes over.
-const browsing = computed(() => version.value === 'v1.1' && !isFiltered.value)
+const browsing = computed(() => !isFiltered.value)
 // The browsing rows are the use cases, each with its name and its count, so a
 // row of chips saying the same six words would be the same list twice. V1.1
 // leaves a category the way it entered one, through its own header.
-const showRail = computed(() => version.value !== 'v1.1')
-const inSection = computed(
-  () => version.value === 'v1.1' && useCase.value !== 'all'
-)
+const inSection = computed(() => useCase.value !== 'all')
 const sectionTitleKey = computed<TranslationKey>(() =>
   useCase.value === 'other'
     ? 'workshop.sections.otherFormats'
@@ -225,12 +167,6 @@ const sectionTitleKey = computed<TranslationKey>(() =>
 // the catalogue's name twice.
 const emit = defineEmits<{ section: [boolean] }>()
 watch(inSection, (value) => emit('section', value), { immediate: true })
-// V1.1 enters a category from its row and leaves it from its header, so the
-// use case is a place rather than a checkbox and the menu does not repeat it.
-// The other versions carry it wherever their rail is not on screen.
-const useCasesInFilter = computed(
-  () => showRail.value && onPhone.value && railBeside.value
-)
 
 // Router reports no curated set yet, so the banner that opens the listing
 // carries the catalogue's own most-run models and costs nothing to keep true
@@ -265,92 +201,18 @@ function clearFilters() {
   providers.value = []
 }
 
-const tabClass = (current: boolean) =>
-  cn(
-    'focus-visible:ring-primary-comfy-yellow/50 inline-flex shrink-0 cursor-pointer items-center gap-2 pb-3 text-sm font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-3',
-    railBeside.value &&
-      'lg:w-full lg:justify-between lg:rounded-xl lg:px-3 lg:py-2.5',
-    current
-      ? cn(
-          'text-primary-warm-white',
-          railBeside.value && 'lg:bg-transparency-white-t8'
-        )
-      : cn(
-          'text-primary-warm-gray hover:text-primary-warm-white',
-          railBeside.value && 'lg:hover:bg-transparency-white-t4'
-        )
-  )
-
-const navRef = useTemplateRef<HTMLElement>('nav')
-const underline = useSlidingUnderline(navRef, () => [useCase.value, rail.value])
-
 const menuItemClass =
   'flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm text-primary-comfy-canvas outline-none select-none data-[highlighted]:bg-transparency-white-t4'
 </script>
 
 <template>
-  <section
-    :key="version"
-    :class="
-      cn(
-        'gap-10',
-        railBeside && !browsing && 'lg:grid lg:grid-cols-[15rem_minmax(0,1fr)]'
-      )
-    "
-  >
+  <section class="gap-10">
     <FeaturedBanner
-      v-if="browsing && showFeatured && featured.length"
+      v-if="browsing && featured.length"
       :models="featured"
       :locale
       class="mb-10"
     />
-
-    <aside
-      v-if="showRail"
-      :class="
-        railBeside &&
-        'lg:sticky lg:top-28 lg:max-h-[calc(100vh-9rem)] lg:scrollbar-thin lg:self-start lg:overflow-y-auto lg:pt-4'
-      "
-    >
-      <nav
-        ref="nav"
-        :class="
-          cn(
-            'relative mb-8 flex gap-8 overflow-x-auto border-b border-transparency-white-t8 max-sm:mb-4',
-            railBeside && 'max-sm:hidden',
-            railBeside &&
-              'lg:mb-0 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:border-b-0'
-          )
-        "
-        :aria-label="t(railLabel, locale)"
-        data-testid="workshop-use-cases"
-      >
-        <span
-          aria-hidden="true"
-          :class="
-            cn(
-              'pointer-events-none absolute bottom-0 h-0.5 rounded-full bg-primary-warm-white transition-[translate,width] duration-300 ease-out',
-              railBeside && 'lg:hidden'
-            )
-          "
-          :style="{
-            translate: `${underline.left}px 0`,
-            width: `${underline.width}px`
-          }"
-        />
-        <button
-          v-for="entry in rail"
-          :key="entry.value"
-          type="button"
-          :aria-pressed="entry.current"
-          :data-testid="`use-case-${entry.value}`"
-          :class="tabClass(entry.current)"
-          @click="selectRail(entry.value)"
-        >
-          <span class="min-w-0 truncate">{{ entry.label }}</span>
-        </button>
-      </nav>
-    </aside>
 
     <div class="min-w-0">
       <button
@@ -399,11 +261,9 @@ const menuItemClass =
             v-model:capabilities="capabilities"
             v-model:providers="providers"
             v-model:modalities="modalities"
-            v-model:use-cases="chosenUseCase"
             :capability-options="capabilityOptions"
             :provider-options="providerOptions"
             :modality-options="modalityOptions"
-            :use-case-options="useCasesInFilter ? useCaseOptions : undefined"
             :result-count="visible.length"
             :locale
           />
@@ -469,14 +329,7 @@ const menuItemClass =
             {{ t('workshop.models.heading', locale) }}
           </h2>
           <ul
-            :class="
-              cn(
-                'grid grid-cols-1 gap-5 sm:grid-cols-2',
-                railBeside
-                  ? 'xl:grid-cols-4 2xl:grid-cols-5'
-                  : 'lg:grid-cols-4 xl:grid-cols-5'
-              )
-            "
+            class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5"
             aria-labelledby="workshop-models-heading"
             data-testid="workshop-models-grid"
           >

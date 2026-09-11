@@ -24,7 +24,7 @@ const baseRoutes = {
   affiliateTerms: '/affiliates/terms',
   contact: '/contact',
   models: '/p/supported-models',
-  modelsShowcase: '/models/showcase',
+  modelsShowcase: '/models',
   mcp: '/mcp',
   agent: '/agent',
   platform: '/platform',

@@ -82,7 +82,11 @@ describe('PlaygroundOutput', () => {
       fileName: 'model.glb'
     }
     render(PlaygroundOutput, {
-      props: { state: succeeded(text), earlier: [model], now: 2_000 }
+      props: {
+        state: succeeded(text),
+        earlier: [{ output: model, attachments: [] }],
+        now: 2_000
+      }
     })
     expect(screen.getByText('<script>unsafe()</script>')).toBeTruthy()
     expect(screen.queryByRole('img')).toBeNull()
@@ -108,7 +112,7 @@ describe('PlaygroundOutput', () => {
     render(PlaygroundOutput, {
       props: {
         state: succeeded(output('latest')),
-        earlier: [output('first')],
+        earlier: [{ output: output('first'), attachments: [] }],
         now: 2_000
       }
     })
@@ -135,7 +139,7 @@ describe('PlaygroundOutput', () => {
     render(PlaygroundOutput, {
       props: {
         state: succeeded(batch),
-        earlier: [output('first')],
+        earlier: [{ output: output('first'), attachments: [] }],
         now: 2_000
       }
     })

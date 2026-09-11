@@ -60,9 +60,7 @@ const sections = computed(() =>
 
 const otherFormats = computed(() =>
   groupModels(
-    GROUPED.flatMap((useCase) =>
-      sortWorkshopModels(filterWorkshopModels(models, { useCase }), sort)
-    )
+    sortWorkshopModels(filterWorkshopModels(models, { useCase: 'other' }), sort)
   )
 )
 
@@ -144,7 +142,7 @@ const unplaced = computed(() =>
         </template>
 
         <li
-          v-for="family in otherFormats"
+          v-for="family in otherFormats.slice(0, ROW_LIMIT)"
           :key="family.key"
           class="w-58 shrink-0 snap-start"
         >

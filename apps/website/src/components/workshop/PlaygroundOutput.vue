@@ -16,7 +16,12 @@ import Button from '@/components/ui/button/Button.vue'
 import VideoPlayer from '../common/VideoPlayer.vue'
 import OutputTransport from './OutputTransport.vue'
 import type { Modality } from '../../config/models-catalogue'
-import type { RunFailure, RunOutput, RunState } from '../../config/workshop-run'
+import type {
+  RunFailure,
+  RunOutput,
+  RunRecord,
+  RunState
+} from '../../config/workshop-run'
 import { formatElapsed, isExpired } from '../../config/workshop-run'
 import { WORKSHOP_CLOUD_BASE_URL } from '../../config/workshop-env'
 import type { Locale, TranslationKey } from '../../i18n/translations'
@@ -27,12 +32,14 @@ const {
   now,
   modality,
   earlier = [],
+  attachments = [],
   locale = 'en'
 } = defineProps<{
   state: RunState
   now: number
   modality?: Modality
-  earlier?: readonly RunOutput[]
+  earlier?: readonly RunRecord[]
+  attachments?: readonly RunOutput[]
   locale?: Locale
 }>()
 
@@ -63,6 +70,15 @@ const failureKey: Record<RunFailure, TranslationKey> = {
   timeout: 'workshop.error.timeout'
 }
 
+const statusMessage = computed(() => {
+  if (state.status === 'failed') return t(failureKey[state.reason], locale)
+  if (state.status === 'running') return t('workshop.run.running', locale)
+  if (state.status === 'cancelled')
+    return t('workshop.output.cancelled', locale)
+  if (state.status === 'succeeded') return t('workshop.output.complete', locale)
+  return ''
+})
+
 const buyCreditsHref = new URL(
   '/?settings=plan-credits',
   WORKSHOP_CLOUD_BASE_URL
@@ -70,13 +86,18 @@ const buyCreditsHref = new URL(
 
 const selected = ref(0)
 // Earlier outputs from this visit stay reachable; the latest is the default.
-const viewing = ref<RunOutput>()
+const viewing = ref<RunRecord>()
+const selectedAttachment = ref<RunOutput>()
 const latest = computed(() =>
   state.status === 'succeeded' || state.status === 'example'
     ? state.output
     : undefined
 )
-const shown = computed(() => viewing.value ?? latest.value)
+const primary = computed(() => viewing.value?.output ?? latest.value)
+const currentAttachments = computed(
+  () => viewing.value?.attachments ?? attachments
+)
+const shown = computed(() => selectedAttachment.value ?? primary.value)
 
 // Only a result the visitor produced opens full screen; the example is a
 // sample of what the model makes, not their picture to inspect.
@@ -94,13 +115,16 @@ const currentUrl = computed(() => outputs.value[selected.value] ?? '')
 watch(latest, () => {
   viewing.value = undefined
 })
+watch(primary, () => {
+  selectedAttachment.value = undefined
+})
 
 // Earlier runs carry their own flag, so switching away from the latest output
 // must not drop the gate.
 const shownIsSensitive = computed(() =>
   viewing.value
-    ? viewing.value.nsfw === true
-    : state.status === 'succeeded' && state.nsfw
+    ? viewing.value.output.nsfw === true || shown.value?.nsfw === true
+    : (state.status === 'succeeded' && state.nsfw) || shown.value?.nsfw === true
 )
 const blurred = computed(() => shownIsSensitive.value && !revealed.value)
 watch(shown, () => {
@@ -121,10 +145,10 @@ const earlierClass = (active: boolean) =>
 <template>
   <section
     class="bg-transparency-white-t4 flex min-h-96 flex-col overflow-hidden rounded-2xl border border-transparency-white-t8"
-    aria-live="polite"
     data-testid="playground-output"
     :data-state="state.status"
   >
+    <p role="status" class="sr-only">{{ statusMessage }}</p>
     <header
       class="flex items-center justify-between border-b border-transparency-white-t8 px-5 py-3 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
     >
@@ -377,6 +401,24 @@ const earlierClass = (active: boolean) =>
       </div>
 
       <div
+        v-if="currentAttachments.length && !blurred"
+        class="flex flex-wrap gap-2 border-t border-transparency-white-t8 px-4 py-3"
+      >
+        <button
+          v-for="output in [primary, ...currentAttachments]"
+          :key="output?.url"
+          type="button"
+          :aria-pressed="shown === output"
+          :class="
+            cn(earlierClass(shown === output), 'size-auto px-3 py-2 break-all')
+          "
+          @click="selectedAttachment = output"
+        >
+          {{ output?.fileName }}
+        </button>
+      </div>
+
+      <div
         v-if="earlier.length && state.status === 'succeeded'"
         class="flex items-center gap-2 overflow-x-auto border-t border-transparency-white-t8 px-4 py-3"
         data-testid="earlier-runs"
@@ -400,23 +442,24 @@ const earlierClass = (active: boolean) =>
           :key="index"
           type="button"
           :aria-pressed="viewing === run"
+          :aria-label="`${t('workshop.output.earlier', locale)} ${index + 1}`"
           :class="earlierClass(viewing === run)"
           :data-testid="`earlier-run-${index}`"
           @click="viewing = run"
         >
           <video
-            v-if="run.kind === 'video'"
-            :src="run.url"
-            :class="cn('size-full object-cover', run.nsfw && 'blur-md')"
+            v-if="run.output.kind === 'video'"
+            :src="run.output.url"
+            :class="cn('size-full object-cover', run.output.nsfw && 'blur-md')"
             muted
             playsinline
             preload="metadata"
           />
           <img
-            v-else-if="run.kind === 'image'"
-            :src="run.url"
+            v-else-if="run.output.kind === 'image'"
+            :src="run.output.url"
             alt=""
-            :class="cn('size-full object-cover', run.nsfw && 'blur-md')"
+            :class="cn('size-full object-cover', run.output.nsfw && 'blur-md')"
           />
           <span v-else>{{ index + 2 }}</span>
         </button>

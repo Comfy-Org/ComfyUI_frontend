@@ -9459,6 +9459,11 @@ Enterprise`
 
   // Workshop – output
   'workshop.output.title': { en: 'Output', 'zh-CN': '输出' },
+  'workshop.output.complete': {
+    en: 'Generation complete.',
+    'zh-CN': '生成完成。',
+    ja: '生成が完了しました。'
+  },
   'workshop.output.truncated': {
     en: 'Preview shortened. Download the complete response below.',
     'zh-CN': '预览已缩短。请在下方下载完整响应。'
@@ -9467,6 +9472,11 @@ Enterprise`
   'workshop.output.exampleHint': {
     en: 'Run to generate your own.',
     'zh-CN': '运行以生成你自己的结果。'
+  },
+  'workshop.run.preparingSession': {
+    en: 'Checking your session…',
+    'zh-CN': '正在检查登录状态…',
+    ja: 'セッションを確認しています…'
   },
   'workshop.output.earlier': {
     en: 'Earlier runs this session',

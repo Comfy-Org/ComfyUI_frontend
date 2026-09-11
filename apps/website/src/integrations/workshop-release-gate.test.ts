@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { workshopReleaseGate } from './workshop-release-gate'
+import { modelsBuildRoutes, workshopReleaseGate } from './workshop-release-gate'
 
 let root: string
 const logger: AstroIntegrationLogger = {
@@ -44,6 +44,34 @@ async function buildDone() {
 }
 
 describe('Workshop release output', () => {
+  it('registers the original marketing entry when disabled and only approved Models routes when enabled', () => {
+    expect(modelsBuildRoutes(false)).toEqual([
+      {
+        pattern: '/models',
+        entrypoint: expect.stringContaining('/routes/models/showcase.astro')
+      }
+    ])
+    const enabled = modelsBuildRoutes(true)
+    expect(enabled.map((route) => route.pattern)).toEqual([
+      '/models',
+      '/models/[slug]',
+      '/models/showcase'
+    ])
+    expect(enabled[0].entrypoint).toContain('/routes/models/index.astro')
+    for (const route of enabled) expect(existsSync(route.entrypoint)).toBe(true)
+  })
+  it('preserves the established Models page and rejects ungated detail routes', async () => {
+    vi.stubEnv('WORKSHOP_IN_BUILD', '0')
+    await mkdir(join(root, 'models'), { recursive: true })
+    await writeFile(join(root, 'models/index.html'), 'Models marketing')
+    await buildDone()
+    expect(await readFile(join(root, 'models/index.html'), 'utf8')).toBe(
+      'Models marketing'
+    )
+    await mkdir(join(root, 'models/leaked-detail'))
+    await writeFile(join(root, 'models/leaked-detail/index.html'), 'Run')
+    await expect(buildDone()).rejects.toThrow('ungated Models route')
+  })
   it('removes only Workshop output when disabled, including repeated builds', async () => {
     vi.stubEnv('WORKSHOP_IN_BUILD', '0')
     await buildDone()

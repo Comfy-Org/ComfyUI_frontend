@@ -10,9 +10,14 @@ import HeaderMainDesktop from './HeaderMainDesktop.vue'
 import HeaderMainMobile from './HeaderMainMobile.vue'
 import Button from '@/components/ui/button/Button.vue'
 
-const { locale = 'en', githubStars = '' } = defineProps<{
+const {
+  locale = 'en',
+  githubStars = '',
+  workshopInBuild = false
+} = defineProps<{
   locale?: Locale
   githubStars?: string
+  workshopInBuild?: boolean
 }>()
 const routes = getRoutes(locale)
 const workshopAuthEnabled = useWorkshopAuthFlag()
@@ -65,19 +70,25 @@ const ctaButtons = [
     </a>
 
     <!-- Desktop nav links -->
-    <HeaderMainDesktop :locale class="hidden lg:block" />
+    <HeaderMainDesktop
+      :locale
+      :workshop-in-build
+      :class="workshopInBuild ? 'hidden xl:block' : 'hidden lg:block'"
+    />
     <div
       data-testid="mobile-nav-cta"
-      class="flex shrink-0 items-center gap-2 lg:hidden"
+      class="flex shrink-0 items-center gap-2"
+      :class="workshopInBuild ? 'xl:hidden' : 'lg:hidden'"
     >
       <HeaderAccount v-if="workshopAuthEnabled" :locale="locale" />
-      <HeaderMainMobile :locale />
+      <HeaderMainMobile :locale :workshop-in-build />
     </div>
 
     <!-- Desktop CTA buttons -->
     <div
       data-testid="desktop-nav-cta"
-      class="hidden shrink-0 items-center gap-2 lg:flex"
+      class="hidden shrink-0 items-center gap-2"
+      :class="workshopInBuild ? 'xl:flex' : 'lg:flex'"
     >
       <!-- Get Yoland to sign a contract of permission before killing this -->
       <GitHubStarBadge v-if="githubStars" :stars="githubStars" />

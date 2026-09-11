@@ -1,9 +1,8 @@
 // @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 
-import { usePrototypeTweaks } from '../../composables/usePrototypeTweaks'
 import type { WorkshopModel } from '../../config/models-catalogue'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
 
@@ -48,12 +47,9 @@ const models: WorkshopModel[] = [
 const cardNames = () =>
   screen.queryAllByTestId('workshop-model-card').map((card) => card.textContent)
 
-const { version } = usePrototypeTweaks()
-
 describe('WorkshopModelsGrid', () => {
-  // These cover the flat listing, which V1 reaches through its section rows.
-  beforeEach(() => {
-    version.value = 'v1.2'
+  afterEach(() => {
+    history.replaceState(null, '', '/')
   })
 
   it('searches by name and provider', async () => {
@@ -102,13 +98,14 @@ describe('WorkshopModelsGrid', () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
 
-    await user.click(screen.getByTestId('use-case-edit-images'))
+    await user.click(screen.getByRole('button', { name: 'Edit images 1' }))
     expect(
-      screen.getByTestId('use-case-edit-images').getAttribute('aria-pressed')
-    ).toBe('true')
+      screen.getByRole('heading', { level: 1, name: 'Edit images 1' })
+    ).toBeTruthy()
     expect(cardNames()).toEqual([expect.stringContaining('Flux')])
 
-    await user.click(screen.getByTestId('use-case-generate-videos'))
+    await user.click(screen.getByRole('button', { name: /Back to/ }))
+    await user.click(screen.getByRole('button', { name: 'Generate videos 1' }))
     expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
   })
 
@@ -143,6 +140,7 @@ describe('WorkshopModelsGrid', () => {
   it('sorts by popularity by default and by name on request', async () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
+    await user.type(screen.getByTestId('workshop-search'), ' ')
     expect(cardNames()[0]).toContain('Kling AI')
 
     await user.click(screen.getByTestId('workshop-sort'))

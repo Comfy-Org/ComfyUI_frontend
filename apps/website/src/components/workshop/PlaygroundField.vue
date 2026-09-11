@@ -48,7 +48,7 @@ const inputClass =
 
 const edited = ref(false)
 watch(
-  () => errors[field.name],
+  () => errors,
   () => {
     edited.value = false
   }
@@ -128,6 +128,7 @@ const uploadField = computed(() => {
 })
 
 function set(value: FieldValue) {
+  if (value === values.value[field.name]) return
   edited.value = true
   values.value = { ...values.value, [field.name]: value }
 }
@@ -200,7 +201,6 @@ function booleanValue(fallback = false): boolean {
       )
     "
     :data-testid="`field-group-${field.name}`"
-    @focusout="edited = true"
   >
     <div class="flex min-w-0 flex-col gap-0.5">
       <div class="flex items-baseline justify-between gap-3">

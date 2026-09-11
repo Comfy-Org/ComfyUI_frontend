@@ -4,7 +4,11 @@ import { fireEvent, render, screen, within } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
 
-import type { FieldSchema, FormValues } from '../../config/workshop-playground'
+import type {
+  FieldErrors,
+  FieldSchema,
+  FormValues
+} from '../../config/workshop-playground'
 import type { WorkshopInputDefinition } from '../../config/workshop-input-definition'
 import { resolveWorkshopUrlInputs } from '../../config/workshop-url-input'
 import {
@@ -17,7 +21,8 @@ import PlaygroundField from './PlaygroundField.vue'
 function mountField(
   field: FieldSchema,
   initial: FormValues = {},
-  locale: Locale = 'en'
+  locale: Locale = 'en',
+  errors: FieldErrors = {}
 ) {
   const values = ref<FormValues>(initial)
   render(
@@ -27,7 +32,7 @@ function mountField(
           h(PlaygroundField, {
             field,
             locale,
-            errors: {},
+            errors,
             modelValue: values.value,
             'onUpdate:modelValue': (next: FormValues) => {
               values.value = next
@@ -40,6 +45,26 @@ function mountField(
 }
 
 describe('PlaygroundField', () => {
+  it('retains a parent cross-field error when the unchanged field loses focus', async () => {
+    mountField(
+      {
+        kind: 'text',
+        name: 'input_task_id',
+        label: 'Task ID',
+        multiline: false,
+        required: false
+      },
+      { input_task_id: 'task-1' },
+      'en',
+      { input_task_id: 'rejected' }
+    )
+    const input = screen.getByRole('textbox', { name: 'Task ID' })
+    const error = screen.getByRole('alert').textContent
+    await userEvent.setup().click(input)
+    await userEvent.setup().tab()
+    expect(screen.getByRole('alert').textContent).toBe(error)
+    expect(input.getAttribute('aria-invalid')).toBe('true')
+  })
   it.for<{
     media: NonNullable<WorkshopInputDefinition['urlUpload']>
     name: string

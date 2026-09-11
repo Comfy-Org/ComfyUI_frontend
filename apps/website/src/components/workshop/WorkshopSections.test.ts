@@ -45,6 +45,26 @@ const models: WorkshopModel[] = [
 ]
 
 describe('WorkshopSections', () => {
+  it('deduplicates and limits the combined formats shelf while showing its full count', () => {
+    const entries = Array.from({ length: 10 }, (_, index) => ({
+      ...model(
+        `audio-${String(index).padStart(2, '0')}`,
+        'text-to-audio',
+        'audio'
+      ),
+      useCases: ['audio', 'text'] as const
+    }))
+    render(WorkshopSections, {
+      props: { models: entries, labelKey, sort: 'name' }
+    })
+    const shelf = within(screen.getByTestId('section-other-formats'))
+    expect(shelf.getByRole('button', { name: 'Other formats 10' })).toBeTruthy()
+    expect(
+      shelf
+        .getAllByRole('heading', { level: 3 })
+        .map((heading) => heading.textContent)
+    ).toEqual(entries.slice(0, 8).map((entry) => entry.name))
+  })
   it('groups models into a row per use case and counts every match', () => {
     render(WorkshopSections, { props: { models, labelKey } })
 

@@ -9,6 +9,7 @@ import AnnouncementBanner from '../templates/drops/AnnouncementBanner.vue'
 import { bannerConfig, getBannerData } from '../config/banner'
 import { getRoutes } from '../config/routes'
 import { isNoindexPathname } from '../config/indexing'
+import { isWorkshopInBuild } from '../config/workshop-release'
 import {
   hreflangAlternates,
   ogLocale,
@@ -252,7 +253,7 @@ const structuredData = shouldNoindex
         </a>
       </div>
     ) : (
-      <HeaderMain locale={locale} github-stars={githubStars} client:load />
+      <HeaderMain locale={locale} github-stars={githubStars} workshop-in-build={isWorkshopInBuild()} client:load />
     )}
     <!-- Horizontal clip lives here (not on <html>, which must stay overflow:
          visible for reka-ui's dialog scroll lock). <body>'s clip does not

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ChevronDown } from '@lucide/vue'
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import type {
   FieldErrors,
@@ -33,6 +33,19 @@ const groups = computed(() => groupPlaygroundFields(schema))
 const advancedHasErrors = computed(() =>
   groups.value.advanced.some((field) => errors[field.name] !== undefined)
 )
+const advancedOpen = ref(false)
+watch(
+  advancedHasErrors,
+  (hasErrors) => {
+    if (hasErrors) advancedOpen.value = true
+  },
+  { immediate: true }
+)
+
+function onAdvancedToggle(event: Event) {
+  if (event.target instanceof HTMLDetailsElement)
+    advancedOpen.value = event.target.open
+}
 </script>
 
 <template>
@@ -73,7 +86,8 @@ const advancedHasErrors = computed(() =>
       v-if="groups.advanced.length"
       class="group rounded-2xl border border-transparency-white-t8"
       data-testid="playground-advanced"
-      :open="advancedHasErrors || undefined"
+      :open="advancedOpen"
+      @toggle="onAdvancedToggle"
     >
       <summary
         class="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase select-none hover:text-primary-warm-white [&::-webkit-details-marker]:hidden"

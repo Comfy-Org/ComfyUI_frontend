@@ -117,6 +117,9 @@ describe('Advanced form values', () => {
     await nextTick()
     expect(disclosure.open).toBe(true)
     expect(screen.getByRole('alert')).toBeTruthy()
+    errors.value = {}
+    await nextTick()
+    expect(disclosure.open).toBe(true)
   })
 
   it('keeps edited typed values when Advanced is closed and validates its hidden fields', async () => {

@@ -7,12 +7,16 @@ import HeaderMainDesktop from './HeaderMainDesktop.vue'
 
 async function modelsLink(path: string) {
   history.replaceState(null, '', path)
-  render(HeaderMainDesktop)
+  render(HeaderMainDesktop, { props: { workshopInBuild: true } })
   await nextTick()
   return screen.getByRole('link', { name: /^Models\b/i })
 }
 
 describe('HeaderMainDesktop', () => {
+  it('does not add Models navigation without a build opt-in', () => {
+    render(HeaderMainDesktop)
+    expect(screen.queryByRole('link', { name: /^Models\b/i })).toBeNull()
+  })
   it('renders the Models leaf link with its NEW badge', async () => {
     const link = await modelsLink('/pricing')
     expect(link.getAttribute('href')).toBe('/models')

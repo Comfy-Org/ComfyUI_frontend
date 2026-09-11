@@ -23,6 +23,12 @@ export interface RunOutput {
   readonly nsfw?: boolean
 }
 
+/** One Router request, including any additional media and raw response. */
+export interface RunRecord {
+  readonly output: RunOutput
+  readonly attachments: readonly RunOutput[]
+}
+
 export type RunState =
   | { readonly status: 'idle' }
   | { readonly status: 'example'; readonly output: RunOutput }

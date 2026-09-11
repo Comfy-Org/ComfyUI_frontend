@@ -13,6 +13,7 @@ import FeaturedWorkflowsSection from '../../components/home/FeaturedWorkflowsSec
 import CaseStudySpotlightSection from '../../components/home/CaseStudySpotlightSection.vue'
 import GetStartedSection from '../../components/home/GetStartedSection.vue'
 import { t } from '../../i18n/translations'
+import { isWorkshopInBuild } from '../../config/workshop-release'
 import {
   comfyUiApplicationNode,
   comfyUiSoftwareId,
@@ -39,7 +40,7 @@ const { siteUrl } = pageContext(
   <DeveloperPlatformSection locale="zh-CN" client:visible />
   <MinimaxLicenseHeroSection locale="zh-CN" client:visible />
   <ModelReleaseSection locale="zh-CN" client:visible />
-  <ModelDiscoverySection locale="zh-CN" client:visible />
+  {isWorkshopInBuild() && <ModelDiscoverySection locale="zh-CN" client:visible />}
   <FeaturedWorkflowsSection locale="zh-CN" client:load />
   <ProductShowcaseSection locale="zh-CN" client:load />
   <IndustriesSection locale="zh-CN" client:load />

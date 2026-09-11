@@ -20,6 +20,9 @@ import ModelDetail from './ModelDetail.vue'
 
 const auth = vi.hoisted(() => ({
   session: { value: undefined as AccountCredential | undefined },
+  settled: { value: true },
+  enabled: { value: true },
+  flagSettled: { value: true },
   ensureFresh: vi.fn()
 }))
 
@@ -28,12 +31,18 @@ vi.mock(import('../../config/workshop-session-state'), () => ({
     user: computed(() => null),
     session: computed(() => auth.session.value),
     sessionFailure: computed<SessionFailure | undefined>(() => undefined),
-    settled: computed(() => true),
+    settled: computed(() => auth.settled.value),
     signedIn: computed(() => auth.session.value !== undefined),
     ensureFresh: auth.ensureFresh,
     remint: auth.ensureFresh,
     signOut: vi.fn().mockResolvedValue(undefined)
   })
+}))
+
+vi.mock(import('../../scripts/posthog'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  useWorkshopAuthFlag: () => computed(() => auth.enabled.value),
+  useWorkshopAuthFlagSettled: () => computed(() => auth.flagSettled.value)
 }))
 
 vi.mock(import('../../config/workshop-router'), async (importOriginal) => ({
@@ -161,6 +170,9 @@ const user = () =>
 describe('ModelDetail', () => {
   beforeEach(() => {
     auth.session = ref<AccountCredential>()
+    auth.settled = ref(true)
+    auth.enabled = ref(true)
+    auth.flagSettled = ref(true)
     localStorage.clear()
     sessionStorage.clear()
     vi.useFakeTimers()
@@ -621,13 +633,92 @@ describe('ModelDetail', () => {
 
   it('sends a signed-out visitor to sign in and come back', async () => {
     history.replaceState(null, '', '/models/demo/?tab=api')
-    mountDetail()
+    mountDetail({ model: runnable })
     await nextTick()
     const button = screen.getByTestId('run-button')
     expect(button.getAttribute('data-gate')).toBe('signedOut')
     expect(button.getAttribute('href')).toBe(
       '/login/?returnTo=%2Fmodels%2Fdemo%2F%3Ftab%3Dapi'
     )
+  })
+
+  it.for(['run', 'auth', 'model'] as const)(
+    'does not solicit sign-in when %s is unavailable',
+    (disabled) => {
+      if (disabled === 'run')
+        vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', undefined)
+      if (disabled === 'auth') auth.enabled.value = false
+      mountDetail({ model: disabled === 'model' ? model : runnable })
+      expect(screen.queryByRole('link', { name: 'Sign in to run' })).toBeNull()
+      expect(screen.getByTestId('run-button').hasAttribute('disabled')).toBe(
+        true
+      )
+    }
+  )
+
+  it.for(['session', 'flag'] as const)(
+    'waits for %s initialization before offering sign-in',
+    async (pending) => {
+      const readiness = pending === 'session' ? auth.settled : auth.flagSettled
+      readiness.value = false
+      mountDetail({ model: runnable })
+      expect(
+        screen
+          .getByRole('button', { name: 'Checking your session…' })
+          .hasAttribute('disabled')
+      ).toBe(true)
+      expect(screen.queryByRole('link', { name: 'Sign in to run' })).toBeNull()
+      auth.session.value = credential
+      readiness.value = true
+      await nextTick()
+      expect(
+        screen.getByRole('button', { name: 'Run' }).hasAttribute('disabled')
+      ).toBe(false)
+    }
+  )
+
+  it('keeps media and raw JSON in one run, then retains both in request history', async () => {
+    auth.session.value = credential
+    vi.mocked(runWorkshopRouter).mockResolvedValue({
+      ...routerResult,
+      outputs: [
+        ...routerResult.outputs,
+        {
+          kind: 'text',
+          url: 'blob:response',
+          fileName: 'response.json',
+          text: '{"id":"one"}'
+        }
+      ]
+    })
+    mountDetail({ model: runnable })
+    const visitor = user()
+    await visitor.type(
+      screen.getByRole('textbox', { name: /Prompt/ }),
+      'A mountain'
+    )
+    await visitor.click(screen.getByRole('button', { name: 'Run' }))
+    expect(screen.queryByTestId('earlier-runs')).toBeNull()
+    await visitor.click(screen.getByRole('button', { name: 'response.json' }))
+    expect(screen.getByText('{"id":"one"}')).toBeTruthy()
+
+    vi.mocked(runWorkshopRouter).mockResolvedValue({
+      ...routerResult,
+      outputs: [
+        {
+          kind: 'image',
+          url: 'https://assets.example/two.jpg',
+          fileName: 'two.jpg'
+        }
+      ]
+    })
+    await visitor.click(screen.getByRole('button', { name: 'Run' }))
+    expect(
+      within(screen.getByTestId('earlier-runs')).getAllByRole('button')
+    ).toHaveLength(2)
+    await visitor.click(screen.getByTestId('earlier-run-0'))
+    await visitor.click(screen.getByRole('button', { name: 'response.json' }))
+    expect(screen.getByText('{"id":"one"}')).toBeTruthy()
   })
 
   it('does not simulate a paid run after real authentication', async () => {

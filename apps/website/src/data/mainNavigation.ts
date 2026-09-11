@@ -41,10 +41,31 @@ export type NavItem =
       featured?: never
     }
 
-export function getMainNavigation(locale: Locale): NavItem[] {
+export function getMainNavigation(
+  locale: Locale,
+  workshopInBuild = false
+): NavItem[] {
   const routes = getRoutes(locale)
+  const modelsEntry: NavItem[] = workshopInBuild
+    ? [
+        {
+          label: t('nav.workshop', locale),
+          href: routes.workshop,
+          badge: 'new'
+        }
+      ]
+    : []
+  const productEntry: NavColumnItem[] = workshopInBuild
+    ? [
+        {
+          label: t('nav.comfyWorkshop', locale),
+          href: routes.workshop,
+          badge: 'new'
+        }
+      ]
+    : []
   return [
-    { label: t('nav.workshop', locale), href: routes.workshop, badge: 'new' },
+    ...modelsEntry,
     {
       label: t('nav.products', locale),
       badge: 'new',
@@ -62,11 +83,7 @@ export function getMainNavigation(locale: Locale): NavItem[] {
         {
           header: t('nav.products', locale),
           items: [
-            {
-              label: t('nav.comfyWorkshop', locale),
-              href: routes.workshop,
-              badge: 'new'
-            },
+            ...productEntry,
             { label: t('nav.comfyLocal', locale), href: routes.download },
             { label: t('nav.comfyCloud', locale), href: routes.cloud },
             {
