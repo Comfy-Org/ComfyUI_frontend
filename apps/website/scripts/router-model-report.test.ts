@@ -115,6 +115,37 @@ describe('persistent model results', () => {
     expect(grid).toContain('Router rejected the mapped inputs')
   })
 
+  it('preserves late collection evidence when reopening for a preflight run', () => {
+    const collected: RouterModelReportUpdate['live'] = {
+      ...passed,
+      completion: 'collected-after-timeout'
+    }
+    const report = openReport()
+    report.update({ ...model, live: collected })
+    report.close()
+
+    const resumed = openReport()
+    resumed.update({
+      ...model,
+      preflight: { status: 'ready', at: nextDate }
+    })
+
+    const saved: unknown = JSON.parse(readFileSync(paths.jsonPath, 'utf8'))
+    expect(saved).toMatchObject({
+      models: [
+        {
+          live: collected,
+          lastSuccess: collected,
+          preflight: { status: 'ready', at: nextDate }
+        }
+      ]
+    })
+    const grid = readFileSync(paths.markdownPath, 'utf8')
+    expect(grid).toContain('Collected after initial timeout')
+    expect(grid).toContain(`passed (${firstDate})`)
+    expect(grid).toContain('[Model testing](MODEL_TESTING.md)')
+  })
+
   it('counts account limits as blocked without declaring the model broken', () => {
     const report = openReport()
     report.update({

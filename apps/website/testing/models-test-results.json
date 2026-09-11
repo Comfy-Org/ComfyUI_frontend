@@ -405,22 +405,22 @@
       "inputMode": "page-defaults",
       "preflight": {
         "status": "ready",
-        "at": "2026-09-11T07:40:10.825Z",
+        "at": "2026-09-11T08:21:28.677Z",
         "fields": [],
         "source": {
-          "revision": "36e639dcee621f03a1208926c48ffbcea05774ac",
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
           "dirty": true,
-          "runId": "2026-09-11T07-40-10.649Z-d02f5083-717a-40b2-8695-c2e5e373b56c"
+          "runId": "2026-09-11T08-21-28.459Z-88a674be-5168-4224-8d7c-296984c1119a"
         }
       },
       "live": {
         "status": "failed",
-        "at": "2026-09-11T07:40:28.233Z",
-        "requestId": "7af603cc-be35-4cfb-84a2-88236d56d2ee",
+        "at": "2026-09-11T08:21:44.825Z",
+        "requestId": "c7600359-0454-4c9d-b159-341935e6616a",
         "source": {
-          "revision": "36e639dcee621f03a1208926c48ffbcea05774ac",
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
           "dirty": true,
-          "runId": "2026-09-11T07-40-10.649Z-d02f5083-717a-40b2-8695-c2e5e373b56c"
+          "runId": "2026-09-11T08-21-28.459Z-88a674be-5168-4224-8d7c-296984c1119a"
         },
         "failure": "invalid-input",
         "fields": [],
@@ -1097,26 +1097,51 @@
       "inputMode": "page-defaults",
       "preflight": {
         "status": "ready",
-        "at": "2026-09-11T07:22:21.981Z",
+        "at": "2026-09-11T08:07:50.238Z",
         "fields": [],
         "source": {
-          "revision": "36e639dcee621f03a1208926c48ffbcea05774ac",
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
           "dirty": true,
-          "runId": "2026-09-11T07-22-21.672Z-cf0be4c5-8c52-4aa5-afec-053604730a80"
+          "runId": "2026-09-11T08-07-50.020Z-06861d9d-adb4-4957-8d47-8117df4ca036"
         }
       },
       "live": {
-        "status": "failed",
-        "at": "2026-09-11T07:04:36.923Z",
-        "requestId": "04f213d7-dd7b-4551-a347-3d8c876db3c9",
+        "status": "passed",
+        "at": "2026-09-11T08:16:12.909Z",
+        "requestId": "f0f18849-bc99-4fd5-963e-f67cd427ab36",
         "source": {
-          "revision": "36e639dcee621f03a1208926c48ffbcea05774ac",
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
           "dirty": true,
-          "runId": "2026-09-11T07-01-40.685Z-127f9df3-7c83-4f5e-afd5-3dfae1f0cb03"
+          "runId": "media-remediation-replay-20260911"
         },
-        "failure": "invalid-input",
-        "fields": [],
-        "httpStatus": 400
+        "artifacts": [
+          {
+            "kind": "image",
+            "bytes": 116085,
+            "sha256": "b14541694ccc50e6dfce4ebb44fda503c47299e38a5b48b060696ff6de544af6",
+            "width": 256,
+            "height": 256
+          }
+        ]
+      },
+      "lastSuccess": {
+        "status": "passed",
+        "at": "2026-09-11T08:16:12.909Z",
+        "requestId": "f0f18849-bc99-4fd5-963e-f67cd427ab36",
+        "source": {
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
+          "dirty": true,
+          "runId": "media-remediation-replay-20260911"
+        },
+        "artifacts": [
+          {
+            "kind": "image",
+            "bytes": 116085,
+            "sha256": "b14541694ccc50e6dfce4ebb44fda503c47299e38a5b48b060696ff6de544af6",
+            "width": 256,
+            "height": 256
+          }
+        ]
       }
     },
     {
@@ -1638,26 +1663,53 @@
       "inputMode": "page-defaults",
       "preflight": {
         "status": "ready",
-        "at": "2026-09-11T07:40:10.840Z",
+        "at": "2026-09-11T08:08:10.513Z",
         "fields": [],
         "source": {
-          "revision": "36e639dcee621f03a1208926c48ffbcea05774ac",
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
           "dirty": true,
-          "runId": "2026-09-11T07-40-10.649Z-d02f5083-717a-40b2-8695-c2e5e373b56c"
+          "runId": "2026-09-11T08-08-10.189Z-1d4877c0-be1d-44ac-bbd2-0e0b6b150618"
         }
       },
       "live": {
-        "status": "failed",
-        "at": "2026-09-11T07:40:25.876Z",
-        "requestId": "747084bc-0aaf-41bc-89e3-6503637d6a1f",
+        "status": "passed",
+        "at": "2026-09-11T08:20:07.883Z",
+        "requestId": "ecdcdd78-b346-42dd-9b44-427f434cd8dd",
         "source": {
-          "revision": "36e639dcee621f03a1208926c48ffbcea05774ac",
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
           "dirty": true,
-          "runId": "2026-09-11T07-40-10.649Z-d02f5083-717a-40b2-8695-c2e5e373b56c"
+          "runId": "timeout-job-recovery-20260911"
         },
-        "failure": "invalid-input",
-        "fields": [],
-        "httpStatus": 400
+        "artifacts": [
+          {
+            "kind": "video",
+            "bytes": 5744140,
+            "sha256": "db36f90ff11839e262427f13cf2423e1d2324afe0f35e432c3ed14aa1c55a7f2",
+            "width": 1110,
+            "height": 836,
+            "durationSeconds": 5.041667
+          }
+        ]
+      },
+      "lastSuccess": {
+        "status": "passed",
+        "at": "2026-09-11T08:20:07.883Z",
+        "requestId": "ecdcdd78-b346-42dd-9b44-427f434cd8dd",
+        "source": {
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
+          "dirty": true,
+          "runId": "timeout-job-recovery-20260911"
+        },
+        "artifacts": [
+          {
+            "kind": "video",
+            "bytes": 5744140,
+            "sha256": "db36f90ff11839e262427f13cf2423e1d2324afe0f35e432c3ed14aa1c55a7f2",
+            "width": 1110,
+            "height": 836,
+            "durationSeconds": 5.041667
+          }
+        ]
       }
     },
     {
@@ -1782,51 +1834,51 @@
       "inputMode": "page-defaults",
       "preflight": {
         "status": "ready",
-        "at": "2026-09-11T07:40:10.844Z",
+        "at": "2026-09-11T08:08:10.516Z",
         "fields": [],
         "source": {
-          "revision": "36e639dcee621f03a1208926c48ffbcea05774ac",
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
           "dirty": true,
-          "runId": "2026-09-11T07-40-10.649Z-d02f5083-717a-40b2-8695-c2e5e373b56c"
+          "runId": "2026-09-11T08-08-10.189Z-1d4877c0-be1d-44ac-bbd2-0e0b6b150618"
         }
       },
       "live": {
         "status": "passed",
-        "at": "2026-09-11T07:43:56.899Z",
-        "requestId": "77a1979d-6692-4576-bd48-6a3e7bfb3f96",
+        "at": "2026-09-11T08:10:17.690Z",
+        "requestId": "c38791e1-d09e-45aa-9e49-86f8b5eef9a4",
         "source": {
-          "revision": "36e639dcee621f03a1208926c48ffbcea05774ac",
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
           "dirty": true,
-          "runId": "2026-09-11T07-40-10.649Z-d02f5083-717a-40b2-8695-c2e5e373b56c"
+          "runId": "2026-09-11T08-08-10.189Z-1d4877c0-be1d-44ac-bbd2-0e0b6b150618"
         },
         "artifacts": [
           {
             "kind": "video",
-            "bytes": 20691668,
-            "sha256": "734af85c7ddda3eb30af01756e5388e9b5d447126027dbdc1c8d4a69854f10cb",
-            "width": 1280,
-            "height": 720,
-            "durationSeconds": 10.08
+            "bytes": 14056414,
+            "sha256": "a74fe01f67a8f7cab49b1fbb4e41a3dac614c43aa7129b6f345b7d5b516bfc58",
+            "width": 1112,
+            "height": 834,
+            "durationSeconds": 5.088
           }
         ]
       },
       "lastSuccess": {
         "status": "passed",
-        "at": "2026-09-11T07:43:56.899Z",
-        "requestId": "77a1979d-6692-4576-bd48-6a3e7bfb3f96",
+        "at": "2026-09-11T08:10:17.690Z",
+        "requestId": "c38791e1-d09e-45aa-9e49-86f8b5eef9a4",
         "source": {
-          "revision": "36e639dcee621f03a1208926c48ffbcea05774ac",
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
           "dirty": true,
-          "runId": "2026-09-11T07-40-10.649Z-d02f5083-717a-40b2-8695-c2e5e373b56c"
+          "runId": "2026-09-11T08-08-10.189Z-1d4877c0-be1d-44ac-bbd2-0e0b6b150618"
         },
         "artifacts": [
           {
             "kind": "video",
-            "bytes": 20691668,
-            "sha256": "734af85c7ddda3eb30af01756e5388e9b5d447126027dbdc1c8d4a69854f10cb",
-            "width": 1280,
-            "height": 720,
-            "durationSeconds": 10.08
+            "bytes": 14056414,
+            "sha256": "a74fe01f67a8f7cab49b1fbb4e41a3dac614c43aa7129b6f345b7d5b516bfc58",
+            "width": 1112,
+            "height": 834,
+            "durationSeconds": 5.088
           }
         ]
       }
@@ -1839,26 +1891,53 @@
       "inputMode": "page-defaults",
       "preflight": {
         "status": "ready",
-        "at": "2026-09-11T07:40:10.845Z",
+        "at": "2026-09-11T08:08:10.518Z",
         "fields": [],
         "source": {
-          "revision": "36e639dcee621f03a1208926c48ffbcea05774ac",
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
           "dirty": true,
-          "runId": "2026-09-11T07-40-10.649Z-d02f5083-717a-40b2-8695-c2e5e373b56c"
+          "runId": "2026-09-11T08-08-10.189Z-1d4877c0-be1d-44ac-bbd2-0e0b6b150618"
         }
       },
       "live": {
-        "status": "failed",
-        "at": "2026-09-11T07:40:25.371Z",
-        "requestId": "07abc216-8fd1-4328-8601-f73533d23d91",
+        "status": "passed",
+        "at": "2026-09-11T08:11:00.278Z",
+        "requestId": "3c4c3451-b98a-4454-a082-356e8a274e98",
         "source": {
-          "revision": "36e639dcee621f03a1208926c48ffbcea05774ac",
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
           "dirty": true,
-          "runId": "2026-09-11T07-40-10.649Z-d02f5083-717a-40b2-8695-c2e5e373b56c"
+          "runId": "2026-09-11T08-08-10.189Z-1d4877c0-be1d-44ac-bbd2-0e0b6b150618"
         },
-        "failure": "invalid-input",
-        "fields": [],
-        "httpStatus": 400
+        "artifacts": [
+          {
+            "kind": "video",
+            "bytes": 9159914,
+            "sha256": "ec691e10cc671a1d60d46cb6f6b8afe1de8aecb23d209b9cf2423c3716064a5d",
+            "width": 1112,
+            "height": 834,
+            "durationSeconds": 5.088
+          }
+        ]
+      },
+      "lastSuccess": {
+        "status": "passed",
+        "at": "2026-09-11T08:11:00.278Z",
+        "requestId": "3c4c3451-b98a-4454-a082-356e8a274e98",
+        "source": {
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
+          "dirty": true,
+          "runId": "2026-09-11T08-08-10.189Z-1d4877c0-be1d-44ac-bbd2-0e0b6b150618"
+        },
+        "artifacts": [
+          {
+            "kind": "video",
+            "bytes": 9159914,
+            "sha256": "ec691e10cc671a1d60d46cb6f6b8afe1de8aecb23d209b9cf2423c3716064a5d",
+            "width": 1112,
+            "height": 834,
+            "durationSeconds": 5.088
+          }
+        ]
       }
     },
     {
@@ -1926,26 +2005,53 @@
       "inputMode": "page-defaults",
       "preflight": {
         "status": "ready",
-        "at": "2026-09-11T07:40:10.847Z",
+        "at": "2026-09-11T08:19:57.469Z",
         "fields": [],
         "source": {
-          "revision": "36e639dcee621f03a1208926c48ffbcea05774ac",
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
           "dirty": true,
-          "runId": "2026-09-11T07-40-10.649Z-d02f5083-717a-40b2-8695-c2e5e373b56c"
+          "runId": "2026-09-11T08-19-57.210Z-adf7c45a-c053-436b-9d29-ae676faa0f9f"
         }
       },
       "live": {
-        "status": "failed",
-        "at": "2026-09-11T07:42:22.720Z",
-        "requestId": "7c09482f-d734-4a9c-9f86-d98d3784327f",
+        "status": "passed",
+        "at": "2026-09-11T08:21:50.685Z",
+        "requestId": "41897afe-5d3f-447d-ab24-40fa7e9da76e",
         "source": {
-          "revision": "36e639dcee621f03a1208926c48ffbcea05774ac",
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
           "dirty": true,
-          "runId": "2026-09-11T07-40-10.649Z-d02f5083-717a-40b2-8695-c2e5e373b56c"
+          "runId": "2026-09-11T08-19-57.210Z-adf7c45a-c053-436b-9d29-ae676faa0f9f"
         },
-        "failure": "provider-error",
-        "fields": [],
-        "httpStatus": 502
+        "artifacts": [
+          {
+            "kind": "video",
+            "bytes": 9389622,
+            "sha256": "bfffbf72eacc3bc839ed642a3eb2b2eb6b917d9257fbb55e539bf6cac6365fdb",
+            "width": 960,
+            "height": 960,
+            "durationSeconds": 5.088
+          }
+        ]
+      },
+      "lastSuccess": {
+        "status": "passed",
+        "at": "2026-09-11T08:21:50.685Z",
+        "requestId": "41897afe-5d3f-447d-ab24-40fa7e9da76e",
+        "source": {
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
+          "dirty": true,
+          "runId": "2026-09-11T08-19-57.210Z-adf7c45a-c053-436b-9d29-ae676faa0f9f"
+        },
+        "artifacts": [
+          {
+            "kind": "video",
+            "bytes": 9389622,
+            "sha256": "bfffbf72eacc3bc839ed642a3eb2b2eb6b917d9257fbb55e539bf6cac6365fdb",
+            "width": 960,
+            "height": 960,
+            "durationSeconds": 5.088
+          }
+        ]
       }
     },
     {
@@ -2848,26 +2954,53 @@
       "inputMode": "page-defaults",
       "preflight": {
         "status": "ready",
-        "at": "2026-09-11T07:40:10.853Z",
+        "at": "2026-09-11T08:08:10.519Z",
         "fields": [],
         "source": {
-          "revision": "36e639dcee621f03a1208926c48ffbcea05774ac",
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
           "dirty": true,
-          "runId": "2026-09-11T07-40-10.649Z-d02f5083-717a-40b2-8695-c2e5e373b56c"
+          "runId": "2026-09-11T08-08-10.189Z-1d4877c0-be1d-44ac-bbd2-0e0b6b150618"
         }
       },
       "live": {
-        "status": "failed",
-        "at": "2026-09-11T07:40:33.156Z",
-        "requestId": "295e9c62-c647-4a0e-8ce9-4ac3accc20d4",
+        "status": "passed",
+        "at": "2026-09-11T08:09:30.095Z",
+        "requestId": "418f0168-128d-44b7-b2a9-7abe9ee2d4b3",
         "source": {
-          "revision": "36e639dcee621f03a1208926c48ffbcea05774ac",
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
           "dirty": true,
-          "runId": "2026-09-11T07-40-10.649Z-d02f5083-717a-40b2-8695-c2e5e373b56c"
+          "runId": "2026-09-11T08-08-10.189Z-1d4877c0-be1d-44ac-bbd2-0e0b6b150618"
         },
-        "failure": "invalid-input",
-        "fields": [],
-        "httpStatus": 400
+        "artifacts": [
+          {
+            "kind": "video",
+            "bytes": 3243841,
+            "sha256": "967a9d4ee8018deab226e602767ecc4472e6b0c5c62a2df8a4d533866473ad7d",
+            "width": 1280,
+            "height": 720,
+            "durationSeconds": 10.005
+          }
+        ]
+      },
+      "lastSuccess": {
+        "status": "passed",
+        "at": "2026-09-11T08:09:30.095Z",
+        "requestId": "418f0168-128d-44b7-b2a9-7abe9ee2d4b3",
+        "source": {
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
+          "dirty": true,
+          "runId": "2026-09-11T08-08-10.189Z-1d4877c0-be1d-44ac-bbd2-0e0b6b150618"
+        },
+        "artifacts": [
+          {
+            "kind": "video",
+            "bytes": 3243841,
+            "sha256": "967a9d4ee8018deab226e602767ecc4472e6b0c5c62a2df8a4d533866473ad7d",
+            "width": 1280,
+            "height": 720,
+            "durationSeconds": 10.005
+          }
+        ]
       }
     },
     {
@@ -2992,26 +3125,53 @@
       "inputMode": "page-defaults",
       "preflight": {
         "status": "ready",
-        "at": "2026-09-11T07:40:10.856Z",
+        "at": "2026-09-11T08:08:10.520Z",
         "fields": [],
         "source": {
-          "revision": "36e639dcee621f03a1208926c48ffbcea05774ac",
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
           "dirty": true,
-          "runId": "2026-09-11T07-40-10.649Z-d02f5083-717a-40b2-8695-c2e5e373b56c"
+          "runId": "2026-09-11T08-08-10.189Z-1d4877c0-be1d-44ac-bbd2-0e0b6b150618"
         }
       },
       "live": {
-        "status": "failed",
-        "at": "2026-09-11T07:40:35.978Z",
-        "requestId": "8cd43b8d-296a-4bd5-a632-6c7e18a5e8e1",
+        "status": "passed",
+        "at": "2026-09-11T08:09:34.465Z",
+        "requestId": "944a0f75-64da-49c9-b994-45f97ee7dd22",
         "source": {
-          "revision": "36e639dcee621f03a1208926c48ffbcea05774ac",
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
           "dirty": true,
-          "runId": "2026-09-11T07-40-10.649Z-d02f5083-717a-40b2-8695-c2e5e373b56c"
+          "runId": "2026-09-11T08-08-10.189Z-1d4877c0-be1d-44ac-bbd2-0e0b6b150618"
         },
-        "failure": "invalid-input",
-        "fields": [],
-        "httpStatus": 400
+        "artifacts": [
+          {
+            "kind": "video",
+            "bytes": 2463518,
+            "sha256": "f315a3324bd49a0a3df8c15e47b9f572762d6dcfddfa9523aab7ec9341a4aa7c",
+            "width": 1280,
+            "height": 720,
+            "durationSeconds": 10.005
+          }
+        ]
+      },
+      "lastSuccess": {
+        "status": "passed",
+        "at": "2026-09-11T08:09:34.465Z",
+        "requestId": "944a0f75-64da-49c9-b994-45f97ee7dd22",
+        "source": {
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
+          "dirty": true,
+          "runId": "2026-09-11T08-08-10.189Z-1d4877c0-be1d-44ac-bbd2-0e0b6b150618"
+        },
+        "artifacts": [
+          {
+            "kind": "video",
+            "bytes": 2463518,
+            "sha256": "f315a3324bd49a0a3df8c15e47b9f572762d6dcfddfa9523aab7ec9341a4aa7c",
+            "width": 1280,
+            "height": 720,
+            "durationSeconds": 10.005
+          }
+        ]
       }
     },
     {
@@ -3529,26 +3689,53 @@
       "inputMode": "page-defaults",
       "preflight": {
         "status": "ready",
-        "at": "2026-09-11T07:40:10.868Z",
+        "at": "2026-09-11T08:17:57.838Z",
         "fields": [],
         "source": {
-          "revision": "36e639dcee621f03a1208926c48ffbcea05774ac",
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
           "dirty": true,
-          "runId": "2026-09-11T07-40-10.649Z-d02f5083-717a-40b2-8695-c2e5e373b56c"
+          "runId": "2026-09-11T08-17-57.585Z-f61e011b-c4fa-454d-bbb4-21cbbfe3814b"
         }
       },
       "live": {
-        "status": "failed",
-        "at": "2026-09-11T07:40:47.464Z",
-        "requestId": "683f8b3b-284d-4609-a11b-68ac400e70d6",
+        "status": "passed",
+        "at": "2026-09-11T08:20:59.442Z",
+        "requestId": "b081b852-2b9b-4a9f-b65d-2386c9a696a7",
         "source": {
-          "revision": "36e639dcee621f03a1208926c48ffbcea05774ac",
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
           "dirty": true,
-          "runId": "2026-09-11T07-40-10.649Z-d02f5083-717a-40b2-8695-c2e5e373b56c"
+          "runId": "2026-09-11T08-17-57.585Z-f61e011b-c4fa-454d-bbb4-21cbbfe3814b"
         },
-        "failure": "provider-error",
-        "fields": [],
-        "httpStatus": 502
+        "artifacts": [
+          {
+            "kind": "video",
+            "bytes": 9613450,
+            "sha256": "c4476098f929d28e2a263edaa4c7b171bb031268aa2373ebc8d5b6c1439172ba",
+            "width": 1920,
+            "height": 1072,
+            "durationSeconds": 9.9
+          }
+        ]
+      },
+      "lastSuccess": {
+        "status": "passed",
+        "at": "2026-09-11T08:20:59.442Z",
+        "requestId": "b081b852-2b9b-4a9f-b65d-2386c9a696a7",
+        "source": {
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
+          "dirty": true,
+          "runId": "2026-09-11T08-17-57.585Z-f61e011b-c4fa-454d-bbb4-21cbbfe3814b"
+        },
+        "artifacts": [
+          {
+            "kind": "video",
+            "bytes": 9613450,
+            "sha256": "c4476098f929d28e2a263edaa4c7b171bb031268aa2373ebc8d5b6c1439172ba",
+            "width": 1920,
+            "height": 1072,
+            "durationSeconds": 9.9
+          }
+        ]
       }
     },
     {
@@ -4134,26 +4321,53 @@
       "inputMode": "page-defaults",
       "preflight": {
         "status": "ready",
-        "at": "2026-09-11T07:27:18.245Z",
+        "at": "2026-09-11T08:19:57.472Z",
         "fields": [],
         "source": {
-          "revision": "36e639dcee621f03a1208926c48ffbcea05774ac",
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
           "dirty": true,
-          "runId": "2026-09-11T07-27-17.893Z-5d98c0ce-ce7c-4fe5-b49b-f7c9846b151e"
+          "runId": "2026-09-11T08-19-57.210Z-adf7c45a-c053-436b-9d29-ae676faa0f9f"
         }
       },
       "live": {
-        "status": "failed",
-        "at": "2026-09-11T07:32:47.870Z",
-        "requestId": "a96e5fb8-9e0b-4b68-9080-b0910d1db6d1",
+        "status": "passed",
+        "at": "2026-09-11T08:30:49.156Z",
+        "requestId": "5798d60b-ee15-48dc-b62a-3fa2ca22f9b7",
         "source": {
-          "revision": "36e639dcee621f03a1208926c48ffbcea05774ac",
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
           "dirty": true,
-          "runId": "2026-09-11T07-27-17.893Z-5d98c0ce-ce7c-4fe5-b49b-f7c9846b151e"
+          "runId": "luma-selected-assets-replay-20260911"
         },
-        "failure": "provider-error",
-        "fields": [],
-        "httpStatus": 502
+        "artifacts": [
+          {
+            "kind": "image",
+            "bytes": 204711,
+            "sha256": "f7b7ab0831e8114f93399dd6614f15697f2c1db0cc82660b81a672b8d8a45a70",
+            "width": 2048,
+            "height": 1152,
+            "durationSeconds": 0.04
+          }
+        ]
+      },
+      "lastSuccess": {
+        "status": "passed",
+        "at": "2026-09-11T08:30:49.156Z",
+        "requestId": "5798d60b-ee15-48dc-b62a-3fa2ca22f9b7",
+        "source": {
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
+          "dirty": true,
+          "runId": "luma-selected-assets-replay-20260911"
+        },
+        "artifacts": [
+          {
+            "kind": "image",
+            "bytes": 204711,
+            "sha256": "f7b7ab0831e8114f93399dd6614f15697f2c1db0cc82660b81a672b8d8a45a70",
+            "width": 2048,
+            "height": 1152,
+            "durationSeconds": 0.04
+          }
+        ]
       }
     },
     {
@@ -4164,26 +4378,53 @@
       "inputMode": "page-defaults",
       "preflight": {
         "status": "ready",
-        "at": "2026-09-11T07:27:18.247Z",
+        "at": "2026-09-11T08:19:57.475Z",
         "fields": [],
         "source": {
-          "revision": "36e639dcee621f03a1208926c48ffbcea05774ac",
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
           "dirty": true,
-          "runId": "2026-09-11T07-27-17.893Z-5d98c0ce-ce7c-4fe5-b49b-f7c9846b151e"
+          "runId": "2026-09-11T08-19-57.210Z-adf7c45a-c053-436b-9d29-ae676faa0f9f"
         }
       },
       "live": {
-        "status": "failed",
-        "at": "2026-09-11T07:32:52.622Z",
-        "requestId": "424c7626-3102-4309-9ee3-ec1688395c0b",
+        "status": "passed",
+        "at": "2026-09-11T08:30:49.200Z",
+        "requestId": "5d206a18-ebe3-4f88-b700-fdcde67364e3",
         "source": {
-          "revision": "36e639dcee621f03a1208926c48ffbcea05774ac",
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
           "dirty": true,
-          "runId": "2026-09-11T07-27-17.893Z-5d98c0ce-ce7c-4fe5-b49b-f7c9846b151e"
+          "runId": "luma-selected-assets-replay-20260911"
         },
-        "failure": "provider-error",
-        "fields": [],
-        "httpStatus": 502
+        "artifacts": [
+          {
+            "kind": "image",
+            "bytes": 156230,
+            "sha256": "9f32dd4e1764a3c56cdcd7c53f66e6be73d5aacfeec357cf6e2775db9403ac6c",
+            "width": 1536,
+            "height": 1536,
+            "durationSeconds": 0.04
+          }
+        ]
+      },
+      "lastSuccess": {
+        "status": "passed",
+        "at": "2026-09-11T08:30:49.200Z",
+        "requestId": "5d206a18-ebe3-4f88-b700-fdcde67364e3",
+        "source": {
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
+          "dirty": true,
+          "runId": "luma-selected-assets-replay-20260911"
+        },
+        "artifacts": [
+          {
+            "kind": "image",
+            "bytes": 156230,
+            "sha256": "9f32dd4e1764a3c56cdcd7c53f66e6be73d5aacfeec357cf6e2775db9403ac6c",
+            "width": 1536,
+            "height": 1536,
+            "durationSeconds": 0.04
+          }
+        ]
       }
     },
     {
@@ -4203,17 +4444,44 @@
         }
       },
       "live": {
-        "status": "failed",
-        "at": "2026-09-11T07:36:27.022Z",
-        "requestId": "9cf4fce0-d502-4320-928f-a25b167ebac1",
+        "status": "passed",
+        "at": "2026-09-11T08:30:49.062Z",
+        "requestId": "64840e18-5179-4505-9acb-588fed927862",
         "source": {
-          "revision": "36e639dcee621f03a1208926c48ffbcea05774ac",
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
           "dirty": true,
-          "runId": "2026-09-11T07-27-17.893Z-5d98c0ce-ce7c-4fe5-b49b-f7c9846b151e"
+          "runId": "luma-selected-assets-replay-20260911"
         },
-        "failure": "timeout",
-        "fields": [],
-        "httpStatus": 504
+        "artifacts": [
+          {
+            "kind": "image",
+            "bytes": 217077,
+            "sha256": "31a5ace3bc3472e39490d2f1892424dab52b9d8a6c52b0888a1759f6c70e6e0e",
+            "width": 2048,
+            "height": 1152,
+            "durationSeconds": 0.04
+          }
+        ]
+      },
+      "lastSuccess": {
+        "status": "passed",
+        "at": "2026-09-11T08:30:49.062Z",
+        "requestId": "64840e18-5179-4505-9acb-588fed927862",
+        "source": {
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
+          "dirty": true,
+          "runId": "luma-selected-assets-replay-20260911"
+        },
+        "artifacts": [
+          {
+            "kind": "image",
+            "bytes": 217077,
+            "sha256": "31a5ace3bc3472e39490d2f1892424dab52b9d8a6c52b0888a1759f6c70e6e0e",
+            "width": 2048,
+            "height": 1152,
+            "durationSeconds": 0.04
+          }
+        ]
       }
     },
     {
@@ -4233,17 +4501,44 @@
         }
       },
       "live": {
-        "status": "failed",
-        "at": "2026-09-11T07:36:27.400Z",
-        "requestId": "8f43b483-b841-4a8b-87b5-9d4d22137a58",
+        "status": "passed",
+        "at": "2026-09-11T08:30:49.109Z",
+        "requestId": "5fdaca36-37fb-4cfa-9867-4580c55c17f0",
         "source": {
-          "revision": "36e639dcee621f03a1208926c48ffbcea05774ac",
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
           "dirty": true,
-          "runId": "2026-09-11T07-27-17.893Z-5d98c0ce-ce7c-4fe5-b49b-f7c9846b151e"
+          "runId": "luma-selected-assets-replay-20260911"
         },
-        "failure": "timeout",
-        "fields": [],
-        "httpStatus": 504
+        "artifacts": [
+          {
+            "kind": "image",
+            "bytes": 169773,
+            "sha256": "af1befcc0cdd14ed535b097e904a16314be53cdb2b977670b634215c34188541",
+            "width": 2048,
+            "height": 1152,
+            "durationSeconds": 0.04
+          }
+        ]
+      },
+      "lastSuccess": {
+        "status": "passed",
+        "at": "2026-09-11T08:30:49.109Z",
+        "requestId": "5fdaca36-37fb-4cfa-9867-4580c55c17f0",
+        "source": {
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
+          "dirty": true,
+          "runId": "luma-selected-assets-replay-20260911"
+        },
+        "artifacts": [
+          {
+            "kind": "image",
+            "bytes": 169773,
+            "sha256": "af1befcc0cdd14ed535b097e904a16314be53cdb2b977670b634215c34188541",
+            "width": 2048,
+            "height": 1152,
+            "durationSeconds": 0.04
+          }
+        ]
       }
     },
     {
@@ -4949,16 +5244,42 @@
         }
       },
       "live": {
-        "status": "failed",
-        "at": "2026-09-11T07:30:40.230Z",
+        "status": "passed",
+        "at": "2026-09-11T08:07:33.033Z",
         "requestId": "cea0d0ec-b6ef-4ff0-a394-c7516f3a52be",
         "source": {
-          "revision": "36e639dcee621f03a1208926c48ffbcea05774ac",
+          "revision": "f9745e3f8b",
           "dirty": true,
-          "runId": "recraft-parser-replay-20260911"
+          "runId": "recraft-svg-remediation-20260911"
         },
-        "failure": "output-kind",
-        "artifacts": []
+        "artifacts": [
+          {
+            "kind": "image",
+            "bytes": 303237,
+            "sha256": "6dad39ae79cae80ba32fb4599b727f91950e067ddab312e21d734f1218780760",
+            "width": 1024,
+            "height": 1024
+          }
+        ]
+      },
+      "lastSuccess": {
+        "status": "passed",
+        "at": "2026-09-11T08:07:33.033Z",
+        "requestId": "cea0d0ec-b6ef-4ff0-a394-c7516f3a52be",
+        "source": {
+          "revision": "f9745e3f8b",
+          "dirty": true,
+          "runId": "recraft-svg-remediation-20260911"
+        },
+        "artifacts": [
+          {
+            "kind": "image",
+            "bytes": 303237,
+            "sha256": "6dad39ae79cae80ba32fb4599b727f91950e067ddab312e21d734f1218780760",
+            "width": 1024,
+            "height": 1024
+          }
+        ]
       }
     },
     {
@@ -5033,16 +5354,42 @@
         }
       },
       "live": {
-        "status": "failed",
-        "at": "2026-09-11T07:30:41.205Z",
+        "status": "passed",
+        "at": "2026-09-11T08:07:33.247Z",
         "requestId": "8b39f2f5-05b4-4b69-84d9-c487af5b37e3",
         "source": {
-          "revision": "36e639dcee621f03a1208926c48ffbcea05774ac",
+          "revision": "f9745e3f8b",
           "dirty": true,
-          "runId": "recraft-parser-replay-20260911"
+          "runId": "recraft-svg-remediation-20260911"
         },
-        "failure": "output-kind",
-        "artifacts": []
+        "artifacts": [
+          {
+            "kind": "image",
+            "bytes": 372790,
+            "sha256": "76ad41380f5e1525801f933a209b4f7aa57ecf947d8dfda777e8129ba9dd47b8",
+            "width": 2048,
+            "height": 2048
+          }
+        ]
+      },
+      "lastSuccess": {
+        "status": "passed",
+        "at": "2026-09-11T08:07:33.247Z",
+        "requestId": "8b39f2f5-05b4-4b69-84d9-c487af5b37e3",
+        "source": {
+          "revision": "f9745e3f8b",
+          "dirty": true,
+          "runId": "recraft-svg-remediation-20260911"
+        },
+        "artifacts": [
+          {
+            "kind": "image",
+            "bytes": 372790,
+            "sha256": "76ad41380f5e1525801f933a209b4f7aa57ecf947d8dfda777e8129ba9dd47b8",
+            "width": 2048,
+            "height": 2048
+          }
+        ]
       }
     },
     {
@@ -5117,16 +5464,42 @@
         }
       },
       "live": {
-        "status": "failed",
-        "at": "2026-09-11T07:30:41.920Z",
+        "status": "passed",
+        "at": "2026-09-11T08:07:33.442Z",
         "requestId": "50415a6a-e653-4ce0-909b-a78362b00e5a",
         "source": {
-          "revision": "36e639dcee621f03a1208926c48ffbcea05774ac",
+          "revision": "f9745e3f8b",
           "dirty": true,
-          "runId": "recraft-parser-replay-20260911"
+          "runId": "recraft-svg-remediation-20260911"
         },
-        "failure": "output-kind",
-        "artifacts": []
+        "artifacts": [
+          {
+            "kind": "image",
+            "bytes": 109007,
+            "sha256": "aeac6fbeef192b0a0f98757b22fd2e58da461cb6ff2c70879ed74170412f4b38",
+            "width": 1024,
+            "height": 1024
+          }
+        ]
+      },
+      "lastSuccess": {
+        "status": "passed",
+        "at": "2026-09-11T08:07:33.442Z",
+        "requestId": "50415a6a-e653-4ce0-909b-a78362b00e5a",
+        "source": {
+          "revision": "f9745e3f8b",
+          "dirty": true,
+          "runId": "recraft-svg-remediation-20260911"
+        },
+        "artifacts": [
+          {
+            "kind": "image",
+            "bytes": 109007,
+            "sha256": "aeac6fbeef192b0a0f98757b22fd2e58da461cb6ff2c70879ed74170412f4b38",
+            "width": 1024,
+            "height": 1024
+          }
+        ]
       }
     },
     {
@@ -5201,16 +5574,42 @@
         }
       },
       "live": {
-        "status": "failed",
-        "at": "2026-09-11T07:30:43.005Z",
+        "status": "passed",
+        "at": "2026-09-11T08:07:33.708Z",
         "requestId": "c722f227-43d0-411d-8a42-1fe8e5029ad6",
         "source": {
-          "revision": "36e639dcee621f03a1208926c48ffbcea05774ac",
+          "revision": "f9745e3f8b",
           "dirty": true,
-          "runId": "recraft-parser-replay-20260911"
+          "runId": "recraft-svg-remediation-20260911"
         },
-        "failure": "output-kind",
-        "artifacts": []
+        "artifacts": [
+          {
+            "kind": "image",
+            "bytes": 153481,
+            "sha256": "8d829afe5ffaee334cf1c7e06deda5079387f52595ae1ffc7ffbf7676b16b6e6",
+            "width": 2048,
+            "height": 2048
+          }
+        ]
+      },
+      "lastSuccess": {
+        "status": "passed",
+        "at": "2026-09-11T08:07:33.708Z",
+        "requestId": "c722f227-43d0-411d-8a42-1fe8e5029ad6",
+        "source": {
+          "revision": "f9745e3f8b",
+          "dirty": true,
+          "runId": "recraft-svg-remediation-20260911"
+        },
+        "artifacts": [
+          {
+            "kind": "image",
+            "bytes": 153481,
+            "sha256": "8d829afe5ffaee334cf1c7e06deda5079387f52595ae1ffc7ffbf7676b16b6e6",
+            "width": 2048,
+            "height": 2048
+          }
+        ]
       }
     },
     {
@@ -5285,16 +5684,42 @@
         }
       },
       "live": {
-        "status": "failed",
-        "at": "2026-09-11T07:30:43.840Z",
+        "status": "passed",
+        "at": "2026-09-11T08:07:33.904Z",
         "requestId": "e762096d-4922-43e8-8bca-65866012c705",
         "source": {
-          "revision": "36e639dcee621f03a1208926c48ffbcea05774ac",
+          "revision": "f9745e3f8b",
           "dirty": true,
-          "runId": "recraft-parser-replay-20260911"
+          "runId": "recraft-svg-remediation-20260911"
         },
-        "failure": "output-kind",
-        "artifacts": []
+        "artifacts": [
+          {
+            "kind": "image",
+            "bytes": 63413,
+            "sha256": "7972dd4b4ab9560796cabb16439461fb3b6a1e71487a01a639725c8fe2434a43",
+            "width": 1024,
+            "height": 1024
+          }
+        ]
+      },
+      "lastSuccess": {
+        "status": "passed",
+        "at": "2026-09-11T08:07:33.904Z",
+        "requestId": "e762096d-4922-43e8-8bca-65866012c705",
+        "source": {
+          "revision": "f9745e3f8b",
+          "dirty": true,
+          "runId": "recraft-svg-remediation-20260911"
+        },
+        "artifacts": [
+          {
+            "kind": "image",
+            "bytes": 63413,
+            "sha256": "7972dd4b4ab9560796cabb16439461fb3b6a1e71487a01a639725c8fe2434a43",
+            "width": 1024,
+            "height": 1024
+          }
+        ]
       }
     },
     {
@@ -5369,16 +5794,42 @@
         }
       },
       "live": {
-        "status": "failed",
-        "at": "2026-09-11T07:30:44.917Z",
+        "status": "passed",
+        "at": "2026-09-11T08:07:34.187Z",
         "requestId": "4f06f737-dce1-445e-a4c7-4b8d28398652",
         "source": {
-          "revision": "36e639dcee621f03a1208926c48ffbcea05774ac",
+          "revision": "f9745e3f8b",
           "dirty": true,
-          "runId": "recraft-parser-replay-20260911"
+          "runId": "recraft-svg-remediation-20260911"
         },
-        "failure": "output-kind",
-        "artifacts": []
+        "artifacts": [
+          {
+            "kind": "image",
+            "bytes": 282929,
+            "sha256": "bd4c8ec1046340db168e40942b07541a08c02c162ea21f2212aec763816edcf1",
+            "width": 2048,
+            "height": 2048
+          }
+        ]
+      },
+      "lastSuccess": {
+        "status": "passed",
+        "at": "2026-09-11T08:07:34.187Z",
+        "requestId": "4f06f737-dce1-445e-a4c7-4b8d28398652",
+        "source": {
+          "revision": "f9745e3f8b",
+          "dirty": true,
+          "runId": "recraft-svg-remediation-20260911"
+        },
+        "artifacts": [
+          {
+            "kind": "image",
+            "bytes": 282929,
+            "sha256": "bd4c8ec1046340db168e40942b07541a08c02c162ea21f2212aec763816edcf1",
+            "width": 2048,
+            "height": 2048
+          }
+        ]
       }
     },
     {
@@ -5453,16 +5904,42 @@
         }
       },
       "live": {
-        "status": "failed",
-        "at": "2026-09-11T07:30:45.707Z",
+        "status": "passed",
+        "at": "2026-09-11T08:07:34.369Z",
         "requestId": "49a8c65b-d723-43d5-a448-7e223a9d0c39",
         "source": {
-          "revision": "36e639dcee621f03a1208926c48ffbcea05774ac",
+          "revision": "f9745e3f8b",
           "dirty": true,
-          "runId": "recraft-parser-replay-20260911"
+          "runId": "recraft-svg-remediation-20260911"
         },
-        "failure": "output-kind",
-        "artifacts": []
+        "artifacts": [
+          {
+            "kind": "image",
+            "bytes": 69829,
+            "sha256": "5a2a0c7e291d7711288e3880b844048344e6f3acc5bd0a0060db1948239478dc",
+            "width": 1024,
+            "height": 1024
+          }
+        ]
+      },
+      "lastSuccess": {
+        "status": "passed",
+        "at": "2026-09-11T08:07:34.369Z",
+        "requestId": "49a8c65b-d723-43d5-a448-7e223a9d0c39",
+        "source": {
+          "revision": "f9745e3f8b",
+          "dirty": true,
+          "runId": "recraft-svg-remediation-20260911"
+        },
+        "artifacts": [
+          {
+            "kind": "image",
+            "bytes": 69829,
+            "sha256": "5a2a0c7e291d7711288e3880b844048344e6f3acc5bd0a0060db1948239478dc",
+            "width": 1024,
+            "height": 1024
+          }
+        ]
       }
     },
     {
@@ -6568,26 +7045,53 @@
       "inputMode": "page-defaults",
       "preflight": {
         "status": "ready",
-        "at": "2026-09-11T07:40:10.888Z",
+        "at": "2026-09-11T08:29:07.586Z",
         "fields": [],
         "source": {
-          "revision": "36e639dcee621f03a1208926c48ffbcea05774ac",
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
           "dirty": true,
-          "runId": "2026-09-11T07-40-10.649Z-d02f5083-717a-40b2-8695-c2e5e373b56c"
+          "runId": "2026-09-11T08-29-07.417Z-4a038604-2aba-4ab1-b6dc-a5d1770596ec"
         }
       },
       "live": {
-        "status": "failed",
-        "at": "2026-09-11T07:41:11.270Z",
-        "requestId": "6be58d83-766c-4fc6-b926-86d04bf8e1be",
+        "status": "passed",
+        "at": "2026-09-11T08:31:31.173Z",
+        "requestId": "7cd8d350-d735-4294-8289-c38ac28a8a50",
         "source": {
-          "revision": "36e639dcee621f03a1208926c48ffbcea05774ac",
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
           "dirty": true,
-          "runId": "2026-09-11T07-40-10.649Z-d02f5083-717a-40b2-8695-c2e5e373b56c"
+          "runId": "2026-09-11T08-29-07.417Z-4a038604-2aba-4ab1-b6dc-a5d1770596ec"
         },
-        "failure": "provider-error",
-        "fields": [],
-        "httpStatus": 502
+        "artifacts": [
+          {
+            "kind": "video",
+            "bytes": 9411158,
+            "sha256": "24ea32c1ab4ef2f705626cd13dd0e7da44fc597a98c2810f70a54f816bfde08a",
+            "width": 1282,
+            "height": 718,
+            "durationSeconds": 5.038005
+          }
+        ]
+      },
+      "lastSuccess": {
+        "status": "passed",
+        "at": "2026-09-11T08:31:31.173Z",
+        "requestId": "7cd8d350-d735-4294-8289-c38ac28a8a50",
+        "source": {
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
+          "dirty": true,
+          "runId": "2026-09-11T08-29-07.417Z-4a038604-2aba-4ab1-b6dc-a5d1770596ec"
+        },
+        "artifacts": [
+          {
+            "kind": "video",
+            "bytes": 9411158,
+            "sha256": "24ea32c1ab4ef2f705626cd13dd0e7da44fc597a98c2810f70a54f816bfde08a",
+            "width": 1282,
+            "height": 718,
+            "durationSeconds": 5.038005
+          }
+        ]
       }
     },
     {
@@ -6655,26 +7159,53 @@
       "inputMode": "page-defaults",
       "preflight": {
         "status": "ready",
-        "at": "2026-09-11T07:40:10.890Z",
+        "at": "2026-09-11T08:29:07.588Z",
         "fields": [],
         "source": {
-          "revision": "36e639dcee621f03a1208926c48ffbcea05774ac",
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
           "dirty": true,
-          "runId": "2026-09-11T07-40-10.649Z-d02f5083-717a-40b2-8695-c2e5e373b56c"
+          "runId": "2026-09-11T08-29-07.417Z-4a038604-2aba-4ab1-b6dc-a5d1770596ec"
         }
       },
       "live": {
-        "status": "failed",
-        "at": "2026-09-11T07:41:14.499Z",
-        "requestId": "a43be7ad-a814-491a-aa53-5fab076a264d",
+        "status": "passed",
+        "at": "2026-09-11T08:32:02.301Z",
+        "requestId": "aa784471-80c6-4018-8835-b57c43e93dfe",
         "source": {
-          "revision": "36e639dcee621f03a1208926c48ffbcea05774ac",
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
           "dirty": true,
-          "runId": "2026-09-11T07-40-10.649Z-d02f5083-717a-40b2-8695-c2e5e373b56c"
+          "runId": "2026-09-11T08-29-07.417Z-4a038604-2aba-4ab1-b6dc-a5d1770596ec"
         },
-        "failure": "provider-error",
-        "fields": [],
-        "httpStatus": 502
+        "artifacts": [
+          {
+            "kind": "video",
+            "bytes": 11592191,
+            "sha256": "5c81a40eb98c0fc7b5c219aa1baeba3d02849523d496be88a90cd85018417a55",
+            "width": 1280,
+            "height": 720,
+            "durationSeconds": 5.038005
+          }
+        ]
+      },
+      "lastSuccess": {
+        "status": "passed",
+        "at": "2026-09-11T08:32:02.301Z",
+        "requestId": "aa784471-80c6-4018-8835-b57c43e93dfe",
+        "source": {
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
+          "dirty": true,
+          "runId": "2026-09-11T08-29-07.417Z-4a038604-2aba-4ab1-b6dc-a5d1770596ec"
+        },
+        "artifacts": [
+          {
+            "kind": "video",
+            "bytes": 11592191,
+            "sha256": "5c81a40eb98c0fc7b5c219aa1baeba3d02849523d496be88a90cd85018417a55",
+            "width": 1280,
+            "height": 720,
+            "durationSeconds": 5.038005
+          }
+        ]
       }
     },
     {
@@ -6685,26 +7216,53 @@
       "inputMode": "page-defaults",
       "preflight": {
         "status": "ready",
-        "at": "2026-09-11T07:40:10.891Z",
+        "at": "2026-09-11T08:29:07.590Z",
         "fields": [],
         "source": {
-          "revision": "36e639dcee621f03a1208926c48ffbcea05774ac",
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
           "dirty": true,
-          "runId": "2026-09-11T07-40-10.649Z-d02f5083-717a-40b2-8695-c2e5e373b56c"
+          "runId": "2026-09-11T08-29-07.417Z-4a038604-2aba-4ab1-b6dc-a5d1770596ec"
         }
       },
       "live": {
-        "status": "failed",
-        "at": "2026-09-11T07:41:15.770Z",
-        "requestId": "0030b4f5-5fcc-4e81-a2c5-32df4d31d7bc",
+        "status": "passed",
+        "at": "2026-09-11T08:31:07.788Z",
+        "requestId": "9a2f2ee0-8ebe-4c66-9c0b-7292c5d57fa0",
         "source": {
-          "revision": "36e639dcee621f03a1208926c48ffbcea05774ac",
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
           "dirty": true,
-          "runId": "2026-09-11T07-40-10.649Z-d02f5083-717a-40b2-8695-c2e5e373b56c"
+          "runId": "2026-09-11T08-29-07.417Z-4a038604-2aba-4ab1-b6dc-a5d1770596ec"
         },
-        "failure": "provider-error",
-        "fields": [],
-        "httpStatus": 502
+        "artifacts": [
+          {
+            "kind": "video",
+            "bytes": 30610954,
+            "sha256": "c91247f4ed0d8b6442025e955f827c52c1527cb8076a469efa2215aee0509d7f",
+            "width": 960,
+            "height": 960,
+            "durationSeconds": 10.030998
+          }
+        ]
+      },
+      "lastSuccess": {
+        "status": "passed",
+        "at": "2026-09-11T08:31:07.788Z",
+        "requestId": "9a2f2ee0-8ebe-4c66-9c0b-7292c5d57fa0",
+        "source": {
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
+          "dirty": true,
+          "runId": "2026-09-11T08-29-07.417Z-4a038604-2aba-4ab1-b6dc-a5d1770596ec"
+        },
+        "artifacts": [
+          {
+            "kind": "video",
+            "bytes": 30610954,
+            "sha256": "c91247f4ed0d8b6442025e955f827c52c1527cb8076a469efa2215aee0509d7f",
+            "width": 960,
+            "height": 960,
+            "durationSeconds": 10.030998
+          }
+        ]
       }
     },
     {
@@ -7235,17 +7793,44 @@
         }
       },
       "live": {
-        "status": "failed",
-        "at": "2026-09-11T07:36:51.247Z",
-        "requestId": "623197d7-bedd-462d-a95a-70ce11e3452d",
+        "status": "passed",
+        "at": "2026-09-11T08:19:04.365Z",
+        "requestId": "31e0569f-b55d-40a7-92d5-deb740156bc3",
         "source": {
-          "revision": "36e639dcee621f03a1208926c48ffbcea05774ac",
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
           "dirty": true,
-          "runId": "2026-09-11T07-27-17.893Z-5d98c0ce-ce7c-4fe5-b49b-f7c9846b151e"
+          "runId": "timeout-job-recovery-20260911"
         },
-        "failure": "timeout",
-        "fields": [],
-        "httpStatus": 504
+        "artifacts": [
+          {
+            "kind": "image",
+            "bytes": 2868056,
+            "sha256": "d6f305afa9b8d3ac51eede9bd60aac13d01b5b754542328de70f23cbb4f11b15",
+            "width": 4096,
+            "height": 4096,
+            "durationSeconds": 0.04
+          }
+        ]
+      },
+      "lastSuccess": {
+        "status": "passed",
+        "at": "2026-09-11T08:19:04.365Z",
+        "requestId": "31e0569f-b55d-40a7-92d5-deb740156bc3",
+        "source": {
+          "revision": "f9745e3f8bc328ceb5ccd8ea1a9b0f951ef04c7b",
+          "dirty": true,
+          "runId": "timeout-job-recovery-20260911"
+        },
+        "artifacts": [
+          {
+            "kind": "image",
+            "bytes": 2868056,
+            "sha256": "d6f305afa9b8d3ac51eede9bd60aac13d01b5b754542328de70f23cbb4f11b15",
+            "width": 4096,
+            "height": 4096,
+            "durationSeconds": 0.04
+          }
+        ]
       }
     },
     {

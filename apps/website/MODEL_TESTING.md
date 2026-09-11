@@ -21,6 +21,13 @@ provides both. You need a Comfy API key with credits in the environment being
 tested. The tester runs locally against hosted Router; provider secrets and a
 local Router deployment are not needed.
 
+Vector image outputs also require Playwright Chromium. The tester uses it to
+run the page's SVG-to-PNG renderer before checking the image:
+
+```sh
+pnpm --filter @comfyorg/website exec playwright install chromium
+```
+
 Load the key into the exported `COMFY_KEY` variable through your secret manager
 or shell profile. To enter it without displaying it or putting its value into
 shell history, use this in zsh (the macOS default shell):
@@ -158,6 +165,17 @@ the shared Router client also has its own 660-second request limit. A timeout
 or Ctrl-C can leave an accepted provider job running and billable. Inspect its
 saved request ID and idempotency key before deciding whether to submit again.
 Use `pnpm --filter @comfyorg/website test:router-models --help` for all options.
+
+Some asynchronous jobs finish after Router's synchronous deadline. Production
+logs can confirm that Router parked a particular job for collection. In that
+case, preserve the original key, authenticated scope, endpoint and exact compact
+request bytes; preparing inputs again or starting a new campaign can create a
+new job. The September 11 [backend investigation](reviews/2026-09-11-backend-model-failures.md)
+documents the verified recovery path and its expiry. A completion or billing log
+alone does not count as a pass: the recovered media must still be decoded.
+The grid labels these passes `Collected after initial timeout`; their saved
+`completion: "collected-after-timeout"` evidence distinguishes successful
+collection from successful completion within the initial page request.
 
 ## Results, separate campaigns and commits
 
