@@ -1,4 +1,5 @@
 import type { WorkshopModel } from '../../config/models-catalogue'
+import { externalLinks } from '../../config/routes'
 
 /**
  * Where a model's docs live. The Router docs page carries one section per
@@ -13,7 +14,7 @@ import type { WorkshopModel } from '../../config/models-catalogue'
  * and "Luma 2" stay distinct. A new model under a known provider needs
  * nothing; a new provider needs one line here once its docs section exists.
  */
-const DOCS_URL = 'https://docs.comfy.org/development/comfy-router/models'
+const DOCS_URL = externalLinks.docsComfyRouterModels
 
 const ANCHORS: Readonly<Record<string, string>> = {
   anthropic: 'anthropic',
