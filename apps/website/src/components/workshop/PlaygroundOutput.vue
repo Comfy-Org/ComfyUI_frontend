@@ -23,7 +23,7 @@ import type {
   RunState
 } from '../../config/workshop-run'
 import { formatElapsed, isExpired } from '../../config/workshop-run'
-import { WORKSHOP_CLOUD_BASE_URL } from '../../config/workshop-env'
+import { WORKSHOP_CREDITS_URL } from '../../config/workshop-env'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
@@ -78,11 +78,6 @@ const statusMessage = computed(() => {
   if (state.status === 'succeeded') return t('workshop.output.complete', locale)
   return ''
 })
-
-const buyCreditsHref = new URL(
-  '/?settings=plan-credits',
-  WORKSHOP_CLOUD_BASE_URL
-).href
 
 const selected = ref(0)
 // Earlier outputs from this visit stay reachable; the latest is the default.
@@ -241,7 +236,7 @@ const earlierClass = (active: boolean) =>
       <Button
         v-if="state.reason === 'noCredits'"
         as="a"
-        :href="buyCreditsHref"
+        :href="WORKSHOP_CREDITS_URL"
         target="_blank"
         rel="noopener noreferrer"
         variant="outline"

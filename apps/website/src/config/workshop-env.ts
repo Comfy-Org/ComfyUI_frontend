@@ -34,6 +34,11 @@ const CLOUD_BASE_URLS: Record<WorkshopCloudEnv, string> = {
 export const WORKSHOP_ROUTER_BASE_URL = ROUTER_BASE_URLS[WORKSHOP_CLOUD_ENV]
 export const WORKSHOP_CLOUD_BASE_URL = CLOUD_BASE_URLS[WORKSHOP_CLOUD_ENV]
 
+export const WORKSHOP_CREDITS_URL = new URL(
+  '/?settings=plan-credits',
+  WORKSHOP_CLOUD_BASE_URL
+).href
+
 // Public web-app configs, same values the platform app ships in
 // src/config/firebase.ts. Staging and test both validate tokens from the dev
 // project; prod validates the prod project.

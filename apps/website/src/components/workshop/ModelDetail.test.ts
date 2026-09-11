@@ -15,6 +15,7 @@ import { WorkshopRouterError } from '../../config/workshop-router-errors'
 import { workshopContract } from '../../config/workshop-contract-catalog'
 import { getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
 import { refreshWorkshopCredits } from '../../config/workshop-credits'
+import type { useWorkshopCredits } from '../../config/workshop-credits'
 import { WORKSHOP_CLOUD_BASE_URL } from '../../config/workshop-env'
 import ModelDetail from './ModelDetail.vue'
 
@@ -25,6 +26,15 @@ const auth = vi.hoisted(() => ({
   flagSettled: { value: true },
   ensureFresh: vi.fn()
 }))
+
+const credits = vi.hoisted(() => {
+  function initialBalance(): ReturnType<
+    typeof useWorkshopCredits
+  >['balance']['value'] {
+    return { status: 'unknown' }
+  }
+  return { balance: { value: initialBalance() } }
+})
 
 vi.mock(import('../../config/workshop-session-state'), () => ({
   useWorkshopSession: () => ({
@@ -50,8 +60,13 @@ vi.mock(import('../../config/workshop-router'), async (importOriginal) => ({
   runWorkshopRouter: vi.fn()
 }))
 
-vi.mock(import('../../config/workshop-credits'), () => ({
-  refreshWorkshopCredits: vi.fn().mockResolvedValue(undefined)
+vi.mock(import('../../config/workshop-credits'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  refreshWorkshopCredits: vi.fn().mockResolvedValue(undefined),
+  useWorkshopCredits: () => ({
+    balance: computed(() => credits.balance.value),
+    session: computed(() => auth.session.value)
+  })
 }))
 
 const credential: AccountCredential = {
@@ -173,6 +188,9 @@ describe('ModelDetail', () => {
     auth.settled = ref(true)
     auth.enabled = ref(true)
     auth.flagSettled = ref(true)
+    credits.balance = ref<
+      ReturnType<typeof useWorkshopCredits>['balance']['value']
+    >({ status: 'unknown' })
     localStorage.clear()
     sessionStorage.clear()
     vi.useFakeTimers()
@@ -255,7 +273,8 @@ describe('ModelDetail', () => {
       init?.method === 'POST'
         ? Response.json({
             upload_url: 'https://storage.example/upload',
-            download_url: 'https://storage.example/image.png'
+            download_url: 'https://storage.example/image.png',
+            expires_at: new Date(Date.now() + 3_600_000).toISOString()
           })
         : new Response(null, { status: 200 })
     )
@@ -435,6 +454,79 @@ describe('ModelDetail', () => {
     )
     expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
     expect(runWorkshopRouter).toHaveBeenCalledTimes(1)
+  })
+
+  it('offers billing immediately at zero credits and enables Run when the balance refreshes', async () => {
+    auth.session.value = credential
+    credits.balance.value = { status: 'ok', credits: 0 }
+    mountDetail({ model: runnable })
+    const visitor = user()
+    await visitor.type(
+      screen.getByRole('textbox', { name: /Prompt/ }),
+      'A red teapot'
+    )
+
+    const buy = screen.getByRole('link', { name: 'Buy credits' })
+    expect(buy.getAttribute('href')).toBe(
+      `${WORKSHOP_CLOUD_BASE_URL}/?settings=plan-credits`
+    )
+    expect(buy.getAttribute('target')).toBe('_blank')
+    expect(screen.queryByRole('button', { name: 'Run' })).toBeNull()
+    expect(runWorkshopRouter).not.toHaveBeenCalled()
+
+    credits.balance.value = { status: 'ok', credits: 100 }
+    await nextTick()
+    expect(screen.getByRole('button', { name: 'Run' })).toBeTruthy()
+    expect(screen.queryByRole('link', { name: 'Buy credits' })).toBeNull()
+    expect(screen.getByRole('textbox', { name: /Prompt/ })).toHaveProperty(
+      'value',
+      'A red teapot'
+    )
+  })
+
+  it.for(['unknown', 'error'] as const)(
+    'does not mistake an %s balance for zero credits',
+    (status) => {
+      auth.session.value = credential
+      credits.balance.value = { status }
+      mountDetail({ model: runnable })
+      expect(screen.getByRole('button', { name: 'Run' })).toBeTruthy()
+      expect(screen.queryByRole('link', { name: 'Buy credits' })).toBeNull()
+    }
+  )
+
+  it('does not suggest buying credits to enable an unavailable model', () => {
+    auth.session.value = credential
+    credits.balance.value = { status: 'ok', credits: 0 }
+    mountDetail()
+    expect(screen.getByTestId('run-button').hasAttribute('disabled')).toBe(true)
+    expect(screen.queryByRole('link', { name: 'Buy credits' })).toBeNull()
+  })
+
+  it('keeps cancellation available if the balance becomes zero during a run', async () => {
+    auth.session.value = credential
+    credits.balance.value = { status: 'ok', credits: 100 }
+    const pending = Promise.withResolvers<typeof routerResult>()
+    vi.mocked(runWorkshopRouter).mockReturnValue(pending.promise)
+    mountDetail({ model: runnable })
+    const visitor = user()
+    await visitor.type(
+      screen.getByRole('textbox', { name: /Prompt/ }),
+      'A teapot'
+    )
+    await visitor.click(screen.getByRole('button', { name: 'Run' }))
+    await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledTimes(1))
+
+    credits.balance.value = { status: 'ok', credits: 0 }
+    await nextTick()
+    expect(screen.getByTestId('run-button').textContent).toContain('Cancel')
+    await visitor.click(screen.getByTestId('run-button'))
+    expect(
+      screen.getByTestId('playground-output').getAttribute('data-state')
+    ).toBe('cancelled')
+    expect(screen.getByRole('link', { name: 'Buy credits' })).toBeTruthy()
+    pending.resolve(routerResult)
+    await vi.waitFor(() => expect(refreshWorkshopCredits).toHaveBeenCalled())
   })
 
   it('retries an unchanged failed request with its original key, but a deliberate new run gets a new key', async () => {

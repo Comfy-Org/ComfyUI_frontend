@@ -25,7 +25,11 @@ import {
 } from '../../config/workshop-playground'
 import type { RunOutput, RunRecord, RunState } from '../../config/workshop-run'
 import { IDLE, transition } from '../../config/workshop-run'
-import { refreshWorkshopCredits } from '../../config/workshop-credits'
+import {
+  refreshWorkshopCredits,
+  useWorkshopCredits
+} from '../../config/workshop-credits'
+import { WORKSHOP_CREDITS_URL } from '../../config/workshop-env'
 import { runWorkshopRouter } from '../../config/workshop-router'
 import { prepareWorkshopRouterInput } from '../../config/workshop-request'
 import { createWorkshopUrlUploader } from '../../config/workshop-url-upload'
@@ -156,6 +160,7 @@ const revealed = ref(false)
 
 const { user, session, sessionFailure, settled, ensureFresh } =
   useWorkshopSession()
+const { balance } = useWorkshopCredits()
 const authEnabled = useWorkshopAuthFlag()
 const authFlagSettled = useWorkshopAuthFlagSettled()
 const signInHref = useSignInHref(locale)
@@ -171,7 +176,14 @@ const gate = computed(() => {
   if (!authFlagSettled.value) return 'pending'
   if (!authEnabled.value || sessionFailure.value) return 'unavailable'
   if (!settled.value || (user.value && !session.value)) return 'pending'
-  return session.value ? 'ready' : 'signedOut'
+  if (!session.value) return 'signedOut'
+  if (
+    runState.value.status !== 'running' &&
+    balance.value.status === 'ok' &&
+    balance.value.credits <= 0
+  )
+    return 'noCredits'
+  return 'ready'
 })
 const errors = computed<FieldErrors>(() =>
   runState.value.status === 'failed' ? runState.value.fieldErrors : {}
@@ -474,6 +486,19 @@ function useInCode() {
             {{ t('workshop.run.signIn', locale) }}
           </Button>
           <Button
+            v-else-if="gate === 'noCredits'"
+            as="a"
+            :href="WORKSHOP_CREDITS_URL"
+            target="_blank"
+            rel="noopener noreferrer"
+            size="lg"
+            class="w-full px-5"
+            data-testid="run-button"
+            data-gate="noCredits"
+          >
+            {{ t('nav.buyCredits', locale) }}
+          </Button>
+          <Button
             v-else-if="gate === 'ready'"
             size="lg"
             class="w-full px-5"
@@ -504,6 +529,13 @@ function useInCode() {
               )
             }}
           </Button>
+          <p
+            v-if="gate === 'noCredits'"
+            role="status"
+            class="text-center text-sm text-primary-warm-gray"
+          >
+            {{ t('workshop.error.noCredits', locale) }}
+          </p>
         </div>
       </div>
 
