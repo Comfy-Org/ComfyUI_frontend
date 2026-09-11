@@ -7979,7 +7979,7 @@
     }
   },
   "ImageColorSpace": {
-    "description": "Преобразование между sRGB (Rec.709), HDR (Rec.2020 HLG) и HDR PQ (Rec.2020 PQ). Используются белая точка SDR 203 нит и эталонный HLG-дисплей 1000 нит. Сужение диапазона выполняет тональное отображение избыточной яркости по всему пакету и сжимает цвета вне цветового охвата. Преобразования вычисляются в float32 и возвращают промежуточные устройство и тип данных. Прямой альфа-канал не преобразуется по цвету.",
+    "description": "Преобразование sRGB, линейного Rec.709, HDR (Rec.2020 HLG) и HDR PQ (Rec.2020 PQ). Линейный 1.0 использует тот же опорный белый 203 нит, что и sRGB; HLG использует опорный дисплей 1000 нит. Линейный вывод и преобразования из линейного в HDR сохраняют расширенные значения без тонального отображения. Вывод SDR и преобразование PQ в HLG применяют тональное отображение избыточной яркости по всему пакету и сжимают цвета вне цветового охвата. Преобразования выполняются в float32 и возвращают промежуточные device и dtype. Прямой альфа-канал не подвергается цветовому преобразованию.",
     "display_name": "Преобразовать цветовое пространство изображения",
     "inputs": {
       "destination": {
@@ -24023,7 +24023,7 @@
     }
   },
   "TripoImageToModelNode": {
-    "display_name": "Tripo: Изображение в модель",
+    "display_name": "Tripo: Изображение в модель (устаревшее)",
     "inputs": {
       "auto_size": {
         "name": "auto_size",
@@ -24094,6 +24094,75 @@
         "tooltip": "Пусто, когда включён quad."
       },
       "3": {
+        "name": "FBX",
+        "tooltip": "Заполняется только при включённом quad."
+      }
+    }
+  },
+  "TripoImageToModelNodeV2": {
+    "display_name": "Tripo: Изображение в модель",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Масштабировать текстурированные модели до их реального размера в метрах. Tripo сохраняет размер как трансформацию сцены модели и применяет его при конвертации, риггинге или ретаргетинге модели; без texture игнорируется."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "Максимальное число полигонов. -1 позволяет Tripo выбирать адаптивно (около 1,4 млн полигонов для v3.x standard, 2 млн для detailed). Tripo молча ограничивает значение: v2.5 — до 500 000, quad-сетки — до 150 000."
+      },
+      "geometry_quality": {
+        "name": "geometry_quality"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "Версия модели, используемая для генерации"
+      },
+      "orientation": {
+        "name": "orientation"
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "Карты материалов PBR (базовый цвет, металличность, шероховатость, нормали). Требуется texture."
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "Вывод quad-сетки. Tripo поставляет quad-сетки в формате FBX, поэтому результат поступает на выход FBX, а выход GLB остаётся пустым."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "Низкополигональная сетка с чистой топологией в стиле ручной работы (500–20 000 полигонов, quad 500–10 000). Лучше всего подходит для простых объектов; сложные могут завершиться ошибкой."
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "Генерировать карты текстур. При отключении возвращается чистая геометрия, а pbr игнорируется."
+      },
+      "texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = текстуры HD, extreme = текстуры 8K Ultra."
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "task_id модели",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Пусто, когда quad включён."
+      },
+      "2": {
         "name": "FBX",
         "tooltip": "Заполняется только при включённом quad."
       }
@@ -24427,7 +24496,7 @@
       },
       "animation": {
         "name": "анимация",
-        "tooltip": "Анимации preset:* работают с обеими моделями рига; анимации preset:biped:* требуют рига, созданного моделью v1.0-20240301."
+        "tooltip": "Анимации preset:* работают с обеими риг-моделями. Анимации preset:biped:* предназначены для ригов из model v1.0-20240301; риг v2.5 принимает только chop, climb, dive, fall, hurt, idle, jump, run, shoot, slash, turn и walk."
       },
       "export_with_geometry": {
         "name": "export_with_geometry",
@@ -24591,6 +24660,48 @@
       }
     }
   },
+  "TripoSmartSegmentNode": {
+    "description": "Разделяет модель на семантически значимые части и даёт им названия. Для изображения Tripo сначала генерирует модель. task_id сегмента передаётся в Tripo: Complete Mesh Parts, Tripo: Retopology, Tripo: Texture model и Tripo: Convert model так же, как результат Tripo: Segment Model.",
+    "display_name": "Tripo: Умная сегментация",
+    "inputs": {
+      "source": {
+        "name": "source",
+        "tooltip": "Сегментировать существующую модель или сгенерировать модель из изображения и сегментировать её."
+      },
+      "source_granularity": {
+        "name": "granularity"
+      },
+      "source_hint": {
+        "name": "hint"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "task_id сегмента",
+        "tooltip": null
+      },
+      "1": {
+        "name": "task_id модели",
+        "tooltip": "Сегментированная модель (сгенерированная из изображения или импортированная)."
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "part_names",
+        "tooltip": "Имена частей, разделённые запятыми."
+      },
+      "4": {
+        "name": "parts",
+        "tooltip": "Описание частей, найденных Tripo."
+      },
+      "5": {
+        "name": "маска",
+        "tooltip": null
+      }
+    }
+  },
   "TripoSplatConditioning": {
     "description": "Кодирует изображение с помощью DINOv3 и Flux2 VAE в TripoSplat положительное/отрицательное кондиционирование и создаёт целевой шум фиксированного размера (latent + камера) для KSampler.",
     "display_name": "TripoSplat кондиционирование",
@@ -24687,7 +24798,7 @@
     }
   },
   "TripoTextToModelNode": {
-    "display_name": "Tripo: Текст в модель",
+    "display_name": "Tripo: преобразование текста в модель (устаревшее)",
     "inputs": {
       "auto_size": {
         "name": "auto_size",
@@ -24763,8 +24874,77 @@
       }
     }
   },
+  "TripoTextToModelNodeV2": {
+    "display_name": "Tripo: преобразование текста в модель",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Масштабировать текстурированные модели до их реального размера в метрах. Tripo сохраняет размер как преобразование сцены модели и запекает его при конвертации, риггинге или ретаргетинге модели; без texture игнорируется."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "Максимальное число граней. -1 позволяет Tripo выбрать значение адаптивно (около 1,4 млн граней для стандартной v3.x, 2 млн — для detailed). Tripo незаметно ограничивает: v2.5 — до 500 000, quad-сетки — до 150 000."
+      },
+      "geometry_quality": {
+        "name": "geometry_quality"
+      },
+      "image_seed": {
+        "name": "image_seed"
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "model_version": {
+        "name": "model_version"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "До 255 символов."
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "Карты PBR-материалов (базовый цвет, металличность, шероховатость, нормали). Требуется texture."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "Вывод quad-сетки. Tripo поставляет quad-сетки в формате FBX, поэтому результат поступает на выход FBX, а выход GLB остаётся пустым."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "Низкополигональная сетка с чистой топологией в стиле ручной работы (500–20 000 граней, quad: 500–10 000). Лучше всего подходит для простых объектов; со сложными возможны ошибки."
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "Генерировать карты текстур. При выключении возвращается только геометрия, а pbr игнорируется."
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = HD-текстуры, extreme = 8K Ultra-текстуры."
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "task_id модели",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Пусто, когда включён quad."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Заполняется только при включённом quad."
+      }
+    }
+  },
   "TripoTextureNode": {
-    "display_name": "Tripo: Модель текстур",
+    "display_name": "Tripo: текстурирование модели (устаревшее)",
     "inputs": {
       "model_task_id": {
         "name": "model_task_id"
@@ -24822,6 +25002,62 @@
         "tooltip": "Пусто, если источником является четырёхугольная сетка или импорт FBX."
       },
       "3": {
+        "name": "FBX",
+        "tooltip": "Tripo возвращает FBX для четырёхугольных сеток и импортов FBX; в остальных случаях пусто."
+      }
+    }
+  },
+  "TripoTextureNodeV2": {
+    "display_name": "Tripo: текстурирование модели",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "Модель текстур: v3.0 для сеток, созданных с помощью v3.x, v2.5 для сеток, созданных с помощью v2.5."
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "Разделённые запятыми названия частей из Tripo: Segment Model для текстурирования. Если пусто, текстурируются все части."
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "Карты PBR-материалов (базовый цвет, металличность, шероховатость, нормали); при выключении создаётся однотонная текстура."
+      },
+      "reference": {
+        "name": "reference",
+        "tooltip": "Референсные изображения, задающие текстуры. Не могут использоваться вместе с texture_prompt или style_image."
+      },
+      "style_image": {
+        "name": "style_image",
+        "tooltip": "Референсное изображение художественного стиля текстур. Используется только вместе с texture_prompt."
+      },
+      "texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "Необязательная текстовая подсказка для текстурирования. На практике необходима для импортированных моделей (Tripo: Import Model), у которых нет исходного изображения для определения цветов. Не может использоваться вместе с референсными изображениями."
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = HD-текстуры, extreme = текстуры 8K Ultra."
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Пусто, если источником является четырёхугольная сетка или импортированный FBX."
+      },
+      "2": {
         "name": "FBX",
         "tooltip": "Tripo возвращает FBX для четырёхугольных сеток и импортов FBX; в остальных случаях пусто."
       }

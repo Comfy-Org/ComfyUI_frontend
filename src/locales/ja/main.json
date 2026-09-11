@@ -2833,6 +2833,7 @@
     "deleteHistoryOnly": "履歴のみが影響を受け、ファイルはディスクに残ります",
     "deleteItems": "これらの項目を削除",
     "deletePermanent": "完全に削除されます。",
+    "deleteTombstone": "ComfyUIには表示されなくなりますが、ディスク上には残ります",
     "deletingImportedFilesCloudOnly": "インポートしたファイルの削除はクラウド版でのみサポートされています",
     "deletionUnsupported": "アセットは有効ですが、サーバーは削除をサポートしていません",
     "failedToCreateNode": "ノードの作成に失敗しました",

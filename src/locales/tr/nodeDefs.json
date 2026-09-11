@@ -7979,7 +7979,7 @@
     }
   },
   "ImageColorSpace": {
-    "description": "sRGB (Rec.709), HDR (Rec.2020 HLG) ve HDR PQ'yu (Rec.2020 PQ) dönüştürür. 203 nit SDR beyazı ve 1000 nit HLG referans ekranı kullanır. Daraltma, toplu iş genelindeki fazla parlaklığı ton eşler ve gamut dışı renkleri sıkıştırır. Dönüşümler float32 ile hesaplanır ve ara cihaz ile veri türünü döndürür. Düz alfa renk dönüşümüne tabi tutulmaz.",
+    "description": "sRGB, doğrusal Rec.709, HDR (Rec.2020 HLG) ve HDR PQ (Rec.2020 PQ) arasında dönüştürür. Linear 1.0, sRGB ile aynı 203 nit referans beyazını kullanır; HLG ise 1000 nit referans ekran kullanır. Doğrusal çıktı ve doğrusaldan HDR'ye dönüşümler, ton eşleme olmadan genişletilmiş değerleri korur. SDR çıktısı ve PQ'dan HLG'ye dönüşüm, toplu işlem genelindeki fazla parlaklığı ton eşler ve gam dışı renkleri sıkıştırır. Dönüşümler float32 ile hesaplanır ve ara cihaz ile dtype döndürülür. Düz alpha renk dönüşümüne tabi tutulmaz.",
     "display_name": "Görüntü Renk Uzayını Dönüştür",
     "inputs": {
       "destination": {
@@ -24023,7 +24023,7 @@
     }
   },
   "TripoImageToModelNode": {
-    "display_name": "Tripo: Görüntüden Modele",
+    "display_name": "Tripo: Görüntüden Modele (Eski)",
     "inputs": {
       "auto_size": {
         "name": "auto_size",
@@ -24094,6 +24094,75 @@
         "tooltip": "quad etkinleştirildiğinde boştur."
       },
       "3": {
+        "name": "FBX",
+        "tooltip": "Yalnızca quad etkinleştirildiğinde doldurulur."
+      }
+    }
+  },
+  "TripoImageToModelNodeV2": {
+    "display_name": "Tripo: Görüntüden Modele",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Dokulu modelleri metre cinsinden gerçek dünya boyutlarına ölçekler. Tripo boyutu modelin sahne dönüşümü olarak depolar ve model dönüştürüldüğünde, rig uygulandığında veya yeniden hedeflendiğinde buna işler; texture olmadan yok sayılır."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "Maksimum yüz sayısı. -1, Tripo'nun uyarlanabilir şekilde seçim yapmasını sağlar (v3.x standard'da yaklaşık 1,4M yüz, detailed'da 2M). Tripo sessizce sınırlar: v2.5'te 500.000, quad ağlarda 150.000."
+      },
+      "geometry_quality": {
+        "name": "geometry_quality"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "Oluşturma için kullanılacak model sürümü"
+      },
+      "orientation": {
+        "name": "orientation"
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "PBR malzeme haritaları (temel renk, metaliklik, pürüzlülük, normal). texture gerektirir."
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "Quad ağ çıktısı. Tripo quad ağları FBX olarak sunar; bu nedenle sonuç FBX çıktısına gelir ve GLB çıktısı boş kalır."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "Temiz, el yapımı tarzda topolojiye sahip düşük poli ağ (500-20.000 yüz, quad 500-10.000). Basit nesneler için idealdir; karmaşık olanlar başarısız olabilir."
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "Doku haritaları oluşturur. Kapalı olduğunda çıplak geometri döndürür ve pbr'yi yok sayar."
+      },
+      "texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = HD dokular, extreme = 8K Ultra dokular."
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "quad etkinleştirildiğinde boş olur."
+      },
+      "2": {
         "name": "FBX",
         "tooltip": "Yalnızca quad etkinleştirildiğinde doldurulur."
       }
@@ -24427,7 +24496,7 @@
       },
       "animation": {
         "name": "animasyon",
-        "tooltip": "preset:* animasyonları her iki rig modeliyle de çalışır; preset:biped:* animasyonları, model v1.0-20240301 ile oluşturulmuş bir rig gerektirir."
+        "tooltip": "preset:* animasyonları her iki rig modeliyle de çalışır. preset:biped:* animasyonları model v1.0-20240301'den gelen rig'ler için hazırlanmıştır; bir v2.5 rig yalnızca chop, climb, dive, fall, hurt, idle, jump, run, shoot, slash, turn ve walk kabul eder."
       },
       "export_with_geometry": {
         "name": "export_with_geometry",
@@ -24591,6 +24660,48 @@
       }
     }
   },
+  "TripoSmartSegmentNode": {
+    "description": "Bir modeli anlamsal olarak anlamlı parçalara ayırır ve adlandırır. Bir görüntüden Tripo önce modeli oluşturur. Segment task_id, Tripo: Complete Mesh Parts, Tripo: Retopology, Tripo: Texture model ve Tripo: Convert model düğümlerine Tripo: Segment Model sonucu gibi aktarılır.",
+    "display_name": "Tripo: Akıllı Bölümlendirme",
+    "inputs": {
+      "source": {
+        "name": "source",
+        "tooltip": "Mevcut bir modeli bölümleyin veya bir görüntüden model oluşturup bölümleyin."
+      },
+      "source_granularity": {
+        "name": "granularity"
+      },
+      "source_hint": {
+        "name": "hint"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "segment task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
+        "tooltip": "Bölümlenen model (görüntüden oluşturulan veya içe aktarılan)."
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "part_names",
+        "tooltip": "Parçaların virgülle ayrılmış adları."
+      },
+      "4": {
+        "name": "parts",
+        "tooltip": "Tripo'nun bulduğu parçalara ilişkin açıklaması."
+      },
+      "5": {
+        "name": "maske",
+        "tooltip": null
+      }
+    }
+  },
   "TripoSplatConditioning": {
     "description": "Görseli DINOv3 ve Flux2 VAE ile kodlayarak TripoSplat pozitif/negatif koşullandırma oluşturur ve KSampler için sabit boyutlu gürültü hedefini (latent + kamera) üretir.",
     "display_name": "TripoSplat Koşullandırma",
@@ -24687,7 +24798,7 @@
     }
   },
   "TripoTextToModelNode": {
-    "display_name": "Tripo: Metinden Modele",
+    "display_name": "Tripo: Metinden Modele (Eski)",
     "inputs": {
       "auto_size": {
         "name": "auto_size",
@@ -24763,8 +24874,77 @@
       }
     }
   },
+  "TripoTextToModelNodeV2": {
+    "display_name": "Tripo: Metinden Modele",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Dokulu modelleri metre cinsinden gerçek dünya boyutlarına ölçekler. Tripo boyutu modelin sahne dönüşümü olarak saklar ve model dönüştürüldüğünde, riglendiğinde veya yeniden hedeflendiğinde kalıcı olarak işler; doku olmadan yok sayılır."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "Maksimum yüz sayısı. -1, Tripo'nun uyarlanabilir şekilde seçim yapmasını sağlar (v3.x standardında yaklaşık 1.4M yüz, detailed modunda 2M). Tripo sessizce sınırlar: v2.5'te 500,000, dörtgen ağlarda 150,000."
+      },
+      "geometry_quality": {
+        "name": "geometry_quality"
+      },
+      "image_seed": {
+        "name": "image_seed"
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "model_version": {
+        "name": "model_version"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "En fazla 255 karakter."
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "PBR malzeme haritaları (temel renk, metalik, pürüzlülük, normal). Doku gerektirir."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "Dörtgen ağ çıktısı. Tripo dörtgen ağları FBX olarak sunar; bu nedenle sonuç FBX çıktısına gelir ve GLB çıktısı boş kalır."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "Temiz, elle oluşturulmuş tarzda topolojiye sahip düşük poligonlu ağ (500-20,000 yüz, dörtgen için 500-10,000). Basit nesneler için en iyisidir; karmaşık olanlar başarısız olabilir."
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "Doku haritaları oluşturur. Kapalı olduğunda çıplak geometri döndürür ve pbr'yi yok sayar."
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = HD dokular, extreme = 8K Ultra dokular."
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "quad etkinleştirildiğinde boş."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Yalnızca quad etkinleştirildiğinde doldurulur."
+      }
+    }
+  },
   "TripoTextureNode": {
-    "display_name": "Tripo: Doku modeli",
+    "display_name": "Tripo: Modeli Dokula (Eski)",
     "inputs": {
       "model_task_id": {
         "name": "model_görev_id"
@@ -24824,6 +25004,62 @@
       "3": {
         "name": "FBX",
         "tooltip": "Tripo, dörtgen ağlar ve FBX içe aktarımları için FBX döndürür; aksi halde boştur."
+      }
+    }
+  },
+  "TripoTextureNodeV2": {
+    "display_name": "Tripo: Modeli Dokula",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "Doku modeli: v3.x ile oluşturulan mesh'ler için v3.0, v2.5 ile oluşturulan mesh'ler için v2.5."
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "Doku uygulanacak, Tripo: Segment Model'den gelen virgülle ayrılmış parça adları. Boş bırakılırsa her parçaya doku uygulanır."
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "PBR malzeme haritaları (temel renk, metalik, pürüzlülük, normal); kapalıyken düz renkli bir doku verir."
+      },
+      "reference": {
+        "name": "reference",
+        "tooltip": "Dokulara yön veren referans görüntüleri. texture_prompt veya style_image ile birleştirilemez."
+      },
+      "style_image": {
+        "name": "style_image",
+        "tooltip": "Dokuların sanatsal stili için referans görüntüsü. Yalnızca texture_prompt ile birlikte kullanılır."
+      },
+      "texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "Doku oluşturma için isteğe bağlı metin yönlendirmesi. Renklerin çıkarılacağı kaynak görüntü taşımayan içe aktarılan modeller (Tripo: Import Model) için pratikte gereklidir. Referans görüntüleriyle birleştirilemez."
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = HD dokular, extreme = 8K Ultra dokular."
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Kaynak bir quad mesh veya FBX içe aktarması olduğunda boştur."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Tripo, quad mesh'ler ve FBX içe aktarmaları için FBX döndürür; aksi hâlde boştur."
       }
     }
   },

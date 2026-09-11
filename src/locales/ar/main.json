@@ -2833,6 +2833,7 @@
     "deleteHistoryOnly": "سيتأثر السجل فقط، وستبقى الملفات على القرص",
     "deleteItems": "حذف هذه العناصر",
     "deletePermanent": "ستُزال نهائيًا.",
+    "deleteTombstone": "لن تظهر بعد الآن في ComfyUI، لكنها ستبقى على القرص",
     "deletingImportedFilesCloudOnly": "حذف الملفات المستوردة مدعوم فقط في النسخة السحابية",
     "deletionUnsupported": "الأصول مفعّلة، لكن الخادم لا يدعم الحذف",
     "failedToCreateNode": "فشل في إنشاء العقدة",

@@ -7979,7 +7979,7 @@
     }
   },
   "ImageColorSpace": {
-    "description": "Konvertiert sRGB (Rec.709), HDR (Rec.2020 HLG) und HDR PQ (Rec.2020 PQ). Verwendet einen SDR-Weißpunkt von 203 Nit und ein HLG-Referenzdisplay mit 1000 Nit. Die Einengung führt für überschüssige Luminanz im gesamten Batch ein Tone-Mapping durch und komprimiert Farben außerhalb des Farbumfangs. Konvertierungen werden in float32 berechnet und geben Device und Datentyp des Zwischenergebnisses zurück. Straight Alpha wird nicht farbtransformiert.",
+    "description": "Konvertiert sRGB, lineares Rec.709, HDR (Rec.2020 HLG) und HDR PQ (Rec.2020 PQ). Linear 1.0 verwendet dasselbe 203-Nit-Referenzweiß wie sRGB; HLG verwendet ein 1000-Nit-Referenzdisplay. Lineare Ausgabe und Linear-zu-HDR-Konvertierungen bewahren erweiterte Werte ohne Tone Mapping. SDR-Ausgabe und PQ-zu-HLG-Konvertierung führen Tone Mapping für überschüssige Luminanz über den gesamten Batch durch und komprimieren Farben außerhalb des Farbraums. Konvertierungen werden in float32 berechnet und geben device und dtype des Zwischenergebnisses zurück. Straight Alpha wird nicht farbtransformiert.",
     "display_name": "Bildfarbraum konvertieren",
     "inputs": {
       "destination": {
@@ -24023,7 +24023,7 @@
     }
   },
   "TripoImageToModelNode": {
-    "display_name": "Tripo: Bild zu Modell",
+    "display_name": "Tripo: Bild zu Modell (Legacy)",
     "inputs": {
       "auto_size": {
         "name": "auto_size",
@@ -24096,6 +24096,75 @@
       "3": {
         "name": "FBX",
         "tooltip": "Nur befüllt, wenn quad aktiviert ist."
+      }
+    }
+  },
+  "TripoImageToModelNodeV2": {
+    "display_name": "Tripo: Bild zu Modell",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Texturierte Modelle auf ihre reale Größe in Metern skalieren. Tripo speichert die Größe als Szenentransformation des Modells und übernimmt sie fest beim Konvertieren, Rigging oder Retargeting des Modells; ohne texture ignoriert."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "Maximale Face-Anzahl. -1 lässt Tripo adaptiv auswählen (etwa 1.4M Faces bei v3.x standard, 2M bei detailed). Tripo begrenzt stillschweigend: v2.5 auf 500,000, Quad-Meshes auf 150,000."
+      },
+      "geometry_quality": {
+        "name": "geometry_quality"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "Die für die Generierung zu verwendende Modellversion"
+      },
+      "orientation": {
+        "name": "orientation"
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "PBR-Materialkarten (Basisfarbe, Metallisch, Rauheit, Normalen). Erfordert texture."
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "Quad-Mesh-Ausgabe. Tripo liefert Quad-Meshes als FBX, daher erscheint das Ergebnis am FBX-Ausgang und der GLB-Ausgang bleibt leer."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "Low-Poly-Mesh mit sauberer, handgefertigt wirkender Topologie (500-20.000 Faces, quad 500-10.000). Am besten für einfache Motive; komplexe können fehlschlagen."
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "Texturkarten generieren. Aus gibt reine Geometrie zurück und ignoriert pbr."
+      },
+      "texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = HD-Texturen, extreme = 8K-Ultra-Texturen."
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Modell task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Leer, wenn quad aktiviert ist."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Nur belegt, wenn quad aktiviert ist."
       }
     }
   },
@@ -24427,7 +24496,7 @@
       },
       "animation": {
         "name": "animation",
-        "tooltip": "Animationen preset:* funktionieren mit beiden Rig-Modellen; Animationen preset:biped:* erfordern ein mit Modell v1.0-20240301 erstelltes Rig."
+        "tooltip": "preset:*-Animationen funktionieren mit beiden Rig-Modellen. preset:biped:*-Animationen sind für Rigs aus Modell v1.0-20240301 erstellt; ein v2.5-Rig akzeptiert nur chop, climb, dive, fall, hurt, idle, jump, run, shoot, slash, turn und walk."
       },
       "export_with_geometry": {
         "name": "export_with_geometry",
@@ -24591,6 +24660,48 @@
       }
     }
   },
+  "TripoSmartSegmentNode": {
+    "description": "Teilt ein Modell in semantisch sinnvolle Teile auf und benennt sie. Aus einem Bild generiert Tripo zunächst das Modell. Die segment task_id versorgt Tripo: Complete Mesh Parts, Tripo: Retopology, Tripo: Texture model und Tripo: Convert model wie ein Ergebnis von Tripo: Segment Model.",
+    "display_name": "Tripo: Intelligente Segmentierung",
+    "inputs": {
+      "source": {
+        "name": "source",
+        "tooltip": "Ein vorhandenes Modell segmentieren oder ein Modell aus einem Bild generieren und segmentieren."
+      },
+      "source_granularity": {
+        "name": "granularity"
+      },
+      "source_hint": {
+        "name": "hint"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Segment task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "Modell task_id",
+        "tooltip": "Das segmentierte Modell (aus dem Bild generiert oder importiert)."
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "part_names",
+        "tooltip": "Kommagetrennte Namen der Teile."
+      },
+      "4": {
+        "name": "parts",
+        "tooltip": "Tripo-Beschreibung der gefundenen Teile."
+      },
+      "5": {
+        "name": "mask",
+        "tooltip": null
+      }
+    }
+  },
   "TripoSplatConditioning": {
     "description": "Kodiert das Bild mit DINOv3 und dem Flux2 VAE in positive/negative TripoSplat-Konditionierung und erstellt das Rauschziel fester Größe (latent + Kamera) für den KSampler",
     "display_name": "TripoSplat-Konditionierung",
@@ -24687,7 +24798,7 @@
     }
   },
   "TripoTextToModelNode": {
-    "display_name": "Tripo: Text zu Modell",
+    "display_name": "Tripo: Text zu Modell (Legacy)",
     "inputs": {
       "auto_size": {
         "name": "auto_size",
@@ -24763,8 +24874,77 @@
       }
     }
   },
+  "TripoTextToModelNodeV2": {
+    "display_name": "Tripo: Text zu Modell",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Texturierte Modelle auf ihre reale Größe in Metern skalieren. Tripo speichert die Größe als Szenentransformation des Modells und übernimmt sie beim Konvertieren, Riggen oder Retargeting des Modells; wird ohne texture ignoriert."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "Maximale Anzahl an Flächen. -1 lässt Tripo adaptiv wählen (etwa 1,4 Mio. Flächen bei v3.x standard, 2 Mio. bei detailed). Tripo begrenzt stillschweigend: v2.5 auf 500,000, Quad-Meshes auf 150,000."
+      },
+      "geometry_quality": {
+        "name": "geometry_quality"
+      },
+      "image_seed": {
+        "name": "image_seed"
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "model_version": {
+        "name": "model_version"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Bis zu 255 Zeichen."
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "PBR-Materialkarten (Grundfarbe, Metallisch, Rauheit, Normal). Erfordert texture."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "Quad-Mesh-Ausgabe. Tripo liefert Quad-Meshes als FBX, daher erscheint das Ergebnis am FBX-Ausgang und der GLB-Ausgang bleibt leer."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "Low-Poly-Mesh mit sauberer Topologie im handgefertigten Stil (500-20,000 Flächen, Quad 500-10,000). Am besten für einfache Motive; komplexe können fehlschlagen."
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "Texturkarten generieren. Aus gibt reine Geometrie zurück und ignoriert pbr."
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = HD-Texturen, extreme = 8K-Ultra-Texturen."
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Leer, wenn quad aktiviert ist."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Nur belegt, wenn quad aktiviert ist."
+      }
+    }
+  },
   "TripoTextureNode": {
-    "display_name": "Tripo: Modell texturieren",
+    "display_name": "Tripo: Modell texturieren (Legacy)",
     "inputs": {
       "model_task_id": {
         "name": "model_task_id"
@@ -24824,6 +25004,62 @@
       "3": {
         "name": "FBX",
         "tooltip": "Tripo gibt FBX für Quad-Meshes und FBX-Importe zurück; andernfalls leer."
+      }
+    }
+  },
+  "TripoTextureNodeV2": {
+    "display_name": "Tripo: Modell texturieren",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      },
+      "model_version": {
+        "name": "Modellversion",
+        "tooltip": "Texturmodell: v3.0 für mit v3.x generierte Meshes, v2.5 für mit v2.5 generierte Meshes."
+      },
+      "part_names": {
+        "name": "Teilenamen",
+        "tooltip": "Durch Kommas getrennte Namen der zu texturierenden Teile aus Tripo: Segment Model. Bei leerer Eingabe werden alle Teile texturiert."
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "PBR-Materialkarten (Grundfarbe, Metallisch, Rauheit, Normal); aus ergibt eine einfarbige Textur."
+      },
+      "reference": {
+        "name": "Referenz",
+        "tooltip": "Referenzbilder, die die Texturen steuern. Kann nicht mit texture_prompt oder style_image kombiniert werden."
+      },
+      "style_image": {
+        "name": "Stilbild",
+        "tooltip": "Referenzbild für den künstlerischen Stil der Texturen. Wird nur zusammen mit texture_prompt verwendet."
+      },
+      "texture_alignment": {
+        "name": "Texturausrichtung"
+      },
+      "texture_prompt": {
+        "name": "Textur-Prompt",
+        "tooltip": "Optionale Textvorgabe für die Texturierung. In der Praxis für importierte Modelle (Tripo: Import Model) erforderlich, da sie kein Quellbild enthalten, aus dem Farben abgeleitet werden können. Kann nicht mit Referenzbildern kombiniert werden."
+      },
+      "texture_quality": {
+        "name": "Texturqualität",
+        "tooltip": "detailed = HD-Texturen, extreme = 8K-Ultra-Texturen."
+      },
+      "texture_seed": {
+        "name": "Textur-Seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Modell-Task-ID",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Leer, wenn die Quelle ein Quad-Mesh oder ein FBX-Import ist."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Tripo gibt für Quad-Meshes und FBX-Importe FBX zurück; andernfalls leer."
       }
     }
   },

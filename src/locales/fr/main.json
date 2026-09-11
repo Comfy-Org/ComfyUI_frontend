@@ -2833,6 +2833,7 @@
     "deleteHistoryOnly": "Seul l'historique sera affecté, les fichiers resteront sur le disque",
     "deleteItems": "Supprimer ces éléments",
     "deletePermanent": "Ils seront supprimés définitivement.",
+    "deleteTombstone": "Ils ne s’afficheront plus dans ComfyUI, mais resteront sur le disque",
     "deletingImportedFilesCloudOnly": "La suppression des fichiers importés n'est prise en charge que dans la version cloud",
     "deletionUnsupported": "Les ressources sont activées, mais le serveur ne prend pas en charge la suppression",
     "failedToCreateNode": "Échec de la création du nœud",

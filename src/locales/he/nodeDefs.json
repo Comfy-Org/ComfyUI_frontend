@@ -7979,7 +7979,7 @@
     }
   },
   "ImageColorSpace": {
-    "description": "ממיר בין sRGB (Rec.709), HDR (Rec.2020 HLG) ו-HDR PQ (Rec.2020 PQ). משתמש בלבן SDR של 203 ניט ובתצוגת ייחוס HLG של 1000 ניט. בעת צמצום, מתבצע מיפוי גוונים של בהיקות עודפת על פני האצווה ודחיסה של צבעים שמחוץ לסולם הצבעים. ההמרות מחושבות ב-float32 ומחזירות את ההתקן ואת ה-dtype הביניים. אלפא ישירה אינה עוברת המרת צבע.",
+    "description": "ממיר בין sRGB, ‏Rec.709 ליניארי, HDR ‏(Rec.2020 HLG) ו-HDR PQ ‏(Rec.2020 PQ). ליניארי 1.0 משתמש באותו לבן ייחוס של 203 ניט כמו sRGB; ‏HLG משתמש בתצוגת ייחוס של 1000 ניט. פלט ליניארי והמרות מליניארי ל-HDR משמרים ערכים מורחבים ללא מיפוי גוונים. פלט SDR והמרה מ-PQ ל-HLG ממפים גוונים של בהירות עודפת לאורך האצווה ומכווצים צבעים מחוץ לסולם הצבעים. ההמרות מחושבות ב-float32 ומחזירות את ההתקן ואת dtype הביניים. אלפא לא־מוכפל מראש אינו עובר המרת צבע.",
     "display_name": "המרת מרחב הצבע של תמונה",
     "inputs": {
       "destination": {
@@ -24023,7 +24023,7 @@
     }
   },
   "TripoImageToModelNode": {
-    "display_name": "Tripo: תמונה למודל",
+    "display_name": "Tripo: תמונה למודל (מדור קודם)",
     "inputs": {
       "auto_size": {
         "name": "auto_size",
@@ -24096,6 +24096,75 @@
       "3": {
         "name": "FBX",
         "tooltip": "מתמלא רק כאשר quad מופעל."
+      }
+    }
+  },
+  "TripoImageToModelNodeV2": {
+    "display_name": "Tripo: תמונה למודל",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "התאמת קנה המידה של מודלים בעלי מרקם לגודלם בעולם האמיתי, במטרים. ‏Tripo שומרת את הגודל כטרנספורמציית הסצנה של המודל ואופה אותו בעת המרת המודל, הוספת שלד או retargeting; האפשרות מתעלמת מהמודל ללא מרקם."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "מספר הפאות המרבי. ‎-1 מאפשר ל-Tripo לבחור באופן הסתגלותי (כ-1.4 מיליון פאות ב-v3.x standard, ‏2 מיליון ב-detailed). ‏Tripo מגביל ללא הודעה: v2.5 ל-500,000, ורשתות quad ל-150,000."
+      },
+      "geometry_quality": {
+        "name": "geometry_quality"
+      },
+      "image": {
+        "name": "תמונה"
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "גרסת המודל שתשמש ליצירה"
+      },
+      "orientation": {
+        "name": "כיוון"
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "מפות חומר PBR ‏(צבע בסיס, מתכתיות, חספוס, נורמל). נדרש מרקם."
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "פלט רשת quad. ‏Tripo מספקת רשתות quad כ-FBX, לכן התוצאה מגיעה בפלט FBX ופלט GLB נותר ריק."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "רשת low-poly עם טופולוגיה נקייה בסגנון עבודת יד (500-20,000 פאות, quad ‏500-10,000). מתאים ביותר לאובייקטים פשוטים; אובייקטים מורכבים עלולים להיכשל."
+      },
+      "texture": {
+        "name": "מרקם",
+        "tooltip": "יצירת מפות מרקם. מצב כבוי מחזיר גאומטריה בלבד ומתעלם מ-pbr."
+      },
+      "texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = מרקמי HD, ‏extreme = מרקמי 8K Ultra."
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "ריק כאשר quad מופעל."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "מכיל נתונים רק כאשר quad מופעל."
       }
     }
   },
@@ -24427,7 +24496,7 @@
       },
       "animation": {
         "name": "אנימציה",
-        "tooltip": "הנפשות preset:* פועלות עם שני דגמי ה-rig; הנפשות preset:biped:* דורשות rig שנוצר עם model v1.0-20240301."
+        "tooltip": "הנפשות preset:* פועלות עם שני מודלי ה-rig. הנפשות preset:biped:* מיועדות לשלדים ממודל v1.0-20240301; שלד v2.5 מקבל רק את chop, climb, dive, fall, hurt, idle, jump, run, shoot, slash, turn ו-walk."
       },
       "export_with_geometry": {
         "name": "export_with_geometry",
@@ -24591,6 +24660,48 @@
       }
     }
   },
+  "TripoSmartSegmentNode": {
+    "description": "מחלק מודל לחלקים בעלי משמעות סמנטית ונותן להם שמות. מתמונה, Tripo יוצר תחילה את המודל. ה-task_id של הפילוח משמש כקלט עבור Tripo: Complete Mesh Parts, Tripo: Retopology, Tripo: Texture model ו-Tripo: Convert model, כפי שעושה תוצאה של Tripo: Segment Model.",
+    "display_name": "Tripo: פילוח חכם",
+    "inputs": {
+      "source": {
+        "name": "מקור",
+        "tooltip": "פילוח מודל קיים, או יצירת מודל מתמונה ולאחר מכן פילוחו."
+      },
+      "source_granularity": {
+        "name": "רמת פירוט"
+      },
+      "source_hint": {
+        "name": "רמז"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "segment task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
+        "tooltip": "המודל שפולח (נוצר מהתמונה או יובא)."
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "שמות חלקים",
+        "tooltip": "שמות החלקים, מופרדים בפסיקים."
+      },
+      "4": {
+        "name": "חלקים",
+        "tooltip": "התיאור של Tripo לחלקים שאיתרה."
+      },
+      "5": {
+        "name": "מסכה",
+        "tooltip": null
+      }
+    }
+  },
   "TripoSplatConditioning": {
     "description": "קידוד התמונה עם DINOv3 ו-Flux2 VAE ל-TripoSplat conditioning חיובי/שלילי, ויצירת יעד רעש בגודל קבוע (latent + מצלמה) עבור KSampler",
     "display_name": "TripoSplat Conditioning",
@@ -24687,7 +24798,7 @@
     }
   },
   "TripoTextToModelNode": {
-    "display_name": "Tripo: טקסט למודל",
+    "display_name": "Tripo: מטקסט למודל (מדור קודם)",
     "inputs": {
       "auto_size": {
         "name": "auto_size",
@@ -24763,8 +24874,77 @@
       }
     }
   },
+  "TripoTextToModelNodeV2": {
+    "display_name": "Tripo: מטקסט למודל",
+    "inputs": {
+      "auto_size": {
+        "name": "גודל אוטומטי",
+        "tooltip": "שינוי קנה המידה של מודלים בעלי מרקם לגודלם בעולם האמיתי במטרים. Tripo שומרת את הגודל כהמרת הסצנה של המודל ומטמיעה אותו בעת המרה, הוספת שלד או מיפוי מחדש של המודל; ללא מרקם אפשרות זו אינה נלקחת בחשבון."
+      },
+      "face_limit": {
+        "name": "מגבלת פאות",
+        "tooltip": "מספר הפאות המרבי. הערך ‎-1 מאפשר ל־Tripo לבחור באופן מסתגל (כ־1.4M פאות ב־v3.x standard, ו־2M ב־detailed). Tripo מגבילה בשקט: v2.5 ל־500,000, ורשתות מרובעים ל־150,000."
+      },
+      "geometry_quality": {
+        "name": "איכות גאומטריה"
+      },
+      "image_seed": {
+        "name": "זרע תמונה"
+      },
+      "model_seed": {
+        "name": "זרע מודל"
+      },
+      "model_version": {
+        "name": "גרסת מודל"
+      },
+      "negative_prompt": {
+        "name": "הנחיה שלילית",
+        "tooltip": "עד 255 תווים."
+      },
+      "pbr": {
+        "name": "PBR",
+        "tooltip": "מפות חומרים מסוג PBR ‏(צבע בסיס, מתכתיות, חספוס, נורמל). דורש מרקם."
+      },
+      "prompt": {
+        "name": "הנחיה"
+      },
+      "quad": {
+        "name": "מרובעים",
+        "tooltip": "פלט רשת מרובעים. Tripo מספקת רשתות מרובעים כ־FBX, לכן התוצאה מתקבלת בפלט FBX ופלט GLB נשאר ריק."
+      },
+      "smart_low_poly": {
+        "name": "low-poly חכם",
+        "tooltip": "רשת low-poly בעלת טופולוגיה נקייה בסגנון עבודת יד (500–20,000 פאות, מרובעים 500–10,000). מתאים במיוחד לאובייקטים פשוטים; אובייקטים מורכבים עלולים להיכשל."
+      },
+      "texture": {
+        "name": "מרקם",
+        "tooltip": "יצירת מפות מרקם. כיבוי מחזיר גאומטריה בלבד ומתעלם מ־PBR."
+      },
+      "texture_quality": {
+        "name": "איכות מרקם",
+        "tooltip": "detailed = מרקמי HD, extreme = מרקמי Ultra ‏8K."
+      },
+      "texture_seed": {
+        "name": "זרע מרקם"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "מזהה משימת מודל",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "ריק כאשר רשת מרובעים מופעלת."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "מתמלא רק כאשר רשת מרובעים מופעלת."
+      }
+    }
+  },
   "TripoTextureNode": {
-    "display_name": "Tripo: מרקם למודל",
+    "display_name": "Tripo: מרקם למודל (מדור קודם)",
     "inputs": {
       "model_task_id": {
         "name": "model_task_id"
@@ -24824,6 +25004,62 @@
       "3": {
         "name": "FBX",
         "tooltip": "Tripo מחזיר FBX עבור רשתות מרובעות וייבואי FBX; אחרת ריק."
+      }
+    }
+  },
+  "TripoTextureNodeV2": {
+    "display_name": "Tripo: מרקם למודל",
+    "inputs": {
+      "model_task_id": {
+        "name": "מזהה משימת מודל"
+      },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "מודל מרקמים: v3.0 עבור רשתות שנוצרו עם v3.x, ‏v2.5 עבור רשתות שנוצרו עם v2.5."
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "שמות חלקים מופרדים בפסיקים מתוך Tripo: Segment Model ליצירת מרקמים. השארה ריקה תיצור מרקמים לכל חלק."
+      },
+      "pbr": {
+        "name": "PBR",
+        "tooltip": "מפות חומרים מסוג PBR ‏(צבע בסיס, מתכתיות, חספוס, נורמל); כיבוי מספק מרקם בצבע אחיד."
+      },
+      "reference": {
+        "name": "reference",
+        "tooltip": "תמונות ייחוס המנחות את יצירת המרקמים. לא ניתן לשלב עם texture_prompt או style_image."
+      },
+      "style_image": {
+        "name": "style_image",
+        "tooltip": "תמונת ייחוס לסגנון האמנותי של המרקמים. בשימוש רק יחד עם texture_prompt."
+      },
+      "texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "הנחיית טקסט אופציונלית ליצירת מרקמים. נדרשת בפועל עבור מודלים מיובאים (Tripo: Import Model), שאין להם תמונת מקור להסיק ממנה צבעים. לא ניתן לשלב עם תמונות ייחוס."
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = מרקמים באיכות HD, extreme = מרקמים באיכות 8K Ultra."
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "ריק כאשר המקור הוא רשת quad או ייבוא FBX."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Tripo מחזיר FBX עבור רשתות quad וייבואי FBX; אחרת ריק."
       }
     }
   },
