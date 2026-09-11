@@ -1,3 +1,5 @@
+import { useLitegraphService } from '@/services/litegraphService'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -1381,6 +1383,83 @@ describe('ComfyApp', () => {
   })
 
   describe('workflow lifecycle', () => {
+    it.for([
+      ['1', '3'],
+      ['99', '1', '3', '5', '7', '9']
+    ])(
+      'restores submitted DynamicGroup rows in encounter order: %j',
+      async (indices) => {
+        const graph = new LGraph()
+        Reflect.set(app, 'rootGraphInternal', graph)
+        Reflect.set(singletonApp, 'rootGraphInternal', graph)
+        const nodeType = 'test/ApiDynamicGroup'
+        const group = {
+          name: 'loras',
+          type: 'COMFY_DYNAMICGROUP_V3',
+          isOptional: false,
+          min: 0,
+          max: 5,
+          template: { required: { strength: ['FLOAT', { default: 1 }] } }
+        } as const
+        class ApiDynamicGroup extends LGraphNode {
+          constructor() {
+            super('API DynamicGroup')
+            this.comfyClass = nodeType
+            this.serialize_widgets = true
+            useLitegraphService().addNodeInput(this, group)
+          }
+        }
+        LiteGraph.registerNodeType(nodeType, ApiDynamicGroup)
+        useNodeDefStore().updateNodeDefs([
+          {
+            name: nodeType,
+            display_name: nodeType,
+            category: 'test',
+            python_module: 'test',
+            description: '',
+            output: [],
+            output_node: false,
+            deprecated: false,
+            experimental: false,
+            input: { required: { loras: ['COMFY_DYNAMICGROUP_V3', group] } }
+          }
+        ])
+        const inputs = Object.fromEntries(
+          indices.map((index, position) => [
+            `loras.${index}.strength`,
+            position + 0.5
+          ])
+        )
+        try {
+          await app.loadApiJson(
+            {
+              '1': { class_type: nodeType, inputs, _meta: { title: nodeType } }
+            },
+            ''
+          )
+          const node = graph.getNodeById(toNodeId(1))
+          expect(
+            node?.widgets?.filter((w) => w.type === 'dynamic_group_row')
+          ).toHaveLength(indices.length)
+          expect(
+            node?.widgets
+              ?.filter((w) => w.name.endsWith('.strength'))
+              .map((w) => [w.name, w.value])
+          ).toEqual(
+            indices.map((_, position) => [
+              `loras.${position}.strength`,
+              position + 0.5
+            ])
+          )
+          expect(Object.keys(inputs)).toEqual(
+            indices.map((index) => `loras.${index}.strength`)
+          )
+        } finally {
+          LiteGraph.unregisterNodeType(nodeType)
+        }
+      }
+    )
+
     it('clears missing node packs before loading API JSON without missing nodes', async () => {
       const graph = new LGraph()
       const activeSubgraph = createTestSubgraph({ rootGraph: graph })

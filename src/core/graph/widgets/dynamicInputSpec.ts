@@ -23,8 +23,7 @@ export function resolveDynamicInputSpec(
       if (group) {
         const separator = suffix.indexOf('.')
         const index = suffix.slice(0, separator)
-        if (!/^(0|[1-9][0-9]*)$/.test(index) || Number(index) >= group[1].max)
-          continue
+        if (!/^(0|[1-9][0-9]*)$/.test(index)) continue
         const field = suffix.slice(separator + 1)
         const template = group[1].template
         if (template.required?.[field])

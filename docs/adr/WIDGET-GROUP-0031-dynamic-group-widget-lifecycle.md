@@ -23,7 +23,10 @@ containing DynamicCombo detaches the widgets to cache their values.
 Row headers and the add button are presentation widgets excluded from both
 workflow values and execution. The count is also excluded from execution.
 Deleting a row renumbers the remaining fields and preserves their values and
-connections. Submitted names stay contiguous and below the group's `max`.
+connections. API import restores submitted rows in encounter order with contiguous
+indices, including rows exceeding `max`. Saving and reloading preserves those
+rows. Adding a row remains disabled at or above `max`; execution validity belongs
+to backend validation.
 
 Reject a second group-owned value store or a composite widget that renders its
 children itself: both would duplicate existing restoration, error, link and

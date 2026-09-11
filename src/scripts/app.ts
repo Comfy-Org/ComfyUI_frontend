@@ -1,3 +1,4 @@
+import { restoreDynamicGroupInputs } from '@/platform/workflow/core/utils/restoreDynamicGroupInputs'
 import { useEventListener, useResizeObserver } from '@vueuse/core'
 import _ from 'es-toolkit/compat'
 import type { ToastMessageOptions } from 'primevue/toast'
@@ -2428,8 +2429,9 @@ export class ComfyApp {
       const node = app.rootGraph.getNodeById(currentNodeId)
       if (!node) return
 
-      for (const input in data.inputs ?? {}) {
-        const value = data.inputs[input]
+      const inputs = restoreDynamicGroupInputs(node, data.inputs ?? {})
+      for (const input in inputs) {
+        const value = inputs[input]
         if (value instanceof Array) {
           const [fromId, fromSlot] = value
           const fromNode = app.rootGraph.getNodeById(

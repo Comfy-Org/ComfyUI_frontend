@@ -65,7 +65,7 @@ export function dynamicGroupWidget(
     },
     callback: () =>
       changeRows(() => {
-        controller.value = rows().length + 1
+        if (rows().length < max) controller.value = rows().length + 1
       })
   })
 
@@ -204,7 +204,7 @@ export function dynamicGroupWidget(
     get: () => rowCount,
     set(value: unknown) {
       if (typeof value !== 'number' || !Number.isFinite(value)) return
-      const count = Math.max(min, Math.min(max, Math.trunc(value)))
+      const count = Math.max(min, Math.trunc(value))
       while (rows().length > count) removeRow(rows().length - 1)
       while (rows().length < count) addRow(rows().length)
       publish()

@@ -226,11 +226,11 @@ describe('DynamicGroup widgets', () => {
     expect(inputs['loras.1.lora_name']).toBe('C')
   })
 
-  it('keeps min rows and bounds malformed restored counts before adding widgets', () => {
+  it('keeps min rows and ignores non-finite restored counts', () => {
     const { widget } = setup(1, 2)
     widget('loras.0').callback?.(undefined)
     expect(widget('loras').value).toBe(1)
-    widget('loras').value = 1_000_000
+    widget('loras').value = 2
     expect(widget('loras').value).toBe(2)
     widget('loras').value = NaN
     expect(widget('loras').value).toBe(2)
@@ -239,6 +239,30 @@ describe('DynamicGroup widgets', () => {
     widget('loras').value = -1
     expect(widget('loras').value).toBe(1)
   })
+
+  it.for([false, true])(
+    'preserves restored overflow rows with named restoration = %s',
+    (named) => {
+      LiteGraph.namedValuesRestore = named
+      const { node, widget } = setup(0, 5)
+      widget('loras').value = 6
+      widget('loras.5.lora_name').value = 'C'
+      const restored = setup(0, 5)
+      restored.node.configure(node.serialize())
+      expect(restored.widget('loras').value).toBe(6)
+      expect(restored.widget('loras.5.lora_name').value).toBe('C')
+      restored.widget('loras.$add').callback?.(undefined)
+      expect(restored.widget('loras').value).toBe(6)
+      restored.widget('loras.0').callback?.(undefined)
+      expect(restored.widget('loras.$add').options.disabled).toBe(true)
+      restored.widget('loras.$add').callback?.(undefined)
+      expect(restored.widget('loras').value).toBe(5)
+      restored.widget('loras.0').callback?.(undefined)
+      expect(restored.widget('loras.$add').options.disabled).toBe(false)
+      restored.widget('loras.$add').callback?.(undefined)
+      expect(restored.widget('loras').value).toBe(5)
+    }
+  )
 
   it.for([false, true])(
     'restores static widgets surrounding rows with named restoration = %s',

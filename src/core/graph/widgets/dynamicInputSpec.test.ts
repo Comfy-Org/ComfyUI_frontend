@@ -24,24 +24,21 @@ const inputs: ComfyInputsSpec = {
 describe('DynamicGroup input specifications', () => {
   it('resolves required fields independently of the minimum row count', () => {
     expect(
-      resolveDynamicInputSpec(inputs, 'loras.2.name', () => undefined)
+      resolveDynamicInputSpec(inputs, 'loras.5.name', () => undefined)
     ).toEqual({ spec: ['COMBO', { options: ['A', 'B'] }], isOptional: false })
     expect(
       resolveDynamicInputSpec(inputs, 'loras.2.strength', () => undefined)
     ).toEqual({ spec: ['FLOAT', { default: 1 }], isOptional: true })
   })
 
-  it.for([
-    'loras.3.name',
-    'loras.01.name',
-    'loras.-1.name',
-    'loras.0.unknown',
-    'loras.0'
-  ])('does not resolve invalid field name %s', (name) => {
-    expect(
-      resolveDynamicInputSpec(inputs, name, () => undefined)
-    ).toBeUndefined()
-  })
+  it.for(['loras.01.name', 'loras.-1.name', 'loras.0.unknown', 'loras.0'])(
+    'does not resolve invalid field name %s',
+    (name) => {
+      expect(
+        resolveDynamicInputSpec(inputs, name, () => undefined)
+      ).toBeUndefined()
+    }
+  )
 
   it('resolves groups inside the selected DynamicCombo option', () => {
     const combo: ComfyInputsSpec = {
