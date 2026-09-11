@@ -81,6 +81,32 @@ jobs:
             echo "::error title=Exports escape dist::Published exports must resolve to compiled dist output, got: $NON_DIST_EXPORTS" >&2
             exit 1
           fi
+          PACKED_FILES=$(tar -tzf "$TARBALL" | sed -n 's#^package/##p')
+          MISSING_TARGETS=''
+          while IFS= read -r TARGET; do
+            [ -n "$TARGET" ] || continue
+            PATTERN=${TARGET#./}
+            FOUND=''
+            while IFS= read -r PACKED; do
+              # Unquoted: pattern exports like ./dist/* must glob-match.
+              case "$PACKED" in
+                $PATTERN)
+                  FOUND=yes
+                  break
+                  ;;
+              esac
+            done <<< "$PACKED_FILES"
+            if [ -z "$FOUND" ]; then
+              MISSING_TARGETS="${MISSING_TARGETS}${TARGET}"$'\n'
+            fi
+          done <<< "$(printf '%s' "$MANIFEST" | jq -r '[.exports | .. | strings] | unique[]')"
+          if [ -n "$MISSING_TARGETS" ]; then
+            echo "::error title=Exports missing from tarball::Published exports point at files the tarball does not contain:" >&2
+            printf '%s' "$MISSING_TARGETS" >&2
+            echo "Packed files:" >&2
+            printf '%s\n' "$PACKED_FILES" >&2
+            exit 1
+          fi
           UNRESOLVED=$(
             printf '%s' "$MANIFEST" |
               jq -r '
