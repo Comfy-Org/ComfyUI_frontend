@@ -95,7 +95,7 @@ test.describe(
       await expect(comfyPage.toast.toastErrors).toHaveCount(0)
     })
 
-    test('keeps node and link counts stable across three rapid renderer toggles', async ({
+    test('keeps node and link counts stable across three serialized renderer round trips', async ({
       comfyPage
     }) => {
       const initialCounts = await comfyPage.page.evaluate(() => ({
