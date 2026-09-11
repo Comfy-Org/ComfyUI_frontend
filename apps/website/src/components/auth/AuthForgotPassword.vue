@@ -8,6 +8,7 @@ import {
 import { cn } from '@comfyorg/tailwind-utils'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
+import { authCopyLocale } from '../../config/auth-copy-locale'
 import { authSchemasFor } from '../../config/auth-schemas'
 import { signInErrorMessage } from '../../config/auth-sign-in-state'
 import { addToast } from '../../config/auth-toast-state'
@@ -110,8 +111,8 @@ function reportSendFailure(error: unknown) {
   const severity = severityForAuthError(classification)
   addToast({
     severity,
-    summary: AUTH_TOAST_SUMMARIES[locale][severity],
-    detail: signInErrorMessage(classification, locale, hostname)
+    summary: AUTH_TOAST_SUMMARIES[authCopyLocale(locale)][severity],
+    detail: signInErrorMessage(classification, authCopyLocale(locale), hostname)
   })
 }
 

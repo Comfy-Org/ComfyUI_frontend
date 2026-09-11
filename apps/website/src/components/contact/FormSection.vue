@@ -23,13 +23,15 @@ const englishFormId = '94e05eab-1373-47f7-ab5e-d84f9e6aa262'
  * full `Record` it will not compile until the new locale is given an id, so the
  * fallback is always somebody's choice rather than an oversight.
  *
- * `ja` points at the English form deliberately: no Japanese HubSpot form exists
- * yet. Swap it for the real id when marketing creates one.
+ * `ja` and `fr` point at the English form deliberately: no Japanese or French
+ * HubSpot form exists yet. Swap each for the real id when marketing creates
+ * one.
  */
 const contactFormIds: Record<Locale, string> = {
   en: englishFormId,
   'zh-CN': '6885750c-02ef-4aa2-ba0d-213be9cccf93',
-  ja: englishFormId
+  ja: englishFormId,
+  fr: englishFormId
 }
 
 function tk(suffix: string): TranslationKey {

@@ -69,6 +69,15 @@ export const LOCALES = {
     name: 'Japanese',
     nativeName: '日本語',
     dir: 'ltr'
+  },
+  fr: {
+    code: 'fr',
+    prefix: '/fr',
+    hreflang: 'fr',
+    ogLocale: 'fr_FR',
+    name: 'French',
+    nativeName: 'Français',
+    dir: 'ltr'
   }
 } as const satisfies Record<string, LocaleConfig>
 
@@ -131,7 +140,12 @@ export function isLocale(value: string | undefined): value is Locale {
 export const PARTIAL_LOCALE_ROUTES: Partial<
   Record<Locale, ReadonlySet<string>>
 > = {
-  ja: new Set(['/', '/download', '/cloud', '/platform', '/about', '/pricing'])
+  ja: new Set(['/', '/download', '/cloud', '/platform', '/about', '/pricing']),
+  // Empty on purpose. French is wired end to end but has no translations yet,
+  // so it publishes nothing: `/fr/` URLs build, and `localizeHref` refuses to
+  // link one. Each route is added here once its French copy exists, the way
+  // Japanese widened.
+  fr: new Set<string>()
 }
 
 /**
@@ -171,7 +185,12 @@ const INDEXABLE_PAGES: Record<
   // route it publishes rather than every route there is. Its home page stays
   // indexed while P4 fills it, rather than changing live behaviour twice in one
   // release.
-  ja: 'all'
+  ja: 'all',
+  // French has no translations yet — the pipeline has 3,174 keys pending for
+  // it. An empty set indexes nothing, so the locale can be built and filled
+  // night by night without advertising English copy at a /fr/ URL. Publishing
+  // it is a reviewed change of its own, the way Japanese was.
+  fr: new Set<string>()
 }
 
 /** Whether `route` may be indexed in `locale`. English is always indexable. */

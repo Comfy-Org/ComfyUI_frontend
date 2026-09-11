@@ -12,7 +12,7 @@ import {
 
 describe('LOCALES', () => {
   it('is the one list every locale-aware site derives from', () => {
-    expect(LOCALE_CODES).toEqual(['en', 'zh-CN', 'ja'])
+    expect(LOCALE_CODES).toEqual(['en', 'zh-CN', 'ja', 'fr'])
     expect(DEFAULT_LOCALE).toBe('en')
   })
 
@@ -106,7 +106,7 @@ describe('isLocale', () => {
   })
 
   it('rejects a code that is not configured', () => {
-    expect(isLocale('fr')).toBe(false)
+    expect(isLocale('de')).toBe(false)
     expect(isLocale(undefined)).toBe(false)
   })
 

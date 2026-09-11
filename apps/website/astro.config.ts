@@ -79,8 +79,17 @@ export default defineConfig({
      * because that gate has already decided; the two would otherwise have to
      * agree about the same list twice. Widening Japanese means adding routes
      * there, in a reviewed change of its own.
+     *
+     * French publishes nothing yet. It needs the fallback so the pipeline has
+     * pages to translate against, but `PARTIAL_LOCALE_ROUTES.fr` is empty until
+     * the nightly has filled it — every `/fr/` URL is built, unadvertised and
+     * unlinked, and none is indexed.
      */
-    fallback: { ja: DEFAULT_LOCALE, 'zh-CN': DEFAULT_LOCALE },
+    fallback: {
+      ja: DEFAULT_LOCALE,
+      'zh-CN': DEFAULT_LOCALE,
+      fr: DEFAULT_LOCALE
+    },
     routing: {
       prefixDefaultLocale: false,
       // Belongs HERE, under `routing`. One level up, directly on `i18n`, Astro

@@ -55,7 +55,7 @@ jobs:
           INPUT_LOCALE: ${{ github.event.inputs.locale }}
         run: |
           set -euo pipefail
-          supported="ja zh-CN"
+          supported="ja zh-CN fr"
           if [ -z "${INPUT_LOCALE}" ]; then
             echo "targets=${supported}" >> "$GITHUB_OUTPUT"
           elif echo "${supported}" | tr ' ' '\n' | grep -qx -- "${INPUT_LOCALE}"; then
@@ -129,11 +129,15 @@ jobs:
         working-directory: apps/website
         run: pnpm i18n:build-resolved
 
-      # Not every Japanese string lives in a dictionary. Three writers turn the
-      # machine layer into generated content — `ja` properties in `src/data`,
-      # and `.mdx` under `src/content/faq` and `src/content/customers` — and
-      # nothing here ran them, so that content only ever changed when someone
-      # ran them by hand.
+      # Not every translated string lives in a dictionary. Three writers turn
+      # the machine layer into generated content — a locale's properties in
+      # `src/data`, and `.mdx` under `src/content/faq` and
+      # `src/content/customers` — and nothing here ran them, so that content
+      # only ever changed when someone ran them by hand.
+      #
+      # Once per locale, the same loop the translator uses. The writers each
+      # held `const TARGET = 'ja'` until they were parameterised, which is why
+      # a second locale used to get dictionaries and no generated content.
       #
       # Withdrawal is why it matters. `i18n:enforce` dropping a key is what
       # tells a writer its generated file is no longer justified; with the
@@ -141,12 +145,17 @@ jobs:
       # enforcement was cosmetic for anything already written. Run after
       # enforcement and after `i18n:validate`, so they only ever act on a layer
       # that passed.
-      - name: Reconcile generated Japanese content
+      - name: Reconcile generated content
         working-directory: apps/website
         run: |
-          pnpm i18n:write-data
-          pnpm i18n:write-faq
-          pnpm i18n:write-story
+          set -euo pipefail
+          for locale in ${{ steps.locales.outputs.targets }}; do
+            echo "::group::${locale}"
+            WEBSITE_I18N_LOCALE="${locale}" pnpm i18n:write-data
+            WEBSITE_I18N_LOCALE="${locale}" pnpm i18n:write-faq
+            WEBSITE_I18N_LOCALE="${locale}" pnpm i18n:write-story
+            echo "::endgroup::"
+          done
 
       - name: Report coverage
         working-directory: apps/website

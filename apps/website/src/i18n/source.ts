@@ -15,6 +15,7 @@
 import type { Locale } from '../config/locales'
 import machineZhCN from './content/zh-CN.json'
 import machineJa from './content/ja.json'
+import machineFr from './content/fr.json'
 import { resolveValue } from './pipeline/resolve'
 import type { Resolved } from './pipeline/resolve'
 
@@ -11311,7 +11312,8 @@ export type LocalizedText = { en: string } & Partial<Record<Locale, string>>
  */
 const MACHINE_LAYERS: Record<Exclude<Locale, 'en'>, Record<string, string>> = {
   'zh-CN': machineZhCN,
-  ja: machineJa
+  ja: machineJa,
+  fr: machineFr
 }
 
 /**

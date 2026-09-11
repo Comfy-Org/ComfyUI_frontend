@@ -34,6 +34,7 @@ import {
 } from '../../config/workshop-return'
 import type { WorkshopSessionUser } from '../../config/workshop-session-state'
 import { useWorkshopSession } from '../../config/workshop-session-state'
+import { authCopyLocale } from '../../config/auth-copy-locale'
 import type { Locale } from '../../i18n/translations'
 import {
   captureAuthCompleted,
@@ -176,12 +177,14 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
     return mode === 'signUp' ? 'auth.signUp.creating' : 'auth.signIn.signingIn'
   })
 
+  const copyLocale = authCopyLocale(locale)
+
   function toastSignInFailure(classification: AuthErrorClassification) {
     const severity = severityForAuthError(classification)
     addToast({
       severity,
-      summary: AUTH_TOAST_SUMMARIES[locale][severity],
-      detail: signInErrorMessage(classification, locale, hostname)
+      summary: AUTH_TOAST_SUMMARIES[copyLocale][severity],
+      detail: signInErrorMessage(classification, copyLocale, hostname)
     })
   }
 

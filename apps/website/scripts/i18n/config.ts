@@ -87,6 +87,11 @@ Do not pad sentences. Japanese marketing copy is shorter than the English; a lit
 const chineseSimplifiedGuidance = `Use ONLY Simplified Chinese characters (简体中文). Never mix Simplified and Traditional.
 Match the terminology already used across comfy.org's Chinese pages: 工作流 for workflow, 节点 for node, 模型 for model.`
 
+const frenchGuidance = `Use natural French for a professional creative-software audience. Address the reader as "vous", and prefer noun phrases for headings and buttons rather than full sentences, as French software marketing does.
+Match the terminology the ComfyUI app already ships in French: flux de travail for workflow, nœud for node, modèle for model. Product and brand names stay in Latin script: ComfyUI, Comfy Cloud, API, GPU.
+Follow French typography: a narrow no-break space before ; : ! and ?, and guillemets « » rather than straight quotes.
+French runs longer than English. Do not pad — a literal translation reads as machine output and overflows a layout built for the English.`
+
 /**
  * The locales the website translates, keyed to `config/locales.ts`.
  *
@@ -102,7 +107,8 @@ export const OUTPUT_LOCALES: Record<string, OutputLocale | undefined> = {
     code: 'zh-CN',
     name: 'Simplified Chinese',
     guidance: chineseSimplifiedGuidance
-  }
+  },
+  fr: { code: 'fr', name: 'French', guidance: frenchGuidance }
 }
 
 /**

@@ -12,6 +12,7 @@ import {
   useTurnstileGate
 } from '@comfyorg/account/vue'
 
+import { authCopyLocale } from '../../config/auth-copy-locale'
 import { authSchemasFor } from '../../config/auth-schemas'
 import { WORKSHOP_TURNSTILE_SITE_KEY } from '../../config/workshop-env'
 import type { Locale } from '../../i18n/translations'
@@ -259,8 +260,8 @@ defineExpose({ resetTurnstile })
       v-model:unavailable="unavailable"
       :site-key="WORKSHOP_TURNSTILE_SITE_KEY"
       theme="dark"
-      :expired-message="TURNSTILE_MESSAGES[locale].expired"
-      :failed-message="TURNSTILE_MESSAGES[locale].failed"
+      :expired-message="TURNSTILE_MESSAGES[authCopyLocale(locale)].expired"
+      :failed-message="TURNSTILE_MESSAGES[authCopyLocale(locale)].failed"
       error-class="text-red-500"
     />
     <small
@@ -270,7 +271,7 @@ defineExpose({ resetTurnstile })
       aria-live="polite"
       class="opacity-80"
     >
-      {{ TURNSTILE_MESSAGES[locale].submitBlockedHint }}
+      {{ TURNSTILE_MESSAGES[authCopyLocale(locale)].submitBlockedHint }}
     </small>
 
     <button

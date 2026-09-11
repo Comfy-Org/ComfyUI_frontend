@@ -121,8 +121,9 @@ export const drops: readonly Drop[] = [
         'zh-CN': '/zh-CN/cloud-nodes',
         // Japanese publishes tier 1 only, and /cloud-nodes is not in it, so the
         // link stays on the English page rather than pointing at a URL that is
-        // built but held back.
-        ja: '/cloud-nodes'
+        // built but held back. French publishes nothing yet, so the same.
+        ja: '/cloud-nodes',
+        fr: '/cloud-nodes'
       }
     }
   },
@@ -198,12 +199,14 @@ export const drops: readonly Drop[] = [
       label: EXPLORE,
       // Not `localizedHref`: the docs site carries its own locale segment, so
       // each language points at a different external page rather than at a
-      // prefixed version of this site's. Japanese has no docs translation yet
-      // and falls back to English, matching how `t()` resolves.
+      // prefixed version of this site's. Neither Japanese nor French has a docs
+      // translation yet, so both fall back to English, matching how `t()`
+      // resolves.
       href: {
         en: 'https://docs.comfy.org/interface/app-mode',
         'zh-CN': 'https://docs.comfy.org/zh/interface/app-mode',
-        ja: 'https://docs.comfy.org/interface/app-mode'
+        ja: 'https://docs.comfy.org/interface/app-mode',
+        fr: 'https://docs.comfy.org/interface/app-mode'
       }
     }
   },
