@@ -1,5 +1,5 @@
 <template>
-  <div class="flex h-full items-center" :class="cn(!isDocked && '-ml-2')">
+  <div :class="cn('flex h-full items-center', !isDocked && '-ml-2')">
     <div
       v-if="isDragging && !isDocked"
       :class="actionbarClass"
@@ -9,16 +9,7 @@
       {{ t('actionbar.dockToTop') }}
     </div>
 
-    <Panel
-      ref="panelRef"
-      class="pointer-events-auto"
-      :style="style"
-      :class="panelClass"
-      :pt="{
-        header: { class: 'hidden' },
-        content: { class: isDocked ? 'p-0' : 'p-1' }
-      }"
-    >
+    <div ref="panelRef" :style :class="panelClass">
       <div class="relative flex items-center gap-2 select-none">
         <span
           ref="dragHandleRef"
@@ -77,7 +68,7 @@
       </div>
       <FreeTierQuota v-if="!isDocked" />
       <PartnerNodesRunCaption v-if="!isDocked" />
-    </Panel>
+    </div>
 
     <Teleport v-if="inlineProgressTarget" :to="inlineProgressTarget">
       <QueueInlineProgress
@@ -94,16 +85,13 @@ import {
   useDraggable,
   useEventListener,
   useLocalStorage,
-  unrefElement,
   watchDebounced
 } from '@vueuse/core'
 import { clamp } from 'es-toolkit/compat'
 import { storeToRefs } from 'pinia'
 import ContextMenu from 'primevue/contextmenu'
 import type { MenuItem } from 'primevue/menuitem'
-import Panel from 'primevue/panel'
 import { computed, nextTick, ref, watch } from 'vue'
-import type { ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import PartnerNodesRunCaption from '@/components/actionbar/PartnerNodesRunCaption.vue'
@@ -154,18 +142,14 @@ const visible = computed(() => position.value !== 'Disabled')
 const { isQueuePanelV2Enabled, isRunProgressBarEnabled } =
   useQueueFeatureFlags()
 
-const panelRef = ref<ComponentPublicInstance | null>(null)
-const panelElement = computed<HTMLElement | null>(() => {
-  const element = unrefElement(panelRef)
-  return element instanceof HTMLElement ? element : null
-})
+const panelRef = ref<HTMLElement | null>(null)
 const dragHandleRef = ref<HTMLElement | null>(null)
 const isDocked = useLocalStorage('Comfy.MenuPosition.Docked', true)
 const storedPosition = useLocalStorage('Comfy.MenuPosition.Floating', {
   x: 0,
   y: 0
 })
-const { x, y, style, isDragging } = useDraggable(panelElement, {
+const { x, y, style, isDragging } = useDraggable(panelRef, {
   initialValue: { x: 0, y: 0 },
   handle: dragHandleRef,
   containerElement: document.body
@@ -182,7 +166,7 @@ watchDebounced(
 
 // Set initial position to bottom center
 const setInitialPosition = () => {
-  const panel = panelElement.value
+  const panel = panelRef.value
   if (panel) {
     const screenWidth = window.innerWidth
     const screenHeight = window.innerHeight
@@ -264,7 +248,7 @@ watch(
 )
 
 const adjustMenuPosition = () => {
-  const panel = panelElement.value
+  const panel = panelRef.value
   if (panel) {
     const screenWidth = window.innerWidth
     const screenHeight = window.innerHeight
@@ -345,13 +329,13 @@ const inlineProgressTarget = computed(() => {
     return null
   }
   if (isDocked.value) return dockedProgressContainer ?? null
-  return panelElement.value
+  return panelRef.value
 })
 const shouldHideInlineProgress = computed(
   () => !isQueuePanelV2Enabled.value && queueOverlayExpanded
 )
 watch(
-  panelElement,
+  panelRef,
   (target) => {
     emit('update:progressTarget', target)
   },
@@ -445,9 +429,8 @@ const panelClass = computed(() =>
   cn(
     'actionbar pointer-events-auto',
     isDragging.value && 'pointer-events-none select-none',
-    isDocked.value
-      ? 'static border-none bg-transparent p-0'
-      : ['fixed z-1300 shadow-interface', 'border-interface-stroke']
+    !isDocked.value &&
+      'fixed z-1300 rounded-lg border border-interface-stroke bg-interface-panel-surface p-1 shadow-interface'
   )
 )
 </script>

@@ -1,4 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -22,9 +22,12 @@ const mockCheckoutStep = ref<'pricing' | 'preview' | 'success'>('pricing')
 const mockPreviewData = ref<{ transition_type: string } | null>(null)
 const mockUseSubscriptionCheckout = vi.hoisted(() => vi.fn())
 
-vi.mock('@/platform/workspace/composables/useSubscriptionCheckout', () => ({
-  useSubscriptionCheckout: mockUseSubscriptionCheckout
-}))
+vi.mock(
+  import('@/platform/workspace/composables/useSubscriptionCheckout'),
+  () => ({
+    useSubscriptionCheckout: mockUseSubscriptionCheckout
+  })
+)
 
 const i18n = createI18n({
   legacy: false,
@@ -101,10 +104,7 @@ function renderComponent(
         : {})
     },
     global: {
-      plugins: [
-        createTestingPinia({ createSpy: vi.fn, stubActions: false }),
-        i18n
-      ],
+      plugins: [getActivePinia()!, i18n],
       stubs: {
         PricingTableWorkspace: PricingTableStub,
         SubscriptionAddPaymentPreviewWorkspace: AddPaymentPreviewStub,

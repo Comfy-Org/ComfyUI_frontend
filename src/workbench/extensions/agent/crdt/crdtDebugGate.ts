@@ -7,14 +7,14 @@
  * sticky — `?crdtDebug=1` turns it on for the origin until `?crdtDebug=0`
  * turns it off — so a tester can be handed a link rather than a build.
  *
- * The query-param path is deliberately blocked on the production hostname
+ * The instrument is deliberately disabled on the production hostname
  * (review: dante01yoon on #16365, 2026-09-01). A link is something a tester
  * forwards, and a forwarded `?crdtDebug=1` landing on `cloud.comfy.org` would
  * flip the instrument on for whoever opens it there, with no re-review step —
  * unlike staging/testcloud/dev, where the audience is already internal. A
- * saved `Comfy.Agent.CrdtDebug.enabled=true` from a non-prod origin does NOT
- * carry over: localStorage is scoped per-origin already, so this only needs
- * to stop the query param from minting a *new* prod opt-in.
+ * stale saved `Comfy.Agent.CrdtDebug.enabled=true` is also ignored there, so
+ * neither query parameters nor persisted choices can retain debug events in
+ * production.
  *
  * Verbosity is a separate axis on purpose. Turning the panel on should not
  * also flood the console: `?crdtDebug=trace` opts into the per-frame chatter,
@@ -146,10 +146,12 @@ applyQueryOverride()
 /**
  * Whether the CRDT debug instrument (panel + console tracing) is available.
  *
- * An explicit opt-out wins over `DEV` so a developer chasing a rendering bug
- * can silence the instrument without editing code.
+ * Production is always disabled, including stale persisted choices from an
+ * older build. Elsewhere, an explicit opt-out wins over `DEV` so a developer
+ * chasing a rendering bug can silence the instrument without editing code.
  */
 export function isCrdtDebugEnabled(): boolean {
+  if (isProductionHostname()) return false
   if (cachedEnabled === null) {
     const stored = readStoredEnabled()
     cachedEnabled =

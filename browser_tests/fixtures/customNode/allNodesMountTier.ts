@@ -42,7 +42,7 @@ interface DuplicateWidgetExpectation {
 
 const MOUNT_WIDGET_DUPLICATE_EXPECTATIONS: Record<
   string,
-  Record<string, DuplicateWidgetExpectation>
+  Partial<Record<string, DuplicateWidgetExpectation>>
 > = {}
 
 const manifestPackNames = loadAllManifestPackNames()
@@ -72,7 +72,7 @@ interface MountedShape {
 function vueMountProblems(
   page: Page,
   mounted: Array<{ id: string; type: string }>,
-  expectedDuplicatesByNode: Record<string, DuplicateWidgetExpectation>
+  expectedDuplicatesByNode: Partial<Record<string, DuplicateWidgetExpectation>>
 ): Promise<string[]> {
   return page.evaluate(
     ([mountedNodes, duplicateExpectations]) => {
@@ -161,7 +161,7 @@ function vueMountProblems(
           widgets.map((widget) => widget.name).filter(Boolean)
         )
         const expectedSlotKeys = [
-          ...(node.inputs ?? []).flatMap((input, index) => {
+          ...node.inputs.flatMap((input, index) => {
             const { name: widgetName } =
               (input as { widget?: { name?: string } }).widget ?? {}
             return widgetName &&
@@ -172,7 +172,7 @@ function vueMountProblems(
               ? []
               : [`${id}-in-${index}`]
           }),
-          ...(node.outputs ?? []).map((_, index) => `${id}-out-${index}`)
+          ...node.outputs.map((_, index) => `${id}-out-${index}`)
         ].sort()
         const mountedSlotKeys = [
           ...root.querySelectorAll<HTMLElement>('[data-slot-key]')
@@ -221,8 +221,8 @@ function addChunk(
         shapes.push({
           id: String(node.id),
           widgetNames: (node.widgets ?? []).map((widget) => widget.name),
-          inputNames: (node.inputs ?? []).map((input) => input.name),
-          outputCount: (node.outputs ?? []).length
+          inputNames: node.inputs.map((input) => input.name),
+          outputCount: node.outputs.length
         })
       }
       window.__cnIdBase = window.app!.graph.last_node_id

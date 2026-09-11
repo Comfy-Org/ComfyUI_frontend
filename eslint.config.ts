@@ -172,6 +172,8 @@ export default defineConfig([
       'components.d.ts',
       'coverage/*',
       'dist/*',
+      'apps/*/dist/**',
+      'apps/*/.astro/**',
       'packages/registry-types/src/comfyRegistryTypes.ts',
       'playwright-report/*',
       'scripts/registry-census/detection-proof/**',
@@ -646,7 +648,8 @@ export default defineConfig([
   {
     files: ['apps/website/**/*.vue'],
     rules: {
-      '@intlify/vue-i18n/no-raw-text': 'off'
+      '@intlify/vue-i18n/no-raw-text': 'off',
+      'vue/no-v-html': 'error'
     }
   },
   // Astro exposes virtual modules (astro:content, astro:assets, ...) that the
@@ -745,9 +748,39 @@ export default defineConfig([
     }
   },
   {
-    files: ['src/components/searchbox/**/*.vue'],
+    name: 'comfy/enforce-sanitized-html-boundary',
+    files: ['src/**/*.vue'],
     rules: {
       'vue/no-v-html': 'error'
+    }
+  },
+  {
+    files: ['apps/website/e2e/**/*.spec.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@playwright/test',
+              importNames: ['test', 'chromium', 'firefox', 'webkit', 'request'],
+              message:
+                'Use the blockExternalMedia fixture so website tests cannot access external services.'
+            },
+            {
+              name: 'playwright',
+              message: 'Use the blockExternalMedia fixture instead.'
+            },
+            {
+              name: 'vue-i18n',
+              importNames: ['useI18n'],
+              message: 'useI18n() requires Vue setup context.'
+            },
+            useVirtualListRestriction,
+            ...reportErrorRestrictions
+          ]
+        }
+      ]
     }
   },
   // Browser tests must use comfyPageFixture, not raw @playwright/test test

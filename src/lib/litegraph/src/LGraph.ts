@@ -2,6 +2,11 @@ import { toString } from 'es-toolkit/compat'
 import { shallowRef, toRaw } from 'vue'
 
 import { assert } from '@/base/assert'
+import { adoptPromotedWidgetValue } from '@/core/graph/subgraph/adoptPromotedWidgetValue'
+import {
+  getAgreedLinkPresentation,
+  transferLinkPresentation
+} from '@/core/graph/transferLinkPresentation'
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
@@ -21,17 +26,20 @@ import {
   detachGroupLayout,
   detachNodeLayout,
   detachRerouteLayout,
-  materializeRerouteLayout
+  materializeRerouteLayout,
+  releaseNodeLayoutAttachment
 } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import type { LinkPresentation } from '@/types/linkPresentation'
 import { useLinkStore } from '@/stores/linkStore'
 import type { EndpointUpdate } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toLinkId } from '@/types/linkId'
+import { parseLinkId, toLinkId } from '@/types/linkId'
 import { isFloatingTopology } from '@/types/linkTopology'
 import { toRerouteId } from '@/types/rerouteId'
 import { graphScopeOf, toRootGraphId } from '@/types/graphScopeId'
@@ -47,12 +55,7 @@ import {
   observeRerouteId
 } from './idAllocation'
 import type { LGraphState } from './idAllocation'
-import {
-  inputHasLink,
-  inputLink,
-  outputHasLinks,
-  outputLinks
-} from './node/slotLinks'
+import { inputHasLink, outputHasLinks, outputLinks } from './node/slotLinks'
 import { normalizeWidgetsView } from './node/widgetsView'
 import { clearNodeOwnedStoreState } from '@/stores/clearNodeOwnedStoreState'
 import { useEntityIdStore } from '@/stores/entityIdStore'
@@ -135,6 +138,7 @@ import { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import { SubgraphOutput } from './subgraph/SubgraphOutput'
 import { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
 import {
+  findUnresolvableSubgraphLink,
   findReleasableSubgraphs,
   findUsedSubgraphIds,
   getBoundaryLinks,
@@ -222,9 +226,19 @@ export interface GraphAddOptions {
   dragEvent?: MouseEvent
 }
 
+/** Options for {@link LGraph.remove} method. */
+export interface GraphRemoveOptions {
+  /**
+   * Detach an adapter after another authority has reconciled canonical stores.
+   * Same-id replacement state is left intact.
+   */
+  preserveCanonicalState?: boolean
+}
+
 export interface LGraphExtra extends Dictionary<unknown> {
   reroutes?: SerialisableReroute[]
   linkExtensions?: { id: LinkId; parentId: RerouteId | undefined }[]
+  linkPresentation?: Record<string, LinkPresentation>
   ds?: DragAndScaleState
   workflowRendererVersion?: RendererType
 }
@@ -235,6 +249,14 @@ export interface BaseLGraph {
 }
 
 const nodesBeingRemoved = new WeakSet<LGraphNode>()
+
+function getRuntimeRootGraph(graph: LGraph): LGraph | undefined {
+  return graph.rootGraph
+}
+
+function runtimeOptional<T>(value: T): T | undefined {
+  return value
+}
 
 function fireNodeRemovalLifecycle(node: LGraphNode): void {
   const graph: LGraph | null = node.graph
@@ -255,7 +277,7 @@ function fireNodeRemovalLifecycles(nodes: LGraphNode[]): void {
 }
 
 function teardownOwnedGraphs(owner: LGraph): void {
-  const rootGraphId = owner.rootGraph?.id ?? owner.id
+  const rootGraphId = getRuntimeRootGraph(owner)?.id ?? owner.id
   const initialOwnedGraphs = owner.isRootGraph
     ? [owner, ...owner._subgraphs.values()]
     : [owner]
@@ -347,15 +369,20 @@ function walkSegment(
 function serialiseOwnedTopology(owner: LGraph) {
   const scope = graphScopeOf(owner)
   const topologies = [...useLinkStore().graphTopologies(scope)]
-  const serialiseLink = (link: (typeof topologies)[number]) => ({
-    id: link.id,
-    origin_id: serializeNodeId(link.originNodeId),
-    origin_slot: link.originSlot,
-    target_id: serializeNodeId(link.targetNodeId),
-    target_slot: link.targetSlot,
-    type: link.type,
-    ...(link.parentId !== undefined && { parentId: link.parentId })
-  })
+  const presentationStore = useLinkPresentationStore()
+  const serialiseLink = (link: (typeof topologies)[number]) => {
+    const presentation = presentationStore.getPresentation(scope, link.id)
+    return {
+      id: link.id,
+      origin_id: serializeNodeId(link.originNodeId),
+      origin_slot: link.originSlot,
+      target_id: serializeNodeId(link.targetNodeId),
+      target_slot: link.targetSlot,
+      type: link.type,
+      ...(link.parentId !== undefined && { parentId: link.parentId }),
+      ...presentation
+    }
+  }
   const links = topologies.filter((link) => !isFloatingTopology(link))
   const floatingLinks = topologies.filter(isFloatingTopology)
   const reroutes = [...owner.reroutes.values()].map((reroute) =>
@@ -464,7 +491,7 @@ export class LGraph
   set id(value: UUID) {
     const raw = toRaw(this)
     if (raw._id.value === value) return
-    const rootGraph = raw.rootGraph
+    const rootGraph = getRuntimeRootGraph(raw)
     const previousId = raw._id.value
     const populated =
       previousId !== zeroUuid &&
@@ -482,13 +509,17 @@ export class LGraph
       console.warn(`Cannot change the ID of populated graph ${previousId}`)
       return
     }
-    const isRegisteredSubgraph =
+    const registration =
       raw instanceof Subgraph &&
+      rootGraph !== undefined &&
       rootGraph !== raw &&
       rootGraph._subgraphs.get(previousId) === raw
+        ? { rootGraph, subgraph: raw }
+        : undefined
     if (
-      isRegisteredSubgraph &&
-      (value === rootGraph.id || rootGraph._subgraphs.has(value))
+      registration &&
+      (value === registration.rootGraph.id ||
+        registration.rootGraph._subgraphs.has(value))
     ) {
       console.warn(
         `Cannot change graph ID ${previousId} to occupied ID ${value}`
@@ -509,19 +540,21 @@ export class LGraph
       return
     }
     raw._id.value = value
-    if (isRegisteredSubgraph) {
-      rootGraph._subgraphs.delete(previousId)
-      rootGraph._subgraphs.set(value, raw)
+    if (registration) {
+      registration.rootGraph._subgraphs.delete(previousId)
+      registration.rootGraph._subgraphs.set(value, registration.subgraph)
     }
   }
 
   get revision(): number {
-    return useGraphMetadataStore().get(this.rootGraph?.id ?? this.id, this.id)
-      .revision
+    return useGraphMetadataStore().get(
+      getRuntimeRootGraph(this)?.id ?? this.id,
+      this.id
+    ).revision
   }
   set revision(value: number) {
     useGraphMetadataStore().get(
-      this.rootGraph?.id ?? this.id,
+      getRuntimeRootGraph(this)?.id ?? this.id,
       this.id
     ).revision = value
   }
@@ -560,7 +593,7 @@ export class LGraph
   readonly events = new CustomEventTarget<LGraphEventMap>()
   readonly _subgraphs: Map<SubgraphId, Subgraph> = new Map()
   _nodes: (LGraphNode | SubgraphNode)[] = []
-  _nodes_by_id: Record<NodeId, LGraphNode> = {}
+  _nodes_by_id: Partial<Record<NodeId, LGraphNode>> = {}
   _nodes_in_order: LGraphNode[] = []
   _nodes_executable: LGraphNode[] | null = null
   _groups: LGraphGroup[] = []
@@ -582,24 +615,32 @@ export class LGraph
   filter?: string
   /** Must contain serialisable values, e.g. primitive types */
   get config(): LGraphConfig {
-    return useGraphMetadataStore().get(this.rootGraph?.id ?? this.id, this.id)
-      .config
+    return useGraphMetadataStore().get(
+      getRuntimeRootGraph(this)?.id ?? this.id,
+      this.id
+    ).config
   }
   set config(value: LGraphConfig) {
-    useGraphMetadataStore().get(this.rootGraph?.id ?? this.id, this.id).config =
-      value
+    useGraphMetadataStore().get(
+      getRuntimeRootGraph(this)?.id ?? this.id,
+      this.id
+    ).config = value
   }
   vars: Dictionary<unknown> = {}
   nodes_executing: boolean[] = []
   nodes_actioning: (string | boolean)[] = []
   nodes_executedAction: string[] = []
   get extra(): LGraphExtra {
-    return useGraphMetadataStore().get(this.rootGraph?.id ?? this.id, this.id)
-      .extra
+    return useGraphMetadataStore().get(
+      getRuntimeRootGraph(this)?.id ?? this.id,
+      this.id
+    ).extra
   }
   set extra(value: LGraphExtra) {
-    useGraphMetadataStore().get(this.rootGraph?.id ?? this.id, this.id).extra =
-      value
+    useGraphMetadataStore().get(
+      getRuntimeRootGraph(this)?.id ?? this.id,
+      this.id
+    ).extra = value
   }
 
   /** @deprecated Deserialising a workflow sets this unused property. */
@@ -675,7 +716,10 @@ export class LGraph
     const linkStore = useLinkStore()
     /** @see MapProxyHandler */
     const links = new LinkMap(
-      () => (this.rootGraph ? graphScopeOf(this) : undefined),
+      () =>
+        getRuntimeRootGraph(this) === undefined
+          ? undefined
+          : graphScopeOf(this),
       (scope) =>
         [...linkStore.graphTopologies(scope)]
           .filter((topology) => !isFloatingTopology(topology))
@@ -693,7 +737,10 @@ export class LGraph
       Record<LinkId, LLink>
 
     this.floatingLinks = new LinkMap(
-      () => (this.rootGraph ? graphScopeOf(this) : undefined),
+      () =>
+        getRuntimeRootGraph(this) === undefined
+          ? undefined
+          : graphScopeOf(this),
       (scope) =>
         [...linkStore.graphTopologies(scope)]
           .filter(isFloatingTopology)
@@ -731,17 +778,21 @@ export class LGraph
 
   private resetAfterClear(): void {
     const graphId = this.id
-    useGraphMetadataStore().clear(this.rootGraph?.id ?? graphId, graphId)
+    useGraphMetadataStore().clear(
+      getRuntimeRootGraph(this)?.id ?? graphId,
+      graphId
+    )
     if (this.isRootGraph) useEntityIdStore().clear(graphId)
     if (this.isRootGraph && graphId !== zeroUuid) {
       useExecutionOrderStore().clearRoot(toRootGraphId(graphId))
       usePreviewExposureStore().clearGraph(graphId)
       useWidgetValueStore().clearGraph(graphId)
       useLinkStore().clearGraph(toRootGraphId(graphId))
+      useLinkPresentationStore().clearGraph(toRootGraphId(graphId))
       useRerouteStore().clearGraph(toRootGraphId(graphId))
       useNodeDataStore().clearGraph(graphId)
       layoutStore.clearGraph(graphId)
-    } else if (this.rootGraph) {
+    } else if (getRuntimeRootGraph(this)) {
       useExecutionOrderStore().clearGraph(graphScopeOf(this))
     }
     this.reroutes.clear()
@@ -753,7 +804,7 @@ export class LGraph
     this._nodes_executable = null
     this._groups = []
 
-    this.id = this.isRootGraph ? createUuidv4() : zeroUuid
+    if (this.isRootGraph) this.id = createUuidv4()
     this.revision = 0
 
     this.state = createLGraphState()
@@ -854,11 +905,7 @@ export class LGraph
     interval ||= 0
 
     // execute once per frame
-    if (
-      interval == 0 &&
-      typeof window != 'undefined' &&
-      window.requestAnimationFrame
-    ) {
+    if (interval == 0 && typeof window != 'undefined') {
       const on_frame = () => {
         if (this.execution_timer_id != -1) return
 
@@ -908,8 +955,6 @@ export class LGraph
     this.globaltime = 0.001 * (start - this.starttime)
 
     const nodes = this._nodes_executable || this._nodes
-    if (!nodes) return
-
     limit = limit || nodes.length
 
     if (do_not_catch_errors) {
@@ -920,7 +965,7 @@ export class LGraph
           // FIXME: Looks like copy/paste broken logic - checks for "on", executes "do"
           if (node.mode == LGraphEventMode.ALWAYS && node.onExecute) {
             // wrap node.onExecute();
-            node.doExecute?.()
+            node.doExecute()
           }
         }
 
@@ -1002,11 +1047,9 @@ export class LGraph
 
       // num of input connections
       let num = 0
-      if (node.inputs) {
-        for (const slotIndex of node.inputs.keys()) {
-          if (inputHasLink(this, id, slotIndex)) {
-            num += 1
-          }
+      for (const slotIndex of node.inputs.keys()) {
+        if (inputHasLink(this, id, slotIndex)) {
+          num += 1
         }
       }
 
@@ -1021,7 +1064,7 @@ export class LGraph
       }
     }
 
-    while (true) {
+    for (;;) {
       // get an starting node
       const node = S.shift()
       if (node === undefined) break
@@ -1032,8 +1075,6 @@ export class LGraph
       L.push(node)
       // remove from the pending nodes
       delete M[id]
-
-      if (!node.outputs) continue
 
       // for every output
       for (const slotIndex of node.outputs.keys()) {
@@ -1105,7 +1146,7 @@ export class LGraph
     margin = margin || 100
 
     const nodes = this.computeExecutionOrder(false, true)
-    const columns: LGraphNode[][] = []
+    const columns: (LGraphNode[] | undefined)[] = []
     for (const node of nodes) {
       const col = node._level || 1
       columns[col] ||= []
@@ -1199,8 +1240,7 @@ export class LGraph
   ): void {
     mode = mode || LGraphEventMode.ALWAYS
 
-    const nodes = this._nodes_in_order || this._nodes
-    if (!nodes) return
+    const nodes = this._nodes_in_order
 
     for (const node of nodes) {
       // @ts-expect-error deprecated
@@ -1208,7 +1248,7 @@ export class LGraph
       if (params === undefined) {
         // @ts-expect-error deprecated
         node[eventname]()
-      } else if (params && params.constructor === Array) {
+      } else if (params.constructor === Array) {
         // @ts-expect-error deprecated
         // eslint-disable-next-line prefer-spread
         node[eventname].apply(node, params)
@@ -1254,7 +1294,7 @@ export class LGraph
    * @param options Additional options for adding the node
    */
   add(
-    node: LGraphNode | LGraphGroup,
+    node: LGraphNode | LGraphGroup | null,
     options?: GraphAddOptions
   ): LGraphNode | null | undefined
   /**
@@ -1268,7 +1308,7 @@ export class LGraph
     skipComputeOrder?: boolean
   ): LGraphNode | null | undefined
   add(
-    node: LGraphNode | LGraphGroup,
+    node: LGraphNode | LGraphGroup | null,
     skipComputeOrderOrOptions?: boolean | GraphAddOptions
   ): LGraphNode | null | undefined {
     if (!node) return
@@ -1291,10 +1331,11 @@ export class LGraph
     // LEGACY: This was changed from constructor === LGraphGroup
     // groups
     if (node instanceof LGraphGroup) {
+      const groupId = runtimeOptional(node.id)
       if (
-        node.id == null ||
-        node.id === -1 ||
-        layoutStore.getGroupLayout(this.rootGraph.id, node.id)
+        groupId === undefined ||
+        groupId === -1 ||
+        layoutStore.getGroupLayout(this.rootGraph.id, groupId)
       ) {
         node.id = mintGroupId(state)
       }
@@ -1325,7 +1366,7 @@ export class LGraph
     }
 
     // give him an id
-    if (node.id == null || node.id === UNASSIGNED_NODE_ID) {
+    if (node.id === UNASSIGNED_NODE_ID) {
       node.id = mintNodeId(state)
     } else {
       observeNodeId(state, node.id)
@@ -1365,7 +1406,7 @@ export class LGraph
       this.canvasAction((c) => c.startGhostPlacement(node, opts.dragEvent))
     }
 
-    if (node.isSubgraphNode?.()) {
+    if (typeof node.isSubgraphNode === 'function' && node.isSubgraphNode()) {
       forEachNode(node.subgraph, (innerNode) => {
         if (innerNode.isSubgraphNode())
           this.subgraphs.set(innerNode.subgraph.id, innerNode.subgraph)
@@ -1380,7 +1421,10 @@ export class LGraph
    * Removes a node from the graph
    * @param node the instance of the node
    */
-  remove(node: LGraphNode | LGraphGroup): void {
+  remove(
+    node: LGraphNode | LGraphGroup,
+    options: GraphRemoveOptions = {}
+  ): void {
     // LEGACY: This was changed from constructor === LiteGraph.LGraphGroup
     if (node instanceof LGraphGroup) {
       this.canvasAction((c) => c.deselect(node))
@@ -1400,12 +1444,12 @@ export class LGraph
     if (nodesBeingRemoved.has(node)) return
 
     // not found
-    if (this._nodes_by_id[node.id] == null) {
+    if (this._nodes_by_id[node.id] == null && !options.preserveCanonicalState) {
       console.warn('LiteGraph: node not found', node)
       return
     }
     // cannot be removed
-    if (node.ignore_remove) {
+    if (node.ignore_remove && !options.preserveCanonicalState) {
       console.warn('LiteGraph: node cannot be removed', node)
       return
     }
@@ -1417,67 +1461,65 @@ export class LGraph
 
     nodesBeingRemoved.add(node)
     try {
-      this.batchVersionUpdates(() => this.removeNode(node))
+      this.batchVersionUpdates(() => this.removeNode(node, options))
     } finally {
       nodesBeingRemoved.delete(node)
     }
   }
 
-  private removeNode(node: LGraphNode): void {
+  private removeNode(node: LGraphNode, options: GraphRemoveOptions): void {
+    const successor =
+      options.preserveCanonicalState &&
+      this._nodes_by_id[node.id] !== node &&
+      this._nodes_by_id[node.id] != null
+        ? this._nodes_by_id[node.id]
+        : undefined
+
     // sure? - almost sure is wrong
     this.beforeChange()
 
-    this.events.dispatch('node:before-removed', { node })
+    this.events.dispatch('node:before-removed', { node, successor })
 
-    const { inputs, outputs } = node
+    if (!successor) {
+      const { inputs, outputs } = node
 
-    // disconnect inputs
-    if (inputs) {
+      // disconnect inputs
       for (const [i] of inputs.entries()) {
         if (inputHasLink(this, node.id, i)) node.disconnectInput(i, true)
       }
-    }
 
-    // disconnect outputs
-    if (outputs) {
+      // disconnect outputs
       for (const i of outputs.keys()) {
         if (outputHasLinks(this, node.id, i)) node.disconnectOutput(i)
       }
-    }
 
-    // Floating links
-    for (const link of this.floatingLinks.values()) {
-      if (link.origin_id === node.id || link.target_id === node.id) {
-        this.removeFloatingLink(link)
+      // Floating links
+      for (const link of this.floatingLinks.values()) {
+        if (link.origin_id === node.id || link.target_id === node.id) {
+          this.removeFloatingLink(link)
+        }
       }
     }
 
     if (node.isSubgraphNode()) {
-      const releasedSubgraphs = findReleasableSubgraphs(this.rootGraph, node)
-      for (const subgraph of releasedSubgraphs) {
-        const nodes: LGraphNode[] = []
-        visitGraphNodes(subgraph, (node) => nodes.push(node))
-        fireNodeRemovalLifecycles(nodes)
-      }
-      for (const subgraph of releasedSubgraphs) {
-        unregisterAllLinkTopologies(subgraph)
-        unregisterAllRerouteChains(subgraph)
-        detachAllNodesFromStores(subgraph)
-        useExecutionOrderStore().clearGraph(graphScopeOf(subgraph))
-        useGraphMetadataStore().clear(this.rootGraph.id, subgraph.id)
-        this.rootGraph.subgraphs.delete(subgraph.id)
-      }
-      detachGraphLayouts(releasedSubgraphs)
+      this.releaseSubgraphs(findReleasableSubgraphs(this.rootGraph, node))
     }
 
     // callback
     node.onRemoved?.()
-    clearNodeOwnedStoreState(node)
+    if (!successor) clearNodeOwnedStoreState(node)
 
     const order = node.order
-    useExecutionOrderStore().remove(graphScopeOf(this), node.id)
-    detachNodeFromStores(this, node)
-    detachNodeLayout(node)
+    if (!successor) {
+      useExecutionOrderStore().remove(graphScopeOf(this), node.id)
+    }
+    if (options.preserveCanonicalState) {
+      node._graphScope = undefined
+      releaseNodeLayoutAttachment(node)
+    } else {
+      detachNodeFromStores(this, node)
+      detachNodeLayout(node)
+    }
 
     node.graph = null
     node.order = order
@@ -1487,7 +1529,7 @@ export class LGraph
     const { list_of_graphcanvas } = this
     if (list_of_graphcanvas) {
       for (const canvas of list_of_graphcanvas) {
-        if (canvas.selected_nodes[node.id])
+        if (node.id in canvas.selected_nodes)
           delete canvas.selected_nodes[node.id]
 
         canvas.deselect(node)
@@ -1498,7 +1540,9 @@ export class LGraph
     const pos = this._nodes.indexOf(node)
     if (pos != -1) this._nodes.splice(pos, 1)
 
-    delete this._nodes_by_id[node.id]
+    if (this._nodes_by_id[node.id] === node) {
+      delete this._nodes_by_id[node.id]
+    }
     this.onNodeRemoved?.(node)
     this.events.dispatch('node:removed', { node })
 
@@ -1514,11 +1558,40 @@ export class LGraph
   }
 
   /**
+   * Tears down subgraph definitions that no longer have (or never gained) a
+   * live instance: fires interior node removal lifecycles, unregisters their
+   * store state and metadata, and drops them from {@link subgraphs}.
+   *
+   * Used when the last {@link SubgraphNode} of a definition is removed, and
+   * to roll back a definition whose {@link createSubgraph} failed part-way so
+   * the same id can be registered again later.
+   */
+  releaseSubgraphs(subgraphs: readonly Subgraph[]): void {
+    try {
+      for (const subgraph of subgraphs) {
+        const nodes: LGraphNode[] = []
+        visitGraphNodes(subgraph, (node) => nodes.push(node))
+        fireNodeRemovalLifecycles(nodes)
+      }
+    } finally {
+      for (const subgraph of subgraphs) {
+        unregisterAllLinkTopologies(subgraph)
+        unregisterAllRerouteChains(subgraph)
+        detachAllNodesFromStores(subgraph)
+        useExecutionOrderStore().clearGraph(graphScopeOf(subgraph))
+        useGraphMetadataStore().clear(this.rootGraph.id, subgraph.id)
+        this.rootGraph.subgraphs.delete(subgraph.id)
+      }
+      detachGraphLayouts(subgraphs)
+    }
+  }
+
+  /**
    * Returns a node by its id.
    */
   getNodeById(id: NodeId | null | undefined): LGraphNode | null {
     return id != null && id !== UNASSIGNED_NODE_ID
-      ? this._nodes_by_id[id]
+      ? (this._nodes_by_id[id] ?? null)
       : null
   }
 
@@ -1543,13 +1616,13 @@ export class LGraph
    * @param type the name of the node type
    * @returns a list with all the nodes of this type
    */
-  findNodesByType(type: string, result: LGraphNode[]): LGraphNode[] {
+  findNodesByType(type: string, result?: LGraphNode[]): LGraphNode[] {
     const matchType = type.toLowerCase()
     result = result || []
     result.length = 0
     const { _nodes } = this
     for (const node of _nodes) {
-      if (node.type?.toLowerCase() == matchType) result.push(node)
+      if (node.type.toLowerCase() == matchType) result.push(node)
     }
     return result
   }
@@ -1736,8 +1809,6 @@ export class LGraph
    */
   clearTriggeredSlots(): void {
     for (const link_info of this.links.values()) {
-      if (!link_info) continue
-
       if (link_info._last_time) link_info._last_time = 0
     }
   }
@@ -1780,8 +1851,10 @@ export class LGraph
    * Registers a link in the root-wide identity store.
    */
   _addLink(link: LLink): boolean {
-    if (!registerLinkTopology(this, link)) return false
+    if (this.links.get(link.id) !== link && !registerLinkTopology(this, link))
+      return false
     observeLinkId(this.state, link.id)
+    this.getNodeById(link.target_id)?.updateComputedDisabled()
     return true
   }
 
@@ -1793,6 +1866,7 @@ export class LGraph
     if (!link) return false
     unregisterLinkTopology(link)
     layoutStore.deleteLinkLayout(linkId)
+    this.getNodeById(link.target_id)?.updateComputedDisabled()
     return true
   }
 
@@ -1865,7 +1939,7 @@ export class LGraph
     const reroute = existingReroute ?? new Reroute(rerouteId, this, pos)
     reroute.parentId =
       parentId === undefined ? undefined : toRerouteId(parentId)
-    if (pos && existingReroute) reroute.pos = pos
+    if (runtimeOptional(pos) && existingReroute) reroute.pos = pos
     reroute.floating = floating
     if (!this._addReroute(reroute)) return
     return reroute
@@ -2082,6 +2156,14 @@ export class LGraph
     } = getBoundaryLinks(this, items)
     const { nodes, reroutes, groups } = splitPositionables(items)
 
+    const presentationStore = useLinkPresentationStore()
+    const scope = graphScopeOf(this)
+    const presentations = new Map(
+      [...internalLinks, ...boundaryInputLinks, ...boundaryOutputLinks].map(
+        (link) => [link.id, presentationStore.getPresentation(scope, link.id)]
+      )
+    )
+
     const boundingRect = createBounds(items)
     if (!boundingRect)
       throw new Error('Failed to create bounding rect for subgraph')
@@ -2108,6 +2190,19 @@ export class LGraph
       links,
       externalReroutes
     )
+    const outputPresentations = outputs.map(({ linkIds = [] }) =>
+      getAgreedLinkPresentation(
+        linkIds.map((id) => presentations.get(toLinkId(id)))
+      )
+    )
+
+    for (const link of links) {
+      const presentation =
+        link.target_id === SUBGRAPH_OUTPUT_ID
+          ? outputPresentations[link.target_slot]
+          : presentations.get(toLinkId(link.id))
+      Object.assign(link, presentation)
+    }
 
     // Prepare subgraph data
     const data = {
@@ -2219,6 +2314,12 @@ export class LGraph
       const [firstResolved, ...others] = connections
       const { output, outputNode, link, subgraphInput } = firstResolved
 
+      const presentation = getAgreedLinkPresentation(
+        connections.map(({ link: groupedLink }) =>
+          presentations.get(groupedLink.id)
+        )
+      )
+
       // Special handling: Subgraph input node
       i++
       if (link.origin_id === SUBGRAPH_INPUT_ID) {
@@ -2227,11 +2328,12 @@ export class LGraph
           targetSlot: i - 1
         })
         if (subgraphInput instanceof SubgraphInput) {
-          subgraphInput.connect(
+          const boundaryLink = subgraphInput.connect(
             subgraphNode.findInputSlotByType(link.type, true, true),
             subgraphNode,
             link.parentId
           )
+          transferLinkPresentation(scope, presentation, boundaryLink?.id)
         } else {
           throw new TypeError('Subgraph input node is not a SubgraphInput')
         }
@@ -2251,7 +2353,13 @@ export class LGraph
       }
 
       const input = subgraphNode.inputs[i - 1]
-      outputNode.connectSlots(output, subgraphNode, input, link.parentId)
+      const boundaryLink = outputNode.connectSlots(
+        output,
+        subgraphNode,
+        input,
+        link.parentId
+      )
+      transferLinkPresentation(scope, presentation, boundaryLink?.id)
     }
 
     // Group matching links
@@ -2266,10 +2374,15 @@ export class LGraph
         // Special handling: Subgraph output node
         if (link.target_id === SUBGRAPH_OUTPUT_ID) {
           if (subgraphOutput instanceof SubgraphOutput) {
-            subgraphOutput.connect(
+            const boundaryLink = subgraphOutput.connect(
               subgraphNode.findOutputSlotByType(link.type, true, true),
               subgraphNode,
               link.parentId
+            )
+            transferLinkPresentation(
+              scope,
+              presentations.get(link.id),
+              boundaryLink?.id
             )
           } else {
             throw new TypeError('Subgraph input node is not a SubgraphInput')
@@ -2286,7 +2399,17 @@ export class LGraph
         }
 
         const output = subgraphNode.outputs[i - 1]
-        subgraphNode.connectSlots(output, inputNode, input, link.parentId)
+        const boundaryLink = subgraphNode.connectSlots(
+          output,
+          inputNode,
+          input,
+          link.parentId
+        )
+        transferLinkPresentation(
+          scope,
+          presentations.get(link.id),
+          boundaryLink?.id
+        )
       }
     }
 
@@ -2308,9 +2431,28 @@ export class LGraph
   unpackSubgraph(
     subgraphNode: SubgraphNode,
     options?: { skipMissingNodes?: boolean }
-  ) {
+  ): boolean {
     if (!(subgraphNode instanceof SubgraphNode))
       throw new Error('Can only unpack Subgraph Nodes')
+
+    const malformedLink = findUnresolvableSubgraphLink(subgraphNode)
+    if (malformedLink) {
+      reportError(
+        new Error('Cannot unpack subgraph: unresolvable inner link'),
+        {
+          errorType: 'error_unpacking_subgraph_link',
+          context: {
+            subgraphNodeId: subgraphNode.id,
+            linkId: malformedLink.id,
+            originId: malformedLink.origin_id,
+            originSlot: malformedLink.origin_slot,
+            targetId: malformedLink.target_id,
+            targetSlot: malformedLink.target_slot
+          }
+        }
+      )
+      return false
+    }
 
     // Record state before unpacking for proper undo support
     this.beforeChange()
@@ -2321,6 +2463,7 @@ export class LGraph
       // Mark state change complete for proper undo support
       this.afterChange()
     }
+    return true
   }
 
   private _unpackSubgraphImpl(
@@ -2349,7 +2492,7 @@ export class LGraph
     const movedNodes = multiClone(subgraphNode.subgraph.nodes)
     const nodeIdMap = new Map<NodeId, NodeId>()
     for (const n_info of movedNodes) {
-      let node = LiteGraph.createNode(String(n_info.type), n_info.title)
+      let node = LiteGraph.createNode(n_info.type, n_info.title)
       if (!node) {
         if (skipMissingNodes) {
           console.warn(
@@ -2357,7 +2500,7 @@ export class LGraph
           )
           node = new LGraphNode(
             n_info.title || n_info.type || 'Missing Node',
-            String(n_info.type)
+            n_info.type
           )
           node.last_serialization = n_info
           node.has_errors = true
@@ -2392,7 +2535,10 @@ export class LGraph
     const groups = structuredClone(
       [...subgraphNode.subgraph.groups].map((g) => g.serialize())
     )
-    const newLinks: {
+    const presentationStore = useLinkPresentationStore()
+    const scope = graphScopeOf(this)
+    const subgraphScope = graphScopeOf(subgraphNode.subgraph)
+    const newLinks: (LinkPresentation & {
       oid: NodeId
       oslot: number
       tid: NodeId
@@ -2401,12 +2547,36 @@ export class LGraph
       iparent?: RerouteId
       eparent?: RerouteId
       externalFirst: boolean
-    }[] = []
+    })[] = []
     for (const [, link] of subgraphNode.subgraph.links) {
+      const presentation = presentationStore.getPresentation(
+        subgraphScope,
+        link.id
+      )
+      const subgraphInput =
+        link.origin_id === SUBGRAPH_INPUT_ID
+          ? link.resolve(subgraphNode.subgraph).subgraphInput
+          : undefined
+      const hostInput = subgraphInput
+        ? subgraphNode.inputs.find(
+            (input) => input._subgraphSlot?.id === subgraphInput.id
+          )
+        : undefined
+      if (link.origin_id === SUBGRAPH_INPUT_ID && !hostInput) {
+        console.error('Missing host input when unpacking subgraph')
+        continue
+      }
       const outerLink =
         link.origin_id === SUBGRAPH_INPUT_ID
-          ? inputLink(this, subgraphNode.id, link.origin_slot)
+          ? this.getLink(hostInput?.link)
           : undefined
+      if (link.origin_id === SUBGRAPH_INPUT_ID && !outerLink) {
+        const interiorNode = this.getNodeById(nodeIdMap.get(link.target_id))
+        if (hostInput && interiorNode) {
+          adoptPromotedWidgetValue(hostInput, interiorNode, link.target_slot)
+        }
+        continue
+      }
       const originId =
         link.origin_id === SUBGRAPH_INPUT_ID
           ? outerLink?.origin_id
@@ -2425,6 +2595,10 @@ export class LGraph
           subgraphNode.id,
           link.target_slot
         )) {
+          const outerPresentation = presentationStore.getPresentation(
+            scope,
+            sublink.id
+          )
           newLinks.push({
             oid: originId,
             oslot: originSlot,
@@ -2433,7 +2607,8 @@ export class LGraph
             id: link.id,
             iparent: link.parentId,
             eparent: sublink.parentId,
-            externalFirst: true
+            externalFirst: true,
+            ...getAgreedLinkPresentation([presentation, outerPresentation])
           })
           sublink.parentId = undefined
         }
@@ -2447,6 +2622,12 @@ export class LGraph
         console.error('Missing Link ID when unpacking')
         continue
       }
+      const outerPresentation = outerLink
+        ? presentationStore.getPresentation(scope, outerLink.id)
+        : undefined
+      const restoredPresentation = outerLink
+        ? getAgreedLinkPresentation([presentation, outerPresentation])
+        : presentation
       newLinks.push({
         oid: originId,
         oslot: originSlot,
@@ -2455,7 +2636,8 @@ export class LGraph
         id: link.id,
         iparent: link.parentId,
         eparent: externalParentId,
-        externalFirst: false
+        externalFirst: false,
+        ...restoredPresentation
       })
     }
     this.remove(subgraphNode)
@@ -2524,6 +2706,7 @@ export class LGraph
         console.error('Failed to create link')
         continue
       }
+      transferLinkPresentation(scope, newLink, created.id)
       //This is a little unwieldy since Map.has isn't a type guard
       const linkIds = linkIdMap.get(newLink.id) ?? []
       linkIds.push(created.id)
@@ -2583,6 +2766,7 @@ export class LGraph
 
     for (const nodeId of nodeIdMap.values()) {
       const node = this._nodes_by_id[nodeId]
+      if (!node) continue
       node._setConcreteSlots()
       node.arrange()
     }
@@ -2641,8 +2825,22 @@ export class LGraph
     if (reroutes?.length) {
       // Link parent IDs cannot go in 0.4 schema arrays
       extra.linkExtensions = linkArray
-        .filter((x) => x.parentId !== undefined)
-        .map((x) => ({ id: x.id, parentId: x.parentId }))
+        .filter((link) => link.parentId !== undefined)
+        .map((link) => ({ id: link.id, parentId: link.parentId }))
+    }
+
+    const presentationStore = useLinkPresentationStore()
+    const scope = graphScopeOf(this)
+    const linkPresentation = Object.fromEntries(
+      linkArray.flatMap((link) => {
+        const presentation = presentationStore.getPresentation(scope, link.id)
+        return presentation
+          ? [[String(link.id), { ...presentation }] as const]
+          : []
+      })
+    )
+    if (Object.keys(linkPresentation).length) {
+      extra.linkPresentation = linkPresentation
     }
 
     extra.reroutes = reroutes?.length ? reroutes : undefined
@@ -2747,6 +2945,7 @@ export class LGraph
 
     // Ensure auto-generated serialisation data is removed from extra
     delete this.extra.linkExtensions
+    delete this.extra.linkPresentation
   }
 
   /**
@@ -2756,9 +2955,11 @@ export class LGraph
    * adding the configuration.
    */
   configure(
-    data: ISerialisedGraph | SerialisableGraph,
+    data: ISerialisedGraph | SerialisableGraph | null | undefined,
     keep_old?: boolean
   ): boolean | undefined {
+    data = runtimeOptional(data)
+    if (!data) return
     const options: LGraphEventMap['configuring'] = {
       data,
       clearGraph: !keep_old
@@ -2781,7 +2982,6 @@ export class LGraph
     beginNamedValuesShadowDiffLoad()
     try {
       // TODO: Finish typing configure()
-      if (!data) return
       data = normalizeConfiguredTopology(data)
       if (options.clearGraph) this.clear()
       else detachGraphLayouts([this])
@@ -2792,6 +2992,7 @@ export class LGraph
         const topologyScope = graphScopeOf(this)
         if (this.isRootGraph) {
           useLinkStore().clearGraph(topologyScope.rootGraphId)
+          useLinkPresentationStore().clearGraph(topologyScope.rootGraphId)
           useRerouteStore().clearGraph(topologyScope.rootGraphId)
           useNodeDataStore().clearGraph(this.id)
           useWidgetValueStore().clearGraph(this.id)
@@ -2799,6 +3000,7 @@ export class LGraph
           layoutStore.clearGraph(this.id)
         } else {
           useLinkStore().clearOwner(topologyScope)
+          useLinkPresentationStore().clearOwner(topologyScope)
           useRerouteStore().clearOwner(topologyScope)
           useNodeDataStore().clearOwner(topologyScope)
         }
@@ -2808,7 +3010,7 @@ export class LGraph
       /**
        * Links restored from this payload, in case node-id remints during the
        * node-creation pass require their endpoints to be remapped
-       * (ADR-0008). Only payload links are candidates; incumbent links are
+       * (ADR-CRDT-MINT-0018). Only payload links are candidates; incumbent links are
        * never touched.
        */
       const addedLinkIds: LinkId[] = []
@@ -2832,6 +3034,14 @@ export class LGraph
           }
         }
 
+        for (const [linkId, presentation] of Object.entries(
+          extra?.linkPresentation ?? {}
+        )) {
+          const id = parseLinkId(linkId)
+          if (id === undefined || !this.links.has(id)) continue
+          useLinkPresentationStore().patch(graphScopeOf(this), id, presentation)
+        }
+
         // Reroutes
         reroutes = extra?.reroutes
 
@@ -2840,19 +3050,26 @@ export class LGraph
         // New schema - one version so far, no check required.
 
         // State - use max to prevent ID collisions across root and subgraphs
-        if (data.state) {
+        const configuredState = runtimeOptional(data.state)
+        if (configuredState) {
           const { lastGroupId, lastLinkId, lastNodeId, lastRerouteId } =
-            data.state
+            configuredState
           const { state } = this
-          if (lastGroupId != null)
-            state.lastGroupId = Math.max(state.lastGroupId, lastGroupId)
-          if (lastLinkId != null)
-            state.lastLinkId = toLinkId(Math.max(state.lastLinkId, lastLinkId))
-          if (lastNodeId != null)
-            state.lastNodeId = Math.max(state.lastNodeId, lastNodeId)
-          if (lastRerouteId != null)
+          const runtimeLastGroupId = runtimeOptional(lastGroupId)
+          const runtimeLastLinkId = runtimeOptional(lastLinkId)
+          const runtimeLastNodeId = runtimeOptional(lastNodeId)
+          const runtimeLastRerouteId = runtimeOptional(lastRerouteId)
+          if (runtimeLastGroupId != null)
+            state.lastGroupId = Math.max(state.lastGroupId, runtimeLastGroupId)
+          if (runtimeLastLinkId != null)
+            state.lastLinkId = toLinkId(
+              Math.max(state.lastLinkId, runtimeLastLinkId)
+            )
+          if (runtimeLastNodeId != null)
+            state.lastNodeId = Math.max(state.lastNodeId, runtimeLastNodeId)
+          if (runtimeLastRerouteId != null)
             state.lastRerouteId = toRerouteId(
-              Math.max(state.lastRerouteId, lastRerouteId)
+              Math.max(state.lastRerouteId, runtimeLastRerouteId)
             )
         }
 
@@ -2860,7 +3077,13 @@ export class LGraph
         if (Array.isArray(data.links)) {
           for (const linkData of data.links) {
             const link = LLink.create(linkData)
-            if (this._addLink(link)) addedLinkIds.push(link.id)
+            if (this._addLink(link)) {
+              addedLinkIds.push(link.id)
+              useLinkPresentationStore().patch(graphScopeOf(this), link.id, {
+                hidden: linkData.hidden,
+                label: linkData.label
+              })
+            }
           }
         }
 
@@ -2918,7 +3141,7 @@ export class LGraph
 
       /**
        * Requested (serialized) id → final id for nodes whose id was
-       * reminted on collision during `this.add` (ADR-0008). Payload links
+       * reminted on collision during `this.add` (ADR-CRDT-MINT-0018). Payload links
        * name nodes by requested id, so their endpoints must follow the
        * remint. Ambiguous requested ids (claimed by >1 payload node) are
        * never recorded — see {@link recordUnambiguousRemint}.
@@ -2932,13 +3155,13 @@ export class LGraph
 
         for (const n_info of effectiveNodesData) {
           // stored info
-          let node = LiteGraph.createNode(String(n_info.type), n_info.title)
+          let node = LiteGraph.createNode(n_info.type, n_info.title)
           if (!node) {
             if (LiteGraph.debug)
               console.warn('Node not found or has errors:', n_info.type)
 
             // in case of error we create a replacement node to avoid losing info
-            node = new LGraphNode('', String(n_info.type))
+            node = new LGraphNode('', n_info.type)
             node.last_serialization = n_info
             node.has_errors = true
             error = true
@@ -3019,7 +3242,13 @@ export class LGraph
           ) {
             floatingLink.id = toLinkId(-1)
           }
-          this.addFloatingLink(floatingLink)
+          if (this.addFloatingLink(floatingLink)) {
+            useLinkPresentationStore().patch(
+              graphScopeOf(this),
+              floatingLink.id,
+              { hidden: linkData.hidden, label: linkData.label }
+            )
+          }
         }
       }
 
@@ -3048,7 +3277,7 @@ export class LGraph
 
       for (const node of this._nodes) {
         if (!(node instanceof SubgraphNode)) continue
-        if (node.properties?.proxyWidgets !== undefined) {
+        if (node.properties.proxyWidgets !== undefined) {
           const nodeData = nodeDataMap.get(node.id)
           if (LGraph.proxyWidgetMigrationFlush) {
             LGraph.proxyWidgetMigrationFlush(node, nodeData)
@@ -3064,6 +3293,8 @@ export class LGraph
         }
         LGraph.autoExposePreviewNodes?.(node)
       }
+
+      for (const node of this._nodes) node.updateComputedDisabled()
 
       this.onConfigure?.(extensionConfigureView(this, data))
       this.incrementVersion()
@@ -3097,7 +3328,7 @@ export class LGraph
     this.rootGraph._canvas = canvas
   }
 
-  load(url: string | Blob | URL | File, callback: () => void) {
+  load(url: string | Blob | URL | File, callback?: () => void) {
     // from file
     if (url instanceof Blob || url instanceof File) {
       const reader = new FileReader()
@@ -3178,7 +3409,7 @@ export class Subgraph
     // No-op: subgraphs share the root graph's state.
   }
 
-  constructor(rootGraph: LGraph, data: ExportedSubgraph) {
+  constructor(rootGraph: LGraph | null | undefined, data: ExportedSubgraph) {
     if (!rootGraph) throw new Error('Root graph is required')
 
     super()
@@ -3190,6 +3421,14 @@ export class Subgraph
     }
     this._configureBase(cloned)
     this._configureSubgraph(cloned)
+  }
+
+  /** Clones and registers the subgraph under a new ID. */
+  // fallow-ignore-next-line unused-class-member
+  clone(): Subgraph {
+    const exported = this.asSerialisable()
+    exported.id = createUuidv4()
+    return this.rootGraph.createSubgraph(structuredClone(exported))
   }
 
   getIoNodeOnPos(
@@ -3256,7 +3495,7 @@ export class Subgraph
     canvas.subgraph = this
   }
 
-  addInput(name: string, type: string): SubgraphInput {
+  addInput(name: string | null, type: string | null): SubgraphInput {
     if (name === null || type === null) {
       throw new Error('Name and type are required for subgraph input')
     }
@@ -3278,7 +3517,7 @@ export class Subgraph
     return input
   }
 
-  addOutput(name: string, type: string): SubgraphOutput {
+  addOutput(name: string | null, type: string | null): SubgraphOutput {
     if (name === null || type === null) {
       throw new Error('Name and type are required for subgraph output')
     }
@@ -3409,19 +3648,6 @@ export class Subgraph
   ): void {
     this.inputNode.draw(ctx, colorContext, fromSlot, editorAlpha)
     this.outputNode.draw(ctx, colorContext, fromSlot, editorAlpha)
-  }
-
-  /**
-   * Clones the subgraph, creating an identical copy with a new ID.
-   * @returns A new subgraph with the same configuration, but a new ID.
-   */
-  clone(keepId: boolean = false): Subgraph {
-    const exported = this.asSerialisable()
-    if (!keepId) exported.id = createUuidv4()
-
-    const subgraph = new Subgraph(this.rootGraph, exported)
-    subgraph.configure(exported)
-    return subgraph
   }
 
   override asSerialisable(): ExportedSubgraph &
