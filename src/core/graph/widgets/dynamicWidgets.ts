@@ -32,6 +32,7 @@ import { graphScopeOf } from '@/types/graphScopeId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import { widgetId } from '@/types/widgetId'
+import { dynamicGroupWidget } from './dynamicGroupWidget'
 
 function setCanvasDirty(canvas: typeof app.canvas | undefined) {
   canvas?.setDirty(true, true)
@@ -289,7 +290,10 @@ function dynamicComboWidget(
   return { widget, minWidth, minHeight }
 }
 
-export const dynamicWidgets = { COMFY_DYNAMICCOMBO_V3: dynamicComboWidget }
+export const dynamicWidgets = {
+  COMFY_DYNAMICCOMBO_V3: dynamicComboWidget,
+  COMFY_DYNAMICGROUP_V3: dynamicGroupWidget
+}
 const dynamicInputs: Record<
   string,
   (node: LGraphNode, inputSpec: InputSpecV2) => void

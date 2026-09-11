@@ -9,6 +9,7 @@ import { useCanvasPositionConversion } from '@/composables/element/useCanvasPosi
 
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import { resolveDynamicInputSpec } from '@/core/graph/widgets/dynamicInputSpec'
 import { setBackendNodeText, st, t } from '@/i18n'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { ChangeTracker } from '@/scripts/changeTracker'
@@ -2545,23 +2546,16 @@ export class ComfyApp {
         const nodeInputs = def.input
         for (const widget of node.widgets) {
           if (widget.type === 'combo') {
-            let inputType: 'required' | 'optional' | undefined
-            if (nodeInputs.required?.[widget.name] !== undefined) {
-              inputType = 'required'
-            } else if (nodeInputs.optional?.[widget.name] !== undefined) {
-              inputType = 'optional'
-            }
-            if (inputType !== undefined) {
-              // Get the input spec associated with the widget
-              const inputSpec = nodeInputs[inputType]?.[widget.name]
-              if (inputSpec) {
-                // Refresh the combo widget's options with the values from the input spec
-                if (isComboInputSpecV2(inputSpec)) {
-                  widget.options.values = inputSpec[1]?.options
-                } else if (isComboInputSpecV1(inputSpec)) {
-                  widget.options.values = inputSpec[0]
-                }
-              }
+            const resolved = resolveDynamicInputSpec(
+              nodeInputs,
+              widget.name,
+              (name) => node.widgets?.find((item) => item.name === name)?.value
+            )
+            const inputSpec = resolved?.spec
+            if (inputSpec && isComboInputSpecV2(inputSpec)) {
+              widget.options.values = inputSpec[1]?.options
+            } else if (inputSpec && isComboInputSpecV1(inputSpec)) {
+              widget.options.values = inputSpec[0]
             }
           }
         }

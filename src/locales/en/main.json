@@ -1,4 +1,9 @@
 {
+  "dynamicGroup": {
+    "add": "Add {group}",
+    "remove": "Remove {row}",
+    "row": "{group} #{index}"
+  },
   "g": {
     "shortcutSuffix": " ({shortcut})",
     "megapixelsValue": "{count} MP",
