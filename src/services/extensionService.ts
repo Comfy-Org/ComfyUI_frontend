@@ -6,6 +6,8 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { reportError } from '@/platform/telemetry/reportError'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExtensionStore } from '@/stores/extensionStore'
@@ -83,45 +85,63 @@ export const useExtensionService = () => {
   const registerExtension = (extension: ComfyExtension) => {
     extensionStore.registerExtension(extension)
 
-    const addKeybinding = wrapWithErrorHandling((keybinding: KeybindingImpl) =>
-      keybindingStore.addExtensionKeybinding(keybinding, extension.name)
+    const registrationError = (error: unknown, reason: string) => {
+      reportError(new Error('Extension shortcut registration failed'), {
+        errorType: 'error_registering_keybinding',
+        level: 'warning',
+        tags: { extension: extension.name, reason }
+      })
+      useToastStore().add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: error instanceof Error ? error.message : t('g.unknownError')
+      })
+    }
+    const addKeybinding = wrapWithErrorHandling(
+      (keybinding: KeybindingImpl) =>
+        keybindingStore.addExtensionKeybinding(keybinding, extension.name),
+      (error) => registrationError(error, 'conflict')
     )
     const addSetting = wrapWithErrorHandling(settingStore.addSetting)
 
     const contextKeyStore = useContextKeyStore()
     const contextKeys = zContextKeys.safeParse(extension.contextKeys)
     if (!contextKeys.success) {
-      toastErrorHandler(
-        new Error(t('g.invalidExtensionContextKeys', { name: extension.name }))
+      registrationError(
+        new Error(t('g.invalidExtensionContextKeys', { name: extension.name })),
+        'context-schema'
       )
     }
     contextKeys.data?.forEach((key) => {
       if (
         !contextKeyStore.register(`${extension.name}.${key}`, extension.name)
       ) {
-        toastErrorHandler(
+        registrationError(
           new Error(
             t('g.invalidExtensionContextKey', { name: extension.name, key })
-          )
+          ),
+          'context-registration'
         )
       }
     })
     extension.keybindings?.forEach((keybinding) => {
       const parsed = zKeybinding.safeParse(keybinding)
       if (!parsed.success) {
-        toastErrorHandler(
+        registrationError(
           new Error(
             `${t('g.invalidExtensionKeybinding', { name: extension.name })}: ${fromZodError(parsed.error).message}`
-          )
+          ),
+          'binding-schema'
         )
         return
       }
       const when = parsed.data.when && parseWhenClause(parsed.data.when)
       if (when && !when.success) {
-        toastErrorHandler(
+        registrationError(
           new Error(
             `${t('g.invalidExtensionKeybinding', { name: extension.name })}: ${when.error}`
-          )
+          ),
+          'when-clause'
         )
         return
       }

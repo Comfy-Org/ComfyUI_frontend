@@ -40,8 +40,11 @@ describe('keybindingService - Escape key handling', () => {
   let keybindingService: ReturnType<typeof useKeybindingService>
 
   beforeEach(() => {
-    vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
-    vi.spyOn(useCommandStore(), 'isRegistered').mockReturnValue(true)
+    useCommandStore().registerCommands(
+      [...new Set(CORE_KEYBINDINGS.map((binding) => binding.commandId))].map(
+        (id) => ({ id, function: vi.fn() })
+      )
+    )
 
     const dialogStore = useDialogStore()
     dialogStore.dialogStack.length = 0
@@ -80,9 +83,9 @@ describe('keybindingService - Escape key handling', () => {
     const event = createKeyboardEvent('Escape')
     await keybindingService.keybindHandler(event)
 
-    expect(useCommandStore().execute).toHaveBeenCalledWith(
-      'Comfy.Graph.ExitSubgraph'
-    )
+    expect(
+      useCommandStore().getCommand('Comfy.Graph.ExitSubgraph').function
+    ).toHaveBeenCalledOnce()
   })
 
   it('should NOT execute Escape keybinding when dialogs are open', async () => {

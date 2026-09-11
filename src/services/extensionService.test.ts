@@ -8,6 +8,7 @@ import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { Keybinding } from '@/platform/keybindings/types'
 import type { ComfyExtension } from '@/types/comfy'
+import * as telemetry from '@/platform/telemetry/reportError'
 
 import { shouldLoadExtension, useExtensionService } from './extensionService'
 
@@ -65,6 +66,9 @@ describe('registerExtension keybindings', () => {
   })
 
   it('rejects a malformed keybinding with a toast and registers nothing', () => {
+    const report = vi
+      .spyOn(telemetry, 'reportError')
+      .mockImplementation(() => {})
     const toast = vi.spyOn(useToastStore(), 'add')
     const extension: ComfyExtension = {
       name: 'Test.Broken',
@@ -72,6 +76,12 @@ describe('registerExtension keybindings', () => {
     }
 
     useExtensionService().registerExtension(extension)
+
+    expect(report).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'error_registering_keybinding',
+      level: 'warning',
+      tags: { extension: 'Test.Broken', reason: 'binding-schema' }
+    })
 
     expect(toast).toHaveBeenCalledWith(
       expect.objectContaining({

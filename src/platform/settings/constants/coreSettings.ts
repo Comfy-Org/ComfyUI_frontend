@@ -654,6 +654,12 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.3.5'
   },
   {
+    id: 'Comfy.Keybinding.CapturePhase',
+    name: 'Dispatch keyboard shortcuts in capture phase',
+    type: 'hidden',
+    defaultValue: false
+  },
+  {
     id: 'Comfy.Keybinding.SettingsV1',
     name: 'Versioned keyboard shortcut settings',
     type: 'hidden',
