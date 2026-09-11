@@ -33,7 +33,8 @@ export async function mockBilling(
       billing_status: 'paid',
       max_seats: 1,
       occupied_seats: 1,
-      team_credit_stop: null
+      team_credit_stop: null,
+      scheduled_change: null
     },
     billingCapabilities = createBillingCapabilities(workspaceId),
     billingCapabilitiesStatus

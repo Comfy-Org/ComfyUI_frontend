@@ -7,7 +7,7 @@ const { mockDownloadFileAsync } = vi.hoisted(() => ({
   mockDownloadFileAsync: vi.fn()
 }))
 
-vi.mock('@/base/common/downloadUtil', () => ({
+vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadFileAsync: mockDownloadFileAsync
 }))
 

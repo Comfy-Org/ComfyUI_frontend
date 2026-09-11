@@ -5,6 +5,7 @@ import {
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf, toOwningGraphId } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
@@ -50,6 +51,42 @@ let topologyFacadeDescriptors: PropertyDescriptorMap | undefined
 
 export function resolveLinkTopology(topology: LinkTopology): LLink | undefined {
   return linkByTopology.get(toRaw(topology))
+}
+
+/**
+ * Gives a topology that was registered directly by a renderer-free store
+ * mutation its live LiteGraph facade. The store remains the identity owner;
+ * this only installs the adapter used by graph lookup, painting, and link
+ * interactions.
+ */
+export function materializeLinkAdapter(
+  graph: Pick<LGraph, 'rootGraph' | 'id'>,
+  topology: LinkTopology
+): LLink | undefined {
+  const rawTopology = toRaw(topology)
+  const existing = linkByTopology.get(rawTopology)
+  if (existing) return existing
+
+  const scope = graphScopeOf(graph)
+  const registered = useLinkStore().getTopology(scope.rootGraphId, topology.id)
+  if (
+    registered?.graphId !== scope.owningGraphId ||
+    toRaw(registered) !== rawTopology
+  ) {
+    return
+  }
+
+  const link = new LLink(
+    topology.id,
+    topology.type,
+    serializeNodeId(topology.originNodeId),
+    topology.originSlot,
+    serializeNodeId(topology.targetNodeId),
+    topology.targetSlot,
+    topology.parentId
+  )
+  adoptLinkTopology(link, scope, registered)
+  return link
 }
 
 function defineEnumerableTopologyFacade(link: LLink): void {
@@ -682,6 +719,9 @@ export function replaceLinkTopology(
   )
   if (!registered) return false
   if (incumbent) {
+    if (incumbent._graphScope) {
+      useLinkPresentationStore().take(incumbent._graphScope, incumbent.id)
+    }
     linkByTopology.delete(toRaw(incumbent._state))
     incumbent._graphScope = undefined
   }
@@ -707,7 +747,9 @@ function adoptLinkTopology(
  */
 export function unregisterLinkTopology(link: LLink): void {
   if (!link._graphScope) return
-  useLinkStore().deleteLink(link._graphScope, link._state)
+  if (useLinkStore().deleteLink(link._graphScope, link._state)) {
+    useLinkPresentationStore().take(link._graphScope, link.id)
+  }
   linkByTopology.delete(toRaw(link._state))
   link._graphScope = undefined
 }

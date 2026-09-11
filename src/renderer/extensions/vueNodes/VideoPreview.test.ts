@@ -1,4 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
@@ -8,11 +8,14 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 
 import VideoPreview from '@/renderer/extensions/vueNodes/VideoPreview.vue'
 
-vi.mock('primevue', () => ({
-  useToast: () => ({ add: vi.fn() })
-}))
+vi.mock<unknown>(
+  import('primevue'), // eslint-disable-line primevue-removal/no-imports
+  () => ({
+    useToast: () => ({ add: vi.fn() })
+  })
+)
 
-vi.mock('@/base/common/downloadUtil', () => ({
+vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadFileAsync: vi.fn().mockResolvedValue(undefined)
 }))
 
@@ -53,7 +56,7 @@ describe('VideoPreview', () => {
         typeof VideoPreview
       >,
       global: {
-        plugins: [createTestingPinia({ createSpy: vi.fn }), i18n],
+        plugins: [getActivePinia()!, i18n],
         stubs: {
           Skeleton: true
         }

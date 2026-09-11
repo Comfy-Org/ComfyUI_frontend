@@ -156,6 +156,27 @@ export interface ModelLaunchSteps {
   secondaryCta?: ModelLaunchCta
 }
 
+interface ModelLaunchComparisonColumn {
+  id: string
+  label: LocalizedText
+}
+
+interface ModelLaunchComparisonRow {
+  id: string
+  label: LocalizedText
+  // One cell per column, in `columns` order.
+  cells: readonly LocalizedText[]
+}
+
+// A feature/tier comparison table, e.g. Professional vs Enterprise on
+// /minimax/license. The first column holds the row labels; `columns` are the
+// remaining headers.
+export interface ModelLaunchComparison {
+  headingKey: TranslationKey
+  columns: readonly ModelLaunchComparisonColumn[]
+  rows: readonly ModelLaunchComparisonRow[]
+}
+
 export interface ModelLaunchRunOptions {
   headingKey: TranslationKey
   subtitleKey: TranslationKey
@@ -180,6 +201,7 @@ export type ModelLaunchSection =
   | 'gallery'
   | 'audioGallery'
   | 'steps'
+  | 'comparison'
   | 'pricing'
   | 'faq'
   | 'closingCta'
@@ -194,6 +216,7 @@ export const DEFAULT_SECTION_ORDER: readonly ModelLaunchSection[] = [
   'pricing',
   'faq',
   'steps',
+  'comparison',
   'closingCta'
 ]
 
@@ -210,6 +233,7 @@ export interface ModelLaunchPage {
   pricing?: ModelLaunchPricing
   faq?: ModelLaunchFaqSection
   steps?: ModelLaunchSteps
+  comparison?: ModelLaunchComparison
   // Pages that end on a steps CTA row do not need a separate closing CTA.
   closingCta?: ModelLaunchClosingCta
   // Reorders the optional body sections for this page only. Defaults to

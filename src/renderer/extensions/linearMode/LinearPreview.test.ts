@@ -7,7 +7,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import type { ResultItemImpl } from '@/stores/queueStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 
 import LinearPreview from './LinearPreview.vue'
 import type { OutputSelection } from './linearModeTypes'
@@ -24,19 +25,14 @@ const outputHistoryState = vi.hoisted(() => ({
 const spies = vi.hoisted(() => ({
   cancelActiveWorkflowJobs: vi.fn(),
   deleteAssets: vi.fn(),
-  downloadFileAsync: vi.fn(() => Promise.resolve()),
-  toastAdd: vi.fn()
+  downloadFileAsync: vi.fn(() => Promise.resolve())
 }))
 
-vi.mock('@/base/common/downloadUtil', () => ({
+vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadFileAsync: spies.downloadFileAsync
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({ add: spies.toastAdd })
-}))
-
-vi.mock('@/composables/useAppMode', async () => {
+vi.mock<unknown>(import('@/composables/useAppMode'), async () => {
   const { computed } = await import('vue')
   return {
     useAppMode: () => ({
@@ -46,22 +42,28 @@ vi.mock('@/composables/useAppMode', async () => {
   }
 })
 
-vi.mock('@/renderer/extensions/linearMode/useOutputHistory', async () => {
-  const { computed } = await import('vue')
-  return {
-    useOutputHistory: () => ({
-      allOutputs: () => [],
-      isWorkflowActive: computed(() => outputHistoryState.isWorkflowActive),
-      cancelActiveWorkflowJobs: spies.cancelActiveWorkflowJobs
-    })
+vi.mock<unknown>(
+  import('@/renderer/extensions/linearMode/useOutputHistory'),
+  async () => {
+    const { computed } = await import('vue')
+    return {
+      useOutputHistory: () => ({
+        allOutputs: () => [],
+        isWorkflowActive: computed(() => outputHistoryState.isWorkflowActive),
+        cancelActiveWorkflowJobs: spies.cancelActiveWorkflowJobs
+      })
+    }
   }
-})
+)
 
-vi.mock('@/platform/assets/composables/useMediaAssetActions', () => ({
-  useMediaAssetActions: () => ({ deleteAssets: spies.deleteAssets })
-}))
+vi.mock<unknown>(
+  import('@/platform/assets/composables/useMediaAssetActions'),
+  () => ({
+    useMediaAssetActions: () => ({ deleteAssets: spies.deleteAssets })
+  })
+)
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { rootGraph: { id: 'root' }, loadGraphData: vi.fn() }
 }))
 
@@ -188,7 +190,7 @@ describe('LinearPreview', () => {
   it('shows a generic file error when a selected output download fails', async () => {
     spies.downloadFileAsync.mockRejectedValueOnce(new Error('download failed'))
     const selection: OutputSelection = {
-      output: fromPartial<ResultItemImpl>({
+      output: fromPartial<AugmentedResultItem>({
         url: 'https://example.com/output'
       }),
       canShowPreview: false
@@ -198,7 +200,7 @@ describe('LinearPreview', () => {
     await user.click(await screen.findByRole('button', { name: 'Download' }))
 
     await waitFor(() => {
-      expect(spies.toastAdd).toHaveBeenCalledWith({
+      expect(vi.mocked(useToastStore().add)).toHaveBeenCalledWith({
         severity: 'error',
         summary: 'Error',
         detail: 'Failed to download file'

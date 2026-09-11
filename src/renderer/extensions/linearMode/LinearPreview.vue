@@ -22,7 +22,8 @@ import OutputHistory from '@/renderer/extensions/linearMode/OutputHistory.vue'
 import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
 import type { OutputSelection } from '@/renderer/extensions/linearMode/linearModeTypes'
 import { app } from '@/scripts/app'
-import type { ResultItemImpl } from '@/stores/queueStore'
+import type { AugmentedResultItem } from '@/utils/resultItem'
+import { resultItemUrl } from '@/utils/resultItemUrl'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
@@ -42,7 +43,7 @@ const { runButtonClick, mobile } = defineProps<{
 }>()
 
 const selectedItem = ref<AssetItem>()
-const selectedOutput = ref<ResultItemImpl>()
+const selectedOutput = ref<AugmentedResultItem>()
 const canShowPreview = ref(true)
 const latentPreview = ref<string>()
 const showSkeleton = ref(false)
@@ -76,7 +77,9 @@ async function downloadAsset(item?: AssetItem) {
   downloadingAll.value = true
   try {
     const results = await Promise.allSettled(
-      outputs.map((output) => downloadFileAsync(output.url, output.filename))
+      outputs.map((output) =>
+        downloadFileAsync(resultItemUrl(output), output.filename)
+      )
     )
 
     if (results.some((result) => result.status === 'rejected')) {
@@ -92,8 +95,9 @@ async function downloadAsset(item?: AssetItem) {
 }
 
 function handleSingleDownload() {
-  if (!selectedOutput.value?.url) return
-  void download(selectedOutput.value.url)
+  if (!selectedOutput.value) return
+  const url = resultItemUrl(selectedOutput.value)
+  if (url) void download(url)
 }
 
 async function loadWorkflow(item: AssetItem | undefined) {
