@@ -1,24 +1,52 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { createApp, defineComponent } from 'vue'
+import type { App } from 'vue'
+import { createI18n } from 'vue-i18n'
 
-import { useWorkspaceTierLabel } from './useWorkspaceTierLabel'
+import { useWorkspaceTierLabel as createWorkspaceTierLabel } from './useWorkspaceTierLabel'
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: vi.fn((key: string, params?: Record<string, unknown>) => {
-      if (key === 'subscription.tierNameYearly') return `${params?.name} Yearly`
+const apps: App<Element>[] = []
 
-      const tierNames: Record<string, string> = {
-        'subscription.tiers.free.name': 'Free',
-        'subscription.tiers.standard.name': 'Standard',
-        'subscription.tiers.creator.name': 'Creator',
-        'subscription.tiers.pro.name': 'Pro',
-        'subscription.tiers.founder.name': "Founder's Edition",
-        'subscription.tiers.enterprise.name': 'Enterprise'
+function useWorkspaceTierLabel(): ReturnType<typeof createWorkspaceTierLabel> {
+  let result: ReturnType<typeof createWorkspaceTierLabel> | undefined
+  const app = createApp(
+    defineComponent({
+      setup() {
+        result = createWorkspaceTierLabel()
+        return () => null
       }
-      return tierNames[key] ?? key
     })
-  })
-}))
+  )
+  app.use(
+    createI18n({
+      legacy: false,
+      locale: 'en',
+      messages: {
+        en: {
+          subscription: {
+            tierNameYearly: '{name} Yearly',
+            tiers: {
+              free: { name: 'Free' },
+              standard: { name: 'Standard' },
+              creator: { name: 'Creator' },
+              pro: { name: 'Pro' },
+              founder: { name: "Founder's Edition" },
+              enterprise: { name: 'Enterprise' }
+            }
+          }
+        }
+      }
+    })
+  )
+  app.mount(document.createElement('div'))
+  apps.push(app)
+  if (!result) throw new Error('workspace tier label not initialized')
+  return result
+}
+
+afterEach(() => {
+  for (const app of apps.splice(0)) app.unmount()
+})
 
 describe('useWorkspaceTierLabel', () => {
   let formatTierName: ReturnType<typeof useWorkspaceTierLabel>['formatTierName']

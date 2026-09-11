@@ -1,16 +1,20 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, useId } from 'vue'
 
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 import {
   isDownloadLinkRequestEnabled,
   joinWaitlist,
   preloadDownloadLinkAnalytics
 } from '../../scripts/customerio'
 
-const { signupEvent = 'agent_beta_waitlist_joined' } = defineProps<{
-  /** Customer.io event tracked on a successful signup. */
-  signupEvent?: string
-}>()
+const { signupEvent = 'agent_beta_waitlist_joined', locale = 'en' } =
+  defineProps<{
+    /** Customer.io event tracked on a successful signup. */
+    signupEvent?: string
+    locale?: Locale
+  }>()
 
 type FormStatus = 'idle' | 'invalid' | 'pending' | 'error' | 'success'
 
@@ -28,10 +32,14 @@ const successRegion = ref<HTMLParagraphElement | null>(null)
 const applicationOpened = ref(false)
 
 const errorMessage = computed(() => {
-  if (status.value === 'invalid') return 'Please enter a valid email address.'
-  if (status.value === 'error') return 'Something went wrong. Please try again.'
+  if (status.value === 'invalid') return t('agent.form.invalidEmail', locale)
+  if (status.value === 'error') return t('agent.form.error', locale)
   return ''
 })
+
+const successMessage = computed(() =>
+  t('agent.form.success', locale).replace('{email}', () => submittedEmail.value)
+)
 
 onMounted(() => {
   if (isDownloadLinkRequestEnabled) preloadDownloadLinkAnalytics()
@@ -88,7 +96,9 @@ async function onSubmit() {
       class="bg-primary-comfy-ink-light mx-auto flex max-w-130 items-center rounded-3xl border border-primary-warm-white/25 p-2 max-[560px]:flex-wrap max-[560px]:gap-3 max-[560px]:border-0 max-[560px]:bg-transparent max-[560px]:p-0"
       @submit.prevent="onSubmit"
     >
-      <label for="agent-beta-email" class="sr-only">Email address</label>
+      <label for="agent-beta-email" class="sr-only">{{
+        t('agent.form.emailLabel', locale)
+      }}</label>
       <input
         v-model="decoy"
         type="text"
@@ -104,7 +114,7 @@ async function onSubmit() {
         type="email"
         name="email"
         autocomplete="email"
-        placeholder="Type your email"
+        :placeholder="t('agent.form.placeholder', locale)"
         required
         :aria-invalid="status === 'invalid' || undefined"
         :aria-describedby="errorMessage ? errorMessageId : undefined"
@@ -116,7 +126,11 @@ async function onSubmit() {
         :aria-busy="status === 'pending'"
         class="bg-primary-comfy-yellow flex-none cursor-pointer rounded-2xl border-0 px-7 py-[15px] text-sm font-bold tracking-[0.06em] text-primary-comfy-ink uppercase disabled:cursor-wait disabled:opacity-75 max-[560px]:w-full max-[560px]:px-6.5 max-[560px]:py-[17px]"
       >
-        {{ status === 'pending' ? 'Joining…' : 'Join the waitlist' }}
+        {{
+          status === 'pending'
+            ? t('agent.form.submitPending', locale)
+            : t('agent.form.submit', locale)
+        }}
       </button>
       <p
         v-if="errorMessage"
@@ -134,16 +148,15 @@ async function onSubmit() {
       tabindex="-1"
       class="bg-primary-comfy-ink-light focus:outline-primary-comfy-yellow border-primary-comfy-yellow/55 mx-auto max-w-130 rounded-3xl border px-6 py-5 text-base text-primary-comfy-canvas focus:outline-2 focus:outline-offset-[3px]"
     >
-      You're on the waitlist! We'll email {{ submittedEmail }} when it's ready.
-      A few questions just opened in a new tab —
+      {{ successMessage }}
       <a
         :href="APPLICATION_URL"
         target="_blank"
         rel="noopener noreferrer"
         class="text-primary-comfy-yellow underline underline-offset-2 hover:opacity-70"
-        >open them here</a
+        >{{ t('agent.form.successLink', locale) }}</a
       >
-      if your browser blocked it.
+      {{ t('agent.form.successTail', locale) }}
     </p>
   </div>
 </template>

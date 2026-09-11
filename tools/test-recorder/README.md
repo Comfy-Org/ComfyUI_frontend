@@ -57,6 +57,13 @@ convention-compliant spec directly — then `comfy-test pr <file>` opens
 the PR. See [Browser Tests README § For agents](../../browser_tests/README.md#for-agents)
 for the full chain.
 
+`agent-replay` runs the recorded agent conversations as tests against a
+running dev server. On a terminal with no flags it asks which recording to
+replay and whether to watch it; `--case <id>` narrows to one recording,
+`--headed` shows it, `--video` records it, and `--help` prints usage without
+running anything. The replay workflow is in
+`.claude/skills/agent-integration-replay/SKILL.md`.
+
 ## Development
 
 ```bash

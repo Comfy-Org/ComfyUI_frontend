@@ -22,7 +22,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
     video-autoplay
     video-loop
     :video-aria-label="t('fdct.hero.title', locale)"
-    video-src="https://media.comfy.org/website/fdct/FDCT_V4.mp4"
+    video-src="https://media.comfy.org/website/fdct/FDCT_V6.mp4"
     video-poster="https://media.comfy.org/website/fdct/FDCT_V4_thumb.jpeg"
   />
 </template>

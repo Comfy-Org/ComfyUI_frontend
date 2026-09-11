@@ -44,7 +44,7 @@ const {
       <span
         :class="
           cn(
-            'bg-primary-comfy-yellow text-primary-comfy-ink flex items-center justify-center py-1.5 transition-all duration-300 sm:py-3 lg:py-5',
+            'bg-primary-comfy-yellow flex items-center justify-center py-1.5 text-primary-comfy-ink transition-all duration-300 sm:py-3 lg:py-5',
             segmentClass
           )
         "

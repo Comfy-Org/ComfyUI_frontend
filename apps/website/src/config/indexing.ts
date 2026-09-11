@@ -1,4 +1,9 @@
 import { models } from './models'
+import {
+  isLegacyWorkshopRoute,
+  isWorkshopInBuild,
+  isWorkshopRoute
+} from './workshop-release'
 
 const LOCALES = ['en', 'zh-CN'] as const
 const DEFAULT_LOCALE = 'en'
@@ -16,6 +21,9 @@ const NOINDEX_PATHNAMES = new Set([
   ...LOCALE_PREFIXES.map((prefix) => `${prefix}/individual-submission`),
   ...LOCALE_PREFIXES.map((prefix) => `${prefix}/booking-confirmation`),
   ...LOCALE_PREFIXES.map((prefix) => `${prefix}/agent`),
+  ...LOCALE_PREFIXES.map((prefix) => `${prefix}/login`),
+  ...LOCALE_PREFIXES.map((prefix) => `${prefix}/signup`),
+  ...LOCALE_PREFIXES.map((prefix) => `${prefix}/forgot-password`),
   ...LOCALE_PREFIXES.map((prefix) => `${prefix}/privacy-policy`),
   ...LOCALE_PREFIXES.map((prefix) => `${prefix}/terms-of-service`),
   ...LOCALE_PREFIXES.flatMap((prefix) =>
@@ -44,6 +52,9 @@ export function isNoindexPathname(pathname: string): boolean {
 export function isExcludedFromSitemap(page: string): boolean {
   const pathname = normalizePathname(new URL(page).pathname)
   return (
-    NOINDEX_PATHNAMES.has(pathname) || MODEL_REDIRECT_PATHNAMES.has(pathname)
+    isNoindexPathname(pathname) ||
+    isLegacyWorkshopRoute(pathname) ||
+    MODEL_REDIRECT_PATHNAMES.has(pathname) ||
+    (!isWorkshopInBuild() && isWorkshopRoute(pathname))
   )
 }
