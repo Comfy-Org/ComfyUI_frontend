@@ -8,7 +8,10 @@ import {
   CLOUD_SELF_EMAIL,
   CloudAuthHelper
 } from '@e2e/fixtures/helpers/CloudAuthHelper'
-import { mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
+import {
+  mockCloudBoot,
+  preselectCloudUser
+} from '@e2e/fixtures/utils/cloudBootMocks'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 const APP_ROOT = new RegExp(
@@ -32,9 +35,7 @@ type CreateCustomerResponse =
 const test = comfyPageFixture.extend<{ cloudAuth: CloudAuthHelper }>({
   page: async ({ page }, use) => {
     await mockCloudBoot(page, { features: {} })
-    await page.addInitScript(() =>
-      localStorage.setItem('Comfy.userId', 'test-user-e2e')
-    )
+    await preselectCloudUser(page)
     await page.route('**/customers', (route) => {
       if (route.request().method() !== 'POST') return route.fallback()
       return route.fulfill({
@@ -140,6 +141,27 @@ test.describe('Cloud onboarding — live auth', { tag: '@cloud' }, () => {
     cloudAuth
   }) => {
     await cloudAuth.mockLiveEmailSignUp()
+
+    const fillSignup = async () => {
+      await page
+        .locator('#comfy-org-sign-up-email')
+        .fill('turnstile-gated@test.comfy.org')
+      await page
+        .locator('#comfy-org-sign-up-password')
+        .fill('Sup3r-secret-pass!')
+      await page
+        .locator('#comfy-org-sign-up-confirm-password')
+        .fill('Sup3r-secret-pass!')
+    }
+    const submit = page.getByRole('button', { name: 'Sign up', exact: true })
+
+    await openSignupEmailForm(page)
+    await fillSignup()
+    await expect(
+      submit,
+      'the same inputs enable submit when Turnstile is not enforced'
+    ).toBeEnabled()
+
     await mockCloudBoot(page, { features: { signup_turnstile: 'enforce' } })
     await page.addInitScript(() => {
       window.turnstile = {
@@ -148,20 +170,11 @@ test.describe('Cloud onboarding — live auth', { tag: '@cloud' }, () => {
         remove: () => {}
       }
     })
-
     await openSignupEmailForm(page)
-
-    await page
-      .locator('#comfy-org-sign-up-email')
-      .fill('turnstile-gated@test.comfy.org')
-    await page.locator('#comfy-org-sign-up-password').fill('Sup3r-secret-pass!')
-    await page
-      .locator('#comfy-org-sign-up-confirm-password')
-      .fill('Sup3r-secret-pass!')
-
+    await fillSignup()
     await expect(
-      page.getByRole('button', { name: 'Sign up', exact: true }),
-      'an unsolved Turnstile challenge must block signup submission'
+      submit,
+      'an unsolved Turnstile challenge blocks submission of those same inputs'
     ).toBeDisabled()
   })
 

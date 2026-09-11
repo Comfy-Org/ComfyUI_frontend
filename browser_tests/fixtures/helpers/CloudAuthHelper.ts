@@ -436,13 +436,34 @@ export class CloudAuthHelper {
       async (route) => {
         const url = route.request().url()
         if (!url.includes('accounts:sendOobCode')) return route.fallback()
-        const body = route.request().postDataJSON() as { email?: string }
+        const body: unknown = route.request().postDataJSON()
+        const email =
+          typeof body === 'object' &&
+          body !== null &&
+          'requestType' in body &&
+          body.requestType === 'PASSWORD_RESET' &&
+          'email' in body &&
+          typeof body.email === 'string'
+            ? body.email
+            : undefined
+        if (email === undefined) {
+          await route.fulfill({
+            status: 400,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              error: {
+                message: 'expected a PASSWORD_RESET request with a string email'
+              }
+            })
+          })
+          return
+        }
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify({
             kind: 'identitytoolkit#GetOobConfirmationCodeResponse',
-            email: body.email
+            email
           })
         })
       }

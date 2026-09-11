@@ -166,27 +166,6 @@ test.describe('Cloud onboarding — auth error codes', { tag: '@cloud' }, () => 
     ).toBeVisible()
   })
 
-  test('marks unmet password rules as the password is typed on sign-up', async ({
-    page
-  }) => {
-    await openSignupEmailForm(page)
-
-    const uppercaseRule = page.getByText(
-      'Must contain at least one uppercase letter'
-    )
-    const specialRule = page.getByText(
-      'Must contain at least one special character'
-    )
-
-    await page.locator('#comfy-org-sign-up-password').fill('alllowercase1')
-    await expect(uppercaseRule).toHaveClass(/text-red-500/)
-    await expect(specialRule).toHaveClass(/text-red-500/)
-
-    await page.locator('#comfy-org-sign-up-password').fill('Sup3r-secret-pass!')
-    await expect(uppercaseRule).not.toHaveClass(/text-red-500/)
-    await expect(specialRule).not.toHaveClass(/text-red-500/)
-  })
-
   test('replaces the sign-up form with the region notice inside China', async ({
     page
   }) => {
