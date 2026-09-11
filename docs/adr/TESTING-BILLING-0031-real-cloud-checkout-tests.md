@@ -9,45 +9,40 @@ Proposed
 ## Context
 
 Mocked checkout responses cannot detect disagreement between the frontend,
-Cloud billing operations, and Stripe. The abandoned no-card checkout incident
-requires an integration regression test, while ordinary browser CI must remain
-independent of real billing credentials and mutable customer state.
+Cloud billing operations, and Stripe. Ordinary browser CI must remain independent
+of real billing credentials and mutable customer state.
 
 ## Decision
 
-Use a separate, explicitly invoked Playwright configuration for real Cloud billing
-tests. Reuse the Comfy page object and network guard, but replace the mock-based
-Cloud setup with real authenticated browser storage and an exact sandbox origin
-allowlist. Keep these tests out of ordinary browser test collection.
+Add an explicitly enabled `cloud-live` project to the existing Playwright runner.
+Reuse `.env`, frontend/backend URL conventions, and ComfyPage, replacing the
+mock-based Cloud setup with real UI authentication. Capture post-login screenshots.
 
-Require a dedicated personal workspace and an idempotent backend-owned reset
-executable. The frontend repository owns browser assertions and reads billing state
-through the public API; it does not embed database writes or Temporal admin logic.
-Reset runs before and after the test, and failure prevents reuse of the fixture.
-The reset implementation remains a prerequisite for live validation.
+Use a dedicated inactive personal workspace. Reuse Cloud E2E account variables
+and billing smoke database/Stripe variables. Bundle teardown with the fixture:
+expire test-created Stripe sessions, signal the existing Temporal abandonment
+path, verify terminal operations, and restore inactive billing with a projection
+outbox event. Guard cleanup with workspace state checks and an advisory lock.
 
-Retain mocked tests for fast frontend feedback. Extending them alone was rejected
-because supplied responses cannot expose a broken backend contract. Reusing a
-shared customer without reset was rejected because a failed run would change the
-next run's preconditions. Hardcoding backend admin cleanup here was rejected
-because the backend owns subscription and workflow lifecycle rules.
+A separate JSON configuration and an unimplemented reset executable were rejected:
+they add another setup contract without making the test runnable. Extending mocked
+tests alone cannot expose a broken backend contract. A public-API-only reset is
+not available for a pending checkout. Adding a new backend admin endpoint would
+expand the first test's scope. The fixture therefore depends on existing privileged
+sandbox interfaces, like Cloud's billing smoke tests.
 
 ## Consequences
 
-### Positive
-
-- Real Subscribe responses and pending operations can expose integration failures.
-- Ordinary CI does not gain a dependency on billing credentials or Stripe.
-- The backend can implement cleanup without duplicating lifecycle rules in tests.
-
-### Negative
-
-- Sandbox auth, reset implementation, and cross-run workspace exclusion must be
-  provisioned before execution; the draft cannot claim live coverage yet.
-- The first recovery test does not cover payment completion or Temporal expiry.
-- A required cross-repository release gate remains follow-up work.
+- Normal browser test collection remains independent of sandbox credentials.
+- Test setup can reject missing access before creating a billing operation.
+- The frontend test now depends on backend schema and workflow cleanup contracts;
+  changes to these contracts require updating this fixture.
+- Cleanup is not a product recovery assertion and cannot count as timeout coverage.
+- A dedicated identity and backend credentials remain required for live validation.
+- Payment completion, reload recovery, timeout behavior, and a release gate remain
+  follow-up work.
 
 ## Notes
 
-See the [scenario matrix and run instructions](../testing/cloud-billing-e2e.md)
-and [scope discussion](https://comfy-organization.slack.com/archives/C0BNGQG2LCW/p1789164154382169).
+See the [run instructions](../testing/cloud-billing-e2e.md) and
+[scope discussion](https://comfy-organization.slack.com/archives/C0BNGQG2LCW/p1789164154382169).

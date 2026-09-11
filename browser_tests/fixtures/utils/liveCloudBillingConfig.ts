@@ -1,50 +1,58 @@
-import { accessSync, constants, readFileSync } from 'node:fs'
-import { isAbsolute } from 'node:path'
-
 import { z } from 'zod'
 
-const absolutePath = z.string().refine(isAbsolute, 'Use an absolute path')
-const origin = z
+const sandboxURL = z
   .string()
   .url()
   .refine((value) => {
     if (!URL.canParse(value)) return false
     const url = new URL(value)
-    return url.protocol === 'https:' && url.origin === value
-  }, 'Use an HTTPS origin without a path')
-
-export const liveCloudBillingConfigSchema = z.object({
-  baseURL: origin.refine((value) => {
-    if (!URL.canParse(value)) return false
-    const { hostname } = new URL(value)
     return (
-      hostname === 'testcloud.comfy.org' ||
-      hostname === 'stagingcloud.comfy.org' ||
-      /^pr-\d+\.testenvs\.comfy\.org$/.test(hostname)
+      url.protocol === 'https:' &&
+      url.origin === value &&
+      (url.hostname === 'testcloud.comfy.org' ||
+        url.hostname === 'stagingcloud.comfy.org' ||
+        /^pr-\d+\.testenvs\.comfy\.org$/.test(url.hostname))
     )
-  }, 'Use a Cloud test, staging, or PR preview deployment'),
-  storageState: absolutePath,
-  workspaceId: z.string().uuid(),
-  resetScript: absolutePath,
-  allowedOrigins: z
-    .array(origin)
-    .refine(
-      (values) => !values.includes('https://cloud.comfy.org'),
-      'Production Cloud is not a sandbox dependency'
-    )
-})
+  }, 'Use a Cloud test, staging, or PR preview origin')
+
+export const liveCloudBillingConfigSchema = z
+  .object({
+    PLAYWRIGHT_TEST_URL: z.string().url(),
+    PLAYWRIGHT_SETUP_API_URL: sandboxURL,
+    CLOUD_ACCOUNT_EMAIL: z.string().email(),
+    CLOUD_ACCOUNT_PASSWORD: z.string().min(1),
+    SMOKE_DB_DSN: z.string().min(1),
+    SMOKE_STRIPE_TEST_KEY: z.string().startsWith('sk_test_'),
+    TEMPORAL_ADDRESS: z.string().min(1),
+    TEMPORAL_NAMESPACE: z.string().min(1),
+    TEMPORAL_API_KEY: z.string().min(1).optional()
+  })
+  .superRefine((config, ctx) => {
+    if (!URL.canParse(config.PLAYWRIGHT_TEST_URL)) return
+    const frontend = new URL(config.PLAYWRIGHT_TEST_URL)
+    const local =
+      ['localhost', '127.0.0.1'].includes(frontend.hostname) &&
+      ['http:', 'https:'].includes(frontend.protocol)
+    if (
+      !local &&
+      config.PLAYWRIGHT_TEST_URL !== config.PLAYWRIGHT_SETUP_API_URL
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['PLAYWRIGHT_TEST_URL'],
+        message: 'Use localhost or the selected sandbox origin'
+      })
+    }
+  })
 
 export function loadLiveCloudBillingConfig() {
-  const path = process.env.CLOUD_BILLING_CONFIG
-  if (!path) {
+  const result = liveCloudBillingConfigSchema.safeParse(process.env)
+  if (!result.success) {
     throw new Error(
-      'Set CLOUD_BILLING_CONFIG to a sandbox config. See docs/testing/cloud-billing-e2e.md.'
+      `Cloud billing prerequisites: ${result.error.issues
+        .map((issue) => issue.path.join('.'))
+        .join(', ')}. See docs/testing/cloud-billing-e2e.md.`
     )
   }
-  const config = liveCloudBillingConfigSchema.parse(
-    JSON.parse(readFileSync(path, 'utf8'))
-  )
-  accessSync(config.storageState, constants.R_OK)
-  accessSync(config.resetScript, constants.X_OK)
-  return config
+  return result.data
 }

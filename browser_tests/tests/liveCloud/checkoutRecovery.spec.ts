@@ -11,7 +11,7 @@ test.describe('Real Cloud checkout recovery', { tag: ['@cloud-live'] }, () => {
   test('resumes an abandoned no-card checkout using the same billing operation', async ({
     comfyPage,
     billingSandbox
-  }) => {
+  }, testInfo) => {
     const preview = billingSandbox.preview
     const currency =
       preview.amount_due_cents === undefined ? 'USD' : preview.currency
@@ -26,6 +26,11 @@ test.describe('Real Cloud checkout recovery', { tag: ['@cloud-live'] }, () => {
     await expect(
       comfyPage.page.getByText(`Total due today ${amountDue}`, { exact: true })
     ).toBeVisible()
+
+    await testInfo.attach('preview.png', {
+      body: await comfyPage.page.screenshot(),
+      contentType: 'image/png'
+    })
 
     const [subscribeResponse, checkout] = await Promise.all([
       comfyPage.page.waitForResponse(
@@ -46,6 +51,10 @@ test.describe('Real Cloud checkout recovery', { tag: ['@cloud-live'] }, () => {
     expect(subscription.billing_op_id).not.toBe('')
     expect(subscription.payment_method_url).toMatch(testCheckoutUrl)
     await expect(checkout).toHaveURL(testCheckoutUrl)
+    await testInfo.attach('stripe-checkout.png', {
+      body: await checkout.screenshot(),
+      contentType: 'image/png'
+    })
     await checkout.close()
 
     await expect
@@ -70,6 +79,10 @@ test.describe('Real Cloud checkout recovery', { tag: ['@cloud-live'] }, () => {
       exact: true
     })
     await expect(resumePayment).toBeEnabled()
+    await testInfo.attach('resume-payment.png', {
+      body: await comfyPage.page.screenshot(),
+      contentType: 'image/png'
+    })
     const [resumeResponse, resumedCheckout] = await Promise.all([
       comfyPage.page.waitForResponse(
         (response) =>
