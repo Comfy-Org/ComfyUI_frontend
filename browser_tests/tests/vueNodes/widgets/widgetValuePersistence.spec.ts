@@ -3,6 +3,7 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import { WidgetSelectDropdownFixture } from '@e2e/fixtures/components/WidgetSelectDropdown'
+import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
@@ -76,6 +77,21 @@ test.describe(
           'selected-output.webp': image,
           'selected-output.webp [output]': image
         })
+        await comfyPage.assets.mockOutputHistory([
+          createMockJob({
+            id: 'job-selected-output',
+            create_time: 1000,
+            execution_start_time: 1000,
+            execution_end_time: 1010,
+            preview_output: {
+              filename: 'selected-output.webp',
+              subfolder: '',
+              type: 'output',
+              nodeId: '1',
+              mediaType: 'images'
+            }
+          })
+        ])
         await comfyPage.menu.topbar.newWorkflowButton.click()
         await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
         await comfyPage.searchBoxV2.addNode('Load Image (from Outputs)')
@@ -98,7 +114,17 @@ test.describe(
             name: 'first-output.webp [output]',
             exact: true
           })
-        ).selectOption(selectedValue)
+        ).open()
+        const menu = comfyPage.page.getByTestId(
+          TestIds.widgets.formDropdownMenu
+        )
+        await menu
+          .getByRole('button', { name: 'Imported', exact: true })
+          .click()
+        const selectedOption = menu.getByText(selectedValue, { exact: true })
+        await expect(selectedOption).toHaveCount(1)
+        await selectedOption.click()
+        await expect(menu).toBeHidden()
         await expect(
           node.getByRole('button', { name: selectedValue, exact: true })
         ).toBeVisible()
@@ -120,15 +146,14 @@ test.describe(
             name: /^(first|selected)-output\.webp \[output\]$/
           })
         ).open()
-        const menu = comfyPage.page.getByTestId(
-          TestIds.widgets.formDropdownMenu
-        )
+        await menu
+          .getByRole('button', { name: 'Imported', exact: true })
+          .click()
         await expect(
           menu.getByText('first-output.webp [output]', { exact: true })
         ).toBeVisible()
-        await expect(
-          menu.getByText(selectedValue, { exact: true })
-        ).toBeVisible()
+        await expect(selectedOption).toHaveCount(1)
+        await expect(selectedOption).toBeVisible()
         await comfyPage.page.keyboard.press('Escape')
         await expect(menu).toBeHidden()
 
@@ -145,10 +170,14 @@ test.describe(
         ).toBeVisible()
         const preview = restoredNode.getByTestId(TestIds.node.mainImage)
         await expect(preview).toBeVisible()
-        await expect(preview).toHaveAttribute(
-          'src',
-          /[?&]filename=selected-output\.webp(?:&|$)/
-        )
+        await expect
+          .poll(async () => {
+            const src = await preview.getAttribute('src')
+            return src
+              ? new URL(src, comfyPage.page.url()).searchParams.get('filename')
+              : null
+          })
+          .toBe(selectedValue)
         await expect(preview).toHaveJSProperty('naturalWidth', 64)
       })
     })
