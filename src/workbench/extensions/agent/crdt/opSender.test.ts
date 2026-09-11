@@ -547,6 +547,20 @@ describe('createOpSender', () => {
     })
   })
 
+  it('reads only a literal true as success and keeps only string op ids', () => {
+    expect(
+      toOpsResultView({
+        ok: 'false',
+        applied: ['a'.repeat(32), 7, null],
+        skipped: [{ op_id: 'b'.repeat(32) }]
+      })
+    ).toEqual({
+      ok: false,
+      applied: ['a'.repeat(32)],
+      skipped: []
+    })
+  })
+
   it('returns a safe empty view for a null or undefined doc_ops_result detail', () => {
     expect(toOpsResultView(null)).toEqual({
       ok: false,

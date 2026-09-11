@@ -75,6 +75,12 @@ function allFailureOpIds(failed: unknown): string[] {
     .filter((id): id is string => id !== undefined)
 }
 
+/** A host id list, keeping only the `op_id` strings the sender can match on. */
+function opIdList(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  return value.filter((entry): entry is string => typeof entry === 'string')
+}
+
 /** `code` / `message` / `index` from one host failure object, dropping anything off-type. */
 function failureDiagnostics(value: unknown): Omit<OpsFailureView, 'op_id'> {
   if (!isRecord(value)) return {}
@@ -116,7 +122,7 @@ export function toOpsResultView(detail: unknown): OpsResultView {
     ...failureDiagnostics(legacyDiagnostics),
     ...failureDiagnostics(canonical)
   }
-  const ok = Boolean(detail.ok)
+  const ok = detail.ok === true
   // Diagnostics alone only describe a failure on a failed frame; a success
   // frame's stray `code` is not one.
   const hasFailure =
@@ -126,8 +132,8 @@ export function toOpsResultView(detail: unknown): OpsResultView {
       workflowId: detail.workflowId
     }),
     ok,
-    applied: Array.isArray(detail.applied) ? detail.applied : [],
-    skipped: Array.isArray(detail.skipped) ? detail.skipped : [],
+    applied: opIdList(detail.applied),
+    skipped: opIdList(detail.skipped),
     ...(hasFailure && {
       failure: {
         ...(failureOpIds.length > 0 && { op_id: failureOpIds[0] }),
