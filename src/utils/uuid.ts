@@ -15,6 +15,10 @@ export class UuidGenerationError extends Error {
   }
 }
 
+function getWebCrypto(): Crypto | undefined {
+  return globalThis.crypto
+}
+
 /**
  * Creates a UUIDv4 string.
  * @returns A new UUIDv4 string
@@ -27,7 +31,7 @@ export class UuidGenerationError extends Error {
  * {@link crypto.getRandomValues} for insecure contexts.
  */
 export function createUuidv4(): UUID {
-  const webCrypto = globalThis.crypto
+  const webCrypto = getWebCrypto()
   if (typeof webCrypto?.randomUUID === 'function') {
     return webCrypto.randomUUID()
   }

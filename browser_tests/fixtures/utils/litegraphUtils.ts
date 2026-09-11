@@ -34,7 +34,7 @@ export class SubgraphSlotReference {
 
         const slots =
           type === 'input' ? currentGraph.inputs : currentGraph.outputs
-        if (!slots || slots.length === 0) {
+        if (slots.length === 0) {
           throw new Error(`No ${type} slots found in subgraph`)
         }
 
@@ -45,10 +45,6 @@ export class SubgraphSlotReference {
 
         if (!slot) {
           throw new Error(`${type} slot '${slotName}' not found`)
-        }
-
-        if (!slot.pos) {
-          throw new Error(`${type} slot '${slotName}' has no position`)
         }
 
         return window.app!.canvasPosToClientPos([slot.pos[0], slot.pos[1]])
@@ -76,10 +72,6 @@ export class SubgraphSlotReference {
 
         const node =
           type === 'input' ? currentGraph.inputNode : currentGraph.outputNode
-
-        if (!node) {
-          throw new Error(`No ${type} node found in subgraph`)
-        }
 
         return window.app!.canvasPosToClientPos([
           node.emptySlot.pos[0],
@@ -135,6 +127,9 @@ class NodeSlotReference {
       },
       [this.type, this.node.id, this.index] as const
     )
+  }
+  async expectLinkCount(expected: number, message?: string): Promise<void> {
+    await expect.poll(() => this.getLinkCount(), message).toBe(expected)
   }
   async removeLinks() {
     await this.node.comfyPage.page.evaluate(
@@ -196,7 +191,7 @@ class NodeWidgetReference {
       ([id, index]) => {
         const node = window.app!.canvas.graph!.getNodeById(id)
         if (!node) throw new Error(`Node ${id} not found.`)
-        const widget = node.widgets![index]
+        const widget = node.widgets?.at(index)
         if (!widget) throw new Error(`Widget ${index} not found.`)
 
         const [x, y, w, _h] = node.getBounding()
@@ -221,7 +216,7 @@ class NodeWidgetReference {
       ([id, index]) => {
         const node = window.app!.graph.getNodeById(id)
         if (!node) throw new Error(`Node ${id} not found.`)
-        const widget = node.widgets![index]
+        const widget = node.widgets?.at(index)
         if (!widget) throw new Error(`Widget ${index} not found.`)
 
         const slot = node.inputs.find(
@@ -262,7 +257,7 @@ class NodeWidgetReference {
       ([id, index]) => {
         const node = window.app!.graph.getNodeById(id)
         if (!node) throw new Error(`Node ${id} not found.`)
-        const widget = node.widgets![index]
+        const widget = node.widgets?.at(index)
         if (!widget) throw new Error(`Widget ${index} not found.`)
         return widget.value
       },

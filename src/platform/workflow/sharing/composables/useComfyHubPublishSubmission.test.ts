@@ -1,3 +1,6 @@
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyHubProfile } from '@/schemas/apiSchema'
@@ -11,8 +14,8 @@ const mockProfile = vi.hoisted((): { value: ComfyHubProfile | null } => ({
   value: null
 }))
 
-vi.mock(
-  '@/platform/workflow/sharing/composables/useComfyHubProfileGate',
+vi.mock<unknown>(
+  import('@/platform/workflow/sharing/composables/useComfyHubProfileGate'),
   () => ({
     useComfyHubProfileGate: () => ({
       profile: mockProfile
@@ -20,29 +23,25 @@ vi.mock(
   })
 )
 
-vi.mock('@/platform/workflow/sharing/services/workflowShareService', () => ({
-  useWorkflowShareService: () => ({
-    getShareableAssets: mockGetShareableAssets
+vi.mock<unknown>(
+  import('@/platform/workflow/sharing/services/workflowShareService'),
+  () => ({
+    useWorkflowShareService: () => ({
+      getShareableAssets: mockGetShareableAssets
+    })
   })
-}))
+)
 
-vi.mock('@/platform/workflow/sharing/services/comfyHubService', () => ({
-  useComfyHubService: () => ({
-    requestAssetUploadUrl: mockRequestAssetUploadUrl,
-    uploadFileToPresignedUrl: mockUploadFileToPresignedUrl,
-    publishWorkflow: mockPublishWorkflow
+vi.mock<unknown>(
+  import('@/platform/workflow/sharing/services/comfyHubService'),
+  () => ({
+    useComfyHubService: () => ({
+      requestAssetUploadUrl: mockRequestAssetUploadUrl,
+      uploadFileToPresignedUrl: mockUploadFileToPresignedUrl,
+      publishWorkflow: mockPublishWorkflow
+    })
   })
-}))
-
-const mockWorkflowStore = vi.hoisted(() => ({
-  activeWorkflow: {
-    path: 'workflows/demo-workflow.json'
-  }
-}))
-
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => mockWorkflowStore
-}))
+)
 
 const { useComfyHubPublishSubmission } =
   await import('./useComfyHubPublishSubmission')
@@ -69,6 +68,12 @@ function createFormData(
     ...overrides
   }
 }
+
+beforeEach(() => {
+  useWorkflowStore().activeWorkflow = fromPartial<LoadedComfyWorkflow>({
+    path: 'workflows/demo-workflow.json'
+  })
+})
 
 describe('useComfyHubPublishSubmission', () => {
   beforeEach(() => {
