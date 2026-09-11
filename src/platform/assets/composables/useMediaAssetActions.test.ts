@@ -1499,4 +1499,109 @@ describe('useMediaAssetActions', () => {
       expect(mockInputAssets.items.map((item) => item.id)).toEqual(['keep'])
     })
   })
+
+  describe('deleteAssets — failures', () => {
+    beforeEach(() => {
+      mockIsCloud.value = true
+      vi.mocked(api.getServerFeature).mockReturnValue(true)
+      mockGetAssetType.mockReturnValue('input')
+      mockShowDialog.mockImplementation(
+        ({ props }: { props: { onConfirm: (confirmed: boolean) => void } }) =>
+          props.onConfirm(true)
+      )
+      mockAppGraph.value = { _nodes: [] }
+    })
+
+    it('keeps a failed asset listed and removes it once a retry succeeds', async () => {
+      mockDeleteAsset
+        .mockRejectedValueOnce(new Error('503 Service Unavailable'))
+        .mockResolvedValueOnce(undefined)
+      const actions = useMediaAssetActions()
+      const asset = createMockAsset({ id: 'asset-503', name: 'retry.png' })
+      mockInputAssets.items = [asset]
+
+      await expect(actions.deleteAssets(asset)).resolves.toBe(true)
+
+      expect(mockInputAssets.items.map((item) => item.id)).toEqual([
+        'asset-503'
+      ])
+      expect(useToast().add).toHaveBeenCalledWith({
+        severity: 'error',
+        summary: i18n.global.t('mediaAsset.assetDelete.error'),
+        detail: i18n.global.t('mediaAsset.assetsDeleted', { total: 1 }, 0),
+        life: 5000
+      })
+      expect(mockMarkMissingMedia).not.toHaveBeenCalled()
+      expect(mockClearWidgetValues).not.toHaveBeenCalled()
+
+      await expect(actions.deleteAssets(asset)).resolves.toBe(true)
+
+      expect(mockDeleteAsset).toHaveBeenCalledTimes(2)
+      expect(mockInputAssets.items).toEqual([])
+      expect(useToast().add).toHaveBeenLastCalledWith({
+        severity: 'success',
+        summary: i18n.global.t('mediaAsset.assetDelete.success'),
+        detail: i18n.global.t('mediaAsset.assetsDeleted', { total: 1 }, 1),
+        life: 2000
+      })
+    })
+
+    it('cleans up only the succeeded assets and clears every overlay when part of a batch fails', async () => {
+      mockDeleteAsset.mockImplementation(async (id: string) => {
+        if (id === 'asset-failed') throw new Error('503 Service Unavailable')
+      })
+      const assets = [
+        createMockAsset({ id: 'asset-first', name: 'first.png' }),
+        createMockAsset({ id: 'asset-failed', name: 'failed.png' }),
+        createMockAsset({ id: 'asset-third', name: 'third.png' })
+      ]
+      mockInputAssets.items = [...assets]
+      const succeededVariants = new Set([
+        'first.png',
+        'first.png [input]',
+        'third.png',
+        'third.png [input]'
+      ])
+
+      await useMediaAssetActions().deleteAssets(assets)
+
+      expect(mockDeleteAsset.mock.calls.map(([id]) => id)).toEqual([
+        'asset-first',
+        'asset-failed',
+        'asset-third'
+      ])
+      expect(mockInputAssets.items.map((item) => item.id)).toEqual([
+        'asset-failed'
+      ])
+      expect(mockMarkMissingMedia).toHaveBeenCalledWith(
+        mockAppGraph.value,
+        succeededVariants
+      )
+      expect(mockClearNodePreviewCache).toHaveBeenCalledWith(
+        mockAppGraph.value,
+        succeededVariants,
+        expect.any(Function)
+      )
+      expect(mockClearWidgetValues).toHaveBeenCalledWith(
+        mockAppGraph.value,
+        succeededVariants
+      )
+      expect(mockCaptureCanvasState).toHaveBeenCalledTimes(1)
+      expect(useToast().add).toHaveBeenCalledWith({
+        severity: 'warn',
+        summary: i18n.global.t('mediaAsset.assetDelete.warn'),
+        detail: i18n.global.t('mediaAsset.assetsDeleted', { total: 3 }, 2),
+        life: 5000
+      })
+
+      const lastFlagById = new Map(
+        mockSetAssetDeleting.mock.calls as [string, boolean][]
+      )
+      expect([...lastFlagById]).toEqual([
+        ['asset-first', false],
+        ['asset-failed', false],
+        ['asset-third', false]
+      ])
+    })
+  })
 })
