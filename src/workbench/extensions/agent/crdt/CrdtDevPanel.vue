@@ -629,17 +629,14 @@ function eventNodeIds(event: DevEvent): string[] {
   if (event.kind !== 'doc_nodes_changed') return []
   const detail = event.detail
   if (typeof detail !== 'object' || detail === null) return []
-  const added = Array.isArray(Reflect.get(detail, 'added'))
-    ? Reflect.get(detail, 'added')
-    : []
-  const removed = Array.isArray(Reflect.get(detail, 'removed'))
-    ? Reflect.get(detail, 'removed')
-    : []
+  const added: unknown = Reflect.get(detail, 'added')
+  const removed: unknown = Reflect.get(detail, 'removed')
   return [
     ...new Set(
-      [...added, ...removed].filter(
-        (id): id is string => typeof id === 'string'
-      )
+      [
+        ...(Array.isArray(added) ? added : []),
+        ...(Array.isArray(removed) ? removed : [])
+      ].filter((id): id is string => typeof id === 'string')
     )
   ]
 }

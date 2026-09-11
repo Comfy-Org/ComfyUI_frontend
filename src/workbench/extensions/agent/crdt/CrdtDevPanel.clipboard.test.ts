@@ -203,6 +203,27 @@ describe('CrdtDevPanel clipboard controls', () => {
     ).toHaveLength(1)
   })
 
+  it('keeps the log usable when a node-id list changes between reads', async () => {
+    const user = userEvent.setup()
+    const detail: { removed: string[] } = { removed: ['node-removed'] }
+    let addedReads = 0
+    Object.defineProperty(detail, 'added', {
+      configurable: true,
+      enumerable: false,
+      get: () => (addedReads++ === 0 ? ['node-added'] : 1)
+    })
+    recordDevEvent('doc_nodes_changed', detail)
+    renderPanel()
+    await user.click(screen.getByTestId('crdt-dev-panel-tab-log'))
+
+    expect(addedReads).toBe(1)
+    await user.click(
+      screen.getByRole('button', { name: 'Copy node id node-added' })
+    )
+
+    expect(writeText).toHaveBeenCalledExactlyOnceWith('node-added')
+  })
+
   it('serializes circular and bigint details without losing their content', async () => {
     const user = userEvent.setup()
     const detail: { count: bigint; self?: unknown } = { count: 7n }
