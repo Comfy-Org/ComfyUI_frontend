@@ -27,10 +27,19 @@ function createDefaultState(): NodeImageState {
   }
 }
 
-const DEFAULT_STATE: Readonly<NodeImageState> = Object.freeze({
-  ...createDefaultState(),
-  imgs: Object.freeze([]) as unknown as HTMLImageElement[],
-  imageRects: Object.freeze([]) as unknown as Rect[]
+type ReadonlyNodeImageState = Readonly<
+  Omit<NodeImageState, 'imgs' | 'imageRects'>
+> & {
+  readonly imgs: readonly HTMLImageElement[]
+  readonly imageRects: readonly Rect[]
+}
+
+const DEFAULT_STATE: ReadonlyNodeImageState = Object.freeze({
+  imgs: Object.freeze([]),
+  imageIndex: null,
+  imageRects: Object.freeze([]),
+  pointerDown: null,
+  overIndex: null
 })
 
 /**
@@ -94,39 +103,33 @@ export const useNodeImageStore = defineStore('nodeImage', () => {
       'imageIndex'
     ]
 
-    const nodeRecord = node as unknown as Record<string, unknown>
+    const existing = {
+      imgs: node.imgs,
+      imageIndex: node.imageIndex,
+      imageRects: node.imageRects,
+      pointerDown: node.pointerDown,
+      overIndex: node.overIndex
+    }
 
     for (const prop of simpleProperties) {
-      const existingValue = nodeRecord[prop]
-
       Object.defineProperty(node, prop, {
         get() {
           const locatorId = getNodeLocatorId(node)
           if (!locatorId) return undefined
           return (peekState(locatorId) ?? DEFAULT_STATE)[prop]
         },
-        set(value: unknown) {
+        set(value: NodeImageState[typeof prop]) {
           const locatorId = getNodeLocatorId(node)
           if (!locatorId) return
-          setStateProperty(
-            locatorId,
-            prop,
-            value as NodeImageState[typeof prop]
-          )
+          setStateProperty(locatorId, prop, value)
         },
         configurable: true,
         enumerable: true
       })
-
-      if (existingValue !== undefined) {
-        nodeRecord[prop] = existingValue
-      }
     }
 
     // imgs needs special handling: return undefined when empty to preserve
     // node.imgs?.length optional chaining semantics
-    const existingImgs = node.imgs
-
     Object.defineProperty(node, 'imgs', {
       get() {
         const locatorId = getNodeLocatorId(node)
@@ -143,9 +146,12 @@ export const useNodeImageStore = defineStore('nodeImage', () => {
       enumerable: true
     })
 
-    if (existingImgs !== undefined) {
-      node.imgs = existingImgs
-    }
+    if (existing.imageRects !== undefined) node.imageRects = existing.imageRects
+    if (existing.pointerDown !== undefined)
+      node.pointerDown = existing.pointerDown
+    if (existing.overIndex !== undefined) node.overIndex = existing.overIndex
+    if (existing.imageIndex !== undefined) node.imageIndex = existing.imageIndex
+    if (existing.imgs !== undefined) node.imgs = existing.imgs
   }
 
   return {
