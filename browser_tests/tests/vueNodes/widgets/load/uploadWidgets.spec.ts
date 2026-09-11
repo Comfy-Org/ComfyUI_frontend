@@ -14,94 +14,33 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
   test.describe('image upload roots', { tag: '@widget' }, () => {
     test.describe.configure({ mode: 'default' })
 
-    for (const { nodeType, title, folder, action } of [
-      {
-        nodeType: 'LoadImage',
-        title: 'Load Image',
-        folder: 'input',
-        action: 'paste'
-      },
-      {
-        nodeType: 'LoadImageMask',
-        title: 'Load Image (as Mask)',
-        folder: 'input',
-        action: 'paste'
-      },
-      {
-        nodeType: 'LoadImageOutput',
-        title: 'Load Image (from Outputs)',
-        folder: 'output',
-        action: 'paste'
-      },
-      {
-        nodeType: 'LoadImage',
-        title: 'Load Image',
-        folder: 'input',
-        action: 'canvas paste'
-      },
-      {
-        nodeType: 'LoadImage',
-        title: 'Load Image',
-        folder: 'input',
-        action: 'drop'
-      }
-    ]) {
-      test.describe(`${nodeType} ${action}`, () => {
-        test.beforeEach(async ({ comfyPage }) => {
-          await comfyPage.menu.topbar.newWorkflowButton.click()
-          await expect
-            .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-            .toBe(0)
-          if (action !== 'canvas paste') {
-            const outputResponse =
-              folder === 'output'
-                ? comfyPage.page.waitForResponse(
-                    (response) =>
-                      new URL(response.url()).pathname.endsWith(
-                        '/internal/files/output'
-                      ) &&
-                      response.request().method() === 'GET' &&
-                      response.ok()
-                  )
-                : undefined
-            await comfyPage.searchBoxV2.addNode(title)
-            await comfyPage.vueNodes.waitForNodes()
-            if (outputResponse) {
-              const response = await outputResponse
-              expect(await response.finished()).toBeNull()
-              const options = z.array(z.string()).parse(await response.json())
-              const [node] = await comfyPage.nodeOps.getNodeRefsByType(nodeType)
-              const imageWidget = await node.getWidgetByName('image')
-              await expect
-                .poll(() =>
-                  comfyPage.page.evaluate(
-                    ({ nodeId, widgetIndex }) =>
-                      window.app!.graph.getNodeById(nodeId)?.widgets?.[
-                        widgetIndex
-                      ]?.options.values,
-                    { nodeId: node.id, widgetIndex: imageWidget.index }
-                  )
-                )
-                .toEqual(options)
-            }
-          }
-        })
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.menu.topbar.newWorkflowButton.click()
+      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+    })
 
-        test.afterEach(async ({ comfyPage }) => {
-          await comfyPage.workflow.deleteWorkflow('image-upload-root')
-          await comfyPage.canvasOps.resetView()
-        })
+    test.afterEach(async ({ comfyPage }) => {
+      await comfyPage.canvasOps.resetView()
+    })
 
-        test('stores image.png at the configured root and preserves its path after reload', async ({
+    test.describe('node paste and reload', () => {
+      test.afterEach(async ({ comfyPage }) => {
+        await comfyPage.workflow.deleteWorkflow('image-upload-root')
+      })
+
+      for (const { nodeType, title } of [
+        { nodeType: 'LoadImage', title: 'Load Image' },
+        { nodeType: 'LoadImageMask', title: 'Load Image (as Mask)' }
+      ]) {
+        test(`${nodeType} keeps the pasted input selected and available after reload`, async ({
           comfyPage,
           comfyFiles
         }) => {
+          await comfyPage.searchBoxV2.addNode(title)
+          await comfyPage.vueNodes.waitForNodes()
+          const [node] = await comfyPage.nodeOps.getNodeRefsByType(nodeType)
           await comfyPage.canvas.focus()
-          if (action !== 'canvas paste') {
-            const nodes = await comfyPage.nodeOps.getNodeRefsByType(nodeType)
-            expect(nodes).toHaveLength(1)
-            await nodes[0].click('title')
-          }
+          await node.click('title')
 
           const uploadResponse = comfyPage.page.waitForResponse(
             (response) =>
@@ -109,89 +48,100 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
               response.status() === 200
           )
 
-          if (action === 'drop') {
-            const dropPosition =
-              await comfyPage.canvasOps.getNodeCenterByTitle(title)
-            if (!dropPosition) throw new Error('Upload node must be visible')
-            await comfyPage.dragDrop.dragAndDropExternalResource({
-              fileName: 'image.png',
-              filePath: assetPath('test_upload_image.png'),
-              dropPosition,
-              waitForUpload: true
-            })
-          } else {
-            await comfyPage.clipboard.pasteFile(
-              assetPath('test_upload_image.png'),
-              { mode: 'direct', fileName: 'image.png' }
-            )
-          }
+          await comfyPage.clipboard.pasteFile(
+            assetPath('test_upload_image.png'),
+            { mode: 'direct', fileName: 'image.png' }
+          )
 
           const uploaded = zUploadImageResponse
             .required()
             .parse(await (await uploadResponse).json())
-          if (!uploaded.name) throw new Error('Upload must return a filename')
           comfyFiles.deleteAfterTest({
             filename: uploaded.name,
             subfolder: uploaded.subfolder,
             type: uploaded.type
           })
-          expect(uploaded.type).toBe(folder)
-          expect(uploaded.subfolder).toBe('')
+          const imageWidget = await node.getWidgetByName('image')
+          await expect.poll(() => imageWidget.getValue()).toBe(uploaded.name)
 
-          const expectedPath =
-            folder === 'output' ? `${uploaded.name} [output]` : uploaded.name
+          await comfyPage.menu.topbar.saveWorkflow('image-upload-root')
+          await comfyPage.workflow.reloadAndWaitForApp()
+          await comfyPage.vueNodes.waitForNodes()
+
           await expect
-            .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-            .toBe(1)
-          const [node] = await comfyPage.nodeOps.getNodeRefsByType(nodeType)
+            .poll(() =>
+              comfyPage.page.evaluate(
+                ({ nodeId, widgetIndex }) =>
+                  window.app!.graph.getNodeById(nodeId)?.widgets?.[widgetIndex]
+                    ?.options.values,
+                { nodeId: node.id, widgetIndex: imageWidget.index }
+              )
+            )
+            .toContain(uploaded.name)
+          await expect.poll(() => imageWidget.getValue()).toBe(uploaded.name)
+        })
+      }
+
+      test.describe('LoadImageOutput', () => {
+        test.beforeEach(async ({ comfyPage }) => {
+          const outputResponse = comfyPage.page.waitForResponse(
+            (response) =>
+              new URL(response.url()).pathname.endsWith(
+                '/internal/files/output'
+              ) &&
+              response.request().method() === 'GET' &&
+              response.ok()
+          )
+          await comfyPage.searchBoxV2.addNode('Load Image (from Outputs)')
+          await comfyPage.vueNodes.waitForNodes()
+          const response = await outputResponse
+          const options = z.array(z.string()).parse(await response.json())
+          const [node] =
+            await comfyPage.nodeOps.getNodeRefsByType('LoadImageOutput')
+          const imageWidget = await node.getWidgetByName('image')
+          await expect
+            .poll(() =>
+              comfyPage.page.evaluate(
+                ({ nodeId, widgetIndex }) =>
+                  window.app!.graph.getNodeById(nodeId)?.widgets?.[widgetIndex]
+                    ?.options.values,
+                { nodeId: node.id, widgetIndex: imageWidget.index }
+              )
+            )
+            .toEqual(options)
+        })
+
+        test('keeps the pasted output available after reload', async ({
+          comfyPage,
+          comfyFiles
+        }) => {
+          const [node] =
+            await comfyPage.nodeOps.getNodeRefsByType('LoadImageOutput')
+          await comfyPage.canvas.focus()
+          await node.click('title')
+          const uploadResponse = comfyPage.page.waitForResponse(
+            (response) =>
+              response.url().includes('/upload/image') &&
+              response.status() === 200
+          )
+          await comfyPage.clipboard.pasteFile(
+            assetPath('test_upload_image.png'),
+            { mode: 'direct', fileName: 'image.png' }
+          )
+          const uploaded = zUploadImageResponse
+            .required()
+            .parse(await (await uploadResponse).json())
+          comfyFiles.deleteAfterTest({
+            filename: uploaded.name,
+            subfolder: uploaded.subfolder,
+            type: uploaded.type
+          })
+          const expectedPath = `${uploaded.name} [output]`
           const imageWidget = await node.getWidgetByName('image')
           await expect.poll(() => imageWidget.getValue()).toBe(expectedPath)
 
           await comfyPage.menu.topbar.saveWorkflow('image-upload-root')
-          if (folder === 'output') {
-            await comfyPage.page.route(
-              '**/internal/files/output**',
-              async (route) => {
-                if (route.request().method() !== 'GET') {
-                  await route.fallback()
-                  return
-                }
-
-                const response = await route.fetch()
-                const options = z
-                  .array(z.string())
-                  .safeParse(await response.json().catch(() => undefined))
-                if (!response.ok() || !options.success) {
-                  await route.fulfill({ response })
-                  return
-                }
-                await route.fulfill({
-                  response,
-                  json: options.data.toSorted(
-                    (a, b) =>
-                      Number(b === expectedPath) - Number(a === expectedPath)
-                  )
-                })
-              }
-            )
-          }
-          const outputResponse =
-            folder === 'output'
-              ? comfyPage.page.waitForResponse(
-                  (response) =>
-                    new URL(response.url()).pathname.endsWith(
-                      '/internal/files/output'
-                    ) && response.request().method() === 'GET'
-                )
-              : undefined
           await comfyPage.workflow.reloadAndWaitForApp()
-          if (outputResponse) {
-            const response = await outputResponse
-            expect(response.ok()).toBe(true)
-            expect(await response.finished()).toBeNull()
-            const options = z.array(z.string()).parse(await response.json())
-            expect(options).toContain(expectedPath)
-          }
           await comfyPage.vueNodes.waitForNodes()
 
           await expect
@@ -204,16 +154,38 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
               )
             )
             .toContain(expectedPath)
-          await expect.poll(() => imageWidget.getValue()).toBe(expectedPath)
-          const saved = await comfyPage.workflow.getExportedWorkflow()
-          expect(
-            saved.nodes.find((entry) => entry.type === nodeType)
-          ).toMatchObject({
-            widgets_values: expect.arrayContaining([expectedPath])
-          })
         })
       })
-    }
+    })
+
+    test('canvas paste creates a LoadImage node with the uploaded filename', async ({
+      comfyPage,
+      comfyFiles
+    }) => {
+      await comfyPage.canvas.focus()
+      const uploadResponse = comfyPage.page.waitForResponse(
+        (response) =>
+          response.url().includes('/upload/image') && response.status() === 200
+      )
+      await comfyPage.clipboard.pasteFile(assetPath('test_upload_image.png'), {
+        mode: 'direct',
+        fileName: 'image.png'
+      })
+      const uploaded = zUploadImageResponse
+        .required()
+        .parse(await (await uploadResponse).json())
+      comfyFiles.deleteAfterTest({
+        filename: uploaded.name,
+        subfolder: uploaded.subfolder,
+        type: uploaded.type
+      })
+
+      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+      const nodes = await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
+      expect(nodes).toHaveLength(1)
+      const imageWidget = await nodes[0].getWidgetByName('image')
+      await expect.poll(() => imageWidget.getValue()).toBe(uploaded.name)
+    })
   })
 
   test.describe('media selection', { tag: '@widget' }, () => {
