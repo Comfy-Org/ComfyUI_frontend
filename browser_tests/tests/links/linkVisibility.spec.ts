@@ -115,8 +115,9 @@ test.describe(
             candidate.target_id === target.id &&
             candidate.target_slot === inputIndex
         )
-        const pos = link?._pos
-        return pos ? { x: pos[0], y: pos[1] } : null
+        if (!link?.path) return null
+        const pos = link._pos
+        return { x: pos[0], y: pos[1] }
       })
       const midpoint = await midpointHandle.jsonValue()
       if (!midpoint) throw new Error('Workflow link was not found')

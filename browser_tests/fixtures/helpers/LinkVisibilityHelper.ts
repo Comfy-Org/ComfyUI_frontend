@@ -15,8 +15,10 @@ export class LinkVisibilityHelper {
 
   async hideFirstLink(): Promise<void> {
     const handle = await this.comfyPage.page.waitForFunction(() => {
-      const pos = window.app!.graph.links.values().next().value?._pos
-      return pos ? ([pos[0], pos[1]] satisfies Point) : null
+      const link = window.app!.graph.links.values().next().value
+      if (!link?.path) return null
+      const pos = link._pos
+      return [pos[0], pos[1]] satisfies Point
     })
     const point = await handle.jsonValue()
     if (!point) throw new Error('Rendered link midpoint was not found')
