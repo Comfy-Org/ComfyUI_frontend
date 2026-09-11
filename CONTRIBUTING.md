@@ -115,6 +115,13 @@ python main.py --comfy-api-base https://stagingapi.comfy.org --verbose
 
 Then run `pnpm dev` as usual. This keeps the frontend in local mode but routes backend API calls through staging.
 
+#### Local Agent Integration
+
+To develop the frontend, the in-workspace multi-player package, and the local agent
+backend together with HMR, use the
+[local agent integration environment](docs/testing/agent-integration-development.md).
+It includes the Playwright entrypoint and teardown procedure.
+
 #### Access dev server on touch devices
 
 Enable remote access to the dev server by setting `VITE_REMOTE_DEV` in `.env` to `true`.

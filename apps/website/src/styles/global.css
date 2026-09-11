@@ -1,5 +1,3 @@
-@import 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap';
-
 @import 'tailwindcss';
 @import '@comfyorg/design-system/css/base.css';
 @import 'tw-animate-css';
@@ -67,6 +65,8 @@
   font-display: optional;
 }
 
+@custom-variant short (@media (max-height: 1100px));
+
 @theme {
   --color-site-dropdown: #332b38;
   --color-site-bg-soft: color-mix(
@@ -76,6 +76,7 @@
   );
   --color-primary-comfy-yellow: #f2ff59;
   --color-primary-comfy-orange: #fabc25;
+  --color-primary-comfy-red: #ff3b3b;
   --color-primary-comfy-ink: #211927;
   --color-primary-comfy-ink-light: #2a2330;
   --color-primary-comfy-canvas: #c2bfb9;
@@ -105,6 +106,48 @@
   --container-9xl: 96rem;
   --container-10xl: 100rem;
   --aspect-ratio-gallery-card: 47/31;
+  --color-page: var(--color-primary-comfy-ink);
+  --color-brand: var(--color-primary-comfy-yellow);
+  --color-content: var(--color-primary-comfy-canvas);
+  --color-content-bright: var(--color-primary-warm-white);
+  --color-content-secondary: rgb(194 191 185 / 0.95);
+  --color-content-muted: rgb(194 191 185 / 0.75);
+  --color-hub-surface: var(--color-transparency-white-t4);
+  --color-hub-surface-hover: var(--color-transparency-white-t8);
+  --color-hub-muted: #8a8a8a;
+}
+
+@utility ppformula-text-center-sm {
+  position: relative;
+  top: 0.12em;
+}
+
+@utility content-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 340px;
+}
+
+@utility scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@utility scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #262729 transparent;
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #262729;
+    border-radius: 9999px;
+  }
 }
 
 @property --border-angle {
@@ -535,4 +578,32 @@ video::-webkit-media-controls-panel {
   @media (prefers-reduced-motion: no-preference) {
     animation: backdrop-drift 48s ease-in-out infinite alternate;
   }
+}
+
+@keyframes soft-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.375rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@utility animate-soft-in {
+  animation: soft-in 260ms ease-out;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+/* WebKit shows its own play button on .cloud-hero-video when autoplay is
+   refused (iOS Low Power Mode); the UA rule only yields to !important. */
+.cloud-hero-video::-webkit-media-controls-start-playback-button,
+.cloud-hero-video::-webkit-media-controls-panel {
+  display: none !important;
+  appearance: none;
 }
