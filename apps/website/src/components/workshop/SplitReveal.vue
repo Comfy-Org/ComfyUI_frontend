@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useMediaQuery, useResizeObserver } from '@vueuse/core'
-import { nextTick, onMounted, ref, useTemplateRef } from 'vue'
+import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
 
 const {
   text,
@@ -21,11 +21,13 @@ const animating = ref(false)
 const revealed = ref(false)
 const lineOfWord = ref<number[]>([])
 
-let words = 0
-const parts = text.split(/(\s+)/).map((value) => ({
-  value,
-  word: /\S/.test(value) ? words++ : undefined
-}))
+const parts = computed(() => {
+  let words = 0
+  return text.split(/(\s+)/).map((value) => ({
+    value,
+    word: /\S/.test(value) ? words++ : undefined
+  }))
+})
 
 // The browser has already broken the heading into lines; words that share a
 // top edge sit on the same one, so they rise together.
@@ -56,6 +58,8 @@ onMounted(async () => {
 useResizeObserver(root, () => {
   if (animating.value) measureLines()
 })
+
+watch(parts, measureLines, { flush: 'post' })
 </script>
 
 <template>

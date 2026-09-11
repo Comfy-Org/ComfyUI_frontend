@@ -10,14 +10,16 @@ type StorageUrls = Required<
     components['schemas']['CustomerStorageResourceResponse'],
     'upload_url' | 'download_url'
   >
->
+> &
+  Pick<components['schemas']['CustomerStorageResourceResponse'], 'expires_at'>
 const storageUrl = z.url().refine((value) => {
   const url = new URL(value)
   return url.protocol === 'https:' && !url.username && !url.password
 })
 const storageUrls: z.ZodType<StorageUrls> = z.object({
   upload_url: storageUrl,
-  download_url: storageUrl
+  download_url: storageUrl,
+  expires_at: z.string().optional()
 })
 
 export function createWorkshopUrlUploader() {
@@ -63,6 +65,8 @@ export function createWorkshopUrlUploader() {
     )
     if (!response.ok) throw new Error('Upload authorization failed')
     const urls = storageUrls.parse(await response.json())
+    const expiresAt = Date.parse(urls.expires_at ?? '')
+    if (expiresAt <= Date.now()) throw new Error('Upload grant expired')
     signal.throwIfAborted()
     const uploaded = await fetch(urls.upload_url, {
       method: 'PUT',
@@ -77,7 +81,8 @@ export function createWorkshopUrlUploader() {
     completed.set(file, {
       scope,
       url: urls.download_url,
-      expiresAt: Date.now() + 23 * 60 * 60 * 1000
+      // Missing/invalid expiry must not invent a lifetime for a signed URL.
+      expiresAt: Number.isFinite(expiresAt) ? expiresAt - 60_000 : 0
     })
     return urls.download_url
   }

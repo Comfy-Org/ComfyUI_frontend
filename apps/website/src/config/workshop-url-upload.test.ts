@@ -7,7 +7,8 @@ import { WORKSHOP_ROUTER_BASE_URL } from './workshop-env'
 
 const grant = {
   upload_url: 'https://storage.googleapis.com/test/input?signature=upload',
-  download_url: 'https://storage.googleapis.com/test/input?signature=download'
+  download_url: 'https://storage.googleapis.com/test/input?signature=download',
+  expires_at: '2099-01-01T00:00:00Z'
 }
 type StorageBody =
   operations['createCustomerStorageResource']['requestBody']['content']['application/json']
@@ -60,12 +61,15 @@ describe('URL upload transport', () => {
     expect(requests).toHaveBeenCalledTimes(6)
   })
 
-  it('does not cache a failed PUT and expires successful grants before their 24-hour lifetime', async () => {
+  it('does not cache a failed PUT and respects the actual grant expiry with a safety margin', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-09-10T10:00:00Z'))
+    const shortGrant = { ...grant, expires_at: '2026-09-10T10:10:00Z' }
     const requests = vi
       .fn<typeof fetch>()
-      .mockResolvedValueOnce(Response.json(grant))
+      .mockResolvedValueOnce(Response.json(shortGrant))
       .mockResolvedValueOnce(new Response(null, { status: 403 }))
-      .mockResolvedValueOnce(Response.json(grant))
+      .mockResolvedValueOnce(Response.json(shortGrant))
       .mockResolvedValueOnce(new Response(null, { status: 200 }))
       .mockResolvedValueOnce(Response.json(grant))
       .mockResolvedValueOnce(new Response(null, { status: 200 }))
@@ -79,10 +83,48 @@ describe('URL upload transport', () => {
     expect(await upload(file, 'token', 'scope', signal)).toBe(
       grant.download_url
     )
-    const now = Date.now()
-    vi.spyOn(Date, 'now').mockReturnValue(now + 24 * 60 * 60 * 1000)
+    vi.setSystemTime(new Date('2026-09-10T10:08:59Z'))
+    await upload(file, 'token', 'scope', signal)
+    expect(requests).toHaveBeenCalledTimes(4)
+    vi.setSystemTime(new Date('2026-09-10T10:09:00Z'))
     await upload(file, 'token', 'scope', signal)
     expect(requests).toHaveBeenCalledTimes(6)
+  })
+
+  it.for([undefined, 'invalid'])(
+    'does not cache a grant with unknown expiry: %s',
+    async (expires_at) => {
+      const requests = vi.fn<typeof fetch>(async (_, init) =>
+        init?.method === 'POST'
+          ? Response.json({ ...grant, expires_at })
+          : new Response(null, { status: 200 })
+      )
+      vi.stubGlobal('fetch', requests)
+      const upload = createWorkshopUrlUploader()
+      const file = new File(['image'], 'image.png')
+      const signal = new AbortController().signal
+      await upload(file, 'token', 'scope', signal)
+      await upload(file, 'token', 'scope', signal)
+      expect(requests).toHaveBeenCalledTimes(4)
+    }
+  )
+
+  it('rejects an already-expired grant before sending private bytes', async () => {
+    const requests = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(
+        Response.json({ ...grant, expires_at: '2000-01-01T00:00:00Z' })
+      )
+    vi.stubGlobal('fetch', requests)
+    await expect(
+      createWorkshopUrlUploader()(
+        new File(['private'], 'image.png'),
+        'token',
+        'scope',
+        new AbortController().signal
+      )
+    ).rejects.toThrow('expired')
+    expect(requests).toHaveBeenCalledTimes(1)
   })
 
   it.for([

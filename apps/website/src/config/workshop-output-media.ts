@@ -22,7 +22,12 @@ const EXTENSIONS = new Map([
   ['txt', 'text/plain']
 ])
 
+export function isPassiveOutputMime(mime: string): boolean {
+  return mime !== 'image/svg+xml' && [...EXTENSIONS.values()].includes(mime)
+}
+
 export function outputKind(mime: string): RunOutput['kind'] {
+  if (!isPassiveOutputMime(mime)) return 'other'
   if (mime.startsWith('image/')) return 'image'
   if (mime.startsWith('video/')) return 'video'
   if (mime.startsWith('audio/')) return 'audio'

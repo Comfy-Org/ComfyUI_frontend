@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, useTemplateRef } from 'vue'
+import { useTemplateRef, watch } from 'vue'
 
 import type { HTMLAttributes } from 'vue'
 
@@ -12,17 +12,23 @@ const { src, alt = '' } = defineProps<{
 
 const canvas = useTemplateRef<HTMLCanvasElement>('canvas')
 
-onMounted(() => {
-  const image = new Image()
-  image.onload = () => {
-    const target = canvas.value
+watch(
+  [() => src, canvas],
+  ([source, target], _, onCleanup) => {
     if (!target) return
-    target.width = image.naturalWidth
-    target.height = image.naturalHeight
-    target.getContext('2d')?.drawImage(image, 0, 0)
-  }
-  image.src = src
-})
+    const image = new Image()
+    image.onload = () => {
+      target.width = image.naturalWidth
+      target.height = image.naturalHeight
+      target.getContext('2d')?.drawImage(image, 0, 0)
+    }
+    image.src = source
+    onCleanup(() => {
+      image.onload = null
+    })
+  },
+  { immediate: true, flush: 'post' }
+)
 </script>
 
 <template>

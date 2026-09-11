@@ -45,10 +45,10 @@ function examplesFor(
 }
 
 function executionFor(
-  routerId: string,
+  catalogId: string,
   contentId: string
 ): WorkshopContract | undefined {
-  const contract = workshopContract(routerId)
+  const contract = workshopContract(catalogId)
   if (!contract) return
   const { creatorVariants, ...base } = contract
   const creator = creatorVariants?.[contentId] ?? contract.creator
@@ -61,7 +61,7 @@ const detailBySlug = new Map(
     if (!source) throw new Error(`Missing content record: ${model.slug}`)
     const execution = model.incompleteReason
       ? undefined
-      : executionFor(model.routerId, source.overlay.id)
+      : executionFor(source.record.catalogId, source.overlay.id)
     if (execution && execution.sourceCommit !== source.alias.sourceCommit)
       throw new Error(`Stale Router identity audit: ${model.routerId}`)
     const detail: WorkshopModelDetail = {

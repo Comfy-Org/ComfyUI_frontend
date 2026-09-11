@@ -21,8 +21,8 @@ import { prepareWorkshopCreatorRequest } from './workshop-creator-request'
 import type { WorkshopUrlEncoder } from './workshop-url-input'
 import { resolveWorkshopUrlInputs } from './workshop-url-input'
 import { loadWorkshopExampleFile } from './workshop-example-file'
+import { MAX_REQUEST_BYTES } from './workshop-limits'
 
-const MAX_REQUEST_BYTES = 10 * 1024 * 1024
 const ACCEPT: Record<WorkshopMediaBinding['accept'], readonly string[]> = {
   image: ['image/png', 'image/jpeg', 'image/webp'],
   video: ['video/mp4', 'video/webm', 'video/quicktime'],
@@ -208,7 +208,7 @@ export async function prepareWorkshopRouterInput(
       files.length > media.targets.length
     )
       throw new WorkshopRouterError('validation', null, {
-        [media.name]: 'rejected'
+        [media.name]: files.length ? 'rejected' : 'required'
       })
     return files.map((upload, index) => {
       signal.throwIfAborted()

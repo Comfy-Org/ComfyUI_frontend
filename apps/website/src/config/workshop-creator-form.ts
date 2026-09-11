@@ -53,19 +53,22 @@ export const workshopCreatorFormSchema = z
   })
   .refine((form) => {
     const names = form.files.map((file) => file.name)
-    const properties = jsonObject.parse(form.parameters.properties ?? {})
+    const properties = jsonObject.safeParse(form.parameters.properties ?? {})
+    if (!properties.success) return false
     return (
       new Set(names).size === names.length &&
       names.every(
         (name) =>
-          !Object.hasOwn(properties, name) && Object.hasOwn(form.inputs, name)
+          !Object.hasOwn(properties.data, name) &&
+          Object.hasOwn(form.inputs, name)
       )
     )
   }, 'File widgets must have unique names separate from scalar inputs')
   .refine((form) => {
-    const properties = jsonObject.parse(form.parameters.properties ?? {})
+    const properties = jsonObject.safeParse(form.parameters.properties ?? {})
+    if (!properties.success) return false
     return Object.entries(form.fixedValues ?? {}).every(([name, value]) => {
-      const schema = jsonObject.safeParse(properties[name])
+      const schema = jsonObject.safeParse(properties.data[name])
       return (
         form.inputs[name]?.hidden &&
         schema.success &&

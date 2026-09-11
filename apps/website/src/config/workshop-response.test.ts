@@ -13,6 +13,90 @@ const png =
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg=='
 
 describe('native Router output handling', () => {
+  it.for(['auto', 'binary'] as const)(
+    'serves SVG as inert bytes in %s responses',
+    async (format) => {
+      const svg = '<svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)"/>'
+      const outputs = await parseRouterResponse(
+        {
+          ...contract,
+          output:
+            format === 'auto'
+              ? { format, contentTypes: ['image/*'] }
+              : { format, contentTypes: ['image/*'], kind: 'image' }
+        },
+        new Response(svg, { headers: { 'Content-Type': 'image/svg+xml' } })
+      )
+      try {
+        expect(outputs[0].kind).toBe('other')
+        const downloaded = await fetch(outputs[0].url)
+        expect(downloaded.headers.get('Content-Type')).toBe(
+          'application/octet-stream'
+        )
+        expect(await downloaded.text()).toBe(svg)
+      } finally {
+        releaseRouterOutputs(outputs)
+      }
+    }
+  )
+
+  it('does not turn an inline SVG in automatic JSON into an active blob', async () => {
+    const outputs = await parseRouterResponse(
+      contract,
+      Response.json({
+        data: `data:image/svg+xml;base64,${btoa('<svg onload="alert(1)"/>')}`
+      })
+    )
+    try {
+      expect(outputs.map(({ kind }) => kind)).toEqual(['text'])
+      expect((await fetch(outputs[0].url)).headers.get('Content-Type')).toBe(
+        'application/json'
+      )
+    } finally {
+      releaseRouterOutputs(outputs)
+    }
+  })
+
+  it.for(['base64', 'text', 'json'] as const)(
+    'does not create an active SVG blob from an explicit %s selector',
+    async (encoding) => {
+      const svg = '<svg onload="alert(1)"/>'
+      const selected = {
+        ...contract,
+        output: {
+          format: 'json' as const,
+          schema: { type: 'object' },
+          selectors: [
+            {
+              path: '/data',
+              kind: 'image' as const,
+              encoding,
+              mimeType: 'image/svg+xml'
+            }
+          ]
+        }
+      }
+      const parsed = parseRouterResponse(
+        selected,
+        Response.json({ data: encoding === 'base64' ? btoa(svg) : svg })
+      )
+      if (encoding === 'base64') {
+        await expect(parsed).rejects.toThrow('inline media type')
+        return
+      }
+      const outputs = await parsed
+      try {
+        expect(outputs[0].kind).toBe('text')
+        expect((await fetch(outputs[0].url)).headers.get('Content-Type')).toBe(
+          'text/plain'
+        )
+        expect(outputs[0].text).toBe(svg)
+      } finally {
+        releaseRouterOutputs(outputs)
+      }
+    }
+  )
+
   it('preserves text and unknown fields while extracting mixed URL and inline media safely', async () => {
     const response = {
       text: '<script>never execute</script>',

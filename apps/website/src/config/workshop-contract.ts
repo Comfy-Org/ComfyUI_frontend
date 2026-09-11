@@ -32,8 +32,10 @@ const mediaSchema = z.object({
   encoding: z.enum(['base64', 'data-url']),
   targets: z
     .array(
-      pointer.refine(
-        (value) => value !== '' && !pointerKeys(value).includes('*')
+      pointer.pipe(
+        z
+          .string()
+          .refine((value) => value !== '' && !pointerKeys(value).includes('*'))
       )
     )
     .min(1),

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Check } from '@lucide/vue'
+import { Check, Music2 } from '@lucide/vue'
 import { computed } from 'vue'
 
 import type { PlaygroundExample } from '../../config/workshop-playground'
@@ -110,17 +110,13 @@ function actionFor(example: PlaygroundExample, active = false) {
               :src="example.outputUrl"
               class="size-full object-cover"
               muted
-              loop
               playsinline
-              autoplay
-            />
-            <audio
-              v-else-if="example.mediaKind === 'audio'"
-              :src="example.outputUrl"
-              :aria-label="example.title"
-              class="size-full px-3"
-              controls
               preload="metadata"
+            />
+            <Music2
+              v-else-if="example.mediaKind === 'audio'"
+              class="size-full px-3"
+              aria-hidden="true"
             />
             <img
               v-else-if="example.outputUrl"
@@ -169,6 +165,14 @@ function actionFor(example: PlaygroundExample, active = false) {
             </span>
           </span>
         </button>
+        <audio
+          v-if="example.mediaKind === 'audio'"
+          :src="example.outputUrl"
+          :aria-label="example.title"
+          controls
+          preload="metadata"
+          class="mt-2 w-full"
+        />
       </li>
     </ul>
   </section>

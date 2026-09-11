@@ -4,28 +4,13 @@ import { valuesAtPointer } from './workshop-json-pointer'
 import type { RunOutput } from './workshop-run'
 import {
   inlineOutput,
+  isPassiveOutputMime,
   outputExtension,
   outputKind,
   outputMimeForUrl
 } from './workshop-output-media'
 
 const MAX_RESPONSE_BYTES = 128 * 1024 * 1024
-const EXTENSIONS: Readonly<Record<string, string>> = {
-  'image/png': 'png',
-  'image/jpeg': 'jpeg',
-  'image/webp': 'webp',
-  'image/gif': 'gif',
-  'image/svg+xml': 'svg',
-  'video/mp4': 'mp4',
-  'video/webm': 'webm',
-  'audio/mpeg': 'mp3',
-  'audio/wav': 'wav',
-  'audio/ogg': 'ogg',
-  'model/gltf-binary': 'glb',
-  'model/gltf+json': 'gltf',
-  'application/json': 'json',
-  'text/plain': 'txt'
-}
 
 function fileName(id: string, mime: string, index: number): string {
   return `${id.replaceAll('/', '-')}-${index + 1}.${outputExtension(mime)}`
@@ -36,12 +21,13 @@ function responseDocument(
   text: string,
   mime = 'application/json'
 ): RunOutput {
+  const safeMime = mime === 'application/json' ? mime : 'text/plain'
   return {
     kind: 'text',
     text: text.slice(0, 65_536),
     truncated: text.length > 65_536,
-    url: URL.createObjectURL(new Blob([text], { type: mime })),
-    fileName: `${id.replaceAll('/', '-')}-response.${outputExtension(mime)}`
+    url: URL.createObjectURL(new Blob([text], { type: safeMime })),
+    fileName: `${id.replaceAll('/', '-')}-response.${outputExtension(safeMime)}`
   }
 }
 
@@ -194,11 +180,15 @@ export async function parseRouterResponse(
     )
       throw new Error('Unexpected Router output type')
     const url = URL.createObjectURL(
-      new Blob([new Uint8Array(bytes)], { type: contentType })
+      new Blob([new Uint8Array(bytes)], {
+        type: isPassiveOutputMime(contentType)
+          ? contentType
+          : 'application/octet-stream'
+      })
     )
     return [
       {
-        kind: output.kind,
+        kind: isPassiveOutputMime(contentType) ? output.kind : 'other',
         url,
         fileName: fileName(contract.id, contentType, 0)
       }
@@ -263,10 +253,7 @@ export async function parseRouterResponse(
             throw new Error('Unsafe media URL')
           url = parsed.href
         } else {
-          if (
-            !selector.mimeType ||
-            !Object.hasOwn(EXTENSIONS, selector.mimeType)
-          )
+          if (!selector.mimeType || !isPassiveOutputMime(selector.mimeType))
             throw new Error('Missing inline media type')
           const decoded = Uint8Array.from(atob(value), (character) =>
             character.charCodeAt(0)
@@ -274,7 +261,12 @@ export async function parseRouterResponse(
           if (!decoded.length) throw new Error('Empty inline media')
           url = URL.createObjectURL(new Blob([decoded], { type: mime }))
         }
-        outputs.push({ kind: selector.kind, url, fileName: name, nsfw })
+        outputs.push({
+          kind: mime === 'image/svg+xml' ? 'other' : selector.kind,
+          url,
+          fileName: name,
+          nsfw
+        })
       }
     }
     if (!outputs.length) throw new Error('Router returned no output')

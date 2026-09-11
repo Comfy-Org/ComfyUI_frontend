@@ -4,14 +4,20 @@ import type { Ref } from 'vue'
 // so the tablist has to move between them itself.
 export function useTablist<T>(items: () => readonly T[], active: Ref<T>) {
   function onKeydown(event: KeyboardEvent) {
+    const values = items()
+    if (!values.length) return
     const step =
       event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0
-    if (step === 0) return
+    if (step === 0 && event.key !== 'Home' && event.key !== 'End') return
     event.preventDefault()
 
-    const values = items()
     const next =
-      (values.indexOf(active.value) + step + values.length) % values.length
+      event.key === 'Home'
+        ? 0
+        : event.key === 'End'
+          ? values.length - 1
+          : (values.indexOf(active.value) + step + values.length) %
+            values.length
     active.value = values[next]
 
     const tabs = (

@@ -8,6 +8,7 @@ import { WorkshopRouterError } from './workshop-router-errors'
 import { renderWorkshopRequestTemplate } from './workshop-request-template'
 import { prepareWorkshopRequestCallback } from './workshop-request-callbacks'
 import { loadWorkshopExampleFile } from './workshop-example-file'
+import { MAX_REQUEST_BYTES } from './workshop-limits'
 
 export interface EncodedWorkshopFile {
   readonly data: string
@@ -58,7 +59,7 @@ export async function prepareWorkshopCreatorRequest(
   let bytes = new TextEncoder().encode(JSON.stringify(plain)).byteLength
   function reserve(file: { size: number; type: string }, name: string) {
     bytes += 4 * Math.ceil(file.size / 3) + file.type.length + 256
-    if (bytes > 10 * 1024 * 1024)
+    if (bytes > MAX_REQUEST_BYTES)
       throw new WorkshopRouterError('validation', null, {
         [name]: 'requestTooLarge'
       })

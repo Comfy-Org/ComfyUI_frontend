@@ -54,6 +54,50 @@ function exampleValues(contract: (typeof contracts)[number]): FormValues {
 }
 
 describe('schema-driven Router coverage', () => {
+  it.for(['not-a-pointer', '/bad~escape', '', '/images/*', '/__proto__/x'])(
+    'returns a schema failure for an invalid media target: %s',
+    (target) => {
+      const result = workshopContractSchema.safeParse({
+        id: 'fixture/native',
+        sourceCommit: 'a'.repeat(40),
+        inputSchema: {},
+        media: [
+          {
+            name: 'image',
+            label: 'Image',
+            accept: 'image',
+            encoding: 'base64',
+            targets: [target]
+          }
+        ],
+        output: { format: 'auto', contentTypes: ['*/*'] }
+      })
+      expect(result.success).toBe(false)
+    }
+  )
+
+  it('identifies missing required media separately from rejected media', async () => {
+    const contract = workshopContractSchema.parse({
+      id: 'fixture/native',
+      sourceCommit: 'a'.repeat(40),
+      inputSchema: { type: 'object' },
+      media: [
+        {
+          name: 'photo',
+          label: 'Photo',
+          accept: 'image',
+          encoding: 'base64',
+          targets: ['/image'],
+          required: true
+        }
+      ],
+      output: { format: 'auto', contentTypes: ['*/*'] }
+    })
+    await expect(
+      prepareWorkshopRouterInput(contract, {}, new AbortController().signal)
+    ).rejects.toMatchObject({ fieldErrors: { photo: 'required' } })
+  })
+
   it('accepts a new schema-only model and preserves exact JSON values without provider code', async () => {
     const snapshot = {
       id: 'fixture/native-model',
