@@ -865,7 +865,7 @@ describe('Composer', () => {
     expect(textbox).toHaveTextContent('Compare Scratch more detail')
   })
 
-  it.for(['pointer', 'keyboard'])(
+  it.for(['pointer', 'Enter', 'Space'])(
     'opens a staged workflow with %s without consuming the draft',
     async (interaction) => {
       const { emitted } = mount({
@@ -878,7 +878,7 @@ describe('Composer', () => {
       if (interaction === 'pointer') await userEvent.click(chip)
       else {
         chip.focus()
-        await userEvent.keyboard('{Enter}')
+        await userEvent.keyboard(interaction === 'Enter' ? '{Enter}' : ' ')
       }
 
       expect(emitted().openReferenceWorkflow).toEqual([['wf-1', 'Water world']])

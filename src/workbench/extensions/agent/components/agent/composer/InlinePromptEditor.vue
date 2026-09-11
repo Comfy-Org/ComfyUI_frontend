@@ -174,20 +174,31 @@ onMounted(() => {
         if (typeof id !== 'string' || typeof name !== 'string') return { dom }
         dom.contentEditable = 'false'
         dom.dataset.testid = 'workflow-reference-chip'
-        dom.className =
-          'group/workflow relative inline-flex max-w-full align-baseline'
-        const open = document.createElement('button')
-        open.type = 'button'
+        dom.className = 'group/workflow inline'
+        const open = document.createElement('span')
+        open.setAttribute('role', 'button')
+        open.tabIndex = 0
         open.setAttribute('aria-label', t('agent.openWorkflowTab', { name }))
         open.className =
-          'inline-flex min-w-0 max-w-28 cursor-pointer items-center gap-1 rounded-sm bg-primary-background/30 px-1 py-0.5 font-inter text-xs/[15px] font-normal text-primary-background-hover ring-1 ring-primary-background/30 transition-colors ring-inset hover:bg-primary-background/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background'
+          'inline cursor-pointer rounded-sm bg-primary-background/30 box-decoration-clone px-1 py-0.5 font-inter text-xs/[15px] font-normal break-all whitespace-normal text-primary-background-hover ring-1 ring-primary-background/30 transition-colors ring-inset hover:bg-primary-background/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background'
         const icon = document.createElement('span')
-        icon.className = 'icon-[comfy--workflow] size-3 shrink-0'
+        icon.className =
+          'icon-[comfy--workflow] mr-1 inline-block size-3 align-middle'
         const title = document.createElement('span')
-        title.className = 'min-w-0 truncate'
         title.textContent = name
         open.append(icon, title)
         open.onclick = () => emit('openReferenceWorkflow', id, name)
+        open.onkeydown = (event) => {
+          if (event.key === 'Enter' || event.key === ' ') event.preventDefault()
+          if (event.key === 'Enter') open.click()
+        }
+        open.onkeyup = (event) => {
+          if (event.key !== ' ') return
+          event.preventDefault()
+          open.click()
+        }
+        const removeAnchor = document.createElement('span')
+        removeAnchor.className = 'relative inline-block h-4 w-0 align-middle'
         const remove = document.createElement('button')
         remove.type = 'button'
         remove.setAttribute(
@@ -210,7 +221,8 @@ onMounted(() => {
             editor.state.tr.delete(position, position + node.nodeSize)
           )
         }
-        dom.append(open, remove)
+        removeAnchor.append(remove)
+        dom.append(open, removeAnchor)
         return { dom, stopEvent: () => true, ignoreMutation: () => true }
       }
     }

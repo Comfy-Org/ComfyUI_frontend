@@ -39,6 +39,11 @@ const promptParts = computed(() =>
 )
 const { copy, copied } = useClipboard({ copiedDuring: 2000, legacy: true })
 
+function openReference(reference: WorkflowReference): void {
+  if (reference.unavailable) return
+  emit('openReferenceWorkflow', reference.id, reference.name)
+}
+
 /* The shared map's 'other' glyph is a checkmark, which reads as a status
    rather than a file on this surface. */
 function attachmentIconClass(name: string): string {
@@ -121,31 +126,31 @@ const splitAttachments = computed(() => {
       class="border-agent-border bg-agent-surface-raised text-agent-fg-muted w-fit max-w-full rounded-[10px] border px-2.5 py-1.5 text-sm/5 font-normal wrap-break-word whitespace-pre-wrap"
     >
       <template v-for="(part, index) in promptParts" :key="index">
-        <button
+        <span
           v-if="part.type === 'workflow'"
-          type="button"
+          role="button"
+          :tabindex="part.reference.unavailable ? -1 : 0"
           :aria-label="
             t('agent.openWorkflowTab', { name: part.reference.name })
           "
           data-testid="workflow-reference-chip"
-          :disabled="part.reference.unavailable"
+          :aria-disabled="part.reference.unavailable"
           :title="
             part.reference.unavailable
               ? t('agent.targetNavigationUnavailable')
               : undefined
           "
-          class="inline-flex max-w-28 cursor-pointer items-center gap-1 rounded-sm border-0 bg-primary-background/30 px-1 py-0.5 align-middle font-inter text-xs/[15px] font-normal text-primary-background-hover ring-1 ring-primary-background/30 ring-inset disabled:cursor-not-allowed disabled:opacity-50"
-          @click="
-            emit(
-              'openReferenceWorkflow',
-              part.reference.id,
-              part.reference.name
-            )
-          "
+          class="inline cursor-pointer rounded-sm bg-primary-background/30 box-decoration-clone px-1 py-0.5 font-inter text-xs/[15px] font-normal break-all whitespace-normal text-primary-background-hover ring-1 ring-primary-background/30 ring-inset focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+          @click="openReference(part.reference)"
+          @keydown.enter.prevent="openReference(part.reference)"
+          @keydown.space.prevent
+          @keyup.space.prevent="openReference(part.reference)"
         >
-          <span class="icon-[comfy--workflow] size-3 shrink-0" />
-          <span class="truncate">{{ part.reference.name }}</span>
-        </button>
+          <span
+            class="mr-1 icon-[comfy--workflow] inline-block size-3 align-middle"
+          />
+          <span>{{ part.reference.name }}</span>
+        </span>
         <template v-else>{{ part.text }}</template>
       </template>
     </div>

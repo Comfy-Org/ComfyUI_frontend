@@ -74,7 +74,7 @@ describe('UserMessage', () => {
     const unavailable = screen.getByRole('button', {
       name: 'Open Deleted workflow'
     })
-    expect(unavailable).toBeDisabled()
+    expect(unavailable).toHaveAttribute('aria-disabled', 'true')
     await userEvent.click(unavailable)
     expect(view.emitted().openReferenceWorkflow).toBeUndefined()
     await userEvent.click(
@@ -104,20 +104,26 @@ describe('UserMessage', () => {
     ).toBeVisible()
   })
 
-  it('emits navigation without changing the editable target when a sent chip is clicked', async () => {
-    const view = renderMessage({
-      text: 'Compare this',
-      workflowReferences: [{ id: 'wf-reference', name: 'Reference' }]
-    })
+  it.for(['pointer', 'Enter', 'Space'])(
+    'opens a sent workflow reference with %s',
+    async (interaction) => {
+      const view = renderMessage({
+        text: 'Compare this',
+        workflowReferences: [{ id: 'wf-reference', name: 'Reference' }]
+      })
 
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Open Reference' })
-    )
+      const chip = screen.getByRole('button', { name: 'Open Reference' })
+      if (interaction === 'pointer') await userEvent.click(chip)
+      else {
+        chip.focus()
+        await userEvent.keyboard(interaction === 'Enter' ? '{Enter}' : ' ')
+      }
 
-    expect(view.emitted('openReferenceWorkflow')).toEqual([
-      ['wf-reference', 'Reference']
-    ])
-  })
+      expect(view.emitted('openReferenceWorkflow')).toEqual([
+        ['wf-reference', 'Reference']
+      ])
+    }
+  )
 
   it('renders a caption-only placeholder tile for a preview-less attachment', () => {
     renderMessage({ text: '', attachments: [{ name: 'clip.bin' }] })
