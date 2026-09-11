@@ -1,30 +1,43 @@
 <template>
-  <div class="flex min-h-screen w-screen flex-col bg-secondary-background">
-    <SubscriptionRequiredDialogContentUnified
-      :on-close="handleClose"
-      :embedded-checkout-enabled="flags.embeddedCheckoutEnabled"
-      :initial-checkout="initialCheckout"
-    />
-  </div>
+  <WorkspaceAuthGate>
+    <div class="flex min-h-screen w-screen flex-col bg-secondary-background">
+      <SubscriptionRequiredDialogContentUnified
+        v-if="capabilitiesReady"
+        :on-close="handleClose"
+        :embedded-checkout-enabled="flags.embeddedCheckoutEnabled"
+        :initial-checkout="initialCheckout"
+      />
+    </div>
+  </WorkspaceAuthGate>
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import WorkspaceAuthGate from '@/platform/workspace/auth/WorkspaceAuthGate.vue'
 import SubscriptionRequiredDialogContentUnified from '@/platform/workspace/components/SubscriptionRequiredDialogContentUnified.vue'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import type { SubscriptionCheckoutSelection } from '@/platform/workspace/composables/useSubscriptionCheckout'
 
 const { flags } = useFeatureFlags()
 const route = useRoute()
 const router = useRouter()
 
-// The splash loader is normally removed by the graph view's boot or the
-// workspace auth gate; this route mounts outside both.
-onMounted(() => {
-  document.getElementById('splash-loader')?.remove()
-})
+// The dialog assumes a warm app: capabilities resolve long before anyone
+// opens it. On a cold page load they are still in flight when this view
+// mounts, and initialCheckout's capability guard would bail to the pricing
+// table — so the checkout waits for the read, behind the splash.
+const { isReady: capabilitiesReady } = useBillingCapabilities()
+
+watch(
+  capabilitiesReady,
+  (ready) => {
+    if (ready) document.getElementById('splash-loader')?.remove()
+  },
+  { immediate: true }
+)
 
 // The plan arrives chosen (products deep-link it); this page is only the
 // checkout. Plan selection gets its own full-page treatment separately.
