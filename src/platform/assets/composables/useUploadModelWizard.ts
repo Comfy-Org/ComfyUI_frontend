@@ -367,7 +367,7 @@ export function useUploadModelWizard(
         }
 
         stopAsyncWatch?.()
-        let resolved = false
+        const watchState = { resolved: false }
         const stop = watch(
           () =>
             assetDownloadStore.downloadList.find(
@@ -375,13 +375,13 @@ export function useUploadModelWizard(
             )?.status,
           async (status) => {
             if (status === 'completed') {
-              resolved = true
+              watchState.resolved = true
               uploadStatus.value = 'success'
               await refreshModelCaches()
               stopAsyncWatch?.()
               stopAsyncWatch = undefined
             } else if (status === 'failed') {
-              resolved = true
+              watchState.resolved = true
               const download = assetDownloadStore.downloadList.find(
                 (d) => d.taskId === result.task.task_id
               )
@@ -397,7 +397,7 @@ export function useUploadModelWizard(
           },
           { immediate: true }
         )
-        if (resolved) {
+        if (watchState.resolved) {
           stop()
           stopAsyncWatch = undefined
         } else {

@@ -8,7 +8,7 @@ type Cta = { label: string; href: string; target?: '_blank' }
 
 export interface FeatureStep {
   id: string
-  number: string
+  number?: string
   title: string
   description: string
 }
@@ -46,6 +46,7 @@ defineProps<{
           <div class="flex flex-1 flex-col gap-4 p-8">
             <div>
               <p
+                v-if="step.number"
                 class="text-primary-comfy-yellow text-xs font-bold tracking-widest uppercase"
               >
                 {{ step.number }}

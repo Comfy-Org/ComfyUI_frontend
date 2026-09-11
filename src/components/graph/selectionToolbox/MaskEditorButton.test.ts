@@ -1,21 +1,17 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { ref } from 'vue'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import MaskEditorButton from '@/components/graph/selectionToolbox/MaskEditorButton.vue'
+import { useCommandStore } from '@/stores/commandStore'
 
-const mockExecute = vi.hoisted(() => vi.fn())
 const mockSelectionState = vi.hoisted(() => ({
   isSingleImageNode: { value: true }
 }))
 
-vi.mock('@/stores/commandStore', () => ({
-  useCommandStore: () => ({ execute: mockExecute })
-}))
-
-vi.mock('@/composables/graph/useSelectionState', () => ({
+vi.mock<unknown>(import('@/composables/graph/useSelectionState'), () => ({
   useSelectionState: () => mockSelectionState
 }))
 
@@ -65,12 +61,17 @@ describe('MaskEditorButton', () => {
 
   it('should execute the OpenMaskEditor command on click', async () => {
     const user = userEvent.setup()
+    const openMaskEditor = vi.fn()
+    useCommandStore().registerCommand({
+      id: 'Comfy.MaskEditor.OpenMaskEditor',
+      function: openMaskEditor
+    })
     renderButton()
 
     await user.click(
       screen.getByRole('button', { name: 'Open in Mask Editor' })
     )
 
-    expect(mockExecute).toHaveBeenCalledWith('Comfy.MaskEditor.OpenMaskEditor')
+    expect(openMaskEditor).toHaveBeenCalledOnce()
   })
 })

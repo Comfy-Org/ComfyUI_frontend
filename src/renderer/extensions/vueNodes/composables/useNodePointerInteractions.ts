@@ -76,8 +76,7 @@ export function useNodePointerInteractions(
 
     const nodeId = toValue(nodeStateRef).id
 
-    const multiSelect =
-      agentNodeSelectionStore.isActive || isMultiSelectKey(event)
+    const multiSelect = isMultiSelectKey(event)
 
     const lmbDown = event.buttons & 1
     if (

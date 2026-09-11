@@ -10,7 +10,7 @@ function creditAddedEvent(atMs: number): AuditLog {
   return {
     event_type: 'credit_added',
     createdAt: new Date(atMs).toISOString()
-  } as AuditLog
+  }
 }
 
 describe('usePendingTopup', () => {

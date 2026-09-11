@@ -8,13 +8,39 @@ import ToolsSection from '../templates/mcp/ToolsSection.vue'
 import UseCasesSection from '../templates/mcp/UseCasesSection.vue'
 import HowItWorksSection from '../templates/mcp/HowItWorksSection.vue'
 import FAQSection from '../templates/mcp/FAQSection.vue'
+import AnnouncementBanner from '../templates/drops/AnnouncementBanner.vue'
+import type { BannerData } from '../config/banner'
+import { createBannerVersion } from '../utils/banner'
 import { t } from '../i18n/translations'
+
+// One-off page banner (not the sitewide `bannerConfig`): points the MCP page
+// at the Comfy Agent beta waitlist. Not dismissible, so no pre-hydration
+// hide script is needed the way BaseLayout wires one up for the sitewide banner.
+const agentBannerData: BannerData = {
+  id: 'mcp-agent-waitlist',
+  title: 'The Comfy Agent is in beta. Get early access.',
+  link: {
+    href: '/agent',
+    title: 'Join the waitlist',
+    buttonVariant: 'underlineLink'
+  }
+}
+const agentBannerVersion = createBannerVersion(agentBannerData, 'en')
 ---
 
 <BaseLayout
   title={t('mcp.meta.title', 'en')}
   description={t('mcp.meta.description', 'en')}
 >
+  <AnnouncementBanner
+    data={agentBannerData}
+    version={agentBannerVersion}
+    locale="en"
+    background="var(--color-primary-comfy-ink-light)"
+    centered
+    dismissible={false}
+    client:load
+  />
   <HeroSection locale="en" client:load />
   <SetupSection locale="en" client:visible />
   <ToolsSection locale="en" client:visible />

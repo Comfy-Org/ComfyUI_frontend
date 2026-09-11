@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onKeyStroke, useWindowSize } from '@vueuse/core'
-import { nextTick, ref, watchEffect } from 'vue'
+import { nextTick, ref, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import type { CoachStep } from '../../composables/agent/useOnboarding'
@@ -24,10 +24,23 @@ const MARGIN = 8
 
 const cardStyle = ref<Record<string, string> | null>(null)
 
-watchEffect(
-  async () => {
-    cardStyle.value = null
-    if (!active.value) return
+// Explicit `watch` sources, not `watchEffect`. This callback measures the
+// DOM after `await nextTick()`, so `width`/`height` must not be read only
+// on the far side of that `await` -- `watchEffect` only tracks dependencies
+// an effect reads during its synchronous execution, and anything read after
+// an `await` is invisible to the tracker. That was the root cause of the
+// original bug: a later viewport resize (e.g. narrowing the window) never
+// re-ran the effect, so the card stayed pinned at its stale position. Naming
+// the sources explicitly sidesteps the tracking pitfall entirely, since
+// `watch`'s sources are declared up front rather than discovered by reading
+// refs inside the callback.
+watch(
+  [active, width, height],
+  async ([isActive, viewportWidth, viewportHeight]) => {
+    if (!isActive) {
+      cardStyle.value = null
+      return
+    }
     await nextTick()
     const target = document.querySelector(step.target)
     if (!target) return
@@ -36,11 +49,11 @@ watchEffect(
     // covering it.
     const left = Math.min(
       Math.max(MARGIN, rect.left - CARD_W - MARGIN),
-      Math.max(MARGIN, width.value - CARD_W - MARGIN)
+      Math.max(MARGIN, viewportWidth - CARD_W - MARGIN)
     )
     const top = Math.min(
       Math.max(MARGIN, rect.top + MARGIN),
-      Math.max(MARGIN, height.value - CARD_H - MARGIN)
+      Math.max(MARGIN, viewportHeight - CARD_H - MARGIN)
     )
     cardStyle.value = {
       top: `${top}px`,
@@ -48,7 +61,7 @@ watchEffect(
       width: `${CARD_W}px`
     }
   },
-  { flush: 'post' }
+  { immediate: true, flush: 'post' }
 )
 </script>
 
@@ -62,7 +75,7 @@ watchEffect(
   >
     <div class="absolute inset-0 bg-black/40" />
     <div
-      :style="cardStyle"
+      :style="cardStyle ?? undefined"
       class="rounded-agent border-agent-border bg-agent-surface-raised text-agent-fg absolute border p-3 shadow-xl"
     >
       <p class="text-sm font-semibold">{{ step.title }}</p>

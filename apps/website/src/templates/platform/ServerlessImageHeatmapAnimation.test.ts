@@ -17,13 +17,11 @@ describe('ServerlessImageHeatmapAnimation', () => {
   })
 
   it('renders the full 36x14 heatmap grid', () => {
-    const { container } = render(ServerlessImageHeatmapAnimation, {
+    render(ServerlessImageHeatmapAnimation, {
       props: { locale: 'en' }
     })
 
-    const grid = container.querySelector('[style*="repeat(36"]')
-    expect(grid).toBeTruthy()
-    expect(grid?.children).toHaveLength(36 * 14)
+    expect(screen.getAllByTestId('heatmap-cell')).toHaveLength(36 * 14)
   })
 
   it('labels the three workers', () => {

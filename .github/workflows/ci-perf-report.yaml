@@ -5,9 +5,11 @@ on:
     branches: [main, core/*]
   pull_request:
     branches-ignore: [wip/*, draft/*, temp/*]
+  schedule:
+    - cron: '17 8 * * *'
 
 concurrency:
-  group: perf-${{ github.ref }}
+  group: perf-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: false
 
 permissions:
@@ -15,6 +17,7 @@ permissions:
 
 jobs:
   changes:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -72,8 +75,11 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
+      # Save whenever metrics exist, not only when every perf test passed.
+      # Gating on steps.perf.outcome == 'success' let a single failing test
+      # silently kill the baseline pipeline for months (issue #15545).
       - name: Save perf baseline to perf-data branch
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.perf.outcome == 'success'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && hashFiles('test-results/perf-metrics.json') != ''
         continue-on-error: true
         run: |
           git config user.name "github-actions[bot]"
@@ -112,3 +118,41 @@ jobs:
           git worktree remove /tmp/perf-data --force 2>/dev/null || true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Fail if performance tests failed
+        if: steps.perf.outcome == 'failure' && github.event_name == 'push'
+        run: |
+          echo "::error::Performance tests failed; partial metrics were saved when available."
+          exit 1
+
+      - name: Warn if performance tests failed on a PR
+        if: steps.perf.outcome == 'failure' && github.event_name == 'pull_request'
+        run: echo "::warning::Performance tests failed; the metrics may be incomplete."
+
+  perf-baseline-freshness:
+    if: github.event_name == 'schedule' && github.repository == 'Comfy-Org/ComfyUI_frontend'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: perf-freshness
+      cancel-in-progress: false
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Check perf baseline freshness
+        run: |
+          if ! git fetch --depth=1 origin perf-data; then
+            echo "::error::The perf-data branch could not be read."
+            exit 1
+          fi
+          NEWEST=$(git log -1 --format=%ct FETCH_HEAD)
+          NOW=$(date +%s)
+          AGE_SECONDS=$(( NOW - NEWEST ))
+          AGE_DAYS=$(( AGE_SECONDS / 86400 ))
+          echo "Newest perf-data commit is ${AGE_DAYS} day(s) old"
+          if [ "$AGE_SECONDS" -gt $(( 7 * 86400 )) ]; then
+            echo "::error::Perf baseline is stale (${AGE_DAYS} days old). CI has not saved a baseline in seven days. Inspect performance workflow failures and issue #15545."
+            exit 1
+          fi

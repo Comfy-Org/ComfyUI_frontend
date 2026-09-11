@@ -29,7 +29,7 @@ test.describe('Load Image upload persistence', () => {
     const readImageWidgetValue = () =>
       comfyPage.page.evaluate(
         () =>
-          window.app?.graph?.nodes
+          window.app?.graph.nodes
             .find((node) => node.type === 'LoadImage')
             ?.widgets?.find((widget) => widget.name === 'image')?.value
       )

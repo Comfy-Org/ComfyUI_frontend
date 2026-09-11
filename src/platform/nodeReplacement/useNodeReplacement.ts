@@ -82,21 +82,20 @@ function planReplacementTopology(
 
   for (const inputMap of replacement.input_mapping ?? []) {
     if (!('old_id' in inputMap) || isDotNotation(inputMap.new_id)) continue
-    const oldSlot = oldNode.inputs?.findIndex(
+    const oldSlot = oldNode.inputs.findIndex(
       (input) => input.name === inputMap.old_id
     )
-    const newSlot = newNode.inputs?.findIndex(
+    const newSlot = newNode.inputs.findIndex(
       (input) => input.name === inputMap.new_id
     )
-    if (oldSlot == null || oldSlot === -1 || newSlot == null || newSlot === -1)
-      continue
+    if (oldSlot === -1 || newSlot === -1) continue
     const linkId = inputLinkId(graph, oldNode.id, oldSlot)
     const link = linkId == null ? undefined : graph.links.get(linkId)
     if (link) addUpdate(link, { targetSlot: newSlot })
   }
 
   for (const outputMap of replacement.output_mapping ?? []) {
-    if (!newNode.outputs?.[outputMap.new_idx]) continue
+    if (!newNode.outputs[outputMap.new_idx]) continue
     for (const link of outputLinks(graph, oldNode.id, outputMap.old_idx)) {
       addUpdate(link, { originSlot: outputMap.new_idx })
     }
@@ -207,7 +206,7 @@ function generateDefaultMapping(
   const oldInputNames = new Set(serialized.inputs?.map((i) => i.name) ?? [])
 
   const inputMapping: { old_id: string; new_id: string }[] = []
-  for (const newInput of newNode.inputs ?? []) {
+  for (const newInput of newNode.inputs) {
     if (oldInputNames.has(newInput.name)) {
       inputMapping.push({ old_id: newInput.name, new_id: newInput.name })
     }
@@ -222,8 +221,8 @@ function generateDefaultMapping(
 
   const outputMapping: { old_idx: number; new_idx: number }[] = []
   for (const [oldIdx, oldOutput] of (serialized.outputs ?? []).entries()) {
-    const newIdx = newNode.outputs?.findIndex((o) => o.name === oldOutput.name)
-    if (newIdx != null && newIdx !== -1) {
+    const newIdx = newNode.outputs.findIndex((o) => o.name === oldOutput.name)
+    if (newIdx !== -1) {
       outputMapping.push({ old_idx: oldIdx, new_idx: newIdx })
     }
   }
@@ -246,7 +245,7 @@ function replaceWithMapping(
   newNode.id = node.id
   newNode.order = order
   newNode.mode = node.mode
-  if (node.flags) newNode.flags = { ...node.flags }
+  newNode.flags = { ...node.flags }
 
   if (
     nodeGraph._nodes[idx] !== node ||
@@ -423,8 +422,18 @@ export function useNodeReplacement() {
 
   function replaceNodesInPlace(selectedTypes: MissingNodeType[]): string[] {
     const replacedTypes: string[] = []
-    let replacementFailed = false
+    const failedTypes = new Set<string>()
+    let replacementFailed: true | undefined
+    let anyNodeReplaced = false
     const graph = app.rootGraph
+    const recordReplacementFailure = (type: string) => {
+      replacementFailed = true
+      failedTypes.add(type)
+      const replacedTypeIndex = replacedTypes.indexOf(type)
+      if (replacedTypeIndex !== -1) {
+        replacedTypes.splice(replacedTypeIndex, 1)
+      }
+    }
 
     const changeTracker =
       useWorkflowStore().activeWorkflow?.changeTracker ?? null
@@ -451,7 +460,7 @@ export function useNodeReplacement() {
         // for nodes whose serialization predates the type field.
         // n.type may have been sanitized by app.ts (HTML special chars stripped);
         // the sanitized variants in targetTypes ensure we still match correctly.
-        const originalType = n.last_serialization.type ?? n.type
+        const originalType = n.last_serialization.type || n.type
         return !!originalType && targetTypes.has(originalType)
       })
 
@@ -461,13 +470,22 @@ export function useNodeReplacement() {
 
         const replacement = match.replacement
         const nodeGraph = node.graph
-        if (!nodeGraph) continue
+        if (!nodeGraph) {
+          recordReplacementFailure(match.type)
+          continue
+        }
 
         const idx = nodeGraph._nodes.indexOf(node)
-        if (idx === -1) continue
+        if (idx === -1) {
+          recordReplacementFailure(match.type)
+          continue
+        }
 
         const newNode = LiteGraph.createNode(replacement.new_node_id)
-        if (!newNode) continue
+        if (!newNode) {
+          recordReplacementFailure(match.type)
+          continue
+        }
 
         const hasMapping =
           replacement.input_mapping != null ||
@@ -490,19 +508,25 @@ export function useNodeReplacement() {
           idx
         )
         if (!replaced) {
-          replacementFailed = true
+          recordReplacementFailure(match.type)
           continue
         }
+        anyNodeReplaced = true
 
-        if (!replacedTypes.includes(match.type)) {
+        if (
+          !failedTypes.has(match.type) &&
+          !replacedTypes.includes(match.type)
+        ) {
           replacedTypes.push(match.type)
         }
       }
 
-      if (replacedTypes.length > 0) {
+      if (anyNodeReplaced) {
         graph.updateExecutionOrder()
         graph.setDirtyCanvas(true, true)
+      }
 
+      if (replacedTypes.length > 0) {
         toastStore.add({
           severity: 'success',
           summary: t('g.success'),
@@ -521,7 +545,7 @@ export function useNodeReplacement() {
       }
     } catch (error) {
       console.error('Failed to replace nodes:', error)
-      if (replacedTypes.length > 0) {
+      if (anyNodeReplaced) {
         graph.updateExecutionOrder()
         graph.setDirtyCanvas(true, true)
       }

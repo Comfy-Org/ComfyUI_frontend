@@ -6,6 +6,8 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
+import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
+
 const { code, lang = 'text' } = defineProps<{
   code: string
   lang?: string
@@ -76,10 +78,10 @@ watchDebounced(
         {{ copied ? t('agent.copied') : t('agent.copy') }}
       </button>
     </div>
-    <div
+    <SanitizedHtml
       v-if="highlighted"
       class="overflow-x-auto p-4 font-mono text-sm [&_pre]:bg-transparent"
-      v-html="highlighted"
+      :html="highlighted"
     />
     <pre
       v-else

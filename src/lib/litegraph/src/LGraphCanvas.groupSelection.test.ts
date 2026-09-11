@@ -1,6 +1,4 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
@@ -11,9 +9,7 @@ import {
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
 
-vi.mock('@/renderer/core/layout/store/layoutStore')
-
-beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
+vi.mock(import('@/renderer/core/layout/store/layoutStore'))
 
 function createCanvas(graph: LGraph): LGraphCanvas {
   const el = document.createElement('canvas')

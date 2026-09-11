@@ -17,7 +17,7 @@ function getMockLGraphNode(): LGraphNode {
   return createMockLGraphNode({ type: 'TestNode' })
 }
 
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   isLGraphNode: vi.fn(() => true)
 }))
 

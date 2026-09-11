@@ -56,7 +56,7 @@ const isPartnerNode = directory === 'partner_nodes'
   >
     <div class="flex max-w-2xl flex-1 flex-col gap-6">
       <p
-        class="text-sm font-medium uppercase tracking-widest text-primary-comfy-yellow"
+        class="text-primary-comfy-yellow text-sm font-medium tracking-widest uppercase"
       >
         {{ eyebrow }}
       </p>
@@ -127,7 +127,7 @@ const isPartnerNode = directory === 'partner_nodes'
           :href="blogUrl"
           target="_blank"
           rel="noopener noreferrer"
-          class="hover:text-primary-comfy-canvas underline"
+          class="underline hover:text-primary-comfy-canvas"
         >
           {{ t('models.hero.blogLink') }}
         </a>

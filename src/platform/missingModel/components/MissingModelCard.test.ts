@@ -1,4 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
@@ -16,7 +16,7 @@ import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 
 const mockDownloadModel = vi.hoisted(() => vi.fn())
 
-vi.mock('@/platform/missingModel/missingModelDownload', async () => {
+vi.mock(import('@/platform/missingModel/missingModelDownload'), async () => {
   const actual = await vi.importActual<typeof MissingModelDownload>(
     '@/platform/missingModel/missingModelDownload'
   )
@@ -26,7 +26,7 @@ vi.mock('@/platform/missingModel/missingModelDownload', async () => {
   }
 })
 
-vi.mock('./MissingModelRow.vue', () => ({
+vi.mock<unknown>(import('./MissingModelRow.vue'), () => ({
   default: {
     name: 'MissingModelRow',
     template: `
@@ -52,7 +52,7 @@ vi.mock('./MissingModelRow.vue', () => ({
 }))
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }
@@ -124,12 +124,7 @@ function mountCard(
   onLocateModel?: (nodeId: string) => void,
   initialGatedRepoUrls: Record<string, string> = {}
 ) {
-  const pinia = createTestingPinia({
-    createSpy: vi.fn,
-    initialState: {
-      missingModel: { gatedRepoUrls: initialGatedRepoUrls }
-    }
-  })
+  useMissingModelStore().gatedRepoUrls = initialGatedRepoUrls
   return render(MissingModelCard, {
     props: {
       missingModelGroups: [makeGroup()],
@@ -137,7 +132,7 @@ function mountCard(
       ...(onLocateModel ? { onLocateModel } : {})
     },
     global: {
-      plugins: [pinia, PrimeVue, i18n]
+      plugins: [getActivePinia()!, PrimeVue, i18n]
     }
   })
 }

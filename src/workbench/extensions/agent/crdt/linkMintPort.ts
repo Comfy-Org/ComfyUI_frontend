@@ -79,7 +79,7 @@ interface SeveranceEntry {
 }
 
 function isRootScope(scope: LinkScopeView): boolean {
-  return String(scope.owningGraphId) === String(scope.rootGraphId)
+  return scope.owningGraphId === scope.rootGraphId
 }
 
 export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
@@ -91,7 +91,6 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
     return shouldMint({
       flagEnabled: deps.isEnabled(),
       docBound: deps.isDocBound(),
-      localProvenance: !deps.session.inRemoteApply(),
       teardown: deps.session.inTeardown()
     })
   }

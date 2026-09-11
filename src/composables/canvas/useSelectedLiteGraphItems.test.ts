@@ -21,18 +21,21 @@ const mockApp = vi.hoisted(() => ({
 
 // canvasStore transitively imports the app singleton; stub it so the real
 // ComfyApp module never loads during these unit tests.
-vi.mock('@/scripts/app', () => ({ app: mockApp }))
+vi.mock<unknown>(import('@/scripts/app'), () => ({ app: mockApp }))
 
 // Mock the litegraph module
-vi.mock('@/lib/litegraph/src/litegraph', async (importOriginal) => {
-  const actual = (await importOriginal()) as Record<string, unknown>
-  return {
-    ...actual,
-    Reroute: class Reroute {
-      constructor() {}
+vi.mock<unknown>(
+  import('@/lib/litegraph/src/litegraph'),
+  async (importOriginal) => {
+    const actual = (await importOriginal()) as Record<string, unknown>
+    return {
+      ...actual,
+      Reroute: class Reroute {
+        constructor() {}
+      }
     }
   }
-})
+)
 
 // Real LGraphNode instances so the production isLGraphNode (instanceof) guard runs
 // unmodified — the node accessors filter selectedItems with the real predicate.

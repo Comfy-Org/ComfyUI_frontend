@@ -11,6 +11,7 @@ import type {
   AuthMetadata,
   BeginCheckoutMetadata,
   BillingTelemetryEvent,
+  BootstrapCompleteMetadata,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ExecutionErrorMetadata,
@@ -20,6 +21,7 @@ import type {
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
   ImageLoadFailureMetadata,
+  LinkDedupDropMetadata,
   NamedValuesShadowDiffMismatchMetadata,
   NamedValuesShadowDiffSummaryMetadata,
   NodeAddedMetadata,
@@ -48,6 +50,7 @@ import type {
   TabCountMetadata,
   TelemetryDispatcher,
   TelemetryProvider,
+  FetchTimeoutMetadata,
   TemplateFilterMetadata,
   TemplateLibraryClosedMetadata,
   TemplateLibraryMetadata,
@@ -110,6 +113,16 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {
     this.dispatch((provider) => provider.trackImageLoadFailed?.(metadata))
+  }
+
+  trackBootstrapComplete(metadata: BootstrapCompleteMetadata): void {
+    this.dispatch((provider) => provider.trackBootstrapComplete?.(metadata))
+  }
+
+  trackFeatureFlagEvaluation(key: string, value: unknown): void {
+    this.dispatch((provider) =>
+      provider.trackFeatureFlagEvaluation?.(key, value)
+    )
   }
 
   trackUserLoggedIn(): void {
@@ -393,7 +406,15 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     )
   }
 
+  trackLinkDedupDrop(metadata: LinkDedupDropMetadata): void {
+    this.dispatch((provider) => provider.trackLinkDedupDrop?.(metadata))
+  }
+
   trackPageView(pageName: string, properties?: PageViewMetadata): void {
     this.dispatch((provider) => provider.trackPageView?.(pageName, properties))
+  }
+
+  trackFetchTimeout(metadata: FetchTimeoutMetadata): void {
+    this.dispatch((provider) => provider.trackFetchTimeout?.(metadata))
   }
 }

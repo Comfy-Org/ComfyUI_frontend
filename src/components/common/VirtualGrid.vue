@@ -18,7 +18,12 @@
 </template>
 
 <script setup lang="ts" generic="T">
-import { useElementSize, useScroll, whenever } from '@vueuse/core'
+import {
+  useElementSize,
+  useInfiniteScroll,
+  useScroll,
+  whenever
+} from '@vueuse/core'
 import { clamp, debounce } from 'es-toolkit/compat'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import type { CSSProperties } from 'vue'
@@ -26,7 +31,6 @@ import type { CSSProperties } from 'vue'
 type GridState = {
   start: number
   end: number
-  isNearEnd: boolean
 }
 
 const {
@@ -36,7 +40,9 @@ const {
   resizeDebounce = 64,
   defaultItemHeight = 200,
   defaultItemWidth = 200,
-  maxColumns = Infinity
+  maxColumns = Infinity,
+  onLoadMore,
+  canLoadMore = false
 } = defineProps<{
   items: (T & { key: string })[]
   gridStyle: CSSProperties
@@ -45,13 +51,8 @@ const {
   defaultItemHeight?: number
   defaultItemWidth?: number
   maxColumns?: number
-}>()
-
-const emit = defineEmits<{
-  /**
-   * Emitted when `bufferRows` (or fewer) rows remaining between scrollY and grid bottom.
-   */
-  'approach-end': []
+  onLoadMore?: () => unknown
+  canLoadMore?: boolean
 }>()
 
 const itemHeight = ref(defaultItemHeight)
@@ -85,13 +86,10 @@ const state = computed<GridState>(() => {
 
   const fromCol = fromRow * cols.value
   const toCol = toRow * cols.value
-  const remainingCol = items.length - toCol
-  const hasMoreToRender = remainingCol >= 0
 
   return {
     start: clamp(fromCol, 0, items?.length),
-    end: clamp(toCol, fromCol, items?.length),
-    isNearEnd: hasMoreToRender && remainingCol <= cols.value * bufferRows
+    end: clamp(toCol, fromCol, items?.length)
   }
 })
 const renderedItems = computed(() =>
@@ -109,11 +107,13 @@ const bottomSpacerStyle = computed<CSSProperties>(() => ({
   height: rowsToHeight(items.length - state.value.end)
 }))
 
-whenever(
-  () => state.value.isNearEnd,
-  () => {
-    emit('approach-end')
-  }
+const distance = 2 * defaultItemHeight * (1 + bufferRows)
+useInfiniteScroll(
+  container,
+  async () => {
+    await onLoadMore?.()
+  },
+  { canLoadMore: () => canLoadMore, distance }
 )
 
 function updateItemSize(): void {

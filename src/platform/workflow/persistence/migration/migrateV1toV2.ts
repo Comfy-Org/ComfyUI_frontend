@@ -92,8 +92,9 @@ export function migrateV1toV2(
   let migrated = 0
 
   // Process in order (oldest first) to maintain LRU order
+  const draftsByPath: Partial<Record<string, V1DraftSnapshot>> = v1Data.drafts
   for (const path of v1Data.order) {
-    const draft = v1Data.drafts[path]
+    const draft = draftsByPath[path]
     if (!draft) continue
 
     const draftKey = hashPath(path)

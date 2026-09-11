@@ -15,7 +15,7 @@ const isNodeMissingDefinition = (
   node: LGraphNode,
   nodeDefsByName: NodeDefLookup
 ) => {
-  const nodeName = node?.type
+  const nodeName = node.type
   if (!nodeName) return false
   return !nodeDefsByName[nodeName]
 }

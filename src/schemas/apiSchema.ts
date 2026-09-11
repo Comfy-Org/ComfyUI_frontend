@@ -26,7 +26,7 @@ export const zResultItem = z.object({
 })
 export type ResultItem = z.infer<typeof zResultItem>
 // Uses .passthrough() because custom nodes can output arbitrary keys.
-// See docs/adr/0007-node-execution-output-passthrough-schema.md
+// See docs/adr/NODE-OUTPUTS-0007-output-passthrough-for-extensible-nodes.md
 const zOutputs = z
   .object({
     audio: z.array(zResultItem).optional(),
@@ -104,7 +104,7 @@ const zExecutionInterruptedWsMessage = zExecutionWsMessageBase.extend({
   executed: z.array(zNodeId)
 })
 const zExecutionErrorWsMessage = zExecutionWsMessageBase.extend({
-  node_id: zNodeId,
+  node_id: zNodeId.nullish(),
   node_type: zNodeType,
   executed: z.array(zNodeId),
   exception_message: z.string(),
@@ -429,7 +429,6 @@ const zSettings = z.object({
   'Comfy.Canvas.MouseWheelScroll': z.string(),
   'Comfy.VueNodes.Enabled': z.boolean(),
   'Comfy.AppBuilder.VueNodeSwitchDismissed': z.boolean(),
-  'Comfy.Assets.UseAssetAPI': z.boolean(),
   'Comfy.ModelLibrary.UseAssetBrowser': z.boolean(),
   'Comfy.Queue.QPOV2': z.boolean(),
   'Comfy.Queue.ShowRunProgressBar': z.boolean(),

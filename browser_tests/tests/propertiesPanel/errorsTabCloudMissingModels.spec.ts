@@ -466,7 +466,6 @@ promotedModelTest.describe(
   () => {
     promotedModelTest.beforeEach(async ({ comfyPage }) => {
       await cleanupFakeModel(comfyPage)
-      await comfyPage.settings.setSetting('Comfy.Assets.UseAssetAPI', true)
       await comfyPage.settings.setSetting(
         'Comfy.RightSidePanel.ShowErrorsTab',
         true

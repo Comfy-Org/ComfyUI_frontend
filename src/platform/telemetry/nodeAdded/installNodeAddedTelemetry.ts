@@ -12,7 +12,7 @@ export function installNodeAddedTelemetry(graph: LGraph): void {
   graph.events.addEventListener('node:added', ({ detail: { node } }) => {
     if (ChangeTracker.isLoadingGraph) return
     useTelemetry()?.trackNodeAdded({
-      node_type: node.type ?? 'unknown',
+      node_type: node.type,
       source: getCurrentNodeAddSource()
     })
   })

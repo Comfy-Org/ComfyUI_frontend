@@ -1,155 +1,101 @@
-import { createTestingPinia } from '@pinia/testing'
-import { render, screen } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, onMounted } from 'vue'
+import { render, screen, within } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
+import { createI18n } from 'vue-i18n'
 
-import type { UseScrollReturn } from '@vueuse/core'
-
-const mockFailedTasksIds = vi.hoisted(() => ({ value: [] as string[] }))
-
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: vi.fn(
-      (key: string, params?: Record<string, unknown>, count?: number) => {
-        if (count !== undefined) return `${key}:${count}`
-        if (params && 'count' in params) return `${key}:${params.count}`
-        return key
-      }
-    )
-  }),
-  createI18n: vi.fn(() => ({
-    global: { t: vi.fn((key: string) => key) }
-  }))
-}))
-
-vi.mock('@vueuse/core', async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...(actual as object),
-    useScroll: () => ({ y: { value: 0 } }) as UseScrollReturn,
-    whenever: vi.fn()
-  }
-})
-
-vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
-  useComfyManagerStore: () => ({
-    taskLogs: [{ taskId: '1', taskName: 'Test', logs: ['log'] }],
-    get failedTasksIds() {
-      return mockFailedTasksIds.value
-    },
-    succeededTasksIds: [],
-    succeededTasksLogs: [],
-    failedTasksLogs: [],
-    taskHistory: {},
-    taskQueue: {
-      history: {},
-      running_queue: [],
-      pending_queue: [],
-      installed_packs: {}
-    },
-    isProcessingTasks: false,
-    resetTaskState: vi.fn()
-  })
-}))
-
-vi.mock('@/workbench/extensions/manager/composables/useApplyChanges', () => ({
-  useApplyChanges: () => ({
-    isRestarting: { value: false },
-    isRestartCompleted: { value: false },
-    applyChanges: vi.fn()
-  })
-}))
+import en from '@/locales/en/main.json'
+import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 
 import ManagerProgressToast from './ManagerProgressToast.vue'
 
-// HoneyToast stub that emits update:expanded on mount to expand the component
-const HoneyToastStub = defineComponent({
-  name: 'HoneyToastStub',
-  emits: ['update:expanded'],
-  setup(_, { emit, slots }) {
-    onMounted(() => {
-      emit('update:expanded', true)
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/services/comfyManagerService'),
+  () => ({
+    useComfyManagerService: () => ({
+      listInstalledPacks: vi.fn(async () => ({}))
     })
-    return () =>
-      h('div', { 'data-testid': 'honey-toast' }, [
-        slots.default?.(),
-        slots.footer?.({ toggle: () => {} })
-      ])
-  }
-})
+  })
+)
 
-const renderComponent = async () => {
-  const result = render(ManagerProgressToast, {
+vi.mock(
+  import('@/workbench/extensions/manager/composables/useApplyChanges'),
+  async () => {
+    const { ref } = await import('vue')
+    return {
+      useApplyChanges: () => ({
+        isRestarting: ref(false),
+        isRestartCompleted: ref(false),
+        applyChanges: vi.fn()
+      })
+    }
+  }
+)
+
+const renderExpanded = async () => {
+  const user = userEvent.setup()
+  render(ManagerProgressToast, {
     global: {
-      plugins: [PrimeVue, createTestingPinia({ stubActions: false })],
-      stubs: {
-        HoneyToast: HoneyToastStub,
-        DotSpinner: true,
-        Panel: {
-          template: '<div><slot name="header" /><slot /></div>'
-        },
-        TabMenu: {
-          template: `
-            <div data-testid="tab-menu">
-              <template v-for="(item, index) in model" :key="index">
-                <slot name="item" :item="item" :props="{ action: {} }" :label="item.label" />
-              </template>
-            </div>
-          `,
-          props: ['model', 'activeIndex']
-        }
-      }
+      plugins: [createI18n({ legacy: false, locale: 'en', messages: { en } })]
     }
   })
-  // Wait for the emit to propagate
-  await new Promise((resolve) => setTimeout(resolve, 0))
-  return result
+  await user.click(screen.getByRole('button', { name: 'Expand' }))
+  return user
 }
 
-describe('ManagerProgressToast', () => {
-  beforeEach(() => {
-    mockFailedTasksIds.value = []
+it('keeps a log collapsed across updates without collapsing another task', async () => {
+  const store = useComfyManagerStore()
+  const first = { taskId: 'first', taskName: 'First task', logs: ['Starting'] }
+  const second = { taskId: 'second', taskName: 'Second task', logs: ['Queued'] }
+  store.isProcessingTasks = true
+  store.taskLogs = [first, second]
+  store.succeededTasksLogs = [first, second]
+  const user = await renderExpanded()
+
+  const [disclosure, otherDisclosure] = screen.getAllByRole('group')
+  expect(disclosure).toHaveAttribute('open')
+  await user.click(within(disclosure).getByText('First task'))
+  expect(disclosure).not.toHaveAttribute('open')
+
+  store.succeededTasksLogs = [second, { ...first, logs: ['Starting', 'Done'] }]
+  await nextTick()
+
+  expect(screen.getAllByRole('group')).toEqual([otherDisclosure, disclosure])
+  expect(within(disclosure).getByText('Done')).toBeInTheDocument()
+  expect(disclosure).not.toHaveAttribute('open')
+  expect(otherDisclosure).toHaveAttribute('open')
+})
+
+describe('failed tab indicator', () => {
+  const renderWithFailures = async (failedTasksIds: string[]) => {
+    const store = useComfyManagerStore()
+    store.isProcessingTasks = true
+    store.taskLogs = [{ taskId: 'a', taskName: 'A task', logs: ['Starting'] }]
+    store.failedTasksIds = failedTasksIds
+    await renderExpanded()
+    return screen.getByRole('menubar')
+  }
+
+  it('leaves the Failed tab untitled when nothing has failed', async () => {
+    const tablist = await renderWithFailures([])
+
+    expect(within(tablist).getByText('Failed')).toBeInTheDocument()
+    expect(within(tablist).queryByTitle(/installations? failed/)).toBeNull()
   })
 
-  describe('failure indicator', () => {
-    it('does not show failure indicator when there are no failures', async () => {
-      mockFailedTasksIds.value = []
-      await renderComponent()
+  it('titles the Failed tab with the singular count for one failure', async () => {
+    const tablist = await renderWithFailures(['task-1'])
 
-      // When there are no failures, the failed tab should NOT have an
-      // aria-label with the indicator tooltip
-      const failedTabWithIndicator = screen.queryByLabelText(
-        /failedTabIndicatorTooltip/
-      )
-      expect(failedTabWithIndicator).toBeNull()
-    })
+    expect(
+      within(tablist).getByTitle('1 installation failed')
+    ).toHaveAccessibleName('Failed — 1 installation failed')
+  })
 
-    it('shows failure indicator aria-label when there are failures', async () => {
-      mockFailedTasksIds.value = ['task-1', 'task-2']
-      await renderComponent()
+  it('titles the Failed tab with the plural count for several failures', async () => {
+    const tablist = await renderWithFailures(['task-1', 'task-2', 'task-3'])
 
-      // When there are failures, the failed tab should have an aria-label
-      // containing the indicator tooltip with the count
-      const failedTabWithIndicator = screen.getByLabelText(
-        /failedTabIndicatorTooltip:2/
-      )
-      expect(failedTabWithIndicator).toBeInTheDocument()
-    })
-
-    it('shows title tooltip with failure count on Failed tab', async () => {
-      mockFailedTasksIds.value = ['task-1', 'task-2', 'task-3']
-      await renderComponent()
-
-      // The aria-label should contain the count (3 in this case)
-      const failedTabWithIndicator = screen.getByLabelText(
-        /failedTabIndicatorTooltip:3/
-      )
-      expect(failedTabWithIndicator).toBeInTheDocument()
-      expect(failedTabWithIndicator).toHaveAttribute(
-        'title',
-        'manager.failedTabIndicatorTooltip:3'
-      )
-    })
+    expect(
+      within(tablist).getByTitle('3 installations failed')
+    ).toHaveAccessibleName('Failed — 3 installations failed')
   })
 })

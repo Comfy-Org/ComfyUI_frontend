@@ -23,15 +23,11 @@ export function useSubgraphOperations() {
     }
 
     const res = graph.convertToSubgraph(canvas.selectedItems)
-    if (!res) {
-      return
-    }
-
     const { node } = res
     canvas.select(node)
     canvasStore.updateSelectedItems()
     // Trigger change tracking
-    workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
+    workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
   }
 
   const doUnpack = (
@@ -42,11 +38,15 @@ export function useSubgraphOperations() {
     const graph = canvas.subgraph ?? canvas.graph
     if (!graph) return
 
+    let changed = false
     for (const subgraphNode of subgraphNodes) {
-      nodeOutputStore.revokeSubgraphPreviews(subgraphNode)
-      graph.unpackSubgraph(subgraphNode, { skipMissingNodes })
+      if (!graph.unpackSubgraph(subgraphNode, { skipMissingNodes })) continue
+      nodeOutputStore.revokeSubgraphPreviews(subgraphNode, graph)
+      changed = true
     }
-    workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
+    if (changed) {
+      workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
+    }
   }
 
   const unpackSubgraph = () => {

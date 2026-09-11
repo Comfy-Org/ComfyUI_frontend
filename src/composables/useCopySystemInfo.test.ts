@@ -8,11 +8,11 @@ import { useCopySystemInfo } from './useCopySystemInfo'
 const mockCopyToClipboard = vi.fn<(text: string) => void>()
 const distributionFlags = vi.hoisted(() => ({ isCloud: false }))
 
-vi.mock('@/composables/useCopyToClipboard', () => ({
+vi.mock<unknown>(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: () => ({ copyToClipboard: mockCopyToClipboard })
 }))
 
-vi.mock('@/platform/distribution/types', () => distributionFlags)
+vi.mock(import('@/platform/distribution/types'), () => distributionFlags)
 
 distributionFlags.isCloud = true
 vi.resetModules()

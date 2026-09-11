@@ -1,5 +1,6 @@
-import type { ComfyExtension } from '@/types/comfy'
+import type { SlotTypeDefaultNodeOpts } from '@/lib/litegraph/src/LiteGraphGlobal'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { ComfyExtension } from '@/types/comfy'
 
 import { app } from '../../scripts/app'
 import { ComfyWidgets } from '../../scripts/widgets'
@@ -8,8 +9,11 @@ import { ComfyWidgets } from '../../scripts/widgets'
 
 interface SlotDefaultsExtension extends ComfyExtension {
   suggestionsNumber: { value: number } | null
-  slot_types_default_out: Record<string, string[]>
-  slot_types_default_in: Record<string, string[]>
+  slot_types_default_out: Record<
+    string,
+    Array<string | SlotTypeDefaultNodeOpts>
+  >
+  slot_types_default_in: Record<string, Array<string | SlotTypeDefaultNodeOpts>>
   setDefaults(maxNum?: number | null): void
 }
 

@@ -12,7 +12,7 @@ import type {
   SceneConfig
 } from '@/extensions/core/load3d/interfaces'
 
-vi.mock('@/composables/useDismissableOverlay', () => ({
+vi.mock(import('@/composables/useDismissableOverlay'), () => ({
   useDismissableOverlay: vi.fn()
 }))
 

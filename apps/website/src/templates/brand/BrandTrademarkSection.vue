@@ -16,7 +16,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
     </SectionHeader>
 
     <div
-      class="text-primary-warm-gray mt-6 flex max-w-4xl flex-col gap-4 text-sm leading-[1.6]"
+      class="mt-6 flex max-w-4xl flex-col gap-4 text-sm leading-[1.6] text-primary-warm-gray"
     >
       <p>{{ t('brand.trademark.body1', locale) }}</p>
       <p>{{ t('brand.trademark.body2', locale) }}</p>

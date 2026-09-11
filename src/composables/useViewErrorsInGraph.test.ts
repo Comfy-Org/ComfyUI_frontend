@@ -15,7 +15,7 @@ const apiMock = vi.hoisted(() => ({
   storeSettings: vi.fn()
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: apiMock
 }))
 
@@ -31,7 +31,7 @@ const appMock = vi.hoisted(() => ({
   }
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: appMock
 }))
 

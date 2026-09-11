@@ -97,6 +97,14 @@ describe('useNodeTooltips', () => {
     expect(consoleError).not.toHaveBeenCalled()
   })
 
+  it('returns empty tooltips for inputs absent from the live node definition', () => {
+    const { getInputSlotTooltip, getWidgetTooltip } =
+      useNodeTooltips('SAM3_Detect')
+
+    expect(getInputSlotTooltip('stale_input')).toBe('')
+    expect(getWidgetTooltip({ name: 'stale_widget' })).toBe('')
+  })
+
   it('reads output slot tooltips without i18n placeholder errors', () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { getOutputSlotTooltip } = useNodeTooltips('SAM3_Detect')

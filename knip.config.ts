@@ -24,6 +24,9 @@ const config: KnipConfig = {
       ],
       ignore: ['scripts/registry-census/detection-proof/**']
     },
+    'packages/account': {
+      project: ['src/**/*.{js,ts,vue}']
+    },
     'packages/design-system': {
       project: ['src/**/*.{css,js,ts}']
     },
@@ -40,7 +43,8 @@ const config: KnipConfig = {
       project: ['src/**/*.{js,ts}']
     },
     'apps/website': {
-      entry: ['src/scripts/**/*.ts']
+      // Models pages are registered by the release-gate integration.
+      entry: ['src/scripts/**/*.ts', 'src/routes/models/*.astro']
     },
     'tools/test-recorder': {
       project: ['src/**/*.ts']

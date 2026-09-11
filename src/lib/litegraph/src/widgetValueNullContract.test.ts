@@ -1,23 +1,27 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { TWidgetValue } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackNamedValuesShadowDiffMismatch: vi.fn(),
     trackNamedValuesShadowDiffSummary: vi.fn()
   })
 }))
 
-vi.mock('@/platform/nodeReplacement/cnrIdUtil', () => ({
+vi.mock(import('@/platform/nodeReplacement/cnrIdUtil'), () => ({
   getCnrIdFromNode: () => undefined
 }))
 
 const NODE_TYPE = 'test/NullContractNode'
 const DEFAULT_VALUE = 'default'
+
+const nullSlotTypeContract = [30, null, 12345] satisfies NonNullable<
+  ISerialisedNode['widgets_values']
+>
 
 function registerNullContractNode(): void {
   class NullContractNode extends LGraphNode {
@@ -44,7 +48,7 @@ function makeGraphWithWidget(value: TWidgetValue): {
 
 function roundTripGraphWithoutLiveWidgetState(graph: LGraph): LGraph {
   const text = JSON.stringify(graph.serialize())
-  setActivePinia(createTestingPinia({ stubActions: false }))
+  useWidgetValueStore().clearGraph(graph.id)
   const reloaded = new LGraph()
   reloaded.configure(JSON.parse(text))
   return reloaded
@@ -52,7 +56,6 @@ function roundTripGraphWithoutLiveWidgetState(graph: LGraph): LGraph {
 
 function firstWidget(graph: LGraph) {
   const node = graph.nodes[0]
-  if (!node) throw new Error('expected a node in the reloaded graph')
   const widget = node.widgets?.[0]
   if (!widget) throw new Error('expected a widget on the reloaded node')
   return widget
@@ -62,7 +65,6 @@ describe('widget value null contract', () => {
   const origNamedValuesRestore = LiteGraph.namedValuesRestore
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     registerNullContractNode()
   })
 
@@ -100,6 +102,23 @@ describe('widget value null contract', () => {
   })
 
   describe('LGraphNode.configure (workflow read)', () => {
+    it('restores a typed null in the middle positional slot', () => {
+      LiteGraph.namedValuesRestore = false
+      const graph = new LGraph()
+      const node = new LGraphNode('Three widgets')
+      node.addWidget('number', 'first', 0, () => undefined)
+      node.addWidget('number', 'nullable', 0, () => undefined)
+      node.addWidget('number', 'third', 0, () => undefined)
+      graph.add(node)
+
+      node.configure({
+        ...node.serialize(),
+        widgets_values: nullSlotTypeContract
+      })
+
+      expect(node.widgets?.map(({ value }) => value)).toEqual([30, null, 12345])
+    })
+
     it('restores a null widget value through the indexed path', () => {
       LiteGraph.namedValuesRestore = false
       const { graph } = makeGraphWithWidget(null)

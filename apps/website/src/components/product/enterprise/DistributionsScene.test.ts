@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { prefersReducedMotion } from '../../../composables/useReducedMotion'
 import DistributionsScene from './DistributionsScene.vue'
 
-vi.mock('../../../composables/useReducedMotion', () => ({
+vi.mock(import('../../../composables/useReducedMotion'), () => ({
   prefersReducedMotion: vi.fn(() => false)
 }))
 
@@ -73,7 +73,7 @@ describe('DistributionsScene', () => {
     const { container } = render(DistributionsScene)
 
     expect(rafCallbacks).toHaveLength(1)
-    rafCallbacks[0]!(0)
+    rafCallbacks[0](0)
 
     const clips = [...container.querySelectorAll('.mbdist-clip')]
     const caps = [...container.querySelectorAll('.mbdist-cap')]
@@ -87,8 +87,8 @@ describe('DistributionsScene', () => {
 
     // The loop keeps scheduling and moves the pillars over time.
     expect(rafCallbacks).toHaveLength(2)
-    rafCallbacks[1]!(500)
-    expect(clips[0]!.getAttribute('transform')).not.toBe(depths[0])
+    rafCallbacks[1](500)
+    expect(clips[0].getAttribute('transform')).not.toBe(depths[0])
   })
 
   it('does not animate when reduced motion is preferred', () => {

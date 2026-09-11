@@ -15,18 +15,21 @@ const mockData = vi.hoisted(() => ({
   mockCamera: { x: 0, y: 0, z: 1 }
 }))
 
-vi.mock('@/renderer/core/layout/transform/useTransformState', () => {
-  const syncWithCanvas = vi.fn()
-  return {
-    useTransformState: () => ({
-      camera: computed(() => mockData.mockCamera),
-      transformStyle: computed(() => mockData.mockTransformStyle),
-      screenToCanvas: vi.fn(),
-      isNodeInViewport: vi.fn(),
-      syncWithCanvas
-    })
+vi.mock<unknown>(
+  import('@/renderer/core/layout/transform/useTransformState'),
+  () => {
+    const syncWithCanvas = vi.fn()
+    return {
+      useTransformState: () => ({
+        camera: computed(() => mockData.mockCamera),
+        transformStyle: computed(() => mockData.mockTransformStyle),
+        screenToCanvas: vi.fn(),
+        isNodeInViewport: vi.fn(),
+        syncWithCanvas
+      })
+    }
   }
-})
+)
 
 function createMockLGraphCanvas() {
   return createMockCanvas({

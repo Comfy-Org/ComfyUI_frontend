@@ -42,7 +42,7 @@ CanvasPointer replaces much of the original pointer handling code. It provides a
 
 A small amount of buffering is performed between down/up events to prevent accidental micro-drag events. If either of the two controls are exceeded, the event will be considered a drag event, not a click.
 
-- `buffterTime` is the maximum time that tiny movements can be ignored (Default: 150ms)
+- `bufferTime` is the maximum time that tiny movements can be ignored (Default: 32ms)
 - `maxClickDrift` controls how far a click can drift from its down event before it is considered a drag (Default: 6)
 
 ### Double-click
@@ -57,7 +57,7 @@ When double clicking, the double click callback is executed shortly after one no
 All above configuration is via class static.
 
 ```ts
-CanvasPointer.bufferTime = 150
+CanvasPointer.bufferTime = 32
 CanvasPointer.maxClickDrift = 6
 CanvasPointer.doubleClickTime = 300
 ```
@@ -181,7 +181,9 @@ type LGraphCanvasState = {
 canvas.state.shouldSetCursor = false
 
 // Checking state - bit operators
-if (canvas.state.hoveringOver & CanvasItem.ResizeSe) element.style.cursor = 'se-resize'
+// CanvasItem members: Nothing, Node, Group, Reroute, Link, RerouteSlot,
+// SubgraphIoNode, SubgraphIoSlot
+if (canvas.state.hoveringOver & CanvasItem.Node) element.style.cursor = 'pointer'
 ```
 
 </detail>

@@ -118,9 +118,10 @@ export function useSettingSearch() {
   const getSearchResults = (
     activeCategory: SettingTreeNode | null
   ): ISettingGroup[] => {
-    const groupedSettings: {
-      [key: string]: { category: string; settings: SettingParams[] }
-    } = {}
+    const groupedSettings = new Map<
+      string,
+      { category: string; settings: SettingParams[] }
+    >()
 
     filteredSettingIds.value.forEach((id) => {
       const setting = settingStore.settingsById[id]
@@ -131,23 +132,23 @@ export function useSettingSearch() {
           : info.subCategory
 
       if (activeCategory === null || activeCategory.label === info.category) {
-        if (!groupedSettings[groupKey]) {
-          groupedSettings[groupKey] = {
+        let group = groupedSettings.get(groupKey)
+        if (!group) {
+          group = {
             category: info.category,
             settings: []
           }
+          groupedSettings.set(groupKey, group)
         }
-        groupedSettings[groupKey].settings.push(setting)
+        group.settings.push(setting)
       }
     })
 
-    return Object.entries(groupedSettings).map(
-      ([key, { category, settings }]) => ({
-        label: activeCategory === null ? key.split('/')[1] : key,
-        ...(activeCategory === null ? { category } : {}),
-        settings
-      })
-    )
+    return [...groupedSettings].map(([key, { category, settings }]) => ({
+      label: activeCategory === null ? key.split('/')[1] : key,
+      ...(activeCategory === null ? { category } : {}),
+      settings
+    }))
   }
 
   return {

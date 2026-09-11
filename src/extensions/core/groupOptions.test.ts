@@ -12,6 +12,7 @@ import type {
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComfyExtension } from '@/types/comfy'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
@@ -21,10 +22,6 @@ const { registerExtension } = vi.hoisted(() => ({
 
 vi.mock('@/scripts/app', () => ({
   app: { registerExtension }
-}))
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({ get: () => 10 })
 }))
 
 import '@/extensions/core/groupOptions'
@@ -83,6 +80,7 @@ const BASE_GROUP_ITEMS: (string | null)[] = [
 
 beforeEach(() => {
   graphChange.mockClear()
+  vi.mocked(useSettingStore().get).mockReturnValue(10)
 })
 
 describe('Comfy.GroupOptions canvas menu', () => {

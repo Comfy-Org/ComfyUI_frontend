@@ -2,6 +2,8 @@ import type { PostHogConfig } from 'posthog-js'
 
 import type { TelemetryEventName } from '@/platform/telemetry/types'
 
+export type { TurnstileMode } from '@comfyorg/account/turnstile'
+
 /**
  * Server health alert configuration from the backend
  */
@@ -109,6 +111,8 @@ export type RemoteConfig = {
   manager_survey_url?: string
   linear_toggle_enabled?: boolean
   partner_node_governance_enabled?: boolean
+  /** Kill switch for the local partner-nodes run gate; defaults on client-side. */
+  partner_run_gate_enabled?: boolean
   user_secrets_enabled?: boolean
   node_library_essentials_enabled?: boolean
   supports_model_type_tags?: boolean
@@ -118,6 +122,7 @@ export type RemoteConfig = {
     used: number
     remaining: number
   }
+  free_tier_job_allowance_enabled?: boolean
   new_free_tier_subscriptions?: boolean
   workflow_sharing_enabled?: boolean
   comfyhub_upload_enabled?: boolean
@@ -134,11 +139,3 @@ export type RemoteConfig = {
   // TurnstileMode — that resolver is the single narrowing boundary.
   signup_turnstile?: string
 }
-
-/**
- * Gate mode for the signup Turnstile challenge.
- * - 'off': do not render the widget
- * - 'shadow': render the widget but never block submit (observe only)
- * - 'enforce': block submit until the challenge is solved
- */
-export type TurnstileMode = 'off' | 'shadow' | 'enforce'

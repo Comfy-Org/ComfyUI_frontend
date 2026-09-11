@@ -16,7 +16,15 @@ Steps:
 ### TypeScript
 
 - No `any` types or `as any` assertions
-- No `@ts-ignore` without explanatory comment
+- No new `@ts-ignore` or `@ts-nocheck`. Allow `@ts-expect-error` only in a test
+  that intentionally verifies a compiler error.
+- Treat all new `eslint-disable` and `oxlint-disable` directives as findings. Do
+  not accept a directive because its comment describes an inconvenience. Verify
+  the diagnostic, trace the value to its authoritative type or schema, search
+  for an existing typed pattern, and identify the external constraint before
+  accepting a narrow exception.
+- Flag double assertions and assertions that replace runtime narrowing at an
+  external boundary
 - Separate type imports (`import type { ... }`)
 - Use `import type { ... }` for type-only imports
 - Explicit return types on exported functions
@@ -46,6 +54,11 @@ Steps:
 - Behavioral tests, not change detectors
 - No mock-heavy tests that don't test real behavior
 - Test names describe behavior, not implementation
+- No Testing Library rule disables used to permit DOM traversal. Prefer a
+  semantic query, or fix missing component semantics.
+- No timing sleeps. Wait on observable readiness or control time explicitly.
+- No malformed fixtures cast to the expected domain type. Pass `unknown` data
+  through the production parser.
 
 ### General
 

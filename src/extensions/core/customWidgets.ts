@@ -39,7 +39,7 @@ function hasLinkedInputResolver(
 /**
  * Resolves the choice widget's current effective value.
  *
- * Per ADR 0009, a promoted widget's host value is not mirrored back onto
+ * Per ADR-SUBGRAPH-PROMOTION-0009, a promoted widget's host value is not mirrored back onto
  * the interior widget, so `comboWidget.value` is only accurate when
  * `choice` hasn't been converted to a linked subgraph input. When it has,
  * the live value must be resolved the same way prompt serialization
@@ -141,8 +141,8 @@ function onCustomComboCreated(this: LGraphNode) {
     },
     set value(_) {},
     draw: () => undefined,
-    computeSize: () => [0, -4],
-    options: { hidden: true },
+    hidden: true,
+    options: {},
     y: 0,
     serializeValue: (resolverNode: LGraphNode, _index: number) =>
       widgets

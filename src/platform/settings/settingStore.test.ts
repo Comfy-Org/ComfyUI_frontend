@@ -13,14 +13,14 @@ const { trackSettingChanged } = vi.hoisted(() => ({
   trackSettingChanged: vi.fn()
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: vi.fn(() => ({
     trackSettingChanged
   }))
 }))
 
 // Mock the api
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getSettings: vi.fn(),
     storeSetting: vi.fn(),
@@ -29,7 +29,7 @@ vi.mock('@/scripts/api', () => ({
 }))
 
 // Mock the app
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     ui: {
       settings: {
@@ -313,6 +313,24 @@ describe('useSettingStore', () => {
       // No installed version, should use backward compatibility
       expect(result).toBe('regular-default')
     })
+
+    it.for([false, 0, ''])(
+      'should return a falsy versioned default (%j)',
+      (falsy) => {
+        const setting: SettingParams = {
+          id: 'test.setting',
+          name: 'Test Setting',
+          type: 'text',
+          defaultValue: 'regular-default',
+          defaultsByInstallVersion: {
+            '1.21.3': falsy
+          }
+        }
+        store.addSetting(setting)
+
+        expect(store.getDefaultValue('test.setting')).toBe(falsy)
+      }
+    )
 
     it('should handle function-based versioned defaults', () => {
       const setting: SettingParams = {

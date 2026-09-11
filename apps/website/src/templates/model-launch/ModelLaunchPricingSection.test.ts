@@ -6,10 +6,8 @@ import { minimaxPage } from '../../data/minimax'
 import ModelLaunchPricingSection from './ModelLaunchPricingSection.vue'
 
 // The live /minimax config, so a refactor of the shared banner cannot quietly
-// change what that page ships. `pricing` is optional on a launch page, so fail
-// loudly here rather than silently testing an empty section.
+// change what that page ships.
 const { pricing } = minimaxPage
-if (!pricing) throw new Error('minimaxPage.pricing is no longer defined')
 
 describe('ModelLaunchPricingSection', () => {
   it('still renders the /minimax banner from its page config', () => {

@@ -1,0 +1,17 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import ModelsCatalogue from '../../components/workshop/ModelsCatalogue.vue'
+import { workshopModels } from '../../config/models-catalogue'
+import { t } from '../../i18n/translations'
+
+---
+
+<BaseLayout
+  title={t('workshop.meta.title')}
+  description={t('workshop.meta.description')}
+  noindex
+>
+  <div class="mx-auto max-w-10xl px-6 py-16 max-sm:py-10 lg:px-8 lg:py-24 lg:short:pt-14">
+    <ModelsCatalogue models={workshopModels} client:load />
+  </div>
+</BaseLayout>

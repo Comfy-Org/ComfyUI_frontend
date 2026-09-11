@@ -70,8 +70,6 @@ export function scanAllMediaCandidates(
   rootGraph: LGraph,
   isCloud: boolean
 ): MissingMediaCandidate[] {
-  if (!rootGraph) return []
-
   const allNodes = collectAllNodes(rootGraph)
   const candidates: MissingMediaCandidate[] = []
 

@@ -26,8 +26,6 @@ export class CurveEditor {
   }
 
   static sampleCurve(f: number, points: Point[]): number | undefined {
-    if (!points) return
-
     for (let i = 0; i < points.length - 1; ++i) {
       const p = points[i]
       const pn = points[i + 1]
@@ -52,7 +50,6 @@ export class CurveEditor {
     inactive = false
   ): void {
     const points = this.points
-    if (!points) return
 
     this.size = size
     const w = size[0] - this.margin * 2
@@ -94,7 +91,6 @@ export class CurveEditor {
   // localpos is mouse in curve editor space
   onMouseDown(localpos: Point, graphcanvas: LGraphCanvas): boolean | undefined {
     const points = this.points
-    if (!points) return
     if (localpos[1] < 0) return
 
     // this.captureInput(true);
@@ -125,7 +121,6 @@ export class CurveEditor {
 
   onMouseMove(localpos: Point, graphcanvas: LGraphCanvas): void {
     const points = this.points
-    if (!points) return
 
     const s = this.selected
     if (s < 0) return
@@ -143,29 +138,26 @@ export class CurveEditor {
     const max_dist = 30 / graphcanvas.ds.scale
     this._nearest = this.getCloserPoint(curvepos, max_dist)
     const point = points[s]
-    if (point) {
-      const is_edge_point = s == 0 || s == points.length - 1
-      if (
-        !is_edge_point &&
-        (localpos[0] < -10 ||
-          localpos[0] > this.size[0] + 10 ||
-          localpos[1] < -10 ||
-          localpos[1] > this.size[1] + 10)
-      ) {
-        points.splice(s, 1)
-        this.selected = -1
-        return
-      }
-      // not edges
-      if (!is_edge_point) point[0] = clamp(x, 0, 1)
-      else point[0] = s == 0 ? 0 : 1
-      point[1] = 1.0 - clamp(y, 0, 1)
-      points.sort(function (a, b) {
-        return a[0] - b[0]
-      })
-      this.selected = points.indexOf(point)
-      this.must_update = true
+    const is_edge_point = s == 0 || s == points.length - 1
+    if (
+      !is_edge_point &&
+      (localpos[0] < -10 ||
+        localpos[0] > this.size[0] + 10 ||
+        localpos[1] < -10 ||
+        localpos[1] > this.size[1] + 10)
+    ) {
+      points.splice(s, 1)
+      this.selected = -1
+      return
     }
+    if (!is_edge_point) point[0] = clamp(x, 0, 1)
+    else point[0] = s == 0 ? 0 : 1
+    point[1] = 1.0 - clamp(y, 0, 1)
+    points.sort(function (a, b) {
+      return a[0] - b[0]
+    })
+    this.selected = points.indexOf(point)
+    this.must_update = true
   }
 
   // Former params: localpos, graphcanvas
@@ -176,7 +168,6 @@ export class CurveEditor {
 
   getCloserPoint(pos: Point, max_dist: number): number {
     const points = this.points
-    if (!points) return -1
 
     max_dist = max_dist || 30
     if (this.size == null) {

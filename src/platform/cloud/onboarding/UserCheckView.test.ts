@@ -4,11 +4,11 @@ import { createI18n } from 'vue-i18n'
 
 import UserCheckView from './UserCheckView.vue'
 
-vi.mock('vue-router', () => ({
+vi.mock<unknown>(import('vue-router'), () => ({
   useRouter: () => ({ replace: vi.fn() })
 }))
 
-vi.mock('@/composables/useErrorHandling', () => ({
+vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({
     wrapWithErrorHandlingAsync:
       <T extends (...args: never[]) => unknown>(fn: T) =>
@@ -17,13 +17,13 @@ vi.mock('@/composables/useErrorHandling', () => ({
   })
 }))
 
-vi.mock('@/composables/useFeatureFlags', () => ({
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
     flags: { onboardingSurveyEnabled: true }
   })
 }))
 
-vi.mock('@/platform/cloud/onboarding/auth', () => ({
+vi.mock(import('@/platform/cloud/onboarding/auth'), () => ({
   getUserCloudStatus: () => new Promise(() => {}),
   getSurveyCompletedStatus: () => new Promise(() => {})
 }))

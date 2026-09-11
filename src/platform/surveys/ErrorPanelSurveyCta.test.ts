@@ -2,14 +2,17 @@ import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 const FEATURE_USAGE_KEY = 'Comfy.FeatureUsage'
 const SURVEY_STATE_KEY = 'Comfy.SurveyState'
 const FEATURE_ID = 'error-panel'
 const PRESENTATION_INLINE_CTA = 'inline-cta'
 const CTA_TEST_ID = 'error-panel-survey-cta'
-const CTA_BUTTON_NAME = /errorPanelSurvey.ctaButton/
-const CLOSE_BUTTON_NAME = 'g.close'
+const CTA_BUTTON_NAME = /give feedback/i
+const CLOSE_BUTTON_NAME = 'Close'
 
 const mockIsNightly = vi.hoisted(() => ({ value: true }))
 const mockIsCloud = vi.hoisted(() => ({ value: false }))
@@ -30,8 +33,13 @@ const mockSurveyConfig = vi.hoisted(() => ({
     | undefined
 }))
 const mockOpen = vi.hoisted(() => vi.fn())
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: enMessages }
+})
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isNightly() {
     return mockIsNightly.value
   },
@@ -43,24 +51,18 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
-vi.mock('./surveyRegistry', () => ({
+vi.mock<unknown>(import('./surveyRegistry'), () => ({
   getSurveyConfig: (id: string) =>
     id === FEATURE_ID ? mockSurveyConfig.value : undefined
 }))
 
-vi.mock('./useErrorSurveyPopoverState', () => ({
+vi.mock(import('./useErrorSurveyPopoverState'), () => ({
   useErrorSurveyPopoverState: () => ({
     isPopoverOpen: ref(false),
     hasOpenedOnce: ref(false),
     open: mockOpen,
     close: vi.fn()
   })
-}))
-
-vi.mock('vue-i18n', () => ({
-  useI18n: vi.fn(() => ({
-    t: (key: string) => key
-  }))
 }))
 
 describe('ErrorPanelSurveyCta', () => {
@@ -98,7 +100,9 @@ describe('ErrorPanelSurveyCta', () => {
   async function renderComponent() {
     const { default: ErrorPanelSurveyCta } =
       await import('./ErrorPanelSurveyCta.vue')
-    return render(ErrorPanelSurveyCta)
+    return render(ErrorPanelSurveyCta, {
+      global: { plugins: [i18n] }
+    })
   }
 
   it('does not render CTA below threshold', async () => {

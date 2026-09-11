@@ -23,7 +23,7 @@ export function trackUserManualRefresh(): void {
   const [navigationEntry] = performance.getEntriesByType(
     'navigation'
   ) as PerformanceNavigationTiming[]
-  if (navigationEntry?.type !== 'reload') return
+  if (navigationEntry.type !== 'reload') return
 
   const sessionId = datadogRum.getInternalContext()?.session_id
   if (!sessionId) return

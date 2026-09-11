@@ -1,5 +1,8 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { NodeId } from '@/types/nodeId'
+import type { LinkPresentation } from '@/types/linkPresentation'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
@@ -48,6 +51,7 @@ export abstract class MovingLinkBase implements RenderLink {
   readonly inputSlot: INodeInputSlot
   readonly inputIndex: number
   readonly inputPos: Point
+  protected readonly presentation: Readonly<LinkPresentation> | undefined
 
   constructor(
     readonly network: LinkNetwork,
@@ -100,6 +104,10 @@ export abstract class MovingLinkBase implements RenderLink {
     this.inputSlot = inputSlot
     this.inputIndex = inputIndex
     this.inputPos = inputNode.getInputPos(inputIndex)
+    const graph = inputNode.graph
+    this.presentation = graph
+      ? useLinkPresentationStore().getPresentation(graphScopeOf(graph), link.id)
+      : undefined
   }
 
   abstract canConnectToInput(

@@ -76,11 +76,11 @@ const dontExamples = [
       <div class="bg-transparency-white-t4 flex flex-col gap-4 rounded-4xl p-8">
         <div class="flex items-center gap-2">
           <span
-            class="bg-primary-warm-gray size-2.5 rounded-full"
+            class="size-2.5 rounded-full bg-primary-warm-gray"
             aria-hidden="true"
           />
           <span
-            class="text-primary-warm-gray text-sm font-bold tracking-wider uppercase"
+            class="text-sm font-bold tracking-wider text-primary-warm-gray uppercase"
           >
             {{ t('brand.voice.dontLabel', locale) }}
           </span>
@@ -90,7 +90,7 @@ const dontExamples = [
           :key="example"
           class="bg-transparency-ink-t80 rounded-2xl p-5"
         >
-          <p class="text-primary-warm-gray text-base/[1.45] line-through">
+          <p class="text-base/[1.45] text-primary-warm-gray line-through">
             {{ example }}
           </p>
         </div>

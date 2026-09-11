@@ -161,6 +161,7 @@ watch(
       <span
         v-for="cell in visualCells"
         :key="cell.id"
+        data-testid="heatmap-cell"
         class="aspect-square rounded-[2px]"
         :style="{ backgroundColor: cell.color }"
       />

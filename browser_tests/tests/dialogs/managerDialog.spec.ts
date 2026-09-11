@@ -2,7 +2,10 @@ import { expect } from '@playwright/test'
 
 import type { AlgoliaNodePack } from '@/types/algoliaTypes'
 import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
-import type { components as RegistryComponents } from '@comfyorg/registry-types'
+import type {
+  components as RegistryComponents,
+  operations as RegistryOperations
+} from '@comfyorg/registry-types'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
@@ -234,6 +237,26 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
     )
 
     await comfyPage.page.route(
+      'https://api.comfy.org/bulk/nodes/versions',
+      (route) =>
+        route.fulfill({
+          json: {
+            node_versions: []
+          } satisfies RegistryComponents['schemas']['BulkNodeVersionsResponse']
+        })
+    )
+    await comfyPage.page.route(
+      'https://api.comfy.org/nodes/test-pack-a/versions/1.0.0/comfy-nodes**',
+      (route) =>
+        route.fulfill({
+          json: {
+            comfy_nodes: [],
+            totalNumberOfPages: 0
+          } satisfies RegistryOperations['ListComfyNodes']['responses'][200]['content']['application/json']
+        })
+    )
+
+    await comfyPage.page.route(
       '**/v2/customnode/getmappings**',
       async (route) => {
         await route.fulfill({ json: {} })
@@ -247,6 +270,7 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
       }
     )
 
+    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
 
     // Seed manager-ready server feature flags AFTER setup so the WebSocket

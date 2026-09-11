@@ -50,7 +50,21 @@ describe('assert', () => {
     setAssertReporter(reporter)
     assert(false, 'reporter message')
     expect(reporter).toHaveBeenCalledWith(
-      '[Assertion failed]: reporter message'
+      '[Assertion failed]: reporter message',
+      undefined
+    )
+  })
+
+  it('forwards structured context without adding it to the message', () => {
+    vi.stubEnv('DEV', false)
+    const reporter = vi.fn()
+    setAssertReporter(reporter)
+
+    assert(false, 'tracker is inactive', { workflowPath: 'a/b.json' })
+
+    expect(reporter).toHaveBeenCalledWith(
+      '[Assertion failed]: tracker is inactive',
+      { workflowPath: 'a/b.json' }
     )
   })
 

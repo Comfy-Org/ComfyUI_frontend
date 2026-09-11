@@ -31,6 +31,10 @@ interface AppliedSetting<TValue> {
   newValue: TValue
 }
 
+function resolveDefaultValue<T>(value: T | (() => T)): T {
+  return typeof value === 'function' ? (value as () => T)() : value
+}
+
 function tryMigrateDeprecatedValue(
   setting: SettingParams | undefined,
   value: unknown
@@ -162,7 +166,7 @@ export const useSettingStore = defineStore('setting', () => {
    * @param key - The key of the setting to check.
    * @returns Whether the setting exists.
    */
-  function exists<K extends keyof Settings>(key: K) {
+  function exists(key: keyof Settings) {
     return settingValues.value[key] !== undefined
   }
 
@@ -226,10 +230,7 @@ export const useSettingStore = defineStore('setting', () => {
     const telemetryEvents: SettingChangedMetadata[] = []
 
     for (const key of Object.keys(settings) as (keyof Settings)[]) {
-      const applied = await applySettingLocally(
-        key,
-        settings[key] as Settings[typeof key]
-      )
+      const applied = await applySettingLocally(key, settings[key])
       if (applied !== undefined) {
         updatedSettings[key] = applied.newValue
         const event = settingChangedEvent(settingsById.value[key], key, applied)
@@ -283,14 +284,7 @@ export const useSettingStore = defineStore('setting', () => {
 
     const versionedDefault = getVersionedDefaultValue(key, param)
 
-    if (versionedDefault) {
-      return versionedDefault
-    }
-
-    const defaultValue = param.defaultValue
-    return typeof defaultValue === 'function'
-      ? (defaultValue as () => Settings[K])()
-      : defaultValue
+    return versionedDefault ?? resolveDefaultValue(param.defaultValue)
   }
 
   function getVersionedDefaultValue<
@@ -336,9 +330,6 @@ export const useSettingStore = defineStore('setting', () => {
    * @param setting - The setting to register.
    */
   function addSetting(setting: SettingParams) {
-    if (!setting.id) {
-      throw new Error('Settings must have an ID')
-    }
     if (setting.id in settingsById.value) {
       // Setting already registered - skip to allow component remounting
       // TODO: Add store reset methods to bootstrapStore and settingStore, then
@@ -402,7 +393,7 @@ export const useSettingStore = defineStore('setting', () => {
       settingValues.value[oldKey] !== undefined &&
       settingValues.value[newKey] === undefined
     ) {
-      const oldValue = settingValues.value[oldKey] as number
+      const oldValue = settingValues.value[oldKey]
 
       // Convert zoom threshold to equivalent font size to preserve exact behavior
       // The threshold formula is: threshold = font_size / (14 * sqrt(DPR))

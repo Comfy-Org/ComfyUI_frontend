@@ -72,7 +72,7 @@ export function useSelectionToolboxPosition(
 
   // Unified dragging state - combines both LiteGraph and Vue node dragging
   const isDragging = computed((): boolean => {
-    const litegraphDragging = canvasStore.canvas?.state?.draggingItems ?? false
+    const litegraphDragging = canvasStore.canvas?.state.draggingItems ?? false
     const vueNodeDragging =
       shouldRenderVueNodes.value && layoutStore.isDraggingVueNodes.value
     return litegraphDragging || vueNodeDragging
@@ -100,9 +100,6 @@ export function useSelectionToolboxPosition(
     // Get bounds for all selected items
     const allBounds: ReadOnlyRect[] = []
     for (const item of selectableItems) {
-      // Skip items without valid IDs
-      if (item.id == null) continue
-
       if (item instanceof LGraphNode || item instanceof LGraphGroup) {
         allBounds.push(getSelectionBounds(item))
       }
@@ -175,7 +172,7 @@ export function useSelectionToolboxPosition(
     (v) => {
       if (v) {
         moreOptionsSelectionSignature = buildSelectionSignature(canvasStore)
-      } else if (!canvasStore.canvas?.state?.draggingItems) {
+      } else if (!canvasStore.canvas?.state.draggingItems) {
         moreOptionsSelectionSignature = null
         if (moreOptionsRestorePending.value)
           moreOptionsRestorePending.value = false

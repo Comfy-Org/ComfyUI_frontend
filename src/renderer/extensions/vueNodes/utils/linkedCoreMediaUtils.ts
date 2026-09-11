@@ -39,11 +39,10 @@ function isMediaLoaderSelectorLinked(
   nodeClass: LinkedCoreMediaLoaderClass
 ): boolean {
   const { selectorName } = LINKED_CORE_MEDIA_LOADERS[nodeClass]
-  const selectorSlotIndex =
-    node.inputs?.findIndex(
-      (input) =>
-        input.widget?.name === selectorName || input.name === selectorName
-    ) ?? -1
+  const selectorSlotIndex = node.inputs.findIndex(
+    (input) =>
+      input.widget?.name === selectorName || input.name === selectorName
+  )
   return selectorSlotIndex >= 0 && node.isInputConnected(selectorSlotIndex)
 }
 

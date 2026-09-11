@@ -80,7 +80,7 @@ test.describe('Errors tab - Missing media', { tag: '@ui' }, () => {
 
       const offsetBefore = await comfyPage.page.evaluate(() => {
         const canvas = window['app']?.canvas
-        return canvas?.ds?.offset
+        return canvas?.ds.offset
           ? [canvas.ds.offset[0], canvas.ds.offset[1]]
           : null
       })
@@ -93,7 +93,7 @@ test.describe('Errors tab - Missing media', { tag: '@ui' }, () => {
         .poll(async () => {
           return await comfyPage.page.evaluate(() => {
             const canvas = window['app']?.canvas
-            return canvas?.ds?.offset
+            return canvas?.ds.offset
               ? [canvas.ds.offset[0], canvas.ds.offset[1]]
               : null
           })
@@ -113,7 +113,7 @@ test.describe('Errors tab - Missing media', { tag: '@ui' }, () => {
 
       const offsetBefore = await comfyPage.page.evaluate(() => {
         const canvas = window['app']?.canvas
-        return canvas?.ds?.offset
+        return canvas?.ds.offset
           ? [canvas.ds.offset[0], canvas.ds.offset[1]]
           : null
       })
@@ -128,7 +128,7 @@ test.describe('Errors tab - Missing media', { tag: '@ui' }, () => {
         .poll(async () => {
           return await comfyPage.page.evaluate(() => {
             const canvas = window['app']?.canvas
-            return canvas?.ds?.offset
+            return canvas?.ds.offset
               ? [canvas.ds.offset[0], canvas.ds.offset[1]]
               : null
           })

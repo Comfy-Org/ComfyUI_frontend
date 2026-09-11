@@ -202,9 +202,34 @@ const DEV_SEVER_FALLBACK_URL =
 
 const DEV_SERVER_COMFYUI_URL =
   DEV_SERVER_COMFYUI_ENV_URL || DEV_SEVER_FALLBACK_URL
+const DEV_AGENT_URL = process.env.DEV_AGENT_URL
+const DEV_AGENT_SESSION_TOKEN = process.env.DEV_AGENT_SESSION_TOKEN
+
+if (Boolean(DEV_AGENT_URL) !== Boolean(DEV_AGENT_SESSION_TOKEN)) {
+  throw new Error(
+    'DEV_AGENT_URL and DEV_AGENT_SESSION_TOKEN must be configured together.'
+  )
+}
+
+if (process.env.VITE_AGENT_STANDALONE === 'true' && !DEV_AGENT_URL) {
+  throw new Error(
+    'VITE_AGENT_STANDALONE requires DEV_AGENT_URL and DEV_AGENT_SESSION_TOKEN; start via scripts/dev-agent-integration.ts.'
+  )
+}
 
 const cloudProxyConfig =
   DISTRIBUTION === 'cloud' ? { secure: false, changeOrigin: true } : {}
+
+// The agent proxy adds the session token, so only the dev server's own pages may use it.
+function isCrossOrigin(req: IncomingMessage): boolean {
+  const origin = req.headers.origin
+  if (origin === undefined) return false
+  try {
+    return new URL(origin).host !== req.headers.host
+  } catch {
+    return true
+  }
+}
 
 function handleGcsRedirect(
   proxyRes: IncomingMessage,
@@ -321,6 +346,30 @@ export default defineConfig({
         ? {
             '/api/view': gcsRedirectProxyConfig,
             '/api/viewvideo': gcsRedirectProxyConfig
+          }
+        : {}),
+
+      ...(DEV_AGENT_URL && DEV_AGENT_SESSION_TOKEN
+        ? {
+            '/api/agent': {
+              target: DEV_AGENT_URL,
+              ws: true,
+              headers: {
+                Authorization: `Bearer ${DEV_AGENT_SESSION_TOKEN}`
+              },
+              rewrite: (path: string) => path.replace(/^\/api/, ''),
+              configure: (proxy) => {
+                proxy.on('proxyReqWs', (_proxyReq, req, socket) => {
+                  if (isCrossOrigin(req)) socket.destroy()
+                })
+              },
+              bypass: (req, res) => {
+                if (!res || !isCrossOrigin(req)) return null
+                res.statusCode = 403
+                res.end('The agent proxy serves the dev server origin only')
+                return false
+              }
+            }
           }
         : {}),
 
@@ -801,6 +850,8 @@ export default defineConfig({
 
   resolve: {
     alias: {
+      '@/base/credits/comfyCredits':
+        '/packages/shared-frontend-utils/src/creditsUtil.ts',
       '@/utils/formatUtil': '/packages/shared-frontend-utils/src/formatUtil.ts',
       '@/utils/networkUtil':
         '/packages/shared-frontend-utils/src/networkUtil.ts',
@@ -847,7 +898,8 @@ export default defineConfig({
       'packages/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
       'scripts/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
       'browser_tests/**/*.test.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
-      'tools/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
+      'tools/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+      'build/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
     ],
     coverage: {
       provider: 'v8',

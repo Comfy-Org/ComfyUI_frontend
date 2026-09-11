@@ -8,6 +8,7 @@ import CopyableField from '../../components/ui/copyable-field/CopyableField.vue'
 import { externalLinks, getRoutes } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import type { CliClientId } from '../../scripts/posthog'
 import {
   captureCliClientTabClick,
   captureCliConnectionTabClick
@@ -34,7 +35,7 @@ interface CliClient {
   shell?: ShellCard
 }
 
-const clients: Record<string, CliClient> = {
+const clients: Record<CliClientId, CliClient> = {
   'claude-code': { name: 'Claude Code', kind: 'agent' },
   codex: { name: 'Codex', kind: 'agent' },
   cursor: { name: 'Cursor', kind: 'agent' },
@@ -115,7 +116,7 @@ const connections: Record<ConnectionId, CliConnection> = {
 const DEFAULT_CLIENT_ID = 'claude-code'
 
 const activeConnectionId = ref<ConnectionId>('cloud')
-const activeClientIds = ref<Record<ConnectionId, string>>({
+const activeClientIds = ref<Record<ConnectionId, CliClientId>>({
   cloud: DEFAULT_CLIENT_ID,
   local: DEFAULT_CLIENT_ID
 })
@@ -138,25 +139,33 @@ function agentDescriptionFor(connId: ConnectionId): string {
   )
 }
 
-// reka-ui re-emits update:modelValue even when the value is unchanged
-// (re-clicking the active tab), so dedupe before capturing.
-let lastTrackedConnectionId: string | undefined
-function onConnectionTabChange(value: string | number | undefined) {
-  if (!value) return
-  const id = String(value)
-  if (id === lastTrackedConnectionId) return
-  lastTrackedConnectionId = id
-  captureCliConnectionTabClick(id)
+function isConnectionId(value: unknown): value is ConnectionId {
+  return typeof value === 'string' && Object.hasOwn(connections, value)
 }
 
-let lastTrackedClientKey: string | undefined
-function onClientTabChange(connId: string, value: string | number | undefined) {
-  if (!value) return
-  const id = String(value)
-  const key = `${connId}:${id}`
+function isCliClientId(value: unknown): value is CliClientId {
+  return typeof value === 'string' && Object.hasOwn(clients, value)
+}
+
+// reka-ui re-emits update:modelValue even when the value is unchanged
+// (re-clicking the active tab), so dedupe before capturing.
+let lastTrackedConnectionId: ConnectionId | undefined
+function onConnectionTabChange(value: string | number | undefined) {
+  if (!isConnectionId(value) || value === lastTrackedConnectionId) return
+  lastTrackedConnectionId = value
+  captureCliConnectionTabClick(value)
+}
+
+let lastTrackedClientKey: `${ConnectionId}:${CliClientId}` | undefined
+function onClientTabChange(
+  connId: ConnectionId,
+  value: string | number | undefined
+) {
+  if (!isCliClientId(value)) return
+  const key = `${connId}:${value}` as const
   if (key === lastTrackedClientKey) return
   lastTrackedClientKey = key
-  captureCliClientTabClick(id)
+  captureCliClientTabClick(value)
 }
 
 const copyLabel = t('ui.copy', locale)

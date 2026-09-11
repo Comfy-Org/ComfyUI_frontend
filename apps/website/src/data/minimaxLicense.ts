@@ -1,4 +1,7 @@
-import type { ModelLaunchPage } from '../templates/model-launch/types'
+import type {
+  ModelLaunchComparison,
+  ModelLaunchPage
+} from '../templates/model-launch/types'
 
 import { minimaxLinks } from './minimax'
 
@@ -14,6 +17,138 @@ const HERO_POSTER_SRC =
 // contact and H3 routes are spelled out rather than taken from baseRoutes.
 const CONTACT_HREF = 'https://comfy.org/contact'
 const MINIMAX_H3_HREF = 'https://comfy.org/minimax-h3'
+const MINIMAX_H3_DESIGN_HREF =
+  'https://design.minimax.io/tools/minimax-h3-comfyui'
+const MINIMAX_H3_LICENSE_REQUEST_HREF = 'https://platform.minimax.io/h3-license'
+
+// Rows and figures come from the tier table supplied for this page
+// (2026-09-02); the pricing numbers live only here, so a deal change means
+// editing this table. /pricing renders these same rows in
+// MinimaxLicensePricingSection, which is why it is a named export.
+export const minimaxLicenseComparison: ModelLaunchComparison = {
+  headingKey: 'minimaxLicense.comparison.heading',
+  columns: [
+    { id: 'professional', label: { en: 'Professional', 'zh-CN': '专业版' } },
+    { id: 'enterprise', label: { en: 'Enterprise', 'zh-CN': '企业版' } }
+  ],
+  rows: [
+    {
+      id: 'price',
+      label: { en: 'Price', 'zh-CN': '价格' },
+      cells: [
+        { en: 'From $5,000 / month', 'zh-CN': '5,000 美元 / 月起' },
+        { en: 'Contact sales', 'zh-CN': '联系销售' }
+      ]
+    },
+    {
+      id: 'video-seconds',
+      label: { en: 'Video-seconds included', 'zh-CN': '包含视频秒数' },
+      cells: [
+        { en: '~46,250', 'zh-CN': '约 46,250' },
+        { en: 'Custom', 'zh-CN': '定制' }
+      ]
+    },
+    {
+      id: 'price-per-video-second',
+      label: {
+        en: 'Price per video-second (in bundle)',
+        'zh-CN': '每视频秒价格（套餐内）'
+      },
+      cells: [
+        { en: '$0.108', 'zh-CN': '0.108 美元' },
+        { en: 'Contact sales', 'zh-CN': '联系销售' }
+      ]
+    },
+    {
+      id: 'overage',
+      label: {
+        en: 'Overage per video-second',
+        'zh-CN': '超出部分每视频秒价格'
+      },
+      cells: [
+        { en: '$0.036', 'zh-CN': '0.036 美元' },
+        { en: 'Contact sales', 'zh-CN': '联系销售' }
+      ]
+    },
+    {
+      id: 'licensed-users',
+      label: { en: 'Licensed users', 'zh-CN': '授权用户' },
+      cells: [
+        { en: 'Up to 10', 'zh-CN': '最多 10 个' },
+        { en: 'No cap', 'zh-CN': '不设上限' }
+      ]
+    },
+    {
+      id: 'domains',
+      label: { en: 'Domains', 'zh-CN': '域名数量' },
+      cells: [
+        { en: '1', 'zh-CN': '1 个' },
+        { en: 'Custom', 'zh-CN': '定制' }
+      ]
+    },
+    {
+      id: 'commercial-use',
+      label: {
+        en: 'Commercial use of outputs',
+        'zh-CN': '产出的商业使用'
+      },
+      cells: [
+        {
+          en: 'Yes, full commercial rights',
+          'zh-CN': '是，完整商业权利'
+        },
+        {
+          en: 'Yes, full commercial rights',
+          'zh-CN': '是，完整商业权利'
+        }
+      ]
+    },
+    {
+      id: 'fine-tuning',
+      label: {
+        en: 'Fine-tuning and LoRA training',
+        'zh-CN': '微调与 LoRA 训练'
+      },
+      cells: [
+        { en: 'Yes', 'zh-CN': '是' },
+        { en: 'Yes', 'zh-CN': '是' }
+      ]
+    },
+    {
+      id: 'client-work',
+      label: {
+        en: 'Client and downstream work',
+        'zh-CN': '客户与下游项目'
+      },
+      cells: [
+        { en: 'Yes', 'zh-CN': '是' },
+        { en: 'Yes', 'zh-CN': '是' }
+      ]
+    },
+    {
+      id: 'model-versions',
+      label: { en: 'Model versions', 'zh-CN': '模型版本' },
+      cells: [
+        {
+          en: 'Distilled open-weight versions',
+          'zh-CN': '蒸馏开源权重版本'
+        },
+        {
+          en: 'Every version, undistilled weights included',
+          'zh-CN': '所有版本，包括未蒸馏权重'
+        }
+      ]
+    },
+    {
+      id: 'term',
+      label: { en: 'Term', 'zh-CN': '期限' },
+      cells: [
+        { en: 'Monthly', 'zh-CN': '按月' },
+        { en: '12-month minimum', 'zh-CN': '至少 12 个月' }
+      ]
+    }
+  ]
+}
 
 export const minimaxLicensePage: ModelLaunchPage = {
   metaTitleKey: 'minimaxLicense.meta.title',
@@ -42,7 +177,7 @@ export const minimaxLicensePage: ModelLaunchPage = {
       'minimaxLicense.hero.tagGlobal'
     ]
   },
-  sectionOrder: ['steps', 'faq', 'closingCta'],
+  sectionOrder: ['steps', 'comparison', 'faq', 'closingCta'],
   steps: {
     headingKey: 'minimaxLicense.steps.heading',
     stepLabelKey: 'minimaxLicense.steps.step',
@@ -68,13 +203,13 @@ export const minimaxLicensePage: ModelLaunchPage = {
         id: 'enterprise',
         title: { en: 'Enterprise', 'zh-CN': '企业版' },
         description: {
-          en: 'An annual agreement for teams building MiniMax into their product. Custom volume pricing, no user cap, and every model version, undistilled weights included.',
-          'zh-CN':
-            '面向将 MiniMax 构建进自家产品的团队的年度协议。定制批量定价，不限用户数，涵盖所有模型版本，包括未蒸馏权重。'
+          en: `An annual agreement for teams building [MiniMax](${MINIMAX_H3_DESIGN_HREF}) into their product. Custom volume pricing, no user cap, and every model version, undistilled weights included.`,
+          'zh-CN': `面向将 [MiniMax](${MINIMAX_H3_DESIGN_HREF}) 构建进自家产品的团队的年度协议。定制批量定价，不限用户数，涵盖所有模型版本，包括未蒸馏权重。`
         }
       }
     ]
   },
+  comparison: minimaxLicenseComparison,
   // Open-weight successor models roll into an active license per the deal, but
   // that line stays OFF the page until the contract's "qualifying" language is
   // tightened (Kevin, 08-27) — stick to what's covered today.
@@ -88,9 +223,8 @@ export const minimaxLicensePage: ModelLaunchPage = {
           'zh-CN': '谁需要 MiniMax H3 商业许可？'
         },
         answer: {
-          en: 'Anyone running MiniMax models locally for commercial work: business use, client work, or products you ship. Open weights let anyone download the models and start creating; the license is what makes commercial use of your local outputs legal.',
-          'zh-CN':
-            '任何在本地运行 MiniMax 模型进行商业创作的人：商业用途、客户项目，或你要发布的产品。开源权重让任何人都能下载模型开始创作；许可让你本地产出的商业使用合法合规。'
+          en: `The H3 Community License generally permits commercial use, provided your commercial products and services generate no more than $20 million in yearly revenue and you comply with its other terms. Businesses above that threshold must obtain separate written authorization from MiniMax.\n\nYou need to explicitly acquire a MiniMax H3 commercial license if you want to use MiniMax H3 in the United States, European Union, United Kingdom, or South Korea, which are excluded from the H3 Community License. You can acquire them here: ${MINIMAX_H3_LICENSE_REQUEST_HREF}`,
+          'zh-CN': `H3 社区许可通常允许商业使用，前提是你的商业产品和服务年收入不超过 2000 万美元，并且你遵守其他条款。超过该门槛的企业必须另行获得 MiniMax 的书面授权。\n\n如果你想在美国、欧盟、英国或韩国使用 MiniMax H3，则需要明确获取 MiniMax H3 商业许可，这些地区不在 H3 社区许可的覆盖范围内。你可以在此获取：${MINIMAX_H3_LICENSE_REQUEST_HREF}`
         }
       },
       {
@@ -127,6 +261,18 @@ export const minimaxLicensePage: ModelLaunchPage = {
           en: 'Professional is a fixed-price monthly license for studios and teams shipping client work, with up to 10 licensed users on distilled open-weight model versions. Enterprise is an annual agreement with custom volume pricing, no user cap, and every model version, undistilled weights included. Request a license and we will help you pick.',
           'zh-CN':
             '专业版是面向交付客户项目的工作室和团队的固定价格月度许可，最多 10 个授权用户，使用蒸馏开源权重模型版本。企业版是年度协议，提供定制批量定价，不限用户数，涵盖包括未蒸馏权重在内的所有模型版本。申请许可，我们会帮你选择。'
+        }
+      },
+      {
+        id: 'pricing-parity',
+        question: {
+          en: 'Is the Commercial License more expensive through Comfy?',
+          'zh-CN': '通过 Comfy 购买商业许可会更贵吗？'
+        },
+        answer: {
+          en: 'No. **MiniMax requires pricing parity across its Commercial License resellers**, so purchasing the license through Comfy does not come with a reseller markup or a higher license price compared with other authorized channels.',
+          'zh-CN':
+            '不会。**MiniMax 要求其商业许可经销商之间保持价格一致**，因此通过 Comfy 购买许可不会产生经销商加价，价格也不会高于其他授权渠道。'
         }
       },
       {

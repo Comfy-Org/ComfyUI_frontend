@@ -1,5 +1,4 @@
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useSelectionOperations } from '@/composables/graph/useSelectionOperations'
 import { app } from '@/scripts/app'
@@ -10,11 +9,11 @@ import { app } from '@/scripts/app'
  * site rather than inside litegraph, so that vendored library stays untouched;
  * the trade-off is that a new editing path has to opt in.
  */
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { canvas: undefined as unknown }
 }))
 
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({ prompt: vi.fn() })
 }))
 
@@ -31,10 +30,6 @@ function stubCanvas(selectOnly: boolean) {
 }
 
 describe('useSelectionOperations delete guard', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
   it('does not delete while the canvas is picking-only', () => {
     const { deleteSelected } = stubCanvas(true)
 

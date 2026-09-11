@@ -32,7 +32,7 @@ const uploadFile = async (
   const resp = await api.fetchApi('/upload/image', {
     method: 'POST',
     body,
-    signal: AbortSignal.timeout(UPLOAD_TIMEOUT_MS)
+    timeoutMs: UPLOAD_TIMEOUT_MS
   })
 
   if (resp.status !== 200) {

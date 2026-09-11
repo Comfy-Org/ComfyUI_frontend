@@ -20,10 +20,10 @@ test.describe(
       const { baseline, interiorLinkCount, promotedText } =
         await test.step('Capture the initial promoted subgraph state', async () => {
           const baseline = await comfyPage.page.evaluate(() =>
-            window.app!.graph!.serialize()
+            window.app!.graph.serialize()
           )
           const interiorLinkCount = await comfyPage.page.evaluate((id) => {
-            const host = window.app!.graph!.getNodeById(id)
+            const host = window.app!.graph.getNodeById(id)
             if (!host?.isSubgraphNode()) {
               throw new Error(`Host node ${id} is not a SubgraphNode`)
             }
@@ -53,7 +53,7 @@ test.describe(
         await expect(promotedText).toBeVisible()
         await expect
           .poll(() =>
-            comfyPage.page.evaluate(() => window.app!.graph!.serialize())
+            comfyPage.page.evaluate(() => window.app!.graph.serialize())
           )
           .toEqual(baseline)
 

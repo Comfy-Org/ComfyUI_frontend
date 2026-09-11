@@ -14,7 +14,7 @@ import {
   resolveFollowerEnabled
 } from './followerGate'
 
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
 

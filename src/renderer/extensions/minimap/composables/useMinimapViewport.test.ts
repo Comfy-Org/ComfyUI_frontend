@@ -12,17 +12,12 @@ import {
 import { useMinimapViewport } from '@/renderer/extensions/minimap/composables/useMinimapViewport'
 import type { MinimapCanvas } from '@/renderer/extensions/minimap/types'
 
-vi.mock('@vueuse/core')
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: vi.fn()
+vi.mock(import('@vueuse/core'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  useRafFn: vi.fn()
 }))
 
-vi.mock('@/stores/executionStore', () => ({
-  useExecutionStore: vi.fn(() => ({
-    nodeLocationProgressStates: {}
-  }))
-}))
-vi.mock('@/renderer/core/spatial/boundsCalculator', () => ({
+vi.mock(import('@/renderer/core/spatial/boundsCalculator'), () => ({
   calculateNodeBounds: vi.fn(),
   calculateMinimapScale: vi.fn(),
   enforceMinimumBounds: vi.fn()

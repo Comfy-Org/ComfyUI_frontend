@@ -8,13 +8,14 @@
     :data-testid="`subgraph-breadcrumb-item-${item.key}`"
     :data-active="isActive ? '' : undefined"
     draggable="false"
-    class="p-breadcrumb-item-link h-8 cursor-pointer px-2"
-    :class="{
-      'flex items-center gap-1': isActive,
-      'p-breadcrumb-item-link-menu-visible': menu?.overlayVisible,
-      'p-breadcrumb-item-link-icon-visible': isActive,
-      'active-breadcrumb-item': isActive
-    }"
+    :class="
+      cn('p-breadcrumb-item-link flex h-8 cursor-pointer items-center px-2', {
+        'gap-1': isActive,
+        'p-breadcrumb-item-link-menu-visible': menu?.overlayVisible,
+        'p-breadcrumb-item-link-icon-visible': isActive,
+        'active-breadcrumb-item': isActive
+      })
+    "
     @click="handleClick"
   >
     <i
@@ -60,6 +61,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import InputText from 'primevue/inputtext'
 import type { MenuState } from 'primevue/menu'
 import Menu from 'primevue/menu'

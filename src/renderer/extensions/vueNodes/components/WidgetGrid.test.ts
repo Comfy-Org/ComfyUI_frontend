@@ -17,10 +17,11 @@ const WidgetStub = markRaw(
 const InputSlotStub = defineComponent({
   props: {
     index: { type: Number, required: true },
-    slotData: { type: Object, required: true }
+    slotData: { type: Object, required: true },
+    standalone: { type: Boolean, default: false }
   },
   template:
-    '<div data-testid="input-slot" :data-index="index" :data-name="slotData.name" />'
+    '<div data-testid="input-slot" :data-index="index" :data-name="slotData.name" :data-standalone="standalone" />'
 })
 
 const AppInputStub = defineComponent({
@@ -75,6 +76,11 @@ describe('WidgetGrid', () => {
     expect(
       screen.getAllByTestId('input-slot').map((element) => element.dataset.name)
     ).toEqual(['seed', 'replacement', 'converted-widget-picker'])
+    expect(
+      screen
+        .getAllByTestId('input-slot')
+        .map((element) => element.dataset.standalone)
+    ).toEqual(['false', 'false', 'false'])
     expect(screen.getAllByTestId('node-widget')).toHaveLength(2)
     expect(
       screen
@@ -106,5 +112,54 @@ describe('WidgetGrid', () => {
       'true'
     )
     expect(screen.getByTestId('app-input')).not.toHaveAttribute('aria-invalid')
+  })
+
+  it('renders connection-suppressed widgets as input sockets without controls', () => {
+    render(WidgetGrid, {
+      props: {
+        nodeId: toNodeId(1),
+        nodeType: 'TestNode',
+        processedWidgets: [
+          {
+            ...widget('prompt', 'text', 0),
+            visible: false,
+            suppressedByConnection: true
+          },
+          {
+            ...widget('hidden_no_slot', 'text', 1),
+            visible: false,
+            suppressedByConnection: true,
+            slotMetadata: undefined
+          },
+          {
+            ...widget('hidden_by_extension', 'text', 2),
+            visible: false
+          },
+          widget('steps', 'number', 3)
+        ]
+      },
+      global: {
+        directives: { tooltip: {} },
+        stubs: {
+          AppInput: AppInputStub,
+          InputSlot: InputSlotStub
+        }
+      }
+    })
+
+    expect(
+      screen.getAllByTestId('input-slot').map((element) => element.dataset.name)
+    ).toEqual(['prompt', 'steps'])
+    expect(
+      screen
+        .getAllByTestId('input-slot')
+        .map((element) => element.dataset.standalone)
+    ).toEqual(['true', 'false'])
+    expect(screen.getAllByTestId('node-widget')).toHaveLength(1)
+    expect(
+      screen
+        .getAllByTestId('app-input')
+        .map((element) => element.dataset.widgetName)
+    ).toEqual(['steps'])
   })
 })

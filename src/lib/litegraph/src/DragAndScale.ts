@@ -102,10 +102,6 @@ export class DragAndScale {
       copyState(this.state, this.lastState)
     }
 
-    if (!this.element) {
-      visible_area[0] = visible_area[1] = visible_area[2] = visible_area[3] = 0
-      return
-    }
     let { width, height } = this.element
     let startx = -offset[0]
     let starty = -offset[1]
@@ -162,8 +158,6 @@ export class DragAndScale {
     if (value == this.scale) return
 
     const rect = this.element.getBoundingClientRect()
-    if (!rect) return
-
     zooming_center = zooming_center ?? [rect.width * 0.5, rect.height * 0.5]
 
     const normalizedCenter: Point = [
@@ -248,7 +242,7 @@ export class DragAndScale {
       easeOutQuad: (t: number) => t * (2 - t),
       easeInOutQuad: (t: number) => (t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t)
     }
-    const easeFunction = easeFunctions[easing] ?? easeFunctions.linear
+    const easeFunction = easeFunctions[easing]
 
     const startTimestamp = performance.now()
     const cw = this.element.width / window.devicePixelRatio

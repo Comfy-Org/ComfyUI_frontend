@@ -14,7 +14,7 @@ function useVueFeatureFlagsIndividual() {
 
   const shouldRenderVueNodes = computed(() => {
     try {
-      return settingStore.get('Comfy.VueNodes.Enabled') ?? false
+      return settingStore.get('Comfy.VueNodes.Enabled')
     } catch {
       return false
     }

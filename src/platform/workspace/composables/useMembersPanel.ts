@@ -80,13 +80,20 @@ export function sortPendingInvites(
 ): WorkspacePendingInvite[] {
   const field = toInviteSortField(sortField)
   return [...invites].sort((a, b) => {
-    const aDate = a[field]
-    const bDate = b[field]
+    const aDate = getInviteDate(a, field)
+    const bDate = getInviteDate(b, field)
     if (!aDate || !bDate) return 0
     const aValue = aDate.getTime()
     const bValue = bDate.getTime()
     return sortDirection === 'asc' ? aValue - bValue : bValue - aValue
   })
+}
+
+function getInviteDate(
+  invite: WorkspacePendingInvite,
+  field: InviteSortField
+): Date | undefined {
+  return invite[field]
 }
 
 export function useMembersPanel() {

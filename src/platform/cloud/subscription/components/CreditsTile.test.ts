@@ -21,6 +21,7 @@ type CustomerEventsResult = { events: { event_type: string }[] } | null
 const state = vi.hoisted(() => ({
   balance: null as Balance | null,
   subscription: null as Subscription | null,
+  personalIsYearly: false,
   canAccessSubscriptionFeatures: false,
   isFreeTier: false,
   isTeamPlan: false,
@@ -44,7 +45,7 @@ const state = vi.hoisted(() => ({
   toastErrorHandler: vi.fn()
 }))
 
-vi.mock('@/composables/useErrorHandling', () => ({
+vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({
     wrapWithErrorHandlingAsync:
       <TArgs extends unknown[], TReturn>(
@@ -60,7 +61,7 @@ vi.mock('@/composables/useErrorHandling', () => ({
   })
 }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     balance: computed(() => state.balance),
     subscription: computed(() => state.subscription),
@@ -78,27 +79,39 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
-vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
-  useBillingCapabilities: () => ({
-    canTopUp: computed(() => state.canTopUp),
-    canSubscribeSelfServe: computed(() => state.canSubscribeSelfServe)
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingCapabilities'),
+  () => ({
+    useBillingCapabilities: () => ({
+      canTopUp: computed(() => state.canTopUp),
+      canSubscribeSelfServe: computed(() => state.canSubscribeSelfServe)
+    })
   })
-}))
+)
 
-vi.mock(
-  '@/platform/cloud/subscription/composables/useSubscriptionDialog',
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
   () => ({
     useSubscriptionDialog: () => ({ showPricingTable: state.showPricingTable })
   })
 )
 
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useSubscription'),
+  () => ({
+    useSubscription: () => ({
+      isYearlySubscription: computed(() => state.personalIsYearly)
+    })
+  })
+)
+
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({
     showTopUpCreditsDialog: state.showTopUpCreditsDialog
   })
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () =>
     state.telemetryUnavailable
       ? null
@@ -108,7 +121,7 @@ vi.mock('@/platform/telemetry', () => ({
         }
 }))
 
-vi.mock('@/services/customerEventsService', () => ({
+vi.mock<unknown>(import('@/services/customerEventsService'), () => ({
   useCustomerEventsService: () => ({
     getMyEvents: state.getMyEvents,
     error: computed(() => state.customerEventsError)
@@ -116,7 +129,7 @@ vi.mock('@/services/customerEventsService', () => ({
 }))
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }
@@ -132,20 +145,25 @@ const i18n = createI18n({
         remaining: 'remaining',
         refreshCredits: 'Refresh credits',
         monthly: 'Monthly',
+        yearly: 'Yearly',
         refillsDate: 'Refills {date}',
         refillsNextCycle: 'Refills next cycle',
         creditsUsed: '{used} used',
         creditsLeftOfTotal: '{remaining} left of {total}',
         monthlyUsageProgress: '{used} of {total} monthly credits used',
+        yearlyUsageProgress: '{used} of {total} yearly credits used',
         additionalCreditsInfo: 'About additional credits',
         additionalCreditsTooltip: 'Credits you add on top of your plan.',
         additionalCredits: 'Additional credits',
         additionalCreditsInUse: 'In use',
         usedAfterMonthly: 'Used after monthly runs out',
+        usedAfterYearly: 'Used after yearly runs out',
         reactivateToUseCredits: 'Reactivate your plan to use these credits',
         monthlyCreditsUsedUpTitle:
           'Monthly credits are used up. Refills {date}',
+        yearlyCreditsUsedUpTitle: 'Yearly credits are used up. Refills {date}',
         monthlyCreditsUsedUpTitleNoDate: 'Monthly credits are used up',
+        yearlyCreditsUsedUpTitleNoDate: 'Yearly credits are used up',
         monthlyCreditsUsedUpDescription:
           "You're now spending additional credits.",
         outOfCreditsTitle: "You're out of credits. Credits refill {date}",
@@ -205,6 +223,7 @@ describe('CreditsTile', () => {
   beforeEach(() => {
     state.balance = null
     state.subscription = null
+    state.personalIsYearly = false
     state.canAccessSubscriptionFeatures = false
     state.isFreeTier = false
     state.isTeamPlan = false
@@ -237,6 +256,65 @@ describe('CreditsTile', () => {
     expect(container.textContent).toContain('Additional credits')
     expect(container.textContent).toContain('633')
     expect(container.textContent).toContain('Used after monthly runs out')
+  })
+
+  it('renders yearly wording for an annual subscription', () => {
+    activeProSubscription()
+    state.subscription = {
+      tier: 'PRO',
+      duration: 'ANNUAL',
+      renewalDate: '2026-02-20T12:00:00Z'
+    }
+    const { container } = renderTile()
+    expect(container.textContent).toContain('Yearly')
+    expect(container.textContent).not.toContain('Monthly')
+    expect(container.textContent).toContain('Used after yearly runs out')
+    expect(container.textContent).not.toContain('Used after monthly runs out')
+    expect(
+      screen.getByRole('progressbar').getAttribute('aria-valuetext')
+    ).toContain('yearly credits used')
+  })
+
+  it('takes the cycle wording from the workspace plan, not the personal one', () => {
+    state.canAccessSubscriptionFeatures = true
+    state.subscription = {
+      tier: 'TEAM',
+      duration: 'ANNUAL',
+      renewalDate: '2026-02-20T12:00:00Z'
+    }
+    state.currentTeamCreditStop = {
+      id: 'team_700',
+      credits_monthly: 147700,
+      stop_usd: 700
+    }
+    state.balance = { amountMicros: 840000, cloudCreditBalanceMicros: 840000 }
+    state.personalIsYearly = false
+
+    const { container } = renderTile()
+
+    expect(container.textContent).toContain('1,772,400 left of 1,772,400')
+    expect(container.textContent).toContain('Yearly')
+    expect(container.textContent).not.toContain('Monthly')
+    expect(container.textContent).toContain('Used after yearly runs out')
+  })
+
+  it('renders the yearly depletion notice when the annual allowance is used up', () => {
+    activeProSubscription()
+    state.subscription = {
+      tier: 'PRO',
+      duration: 'ANNUAL',
+      renewalDate: '2026-02-20T12:00:00Z'
+    }
+    state.balance = {
+      amountMicros: 300,
+      cloudCreditBalanceMicros: 0,
+      prepaidBalanceMicros: 300
+    }
+    const { container } = renderTile()
+    expect(container.textContent).toContain(
+      'Yearly credits are used up. Refills Feb 20'
+    )
+    expect(container.textContent).not.toContain('Monthly credits are used up')
   })
 
   it('hides the monthly usage bar on Local', () => {

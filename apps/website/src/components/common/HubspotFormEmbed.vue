@@ -17,59 +17,91 @@ const HUBSPOT_SCRIPT_SRC = `https://js-${HUBSPOT_REGION}.hsforms.net/forms/embed
 
 const hasEmbedLoadError = ref(false)
 
+const FIELD_SURFACE = 'var(--color-primary-comfy-ink-light)'
+const FIELD_TEXT = 'var(--color-primary-comfy-canvas)'
+const FIELD_BORDER =
+  'color-mix(in srgb, var(--color-primary-warm-white) 8%, transparent)'
+const FIELD_PLACEHOLDER =
+  'color-mix(in srgb, var(--color-primary-comfy-canvas) 60%, transparent)'
+const FIELD_RADIUS = '16px'
+const FIELD_PADDING = '16px'
+
+/**
+ * Radios and checkboxes are `appearance: none` boxes that HubSpot never gives a
+ * width, so they render at exactly 2 × padding + 2 × border. Left unset they
+ * fall through to `--hsf-field-input__padding` and come out at 34px; 13px puts
+ * them at the 28px the design uses.
+ */
+const CHOICE_PADDING = '13px'
+
 const hubspotFormStyles: Record<`--${string}`, string> = {
-  '--hsf-global__font-family': "'PP Formula', sans-serif",
-  '--hsf-global__color': '#c2bfb9',
-  '--hsf-background__background-color': '#211927',
+  '--hsf-global__font-family': 'var(--font-formula)',
+  '--hsf-global__font-size': '14px',
+  '--hsf-global__color': FIELD_TEXT,
+  '--hsf-global__error-color': 'var(--color-destructive)',
+
+  '--hsf-background__background-color': 'var(--color-primary-comfy-ink)',
   '--hsf-background__border-width': '0',
   '--hsf-background__padding': '0',
-  '--hsf-button__font-family': "'PP Formula', sans-serif",
-  '--hsf-button__font-size': '14px',
-  '--hsf-button__color': '#211927',
-  '--hsf-button__background-color': '#f2ff59',
-  '--hsf-button__border-radius': '16px',
-  '--hsf-button__padding': '10px 24px',
-  '--hsf-richtext__font-family': "'PP Formula', sans-serif",
-  '--hsf-richtext__color': '#c2bfb9',
-  '--hsf-heading__font-family': "'PP Formula', sans-serif",
-  '--hsf-heading__color': '#c2bfb9',
-  '--hsf-field-label__font-family': "'PP Formula', sans-serif",
-  '--hsf-field-label__font-size': '12px',
-  '--hsf-field-label__color': '#c2bfb9',
-  '--hsf-field-description__font-family': "'PP Formula', sans-serif",
-  '--hsf-field-description__color': '#c2bfb9',
-  '--hsf-field-footer__font-family': "'PP Formula', sans-serif",
-  '--hsf-field-footer__color': '#c2bfb9',
-  '--hsf-field-input__font-family': "'PP Formula', sans-serif",
-  '--hsf-field-input__color': '#c2bfb9',
-  '--hsf-field-input__background-color': '#2a2230',
-  '--hsf-field-input__placeholder-color': '#585159',
-  '--hsf-field-input__border-color': '#3b3539',
+
+  '--hsf-row__vertical-spacing': '20px',
+  '--hsf-row__horizontal-spacing': '24px',
+  '--hsf-module__vertical-spacing': '8px',
+
+  '--hsf-heading__color': FIELD_TEXT,
+  '--hsf-richtext__color': FIELD_TEXT,
+  '--hsf-field-label__font-size': '14px',
+  '--hsf-field-label__color': FIELD_TEXT,
+  '--hsf-field-description__font-size': '12px',
+  '--hsf-field-description__color': FIELD_TEXT,
+  '--hsf-field-footer__font-size': '12px',
+  '--hsf-field-footer__color': FIELD_TEXT,
+
+  '--hsf-field-input__color': FIELD_TEXT,
+  '--hsf-field-input__background-color': FIELD_SURFACE,
+  '--hsf-field-input__placeholder-color': FIELD_PLACEHOLDER,
+  '--hsf-field-input__border-color': FIELD_BORDER,
   '--hsf-field-input__border-width': '1px',
   '--hsf-field-input__border-style': 'solid',
-  '--hsf-field-input__border-radius': '16px',
-  '--hsf-field-input__padding': '16px',
-  '--hsf-field-textarea__font-family': "'PP Formula', sans-serif",
-  '--hsf-field-textarea__color': '#c2bfb9',
-  '--hsf-field-textarea__background-color': '#2a2230',
-  '--hsf-field-textarea__placeholder-color': '#585159',
-  '--hsf-field-textarea__border-color': '#3b3539',
+  '--hsf-field-input__border-radius': FIELD_RADIUS,
+  '--hsf-field-input__padding': FIELD_PADDING,
+  '--hsf-field-dropdown-options__border-radius': FIELD_RADIUS,
+
+  '--hsf-field-textarea__color': FIELD_TEXT,
+  '--hsf-field-textarea__background-color': FIELD_SURFACE,
+  '--hsf-field-textarea__placeholder-color': FIELD_PLACEHOLDER,
+  '--hsf-field-textarea__border-color': FIELD_BORDER,
   '--hsf-field-textarea__border-width': '1px',
   '--hsf-field-textarea__border-style': 'solid',
-  '--hsf-field-textarea__border-radius': '16px',
-  '--hsf-field-textarea__padding': '16px',
-  '--hsf-field-checkbox__color': '#c2bfb9',
-  '--hsf-field-checkbox__background-color': '#2a2230',
-  '--hsf-field-checkbox__border-color': '#464147',
+  '--hsf-field-textarea__border-radius': FIELD_RADIUS,
+  '--hsf-field-textarea__padding': FIELD_PADDING,
+
+  '--hsf-field-checkbox__color': 'var(--color-primary-comfy-yellow)',
+  '--hsf-field-checkbox__background-color': FIELD_SURFACE,
+  '--hsf-field-checkbox__border-color': FIELD_BORDER,
   '--hsf-field-checkbox__border-width': '1px',
   '--hsf-field-checkbox__border-style': 'solid',
-  '--hsf-field-radio__color': '#c2bfb9',
-  '--hsf-field-radio__background-color': '#2a2230',
-  '--hsf-field-radio__border-color': '#464147',
+  '--hsf-field-checkbox__padding': CHOICE_PADDING,
+
+  '--hsf-field-radio__color': 'var(--color-primary-comfy-yellow)',
+  '--hsf-field-radio__background-color': FIELD_SURFACE,
+  '--hsf-field-radio__border-color': FIELD_BORDER,
   '--hsf-field-radio__border-width': '1px',
   '--hsf-field-radio__border-style': 'solid',
-  '--hsf-erroralert__font-family': "'PP Formula', sans-serif",
-  '--hsf-infoalert__font-family': "'PP Formula', sans-serif"
+  '--hsf-field-radio__padding': CHOICE_PADDING,
+
+  '--hsf-button__font-size': '14px',
+  '--hsf-button__font-weight': '700',
+  '--hsf-button__color': 'var(--color-primary-comfy-ink)',
+  '--hsf-button__background-color': 'var(--color-primary-comfy-yellow)',
+  '--hsf-button__border-radius': FIELD_RADIUS,
+  '--hsf-button__padding': '12px 28px',
+  '--hsf-button--hover__background-color':
+    'color-mix(in srgb, var(--color-primary-comfy-yellow) 90%, var(--color-primary-comfy-ink))',
+  '--hsf-button--hover__color': 'var(--color-primary-comfy-ink)',
+  '--hsf-button--focus__background-color':
+    'color-mix(in srgb, var(--color-primary-comfy-yellow) 90%, var(--color-primary-comfy-ink))',
+  '--hsf-button--focus__color': 'var(--color-primary-comfy-ink)'
 }
 
 onMounted(() => {
@@ -119,3 +151,19 @@ onMounted(() => {
     />
   </div>
 </template>
+
+<!--
+  HubSpot derives a field's focus affordance from that field's own border
+  colour, so the design's 8%-alpha border leaves focus all but invisible, and
+  it exposes no focus variable to set independently. The markup is injected at
+  runtime, so utilities can't reach it either.
+-->
+<style scoped>
+.hs-form-html :deep(input:focus-visible),
+.hs-form-html :deep(textarea:focus-visible),
+.hs-form-html :deep(.hsfc-PhoneInput__FlagAndCaret:focus-visible),
+.hs-form-html :deep(.hsfc-DropdownInput__Caret:focus-visible) {
+  outline: 2px solid var(--color-primary-comfy-yellow);
+  outline-offset: 2px;
+}
+</style>

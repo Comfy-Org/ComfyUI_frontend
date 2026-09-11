@@ -21,7 +21,7 @@ const { title, links } = defineProps<{
         :href="link.href"
         :target="link.external ? '_blank' : undefined"
         :rel="link.external ? 'noopener' : undefined"
-        class="hover:text-primary-warm-white block py-1.5 text-sm transition-colors"
+        class="block py-1.5 text-sm transition-colors hover:text-primary-warm-white"
       >
         {{ link.label }}
         <img

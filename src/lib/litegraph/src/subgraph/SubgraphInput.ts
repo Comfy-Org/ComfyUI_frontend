@@ -103,6 +103,7 @@ export class SubgraphInput extends SubgraphSlot {
       if (existingLink) subgraph.afterChange()
       return
     }
+    subgraph._addLink(link)
 
     if (existingLink) {
       this.parent._disconnectNodeInput(node, slot, existingLink)

@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { getActivePinia, setActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 
 import { t } from '@/i18n'
@@ -240,8 +238,6 @@ describe('GroupNodeConfig.registerFromWorkflow', () => {
   it('removes a prior same-name group type before reporting missing nodes', async () => {
     const groupType = 'workflow>MyGroup'
     const missing: MissingNodeType[] = []
-    const previousPinia = getActivePinia()
-    setActivePinia(createTestingPinia({ stubActions: false }))
     extensionState.registerNodeDef.mockImplementation(
       async (typeName, nodeDef) => {
         class PreviousGroupNode extends LGraphNode {
@@ -282,7 +278,6 @@ describe('GroupNodeConfig.registerFromWorkflow', () => {
       ])
     } finally {
       extensionState.registerNodeDef.mockReset()
-      setActivePinia(previousPinia)
     }
   })
 
@@ -382,19 +377,12 @@ describe('group node extension beforeConfigureGraph', () => {
         expect.objectContaining({ nodeId: '8', type: 'workflow>MyGroup' })
       ])
 
-      const previousPinia = getActivePinia()
-      setActivePinia(createTestingPinia({ stubActions: false }))
-      try {
-        const store = useMissingNodesErrorStore()
-        store.setMissingNodeTypes(missingNodeTypes)
-        store.removeMissingNodesByNodeId('7')
-
-        expect(store.missingNodesError?.nodeTypes).toStrictEqual([
-          expect.objectContaining({ nodeId: '8', type: 'workflow>MyGroup' })
-        ])
-      } finally {
-        setActivePinia(previousPinia)
-      }
+      const store = useMissingNodesErrorStore()
+      store.setMissingNodeTypes(missingNodeTypes)
+      store.removeMissingNodesByNodeId('7')
+      expect(store.missingNodesError?.nodeTypes).toStrictEqual([
+        expect.objectContaining({ nodeId: '8', type: 'workflow>MyGroup' })
+      ])
     } finally {
       extensionState.rootGraph.nodes = []
     }

@@ -9,7 +9,7 @@ import type { SystemStats } from '@/schemas/apiSchema'
 import SystemStatsPanel from './SystemStatsPanel.vue'
 
 const copyToClipboard = vi.fn()
-vi.mock('@/composables/useCopyToClipboard', () => ({
+vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: () => ({ copyToClipboard })
 }))
 

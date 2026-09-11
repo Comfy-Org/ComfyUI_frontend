@@ -28,7 +28,7 @@ const IGNORE_KEYS = new Set<string>([
   'dynamicPrompts'
 ])
 
-const getRange = (options: NumericInputOptions) => {
+const getRange = (options: Pick<NumericInputOptions, 'min' | 'max'>) => {
   const min = options.min ?? -Infinity
   const max = options.max ?? Infinity
   return { min, max }

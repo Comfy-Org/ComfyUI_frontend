@@ -6,7 +6,7 @@ import { createI18n } from 'vue-i18n'
 
 import AnimationControls from '@/components/load3d/controls/AnimationControls.vue'
 
-vi.mock('@/components/ui/slider/Slider.vue')
+vi.mock(import('@/components/ui/slider/Slider.vue'))
 
 const i18n = createI18n({
   legacy: false,

@@ -6,7 +6,8 @@
       :grid-style="listGridStyle"
       :max-columns="1"
       :default-item-height="48"
-      @approach-end="emit('approach-end')"
+      :on-load-more
+      :can-load-more
     >
       <template #item="{ item }">
         <div class="relative">
@@ -99,6 +100,8 @@ const {
   isSelected: (assetId: string) => boolean
   isStackExpanded: (asset: AssetItem) => boolean
   toggleStack: (asset: AssetItem) => Promise<void>
+  onLoadMore?: () => unknown
+  canLoadMore?: boolean
 }>()
 
 const assetsStore = useAssetsStore()
@@ -107,7 +110,6 @@ const emit = defineEmits<{
   (e: 'select-asset', asset: AssetItem, assets?: AssetItem[]): void
   (e: 'preview-asset', asset: AssetItem): void
   (e: 'context-menu', event: MouseEvent, asset: AssetItem): void
-  (e: 'approach-end'): void
 }>()
 
 const { t } = useI18n()

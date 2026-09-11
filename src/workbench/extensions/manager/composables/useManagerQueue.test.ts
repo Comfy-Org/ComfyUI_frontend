@@ -6,7 +6,7 @@ import { useManagerQueue } from '@/workbench/extensions/manager/composables/useM
 import type { components } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 
 // Mock the app API
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     api: {
       addEventListener: vi.fn(),

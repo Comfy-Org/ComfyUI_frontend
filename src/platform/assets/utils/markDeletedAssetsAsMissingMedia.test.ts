@@ -1,3 +1,4 @@
+import type * as DistributionModule from '@/platform/distribution/types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
@@ -10,17 +11,14 @@ import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 
 import { markDeletedAssetsAsMissingMedia } from './markDeletedAssetsAsMissingMedia'
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
+  ...(await importOriginal<typeof DistributionModule>()),
   isCloud: true
 }))
 
 const mockScanNodeMediaCandidates = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/missingMedia/missingMediaScan', () => ({
+vi.mock(import('@/platform/missingMedia/missingMediaScan'), () => ({
   scanNodeMediaCandidates: mockScanNodeMediaCandidates
-}))
-
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({ currentGraph: null })
 }))
 
 function makeGraph(nodes: unknown[]): LGraph {

@@ -18,16 +18,16 @@ const {
   resolveInitialLayerState: vi.fn<() => unknown>(() => null)
 }))
 
-vi.mock(
-  '@/renderer/extensions/compositor/composables/compositorLayerState',
+vi.mock<unknown>(
+  import('@/renderer/extensions/compositor/composables/compositorLayerState'),
   () => ({
     applyLayerState,
     parseLayerState: () => null,
     resolveInitialLayerState
   })
 )
-vi.mock(
-  '@/renderer/extensions/compositor/composables/useCompositorLayers',
+vi.mock<unknown>(
+  import('@/renderer/extensions/compositor/composables/useCompositorLayers'),
   () => ({
     getCompositorBBoxes: () => undefined,
     getCompositorCanvas,
@@ -36,15 +36,15 @@ vi.mock(
   })
 )
 vi.mock(
-  '@/renderer/extensions/compositor/composables/compositorWidgets',
+  import('@/renderer/extensions/compositor/composables/compositorWidgets'),
   () => ({
     getCompositorWidgetValue: () => ({})
   })
 )
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: { apiURL: (path: string) => `http://host/api${path}` }
 }))
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { getRandParam: () => '&rand=0.5' }
 }))
 

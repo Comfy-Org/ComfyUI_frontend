@@ -145,7 +145,7 @@ describe('equidistance snapping', () => {
     expect(g).toBeTruthy()
     expect(g!.spans).toHaveLength(2)
     const [s1, s2] = g!.spans!
-    expect(s1![1] - s1![0]).toBeCloseTo(s2![1] - s2![0], 6)
+    expect(s1[1] - s1[0]).toBeCloseTo(s2[1] - s2[0], 6)
   })
   it('continues an existing left-side spacing', () => {
     const A = { x: 0, y: 0.4, w: 0.1, h: 0.2 }

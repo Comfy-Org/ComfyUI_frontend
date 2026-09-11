@@ -154,6 +154,87 @@ can't be accidentally committed. Otherwise the `Release: Website` GitHub
 Actions workflow runs the same step on every manual dispatch and opens a PR
 with the refreshed snapshot.
 
+## Workshop (unreleased)
+
+Workshop is being built in the open on `main`, but it is not finished and must
+not appear on comfy.org until we say so. `noindex` cannot enforce that — it asks
+a crawler to stay away while the page stays live at a URL anyone can share — so
+the routes are kept out of the build instead.
+
+That gives three environments:
+
+| Environment      | `VERCEL_ENV` | Workshop | Answers                        |
+| ---------------- | ------------ | -------- | ------------------------------ |
+| Production       | `production` | out      | what is on comfy.org right now |
+| Preview, staging | `preview`    | out      | what ships if we release today |
+| Development      | unset        | in       | what we are building           |
+
+Preview deliberately matches production. A preview carrying an unreleased
+feature cannot answer the question a preview exists for: if we cut a release
+right now — for a hotfix, say — what goes out?
+
+`WORKSHOP_IN_BUILD` overrides it either way, and is how the remaining cases are
+reached without a code change:
+
+| Value   | Effect                | Used by                                        |
+| ------- | --------------------- | ---------------------------------------------- |
+| `1`     | Workshop in the build | a PR labelled `workshop`; production at launch |
+| `0`     | Workshop out          | reproducing a release build locally            |
+| _unset_ | environment default   | everything else                                |
+
+**To review Workshop on a deployed URL,** add the `workshop` label to the PR
+(signs in against staging Cloud) or `workshop-test` (test Cloud).
+`ci-vercel-website-preview.yaml` listens for `labeled`/`unlabeled`, so the
+preview rebuilds without needing a push, and the preview comment says which
+build you are looking at and which Cloud it talks to.
+
+**To reproduce the next release locally:**
+
+```bash
+WORKSHOP_IN_BUILD=0 pnpm --filter @comfyorg/website build
+test ! -d apps/website/dist/workshop && echo "no Workshop in this build"
+```
+
+**To launch,** set `WORKSHOP_IN_BUILD=1` and `PUBLIC_WORKSHOP_CLOUD_ENV=prod` in
+the Vercel _production_ environment — and `WORKSHOP_IN_BUILD=1` with
+`PUBLIC_WORKSHOP_CLOUD_ENV=staging` in the _preview_ environment at the same
+time, so the two go on matching in content while each keeps to the Cloud it is
+allowed to reach. No code change, and reversible by removing them. An
+unlabelled PR deliberately leaves both variables undefined rather than setting
+them empty, so that the Vercel preview values are what govern once they exist.
+Production Cloud must also allow `https://comfy.org` in ingest's CORS
+allowlist (cloud FE-2009) before launch; until it does, sign-in on comfy.org
+fails at the browser's preflight rather than quietly using staging.
+
+### Which Cloud the Workshop talks to
+
+`PUBLIC_WORKSHOP_CLOUD_ENV` picks the backend family. Router, Cloud and the
+Firebase project move together, because a token minted in one family is only
+valid there:
+
+| Value     | Router                 | Cloud                    | Firebase project  | Who uses it                                   |
+| --------- | ---------------------- | ------------------------ | ----------------- | --------------------------------------------- |
+| `prod`    | `api.comfy.org`        | `cloud.comfy.org`        | `dreamboothy`     | production, at launch                         |
+| `staging` | `stagingapi.comfy.org` | `stagingcloud.comfy.org` | `dreamboothy-dev` | previews (`workshop` label); local by default |
+| `test`    | `testapi.comfy.org`    | `testcloud.comfy.org`    | `dreamboothy-dev` | previews (`workshop-test` label)              |
+
+The backends decide who may call them: ingest's CORS allowlist admits
+`comfy.org` only in production and the website's Vercel preview origins only
+in staging and test (cloud FE-2009). So a production build must say `prod`, a
+preview must say `staging` or `test`, and `workshop-release-gate` fails the
+build otherwise — a wrong family is a build error, not a preflight error in a
+visitor's browser. Builds without Workshop in them are not checked, so nothing
+changes for production until launch. Local builds may leave it unset
+(staging) or pick a family for a specific check. `test` has no Turnstile
+sitekey in this mapping, so the client widget stays off there.
+
+The switch is `src/config/workshop-release.ts`; the removal is the
+`workshop-release-gate` Astro integration, which deletes the emitted directory
+at `astro:build:done` and throws if it is still there afterwards. It deletes
+output rather than filtering routes at `astro:routes:resolved`, because that
+hook only reports the resolved routes — mutating the array does not stop them
+being generated.
+
 ## HubSpot forms
 
 Pages that collect leads use HubSpot's hosted form embed:

@@ -317,7 +317,7 @@ export function createDummyFolderNodeDef(folderPath: string): ComfyNodeDefImpl {
     output_name: [],
     output_is_list: [],
     output_node: false
-  } as ComfyNodeDefV1)
+  })
 }
 
 /**
@@ -437,8 +437,11 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
   function removeNodeDef(nodeName: string) {
     delete nodeDefsByName.value[nodeName]
   }
+  function getNodeDefByName(nodeName: string): ComfyNodeDefImpl | undefined {
+    return nodeDefsByName.value[nodeName]
+  }
   function fromLGraphNode(node: LGraphNode): ComfyNodeDefImpl | null {
-    const nodeTypeName = node.constructor?.nodeData?.name ?? node.type
+    const nodeTypeName = node.constructor.nodeData?.name ?? node.type
     if (!nodeTypeName) return null
     const nodeDef = nodeDefsByName.value[nodeTypeName] ?? null
     return nodeDef
@@ -553,6 +556,7 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     updateNodeDefs,
     addNodeDef,
     removeNodeDef,
+    getNodeDefByName,
     fromLGraphNode,
     getInputSpecForWidget,
     registerNodeDefFilter,
@@ -591,8 +595,10 @@ export const useNodeFrequencyStore = defineStore('nodeFrequency', () => {
   const nodeDefStore = useNodeDefStore()
   const topNodeDefs = computed<ComfyNodeDefImpl[]>(() => {
     return nodeNamesByFrequency.value
-      .map((nodeName: string) => nodeDefStore.nodeDefsByName[nodeName])
-      .filter((nodeDef: ComfyNodeDefImpl) => nodeDef !== undefined)
+      .flatMap((nodeName: string) => {
+        const nodeDef = nodeDefStore.getNodeDefByName(nodeName)
+        return nodeDef ? [nodeDef] : []
+      })
       .slice(0, topNodeDefLimit.value)
   })
 

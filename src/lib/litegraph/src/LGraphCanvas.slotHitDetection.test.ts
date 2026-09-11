@@ -1,26 +1,24 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   LGraph,
   LGraphCanvas,
   LGraphNode,
-  LiteGraph
+  LiteGraph,
+  ToInputRenderLink
 } from '@/lib/litegraph/src/litegraph'
 import { getSlotLayoutAtPoint } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import type * as SlotCalculations from '@/renderer/core/canvas/litegraph/slotCalculations'
 
-vi.mock('@/renderer/core/layout/store/layoutStore')
+vi.mock(import('@/renderer/core/layout/store/layoutStore'))
 vi.mock(
-  '@/renderer/core/canvas/litegraph/slotCalculations',
+  import('@/renderer/core/canvas/litegraph/slotCalculations'), // eslint-disable-line import-x/no-restricted-paths
+
   async (importOriginal) => ({
     ...(await importOriginal<typeof SlotCalculations>()),
     getSlotLayoutAtPoint: vi.fn()
   })
 )
-
-beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 
 describe('LGraphCanvas slot hit detection', () => {
   let graph: LGraph
@@ -92,6 +90,34 @@ describe('LGraphCanvas slot hit detection', () => {
 
   afterEach(() => {
     LiteGraph.vueNodesMode = false
+  })
+
+  it('highlights the free fallback when hovering an incompatible input', () => {
+    LiteGraph.vueNodesMode = false
+    node.addInput('image', 'IMAGE')
+    node.addInput('video', 'VIDEO')
+    node.updateArea()
+    canvas.visible_nodes = [node]
+
+    const source = new LGraphNode('Source')
+    source.addOutput('image', 'IMAGE')
+    graph.add(source)
+    canvas.linkConnector.state.connectingTo = 'input'
+    canvas.linkConnector.renderLinks.push(
+      new ToInputRenderLink(graph, source, source.outputs[0])
+    )
+
+    const [clientX, clientY] = node.getInputPos(1)
+    canvas.processMouseMove(
+      new PointerEvent('pointermove', {
+        clientX,
+        clientY,
+        isPrimary: true
+      })
+    )
+
+    expect(canvas._highlight_input).toBe(node.inputs[0])
+    expect(canvas._highlight_pos).toEqual(node.getInputSlotPos(node.inputs[0]))
   })
 
   describe('processMouseDown slot fallback in Vue nodes mode', () => {

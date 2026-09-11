@@ -48,7 +48,7 @@ export const useBoundingBoxWidget = (): ComfyWidgetConstructorV2 => {
       () => {
         for (let i = 0; i < fields.length; i++) {
           const field = fields[i]
-          const subWidget = subWidgets[i]
+          const subWidget = subWidgets.at(i)
           if (subWidget) {
             subWidget.value = widget.value[field]
           }

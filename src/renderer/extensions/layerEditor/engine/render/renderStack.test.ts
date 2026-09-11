@@ -104,10 +104,10 @@ class FakeCompositor implements Compositor {
     this.freed.push(handle.id)
   }
   targetTexture(): WebGLTexture {
-    return {} as WebGLTexture
+    return {}
   }
   upload(): WebGLTexture {
-    return {} as WebGLTexture
+    return {}
   }
   readback(): ImageData {
     return new ImageData(1, 1)

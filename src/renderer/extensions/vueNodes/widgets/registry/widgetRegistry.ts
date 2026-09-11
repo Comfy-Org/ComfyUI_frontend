@@ -4,8 +4,6 @@
 import { defineAsyncComponent } from 'vue'
 import type { Component } from 'vue'
 
-import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
-
 const WidgetButton = defineAsyncComponent(
   () => import('../components/WidgetButton.vue')
 )
@@ -87,6 +85,9 @@ const WidgetVideoEdit = defineAsyncComponent(
 )
 const WidgetColors = defineAsyncComponent(
   () => import('@/components/palette/WidgetColors.vue')
+)
+const WidgetResolutionPreview = defineAsyncComponent(
+  () => import('../components/WidgetResolutionPreview.vue')
 )
 
 export const FOR_TESTING = {
@@ -286,6 +287,14 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
       aliases: ['COLORS'],
       essential: false
     }
+  ],
+  [
+    'resolutionpreview',
+    {
+      component: WidgetResolutionPreview,
+      aliases: ['RESOLUTION_PREVIEW'],
+      essential: false
+    }
   ]
 ]
 
@@ -311,13 +320,6 @@ export const getComponent = (type: string): Component | null => {
 export const isEssential = (type: string): boolean => {
   const canonicalType = getCanonicalType(type)
   return widgets.get(canonicalType)?.essential || false
-}
-
-export const shouldRenderAsVue = (widget: {
-  options?: Pick<IWidgetOptions, 'canvasOnly'>
-  type?: string
-}): boolean => {
-  return !widget.options?.canvasOnly && !!widget.type
 }
 
 const EXPANDING_TYPES = [

@@ -76,6 +76,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingBanner } from '@/platform/workspace/composables/useBillingBanner'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
+import { useScheduledPlanChange } from '@/platform/workspace/composables/useScheduledPlanChange'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useDialogService } from '@/services/dialogService'
 
@@ -87,6 +88,11 @@ const { permissions, canReactivatePlan } = useWorkspaceUI()
 const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
 const { kind, dismiss } = useBillingBanner()
 const { isResubscribing, handleResubscribe } = useResubscribe()
+const {
+  planName: scheduledPlanName,
+  formattedDate: scheduledChangeDate,
+  isDisplayable: canShowScheduledChange
+} = useScheduledPlanChange()
 const dialogService = useDialogService()
 
 const canManage = computed(() => permissions.value.canManageSubscription)
@@ -151,6 +157,18 @@ const banner = computed<BannerView | null>(() => {
         title: t(`${bs}.ending.title`, { date: planEndDate.value }),
         body: t(`${bs}.ending.body`),
         action: canReactivatePlan.value ? 'reactivate' : null,
+        dismissible: false
+      }
+    case 'planChange':
+      if (!canShowScheduledChange.value) return null
+      return {
+        muted: true,
+        title: t(`${bs}.planChange.title`, {
+          plan: scheduledPlanName.value,
+          date: scheduledChangeDate.value
+        }),
+        body: t(`${bs}.planChange.body`),
+        action: null,
         dismissible: false
       }
     default:

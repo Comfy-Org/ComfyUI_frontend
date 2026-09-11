@@ -1,16 +1,22 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import FormDropdownMenu from './FormDropdownMenu.vue'
 import type { FormDropdownItem, LayoutMode } from './types'
 
 const VirtualGridStub = {
   name: 'VirtualGrid',
-  props: ['items', 'maxColumns', 'itemHeight', 'scrollerHeight'],
-  emits: ['approach-end'],
+  props: [
+    'items',
+    'maxColumns',
+    'itemHeight',
+    'scrollerHeight',
+    'onLoadMore',
+    'canLoadMore'
+  ],
   template:
-    '<div data-testid="virtual-grid" :data-items="JSON.stringify(items)" :data-max-columns="maxColumns" @click="$emit(\'approach-end\')" />'
+    '<div data-testid="virtual-grid" :data-items="JSON.stringify(items)" :data-max-columns="maxColumns" :data-can-load-more="String(canLoadMore)" @click="onLoadMore && onLoadMore()" />'
 }
 
 function createItem(id: string, name: string): FormDropdownItem {
@@ -96,16 +102,19 @@ describe('FormDropdownMenu', () => {
     expect(virtualGrid.getAttribute('data-max-columns')).toBe('1')
   })
 
-  it('forwards approach-end from the virtual grid', async () => {
+  it('forwards onLoadMore and canLoadMore to the virtual grid', async () => {
     const user = userEvent.setup()
-    const { emitted } = render(FormDropdownMenu, {
-      props: defaultProps,
+    const onLoadMore = vi.fn()
+    render(FormDropdownMenu, {
+      props: { ...defaultProps, onLoadMore, canLoadMore: true },
       global: globalConfig
     })
 
-    await user.click(screen.getByTestId('virtual-grid'))
+    const grid = screen.getByTestId('virtual-grid')
+    expect(grid.getAttribute('data-can-load-more')).toBe('true')
 
-    expect(emitted()['approach-end']).toHaveLength(1)
+    await user.click(grid)
+    expect(onLoadMore).toHaveBeenCalledTimes(1)
   })
 
   it('shows the loading-more row only while loadingMore is set', async () => {

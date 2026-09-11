@@ -13,7 +13,7 @@
       <UserAvatar
         class="size-8"
         :photo-url="isCurrentUser ? photoUrl : undefined"
-        :pt:icon:class="{ 'text-xl!': !isCurrentUser || !photoUrl }"
+        icon-class="size-5"
       />
       <div class="flex min-w-0 flex-1 flex-col gap-1">
         <span class="text-sm text-base-foreground">

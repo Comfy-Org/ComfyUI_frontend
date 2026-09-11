@@ -14,7 +14,7 @@ const { rendererCtor, forceContextLoss, dispose } = vi.hoisted(() => ({
   dispose: vi.fn()
 }))
 
-vi.mock('three', async (importOriginal) => {
+vi.mock<unknown>(import('three'), async (importOriginal) => {
   const actual = await importOriginal<typeof THREE>()
   class WebGLRenderer {
     domElement = document.createElement('canvas')

@@ -8,11 +8,15 @@ import AudioPreviewPlayer from '@/renderer/extensions/vueNodes/widgets/component
 
 const mockToastAdd = vi.fn()
 
-vi.mock('primevue/usetoast', () => ({
-  useToast: () => ({ add: mockToastAdd })
-}))
+vi.mock<unknown>(
+  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
 
-vi.mock('@/base/common/downloadUtil', () => ({
+  () => ({
+    useToast: () => ({ add: mockToastAdd })
+  })
+)
+
+vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadFile: vi.fn()
 }))
 

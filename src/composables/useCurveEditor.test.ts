@@ -13,7 +13,7 @@ const mockCreateInterpolator = vi.hoisted(() =>
   })
 )
 
-vi.mock('@/components/curve/curveUtils', () => ({
+vi.mock(import('@/components/curve/curveUtils'), () => ({
   createInterpolator: mockCreateInterpolator
 }))
 
@@ -29,10 +29,7 @@ const ensureMatrixTransformPolyfill = () => {
 }
 
 const createSvgElement = (): SVGSVGElement => {
-  const svg = document.createElementNS(
-    'http://www.w3.org/2000/svg',
-    'svg'
-  ) as SVGSVGElement
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
   svg.setPointerCapture = vi.fn()
   svg.releasePointerCapture = vi.fn()
   document.body.appendChild(svg)

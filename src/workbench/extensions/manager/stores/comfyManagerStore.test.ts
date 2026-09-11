@@ -1,73 +1,51 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useComfyManagerService } from '@/workbench/extensions/manager/services/comfyManagerService'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 
 type InstalledPacksResponse =
   ManagerComponents['schemas']['InstalledPacksResponse']
-type ManagerChannel = ManagerComponents['schemas']['ManagerChannel']
-type ManagerDatabaseSource =
-  ManagerComponents['schemas']['ManagerDatabaseSource']
 type ManagerPackInstalled = ManagerComponents['schemas']['ManagerPackInstalled']
 
-vi.mock('@/workbench/extensions/manager/services/comfyManagerService', () => ({
-  useComfyManagerService: vi.fn()
-}))
+vi.mock(
+  import('@/workbench/extensions/manager/services/comfyManagerService'),
 
-vi.mock('@/workbench/extensions/manager/composables/useManagerQueue', () => {
-  const enqueueTaskMock = vi.fn()
+  () => ({
+    useComfyManagerService: vi.fn()
+  })
+)
 
-  return {
-    useManagerQueue: () => {
-      const isProcessing = ref(false)
-      return {
-        statusMessage: ref(''),
-        allTasksDone: ref(false),
-        enqueueTask: enqueueTaskMock,
-        isProcessing,
-        isProcessingTasks: isProcessing
-      }
-    },
-    enqueueTask: enqueueTaskMock
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/composables/useManagerQueue'),
+
+  () => {
+    const enqueueTaskMock = vi.fn()
+
+    return {
+      useManagerQueue: () => {
+        const isProcessing = ref(false)
+        return {
+          statusMessage: ref(''),
+          allTasksDone: ref(false),
+          enqueueTask: enqueueTaskMock,
+          isProcessing,
+          isProcessingTasks: isProcessing
+        }
+      },
+      enqueueTask: enqueueTaskMock
+    }
   }
-})
+)
 
-vi.mock('@/composables/useServerLogs', () => ({
+vi.mock(import('@/composables/useServerLogs'), () => ({
   useServerLogs: () => ({
     startListening: vi.fn(),
     stopListening: vi.fn(),
     logs: ref([])
   })
-}))
-
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: vi.fn((key) => key)
-  }),
-  createI18n: vi.fn(() => ({
-    global: {
-      t: vi.fn((key) => key)
-    }
-  }))
-}))
-
-const { toastAddMock } = vi.hoisted(() => ({
-  toastAddMock: vi.fn()
-}))
-
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: vi.fn(() => ({
-    add: toastAddMock
-  }))
-}))
-
-vi.mock('@/i18n', () => ({
-  t: (key: string, params?: Record<string, unknown>) => {
-    if (params && 'count' in params) return `${key}:${String(params.count)}`
-    return key
-  }
 }))
 
 interface EnabledDisabledTestCase {
@@ -114,10 +92,6 @@ describe('useComfyManagerStore', () => {
     }
 
     vi.mocked(useComfyManagerService).mockReturnValue(mockManagerService)
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
   })
 
   const testCases: EnabledDisabledTestCase[] = [
@@ -387,8 +361,8 @@ describe('useComfyManagerStore', () => {
       await store.installPack.call({
         id: 'test-pack',
         repository: 'https://github.com/test/test-pack',
-        channel: 'dev' as ManagerChannel,
-        mode: 'cache' as ManagerDatabaseSource,
+        channel: 'dev',
+        mode: 'cache',
         selected_version: 'latest',
         version: 'latest'
       })
@@ -404,8 +378,8 @@ describe('useComfyManagerStore', () => {
       await store.installPack.call({
         id: 'pack-1',
         repository: 'https://github.com/test/pack-1',
-        channel: 'dev' as ManagerChannel,
-        mode: 'cache' as ManagerDatabaseSource,
+        channel: 'dev',
+        mode: 'cache',
         selected_version: 'latest',
         version: 'latest'
       })
@@ -414,8 +388,8 @@ describe('useComfyManagerStore', () => {
       await store.installPack.call({
         id: 'pack-2',
         repository: 'https://github.com/test/pack-2',
-        channel: 'dev' as ManagerChannel,
-        mode: 'cache' as ManagerDatabaseSource,
+        channel: 'dev',
+        mode: 'cache',
         selected_version: 'latest',
         version: 'latest'
       })
@@ -521,6 +495,13 @@ describe('useComfyManagerStore', () => {
   })
 
   describe('installation failure toast', () => {
+    const spyOnToastAdd = () => vi.spyOn(useToastStore(), 'add')
+    let toastAddMock: ReturnType<typeof spyOnToastAdd>
+
+    beforeEach(() => {
+      toastAddMock = spyOnToastAdd()
+    })
+
     const setTaskHistory = (
       store: ReturnType<typeof useComfyManagerStore>,
       history: Record<string, ManagerComponents['schemas']['TaskHistoryItem']>
@@ -559,8 +540,10 @@ describe('useComfyManagerStore', () => {
       expect(toastAddMock).toHaveBeenCalledTimes(1)
       const message = toastAddMock.mock.calls[0][0]
       expect(message.severity).toBe('error')
-      expect(message.summary).toBe('manager.installFailureToast.summary')
-      expect(message.detail).toBe('manager.installFailureToast.detail:1')
+      expect(message.summary).toBe('Installation failed')
+      expect(message.detail).toBe(
+        '1 extension failed to install. Check the Failed tab for details.'
+      )
     })
 
     it('does not show a toast when all tasks succeed', async () => {
@@ -582,7 +565,7 @@ describe('useComfyManagerStore', () => {
 
       expect(toastAddMock).toHaveBeenCalledTimes(1)
       expect(toastAddMock.mock.calls[0][0].detail).toBe(
-        'manager.installFailureToast.detail:2'
+        '2 extensions failed to install. Check the Failed tab for details.'
       )
     })
 

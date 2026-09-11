@@ -87,7 +87,7 @@
       </div>
 
       <!-- Sort Options -->
-      <div class="flex justify-end px-6 pb-4">
+      <div v-if="isSortable" class="flex justify-end px-6 pb-4">
         <SingleSelect
           v-model="sortField"
           :label="$t('g.sort')"
@@ -111,7 +111,7 @@
         :node-names="unresolvedNodeNames"
       />
       <NoResultsPlaceholder
-        v-else-if="displayPacks.length === 0"
+        v-else-if="displayPacks.length === 0 && !canLoadMorePacks"
         :title="emptyStateTitle"
         :message="emptyStateMessage"
       />
@@ -121,7 +121,8 @@
           :items="resultsWithKeys"
           :buffer-rows="4"
           :grid-style="GRID_STYLE"
-          @approach-end="onApproachEnd"
+          :on-load-more="loadMorePacks"
+          :can-load-more="canLoadMorePacks"
         >
           <template #item="{ item }">
             <PackCard
@@ -147,7 +148,7 @@
 </template>
 
 <script setup lang="ts">
-import { until, whenever } from '@vueuse/core'
+import { refDebounced, until, whenever } from '@vueuse/core'
 import { merge } from 'es-toolkit/compat'
 import {
   computed,
@@ -156,6 +157,7 @@ import {
   onUnmounted,
   provide,
   ref,
+  toValue,
   watch,
   watchEffect
 } from 'vue'
@@ -174,7 +176,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import type { components } from '@/types/comfyRegistryTypes'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
-import type { QuerySuggestion } from '@/types/searchServiceTypes'
+import type { QuerySuggestion, SearchMode } from '@/types/searchServiceTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
 import PackInstallButton from '@/workbench/extensions/manager/components/manager/button/PackInstallButton.vue'
 import PackUpdateButton from '@/workbench/extensions/manager/components/manager/button/PackUpdateButton.vue'
@@ -194,6 +196,7 @@ import { useLegacySearchTip } from '@/workbench/extensions/manager/composables/u
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
+import { PACK_SORTABLE_FIELDS } from '@/workbench/extensions/manager/utils/nodePackSort'
 
 const { initialTab, initialPackId, onClose } = defineProps<{
   initialTab?: ManagerTab
@@ -340,61 +343,70 @@ watch(navItems, (items) => {
   }
 })
 
-const {
-  searchQuery,
-  pageNumber,
-  isLoading: isSearchLoading,
-  searchResults,
-  searchMode,
-  sortField,
-  suggestions,
-  sortOptions
-} = useRegistrySearch({
-  initialSortField: initialState.sortField,
-  initialSearchMode:
-    initialPackId && initialTabId !== ManagerTab.Missing
-      ? 'packs'
-      : initialState.searchMode,
-  initialSearchQuery:
-    initialTabId === ManagerTab.Missing
-      ? ''
-      : (initialPackId ?? initialState.searchQuery)
-})
-pageNumber.value = 0
+const SEARCH_DEBOUNCE_MS = 320
 
+const searchQuery = ref(
+  initialTabId === ManagerTab.Missing
+    ? ''
+    : (initialPackId ?? initialState.searchQuery)
+)
+const searchMode = ref<SearchMode>(
+  initialPackId && initialTabId !== ManagerTab.Missing
+    ? 'packs'
+    : initialState.searchMode
+)
+const sortField = ref<string>(initialState.sortField)
+
+const isSearchBacked = computed(() => {
+  const tab = selectedTab.value?.id
+  return (
+    tab === ManagerTab.All ||
+    tab === ManagerTab.NotInstalled ||
+    (searchQuery.value !== '' && tab !== ManagerTab.Unresolved)
+  )
+})
+const packs = useRegistrySearch({
+  query: refDebounced(searchQuery, SEARCH_DEBOUNCE_MS),
+  searchMode
+})
+const searchResults = computed(() => [...toValue(packs.items)])
+const isSearchLoading = computed(
+  () => isSearchBacked.value && toValue(packs.isLoading)
+)
+const hasMorePacks = computed(() => toValue(packs.hasMore))
+const suggestions = computed(() => toValue(packs.suggestions))
+const sortOptions = PACK_SORTABLE_FIELDS
 const { isLegacyManagerSearch } = useLegacySearchTip(
   searchQuery,
   isNewManagerUI
 )
-
 const filterOptions = computed(() => [
   { name: t('manager.filter.nodePack'), value: 'packs' },
   { name: t('g.nodes'), value: 'nodes' }
 ])
-
-const availableSortOptions = computed(() => {
-  if (!sortOptions.value) return []
-  return sortOptions.value.map((field) => ({
+const availableSortOptions = computed(() =>
+  sortOptions.map((field) => ({
     name: field.label,
     value: field.id
   }))
-})
-
+)
 const onOptionSelect = (suggestion: QuerySuggestion) => {
   searchQuery.value = suggestion.query
 }
-
-const onApproachEnd = () => {
-  pageNumber.value++
-}
-
-const isInitialLoad = computed(
-  () => searchResults.value.length === 0 && searchQuery.value === ''
+const loadMorePacks = () => packs.loadMore()
+const canLoadMorePacks = computed(
+  () => hasMorePacks.value && !isSearchLoading.value && isSearchBacked.value
 )
-
+const isInitialLoad = computed(
+  () =>
+    isSearchBacked.value &&
+    searchResults.value.length === 0 &&
+    searchQuery.value === ''
+)
 // Use the new composable for tab-based display packs
 const {
   displayPacks,
+  isSortable,
   isLoading: isTabLoading,
   workflowPacks
 } = useManagerDisplayPacks(selectedNavId, searchResults, searchQuery, sortField)
@@ -598,7 +610,6 @@ onMounted(() => {
 watch([searchQuery, selectedNavId], () => {
   gridContainer ??= document.getElementById('results-grid')
   if (gridContainer) {
-    pageNumber.value = 0
     gridContainer.scrollTop = 0
   }
   unSelectItems()

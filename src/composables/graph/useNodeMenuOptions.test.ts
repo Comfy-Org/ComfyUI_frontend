@@ -11,11 +11,11 @@ import { toNodeId } from '@/types/nodeId'
 
 // canvasStore transitively imports the app singleton; stub it so the real
 // ComfyApp module never loads during these unit tests.
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { canvas: { selected_nodes: null } }
 }))
 
-vi.mock('@/composables/graph/useNodeCustomization', () => ({
+vi.mock<unknown>(import('@/composables/graph/useNodeCustomization'), () => ({
   useNodeCustomization: () => ({
     shapeOptions: [],
     applyShape: vi.fn(),
@@ -25,7 +25,7 @@ vi.mock('@/composables/graph/useNodeCustomization', () => ({
   })
 }))
 
-vi.mock('@/composables/graph/useSelectedNodeActions', () => ({
+vi.mock(import('@/composables/graph/useSelectedNodeActions'), () => ({
   useSelectedNodeActions: () => ({
     adjustNodeSize: vi.fn(),
     toggleNodeCollapse: vi.fn(),

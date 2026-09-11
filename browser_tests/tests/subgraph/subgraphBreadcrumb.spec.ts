@@ -200,7 +200,7 @@ test.describe('Subgraph Breadcrumb', { tag: ['@subgraph'] }, () => {
       await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(false)
 
       const rootNodeTitle = await comfyPage.page.evaluate(
-        (nodeId) => window.app!.graph!.getNodeById(nodeId)?.title ?? null,
+        (nodeId) => window.app!.graph.getNodeById(nodeId)?.title ?? null,
         toNodeId(OUTER_SUBGRAPH_NODE_ID_IN_NESTED)
       )
       expect(rootNodeTitle).toBe(newName)

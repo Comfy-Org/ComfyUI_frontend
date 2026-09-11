@@ -17,7 +17,7 @@ describe('WidgetInputText Value Binding', () => {
     options: Partial<InputTextProps> & IWidgetOptions = {},
     callback?: (value: string) => void
   ) =>
-    createMockWidget<string>({
+    createMockWidget({
       value,
       name: 'test_input',
       options,
@@ -177,6 +177,13 @@ describe('WidgetInputText Value Binding', () => {
         'aria-invalid',
         'true'
       )
+    })
+
+    it('does not mark a valid text input as invalid', () => {
+      const widget = createInputTextWidget('valid value')
+      renderComponent(widget, 'valid value', { invalid: false })
+
+      expect(screen.getByRole('textbox')).not.toHaveAttribute('aria-invalid')
     })
   })
 

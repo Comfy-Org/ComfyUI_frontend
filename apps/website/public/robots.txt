@@ -35,3 +35,4 @@ Disallow: /_vercel/
 Content-Signal: search=yes, ai-input=yes, ai-train=yes
 
 Sitemap: https://comfy.org/sitemap-index.xml
+Sitemap: https://comfy.org/video-sitemap.xml

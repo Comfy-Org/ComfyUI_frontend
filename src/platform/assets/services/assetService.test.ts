@@ -1,3 +1,8 @@
+import type * as DistributionModule from '@/platform/distribution/types'
+import type * as I18nModule from '@/i18n'
+import type { ComfyApp } from '@/scripts/app'
+import { useModelToNodeStore } from '@/stores/modelToNodeStore'
+import { useAssetsStore } from '@/stores/assetsStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -11,16 +16,16 @@ import {
 import { api } from '@/scripts/api'
 
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
-const mockSettingStoreGet = vi.hoisted(() => vi.fn(() => false))
 const mockSupportsModelTypeTags = vi.hoisted(() => ({ value: true }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
+  ...(await importOriginal<typeof DistributionModule>()),
   get isCloud() {
     return mockDistributionState.isCloud
   }
 }))
 
-vi.mock('@/composables/useFeatureFlags', () => ({
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
     flags: {
       get supportsModelTypeTags() {
@@ -30,47 +35,19 @@ vi.mock('@/composables/useFeatureFlags', () => ({
   })
 }))
 
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: vi.fn(() => ({
-    get: mockSettingStoreGet
-  }))
-}))
-
-vi.mock('@/stores/modelToNodeStore', () => {
-  const registeredNodeTypes: Record<string, string> = {
-    CheckpointLoaderSimple: 'ckpt_name',
-    LoraLoader: 'lora_name'
-  }
-  const nodeTypeCategories: Record<string, string> = {
-    CheckpointLoaderSimple: 'checkpoints',
-    LoraLoader: 'loras'
-  }
-  return {
-    useModelToNodeStore: vi.fn(() => ({
-      getRegisteredNodeTypes: () => registeredNodeTypes,
-      getCategoryForNodeType: vi.fn(
-        (nodeType: string) => nodeTypeCategories[nodeType]
-      )
-    }))
-  }
-})
-
 const mockInvalidateInputAssets = vi.hoisted(() => vi.fn())
-vi.mock('@/stores/assetsStore', () => ({
-  useAssetsStore: () => ({
-    inputAssets: { invalidate: mockInvalidateInputAssets }
-  })
-}))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     fetchApi: vi.fn(),
+    addEventListener: vi.fn(),
     addCustomEventListener: vi.fn(),
     removeCustomEventListener: vi.fn()
   }
 }))
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), async (importOriginal) => ({
+  ...(await importOriginal<typeof I18nModule>()),
   st: vi.fn((_key: string, fallback: string) => fallback)
 }))
 
@@ -122,63 +99,74 @@ function validAsset(overrides: Partial<AssetItem> = {}): AssetItem {
   }
 }
 
-describe(assetService.shouldUseAssetBrowser, () => {
+beforeEach(() => {
+  const registeredNodeTypes: Record<string, string> = {
+    CheckpointLoaderSimple: 'ckpt_name',
+    LoraLoader: 'lora_name'
+  }
+  const nodeTypeCategories: Record<string, string> = {
+    CheckpointLoaderSimple: 'checkpoints',
+    LoraLoader: 'loras'
+  }
+  vi.mocked(useModelToNodeStore().getRegisteredNodeTypes).mockImplementation(
+    () => registeredNodeTypes
+  )
+  vi.mocked(useModelToNodeStore().getCategoryForNodeType).mockImplementation(
+    (nodeType: string) => nodeTypeCategories[nodeType]
+  )
+  vi.spyOn(useAssetsStore().inputAssets, 'invalidate').mockImplementation(
+    mockInvalidateInputAssets
+  )
+})
+
+describe(assetService.shouldUseWidgetAssetPicker, () => {
   beforeEach(() => {
     mockDistributionState.isCloud = false
-    mockSettingStoreGet.mockReturnValue(false)
   })
 
   it('returns false when not on cloud', () => {
     mockDistributionState.isCloud = false
-    mockSettingStoreGet.mockReturnValue(true)
 
     expect(
-      assetService.shouldUseAssetBrowser('CheckpointLoaderSimple', 'ckpt_name')
-    ).toBe(false)
-  })
-
-  it('returns false when asset API setting is disabled', () => {
-    mockDistributionState.isCloud = true
-    mockSettingStoreGet.mockReturnValue(false)
-
-    expect(
-      assetService.shouldUseAssetBrowser('CheckpointLoaderSimple', 'ckpt_name')
+      assetService.shouldUseWidgetAssetPicker(
+        'CheckpointLoaderSimple',
+        'ckpt_name'
+      )
     ).toBe(false)
   })
 
   it('returns false when node type is not eligible', () => {
     mockDistributionState.isCloud = true
-    mockSettingStoreGet.mockReturnValue(true)
 
     expect(
-      assetService.shouldUseAssetBrowser('UnknownNode', 'some_input')
+      assetService.shouldUseWidgetAssetPicker('UnknownNode', 'some_input')
     ).toBe(false)
   })
 
-  it('returns true when cloud, setting enabled, and node is eligible', () => {
+  it('returns true when on cloud and node is eligible', () => {
     mockDistributionState.isCloud = true
-    mockSettingStoreGet.mockReturnValue(true)
 
     expect(
-      assetService.shouldUseAssetBrowser('CheckpointLoaderSimple', 'ckpt_name')
+      assetService.shouldUseWidgetAssetPicker(
+        'CheckpointLoaderSimple',
+        'ckpt_name'
+      )
     ).toBe(true)
   })
 
   it('returns false when nodeType is undefined', () => {
     mockDistributionState.isCloud = true
-    mockSettingStoreGet.mockReturnValue(true)
 
-    expect(assetService.shouldUseAssetBrowser(undefined, 'ckpt_name')).toBe(
-      false
-    )
+    expect(
+      assetService.shouldUseWidgetAssetPicker(undefined, 'ckpt_name')
+    ).toBe(false)
   })
 
   it('returns false when widget name does not match registered input', () => {
     mockDistributionState.isCloud = true
-    mockSettingStoreGet.mockReturnValue(true)
 
     expect(
-      assetService.shouldUseAssetBrowser(
+      assetService.shouldUseWidgetAssetPicker(
         'CheckpointLoaderSimple',
         'wrong_input'
       )
@@ -426,7 +414,7 @@ describe(assetService.getAssetModels, () => {
     await assetService.getAssetModels('checkpoints')
 
     expect(fetchApiMock).toHaveBeenCalledTimes(1)
-    const requestedUrl = fetchApiMock.mock.calls[0]?.[0] as string
+    const requestedUrl = fetchApiMock.mock.calls[0]?.[0]
     const params = new URL(requestedUrl, 'http://localhost').searchParams
     expect(params.get('include_tags')).toBe('models')
     expect(params.get('exclude_tags')).toBe(MISSING_TAG)
@@ -762,7 +750,7 @@ describe(assetService.onModelsScanned, () => {
     const unsubscribe = assetService.onModelsScanned(callback)
 
     const [eventType, handler] = vi.mocked(api.addCustomEventListener).mock
-      .calls[0]!
+      .calls[0]
     expect(eventType).toBe('assets.seed.fast_complete')
 
     handler!(new CustomEvent(eventType))
@@ -852,7 +840,7 @@ describe(assetService.getAssetsByTag, () => {
 
     expect(assets.map((a) => a.id)).toEqual(['visible'])
 
-    const requestedUrl = fetchApiMock.mock.calls[0]?.[0] as string
+    const requestedUrl = fetchApiMock.mock.calls[0]?.[0]
     const params = new URL(requestedUrl, 'http://localhost').searchParams
     expect(params.get('include_public')).toBe('true')
     expect(params.get('exclude_tags')).toBe(MISSING_TAG)
@@ -865,7 +853,7 @@ describe(assetService.getAssetsByTag, () => {
 
     await assetService.getAssetsByTag(' input ')
 
-    const requestedUrl = fetchApiMock.mock.calls[0]?.[0] as string
+    const requestedUrl = fetchApiMock.mock.calls[0]?.[0]
     const params = new URL(requestedUrl, 'http://localhost').searchParams
     expect(params.get('include_tags')).toBe('input')
     expect(params.get('exclude_tags')).toBe(MISSING_TAG)
@@ -894,7 +882,7 @@ describe(assetService.getAllAssetsByTag, () => {
 
     expect(assets.map((a) => a.id)).toEqual(['a', 'b', 'c'])
 
-    const firstUrl = fetchApiMock.mock.calls[0]?.[0] as string
+    const firstUrl = fetchApiMock.mock.calls[0]?.[0]
     const firstParams = new URL(firstUrl, 'http://localhost').searchParams
     expect(firstParams.get('include_public')).toBe('true')
     expect(firstParams.get('exclude_tags')).toBe(MISSING_TAG)
@@ -903,7 +891,7 @@ describe(assetService.getAllAssetsByTag, () => {
     expect(firstParams.has('after')).toBe(false)
     expect(firstParams.has('offset')).toBe(false)
 
-    const secondUrl = fetchApiMock.mock.calls[1]?.[0] as string
+    const secondUrl = fetchApiMock.mock.calls[1]?.[0]
     const secondParams = new URL(secondUrl, 'http://localhost').searchParams
     expect(secondParams.get('include_public')).toBe('true')
     expect(secondParams.get('exclude_tags')).toBe(MISSING_TAG)
@@ -1102,7 +1090,7 @@ describe(assetService.getAssetsPageForNodeType, () => {
     expect(page.has_more).toBe(true)
     expect(page.next_cursor).toBe('cursor-1')
 
-    const requestedUrl = fetchApiMock.mock.calls[0]?.[0] as string
+    const requestedUrl = fetchApiMock.mock.calls[0]?.[0]
     const params = new URL(requestedUrl, 'http://localhost').searchParams
     expect(params.get('include_tags')).toBe('models,checkpoints')
     expect(params.get('exclude_tags')).toBe(MISSING_TAG)
@@ -1121,7 +1109,7 @@ describe(assetService.getAssetsPageForNodeType, () => {
       after: 'cursor-2'
     })
 
-    const requestedUrl = fetchApiMock.mock.calls[0]?.[0] as string
+    const requestedUrl = fetchApiMock.mock.calls[0]?.[0]
     const params = new URL(requestedUrl, 'http://localhost').searchParams
     expect(params.get('after')).toBe('cursor-2')
     expect(params.has('offset')).toBe(false)
@@ -1137,7 +1125,7 @@ describe(assetService.getAssetsPageForNodeType, () => {
       after: ''
     })
 
-    const requestedUrl = fetchApiMock.mock.calls[0]?.[0] as string
+    const requestedUrl = fetchApiMock.mock.calls[0]?.[0]
     const params = new URL(requestedUrl, 'http://localhost').searchParams
     expect(params.get('after')).toBe('')
     expect(params.has('offset')).toBe(false)
@@ -1152,7 +1140,7 @@ describe(assetService.getAssetsPageForNodeType, () => {
       offset: 500
     })
 
-    const requestedUrl = fetchApiMock.mock.calls[0]?.[0] as string
+    const requestedUrl = fetchApiMock.mock.calls[0]?.[0]
     const params = new URL(requestedUrl, 'http://localhost').searchParams
     expect(params.get('offset')).toBe('500')
     expect(params.has('after')).toBe(false)
@@ -1178,4 +1166,9 @@ describe(assetService.getAssetsForNodeType, () => {
     expect(assets).toEqual([])
     expect(fetchApiMock).not.toHaveBeenCalled()
   })
+})
+
+vi.mock(import('@/scripts/app'), async () => {
+  const { fromPartial } = await import('@total-typescript/shoehorn')
+  return { app: fromPartial<ComfyApp>({}) }
 })

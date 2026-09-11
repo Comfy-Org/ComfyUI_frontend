@@ -1,0 +1,62 @@
+{
+  "sourceCommit": "f331af10934fdf0d773d5f26c1d00f33559ae09d",
+  "repairs": [
+    {
+      "id": "bria--green-screen-video--edit-videos",
+      "exampleTitle": "Green Screen: Bria",
+      "sampleUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_bria_video_green_screen-2.webp",
+      "values": {
+        "medias": [
+          {
+            "role": "video",
+            "value": "https://cdn.jsdelivr.net/gh/Comfy-Org/workflow_templates@main/input/investigator.mp4"
+          }
+        ]
+      }
+    },
+    {
+      "id": "bria--replace-video-background--edit-videos",
+      "exampleTitle": "Replace Background: Bria",
+      "sampleUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_bria_video_replace_background-2.webp",
+      "values": {
+        "medias": [
+          {
+            "role": "video",
+            "value": "https://cdn.jsdelivr.net/gh/Comfy-Org/workflow_templates@main/input/stained_window_vintage_woman.mp4"
+          },
+          {
+            "role": "background_image",
+            "value": "https://cdn.jsdelivr.net/gh/Comfy-Org/workflow_templates@main/input/gothic_hall_light_rays.png"
+          }
+        ]
+      }
+    },
+    {
+      "id": "runway--aleph2-video-to-video--edit-videos",
+      "exampleTitle": "Runway Aleph2: Video Edit",
+      "sampleUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_runway_aleph2_video_edit-2.webp",
+      "values": {
+        "prompt": "Change the scene to a surfing scene and replace the characters with surfers",
+        "medias": [
+          {
+            "role": "video",
+            "value": "https://cdn.jsdelivr.net/gh/Comfy-Org/workflow_templates@main/input/sunset_city_skateboarder.mp4"
+          }
+        ]
+      }
+    },
+    {
+      "id": "wavespeed--flashvsr--edit-videos",
+      "exampleTitle": "Video Upscale: WaveSpeed FlashVSR",
+      "sampleUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_wavespeed_flshvsr_video_upscale-2.webp",
+      "values": {
+        "medias": [
+          {
+            "role": "video",
+            "value": "https://cdn.jsdelivr.net/gh/Comfy-Org/workflow_templates@main/input/lighter.mp4"
+          }
+        ]
+      }
+    }
+  ]
+}

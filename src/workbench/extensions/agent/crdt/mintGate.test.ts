@@ -5,11 +5,10 @@ import { shouldMint } from './mintGate'
 const OPEN = {
   flagEnabled: true,
   docBound: true,
-  localProvenance: true,
   teardown: false
 }
 
-describe('shouldMint (the four-way zero-mint battery)', () => {
+describe('shouldMint', () => {
   it('mints only when every conjunct holds', () => {
     expect(shouldMint(OPEN)).toBe(true)
   })
@@ -20,10 +19,6 @@ describe('shouldMint (the four-way zero-mint battery)', () => {
 
   it('never mints without a bound doc', () => {
     expect(shouldMint({ ...OPEN, docBound: false })).toBe(false)
-  })
-
-  it('never mints for non-local provenance (agent-remote or load-driven)', () => {
-    expect(shouldMint({ ...OPEN, localProvenance: false })).toBe(false)
   })
 
   it('never mints for graph teardown (workflow load/switch/close clearing)', () => {

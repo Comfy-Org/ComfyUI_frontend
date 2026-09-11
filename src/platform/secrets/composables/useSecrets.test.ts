@@ -1,23 +1,19 @@
-import { describe, expect, it, vi } from 'vitest'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { render } from '@testing-library/vue'
+import { defineComponent } from 'vue'
+import { createI18n } from 'vue-i18n'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { SecretMetadata } from '../types'
-import { useSecrets } from './useSecrets'
+import { useSecrets as useSecretsComposable } from './useSecrets'
 
 const mockAdd = vi.fn()
-
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({ t: (key: string) => key })
-}))
-
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({ add: mockAdd })
-}))
 
 const mockListSecrets = vi.fn()
 const mockListSecretProviders = vi.fn()
 const mockDeleteSecret = vi.fn()
 
-vi.mock('../api/secretsApi', () => ({
+vi.mock<unknown>(import('../api/secretsApi'), () => ({
   listSecrets: () => mockListSecrets(),
   listSecretProviders: () => mockListSecretProviders(),
   deleteSecret: (id: string) => mockDeleteSecret(id),
@@ -33,6 +29,25 @@ vi.mock('../api/secretsApi', () => ({
   }
 }))
 
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  missingWarn: false,
+  fallbackWarn: false
+})
+
+function useSecrets(): ReturnType<typeof useSecretsComposable> {
+  let result!: ReturnType<typeof useSecretsComposable>
+  const Wrapper = defineComponent({
+    setup() {
+      result = useSecretsComposable()
+      return () => null
+    }
+  })
+  render(Wrapper, { global: { plugins: [i18n] } })
+  return result
+}
+
 function createMockSecret(
   overrides: Partial<SecretMetadata> = {}
 ): SecretMetadata {
@@ -45,6 +60,10 @@ function createMockSecret(
     ...overrides
   }
 }
+
+beforeEach(() => {
+  vi.mocked(useToastStore().add).mockImplementation(mockAdd)
+})
 
 describe('useSecrets', () => {
   describe('fetchSecrets', () => {

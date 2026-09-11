@@ -4,12 +4,18 @@ name: 'CI: Binary Size Validation'
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, labeled, unlabeled]
   merge_group:
     types: [checks_requested]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: >-
+    ${{ github.workflow }}-${{ github.ref }}-${{
+      contains(fromJSON('["labeled", "unlabeled"]'), github.event.action) &&
+      github.event.label.name != 'allow-large-binaries' &&
+      github.run_id ||
+      'validation'
+    }}
   cancel-in-progress: true
 
 permissions:
@@ -17,7 +23,14 @@ permissions:
 
 jobs:
   binary-size:
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'allow-large-binaries') }}
+    if: >-
+      ${{
+        (
+          !contains(fromJSON('["labeled", "unlabeled"]'), github.event.action) ||
+          github.event.label.name == 'allow-large-binaries'
+        ) &&
+        !contains(github.event.pull_request.labels.*.name, 'allow-large-binaries')
+      }}
     runs-on: ubuntu-latest
     steps:
       # The label bypass only exists on the pull request, so re-checking the

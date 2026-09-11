@@ -4,7 +4,7 @@ const { mockTrackUiButtonClicked } = vi.hoisted(() => ({
   mockTrackUiButtonClicked: vi.fn()
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackUiButtonClicked: mockTrackUiButtonClicked
   })

@@ -10,7 +10,7 @@ const mocks = vi.hoisted(() => ({
   resolveOutputAssetItems: vi.fn()
 }))
 
-vi.mock('@/platform/assets/utils/outputAssetUtil', () => ({
+vi.mock(import('@/platform/assets/utils/outputAssetUtil'), () => ({
   resolveOutputAssetItems: mocks.resolveOutputAssetItems
 }))
 

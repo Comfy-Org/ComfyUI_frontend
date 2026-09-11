@@ -80,15 +80,19 @@ jobs:
           ref: ${{ steps.pr-info.outputs.branch }}
           token: ${{ secrets.PR_GH_TOKEN }}
 
-      - name: Install pnpm
-        run: corepack enable && corepack prepare
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          node_cache: 'false'
 
       - name: Build website
         env:
+          NODE_ENV: production
+          WORKSHOP_IN_BUILD: '1'
+          PUBLIC_WORKSHOP_ROUTER_RUN: '1'
+          PUBLIC_WORKSHOP_CLOUD_ENV: test
           WEBSITE_GITHUB_STARS_OVERRIDE: 110000
+          PUBLIC_CUSTOMERIO_WRITE_KEY: test-e2e-write-key
         run: pnpm --filter @comfyorg/website build
 
       - name: Update screenshots

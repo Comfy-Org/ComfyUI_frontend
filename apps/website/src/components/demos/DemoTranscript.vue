@@ -5,6 +5,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { ref } from 'vue'
 
 import { t } from '../../i18n/translations'
+import SafeRichText from '@/components/common/SafeRichTextContent'
 
 const { transcript, locale = 'en' } = defineProps<{
   transcript: string
@@ -22,28 +23,29 @@ const expanded = ref(false)
     <div class="mx-auto max-w-4xl">
       <button
         type="button"
-        class="text-primary-comfy-canvas text-left"
+        class="text-left text-primary-comfy-canvas"
         :aria-expanded="expanded"
         @click="expanded = !expanded"
       >
         <span class="text-sm font-semibold tracking-wide uppercase">
           {{ t('demos.transcript.label', locale) }}
         </span>
-        <span class="text-primary-warm-gray ml-2 text-xs">
+        <span class="ml-2 text-xs text-primary-warm-gray">
           {{ t('demos.transcript.note', locale) }}
         </span>
       </button>
 
-      <div
+      <SafeRichText
+        as="div"
         role="region"
         :aria-label="t('demos.transcript.label', locale)"
         :class="
           cn(
             expanded ? 'mt-4' : 'sr-only',
-            'text-primary-warm-gray text-sm/relaxed'
+            'text-sm/relaxed text-primary-warm-gray'
           )
         "
-        v-html="transcript"
+        :html="transcript"
       />
     </div>
   </section>

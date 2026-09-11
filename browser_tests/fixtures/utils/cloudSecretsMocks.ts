@@ -67,7 +67,7 @@ export async function mockSecretsBackend(
     // Anchor to the start of the pathname so only genuine `/api/secrets…` API
     // routes are handled; everything else falls through to the real Vite server.
     if (!/^\/api\/secrets(\/|$)/.test(pathname)) {
-      return route.continue()
+      return route.fallback()
     }
 
     // GET /secrets/providers — the entitlement-gated provider allowlist.

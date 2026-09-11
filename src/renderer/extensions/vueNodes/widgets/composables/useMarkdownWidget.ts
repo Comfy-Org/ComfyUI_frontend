@@ -1,15 +1,16 @@
 import { Editor as TiptapEditor } from '@tiptap/core'
-import TiptapLink from '@tiptap/extension-link'
-import TiptapTable from '@tiptap/extension-table'
-import TiptapTableCell from '@tiptap/extension-table-cell'
-import TiptapTableHeader from '@tiptap/extension-table-header'
-import TiptapTableRow from '@tiptap/extension-table-row'
+import {
+  Table as TiptapTable,
+  TableCell as TiptapTableCell,
+  TableHeader as TiptapTableHeader,
+  TableRow as TiptapTableRow
+} from '@tiptap/extension-table'
 import TiptapStarterKit from '@tiptap/starter-kit'
 import { Markdown as TiptapMarkdown } from 'tiptap-markdown'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import { resolveNodeRootGraphId } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { resolveNodeRootGraphId } from '@/lib/litegraph/src/utils/widget'
 import { forwardMiddleButtonToCanvas } from '@/renderer/extensions/vueNodes/widgets/utils/forwardMiddleButtonToCanvas'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { app } from '@/scripts/app'
@@ -33,7 +34,6 @@ function addMarkdownWidget(
     extensions: [
       TiptapStarterKit,
       TiptapMarkdown,
-      TiptapLink,
       TiptapTable,
       TiptapTableCell,
       TiptapTableHeader,

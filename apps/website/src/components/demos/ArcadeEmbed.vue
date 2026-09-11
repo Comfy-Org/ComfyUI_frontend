@@ -35,9 +35,9 @@ const loaded = ref(false)
         class="absolute inset-0 flex flex-col items-center justify-center bg-black/50"
       >
         <div
-          class="border-primary-comfy-canvas/60 mb-4 size-10 animate-pulse rounded-full border-2"
+          class="mb-4 size-10 animate-pulse rounded-full border-2 border-primary-comfy-canvas/60"
         />
-        <p class="text-primary-warm-gray text-sm">
+        <p class="text-sm text-primary-warm-gray">
           {{ t('demos.loading', locale) }}
         </p>
       </div>

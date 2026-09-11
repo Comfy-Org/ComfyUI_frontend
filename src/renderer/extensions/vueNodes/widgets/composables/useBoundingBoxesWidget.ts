@@ -19,6 +19,6 @@ export const useBoundingBoxesWidget = (): ComfyWidgetConstructorV2 => {
       serialize: true,
       canvasOnly: false,
       hideInPanel: true
-    }) as IBaseWidget
+    })
   }
 }

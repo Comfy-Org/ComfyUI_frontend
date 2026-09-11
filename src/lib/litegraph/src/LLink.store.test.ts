@@ -1,6 +1,5 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { getActivePinia, setActivePinia } from 'pinia'
+import { describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
 import { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
@@ -22,8 +21,6 @@ import {
 } from './subgraph/__fixtures__/subgraphHelpers'
 
 describe('LLink ↔ linkStore integration', () => {
-  beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
-
   it('preserves the id and reactive state of a registered link', () => {
     const graph = new LGraph()
     const link = new LLink(
@@ -67,9 +64,13 @@ describe('LLink ↔ linkStore integration', () => {
   })
 
   it('requires Pinia when constructing a root graph', () => {
+    const pinia = getActivePinia()
     setActivePinia(undefined)
-
-    expect(() => new LGraph()).toThrow()
+    try {
+      expect(() => new LGraph()).toThrow()
+    } finally {
+      setActivePinia(pinia)
+    }
   })
 
   it('does not add a link when topology registration is rejected', () => {

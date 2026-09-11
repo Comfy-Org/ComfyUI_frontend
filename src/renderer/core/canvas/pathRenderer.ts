@@ -438,8 +438,8 @@ export class CanvasPathRenderer {
       ctx.fillStyle = color
       ctx.beginPath()
       ctx.moveTo(-5, -3)
-      ctx.lineTo(0, +7)
-      ctx.lineTo(+5, -3)
+      ctx.lineTo(0, 7)
+      ctx.lineTo(5, -3)
       ctx.fill()
       ctx.setTransform(transform)
     }

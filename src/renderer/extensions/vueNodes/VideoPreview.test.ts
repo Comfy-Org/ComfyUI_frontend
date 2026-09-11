@@ -1,4 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
@@ -8,7 +8,7 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 
 import VideoPreview from '@/renderer/extensions/vueNodes/VideoPreview.vue'
 
-vi.mock('@/base/common/downloadUtil', () => ({
+vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadFile: vi.fn()
 }))
 
@@ -49,7 +49,7 @@ describe('VideoPreview', () => {
         typeof VideoPreview
       >,
       global: {
-        plugins: [createTestingPinia({ createSpy: vi.fn }), i18n],
+        plugins: [getActivePinia()!, i18n],
         stubs: {
           Skeleton: true
         }

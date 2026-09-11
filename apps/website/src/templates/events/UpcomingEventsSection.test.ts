@@ -44,7 +44,7 @@ const { streamedEvent, externalEvent, stub } = vi.hoisted(() => {
   return { streamedEvent, externalEvent, stub: { upcomingEvents } }
 })
 
-vi.mock('../../data/events', async (importOriginal) => {
+vi.mock(import('../../data/events'), async (importOriginal) => {
   const actual = await importOriginal<typeof EventsData>()
   return {
     ...actual,

@@ -213,7 +213,6 @@ export class AppModeHelper {
   async enterAppModeWithInputs(inputs: [string, string][]) {
     await this.page.evaluate(async (inputTuples) => {
       const graph = window.app!.graph
-      if (!graph) return
 
       const outputNodeIds = graph.nodes
         .filter(

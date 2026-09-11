@@ -113,10 +113,11 @@
           :selectable-assets="listViewSelectableAssets"
           :is-stack-expanded="isListViewStackExpanded"
           :toggle-stack="toggleListViewStack"
+          :on-load-more="loadMoreAssets"
+          :can-load-more="canLoadMoreAssets"
           @select-asset="handleAssetSelect"
           @preview-asset="handleZoomClick"
           @context-menu="handleAssetContextMenu"
-          @approach-end="handleApproachEnd"
         />
         <div v-else class="size-full">
           <AssetsSidebarGridView
@@ -125,10 +126,11 @@
             :show-output-count
             :get-output-count
             :grid-mode
+            :on-load-more="loadMoreAssets"
+            :can-load-more="canLoadMoreAssets"
             @select-asset="handleAssetSelect"
             @toggle-asset-selection="handleAssetSelectionToggle"
             @context-menu="handleAssetContextMenu"
-            @approach-end="handleApproachEnd"
             @zoom="handleZoomClick"
             @output-count-click="enterFolderView"
           />
@@ -181,7 +183,6 @@
 import {
   unrefElement,
   useAsyncState,
-  useDebounceFn,
   useStorage,
   useTimeoutFn
 } from '@vueuse/core'
@@ -230,20 +231,20 @@ import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataS
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
 import {
-  getAssetSubfolder,
-  getAssetUrl
+  getAssetFileUrl,
+  getAssetSubfolder
 } from '@/platform/assets/utils/assetUrlUtil'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { isCloud } from '@/platform/distribution/types'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { ResultItemImpl } from '@/stores/queueStore'
 import {
   formatDuration,
   getMediaTypeFromFilename,
   isPreviewableMediaType
 } from '@/utils/formatUtil'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 
 const Load3dViewerContent = defineAsyncComponent(
   () => import('@/components/load3d/Load3dViewerContent.vue')
@@ -434,7 +435,10 @@ const showLoadingState = computed(
 
 const showEmptyState = computed(
   () =>
-    !loading.value && !isFolderLoading.value && displayAssets.value.length === 0
+    !loading.value &&
+    !isFolderLoading.value &&
+    !canLoadMoreAssets.value &&
+    displayAssets.value.length === 0
 )
 
 watch(visibleAssets, (newAssets) => {
@@ -455,25 +459,17 @@ watch(galleryActiveIndex, (index) => {
   }
 })
 
-const galleryItems = computed(() => {
+const galleryItems = computed<AugmentedResultItem[]>(() => {
   return previewableVisibleAssets.value.map((asset) => {
     const mediaType = getMediaTypeFromFilename(asset.name)
-    const resultItem = new ResultItemImpl({
+    return {
       filename: asset.name,
       subfolder: getAssetSubfolder(asset),
       type: 'output',
       nodeId: '0',
-      mediaType: mediaType === 'image' ? 'images' : mediaType
-    })
-
-    Object.defineProperty(resultItem, 'url', {
-      get() {
-        return asset.preview_url || ''
-      },
-      configurable: true
-    })
-
-    return resultItem
+      mediaType: mediaType === 'image' ? 'images' : mediaType,
+      url: asset.preview_url || ''
+    }
   })
 })
 
@@ -576,7 +572,7 @@ const handleZoomClick = (asset: AssetItem) => {
       title: getAssetDisplayName(asset),
       component: Load3dViewerContent,
       props: {
-        modelUrl: asset.preview_url || getAssetUrl(asset)
+        modelUrl: getAssetFileUrl(asset)
       },
       dialogComponentProps: {
         renderer: 'reka',
@@ -673,7 +669,8 @@ const copyJobId = async () => {
   }
 }
 
-const handleApproachEnd = useDebounceFn(async () => {
-  if (!isInFolderView.value) await currentAssets.value.loadMore()
-}, 300)
+const loadMoreAssets = () => currentAssets.value.loadMore()
+const canLoadMoreAssets = computed(
+  () => !isInFolderView.value && toValue(currentAssets.value.hasMore)
+)
 </script>

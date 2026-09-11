@@ -2,6 +2,8 @@ import { z } from 'zod'
 import type { SafeParseReturnType } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 import type { RendererType } from '@/lib/litegraph/src/LGraph'
+import { parseLinkId } from '@/types/linkId'
+import type { LinkPresentation } from '@/types/linkPresentation'
 
 const zRendererType = z.enum([
   'LG',
@@ -81,6 +83,13 @@ const zComfyLinkExtension = z
   })
   .passthrough()
 
+const zLinkPresentationFields = {
+  hidden: z.boolean().optional(),
+  label: z.string().optional()
+} satisfies { [K in keyof LinkPresentation]-?: z.ZodType<LinkPresentation[K]> }
+
+const zComfyLinkPresentation = z.object(zLinkPresentationFields).passthrough()
+
 const zComfyLinkObject = z
   .object({
     id: z.number(),
@@ -89,7 +98,8 @@ const zComfyLinkObject = z
     target_id: zNodeId,
     target_slot: zSlotIndex,
     type: zDataType,
-    parentId: z.number().optional()
+    parentId: z.number().optional(),
+    ...zLinkPresentationFields
   })
   .passthrough()
 
@@ -286,6 +296,14 @@ const zExtra = z
     ds: zDS.optional(),
     frontendVersion: z.string().optional(),
     linkExtensions: z.array(zComfyLinkExtension).optional(),
+    linkPresentation: z
+      .record(
+        z.string().refine((value) => parseLinkId(value) !== undefined, {
+          message: 'Expected a canonical integer link ID'
+        }),
+        zComfyLinkPresentation
+      )
+      .optional(),
     reroutes: z.array(zReroute).optional(),
     workflowRendererVersion: zRendererType.optional(),
     BlueprintDescription: z.string().optional(),
@@ -399,8 +417,7 @@ export const zComfyWorkflow1 = zBaseExportableGraph
               SubgraphDefinitionBase<ComfyWorkflow1BaseOutput>,
               z.ZodTypeDef,
               SubgraphDefinitionBase<ComfyWorkflow1BaseInput>
-            >,
-            'many'
+            >
           > => z.array(zSubgraphDefinition)
         )
       })
@@ -486,8 +503,7 @@ const zSubgraphDefinition = zComfyWorkflow1
               SubgraphDefinitionBase<ComfyWorkflow1BaseInput>,
               z.ZodTypeDef,
               SubgraphDefinitionBase<ComfyWorkflow1BaseInput>
-            >,
-            'many'
+            >
           > => zSubgraphDefinition.array()
         )
       })

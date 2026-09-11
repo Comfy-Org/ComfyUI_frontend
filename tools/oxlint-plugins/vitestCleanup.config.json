@@ -7,6 +7,15 @@
   "overrides": [
     {
       "files": [
+        "**/*.{test,spec}.{ts,tsx}",
+        "**/{__test__,__tests__,__fixtures__}/**/*.{ts,tsx}"
+      ],
+      "rules": {
+        "comfy/use-global-pinia": "error"
+      }
+    },
+    {
+      "files": [
         "**/apps/**/*.test.{ts,tsx}",
         "**/packages/**/*.test.{ts,tsx}",
         "**/scripts/**/*.test.{ts,tsx}",

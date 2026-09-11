@@ -1,3 +1,5 @@
+import type * as VueUse from '@vueuse/core'
+import { useExecutionStore } from '@/stores/executionStore'
 import { useThrottleFn } from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
@@ -20,21 +22,12 @@ import {
   createMockLinks
 } from '@/utils/__tests__/litegraphTestUtils'
 
-vi.mock('@vueuse/core', () => ({
+vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => ({
+  ...(await importOriginal<typeof VueUse>()),
   useThrottleFn: vi.fn((fn) => fn)
 }))
 
-const { mockProgressStates } = vi.hoisted(() => ({
-  mockProgressStates: {} as Record<string, { state: string }>
-}))
-
-vi.mock('@/stores/executionStore', () => ({
-  useExecutionStore: vi.fn(() => ({
-    nodeProgressStates: mockProgressStates
-  }))
-}))
-
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     addEventListener: vi.fn(),
     removeEventListener: vi.fn()
@@ -61,8 +54,8 @@ describe('useMinimapGraph', () => {
     })
 
     onGraphChangedMock = vi.fn()
-    for (const key of Object.keys(mockProgressStates)) {
-      delete mockProgressStates[key]
+    for (const key of Object.keys(useExecutionStore().nodeProgressStates)) {
+      delete useExecutionStore().nodeProgressStates[key]
     }
   })
 
@@ -105,6 +98,23 @@ describe('useMinimapGraph', () => {
     mockGraph.events.dispatch('node:added', { node: { id: '3' } as LGraphNode })
 
     expect(onGraphChangedMock).toHaveBeenCalled()
+  })
+
+  it('notifies on connection change after running the original callback', () => {
+    const originalOnConnectionChange = vi.fn()
+    mockGraph.onConnectionChange = originalOnConnectionChange
+
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+    const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
+
+    graphManager.setupEventListeners()
+    mockGraph.onConnectionChange(mockGraph._nodes[0])
+
+    expect(originalOnConnectionChange).toHaveBeenCalledWith(mockGraph._nodes[0])
+    expect(onGraphChangedMock).toHaveBeenCalledTimes(1)
+    expect(originalOnConnectionChange.mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(onGraphChangedMock).mock.invocationCallOrder[0]
+    )
   })
 
   it('should prevent duplicate event listener setup', () => {
@@ -181,7 +191,7 @@ describe('useMinimapGraph', () => {
 
     // Call the method directly and ensure it is a no-op
     const testNode = { id: '9' } as LGraphNode
-    buriedWrapper!(testNode)
+    buriedWrapper(testNode)
 
     expect(originalOnConnectionChange).toHaveBeenCalledWith(testNode)
     expect(onGraphChangedMock).not.toHaveBeenCalled()
@@ -483,11 +493,23 @@ describe('useMinimapGraph', () => {
     graphManager.checkForChanges()
     expect(graphManager.checkForChanges()).toBe(false)
 
-    mockProgressStates['1'] = { state: 'running' }
+    useExecutionStore().nodeProgressStates['1'] = {
+      state: 'running',
+      value: 1,
+      max: 2,
+      node_id: '1',
+      prompt_id: 'job-1'
+    }
     expect(graphManager.checkForChanges()).toBe(true)
     expect(graphManager.checkForChanges()).toBe(false)
 
-    mockProgressStates['1'] = { state: 'finished' }
+    useExecutionStore().nodeProgressStates['1'] = {
+      state: 'finished',
+      value: 2,
+      max: 2,
+      node_id: '1',
+      prompt_id: 'job-1'
+    }
     expect(graphManager.checkForChanges()).toBe(true)
   })
 

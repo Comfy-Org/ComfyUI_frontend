@@ -4,6 +4,7 @@
       <WorkspaceProfilePic
         class="size-12 text-3xl!"
         :workspace-name="workspaceName"
+        :subscription-tier="activeWorkspace?.subscriptionTier"
       />
       <h1 class="text-3xl font-semibold text-base-foreground">
         {{ workspaceName }}
@@ -32,5 +33,5 @@ const { section } = defineProps<{
   section: 'planCredits' | 'members' | 'allowlist'
 }>()
 
-const { workspaceName } = storeToRefs(useTeamWorkspaceStore())
+const { workspaceName, activeWorkspace } = storeToRefs(useTeamWorkspaceStore())
 </script>

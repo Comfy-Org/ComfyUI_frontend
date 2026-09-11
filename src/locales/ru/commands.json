@@ -278,9 +278,6 @@
   "Comfy_Subgraph_SetSearchAliases": {
     "label": "Установить поисковые псевдонимы подграфа"
   },
-  "Comfy_ToggleAssetAPI": {
-    "label": "Экспериментально: Включить AssetAPI"
-  },
   "Comfy_ToggleCanvasInfo": {
     "label": "Производительность холста"
   },

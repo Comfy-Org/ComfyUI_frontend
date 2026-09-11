@@ -6,6 +6,7 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import { WidgetSelectDropdownFixture } from '@e2e/fixtures/components/WidgetSelectDropdown'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { assetPath } from '@e2e/fixtures/utils/paths'
 
 test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
   test.describe('media selection', { tag: '@widget' }, () => {
@@ -61,6 +62,30 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
         comfyPage.page.getByTestId(TestIds.errors.videoLoadError).count()
       )
       .toBeGreaterThan(0)
+  })
+
+  test('uploads an EXR image', async ({ comfyPage, comfyFiles }) => {
+    await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
+
+    const [loadImageNode] =
+      await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
+    const imageWidget = await loadImageNode.getWidgetByName('image')
+    const node = comfyPage.vueNodes.getNodeByTitle('Load Image')
+    const filename = 'test_upload_image.exr'
+    const uploadResponse = comfyPage.page.waitForResponse(
+      (response) =>
+        response.url().includes('/upload/image') && response.status() === 200
+    )
+
+    await node.locator('input[type="file"]').setInputFiles(assetPath(filename))
+    comfyFiles.deleteAfterTest({ filename, type: 'input' })
+    await uploadResponse
+
+    await expect.poll(() => imageWidget.getValue()).toBe(filename)
+    await expect(
+      node.getByRole('button', { name: filename, exact: true })
+    ).toBeVisible()
+    await expect(node.getByTestId(TestIds.errors.imageLoadError)).toBeHidden()
   })
 
   test('shows a spinner during upload', async ({ comfyPage }) => {

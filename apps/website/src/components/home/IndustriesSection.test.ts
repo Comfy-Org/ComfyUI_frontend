@@ -11,7 +11,7 @@ import IndustriesSection from './IndustriesSection.vue'
 
 const motion = vi.hoisted(() => ({ reduced: false }))
 
-vi.mock('../../composables/useReducedMotion', () => ({
+vi.mock(import('../../composables/useReducedMotion'), () => ({
   prefersReducedMotion: () => motion.reduced
 }))
 
@@ -26,6 +26,43 @@ describe('IndustriesSection', () => {
   beforeEach(() => {
     motion.reduced = false
     stubIntersectionObserver()
+  })
+
+  it('renders the homepage eyebrow and body with no heading by default', () => {
+    render(IndustriesSection)
+
+    expect(screen.getByText('Industries')).toBeTruthy()
+    expect(screen.getByText(/Powered by 60,000\+ nodes/)).toBeTruthy()
+    expect(screen.queryByRole('heading', { level: 2 })).toBeNull()
+  })
+
+  it('replaces the eyebrow and body with a heading when overridden', () => {
+    render(IndustriesSection, {
+      props: { heading: 'Built with studios in the room' }
+    })
+
+    expect(
+      screen.getByRole('heading', {
+        level: 2,
+        name: 'Built with studios in the room'
+      })
+    ).toBeTruthy()
+    expect(screen.queryByText('Industries')).toBeNull()
+    expect(screen.queryByText(/Powered by 60,000\+ nodes/)).toBeNull()
+  })
+
+  it('keeps the industry list and CTA when both overrides are provided', () => {
+    render(IndustriesSection, {
+      props: {
+        heading: 'Built with studios in the room',
+        body: 'A body override.'
+      }
+    })
+
+    expect(screen.getByText('A body override.')).toBeTruthy()
+    const nav = screen.getByRole('navigation', { name: 'Industry categories' })
+    expect(nav.querySelectorAll('button')).toHaveLength(4)
+    expect(screen.getByRole('link', { name: 'EXPLORE WORKFLOWS' })).toBeTruthy()
   })
 
   it('lists the four industries starting on VFX & Animation', () => {

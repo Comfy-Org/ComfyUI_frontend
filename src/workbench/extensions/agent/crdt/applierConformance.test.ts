@@ -220,10 +220,10 @@ describe('applier conformance (the pinned package the doc host runs)', () => {
     const doc = seedDoc()
     const newer = setWidget(20, {
       stamp: [5, 'human:u1:tab']
-    } as Partial<SetWidgetOp>)
+    })
     const older = setWidget(10, {
       stamp: [2, 'human:u1:tab']
-    } as Partial<SetWidgetOp>)
+    })
 
     applyOps(doc, [newer], CATALOG)
     const result = applyOps(doc, [older], CATALOG)
@@ -234,8 +234,8 @@ describe('applier conformance (the pinned package the doc host runs)', () => {
 
   it('orders by the stamp FIELD, exact ties broken by op_id (KA-2 offline order)', () => {
     const actor = 'human:u1:tab'
-    const low = setWidget(1, { stamp: [3, actor] } as Partial<SetWidgetOp>)
-    const high = setWidget(2, { stamp: [3, actor] } as Partial<SetWidgetOp>)
+    const low = setWidget(1, { stamp: [3, actor] })
+    const high = setWidget(2, { stamp: [3, actor] })
 
     const winner =
       compareStampKeys(stampKey(low), stampKey(high)) > 0 ? low : high
