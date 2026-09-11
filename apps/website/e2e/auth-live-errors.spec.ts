@@ -2,6 +2,12 @@ import { expect } from '@playwright/test'
 import type { Page, Route } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
+import {
+  WORKSHOP_EMAIL,
+  forceWorkshopAuthFlag,
+  jsonRoute,
+  mockFirebaseSignInFailure
+} from './fixtures/workshopAuth'
 
 /**
  * The website's equivalents of the app's `signInDialogAuthErrors.spec.ts`
@@ -10,57 +16,6 @@ import { test } from './fixtures/blockExternalMedia'
  * password-requirements checklist, and the China region gate, all through
  * `AuthEmailForm.vue` / `AuthSignInPanel.vue`.
  */
-
-const WORKSHOP_EMAIL = 'workshop-e2e@test.comfy.org'
-
-function jsonRoute(body: unknown, status = 200) {
-  return { status, contentType: 'application/json', body: JSON.stringify(body) }
-}
-
-async function forceWorkshopAuthFlag(page: Page) {
-  await page.route('**/t.comfy.org/**', (route) => {
-    if (!/\/(flags|decide)\//.test(route.request().url())) {
-      return route.abort('blockedbyclient')
-    }
-    return route.fulfill(
-      jsonRoute({
-        featureFlags: { 'workshop-auth': true },
-        featureFlagPayloads: {},
-        flags: {
-          'workshop-auth': {
-            key: 'workshop-auth',
-            enabled: true,
-            variant: null,
-            reason: { code: 'condition_match', condition_index: 0 },
-            metadata: { id: 1, version: 1, payload: null }
-          }
-        }
-      })
-    )
-  })
-}
-
-async function mockFirebaseSignInFailure(
-  page: Page,
-  code: number,
-  message: string
-) {
-  await page.route(
-    '**/identitytoolkit.googleapis.com/**',
-    async (route: Route) => {
-      const url = route.request().url()
-      if (!url.includes('accounts:signInWithPassword')) return route.fallback()
-      return route.fulfill(
-        jsonRoute(
-          {
-            error: { code, message, errors: [{ message, reason: 'invalid' }] }
-          },
-          code
-        )
-      )
-    }
-  )
-}
 
 async function mockFirebaseSignUpFailure(
   page: Page,
@@ -90,13 +45,6 @@ async function openEmailForm(page: Page) {
 
 test.describe('Live sign-in error codes', () => {
   test.beforeEach(async ({ page }) => {
-    await page.route('**/cdn-cgi/trace', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'text/plain',
-        body: 'loc=US\n'
-      })
-    )
     await forceWorkshopAuthFlag(page)
   })
 
@@ -183,13 +131,6 @@ test.describe('Live sign-in error codes', () => {
 
 test.describe('Live sign-up error codes and password checklist', () => {
   test.beforeEach(async ({ page }) => {
-    await page.route('**/cdn-cgi/trace', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'text/plain',
-        body: 'loc=US\n'
-      })
-    )
     await forceWorkshopAuthFlag(page)
   })
 
