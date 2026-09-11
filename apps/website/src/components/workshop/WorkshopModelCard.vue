@@ -117,12 +117,10 @@ const pillClass =
         v-if="thumbnailLabel"
         :class="
           cn(
-            'bg-brand text-page pointer-events-none absolute top-4 -right-11 z-10 flex h-10 w-40 rotate-45 items-center justify-center font-sans font-extrabold whitespace-nowrap shadow-sm select-none',
-            thumbnailLabel.length > 9
-              ? 'text-[0.5625rem]'
-              : thumbnailLabel.length > 6
-                ? 'text-xs'
-                : 'text-base'
+            'bg-site-dropdown pointer-events-none absolute z-10 rounded-xl border border-white/10 px-3 py-2 text-sm leading-none font-bold whitespace-nowrap text-primary-warm-white shadow-sm transition-all duration-500 select-none group-hover:opacity-0 group-focus-visible:opacity-0',
+            providerBadge
+              ? 'top-3 right-3 group-hover:translate-x-1 group-hover:-translate-y-1'
+              : 'bottom-3 left-3 group-hover:-translate-x-1 group-hover:translate-y-1'
           )
         "
         aria-hidden="true"
