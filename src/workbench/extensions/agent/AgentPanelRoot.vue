@@ -960,11 +960,12 @@ const { submit: onSend } = useAgentDraftSubmission({
       node_tag_count: nodes.length
     })
     return sendMessage(text, attachments, nodes, references)
-  }
+  },
+  stop: stopTurn
 })
 
 function onStop(): void {
-  void stopTurn()
+  if (!composerStore.requestSubmissionStop()) void stopTurn()
 }
 
 function onRenameChat(title: string): void {

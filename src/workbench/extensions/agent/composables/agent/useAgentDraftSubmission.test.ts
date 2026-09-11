@@ -62,7 +62,8 @@ function setup() {
         workflow: () => nodeWorkflow.value,
         exit: () => {}
       },
-      send
+      send,
+      stop: vi.fn(async () => {})
     }
     let submission = useAgentDraftSubmission(options)
     let mountedScope = scope

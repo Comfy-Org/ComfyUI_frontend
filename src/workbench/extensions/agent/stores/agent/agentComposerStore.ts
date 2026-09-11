@@ -22,6 +22,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
   const submission = shallowRef<{
     id: number
     phase: 'pending' | 'failed'
+    stopRequested: boolean
     revision: number
     snapshot: SubmittedDraft
   } | null>(null)
@@ -42,8 +43,21 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     attachments.value = []
     workflowReferences.value = []
     const id = ++nextSubmissionId
-    submission.value = { id, phase: 'pending', revision, snapshot }
+    submission.value = {
+      id,
+      phase: 'pending',
+      stopRequested: false,
+      revision,
+      snapshot
+    }
     return id
+  }
+
+  function requestSubmissionStop(): boolean {
+    const pending = submission.value
+    if (pending?.phase !== 'pending') return false
+    submission.value = { ...pending, stopRequested: true }
+    return true
   }
 
   function settleSubmission(id: number, sent: boolean): void {
@@ -73,6 +87,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     submission,
     markEdited,
     startSubmission,
+    requestSubmissionStop,
     settleSubmission,
     takeFailedSubmission,
     invalidateSubmission

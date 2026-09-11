@@ -24,6 +24,7 @@ interface UseAgentDraftSubmissionOptions {
     nodes: SelectedNode[],
     references: WorkflowReference[]
   ) => Promise<boolean>
+  stop: () => Promise<void>
 }
 
 export function useAgentDraftSubmission(
@@ -94,7 +95,11 @@ export function useAgentDraftSubmission(
       nodes,
       sentReferences
     )
+    const stopRequested =
+      composer.submission?.id === submissionId &&
+      composer.submission.stopRequested
     composer.settleSubmission(submissionId, sent)
+    if (sent && stopRequested) await options.stop()
   }
 
   return { submit }

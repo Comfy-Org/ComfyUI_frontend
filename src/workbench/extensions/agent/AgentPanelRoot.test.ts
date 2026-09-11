@@ -4997,9 +4997,10 @@ describe('AgentPanelRoot workflow binding', () => {
     ].flatMap((nextAction) =>
       ['mounted', 'reopened'].map((panel) => ({ nextAction, panel }))
     ),
-    { nextAction: 'untouched', panel: 'closed' }
+    { nextAction: 'untouched', panel: 'closed' },
+    { nextAction: 'stop', panel: 'reopened' }
   ])(
-    'recovers a failed send only in its untouched composer: $nextAction ($panel)',
+    'settles a submission without losing composer intent: $nextAction ($panel)',
     async ({ nextAction, panel }) => {
       setupWorkflowContext({
         targetId: 'wf-42',
@@ -5008,6 +5009,7 @@ describe('AgentPanelRoot workflow binding', () => {
         ]
       })
       const bodies: Record<string, unknown>[] = []
+      const cancellations: string[] = []
       let finishSend: (response: Response) => void = () => {}
       const response = new Promise<Response>((resolve) => {
         finishSend = resolve
@@ -5015,6 +5017,10 @@ describe('AgentPanelRoot workflow binding', () => {
       vi.stubGlobal(
         'fetch',
         vi.fn(async (url: string, init?: RequestInit) => {
+          if (url.endsWith('/cancel')) {
+            cancellations.push(url)
+            return json(200, {})
+          }
           if (url.includes('/messages') && init?.method === 'POST') {
             bodies.push(
               JSON.parse(String(init.body)) as Record<string, unknown>
@@ -5116,7 +5122,22 @@ describe('AgentPanelRoot workflow binding', () => {
         )
         await userEvent.click(await screen.findByText('Earlier chat'))
       }
-      finishSend(json(500, { error: 'Unavailable' }))
+      if (nextAction === 'stop') {
+        await userEvent.click(screen.getByRole('button', { name: 'Stop' }))
+        expect(cancellations).toHaveLength(0)
+      }
+      finishSend(
+        nextAction === 'stop'
+          ? json(202, ack('wf-42', 'm-stopped'))
+          : json(500, { error: 'Unavailable' })
+      )
+      if (nextAction === 'stop') {
+        await vi.waitFor(() => expect(cancellations).toHaveLength(1))
+        expect(cancellations[0]).toContain('m-stopped')
+        expect(composer.draft).toBe('')
+        expect(composer.workflowReferences).toEqual([])
+        return
+      }
       if (panel === 'closed') {
         await vi.waitFor(() =>
           expect(composer.submission?.phase).toBe('failed')
