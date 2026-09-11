@@ -20,6 +20,10 @@ const renderModes = [
 ] as const
 
 test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
+  test.use({
+    initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true }
+  })
+
   for (const mode of renderModes) {
     test.describe(
       `(${mode.name})`,

@@ -24,7 +24,6 @@ test.describe(
   () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.appMode.enableLinearMode()
-      await comfyPage.appMode.allowVueNodeSwitchPopup()
       await comfyPage.menu.topbar.setVueNodesEnabled(false)
     })
 
