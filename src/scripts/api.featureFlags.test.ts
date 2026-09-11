@@ -123,7 +123,6 @@ describe('API Feature Flags', () => {
     })
 
     it('should handle server without feature flags support', async () => {
-      vi.useFakeTimers()
       // Initialize API connection
       const initPromise = api.init()
 
@@ -162,7 +161,6 @@ describe('API Feature Flags', () => {
     })
 
     it('settles feature flags when the socket closes before opening', () => {
-      vi.useFakeTimers()
       api.init()
 
       wsEventHandlers['error'](new Event('error'))
