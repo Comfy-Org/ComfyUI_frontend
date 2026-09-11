@@ -126,6 +126,15 @@ cleanup and does not copy again, so the committed destination is never
 overwritten by stale source data. A completion record identifies the source
 generation and lets a losing same-scope tab distinguish the winning copy from
 its own artifacts without allowing an older migration to suppress rollback.
+The record is stored persistently at
+`Comfy.Workflow.MigrationCompletion:<workspaceId>` as JSON containing the
+destination `scope`, the source index's `sourceUpdatedAt` generation and the
+winning claim's `nonce`. The winner writes it after publishing the destination
+index and before removing source artifacts. Losing attempts read it when they
+no longer own the claim and only treat it as another same-scope winner when
+both scope and source generation match. It has no TTL and remains for the
+lifetime of the browser's site storage so delayed losing attempts can still
+identify the committed generation.
 
 The first user to sign in on a browser therefore claims any pre-existing
 workspace-keyed drafts. This is accepted: before this change those drafts were
@@ -196,8 +205,9 @@ is a data loss for the common single-user case.
 - Writes made while the gate is `deferred` are not queued; if the tab closes
   before the gate opens, changes made during the transition are lost. This is
   the same window that already existed for the transitioning state.
-- One more key segment in `localStorage`; total storage use is unchanged after
-  migration because source keys are removed.
+- One more key segment in `localStorage`, plus one persistent migration
+  completion record per migrated workspace. Draft storage returns to one copy
+  after migration because source keys are removed.
 
 ## Notes
 
