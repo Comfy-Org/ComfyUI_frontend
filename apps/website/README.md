@@ -197,6 +197,36 @@ PUBLIC_WORKSHOP_ENABLED=1 PUBLIC_WORKSHOP_AUTH_FLAG=1 PUBLIC_WORKSHOP_ROUTER_RUN
 previews and production always use PostHog. This is a frontend visibility
 control; the APIs continue to enforce authentication and billing.
 
+### Models analytics
+
+Product analytics use the website's existing PostHog project, following the
+[telemetry routing policy](../../docs/adr/TELEMETRY-ROUTING-0013-telemetry-routing-across-consumers.md).
+Hex/Snowflake remains the downstream warehouse analysis layer.
+
+All event names below have the prefix `website:workshop_`:
+
+| Event                     | When it fires                                                                  |
+| ------------------------- | ------------------------------------------------------------------------------ |
+| `catalogue_viewed`        | Once per page mount, after the catalogue becomes visible.                      |
+| `model_viewed`            | Once per page mount, after a model page becomes visible.                       |
+| `api_viewed`              | The user opens a model's API tab.                                              |
+| `run_validation_failed`   | Local form validation rejects a Run action.                                    |
+| `run_started`             | A validated Run action begins, including uploads and credential refresh.       |
+| `run_finished`            | The attempt succeeds, fails, or is cancelled, with `status` and `duration_ms`. |
+| `output_download_clicked` | The user requests an output download.                                          |
+
+The basic funnel is catalogue view → model view → run started → run finished
+with `status=succeeded` → output download clicked. Model events include slug,
+Router ID, provider, and modality. Run events also retain the initiating
+`user_id`, `workspace_id`, and a unique `attempt_id` across their start and
+finish. Finished requests include `request_id` when available; success counts
+returned artifacts, and failures include only a bounded reason code.
+
+Retries get new attempt IDs even when they reuse a Router idempotency key.
+Cancellation describes the browser stopping its wait, not a billing outcome.
+Downloads measure clicks, not completed transfers. These events contain no
+prompts, form values, filenames, media URLs, output contents, or credentials.
+
 ### Which Cloud the Workshop talks to
 
 `PUBLIC_WORKSHOP_CLOUD_ENV` picks the backend family. Router, Cloud and the

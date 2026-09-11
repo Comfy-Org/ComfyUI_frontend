@@ -189,6 +189,40 @@ describe('capturePageview', () => {
   })
 })
 
+describe('Workshop analytics transport', () => {
+  beforeEach(() => {
+    vi.resetModules()
+  })
+
+  it('uses the website PostHog stream and cannot interrupt interaction when capture fails', async () => {
+    const { initPostHog, captureWorkshopEvent } = await import('./posthog')
+    captureWorkshopEvent({
+      name: 'catalogue_viewed',
+      properties: { model_count: 10 }
+    })
+    expect(hoisted.mockCapture).not.toHaveBeenCalled()
+    initPostHog()
+    captureWorkshopEvent({
+      name: 'catalogue_viewed',
+      properties: { model_count: 10 }
+    })
+    expect(hoisted.mockCapture).toHaveBeenCalledWith(
+      'website:workshop_catalogue_viewed',
+      { model_count: 10 }
+    )
+    vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    hoisted.mockCapture.mockImplementation(() => {
+      throw new Error('Capture unavailable')
+    })
+    expect(() =>
+      captureWorkshopEvent({
+        name: 'catalogue_viewed',
+        properties: { model_count: 10 }
+      })
+    ).not.toThrow()
+  })
+})
+
 describe('captureDownloadClick', () => {
   beforeEach(() => {
     vi.resetModules()

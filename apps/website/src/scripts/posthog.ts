@@ -17,6 +17,7 @@ import type { TurnstileMode } from '@comfyorg/account/turnstile'
 
 import type { Platform } from '@/composables/useDownloadUrl'
 import type { ConnectionId, McpClientId } from '@/config/mcpClients'
+import type { WorkshopAnalyticsEvent } from './workshop-analytics'
 
 const POSTHOG_KEY =
   import.meta.env.PUBLIC_POSTHOG_KEY ??
@@ -54,6 +55,10 @@ export type CliClientId =
   | 'ci'
 
 type AnalyticsEvent =
+  | {
+      name: `website:workshop_${WorkshopAnalyticsEvent['name']}`
+      properties: WorkshopAnalyticsEvent['properties']
+    }
   | { name: typeof ANALYTICS_EVENT.pageview; properties?: undefined }
   | {
       name: typeof ANALYTICS_EVENT.downloadButtonClicked
@@ -205,6 +210,13 @@ function captureEvent(event: AnalyticsEvent): void {
 
 export function capturePageview(): void {
   captureEvent({ name: ANALYTICS_EVENT.pageview })
+}
+
+export function captureWorkshopEvent(event: WorkshopAnalyticsEvent): void {
+  captureEvent({
+    name: `website:workshop_${event.name}`,
+    properties: event.properties
+  })
 }
 
 export function captureDownloadClick(platform: Platform): void {
