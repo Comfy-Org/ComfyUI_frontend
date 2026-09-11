@@ -24,12 +24,12 @@ import {
   upsertEntry
 } from '../base/draftCacheV2'
 import { hashPath } from '../base/hashUtil'
-import { getWorkspaceId } from '../base/storageKeys'
 import {
   deleteOrphanPayloads,
   deletePayload,
   deletePayloads,
   getPayloadKeys,
+  getStorageScope,
   isStorageAvailable,
   markStorageUnavailable,
   readIndex,
@@ -49,57 +49,50 @@ interface LoadPersistedWorkflowOptions {
 }
 
 export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
-  // In-memory cache of the index per workspace (synced with localStorage)
-  // Key is workspaceId, value is the cached index
-  const indexCacheByWorkspace = ref<Record<string, DraftIndexV2>>({})
-
-  /**
-   * Gets the current workspace ID fresh (not cached).
-   * This ensures operations use the correct workspace after switches.
-   */
-  function currentWorkspaceId(): string {
-    return getWorkspaceId()
-  }
+  // In-memory cache of the index per scope (synced with localStorage)
+  const indexCacheByScope = ref<Record<string, DraftIndexV2>>({})
 
   /**
    * Loads the index from localStorage or creates empty.
    */
   function loadIndex(): DraftIndexV2 {
-    const workspaceId = currentWorkspaceId()
+    const scope = getStorageScope()
+    if (!scope) return createEmptyIndex()
 
-    const cached = getCachedIndex(workspaceId)
+    const cached = getCachedIndex(scope)
     if (cached) return cached
 
-    const stored = readIndex(workspaceId)
+    const stored = readIndex(scope)
     if (stored) {
       // Clean up any index/payload drift
-      const payloadKeys = new Set(getPayloadKeys(workspaceId))
+      const payloadKeys = new Set(getPayloadKeys(scope))
       const cleaned = removeOrphanedEntries(stored, payloadKeys)
-      indexCacheByWorkspace.value[workspaceId] = cleaned
+      indexCacheByScope.value[scope] = cleaned
 
       // Also clean up orphan payloads
       const indexKeys = new Set(cleaned.order)
-      deleteOrphanPayloads(workspaceId, indexKeys)
+      deleteOrphanPayloads(scope, indexKeys)
 
       return cleaned
     }
 
     const emptyIndex = createEmptyIndex()
-    indexCacheByWorkspace.value[workspaceId] = emptyIndex
+    indexCacheByScope.value[scope] = emptyIndex
     return emptyIndex
   }
 
-  function getCachedIndex(workspaceId: string): DraftIndexV2 | null {
-    return indexCacheByWorkspace.value[workspaceId]
+  function getCachedIndex(scope: string): DraftIndexV2 | null {
+    return indexCacheByScope.value[scope]
   }
 
   /**
    * Persists the current index to localStorage.
    */
   function persistIndex(index: DraftIndexV2): boolean {
-    const workspaceId = currentWorkspaceId()
-    indexCacheByWorkspace.value[workspaceId] = index
-    return writeIndex(workspaceId, index)
+    const scope = getStorageScope()
+    if (!scope) return false
+    indexCacheByScope.value[scope] = index
+    return writeIndex(scope, index)
   }
 
   /**
@@ -107,9 +100,9 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
    * Primes index cache, writes payload, then persists updated index.
    */
   function saveDraft(path: string, data: string, meta: DraftMeta): boolean {
-    if (!isStorageAvailable()) return false
+    const scope = getStorageScope()
+    if (!scope || !isStorageAvailable()) return false
 
-    const workspaceId = currentWorkspaceId()
     const draftKey = hashPath(path)
     const now = Date.now()
 
@@ -119,7 +112,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     const index = loadIndex()
 
     // Write payload before persisting the updated index
-    const payloadWritten = writePayload(workspaceId, draftKey, {
+    const payloadWritten = writePayload(scope, draftKey, {
       data,
       updatedAt: now
     })
@@ -136,12 +129,12 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     )
 
     if (!persistIndex(newIndex)) {
-      deletePayload(workspaceId, draftKey)
+      deletePayload(scope, draftKey)
       persistIndex(index)
       return false
     }
 
-    deletePayloads(workspaceId, evicted)
+    deletePayloads(scope, evicted)
     return true
   }
 
@@ -163,7 +156,8 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     data: string,
     meta: DraftMeta
   ): boolean {
-    const workspaceId = currentWorkspaceId()
+    const scope = getStorageScope()
+    if (!scope) return false
     const draftKey = hashPath(path)
 
     let currentIndex = loadIndex()
@@ -182,12 +176,12 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
       const result = removeEntry(currentIndex, oldestEntry.path)
       currentIndex = result.index
       if (result.removedKey) {
-        deletePayload(workspaceId, result.removedKey)
+        deletePayload(scope, result.removedKey)
         evictedCount++
       }
 
       const now = Date.now()
-      if (writePayload(workspaceId, draftKey, { data, updatedAt: now })) {
+      if (writePayload(scope, draftKey, { data, updatedAt: now })) {
         const { index: finalIndex } = upsertEntry(
           currentIndex,
           path,
@@ -195,7 +189,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
           MAX_DRAFTS
         )
         if (!persistIndex(finalIndex)) {
-          deletePayload(workspaceId, draftKey)
+          deletePayload(scope, draftKey)
           persistIndex(currentIndex)
           return false
         }
@@ -259,12 +253,13 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
    * Removes a draft.
    */
   function removeDraft(path: string): void {
-    const workspaceId = currentWorkspaceId()
+    const scope = getStorageScope()
+    if (!scope) return
     const index = loadIndex()
     const { index: newIndex, removedKey } = removeEntry(index, path)
 
     if (removedKey) {
-      deletePayload(workspaceId, removedKey)
+      deletePayload(scope, removedKey)
       persistIndex(newIndex)
     }
   }
@@ -273,24 +268,25 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
    * Moves a draft from one path to another (rename).
    */
   function moveDraft(oldPath: string, newPath: string, name: string): void {
-    const workspaceId = currentWorkspaceId()
+    const scope = getStorageScope()
+    if (!scope) return
     const index = loadIndex()
     const result = moveEntry(index, oldPath, newPath, name)
 
     if (result) {
-      const oldPayload = readPayload(workspaceId, result.oldKey)
+      const oldPayload = readPayload(scope, result.oldKey)
       if (oldPayload) {
-        const written = writePayload(workspaceId, result.newKey, {
+        const written = writePayload(scope, result.newKey, {
           data: oldPayload.data,
           updatedAt: oldPayload.updatedAt
         })
         if (!written) return
 
         if (!persistIndex(result.index)) {
-          deletePayload(workspaceId, result.newKey)
+          deletePayload(scope, result.newKey)
           return
         }
-        deletePayload(workspaceId, result.oldKey)
+        deletePayload(scope, result.oldKey)
       }
     }
   }
@@ -304,13 +300,14 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     isTemporary: boolean
     updatedAt: number
   } | null {
-    const workspaceId = currentWorkspaceId()
+    const scope = getStorageScope()
+    if (!scope) return null
     const index = loadIndex()
     const entry = getEntryByPath(index, path)
     if (!entry) return null
 
     const draftKey = hashPath(path)
-    const payload = readPayload(workspaceId, draftKey)
+    const payload = readPayload(scope, draftKey)
     if (!payload) {
       // Payload missing - clean up index
       removeDraft(path)
@@ -418,8 +415,9 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
    * Resets the store (clears in-memory cache for current workspace).
    */
   function reset(): void {
-    const workspaceId = currentWorkspaceId()
-    delete indexCacheByWorkspace.value[workspaceId]
+    const scope = getStorageScope()
+    if (!scope) return
+    delete indexCacheByScope.value[scope]
   }
 
   return {

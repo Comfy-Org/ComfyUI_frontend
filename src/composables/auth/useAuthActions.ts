@@ -20,7 +20,8 @@ import { useTelemetry } from '@/platform/telemetry'
 import type { AuthFlowAction } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import {
-  clearAllWorkflowStorage,
+  clearWorkflowStorageForScope,
+  getStorageScope,
   prepareWorkflowLogoutTransition
 } from '@/platform/workflow/persistence/base/storageIO'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -132,10 +133,11 @@ export const useAuthActions = () => {
       }
     }
 
+    const departingScope = isCloud ? getStorageScope() : null
     await authStore.logout()
     if (isCloud) {
       prepareWorkflowLogoutTransition()
-      clearAllWorkflowStorage()
+      if (departingScope !== null) clearWorkflowStorageForScope(departingScope)
     }
 
     toastStore.add({

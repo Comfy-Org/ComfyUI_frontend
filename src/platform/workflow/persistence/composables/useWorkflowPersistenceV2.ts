@@ -32,12 +32,16 @@ import {
 import { PERSIST_DEBOUNCE_MS } from '../base/draftTypes'
 import type { StartupOutcome } from '../base/draftTypes'
 import {
-  clearAllWorkflowStorage,
   completeWorkflowLogoutTransition,
+  getStorageScope,
+  getStorageWriteGate,
   prepareWorkflowLogoutTransition,
-  registerWorkflowPersistenceFlush
+  registerWorkflowPersistenceFlush,
+  setStorageIdentity
 } from '../base/storageIO'
+import { getWorkspaceId } from '../base/storageKeys'
 import { migrateV1toV2 } from '../migration/migrateV1toV2'
+import { migrateWorkspaceToScope } from '../migration/migrateWorkspaceToScope'
 import { useWorkflowDraftStoreV2 } from '../stores/workflowDraftStoreV2'
 import { useWorkflowTabState } from './useWorkflowTabState'
 import { useSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
@@ -67,8 +71,19 @@ export function useWorkflowPersistenceV2() {
     stopWorkspaceReadinessWatcher = undefined
   }
 
-  // Run migration on module load, passing clientId for tab state migration
-  migrateV1toV2(undefined, api.clientId ?? api.initialClientId ?? undefined)
+  function ensureScopedStorage(clientId?: string): void {
+    const workspaceId = getWorkspaceId()
+    const scope = getStorageScope()
+    if (scope === null) return
+    if (scope === workspaceId) {
+      migrateV1toV2(scope, clientId)
+      return
+    }
+    migrateV1toV2(workspaceId, clientId)
+    migrateWorkspaceToScope(workspaceId, scope)
+  }
+
+  ensureScopedStorage(api.clientId ?? api.initialClientId ?? undefined)
 
   const ensureTemplateQueryFromIntent = async () => {
     hydratePreservedQuery(TEMPLATE_NAMESPACE)
@@ -89,6 +104,8 @@ export function useWorkflowPersistenceV2() {
   )
 
   const lastSavedJsonByPath = ref<Record<string, string>>({})
+  let resolvedUserId: string | null = null
+  let pendingPersistenceOwnerId: string | null = null
 
   watch(workflowPersistenceEnabled, (enabled) => {
     if (!enabled) {
@@ -98,16 +115,27 @@ export function useWorkflowPersistenceV2() {
   })
 
   const persistCurrentWorkflow = () => {
-    if (!workflowPersistenceEnabled.value) return
+    if (!workflowPersistenceEnabled.value) {
+      pendingPersistenceOwnerId = null
+      return
+    }
     const activeWorkflow = workflowStore.activeWorkflow
-    if (!activeWorkflow) return
+    if (!activeWorkflow) {
+      pendingPersistenceOwnerId = null
+      return
+    }
 
     const graphData = comfyApp.rootGraph.serialize()
     const workflowJson = JSON.stringify(graphData)
     const workflowPath = activeWorkflow.path
 
     // Skip if unchanged
-    if (workflowJson === lastSavedJsonByPath.value[workflowPath]) return
+    if (workflowJson === lastSavedJsonByPath.value[workflowPath]) {
+      pendingPersistenceOwnerId = null
+      return
+    }
+    if (getStorageWriteGate() === 'deferred') return
+    pendingPersistenceOwnerId = null
 
     // Save to V2 draft store
     const saved = draftStore.saveDraft(workflowPath, workflowJson, {
@@ -138,6 +166,16 @@ export function useWorkflowPersistenceV2() {
   // Debounced version for graphChanged events
   const debouncedPersist = debounce(persistCurrentWorkflow, PERSIST_DEBOUNCE_MS)
 
+  function scheduleWorkflowPersistence(): void {
+    pendingPersistenceOwnerId = resolvedUserId
+    debouncedPersist()
+  }
+
+  function persistWorkflowForCurrentOwner(): void {
+    pendingPersistenceOwnerId = resolvedUserId
+    persistCurrentWorkflow()
+  }
+
   function flushPendingPersistence() {
     debouncedPersist.flush()
   }
@@ -147,16 +185,38 @@ export function useWorkflowPersistenceV2() {
   )
   window.addEventListener('pagehide', flushPendingPersistence)
 
-  onUserLogout(() => {
-    if (!isCloud) return
+  function fenceIdentityChange(): void {
     stopPendingWorkspaceReadinessWatcher()
     debouncedPersist.cancel()
+    pendingPersistenceOwnerId = null
     prepareWorkflowLogoutTransition()
-    clearAllWorkflowStorage()
-  })
-  onUserResolved(() => {
+    lastSavedJsonByPath.value = {}
+  }
+
+  function releaseIdentityFence(): void {
+    completeWorkflowLogoutTransition()
+    ensureScopedStorage()
+    if (
+      pendingPersistenceOwnerId !== null &&
+      pendingPersistenceOwnerId === resolvedUserId
+    ) {
+      debouncedPersist.cancel()
+      persistCurrentWorkflow()
+    }
+  }
+
+  onUserLogout(() => {
     if (!isCloud) return
+    fenceIdentityChange()
+    resolvedUserId = null
+    setStorageIdentity(null)
+  })
+  onUserResolved((user) => {
+    if (!isCloud) return
+    if (resolvedUserId !== user.id) fenceIdentityChange()
     stopPendingWorkspaceReadinessWatcher()
+    resolvedUserId = user.id
+    setStorageIdentity(user.id)
 
     // Release the fence once initialization concludes either way: a resolved
     // workspace, or a permanent init failure. Waiting on 'ready' alone would
@@ -167,7 +227,7 @@ export function useWorkflowPersistenceV2() {
         teamWorkspaceStore.activeWorkspaceId !== null) ||
       teamWorkspaceStore.initState === 'error'
     if (isWorkspaceInitConcluded()) {
-      completeWorkflowLogoutTransition()
+      releaseIdentityFence()
       return
     }
 
@@ -175,7 +235,7 @@ export function useWorkflowPersistenceV2() {
       isWorkspaceInitConcluded,
       () => {
         stopWorkspaceReadinessWatcher = undefined
-        completeWorkflowLogoutTransition()
+        releaseIdentityFence()
       },
       { once: true }
     )
@@ -304,16 +364,16 @@ export function useWorkflowPersistenceV2() {
       // Flush any pending persistence from the previous workflow
       debouncedPersist.flush()
       // Persist the new workflow immediately
-      persistCurrentWorkflow()
+      persistWorkflowForCurrentOwner()
     }
   )
 
   // Debounced persistence on graph changes
-  api.addEventListener('graphChanged', debouncedPersist)
+  api.addEventListener('graphChanged', scheduleWorkflowPersistence)
 
   // Clean up event listener when component unmounts
   tryOnScopeDispose(() => {
-    api.removeEventListener('graphChanged', debouncedPersist)
+    api.removeEventListener('graphChanged', scheduleWorkflowPersistence)
     window.removeEventListener('pagehide', flushPendingPersistence)
     unregisterPersistenceFlush()
     debouncedPersist.cancel()

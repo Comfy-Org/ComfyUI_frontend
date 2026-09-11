@@ -7,10 +7,30 @@ import { createI18n } from 'vue-i18n'
 
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { DraftPayloadV2 } from '../base/draftTypes'
+import { hashPath } from '../base/hashUtil'
 import { StorageKeys } from '../base/storageKeys'
 import * as storageIO from '../base/storageIO'
 import { useWorkflowDraftStoreV2 } from '../stores/workflowDraftStoreV2'
 import { useWorkflowPersistenceV2 } from './useWorkflowPersistenceV2'
+
+function readDraftPayload(key: string): DraftPayloadV2 {
+  const raw = localStorage.getItem(key)
+  expect(raw).not.toBeNull()
+  if (raw === null) throw new Error(`Missing draft payload: ${key}`)
+
+  const payload: unknown = JSON.parse(raw)
+  if (typeof payload !== 'object' || payload === null) {
+    throw new Error(`Invalid draft payload: ${key}`)
+  }
+  if (!('data' in payload) || typeof payload.data !== 'string') {
+    throw new Error(`Invalid draft payload: ${key}`)
+  }
+  if (!('updatedAt' in payload) || typeof payload.updatedAt !== 'number') {
+    throw new Error(`Invalid draft payload: ${key}`)
+  }
+  return { data: payload.data, updatedAt: payload.updatedAt }
+}
 
 const mockToastAdd = vi.fn()
 vi.mock<unknown>(
@@ -199,6 +219,8 @@ describe('useWorkflowPersistenceV2', () => {
     routeMocks.query = {}
     preservedQueryMocks.payloads = {}
     distributionMocks.isCloud = false
+    storageIO.setStorageIdentity(null)
+    storageIO.resetStorageAvailable()
     Object.assign(useTeamWorkspaceStore(), { initState: 'uninitialized' })
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: null })
   })
@@ -705,7 +727,7 @@ describe('useWorkflowPersistenceV2', () => {
 
     window.dispatchEvent(new PageTransitionEvent('pagehide'))
 
-    const payload = JSON.parse(localStorage.getItem(payloadKey)!)
+    const payload = readDraftPayload(payloadKey)
     expect(JSON.parse(payload.data)).toEqual({
       nodes: [],
       extra: { marker: 'final-edit' }
@@ -753,6 +775,15 @@ describe('useWorkflowPersistenceV2', () => {
       .load()
     workflowStore.activeWorkflow = workflow
     mountWorkflowPersistence()
+    currentUserMocks.onUserResolved.mock.calls[0][0]({ id: 'user-a' })
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: sourceWorkspaceId
+    })
+    Object.assign(useTeamWorkspaceStore(), { initState: 'ready' })
+    await nextTick()
+
+    mocks.state.graphChangedHandler?.()
+    await vi.runAllTimersAsync()
 
     mocks.state.currentGraph = {
       nodes: [],
@@ -762,13 +793,14 @@ describe('useWorkflowPersistenceV2', () => {
 
     const sourcePayloadKey = StorageKeys.draftPayload(
       workflow.path,
-      sourceWorkspaceId
+      `user-a:${sourceWorkspaceId}`
     )
     const destinationPayloadKey = StorageKeys.draftPayload(
       workflow.path,
-      destinationWorkspaceId
+      `user-a:${destinationWorkspaceId}`
     )
-    expect(localStorage.getItem(sourcePayloadKey)).toBeNull()
+    const payloadBeforeTransition = readDraftPayload(sourcePayloadKey)
+    expect(JSON.parse(payloadBeforeTransition.data)).toEqual({ initial: true })
 
     const cancelTransition = storageIO.prepareWorkflowWorkspaceTransition()
     sessionStorage.setItem(
@@ -782,7 +814,7 @@ describe('useWorkflowPersistenceV2', () => {
     mocks.state.graphChangedHandler?.()
     await vi.runAllTimersAsync()
 
-    const sourcePayload = JSON.parse(localStorage.getItem(sourcePayloadKey)!)
+    const sourcePayload = readDraftPayload(sourcePayloadKey)
     expect(JSON.parse(sourcePayload.data)).toEqual({
       nodes: [],
       extra: { marker: 'workspace-a-final-edit' }
@@ -799,6 +831,10 @@ describe('useWorkflowPersistenceV2', () => {
 
   it('resumes workflow writes once workspace readiness is confirmed after authentication recovers', async () => {
     distributionMocks.isCloud = true
+    sessionStorage.setItem(
+      WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
+      JSON.stringify({ id: 'workspace-a', type: 'team' })
+    )
     localStorage.setItem('Comfy.Workflow.DraftIndex.v2:workspace-a', '{}')
     sessionStorage.setItem('Comfy.Workflow.ActivePath:test-client', '{}')
     mountWorkflowPersistence()
@@ -807,8 +843,6 @@ describe('useWorkflowPersistenceV2', () => {
     const onUserResolved = currentUserMocks.onUserResolved.mock.calls[0][0]
     onLogout()
 
-    expect(localStorage).toHaveLength(0)
-    expect(sessionStorage).toHaveLength(0)
     expect(
       storageIO.writePayload('workspace-a', 'blocked', {
         data: '{}',
@@ -909,7 +943,7 @@ describe('useWorkflowPersistenceV2', () => {
     )
     const destinationPayloadKey = StorageKeys.draftPayload(
       workflow.path,
-      destinationWorkspaceId
+      `user-b:${destinationWorkspaceId}`
     )
     const personalPayloadKey = StorageKeys.draftPayload(
       workflow.path,
@@ -937,4 +971,285 @@ describe('useWorkflowPersistenceV2', () => {
     expect(localStorage.getItem(personalPayloadKey)).toBeNull()
     expect(localStorage.getItem(destinationPayloadKey)).not.toBeNull()
   })
+
+  it('fences writes across an identity swap that skips logout', async () => {
+    distributionMocks.isCloud = true
+    sessionStorage.setItem(
+      WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
+      JSON.stringify({ id: 'workspace-a', type: 'team' })
+    )
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore
+      .createTemporary('IdentitySwap.json')
+      .load()
+    workflowStore.activeWorkflow = workflow
+    mountWorkflowPersistence()
+    const onUserResolved = currentUserMocks.onUserResolved.mock.calls[0][0]
+
+    onUserResolved({ id: 'user-a' })
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-a' })
+    Object.assign(useTeamWorkspaceStore(), { initState: 'ready' })
+    await nextTick()
+    mocks.state.currentGraph = { marker: 'user-a-edit' }
+    mocks.state.graphChangedHandler?.()
+    await vi.runAllTimersAsync()
+
+    const userAPayloadKey = StorageKeys.draftPayload(
+      workflow.path,
+      'user-a:workspace-a'
+    )
+    const userBPayloadKey = StorageKeys.draftPayload(
+      workflow.path,
+      'user-b:workspace-a'
+    )
+    expect(localStorage.getItem(userAPayloadKey)).not.toBeNull()
+
+    mocks.state.currentGraph = { marker: 'pending-during-swap' }
+    mocks.state.graphChangedHandler?.()
+    Object.assign(useTeamWorkspaceStore(), { initState: 'uninitialized' })
+    onUserResolved({ id: 'user-b' })
+    await vi.runAllTimersAsync()
+
+    const userAPayload = readDraftPayload(userAPayloadKey)
+    expect(JSON.parse(userAPayload.data)).toEqual({ marker: 'user-a-edit' })
+    expect(localStorage.getItem(userBPayloadKey)).toBeNull()
+
+    Object.assign(useTeamWorkspaceStore(), { initState: 'ready' })
+    await nextTick()
+    mocks.state.currentGraph = { marker: 'user-b-edit' }
+    mocks.state.graphChangedHandler?.()
+    await vi.runAllTimersAsync()
+
+    expect(readDraftPayload(userAPayloadKey).data).toBe(userAPayload.data)
+    const userBPayload = readDraftPayload(userBPayloadKey)
+    expect(JSON.parse(userBPayload.data)).toEqual({ marker: 'user-b-edit' })
+  })
+
+  it('does not adopt the previous identity canvas when the workspace stays ready', async () => {
+    distributionMocks.isCloud = true
+    sessionStorage.setItem(
+      WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
+      JSON.stringify({ id: 'workspace-a', type: 'team' })
+    )
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore
+      .createTemporary('IdentitySwap.json')
+      .load()
+    workflowStore.activeWorkflow = workflow
+    mountWorkflowPersistence()
+    const onUserResolved = currentUserMocks.onUserResolved.mock.calls[0][0]
+
+    onUserResolved({ id: 'user-a' })
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-a',
+      initState: 'ready'
+    })
+    await nextTick()
+
+    mocks.state.currentGraph = { marker: 'user-a-pending-edit' }
+    mocks.state.graphChangedHandler?.()
+    onUserResolved({ id: 'user-b' })
+    await vi.runAllTimersAsync()
+
+    expect(
+      localStorage.getItem(
+        StorageKeys.draftPayload(workflow.path, 'user-b:workspace-a')
+      )
+    ).toBeNull()
+  })
+
+  it('fences writes on the initial identity resolution until the workspace store confirms the workspace', async () => {
+    distributionMocks.isCloud = true
+    sessionStorage.setItem(
+      WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
+      JSON.stringify({ id: 'workspace-a', type: 'team' })
+    )
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore
+      .createTemporary('InitialResolve.json')
+      .load()
+    workflowStore.activeWorkflow = workflow
+    mountWorkflowPersistence()
+    const payloadKey = StorageKeys.draftPayload(
+      workflow.path,
+      'user-a:workspace-a'
+    )
+
+    currentUserMocks.onUserResolved.mock.calls[0][0]({ id: 'user-a' })
+    mocks.state.currentGraph = { marker: 'before-workspace-ready' }
+    mocks.state.graphChangedHandler?.()
+    await vi.runAllTimersAsync()
+
+    expect(localStorage.getItem(payloadKey)).toBeNull()
+    expect(mockToastAdd).not.toHaveBeenCalled()
+
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-a' })
+    Object.assign(useTeamWorkspaceStore(), { initState: 'ready' })
+    await nextTick()
+
+    const readyPayload = storageIO.readPayload(
+      'user-a:workspace-a',
+      hashPath(workflow.path)
+    )
+    expect(readyPayload).not.toBeNull()
+    if (!readyPayload) return
+    expect(JSON.parse(readyPayload.data)).toEqual({
+      marker: 'before-workspace-ready'
+    })
+
+    mocks.state.currentGraph = { marker: 'after-workspace-ready' }
+    mocks.state.graphChangedHandler?.()
+    await vi.runAllTimersAsync()
+
+    const updatedPayload = storageIO.readPayload(
+      'user-a:workspace-a',
+      hashPath(workflow.path)
+    )
+    expect(updatedPayload).not.toBeNull()
+    if (!updatedPayload) return
+    expect(JSON.parse(updatedPayload.data)).toEqual({
+      marker: 'after-workspace-ready'
+    })
+  })
+
+  it('stays silent while the write gate is deferred on an unresolved identity', async () => {
+    distributionMocks.isCloud = true
+    sessionStorage.setItem(
+      WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
+      JSON.stringify({ id: 'workspace-a', type: 'team' })
+    )
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore.createTemporary('Deferred.json').load()
+    workflowStore.activeWorkflow = workflow
+    mountWorkflowPersistence()
+
+    mocks.state.currentGraph = { marker: 'before-identity' }
+    mocks.state.graphChangedHandler?.()
+    await vi.runAllTimersAsync()
+
+    expect(mockToastAdd).not.toHaveBeenCalled()
+    expect(
+      localStorage.getItem(
+        StorageKeys.draftPayload(workflow.path, 'workspace-a')
+      )
+    ).toBeNull()
+  })
+
+  it('moves workspace-scoped drafts into the resolved user scope', async () => {
+    distributionMocks.isCloud = true
+    sessionStorage.setItem(
+      WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
+      JSON.stringify({ id: 'workspace-a', type: 'team' })
+    )
+    const workspaceIndexKey = StorageKeys.draftIndex('workspace-a')
+    const workspacePayloadKey = StorageKeys.draftPayload(
+      'Legacy.json',
+      'workspace-a'
+    )
+    localStorage.setItem(
+      workspaceIndexKey,
+      JSON.stringify(legacyIndex('Legacy.json'))
+    )
+    localStorage.setItem(
+      workspacePayloadKey,
+      JSON.stringify({ data: '{"marker":"legacy"}', updatedAt: 1 })
+    )
+    mountWorkflowPersistence()
+
+    currentUserMocks.onUserResolved.mock.calls[0][0]({ id: 'user-a' })
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-a' })
+    Object.assign(useTeamWorkspaceStore(), { initState: 'ready' })
+    await nextTick()
+
+    expect(localStorage.getItem(workspaceIndexKey)).toBeNull()
+    expect(localStorage.getItem(workspacePayloadKey)).toBeNull()
+    expect(
+      localStorage.getItem(StorageKeys.draftIndex('user-a:workspace-a'))
+    ).not.toBeNull()
+    expect(
+      readDraftPayload(
+        StorageKeys.draftPayload('Legacy.json', 'user-a:workspace-a')
+      ).data
+    ).toBe('{"marker":"legacy"}')
+    expect(useWorkflowDraftStoreV2().getDraft('Legacy.json')?.data).toBe(
+      '{"marker":"legacy"}'
+    )
+  })
+
+  it('preserves unclaimed workspace drafts when the user scope already has an index', async () => {
+    distributionMocks.isCloud = true
+    sessionStorage.setItem(
+      WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
+      JSON.stringify({ id: 'workspace-a', type: 'team' })
+    )
+    const workspaceIndexKey = StorageKeys.draftIndex('workspace-a')
+    const workspacePayloadKey = StorageKeys.draftPayload(
+      'Legacy.json',
+      'workspace-a'
+    )
+    const scopedIndexKey = StorageKeys.draftIndex('user-a:workspace-a')
+    const scopedIndex = JSON.stringify(legacyIndex('Scoped.json'))
+    localStorage.setItem(
+      workspaceIndexKey,
+      JSON.stringify(legacyIndex('Legacy.json'))
+    )
+    localStorage.setItem(
+      workspacePayloadKey,
+      JSON.stringify({ data: '{"marker":"legacy"}', updatedAt: 1 })
+    )
+    localStorage.setItem(scopedIndexKey, scopedIndex)
+    mountWorkflowPersistence()
+
+    currentUserMocks.onUserResolved.mock.calls[0][0]({ id: 'user-a' })
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-a' })
+    Object.assign(useTeamWorkspaceStore(), { initState: 'ready' })
+    await nextTick()
+
+    expect(localStorage.getItem(workspaceIndexKey)).not.toBeNull()
+    expect(localStorage.getItem(workspacePayloadKey)).not.toBeNull()
+    expect(localStorage.getItem(scopedIndexKey)).toBe(scopedIndex)
+  })
+
+  it('does not adopt an ownerless edit when the identity resolves', async () => {
+    distributionMocks.isCloud = true
+    sessionStorage.setItem(
+      WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
+      JSON.stringify({ id: 'workspace-a', type: 'team' })
+    )
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore.createTemporary('Deferred.json').load()
+    workflowStore.activeWorkflow = workflow
+    mountWorkflowPersistence()
+
+    mocks.state.currentGraph = { marker: 'before-identity' }
+    mocks.state.graphChangedHandler?.()
+    await vi.runAllTimersAsync()
+
+    currentUserMocks.onUserResolved.mock.calls[0][0]({ id: 'user-a' })
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-a' })
+    Object.assign(useTeamWorkspaceStore(), { initState: 'ready' })
+    await nextTick()
+    await vi.runAllTimersAsync()
+
+    const payload = localStorage.getItem(
+      StorageKeys.draftPayload(workflow.path, 'user-a:workspace-a')
+    )
+    expect(payload).toBeNull()
+  })
 })
+
+function legacyIndex(path: string) {
+  return {
+    v: 2,
+    updatedAt: 1,
+    order: [hashPath(path)],
+    entries: {
+      [hashPath(path)]: {
+        path,
+        name: path.replace(/\.json$/, ''),
+        isTemporary: true,
+        updatedAt: 1
+      }
+    }
+  }
+}
