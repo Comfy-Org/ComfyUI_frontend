@@ -21,6 +21,7 @@ import {
   createTestSubgraphNode,
   enableSubgraphNodeCreation
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
 import { reportError } from '@/platform/telemetry/reportError'
 // Mirrors the production bridge in AgentPanelRoot.vue, which takes the same
 // exemption to drive the real layout store.
@@ -61,6 +62,8 @@ class DummyNode extends LGraphNode {
 class WidgetNode extends LGraphNode {
   constructor() {
     super('widget-node')
+    const input = this.addInput('value', 'NUMBER')
+    input.widget = { name: 'value' }
     this.addWidget('number', 'value', 0, () => {})
   }
 }
@@ -968,6 +971,139 @@ describe('reconcileAgentAdapters', () => {
       expect(registered?.nodes.map((node) => node.id)).toEqual([toNodeId(7)])
       expect(created).toHaveBeenCalledOnce()
       expect(reportError).not.toHaveBeenCalled()
+    })
+
+    function promotedDefinition(
+      definition: ReturnType<typeof createTestSubgraphData>,
+      targetId = 7,
+      widgetName = 'value'
+    ) {
+      return {
+        ...definition,
+        inputs: [
+          {
+            id: '00000000-0000-4000-8000-000000000099',
+            name: widgetName,
+            type: 'NUMBER',
+            linkIds: [99]
+          }
+        ],
+        links: [
+          {
+            id: 99,
+            origin_id: SUBGRAPH_INPUT_ID,
+            origin_slot: 0,
+            target_id: targetId,
+            target_slot: 0,
+            type: 'NUMBER'
+          }
+        ]
+      }
+    }
+
+    it('S3 promotes an interior widget on every host instance', () => {
+      const definition = createTestSubgraphData({
+        nodes: [nodePayload(7, 'widget-node')] as never
+      })
+      const { follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, definition.id), nodePayload(2, definition.id)],
+        links: [],
+        definitions: { subgraphs: [definition] }
+      })
+      reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+
+      reconcileAgentAdapters(graph, [promotedDefinition(definition)])
+
+      for (const id of [1, 2]) {
+        const host = graph.getNodeById(toNodeId(id)) as SubgraphNode
+        expect(host.widgets.map(({ name }) => name)).toEqual(['value'])
+      }
+    })
+
+    it('S3 promotion replay is a no-op', () => {
+      const definition = createTestSubgraphData({
+        nodes: [nodePayload(7, 'widget-node')] as never
+      })
+      const { follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, definition.id)],
+        links: [],
+        definitions: { subgraphs: [definition] }
+      })
+      reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+      const promoted = promotedDefinition(definition)
+      reconcileAgentAdapters(graph, [promoted])
+      const host = graph.getNodeById(toNodeId(1)) as SubgraphNode
+      const widget = host.widgets[0]
+
+      reconcileAgentAdapters(graph, [promoted])
+
+      expect(host.widgets).toHaveLength(1)
+      expect(host.widgets[0]).toBe(widget)
+    })
+
+    it('S3 rejects an unknown promotion source without partial live state', () => {
+      const definition = createTestSubgraphData({
+        nodes: [nodePayload(7, 'widget-node')] as never
+      })
+      const { follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, definition.id)],
+        links: [],
+        definitions: { subgraphs: [definition] }
+      })
+      reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+
+      reconcileAgentAdapters(graph, [promotedDefinition(definition, 404)])
+
+      const host = graph.getNodeById(toNodeId(1)) as SubgraphNode
+      expect(host.widgets).toHaveLength(0)
+      expect(host.inputs).toHaveLength(0)
+      expect(reportError).toHaveBeenCalledOnce()
+    })
+
+    it('S3 demotes a widget removed from the definition', () => {
+      const definition = createTestSubgraphData({
+        nodes: [nodePayload(7, 'widget-node')] as never
+      })
+      const promoted = promotedDefinition(definition)
+      const { follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, definition.id)],
+        links: [],
+        definitions: { subgraphs: [promoted] }
+      })
+      reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+      const host = graph.getNodeById(toNodeId(1)) as SubgraphNode
+      expect(host.widgets).toHaveLength(1)
+
+      reconcileAgentAdapters(graph, [definition])
+
+      expect(host.widgets).toHaveLength(0)
+      expect(host.inputs).toHaveLength(0)
+    })
+
+    it('S3 promotes a widget through a nested definition host', () => {
+      const inner = createTestSubgraphData({
+        nodes: [nodePayload(7, 'widget-node')] as never
+      })
+      const promotedInner = promotedDefinition(inner)
+      const outer = createTestSubgraphData({
+        nodes: [nodePayload(8, inner.id)] as never,
+        definitions: { subgraphs: [inner] }
+      })
+      const { follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, outer.id)],
+        links: [],
+        definitions: { subgraphs: [outer] }
+      })
+      reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+
+      reconcileAgentAdapters(graph, [
+        { ...outer, definitions: { subgraphs: [promotedInner] } }
+      ])
+
+      const nestedHost = graph.subgraphs
+        .get(outer.id)
+        ?.getNodeById(toNodeId(8)) as SubgraphNode
+      expect(nestedHost.widgets.map(({ name }) => name)).toEqual(['value'])
     })
 
     it('carries interior widget values into the instantiated subgraph', () => {
