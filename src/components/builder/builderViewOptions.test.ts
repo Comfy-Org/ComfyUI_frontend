@@ -1,29 +1,25 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { app } from '@/scripts/app'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
-import type { setWorkflowDefaultView as SetWorkflowDefaultViewFn } from './builderViewOptions'
+import { setWorkflowDefaultView } from './builderViewOptions'
 
 const mockTrackDefaultViewSet = vi.hoisted(() => vi.fn())
 
-vi.mock('@/i18n', () => ({ t: (key: string) => key }))
+vi.mock(import('@/i18n'), () => ({ t: (key: string) => key }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({ trackDefaultViewSet: mockTrackDefaultViewSet })
 }))
 
-vi.mock('@/scripts/app', () => ({
-  app: { rootGraph: { extra: {} } }
-}))
+vi.mock<unknown>(import('@/scripts/app'), () => {
+  const rootGraph = { extra: {} }
+  return { app: { rootGraph, rootGraphOrUndefined: rootGraph } }
+})
 
 describe('setWorkflowDefaultView', () => {
-  let setWorkflowDefaultView: typeof SetWorkflowDefaultViewFn
-  let app: { rootGraph: { extra: Record<string, unknown> } }
-
-  beforeEach(async () => {
-    const mod = await import('./builderViewOptions')
-    setWorkflowDefaultView = mod.setWorkflowDefaultView
-    app = (await import('@/scripts/app')).app
+  beforeEach(() => {
     app.rootGraph.extra = {}
   })
 

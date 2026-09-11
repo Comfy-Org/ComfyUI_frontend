@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -12,20 +12,23 @@ const billingMocks = vi.hoisted(() => ({
   balance: { value: null as BalanceInfo | null },
   manageSubscription: vi.fn()
 }))
-vi.mock('@/composables/billing/useBillingContext', async () => {
-  const { ref } = await import('vue')
-  const balance = ref<BalanceInfo | null>(null)
-  Object.defineProperty(billingMocks, 'balance', { get: () => balance })
-  return {
-    useBillingContext: () => ({
-      balance,
-      manageSubscription: billingMocks.manageSubscription
-    })
+vi.mock<unknown>(
+  import('@/composables/billing/useBillingContext'),
+  async () => {
+    const { ref } = await import('vue')
+    const balance = ref<BalanceInfo | null>(null)
+    Object.defineProperty(billingMocks, 'balance', { get: () => balance })
+    return {
+      useBillingContext: () => ({
+        balance,
+        manageSubscription: billingMocks.manageSubscription
+      })
+    }
   }
-})
+)
 
 const refreshActivity = vi.hoisted(() => vi.fn())
-vi.mock('./UsageLogsTable.vue', async () => {
+vi.mock<unknown>(import('./UsageLogsTable.vue'), async () => {
   const { defineComponent, h } = await import('vue')
   return {
     default: defineComponent({
@@ -37,19 +40,18 @@ vi.mock('./UsageLogsTable.vue', async () => {
   }
 })
 
-vi.mock('@/platform/cloud/subscription/components/CreditsTile.vue', () => ({
-  default: defineComponent({ setup: () => () => h('div') })
-}))
+vi.mock(
+  import('@/platform/cloud/subscription/components/CreditsTile.vue'),
+  () => ({
+    default: defineComponent({ setup: () => () => h('div') })
+  })
+)
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({ trackHelpResourceClicked: vi.fn() })
 }))
 
-vi.mock('@/stores/commandStore', () => ({
-  useCommandStore: () => ({ execute: vi.fn() })
-}))
-
-vi.mock('@/composables/useExternalLink', () => ({
+vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
   useExternalLink: () => ({
     buildDocsUrl: () => 'https://docs.comfy.org',
     docsPaths: { partnerNodesPricing: '/partner-nodes' }

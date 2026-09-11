@@ -23,13 +23,19 @@ export function useToolManager(
 
   const coordinateTransform = useCoordinateTransform()
 
+  const useDominantAxis = app.extensionManager.setting.get(
+    'Comfy.MaskEditor.UseDominantAxis'
+  )
+  const brushAdjustmentSpeed = app.extensionManager.setting.get(
+    'Comfy.MaskEditor.BrushAdjustmentSpeed'
+  )
   const brushDrawing = useBrushDrawing({
-    useDominantAxis: app.extensionManager.setting.get<boolean>(
-      'Comfy.MaskEditor.UseDominantAxis'
-    ),
-    brushAdjustmentSpeed: app.extensionManager.setting.get<number>(
-      'Comfy.MaskEditor.BrushAdjustmentSpeed'
-    )
+    useDominantAxis:
+      typeof useDominantAxis === 'boolean' ? useDominantAxis : undefined,
+    brushAdjustmentSpeed:
+      typeof brushAdjustmentSpeed === 'number'
+        ? brushAdjustmentSpeed
+        : undefined
   })
   const canvasTools = useCanvasTools()
 

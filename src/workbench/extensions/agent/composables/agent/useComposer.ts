@@ -18,7 +18,8 @@ export interface UseComposerOptions {
 }
 
 export function useComposer(options: UseComposerOptions) {
-  const { draft, attachments } = storeToRefs(useAgentComposerStore())
+  const store = useAgentComposerStore()
+  const { draft, attachments, prompt, workflowReferences } = storeToRefs(store)
 
   const canSend = computed(
     () =>
@@ -33,43 +34,30 @@ export function useComposer(options: UseComposerOptions) {
     }
     if (!canSend.value) return
     options.onSend(draft.value.trim(), attachments.value)
-    draft.value = ''
-    attachments.value = []
   }
 
   function insert(text: string): void {
-    draft.value = draft.value ? `${draft.value} ${text}` : text
-  }
-
-  function addAttachment(attachment: ComposerAttachment): void {
-    if (attachments.value.some((item) => item.id === attachment.id)) return
-    attachments.value = [...attachments.value, attachment]
-  }
-
-  function updateAttachment(
-    id: string,
-    patch: Partial<ComposerAttachment>
-  ): void {
-    attachments.value = attachments.value.map((item) =>
-      item.id === id ? { ...item, ...patch } : item
-    )
+    store.setText(draft.value ? `${draft.value} ${text}` : text)
   }
 
   function removeAttachment(id: string): void {
-    const removed = attachments.value.find((item) => item.id === id)
+    const removed = store.removeAttachment(id)
     if (removed?.previewUrl?.startsWith('blob:'))
       URL.revokeObjectURL(removed.previewUrl)
-    attachments.value = attachments.value.filter((item) => item.id !== id)
   }
 
   return {
     draft,
     attachments,
+    prompt,
+    workflowReferences,
     canSend,
     submit,
     insert,
-    addAttachment,
-    updateAttachment,
+    setText: store.setText,
+    replacePrompt: store.replacePrompt,
+    addAttachment: store.addAttachment,
+    updateAttachment: store.updateAttachment,
     removeAttachment
   }
 }
