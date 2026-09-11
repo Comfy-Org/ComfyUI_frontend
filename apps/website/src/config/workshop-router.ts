@@ -162,6 +162,11 @@ export async function runWorkshopRouter(options: {
       if (inFlightWait !== undefined && inFlightRetries < IN_FLIGHT_RETRIES) {
         inFlightRetries += 1
         await response.body?.cancel().catch(() => {})
+        clearTimeout(timeout)
+        const waitRemaining = deadlineAt - Date.now()
+        if (waitRemaining <= 0) requestController.abort()
+        else
+          timeout = setTimeout(() => requestController.abort(), waitRemaining)
         await waitFor(inFlightWait, signal)
         continue
       }
