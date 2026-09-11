@@ -1,7 +1,7 @@
 <template>
   <div
-    :class="cn('relative overflow-hidden rounded-2xl', sizeClasses)"
     ref="layoutRoot"
+    :class="cn('relative overflow-hidden rounded-2xl', sizeClasses)"
   >
     <div
       class="grid size-full transition-[grid-template-columns] duration-300 ease-out"
