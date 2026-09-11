@@ -10,6 +10,7 @@ import type {
   IBaseWidget,
   IStringWidget
 } from '@/lib/litegraph/src/types/widgets'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import {
   getResourceURL,
@@ -330,6 +331,33 @@ app.registerExtension({
         let stopPromise: Promise<void> | null = null
         let stopResolve: (() => void) | null = null
 
+        const handleRecordingStartFailure = (error: unknown) => {
+          reportError(error, {
+            errorType: 'failure_starting_audio_recorder',
+            tags: {
+              failure_kind: 'caught_unexpected',
+              feature_area: 'assets',
+              operation: 'execute',
+              outcome: 'recovered'
+            },
+            level: 'error'
+          })
+          useToastStore().addAlert(t('g.recordingFailedToStart'))
+
+          if (mediaRecorder) {
+            try {
+              mediaRecorder.stop()
+            } catch {}
+          }
+          mediaRecorder = null
+          useAudioService().stopAllTracks(currentStream)
+          currentStream = null
+          isRecording = false
+          if (recordWidget) {
+            recordWidget.label = t('g.startRecording')
+          }
+        }
+
         audioUIWidget.serializeValue = async () => {
           if (isRecording && mediaRecorder) {
             stopPromise = new Promise((resolve) => {
@@ -358,88 +386,91 @@ app.registerExtension({
           inputName,
           '',
           async () => {
-            if (!isRecording) {
-              try {
-                currentStream = await navigator.mediaDevices.getUserMedia({
-                  audio: true
-                })
+            if (isRecording) {
+              mediaRecorder?.stop()
+              return
+            }
 
-                mediaRecorder = new ExtendableMediaRecorder(currentStream, {
-                  mimeType: 'audio/wav'
-                }) as unknown as MediaRecorder
-
-                audioChunks = []
-
-                mediaRecorder.ondataavailable = (event) => {
-                  audioChunks.push(event.data)
-                }
-
-                mediaRecorder.onstop = async () => {
-                  const audioBlob = new Blob(audioChunks, { type: 'audio/wav' })
-
-                  useAudioService().stopAllTracks(currentStream)
-
-                  if (
-                    audioUIWidget.element.src &&
-                    audioUIWidget.element.src.startsWith('blob:')
-                  ) {
-                    URL.revokeObjectURL(audioUIWidget.element.src)
-                  }
-
-                  updateUIWidget(audioUIWidget, URL.createObjectURL(audioBlob))
-
-                  isRecording = false
-
-                  if (recordWidget) {
-                    recordWidget.label = t('g.startRecording')
-                  }
-
-                  if (stopResolve) {
-                    stopResolve()
-                    stopResolve = null
-                    stopPromise = null
-                  }
-                }
-
-                mediaRecorder.onerror = (event) => {
-                  console.error('MediaRecorder error:', event)
-                  useAudioService().stopAllTracks(currentStream)
-                  isRecording = false
-
-                  if (recordWidget) {
-                    recordWidget.label = t('g.startRecording')
-                  }
-
-                  if (stopResolve) {
-                    stopResolve()
-                    stopResolve = null
-                    stopPromise = null
-                  }
-                }
-
-                mediaRecorder.start()
-                isRecording = true
-                if (recordWidget) {
-                  recordWidget.label = t('g.stopRecording')
-                }
-              } catch (err) {
+            try {
+              currentStream = await navigator.mediaDevices.getUserMedia({
+                audio: true
+              })
+            } catch (err) {
+              if (
+                err instanceof DOMException &&
+                err.name === 'NotAllowedError'
+              ) {
                 console.error('Error accessing microphone:', err)
                 useToastStore().addAlert(t('g.micPermissionDenied'))
-
-                if (mediaRecorder) {
-                  try {
-                    mediaRecorder.stop()
-                  } catch {}
-                }
                 useAudioService().stopAllTracks(currentStream)
                 currentStream = null
+              } else {
+                handleRecordingStartFailure(err)
+              }
+              return
+            }
+
+            try {
+              mediaRecorder = new ExtendableMediaRecorder(currentStream, {
+                mimeType: 'audio/wav'
+              }) as unknown as MediaRecorder
+
+              audioChunks = []
+
+              mediaRecorder.ondataavailable = (event) => {
+                audioChunks.push(event.data)
+              }
+
+              mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' })
+
+                useAudioService().stopAllTracks(currentStream)
+
+                if (
+                  audioUIWidget.element.src &&
+                  audioUIWidget.element.src.startsWith('blob:')
+                ) {
+                  URL.revokeObjectURL(audioUIWidget.element.src)
+                }
+
+                updateUIWidget(audioUIWidget, URL.createObjectURL(audioBlob))
+
                 isRecording = false
+
                 if (recordWidget) {
                   recordWidget.label = t('g.startRecording')
                 }
+
+                if (stopResolve) {
+                  stopResolve()
+                  stopResolve = null
+                  stopPromise = null
+                }
               }
-            } else if (mediaRecorder && isRecording) {
-              mediaRecorder.stop()
+
+              mediaRecorder.onerror = (event) => {
+                console.error('MediaRecorder error:', event)
+                useAudioService().stopAllTracks(currentStream)
+                isRecording = false
+
+                if (recordWidget) {
+                  recordWidget.label = t('g.startRecording')
+                }
+
+                if (stopResolve) {
+                  stopResolve()
+                  stopResolve = null
+                  stopPromise = null
+                }
+              }
+
+              mediaRecorder.start()
+              isRecording = true
+              if (recordWidget) {
+                recordWidget.label = t('g.stopRecording')
+              }
+            } catch (err) {
+              handleRecordingStartFailure(err)
             }
           },
           { serialize: false, canvasOnly: false }

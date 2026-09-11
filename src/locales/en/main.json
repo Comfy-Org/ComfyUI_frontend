@@ -349,6 +349,7 @@
     "startRecording": "Start Recording",
     "stopRecording": "Stop Recording",
     "micPermissionDenied": "Microphone permission denied",
+    "recordingFailedToStart": "Could not start recording",
     "noAudioRecorded": "No audio recorded",
     "nodesRunning": "nodes running",
     "duplicate": "Duplicate",
@@ -2831,8 +2832,8 @@
     "cancelPlan": "Cancel plan",
     "canceled": "Canceled",
     "resubscribe": "Resubscribe",
-    "reactivatePlan": "Reactivate plan",
-    "resubscribeTo": "Resubscribe to {plan}",
+    "reactivatePlan": "Resume subscription",
+    "resubscribeTo": "Resume {plan}",
     "resubscribeSuccess": "Subscription reactivated successfully",
     "resubscribeFailed": "Failed to reactivate subscription",
     "subscribeFailed": "Failed to subscribe",
@@ -3238,8 +3239,8 @@
       },
       "ending": {
         "title": "Your team plan ends on {date}",
-        "body": "Members keep full access until then. Reactivate to keep your shared credits and seats.",
-        "reactivate": "Reactivate plan"
+        "body": "Members keep full access until then. Resume your subscription to keep your shared credits and seats.",
+        "reactivate": "Resume subscription"
       },
       "planChange": {
         "title": "Your plan changes to {plan} on {date}",
