@@ -957,10 +957,15 @@ describe(assetService.getAllAssetsByTag, () => {
       )
     )
 
-    await expect(
-      assetService.getAllAssetsByTag('input', true, { limit: 1 })
-    ).rejects.toBeInstanceOf(AssetPaginationCapError)
+    const failure = await assetService
+      .getAllAssetsByTag('input', true, { limit: 1 })
+      .then(
+        () => null,
+        (error: unknown) => error
+      )
 
+    expect(failure).toBeInstanceOf(AssetPaginationCapError)
+    expect(failure).toMatchObject({ tag: 'input', assetsCollected: 1000 })
     expect(fetchApiMock).toHaveBeenCalledTimes(1000)
   })
 
