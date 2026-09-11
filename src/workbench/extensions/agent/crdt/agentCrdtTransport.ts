@@ -1,5 +1,6 @@
 import { api } from '@/scripts/api'
 
+import { isCrdtDebugEnabled } from './crdtDebugGate'
 import { wireLog } from './crdtLog'
 import type { DocFrameTransport } from './docFrameClient'
 
@@ -21,6 +22,21 @@ export const apiTransport: DocFrameTransport = {
 }
 
 /**
+ * Both of `wireLog.trace`'s sinks drop the detail unless the debug instrument
+ * is on, so an ungated parse costs every user edit a full `JSON.parse` of the
+ * `doc_ops` batch `DocFrameClient.send` just serialised, on the main thread,
+ * for a value nothing reads.
+ */
+function traceableFrame(frame: string): unknown {
+  if (!isCrdtDebugEnabled()) return frame
+  try {
+    return JSON.parse(frame)
+  } catch {
+    return frame
+  }
+}
+
+/**
  * Dev-panel tap (poc-4): logs every outbound frame with its delivery result.
  * Wraps `apiTransport` instead of modifying it, so the exported transport's
  * never-throw contract stays exactly what `apiTransport.test.ts` covers.
@@ -29,13 +45,10 @@ export function createLoggedTransport(): DocFrameTransport {
   return {
     send(frame) {
       const delivered = apiTransport.send(frame)
-      let parsed: unknown = frame
-      try {
-        parsed = JSON.parse(frame)
-      } catch {
-        // Leave the raw string.
-      }
-      wireLog.trace('ws_out', 'outbound frame', { delivered, frame: parsed })
+      wireLog.trace('ws_out', 'outbound frame', {
+        delivered,
+        frame: traceableFrame(frame)
+      })
       return delivered
     },
     addEventListener(type, listener) {

@@ -15,6 +15,9 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({ api: { socket: null } }))
 
 import { api } from '@/scripts/api'
 
+import { createLoggedTransport } from './agentCrdtTransport'
+import { setCrdtDebugEnabled } from './crdtDebugGate'
+import { clearDevEvents, devEvents } from './devPanelLog'
 import { apiTransport } from './useAgentCrdtFollower'
 
 const mutableApi = api as unknown as {
@@ -43,5 +46,37 @@ describe('apiTransport.send', () => {
     mutableApi.socket = { readyState: WebSocket.OPEN, send }
     expect(apiTransport.send('frame')).toBe(true)
     expect(send).toHaveBeenCalledWith('frame')
+  })
+})
+
+describe('createLoggedTransport.send', () => {
+  const frame = '{"type":"doc_ops"}'
+
+  beforeEach(() => {
+    clearDevEvents()
+    mutableApi.socket = { readyState: WebSocket.OPEN, send: vi.fn() }
+  })
+
+  it('leaves the frame unparsed while the debug instrument is off', () => {
+    // Both of wireLog's sinks discard the detail when the gate is closed, so
+    // parsing every `doc_ops` batch on the main thread buys nothing.
+    setCrdtDebugEnabled(false)
+    const parse = vi.spyOn(JSON, 'parse')
+
+    expect(createLoggedTransport().send(frame)).toBe(true)
+
+    expect(parse).not.toHaveBeenCalled()
+    parse.mockRestore()
+  })
+
+  it('records the parsed frame while the instrument is on', () => {
+    setCrdtDebugEnabled(true)
+
+    expect(createLoggedTransport().send(frame)).toBe(true)
+
+    expect(devEvents.value.at(-1)?.detail).toEqual({
+      delivered: true,
+      frame: { type: 'doc_ops' }
+    })
   })
 })
