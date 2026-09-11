@@ -677,7 +677,7 @@ fix so the bug stays fixed:
 
 1. **Record the conversation.** Reproduce the bug's turn with
    `scripts/agentConversationRecord.ts` against the non-standalone local
-   stack (Postgres + doc host). In that mode the agent writes the per-op
+   stack (Postgres + Redis + doc host). In that mode the agent writes the per-op
    audit rows (`agent_tool_calls` parent and child rows) to Postgres,
    which is what a replay asserts; the doc host is a separate required
    service and writes none of them. That one command records the turn and
