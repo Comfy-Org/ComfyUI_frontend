@@ -204,4 +204,29 @@ describe('tutorialMetaTitle', () => {
     expect(basics.title['zh-CN']).toContain('ComfyUI')
     expect(tutorialMetaTitle(basics, 'zh-CN')).toBe(basics.title['zh-CN'])
   })
+
+  /**
+   * Covered here rather than in the browser. Every one of the 23 tutorials
+   * carries Chinese and Japanese today, so no E2E fixture can reach this branch
+   * without inventing site content — but a tutorial made to lack a locale can,
+   * and the branch is what stops a missing translation rendering as nothing.
+   *
+   * `||`, not `??`: an empty string is a missing translation, not a translation
+   * that happens to be empty.
+   */
+  it('falls back to English when the locale has no title', () => {
+    const untranslated = { ...firstVfx, title: { en: firstVfx.title.en } }
+
+    expect(tutorialMetaTitle(untranslated, 'ja')).toBe(
+      `${firstVfx.title.en}: Free ComfyUI Tutorial`
+    )
+  })
+
+  it('treats an empty title as missing rather than as the answer', () => {
+    const blank = { ...firstVfx, title: { en: firstVfx.title.en, ja: '' } }
+
+    expect(tutorialMetaTitle(blank, 'ja')).toBe(
+      `${firstVfx.title.en}: Free ComfyUI Tutorial`
+    )
+  })
 })

@@ -28,7 +28,7 @@ const {
   readMoreHref?: string
 }>()
 
-const sections = deriveSections(prefix)
+const sections = deriveSections(prefix, locale)
 
 function key(sectionId: string, suffix: string): TranslationKey {
   return `${prefix}.${sectionId}.${suffix}` as TranslationKey

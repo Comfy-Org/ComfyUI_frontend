@@ -1,0 +1,148 @@
+---
+title: "ノードグラフから建物のファサードへ：Ina ConradiのNTU学生がComfyUIで手がける建築スケールのパブリックアート"
+category: "クリエイティブ・キャンパス・ショーケース"
+description: "シンガポールのNTUで、Ina Conradiの学生たちは、プロンプト入力欄では描き出せない、ComfyUIなら実現できる建物規模のLEDウォール向け90秒映像を制作しています。その作品はキャンパスから杭州のWest Lake Media Façadeへと広がり、毎日100万人に届けられています。"
+cover: "https://media.comfy.org/website/customers/ina-conradi/cover.png"
+order: 2
+translatedBy: machine
+sections:
+  - id: topic-1
+    label: "イントロ"
+  - id: topic-2
+    label: "キャンバス"
+  - id: topic-3
+    label: "ComfyUIを選ぶ理由"
+  - id: topic-4
+    label: "2026年の課題"
+  - id: topic-5
+    label: "学生作品"
+  - id: topic-6
+    label: "パブリックスクリーン"
+  - id: topic-7
+    label: "概要"
+---
+
+<Section id="topic-1">
+
+<Figure src="https://media.comfy.org/website/customers/ina-conradi/fig1-quantum-logos.jpg" alt="Media Art NexusのLEDスクリーンに映し出されたQuantum Logos（Vision Serpent）" caption="Quantum Logos（Vision Serpent）、Mark Chavez、Ina Conradi。実験アニメーション、Media Art Nexus LEDスクリーン（15 m × 2 m）、シンガポール。撮影：Quek Jia Liang。" />
+
+### スタジオからスクリーンへ、AIアートの制作パイプラインを構築
+
+Ina Conradiは2022年から、NTUのAI関連2科目を設計・担当しています。学部課程のDM2012「Explorations in AI-Generated Art」と、大学院課程のAP7055「Art in the Age of the Creative Machine」です。各科目の受講者は1学期あたり約30名です。制作パイプラインでは、アニメーション業界のベテランであり、ComfyUIの早期導入者でもあるMark Chavez（DreamWorks、Rhythm & Hues）が彼女と協働しています。2人は、これらの授業で作品を制作するプラットフォームを共同キュレーションしています。それは2016年にNTUのNorth SpineへMedia Art Nexusとして設置された、幅15メートル・高さ2メートルのLEDウォールです。現在はNTU MuseumがNTU Indexとして運営し、毎学期新作を受け入れています。
+
+この壁面で発表された作品は、シンガポールの大型パブリックスクリーン（Ten Square）、杭州、重慶へと展開され、Bauhaus University、ベルリン芸術大学、ハンブルクのエルプフィルハーモニーとのコラボレーションにもつながっています。
+
+<Figure src="https://media.comfy.org/website/customers/ina-conradi/fig2-nature-sanctuary.jpg" alt="West Lake Media Façadeに映し出されたNature Sanctuary 3000" caption="Nature Sanctuary 3000、Sowmya Sreeshna。実験アニメーション、West Lake Media Façade（170 m × 18 m）、中国・杭州。撮影：Limpid Art。" />
+
+</Section>
+
+<Section id="topic-2">
+
+### Inaさん、学生たちはノートPC向けの映像を作っていません。なぜ建物ほどの大きさのスクリーンなのでしょうか？
+
+フォーマットそのものが学びになるからです。横6K、8:1のパノラマで90秒の映像を作るには、偶然うまくいったプロンプトでは足りません。構成する必要があります。そして、スクリーンは実在します。優れた学生作品はキャンパス内にある幅15メートル・高さ2メートルのNTU Indexで上映され、City Digital Skin Art Festival（CDSA）を通じて中国や欧州の都市ファサードにも展開されます。杭州で1日に100万人が自分の映像の前を通るかもしれないと学生が知れば、制作技術についての議論は変わります。
+
+### Markさん、キャンバスについて教えてください。
+
+基本的に、シンガポールと中国にある非常に大型のメディアLEDスクリーン向けに構成を作っています。シンガポールには8対1のスクリーンがあります。解像度は5,888 × 768ピクセルです。学生たちは授業で、通常は横約6Kの長い風景パノラマ画像を作ります。出力は90秒の短編映像です。2分ではなく90秒。そこは変えません。この形式は授業内で扱いやすいので気に入っています。
+
+</Section>
+
+<Section id="topic-3">
+
+### そのフォーマットは、多くのAIツールでは対応できません。何が起きたのでしょうか？
+
+Runwayは、学校向けに適した教育プランで利用しているツールの一つです。直面した制約はフォーマットでした。Runwayは16:9で動作するため、横6Kのパノラマは範囲外になります。前学期には、必要な解像度でMidjourneyに問題があり、アップスケールも困難でした。そこで既存の環境に加え、選択肢を広げるためComfyUIを導入しています。
+
+<Quote>ComfyUIが最もクリーンな結果を出しました。構成後に8対1のパノラマを8Kへアップスケールするのは本当に難しく、画像、モーション、アップスケールのモデルを学生が一つに組み合わせられるのはComfyUIだけです。</Quote>
+
+### 予算面はいかがですか？
+
+予算は引き続き課題になります。学校は十分に支援してくれていますが、新しいツールは毎学期登場し、学生はそれらを試し、自分のパイプラインを構築したいと考えます。月額のシート単位ライセンスは、学期の運用には合いません。ComfyUIをローカルで実行するのも学生には難しいことです。多くのノートPCには十分なVRAMを持つGPUがなく、動作させるには実際に試行錯誤が必要です。自宅で作業したい学生は多いのですが、ハードウェアが障壁となり、ラボに来ることになります。Comfy Cloudを使った学生もいます。サブスクリプション料金はかかりますが、前払い型ツールより大幅に低コストで、結果も良好でした。どちらの場合も目指しているのは同じです。場所を問わず、継続して取り組めるパイプラインです。
+
+### Inaさん、これらの授業はツールについてではないと強調されています。何についての授業なのでしょうか？
+
+私の授業は、単一のツールを教えるものではありません。学生がプラットフォームを横断して対話する応答的なシステムであり、継続的な対話を通じて出力を演出し、批評し、形作ることです。ComfyUIはこれに適しています。ノードグラフは、読み取り、問い直し、組み直せる論証です。プロンプト入力欄はそうではありません。シンガポールの学生は、技術にすぐ習熟します。アート教育に必要なのは、ただ作る技術ではなく、自分が作っているものを問い直すための言葉です。
+
+</Section>
+
+<Section id="topic-4">
+
+### Inaさん、2026年の課題では学生を海へ向かわせます。どのような課題ですか？
+
+プロジェクトは「The Liquid Commons: Bringing Ocean Science into Global Media Architecture」です。OceanXplorer調査船を運営する組織OceanXとの対話、およびCDSA 2026のフェスティバルテーマから開発されました。課題は明確です。科学を図解するのではなく、翻訳すること。2026年の受講生は、TopazによるアップスケーリングとともにComfyUIでこれらの映像を制作する最初の世代であり、二つの実際の締切に向けて作業しています。作品は今年10月にシンガポールで開催されるOceanX Summitの候補となり、審査員が選出した作品は、杭州のWest Lake Media Façadeで開催されるCity Digital Skin Art Festivalで上映されます。幅170メートル・高さ18メートル、1日あたり約100万人が見る場所です。
+
+<Quote>納品仕様を見れば、ツールが重要な理由が分かります。最終書き出しは5,888 × 768 px、必要に応じて8Kです。プロンプト入力欄だけでは満たせない課題です。</Quote>
+
+</Section>
+
+<Section id="topic-5">
+
+### Markさん、学生作品はどのようなものですか？
+
+これまでに約8人の学生がComfyで映像を制作しており、どれも非常に良い作品です。ゲームエンジンのグラフィックスに制限されないため、意外性があり、洞察に富んでいます。特に目立った学生が一人いて、Comfyのあらゆるモデルを試し、最も遠くまで可能性を追求しました。
+
+2026年の受講生による3作品は、その幅広さを示しています。
+
+**The Tao of Water**（Wang Zilin、AP7055）は、老子『道徳経』を通して海を読み解きます。水から海洋植物、虚無を経て起源へ戻る三部構成です。パイプラインはPinterestのリサーチボードからMidjourneyを経てComfyUIへ進みます。ComfyUIではNano Bananaが単一フレームを連続するパノラマへ拡張し、Kling 3.0がフル幅5,888ピクセルで最初のフレームから最後のフレームまでのモーションをアニメーション化します。その後、Premiereで編集します。
+
+<Figure src="https://media.comfy.org/website/customers/ina-conradi/fig3-tao-of-water.jpg" alt="NTU Indexスクリーンに映し出されたThe Tao of Water" caption="The Tao of Water、Wang Zilin。実験アニメーション、NTU Indexスクリーン（15 m × 2 m）、シンガポール。撮影：Quek Jia Liang。" />
+
+**microscophony**（Jiin Ko、AP7055）は、*microscopic*と、密な声の網目が一つの音の雲へ溶け合うLigetiの用語*micropolyphony*を融合したものです。素材はOceanXによる深海微生物の顕微鏡映像に基づき、それをグラフィック譜（Ligeti、Xenakis、Cardew）の視覚的論理へ翻訳することで、パノラマを聴くための楽譜にしています。画像はMidjourneyとNano Banana、映像はVidu Q2を用いたComfyUI、サウンドデザインはAbleton Liveで制作し、それぞれ異なる音響テクスチャを異なる視覚形態に対応付けています。
+
+<Figure src="https://media.comfy.org/website/customers/ina-conradi/fig4-microscophony.jpg" alt="NTU Indexスクリーンに映し出されたmicroscophony" caption="microscophony、Jiin Ko。実験アニメーション、NTU Indexスクリーン（15 m × 2 m）、シンガポール。撮影：Quek Jia Liang。" />
+
+**GO! PLASTIC**（Jianwei Hoe、DM2012）は海洋プラスチックを扱う作品で、その制作ログはプロンプト履歴ではなくスタジオの制作書類のようです。まず一行のアートディレクションから始まります。すべてのプロジェクトで、フレームを生成する前に、込められたアイロニーを含むアイデアを一行で記します。次に、モデル選定、プラットフォームとローカル環境のコスト比較（RTX 5090とクラウドB200におけるクリップ単位・シーン単位のコスト、レンダリング時間を含む）、そして各ソース画像に完全なプロンプトと設定を対応付けたショットごとのシートを提示します。
+
+<Figure src="https://media.comfy.org/website/customers/ina-conradi/fig5-go-plastic.jpg" alt="NTU Indexスクリーンに映し出されたGO! PLASTIC" caption="GO! PLASTIC、Hoe Jianwei。実験アニメーション、NTU Indexスクリーン（15 m × 2 m）、シンガポール。撮影：Quek Jia Liang。" />
+
+</Section>
+
+<Section id="topic-6">
+
+### Inaさん、授業後、作品はどこへ向かうのでしょうか？
+
+パブリックスクリーン、そして審査制の国際コンペティションです。City Digital Skin Art Festivalは2023年に設立され、中国美術学院の彫刻・パブリックアート学部が主導し、Public Art Lab Berlin、MEET Digital Culture Center Milan、NTU ADMと共同キュレーションしています。中国と欧州の29を超える美術アカデミーのネットワークを持っています。
+
+<Figure src="https://media.comfy.org/website/customers/ina-conradi/fig6-cdsa-awards.jpg" alt="West Lake Media Façadeに映し出されたCDSA Festival受賞作品" caption="CDSA Festivalの受賞者、キュレーター、主催者。West Lake Media Façade（170 m × 18 m）、中国・杭州。撮影：Limpid Art。アジア最大の高精細屋外スクリーン。" />
+
+2024年版は5か国9都市の11面のLEDスクリーンで展開され、1億回を超える視聴に到達しました。Memory Coexistenceをテーマとする2025～2026年版には、200件を超える国際応募が集まり、16名の審査員が上位40作品を選出しました。私はNTU IndexとTen Squareのランドマークファサードで展開するシンガポールプログラムをキュレーションしています。教室で横6Kの構成を制作する学生は、その回路のために制作しているのです。
+
+<Figure src="https://media.comfy.org/website/customers/ina-conradi/fig7-crispr.jpg" alt="Ten Square Landmark Façadeに映し出されたCrispr" caption="Crispr、Lee Chaewon。実験アニメーション、Ten Square Landmark Façade（21.2 m × 14.4 m）、シンガポール。撮影：Quek Jia Liang。" />
+
+NTU ADMの学生は、すでにこのレベルで受賞しています。CDSA 2025では、主要賞の大半をこの二つの授業の学生が受賞しました。Gold（Sun Yutong、*Echoes of Her*）、Silver（Tan Yu Yan Cheerie、*Eternal Flux*）、Bronze（Shah Pranjal Kirti、*Mumbai Miniatures*）、Business（Ong Sze Ching、*Nuwa*）、Creative（Leah Chakola、*Caravan of Memory*）です。また、これらの授業は2023年以降、唯一のシンガポールのキャンパスパートナーとしてNTUをリンツのArs Electronicaへ送り出してきました。最初は*Butterfly's Dreams*（2023年、「Who Owns the Truth?」）、そして2025年には中国美術学院およびBauhaus-Universität Weimarとの共同展示*Beyond the Screen*です。
+
+### Markさん、DreamWorksで10年を過ごされました。このツールがアート学生に適している理由は何でしょうか？
+
+私はビジュアルエフェクト出身です。DreamWorksに約10年、その後Rhythm & Hues、ゲーム業界、大規模なインタラクティブインスタレーションに携わりました。プログラマーではないので、ComfyUIが気に入っています。
+
+<Quote>今グラフィックスを手がける私の知人は皆これを使っています。非常に適応性が高いからです。Comfyをバックエンドとしてだけ使うこともあります。みんなそうしています。</Quote>
+
+大学のアートインスタレーションで、この幅15メートル・高さ2メートルの大きなスクリーンを手に入れ、メディアとさまざまな技法を探究できるようになりました。学生にはTouchDesignerを扱えるほどの技術力がなかったため、映像制作を始めました。その後、私がAIを試し始め、今ではすべてがAIです。次に欲しいのは、こうしたスクリーン向けにカスタムメイドされたテンプレートです。
+
+Inaと私が制作した*Echoes, Whispers and Memories*を例に取ります。完成したイラストを出力させるためにComfyを使うのではありません。画像を何度も再構成し、分解して再び組み立てるワークフローを構築し、画面上で進化させます。それがポイントです。エントロピー、記憶、崩れ、再形成です。その出力をリアルタイムおよびプロジェクションシステムへ送り、Ars ElectronicaのDeep Space 8KやミラノのMEETのような大空間で展開します。
+
+<Figure src="https://media.comfy.org/website/customers/ina-conradi/fig8-echoes.jpg" alt="Ars Electronica Deep Space 8KでのEchoes, Whispers and Memories" caption="Echoes, Whispers and Memories、Mark Chavez、Ina Conradi。ComfyUIを使用したAI生成の没入型インスタレーション、Deep Space 8K、Ars Electronica、オーストリア・リンツ。撮影：Wolfgang Simlinger。" />
+
+### 業界からのシグナル
+
+<Quote>インターンシップや就職先を探す学生から聞くのですが、向こうで最初に聞かれるのは「Comfyを知っていますか？」です。パイプラインを理解している人を採用したいからです。</Quote>
+
+</Section>
+
+<Section id="topic-7" title="概要">
+
+<AtAGlance rows={[
+  { label: "教育機関", value: "南洋理工大学 芸術・デザイン・メディア学部（シンガポール）" },
+  { label: "授業", value: "DM2012：Explorations in AI-Generated Art（学部）およびAP7055：Art in the Age of the Creative Machine（大学院）。Ina Conradiが2022年から設計・担当。1学期あたり約30名" },
+  { label: "キャンバス", value: "シンガポールと中国の横6K・8:1 LEDウォール。キャンパス内のNTU Indexウォール（15 m × 2 m、5,888 × 768 px）" },
+  { label: "中核技法", value: "超横長パノラマ出力のためのTopazアップスケーリングを組み合わせたComfyUI構成。クリップ単位のコストとプロンプトシートを記録する制作ログ" },
+  { label: "Comfyを選んだ理由", value: "ホステッドツールは16:9に固定。構成後に8対1のパノラマを8Kへアップスケールするには複数モデルのパイプラインが必要で、月額シート単位の更新は学期制に合わなかった" }
+]} />
+
+</Section>
+
+<AuthorBio label="著者について" people={[
+  { name: "Ina Conradi", photo: "https://media.comfy.org/website/customers/ina-conradi/author-ina.jpg", bio: `Ina Conradiはシンガポールとロサンゼルスを拠点に活動するアーティスト、キュレーターです。NTU芸術・デザイン・メディア学部（2005年設立）の創設教員であり、2022年から同校のAI関連科目を設計・担当しています。彼女の映画「Moirai: Thread of Life」は、SIGGRAPH Asia Computer Animation Festival 2023でBest in Showを受賞しました。シンガポール初の受賞です。` },
+  { name: "Mark Chavez", photo: "https://media.comfy.org/website/customers/ina-conradi/author-mark.jpg", bio: `Mark ChavezはシンガポールのNTU芸術・デザイン・メディア学部に所属するアニメーター、ディレクター、創設教員です。DreamWorks Animationでの10年と、創設時のRhythm & Hues Studiosでのビジュアルエフェクト業務を経て、NTUのDigital Animation分野（2005年）と、シンガポールのNational Research FoundationおよびMedia Development Authorityが資金提供するアニメーション研究シンクタンクを設立しました。` }
+]} />

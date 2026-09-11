@@ -38,6 +38,12 @@ jobs:
       - name: Typecheck website
         run: pnpm --filter @comfyorg/website typecheck
 
+      # Copy typed into a page file has no key, so it reaches no adapter and
+      # shows up in no report or coverage number: it renders English in every
+      # locale and nothing says so. Reads source, so it runs before the build.
+      - name: Check for copy the translation pipeline cannot see
+        run: pnpm --filter @comfyorg/website check:hardcoded-copy
+
       - name: Build website
         env:
           WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
@@ -56,6 +62,13 @@ jobs:
       - name: Check hreflang clusters
         run: pnpm --filter @comfyorg/website check:hreflang
 
+      # A localized page is served from the English page file, but content read
+      # at render time is outside Astro's i18n fallback: a collection filtered
+      # by locale returns an empty array and the section vanishes rather than
+      # falling back. That shipped twice before this check existed, and the
+      # build exits 0 either way.
+      - name: Check localized pages render their content
+        run: pnpm --filter @comfyorg/website check:localized-pages
       # The build above is the development shape: Workshop included. Preview
       # and production build the other shape, and nothing else here exercises
       # it -- so a fault on the exclusion path reaches a deploy untested. It
@@ -64,6 +77,12 @@ jobs:
       #
       # Hence both halves of the assertion. The directory must be gone AND the
       # build must succeed.
+      #
+      # Searched rather than named: this step used to test `dist/workshop`
+      # alone and passed while /ja/workshop/ and /zh-CN/workshop/ shipped 538
+      # pages, reachable and not even noindexed. A locale serves Workshop from
+      # its own prefix, so the assertion has to cover any depth, including a
+      # locale added after this was written.
       - name: Build the release shape, with Workshop excluded
         env:
           WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
@@ -71,8 +90,9 @@ jobs:
           WORKSHOP_IN_BUILD: '0'
         run: |
           pnpm --filter @comfyorg/website build
-          if [ -d apps/website/dist/workshop ]; then
-            echo "::error title=Workshop leaked into a release build::apps/website/dist/workshop exists with WORKSHOP_IN_BUILD=0. Workshop is unreleased and must not deploy. See apps/website/src/integrations/workshop-release-gate.ts."
+          leaked=$(find apps/website/dist -type d -name workshop | sort | tr '\n' ' ')
+          if [ -n "$leaked" ]; then
+            echo "::error title=Workshop leaked into a release build::Workshop output exists with WORKSHOP_IN_BUILD=0: $leaked. Workshop is unreleased and must not deploy. See apps/website/src/integrations/workshop-release-gate.ts."
             exit 1
           fi
-          echo "Release build has no Workshop output."
+          echo "Release build has no Workshop output, in any locale."

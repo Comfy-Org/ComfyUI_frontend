@@ -191,8 +191,9 @@ export const chatgptImage25Page: ModelLaunchPage = {
           'zh-CN': '如何在 ComfyUI 中运行 ChatGPT Images 2.5？'
         },
         answer: {
-          en: `Open [Comfy Cloud](${chatgptImage25Links.cloud}), add the OpenAI image Partner Node to a workflow, enter a prompt, and connect any reference images you want to use.`,
-          'zh-CN': `打开 [Comfy Cloud](${chatgptImage25Links.cloud})，在工作流中添加 OpenAI 图像合作伙伴节点，输入提示词，并连接需要使用的参考图像。`
+          en: 'Open [Comfy Cloud](https://cloud.comfy.org/?template=api_openai_gpt_image_25_flare_t2i&utm_source=comfy.org&utm_medium=referral&utm_campaign=gpt-image-2-5), add the OpenAI image Partner Node to a workflow, enter a prompt, and connect any reference images you want to use.',
+          'zh-CN':
+            '打开 [Comfy Cloud](https://cloud.comfy.org/?template=api_openai_gpt_image_25_flare_t2i&utm_source=comfy.org&utm_medium=referral&utm_campaign=gpt-image-2-5)，在工作流中添加 OpenAI 图像合作伙伴节点，输入提示词，并连接需要使用的参考图像。'
         }
       },
       {

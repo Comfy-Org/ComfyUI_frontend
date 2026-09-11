@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import BrandButton from '../common/BrandButton.vue'
+import { DEFAULT_LOCALE } from '../../config/locales'
+import type { Locale } from '../../config/locales'
 import { t } from '../../i18n/translations'
 
 const {
@@ -10,7 +12,8 @@ const {
   blogUrl,
   hubSlug,
   workflowCount,
-  directory
+  directory,
+  locale = DEFAULT_LOCALE
 } = defineProps<{
   displayName: string
   huggingFaceUrl: string
@@ -19,6 +22,7 @@ const {
   hubSlug?: string
   workflowCount: number
   directory: string
+  locale?: Locale
 }>()
 
 const workflowsUrl = hubSlug
@@ -67,7 +71,7 @@ const isPartnerNode = directory === 'partner_nodes'
 
       <p class="text-sm text-primary-comfy-canvas/60">
         {{
-          t('models.hero.workflowCount').replace(
+          t('models.hero.workflowCount', locale).replace(
             '{count}',
             String(workflowCount)
           )
@@ -82,7 +86,7 @@ const isPartnerNode = directory === 'partner_nodes'
           size="lg"
           class="w-full uppercase sm:w-auto sm:min-w-48"
         >
-          {{ t('models.hero.primaryCta') }}
+          {{ t('models.hero.primaryCta', locale) }}
         </BrandButton>
 
         <BrandButton
@@ -94,7 +98,7 @@ const isPartnerNode = directory === 'partner_nodes'
           size="lg"
           class="w-full uppercase sm:w-auto sm:min-w-48"
         >
-          {{ t('models.hero.secondaryCta') }}
+          {{ t('models.hero.secondaryCta', locale) }}
         </BrandButton>
 
         <BrandButton
@@ -106,7 +110,7 @@ const isPartnerNode = directory === 'partner_nodes'
           size="lg"
           class="w-full uppercase sm:w-auto sm:min-w-48"
         >
-          {{ t('models.hero.cloudCta') }}
+          {{ t('models.hero.cloudCta', locale) }}
         </BrandButton>
 
         <BrandButton
@@ -118,7 +122,7 @@ const isPartnerNode = directory === 'partner_nodes'
           size="lg"
           class="w-full uppercase sm:w-auto sm:min-w-48"
         >
-          {{ t('models.hero.tutorialCta') }}
+          {{ t('models.hero.tutorialCta', locale) }}
         </BrandButton>
       </div>
 
@@ -129,7 +133,7 @@ const isPartnerNode = directory === 'partner_nodes'
           rel="noopener noreferrer"
           class="underline hover:text-primary-comfy-canvas"
         >
-          {{ t('models.hero.blogLink') }}
+          {{ t('models.hero.blogLink', locale) }}
         </a>
       </div>
     </div>

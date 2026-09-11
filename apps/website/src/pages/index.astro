@@ -26,9 +26,9 @@ import {
   pageContext,
 } from "../utils/jsonLd";
 
-const { siteUrl } = pageContext(
+const { siteUrl, locale } = pageContext(
   Astro.site,
-  Astro.url.pathname,
+  Astro.originPathname,
   Astro.currentLocale,
 );
 
@@ -45,36 +45,42 @@ const workshopModels = await resolveHomepageWorkshopModels(
 ---
 
 <BaseLayout
-  title="Comfy - Professional Control of Visual AI"
-  description={t("hero.subtitle", "en")}
+  title={t('home.meta.title', locale)}
+  description={t('hero.subtitle', locale)}
   mainEntityId={comfyUiSoftwareId(siteUrl)}
   extraJsonLd={[
     comfyUiApplicationNode(siteUrl),
     comfyUiSourceCodeNode(siteUrl),
   ]}
-  keywords={[
-    "comfyui app",
-    "comfyui web app",
-    "comfy ui application",
-    "comfyui application",
-    "comfy app",
-    "comfyui",
-    "visual ai app",
-    "node-based ai",
-    "generative ai workflows",
-  ]}
+  keywords={t('home.meta.keywords', locale).split(', ')}
 >
-  <HeroGraphSection client:load />
+  <HeroGraphSection locale={locale} client:load />
   <SocialProofBarSection />
-  <DeveloperPlatformSection client:visible />
-  <MinimaxLicenseHeroSection client:visible />
-  {isWorkshopInBuild() && <ModelDiscoverySection providers={discoveryProviders} client:visible />}
-  <FeaturedWorkflowsSection client:load />
-  {workshopModels.length > 0 && <WorkshopSection models={workshopModels} />}
-  <ProductShowcaseSection client:load />
-  <IndustriesSection client:load />
-  <GetStartedSection />
-  <ProductCardsSection />
-  <CaseStudySpotlightSection client:load />
-  <ModelReleaseSection modelLinks={await modelReleaseLinks(isWorkshopInBuild())} client:visible />
+  <DeveloperPlatformSection locale={locale} client:visible />
+  <MinimaxLicenseHeroSection locale={locale} client:visible />
+  {
+    isWorkshopInBuild() && (
+      <ModelDiscoverySection
+        locale={locale}
+        providers={discoveryProviders}
+        client:visible
+      />
+    )
+  }
+  <FeaturedWorkflowsSection locale={locale} client:load />
+  {
+    workshopModels.length > 0 && (
+      <WorkshopSection locale={locale} models={workshopModels} />
+    )
+  }
+  <ProductShowcaseSection locale={locale} client:load />
+  <IndustriesSection locale={locale} client:load />
+  <GetStartedSection locale={locale} />
+  <ProductCardsSection locale={locale} />
+  <CaseStudySpotlightSection locale={locale} client:load />
+  <ModelReleaseSection
+    locale={locale}
+    modelLinks={await modelReleaseLinks(isWorkshopInBuild())}
+    client:visible
+  />
 </BaseLayout>

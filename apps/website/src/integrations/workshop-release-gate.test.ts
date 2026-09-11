@@ -6,7 +6,17 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { DEFAULT_LOCALE, LOCALE_CODES, localePrefix } from '../config/locales'
 import { modelsBuildRoutes, workshopReleaseGate } from './workshop-release-gate'
+
+/**
+ * The prefixes the gate reads, minus English's empty one, so adding a locale
+ * extends this test rather than slipping past it. Directories, so no leading
+ * slash.
+ */
+const LOCALIZED = LOCALE_CODES.filter(
+  (locale) => locale !== DEFAULT_LOCALE
+).map((locale) => localePrefix(locale).replace(/^\//, ''))
 
 let root: string
 const logger: AstroIntegrationLogger = {
@@ -28,6 +38,15 @@ beforeEach(async () => {
   await mkdir(join(root, 'workshop'), { recursive: true })
   await writeFile(join(root, 'workshop/index.html'), 'Workshop')
   await writeFile(join(root, 'index.html'), 'Home')
+  // A locale serves Workshop from its own prefix, so the fixture has to hold
+  // those trees too. Building only the English one is what let 538 localized
+  // pages ship from a release build while the gate reported success.
+  for (const locale of LOCALIZED) {
+    await mkdir(join(root, locale, 'workshop/models'), { recursive: true })
+    await writeFile(join(root, locale, 'workshop/index.html'), 'Workshop')
+    await writeFile(join(root, locale, 'workshop/models/index.html'), 'Model')
+    await writeFile(join(root, locale, 'index.html'), 'Home')
+  }
 })
 afterEach(async () => {
   await rm(root, { recursive: true, force: true })
@@ -142,6 +161,21 @@ describe('Workshop release output', () => {
     expect(existsSync(join(root, 'workshop'))).toBe(false)
     expect(await readFile(join(root, 'index.html'), 'utf8')).toBe('Home')
     await expect(buildDone()).resolves.toBeUndefined()
+  })
+
+  it("removes every locale's Workshop tree, not only the English one", async () => {
+    vi.stubEnv('WORKSHOP_IN_BUILD', '0')
+    await buildDone()
+    for (const locale of LOCALIZED) {
+      expect(
+        existsSync(join(root, locale, 'workshop')),
+        `/${locale}/workshop/ shipped in a release build`
+      ).toBe(false)
+      // The locale itself survives: the gate takes Workshop, not the tree.
+      expect(await readFile(join(root, locale, 'index.html'), 'utf8')).toBe(
+        'Home'
+      )
+    }
   })
 
   it('retires legacy Workshop output even when Models is enabled', async () => {

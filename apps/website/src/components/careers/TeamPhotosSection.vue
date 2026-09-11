@@ -1,36 +1,42 @@
 <script setup lang="ts">
+import type { Locale } from '../../i18n/translations'
+
+import { t } from '../../i18n/translations'
+
+const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+
 const photos = [
   {
     src: 'https://media.comfy.org/website/careers/team0.webp',
-    alt: 'Team dinner'
+    alt: t('careers.teamPhotos.team0.alt', locale)
   },
   {
     src: 'https://media.comfy.org/website/careers/team1.webp',
-    alt: 'Team working'
+    alt: t('careers.teamPhotos.team1.alt', locale)
   },
   {
     src: 'https://media.comfy.org/website/careers/team2.webp',
-    alt: 'Team offsite'
+    alt: t('careers.teamPhotos.team2.alt', locale)
   },
   {
     src: 'https://media.comfy.org/website/careers/team3.webp',
-    alt: 'Team on a boat'
+    alt: t('careers.teamPhotos.team3.alt', locale)
   },
   {
     src: 'https://media.comfy.org/website/careers/team4.webp',
-    alt: 'Teammates posing at a restaurant'
+    alt: t('careers.teamPhotos.team4.alt', locale)
   },
   {
     src: 'https://media.comfy.org/website/careers/team5.webp',
-    alt: 'Teammates at a social gathering'
+    alt: t('careers.teamPhotos.team5.alt', locale)
   },
   {
     src: 'https://media.comfy.org/website/careers/team6.webp',
-    alt: 'Team sailing at golden hour'
+    alt: t('careers.teamPhotos.team6.alt', locale)
   },
   {
     src: 'https://media.comfy.org/website/careers/team7.webp',
-    alt: 'Team on a sailboat at sunset'
+    alt: t('careers.teamPhotos.team7.alt', locale)
   }
 ]
 </script>

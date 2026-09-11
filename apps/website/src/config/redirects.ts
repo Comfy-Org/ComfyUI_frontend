@@ -21,7 +21,6 @@ export const redirects = {
     '/customers/moment-factory/',
   '/cloud/enterprise-case-studies/how-series-entertainment-rebuilt-game-and-video-production-with-comfyui':
     '/customers/series-entertainment/',
-  '/zh-CN/terms-of-service': '/terms-of-service/',
   // The platform rename, added on main while this branch was open.
   '/api': '/platform/',
   '/zh-CN/api': '/zh-CN/platform/',
@@ -31,10 +30,53 @@ export const redirects = {
   // Pricing moved out from under /cloud, also from main.
   '/cloud/pricing': '/pricing/',
   '/zh-CN/cloud/pricing': '/zh-CN/pricing/',
-  // Affiliates exists in English only. Without these a reader who swaps the
-  // locale prefix by hand gets a 404 instead of the page they asked for.
-  '/zh-CN/affiliates': '/affiliates/',
-  '/zh-CN/affiliates/terms': '/affiliates/terms/',
+  // Affiliates and Terms of Service exist in English only, and used to redirect
+  // from their /zh-CN prefix so a reader who swapped the prefix by hand landed
+  // on the page rather than a 404.
+  //
+  // Those three redirects are gone because they cannot coexist with the i18n
+  // fallback: Astro gives the fallback route higher priority, drops the
+  // redirect, and — this is the dangerous part — only says so in a build WARNING
+  // while still exiting 0. The URLs 404ed silently.
+  //
+  // The fallback covers the same need: /zh-CN/affiliates now renders the English
+  // page at that URL with a canonical pointing at /affiliates/, so no reader
+  // hits a 404 and Google is still told which one is the original.
+  // `redirects.test.ts` fails if such a redirect is reintroduced.
   '/minimax': { status: 307, destination: '/minimax-h3/' },
   '/zh-CN/minimax': { status: 307, destination: '/zh-CN/minimax-h3/' }
 } satisfies Record<string, RedirectConfig>
+
+/**
+ * Localized redirects whose English route exists, and so will be silently
+ * dropped in favour of the i18n fallback page.
+ *
+ * Astro gives the fallback higher priority, discards the redirect, and says so
+ * only in a build WARNING while still exiting 0 — which is how three redirects
+ * became silent 404s. `redirects.test.ts` runs this over the real table.
+ *
+ * Sources are normalised before the lookup because the English routes are
+ * collected without a trailing slash: `/zh-CN/pricing/` yields `/pricing/`,
+ * which would never match `/pricing`, and the guard would miss exactly the
+ * collision it exists for. A bare prefix is the locale home, which maps to `/`.
+ */
+export function fallbackCollisions(
+  sources: readonly string[],
+  englishRoutes: ReadonlySet<string>,
+  localePrefixes: readonly string[]
+): string[] {
+  const collisions: string[] = []
+  for (const from of sources) {
+    const prefix = localePrefixes.find(
+      (candidate) => from === candidate || from.startsWith(`${candidate}/`)
+    )
+    if (prefix === undefined) continue
+
+    const remainder = from.slice(prefix.length).replace(/\/$/, '')
+    const route = remainder === '' ? '/' : remainder
+    if (englishRoutes.has(route)) {
+      collisions.push(`${from} collides with ${route}`)
+    }
+  }
+  return collisions
+}

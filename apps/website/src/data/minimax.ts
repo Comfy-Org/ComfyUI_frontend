@@ -95,76 +95,130 @@ export const minimaxPage = {
     cards: [
       {
         id: 'liquid-chrome',
-        name: { en: 'Liquid chrome', 'zh-CN': '液态铬' },
+        name: {
+          en: 'Liquid chrome',
+          'zh-CN': '液态铬',
+          ja: 'リキッドクローム' /* machine */
+        },
         tier: 'premium',
-        note: { en: 'Text to video', 'zh-CN': '文本生成视频' },
+        note: {
+          en: 'Text to video',
+          'zh-CN': '文本生成视频',
+          ja: 'テキストから動画へ' /* machine */
+        },
         description: {
           en: 'A chrome fluid ripples under teal and amber light, a stress test for reflection and micro-detail.',
           'zh-CN':
-            '青与琥珀光下的液态铬面泛起涟漪，是对反射与微观细节的一次压力测试。'
+            '青与琥珀光下的液态铬面泛起涟漪，是对反射与微观细节的一次压力测试。',
+          ja: 'ティールとアンバーの光の下でクロームの液体が波打つ、反射と微細なディテールのストレステスト。' /* machine */
         },
         media: media.fluid,
         href: minimaxLinks.textToVideo
       },
       {
         id: 'sunken-temple',
-        name: { en: 'Sunken temple', 'zh-CN': '沉没神殿' },
+        name: {
+          en: 'Sunken temple',
+          'zh-CN': '沉没神殿',
+          ja: '水没した神殿' /* machine */
+        },
         tier: 'premium',
-        note: { en: 'Text to video', 'zh-CN': '文本生成视频' },
+        note: {
+          en: 'Text to video',
+          'zh-CN': '文本生成视频',
+          ja: 'テキストから動画' /* machine */
+        },
         description: {
           en: 'God-rays drift through a flooded temple of carved gold, holding light and depth steady across the whole shot.',
-          'zh-CN': '光束穿过被水淹没的黄金浮雕神殿，全程保持光影与景深的稳定。'
+          'zh-CN': '光束穿过被水淹没的黄金浮雕神殿，全程保持光影与景深的稳定。',
+          ja: '彫刻を施した金の水没神殿に差し込む光芒。ショット全体で光と奥行きを安定して保ちます。' /* machine */
         },
         media: media.sunkenTemple,
         href: minimaxLinks.textToVideo
       },
       {
         id: 'night-ascent',
-        name: { en: 'Night ascent', 'zh-CN': '夜间攀登' },
+        name: {
+          en: 'Night ascent',
+          'zh-CN': '夜间攀登',
+          ja: '夜の登攀' /* machine */
+        },
         tier: 'premium',
-        note: { en: 'Text to video', 'zh-CN': '文本生成视频' },
+        note: {
+          en: 'Text to video',
+          'zh-CN': '文本生成视频',
+          ja: 'テキストから動画' /* machine */
+        },
         description: {
           en: 'A headlamped climber pushes up a moonlit dune, fine grain and motion kept clean in near-dark.',
           'zh-CN':
-            '头灯登山者攀上月光沙丘，近乎全黑的画面中颗粒与运动依旧干净。'
+            '头灯登山者攀上月光沙丘，近乎全黑的画面中颗粒与运动依旧干净。',
+          ja: 'ヘッドランプを付けた登山者が月明かりの砂丘を登ります。暗闇に近い環境でも、細かな粒子感と動きをクリアに保ちます。' /* machine */
         },
         media: media.nightAscent,
         href: minimaxLinks.textToVideo
       },
       {
         id: 'ice-rider',
-        name: { en: 'Ice canyon rider', 'zh-CN': '冰川峡谷骑手' },
+        name: {
+          en: 'Ice canyon rider',
+          'zh-CN': '冰川峡谷骑手',
+          ja: '氷の峡谷のライダー' /* machine */
+        },
         tier: 'premium',
-        note: { en: 'Text to video', 'zh-CN': '文本生成视频' },
+        note: {
+          en: 'Text to video',
+          'zh-CN': '文本生成视频',
+          ja: 'テキストから動画へ' /* machine */
+        },
         description: {
           en: 'A lone rider crosses a glacial canyon in one continuous move, camera and native audio straight out of H3.',
-          'zh-CN': '骑手一镜到底穿越冰川峡谷，运镜与原生音频均由 H3 直接生成。'
+          'zh-CN': '骑手一镜到底穿越冰川峡谷，运镜与原生音频均由 H3 直接生成。',
+          ja: '孤独なライダーが氷河の峡谷をワンカットで駆け抜けます。カメラワークとネイティブ音声はH3で生成されています。' /* machine */
         },
         media: media.iceRider,
         href: minimaxLinks.iceRider
       },
       {
         id: 'backyard-hero',
-        name: { en: 'Backyard hero', 'zh-CN': '后院小英雄' },
+        name: {
+          en: 'Backyard hero',
+          'zh-CN': '后院小英雄',
+          ja: '庭のヒーロー' /* machine */
+        },
         tier: 'premium',
-        note: { en: 'Reference to video', 'zh-CN': '参考生成视频' },
+        note: {
+          en: 'Reference to video',
+          'zh-CN': '参考生成视频',
+          ja: '参照画像から動画へ' /* machine */
+        },
         description: {
           en: 'A pint-size superhero calls out a towering city monster, character held consistent from a single reference image.',
           'zh-CN':
-            '小小超级英雄向巨型城市怪兽宣战，仅凭一张参考图便保持角色始终如一。'
+            '小小超级英雄向巨型城市怪兽宣战，仅凭一张参考图便保持角色始终如一。',
+          ja: '1枚の参照画像からキャラクターの一貫性を保ち、小さなスーパーヒーローがそびえ立つ街の怪物に立ち向かいます。' /* machine */
         },
         media: media.superhero,
         href: minimaxLinks.referenceToVideo
       },
       {
         id: 'stay-comfy-can',
-        name: { en: 'Stay Comfy can', 'zh-CN': 'Stay Comfy 罐' },
+        name: {
+          en: 'Stay Comfy can',
+          'zh-CN': 'Stay Comfy 罐',
+          ja: 'Stay Comfy缶' /* machine */
+        },
         tier: 'premium',
-        note: { en: 'Reference to video', 'zh-CN': '参考生成视频' },
+        note: {
+          en: 'Reference to video',
+          'zh-CN': '参考生成视频',
+          ja: 'リファレンスから動画' /* machine */
+        },
         description: {
           en: 'One product shot becomes a full scene — the label stays crisp as the can pours out beside a waterfall.',
           'zh-CN':
-            '一张产品图生成完整场景 — 瀑布旁倾倒的罐身上，标签始终清晰锐利。'
+            '一张产品图生成完整场景 — 瀑布旁倾倒的罐身上，标签始终清晰锐利。',
+          ja: '1枚の商品写真からフルシーンへ。滝のそばで缶から飲料が注がれても、ラベルはくっきり保たれます。' /* machine */
         },
         media: media.comfyCan,
         href: minimaxLinks.referenceToVideo
@@ -191,7 +245,8 @@ export const minimaxPage = {
         id: 'what-is-minimax',
         question: {
           en: 'What is MiniMax H3?',
-          'zh-CN': 'MiniMax H3 是什么？'
+          'zh-CN': 'MiniMax H3 是什么？',
+          ja: 'MiniMax H3とは？' /* machine */
         },
         answer: {
           en: `MiniMax's video model, available as Open Weights and through Partner Nodes. It takes text, image, or audio in and renders a clip with native stereo audio. On Comfy you direct it on the canvas alongside every other model. Read [the day-0 launch post](${minimaxLinks.blog}) for the technical details.`,
@@ -202,54 +257,63 @@ export const minimaxPage = {
         id: 'cost-per-generation',
         question: {
           en: 'How much does MiniMax H3 cost per generation?',
-          'zh-CN': 'MiniMax H3 每次生成需要多少费用？'
+          'zh-CN': 'MiniMax H3 每次生成需要多少费用？',
+          ja: 'MiniMax H3の1回の生成にかかる料金は？' /* machine */
         },
         answer: {
           en: 'It runs on pay-as-you-go or subscription credits. You can draft the same shot free on Wan 2.2 first, and spend credits only on the final render.',
           'zh-CN':
-            '它采用按量付费或订阅积分。你可以先在 Wan 2.2 上免费打样同一个镜头，只在最终渲染时消耗积分。'
+            '它采用按量付费或订阅积分。你可以先在 Wan 2.2 上免费打样同一个镜头，只在最终渲染时消耗积分。',
+          ja: '従量課金またはサブスクリプションクレジットで利用できます。まずWan 2.2で同じショットを無料で試作し、最終レンダリングにのみクレジットを使えます。' /* machine */
         }
       },
       {
         id: 'resolution-length',
         question: {
           en: 'What resolution and clip length does MiniMax H3 support?',
-          'zh-CN': 'MiniMax H3 支持哪些分辨率和片段时长？'
+          'zh-CN': 'MiniMax H3 支持哪些分辨率和片段时长？',
+          ja: 'MiniMax H3はどの解像度とクリップ長に対応していますか？' /* machine */
         },
         answer: {
           en: 'Up to 2K, and 5 to 15 seconds per generation.',
-          'zh-CN': '最高 2K，每次生成 5 到 15 秒。'
+          'zh-CN': '最高 2K，每次生成 5 到 15 秒。',
+          ja: '最大2K、1回の生成につき5〜15秒です。' /* machine */
         }
       },
       {
         id: 'native-audio',
         question: {
           en: 'Does MiniMax H3 generate audio?',
-          'zh-CN': 'MiniMax H3 会生成音频吗？'
+          'zh-CN': 'MiniMax H3 会生成音频吗？',
+          ja: 'MiniMax H3は音声を生成しますか？' /* machine */
         },
         answer: {
           en: 'Yes. Every clip carries native stereo audio. When you feed it input audio, H3 conditions on that track instead of overwriting or dropping it.',
           'zh-CN':
-            '会。每个片段都带有原生立体声音频。当你输入音频时，H3 会以该音轨为条件进行生成，而不是覆盖或丢弃它。'
+            '会。每个片段都带有原生立体声音频。当你输入音频时，H3 会以该音轨为条件进行生成，而不是覆盖或丢弃它。',
+          ja: 'はい。すべてのクリップにネイティブのステレオ音声が含まれます。入力音声を与えると、H3はそのトラックを条件として使用し、上書きや削除はしません。' /* machine */
         }
       },
       {
         id: 'open-weights',
         question: {
           en: 'Is MiniMax H3 available as Open Weights?',
-          'zh-CN': 'MiniMax H3 提供开源权重吗？'
+          'zh-CN': 'MiniMax H3 提供开源权重吗？',
+          ja: 'MiniMax H3はOpen Weightsで利用できますか？' /* machine */
         },
         answer: {
           en: 'Yes. H3 is available as Open Weights, so you can run it yourself, and through Partner Nodes on Comfy Cloud. To use what you make locally for commercial work, [get an H3 commercial license through Comfy](https://comfy.org/minimax/license).',
           'zh-CN':
-            '是的。H3 以开源权重形式提供，你可以自行运行；也可以通过 Comfy Cloud 上的合作伙伴节点使用。如需将本地产出用于商业创作，请[通过 Comfy 获取 H3 商业许可](https://comfy.org/zh-CN/minimax/license)。'
+            '是的。H3 以开源权重形式提供，你可以自行运行；也可以通过 Comfy Cloud 上的合作伙伴节点使用。如需将本地产出用于商业创作，请[通过 Comfy 获取 H3 商业许可](https://comfy.org/zh-CN/minimax/license)。',
+          ja: 'はい。H3はOpen Weightsとして提供されているため、自分で実行でき、Comfy CloudではPartner Nodesからも利用できます。ローカルで作成したものを商用利用するには、[Comfyを通じてH3の商用ライセンスを取得](https://comfy.org/minimax/license)してください。' /* machine */
         }
       },
       {
         id: 'run-in-comfyui',
         question: {
           en: 'How do I run MiniMax H3 in ComfyUI?',
-          'zh-CN': '如何在 ComfyUI 中运行 MiniMax H3？'
+          'zh-CN': '如何在 ComfyUI 中运行 MiniMax H3？',
+          ja: 'ComfyUIでMiniMax H3を実行するには？' /* machine */
         },
         answer: {
           en: `Open a MiniMax workflow template, or add H3 to any workflow on the canvas. It runs on Comfy Cloud, so you do not need a local GPU. Follow [the MiniMax H3 workflow tutorial](${minimaxLinks.docs}) for a step-by-step walkthrough.`,

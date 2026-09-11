@@ -1,0 +1,147 @@
+---
+title: "新たな視点で世界を見る：カーネギーメロン大学のGolan Levin教授がComfyUIを授業で活用する方法"
+category: "クリエイティブ・キャンパス・ショーケース"
+description: "「私にとってComfyUIは、単なる生成AIではありません。まったく新しい表現のための画像処理ワークステーションです。」"
+cover: "https://media.comfy.org/website/customers/golan-levin/cover.png"
+order: 3
+translatedBy: machine
+sections:
+  - id: topic-1
+    label: "イントロダクション"
+  - id: topic-2
+    label: "COMFYUIの活用方法"
+  - id: topic-3
+    label: "画像生成"
+  - id: topic-4
+    label: "画像解析"
+  - id: topic-5
+    label: "CVラボ"
+  - id: topic-6
+    label: "概要"
+  - id: topic-7
+    label: "学生作品"
+---
+
+<Section id="topic-1">
+
+<Figure src="https://media.comfy.org/website/customers/golan-levin/augmented-hand.jpg" alt="ゴーラン・レヴィン『Augmented Hand Series』" caption="ゴーラン・レヴィン『Augmented Hand Series』（2014年）、クリス・シュグルー、カイル・マクドナルドとの共同制作。写真：ゲルリンデ・デ・ホイス、Cinekid提供。" />
+
+多くの人にとって、アートにおけるAIといえば画像生成です。しかしレヴィンは過去20年の大半を、コンピューターが視覚世界をどのように解釈、分析、計測できるかをアーティストに教えることに費やしてきました。自身の作品でも長年、リアルタイムのコンピュータービジョンシステムを通じて機械知覚を探求しており、2024年以降はこうした原理を教えるためにComfyUIを積極的に活用しています。
+
+レヴィンにとってComfyUIは、画像生成器というより画像処理のワークベンチです。学生はセグメンテーション、トラッキング、深度推定など、計算論的知覚のためのカスタムワークフローを組み立てます。これによりアーティストは、研究レベルの機械学習ツールを直接試し、自ら設計したシステムへ組み合わせられる環境を得られます。
+
+</Section>
+
+<Section id="topic-2">
+
+### ComfyUIは、あなたが取り組もうとしていることの中でどのような役割を担っていますか？
+
+私はクリエイティブテクノロジストと、技術リテラシーを備えたアーティストを育成しています。Creative Codingの授業に参加する典型的な学生は、真のハイブリッドです。美術またはデザインを専攻する学部生でありながら、コンピューターサイエンス、ヒューマン・コンピューター・インタラクション、情報科学も学んでいます。優れた視覚的能力、文化的リテラシー、アルゴリズム的思考力を持っていますが、それらを結び付ける機会は私の授業が初めてかもしれません。
+
+私にとって重要なのは、クリエイティブソフトウェアを固定された既製品として扱うのではなく、学生が理解し、改変し、リミックスして、自ら設計したシステムを作れるツールを提供することです。だからこそ私は、アートのためのコミュニティ主導・オープンソースのソフトウェア開発ツールキットを強く支持しています。
+
+<Quote>ComfyUIは、参入しやすさと高い拡張性を両立した初めてのAIツールです。最新のアルゴリズムを使い、アーティストが自分のAIワークフローを設計できるという点で、非常に高機能かつ柔軟です。同時に、癖のあるGitHubリポジトリや古くなったColabノートブックに対処する手間を飛び越えられます。</Quote>
+
+### 以前、学生は何につまずいていましたか？
+
+学生はしばしば、二つの世界の間に立たされていました。一方には、印象的な結果を生み出せてもカスタマイズの余地が限られる商用AIツールがあります。もう一方には、大学や研究所が公開する研究プロジェクトがあり、ソフトウェアのインストールが難しい、ドキュメントが不十分、すでに古くなっている、といった問題がありました。
+
+ComfyUIはその隔たりを埋めます。学生が理解、改変、拡張できる環境を通じて、最先端のアルゴリズムにアクセスできます。ツールに組み込まれたワークフローにアイデアを合わせるのではなく、自身の関心や問いを反映するワークフローを構築できます。
+
+<Quote>私の学生は探究者です。コードを書けるアーティストで、これまで存在しなかったシステムを作りたいと考えています。</Quote>
+
+</Section>
+
+<Section id="topic-3">
+
+### 最初の演習：ComfyUI内で画像合成を動かすp5.jsスケッチ
+
+レヴィンの導入演習の一つでは、学生がComfyUI環境に初めて触れる際、ComfyUI内で直接シンプルなp5.jsスケッチを書きます。そして描いた図形とテキストプロンプトを使い、Stable Diffusionの画像合成を導きます。生成された画像のペアを記録します。左側はJavaScriptキャンバスに描いた絵、右側はAI合成です。p5.jsでニュアンスを引き出すことに数週間取り組んできた学生は、単純な図形からこうした結果が得られることを楽しみ、Stable Diffusionの仕組みを多く学びます。
+
+<Figure src="https://media.comfy.org/website/customers/golan-levin/p5-landscape.png" alt="Stable Diffusionの合成を導くp5.jsの楕円" caption={`p5.jsで描いた幅広い楕円（左）が、プロンプト「rolling hills, foggy day」を使用したStable Diffusionの合成（右）を導きます。`} />
+
+アート系の学生がすぐに理解できるノードベースのキャンバス上で動作します。すでに使い慣れたツールと同じように扱えるためです。
+
+<Figure src="https://media.comfy.org/website/customers/golan-levin/p5-workflow.png" alt="ComfyUI-p5js-nodeを使用するテンプレートComfyUIワークフロー" caption="学生に配布するテンプレートComfyUIワークフロー。Ben FoxによるカスタムComfyUI-p5js-nodeを使用しています。レヴィンの60-212コースリポジトリより。" />
+
+*自分で試す：[jsonファイル](https://media.comfy.org/website/customers/golan-levin/p5-in-comfy.json)（Comfy ローカルのみ）*
+
+</Section>
+
+<Section id="topic-4">
+
+### 多くのアーティストは生成AIのためにComfyUIを使い始めます。あなたの使い方は異なりますね。
+
+そうかもしれません。私はAIを拡張された知覚の枠組みとして捉えているため、過去25年間に機械学習とコンピュータービジョンを使ってきた方法の多くは、画像合成ではなく画像分析のためのものでした。基本的には、コンピュータービジョンで動画や画像を理解し、そこから抽出した情報を使って新しい種類のインタラクティブ体験を作ります。授業では、学生が「機械のように見る」方法を学べるようComfyUIを使っています。つまり、画像を生成するだけでなく、分析するための枠組みとしてComfyUIを使わせています。たとえば、入力画像からAIを使って、セマンティックセグメンテーション（「どのピクセルが象に属するか？」）や単眼深度推定（「各ピクセルはどれほど離れているか？」）といった新たな画像を算出させます。その後学生は、元画像を解釈するインタラクティブ作品を構築します。ただし使う情報チャンネルは3つではなく5つです。通常の赤、緑、青に、深度とセグメンテーションを加えます。私のデモプロジェクトでは、セグメンテーションが象をピンクに色付けし、背景ピクセルはAIが推定した距離に応じて大きさを変えます。
+
+<Figure src="https://media.comfy.org/website/customers/golan-levin/depth-segmentation.png" alt="ComfyUIでのセマンティックセグメンテーションと単眼深度分析" caption={`ComfyUI内で分析した入力画像：セマンティックセグメンテーションと単眼深度を、5チャンネルの「Custom Pixel」演習に入力しています。レヴィンの60-212コースリポジトリより。`} />
+
+*自分で試す：[デモプロジェクト](https://editor.p5js.org/golan/sketches/-_cFmLtoP) · [レッスンプランとワークフロー](https://github.com/golanlevin/60-212/tree/main/lectures/comfy/image_analysis#3-segment-the-image-with-ai)*
+
+*ワークフローファイル：[.json](https://media.comfy.org/website/customers/golan-levin/image-analysis-workflow.json)をダウンロードするか、[メタデータにワークフローを埋め込んだ.png](https://media.comfy.org/website/customers/golan-levin/image-analysis-workflow.png)をダウンロードしてください（ComfyUIにドラッグするとグラフを読み込めます）。*
+
+<Quote>学生には、AIは画像生成のためだけのツールではないと理解してほしいのです。知覚、計測、分析のためのツールでもあります。</Quote>
+
+このために作られたコンピュータービジョンツールは、通常、開発者や企業向けです。エンジニアリングのワークフローを前提としています。私はアートの学生たちに、まず本番パイプラインを構築せずとも、すでに考え慣れた環境の中でセグメンテーション、深度、トラッキングを扱ってほしかったのです。
+
+### ワークフローにComfyUIを導入すると、何が変わりましたか？
+
+二つあります。第一に、多くのアート系学生がTouchDesigner、Max/MSP、Grasshopperのような環境ですでに理解しているノードベースのキャンバスで動作します。ただしブラウザ上で動き、AIのための環境です。そのため学生は、まったく新しいインタラクションの考え方を先に学ぶのではなく、機械学習ワークフローの背後にあるアイデアに集中できます。第二に、研究室と教室の距離を縮めます。
+
+<Quote>研究室から教室までのパイプラインが速いのです。AI研究コードをComfyノードに変換することは、公開から数日以内に行われることも多く、愛好家の間では一般的になっています。</Quote>
+
+ComfyUIエコシステムの特筆すべき点の一つは、新しい研究へのアクセスが非常に速いことです。コンピュータービジョンの論文がCVPRやICCVで発表されると、数日以内にコミュニティの誰かが再利用可能なComfyUIノードとしてラップしていることがあります。教育者にとって、これは研究室と教室の距離を大幅に縮めます。実験的なソフトウェア環境を再構築するために数週間を費やす代わりに、学生はほぼすぐに根底のアイデアを探究し始められます。
+
+アクセシビリティと公平性のためにも、クラウドは重要です。私の学生の大半は高性能GPUワークステーションを持っていませんし、高度なツールへのアクセスを各自のハードウェア性能に左右されたくありません。クラウドプラットフォームなら、所有するノートPCにかかわらず、クラス全員が同じモデルを使い、同じ環境で作業できます。
+
+</Section>
+
+<Section id="topic-5">
+
+### 上級のExperimental Captureスタジオでは、ComfyUIをコンピュータービジョンラボにしています。
+
+この授業の目標は、テクノロジーを使って世界を新しい方法で見ることです。非常に速いもの、非常に遅いもの、非常に小さいもの、非常に大きいもの、さらにIRやUVのような人間の知覚を超えるスペクトルを扱います。学生の好奇心を育むことが目的です。しかしこのスタジオにはハードウェアという制約があります。毎秒10万フレームを撮影できるカメラが1台、高解像度サーマルカメラが1台、電子顕微鏡を1台利用できますが、学生は20人います。皆を一台の特殊なカメラに順番待ちさせるわけにはいきません。そこがボトルネックです。
+
+<Quote>学生全員が自分のハードウェアで実行でき、世界を新しい方法で見るためのツールを提供する必要があります。</Quote>
+
+ComfyUIにより、学生は自分のスマートフォンを使って、これまでできなかった問いを立てられます。そこで、スマートフォンのカメラを窓にテープで固定し、通り過ぎる世界を記録します。そしてLocateAnythingとSAM3のComfyUIノードで対象をトラッキングし、カメラが捉えたものを抽出したデータファイルを生成します。ComfyUIは計算論的観察のラボとなり、画像や動画に対して、そうでなければ立てにくい問いを学生が投げかけられるようにします。
+
+### ニッチな研究ライブラリを自らComfyUIノードにラップもしていますね。
+
+ComfyUIエコシステムの注目すべき点の一つは、その周囲に形成されるコミュニティです。GitHubには、私が尊敬するKijaiという人がいます。彼はコンピュータービジョン研究室のライブラリをComfyUIノードへと変え続けています。何百ものノードを作っており、研究室レベルのモデルを誰でも使えるツールに変えることに、おそらく誰よりも貢献しています。私と学生も、この取り組みを始めています。ニッチという言葉がぴったりです。今、私は昆虫の脚をトラッキングする優れたライブラリを公開した動物学研究室に注目しています。作った人たちはComfyUIが何かすら知らないかもしれません。しかし私はそのアルゴリズムを学生に使わせたいですし、他にもきっと使いたい人がいるはずです。
+
+### 学生たちに見られる、より大きな傾向は何ですか？
+
+私の学生は探究者です。新しいツールを見ると、すぐにほかの何と接続できるかを考え始めます。「これをあれと組み合わせられるはずだ」と探究します。彼らに許可されたことを指示するツールではなく、土台として構築できるシステムを与える理由は、まさにそこにあります。
+
+<Quote>私たちが育成しているのは、既存の形式や体験を再現するだけでなく、新しい形式や体験を発明したい学生です。</Quote>
+
+</Section>
+
+<Section id="topic-6" title="概要">
+
+<AtAGlance rows={[
+  { label: "授業", value: "Intermediate Studio: Creative Coding（60-212）、Experimental Capture（Nica Rossとの共同授業）" },
+  { label: "対象", value: "学部生（2年生スタジオ＋上級スタジオ、約20名）" },
+  { label: "環境", value: "クラウドホストのComfyUI、学生自身のノートPCで実行" },
+  { label: "主な技術", value: "p5.jsによる合成、セマンティックセグメンテーション、単眼深度、LocateAnything + SAM3トラッキング" },
+  { label: "特徴", value: "単なる生成器ではなく、コンピュータービジョンラボとしてのComfyUI" }
+]} />
+
+</Section>
+
+<Section id="topic-7" title="学生作品">
+
+<Figure src="https://media.comfy.org/website/customers/golan-levin/student-tippi.png" alt="Tippi Liによる学生作品" caption={`Tippi Li「nuclear explosion」`} />
+
+<Figure src="https://media.comfy.org/website/customers/golan-levin/student-xiao.png" alt="Xiao Yuanによる学生作品" caption={`Xiao Yuan「Chinese painting, plants, ink, transparent」`} />
+
+<Figure src="https://media.comfy.org/website/customers/golan-levin/student-aarnav.png" alt="Aarnav Patelによる学生作品" caption={`Aarnav Patel「NASA space image of a new cosmos detected」`} />
+
+<Figure src="https://media.comfy.org/website/customers/golan-levin/student-jeffrey.png" alt="Jeffrey Wangによる学生作品" caption={`Jeffrey Wang「Dream Scene Painting」`} />
+
+<Figure src="https://media.comfy.org/website/customers/golan-levin/student-kai.gif" alt="Kai Okoroduduによる学生作品" caption={`Kai Okorodudu「Electric hand」`} />
+
+</Section>
+
+<AuthorBio people={[{ name: "Golan Levin", photo: "https://media.comfy.org/website/customers/golan-levin/author-golan.png" }]}>Golan Levinはカーネギーメロン大学のComputational Art教授であり、Tega Brainとの共著『Code as Creative Medium』の著者です。この秋、ComfyUIを使ってCMUで二つの授業を担当します。p5.jsを中心に構成した「Intermediate Studio: Creative Coding」（60-212）と、Nica Rossと共同で教える計算論的・拡張写真のスタジオ「Experimental Capture」です。レヴィンはまた、Kyle McDonaldとChristine Sugrueと制作した[Augmented Hand Series](https://flong.com/archive/projects/augmented-hand-series/index.html)（2014年）など、リアルタイム機械視覚を用いたインタラクティブアートインスタレーションでも広く知られています。</AuthorBio>

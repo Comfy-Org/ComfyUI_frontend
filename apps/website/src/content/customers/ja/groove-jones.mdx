@@ -1,0 +1,107 @@
+---
+title: "Groove JonesがComfyでDick's Sporting Goods向けホリデーFOOHキャンペーンを制作した方法"
+category: "導入事例"
+description: "ダラス拠点のクリエイティブスタジオ、Groove Jonesは、迫る締め切りの中、Comfyを使ってCrocs x NFLコレクション向けのフォトリアルなFOOHホリデーキャンペーンを制作しました。"
+cover: "https://media.comfy.org/website/customers/groove-jones/crocs-nfl-dicks-sporting-goods-fooh.webp"
+order: 10
+translatedBy: machine
+sections:
+  - id: topic-1
+    label: "はじめに"
+  - id: topic-2
+    label: "成果物"
+  - id: topic-3
+    label: "課題"
+  - id: topic-4
+    label: "COMFYによる課題解決"
+  - id: topic-5
+    label: "ブランド学習済みLoRA"
+  - id: topic-6
+    label: "マルチモデルのオーケストレーション"
+  - id: topic-7
+    label: "パイプライン"
+  - id: topic-8
+    label: "バージョン管理"
+  - id: topic-9
+    label: "NUKEでの仕上げ"
+  - id: topic-10
+    label: "まとめ"
+---
+
+<Section id="topic-1">
+
+ダラスを拠点とするクリエイティブスタジオ Groove Jones は、フォトリアルな品質、創造的な表現、SNS向けのスピードをすべて両立させる必要がある大手ブランド向けに、AIを活用したキャンペーンや没入型体験を制作しています。Crocs、NFL、Dick’s Sporting Goods などのクライアント向けに、AI Video、AR、VR、WebGL を活用した仕事が拡大する中で、商業制作のスケジュールと予算内で長編映画品質のVFXを提供するという課題に繰り返し直面しました。
+
+Crocs x NFL コレクションのホリデーシーズン向けローンチでは、この課題が顕在化しました。複数の Dick’s Sporting Goods 駐車場に、NFLライセンスの巨大な Crocs がパラシュート降下する超リアルな動画を、差し迫ったホリデーシーズンの期限までに納品する必要がありました。実写撮影と従来のCGパイプラインは選択肢になりませんでした。
+
+</Section>
+
+<Section id="topic-2" title="Comfyで Groove Jones が達成した成果">
+
+- 厳しいホリデーシーズンの納期に合わせて、完全なFOOH（フェイク屋外広告）SNSキャンペーンを納品
+- NFLライセンスの巨大な Crocs が Dick’s Sporting Goods の駐車場へパラシュート降下する超リアルな動画
+- Instagram Reels、TikTok、YouTube Shorts 向け、2K・縦型9:16の納品素材
+- 数週間かかるアセット更新ではなく、クライアントのフィードバックに当日中に対応
+- Aaron Awards 2024「Best AI Workflow for Production」受賞
+
+</Section>
+
+<Section id="topic-3" title="Groove Jones が解決しようとした課題">
+
+このクリエイティブを従来のパイプラインで制作する場合、複数店舗での実写撮影に加え、フルCG制作が必要でした。各チームのクロッグの高解像度モデリング、ルック開発、ライティング、レンダリング、コンポジット、そしてクライアントがバリエーションを求めるたびの再レンダリングです。また、モデラー、テクスチャアーティスト、ライティングアーティスト、コンポジターから成る大規模なチームと、数か月単位のスケジュールも必要になります。予算もホリデーシーズンの期間も、その方法には対応できませんでした。
+
+</Section>
+
+<Section id="topic-4" title="Groove Jones が Comfy で課題を解決した方法">
+
+Groove Jones のシニア・クリエイティブ・テクノロジストである Doug Hogan 氏は、独自の GrooveTech GenVFX パイプラインを用い、Comfy のノードベースワークフローシステムを中心に制作プロセスを再構築しました。カスタム LoRA でブランドの正確性を維持し、単一の Comfy グラフで複数の生成モデルを連携させ、最終仕上げは Nuke で行いました。長編映画やCM制作をルーツに持つチームにとって、この環境はすぐに馴染めるものでした。
+
+<Quote name="Doug Hogan | Senior Creative Technologist @ Groove Jones">Comfy は、従来のCGやコンポジットのパイプラインで作業する感覚にとても近いものでした。ノードベースのロジック、明確なデータフロー、モジュール式の構成。すでにアーティストにとって自然な環境でした。</Quote>
+
+</Section>
+
+<Section id="topic-5" title="ヒーローアセット向けのブランド学習済みLoRA">
+
+Groove Jones は Crocs NFL Team Clogs と Dick’s Sporting Goods の店舗外観でカスタム LoRA を学習させ、すべての生成結果をブランドに忠実なリファレンスに基づかせました。実際のチームカラー、製品シルエット、店舗外観をショット間で一貫して維持し、フレームごとの修正を不要にしました。通常なら数週間かかる手作業のルック開発を置き換えています。
+
+<Figure src="https://media.comfy.org/website/customers/groove-jones/nfl-crocs-team-lineup.webp" alt="カスタムLoRAで生成した、ブランドに忠実なNFLチームCrocsのグリッド" caption="カスタムLoRAで生成した、ブランドに忠実なNFLチームカラー。" />
+
+</Section>
+
+<Section id="topic-6" title="単一グラフでのマルチモデル連携">
+
+このクリエイティブでは、工程ごとに異なる生成モデルが必要でした。キーフレーム静止画の開発には Flux、迅速なアイデア出しとバリエーション作成には Gemini Flash 2.5（Nano Banana）、最終動画生成には Veo 3.1 と Moonvalley の Marey を使用しました。Comfy は4つすべてを1つのグラフ内でつなぎ、あるモデルの出力を環境外に出すことなく次のモデルへ直接渡しました。
+
+<Quote name="Dale Carman | Co-founder @ Groove Jones">Comfy コミュニティはほぼ指数関数的な勢いで発展しており、既存のノードやツールを活用することで、自分たちで一から作り直すことなく、非常に具体的な制作上の課題を解決できました。</Quote>
+
+</Section>
+
+<Section id="topic-7" title="ストーリーボードからプリビズ、最終ショットまでを1つのパイプラインで">
+
+ワークフローは、ストーリー承認のための従来型ストーリーボードから始まり、構図、カメラフレーミング、ストーリーの要点を固めるCGIブロッキングへと進みました。その後は Comfy が生成を担い、シューズの降下、駐車場での反応、群衆のカット、静的な夏の店舗外観を雪に覆われたホリデーシーンへ変換する環境演出まで、すべてを同じグラフ内で実現しました。
+
+<Figure src="https://media.comfy.org/website/customers/groove-jones/nfl-crocs-dicks-storyboards.webp" alt="Crocs x NFL ホリデーキャンペーンのストーリーボードグリッド" caption="生成前にストーリーの要点を固めるために使用したグレースケールのストーリーボード。" />
+
+<Figure src="https://media.comfy.org/website/customers/groove-jones/nfl-crocs-fooh-sequence.webp" alt="ブロッキングから中間レンダリング、最終ショットまでの構図の変化" caption="構図の変化：ワイヤーフレームのブロッキング、中間レンダリング、最終ショット。" />
+
+</Section>
+
+<Section id="topic-8" title="バージョン管理としてのワークフローファイル">
+
+各ショットのすべてのバリエーションは Comfy ワークフローファイルとして保存され、バージョン管理も兼ねていました。異なるチームカラー、店舗外観、時間帯を求めるフィードバックが届いた際、チームは作り直す代わりにブランチを複製できたため、当日中の反復作業が可能になりました。GPU 使用量と API クレジット消費量は制作作業と同じ環境内で追跡でき、プロダクションチームは反復ごとのコンピューティングコストをリアルタイムで確認できました。
+
+</Section>
+
+<Section id="topic-9" title="Nukeでの最終仕上げ">
+
+生成したショットは、最終コンポジットのために Nuke へ移されました。降雪、カメラシェイク、群衆の環境音、ホリデー向け音声、そして Instagram Reels、TikTok、YouTube Shorts 向け9:16・2Kマスタリングを行いました。Comfy が生成を適切に処理したため、Nuke では生成アーティファクトの修正ではなく、仕上げとモーションの強化に集中できました。
+
+</Section>
+
+<Section id="topic-10" title="まとめ">
+
+FOOHパイプラインを Comfy 内に構築することで、Groove Jones は高額な実写撮影と数か月のCG制作が必要だった企画を、クライアントがリアルタイムで指示できる、迅速で反復可能な単一環境のワークフローへ変えました。このプロジェクトは最近、Aaron Award の「Best AI Workflow for Production」を受賞しました。
+
+<Quote name="Dale Carman | Co-founder @ Groove Jones">Groove Jones では、人々が「WOW!」と言うような仕事を届けることを大切にしています。同時に、納期と予算を守ることも重視しています。以前のVFXプロジェクトは利益率が非常に厳しいものでした。Comfy がその課題を解決してくれました。</Quote>
+
+</Section>

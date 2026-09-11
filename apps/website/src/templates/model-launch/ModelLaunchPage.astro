@@ -17,6 +17,7 @@ import { getRoutes } from '../../config/routes'
 import { t } from '../../i18n/translations'
 import { faqAnswerPlainText } from '../../utils/faqAnswer'
 import { absoluteUrl, faqPageNode, pageContext } from '../../utils/jsonLd'
+import { resolveFaqPairs } from '../../utils/faqPairs'
 
 interface Props {
   page: ModelLaunchPage
@@ -24,9 +25,9 @@ interface Props {
 
 const { page } = Astro.props
 
-const { locale, url } = pageContext(
+const { locale, canonicalUrl } = pageContext(
   Astro.site,
-  Astro.url.pathname,
+  Astro.originPathname,
   Astro.currentLocale,
 )
 const routes = getRoutes(locale)
@@ -48,10 +49,10 @@ const breadcrumbs = crumbs.map((crumb) =>
 // Organization / WebSite / WebPage / BreadcrumbList come from BaseLayout.
 const faqPage = page.faq
   ? faqPageNode(
-      url,
-      page.faq.items.map((item) => ({
-        question: item.question[locale] || item.question.en,
-        answer: faqAnswerPlainText(item.answer[locale] || item.answer.en),
+      canonicalUrl,
+      resolveFaqPairs(page.faq.items, locale).map(({ question, answer }) => ({
+        question,
+        answer: faqAnswerPlainText(answer),
       })),
     )
   : undefined

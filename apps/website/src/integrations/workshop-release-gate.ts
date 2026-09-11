@@ -7,13 +7,20 @@ import { readdir, rm } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
 
-import { workshopClientBoundary } from './workshop-client-boundary'
-
+import { LOCALE_CODES, localePrefix } from '../config/locales'
 import {
   assertWorkshopCloudEnvForBuild,
-  isWorkshopInBuild,
-  isLegacyWorkshopRoute
+  isWorkshopInBuild
 } from '../config/workshop-release'
+import { workshopClientBoundary } from './workshop-client-boundary'
+
+/**
+ * Where each locale's output sits, read from the locale's configured prefix
+ * rather than its code — they match today, but the prefix is what decides the
+ * URL, so it is what decides the directory. English's prefix is empty, which
+ * makes `dist/workshop` fall out of the same expression as the rest.
+ */
+const WORKSHOP_OUTPUTS = LOCALE_CODES.map(localePrefix)
 
 export function modelsBuildRoutes(enabled: boolean) {
   const entry = (name: string) =>
@@ -45,6 +52,12 @@ export function modelsBuildRoutes(enabled: boolean) {
  * unambiguous. The client build rejects bundled catalogue modules when disabled;
  * shared CSS and translations are not covered by that catalogue boundary.
  *
+ * Every locale is removed, not only English. A locale serves Workshop from its
+ * own prefix, so `/ja/workshop/` and `/zh-CN/workshop/` are separate trees on
+ * disk; removing `dist/workshop` alone left 538 localized pages in a release
+ * build, reachable and without so much as a `noindex`, while the gate logged
+ * success.
+ *
  * Preview builds are release builds too — a preview answers "what goes out if
  * we release right now?", so it excludes Models detail routes for the same reason.
  * Local development includes Models, as does any build asked for it explicitly. See
@@ -67,20 +80,27 @@ export function workshopReleaseGate(): AstroIntegration {
       'astro:build:start': () => {
         assertWorkshopCloudEnvForBuild()
       },
-      'astro:build:done': async ({ dir, pages, logger }) => {
-        const built = pages.filter((page) =>
-          isLegacyWorkshopRoute(`/${page.pathname}`)
-        ).length
-
+      'astro:build:done': async ({ dir, logger }) => {
         const root = fileURLToPath(dir)
-        const workshopOutput = join(root, 'workshop')
-        await rm(workshopOutput, { recursive: true, force: true })
-        if (existsSync(workshopOutput)) {
-          throw new Error(
-            'workshop-release-gate could not remove the retired Workshop output; refusing to ship it.'
-          )
+        let removed = 0
+        for (const prefix of WORKSHOP_OUTPUTS) {
+          const output = join(root, prefix, 'workshop')
+          // Counted off disk rather than off Astro's route list, which omits
+          // the pages the i18n fallback generates — the list reported 269 while
+          // 807 were on disk, and a gate that under-reports what it removed is
+          // how this went unnoticed.
+          if (existsSync(output)) {
+            const entries = await readdir(output, { recursive: true })
+            removed += entries.filter((entry) => entry.endsWith('.html')).length
+          }
+          await rm(output, { recursive: true, force: true })
+          if (existsSync(output)) {
+            throw new Error(
+              `workshop-release-gate could not remove ${output}; refusing to ship it.`
+            )
+          }
         }
-        logger.info(`Removed ${built} retired Workshop pages.`)
+        logger.info(`Removed ${removed} retired Workshop pages.`)
         if (isWorkshopInBuild()) return
 
         // Keep the established /models/index.html and its markdown twin, but

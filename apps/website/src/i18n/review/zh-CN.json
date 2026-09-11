@@ -1,0 +1,39 @@
+{
+  "promptVersion": 1,
+  "glossary": "7a14d59eb5c54b78e0aa9e2efcf8f4d4",
+  "entries": {
+    "careers.teamPhotos.team0.alt": "b2add2f28d0eb8e0df249259cb9d5c67",
+    "careers.teamPhotos.team1.alt": "59f48da5686f4cbde84c1e7d9913f504",
+    "careers.teamPhotos.team2.alt": "a097f59e25c6bb639625a17ce3b49662",
+    "careers.teamPhotos.team3.alt": "7a298ccaa15032910ec56d038b866b5b",
+    "careers.teamPhotos.team4.alt": "207f17a2d678d3f94082e8e80c3735a7",
+    "careers.teamPhotos.team5.alt": "ff71f83363435ec7f7ff07e34fe02d47",
+    "careers.teamPhotos.team6.alt": "267d1e7f5029e2abfac5559a4dc513ea",
+    "careers.teamPhotos.team7.alt": "bee47987a3227202b79efc976cef3a58",
+    "cli.meta.keywords": "36c89524832067dca4a5fde1e7be9ead",
+    "enterprise.managedBuilds.compare.exploreBuilds": "ab1cace1d38073100f26523221465219",
+    "enterprise.managedBuilds.industries.games.description": {
+      "hash": "2eb891f65b28d677c5ba80f24f97b9d4",
+      "findings": [
+        {
+          "key": "enterprise.managedBuilds.industries.games.description",
+          "category": "fluency",
+          "severity": "minor",
+          "span": "在为其工作打造的 Comfy Workflows 中开展工作",
+          "suggestion": "在为其量身打造的 Comfy Workflows 中开展各自的任务",
+          "reason": "\"工作\" is repeated twice in one clause, producing clumsy phrasing a native writer would avoid."
+        }
+      ]
+    },
+    "enterprise.managedBuilds.industries.games.title": "ba7db5ac34cc1fb8f275661d84c648e9",
+    "enterprise.managedBuilds.industries.onboarding.description": "8b2d10434ec200c364da69903706f414",
+    "enterprise.managedBuilds.industries.onboarding.title": "e155ca352737032b07a51e54d1012d2e",
+    "enterprise.managedBuilds.industries.vfx.description": "1288823cd749c7cc1883d5c3ce580972",
+    "enterprise.managedBuilds.industries.vfx.title": "42e13c0591adeda9d13f1d251af396b9",
+    "mcp.agentBanner.linkTitle": "570e4a049288292255a118eb99d7cf34",
+    "mcp.agentBanner.title": "86cf5233c9d204a1c3082303d51d049a",
+    "meta.defaultDescription": "363387136f7805f01cadafd55cdf5b60",
+    "notFound.a11y.pageLabel": "24967d5ec8fc65863f26ef5bb5efc6ea",
+    "notFound.meta.title": "5bc2a8a0d424c848c2c7eb43b6063da7"
+  }
+}

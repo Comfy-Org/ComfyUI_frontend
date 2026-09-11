@@ -17,22 +17,25 @@ import {
   pageContext,
   videoObjectNode
 } from '../utils/jsonLd'
+import { localizeHref } from '../config/routes'
 
-const stories = (await loadStories('en')).map(toCardProps)
-
-const { siteUrl, url, locale } = pageContext(
+const { siteUrl, locale, canonicalUrl, canonicalLocale } = pageContext(
   Astro.site,
-  Astro.url.pathname,
+  Astro.originPathname,
   Astro.currentLocale
 )
+
+const stories = (await loadStories(locale)).map(toCardProps)
+
 const collectionLabel = t('nav.customerStories', locale)
 const homeLabel = t('breadcrumb.home', locale)
+const homeHref = localizeHref('/', canonicalLocale)
 
 const storyList = itemListNode(
-  url,
+  canonicalUrl,
   collectionLabel,
   stories.map((story) => ({
-    url: absoluteUrl(Astro.site, `/customers/${story.slug}`),
+    url: absoluteUrl(Astro.site, localizeHref(`/customers/${story.slug}`, canonicalLocale)),
     name: story.title
   }))
 )
@@ -47,8 +50,8 @@ const watchCards = customerVideoStories.map((story) => ({
 const videoNodes = customerVideoStories.map((story) =>
   videoObjectNode({
     siteUrl,
-    id: jsonLdId(url, `video-${story.slug}`),
-    pageUrl: url,
+    id: jsonLdId(canonicalUrl, `video-${story.slug}`),
+    pageUrl: canonicalUrl,
     name: story.title,
     description: story.description,
     thumbnailUrl: story.poster,
@@ -57,31 +60,29 @@ const videoNodes = customerVideoStories.map((story) =>
     locale
   })
 )
-
-const breadcrumbs = [
-  { name: homeLabel, url: absoluteUrl(Astro.site, '/') },
-  { name: collectionLabel }
-]
 ---
 
 <BaseLayout
-  title="ComfyUI Customer Stories: Studios, Brands, and Artists"
-  description="Customer stories from studios, brands, artists, and universities using ComfyUI for campaigns, games, films, public art, and teaching."
+  title={t('customers.meta.title', locale)}
+  description={t('customers.meta.description', locale)}
   pageType="CollectionPage"
-  mainEntityId={jsonLdId(url, 'itemlist')}
-  breadcrumbs={breadcrumbs}
+  mainEntityId={jsonLdId(canonicalUrl, 'itemlist')}
+  breadcrumbs={[
+    { name: homeLabel, url: absoluteUrl(Astro.site, homeHref) },
+    { name: collectionLabel }
+  ]}
   extraJsonLd={[storyList, ...videoNodes]}
 >
   <BreadcrumbBar
     crumbs={[
-      { label: homeLabel, href: '/' },
+      { label: homeLabel, href: localizeHref('/', locale) },
       { label: collectionLabel }
     ]}
     label={t('ui.breadcrumb', locale)}
   />
-  <HeroSection client:load />
-  <WatchSection stories={watchCards} />
-  <StorySection stories={stories} />
-  <FeedbackSection client:load />
-  <ContactSection />
+  <HeroSection locale={locale} client:load />
+  <WatchSection locale={locale} stories={watchCards} />
+  <StorySection locale={locale} stories={stories} />
+  <FeedbackSection locale={locale} client:load />
+  <ContactSection locale={locale} />
 </BaseLayout>

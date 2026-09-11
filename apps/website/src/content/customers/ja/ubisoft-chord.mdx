@@ -1,0 +1,102 @@
+---
+title: "Ubisoft、AAA向けPBRマテリアル生成のためにCHORDモデルをComfyUI対応でオープンソース化"
+category: "AAAゲーム制作"
+description: "Ubisoft La Forgeは、CHORD PBRマテリアル推定モデルとComfyUIカスタムノードをオープンソース化し、AAAゲーム制作向けのエンドツーエンドのテクスチャ生成ワークフローを実現しました。"
+cover: "https://media.comfy.org/website/customers/ubisoft/cover.webp"
+readMore: "https://blog.comfy.org/p/ubisoft-open-sources-the-chord-model"
+order: 9
+translatedBy: machine
+sections:
+  - id: topic-1
+    label: "概要"
+  - id: topic-2
+    label: "課題"
+  - id: topic-3
+    label: "ComfyUIを選ぶ理由"
+  - id: topic-4
+    label: "パイプライン"
+  - id: topic-5
+    label: "試す"
+  - id: topic-6
+    label: "結果"
+---
+
+<Section id="topic-1">
+
+Ubisoft La Forgeは、PBRマテリアル推定モデル **CHORD (Chain of Rendering Decomposition)** と、AIによるエンドツーエンドのマテリアル生成ワークフローを構築する **ComfyUI-Chord** カスタムノード実装をオープンソース化しました。
+
+モデルウェイトとコードは、Research-Onlyライセンスで公開されています。研究用途にとどまらず、ComfyUIをAAA規模のゲーム制作ワークフローへ統合するための重要な一歩でもあります。
+
+<Figure src="https://media.comfy.org/website/customers/ubisoft/cover.webp" alt="ComfyUIでのCHORDによるPBRマテリアル生成" caption="ComfyUIでCHORDモデルを使用して生成したPBRマテリアル。" />
+
+</Section>
+
+<Section id="topic-2" title="現在のAAAゲームにおけるPBRマテリアル制作">
+
+AAAゲーム開発では、PBRマテリアルが視覚的なリアリズムの基盤です。大規模タイトルでは、厳格なsvBRDF基準を満たすBase Color、Normal、Height、Roughness、Metalnessマップを備えた、数百種類の再利用可能なマテリアルが必要になります。
+
+従来、これらのアセットはテクスチャアーティストがフォトグラメトリ、プロシージャルツール、広範な手動調整を用いて制作しており、時間がかかり、高度な専門知識も必要でした。
+
+UbisoftのGenerative Base Materialプロトタイプは、この制作上のボトルネックを直接的に解決します。ComfyUIワークフローは、プロトタイピングやプレースホルダーアセット向けに、DCCツールやゲームエンジンへ直接統合できるPBRテクスチャセットを出力します。
+
+</Section>
+
+<Section id="topic-3" title="UbisoftがワークフロープラットフォームにComfyUIを選んだ理由">
+
+UbisoftによるComfyUIの選択は、制作現場の実情に基づいています。大規模スタジオに必要なのは、単なる画像生成ツールではありません。ゲーム開発特有の要件に対応できる、制御可能で統合しやすいAIワークフロープラットフォームです。
+
+<Quote name="Ubisoft La Forge Blog">プロトタイプは複数段階で構成されるため、ComfyUIはテクスチャ画像合成、マテリアル推定、マテリアルのアップスケーリングを行う統合ワークフローを構築する効率的なフレームワークを提供します。また、最先端の生成モデルに加え、ControlNets、画像ガイダンス、インペインティングなど数多くのオプションにより、制作者が細部まで制御できるComfyUIの機能を活用できます。</Quote>
+
+</Section>
+
+<Section id="topic-4" title="Generative Base Materialパイプラインの3段階">
+
+CHORDモデルは、3つの主要ステージで構成される広範なパイプラインに統合されています。
+
+<Figure src="https://media.comfy.org/website/customers/ubisoft/pipeline.webp" alt="3段階のGenerative Base Materialパイプライン" caption="3段階のGenerative Base Materialパイプライン：テクスチャ生成、CHORD推定、アップスケーリング。" />
+
+### ステージ1 — テクスチャ画像生成
+
+第1ステージでは、完全な条件制御を備えたカスタム拡散モデルを使用し、テキストプロンプトまたはラインアートやハイトマップなどの参照入力から、継ぎ目なくタイル可能な2Dテクスチャを生成します。
+
+### ステージ2 — CHORDによる画像からマテリアルへの推定
+
+単一のテクスチャを、連鎖分解、統合マルチモーダル予測、効率的な単一ステップ拡散推論によって、Base Color、Normal、Height、Roughness、Metalnessを含む完全なPBRマップセットへ変換します。これにより、制御可能でスケーラブルな結果を得られます。
+
+### ステージ3 — マテリアルのアップスケーリング
+
+CHORDは1024解像度で最適に動作するため、第3ステージでは業務用グレードのPBRアップスケーリングを適用します。すべてのチャンネルを2倍または4倍にアップスケーリングし、リアルタイムゲーム制作向けの2Kおよび4Kテクスチャアセットを作成します。
+
+この一連のパイプラインにより、アーティストはアイデアを迅速に反復し、既存のワークフロー内でAI生成出力を組み合わせられるため、業務用グレードのPBRマテリアル制作への障壁を下げられます。
+
+</Section>
+
+<Section id="topic-5" title="ComfyUIでCHORDを試す方法">
+
+Ubisoftは、CHORDモデルウェイト、ComfyUIカスタムノード、およびパイプラインのテクスチャ画像生成ステージと画像からマテリアルへの推定ステージを対象とするサンプルワークフローをオープンソース化しています。
+
+<Figure src="https://media.comfy.org/website/customers/ubisoft/workflow.webp" alt="ComfyUIのCHORDサンプルワークフロー" caption="エンドツーエンドのPBRマテリアル生成のための、ComfyUIにおけるCHORDサンプルワークフロー。" />
+
+<Steps items={["ComfyUIを最新バージョンにインストールまたはアップデートする","UbisoftのCHORD ComfyUIカスタムノードをインストールする","CHORDモデルをダウンロードし、./ComfyUI/models/checkpointsに配置する","ComfyUIでCHORDサンプルワークフローを読み込む"]} />
+
+テクスチャ画像生成モデルは任意の画像モデルに切り替えられ、各ステージのワークフローモジュールを個別に使用することもできます。
+
+</Section>
+
+<Section id="topic-6" title="出力例">
+
+<Figure src="https://media.comfy.org/website/customers/ubisoft/example1.webp" alt="CHORD PBRマテリアル出力例1" caption="Base Color、Normal、Height、Roughness、Metalnessマップを示す生成済みPBRマテリアルセット。" />
+
+<Figure src="https://media.comfy.org/website/customers/ubisoft/example2.webp" alt="CHORD PBRマテリアル出力例2" caption="CHORDで実現できるテクスチャの多様性を示す、別の生成済みPBRマテリアルセット。" />
+
+<Figure src="https://media.comfy.org/website/customers/ubisoft/example3.webp" alt="CHORD PBRマテリアル出力例3" caption="完全なPBRチャンネル分解によるマテリアル生成出力。" />
+
+<Figure src="https://media.comfy.org/website/customers/ubisoft/example4.webp" alt="CHORD PBRマテリアル出力例4" caption="単一の入力テクスチャから生成した高品質なPBRテクスチャセット。" />
+
+<Figure src="https://media.comfy.org/website/customers/ubisoft/example5.webp" alt="CHORD PBRマテリアル出力例5" caption="実制作に対応する品質を示す最終レンダリング済みPBRマテリアル。" />
+
+CHORDの公開は、ComfyUIがコミュニティ主導のツールから実際の制作のためのプラットフォームへ成長したことを示しています。スタジオユーザーは、プロンプトまたは参照入力からテクスチャ生成、マテリアル推定、PBRアップスケーリングを経て、最終的にDCCツールやゲームエンジンへエクスポートするエンドツーエンドのパイプラインを構築できます。各ステージは独立して動作させることもでき、既存の制作システムに組み込めます。
+
+<Contributors label="著者" people={[{"name":"Jo Zhang","role":"ComfyUI Blog"},{"name":"Daxiong (Lin)","role":"ComfyUI Blog"}]} />
+
+</Section>
