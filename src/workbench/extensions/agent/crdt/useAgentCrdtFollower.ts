@@ -548,12 +548,13 @@ export function useAgentCrdtFollower(
       event instanceof CustomEvent ? (event.detail ?? null) : null
     )
   }
-  const onReconnected: EventListener = () => {
+  const handleReconnected = (): void => {
     connected.value = false
     clearStaleProbe()
     recordDevEvent('reconnected', null)
     bridge.resubscribe()
   }
+  const onReconnected: EventListener = () => handleReconnected()
   /**
    * Re-drive subscription intent whenever the socket may have become usable.
    *
@@ -585,9 +586,12 @@ export function useAgentCrdtFollower(
   api.addEventListener('reconnected', onReconnected)
   api.addEventListener('status', onSocketActivity)
   // A transport on a socket other than ComfyUI's (the standalone agent's)
-  // announces its own opens; without this a subscribe dropped while that
-  // socket was connecting waited for ComfyUI's next unrelated status frame.
-  const stopTransportConnected = baseTransport.onConnected?.(reconcileIfIdle)
+  // announces its own opens. Every open is treated as a reconnect: the server
+  // drops a connection's follows when its socket closes while the bridge
+  // still believes it is subscribed, so a reconcile (a no-op once intent
+  // equals reality) would leave the follower deaf. On a first open the
+  // resubscribe is one redundant frame the server answers as a resync.
+  const stopTransportConnected = baseTransport.onConnected?.(handleReconnected)
 
   // FE-1902 (poc-3): distinguish the mount-time null (in-memory doc id died
   // with the previous mount — rebind from sessionStorage) from a later null
