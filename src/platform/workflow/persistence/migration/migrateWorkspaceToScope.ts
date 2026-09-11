@@ -61,6 +61,7 @@ export function migrateWorkspaceToScope(
 
   const draftKeys = getPayloadKeys(workspaceId)
   const sourcePayloads = snapshotPayloads(workspaceId, draftKeys)
+  const sourceArtifacts = snapshotSourceArtifacts(workspaceId)
   const destinationIndex = readIndex(scope)
 
   if (destinationIndex) {
@@ -83,7 +84,13 @@ export function migrateWorkspaceToScope(
     existingClaim !== null &&
     index.updatedAt <= existingClaim.sourceUpdatedAt
   ) {
-    cleanupSourceIfCurrent(workspaceId, sourcePayloads, claimKey, claim)
+    cleanupSourceIfCurrent(
+      workspaceId,
+      sourcePayloads,
+      sourceArtifacts,
+      claimKey,
+      claim
+    )
     return
   }
 
@@ -125,7 +132,13 @@ export function migrateWorkspaceToScope(
       completionKey,
       JSON.stringify({ ...claim, completedAt: Date.now() })
     )
-    cleanupSourceIfCurrent(workspaceId, sourcePayloads, claimKey, claim)
+    cleanupSourceIfCurrent(
+      workspaceId,
+      sourcePayloads,
+      sourceArtifacts,
+      claimKey,
+      claim
+    )
   } else {
     const currentClaim = readLocalPointer(claimKey, isValidClaim)
     const completion = readLocalPointer(completionKey, isCurrentCompletion)
@@ -160,6 +173,7 @@ function releaseClaimIfOwned(claimKey: string, claim: MigrationClaim): void {
 function cleanupSourceIfCurrent(
   workspaceId: string,
   sourcePayloads: Map<string, string | null>,
+  sourceArtifacts: Map<string, string | null>,
   claimKey: string,
   claim: MigrationClaim
 ): void {
@@ -174,10 +188,9 @@ function cleanupSourceIfCurrent(
       const key = payloadKey(workspaceId, draftKey)
       if (localStorage.getItem(key) === sourceRaw) localStorage.removeItem(key)
     }
-    removeStorageKeys(localStorage, [
-      ...restorePointerKeys.map((keyFor) => keyFor(workspaceId)),
-      StorageKeys.draftIndex(workspaceId)
-    ])
+    for (const [key, sourceRaw] of sourceArtifacts) {
+      if (localStorage.getItem(key) === sourceRaw) localStorage.removeItem(key)
+    }
   }
   releaseClaimIfOwned(claimKey, claim)
 }
@@ -205,6 +218,14 @@ function snapshotPayloads(
       localStorage.getItem(payloadKey(scope, draftKey))
     ])
   )
+}
+
+function snapshotSourceArtifacts(scope: string): Map<string, string | null> {
+  const keys = [
+    ...restorePointerKeys.map((keyFor) => keyFor(scope)),
+    StorageKeys.draftIndex(scope)
+  ]
+  return new Map(keys.map((key) => [key, localStorage.getItem(key)]))
 }
 
 function snapshotMigrationArtifacts(
