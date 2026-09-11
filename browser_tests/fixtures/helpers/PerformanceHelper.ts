@@ -323,8 +323,8 @@ export class PerformanceHelper {
       const nodes = graph.nodes.map((node) => ({
         id: String(node.id),
         type: node.type,
-        inputCount: node.inputs?.length ?? 0,
-        outputCount: node.outputs?.length ?? 0,
+        inputCount: node.inputs.length,
+        outputCount: node.outputs.length,
         widgetCount: node.widgets?.length ?? 0
       }))
       const links = [...graph.links.values()].map((link) => ({
@@ -333,10 +333,10 @@ export class PerformanceHelper {
         targetId: String(link.target_id),
         targetSlot: link.target_slot
       }))
-      const setting = app.extensionManager?.setting
+      const setting = app.extensionManager.setting
       const vueNodesEnabled =
-        setting?.get<boolean>('Comfy.VueNodes.Enabled') ?? false
-      const canvasInfoSetting = setting?.get<boolean>('Comfy.Graph.CanvasInfo')
+        setting.get<boolean>('Comfy.VueNodes.Enabled') ?? false
+      const canvasInfoSetting = setting.get<boolean>('Comfy.Graph.CanvasInfo')
       const canvasInfoEnabled =
         typeof canvasInfoSetting === 'boolean' ? canvasInfoSetting : null
       const renderer: PerfIdentitySource['renderer'] = vueNodesEnabled
