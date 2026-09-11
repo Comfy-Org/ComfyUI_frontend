@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import { api } from '@/scripts/api'
+
 const telemetry = vi.hoisted(() => ({
   trackAgentPanelOpened: vi.fn(),
   trackAgentPanelClosed: vi.fn()
@@ -16,7 +18,16 @@ const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
 describe('agentPanelStore engagement telemetry', () => {
   beforeEach(() => {
     localStorage.clear()
-    vi.useFakeTimers()
+    api.serverFeatureFlagsSettled.value = false
+  })
+
+  it('derives flag settlement directly from the API state', async () => {
+    const store = useAgentPanelStore()
+
+    expect(store.flagsSettled).toBe(false)
+    api.serverFeatureFlagsSettled.value = true
+    await nextTick()
+    expect(store.flagsSettled).toBe(true)
   })
 
   it('emits a restored open only once the rehydrated panel actually docks', async () => {

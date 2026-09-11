@@ -79,6 +79,8 @@ import {
   fetchQueue
 } from '@/platform/remote/comfyui/jobs/fetchJobs'
 
+const SERVER_FEATURE_FLAGS_TIMEOUT_MS = 5_000
+
 interface QueuePromptRequestBody {
   client_id: string
   prompt: ComfyApiWorkflow
@@ -464,6 +466,15 @@ export class ComfyApi extends EventTarget {
   serverFeatureFlags = ref<Record<string, unknown>>({})
 
   /**
+   * Whether feature-flag negotiation for the current socket has settled: the
+   * server delivered a map, or delivery was abandoned (5s timeout, or the
+   * socket closed first). True does not imply the map is non-empty, and after
+   * {@link resetSocket} {@link serverFeatureFlags} still holds the previous
+   * identity's map until the next `feature_flags` message replaces it.
+   */
+  serverFeatureFlagsSettled = ref(false)
+
+  /**
    * The auth token for the comfy org account if the user is logged in.
    * This is only used for {@link queuePrompt} now. It is not directly
    * passed as parameter to the function because some custom nodes are hijacking
@@ -830,6 +841,13 @@ export class ComfyApi extends EventTarget {
     this.socket = socket
     socket.binaryType = 'arraybuffer'
 
+    // Armed before `open` so a socket that never opens still settles.
+    const settleTimer = setTimeout(() => {
+      if (this.socket === socket && !this.serverFeatureFlagsSettled.value) {
+        this.serverFeatureFlagsSettled.value = true
+      }
+    }, SERVER_FEATURE_FLAGS_TIMEOUT_MS)
+
     socket.addEventListener('open', () => {
       opened = true
 
@@ -861,6 +879,8 @@ export class ComfyApi extends EventTarget {
       // A replaced socket (e.g. after resetSocket on an account switch) must
       // not reconnect; only the active socket owns the reconnect lifecycle.
       if (this.socket !== socket) return
+      this.serverFeatureFlagsSettled.value = true
+      clearTimeout(settleTimer)
       setTimeout(async () => {
         if (this.socket !== socket) return
         this.socket = null
@@ -1012,6 +1032,7 @@ export class ComfyApi extends EventTarget {
               break
             case 'feature_flags':
               this.serverFeatureFlags.value = msg.data
+              this.serverFeatureFlagsSettled.value = true
               this.dispatchCustomEvent('feature_flags', msg.data)
               break
             default:
@@ -1047,6 +1068,9 @@ export class ComfyApi extends EventTarget {
    */
   async resetSocket(): Promise<void> {
     const previous = this.socket
+    // serverFeatureFlags deliberately keeps the previous map: clearing it would
+    // downgrade every serverSupportsFeature() caller until the next delivery.
+    this.serverFeatureFlagsSettled.value = false
     // Detach before closing so the previous socket's close handler sees it is
     // no longer the active socket and does not start a competing reconnect.
     this.socket = null
