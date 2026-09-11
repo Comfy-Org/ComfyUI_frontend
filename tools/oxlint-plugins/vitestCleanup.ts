@@ -102,10 +102,6 @@ interface FunctionExpression extends Node {
   readonly params: readonly Node[]
 }
 
-function isCallExpression(node: Node | undefined): node is CallExpression {
-  return node?.type === 'CallExpression'
-}
-
 function isImportExpression(node: Node | undefined): node is ImportExpression {
   return node?.type === 'ImportExpression'
 }
@@ -475,10 +471,29 @@ export const noModuleScopeVitestMocks = {
 
 export const noImportActual = {
   create(context: RuleContext) {
+    const mockedModulesByFactory = new Map<FunctionExpression, Set<string>>()
+    const importsInFactories: {
+      node: ImportExpression
+      factory: FunctionExpression
+      importedModule: string
+    }[] = []
+
     return {
       CallExpression(node: CallExpression) {
         const methodName = vitestMethodName(context, node)
         const factory = mockFactory(context, node.arguments[1])
+        if (
+          methodName !== undefined &&
+          PARTIAL_MOCK_METHODS.has(methodName) &&
+          factory !== undefined
+        ) {
+          const mockedModule = staticModuleName(node.arguments[0])
+          if (mockedModule !== undefined) {
+            const modules = mockedModulesByFactory.get(factory) ?? new Set()
+            modules.add(mockedModule)
+            mockedModulesByFactory.set(factory, modules)
+          }
+        }
         const usesImportOriginal =
           methodName !== undefined &&
           PARTIAL_MOCK_METHODS.has(methodName) &&
@@ -495,25 +510,22 @@ export const noImportActual = {
       },
       ImportExpression(node: ImportExpression) {
         const importedModule = staticModuleName(node.source)
+        if (importedModule === undefined) return
         const ancestors = context.sourceCode.getAncestors(node)
-        const usesDynamicImportInMock = ancestors.some((ancestor, index) => {
-          if (!isFunctionExpression(ancestor)) return false
-          const call = ancestors[index - 1]
-          return (
-            isCallExpression(call) &&
-            call.arguments[1] === ancestor &&
-            PARTIAL_MOCK_METHODS.has(vitestMethodName(context, call) ?? '') &&
-            staticModuleName(call.arguments[0]) === importedModule
-          )
-        })
-
-        if (!usesDynamicImportInMock) return
-
-        context.report({
-          node,
-          message:
-            'Do not dynamically import the original module in a vi.mock() factory. Delete the mock, use vi.mock(..., { spy: true }), or provide a focused full mock.'
-        })
+        const factory = ancestors.findLast(isFunctionExpression)
+        if (factory === undefined) return
+        importsInFactories.push({ node, factory, importedModule })
+      },
+      'Program:exit'() {
+        for (const { node, factory, importedModule } of importsInFactories) {
+          if (!mockedModulesByFactory.get(factory)?.has(importedModule))
+            continue
+          context.report({
+            node,
+            message:
+              'Do not dynamically import the original module in a vi.mock() factory. Delete the mock, use vi.mock(..., { spy: true }), or provide a focused full mock.'
+          })
+        }
       }
     }
   }

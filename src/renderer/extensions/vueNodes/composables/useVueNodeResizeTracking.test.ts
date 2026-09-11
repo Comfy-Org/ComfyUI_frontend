@@ -7,6 +7,7 @@ import { render, screen } from '@testing-library/vue'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { NodeLayout } from '@/renderer/core/layout/types'
+import type { ComfyApp } from '@/scripts/app'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
@@ -66,9 +67,10 @@ const testState = vi.hoisted(() => {
   }
 })
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: { canvas: {}, nodePreviewImages: {} }
-}))
+vi.mock(import('@/scripts/app'), async () => {
+  const { fromPartial } = await import('@total-typescript/shoehorn')
+  return { app: fromPartial<ComfyApp>({ canvas: {}, nodePreviewImages: {} }) }
+})
 
 vi.mock<unknown>(
   import('@/composables/element/useCanvasPositionConversion'),

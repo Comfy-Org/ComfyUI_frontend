@@ -68,6 +68,15 @@ vi.mock('./dependency', factory)`,
     },
     {
       code: `import { vi } from 'vitest'
+async function factory() {
+  const original = await import('./dependency')
+  return { ...original, dependency: vi.fn() }
+}
+vi.mock('./dependency', factory)`,
+      errors: [{ message: /Do not dynamically import/ }]
+    },
+    {
+      code: `import { vi } from 'vitest'
 vi.mock(\`./dependency\`, async () => {
   const original = await import(\`./dependency\`)
   return { ...original, dependency: vi.fn() }
