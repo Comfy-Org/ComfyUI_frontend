@@ -48,4 +48,20 @@ describe('isApiJson', () => {
       false
     )
   })
+
+  it('rejects malformed node values', () => {
+    expect(isApiJson({ '1': null })).toBe(false)
+    expect(isApiJson({ '1': 'KSampler' })).toBe(false)
+    expect(isApiJson({ '1': 42 })).toBe(false)
+  })
+
+  it('rejects a non-string class_type', () => {
+    expect(isApiJson({ '1': { class_type: 42, inputs: {} } })).toBe(false)
+  })
+
+  it('rejects null inputs', () => {
+    expect(isApiJson({ '1': { class_type: 'KSampler', inputs: null } })).toBe(
+      false
+    )
+  })
 })

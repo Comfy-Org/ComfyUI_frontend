@@ -35,7 +35,8 @@ export function isApiJson(data: unknown): data is ComfyApiWorkflow {
       return false
     }
 
-    const { class_type: classType, inputs } = node as Record<string, unknown>
+    const classType = Reflect.get(node, 'class_type')
+    const inputs = Reflect.get(node, 'inputs')
     const inputsIsRecord = isObject(inputs) && !Array.isArray(inputs)
     return typeof classType === 'string' && inputsIsRecord
   })
