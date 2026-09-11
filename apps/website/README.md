@@ -226,7 +226,7 @@ build otherwise — a wrong family is a build error, not a preflight error in a
 visitor's browser. Builds without Workshop in them are not checked, so nothing
 changes for production until launch. Local builds may leave it unset
 (staging) or pick a family for a specific check. `test` has no Turnstile
-sitekey, so the widget stays off there and the server's shadow policy applies.
+sitekey in this mapping, so the client widget stays off there.
 
 The switch is `src/config/workshop-release.ts`; the removal is the
 `workshop-release-gate` Astro integration, which deletes the emitted directory
