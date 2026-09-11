@@ -1,7 +1,17 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { reportError } from '@/platform/telemetry/reportError'
+
 import type { ComposerAttachment } from './useComposer'
-import { MAX_ATTACHMENT_BYTES, useAttachment } from './useAttachment'
+import {
+  MAX_ATTACHMENT_BYTES,
+  resolveAttachmentLimit,
+  useAttachment
+} from './useAttachment'
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 function fileOfSize(name: string, size: number, type = 'image/png'): File {
   const file = new File(['x'], name, { type })
@@ -56,7 +66,7 @@ describe('useAttachment', () => {
     expect(registry.chips).toEqual([])
     expect(upload).not.toHaveBeenCalled()
     expect(onError).toHaveBeenCalledOnce()
-    expect(onError).toHaveBeenCalledWith('huge.png is larger than 20MB')
+    expect(onError).toHaveBeenCalledWith('huge.png is larger than 20 MB')
   })
 
   it('uses the resolved limit for each file', async () => {
@@ -153,7 +163,7 @@ describe('useAttachment', () => {
 
     expect(registry.chips).toEqual([])
     expect(upload).not.toHaveBeenCalled()
-    expect(onError).toHaveBeenCalledWith('huge.mp4 is larger than 30MB')
+    expect(onError).toHaveBeenCalledWith('huge.mp4 is larger than 30 MB')
   })
 
   it('stages an uploading chip immediately, then settles it with the server ref', async () => {
@@ -244,11 +254,12 @@ describe('useAttachment', () => {
 
     expect(registry.chips).toEqual([])
     expect(upload).not.toHaveBeenCalled()
-    expect(onError).toHaveBeenCalledWith('large.mp4 is larger than 30MB')
+    expect(onError).toHaveBeenCalledWith('large.mp4 is larger than 30 MB')
   })
 
   it('removes the chip and surfaces the error when the upload fails', async () => {
-    const upload = vi.fn().mockRejectedValue(new Error('network down'))
+    const cause = new Error('network down')
+    const upload = vi.fn().mockRejectedValue(cause)
     const onError = vi.fn()
     const registry = chipRegistry()
     const { addFiles } = useAttachment({ upload, onError, ...registry })
@@ -257,6 +268,9 @@ describe('useAttachment', () => {
 
     expect(registry.chips).toEqual([])
     expect(onError).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledWith(cause, {
+      errorType: 'agent_attachment_upload_failed'
+    })
   })
 
   it('keeps earlier settled chips and continues the batch when one upload fails', async () => {
@@ -278,5 +292,183 @@ describe('useAttachment', () => {
     expect(registry.chips.map((chip) => chip.ref)).toEqual(['a.png', 'c.png'])
     expect(registry.chips.every((chip) => chip.uploading === false)).toBe(true)
     expect(onError).toHaveBeenCalledWith('b.png could not be uploaded')
+  })
+
+  it('keeps a dropped folder from saturating the connection pool', async () => {
+    const resolvers: Array<(result: { ref: string }) => void> = []
+    const upload = vi.fn(() => {
+      return new Promise<{ ref: string }>((resolve) => {
+        resolvers.push(resolve)
+      })
+    })
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({ upload, ...registry })
+
+    const pending = addFiles(
+      Array.from({ length: 8 }, (_unused, index) =>
+        fileOfSize(`${index}.png`, 1)
+      )
+    )
+
+    expect(registry.chips).toHaveLength(8)
+    expect(upload).toHaveBeenCalledTimes(3)
+
+    resolvers[0]({ ref: '0.png' })
+    await vi.waitFor(() => expect(upload).toHaveBeenCalledTimes(4))
+
+    await vi.waitFor(() => {
+      for (const resolve of resolvers) resolve({ ref: 'done' })
+      expect(upload).toHaveBeenCalledTimes(8)
+    })
+    await pending
+  })
+
+  it('scales the upload deadline to the file size', async () => {
+    vi.useFakeTimers()
+    try {
+      let signal: AbortSignal | undefined
+      const upload = vi.fn((_file: File, uploadSignal: AbortSignal) => {
+        signal = uploadSignal
+        return new Promise<{ ref: string }>(() => {})
+      })
+      const registry = chipRegistry()
+      const { addFiles } = useAttachment({
+        upload,
+        maxBytes: () => 200 * 1024 * 1024,
+        ...registry
+      })
+
+      const pending = addFiles([fileOfSize('big.png', 100 * 1024 * 1024)])
+      await vi.advanceTimersByTimeAsync(5 * 60 * 1000)
+
+      expect(signal?.aborted).toBe(false)
+
+      await vi.advanceTimersByTimeAsync(60 * 60 * 1000)
+      await pending
+      expect(signal?.aborted).toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('aborts a cancelled upload without reporting it as a failure', async () => {
+    let signal: AbortSignal | undefined
+    const upload = vi.fn((_file: File, uploadSignal: AbortSignal) => {
+      signal = uploadSignal
+      return new Promise<{ ref: string }>((_resolve, reject) => {
+        uploadSignal.addEventListener('abort', () =>
+          reject(uploadSignal.reason)
+        )
+      })
+    })
+    const onError = vi.fn()
+    const registry = chipRegistry()
+    const { addFiles, cancelUpload } = useAttachment({
+      upload,
+      onError,
+      ...registry
+    })
+
+    const pending = addFiles([fileOfSize('cat.png', 1024)])
+    cancelUpload(registry.chips[0].id)
+    await pending
+
+    expect(signal?.aborted).toBe(true)
+    expect(onError).not.toHaveBeenCalled()
+  })
+
+  it('aborts every in-flight upload when the panel goes away', async () => {
+    const signals: AbortSignal[] = []
+    const upload = vi.fn((_file: File, uploadSignal: AbortSignal) => {
+      signals.push(uploadSignal)
+      return new Promise<{ ref: string }>((_resolve, reject) => {
+        uploadSignal.addEventListener('abort', () =>
+          reject(uploadSignal.reason)
+        )
+      })
+    })
+    const registry = chipRegistry()
+    const { addFiles, cancelAllUploads } = useAttachment({
+      upload,
+      ...registry
+    })
+
+    const pending = addFiles([fileOfSize('a.png', 1), fileOfSize('b.png', 1)])
+    cancelAllUploads()
+    await pending
+
+    expect(signals.map(({ aborted }) => aborted)).toEqual([true, true])
+  })
+
+  it('removes a deferred chip whose source never resolves', async () => {
+    vi.useFakeTimers()
+    try {
+      const upload = vi.fn()
+      const onError = vi.fn()
+      const registry = chipRegistry()
+      const { addDeferredFile } = useAttachment({
+        upload,
+        onError,
+        ...registry
+      })
+
+      const pending = addDeferredFile(
+        'stuck.mp4',
+        () => new Promise<File | undefined>(() => {})
+      )
+      await vi.advanceTimersByTimeAsync(60 * 1000)
+
+      await expect(pending).resolves.toBeUndefined()
+      expect(registry.chips).toEqual([])
+      expect(upload).not.toHaveBeenCalled()
+      expect(onError).toHaveBeenCalledWith('stuck.mp4 could not be uploaded')
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        errorType: 'agent_attachment_fetch_failed'
+      })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('signals a settled batch once, not once per file', async () => {
+    const upload = vi.fn(async (file: File) => ({ ref: file.name }))
+    const onUploaded = vi.fn()
+    const registry = chipRegistry()
+    const { addFiles } = useAttachment({ upload, onUploaded, ...registry })
+
+    await addFiles([
+      fileOfSize('a.png', 1),
+      fileOfSize('b.png', 1),
+      fileOfSize('c.png', 1)
+    ])
+
+    expect(onUploaded).toHaveBeenCalledOnce()
+  })
+})
+
+describe('resolveAttachmentLimit', () => {
+  const MULTIPART_ENVELOPE_BYTES = 1024
+
+  it('falls back to the built-in limit for an unusable advertised value', () => {
+    for (const advertised of [undefined, null, 0, -1, Number.NaN, '100MB'])
+      expect(resolveAttachmentLimit(advertised)).toBeLessThanOrEqual(
+        MAX_ATTACHMENT_BYTES
+      )
+    expect(resolveAttachmentLimit(null)).toBe(
+      MAX_ATTACHMENT_BYTES - MULTIPART_ENVELOPE_BYTES
+    )
+  })
+
+  it('keeps a client ceiling below an implausible advertised value', () => {
+    expect(resolveAttachmentLimit(Number.MAX_SAFE_INTEGER)).toBe(
+      512 * 1024 * 1024 - MULTIPART_ENVELOPE_BYTES
+    )
+  })
+
+  it('leaves room for the multipart envelope the server also counts', () => {
+    const advertised = 100 * 1024 * 1024
+    expect(resolveAttachmentLimit(advertised)).toBe(
+      advertised - MULTIPART_ENVELOPE_BYTES
+    )
   })
 })
