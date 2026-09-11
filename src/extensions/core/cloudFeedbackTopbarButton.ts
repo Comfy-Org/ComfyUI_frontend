@@ -1,8 +1,8 @@
 import { t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { openFeedbackDialog } from '@/platform/support/feedbackDialog'
 import { useExtensionService } from '@/services/extensionService'
 import type { ActionBarButton } from '@/types/comfy'
+import { openFeedbackDialog } from '@/workbench/extensions/agent/feedback'
 
 const buttons: ActionBarButton[] = [
   {

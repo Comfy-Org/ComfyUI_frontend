@@ -19,7 +19,6 @@ vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('firebase/auth'))
 vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
-vi.mock(import('@/i18n'), () => ({ t: (key: string) => key }))
 vi.mock(import('@/platform/telemetry'), () => ({ useTelemetry: () => null }))
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true,
@@ -28,6 +27,14 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 
 const userEmail: { value: string | undefined } = { value: undefined }
+
+function getHiddenFields() {
+  return screen
+    .getByTestId('typeform-embed')
+    .getAttribute('data-tf-hidden')
+    ?.split(/(?<!\\),/)
+    .sort()
+}
 
 function renderFeedback() {
   const global = {
@@ -71,12 +78,19 @@ describe('Agent feedback in the existing dialog', () => {
     const user = renderFeedback()
     await user.click(screen.getByRole('button', { name: 'Feedback' }))
 
-    expect(await screen.findByRole('dialog')).toBeVisible()
+    expect(
+      await screen.findByRole('dialog', { name: 'Share Feedback' })
+    ).toBeVisible()
     const embed = screen.getByTestId('typeform-embed')
     expect(embed).toHaveAttribute('data-tf-widget', 'MZ6cjWIB')
-    expect(embed).toHaveAttribute(
-      'data-tf-hidden',
-      'email=alpha@example.com,source=topbar,version=1.55.4,os=MacIntel,session=thread-264'
+    expect(getHiddenFields()).toEqual(
+      [
+        'email=alpha@example.com',
+        'source=topbar',
+        'version=1.55.4',
+        'os=MacIntel',
+        'session=thread-264'
+      ].sort()
     )
     expect(embed).toHaveAttribute('data-tf-redirect-target', '_self')
     expect(useDialogStore().dialogStack).toHaveLength(1)
@@ -87,10 +101,7 @@ describe('Agent feedback in the existing dialog', () => {
     const user = renderFeedback()
     await user.click(screen.getByRole('button', { name: 'Feedback' }))
 
-    expect(await screen.findByTestId('typeform-embed')).toHaveAttribute(
-      'data-tf-hidden',
-      'source=topbar,version=1.55.4'
-    )
+    expect(getHiddenFields()).toEqual(['source=topbar', 'version=1.55.4'])
   })
 
   it('escapes delimiters so an email cannot introduce an extra hidden field', async () => {
@@ -98,9 +109,13 @@ describe('Agent feedback in the existing dialog', () => {
     const user = renderFeedback()
     await user.click(screen.getByRole('button', { name: 'Feedback' }))
 
-    expect(await screen.findByTestId('typeform-embed')).toHaveAttribute(
-      'data-tf-hidden',
-      'email=alpha\\,graph=private@example.com,source=topbar,version=1.55.4,os=MacIntel'
+    expect(getHiddenFields()).toEqual(
+      [
+        'email=alpha\\,graph=private@example.com',
+        'source=topbar',
+        'version=1.55.4',
+        'os=MacIntel'
+      ].sort()
     )
   })
 
@@ -112,9 +127,6 @@ describe('Agent feedback in the existing dialog', () => {
 
     const embed = await screen.findByTestId('typeform-embed')
     expect(embed).toHaveAttribute('data-tf-widget', 'q7azbWPi')
-    expect(embed).toHaveAttribute(
-      'data-tf-hidden',
-      'distribution=ccloud,source=topbar'
-    )
+    expect(getHiddenFields()).toEqual(['distribution=ccloud', 'source=topbar'])
   })
 })
