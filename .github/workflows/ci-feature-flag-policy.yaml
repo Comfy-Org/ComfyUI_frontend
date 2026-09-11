@@ -66,7 +66,7 @@ jobs:
         id: posthog
         if: steps.prepare.outputs.requires_ai == 'true'
         env:
-          POSTHOG_PERSONAL_API_KEY: ${{ secrets.POSTHOG_PERSONAL_API_KEY }}
+          POSTHOG_PERSONAL_API_KEY: ${{ secrets.FEATURE_FLAG_POLICY_READ_TOKEN }}
           POSTHOG_PROJECT_ID: ${{ vars.POSTHOG_PROJECT_ID }}
         run: |
           node <<'NODE'
