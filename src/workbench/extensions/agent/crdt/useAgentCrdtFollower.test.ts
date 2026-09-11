@@ -349,6 +349,20 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('FEC-5: refuses an empty doc id rather than subscribing to it', () => {
+    const setup = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+    setup.unmount()
+    bridgeState.current = null
+    writeRawRecord({ docId: '', nonce: persistedRecord()?.nonce })
+
+    const { unmount, status } = mountFollower(null)
+
+    expect(bridge().subscribe).not.toHaveBeenCalled()
+    expect(status().workflowId).toBeNull()
+    unmount()
+  })
+
   it('FEC-5: refuses a legacy bare-string record', () => {
     sessionStorage.setItem(DOC_ID_KEY, 'wf-legacy')
 

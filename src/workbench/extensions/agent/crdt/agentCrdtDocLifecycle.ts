@@ -88,6 +88,7 @@ function readPersistedDocId(): string | null {
     const record = JSON.parse(raw) as Partial<PersistedDocIdRecord>
     if (
       typeof record.docId !== 'string' ||
+      record.docId.length === 0 ||
       typeof record.nonce !== 'string' ||
       typeof record.expiresAt !== 'number'
     ) {
