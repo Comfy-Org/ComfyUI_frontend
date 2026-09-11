@@ -1,6 +1,5 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
-import WorkshopSection from "../components/home/WorkshopSection.vue";
 import ProductCardsSection from "../components/home/ProductCardsSection.vue";
 import HeroGraphSection from "../components/hero/HeroGraphSection.vue";
 import SocialProofBarSection from "../components/common/SocialProofBarSection.vue";
@@ -8,13 +7,11 @@ import MinimaxLicenseHeroSection from "../components/common/MinimaxLicenseHeroSe
 import DeveloperPlatformSection from "../components/home/DeveloperPlatformSection.vue";
 import IndustriesSection from "../components/home/IndustriesSection.vue";
 import ModelReleaseSection from "../components/home/ModelReleaseSection.vue";
+import ModelCardsSection from "../components/home/ModelCardsSection.vue";
 import ProductShowcaseSection from "../components/home/ProductShowcaseSection.vue";
 import FeaturedWorkflowsSection from "../components/home/FeaturedWorkflowsSection.vue";
 import CaseStudySpotlightSection from "../components/home/CaseStudySpotlightSection.vue";
 import GetStartedSection from "../components/home/GetStartedSection.vue";
-import { getCollection } from "astro:content";
-import { isWorkshopInBuild } from "../config/workshop-release";
-import { resolveHomepageWorkshopModels } from "../config/workshop-homepage";
 import { t } from "../i18n/translations";
 import {
   comfyUiApplicationNode,
@@ -29,14 +26,6 @@ const { siteUrl } = pageContext(
   Astro.currentLocale,
 );
 
-// The same switch that decides whether Workshop is built at all. A release
-// build has no Workshop routes, so the homepage must not link to them; one
-// control rather than two that can drift apart.
-const workshopModels = await resolveHomepageWorkshopModels(
-  isWorkshopInBuild(),
-  async () =>
-    (await getCollection("workshopModels")).map((entry) => entry.data),
-);
 ---
 
 <BaseLayout
@@ -64,7 +53,7 @@ const workshopModels = await resolveHomepageWorkshopModels(
   <DeveloperPlatformSection client:visible />
   <MinimaxLicenseHeroSection client:visible />
   <FeaturedWorkflowsSection client:load />
-  {workshopModels.length > 0 && <WorkshopSection models={workshopModels} />}
+  <ModelCardsSection client:load />
   <ProductShowcaseSection client:load />
   <IndustriesSection client:load />
   <GetStartedSection />

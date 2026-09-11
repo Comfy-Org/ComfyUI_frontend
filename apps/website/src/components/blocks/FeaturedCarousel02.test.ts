@@ -50,9 +50,7 @@ function makeSlides(): FeaturedSplitSlide[] {
   ]
 }
 
-function dot(title: string): HTMLElement {
-  // Dots are the only buttons on image-only slides; each is labelled by its
-  // slide's title.
+function paginationButton(title: string): HTMLElement {
   return screen.getByRole('button', { name: title })
 }
 
@@ -103,11 +101,19 @@ describe('FeaturedCarousel02', () => {
     expect(activeDotTitle()).toBe('Slide A')
   })
 
-  it('navigates on dot click', async () => {
+  it('renders one labelled pagination button per slide and identifies the active slide', async () => {
+    render(FeaturedCarousel02, { props: { slides: makeSlides() } })
+    await nextTick()
+
+    expect(screen.getAllByRole('button')).toHaveLength(3)
+    expect(activeDotTitle()).toBe('Slide A')
+  })
+
+  it('navigates on pagination click', async () => {
     const user = setupUser()
     render(FeaturedCarousel02, { props: { slides: makeSlides() } })
     await nextTick()
-    await user.click(dot('Slide C'))
+    await user.click(paginationButton('Slide C'))
     expect(activeDotTitle()).toBe('Slide C')
   })
 
@@ -134,12 +140,12 @@ describe('FeaturedCarousel02', () => {
     // Wait for the hover listeners to attach to the template ref.
     await nextTick()
 
-    // Hovering a dot enters the carousel root as well.
-    await user.hover(dot('Slide A'))
+    // Hovering a pagination control enters the carousel root as well.
+    await user.hover(paginationButton('Slide A'))
     await advance(20000)
     expect(activeDotTitle()).toBe('Slide A')
 
-    await user.unhover(dot('Slide A'))
+    await user.unhover(paginationButton('Slide A'))
     await advance(5000)
     expect(activeDotTitle()).toBe('Slide B')
   })
@@ -150,7 +156,7 @@ describe('FeaturedCarousel02', () => {
     // Wait for the focus/keyboard listeners to attach to the template ref.
     await nextTick()
 
-    // Tab onto a dot: keyboard-driven focus holds the carousel.
+    // Tab onto a pagination control: keyboard-driven focus holds the carousel.
     await user.tab()
     expect(activeDotTitle()).toBe('Slide A')
     await advance(20000)
@@ -158,8 +164,8 @@ describe('FeaturedCarousel02', () => {
 
     // A pointer click focuses the control too, but once the pointer leaves it
     // must not stall autoplay.
-    await user.click(dot('Slide B'))
-    await user.unhover(dot('Slide B'))
+    await user.click(paginationButton('Slide B'))
+    await user.unhover(paginationButton('Slide B'))
     await advance(1000)
     expect(activeDotTitle()).toBe('Slide C')
   })
@@ -169,15 +175,15 @@ describe('FeaturedCarousel02', () => {
     render(FeaturedCarousel02, { props: { slides: makeSlides() } })
     await nextTick()
 
-    // Keyboard focus on the first dot holds the carousel...
+    // Keyboard focus on the first pagination control holds the carousel...
     await user.tab()
     await advance(20000)
     expect(activeDotTitle()).toBe('Slide A')
 
-    // ...and clicking that same, already-focused dot fires no focusin, but
+    // ...and clicking that same, already-focused control fires no focusin, but
     // the pointer interaction must still lift the keyboard pause.
-    await user.click(dot('Slide A'))
-    await user.unhover(dot('Slide A'))
+    await user.click(paginationButton('Slide A'))
+    await user.unhover(paginationButton('Slide A'))
     await advance(5000)
     expect(activeDotTitle()).toBe('Slide B')
   })
@@ -216,13 +222,13 @@ describe('FeaturedCarousel02', () => {
     render(FeaturedCarousel02, { props: { slides: makeSlides() } })
     await nextTick()
 
-    // Keyboard focus on the first dot holds the carousel...
+    // Keyboard focus on the first pagination control holds the carousel...
     await user.tab()
     await advance(20000)
     expect(activeDotTitle()).toBe('Slide A')
 
     // ...and once focus leaves the carousel entirely, autoplay resumes.
-    dot('Slide A').blur()
+    paginationButton('Slide A').blur()
     await advance(5000)
     expect(activeDotTitle()).toBe('Slide B')
   })
