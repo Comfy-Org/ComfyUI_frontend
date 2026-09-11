@@ -158,16 +158,16 @@ function createInnerPreview(
     const graph = node?.graph
     if (!graph) return null
     const rootGraph = graph.rootGraph
-    if (!rootGraph || graph === rootGraph) return null
+    if (graph === rootGraph) return null
 
     return (
-      rootGraph._nodes?.find(
+      rootGraph._nodes.find(
         (n) => n.isSubgraphNode() && n.subgraph === graph
       ) ?? null
     )
   })()
 
-  const graphId = computed(() => nodeRef.value?.graph?.rootGraph?.id)
+  const graphId = computed(() => nodeRef.value?.graph?.rootGraph.id)
 
   const nodeId = computed(() => {
     const id = nodeRef.value?.id
@@ -327,7 +327,7 @@ function createInnerPreview(
     const custom = customResolution.value
     if (custom) return custom
 
-    const img = images[0]
+    const img = images.at(0)
     if (img) {
       const w = img instanceof ImageBitmap ? img.width : img.naturalWidth
       const h = img instanceof ImageBitmap ? img.height : img.naturalHeight
@@ -338,6 +338,7 @@ function createInnerPreview(
   }
 
   let disposed = false
+  const isDisposed = (): boolean => disposed
   let lastRendererConfig: GLSLRendererConfig | null = null
 
   function revokePreview(): void {
@@ -439,7 +440,7 @@ function createInnerPreview(
       r.render()
 
       const blob = await r.toBlob()
-      if (requestId !== renderRequestId || disposed) return
+      if (requestId !== renderRequestId || isDisposed()) return
       const blobUrl = createSharedObjectUrl(blob)
       try {
         const inner = innerGLSLNode
