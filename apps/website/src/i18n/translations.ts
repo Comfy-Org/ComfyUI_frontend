@@ -1,6 +1,565 @@
 type Locale = 'en' | 'zh-CN' | 'ja'
 
 const translations = {
+  'home.workshop.heading': {
+    en: 'Run any model, from one place',
+    'zh-CN': '在同一个地方运行任何模型'
+  },
+  'home.workshop.subheading': {
+    en: 'Hundreds of models from the labs building them, with their real inputs and the same API you would call from your own application.',
+    'zh-CN':
+      '汇集数百个来自各大实验室的模型，提供真实的输入参数，以及可在你自己的应用中调用的同一套 API。'
+  },
+  'home.workshop.browseAll': {
+    en: 'Browse all models',
+    'zh-CN': '浏览全部模型'
+  },
+  'workshop.meta.title': {
+    en: 'Comfy Workshop',
+    'zh-CN': 'Comfy Workshop'
+  },
+  'workshop.meta.description': {
+    en: 'Browse and run AI models with Comfy.',
+    'zh-CN': '使用 Comfy 浏览并运行 AI 模型。'
+  },
+  'workshop.hero.eyebrow': {
+    en: 'Comfy Workshop',
+    'zh-CN': 'Comfy Workshop'
+  },
+  'workshop.hero.heading': {
+    en: 'Build with the best AI models',
+    'zh-CN': '使用顶尖 AI 模型进行创作'
+  },
+  'workshop.hero.subtitle': {
+    en: 'Compare models, try their inputs, and use the same API from your own application.',
+    'zh-CN': '比较模型、尝试输入，并在你自己的应用中使用相同的 API。'
+  },
+  'workshop.search.label': {
+    en: 'Search models',
+    'zh-CN': '搜索模型'
+  },
+  'workshop.search.placeholder': {
+    en: 'Search models, providers, and capabilities',
+    'zh-CN': '搜索模型、提供商和功能'
+  },
+  'workshop.provider.label': {
+    en: 'Filter by provider',
+    'zh-CN': '按提供商筛选'
+  },
+  'workshop.provider.all': {
+    en: 'All providers',
+    'zh-CN': '所有提供商'
+  },
+  'workshop.filter.all': { en: 'All', 'zh-CN': '全部' },
+  'workshop.filter.image': { en: 'Image', 'zh-CN': '图像' },
+  'workshop.filter.video': { en: 'Video', 'zh-CN': '视频' },
+  'workshop.filter.audio': { en: 'Audio', 'zh-CN': '音频' },
+  'workshop.filter.3d': { en: '3D', 'zh-CN': '3D' },
+  'workshop.result': {
+    en: '{count} model',
+    'zh-CN': '{count} 个模型'
+  },
+  'workshop.results': {
+    en: '{count} models',
+    'zh-CN': '{count} 个模型'
+  },
+  'workshop.empty': {
+    en: 'No models match these filters.',
+    'zh-CN': '没有符合这些筛选条件的模型。'
+  },
+  'workshop.showMore': {
+    en: 'Show more models',
+    'zh-CN': '显示更多模型'
+  },
+  'workshop.model.breadcrumb': { en: 'Workshop', 'zh-CN': 'Workshop' },
+  'workshop.model.inputs': { en: 'Model inputs', 'zh-CN': '模型输入' },
+  'workshop.model.select': { en: 'Select an option', 'zh-CN': '选择一个选项' },
+  'workshop.model.maxFiles': {
+    en: 'Select no more than {count} files.',
+    'zh-CN': '最多选择 {count} 个文件。'
+  },
+  'workshop.model.invalidJson': {
+    en: "Enter JSON that matches this model input's schema.",
+    'zh-CN': '请输入符合此模型输入架构的 JSON。'
+  },
+  'workshop.model.runNext': {
+    en: 'Run model — sign-in coming next',
+    'zh-CN': '运行模型 — 登录功能即将推出'
+  },
+  'workshop.model.codeLanguage': { en: 'Code language', 'zh-CN': '代码语言' },
+  'workshop.model.copy': { en: 'Copy code', 'zh-CN': '复制代码' },
+  'workshop.model.copied': { en: 'Copied', 'zh-CN': '已复制' },
+  'workshop.model.getApiKey': {
+    en: 'Get your API key',
+    'zh-CN': '获取 API 密钥'
+  },
+  'workshop.model.related': { en: 'Related models', 'zh-CN': '相关模型' },
+  'workshop.model.browseAll': {
+    en: 'Browse all models',
+    'zh-CN': '浏览所有模型'
+  },
+  'auth.signIn.meta.title': {
+    en: 'Sign in - Comfy',
+    'zh-CN': '登录 - Comfy'
+  },
+  'auth.signIn.meta.description': {
+    en: 'Sign in to your Comfy account.',
+    'zh-CN': '登录你的 Comfy 账户。'
+  },
+  'auth.signUp.meta.title': {
+    en: 'Sign up - Comfy',
+    'zh-CN': '注册 - Comfy'
+  },
+  'auth.signUp.meta.description': {
+    en: 'Create your Comfy account.',
+    'zh-CN': '创建你的 Comfy 账户。'
+  },
+  'auth.signIn.heading': {
+    en: 'Log in to your account',
+    'zh-CN': '登录您的账户',
+    ja: 'アカウントにログインする'
+  },
+  'auth.signUp.heading': {
+    en: 'Create an account',
+    'zh-CN': '创建一个账户',
+    ja: 'アカウントを作成する'
+  },
+  'auth.signIn.newHere': {
+    en: 'New to Comfy?',
+    'zh-CN': '初次使用 Comfy？',
+    ja: 'Comfyを初めてご利用ですか？'
+  },
+  'auth.signIn.signUpLink': {
+    en: 'Sign up here',
+    'zh-CN': '在这里注册',
+    ja: 'こちらからサインアップ'
+  },
+  'auth.signIn.freeRunsSuffix': {
+    en: 'to get 5 free runs.',
+    'zh-CN': '可获得 5 次免费运行。',
+    ja: '5回の無料実行を獲得しましょう。'
+  },
+  'auth.signUp.haveAccount': {
+    en: 'Already have an account?',
+    'zh-CN': '已经有账户了？',
+    ja: 'すでにアカウントをお持ちですか？'
+  },
+  'auth.signUp.signInLink': {
+    en: 'Sign in',
+    'zh-CN': '登录',
+    ja: 'サインイン'
+  },
+  'auth.signIn.google': {
+    en: 'Log in with Google',
+    'zh-CN': '使用Google登录',
+    ja: 'Googleでログイン'
+  },
+  'auth.signIn.github': {
+    en: 'Log in with Github',
+    'zh-CN': '使用Github登录',
+    ja: 'Githubでログイン'
+  },
+  'auth.signIn.googleSsoInAppBrowserNotice': {
+    en: "If you opened this from an in-app browser (e.g. Instagram, LinkedIn), Google sign-in may not work. Use GitHub or email, or open this page in your device's default browser.",
+    'zh-CN':
+      '如果您是从应用内浏览器（如 Instagram、LinkedIn）打开的，Google 登录可能无法使用。请使用 GitHub 或邮箱登录，或在设备默认浏览器中打开此页面。',
+    ja: 'アプリ内ブラウザ（例：Instagram、LinkedIn）から開いた場合、Googleでのサインインができないことがあります。GitHubまたはメールをご利用いただくか、デバイスの標準ブラウザでこのページを開いてください。'
+  },
+  'auth.signIn.pending': {
+    en: 'Finish signing in from the pop-up window.',
+    'zh-CN': '请在弹出窗口中完成登录。'
+  },
+  'auth.signIn.signingIn': {
+    en: 'Signing you in…',
+    'zh-CN': '正在为你登录…',
+    ja: 'サインインしています…'
+  },
+  'auth.signUp.creating': {
+    en: 'Creating your account…',
+    'zh-CN': '正在创建你的账户…',
+    ja: 'アカウントを作成しています…'
+  },
+  'auth.signIn.signOut': {
+    en: 'Sign out',
+    'zh-CN': '退出登录'
+  },
+  'auth.signUp.regionRestrictionChina': {
+    en: 'In accordance with local regulatory requirements, our services are temporarily unavailable to users located in China.',
+    'zh-CN': '根据当地法规要求，我们暂时无法为中国地区的用户提供服务。',
+    ja: '現地の規制要件に従い、当社のサービスは現在中国本土のユーザーにはご利用いただけません。'
+  },
+  'auth.signUp.google': {
+    en: 'Sign up with Google',
+    'zh-CN': '使用Google注册',
+    ja: 'Googleでサインアップ'
+  },
+  'auth.signUp.github': {
+    en: 'Sign up with Github',
+    'zh-CN': '使用Github注册',
+    ja: 'Githubでサインアップ'
+  },
+  'auth.signIn.useEmailInstead': {
+    en: 'Use email instead',
+    'zh-CN': '改用邮箱',
+    ja: 'メールアドレスを使用する'
+  },
+  'auth.signIn.backToSocialLogin': {
+    en: 'Sign up with Google or Github instead',
+    'zh-CN': '改用 Google 或 Github 注册',
+    ja: 'GoogleまたはGithubでサインアップする'
+  },
+  'auth.signIn.backToSocialSignIn': {
+    en: 'Sign in with Google or Github instead',
+    'zh-CN': '改用 Google 或 Github 登录',
+    ja: 'GoogleまたはGithubでサインインする'
+  },
+  'auth.signIn.insecureContextWarning': {
+    en: 'This connection is insecure (HTTP) - your credentials may be intercepted by attackers if you proceed to login.',
+    'zh-CN': '此连接不安全（HTTP）—如果继续登录，您的凭据可能会被攻击者拦截。',
+    ja: 'この接続は安全ではありません（HTTP）- このままログインを続けると、認証情報が攻撃者に傍受される可能性があります。'
+  },
+  'auth.email.placeholder': {
+    en: 'Enter your email',
+    'zh-CN': '输入您的电子邮件',
+    ja: 'メールアドレスを入力してください'
+  },
+  'auth.password.placeholder': {
+    en: 'Enter your password',
+    'zh-CN': '输入您的密码',
+    ja: 'パスワードを入力してください'
+  },
+  'auth.password.newPlaceholder': {
+    en: 'Enter new password',
+    'zh-CN': '输入新密码',
+    ja: '新しいパスワードを入力してください'
+  },
+  'auth.password.show': {
+    en: 'Show password',
+    'zh-CN': '显示密码',
+    ja: 'パスワードを表示'
+  },
+  'auth.password.hide': {
+    en: 'Hide password',
+    'zh-CN': '隐藏密码',
+    ja: 'パスワードを非表示'
+  },
+  'auth.confirmPassword.placeholder': {
+    en: 'Enter the same password again',
+    'zh-CN': '再次输入相同的密码',
+    ja: 'もう一度同じパスワードを入力してください'
+  },
+  'validation.password.requirements': {
+    en: 'Password requirements',
+    'zh-CN': '密码要求',
+    ja: 'パスワードの要件'
+  },
+  'validation.password.lengthRange': {
+    en: 'Must be between 8 and 32 characters',
+    'zh-CN': '必须在8到32个字符之间',
+    ja: '8文字から32文字の間でなければなりません'
+  },
+  'auth.shell.logoAlt': {
+    en: 'ComfyOrg Logo',
+    'zh-CN': 'ComfyOrg 徽标',
+    ja: 'ComfyOrgロゴ'
+  },
+  'auth.shell.termsText': {
+    en: 'By clicking "Next" or "Sign Up", you agree to our',
+    'zh-CN': '点击“下一步”或“注册”即表示您同意我们的',
+    ja: '「次へ」または「サインアップ」をクリックすると、私たちの'
+  },
+  'auth.shell.termsLink': {
+    en: 'Terms of Use',
+    'zh-CN': '使用条款',
+    ja: '利用規約'
+  },
+  'auth.shell.andText': {
+    en: 'and',
+    'zh-CN': '和',
+    ja: 'および'
+  },
+  'auth.shell.privacyLink': {
+    en: 'Privacy Policy',
+    'zh-CN': '隐私政策',
+    ja: 'プライバシーポリシー'
+  },
+  'auth.shell.questionsText': {
+    en: 'Questions? Contact us',
+    'zh-CN': '有问题？联系我们',
+    ja: '質問がありますか？お問い合わせください'
+  },
+  'auth.shell.contactLink': {
+    en: 'here',
+    'zh-CN': '这里',
+    ja: 'こちら'
+  },
+  'auth.shell.needHelp': {
+    en: 'Need Help?',
+    'zh-CN': '需要帮助？',
+    ja: 'ヘルプが必要ですか？'
+  },
+  'auth.toast.close': {
+    en: 'Close',
+    'zh-CN': '关闭',
+    ja: '閉じる'
+  },
+  'auth.hero.carouselLabel': {
+    en: 'Featured models',
+    'zh-CN': '精选模型',
+    ja: '注目モデル'
+  },
+  'auth.hero.carouselRoleDescription': {
+    en: 'carousel',
+    'zh-CN': '轮播图',
+    ja: 'カルーセル'
+  },
+  'auth.hero.slideRoleDescription': {
+    en: 'slide',
+    'zh-CN': '幻灯片',
+    ja: 'スライド'
+  },
+  'auth.hero.slideStatus': {
+    en: '{title}, slide {current} of {total}',
+    'zh-CN': '{title}，第 {current} 张，共 {total} 张',
+    ja: '{title}、{total}枚中{current}枚目'
+  },
+  'auth.hero.previousSlide': {
+    en: 'Previous slide',
+    'zh-CN': '上一张幻灯片',
+    ja: '前のスライド'
+  },
+  'auth.hero.nextSlide': {
+    en: 'Next slide',
+    'zh-CN': '下一张幻灯片',
+    ja: '次のスライド'
+  },
+  'auth.signIn.error.provisioning': {
+    en: 'You are signed in, but account setup did not finish. Please try again shortly.',
+    'zh-CN': '您已登录，但账户设置尚未完成。请稍后重试。'
+  },
+  'auth.signIn.error.session': {
+    en: 'You are signed in, but your workspace session could not be started. Retry, or sign in again with another account.',
+    'zh-CN': '您已登录，但工作区会话无法启动。请重试，或使用其他账户重新登录。'
+  },
+  'auth.signIn.retry': {
+    en: 'Retry session',
+    'zh-CN': '重试会话'
+  },
+  // Auth validation copy, matching the platform app's messages. The {length}
+  // and {prefix} tokens are interpolated by config/auth-schemas.ts.
+  'validation.invalidEmail': {
+    en: 'Invalid email address',
+    'zh-CN': '无效的电子邮件地址'
+  },
+  'validation.required': {
+    en: 'Required',
+    'zh-CN': '必填'
+  },
+  'validation.minLength': {
+    en: 'Must be at least {length} characters',
+    'zh-CN': '必须至少有{length}个字符'
+  },
+  'validation.maxLength': {
+    en: 'Must be no more than {length} characters',
+    'zh-CN': '不能超过{length}个字符'
+  },
+  'validation.length': {
+    en: 'Must be {length} characters',
+    'zh-CN': '必须为{length}个字符'
+  },
+  'validation.prefix': {
+    en: 'Must start with {prefix}',
+    'zh-CN': '必须以 {prefix} 开头'
+  },
+  'validation.password.uppercase': {
+    en: 'Must contain at least one uppercase letter',
+    'zh-CN': '必须包含至少一个大写字母'
+  },
+  'validation.password.lowercase': {
+    en: 'Must contain at least one lowercase letter',
+    'zh-CN': '必须包含至少一个小写字母'
+  },
+  'validation.password.number': {
+    en: 'Must contain at least one number',
+    'zh-CN': '必须包含至少一个数字'
+  },
+  'validation.password.special': {
+    en: 'Must contain at least one special character',
+    'zh-CN': '必须包含至少一个特殊字符'
+  },
+  'validation.password.match': {
+    en: 'Passwords must match',
+    'zh-CN': '密码必须匹配'
+  },
+  'auth.email.label': {
+    en: 'Email',
+    'zh-CN': '电子邮件'
+  },
+  'auth.password.label': {
+    en: 'Password',
+    'zh-CN': '密码'
+  },
+  'auth.confirmPassword.label': {
+    en: 'Confirm Password',
+    'zh-CN': '确认密码',
+    ja: 'パスワードの確認'
+  },
+  'auth.signIn.submit': {
+    en: 'Sign in',
+    'zh-CN': '登录',
+    ja: 'ログイン'
+  },
+  'auth.signUp.submit': {
+    en: 'Sign up',
+    'zh-CN': '注册',
+    ja: 'サインアップ'
+  },
+  'auth.signIn.forgotPassword': {
+    en: 'Forgot password?',
+    'zh-CN': '忘记密码？'
+  },
+  'auth.forgot.meta.title': {
+    en: 'Reset password - Comfy',
+    'zh-CN': '重置密码 - Comfy'
+  },
+  'auth.forgot.meta.description': {
+    en: 'Reset your Comfy account password.',
+    'zh-CN': '重置你的 Comfy 账户密码。'
+  },
+  'auth.forgot.heading': {
+    en: 'Forgot Password',
+    'zh-CN': '忘记密码',
+    ja: 'パスワードを忘れた場合'
+  },
+  'auth.forgot.body': {
+    en: "Enter your email address and we'll send you a link to reset your password.",
+    'zh-CN': '请输入您的电子邮件地址，我们将向您发送重置密码的链接。',
+    ja: 'メールアドレスを入力すると、パスワードリセット用のリンクをお送りします。'
+  },
+  'auth.forgot.submit': {
+    en: 'Send reset link',
+    'zh-CN': '发送重置链接',
+    ja: 'リセットリンクを送信'
+  },
+  'auth.forgot.sent': {
+    en: 'Password reset sent',
+    'zh-CN': '密码重置邮件已发送',
+    ja: 'パスワードリセットを送信しました'
+  },
+  'auth.forgot.error': {
+    en: 'Failed to send password reset email',
+    'zh-CN': '发送密码重置邮件失败',
+    ja: 'パスワードリセットメールの送信に失敗しました'
+  },
+  'auth.forgot.emailRequired': {
+    en: 'Email is required',
+    'zh-CN': '邮箱是必填项',
+    ja: 'メールアドレスは必須です'
+  },
+  'auth.forgot.didntReceive': {
+    en: "Didn't receive an email?",
+    'zh-CN': '没有收到邮件？',
+    ja: 'メールが届きませんでしたか？'
+  },
+  'auth.forgot.toastSummary': {
+    en: 'Password reset email sent',
+    'zh-CN': '重置密码邮件已发送',
+    ja: 'パスワードリセット用メールを送信しました'
+  },
+  'auth.forgot.toastDetail': {
+    en: 'Please check your email for a link to reset your password.',
+    'zh-CN': '请查收您的电子邮件，点击链接重置密码。',
+    ja: 'パスワードをリセットするためのリンクが記載されたメールをご確認ください。'
+  },
+  'auth.forgot.backToSignIn': {
+    en: 'Back to login',
+    'zh-CN': '返回登录',
+    ja: 'ログインに戻る'
+  },
+  'auth.header.signIn': {
+    en: 'Sign in',
+    'zh-CN': '登录'
+  },
+  'auth.header.account': {
+    en: 'Account',
+    'zh-CN': '账户'
+  },
+  'auth.header.credits': {
+    en: 'credits',
+    'zh-CN': '积分'
+  },
+  'auth.header.credit': {
+    en: 'credit',
+    'zh-CN': '积分'
+  },
+  'auth.header.signingIn': {
+    en: 'Signing in…',
+    'zh-CN': '正在登录…'
+  },
+  'auth.header.sessionRetry': {
+    en: 'Session error — retry',
+    'zh-CN': '会话错误 — 重试'
+  },
+  'auth.header.sessionRetrying': {
+    en: 'Retrying session…',
+    'zh-CN': '正在重试会话…'
+  },
+  'auth.header.balanceError': {
+    en: 'Balance unavailable right now.',
+    'zh-CN': '暂时无法获取余额。'
+  },
+  'auth.timeout.title': {
+    en: 'Connection Taking Too Long',
+    'zh-CN': '连接时间过长',
+    ja: '接続に時間がかかっています'
+  },
+  'auth.timeout.message': {
+    en: "We're having trouble connecting to ComfyUI Cloud. This could be due to a slow connection or temporary service issue.",
+    'zh-CN':
+      '我们无法连接到 ComfyUI 云端服务。这可能是由于网络连接缓慢或临时服务问题导致的。',
+    ja: 'ComfyUIクラウドへの接続に問題が発生しています。これは接続速度が遅いか、一時的なサービス障害が原因である可能性があります。'
+  },
+  'auth.timeout.troubleshooting': {
+    en: 'Common causes:',
+    'zh-CN': '常见原因：',
+    ja: '一般的な原因：'
+  },
+  'auth.timeout.causes.firewall': {
+    en: 'Corporate firewall or proxy blocking authentication services',
+    'zh-CN': 'Corporate firewall or proxy blocking authentication services'
+  },
+  'auth.timeout.causes.vpn': {
+    en: 'VPN or network restrictions',
+    'zh-CN': 'VPN or network restrictions'
+  },
+  'auth.timeout.causes.extensions': {
+    en: 'Browser extensions interfering with requests',
+    'zh-CN': 'Browser extensions interfering with requests'
+  },
+  'auth.timeout.causes.regional': {
+    en: 'Regional network limitations',
+    'zh-CN': 'Regional network limitations'
+  },
+  'auth.timeout.causes.differentBrowser': {
+    en: 'Try a different browser or network',
+    'zh-CN': 'Try a different browser or network'
+  },
+  'auth.timeout.helpText': {
+    en: 'Need help? Contact',
+    'zh-CN': '需要帮助？联系',
+    ja: 'ヘルプが必要ですか？サポートに連絡'
+  },
+  'auth.timeout.supportLink': {
+    en: 'support',
+    'zh-CN': '支持',
+    ja: 'サポート'
+  },
+  'auth.timeout.restart': {
+    en: 'Sign Out & Try Again',
+    'zh-CN': '退出并重试',
+    ja: 'サインアウトして再試行'
+  },
+
   // Tags (global, reusable across sections)
   'tags.partnerNodes': {
     en: 'Partner Nodes',
@@ -488,6 +1047,11 @@ Enterprise`
     en: 'SEE ALL CASE STUDIES',
     'zh-CN': '查看全部案例',
     ja: 'すべてのケーススタディを見る'
+  },
+  'caseStudy.watchStory': {
+    en: 'WATCH STORY',
+    'zh-CN': '观看故事',
+    ja: 'ストーリーを見る'
   },
 
   // BuildWhatSection
@@ -1522,6 +2086,10 @@ Enterprise`
   },
   'pricing.plan.period': { en: '/month', 'zh-CN': '/月' },
   'pricing.creditsLabel': { en: 'monthly credits', 'zh-CN': '每月积分' },
+  'pricing.creditsLabelYearly': {
+    en: 'credits per year',
+    'zh-CN': '年度积分'
+  },
   'pricing.banner.title': {
     en: "Start free. Upgrade when you're ready.",
     'zh-CN': '免费开始，准备好了再升级。'
@@ -1598,9 +2166,14 @@ Enterprise`
   'pricing.plan.standard.eduYearlyPrice': { en: '$15', 'zh-CN': '$15' },
   'pricing.plan.standard.eduYearlyTotal': { en: '$180', 'zh-CN': '$180' },
   'pricing.plan.standard.credits': { en: '4,200', 'zh-CN': '4,200' },
+  'pricing.plan.standard.yearlyCredits': { en: '50,400', 'zh-CN': '50,400' },
   'pricing.plan.standard.estimate': {
     en: 'Generates ~380 5s videos*',
     'zh-CN': '约可生成 380 个 5 秒视频*'
+  },
+  'pricing.plan.standard.yearlyEstimate': {
+    en: 'Generates ~4,560 5s videos*',
+    'zh-CN': '约可生成 4,560 个 5 秒视频*'
   },
   'pricing.plan.standard.cta': {
     en: 'SUBSCRIBE TO STANDARD',
@@ -1615,9 +2188,14 @@ Enterprise`
   'pricing.plan.creator.eduYearlyPrice': { en: '$26.25', 'zh-CN': '$26.25' },
   'pricing.plan.creator.eduYearlyTotal': { en: '$315', 'zh-CN': '$315' },
   'pricing.plan.creator.credits': { en: '7,400', 'zh-CN': '7,400' },
+  'pricing.plan.creator.yearlyCredits': { en: '88,800', 'zh-CN': '88,800' },
   'pricing.plan.creator.estimate': {
     en: 'Generates ~670 5s videos*',
     'zh-CN': '约可生成 670 个 5 秒视频*'
+  },
+  'pricing.plan.creator.yearlyEstimate': {
+    en: 'Generates ~8,040 5s videos*',
+    'zh-CN': '约可生成 8,040 个 5 秒视频*'
   },
   'pricing.plan.creator.cta': {
     en: 'SUBSCRIBE TO CREATOR',
@@ -1632,9 +2210,14 @@ Enterprise`
   'pricing.plan.pro.eduYearlyPrice': { en: '$75', 'zh-CN': '$75' },
   'pricing.plan.pro.eduYearlyTotal': { en: '$900', 'zh-CN': '$900' },
   'pricing.plan.pro.credits': { en: '21,100', 'zh-CN': '21,100' },
+  'pricing.plan.pro.yearlyCredits': { en: '253,200', 'zh-CN': '253,200' },
   'pricing.plan.pro.estimate': {
     en: 'Generates ~1,915 5s videos*',
     'zh-CN': '约可生成 1,915 个 5 秒视频*'
+  },
+  'pricing.plan.pro.yearlyEstimate': {
+    en: 'Generates ~22,980 5s videos*',
+    'zh-CN': '约可生成 22,980 个 5 秒视频*'
   },
   'pricing.plan.pro.cta': { en: 'SUBSCRIBE TO PRO', 'zh-CN': '订阅专业版' },
 
@@ -1748,9 +2331,9 @@ Enterprise`
     'zh-CN': '积分余额'
   },
   'pricing.included.feature4.description': {
-    en: 'All plans will include a monthly pool of credits that are spent on active workflow runtime and <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">Partner Nodes</a> like Nano Banana Pro.',
+    en: 'Every plan includes a pool of credits that are spent on active workflow runtime and <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">Partner Nodes</a> like Nano Banana Pro. Monthly plans refill the pool each month; annual plans grant the whole year up front.',
     'zh-CN':
-      '所有计划均包含每月积分池，可用于工作流运行和<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">合作伙伴节点</a>（如 Nano Banana Pro）。'
+      '所有计划均包含积分池，可用于工作流运行和<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">合作伙伴节点</a>（如 Nano Banana Pro）。按月订阅每月重置积分，按年订阅在开通时一次性发放全年积分。'
   },
   'pricing.included.feature5.title': {
     en: 'Add more credits anytime',
@@ -1783,9 +2366,9 @@ Enterprise`
     'zh-CN': '合作伙伴节点'
   },
   'pricing.included.feature8.description': {
-    en: 'Run <strong>proprietary models</strong> through Comfy\'s <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">Partner Nodes</a>, such as Nano Banana. The amount of credits each node uses depends on the model and parameters you set in the node, but these credits are the same ones that your monthly subscription comes with. These credits can also be used across <strong>Comfy Cloud and local ComfyUI</strong>. Read more about Partner nodes <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">here</a>.',
+    en: 'Run <strong>proprietary models</strong> through Comfy\'s <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">Partner Nodes</a>, such as Nano Banana. The amount of credits each node uses depends on the model and parameters you set in the node, but these credits are the same ones that your subscription comes with. These credits can also be used across <strong>Comfy Cloud and local ComfyUI</strong>. Read more about Partner nodes <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">here</a>.',
     'zh-CN':
-      '通过 Comfy 的<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">合作伙伴节点</a>运行<strong>专有模型</strong>，如 Nano Banana。每个节点消耗的积分取决于所用模型和参数设置，且与月度订阅积分通用。积分可在 <strong>Comfy Cloud 和本地 ComfyUI</strong> 间通用。了解更多关于合作伙伴节点的信息请点击<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">此处</a>。'
+      '通过 Comfy 的<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">合作伙伴节点</a>运行<strong>专有模型</strong>，如 Nano Banana。每个节点消耗的积分取决于所用模型和参数设置，且与订阅赠送的积分通用。积分可在 <strong>Comfy Cloud 和本地 ComfyUI</strong> 间通用。了解更多关于合作伙伴节点的信息请点击<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">此处</a>。'
   },
   'pricing.included.feature9.title': {
     en: 'Job queue',
@@ -3532,6 +4115,10 @@ Enterprise`
   // CLI – nav + breadcrumb
   'nav.comfyCli': { en: 'Comfy CLI', 'zh-CN': 'Comfy CLI' },
   'breadcrumb.cli': { en: 'Comfy CLI', 'zh-CN': 'Comfy CLI' },
+  'breadcrumb.cloudNodes': {
+    en: 'Comfy Cloud Nodes',
+    'zh-CN': 'Comfy Cloud 节点'
+  },
 
   // SiteNav
   'nav.products': { en: 'Products', 'zh-CN': '产品' },
@@ -3544,6 +4131,10 @@ Enterprise`
   'nav.comfyEnterprise': {
     en: 'Comfy Enterprise',
     'zh-CN': 'Comfy 企业版'
+  },
+  'nav.managedBuilds': {
+    en: 'Managed Builds',
+    'zh-CN': '托管构建'
   },
   'nav.comfyHub': { en: 'Comfy Workflows', 'zh-CN': 'Comfy Workflows' },
   'nav.fdct': {
@@ -3608,20 +4199,20 @@ Enterprise`
   // Featured dropdown cards — keys are keyed by parent nav item, not card content,
   // so the copy can be swapped without renaming the key.
   'nav.featuredProductsTitle': {
-    en: 'NEW RELEASE: LTX 2.5',
-    'zh-CN': '全新发布：LTX 2.5'
+    en: 'NEW RELEASE: MINIMAX H3',
+    'zh-CN': '全新发布：MiniMax H3'
   },
   'nav.featuredProductsAlt': {
-    en: 'LTX 2.5 feature image',
-    'zh-CN': 'LTX 2.5 精选图片'
+    en: 'MiniMax H3 feature image',
+    'zh-CN': 'MiniMax H3 精选图片'
   },
   'nav.featuredProductsCta': {
     en: 'EXPLORE NOW',
     'zh-CN': '立即探索'
   },
   'nav.featuredProductsCtaAria': {
-    en: 'Explore the LTX 2.5 release',
-    'zh-CN': '探索 LTX 2.5 版本'
+    en: 'Explore the MiniMax H3 release',
+    'zh-CN': '探索 MiniMax H3 版本'
   },
   'nav.featuredCommunityTitle': {
     en: 'Sky Replacement',
@@ -5343,6 +5934,26 @@ Enterprise`
     'zh-CN':
       '从独立艺术家到全球工作室——构建视觉媒体未来的团队都在使用 ComfyUI。'
   },
+  'customers.group.watch': { en: 'WATCH', 'zh-CN': '观看' },
+  'customers.group.read': { en: 'READ', 'zh-CN': '阅读' },
+  'customers.video.watchStory': { en: 'WATCH STORY', 'zh-CN': '观看故事' },
+  'customers.watch.transcript': { en: 'Transcript', 'zh-CN': '文字记录' },
+  'customers.watch.readWrittenStory': {
+    en: 'Read the written story',
+    'zh-CN': '阅读文字版故事'
+  },
+  'customers.watch.browseAll': {
+    en: 'BROWSE ALL CUSTOMER STORIES',
+    'zh-CN': '浏览全部客户故事'
+  },
+  'pricing.customerProof.heading': {
+    en: 'Built with ComfyUI',
+    'zh-CN': '使用 ComfyUI 构建'
+  },
+  'customers.article.watchVideo': {
+    en: 'WATCH THE VIDEO',
+    'zh-CN': '观看视频'
+  },
   'customers.contact.label': { en: 'CONTACT', 'zh-CN': '联系' },
   'customers.contact.heading': {
     en: 'Interested in a case study with ComfyUI? Reach out <a href="https://docs.google.com/forms/d/e/1FAIpQLSd-Keeq1VIePeanQIsdHq9eYeDE82MHJTdvwdgpxCoEzo_CUg/viewform" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">here</a>',
@@ -6845,6 +7456,104 @@ Enterprise`
   },
   'wan3.reviews.highlightCta': { en: 'GET STARTED', 'zh-CN': '开始使用' },
   'footer.wan3': { en: 'Wan 3.0', 'zh-CN': 'Wan 3.0' },
+  // ChatGPT Images 2.5 model page (/chatgpt-image-2.5)
+  'chatgptImage25.meta.title': {
+    en: 'ChatGPT Images 2.5 on Comfy: Generate and Edit Images',
+    'zh-CN': 'Comfy 上的 ChatGPT Images 2.5：生成与编辑图像'
+  },
+  'chatgptImage25.meta.description': {
+    en: 'Run ChatGPT Images 2.5 in ComfyUI. Generate detailed images from text, edit existing visuals, and direct results with reference images in a repeatable workflow.',
+    'zh-CN':
+      '在 ComfyUI 中运行 ChatGPT Images 2.5。通过文字生成精细图像、编辑现有视觉内容，并使用参考图像在可复用工作流中引导结果。'
+  },
+  'chatgptImage25.breadcrumb.model': {
+    en: 'ChatGPT Images 2.5',
+    'zh-CN': 'ChatGPT Images 2.5'
+  },
+  'chatgptImage25.breadcrumb.updated': {
+    en: 'Updated September 2026',
+    'zh-CN': '更新于 2026 年 9 月'
+  },
+  'chatgptImage25.hero.title': {
+    en: 'ChatGPT Images 2.5\nis here',
+    'zh-CN': 'ChatGPT Images 2.5 已上线'
+  },
+  'chatgptImage25.hero.description': {
+    en: 'Turn a plain language brief into a finished image, or revise an existing visual without rebuilding it from scratch. ChatGPT Images 2.5 brings generation, reference guided creation, and precise editing into ComfyUI workflows through Partner Nodes.',
+    'zh-CN':
+      '用自然语言简报生成完整图像，或在无需从头制作的情况下修改现有视觉内容。ChatGPT Images 2.5 通过合作伙伴节点，将图像生成、参考图引导创作与精确编辑带入 ComfyUI 工作流。'
+  },
+  'chatgptImage25.hero.tagTextToImage': {
+    en: 'Text to Image',
+    'zh-CN': '文生图'
+  },
+  'chatgptImage25.hero.tagImageEditing': {
+    en: 'Image Editing',
+    'zh-CN': '图像编辑'
+  },
+  'chatgptImage25.hero.tagReferenceImages': {
+    en: 'Reference Images',
+    'zh-CN': '参考图像'
+  },
+  'chatgptImage25.hero.primaryCta': {
+    en: 'RUN CHATGPT IMAGES 2.5',
+    'zh-CN': '运行 ChatGPT Images 2.5'
+  },
+  'chatgptImage25.hero.secondaryCta': {
+    en: 'READ THE GUIDE',
+    'zh-CN': '查看教程'
+  },
+  'chatgptImage25.gallery.heading': {
+    en: 'Made with ChatGPT Images 2.5',
+    'zh-CN': '由 ChatGPT Images 2.5 创作'
+  },
+  'chatgptImage25.pricing.banner.title': {
+    en: "Start Comfy Cloud for free. Upgrade when you're ready.",
+    'zh-CN': '免费开始使用 Comfy Cloud，准备好了再升级。'
+  },
+  'chatgptImage25.pricing.banner.subtitle': {
+    en: '5 free runs on real GPUs — no credit card required.',
+    'zh-CN': '在真实 GPU 上免费运行 5 次 — 无需信用卡。'
+  },
+  'chatgptImage25.pricing.banner.cta': {
+    en: 'TRY FREE',
+    'zh-CN': '免费试用'
+  },
+  'chatgptImage25.faq.heading': { en: 'Q&A', 'zh-CN': '问答' },
+  'chatgptImage25.runOptions.heading': {
+    en: 'One engine, every way to run it',
+    'zh-CN': '同一引擎，多种运行方式'
+  },
+  'chatgptImage25.runOptions.subtitle': {
+    en: 'Build workflows in the browser today. Batch campaigns with the API, or connect image generation to the rest of your creative pipeline.',
+    'zh-CN':
+      '今天就在浏览器中搭建工作流。用 API 批量制作，或将图像生成接入完整创意流程。'
+  },
+  'chatgptImage25.runOptions.cta': {
+    en: 'LEARN MORE',
+    'zh-CN': '了解更多'
+  },
+  'chatgptImage25.reviews.heading': {
+    en: '4+ million Comfy creators say',
+    'zh-CN': '超过 400 万 Comfy 创作者这样说'
+  },
+  'chatgptImage25.reviews.highlightTitle': {
+    en: 'Comfy MCP: now turn your agent into a creative technologist.',
+    'zh-CN': 'Comfy MCP：让你的智能体成为创意技术专家。'
+  },
+  'chatgptImage25.reviews.highlightDescription': {
+    en: 'Your AI assistant can access the ecosystem, build workflows, and generate images, video, audio, or 3D.',
+    'zh-CN':
+      '你的 AI 助手可以接入整个生态、构建工作流，并生成图像、视频、音频或 3D 内容。'
+  },
+  'chatgptImage25.reviews.highlightCta': {
+    en: 'GET STARTED',
+    'zh-CN': '开始使用'
+  },
+  'footer.chatgptImage25': {
+    en: 'ChatGPT Images 2.5',
+    'zh-CN': 'ChatGPT Images 2.5'
+  },
   'minimax.meta.title': {
     en: 'MiniMax H3 on Comfy: Open-Weight Video Model',
     'zh-CN': 'Comfy 上的 MiniMax H3：开源权重视频模型'
@@ -7526,8 +8235,8 @@ Enterprise`
     'zh-CN': '开发者平台'
   },
   'home.platform.body': {
-    en: 'Scale your custom nodes in your Comfy workflows in custom environments through Comfy API.',
-    'zh-CN': '通过 Comfy API 在自定义环境中扩展你的 Comfy 工作流和自定义节点。'
+    en: 'Deploy your ComfyUI workflow as a production API. Thousands of models on one platform.',
+    'zh-CN': '将你的 ComfyUI 工作流部署为生产级 API。数千个模型，尽在一个平台。'
   },
   'home.platform.cta': {
     en: 'Explore the Developer Platform',
@@ -7562,6 +8271,10 @@ Enterprise`
   'enterprise.managedBuilds.aboutBuilder': {
     en: 'About Builder',
     'zh-CN': '了解 Builder'
+  },
+  'enterprise.managedBuilds.closing.headingAfterBadge': {
+    en: 'Scale your custom nodes in your Comfy workflows\nin custom environments through Comfy API.',
+    'zh-CN': '通过 Comfy API 在自定义环境中扩展你的 Comfy 工作流和自定义节点。'
   },
   'enterprise.managedBuilds.1.title': {
     en: 'Open Source Models',
@@ -7705,8 +8418,8 @@ Enterprise`
     'zh-CN': '几分钟内上线'
   },
   'platform.serverlessDeploy.shipSubtitle': {
-    en: 'Easily package up your existing ComfyUI environment or a single workflow,\nthen deploy it to Comfy API.',
-    'zh-CN': '轻松打包现有的 ComfyUI 环境或单个工作流，然后部署到 Comfy API。'
+    en: 'Using our CLI and Skills, have your coding agent deploy everything in minutes.',
+    'zh-CN': '使用我们的 CLI 和 Skills，让你的编码智能体在几分钟内完成部署。'
   },
   'platform.serverlessDeploy.subtitle': {
     en: 'Builder packages your ComfyUI workflow and environment into a reproducible build. Deploy that build to Comfy API and scale it on demand.',
@@ -7810,61 +8523,89 @@ Enterprise`
     'zh-CN': 'Builder'
   },
   'platform.products.builder.description': {
-    en: 'Package custom nodes, models, and Python dependencies into a reproducible build. Run it on Comfy Desktop or deploy it to Comfy API.',
+    en: 'Package custom nodes, LoRAs, models, and Python dependencies into a reproducible build. Run it on Comfy Desktop or deploy it to Comfy API.',
     'zh-CN':
-      '将自定义节点、模型和 Python 依赖打包成可复现的构建。在 Comfy Desktop 上运行，或部署到 Comfy API。'
+      '将自定义节点、LoRA、模型和 Python 依赖打包成可复现的构建。在 Comfy Desktop 上运行，或部署到 Comfy API。'
   },
   'platform.products.builder.enterpriseCta': {
     en: 'Enterprise: Managed Builds',
     'zh-CN': '企业版：托管构建'
   },
   'platform.products.models.title': {
-    en: 'Models API',
-    'zh-CN': 'Models API'
+    en: 'Comfy Router',
+    'zh-CN': 'Comfy Router'
   },
   'platform.products.models.description': {
-    en: 'Call partner models including Seedance, Minimax H3, Nano Banana, and GPT-Image-2. Access the latest models with a single API key.',
+    en: 'Use thousands of the latest models in one API. Call Seedance, Minimax H3, Nano Banana, and GPT-Image.',
     'zh-CN':
-      '调用合作伙伴模型——Seedance、Minimax H3、Nano Banana、GPT-Image-2——用一个 API 密钥即可访问最新模型。'
+      '在一个 API 中使用数千个最新模型。调用 Seedance、Minimax H3、Nano Banana 和 GPT-Image。'
+  },
+  'platform.modelsHero.heading': {
+    en: '1000+ media AI models in one API.',
+    'zh-CN': '1000+ 媒体 AI 模型，尽在一个 API。'
+  },
+  'platform.modelsHero.subtitle': {
+    en: 'Use state-of-the-art models for image, video, 3D, and audio. Ready for production.',
+    'zh-CN': '使用最先进的图像、视频、3D 和音频模型。生产环境就绪。'
+  },
+  'platform.builderHero.heading': {
+    en: 'Share ComfyUI Builds with your team',
+    'zh-CN': '与团队共享 ComfyUI Builds'
+  },
+  'platform.builderHero.subtitle': {
+    en: 'A Build lets you share ComfyUI custom nodes, LoRAs, models, and Python dependencies without hassle. Run them on your workstation, server, or datacenter.',
+    'zh-CN':
+      'Build 让你轻松共享 ComfyUI 自定义节点、LoRA、模型和 Python 依赖。可在工作站、服务器或数据中心运行。'
+  },
+  'platform.serverlessHero.heading': {
+    en: 'ComfyUI workflow to production API in minutes.',
+    'zh-CN': '几分钟内，将 ComfyUI 工作流变成生产级 API。'
+  },
+  'platform.serverlessHero.subtitle': {
+    en: 'Package all your custom nodes, LoRAs, models, and Python dependencies into an autoscaling endpoint.',
+    'zh-CN':
+      '将你的所有自定义节点、LoRA、模型和 Python 依赖打包成一个自动扩缩的端点。'
+  },
+  'platform.modelsGallery.ariaLabel': {
+    en: 'Sample outputs from partner models',
+    'zh-CN': '合作伙伴模型的示例输出'
   },
   'platform.modelsFeatures.heading': {
-    en: 'One key, every frontier model',
-    'zh-CN': '一个密钥，所有前沿模型'
+    en: 'Built for production',
+    'zh-CN': '为生产环境而建'
   },
   'platform.modelsFeatures.1.title': {
     en: 'Every frontier media model',
     'zh-CN': '所有前沿媒体模型'
   },
   'platform.modelsFeatures.1.description': {
-    en: '36+ partner providers — Nano Banana, Veo, Kling, Seedance, Flux, Sora, GPT Image, Runway, Luma, ElevenLabs and more — behind stable model IDs.',
+    en: '1000+ models — Seedance, GPT Image 2, Nano Banana, Kling, Minimax, Flux, ElevenLabs, and more with day 0 access.',
     'zh-CN':
-      '36+ 家合作伙伴——Nano Banana、Veo、Kling、Seedance、Flux、Sora、GPT Image、Runway、Luma、ElevenLabs 等——都在稳定的模型 ID 之后。'
+      '1000+ 模型——Seedance、GPT Image 2、Nano Banana、Kling、Minimax、Flux、ElevenLabs 等——首发日即可使用。'
   },
   'platform.modelsFeatures.3.title': {
     en: 'One credit pool',
     'zh-CN': '一个积分池'
   },
   'platform.modelsFeatures.3.description': {
-    en: 'Pay per use from the same balance that powers Cloud workflows and serverless GPUs. No subscription floor.',
-    'zh-CN':
-      '按用量付费，与 Cloud 工作流和无服务器 GPU 共用同一余额。没有订阅门槛。'
+    en: 'Pay per use from one credit pool for your team. No subscription required.',
+    'zh-CN': '按用量付费，团队共用同一积分池。无需订阅。'
   },
   'platform.modelsFeatures.5.title': {
-    en: 'Schemas to generate against',
-    'zh-CN': '可直接生成代码的 Schema'
+    en: 'No setup',
+    'zh-CN': '无需配置'
   },
   'platform.modelsFeatures.5.description': {
-    en: 'Every model publishes its own OpenAPI document — the same one the server validates your call against.',
-    'zh-CN':
-      '每个模型都发布自己的 OpenAPI 文档——服务器校验你的调用时用的正是同一份。'
+    en: 'Every model can be accessed via a simple API or SDK.',
+    'zh-CN': '每个模型都可通过简单的 API 或 SDK 访问。'
   },
   'platform.modelsFeatures.6.title': {
-    en: 'Cancel anytime',
-    'zh-CN': '随时取消'
+    en: 'No data retention',
+    'zh-CN': '不保留数据'
   },
   'platform.modelsFeatures.6.description': {
-    en: 'A queued request cancels immediately and costs nothing; in-progress calls get a best-effort cancel.',
-    'zh-CN': '排队中的请求立即取消且不产生费用；进行中的调用会尽力取消。'
+    en: 'You own your outputs. Your prompts and data are never retained.',
+    'zh-CN': '输出归你所有。你的提示词和数据永不保留。'
   },
   'platform.examples.heading': {
     en: 'Built on the Developer Platform',
@@ -7998,26 +8739,6 @@ Enterprise`
     en: 'Contact sales',
     'zh-CN': '联系销售'
   },
-  'pricing.lookingForElse.heading': {
-    en: 'Looking for something else?',
-    'zh-CN': '在找别的方案？'
-  },
-  'pricing.lookingForElse.community.title': {
-    en: 'Community Edition',
-    'zh-CN': '社区版'
-  },
-  'pricing.lookingForElse.community.description': {
-    en: 'A standard, self-hosted version of ComfyUI is available on GitHub.',
-    'zh-CN': '标准的自托管版 ComfyUI 已在 GitHub 上提供。'
-  },
-  'pricing.lookingForElse.community.github': {
-    en: 'View on GitHub',
-    'zh-CN': '前往 GitHub'
-  },
-  'pricing.lookingForElse.community.docs': {
-    en: 'Self-hosting docs',
-    'zh-CN': '自托管文档'
-  },
   'pricing.resourceCosts.note': {
     en: 'Applies to the Comfy API on the Developer Platform.',
     'zh-CN': '仅适用于开发者平台上的 Comfy API。'
@@ -8121,9 +8842,9 @@ Enterprise`
     'zh-CN': '示例：500 GB 模型存放在标准网络存储上 = 每月 $45.50 + GPU 时间。'
   },
   'platform.pricing.modelsNote': {
-    en: 'Models API usage shows per-output prices on each model card and draws from the same credit pool.',
+    en: 'Comfy Router usage shows per-output prices on each model card and draws from the same credit pool.',
     'zh-CN':
-      'Models API 用量在每个模型卡片上标注单次输出价格，并从同一积分池扣费。'
+      'Comfy Router 用量在每个模型卡片上标注单次输出价格，并从同一积分池扣费。'
   },
   'platform.faq.betaBanner': {
     en: 'Limited beta: builds can take up to 3 hours and may fail. You get a direct support line while we harden the pipeline.',
@@ -8262,20 +8983,19 @@ Enterprise`
     'zh-CN': '让每个人都用上同一个 Comfy'
   },
   'platform.builderPillars.1.title': {
-    en: 'Consistency',
-    'zh-CN': '一致性'
+    en: 'It just works',
+    'zh-CN': '开箱即用'
   },
   'platform.builderPillars.1.description': {
-    en: 'Ensure your team is using the same consistent build. Deploy exact models, custom nodes, pip dependencies and get consistent results.',
-    'zh-CN':
-      '确保团队使用同一个一致的构建。部署完全一致的模型、自定义节点和 pip 依赖，获得一致的结果。'
+    en: 'Ensure your team uses the same environment. Share custom nodes, LoRAs, and models without hassle.',
+    'zh-CN': '确保团队使用同一环境。轻松共享自定义节点、LoRA 和模型。'
   },
   'platform.builderPillars.2.title': {
     en: 'Comfy Desktop',
     'zh-CN': 'Comfy Desktop'
   },
   'platform.builderPillars.2.description': {
-    en: 'Run builds locally on Desktop. Easily reinstall the same working build.',
+    en: 'Run Builds locally on Desktop. Easily reinstall the same working Build.',
     'zh-CN': '在 Desktop 上本地运行构建，随时轻松重装同一个可用构建。'
   },
   'platform.builderPillars.3.title': {
@@ -8287,20 +9007,19 @@ Enterprise`
     'zh-CN': '构建可以部署到 Comfy API，并以编程方式运行。'
   },
   'platform.builderPillars.4.title': {
-    en: 'Migrate in minutes',
-    'zh-CN': '几分钟内完成迁移'
+    en: 'Start in minutes',
+    'zh-CN': '几分钟内上手'
   },
   'platform.builderPillars.4.description': {
-    en: 'Easily migrate using the UI or your agent via Skills maintained by our team.',
-    'zh-CN':
-      '通过界面轻松迁移，或让你的智能体使用我们团队维护的 Skills 完成迁移。'
+    en: 'Have your coding agent do all of the work in minutes using our CLI and skills library.',
+    'zh-CN': '让你的编码智能体使用我们的 CLI 和技能库，在几分钟内完成全部工作。'
   },
   'platform.builderEnterprise.heading': {
     en: 'Builds vs. Managed Builds',
     'zh-CN': 'Builder 与托管构建对比'
   },
   'platform.builderEnterprise.subtitle': {
-    en: 'Builder is self-serve for packaging and testing your own environment. Managed Builds adds team sharing and enterprise governance.',
+    en: 'Builds is self-serve for packaging and testing your own environment. Managed Builds adds team sharing and enterprise governance.',
     'zh-CN':
       'Builder 可用于自助打包和测试自己的环境。托管构建增加了团队共享和企业治理。'
   },
@@ -8345,8 +9064,296 @@ Enterprise`
     'zh-CN': '将规模与控制力最大化'
   },
   'platform.closing.headingAfterBadge': {
-    en: 'Scale your custom nodes in your Comfy workflows\nin custom environments through Comfy API.',
-    'zh-CN': '通过 Comfy API 在自定义环境中扩展你的 Comfy 工作流和自定义节点。'
+    en: 'Deploy your ComfyUI workflow as a production API.\nThousands of models on one platform.',
+    'zh-CN': '将你的 ComfyUI 工作流部署为生产级 API。数千个模型，尽在一个平台。'
+  },
+
+  'cloudNodesLaunch.meta.title': {
+    en: 'Comfy Cloud Nodes: Run Open Models on Our GPUs, From Your ComfyUI',
+    'zh-CN':
+      'Comfy Cloud 节点：在我们的 GPU 上运行开源模型，就在你的 ComfyUI 里'
+  },
+  'cloudNodesLaunch.meta.description': {
+    en: 'Drop a Comfy Cloud node into a local graph and run open models on Comfy Cloud GPUs. No subscription, no downloads, billed per GPU-second in credits.',
+    'zh-CN':
+      '把 Comfy Cloud 节点放进本地工作流，即可在 Comfy Cloud 的 GPU 上运行开源模型。无需订阅，无需下载，按 GPU 秒数以积分计费。'
+  },
+  'cloudNodesLaunch.cta.getStarted': {
+    en: 'Get Started',
+    'zh-CN': '开始使用'
+  },
+  'cloudNodesLaunch.cta.docs': {
+    en: 'Read the Docs',
+    'zh-CN': '查看文档'
+  },
+  'cloudNodesLaunch.cta.update': {
+    en: 'How to Update ComfyUI',
+    'zh-CN': '如何更新 ComfyUI'
+  },
+  'cloudNodesLaunch.hero.title': {
+    en: 'Our GPUs.',
+    'zh-CN': '我们的 GPU。'
+  },
+  'cloudNodesLaunch.hero.titleHighlight': {
+    en: 'Your graph.',
+    'zh-CN': '你的工作流。'
+  },
+  'cloudNodesLaunch.hero.subtitle': {
+    en: 'Comfy Cloud nodes run the newest open models on our GPUs from inside your own ComfyUI. Drop one into the graph you already have and wire it like any other node.',
+    'zh-CN':
+      'Comfy Cloud 节点让你在自己的 ComfyUI 中，用我们的 GPU 运行最新的开源模型。把它放进你已有的工作流，像其他节点一样连线即可。'
+  },
+  'cloudNodesLaunch.hero.feature1': {
+    en: 'No subscription',
+    'zh-CN': '无需订阅'
+  },
+  'cloudNodesLaunch.hero.feature2': {
+    en: 'Nothing to download, no VRAM floor',
+    'zh-CN': '无需下载，没有显存门槛'
+  },
+  'cloudNodesLaunch.hero.feature3': {
+    en: 'Billed per GPU-second in credits',
+    'zh-CN': '按 GPU 秒数以积分计费'
+  },
+  'cloudNodesLaunch.hero.videoAlt': {
+    en: 'A Comfy Cloud Flux 2 Text to Image node on the ComfyUI canvas, wired to a Save Image node',
+    'zh-CN':
+      'ComfyUI 画布上的 Comfy Cloud Flux 2 文生图节点，连接到 Save Image 节点'
+  },
+  'cloudNodesLaunch.setup.heading': {
+    en: 'Four steps to your first run',
+    'zh-CN': '四步完成首次运行'
+  },
+  'cloudNodesLaunch.setup.step1.label': {
+    en: 'Update ComfyUI',
+    'zh-CN': '更新 ComfyUI'
+  },
+  'cloudNodesLaunch.setup.step1.description': {
+    en: 'Update to v0.34.5 or later. The nodes are part of ComfyUI core, so there is nothing to install separately.',
+    'zh-CN':
+      '更新到 v0.34.5 或更高版本。这些节点属于 ComfyUI 核心，无需单独安装。'
+  },
+  'cloudNodesLaunch.setup.step2.label': {
+    en: 'Restart ComfyUI',
+    'zh-CN': '重启 ComfyUI'
+  },
+  'cloudNodesLaunch.setup.step2.description': {
+    en: 'The nodes only register at startup, so they will not appear until you restart.',
+    'zh-CN': '节点只在启动时注册，重启后才会出现。'
+  },
+  'cloudNodesLaunch.setup.step3.label': {
+    en: 'Find a node',
+    'zh-CN': '找到节点'
+  },
+  'cloudNodesLaunch.setup.step3.description': {
+    en: 'Search the node library for “Comfy Cloud”.',
+    'zh-CN': '在节点库中搜索“Comfy Cloud”。'
+  },
+  'cloudNodesLaunch.setup.step4.label': {
+    en: 'Wire it in and run',
+    'zh-CN': '连线并运行'
+  },
+  'cloudNodesLaunch.setup.step4.description': {
+    en: 'Wire it like any other node. The model runs on our GPUs and the result comes back into the same canvas.',
+    'zh-CN':
+      '像其他节点一样连线。模型在我们的 GPU 上运行，结果会回到同一张画布。'
+  },
+  'cloudNodesLaunch.models.heading': {
+    en: 'Eight nodes, six models',
+    'zh-CN': '八个节点，六个模型'
+  },
+  'cloudNodesLaunch.models.subtitle': {
+    en: 'Image, video and audio at launch. Every image and clip below is a real output from the model on the card, generated on Comfy Cloud.',
+    'zh-CN':
+      '首发覆盖图像、视频与音频。下方的图片与视频，均为对应模型在 Comfy Cloud 上的真实输出。'
+  },
+  'cloudNodesLaunch.models.footnote': {
+    en: 'The full node list and their inputs live in the docs.',
+    'zh-CN': '完整的节点列表及其输入参数见文档。'
+  },
+  'cloudNodesLaunch.models.footnoteLink': {
+    en: 'See the node reference',
+    'zh-CN': '查看节点参考'
+  },
+  'cloudNodesLaunch.models.nodeCount': {
+    en: '{count} node | {count} nodes',
+    'zh-CN': '{count} 个节点'
+  },
+  'cloudNodesLaunch.models.flux2': {
+    en: 'Flux 2',
+    'zh-CN': 'Flux 2'
+  },
+  'cloudNodesLaunch.models.minimaxH3': {
+    en: 'MiniMax H3',
+    'zh-CN': 'MiniMax H3'
+  },
+  'cloudNodesLaunch.models.zImageTurbo': {
+    en: 'Z-Image Turbo',
+    'zh-CN': 'Z-Image Turbo'
+  },
+  'cloudNodesLaunch.models.mageFlow': {
+    en: 'Mage Flow',
+    'zh-CN': 'Mage Flow'
+  },
+  'cloudNodesLaunch.models.mageFlowTurbo': {
+    en: 'Mage Flow Turbo',
+    'zh-CN': 'Mage Flow Turbo'
+  },
+  'cloudNodesLaunch.models.minimaxMusic3': {
+    en: 'MiniMax Music 3',
+    'zh-CN': 'MiniMax Music 3'
+  },
+  'cloudNodesLaunch.howItWorks.heading': {
+    en: 'What actually runs on our side',
+    'zh-CN': '我们这边究竟运行什么'
+  },
+  'cloudNodesLaunch.howItWorks.subheading': {
+    en: 'One curated workflow per node, pinned to a fixed model version.',
+    'zh-CN': '每个节点对应一套精选工作流，并锁定具体模型版本。'
+  },
+  'cloudNodesLaunch.howItWorks.1.label': {
+    en: 'Pinned versions, so a saved graph keeps its result.',
+    'zh-CN': '版本锁定，保存的工作流结果不变。'
+  },
+  'cloudNodesLaunch.howItWorks.2.label': {
+    en: 'Only the node’s inputs leave your machine.',
+    'zh-CN': '只有该节点的输入会离开你的机器。'
+  },
+  'cloudNodesLaunch.howItWorks.3.label': {
+    en: 'Results return as a normal IMAGE, VIDEO or AUDIO output.',
+    'zh-CN': '结果以普通的 IMAGE、VIDEO 或 AUDIO 输出返回。'
+  },
+  'cloudNodesLaunch.howItWorks.4.label': {
+    en: 'Charged by execution time, not per generation.',
+    'zh-CN': '按执行时间计费，而不是按次计费。'
+  },
+  'cloudNodesLaunch.why.heading': {
+    en: 'Maximum control.\n',
+    'zh-CN': '完全掌控。\n'
+  },
+  'cloudNodesLaunch.why.headingHighlight': {
+    en: 'Offload only the compute.',
+    'zh-CN': '只把算力交给我们。'
+  },
+  'cloudNodesLaunch.why.subtitle': {
+    en: 'Your graph, your nodes, your outputs. A Comfy Cloud node hands off a single model run and hands the result straight back.',
+    'zh-CN':
+      '你的工作流、你的节点、你的输出，始终属于你。Comfy Cloud 节点只把一次模型运行交出去，并把结果直接送回。'
+  },
+  'cloudNodesLaunch.why.1.title': {
+    en: 'Your workflow stays yours',
+    'zh-CN': '工作流始终是你的'
+  },
+  'cloudNodesLaunch.why.1.description': {
+    en: 'The graph you built, the nodes around it and the outputs you route onward all stay on your machine, exactly as they are.',
+    'zh-CN':
+      '你搭建的工作流、周围的节点，以及往下游输送的输出，都原封不动地留在你的机器上。'
+  },
+  'cloudNodesLaunch.why.2.title': {
+    en: 'Only the compute moves',
+    'zh-CN': '移动的只有算力'
+  },
+  'cloudNodesLaunch.why.2.description': {
+    en: 'A Cloud node sends the inputs for one model and returns the result. Everything else in the workflow keeps running locally.',
+    'zh-CN':
+      '云端节点只发送某一个模型所需的输入，并返回结果。工作流中的其他部分仍在本地运行。'
+  },
+  'cloudNodesLaunch.why.3.title': {
+    en: 'Reach for any model',
+    'zh-CN': '任何模型都能用上'
+  },
+  'cloudNodesLaunch.why.3.description': {
+    en: 'The newest open models run on our GPUs at full size, so what your hardware can do stops deciding what you can make.',
+    'zh-CN':
+      '最新的开源模型以完整规模在我们的 GPU 上运行，你能做什么不再取决于手上的硬件。'
+  },
+  'cloudNodesLaunch.why.4.title': {
+    en: 'One node, not a migration',
+    'zh-CN': '只是一个节点，而不是迁移'
+  },
+  'cloudNodesLaunch.why.4.description': {
+    en: 'You add a node to the graph you already have. Nothing else about your setup changes.',
+    'zh-CN': '你只是在已有的工作流里加一个节点，其他一切都不用改。'
+  },
+  'cloudNodesLaunch.faq.heading': {
+    en: 'Frequently asked questions',
+    'zh-CN': '常见问题'
+  },
+  'cloudNodesLaunch.faq.1.q': {
+    en: 'Why are these marked beta?',
+    'zh-CN': '为什么这些节点标记为测试版？'
+  },
+  'cloudNodesLaunch.faq.1.a': {
+    en: 'Because the curated set is still changing: nodes may gain or lose options, and a workflow may be retired. It is not a statement about reliability, runs are real and are billed the same as any other partner node.',
+    'zh-CN':
+      '因为精选节点集仍在调整：节点的选项可能增减，某个工作流也可能被下线。这与稳定性无关，运行是真实的，计费方式与其他合作伙伴节点一致。'
+  },
+  'cloudNodesLaunch.faq.2.q': {
+    en: 'Do I need a Comfy Cloud subscription?',
+    'zh-CN': '我需要订阅 Comfy Cloud 吗？'
+  },
+  'cloudNodesLaunch.faq.2.a': {
+    en: 'No. These behave like every other partner node: an account and credits are enough. There is no plan floor.',
+    'zh-CN':
+      '不需要。它们与其他合作伙伴节点一样，只需账号和积分即可使用，没有套餐门槛。'
+  },
+  'cloudNodesLaunch.faq.3.q': {
+    en: 'Which models can I run?',
+    'zh-CN': '可以运行哪些模型？'
+  },
+  'cloudNodesLaunch.faq.3.a': {
+    en: 'Eight nodes at launch. Four text-to-image (Flux 2, Mage Flow, Mage Flow Turbo, Z-Image Turbo), three MiniMax H3 video nodes (text, image, and first-last frame to video), and MiniMax Music 3 for audio.',
+    'zh-CN':
+      '首发八个节点：四个文生图（Flux 2、Mage Flow、Mage Flow Turbo、Z-Image Turbo），三个 MiniMax H3 视频节点（文生视频、图生视频、首尾帧生视频），以及用于音频的 MiniMax Music 3。'
+  },
+  'cloudNodesLaunch.faq.4.q': {
+    en: 'What actually runs on your side?',
+    'zh-CN': '究竟有哪些内容在你们那边运行？'
+  },
+  'cloudNodesLaunch.faq.4.a': {
+    en: 'A curated workflow per node, pinned to an exact model version so a saved graph keeps producing the same thing. Your graph, prompts and inputs stay on your machine apart from what the node sends.',
+    'zh-CN':
+      '每个节点对应一套精选工作流，并锁定具体模型版本，因此保存的工作流会持续产出一致的结果。除节点发送的内容外，你的工作流、提示词与输入都保留在本机。'
+  },
+  'cloudNodesLaunch.faq.5.q': {
+    en: 'How is it billed?',
+    'zh-CN': '如何计费？'
+  },
+  'cloudNodesLaunch.faq.5.a': {
+    en: 'Per GPU-second in credits, shown on the node before you run. A short image generation is a few seconds; video is longer.',
+    'zh-CN':
+      '按 GPU 秒数以积分计费，运行前会在节点上显示。生成一张图通常只需几秒，视频则更久。'
+  },
+  'cloudNodesLaunch.faq.6.q': {
+    en: 'Can I use my own LoRAs or checkpoints?',
+    'zh-CN': '可以使用我自己的 LoRA 或模型吗？'
+  },
+  'cloudNodesLaunch.faq.6.a': {
+    en: 'Not yet. Each node exposes a fixed set of weights we host. Bringing your own is the obvious next step and is not in this first release.',
+    'zh-CN':
+      '暂时还不行。每个节点仅提供我们托管的固定权重集合。自带模型是后续的明确方向，但不在首个版本中。'
+  },
+  'cloudNodesLaunch.faq.7.q': {
+    en: 'Does this replace running locally?',
+    'zh-CN': '这会取代本地运行吗？'
+  },
+  'cloudNodesLaunch.faq.7.a': {
+    en: 'No, and it should not. Keep running what your machine handles well. These nodes exist for the models it cannot, without asking you to leave your workflow.',
+    'zh-CN':
+      '不会，也不应该。本机跑得动的继续在本机跑。这些节点是为跑不动的模型准备的，同时让你无需离开自己的工作流。'
+  },
+  'cloudNodesLaunch.closing.heading': {
+    en: 'Run the model, not the hardware',
+    'zh-CN': '专注模型，而不是硬件'
+  },
+  'cloudNodesLaunch.closing.subtitle': {
+    en: 'Update to v0.34.5 or later, search the node library for Comfy Cloud, and wire one in.',
+    'zh-CN':
+      '更新到 v0.34.5 或更高版本，在节点库中搜索 Comfy Cloud，然后连线使用。'
+  },
+  'footer.cloudNodes': {
+    en: 'Comfy Cloud Nodes',
+    'zh-CN': 'Comfy Cloud 节点'
   }
 } as const satisfies Record<
   string,
@@ -8359,14 +9366,35 @@ export type LocalizedText = { en: string; 'zh-CN': string } & Partial<
   Record<Locale, string>
 >
 
-export function t(key: TranslationKey, locale: Locale = 'en'): string {
+// Returns the message plus the locale it actually came from, which is 'en'
+// whenever the requested locale has no translation for the key.
+function resolve(key: TranslationKey, locale: Locale): [string, Locale] {
   const entry = translations[key] as LocalizedText
-  return entry[locale] ?? entry.en
+  const message = entry[locale]
+  return message === undefined ? [entry.en, 'en'] : [message, locale]
+}
+
+export function t(key: TranslationKey, locale: Locale = 'en'): string {
+  return resolve(key, locale)[0]
+}
+
+export function tPlural(
+  key: TranslationKey,
+  count: number,
+  locale: Locale = 'en'
+): string {
+  const [message, messageLocale] = resolve(key, locale)
+  const forms = message.split('|')
+  const form =
+    new Intl.PluralRules(messageLocale).select(count) === 'one'
+      ? forms[0]
+      : forms[forms.length - 1]
+  return form.trim().replace('{count}', String(count))
 }
 
 export const translationKeys = Object.keys(translations) as TranslationKey[]
 
-export function hasKey(key: string): boolean {
+export function hasKey(key: string): key is TranslationKey {
   return key in translations
 }
 

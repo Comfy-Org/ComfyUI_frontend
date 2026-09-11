@@ -18,16 +18,40 @@ test.describe('Group node migration', { tag: '@node' }, () => {
       const graph = window.app!.graph
       return {
         groupNodeInstances: graph.nodes.filter((n) =>
-          String(n.type).startsWith('workflow>')
+          n.type.startsWith('workflow>')
         ).length,
         subgraphCount: graph.subgraphs.size,
-        hasGroupNodesExtra: !!graph.extra?.groupNodes
+        hasGroupNodesExtra: !!graph.extra.groupNodes
       }
     })
 
     expect(state.groupNodeInstances).toBe(0)
     expect(state.subgraphCount).toBe(1)
     expect(state.hasGroupNodesExtra).toBe(false)
+  })
+
+  test('Preserves group node widget values through subgraph conversion', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow('groupnodes/group_node_v1.3.3')
+
+    const interiorValues = await comfyPage.page.evaluate(() =>
+      [...window.app!.graph.subgraphs.values()].flatMap((subgraph) =>
+        subgraph.nodes.flatMap(
+          (node) => node.widgets?.map((widget) => widget.value) ?? []
+        )
+      )
+    )
+
+    expect(interiorValues).toHaveLength(14)
+    expect(interiorValues).toEqual(
+      expect.arrayContaining([
+        156680208700286,
+        'euler',
+        'v1-5-pruned-emaonly.ckpt',
+        expect.stringContaining('purple galaxy bottle')
+      ])
+    )
   })
 
   test(

@@ -32,25 +32,25 @@ const difficultyKey = `demos.difficulty.${difficulty}` as TranslationKey
       </span>
 
       <h1
-        class="text-primary-comfy-canvas mt-4 text-3xl/tight font-light lg:text-5xl/tight"
+        class="mt-4 text-3xl/tight font-light text-primary-comfy-canvas lg:text-5xl/tight"
       >
         {{ title }}
       </h1>
 
       <p
-        class="text-primary-warm-gray mt-6 max-w-xl text-sm/relaxed lg:text-base/relaxed"
+        class="mt-6 max-w-xl text-sm/relaxed text-primary-warm-gray lg:text-base/relaxed"
       >
         {{ description }}
       </p>
 
       <div class="mt-6 flex flex-wrap justify-center gap-3">
         <span
-          class="bg-transparency-white-t4 text-primary-comfy-canvas rounded-full px-3 py-1 text-xs font-semibold tracking-wide uppercase"
+          class="bg-transparency-white-t4 rounded-full px-3 py-1 text-xs font-semibold tracking-wide text-primary-comfy-canvas uppercase"
         >
           {{ t(difficultyKey, locale) }}
         </span>
         <span
-          class="bg-transparency-white-t4 text-primary-comfy-canvas rounded-full px-3 py-1 text-xs font-semibold"
+          class="bg-transparency-white-t4 rounded-full px-3 py-1 text-xs font-semibold text-primary-comfy-canvas"
         >
           {{ t(estimatedTime as TranslationKey, locale) }}
         </span>
