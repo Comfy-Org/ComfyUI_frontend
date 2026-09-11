@@ -43,10 +43,20 @@ const topUp = useTopUpWatch()
 const lastCheckout = ref<TopUpCheckoutSession | undefined>(undefined)
 
 // The hand-off owns the step from the moment it happens: waiting is 4a,
-// landed 4b, unresolved 4c. Before that, the amount card and its errors.
-const step = computed(() =>
-  topUp.value.status === 'idle' ? state.value : topUp.value.status
+// landed 4b, unresolved 4c; before that, the amount card and its errors.
+// The step latches: once the return flow is showing, a transient idle from
+// the watch must not flash the amount card between two of its states.
+const latchedReturn = ref<'waiting' | 'landed' | 'unresolved' | undefined>(
+  undefined
 )
+watch(
+  topUp,
+  (value) => {
+    if (value.status !== 'idle') latchedReturn.value = value.status
+  },
+  { immediate: true }
+)
+const step = computed(() => latchedReturn.value ?? state.value)
 const landedDelta = computed(() =>
   topUp.value.status === 'landed'
     ? topUp.value.newCredits - topUp.value.previousCredits
@@ -71,12 +81,16 @@ watch(open, (value) => {
     Date.now() - topUp.value.landedAt > STALE_RECEIPT_MS
   ) {
     clearTopUpWatch()
+    latchedReturn.value = undefined
+  } else if (topUp.value.status === 'idle') {
+    latchedReturn.value = undefined
   }
 })
 
 function finish() {
   stopAutoClose()
   clearTopUpWatch()
+  latchedReturn.value = undefined
   lastCheckout.value = undefined
   open.value = false
 }
