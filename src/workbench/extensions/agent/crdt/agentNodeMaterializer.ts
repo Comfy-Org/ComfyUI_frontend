@@ -172,6 +172,65 @@ function definitionHosts(rootGraph: LGraph, definitionId: string) {
   )
 }
 
+const knownPromotionBoundaryNames = new WeakMap<Subgraph, Set<string>>()
+
+function stalePromotionBoundaryNames(
+  subgraph: Subgraph,
+  definition: ExportedSubgraph
+): Set<string> {
+  const stale = new Set<string>()
+  const known = knownPromotionBoundaryNames.get(subgraph) ?? new Set()
+  const definitionNodeIds = new Set(
+    (definition.nodes ?? []).map(({ id }) => String(id))
+  )
+  const links = promotionLinks(definition)
+  if (links instanceof Error) return stale
+
+  for (const input of definition.inputs ?? []) {
+    if (!known.has(input.name)) continue
+    for (const linkId of input.linkIds ?? []) {
+      const link = links.get(linkId)
+      if (!link || String(link.originId) !== SUBGRAPH_INPUT_ID) continue
+      const node = subgraph.getNodeById(toNodeId(String(link.targetId)))
+      const slot = node?.inputs[link.targetSlot]
+      if (
+        !definitionNodeIds.has(String(link.targetId)) ||
+        !node ||
+        !slot ||
+        !node.getWidgetFromSlot(slot)
+      ) {
+        stale.add(input.name)
+      }
+    }
+  }
+  return stale
+}
+
+function removeStalePromotedInputs(
+  subgraph: Subgraph,
+  hosts: SubgraphNode[],
+  staleBoundaryNames: ReadonlySet<string>
+): void {
+  for (const subgraphInput of [...subgraph.inputs]) {
+    if (!staleBoundaryNames.has(subgraphInput.name)) continue
+    const hostInputs = hosts.flatMap((host) => {
+      const input = host.inputs.find(
+        (candidate) => candidate._subgraphSlot === subgraphInput
+      )
+      return input ? [{ host, input }] : []
+    })
+
+    for (const { host, input } of hostInputs) {
+      const inputIndex = host.inputs.indexOf(input)
+      if (host.isInputConnected(inputIndex)) host.disconnectInput(inputIndex)
+    }
+    subgraph.removeInput(subgraphInput)
+    for (const { input } of hostInputs) {
+      if (input.widgetId) useWidgetValueStore().deleteWidget(input.widgetId)
+    }
+  }
+}
+
 const reportedPromotionFailures = new WeakMap<LGraph, Map<string, string>>()
 
 function reconcileSubgraphPromotions(
@@ -185,6 +244,23 @@ function reconcileSubgraphPromotions(
   for (const definition of topologicalSortSubgraphs(flattened)) {
     const live = rootGraph.subgraphs.get(definition.id)
     if (!live) continue
+    const hosts = definitionHosts(rootGraph, definition.id)
+    const declaredBoundaryNames = new Set(
+      (definition.inputs ?? []).map(({ name }) => name)
+    )
+    const staleBoundaryNames = stalePromotionBoundaryNames(live, definition)
+    for (const input of live.inputs) {
+      if (
+        knownPromotionBoundaryNames.get(live)?.has(input.name) &&
+        !declaredBoundaryNames.has(input.name)
+      ) {
+        staleBoundaryNames.add(input.name)
+      }
+    }
+    removeStalePromotedInputs(live, hosts, staleBoundaryNames)
+    const known = knownPromotionBoundaryNames.get(live)
+    for (const name of staleBoundaryNames) known?.delete(name)
+
     const desired = resolvePromotionSources(live, definition)
     if (desired instanceof Error) {
       if (reported.get(definition.id) !== desired.message) {
@@ -198,8 +274,11 @@ function reconcileSubgraphPromotions(
     }
 
     reported.delete(definition.id)
+    knownPromotionBoundaryNames.set(
+      live,
+      new Set(desired.map(({ boundaryName }) => boundaryName))
+    )
 
-    const hosts = definitionHosts(rootGraph, definition.id)
     if (hosts.length === 0) continue
     const desiredKeys = new Set(
       desired.map(({ node, widget, boundaryName }) =>

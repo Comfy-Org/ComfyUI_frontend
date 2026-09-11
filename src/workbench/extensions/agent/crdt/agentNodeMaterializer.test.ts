@@ -1280,6 +1280,93 @@ describe('reconcileAgentAdapters', () => {
       expect(unconnectedHost.widgets).toHaveLength(0)
     })
 
+    it('S3 removes a promotion whose interior source node was removed', () => {
+      const definition = promotedDefinition(
+        createTestSubgraphData({
+          nodes: [nodePayload(7, 'widget-node')] as never
+        })
+      )
+      const { follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, definition.id)],
+        links: [],
+        definitions: { subgraphs: [definition] }
+      })
+      reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+      const host = graph.getNodeById(toNodeId(1)) as SubgraphNode
+      const source = new DummyNode()
+      source.addOutput('value', 'NUMBER')
+      graph.add(source)
+      source.connect(0, host, 0)
+
+      const subgraph = graph.subgraphs.get(definition.id)!
+      subgraph.remove(subgraph.getNodeById(toNodeId(7))!)
+      reconcileAgentAdapters(graph, [{ ...definition, nodes: [] }])
+
+      expect(host.widgets).toHaveLength(0)
+      expect(host.inputs).toHaveLength(0)
+      expect(graph.links.size).toBe(0)
+    })
+
+    it('S3 removes a promotion whose source widget was removed', () => {
+      const definition = promotedDefinition(
+        createTestSubgraphData({
+          nodes: [nodePayload(7, 'widget-node')] as never
+        })
+      )
+      const { follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, definition.id)],
+        links: [],
+        definitions: { subgraphs: [definition] }
+      })
+      reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+      const host = graph.getNodeById(toNodeId(1)) as SubgraphNode
+      const source = new DummyNode()
+      source.addOutput('value', 'NUMBER')
+      graph.add(source)
+      source.connect(0, host, 0)
+
+      const interior = graph.subgraphs
+        .get(definition.id)!
+        .getNodeById(toNodeId(7))!
+      interior.widgets = []
+      interior.inputs[0].widget = undefined
+      reconcileAgentAdapters(graph, [definition])
+
+      expect(host.widgets).toHaveLength(0)
+      expect(host.inputs).toHaveLength(0)
+      expect(graph.links.size).toBe(0)
+    })
+
+    it('S3 keeps a promotion after an unrelated interior node is removed', () => {
+      const definition = promotedDefinition(
+        createTestSubgraphData({
+          nodes: [
+            nodePayload(7, 'widget-node'),
+            nodePayload(8, 'dummy')
+          ] as never
+        })
+      )
+      const { follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, definition.id)],
+        links: [],
+        definitions: { subgraphs: [definition] }
+      })
+      reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+      const host = graph.getNodeById(toNodeId(1)) as SubgraphNode
+
+      const subgraph = graph.subgraphs.get(definition.id)!
+      subgraph.remove(subgraph.getNodeById(toNodeId(8))!)
+      reconcileAgentAdapters(graph, [
+        {
+          ...definition,
+          nodes: definition.nodes?.filter((node) => node.id !== 8)
+        }
+      ])
+
+      expect(host.widgets.map(({ name }) => name)).toEqual(['value'])
+      expect(host.inputs.map(({ name }) => name)).toEqual(['value'])
+    })
+
     it('S3 reports a host promotion failure without throwing', () => {
       const definition = createTestSubgraphData({
         nodes: [nodePayload(7, 'widget-node')] as never
