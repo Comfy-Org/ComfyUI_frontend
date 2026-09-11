@@ -75,7 +75,7 @@ export const inlinePromptSchema = new Schema({
   }
 })
 
-export function promptReferenceNode(reference: ComposerReference): Node {
+function promptReferenceNode(reference: ComposerReference): Node {
   switch (reference.kind) {
     case 'workflow':
       return inlinePromptSchema.nodes.workflow.create({
