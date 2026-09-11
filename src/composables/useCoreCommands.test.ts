@@ -257,6 +257,12 @@ describe('useCoreCommands', () => {
 
   const mockSubgraph = createMockSubgraph()!
 
+  function findCommand(id: string) {
+    const command = useCoreCommands().find((cmd) => cmd.id === id)
+    if (!command) expect.fail(`Command '${id}' not found`)
+    return command
+  }
+
   beforeEach(() => {
     mockWorkflowStore = useWorkflowStore()
     mockWorkflowStore.activeWorkflow = fromPartial<
@@ -283,12 +289,7 @@ describe('useCoreCommands', () => {
 
   describe('ClearWorkflow command', () => {
     it('should clear main graph when not in subgraph', async () => {
-      const commands = useCoreCommands()
-      const clearCommand = commands.find(
-        (cmd) => cmd.id === 'Comfy.ClearWorkflow'
-      )!
-
-      await clearCommand.function()
+      await findCommand('Comfy.ClearWorkflow').function()
 
       expect(app.clean).toHaveBeenCalled()
       expect(app.rootGraph.clear).toHaveBeenCalled()
@@ -299,12 +300,7 @@ describe('useCoreCommands', () => {
     it('should preserve input/output nodes when clearing subgraph', async () => {
       app.canvas.subgraph = mockSubgraph
 
-      const commands = useCoreCommands()
-      const clearCommand = commands.find(
-        (cmd) => cmd.id === 'Comfy.ClearWorkflow'
-      )!
-
-      await clearCommand.function()
+      await findCommand('Comfy.ClearWorkflow').function()
 
       expect(app.clean).not.toHaveBeenCalled()
       expect(app.rootGraph.clear).not.toHaveBeenCalled()
@@ -325,12 +321,7 @@ describe('useCoreCommands', () => {
 
       global.confirm = vi.fn().mockReturnValue(false)
 
-      const commands = useCoreCommands()
-      const clearCommand = commands.find(
-        (cmd) => cmd.id === 'Comfy.ClearWorkflow'
-      )!
-
-      await clearCommand.function()
+      await findCommand('Comfy.ClearWorkflow').function()
 
       expect(app.clean).not.toHaveBeenCalled()
       expect(app.rootGraph.clear).not.toHaveBeenCalled()
@@ -339,10 +330,6 @@ describe('useCoreCommands', () => {
   })
 
   describe('Canvas clipboard commands', () => {
-    function findCommand(id: string) {
-      return useCoreCommands().find((cmd) => cmd.id === id)!
-    }
-
     beforeEach(() => {
       app.canvas.selectedItems = new Set()
       app.canvas.selectOnly = false
@@ -411,12 +398,7 @@ describe('useCoreCommands', () => {
       it('should do nothing when not in subgraph', async () => {
         app.canvas.subgraph = undefined
 
-        const commands = useCoreCommands()
-        const setDescCommand = commands.find(
-          (cmd) => cmd.id === 'Comfy.Subgraph.SetDescription'
-        )!
-
-        await setDescCommand.function()
+        await findCommand('Comfy.Subgraph.SetDescription').function()
 
         expect(mockDialogService.prompt).not.toHaveBeenCalled()
       })
@@ -425,12 +407,7 @@ describe('useCoreCommands', () => {
         app.canvas.subgraph = mockSubgraph
         mockDialogService.prompt.mockResolvedValue('Test description')
 
-        const commands = useCoreCommands()
-        const setDescCommand = commands.find(
-          (cmd) => cmd.id === 'Comfy.Subgraph.SetDescription'
-        )!
-
-        await setDescCommand.function()
+        await findCommand('Comfy.Subgraph.SetDescription').function()
 
         expect(mockDialogService.prompt).toHaveBeenCalled()
         expect(mockSubgraph.extra.BlueprintDescription).toBe('Test description')
@@ -441,12 +418,7 @@ describe('useCoreCommands', () => {
         app.canvas.subgraph = mockSubgraph
         mockDialogService.prompt.mockResolvedValue(null)
 
-        const commands = useCoreCommands()
-        const setDescCommand = commands.find(
-          (cmd) => cmd.id === 'Comfy.Subgraph.SetDescription'
-        )!
-
-        await setDescCommand.function()
+        await findCommand('Comfy.Subgraph.SetDescription').function()
 
         expect(mockSubgraph.extra.BlueprintDescription).toBeUndefined()
         expect(mockChangeTracker.captureCanvasState).not.toHaveBeenCalled()
@@ -457,12 +429,7 @@ describe('useCoreCommands', () => {
       it('should do nothing when not in subgraph', async () => {
         app.canvas.subgraph = undefined
 
-        const commands = useCoreCommands()
-        const setAliasesCommand = commands.find(
-          (cmd) => cmd.id === 'Comfy.Subgraph.SetSearchAliases'
-        )!
-
-        await setAliasesCommand.function()
+        await findCommand('Comfy.Subgraph.SetSearchAliases').function()
 
         expect(mockDialogService.prompt).not.toHaveBeenCalled()
       })
@@ -471,12 +438,7 @@ describe('useCoreCommands', () => {
         app.canvas.subgraph = mockSubgraph
         mockDialogService.prompt.mockResolvedValue('alias1, alias2, alias3')
 
-        const commands = useCoreCommands()
-        const setAliasesCommand = commands.find(
-          (cmd) => cmd.id === 'Comfy.Subgraph.SetSearchAliases'
-        )!
-
-        await setAliasesCommand.function()
+        await findCommand('Comfy.Subgraph.SetSearchAliases').function()
 
         expect(mockDialogService.prompt).toHaveBeenCalled()
         expect(mockSubgraph.extra.BlueprintSearchAliases).toEqual([
@@ -491,12 +453,7 @@ describe('useCoreCommands', () => {
         app.canvas.subgraph = mockSubgraph
         mockDialogService.prompt.mockResolvedValue('  alias1  ,  , alias2 ,  ')
 
-        const commands = useCoreCommands()
-        const setAliasesCommand = commands.find(
-          (cmd) => cmd.id === 'Comfy.Subgraph.SetSearchAliases'
-        )!
-
-        await setAliasesCommand.function()
+        await findCommand('Comfy.Subgraph.SetSearchAliases').function()
 
         expect(mockSubgraph.extra.BlueprintSearchAliases).toEqual([
           'alias1',
@@ -508,12 +465,7 @@ describe('useCoreCommands', () => {
         app.canvas.subgraph = mockSubgraph
         mockDialogService.prompt.mockResolvedValue('')
 
-        const commands = useCoreCommands()
-        const setAliasesCommand = commands.find(
-          (cmd) => cmd.id === 'Comfy.Subgraph.SetSearchAliases'
-        )!
-
-        await setAliasesCommand.function()
+        await findCommand('Comfy.Subgraph.SetSearchAliases').function()
 
         expect(mockSubgraph.extra.BlueprintSearchAliases).toBeUndefined()
       })
@@ -522,12 +474,7 @@ describe('useCoreCommands', () => {
         app.canvas.subgraph = mockSubgraph
         mockDialogService.prompt.mockResolvedValue(null)
 
-        const commands = useCoreCommands()
-        const setAliasesCommand = commands.find(
-          (cmd) => cmd.id === 'Comfy.Subgraph.SetSearchAliases'
-        )!
-
-        await setAliasesCommand.function()
+        await findCommand('Comfy.Subgraph.SetSearchAliases').function()
 
         expect(mockSubgraph.extra.BlueprintSearchAliases).toBeUndefined()
         expect(mockChangeTracker.captureCanvasState).not.toHaveBeenCalled()
@@ -536,18 +483,15 @@ describe('useCoreCommands', () => {
   })
 
   describe('Canvas view commands', () => {
-    const findCmd = (id: string) =>
-      useCoreCommands().find((cmd) => cmd.id === id)!
-
     it('Comfy.Canvas.ResetView delegates to litegraphService.resetView', async () => {
-      await findCmd('Comfy.Canvas.ResetView').function()
+      await findCommand('Comfy.Canvas.ResetView').function()
 
       expect(mockResetView).toHaveBeenCalled()
     })
 
     it('Comfy.Canvas.ZoomIn scales the canvas up by 1.1× and marks it dirty', async () => {
       app.canvas.ds.scale = 1
-      await findCmd('Comfy.Canvas.ZoomIn').function()
+      await findCommand('Comfy.Canvas.ZoomIn').function()
 
       expect(app.canvas.ds.changeScale).toHaveBeenCalledWith(
         1.1,
@@ -558,7 +502,7 @@ describe('useCoreCommands', () => {
 
     it('Comfy.Canvas.ZoomOut scales the canvas down by 1/1.1× and marks it dirty', async () => {
       app.canvas.ds.scale = 1
-      await findCmd('Comfy.Canvas.ZoomOut').function()
+      await findCommand('Comfy.Canvas.ZoomOut').function()
 
       expect(app.canvas.ds.changeScale).toHaveBeenCalledWith(
         1 / 1.1,
@@ -577,7 +521,7 @@ describe('useCoreCommands', () => {
       async ({ id, from, to }) => {
         app.canvas.read_only = from
 
-        await findCmd(id).function()
+        await findCommand(id).function()
 
         expect(app.canvas.read_only).toBe(to)
       }
@@ -585,11 +529,8 @@ describe('useCoreCommands', () => {
   })
 
   describe('Workflow lifecycle commands', () => {
-    const findCmd = (id: string) =>
-      useCoreCommands().find((cmd) => cmd.id === id)!
-
     it('Comfy.OpenClipspace delegates to app.openClipspace', async () => {
-      await findCmd('Comfy.OpenClipspace').function()
+      await findCommand('Comfy.OpenClipspace').function()
 
       expect(app.openClipspace).toHaveBeenCalled()
     })
@@ -614,7 +555,9 @@ describe('useCoreCommands', () => {
         }
       )
 
-      const commandPromise = findCmd('Comfy.RefreshNodeDefinitions').function()
+      const commandPromise = findCommand(
+        'Comfy.RefreshNodeDefinitions'
+      ).function()
 
       expect(
         vi.mocked(useMissingModelStore().refreshMissingModels)
@@ -638,7 +581,7 @@ describe('useCoreCommands', () => {
       vi.mocked(app.refreshComboInNodes).mockRejectedValue(new Error('boom'))
 
       await expect(
-        findCmd('Comfy.RefreshNodeDefinitions').function()
+        findCommand('Comfy.RefreshNodeDefinitions').function()
       ).rejects.toThrow('boom')
       expect(
         vi.mocked(useMissingModelStore().refreshMissingModels)
@@ -648,7 +591,7 @@ describe('useCoreCommands', () => {
     it('Comfy.RefreshNodeDefinitions skips missing model refresh on cloud', async () => {
       mockDistributionState.isCloud = true
 
-      await findCmd('Comfy.RefreshNodeDefinitions').function()
+      await findCommand('Comfy.RefreshNodeDefinitions').function()
 
       expect(app.refreshComboInNodes).toHaveBeenCalled()
       expect(vi.mocked(useModelStore().refresh)).toHaveBeenCalled()
@@ -659,9 +602,6 @@ describe('useCoreCommands', () => {
   })
 
   describe('Queue commands subscription gate', () => {
-    const findCmd = (id: string) =>
-      useCoreCommands().find((cmd) => cmd.id === id)!
-
     it.for([
       ['Comfy.QueuePrompt', 0],
       ['Comfy.QueuePromptFront', -1]
@@ -670,7 +610,7 @@ describe('useCoreCommands', () => {
       async ([id, num]) => {
         mockBillingState.canAccessSubscriptionFeatures = false
 
-        await findCmd(id).function()
+        await findCommand(id).function()
 
         expect(app.queuePrompt).toHaveBeenCalledWith(num, 1, expect.anything())
         expect(mockBillingState.showSubscriptionDialog).not.toHaveBeenCalled()
@@ -680,7 +620,7 @@ describe('useCoreCommands', () => {
     it('Comfy.QueueSelectedOutputNodes passes the gate on Local without subscription features', async () => {
       mockBillingState.canAccessSubscriptionFeatures = false
 
-      await findCmd('Comfy.QueueSelectedOutputNodes').function()
+      await findCommand('Comfy.QueueSelectedOutputNodes').function()
 
       expect(mockBillingState.showSubscriptionDialog).not.toHaveBeenCalled()
       expect(useToastStore().add).toHaveBeenCalledWith(
@@ -698,7 +638,7 @@ describe('useCoreCommands', () => {
         mockDistributionState.isCloud = true
         mockBillingState.canAccessSubscriptionFeatures = false
 
-        await findCmd(id).function()
+        await findCommand(id).function()
 
         expect(app.queuePrompt).not.toHaveBeenCalled()
         expect(mockBillingState.showSubscriptionDialog).toHaveBeenCalledWith({
@@ -714,7 +654,7 @@ describe('useCoreCommands', () => {
         mockBillingState.canAccessSubscriptionFeatures = false
         mockBillingState.subscriptionTier = tier
 
-        await findCmd('Comfy.QueuePrompt').function()
+        await findCommand('Comfy.QueuePrompt').function()
 
         expect(app.queuePrompt).not.toHaveBeenCalled()
         expect(mockBillingState.showSubscriptionDialog).not.toHaveBeenCalled()
@@ -727,15 +667,13 @@ describe('useCoreCommands', () => {
     it('Comfy.QueuePrompt queues on Cloud with an active subscription', async () => {
       mockDistributionState.isCloud = true
 
-      await findCmd('Comfy.QueuePrompt').function()
+      await findCommand('Comfy.QueuePrompt').function()
 
       expect(app.queuePrompt).toHaveBeenCalledWith(0, 1, expect.anything())
     })
   })
 
   describe('Help commands', () => {
-    const findCmd = (id: string) =>
-      useCoreCommands().find((cmd) => cmd.id === id)!
     const { staticUrls } = useExternalLink()
     let openSpy: ReturnType<typeof vi.spyOn>
 
@@ -744,7 +682,7 @@ describe('useCoreCommands', () => {
     })
 
     it('Comfy.Help.OpenComfyUIIssues opens the GitHub issues URL and tracks telemetry', async () => {
-      await findCmd('Comfy.Help.OpenComfyUIIssues').function()
+      await findCommand('Comfy.Help.OpenComfyUIIssues').function()
 
       expect(mockTrackHelpResourceClicked).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -757,7 +695,7 @@ describe('useCoreCommands', () => {
     })
 
     it('Comfy.Help.OpenComfyOrgDiscord opens the Discord URL and tracks telemetry', async () => {
-      await findCmd('Comfy.Help.OpenComfyOrgDiscord').function()
+      await findCommand('Comfy.Help.OpenComfyOrgDiscord').function()
 
       expect(mockTrackHelpResourceClicked).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -768,7 +706,7 @@ describe('useCoreCommands', () => {
     })
 
     it('Comfy.Help.AboutComfyUI opens the About dialog', async () => {
-      await findCmd('Comfy.Help.AboutComfyUI').function()
+      await findCommand('Comfy.Help.AboutComfyUI').function()
 
       expect(mockShowAbout).toHaveBeenCalled()
     })
@@ -777,8 +715,7 @@ describe('useCoreCommands', () => {
   describe('BrowseModelAssets command', () => {
     const asset = fromPartial<AssetItem>({ id: 'asset-1' })
 
-    const browseModelAssets = () =>
-      useCoreCommands().find((cmd) => cmd.id === 'Comfy.BrowseModelAssets')!
+    const browseModelAssets = () => findCommand('Comfy.BrowseModelAssets')
 
     async function selectAssetFromBrowser() {
       mockFeatureFlagState.assetsEnabled = true
