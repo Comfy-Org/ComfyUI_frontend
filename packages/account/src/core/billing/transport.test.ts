@@ -73,6 +73,31 @@ function jsonResponse(
   })
 }
 
+/**
+ * Headers arrive, the body never does. The stream fails on the signal the
+ * transport passed to `fetch`, the way a real response body fails when its
+ * request is aborted, so the body read is only bounded if the transport
+ * still holds the timeout and the caller's cancellation over that phase.
+ */
+function stallingFetch(): MockedFunction<typeof fetch> {
+  return vi.fn<typeof fetch>(
+    async (_input, init) =>
+      new Response(
+        new ReadableStream<Uint8Array>({
+          pull: () =>
+            new Promise<void>((_resolve, reject) => {
+              init?.signal?.addEventListener(
+                'abort',
+                () => reject(new DOMException('Aborted', 'AbortError')),
+                { once: true }
+              )
+            })
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      )
+  )
+}
+
 function makeTransport(
   options: {
     ensureFresh?: SessionResult | undefined
@@ -314,32 +339,37 @@ describe('createSessionBillingTransport', () => {
     expect(result).toEqual({ status: 'error', code: 'REQUEST_FAILED' })
   })
 
-  it('reads the body while the request timeout is still armed', async () => {
-    // A stalled body has to time out like a stalled connect, so the read
-    // cannot happen after the attempt's timer is cleared.
-    const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout')
-    let clearedBeforeBodyRead: boolean | undefined
-    const stalling = new Response(
-      new ReadableStream<Uint8Array>({
-        pull: (controller) => {
-          clearedBeforeBodyRead = clearTimeoutSpy.mock.calls.length > 0
-          controller.enqueue(new TextEncoder().encode('{"ok":true}'))
-          controller.close()
-        }
-      }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    )
-    const { transport } = makeTransport({ responses: [stalling] })
-    // Guards the assertion below against a body that was already drained
-    // when the response was built, which would prove nothing.
-    expect(clearedBeforeBodyRead).toBeUndefined()
+  it('times out a body that never arrives', async () => {
+    const { transport } = makeTransport({ fetchImpl: stallingFetch() })
 
-    const result = await transport({ method: 'GET', route: '/billing/status' })
+    const pending = transport({
+      method: 'GET',
+      route: '/billing/status',
+      timeoutMs: 1_000
+    })
+    await vi.advanceTimersByTimeAsync(1_000)
 
-    expect(clearedBeforeBodyRead).toBe(false)
-    expect(result).toMatchObject({
-      status: 'ok',
-      value: { body: { ok: true } }
+    await expect(pending).resolves.toEqual({
+      status: 'error',
+      code: 'REQUEST_FAILED'
+    })
+  })
+
+  it('cancels a body that never arrives when the caller aborts', async () => {
+    const { transport } = makeTransport({ fetchImpl: stallingFetch() })
+    const caller = new AbortController()
+
+    const pending = transport({
+      method: 'GET',
+      route: '/billing/status',
+      signal: caller.signal
+    })
+    await vi.advanceTimersByTimeAsync(0)
+    caller.abort()
+
+    await expect(pending).resolves.toEqual({
+      status: 'error',
+      code: 'REQUEST_FAILED'
     })
   })
 })
