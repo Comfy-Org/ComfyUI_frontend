@@ -75,7 +75,7 @@ export function useAgentWorkflowSelection({
     tab: ComfyWorkflow,
     isCurrent: () => boolean
   ): Promise<string | undefined> {
-    const fail = (detail?: string): undefined => {
+    function fail(detail?: string): undefined {
       if (isCurrent()) warnWorkflowSelectionFailed(detail)
       return undefined
     }

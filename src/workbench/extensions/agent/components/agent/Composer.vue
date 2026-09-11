@@ -18,6 +18,7 @@ import { buildAgentTooltipConfig } from '@/composables/useTooltipConfig'
 
 import InlinePromptEditor from './composer/InlinePromptEditor.vue'
 import { useAgentMentionPicker } from '../../composables/agent/useAgentMentionPicker'
+import { useWorkflowReferencePicker } from '../../composables/agent/useWorkflowReferencePicker'
 import type { ComposerAttachment } from '../../composables/agent/useComposer'
 import { useComposer } from '../../composables/agent/useComposer'
 import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
@@ -132,8 +133,16 @@ const { workflowReferences } = composer
 const workflowSubmenuOpen = ref(false)
 const addMenuOpen = ref(false)
 
+const { eligibleWorkflows, selectWorkflow } = useWorkflowReferencePicker({
+  editor: () => editorRef.value,
+  references: () => workflowReferences.value,
+  workflows: () => availableWorkflows,
+  editableWorkflowId: () => editableWorkflowId,
+  selecting: () => workflowSelecting,
+  resolve: (workflow) => selectWorkflowReference(workflow)
+})
+
 const {
-  eligibleWorkflows,
   mentionSection,
   mentionActive,
   mentionMatches,
@@ -143,11 +152,8 @@ const {
   tagDupes,
   syncMention,
   pickMention,
-  pickWorkflow: selectWorkflow,
   isNodeReferenceDisabled,
   isMentionDisabled,
-  onSelectNodes,
-  onWorkflowSubmenuOpenChange,
   onComposerKeydown: handleMentionKeydown,
   onComposerKeyup,
   close: closeMention,
@@ -156,17 +162,26 @@ const {
   draft: () => composer.draft.value,
   editor: () => editorRef.value,
   selectionTags: () => selectionTags,
-  references: () => workflowReferences.value,
-  workflows: () => availableWorkflows,
-  editableWorkflowId: () => editableWorkflowId,
+  workflows: () => eligibleWorkflows.value,
   nodeReferenceDisabledReason: () => nodeReferenceDisabledReason,
   workflowSelecting: () => workflowSelecting,
   getMentionNodes: () => getMentionNodes(),
-  selectWorkflowReference: (workflow) => selectWorkflowReference(workflow),
+  selectWorkflow,
   pickNode: (node) => emit('mentionPick', node),
-  selectNodes: () => emit('selectNodes'),
   requestWorkflows: () => emit('requestWorkflowReferences')
 })
+
+function onSelectNodes(event: Event): void {
+  if (nodeReferenceDisabledReason) {
+    event.preventDefault()
+    return
+  }
+  emit('selectNodes')
+}
+
+function onWorkflowSubmenuOpenChange(open: boolean): void {
+  if (open && !workflowSelecting) emit('requestWorkflowReferences')
+}
 
 async function pickWorkflow(workflow: WorkflowReferenceOption): Promise<void> {
   if (await selectWorkflow(workflow)) addMenuOpen.value = false

@@ -2,11 +2,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { PromptEditor } from '../../types/promptEditor'
-import type {
-  WorkflowReference,
-  WorkflowReferenceMetadata,
-  WorkflowReferenceOption
-} from '../../types/workflowReference'
+import type { WorkflowReferenceOption } from '../../types/workflowReference'
 import type {
   MentionPickerEvent,
   MentionPickerState,
@@ -20,33 +16,22 @@ interface MentionPickerOptions {
   draft: () => string
   editor: () => PromptEditor | null
   selectionTags: () => SelectedNode[]
-  references: () => WorkflowReference[]
   workflows: () => WorkflowReferenceOption[]
-  editableWorkflowId: () => string | undefined
   nodeReferenceDisabledReason: () => string | undefined
   workflowSelecting: () => boolean
   getMentionNodes: () => SelectedNode[]
-  selectWorkflowReference: (
-    workflow: WorkflowReferenceOption
-  ) => Promise<WorkflowReferenceMetadata | undefined>
+  selectWorkflow: (
+    workflow: WorkflowReferenceOption,
+    from: number,
+    to: number
+  ) => Promise<boolean>
   pickNode: (node: SelectedNode) => void
-  selectNodes: () => void
   requestWorkflows: () => void
 }
 
 export function useAgentMentionPicker(options: MentionPickerOptions) {
   const { t } = useI18n()
   const graphNodes = ref<SelectedNode[]>([])
-  const eligibleWorkflows = computed(() => {
-    const selectedIds = new Set(options.references().map(({ id }) => id))
-    return options
-      .workflows()
-      .filter(
-        ({ id }) =>
-          id === undefined ||
-          (id !== options.editableWorkflowId() && !selectedIds.has(id))
-      )
-  })
   function loadMentionNodes(): void {
     if (options.nodeReferenceDisabledReason()) {
       graphNodes.value = []
@@ -122,7 +107,8 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
 
     return [
       back,
-      ...eligibleWorkflows.value
+      ...options
+        .workflows()
         .filter(({ name }) => name.toLowerCase().includes(search))
         .map(
           (workflow): MentionMatch => ({
@@ -218,14 +204,6 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
     )
   }
 
-  function onSelectNodes(event: Event): void {
-    if (options.nodeReferenceDisabledReason()) {
-      event.preventDefault()
-      return
-    }
-    options.selectNodes()
-  }
-
   watch(
     () => options.nodeReferenceDisabledReason(),
     (reason) => {
@@ -263,16 +241,14 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
       return
     }
     if (match.kind === 'workflow') {
-      const insertion = options
-        .editor()
-        ?.captureInsertion(state.start, state.start + 1 + state.query.length)
-      const reference = await options.selectWorkflowReference(match.workflow)
-      if (!reference) {
-        insertion?.cancel()
-        return
-      }
-      insertion?.insert(reference)
-      dispatchMention({ type: 'closed' })
+      if (
+        await options.selectWorkflow(
+          match.workflow,
+          state.start,
+          state.start + 1 + state.query.length
+        )
+      )
+        dispatchMention({ type: 'closed' })
       return
     }
     const draft = options.draft()
@@ -293,24 +269,6 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
     options.editor()?.replaceText(state.start, draft.length - after.length, '')
     dispatchMention({ type: 'closed' })
     options.editor()?.focus()
-  }
-
-  function onWorkflowSubmenuOpenChange(open: boolean): void {
-    if (open && !options.workflowSelecting()) options.requestWorkflows()
-  }
-
-  async function pickWorkflow(
-    workflow: WorkflowReferenceOption
-  ): Promise<boolean> {
-    if (options.workflowSelecting()) return false
-    const insertion = options.editor()?.captureInsertion()
-    const reference = await options.selectWorkflowReference(workflow)
-    if (!reference) {
-      insertion?.cancel()
-      return false
-    }
-    insertion?.insert(reference)
-    return true
   }
 
   function isMentionDisabled(match: MentionMatch): boolean {
@@ -362,7 +320,6 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
   }
 
   return {
-    eligibleWorkflows,
     mentionSection,
     mentionActive,
     mentionMatches,
@@ -372,11 +329,8 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
     tagDupes,
     syncMention,
     pickMention,
-    pickWorkflow,
     isNodeReferenceDisabled,
     isMentionDisabled,
-    onSelectNodes,
-    onWorkflowSubmenuOpenChange,
     onComposerKeydown,
     onComposerKeyup,
     close: () => dispatchMention({ type: 'closed' }),
