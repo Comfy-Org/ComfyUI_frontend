@@ -36,10 +36,11 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
     links: [
       { label: t('nav.comfyLocal', locale), href: routes.download },
       { label: t('nav.comfyCloud', locale), href: routes.cloud },
-      { label: t('nav.comfyApi', locale), href: routes.api },
+      { label: t('nav.developerPlatform', locale), href: routes.platform },
       { label: t('nav.comfyEnterprise', locale), href: routes.enterprise },
-      { label: t('nav.pricing', locale), href: routes.cloudPricing },
+      { label: t('nav.pricing', locale), href: routes.pricing },
       { label: t('nav.mcpServer', locale), href: routes.mcp },
+      { label: t('nav.comfyAgent', locale), href: routes.agent },
       { label: t('nav.comfyCli', locale), href: routes.cli },
       { label: t('nav.supportedModels', locale), href: routes.models },
       { label: t('footer.minimaxH3', locale), href: routes.minimax },
@@ -56,6 +57,10 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
       { label: t('footer.ltx', locale), href: routes.ltx },
       { label: t('footer.geminiOmni', locale), href: routes.geminiOmni },
       { label: t('footer.wan3', locale), href: routes.wan3 },
+      {
+        label: t('footer.chatgptImage25', locale),
+        href: routes.chatgptImage25
+      },
       { label: t('footer.flux3', locale), href: routes.flux3 }
     ]
   },
@@ -63,6 +68,10 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
     title: t('footer.resources', locale),
     links: [
       { label: t('nav.learning', locale), href: routes.learning },
+      {
+        label: t('nav.customerStories', locale),
+        href: routes.customers
+      },
       { label: t('footer.workflows', locale), href: externalLinks.workflows },
       {
         label: t('footer.useCases', locale),

@@ -18,7 +18,7 @@ test.describe('Load3D LOD', () => {
       )
 
       await comfyPage.page.evaluate(() => {
-        const node = window.app!.graph!.nodes[0]
+        const node = window.app!.graph.nodes[0]
         window.app!.canvas.ds.scale = 2.0
         node.onResize?.(node.size)
       })

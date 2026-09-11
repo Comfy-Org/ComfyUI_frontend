@@ -4,6 +4,7 @@ import { expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
 import { waitForIsland } from './fixtures/islands'
+import { waitForPpFormulaLight } from './fixtures/visualFonts'
 import { VIEWPORTS } from './viewports'
 
 test.describe.configure({ timeout: 60_000 })
@@ -29,6 +30,7 @@ async function assertNoOverflow(page: Page) {
 async function navigateAndSettle(page: Page, url: string) {
   await page.goto(url, { waitUntil: 'domcontentloaded' })
   await page.waitForLoadState('load')
+  await waitForPpFormulaLight(page)
 }
 
 test.describe('Home', { tag: '@visual' }, () => {
@@ -64,7 +66,7 @@ test.describe('Pricing', { tag: '@visual' }, () => {
   for (const vp of VIEWPORTS) {
     test(`pricing-tiers-${vp.name}`, async ({ page }) => {
       await page.setViewportSize({ width: vp.width, height: vp.height })
-      await navigateAndSettle(page, '/cloud/pricing')
+      await navigateAndSettle(page, '/pricing')
       await assertNoOverflow(page)
 
       const section = page.locator('section', {
@@ -83,7 +85,7 @@ test.describe('Pricing', { tag: '@visual' }, () => {
 const FAQ_PAGES = [
   {
     name: 'pricing',
-    url: '/cloud/pricing',
+    url: '/pricing',
     // PricingFaq.astro is plain markup — there is no island to wait for.
     island: false,
     trigger: 'details > summary',
@@ -172,12 +174,14 @@ test.describe('About', { tag: '@visual' }, () => {
 })
 
 test.describe('Overflow guards', { tag: '@visual' }, () => {
+  test.describe.configure({ mode: 'parallel' })
+
   const pages = [
     '/',
     '/cloud',
     '/enterprise',
     '/enterprise/managed-builds',
-    '/cloud/pricing',
+    '/pricing',
     '/contact',
     '/download',
     '/gallery',
