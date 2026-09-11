@@ -23,7 +23,8 @@ import {
 import { AgentApiError } from '../../services/agent/agentRestClient'
 import type {
   AgentRestClient,
-  PostMessageInput
+  PostMessageInput,
+  AgentIdentity
 } from '../../services/agent/agentRestClient'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
@@ -43,6 +44,12 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
         thread_id: 'th-1',
         message_id: 'msg-1',
         workflow_id: 'wf-1'
+      })
+    ),
+    getIdentity: vi.fn(
+      async (): Promise<AgentIdentity> => ({
+        workspaceId: 'w-test',
+        userId: 'user-test'
       })
     ),
     getMessages: vi.fn(async (): Promise<AgentMessages> => []),
@@ -1090,11 +1097,11 @@ describe('useAgentSession (v1 composition root)', () => {
   })
 
   it('tells the server the current tab is unbound when the turn context has no workflow id', async () => {
-    const postMessage = vi.fn(async () => ({
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
       thread_id: 'th-1',
       message_id: 'msg-1',
       workflow_id: 'wf-minted'
-    })) as unknown as AgentRestClient['postMessage']
+    }))
     const rest = fakeRest({ postMessage })
     const { source } = fakeEvents()
     const session = useAgentSession({
@@ -1119,11 +1126,11 @@ describe('useAgentSession (v1 composition root)', () => {
   })
 
   it('does not flag the current tab as unbound when the turn context names a workflow', async () => {
-    const postMessage = vi.fn(async () => ({
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
       thread_id: 'th-1',
       message_id: 'msg-1',
       workflow_id: 'wf-a'
-    })) as unknown as AgentRestClient['postMessage']
+    }))
     const rest = fakeRest({ postMessage })
     const { source } = fakeEvents()
     const session = useAgentSession({

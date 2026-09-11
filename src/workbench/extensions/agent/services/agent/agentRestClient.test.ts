@@ -221,6 +221,25 @@ describe('agentRestClient route + method', () => {
   })
 })
 
+describe('getIdentity', () => {
+  it('reads the identity the agent authenticated this client as', async () => {
+    respond(
+      jsonResponse(200, { workspace_id: 'w-local', user_id: 'local-user' })
+    )
+
+    const identity = await makeClient().getIdentity()
+
+    expect(identity).toEqual({ workspaceId: 'w-local', userId: 'local-user' })
+    expect(lastCall().route).toBe('/agent/identity')
+  })
+
+  it('rejects a malformed identity rather than returning a partial one', async () => {
+    respond(jsonResponse(200, { workspace_id: 'w-local' }))
+
+    await expect(makeClient().getIdentity()).rejects.toThrow()
+  })
+})
+
 describe('postMessage wire body', () => {
   it('uses snake_case workflow_id and includes only the keys provided', async () => {
     respond(jsonResponse(202, turnAccepted))
