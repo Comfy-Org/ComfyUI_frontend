@@ -85,6 +85,8 @@ export const useNodeImageStore = defineStore('nodeImage', () => {
   }
 
   function installPropertyProjection(node: LGraphNode): void {
+    if (!_nodeLocatorResolver) return
+
     const simpleProperties: (keyof NodeImageState)[] = [
       'imageRects',
       'pointerDown',
