@@ -117,8 +117,8 @@ describe('NodeConflictDialogContent', () => {
       const { container } = renderComponent()
 
       expect(container.textContent).not.toContain('Conflicts')
-      expect(container.textContent).not.toContain('Extensions at Risk')
-      expect(container.textContent).not.toContain('Import Failed Extensions')
+      expect(container.textContent).not.toContain('Custom Node at Risk')
+      expect(container.textContent).not.toContain('Import Failed Custom Nodes')
     })
 
     it('should render with conflict data from composable', () => {
@@ -128,8 +128,8 @@ describe('NodeConflictDialogContent', () => {
 
       expect(container.textContent).toContain('3')
       expect(container.textContent).toContain('Conflicts')
-      expect(container.textContent).toContain('Extension at Risk')
-      expect(container.textContent).toContain('Import Failed Extensions')
+      expect(container.textContent).toContain('Custom Node at Risk')
+      expect(container.textContent).toContain('Import Failed Custom Nodes')
       expect(container.textContent).toContain('1')
     })
 
@@ -139,10 +139,10 @@ describe('NodeConflictDialogContent', () => {
       })
 
       expect(container.textContent).toContain(
-        "We've detected conflicts between some of your extensions"
+        "We've detected conflicts between some of your custom nodes"
       )
       expect(container.textContent).toContain(
-        'the conflicting extensions will be disabled automatically'
+        'the conflicting custom nodes will be disabled automatically'
       )
     })
 
@@ -152,10 +152,10 @@ describe('NodeConflictDialogContent', () => {
       })
 
       expect(container.textContent).not.toContain(
-        "We've detected conflicts between some of your extensions"
+        "We've detected conflicts between some of your custom nodes"
       )
       expect(container.textContent).not.toContain(
-        'the conflicting extensions will be disabled automatically'
+        'the conflicting custom nodes will be disabled automatically'
       )
     })
 
@@ -169,9 +169,9 @@ describe('NodeConflictDialogContent', () => {
         '.w-full.flex.flex-col.bg-base-background'
       )
 
-      // Import Failed Extensions section
+      // Import Failed Custom Nodes section
       expect(sections[0].textContent).toContain('1')
-      expect(sections[0].textContent).toContain('Import Failed Extensions')
+      expect(sections[0].textContent).toContain('Import Failed Custom Nodes')
 
       // Conflicts section
       expect(sections[1].textContent).toContain('3')
@@ -325,8 +325,8 @@ describe('NodeConflictDialogContent', () => {
       const { container } = renderComponent()
 
       expect(container.textContent).not.toContain('Conflicts')
-      expect(container.textContent).not.toContain('Extensions at Risk')
-      expect(container.textContent).not.toContain('Import Failed Extensions')
+      expect(container.textContent).not.toContain('Custom Node at Risk')
+      expect(container.textContent).not.toContain('Import Failed Custom Nodes')
     })
 
     it('should handle conflicts without import_failed', () => {
@@ -335,7 +335,7 @@ describe('NodeConflictDialogContent', () => {
 
       expect(container.textContent).toContain('3')
       expect(container.textContent).toContain('2')
-      expect(container.textContent).not.toContain('Import Failed Extensions')
+      expect(container.textContent).not.toContain('Import Failed Custom Nodes')
     })
   })
 
