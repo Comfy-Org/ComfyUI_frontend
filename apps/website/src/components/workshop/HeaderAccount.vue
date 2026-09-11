@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Coins, ExternalLink, LogOut, Settings } from '@lucide/vue'
 import { onClickOutside } from '@vueuse/core'
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 
 import { useWorkshopCredits } from '../../config/workshop-credits'
 import { externalLinks } from '../../config/routes'
@@ -50,9 +50,42 @@ function goToSignIn(event: MouseEvent): void {
 
 const menuOpen = ref(false)
 const menuRoot = useTemplateRef('menuRoot')
+const accountButton = useTemplateRef('accountButton')
 onClickOutside(menuRoot, () => {
   menuOpen.value = false
 })
+
+// The div is a menu in name, so it keeps the menu's keyboard promises:
+// focus enters on open, arrows rove the items, Escape hands focus back.
+const menuItems = () => [
+  ...(menuRoot.value?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? [])
+]
+
+watch(menuOpen, (open) => {
+  if (open) void nextTick(() => menuItems()[0]?.focus())
+})
+
+function onMenuKeydown(event: KeyboardEvent) {
+  if (!menuOpen.value) return
+  if (event.key === 'Escape') {
+    event.preventDefault()
+    menuOpen.value = false
+    accountButton.value?.focus()
+    return
+  }
+  if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return
+  event.preventDefault()
+  const items = menuItems()
+  const index = items.indexOf(document.activeElement as HTMLElement)
+  const step = event.key === 'ArrowDown' ? 1 : -1
+  const next =
+    index === -1
+      ? step === 1
+        ? items[0]
+        : items.at(-1)
+      : items[(index + step + items.length) % items.length]
+  next?.focus()
+}
 
 const initial = computed(() => {
   const name = user.value?.displayName ?? user.value?.email ?? ''
@@ -132,8 +165,9 @@ async function signOutFromMenu() {
       {{ t('auth.header.signingIn', locale) }}
     </span>
 
-    <div v-else ref="menuRoot" class="relative">
+    <div v-else ref="menuRoot" class="relative" @keydown="onMenuKeydown">
       <button
+        ref="accountButton"
         type="button"
         class="hover:border-primary-comfy-yellow/60 flex h-10 items-center gap-2.5 rounded-2xl border border-primary-comfy-canvas/25 pr-3 pl-1.5 transition-colors"
         :aria-label="accountLabel"
