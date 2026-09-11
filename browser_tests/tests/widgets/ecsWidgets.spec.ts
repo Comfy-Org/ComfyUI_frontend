@@ -16,6 +16,7 @@ test.describe(
 
     test.afterEach(async ({ comfyPage }) => {
       await comfyPage.canvasOps.resetView()
+      await comfyPage.workflow.setupWorkflowsDirectory({})
     })
 
     test('converts a widget to a connected input and restores it on disconnect', async ({
@@ -33,7 +34,10 @@ test.describe(
           window.app!.graph.nodes.find((node) => String(node.id) === '2')
             ?.inputs.length
       )
-      expect(initialInputCount).toBeDefined()
+      expect(
+        initialInputCount,
+        'KSampler fixture should expose its seed widget input metadata'
+      ).toBeDefined()
 
       await primitiveNode.connectWidget(0, ksamplerNode, 0)
 
@@ -52,11 +56,13 @@ test.describe(
             const node = window.app!.graph.nodes.find(
               (node) => String(node.id) === '2'
             )
-            return node?.inputs.find((input) => input.widget?.name === 'seed')
-              ?.link
+            return (
+              node?.inputs.find((input) => input.widget?.name === 'seed')
+                ?.link != null
+            )
           })
         )
-        .not.toBeNull()
+        .toBe(true)
 
       await primitiveNode.delete()
 
@@ -77,17 +83,25 @@ test.describe(
     test('keeps a cleared text widget empty after save and reload', async ({
       comfyPage
     }) => {
-      const textBox = comfyPage.widgetTextBox
+      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+      await comfyPage.workflow.loadWorkflow('inputs/string_input')
+      const textBox = comfyPage.vueNodes.getWidgetByName(
+        'Node With String Input',
+        'string_input'
+      )
+      await textBox.fill('temporary value')
+      await expect(textBox).toHaveValue('temporary value')
       await textBox.fill('')
-      await comfyPage.keyboard.press('Control+s')
-      await comfyPage.menu.topbar.getSaveDialog().fill('ecs-cleared-text')
-      await comfyPage.keyboard.press('Enter')
-      await comfyPage.workflow.waitForWorkflowIdle()
-      await expect(comfyPage.menu.topbar.getSaveDialog()).toBeHidden()
+      await comfyPage.menu.topbar.saveWorkflow('ecs-cleared-text')
 
       await comfyPage.workflow.reloadAndWaitForApp()
 
-      await expect(comfyPage.widgetTextBox).toHaveValue('')
+      await expect(
+        comfyPage.vueNodes.getWidgetByName(
+          'Node With String Input',
+          'string_input'
+        )
+      ).toHaveValue('')
     })
 
     test('keeps a combo selection after save and reload', async ({
@@ -102,11 +116,7 @@ test.describe(
         .click()
       await comfyPage.contextMenu.waitForHidden()
       await expect.poll(() => samplerWidget.getValue()).toBe('heun')
-      await comfyPage.keyboard.press('Control+s')
-      await comfyPage.menu.topbar.getSaveDialog().fill('ecs-combo-selection')
-      await comfyPage.keyboard.press('Enter')
-      await comfyPage.workflow.waitForWorkflowIdle()
-      await expect(comfyPage.menu.topbar.getSaveDialog()).toBeHidden()
+      await comfyPage.menu.topbar.saveWorkflow('ecs-combo-selection')
 
       await comfyPage.workflow.reloadAndWaitForApp()
 
@@ -118,18 +128,25 @@ test.describe(
     test('keeps multiline text with special characters after save and reload', async ({
       comfyPage
     }) => {
+      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+      await comfyPage.workflow.loadWorkflow('inputs/string_input')
       const prompt =
         'first line: [subject]\nsecond line: café & tea\nthird line: <end> #100%'
-      await comfyPage.widgetTextBox.fill(prompt)
-      await comfyPage.keyboard.press('Control+s')
-      await comfyPage.menu.topbar.getSaveDialog().fill('ecs-multiline-text')
-      await comfyPage.keyboard.press('Enter')
-      await comfyPage.workflow.waitForWorkflowIdle()
-      await expect(comfyPage.menu.topbar.getSaveDialog()).toBeHidden()
+      const textBox = comfyPage.vueNodes.getWidgetByName(
+        'Node With String Input',
+        'string_input'
+      )
+      await textBox.fill(prompt)
+      await comfyPage.menu.topbar.saveWorkflow('ecs-multiline-text')
 
       await comfyPage.workflow.reloadAndWaitForApp()
 
-      await expect(comfyPage.widgetTextBox).toHaveValue(prompt)
+      await expect(
+        comfyPage.vueNodes.getWidgetByName(
+          'Node With String Input',
+          'string_input'
+        )
+      ).toHaveValue(prompt)
     })
 
     test('prevents dragging a pinned node and allows dragging after unpin', async ({
