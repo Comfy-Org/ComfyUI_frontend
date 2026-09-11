@@ -300,7 +300,12 @@ describe('widget visibility', () => {
       widget.type = fromAny('hidden')
 
       const processed = process()
-      expect(processed.slotMetadata).toBeDefined()
+      expect(processed.slotMetadata).toEqual({
+        index: 0,
+        type: 'INT',
+        linked: false,
+        promoted: false
+      })
       expect(processed.visible).toBe(false)
       expect(processed.suppressedByConnection).toBe(false)
     })
@@ -321,7 +326,12 @@ describe('widget visibility', () => {
 
       const processed = process()
       expect(processed.simplified.type).toBe('converted-widget')
-      expect(processed.slotMetadata).toBeDefined()
+      expect(processed.slotMetadata).toEqual({
+        index: 0,
+        type: 'INT',
+        linked: false,
+        promoted: false
+      })
     })
   })
 
