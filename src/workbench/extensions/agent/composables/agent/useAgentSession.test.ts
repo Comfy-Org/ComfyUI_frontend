@@ -1,10 +1,11 @@
 import type { AgentAdmissionError } from '@comfyorg/ingest-types'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
 import type * as VueModule from 'vue'
 
 import { reportError } from '@/platform/telemetry/reportError'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
@@ -49,11 +50,25 @@ afterEach(() => {
 
 const THREAD_KEY = 'Comfy.Agent.ThreadId.user-1/workspace-1'
 
+// `activeWorkspaceId` is a read-only computed on the store, so `Object.assign`
+// cannot change it. Back it with a test-owned ref instead.
+const activeWorkspaceId = ref<string | null>('workspace-1')
+
+function installActiveWorkspaceId() {
+  Object.defineProperty(useTeamWorkspaceStore(), 'activeWorkspaceId', {
+    get: () => activeWorkspaceId.value,
+    configurable: true
+  })
+}
+
+function setActiveWorkspaceId(workspaceId: string | null) {
+  activeWorkspaceId.value = workspaceId
+}
+
 const identity = await vi.hoisted(async () => {
   const { ref } = await vi.importActual<typeof VueModule>('vue')
   return {
-    user: ref<{ id: string } | null>({ id: 'user-1' }),
-    workspaceId: ref<string | null>('workspace-1')
+    user: ref<{ id: string } | null>({ id: 'user-1' })
   }
 })
 
@@ -67,23 +82,6 @@ vi.mock(import('@/composables/auth/useCurrentUser'), async (importOriginal) => {
       })
   }
 })
-
-vi.mock(
-  import('@/platform/workspace/stores/teamWorkspaceStore'),
-  async (importOriginal) => {
-    const actual = await importOriginal()
-    const useTeamWorkspaceStore = Object.assign(
-      () =>
-        fromPartial<ReturnType<typeof actual.useTeamWorkspaceStore>>({
-          get activeWorkspaceId() {
-            return identity.workspaceId.value
-          }
-        }),
-      { $id: actual.useTeamWorkspaceStore.$id }
-    )
-    return { ...actual, useTeamWorkspaceStore }
-  }
-)
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
@@ -257,8 +255,9 @@ function admissionError(
 describe('useAgentSession (v1 composition root)', () => {
   beforeEach(() => {
     localStorage.clear()
+    installActiveWorkspaceId()
     identity.user.value = { id: 'user-1' }
-    identity.workspaceId.value = 'workspace-1'
+    setActiveWorkspaceId('workspace-1')
     vi.mocked(reportError).mockClear()
   })
 
@@ -395,7 +394,7 @@ describe('useAgentSession (v1 composition root)', () => {
     const first = useAgentSession({ rest, events: fakeEvents().source })
     first.start()
     first.stop()
-    identity.workspaceId.value = 'workspace-2'
+    setActiveWorkspaceId('workspace-2')
     const second = useAgentSession({ rest, events: fakeEvents().source })
     second.start()
 
@@ -432,7 +431,7 @@ describe('useAgentSession (v1 composition root)', () => {
     })
     executionErrors.showErrorOverlay()
 
-    identity.workspaceId.value = 'workspace-2'
+    setActiveWorkspaceId('workspace-2')
     await nextTick()
 
     expect(session.notices.value).toEqual([])
@@ -455,7 +454,7 @@ describe('useAgentSession (v1 composition root)', () => {
     session.start()
     conversation.setThreadId('thread-workspace-1')
 
-    identity.workspaceId.value = 'workspace-2'
+    setActiveWorkspaceId('workspace-2')
     await session.sendMessage('new scope')
 
     expect(rest.postMessage).toHaveBeenCalledWith(
@@ -489,7 +488,7 @@ describe('useAgentSession (v1 composition root)', () => {
     })
     executionErrors.showErrorOverlay()
 
-    identity.workspaceId.value = 'workspace-2'
+    setActiveWorkspaceId('workspace-2')
     await nextTick()
 
     expect(executionErrors.lastPromptError).toBeNull()
@@ -1481,7 +1480,7 @@ describe('useAgentSession (v1 composition root)', () => {
 
     const send = session.sendMessage('accepted before switch')
     await vi.waitFor(() => expect(postMessage).toHaveBeenCalledOnce())
-    identity.workspaceId.value = 'workspace-2'
+    setActiveWorkspaceId('workspace-2')
     await nextTick()
     accept({ thread_id: 'th-old-scope', message_id: 'msg-old-scope' })
 
@@ -1493,7 +1492,7 @@ describe('useAgentSession (v1 composition root)', () => {
 
   it('does not hydrate or persist before user and workspace identity resolve', async () => {
     identity.user.value = null
-    identity.workspaceId.value = null
+    setActiveWorkspaceId(null)
     localStorage.setItem('Comfy.Agent.ThreadId.signed-out.personal', 'th-other')
     const getMessages = vi.fn(async (): Promise<AgentMessages> => [])
     const session = useAgentSession({
@@ -2373,6 +2372,10 @@ describe('thread resume (B17)', () => {
 
   beforeEach(() => {
     localStorage.clear()
+    installActiveWorkspaceId()
+    identity.user.value = { id: 'user-1' }
+    setActiveWorkspaceId('workspace-1')
+    vi.mocked(reportError).mockClear()
   })
 
   it('restores the persisted thread and hydrates its transcript on start', async () => {
