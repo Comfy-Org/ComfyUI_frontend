@@ -1,11 +1,13 @@
 import { z } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { useContextKeyStore } from '@/platform/keybindings/contextKeyStore'
@@ -40,43 +42,56 @@ export const useExtensionService = () => {
     toastErrorHandler
   } = useErrorHandling()
 
-  /**
-   * Register an extension with the app
-   * @param extension The extension to register
-   */
   const registerExtension = (extension: ComfyExtension) => {
     extensionStore.registerExtension(extension)
 
-    const addKeybinding = wrapWithErrorHandling((keybinding: KeybindingImpl) =>
-      keybindingStore.addExtensionKeybinding(keybinding, extension.name)
+    const registrationError = (error: unknown, reason: string) => {
+      reportError(new Error('Extension shortcut registration failed'), {
+        errorType: 'error_registering_keybinding',
+        surface: 'platform',
+        level: 'warning',
+        tags: { extension: extension.name, reason }
+      })
+      useToast().error(t('g.error'), {
+        description:
+          error instanceof Error ? error.message : t('g.unknownError')
+      })
+    }
+    const addKeybinding = wrapWithErrorHandling(
+      (keybinding: KeybindingImpl) =>
+        keybindingStore.addExtensionKeybinding(keybinding, extension.name),
+      (error) => registrationError(error, 'conflict')
     )
     const addSetting = wrapWithErrorHandling(settingStore.addSetting)
 
     const contextKeyStore = useContextKeyStore()
     const contextKeys = zContextKeys.safeParse(extension.contextKeys)
     if (!contextKeys.success) {
-      toastErrorHandler(
-        new Error(t('g.invalidExtensionContextKeys', { name: extension.name }))
+      registrationError(
+        new Error(t('g.invalidExtensionContextKeys', { name: extension.name })),
+        'context-schema'
       )
     }
     contextKeys.data?.forEach((key) => {
       if (
         !contextKeyStore.register(`${extension.name}.${key}`, extension.name)
       ) {
-        toastErrorHandler(
+        registrationError(
           new Error(
             t('g.invalidExtensionContextKey', { name: extension.name, key })
-          )
+          ),
+          'context-registration'
         )
       }
     })
     extension.keybindings?.forEach((keybinding) => {
       const parsed = zKeybinding.safeParse(keybinding)
       if (!parsed.success) {
-        toastErrorHandler(
+        registrationError(
           new Error(
             `${t('g.invalidExtensionKeybinding', { name: extension.name })}: ${fromZodError(parsed.error).message}`
-          )
+          ),
+          'binding-schema'
         )
         return
       }
@@ -87,8 +102,6 @@ export const useExtensionService = () => {
     extension.settings?.forEach(addSetting)
     useBottomPanelStore().registerExtensionBottomPanelTabs(extension)
     if (extension.getCustomWidgets) {
-      // TODO(huchenlei): We should deprecate the async return value of
-      // getCustomWidgets.
       void (async () => {
         if (extension.getCustomWidgets) {
           const widgets = await extension.getCustomWidgets(useApp())
