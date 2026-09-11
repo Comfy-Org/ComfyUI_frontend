@@ -107,18 +107,28 @@ PUBLIC_WORKSHOP_CLOUD_ENV=prod pnpm --filter @comfyorg/website test:router-model
 
 PUBLIC_WORKSHOP_CLOUD_ENV=prod pnpm --filter @comfyorg/website test:router-models \
   --execute --concurrency 1 --slug bfl--flux-2-pro--generate-images
+
+PUBLIC_WORKSHOP_CLOUD_ENV=prod pnpm --filter @comfyorg/website test:router-models \
+  --execute --modality image --concurrency 1 --starts-per-second 0.1
 ```
 
 Requires `ffprobe` and `ffmpeg` for live execution. `--help` lists time, artifact
 size, output directory and selection options. Dry preflight makes no network
 calls and exits nonzero for invalid defaults. The live sweep inventories every
 published image/video/audio page, including separate use-case pages for the same
-Router identity. 3D and text pages are outside this acceptance test.
+Router identity. The results grid also lists published 3D and text pages as
+untested; their output formats are outside this acceptance test.
 
 Each run creates a new private directory under `temp/router-model-tests/` with:
 
 - `manifest.json`: selected pages, origin, concurrency and limits.
 - `events.jsonl`: preflight, prepared request, response ID and final evidence.
+- `<slug>/outputs.json`: every parsed output, saved before media verification,
+  including URLs that the page could not classify.
+- `<slug>/response-N.json` or `.txt`: complete local response attachments,
+  saved before their blobs are released. JSON with extracted inline media is
+  the parser's metadata document; other JSON attachments can be replayed through
+  the parser without another generation.
 - Per-model `request.json` and downloaded media with byte counts, SHA-256,
   dimensions or duration. FFmpeg decodes the media, detecting broken content.
 - `summary.json`: passed, failed, cancelled and preflight counts.
@@ -151,6 +161,20 @@ may contain private input or signed URLs; the output directory is intentionally
 local, access restricted, and not checked into Git. Blob outputs are released
 after verification. Ctrl-C stops pending work and cancels local requests; an
 accepted provider job may still finish remotely.
+
+`--modality` selects all published pages of one media type. Fractional
+`--starts-per-second` values allow slower pacing: `0.1` starts at most one case
+every ten seconds. Captured outputs and response attachments use private `0600`
+files, redact the API key if echoed by a provider, and never count as a media
+verification pass on their own.
+
+During live execution, the Node tester sets Undici's header and body inactivity
+timeouts to `--timeout-seconds`, then restores the previous dispatcher and closes
+its connections. This avoids Node's default five-minute header timeout cutting
+off a paid generation early. The per-case abort deadline and the shared Router
+client's 660-second request limit still apply. Browser transport is unchanged.
+See [Node's custom dispatcher API](https://nodejs.org/api/globals.html#custom-dispatcher)
+and [Undici's timeout options](https://undici.nodejs.org/api/Client).
 
 The API account also imposes a shared Partner Node concurrency limit. A high local
 worker count does not increase that entitlement. Choose `--concurrency` within

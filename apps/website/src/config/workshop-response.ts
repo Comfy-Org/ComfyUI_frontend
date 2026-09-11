@@ -3,6 +3,7 @@ import { validateWorkshopInput } from './workshop-json-schema'
 import { valuesAtPointer } from './workshop-json-pointer'
 import type { RunOutput } from './workshop-run'
 import {
+  discoverOutputMimes,
   inlineOutput,
   isPassiveOutputMime,
   outputExtension,
@@ -35,10 +36,11 @@ function responseDocument(
   }
 }
 
-function automaticOutputs(
+async function automaticOutputs(
   contract: WorkshopContract,
-  data: unknown
-): RunOutput[] {
+  data: unknown,
+  signal?: AbortSignal
+): Promise<RunOutput[]> {
   const outputs: RunOutput[] = []
   const seen = new Set<string>()
   const extracted = new Map<string, string>()
@@ -84,6 +86,19 @@ function automaticOutputs(
   }
   try {
     visit(data, 0)
+    const discovered = await discoverOutputMimes(
+      outputs.map(({ url }) => url),
+      signal
+    )
+    for (const [index, output] of outputs.entries()) {
+      const mime = discovered.get(output.url)
+      if (mime)
+        outputs[index] = {
+          ...output,
+          kind: outputKind(mime),
+          fileName: fileName(contract.id, mime, index)
+        }
+    }
     const text = JSON.stringify(
       data,
       (_key, value: unknown) =>
@@ -147,8 +162,10 @@ export function releaseRouterOutputs(outputs: readonly RunOutput[]): void {
 
 export async function parseRouterResponse(
   contract: WorkshopContract,
-  response: Response
+  response: Response,
+  signal?: AbortSignal
 ): Promise<RunOutput[]> {
+  signal?.throwIfAborted()
   const bytes = await responseBytes(response)
   const contentType =
     response.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase() ??
@@ -169,7 +186,7 @@ export async function parseRouterResponse(
       const data: unknown = JSON.parse(new TextDecoder().decode(bytes))
       if (output.schema && !validateWorkshopInput(data, output.schema))
         throw new Error('Invalid Router response')
-      return automaticOutputs(contract, data)
+      return automaticOutputs(contract, data, signal)
     }
     if (contentType === 'text/plain' || contentType === 'text/event-stream')
       return [

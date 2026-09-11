@@ -104,7 +104,11 @@ export async function runWorkshopRouter(options: {
         {},
         await failureDetails(response)
       )
-    const outputs = await parseRouterResponse(options.contract, response)
+    const outputs = await parseRouterResponse(
+      options.contract,
+      response,
+      signal
+    )
     if (signal.aborted) {
       releaseRouterOutputs(outputs)
       signal.throwIfAborted()

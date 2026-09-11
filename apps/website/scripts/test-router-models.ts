@@ -15,8 +15,10 @@ import type { RunOutput } from '../src/config/workshop-run'
 import type { MediaKind } from './router-model-artifacts'
 import { checkMediaDecoders, validateArtifact } from './router-model-artifacts'
 import { createStartGate, mapConcurrent } from './router-model-batch'
+import { captureRouterOutputs } from './router-model-evidence'
 import { openRouterModelReport } from './router-model-report'
 import { routerReportUpdate } from './router-model-report-events'
+import { openRouterModelTransport } from './router-model-transport'
 import { resolveRouterRender, router_render } from './router-render'
 
 const HELP = `Test every published image, video and audio page with its initial defaults.
@@ -25,8 +27,9 @@ pnpm --filter @comfyorg/website test:router-models [options]
 
   --execute                Make paid Router calls after preflight (default: dry)
   --slug SLUG              Test one page; repeat to select more pages
+  --modality KIND          Select image, video or audio pages
   --concurrency N          Simultaneous cases, 1–128 (default: 16)
-  --starts-per-second N    Pace new requests (default: 2)
+  --starts-per-second N    Pace new requests; fractions allowed (default: 2)
   --timeout-seconds N      Whole-case deadline (default: 900)
   --max-artifact-mb N      Limit each downloaded artifact (default: 256)
   --output PATH            New evidence directory (default: repo temp directory)
@@ -37,13 +40,21 @@ pnpm --filter @comfyorg/website test:router-models [options]
 and ffprobe/ffmpeg on PATH. Requests are never automatically retried.
 Preflight validates defaults without network calls; ready is not a generation pass.
 Each run writes manifest.json, append-only events.jsonl, summary.json and artifacts.
+Parsed outputs and full JSON/text attachments are saved before media verification.
 The public Markdown grid and JSON state update after each result; commit both files.
 An interrupted request may still complete and be billed by the provider.
 `
 
-function positiveInteger(value: string | undefined, fallback: number): number {
+function positiveNumber(value: string | undefined, fallback: number): number {
   const parsed = value === undefined ? fallback : Number(value)
-  if (!Number.isSafeInteger(parsed) || parsed < 1)
+  if (!Number.isFinite(parsed) || parsed <= 0)
+    throw new Error('Numeric options must be positive finite numbers')
+  return parsed
+}
+
+function positiveInteger(value: string | undefined, fallback: number): number {
+  const parsed = positiveNumber(value, fallback)
+  if (!Number.isSafeInteger(parsed))
     throw new Error('Numeric options must be positive integers')
   return parsed
 }
@@ -82,6 +93,7 @@ async function main() {
     options: {
       execute: { type: 'boolean', default: false },
       slug: { type: 'string', multiple: true },
+      modality: { type: 'string' },
       concurrency: { type: 'string' },
       'starts-per-second': { type: 'string' },
       'timeout-seconds': { type: 'string' },
@@ -96,7 +108,9 @@ async function main() {
     return
   }
   const concurrency = positiveInteger(values.concurrency, 16)
-  const startsPerSecond = positiveInteger(values['starts-per-second'], 2)
+  const startsPerSecond = positiveNumber(values['starts-per-second'], 2)
+  if (values.modality !== undefined && !isMediaKind(values.modality))
+    throw new Error('--modality must be image, video or audio')
   if (concurrency > 128) throw new Error('Concurrency cannot exceed 128')
   const timeoutMs = positiveInteger(values['timeout-seconds'], 900) * 1000
   const maxBytes = positiveInteger(values['max-artifact-mb'], 256) * 1024 * 1024
@@ -107,8 +121,10 @@ async function main() {
     : fileURLToPath(
         new URL(`../../../temp/router-model-tests/${runId}/`, import.meta.url)
       )
-  const models = routerWorkshopModels.filter((model) =>
-    isMediaKind(model.modality)
+  const models = routerWorkshopModels.filter(
+    (model) =>
+      isMediaKind(model.modality) &&
+      (!values.modality || model.modality === values.modality)
   )
   const selected = new Set(values.slug ?? models.map((model) => model.slug))
   for (const slug of selected)
@@ -145,12 +161,11 @@ async function main() {
   }
   const report = openRouterModelReport({ jsonPath, markdownPath })
   try {
-    for (const model of cases) {
-      if (!isMediaKind(model.modality)) continue
+    for (const model of routerWorkshopModels) {
       report.update({
         slug: model.slug,
         routerId: model.routerId,
-        modality: model.modality,
+        modality: model.modality ?? 'other',
         environment,
         inputMode: 'page-defaults'
       })
@@ -243,6 +258,7 @@ async function main() {
       await checkMediaDecoders()
       const campaign = new AbortController()
       const waitToStart = createStartGate(startsPerSecond)
+      const closeTransport = openRouterModelTransport(timeoutMs)
       function stop() {
         campaign.abort(new Error('Campaign interrupted'))
       }
@@ -319,6 +335,12 @@ async function main() {
             )
             requestId = rendered.requestId
             outputs = rendered.outputs
+            await captureRouterOutputs(
+              outputs,
+              artifactDirectory,
+              token,
+              maxBytes
+            )
             if (!isMediaKind(rendered.expectedKind))
               throw new Error('Unsupported output kind')
             const media = outputs.filter(
@@ -371,6 +393,7 @@ async function main() {
       } finally {
         process.removeListener('SIGINT', stop)
         process.removeListener('SIGTERM', stop)
+        await closeTransport()
       }
     }
     const summary = {

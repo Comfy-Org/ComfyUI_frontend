@@ -8,7 +8,7 @@ const templateInputs =
   'https://cdn.jsdelivr.net/gh/Comfy-Org/workflow_templates@main/input/'
 const image = `${templateInputs}denim_girl.png`
 const portrait =
-  'https://img.freepik.com/free-photo/portrait-woman_395237-33.jpg?w=740&q=80'
+  'https://cdn.jsdelivr.net/gh/Comfy-Org/workflow_templates@1e272b544243e539b182da4ac26b6616224716f2/input/close_up_portrait.png'
 const video = `${templateInputs}lighter.mp4`
 const audio = 'https://assets.sync.so/docs/example-audio.wav'
 const sourceImage = { source_images: [image] }

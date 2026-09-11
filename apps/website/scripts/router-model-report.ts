@@ -13,6 +13,7 @@ import { dirname } from 'node:path'
 import { z } from 'zod'
 
 const kindSchema = z.enum(['image', 'video', 'audio'])
+const modalitySchema = z.enum([...kindSchema.options, '3d', 'text', 'other'])
 const dateSchema = z.string().datetime({ offset: true })
 const fieldsSchema = z
   .array(z.string().regex(/^[A-Za-z_][A-Za-z0-9_.[\]-]{0,79}$/))
@@ -102,7 +103,7 @@ const liveSchema = z
 const updateSchema = z.object({
   slug: z.string().regex(/^[a-z0-9][a-z0-9_.-]{0,249}$/),
   routerId: z.string().regex(/^[A-Za-z0-9][A-Za-z0-9_./-]{0,249}$/),
-  modality: kindSchema,
+  modality: modalitySchema,
   environment: z.enum(['prod', 'staging', 'test']),
   inputMode: z.enum(['page-defaults', 'custom-inputs']),
   preflight: preflightSchema.optional(),
@@ -190,6 +191,9 @@ function markdown(rows: readonly ReportRow[]): string {
   const lines = rows.map((row) => {
     const { live, preflight, lastSuccess } = row
     const detail = [
+      !live &&
+        !kindSchema.safeParse(row.modality).success &&
+        'Live verification is not supported for this output type',
       live?.failure && failureLabels[live.failure],
       live?.httpStatus && `HTTP ${live.httpStatus}`,
       preflight?.status === 'failed' && 'Initial inputs failed validation',

@@ -79,6 +79,7 @@
     "tsx": "catalog:",
     "tw-animate-css": "catalog:",
     "typescript": "catalog:",
+    "undici": "catalog:",
     "vitest": "catalog:",
     "vue-component-type-helpers": "catalog:",
     "vue-tsc": "catalog:"

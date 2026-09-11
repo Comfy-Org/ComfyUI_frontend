@@ -166,6 +166,38 @@ describe('persistent model results', () => {
     ).toThrow('dimensions')
   })
 
+  it.for(['3d', 'text', 'other'] as const)(
+    'keeps %s inventory visible without claiming a supported verification',
+    (modality) => {
+      const report = openReport()
+      report.update({ ...model, live: passed })
+      const unsupported = { ...model, slug: 'unsupported-model', modality }
+      report.update(unsupported)
+      report.close()
+
+      const resumed = openReport()
+      resumed.flush()
+      const saved: unknown = JSON.parse(readFileSync(paths.jsonPath, 'utf8'))
+      expect(saved).toMatchObject({
+        models: [
+          { slug: model.slug, live: passed, lastSuccess: passed },
+          unsupported
+        ]
+      })
+      const grid = readFileSync(paths.markdownPath, 'utf8')
+      expect(grid).toContain(
+        'passed: 1; failed: 0; blocked: 0; cancelled: 0; not-run: 1'
+      )
+      expect(grid).toContain(
+        `| ${modality} | prod / page-defaults | not checked | not-run | Live verification is not supported for this output type | — |`
+      )
+      expect(() => resumed.update({ ...unsupported, live: passed })).toThrow(
+        'Artifact kind'
+      )
+      expect(readFileSync(paths.markdownPath, 'utf8')).toBe(grid)
+    }
+  )
+
   it('publishes only allowlisted evidence and rejects unsafe identifiers', () => {
     const report = openReport()
     const privateRecord = {

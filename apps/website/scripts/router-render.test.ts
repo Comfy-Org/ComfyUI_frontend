@@ -14,6 +14,30 @@ vi.mock(import('../src/config/workshop-router'), async (importOriginal) => ({
 }))
 
 describe('router_render', () => {
+  it.for([
+    'openai--gpt-image-1--edit-images',
+    'openai--gpt-image-1.5--edit-images',
+    'openai--gpt-image-2--edit-images'
+  ])(
+    'omits optional PNG compression for the initial %s request',
+    async (slug) => {
+      const initial = await prepareRouterRender(slug)
+      expect(initial.body.output_format).toBe('png')
+      expect(initial.body).not.toHaveProperty('output_compression')
+
+      for (const output_format of ['jpeg', 'webp']) {
+        const compressed = await prepareRouterRender(slug, {
+          output_format,
+          model_specific: { output_compression: 80 }
+        })
+        expect(compressed.body).toMatchObject({
+          output_format,
+          output_compression: 80
+        })
+      }
+    }
+  )
+
   it('maps a generic prompt into structured image and spoken dialogue inputs', async () => {
     const prompt = 'A blue ceramic fox'
     const image = await prepareRouterRender('ideogram--v4--generate-images', {

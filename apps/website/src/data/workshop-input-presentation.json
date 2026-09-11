@@ -191,7 +191,6 @@
       "label": "Compression",
       "help": "Set compression for JPEG or WebP output, from 0 to 100.",
       "advanced": true,
-      "defaultCandidates": [90],
       "control": "number"
     },
     {
