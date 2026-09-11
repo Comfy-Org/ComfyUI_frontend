@@ -22,6 +22,10 @@ to a section below.
 
 ## Prerequisites
 
+For the proposed real Cloud backend billing scenarios, environment requirements,
+and release criteria, see the [Cloud billing E2E coverage proposal](../docs/testing/cloud-billing-e2e.md).
+It is a draft plan; executable coverage and its CI gate remain to be implemented.
+
 **CRITICAL**: Start the ComfyUI backend with `--multi-user`:
 
 ```bash
