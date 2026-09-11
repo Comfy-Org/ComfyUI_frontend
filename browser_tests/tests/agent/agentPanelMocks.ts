@@ -1,7 +1,15 @@
+import { expect } from '@playwright/test'
 import type { Page, Route } from '@playwright/test'
+
+import type {
+  AgentThreadListResponse,
+  WorkflowListResponse
+} from '@comfyorg/ingest-types'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { UserDataFullInfo } from '@/schemas/apiSchema'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type {
   AgentCancelAccepted,
@@ -153,6 +161,72 @@ async function mockAgentBoot(
       'Comfy.RightSidePanel.ShowErrorsTab': false
     }
   })
+  let savedWorkflow: UserDataFullInfo | undefined
+  let savedContent: string | undefined
+  await page.route('**/api/userdata**', (route) => {
+    const url = new URL(route.request().url())
+    const path = decodeURIComponent(url.pathname.split('/userdata/')[1] ?? '')
+    if (route.request().method() === 'POST' && path.startsWith('workflows/')) {
+      savedContent = route.request().postData() ?? '{}'
+      savedWorkflow = {
+        path,
+        modified: 1_788_825_600_000,
+        size: route.request().postDataBuffer()?.length ?? 0
+      }
+      return route.fulfill(jsonRoute(savedWorkflow))
+    }
+    if (savedWorkflow && path === savedWorkflow.path)
+      return route.fulfill({
+        contentType: 'application/json',
+        body: savedContent
+      })
+    return route.fulfill(
+      jsonRoute(
+        savedWorkflow && url.searchParams.get('dir') === 'workflows'
+          ? [
+              {
+                ...savedWorkflow,
+                path: savedWorkflow.path.slice('workflows/'.length)
+              }
+            ]
+          : []
+      )
+    )
+  })
+  await page.route('**/api/workflows?*', (route) => {
+    const workflows: WorkflowListResponse = {
+      data: savedWorkflow
+        ? [
+            {
+              id: WORKFLOW_ID,
+              name: savedWorkflow.path.slice(
+                'workflows/'.length,
+                -'.json'.length
+              ),
+              created_at: '2026-09-01T00:00:00Z',
+              updated_at: '2026-09-01T00:00:00Z',
+              created_by: 'test-user-e2e',
+              latest_version: 1
+            }
+          ]
+        : [],
+      pagination: {
+        offset: 0,
+        limit: 100,
+        total: savedWorkflow ? 1 : 0,
+        has_more: false
+      }
+    }
+    return route.fulfill(jsonRoute(workflows))
+  })
+  const threads: AgentThreadListResponse = {
+    threads: [],
+    pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+  }
+  await page.route('**/api/agent/threads', (route) =>
+    route.fulfill(jsonRoute(threads))
+  )
+
   await page.route('**/api/auth/token', (r) =>
     r.fulfill(
       jsonRoute({
@@ -220,3 +294,14 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
     await use(page)
   }
 })
+
+export async function selectAgentWorkflow(page: Page): Promise<void> {
+  const picker = page.locator('#agent-panel-root').getByRole('button', {
+    name: enMessages.agent.switchWorkflow
+  })
+  await picker.click()
+  await page
+    .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
+    .click()
+  await expect(picker).toHaveText('Unsaved Workflow')
+}
