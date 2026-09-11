@@ -25,12 +25,14 @@ describe('resolveWorkshopCloudEnv', () => {
 })
 
 describe('isWorkshopCloudEnv', () => {
-  it('accepts exactly the three families', () => {
-    expect(isWorkshopCloudEnv('prod')).toBe(true)
-    expect(isWorkshopCloudEnv('staging')).toBe(true)
-    expect(isWorkshopCloudEnv('test')).toBe(true)
-    expect(isWorkshopCloudEnv('Prod')).toBe(false)
-    expect(isWorkshopCloudEnv('')).toBe(false)
-    expect(isWorkshopCloudEnv(undefined)).toBe(false)
+  it.for([
+    { name: 'prod is valid', value: 'prod', expected: true },
+    { name: 'staging is valid', value: 'staging', expected: true },
+    { name: 'test is valid', value: 'test', expected: true },
+    { name: 'family names are case-sensitive', value: 'Prod', expected: false },
+    { name: 'empty is invalid', value: '', expected: false },
+    { name: 'unset is invalid', value: undefined, expected: false }
+  ])('$name', ({ value, expected }) => {
+    expect(isWorkshopCloudEnv(value)).toBe(expected)
   })
 })
