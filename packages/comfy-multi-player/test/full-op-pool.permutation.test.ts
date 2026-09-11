@@ -216,12 +216,14 @@ function makeOp(
     case "clear":
       return { ...env, op: "clear", removed_nodes: side === 0 ? [10, 40, 57] : [20, 40, 57] };
     case "define_subgraph":
+      const id = "12345678-1234-4123-8123-123456789abc";
       return {
         ...env,
         op: "define_subgraph",
-        subgraph_id: `12345678-1234-4123-8123-123456789ab${side}`,
+        subgraph_id: id,
         subgraph_definition: {
-          id: `12345678-1234-4123-8123-123456789ab${side}`,
+          id,
+          name: `side-${side}`,
           nodes: [],
           links: [],
         },

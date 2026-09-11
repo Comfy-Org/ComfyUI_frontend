@@ -15,6 +15,7 @@ import { definitionsMap } from "../src/doc.js"
 const catalog: WidgetCatalog = {
   types: {
     Inner: { widget_order: ["value"] },
+    Other: { widget_order: [] },
   },
 }
 
@@ -95,12 +96,10 @@ describe("define_subgraph application", () => {
     expect(projected.nodes[0]!.widgets_values).toEqual([2])
   })
 
-  it("rejects same definition id with different content without changing the original", () => {
+  it("drops a losing definition conflict without changing the winner", () => {
     const doc = empty()
     applyOps(doc, [define()], catalog)
-    const before = Y.encodeStateAsUpdate(doc)
-    expect(rejectionCode(doc, define(subgraphId, 2))).toBe("definition_conflict")
-    expect(Y.encodeStateAsUpdate(doc)).toEqual(before)
+    expect(applyOps(doc, [define(subgraphId, 2)], catalog).outcomes[0]?.outcome).toBe("lww-dropped")
     expect((project(doc, catalog).definitions as { subgraphs: unknown[] }).subgraphs).toEqual([definition()])
   })
 
@@ -116,10 +115,26 @@ describe("define_subgraph application", () => {
     expect(projections[0]).toEqual(projections[1])
   })
 
+  it("keeps applying a batch suffix after the deterministic conflict loser", () => {
+    const a = define(subgraphId, 1)
+    const b = define(subgraphId, 2)
+    const suffix = { op: "add_node", ...envelope(), node_id: 99, class_type: "Other", pos: [0, 0], node: { id: 99, type: "Other", inputs: [], outputs: [] } } as Op
+    const projections = [[a, b], [b, a]].map((ops) => {
+      const doc = empty()
+      applyOps(doc, [ops[0]!], catalog)
+      applyOps(doc, [ops[1]!, suffix], catalog)
+      return project(doc, catalog)
+    })
+    expect(projections[0]).toEqual(projections[1])
+    expect(projections[0].nodes.some((node) => node.id === 99)).toBe(true)
+  })
+
   it.each([
     ["missing nodes", { ...definition(), nodes: undefined }],
     ["invalid definition id", definition("not-a-uuid")],
     ["duplicate normalized node ids", { ...definition(), nodes: [{ id: 1, type: "Inner" }, { id: "1", type: "Inner" }] }],
+    ["missing interior node id", { ...definition(), nodes: [{ type: "Inner" }] }],
+    ["reserved structural key", { ...definition(), node_order: [] }],
     ["duplicate normalized nested definition ids", {
       ...definition(),
       definitions: {
@@ -163,6 +178,24 @@ describe("define_subgraph application", () => {
 
     expect(outcome).toBe("applied")
     expect(projected.definitions.subgraphs[0]!.nodes[0]!.widgets_values).toEqual([9])
+  })
+
+  it("rejects a direct edit to a definition with multiple live instances", () => {
+    const doc = empty()
+    applyOps(doc, [define()], catalog)
+    applyOps(doc, [
+      { op: "add_node", ...envelope(), node_id: 1, class_type: subgraphId, pos: [0, 0], node: { id: 1, type: subgraphId, inputs: [], outputs: [] } },
+      { op: "add_node", ...envelope(), node_id: 2, class_type: subgraphId, pos: [0, 0], node: { id: 2, type: subgraphId, inputs: [], outputs: [] } },
+    ], catalog)
+    expect(rejectionCode(doc, { op: "set_widget", ...envelope(), node_id: 10, path: [subgraphId, "10"], inner_widget: "value", widget: "value", value: 9 })).toBe("shared_definition_unforked")
+  })
+
+  it("rejects an unprojectable named widget in an interior node atomically", () => {
+    const doc = empty()
+    const malformed = { ...definition(), nodes: [{ id: 10, type: "Inner", inputs: [], outputs: [], widgets_values: { missing: 1 } }] }
+    const before = Y.encodeStateAsUpdate(doc)
+    expect(rejectionCode(doc, { ...define(), subgraph_definition: malformed })).toBe("unknown_widget")
+    expect(Y.encodeStateAsUpdate(doc)).toEqual(before)
   })
 
   it.each([
@@ -234,11 +267,11 @@ describe("define_subgraph application", () => {
     expect(subgraph.nodes[0]!.widgets_values).toEqual([2])
   })
 
-  it("rejects an instance before its definition through the unknown-node path", () => {
+  it("accepts an opaque UUID-shaped node type before its definition arrives", () => {
     const doc = empty()
     const missing = "abcdefab-cdef-4abc-8def-abcdefabcdef"
     const instance = { op: "add_node", ...envelope(), node_id: 1, class_type: missing, pos: [0, 0], node: { id: 1, type: missing, inputs: [], outputs: [] } } as Op
-    expect(rejectionCode(doc, instance)).toBe("invalid_node_payload")
+    expect(applyOps(doc, [instance], catalog).outcomes[0]?.outcome).toBe("applied")
   })
 
   it("has root/interior widget-edit parity", () => {

@@ -592,34 +592,11 @@ function sharedDefinitionCase(): { doc: Y.Doc; op: Op; catalog?: WidgetCatalog; 
   };
 }
 
-function definitionConflictCase(): { doc: Y.Doc; op: Op; catalog?: WidgetCatalog; code: string } {
-  const id = "12345678-1234-4123-8123-123456789abc";
-  const first = {
-    op: "define_subgraph",
-    ...env(),
-    subgraph_id: id,
-    subgraph_definition: { id, name: "original", nodes: [], links: [] },
-  } as Op;
-  const doc = mint(baseWorkflow(), catalog);
-  applyOps(doc, [first], catalog);
-  return {
-    doc,
-    op: {
-      ...first,
-      ...env(),
-      subgraph_definition: { id, name: "replacement", nodes: [], links: [] },
-    } as Op,
-    catalog,
-    code: "definition_conflict",
-  };
-}
-
 const FIXTURE_CASES = [
   ["add_node without a catalog", catalogRequiredCase],
   ["promoted host write without a catalog", promotedCatalogRequiredCase],
   ["interior set_widget past the positional length", widgetOutOfRangeCase],
   ["interior set_widget into a definition two nodes instantiate", sharedDefinitionCase],
-  ["define_subgraph reusing an id with different content", definitionConflictCase],
 ] as const;
 
 describe("KA-4: the rejection codes that need their own fixture", () => {
@@ -665,7 +642,6 @@ const ALL_REJECTION_CODES = [
   "not_a_subgraph",
   "interior_node_not_found",
   "shared_definition_unforked",
-  "definition_conflict",
 ] as const;
 
 // These require an already-consumed op_id or an intentionally deep payload;

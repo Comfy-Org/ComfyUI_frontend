@@ -477,6 +477,7 @@ function applyDefineSubgraph(
     throw new OpRejectedError("catalog_required", "define_subgraph: the pinned catalog is required to encode interior nodes");
   }
   const digest = sha256Hex(canonicalOp(op.subgraph_definition as unknown as Op));
+  validateDefinitionWidgets(op.subgraph_definition, catalog);
   const definitions = definitionsMap(doc);
   const existing = definitions.get(op.subgraph_id);
   if (existing !== undefined) {
@@ -495,10 +496,7 @@ function applyDefineSubgraph(
       setDefinitionDigest(doc, op.subgraph_id, digest);
       return "applied";
     }
-    throw new OpRejectedError(
-      "definition_conflict",
-      `define_subgraph: definition '${op.subgraph_id}' already exists with different content`,
-    );
+    return "lww-dropped";
   }
   assertDefinitionIdsAvailable(doc, op.subgraph_definition);
   let definition: Y.Map<unknown>;
@@ -557,12 +555,14 @@ function validateSubgraphDefinition(definition: Record<string, unknown>, path: s
   if (!isUuid(definition.id) || !Array.isArray(definition.nodes) || !Array.isArray(definition.links)) {
     throw new OpRejectedError("malformed_op", `define_subgraph: ${path} needs a UUID id plus nodes and links arrays`);
   }
-  assertUniqueNormalizedIds(definition.nodes, `${path}.nodes`);
+  for (const key of ["node_order", "link_order", "__definition_digest"]) {
+    if (Object.hasOwn(definition, key)) {
+      throw new OpRejectedError("malformed_op", `define_subgraph: ${path} contains reserved key '${key}'`);
+    }
+  }
+  assertUniqueNormalizedIds(definition.nodes, `${path}.nodes`, true);
   assertUniqueNormalizedIds(definition.links, `${path}.links`);
   validateSerializableValue(definition, path);
-  if (Object.hasOwn(definition, "__definition_digest")) {
-    throw new OpRejectedError("malformed_op", `define_subgraph: ${path} contains reserved key '__definition_digest'`);
-  }
 
   const nested = definition.definitions;
   if (nested === undefined) return;
@@ -583,17 +583,35 @@ function validateSubgraphDefinition(definition: Record<string, unknown>, path: s
   });
 }
 
-function assertUniqueNormalizedIds(values: unknown[], path: string): void {
+function assertUniqueNormalizedIds(values: unknown[], path: string, required = false): void {
   const ids = new Set<string>();
   values.forEach((value, index) => {
     const id = Array.isArray(value) ? value[0] : isPlainRecord(value) ? value.id : undefined;
-    if (id === undefined || id === null) return;
+    if (id === undefined || id === null) {
+      if (required) throw new OpRejectedError("malformed_op", `define_subgraph: missing id at ${path}[${index}]`);
+      return;
+    }
     const normalized = String(id);
     if (ids.has(normalized)) {
       throw new OpRejectedError("malformed_op", `define_subgraph: duplicate normalized id '${normalized}' at ${path}[${index}]`);
     }
     ids.add(normalized);
   });
+}
+
+function validateDefinitionWidgets(definition: Record<string, unknown>, catalog: WidgetCatalog): void {
+  (definition.nodes as unknown[]).forEach((candidate) => {
+    if (!isPlainRecord(candidate)) {
+      throw new OpRejectedError("malformed_op", "define_subgraph: every interior node must be an object");
+    }
+    rejectUnprojectableWidgets(candidate.type, candidate.widgets_values, catalogEntry(catalog, candidate.type));
+  });
+  const nested = definition.definitions;
+  if (isPlainRecord(nested) && Array.isArray(nested.subgraphs)) {
+    nested.subgraphs.forEach((child) => {
+      if (isPlainRecord(child)) validateDefinitionWidgets(child, catalog);
+    });
+  }
 }
 
 function validateSerializableValue(value: unknown, path: string): void {
@@ -675,13 +693,6 @@ function applyAddNode(doc: Y.Doc, op: AddNodeOp, catalog?: WidgetCatalog): Succe
   // key) otherwise resolves to a prototype object and is mistaken for a real
   // catalog entry (#13).
   const entry = catalogEntry(catalog, op.node.type);
-  if (
-    entry === undefined &&
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(op.node.type) &&
-    !resolveDefinition(doc, op.node.type)
-  ) {
-    throw new OpRejectedError("invalid_node_payload", `add_node: unknown subgraph definition '${op.node.type}'`);
-  }
   const order = entry?.widget_order;
   // No catalog AT ALL: the host cannot tell an unknown class from a known one,
   // so it cannot decide between name-decomposition and opaque storage — reject
@@ -1160,7 +1171,14 @@ function resolveInteriorNode(doc: Y.Doc, path: string[], catalog?: WidgetCatalog
   const head = nodesMap(doc).get(path[0]!);
   if (!head) {
     const definition = resolveDefinition(doc, path[0]!);
-    if (!definition) return null;
+    if (!definition || String(definition.get("id")) !== path[0]) return null;
+    const instances = countDefinitionInstances(doc, path[0]!, catalog);
+    if (instances > 1) {
+      throw new OpRejectedError(
+        "shared_definition_unforked",
+        `definition ${path[0]} is instantiated ${instances} times; interior writes to shared definitions are rejected until forking is specced (schema §5.3)`,
+      );
+    }
     const innerNodes = definition.get("nodes");
     const inner = innerNodes instanceof Y.Map ? innerNodes.get(path[1]!) : undefined;
     if (!(inner instanceof Y.Map)) {

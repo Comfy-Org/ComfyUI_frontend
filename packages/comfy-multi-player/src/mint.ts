@@ -139,13 +139,18 @@ function definitionLinkKey(ln: unknown, index: number): string {
 }
 
 export function mintDefinition(sg: SubgraphDef, catalog: WidgetCatalog): Y.Map<unknown> {
+  for (const key of ["node_order", "link_order", "__definition_digest"]) {
+    if (Object.hasOwn(sg, key)) throw new TypeError(`mint: definition key '${key}' is reserved`);
+  }
   const dm = new Y.Map<unknown>();
   for (const [k, v] of Object.entries(sg)) {
     if (k === "nodes" && Array.isArray(v)) {
       const nm = new Y.Map<Y.Map<unknown>>();
       const order: string[] = [];
       for (const n of v as WorkflowNode[]) {
+        if (n.id === undefined || n.id === null) throw new TypeError("mint: definition node is missing id");
         const key = String(n.id);
+        if (order.includes(key)) throw new TypeError(`mint: duplicate definition node id '${key}'`);
         order.push(key);
         nm.set(key, createNodeMap(n, widgetOrderFor(catalog, n.type)));
       }
@@ -175,7 +180,9 @@ export function mintDefinition(sg: SubgraphDef, catalog: WidgetCatalog): Y.Map<u
         const nested = new Y.Map<Y.Map<unknown>>();
         const order: string[] = [];
         for (const child of subgraphs as SubgraphDef[]) {
+          if (child.id === undefined || child.id === null) throw new TypeError("mint: nested definition is missing id");
           const key = String(child.id);
+          if (order.includes(key)) throw new TypeError(`mint: duplicate nested definition id '${key}'`);
           order.push(key);
           nested.set(key, mintDefinition(child, catalog));
         }
