@@ -29,7 +29,7 @@ export const useAgentWorkflowTabBindingStore = defineStore(
 
     watch(
       () => workflows.openWorkflows.map((tab) => ({ tab, path: tab.path })),
-      (open, previous) => {
+      (open, previous = []) => {
         for (const { tab, path } of previous) {
           if (!open.some((entry) => entry.tab === tab)) {
             const id = workflowIdFor(path)
@@ -40,7 +40,13 @@ export const useAgentWorkflowTabBindingStore = defineStore(
               unbind(path)
           }
         }
-      }
+        for (const { tab, path } of open) {
+          const id = workflowIdFor(path)
+          if (id !== undefined && !boundInstances.has(id))
+            boundInstances.set(id, toRaw(tab))
+        }
+      },
+      { immediate: true }
     )
 
     function matchesWorkflow(

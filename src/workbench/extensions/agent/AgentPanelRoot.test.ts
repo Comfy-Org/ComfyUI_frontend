@@ -2429,6 +2429,57 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(useAgentPanelStore().selectedWorkflow?.path).toBe(current.path)
   })
 
+  it('restores an agent-minted draft target after reload and keeps its Cloud identity on send', async () => {
+    localStorage.setItem(
+      'Comfy.Agent.WorkflowTabBindings',
+      JSON.stringify({ 'wf-minted': 'workflows/minted.json' })
+    )
+    const restored = addTab('workflows/minted.json', { isTemporary: true })
+    useAgentConversationStore().setThreadId('th-1')
+    const bodies: unknown[] = []
+    const history: AgentMessages = [
+      {
+        id: 'row',
+        thread_id: 'th-1',
+        seq: 1,
+        role: 'user',
+        status: 'complete',
+        turn_id: 'turn',
+        workflow_id: 'wf-minted',
+        content: { text: 'Earlier request' }
+      }
+    ]
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.includes('/messages') && init?.method === 'POST') {
+          bodies.push(JSON.parse(String(init.body)))
+          return json(202, ack('wf-minted'))
+        }
+        if (url.includes('/messages')) return json(200, history)
+        if (url.includes('/workflows'))
+          return json(200, {
+            data: [],
+            pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+          })
+        return json(200, agentThreadList())
+      })
+    )
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await vi.waitFor(() =>
+      expect(useAgentPanelStore().selectedWorkflow).toEqual(restored)
+    )
+    expect(useToastStore().messagesToAdd).toHaveLength(0)
+    await sendFromComposer('continue editing')
+
+    expect(bodies[0]).toMatchObject({
+      workflow_id: 'wf-minted',
+      open_tabs: [{ workflow_id: 'wf-minted', name: 'minted' }]
+    })
+    expect(workflowService.saveWorkflowAs).not.toHaveBeenCalled()
+  })
+
   it.for(['wf-old', '', 'missing'])(
     'retains the explicit target when reopening history for %s',
     async (restoredId) => {
