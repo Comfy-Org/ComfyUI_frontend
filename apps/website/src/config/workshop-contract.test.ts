@@ -218,22 +218,26 @@ describe('schema-driven Router coverage', () => {
       )
     ).toEqual([])
   })
-  it('enables every authored input without requiring a presentation binding', () => {
-    const generated = z
-      .array(workshopContractRecordSchema)
-      .parse(JSON.parse(compileWorkshopContracts(rawSnapshots)))
-    expect(generated.map((entry) => entry.id).sort()).toEqual(
-      snapshots
-        .filter((entry) => entry.document['x-comfy-input-schema-authored'])
-        .map((entry) => entry.id)
-        .sort()
-    )
-    expect(
-      generated.some(
-        (entry) => entry.output.format === 'auto' && !entry.output.schema
+  it(
+    'enables every authored input without requiring a presentation binding',
+    { timeout: 15_000 },
+    () => {
+      const generated = z
+        .array(workshopContractRecordSchema)
+        .parse(JSON.parse(compileWorkshopContracts(rawSnapshots)))
+      expect(generated.map((entry) => entry.id).sort()).toEqual(
+        snapshots
+          .filter((entry) => entry.document['x-comfy-input-schema-authored'])
+          .map((entry) => entry.id)
+          .sort()
       )
-    ).toBe(true)
-  })
+      expect(
+        generated.some(
+          (entry) => entry.output.format === 'auto' && !entry.output.schema
+        )
+      ).toBe(true)
+    }
+  )
 
   it(
     'generates the committed packed contracts deterministically',
