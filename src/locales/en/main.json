@@ -5296,6 +5296,8 @@
     "toolForgotPreference": "Forgot a preference",
     "toolForgettingPreference": "Forgetting a preference",
     "openWorkflowTab": "Open {name}",
+    "unavailableWorkflowReference": "{name} (unavailable)",
+    "workflowReferenceUnavailableReason": "This referenced workflow is no longer available or you do not have access to it.",
     "removeWorkflowReference": "Remove {name} reference",
     "targetNavigationUnavailable": "This workflow target is no longer available.",
     "runModeTriggerAutoLimit": "Auto (limited)",

@@ -72,9 +72,16 @@ describe('UserMessage', () => {
       ]
     })
     const unavailable = screen.getByRole('button', {
-      name: 'Open Deleted workflow'
+      name: 'Deleted workflow (unavailable)'
     })
     expect(unavailable).toHaveAttribute('aria-disabled', 'true')
+    expect(unavailable).toHaveAttribute(
+      'aria-description',
+      t('agent.workflowReferenceUnavailableReason')
+    )
+    await userEvent.tab()
+    expect(unavailable).toHaveFocus()
+    await userEvent.keyboard('{Enter} ')
     await userEvent.click(unavailable)
     expect(view.emitted().openReferenceWorkflow).toBeUndefined()
     await userEvent.click(

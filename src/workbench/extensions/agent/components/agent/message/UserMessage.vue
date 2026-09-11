@@ -132,15 +132,24 @@ const splitAttachments = computed(() => {
         <span
           v-if="part.type === 'workflow'"
           role="button"
-          :tabindex="part.reference.unavailable ? -1 : 0"
+          tabindex="0"
           :aria-label="
-            t('agent.openWorkflowTab', { name: part.reference.name })
+            part.reference.unavailable
+              ? t('agent.unavailableWorkflowReference', {
+                  name: part.reference.name
+                })
+              : t('agent.openWorkflowTab', { name: part.reference.name })
           "
           data-testid="workflow-reference-chip"
           :aria-disabled="part.reference.unavailable"
+          :aria-description="
+            part.reference.unavailable
+              ? t('agent.workflowReferenceUnavailableReason')
+              : undefined
+          "
           :title="
             part.reference.unavailable
-              ? t('agent.targetNavigationUnavailable')
+              ? t('agent.workflowReferenceUnavailableReason')
               : undefined
           "
           class="inline cursor-pointer rounded-sm bg-primary-background/30 box-decoration-clone px-1 py-0.5 font-inter text-xs/[15px] font-normal break-all whitespace-normal text-primary-background-hover ring-1 ring-primary-background/30 ring-inset focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
