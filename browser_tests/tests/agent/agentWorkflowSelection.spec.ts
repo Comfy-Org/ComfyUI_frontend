@@ -65,7 +65,7 @@ test.describe(
       expect(workflowSelection.postedMessages).toHaveLength(0)
     })
 
-    test('navigates and removes staged workflow chips while retaining the draft and target', async ({
+    test('retains a closed-workflow reference across panel reopen, navigation, and removal', async ({
       page,
       workflowSelection
     }, testInfo) => {
@@ -99,6 +99,13 @@ test.describe(
       await expect.poll(() => workflowSelection.savedPaths.length).toBe(2)
       workflowSelection.finishSave(true)
       await expect(targetPicker).toHaveText('Unsaved Workflow (2)')
+      const tabs = page.getByTestId('workflow-tab')
+      await tabs.first().hover()
+      await tabs
+        .first()
+        .getByRole('button', { name: enMessages.g.close })
+        .click()
+      await expect(tabs).toHaveCount(1)
 
       const composer = panel.getByRole('textbox', { includeHidden: true })
       await composer.fill('@')
@@ -112,6 +119,14 @@ test.describe(
         .getByRole('menuitem', { name: 'Unsaved Workflow', exact: true })
         .click()
       await composer.fill('Use this workflow as inspiration')
+      await expect(tabs).toHaveCount(1)
+      await panel.getByRole('button', { name: enMessages.g.close }).click()
+      await expect(panel).toHaveCount(0)
+      await page
+        .getByRole('button', { name: enMessages.agent.askComfyAgent })
+        .click()
+      await expect(composer).toHaveValue('Use this workflow as inspiration')
+      await expect(targetPicker).toHaveText('Unsaved Workflow (2)')
       const chip = panel.getByTestId('workflow-reference-chip')
       const open = chip.getByRole('button', {
         name: 'Open Unsaved Workflow',

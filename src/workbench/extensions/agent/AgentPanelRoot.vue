@@ -44,6 +44,8 @@ import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { blankGraph } from '@/scripts/defaultGraph'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
@@ -164,7 +166,8 @@ const agentNodeSelectionStore = useAgentNodeSelectionStore()
 const {
   refreshCloudWorkflowIds,
   cloudIdFor,
-  boundWorkflowFor,
+  cloudWorkflowName,
+  boundOrOpenWorkflowFor,
   storedWorkflowFor,
   openWorkflowFor,
   availableWorkflowReferences,
@@ -177,6 +180,11 @@ const {
 })
 const tabActivity = useWorkflowTabActivityStore()
 const CREATING_TAB_MIN_DURATION_MS = 500
+// Opens at the template's view so the follower's first nodes land on screen.
+const agentTabGraph: ComfyWorkflowJSON = {
+  ...blankGraph,
+  extra: { ds: { offset: [0, 0], scale: 1 } }
+}
 
 const canvasStore = useCanvasStore()
 const graphMutationsByWorkflow = new Map<
@@ -188,7 +196,7 @@ const graphMutations = (workflowId: string) => {
   if (existing) return existing
   const mutations = createGraphMutations({
     getScope() {
-      const rootGraphId = boundWorkflowFor(workflowId)?.activeState?.id
+      const rootGraphId = boundOrOpenWorkflowFor(workflowId)?.activeState?.id
       return rootGraphId
         ? {
             rootGraphId: toRootGraphId(rootGraphId),
@@ -377,7 +385,7 @@ function targetWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
   return { content }
 }
 
-const activeTab = computed<ActiveTab | null>(() => {
+const selectedTargetTab = computed<ActiveTab | null>(() => {
   const target = selectedTarget.value
   return target
     ? {
@@ -521,7 +529,7 @@ async function onSelectWorkflowReference(
     bindingStore.bind(workflowId, tab.path)
     addWorkflowReference({
       id: workflowId,
-      name: tab.suffix === 'app.json' ? `${tab.filename}.app` : tab.filename
+      name: cloudWorkflowName(tab)
     })
     return true
   } catch (error) {
@@ -574,7 +582,7 @@ async function onWorkflowRestored(
   if (workflowId === undefined) return
   await refreshCloudWorkflowIds()
   if (generation !== targetSelectionGeneration || !isSessionCurrent()) return
-  const target = boundWorkflowFor(workflowId)
+  const target = boundOrOpenWorkflowFor(workflowId)
   if (target === null) {
     selectedTarget.value = null
     warnWorkflowUnavailable()
@@ -636,7 +644,7 @@ const isBoundWorkflowActive = computed(() => {
   return (
     bound !== null &&
     active !== null &&
-    boundWorkflowFor(bound)?.path === active.path
+    boundOrOpenWorkflowFor(bound)?.path === active.path
   )
 })
 
@@ -783,7 +791,7 @@ async function onAgentActiveTab(
   const stale = () => generation !== activeTabGeneration
   if (stale()) return
   try {
-    const bound = boundWorkflowFor(data.workflow_id)
+    const bound = boundOrOpenWorkflowFor(data.workflow_id)
     if (bound) {
       const opened = await workflowService.openWorkflow(bound)
       if (stale()) return
@@ -791,7 +799,7 @@ async function onAgentActiveTab(
         warnWorkflowUnavailable()
         return
       }
-      // boundWorkflowFor can resolve by cloud name, which leaves no binding behind
+      // boundOrOpenWorkflowFor can resolve by cloud name, which leaves no binding behind
       // for everything downstream that only reads tabPathFor.
       bindingStore.bind(data.workflow_id, bound.path)
       if (status.value !== 'idle') tabActivity.setEditing(bound.path)
@@ -802,9 +810,6 @@ async function onAgentActiveTab(
       })
       return
     }
-    // A new agent workflow opens as an EMPTY tab: the host minted its doc
-    // server-side (seed-at-bind), and the follower fills the canvas through
-    // the ordinary subscribe catch-up - no snapshot fetch, no draft apply.
     const creatingStartedAt = Date.now()
     tabActivity.setCreating(true)
     const remainingCreatingTime =
@@ -812,9 +817,18 @@ async function onAgentActiveTab(
     if (remainingCreatingTime > 0)
       await new Promise((resolve) => setTimeout(resolve, remainingCreatingTime))
     if (stale()) return
-    const tab = workflowStore.createTemporary(agentTabFilename(data.name))
+    const tab = workflowStore.createNewTemporary(
+      agentTabFilename(data.name),
+      agentTabGraph
+    )
     tabActivity.setCreating(false)
-    const opened = await workflowService.openWorkflow(tab)
+    let opened: boolean
+    try {
+      opened = await workflowService.openWorkflow(tab)
+    } catch (error) {
+      await workflowService.closeWorkflow(tab, { warnIfUnsaved: false })
+      throw error
+    }
     if (stale() || !opened) {
       await workflowService.closeWorkflow(tab, { warnIfUnsaved: false })
       if (!stale()) warnWorkflowUnavailable()
@@ -1259,7 +1273,7 @@ function onPanelDrop(event: DragEvent): void {
       :saving-reference="savingReference"
       :available-workflows="availableWorkflowReferences"
       :editable-workflow-id="editableWorkflowId"
-      :active-tab="activeTab"
+      :active-tab="selectedTargetTab"
       :workflow-tabs="workflowTabs"
       :visible-tab-path="workflowStore.activeWorkflow?.path ?? null"
       :selecting-tab-path="selectingTarget?.path ?? null"

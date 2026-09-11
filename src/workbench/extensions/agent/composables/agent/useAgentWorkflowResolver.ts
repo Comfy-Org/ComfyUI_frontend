@@ -107,7 +107,7 @@ export function useAgentWorkflowResolver({
     return null
   }
 
-  function boundWorkflowFor(workflowId: string): ComfyWorkflow | null {
+  function boundOrOpenWorkflowFor(workflowId: string): ComfyWorkflow | null {
     return resolveWorkflow(workflowId, workflows.openWorkflows)
   }
 
@@ -179,7 +179,8 @@ export function useAgentWorkflowResolver({
   return {
     refreshCloudWorkflowIds,
     cloudIdFor,
-    boundWorkflowFor,
+    cloudWorkflowName,
+    boundOrOpenWorkflowFor,
     storedWorkflowFor,
     openWorkflowFor,
     availableWorkflowReferences,

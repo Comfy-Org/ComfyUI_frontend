@@ -47,18 +47,10 @@ export interface WorkflowTurnContext {
 }
 
 /**
- * Which tab a turn belongs to, resolved once before prepare() and then handed
- * to every post-await lookup. The three states are deliberately distinct:
- *
- * - omitted: resolve the currently selected target. Only correct outside a
- *   send, where there is nothing to pin to.
- * - `null`: the send had no origin tab at all (panel detached, or no workflow
- *   open when it started).
- * - `{ tabPath }`: pin resolution to that tab.
- *
- * Collapsing `null` into the omitted case is what lets a detached send pick up
- * whichever tab the user selects during prepare(), i.e. exactly the late
- * binding this pin exists to remove.
+ * Workflow lookup context: omitted resolves the currently selected target,
+ * `null` pins the absence of a target, and `{ tabPath }` pins its identity.
+ * A send captures this before preparation so later selections cannot change
+ * which workflow owns the turn.
  */
 export type TurnOrigin = { tabPath: string } | null
 
@@ -244,14 +236,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     promptEditState.value = { phase: 'idle' }
     sending.value = true
     stopRequestedWhileSending.value = false
-    // Capture the originating tab identity before the first await: prepare()
-    // can take up to PREPARE_TIMEOUT_MS, and a tab switch while it is
-    // pending must not reattribute this send to the newly active tab. The id
-    // lookups themselves stay post-await (prepare() is what warms them), but
-    // pinned to this originating path rather than whatever is active later.
-    // A send that starts with no origin tab must stay that way: `null` is not
-    // "resolve the selected target", or re-attaching during prepare() reattributes
-    // the turn to the tab selected afterwards.
     const generation = loadGeneration
     const threadAtSend = conversationStore.threadId ?? 'new'
     const originContext = workflow?.current()

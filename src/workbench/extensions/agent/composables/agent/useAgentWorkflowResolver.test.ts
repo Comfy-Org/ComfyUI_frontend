@@ -63,7 +63,7 @@ describe('Agent workflow resolution', () => {
     ])
     bindings.bind('stale-cloud-id', 'workflows/scratch.json')
     expect(resolver.cloudIdFor(workflows.openWorkflows[0])).toBeUndefined()
-    expect(resolver.boundWorkflowFor('stale-cloud-id')).toBeNull()
+    expect(resolver.boundOrOpenWorkflowFor('stale-cloud-id')).toBeNull()
     expect(resolver.availableWorkflowReferences.value).toEqual([
       { tabPath: 'workflows/scratch.json', name: 'Scratch' }
     ])
@@ -120,7 +120,7 @@ describe('Agent workflow resolution', () => {
       { id: 'cloud-shared', name: 'Shared' }
     ])
     expect(resolver.storedWorkflowFor('cloud-shared')).toBeNull()
-    expect(resolver.boundWorkflowFor('cloud-ambiguous-1')).toBeNull()
+    expect(resolver.boundOrOpenWorkflowFor('cloud-ambiguous-1')).toBeNull()
   })
 
   it('distinguishes open references from stored and explicitly bound closed workflows', async () => {
@@ -135,10 +135,12 @@ describe('Agent workflow resolution', () => {
     await resolver.refreshCloudWorkflowIds()
     expect(resolver.openWorkflowFor('cloud-a')).toBe(workflows.openWorkflows[0])
     expect(resolver.openWorkflowFor('cloud-b')).toBeNull()
-    expect(resolver.boundWorkflowFor('cloud-b')).toBeNull()
+    expect(resolver.boundOrOpenWorkflowFor('cloud-b')).toBeNull()
     expect(resolver.storedWorkflowFor('cloud-b')).toBe(workflows.workflows[1])
     bindings.bind('cloud-b', 'workflows/b.json')
-    expect(resolver.boundWorkflowFor('cloud-b')).toBe(workflows.workflows[1])
+    expect(resolver.boundOrOpenWorkflowFor('cloud-b')).toBe(
+      workflows.workflows[1]
+    )
     expect(resolver.openWorkflowFor('cloud-b')).toBeNull()
   })
 
