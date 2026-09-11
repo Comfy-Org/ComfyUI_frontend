@@ -172,6 +172,15 @@ describe('inline node and asset references', () => {
 
     selected.value = []
     store.setNodeScope('workflow-B')
+    await waitFor(() => expect(editor.textContent).toBe('参考 🐈  source.png '))
+    await user.click(editor)
+    await user.keyboard('{Control>}z{/Control}')
+    expect(editor.textContent).toBe('参考 🐈  source.png ')
+    expect(store.nodes).toEqual([])
+    expect(screen.queryByTestId('node-reference-chip')).not.toBeInTheDocument()
+    expect(screen.getByTestId('asset-reference-chip')).toHaveTextContent(
+      'source.png'
+    )
     store.replaceDraft({ text: '', workflowReferences: [], attachments: [] })
     await waitFor(() => expect(editor.textContent).toBe(''))
     await user.click(editor)
