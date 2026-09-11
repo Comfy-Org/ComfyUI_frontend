@@ -2,6 +2,7 @@ import { OPAQUE_WIDGETS_KEY } from '@comfyorg/comfy-multi-player'
 import * as Y from 'yjs'
 
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
+import { reportError } from '@/platform/telemetry/reportError'
 import { zProjectedSubgraphDefinition } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 /**
@@ -163,6 +164,14 @@ export function readSubgraphDefinitionIds(doc: Y.Doc): string[] {
 }
 
 /**
+ * Ids already reported as failing to validate, per document. The follower
+ * reads the definitions root on every applied frame, and a definition minted
+ * in a broken shape stays broken, so without this the first report would be
+ * buried under one per frame for the rest of the session.
+ */
+const reportedUnreadableDefinitions = new WeakMap<Y.Doc, Set<string>>()
+
+/**
  * Project the subgraph definitions the op layer minted into the follower doc
  * back to the `ExportedSubgraph` shape `LGraph.createSubgraphs()` consumes,
  * interior nodes and links in mint order.
@@ -177,10 +186,23 @@ export function readSubgraphDefinitions(doc: Y.Doc): ExportedSubgraph[] {
   // (For a root that arrived over the wire, `getMap` upgrades the untyped
   // shared type in place; that is a read-side view, not new content.)
   if (!doc.share.has(DEFINITIONS_ROOT)) return definitions
-  doc.getMap<unknown>(DEFINITIONS_ROOT).forEach((value) => {
+  const reported =
+    reportedUnreadableDefinitions.get(doc) ??
+    reportedUnreadableDefinitions.set(doc, new Set()).get(doc)!
+  doc.getMap<unknown>(DEFINITIONS_ROOT).forEach((value, id) => {
     if (!(value instanceof Y.Map)) return
     const definition = readDefinition(value)
-    if (definition) definitions.push(definition)
+    if (definition) {
+      definitions.push(definition)
+      reported.delete(id)
+      return
+    }
+    if (reported.has(id)) return
+    reported.add(id)
+    reportError(
+      new Error(`Agent subgraph definition ${id} does not validate`),
+      { errorType: 'agent_crdt_unreadable_subgraph_definition' }
+    )
   })
   return definitions
 }

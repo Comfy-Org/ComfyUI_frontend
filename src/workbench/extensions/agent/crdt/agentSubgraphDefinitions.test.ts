@@ -1,6 +1,6 @@
 import { mint } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { createTestSubgraphData } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
@@ -9,8 +9,13 @@ import type {
   ISerialisedNode,
   SerialisableLLink
 } from '@/lib/litegraph/src/types/serialisation'
+import { reportError } from '@/platform/telemetry/reportError'
 
 import { readSubgraphDefinitions } from './agentSubgraphDefinitions'
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 const CATALOG: WidgetCatalog = {
   types: {
@@ -79,6 +84,10 @@ function seed(...definitions: ExportedSubgraph[]): Y.Doc {
 }
 
 describe('readSubgraphDefinitions', () => {
+  beforeEach(() => {
+    vi.mocked(reportError).mockClear()
+  })
+
   it('returns nothing for a document without definitions', () => {
     expect(readSubgraphDefinitions(new Y.Doc())).toEqual([])
     expect(readSubgraphDefinitions(seed())).toEqual([])
@@ -199,6 +208,31 @@ describe('readSubgraphDefinitions', () => {
     stored.set('definitions', { subgraphs: [null] })
 
     expect(readSubgraphDefinitions(doc)).toEqual([])
+  })
+
+  it('reports a dropped definition once, and again after it recovers', () => {
+    const definition = createTestSubgraphData()
+    const doc = seed(definition)
+    const stored = expectYMap(
+      doc.getMap<unknown>('definitions').get(definition.id)
+    )
+    const state = stored.get('state')
+    stored.delete('state')
+
+    readSubgraphDefinitions(doc)
+    readSubgraphDefinitions(doc)
+
+    expect(reportError).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'agent_crdt_unreadable_subgraph_definition'
+    })
+
+    stored.set('state', state)
+    expect(readSubgraphDefinitions(doc)).toHaveLength(1)
+    stored.delete('state')
+    readSubgraphDefinitions(doc)
+
+    expect(reportError).toHaveBeenCalledTimes(2)
   })
 
   it('rejects a definition with malformed interior nodes', () => {
