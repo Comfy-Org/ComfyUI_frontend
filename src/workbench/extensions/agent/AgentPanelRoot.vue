@@ -495,7 +495,7 @@ async function onSelectWorkflowTarget(path: string): Promise<boolean> {
   try {
     const workflowId = await prepareWorkflowSelection(tab, isCurrent)
     if (workflowId === undefined || !isCurrent()) return false
-    if ((await workflowService.openWorkflow(tab)) === false) {
+    if (!(await workflowService.openWorkflow(tab))) {
       if (isCurrent())
         warnWorkflowSelectionFailed(t('agent.targetNavigationUnavailable'))
       return false
@@ -597,7 +597,7 @@ async function onWorkflowRestored(
   try {
     const opened = await workflowService.openWorkflow(target)
     if (generation !== targetSelectionGeneration || !isSessionCurrent()) return
-    if (opened === false) {
+    if (!opened) {
       selectedTarget.value = null
       warnWorkflowUnavailable()
       return
@@ -765,10 +765,7 @@ async function onNavigateToReferenceWorkflow(
       ])
       target = storedWorkflowFor(workflowId)
     }
-    if (
-      target === null ||
-      (await workflowService.openWorkflow(target)) === false
-    ) {
+    if (target === null || !(await workflowService.openWorkflow(target))) {
       warnWorkflowUnavailable()
       return
     }
@@ -804,7 +801,7 @@ async function onAgentActiveTab(
     if (bound) {
       const opened = await workflowService.openWorkflow(bound)
       if (stale()) return
-      if (opened === false) {
+      if (!opened) {
         warnWorkflowUnavailable()
         return
       }
@@ -832,7 +829,7 @@ async function onAgentActiveTab(
     const tab = workflowStore.createTemporary(agentTabFilename(data.name))
     tabActivity.setCreating(false)
     const opened = await workflowService.openWorkflow(tab)
-    if (stale() || opened === false) {
+    if (stale() || !opened) {
       await workflowService.closeWorkflow(tab, { warnIfUnsaved: false })
       if (!stale()) warnWorkflowUnavailable()
       return
