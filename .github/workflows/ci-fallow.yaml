@@ -1,0 +1,34 @@
+name: 'CI: Fallow'
+
+on:
+  pull_request:
+  merge_group:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  fallow:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout ref
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Audit new findings
+        uses: fallow-rs/fallow@e36026dfc0f00bfdf8dab889efc58ab86e5ec466 # v2.104.0
+        with:
+          command: audit
+          version: '2.104.0'
+          format: json
+          changed-since: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
