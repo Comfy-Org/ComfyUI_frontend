@@ -226,7 +226,11 @@ describe('WidgetSelectDropdown', () => {
       screen.getByRole('button', {
         name: 'widgets.uploadSelect.placeholderModel'
       })
-    ).not.toHaveAttribute('nodeType')
+    ).toBeInTheDocument()
+
+    const renderedMarkup = document.body.innerHTML
+    expect(renderedMarkup).not.toMatch(/ values="/i)
+    expect(renderedMarkup).not.toMatch(/ getoptionlabel="/i)
     expect(consoleWarn.mock.calls.flat().join(' ')).not.toContain(
       'Failed setting prop "nodeType"'
     )
