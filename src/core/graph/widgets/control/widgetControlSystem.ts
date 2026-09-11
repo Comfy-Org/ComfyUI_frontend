@@ -39,7 +39,8 @@ function collectGraphTargets(graph: LGraph): {
 export function runWidgetControl(
   graph: LGraph,
   phase: WidgetControlPhase,
-  controlMode: WidgetControlPhase
+  controlMode: WidgetControlPhase,
+  queuedNodeIds?: ReadonlySet<string>
 ): void {
   const runBefore = controlMode === 'before'
   if (phase === 'before' && !runBefore) return
@@ -50,15 +51,20 @@ export function runWidgetControl(
   for (const [targetId, control] of store.getWidgetControls(
     graph.rootGraph.id
   )) {
+    if (
+      phase === 'after' &&
+      queuedNodeIds &&
+      !queuedNodeIds.has(String(parseWidgetId(targetId).nodeId))
+    ) {
+      continue
+    }
     if (!live.has(targetId)) continue
     const target = store.getWidget(targetId)
     if (!target || linkFed.has(targetId)) continue
 
-    if (phase === 'before') {
-      const firstRun = !control.hasExecuted
-      store.updateWidgetControl(targetId, { hasExecuted: true })
-      if (firstRun) continue
-    }
+    const firstRun = !control.hasExecuted
+    store.updateWidgetControl(targetId, { hasExecuted: true })
+    if (phase === 'before' && firstRun) continue
 
     const next = computeNextControlledValue(target, control.mode, {
       comboFilter: control.filter,

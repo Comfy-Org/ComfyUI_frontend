@@ -22,7 +22,7 @@ export function registerWidgetControlFromConfig(widget: IBaseWidget): void {
 }
 
 export function getWidgetControlView(
-  widget: Pick<IBaseWidget, 'widgetId'>
+  widget: Pick<IBaseWidget, 'widgetId' | 'controlConfig'>
 ): SafeControlWidget | undefined {
   const targetId = widget.widgetId
   if (!targetId) return undefined
@@ -32,8 +32,10 @@ export function getWidgetControlView(
   return {
     value: normalizeControlOption(control.mode),
     update: (value) => {
+      const mode = normalizeControlOption(value)
+      if (widget.controlConfig) widget.controlConfig.mode = mode
       store.updateWidgetControl(targetId, {
-        mode: normalizeControlOption(value)
+        mode
       })
     }
   }

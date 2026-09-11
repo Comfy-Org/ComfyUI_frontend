@@ -2018,7 +2018,12 @@ export class ComfyApp {
           executeWidgetsCallback(queuedNodes, 'afterQueued', {
             isPartialExecution
           })
-          runWidgetControl(this.rootGraph, 'after', widgetControlMode)
+          runWidgetControl(
+            this.rootGraph,
+            'after',
+            widgetControlMode,
+            isPartialExecution ? new Set(queueNodeIds.map(String)) : undefined
+          )
           useFreeTierQuota().trackRun()
           this.canvas.draw(true, true)
           await this.ui.queue.update()

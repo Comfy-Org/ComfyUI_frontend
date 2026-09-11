@@ -424,7 +424,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     // Private fields
     this._node = node ?? widget.node
 
-    this._visibility = deriveWidgetVisibility(widget)
+    this._visibility = widget.visibility ?? deriveWidgetVisibility(widget)
 
     // The set and get functions for DOM widget values are hacked on to the options object;
     // attempting to set value before options will throw.
@@ -456,6 +456,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       // @ts-expect-error Prevent naming conflicts with custom nodes.
       labelBaseline,
       label,
+      visibility,
       hidden,
       disabled,
       value,

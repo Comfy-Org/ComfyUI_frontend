@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { createWidgetRestorationState } from '@/lib/litegraph/src/LGraphNode'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import {
@@ -185,6 +186,50 @@ describe('widget control persistence', () => {
     expect(
       useWidgetValueStore().getWidgetControl(target.widgetId)?.filter
     ).toBe('/portrait/')
+  })
+
+  it('removes a retained filter when filtering is disabled', () => {
+    const { node } = createControlledNode()
+    const target = node.widgets?.[0]
+    if (!target?.widgetId) throw new Error('Target widget was not registered')
+    target.controlConfig = {
+      mode: 'randomize',
+      hasFilter: true,
+      filter: '/portrait/'
+    }
+    registerWidgetControlFromConfig(target)
+
+    target.controlConfig = { mode: 'randomize', hasFilter: false }
+    registerWidgetControlFromConfig(target)
+
+    expect(
+      useWidgetValueStore().getWidgetControl(target.widgetId)?.filter
+    ).toBeUndefined()
+  })
+
+  it('keeps legacy control config in sync with Vue edits', () => {
+    const { node } = createControlledNode()
+    const target = node.widgets?.[0]
+    if (!target) throw new Error('Target widget was not registered')
+
+    getWidgetControlView(target)?.update('increment')
+
+    expect(target.controlConfig?.mode).toBe('increment')
+  })
+
+  it('maps fallback names around embedded control values', () => {
+    const widgets = [
+      { controlConfig: { mode: 'increment' as const, hasFilter: false } },
+      { controlConfig: undefined }
+    ]
+
+    const restoration = createWidgetRestorationState(
+      { widgets_values: [12345, 'increment', 20] },
+      ['seed', 'steps'],
+      widgets
+    )
+
+    expect(restoration.named).toEqual({ seed: 12345, steps: 20 })
   })
 
   it('moves and removes the component with its target widget', () => {

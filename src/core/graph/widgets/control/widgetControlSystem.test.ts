@@ -55,6 +55,32 @@ describe('runWidgetControl', () => {
     expect(seed.value).toBe(2)
   })
 
+  it('does not skip when switching from after mode to before mode', () => {
+    const { graph, seed } = createControlledSeed()
+
+    runWidgetControl(graph, 'after', 'after')
+    runWidgetControl(graph, 'before', 'before')
+
+    expect(seed.value).toBe(3)
+  })
+
+  it('only advances queued nodes after a partial execution', () => {
+    const { graph, node, seed } = createControlledSeed()
+    const other = new LGraphNode('OtherSeedNode')
+    const otherSeed = other.addWidget('number', 'seed', 10, () => {}, {
+      min: 0,
+      max: 100,
+      step2: 1
+    })
+    otherSeed.controlConfig = { mode: 'increment', hasFilter: false }
+    graph.add(other)
+
+    runWidgetControl(graph, 'after', 'after', new Set([String(node.id)]))
+
+    expect(seed.value).toBe(2)
+    expect(otherSeed.value).toBe(10)
+  })
+
   it('does not advance retained state after its node leaves the graph', () => {
     const { graph, node, seed } = createControlledSeed()
     graph.remove(node)

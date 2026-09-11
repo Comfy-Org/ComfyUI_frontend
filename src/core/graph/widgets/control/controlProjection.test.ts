@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import { getControlProjections } from './controlProjection'
@@ -50,5 +51,19 @@ describe('classic control projection', () => {
       expect(projection.advanced).toBe(true)
       expect(projection.connectionSuppressed).toBe(true)
     }
+  })
+
+  it('converts projections for classic canvas drawing', () => {
+    const node = new LGraphNode('SeedNode')
+    const seed = node.addWidget('number', 'seed', 1, () => {}, {})
+    seed.controlConfig = { mode: 'increment', hasFilter: false }
+    const [projection] = getControlProjections(seed)
+    if (!projection) throw new Error('Expected a control projection')
+
+    const concrete = toConcreteWidget(projection, node)
+
+    expect(concrete.visibility).toBe(seed.visibility)
+    seed.hidden = true
+    expect(concrete.hidden).toBe(true)
   })
 })

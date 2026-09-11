@@ -212,15 +212,21 @@ function serialiseWidgetValues(widgets: IBaseWidget[]) {
 
 export function createWidgetRestorationState(
   info: Pick<ISerialisedNode, 'widgets_values' | 'widgets_values_named'>,
-  fallbackNames?: readonly string[]
+  fallbackNames?: readonly string[],
+  widgets?: readonly Pick<IBaseWidget, 'widgetId' | 'controlConfig'>[]
 ) {
   const positional = Array.from(info.widgets_values ?? [])
+  const valueLayout = widgets
+    ? decodeWidgetValueLayout(widgets, positional)
+    : undefined
   const named =
     info.widgets_values_named ??
     (info.widgets_values && fallbackNames
       ? Object.fromEntries(
-          positional.flatMap((value, index) =>
-            fallbackNames[index] ? [[fallbackNames[index], value]] : []
+          fallbackNames.flatMap((name, index) =>
+            name
+              ? [[name, positional[valueLayout?.[index]?.valueIndex ?? index]]]
+              : []
           )
         )
       : undefined)
@@ -1180,7 +1186,8 @@ export class LGraphNode
 
     const restoration = createWidgetRestorationState(
       info,
-      this.constructor.nodeData?.fallbackWidgetsValuesNames
+      this.constructor.nodeData?.fallbackWidgetsValuesNames,
+      (this.widgets ?? []).filter((widget) => widget.serialize !== false)
     )
     const namedValues = restoration.named
     const graphId = this.graph?.rootGraph.id ?? zeroUuid
@@ -4485,6 +4492,7 @@ export class LGraphNode
     let y = startY
     for (const w of visibleWidgets) {
       w.y = y
+      w.last_y = y
       y += w.computedHeight ?? 0
     }
 

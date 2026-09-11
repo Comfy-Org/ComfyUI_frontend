@@ -709,7 +709,7 @@ describe('useNodeReplacement', () => {
     it('should transfer widget values using old_widget_ids', () => {
       const placeholder = createPlaceholderNode(1, 'ResizeImagesByLongerEdge')
       // Set widget values in serialized data
-      placeholder.last_serialization!.widgets_values = [512]
+      placeholder.last_serialization!.widgets_values = [512, 'increment', 20]
 
       const graph = createMockGraph([placeholder])
       placeholder.graph = graph
@@ -720,7 +720,8 @@ describe('useNodeReplacement', () => {
       const newNode = createNewNode(
         [
           { name: 'image', link: null },
-          { name: 'largest_size', link: null }
+          { name: 'largest_size', link: null },
+          { name: 'face_point_size', link: null }
         ],
         [{ name: 'IMAGE', links: null }],
         [
@@ -737,10 +738,11 @@ describe('useNodeReplacement', () => {
         makeMissingNodeType('ResizeImagesByLongerEdge', {
           new_node_id: 'ImageScaleToMaxDimension',
           old_node_id: 'ResizeImagesByLongerEdge',
-          old_widget_ids: ['longer_edge'],
+          old_widget_ids: ['longer_edge', 'face_point_size'],
           input_mapping: [
             { new_id: 'image', old_id: 'images' },
             { new_id: 'largest_size', old_id: 'longer_edge' },
+            { new_id: 'face_point_size', old_id: 'face_point_size' },
             { new_id: 'upscale_method', set_value: 'lanczos' }
           ],
           output_mapping: [{ new_idx: 0, old_idx: 0 }]
@@ -748,6 +750,7 @@ describe('useNodeReplacement', () => {
       ])
 
       expect(newNode.widgets![0].value).toBe(512)
+      expect(newNode.widgets![1].value).toBe(20)
       expect(setNodeId).toHaveBeenCalledWith(1)
     })
 
