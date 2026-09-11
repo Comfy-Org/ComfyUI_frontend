@@ -10,6 +10,12 @@ describe('bannerName', () => {
     expect(bannerName('Seedance Text to Video', 'Text to Video')).toBe(
       'Seedance'
     )
+    expect(bannerName('Seedance Text–to–Video', 'Text to Video')).toBe(
+      'Seedance'
+    )
+    expect(bannerName('Seedance Text—to—Video', 'Text to Video')).toBe(
+      'Seedance'
+    )
   })
 
   it('requires the label to start at a word boundary', () => {
