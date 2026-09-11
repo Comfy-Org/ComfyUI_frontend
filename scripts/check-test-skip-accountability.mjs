@@ -42,7 +42,7 @@ const readPullRequestBody = () => {
   })
 }
 
-const addedSkipPattern = /^\+[ \t]*test\.(?:fixme|skip)[ \t]*\(/m
+const addedSkipPattern = /^\+[ \t]*test\.(?:describe\.)?(?:fixme|skip)[ \t]*\(/m
 const trackingLinkPattern =
   /(?:https?:\/\/github\.com\/[\w.-]+\/[\w.-]+\/(?:issues|pull)\/\d+|(?:^|[\s([])#\d+)/m
 

@@ -31,6 +31,13 @@ describe('test skip accountability checker', () => {
     assert.equal(result.status, 0, result.stderr)
   })
 
+  it('rejects an added block-level describe skip without tracking', () => {
+    const result = runChecker('unlinked-body.md', 'added-describe-skip.diff')
+
+    assert.equal(result.status, 1)
+    assert.match(result.stderr, /tracking issue or follow-up PR/)
+  })
+
   it('ignores non-executable and unchanged skip calls', () => {
     const result = runChecker('unlinked-body.md', 'non-executable-skips.diff')
 
