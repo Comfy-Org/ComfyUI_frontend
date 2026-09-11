@@ -54,6 +54,25 @@ vi.mock('./dependency', async () => {
   return { ...original, dependency: vi.fn() }
 })`,
       errors: [{ message: /Do not dynamically import/ }]
+    },
+    {
+      code: `import { vi } from 'vitest'
+vi.doMock('./dependency', async (importOriginal) => importOriginal())`,
+      errors: [{ message: /Avoid importOriginal/ }]
+    },
+    {
+      code: `import { vi } from 'vitest'
+const factory = async (importOriginal: () => Promise<object>) => importOriginal()
+vi.mock('./dependency', factory)`,
+      errors: [{ message: /Avoid importOriginal/ }]
+    },
+    {
+      code: `import { vi } from 'vitest'
+vi.mock(\`./dependency\`, async () => {
+  const original = await import(\`./dependency\`)
+  return { ...original, dependency: vi.fn() }
+})`,
+      errors: [{ message: /Do not dynamically import/ }]
     }
   ]
 })

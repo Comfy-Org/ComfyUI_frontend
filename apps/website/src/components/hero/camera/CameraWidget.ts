@@ -31,10 +31,10 @@ import {
   TorusGeometry,
   TubeGeometry,
   Vector2,
-  Vector3,
-  WebGLRenderer
+  Vector3
 } from 'three'
 import type { Camera, Material } from 'three'
+import { WebGLRenderer } from 'three/src/renderers/WebGLRenderer.js'
 
 import type { CameraPalette, CameraState, CameraWidgetOptions } from './types'
 
@@ -118,7 +118,7 @@ export class CameraWidget {
   private paused = false
   private disposed = false
 
-  constructor(options: CameraWidgetOptions, renderer?: WebGLRenderer) {
+  constructor(options: CameraWidgetOptions) {
     this.container = options.container
     this.onStateChange = options.onStateChange
     this.pal = { ...DEFAULT_PALETTE, ...options.palette }
@@ -133,13 +133,13 @@ export class CameraWidget {
     this.liveElevation = this.state.elevation
     this.liveDistance = this.state.distance
 
-    this.initThreeJS(renderer)
+    this.initThreeJS()
     this.bindEvents()
     if (this.state.imageUrl) this.updateImage(this.state.imageUrl)
     this.animate()
   }
 
-  private initThreeJS(renderer?: WebGLRenderer): void {
+  private initThreeJS(): void {
     const width = this.container.clientWidth || 300
     const height = this.container.clientHeight || 300
 
@@ -154,8 +154,7 @@ export class CameraWidget {
     this.previewCamera = new PerspectiveCamera(50, width / height, 0.1, 100)
     this.activeCamera = this.camera
 
-    this.renderer =
-      renderer ?? new WebGLRenderer({ antialias: true, alpha: true })
+    this.renderer = new WebGLRenderer({ antialias: true, alpha: true })
     this.renderer.setSize(width, height, false)
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     this.renderer.outputColorSpace = SRGBColorSpace

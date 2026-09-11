@@ -15,6 +15,7 @@ const REDUNDANT_LITEGRAPH_CLEANUP_METHODS = new Set([
 ])
 
 const MODULE_SCOPE_MOCK_METHODS = new Set(['spyOn', 'stubGlobal'])
+const PARTIAL_MOCK_METHODS = new Set(['doMock', 'mock'])
 const AFTER_EACH_IMPORTS = new Set(['afterEach'])
 const BEFORE_TEST_IMPORTS = new Set(['beforeAll', 'describe', 'suite'])
 const SUITE_CALLBACK_MODIFIERS = new Set([
@@ -49,6 +50,14 @@ interface StringLiteral extends Node {
   readonly value: string
 }
 
+interface TemplateLiteral extends Node {
+  readonly type: 'TemplateLiteral'
+  readonly expressions: readonly Expression[]
+  readonly quasis: readonly {
+    readonly value: { readonly cooked?: string; readonly raw: string }
+  }[]
+}
+
 interface ImportExpression extends Node {
   readonly type: 'ImportExpression'
   readonly source: Expression
@@ -75,6 +84,7 @@ type Expression =
   | Node
   | Identifier
   | StringLiteral
+  | TemplateLiteral
   | MemberExpression
   | ChainExpression
 
@@ -85,7 +95,10 @@ interface CallExpression extends Node {
 }
 
 interface FunctionExpression extends Node {
-  readonly type: 'ArrowFunctionExpression' | 'FunctionExpression'
+  readonly type:
+    | 'ArrowFunctionExpression'
+    | 'FunctionDeclaration'
+    | 'FunctionExpression'
   readonly params: readonly Node[]
 }
 
@@ -97,10 +110,19 @@ function isImportExpression(node: Node | undefined): node is ImportExpression {
   return node?.type === 'ImportExpression'
 }
 
+function isTemplateLiteral(node: Node): node is TemplateLiteral {
+  return node.type === 'TemplateLiteral'
+}
+
 function staticModuleName(node: Node | undefined): string | undefined {
   if (!node) return
   if (isImportExpression(node)) return staticModuleName(node.source)
   if ('value' in node && typeof node.value === 'string') return node.value
+  if (isTemplateLiteral(node)) {
+    if (node.expressions.length === 0) {
+      return node.quasis[0]?.value.cooked ?? node.quasis[0]?.value.raw
+    }
+  }
 }
 
 function isFunctionExpression(
@@ -108,13 +130,17 @@ function isFunctionExpression(
 ): node is FunctionExpression {
   return (
     node?.type === 'ArrowFunctionExpression' ||
+    node?.type === 'FunctionDeclaration' ||
     node?.type === 'FunctionExpression'
   )
 }
 
 interface ScopeVariableDefinition {
   readonly type: string
-  readonly node: Node & { readonly imported?: Identifier }
+  readonly node: Node & {
+    readonly imported?: Identifier
+    readonly init?: Expression
+  }
   readonly parent: Node & { readonly source?: StringLiteral }
 }
 
@@ -184,6 +210,26 @@ function resolvedVariable(
     )
     if (reference) return reference.resolved
     scope = scope.upper
+  }
+}
+
+function mockFactory(
+  context: RuleContext,
+  expression: Expression | undefined
+): FunctionExpression | undefined {
+  if (isFunctionExpression(expression)) return expression
+  const identifier = expression && asIdentifier(expression)
+  if (!identifier) return
+
+  const variable = resolvedVariable(context, identifier)
+  for (const definition of variable?.defs ?? []) {
+    if (isFunctionExpression(definition.node)) return definition.node
+    if (
+      definition.node.type === 'VariableDeclarator' &&
+      isFunctionExpression(definition.node.init)
+    ) {
+      return definition.node.init
+    }
   }
 }
 
@@ -432,10 +478,11 @@ export const noImportActual = {
     return {
       CallExpression(node: CallExpression) {
         const methodName = vitestMethodName(context, node)
-        const factory = node.arguments[1]
+        const factory = mockFactory(context, node.arguments[1])
         const usesImportOriginal =
-          methodName === 'mock' &&
-          isFunctionExpression(factory) &&
+          methodName !== undefined &&
+          PARTIAL_MOCK_METHODS.has(methodName) &&
+          factory !== undefined &&
           factory.params.length > 0
 
         if (methodName !== 'importActual' && !usesImportOriginal) return
@@ -455,7 +502,7 @@ export const noImportActual = {
           return (
             isCallExpression(call) &&
             call.arguments[1] === ancestor &&
-            vitestMethodName(context, call) === 'mock' &&
+            PARTIAL_MOCK_METHODS.has(vitestMethodName(context, call) ?? '') &&
             staticModuleName(call.arguments[0]) === importedModule
           )
         })

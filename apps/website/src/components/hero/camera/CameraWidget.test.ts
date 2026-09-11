@@ -2,13 +2,18 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { PerspectiveCamera, Vector3 } from 'three'
-import type { Camera, Scene, WebGLRenderer } from 'three'
+import type { Camera, Scene, WebGLRenderer as WebGLRendererType } from 'three'
+import { WebGLRenderer } from 'three/src/renderers/WebGLRenderer.js'
 
 import { CameraWidget } from './CameraWidget'
 import type { CameraState } from './types'
 
+vi.mock(import('three/src/renderers/WebGLRenderer.js'), () => ({
+  WebGLRenderer: vi.fn()
+}))
+
 function fakeRenderer() {
-  return fromPartial<WebGLRenderer>({
+  return fromPartial<WebGLRendererType>({
     domElement: document.createElement('canvas'),
     setSize: vi.fn(),
     setPixelRatio: vi.fn(),
@@ -66,14 +71,11 @@ function createWidget(
 ) {
   const container = createContainer()
   const states: CameraState[] = []
-  const widget = new CameraWidget(
-    {
-      container,
-      onStateChange: (state) => states.push(state),
-      ...options
-    },
-    fakeRenderer()
-  )
+  const widget = new CameraWidget({
+    container,
+    onStateChange: (state) => states.push(state),
+    ...options
+  })
   const canvas = container.querySelector('canvas')!
   vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue({
     left: 0,
@@ -119,6 +121,7 @@ describe('CameraWidget', () => {
   beforeEach(() => {
     FakeImage.instances = []
     FakeResizeObserver.instances = []
+    vi.mocked(WebGLRenderer).mockImplementation(fakeRenderer)
     vi.stubGlobal('Image', FakeImage)
     vi.stubGlobal('ResizeObserver', FakeResizeObserver)
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(

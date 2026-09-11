@@ -46,6 +46,9 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 
 vi.mock(import('@vueuse/core'), { spy: true })
+vi.mocked(VueUse.createSharedComposable).mockImplementation(
+  sharedComposable.create
+)
 
 vi.mock<unknown>(
   import('@/platform/cloud/subscription/composables/useSubscription'),
@@ -74,9 +77,7 @@ vi.mock<unknown>(import('../tour/useFirstRunTourController'), () => ({
   useFirstRunTourController: () => ({ beginTour: mocks.beginTour })
 }))
 
-import { useFirstRunEntryIndividual } from './firstRunEntry'
-
-const useFirstRunEntry = sharedComposable.create(useFirstRunEntryIndividual)
+const { useFirstRunEntry } = await import('./firstRunEntry')
 
 type FirstRunEntry = ReturnType<typeof useFirstRunEntry>
 

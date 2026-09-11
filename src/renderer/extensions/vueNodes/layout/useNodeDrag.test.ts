@@ -1,6 +1,6 @@
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { whenever } from '@vueuse/core'
+import * as VueUse from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -90,8 +90,12 @@ vi.mock<unknown>(
 )
 
 vi.mock(import('@vueuse/core'), { spy: true })
+vi.mocked(VueUse.createSharedComposable).mockImplementation(
+  (composable) => composable
+)
 
-import { useNodeDragIndividual as useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
+const { useNodeDrag } =
+  await import('@/renderer/extensions/vueNodes/layout/useNodeDrag')
 
 const node1 = toNodeId('1')
 
@@ -103,7 +107,7 @@ function pointerEvent(clientX: number, clientY: number): PointerEvent {
 }
 
 beforeEach(() => {
-  vi.mocked(whenever).mockImplementation(() =>
+  vi.mocked(VueUse.whenever).mockImplementation(() =>
     Object.assign(vi.fn(), {
       pause: vi.fn(),
       resume: vi.fn(),

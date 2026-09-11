@@ -143,11 +143,6 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({ app: appMock }))
 vi.mock(import('@/platform/workflow/validation/schemas/workflowSchema'), {
   spy: true
 })
-vi.mocked(validateComfyWorkflow).mockImplementation(async (content) =>
-  fromPartial<ComfyWorkflowJSON>(
-    typeof content === 'object' && content !== null ? content : {}
-  )
-)
 
 let workflowStore: ReturnType<typeof useWorkflowStore>
 let canvasStore: ReturnType<typeof useCanvasStore>
@@ -216,14 +211,6 @@ vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
 const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
 
 vi.mock(import('@vueuse/core'), { spy: true })
-vi.mocked(useClipboard).mockReturnValue(
-  fromPartial({
-    copy: clipboard.copy,
-    copied: computed(() => false),
-    isSupported: ref(true),
-    text: ref('')
-  })
-)
 
 const telemetry = vi.hoisted(() => ({
   trackAgentMessageFeedback: vi.fn(),
@@ -266,29 +253,10 @@ const paywallBilling = vi.hoisted(() => ({
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'), {
   spy: true
 })
-vi.mocked(useWorkspaceUI).mockReturnValue(
-  fromPartial({
-    workspaceRole: computed(() => paywallWorkspace.role)
-  })
-)
 vi.mock(import('@/composables/billing/useBillingContext'), { spy: true })
-vi.mocked(useBillingContext).mockReturnValue(
-  fromPartial({
-    tier: computed(() => paywallBilling.tier)
-  })
-)
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'), {
   spy: true
 })
-vi.mocked(useBillingCapabilities).mockReturnValue(
-  fromPartial({
-    canTopUp: computed(() => paywallCapabilities.canTopUp),
-    canSubscribeSelfServe: computed(
-      () => paywallCapabilities.canSubscribeSelfServe
-    ),
-    isReady: computed(() => paywallCapabilities.isReady)
-  })
-)
 
 import type { AgentMessages, TurnId } from './schemas/agentApiSchema'
 import { zAgentWsEvent } from './schemas/agentApiSchema'

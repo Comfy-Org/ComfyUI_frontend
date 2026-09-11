@@ -21,11 +21,7 @@ import { useFirstRunTourController } from '../tour/useFirstRunTourController'
  * Getting Started screen for first-run tour candidates, the template browser
  * for everyone else.
  */
-export const useFirstRunEntry = createSharedComposable(
-  useFirstRunEntryIndividual
-)
-
-export function useFirstRunEntryIndividual() {
+export const useFirstRunEntry = createSharedComposable(() => {
   const settingStore = useSettingStore()
   const gettingStartedVisible = ref(false)
   const isDesktopWidth =
@@ -123,4 +119,4 @@ export function useFirstRunEntryIndividual() {
     handleUrlWorkflow,
     dismissGettingStarted
   }
-}
+})
