@@ -118,12 +118,15 @@ any record this ADR relies on.
   — centralized layout management with CRDT.
 - [ADR-GRAPH-DOCUMENT-0024: Graph Activation and Document Objects for In-App Agent Targets](GRAPH-DOCUMENT-0024-graph-activation-and-document-objects-for-in-app-agent-targets.md)
   — owns the follower-document replacement rule this ADR builds on.
-- [CRDT weekend final call](https://github.com/christian-byrne/in-app-agent-program/blob/main/decisions/ADR-019-crdt-weekend-final-call.md)
-  — bounded scalar-v1, reset/remint deferral, and the deployed-proof bar.
-- [DQ-47 resolution](https://github.com/christian-byrne/blocked-on-christian/issues/56#issuecomment-5462261123)
-  — vehicle, status, and deferred-contract disposition.
 - [`docFrameClient.ts`](../../src/workbench/extensions/agent/crdt/docFrameClient.ts)
   — the frame parser and subscription encoder that rule 4 would extend.
 - [`layoutFollowerBridge.ts`](../../src/workbench/extensions/agent/crdt/layoutFollowerBridge.ts)
   — owns gap detection, the resubscribe, and the ordered reset-before-replacement
   lifecycle.
+
+### Non-public history (not governing)
+
+The decision was first recorded in the in-app agent program's private tracker, as
+program ADR-019 and issue DQ-47. Those records are not readable from this
+repository and confer no authority here; everything they settled that still governs
+is restated above. They are listed only so the provenance is not silently dropped.
