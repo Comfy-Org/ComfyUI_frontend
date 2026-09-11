@@ -1131,6 +1131,42 @@ describe('AgentPanelRoot attach flow', () => {
     expect(refresh).toHaveBeenCalledOnce()
   })
 
+  it('chains input asset refreshes across overlapping batches', async () => {
+    const uploaded = stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+    let releaseFirstRefresh: () => void = () => {}
+    const refresh = vi
+      .spyOn(useAssetsStore().inputAssets, 'loadNew')
+      .mockImplementationOnce(
+        () =>
+          new Promise<undefined>((resolve) => {
+            releaseFirstRefresh = () => resolve(undefined)
+          })
+      )
+      .mockResolvedValue(undefined)
+
+    const textbox = screen.getByRole('textbox')
+    dispatchDrag(textbox, 'drop', {
+      files: [new File(['x'], 'a.png', { type: 'image/png' })]
+    })
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalledOnce())
+
+    dispatchDrag(textbox, 'drop', {
+      files: [new File(['x'], 'b.png', { type: 'image/png' })]
+    })
+    await vi.waitFor(() => expect(uploaded).toEqual(['a.png', 'b.png']))
+    await expect(
+      vi.waitFor(() => expect(refresh).toHaveBeenCalledTimes(2), {
+        timeout: 250,
+        interval: 10
+      })
+    ).rejects.toThrow()
+
+    releaseFirstRefresh()
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalledTimes(2))
+  })
+
   it('aborts an upload when its chip is removed', async () => {
     const signals: AbortSignal[] = []
     vi.stubGlobal(

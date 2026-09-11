@@ -88,13 +88,21 @@ async function forEachWithLimit<T>(
 let stagedCount = 0
 
 export function useAttachment(options: UseAttachmentOptions) {
+  const pending = new Set<string>()
   const inFlight = new Map<string, AbortController>()
   const cancelled = new Set<string>()
 
   function stage(name: string): string {
     const id = `upload-${++stagedCount}:${name}`
+    pending.add(id)
     options.stage({ id, name, ref: '', uploading: true })
     return id
+  }
+
+  function settle(id: string): void {
+    pending.delete(id)
+    inFlight.delete(id)
+    cancelled.delete(id)
   }
 
   function isTooLarge(file: File): boolean {
@@ -120,6 +128,12 @@ export function useAttachment(options: UseAttachmentOptions) {
   }
 
   async function uploadStagedFile(id: string, file: File): Promise<boolean> {
+    // A pooled batch stages every chip up front, so a queued upload can be
+    // cancelled before its worker reaches it.
+    if (cancelled.has(id)) {
+      settle(id)
+      return false
+    }
     options.update(id, {
       name: file.name,
       previewUrl: hasImageType(file) ? URL.createObjectURL(file) : undefined
@@ -139,20 +153,18 @@ export function useAttachment(options: UseAttachmentOptions) {
         failAttachment(id, file.name, 'agent_attachment_upload_failed')(cause)
       return false
     } finally {
-      inFlight.delete(id)
-      cancelled.delete(id)
+      settle(id)
     }
   }
 
   function cancelUpload(id: string): void {
-    const controller = inFlight.get(id)
-    if (!controller) return
+    if (!pending.has(id)) return
     cancelled.add(id)
-    controller.abort()
+    inFlight.get(id)?.abort()
   }
 
   function cancelAllUploads(): void {
-    for (const id of [...inFlight.keys()]) cancelUpload(id)
+    for (const id of [...pending]) cancelUpload(id)
   }
 
   async function addDeferredFile(
@@ -164,10 +176,12 @@ export function useAttachment(options: UseAttachmentOptions) {
       failAttachment(id, name, 'agent_attachment_fetch_failed')
     )
     if (!file) {
+      settle(id)
       options.remove(id)
       return undefined
     }
     if (isTooLarge(file)) {
+      settle(id)
       options.remove(id)
       return file
     }

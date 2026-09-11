@@ -34,18 +34,23 @@ describe('isAgentAttachable', () => {
   })
 
   it('names every approved extension in the picker accept list', () => {
-    expect(AGENT_ATTACH_ACCEPT.split(',')).toEqual([
-      'image/*',
-      'video/*',
-      'audio/*',
-      '.mp4',
-      '.m4a',
-      '.mov',
-      '.mp3',
-      '.wav',
-      '.glb',
-      '.md',
-      '.txt'
-    ])
+    const accepted = AGENT_ATTACH_ACCEPT.split(',')
+
+    expect(new Set(accepted)).toEqual(
+      new Set([
+        'image/*',
+        'video/*',
+        'audio/*',
+        '.mp4',
+        '.m4a',
+        '.mov',
+        '.mp3',
+        '.wav',
+        '.glb',
+        '.md',
+        '.txt'
+      ])
+    )
+    expect(accepted).toHaveLength(11)
   })
 })

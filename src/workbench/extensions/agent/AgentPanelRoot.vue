@@ -912,6 +912,7 @@ function onSelectNodes(): void {
 }
 
 const assetsStore = useAssetsStore()
+let inputAssetRefresh: Promise<unknown> = Promise.resolve()
 
 const attachment = useAttachment({
   upload: async (file, signal) => {
@@ -920,9 +921,15 @@ const attachment = useAttachment({
   },
   // The library caches input assets; without this refresh a just-uploaded file
   // is neither listed in the Assets tab nor mentionable this session. One run
-  // per settled batch, because the query queue coalesces an overlapping refresh
-  // into the in-flight one instead of scheduling a trailing pass.
-  onUploaded: () => void assetsStore.inputAssets.loadNew(),
+  // per settled batch, chained, because the query queue coalesces an
+  // overlapping refresh into the in-flight one instead of scheduling a
+  // trailing pass.
+  onUploaded: () => {
+    inputAssetRefresh = inputAssetRefresh.then(
+      () => assetsStore.inputAssets.loadNew(),
+      () => assetsStore.inputAssets.loadNew()
+    )
+  },
   maxBytes: () =>
     resolveAttachmentLimit(api.getServerFeature('max_upload_size')),
   // A rejected file is the user's problem to fix, not an agent failure, so it

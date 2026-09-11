@@ -377,6 +377,39 @@ describe('useAttachment', () => {
     expect(onError).not.toHaveBeenCalled()
   })
 
+  it('never starts an upload cancelled while it waited in the queue', async () => {
+    const resolvers: Array<() => void> = []
+    const upload = vi.fn((file: File) => {
+      return new Promise<{ ref: string }>((resolve) => {
+        resolvers.push(() => resolve({ ref: file.name }))
+      })
+    })
+    const onError = vi.fn()
+    const registry = chipRegistry()
+    const { addFiles, cancelUpload } = useAttachment({
+      upload,
+      onError,
+      ...registry
+    })
+
+    const pending = addFiles(
+      Array.from({ length: 4 }, (_unused, index) =>
+        fileOfSize(`${index}.png`, 1)
+      )
+    )
+    const queued = registry.chips[3]
+    cancelUpload(queued.id)
+
+    await vi.waitFor(() => {
+      for (const resolve of resolvers) resolve()
+      expect(upload).toHaveBeenCalledTimes(3)
+    })
+    await pending
+
+    expect(upload).toHaveBeenCalledTimes(3)
+    expect(onError).not.toHaveBeenCalled()
+  })
+
   it('aborts every in-flight upload when the panel goes away', async () => {
     const signals: AbortSignal[] = []
     const upload = vi.fn((_file: File, uploadSignal: AbortSignal) => {
