@@ -11,14 +11,26 @@ import {
 const hoisted = vi.hoisted(() => ({
   mockInit: vi.fn(),
   mockCapture: vi.fn(),
-  mockOnFeatureFlags: vi.fn(),
+  mockOnFeatureFlags: vi.fn<typeof PostHogModule.default.onFeatureFlags>(),
   mockIsFeatureEnabled: vi.fn(),
-  mockGetFeatureFlag: vi.fn()
+  mockGetFeatureFlag: vi.fn(),
+  mockIdentify: vi.fn(),
+  mockReset: vi.fn(),
+  mockGetProperty: vi.fn(),
+  mockReloadFeatureFlags: vi.fn()
 }))
 
 type PostHogMock = Pick<
   typeof PostHogModule.default,
-  'init' | 'capture' | 'onFeatureFlags' | 'isFeatureEnabled' | 'getFeatureFlag'
+  | 'init'
+  | 'capture'
+  | 'onFeatureFlags'
+  | 'isFeatureEnabled'
+  | 'getFeatureFlag'
+  | 'identify'
+  | 'reset'
+  | 'get_property'
+  | 'reloadFeatureFlags'
 >
 
 const postHogMock = {
@@ -26,7 +38,11 @@ const postHogMock = {
   capture: hoisted.mockCapture,
   onFeatureFlags: hoisted.mockOnFeatureFlags,
   isFeatureEnabled: hoisted.mockIsFeatureEnabled,
-  getFeatureFlag: hoisted.mockGetFeatureFlag
+  getFeatureFlag: hoisted.mockGetFeatureFlag,
+  identify: hoisted.mockIdentify,
+  reset: hoisted.mockReset,
+  get_property: hoisted.mockGetProperty,
+  reloadFeatureFlags: hoisted.mockReloadFeatureFlags
 } satisfies PostHogMock
 
 // The real default export carries 130+ members, so only the boundary handoff
@@ -36,12 +52,87 @@ vi.mock(import('posthog-js'), () => ({
 }))
 
 /** Fire the callback PostHog registered with onFeatureFlags. */
-function emitFeatureFlags() {
-  const cb = hoisted.mockOnFeatureFlags.mock.calls.at(-1)?.[0] as
-    | (() => void)
-    | undefined
-  cb?.()
+function emitFeatureFlags(errorsLoading = false) {
+  const cb = hoisted.mockOnFeatureFlags.mock.calls.at(-1)?.[0]
+  cb?.([], {}, { errorsLoading })
 }
+
+describe('Workshop visibility', () => {
+  beforeEach(() => {
+    vi.resetModules()
+  })
+
+  it('requires an explicit enable and responds to remote disable and load failures', async () => {
+    const { initPostHog, useWorkshopEnabled } = await import('./posthog')
+    const enabled = useWorkshopEnabled()
+    initPostHog()
+    expect(enabled.value).toBe(false)
+
+    for (const answer of [undefined, false, 'true', true, false, true]) {
+      hoisted.mockIsFeatureEnabled.mockImplementation((key) =>
+        key === 'workshop-enabled' ? answer : true
+      )
+      emitFeatureFlags()
+      expect(enabled.value).toBe(answer === true)
+    }
+    emitFeatureFlags(true)
+    expect(enabled.value).toBe(false)
+  })
+
+  it('does not let preview auth or production visibility overrides bypass PostHog', async () => {
+    vi.stubEnv('DEV', false)
+    vi.stubEnv('PUBLIC_WORKSHOP_AUTH_FLAG', '1')
+    vi.stubEnv('PUBLIC_WORKSHOP_ENABLED', '1')
+    const { initPostHog, useWorkshopEnabled } = await import('./posthog')
+    initPostHog()
+    emitFeatureFlags()
+    expect(useWorkshopEnabled().value).toBe(false)
+  })
+
+  it('allows local development to preview the feature without PostHog', async () => {
+    vi.stubEnv('DEV', true)
+    vi.stubEnv('PUBLIC_WORKSHOP_ENABLED', '1')
+    const { useWorkshopEnabled } = await import('./posthog')
+    expect(useWorkshopEnabled().value).toBe(true)
+  })
+
+  it('identifies staff by UID and hides the feature while reevaluating another user or sign-out', async () => {
+    const { initPostHog, identifyWorkshopUser, useWorkshopEnabled } =
+      await import('./posthog')
+    identifyWorkshopUser('staff-uid')
+    initPostHog()
+    expect(hoisted.mockIdentify).toHaveBeenCalledWith('staff-uid')
+    hoisted.mockIsFeatureEnabled.mockReturnValue(true)
+    emitFeatureFlags()
+    expect(useWorkshopEnabled().value).toBe(true)
+
+    identifyWorkshopUser('staff-uid')
+    expect(hoisted.mockIdentify).toHaveBeenCalledOnce()
+    expect(useWorkshopEnabled().value).toBe(true)
+
+    identifyWorkshopUser('another-uid')
+    expect(useWorkshopEnabled().value).toBe(false)
+    emitFeatureFlags()
+    identifyWorkshopUser(null)
+    expect(useWorkshopEnabled().value).toBe(false)
+    expect(hoisted.mockReset).toHaveBeenCalledOnce()
+    expect(hoisted.mockReloadFeatureFlags).toHaveBeenCalledTimes(3)
+  })
+
+  it('preserves anonymous identity across page loads and resets a restored signed-out identity', async () => {
+    const { initPostHog, identifyWorkshopUser } = await import('./posthog')
+    initPostHog()
+    identifyWorkshopUser(null)
+    expect(hoisted.mockReset).not.toHaveBeenCalled()
+
+    vi.resetModules()
+    hoisted.mockGetProperty.mockReturnValue('previous-user')
+    const restored = await import('./posthog')
+    restored.initPostHog()
+    restored.identifyWorkshopUser(null)
+    expect(hoisted.mockReset).toHaveBeenCalledOnce()
+  })
+})
 
 describe('initPostHog', () => {
   beforeEach(() => {

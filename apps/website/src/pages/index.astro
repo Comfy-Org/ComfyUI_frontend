@@ -8,6 +8,7 @@ import DeveloperPlatformSection from "../components/home/DeveloperPlatformSectio
 import IndustriesSection from "../components/home/IndustriesSection.vue";
 import ModelReleaseSection from "../components/home/ModelReleaseSection.vue";
 import ModelDiscoverySection from "../components/home/ModelDiscoverySection.vue";
+import WorkshopGate from "../components/workshop/WorkshopGate.vue";
 import ProductShowcaseSection from "../components/home/ProductShowcaseSection.vue";
 import FeaturedWorkflowsSection from "../components/home/FeaturedWorkflowsSection.vue";
 import CaseStudySpotlightSection from "../components/home/CaseStudySpotlightSection.vue";
@@ -56,7 +57,7 @@ const discoveryProviders = await resolveDiscoveryProviders(isWorkshopInBuild());
   <SocialProofBarSection />
   <DeveloperPlatformSection client:visible />
   <MinimaxLicenseHeroSection client:visible />
-  {isWorkshopInBuild() && <ModelDiscoverySection providers={discoveryProviders} client:visible />}
+  {isWorkshopInBuild() && <WorkshopGate client:load><ModelDiscoverySection providers={discoveryProviders} client:visible /></WorkshopGate>}
   <FeaturedWorkflowsSection client:load />
   <ProductShowcaseSection client:load />
   <IndustriesSection client:load />

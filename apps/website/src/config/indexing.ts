@@ -55,6 +55,7 @@ export function isExcludedFromSitemap(page: string): boolean {
     isNoindexPathname(pathname) ||
     isLegacyWorkshopRoute(pathname) ||
     MODEL_REDIRECT_PATHNAMES.has(pathname) ||
-    (!isWorkshopInBuild() && isWorkshopRoute(pathname))
+    (isWorkshopInBuild() && pathname === '/models') ||
+    (isWorkshopRoute(pathname) && pathname !== '/models/showcase')
   )
 }

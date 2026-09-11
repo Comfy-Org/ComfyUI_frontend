@@ -1,18 +1,23 @@
 <script setup lang="ts">
 import {
+  computed,
   defineAsyncComponent,
   onBeforeUnmount,
   onMounted,
   ref,
   watch
 } from 'vue'
+import { useMounted } from '@vueuse/core'
 
 import type { Locale } from '../../../i18n/translations.ts'
 import { t } from '../../../i18n/translations.ts'
 import { externalLinks, getRoutes } from '../../../config/routes.ts'
 import { subscribeToWorkshopBuyCredits } from '../../../config/workshop-buy-credits.ts'
 import { announceTopUpReturnFromLocation } from '../../../lib/workshop/topup-return.ts'
-import { useWorkshopAuthFlag } from '../../../scripts/posthog.ts'
+import {
+  useWorkshopAuthFlag,
+  useWorkshopEnabled
+} from '../../../scripts/posthog.ts'
 import GitHubStarBadge from '../GitHubStarBadge.vue'
 import HeaderMainDesktop from './HeaderMainDesktop.vue'
 import HeaderMainMobile from './HeaderMainMobile.vue'
@@ -29,6 +34,11 @@ const {
 }>()
 const routes = getRoutes(locale)
 const workshopAuthEnabled = useWorkshopAuthFlag()
+const workshopEnabled = useWorkshopEnabled()
+const mounted = useMounted()
+const showWorkshop = computed(
+  () => mounted.value && workshopInBuild && workshopEnabled.value
+)
 const HeaderAccount = defineAsyncComponent(
   () => import('../../workshop/HeaderAccount.vue')
 )
@@ -103,23 +113,26 @@ const ctaButtons = [
     <!-- Desktop nav links -->
     <HeaderMainDesktop
       :locale
-      :workshop-in-build
-      :class="workshopInBuild ? 'hidden xl:block' : 'hidden lg:block'"
+      :workshop-in-build="showWorkshop"
+      :class="showWorkshop ? 'hidden xl:block' : 'hidden lg:block'"
     />
     <div
       data-testid="mobile-nav-cta"
       class="flex shrink-0 items-center gap-2"
-      :class="workshopInBuild ? 'xl:hidden' : 'lg:hidden'"
+      :class="showWorkshop ? 'xl:hidden' : 'lg:hidden'"
     >
-      <HeaderAccount v-if="workshopAuthEnabled" :locale="locale" />
-      <HeaderMainMobile :locale :workshop-in-build />
+      <HeaderAccount
+        v-if="showWorkshop && workshopAuthEnabled"
+        :locale="locale"
+      />
+      <HeaderMainMobile :locale :workshop-in-build="showWorkshop" />
     </div>
 
     <!-- Desktop CTA buttons -->
     <div
       data-testid="desktop-nav-cta"
       class="hidden shrink-0 items-center gap-2"
-      :class="workshopInBuild ? 'xl:flex' : 'lg:flex'"
+      :class="showWorkshop ? 'xl:flex' : 'lg:flex'"
     >
       <!-- Get Yoland to sign a contract of permission before killing this -->
       <GitHubStarBadge v-if="githubStars" :stars="githubStars" />
@@ -136,7 +149,10 @@ const ctaButtons = [
           <span class="min-[1800px]:hidden">{{ cta.short }}</span>
         </span>
       </Button>
-      <HeaderAccount v-if="workshopAuthEnabled" :locale="locale" />
+      <HeaderAccount
+        v-if="showWorkshop && workshopAuthEnabled"
+        :locale="locale"
+      />
     </div>
   </nav>
   <BuyCreditsDialog

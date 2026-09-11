@@ -44,6 +44,7 @@ import { workshopIdempotencyKey } from '../../config/workshop-snippets'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import {
+  useWorkshopEnabled,
   useWorkshopAuthFlag,
   useWorkshopAuthFlagSettled
 } from '../../scripts/posthog'
@@ -164,6 +165,7 @@ const revealed = ref(false)
 const { user, session, sessionFailure, settled, ensureFresh, remint } =
   useWorkshopSession()
 const { balance } = useWorkshopCredits()
+const workshopEnabled = useWorkshopEnabled()
 const authEnabled = useWorkshopAuthFlag()
 const authFlagSettled = useWorkshopAuthFlagSettled()
 const mounted = useMounted()
@@ -172,6 +174,7 @@ const docsHref = modelDocsHref(model)
 
 const gate = computed(() => {
   if (
+    !workshopEnabled.value ||
     model.incompleteReason ||
     import.meta.env.PUBLIC_WORKSHOP_ROUTER_RUN !== '1' ||
     !model.execution ||
@@ -291,6 +294,11 @@ function cancelRun() {
 
 const personalSwitchPending = ref(false)
 const personalSwitchError = ref(false)
+
+watch(workshopEnabled, (enabled) => {
+  if (!enabled) cancelRun()
+})
+
 async function switchToPersonal() {
   if (personalSwitchPending.value) return
   personalSwitchPending.value = true

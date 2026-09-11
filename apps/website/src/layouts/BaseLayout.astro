@@ -278,6 +278,9 @@ const structuredData = shouldNoindex
       if (import.meta.env.PROD) {
         initPostHog()
         document.addEventListener('astro:page-load', capturePageview)
+        void import('../config/workshop-session-state')
+          .then(({ useWorkshopSession }) => useWorkshopSession())
+          .catch((error: unknown) => console.error('Website session initialization failed', error))
       }
 
       document.addEventListener('astro:page-load', () => {

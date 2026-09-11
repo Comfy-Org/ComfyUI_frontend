@@ -2,6 +2,18 @@ import { describe, expect, it, vi } from 'vitest'
 import { isExcludedFromSitemap, isNoindexPathname } from './indexing'
 
 describe('indexing policy', () => {
+  it('excludes gated Models pages even when built, while keeping the public showcase', () => {
+    vi.stubEnv('WORKSHOP_IN_BUILD', '1')
+    expect(isExcludedFromSitemap('https://comfy.org/models/')).toBe(true)
+    expect(isExcludedFromSitemap('https://comfy.org/models/example/')).toBe(
+      true
+    )
+    expect(isExcludedFromSitemap('https://comfy.org/models/showcase/')).toBe(
+      false
+    )
+    vi.stubEnv('WORKSHOP_IN_BUILD', '0')
+    expect(isExcludedFromSitemap('https://comfy.org/models/')).toBe(false)
+  })
   it.for(['0', '1'])(
     'excludes retired Workshop in either build (%s)',
     (value) => {

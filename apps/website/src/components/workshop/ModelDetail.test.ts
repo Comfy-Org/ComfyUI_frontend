@@ -25,6 +25,7 @@ const auth = vi.hoisted(() => ({
   session: { value: undefined as AccountCredential | undefined },
   settled: { value: true },
   enabled: { value: true },
+  workshopEnabled: { value: true },
   flagSettled: { value: true },
   ensureFresh: vi.fn()
 }))
@@ -52,6 +53,7 @@ vi.mock(import('../../config/workshop-session-state'), () => ({
 }))
 
 vi.mock(import('../../scripts/posthog'), () => ({
+  useWorkshopEnabled: () => computed(() => auth.workshopEnabled.value),
   useWorkshopAuthFlag: () => computed(() => auth.enabled.value),
   useWorkshopAuthFlagSettled: () => computed(() => auth.flagSettled.value)
 }))
@@ -198,6 +200,7 @@ describe('ModelDetail', () => {
     auth.session = ref<AccountCredential>()
     auth.settled = ref(true)
     auth.enabled = ref(true)
+    auth.workshopEnabled = ref(true)
     auth.flagSettled = ref(true)
     credits.balance = ref<
       ReturnType<typeof useWorkshopCredits>['balance']['value']
@@ -296,6 +299,15 @@ describe('ModelDetail', () => {
       expect(screen.getByRole('img', { name: 'saved.webp' })).toBeTruthy()
     }
   )
+
+  it('prevents generation while the feature is hidden', async () => {
+    auth.session.value = credential
+    auth.workshopEnabled.value = false
+    mountDetail({ model: runnable })
+    await nextTick()
+    expect(screen.queryByRole('button', { name: 'Run' })).toBeNull()
+    expect(runWorkshopRouter).not.toHaveBeenCalled()
+  })
 
   it.for([
     {
@@ -986,26 +998,30 @@ describe('ModelDetail', () => {
     expect(runWorkshopRouter).toHaveBeenCalledTimes(1)
   })
 
-  it('does not publish a result after sign-out', async () => {
-    auth.session.value = credential
-    const late = Promise.withResolvers<typeof routerResult>()
-    vi.mocked(runWorkshopRouter).mockReturnValue(late.promise)
-    mountDetail({ model: runnable })
-    await user().type(screen.getByTestId('field-prompt'), 'A teapot')
-    await user().click(screen.getByTestId('run-button'))
-    await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledTimes(1))
-    auth.session.value = undefined
-    await nextTick()
-    late.resolve(routerResult)
-    await vi.waitFor(() => expect(refreshWorkshopCredits).toHaveBeenCalled())
-    expect(screen.getByTestId('run-button').getAttribute('data-gate')).toBe(
-      'signedOut'
-    )
-    expect(
-      screen.getByTestId('playground-output').getAttribute('data-state')
-    ).toBe('cancelled')
-    expect(screen.queryByTestId('router-request-id')).toBeNull()
-  })
+  it.for(['sign-out', 'visibility revoked'] as const)(
+    'does not publish a result after %s',
+    async (change) => {
+      auth.session.value = credential
+      const late = Promise.withResolvers<typeof routerResult>()
+      vi.mocked(runWorkshopRouter).mockReturnValue(late.promise)
+      mountDetail({ model: runnable })
+      await user().type(screen.getByTestId('field-prompt'), 'A teapot')
+      await user().click(screen.getByTestId('run-button'))
+      await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledTimes(1))
+      if (change === 'sign-out') auth.session.value = undefined
+      else auth.workshopEnabled.value = false
+      await nextTick()
+      late.resolve(routerResult)
+      await vi.waitFor(() => expect(refreshWorkshopCredits).toHaveBeenCalled())
+      expect(screen.getByTestId('run-button').getAttribute('data-gate')).toBe(
+        change === 'sign-out' ? 'signedOut' : 'unavailable'
+      )
+      expect(
+        screen.getByTestId('playground-output').getAttribute('data-state')
+      ).toBe('cancelled')
+      expect(screen.queryByTestId('router-request-id')).toBeNull()
+    }
+  )
 
   it('refuses a refreshed credential for a different workspace', async () => {
     auth.session.value = credential
