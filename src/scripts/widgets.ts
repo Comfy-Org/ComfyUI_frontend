@@ -3,7 +3,8 @@ import { registerWidgetControlFromConfig } from '@/core/graph/widgets/control/wi
 import { isValueControlMode } from '@/core/graph/widgets/control/valueControl'
 import type { ValueControlMode } from '@/core/graph/widgets/control/valueControl'
 import { t } from '@/i18n'
-import { type LGraphNode, isComboWidget } from '@/lib/litegraph/src/litegraph'
+import { isComboWidget } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type {
   IBaseWidget,
   IComboWidget,

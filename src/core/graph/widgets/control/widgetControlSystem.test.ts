@@ -26,13 +26,13 @@ describe('runWidgetControl', () => {
   it('advances the target and invokes its compatibility callback', () => {
     const { callback, graph, seed } = createControlledSeed()
 
-    runWidgetControl(graph, 'after')
+    runWidgetControl(graph, 'after', 'after')
 
     expect(seed.value).toBe(2)
     expect(callback).toHaveBeenCalledWith(2)
   })
 
-  it('skips partial and link-fed targets', () => {
+  it('skips link-fed targets', () => {
     const { graph, node, seed } = createControlledSeed()
     node.addInput('seed', 'number', { widget: { name: 'seed' } })
     const source = new LGraphNode('Source')
@@ -40,11 +40,7 @@ describe('runWidgetControl', () => {
     graph.add(source)
     source.connect(0, node, 0)
 
-    runWidgetControl(graph, 'after')
-    expect(seed.value).toBe(1)
-
-    node.disconnectInput(0)
-    runWidgetControl(graph, 'after', { isPartialExecution: true })
+    runWidgetControl(graph, 'after', 'after')
     expect(seed.value).toBe(1)
   })
 
@@ -52,10 +48,10 @@ describe('runWidgetControl', () => {
     useSettingStore().settingValues['Comfy.WidgetControlMode'] = 'before'
     const { graph, seed } = createControlledSeed()
 
-    runWidgetControl(graph, 'before')
+    runWidgetControl(graph, 'before', 'before')
     expect(seed.value).toBe(1)
 
-    runWidgetControl(graph, 'before')
+    runWidgetControl(graph, 'before', 'before')
     expect(seed.value).toBe(2)
   })
 
@@ -63,7 +59,7 @@ describe('runWidgetControl', () => {
     const { graph, node, seed } = createControlledSeed()
     graph.remove(node)
 
-    runWidgetControl(graph, 'after')
+    runWidgetControl(graph, 'after', 'after')
 
     expect(seed.value).toBe(1)
   })

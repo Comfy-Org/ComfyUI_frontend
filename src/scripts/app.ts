@@ -1793,6 +1793,9 @@ export class ComfyApp {
             }
           }
 
+          const widgetControlMode = useSettingStore().get(
+            'Comfy.WidgetControlMode'
+          )
           // Allow widgets to run callbacks before a prompt has been queued
           // e.g. random seed before every gen
           forEachNode(this.rootGraph, (node) => {
@@ -1800,7 +1803,7 @@ export class ComfyApp {
               widget.beforeQueued?.({ isPartialExecution })
             }
           })
-          runWidgetControl(this.rootGraph, 'before', { isPartialExecution })
+          runWidgetControl(this.rootGraph, 'before', widgetControlMode)
 
           // Capture workflow and mode before await — both may change if the
           // user switches tabs or toggles app/graph mode while the request is
@@ -2015,7 +2018,7 @@ export class ComfyApp {
           executeWidgetsCallback(queuedNodes, 'afterQueued', {
             isPartialExecution
           })
-          runWidgetControl(this.rootGraph, 'after', { isPartialExecution })
+          runWidgetControl(this.rootGraph, 'after', widgetControlMode)
           useFreeTierQuota().trackRun()
           this.canvas.draw(true, true)
           await this.ui.queue.update()

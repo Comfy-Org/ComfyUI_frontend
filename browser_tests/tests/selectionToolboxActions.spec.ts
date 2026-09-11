@@ -298,9 +298,9 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
       const sampler = window.app!.graph._nodes.find(
         (node) => node.type === 'KSampler'
       )
-      const control = sampler?.widgets?.find(
-        (widget) => widget.name === 'control_after_generate'
-      )
+      const control = sampler
+        ?.getLayoutWidgets()
+        .find((widget) => widget.name === 'control_after_generate')
       if (!control) throw new Error('seed control widget missing')
       control.value = 'randomize'
     })

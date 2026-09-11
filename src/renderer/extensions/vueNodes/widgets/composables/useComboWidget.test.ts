@@ -8,7 +8,6 @@ import { assetService } from '@/platform/assets/services/assetService'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useComboWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useComboWidget'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { addValueControlWidgets } from '@/scripts/widgets'
 
 function createMockAssetItem(overrides: Partial<AssetItem> = {}): AssetItem {
   return {
@@ -26,10 +25,6 @@ function createMockAssetItem(overrides: Partial<AssetItem> = {}): AssetItem {
 }
 
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
-
-vi.mock(import('@/scripts/widgets'), () => ({
-  addValueControlWidgets: vi.fn()
-}))
 
 vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
   ...(await importOriginal()),
@@ -673,7 +668,10 @@ describe('useComboWidget', () => {
         ]
       )
 
-      expect(addValueControlWidgets).toHaveBeenCalledWith(widget, 'randomize')
+      expect(widget.controlConfig).toEqual({
+        mode: 'randomize',
+        hasFilter: true
+      })
     })
 
     it('should create normal combo widget for non-input nodes in cloud', () => {

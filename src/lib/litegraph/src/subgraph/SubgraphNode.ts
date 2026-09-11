@@ -580,15 +580,17 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     )
 
     for (const input of this.inputs) {
-      delete input.widget
-      delete input.pos
-      delete input.widgetId
-      clearPromotedWidgetControl(input)
       const subgraphInput = input._subgraphSlot
-      if (!subgraphInput) continue
-      this._resolveInputWidget(subgraphInput, input)
+      if (!subgraphInput) {
+        clearPromotedWidgetControl(input)
+        delete input.widget
+        delete input.pos
+        delete input.widgetId
+        continue
+      }
+      const resolved = this._resolveInputWidget(subgraphInput, input)
       const previous = previousBindings.get(input)
-      if (previous) {
+      if (resolved && previous) {
         store.setValue(
           widgetId(this.rootGraph.id, this.id, input.name),
           previous.value
@@ -607,7 +609,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   private _resolveInputWidget(
     subgraphInput: SubgraphInput,
     input: INodeInputSlot
-  ) {
+  ): boolean {
     for (const linkId of subgraphInput.linkIds) {
       const link = this.subgraph.getLink(linkId)
       if (!link) {
@@ -632,7 +634,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       const widget = inputNode.getWidgetFromSlot(targetInput)
       if (widget) {
         this._setWidget(subgraphInput, input, widget, targetInput.widget)
-        break
+        return Boolean(input.widgetId)
       }
 
       // Nested promotion: the source is itself a promoted subgraph input with
@@ -641,9 +643,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       const nested = this._resolveNestedPromotedSource(inputNode, targetInput)
       if (nested) {
         this._setWidget(subgraphInput, input, nested.widget, targetInput.widget)
-        break
+        return Boolean(input.widgetId)
       }
     }
+    return false
   }
 
   private _resolveNestedPromotedSource(

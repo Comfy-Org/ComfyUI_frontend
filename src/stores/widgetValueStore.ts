@@ -400,7 +400,12 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     const { graphId } = parseWidgetId(targetId)
     const controls = getGraphWidgetControls(graphId)
     const existing = controls.get(targetId)
-    if (existing) return existing
+    if (existing) {
+      if (existing.filter === undefined && init.filter !== undefined) {
+        existing.filter = init.filter
+      }
+      return existing
+    }
 
     controls.set(targetId, { ...init, hasExecuted: false })
     return controls.get(targetId)

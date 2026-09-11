@@ -52,7 +52,7 @@ describe('runWidgetControl with promoted targets', () => {
     const host = createPromotedSeedHost('increment')
     expect(promotedSeedValue(host)).toBe(1)
 
-    runWidgetControl(host.rootGraph, 'after')
+    runWidgetControl(host.rootGraph, 'after', 'after')
 
     expect(promotedSeedValue(host)).toBe(2)
   })
@@ -60,7 +60,7 @@ describe('runWidgetControl with promoted targets', () => {
   it('leaves the value unchanged when the control mode is fixed', () => {
     const host = createPromotedSeedHost('fixed')
 
-    runWidgetControl(host.rootGraph, 'after')
+    runWidgetControl(host.rootGraph, 'after', 'after')
 
     expect(promotedSeedValue(host)).toBe(1)
   })
@@ -81,7 +81,7 @@ describe('runWidgetControl with promoted targets', () => {
         .map(([id]) => id)
     ).toContain(seedInput.widgetId)
 
-    runWidgetControl(host.rootGraph, 'after')
+    runWidgetControl(host.rootGraph, 'after', 'after')
 
     expect(promotedSeedValue(host)).toBe(1)
   })

@@ -1,6 +1,5 @@
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetId } from '@/types/widgetId'
 import { parseWidgetId, widgetId } from '@/types/widgetId'
@@ -40,12 +39,9 @@ function collectGraphTargets(graph: LGraph): {
 export function runWidgetControl(
   graph: LGraph,
   phase: WidgetControlPhase,
-  { isPartialExecution }: { isPartialExecution?: boolean } = {}
+  controlMode: WidgetControlPhase
 ): void {
-  if (isPartialExecution) return
-
-  const runBefore =
-    useSettingStore().get('Comfy.WidgetControlMode') === 'before'
+  const runBefore = controlMode === 'before'
   if (phase === 'before' && !runBefore) return
   if (phase === 'after' && runBefore) return
 

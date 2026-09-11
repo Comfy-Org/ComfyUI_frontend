@@ -3,6 +3,7 @@ import type {
   IComboWidget,
   IStringWidget
 } from '@/lib/litegraph/src/types/widgets'
+import { t } from '@/i18n'
 import { widgetControlLabel } from '@/lib/litegraph/src/widgetControlLabel'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
@@ -28,9 +29,22 @@ function createModeProjection(target: IBaseWidget): IComboWidget {
       serialize: false
     },
     serialize: false,
-    tooltip:
-      'Allows the linked widget to be changed automatically, for example randomizing the noise seed.',
+    get tooltip() {
+      return t('widgets.valueControl.modeTooltip')
+    },
     y: 0,
+    get visibility() {
+      return target.visibility
+    },
+    get hidden() {
+      return target.hidden
+    },
+    get advanced() {
+      return target.advanced
+    },
+    get connectionSuppressed() {
+      return target.connectionSuppressed
+    },
     get computedDisabled() {
       return target.computedDisabled
     },
@@ -67,9 +81,22 @@ function createFilterProjection(target: IBaseWidget): IStringWidget {
     name: 'control_filter_list',
     options: { serialize: false },
     serialize: false,
-    tooltip:
-      "Allows for filtering the list of values when changing the value via the control generate mode. Allows for RegEx matches in the format /abc/ to only filter to values containing 'abc'.",
+    get tooltip() {
+      return t('widgets.valueControl.filterTooltip')
+    },
     y: 0,
+    get visibility() {
+      return target.visibility
+    },
+    get hidden() {
+      return target.hidden
+    },
+    get advanced() {
+      return target.advanced
+    },
+    get connectionSuppressed() {
+      return target.connectionSuppressed
+    },
     get computedDisabled() {
       return target.computedDisabled
     },

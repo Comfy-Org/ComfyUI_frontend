@@ -7,6 +7,7 @@ import {
   getWidgetControlView,
   registerWidgetControlFromConfig
 } from './widgetControl'
+import { runWidgetControl } from './widgetControlSystem'
 
 function createControlledNode(): { graph: LGraph; node: LGraphNode } {
   const graph = new LGraph()
@@ -94,6 +95,15 @@ describe('widget control persistence', () => {
     ).toBe('randomize')
   })
 
+  it('serializes configured controls before the widget has a store identity', () => {
+    const node = new LGraphNode('TestNode')
+    node.serialize_widgets = true
+    const seed = node.addWidget('number', 'seed', 0, () => {}, {})
+    seed.controlConfig = { mode: 'increment', hasFilter: false }
+
+    expect(node.serialize().widgets_values).toEqual([0, 'increment'])
+  })
+
   it('does not consume the next widget when the control slot is absent', () => {
     const { node } = createControlledNode()
 
@@ -140,6 +150,41 @@ describe('widget control persistence', () => {
     })
 
     expect(getWidgetControlView(target)?.value).toBe('increment-wrap')
+  })
+
+  it('removes retained control state when a widget is re-registered without configuration', () => {
+    const { graph, node } = createControlledNode()
+    const target = node.widgets?.[0]
+    if (!target?.widgetId) throw new Error('Target widget was not registered')
+    useWidgetValueStore().updateWidgetControl(target.widgetId, {
+      mode: 'increment'
+    })
+
+    target.controlConfig = undefined
+    registerWidgetControlFromConfig(target)
+    runWidgetControl(graph, 'after', 'after')
+
+    expect(
+      useWidgetValueStore().getWidgetControl(target.widgetId)
+    ).toBeUndefined()
+    expect(target.value).toBe(0)
+  })
+
+  it('adds a filter to retained control state when filtering is enabled', () => {
+    const { node } = createControlledNode()
+    const target = node.widgets?.[0]
+    if (!target?.widgetId) throw new Error('Target widget was not registered')
+
+    target.controlConfig = {
+      mode: 'randomize',
+      hasFilter: true,
+      filter: '/portrait/'
+    }
+    registerWidgetControlFromConfig(target)
+
+    expect(
+      useWidgetValueStore().getWidgetControl(target.widgetId)?.filter
+    ).toBe('/portrait/')
   })
 
   it('moves and removes the component with its target widget', () => {

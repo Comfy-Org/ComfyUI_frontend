@@ -35,16 +35,15 @@ with a different widget type removes stale control state.
 
 ## System
 
-`runWidgetControl(rootGraph, phase, options)` runs once in each existing queue
+`runWidgetControl(rootGraph, phase, controlMode)` runs once in each existing queue
 phase.
 
-1. Skip partial executions.
-2. Skip the phase not selected by `Comfy.WidgetControlMode`.
-3. Query controls scoped to the root graph.
-4. Derive link-fed target IDs from the live graph and skip them.
-5. In "before" mode, mark the component executed and skip its first run.
-6. Compute the next value with the existing pure value-control rules.
-7. Write through `widgetValueStore`.
+1. Skip the phase not selected by the captured `controlMode`.
+2. Query controls scoped to the root graph.
+3. Derive link-fed target IDs from the live graph and skip them.
+4. In "before" mode, mark the component executed and skip its first run.
+5. Compute the next value with the existing pure value-control rules.
+6. Write through `widgetValueStore`.
 
 There is no general ECS scheduler. The existing queue lifecycle is the system's
 explicit scheduling boundary.
@@ -93,7 +92,8 @@ execution time to mutate a promoted value.
 - Preserve fixed, increment, decrement, randomize, combo wrap, and combo
   filtering behavior.
 - Preserve before-mode first-run behavior and after-mode timing.
-- Preserve partial-execution and link-fed suppression.
+- Preserve control updates during partial execution and suppress link-fed
+  targets.
 - Preserve positional workflow round trips, including older files with omitted
   control slots.
 - Preserve target widget callbacks required by custom widgets when a system
@@ -118,7 +118,7 @@ Once all presentation and persistence paths use the component, remove:
 1. A regular number or combo control behaves identically before and after
    workflow save/load.
 2. Classic and Vue node renderers edit the same component state.
-3. Link-fed and partial-execution targets do not advance.
+3. Partial executions advance controls, but link-fed targets do not advance.
 4. Before mode skips the first execution and advances subsequent executions.
 5. Promoted and nested promoted targets advance their authoritative host value
    exactly once.

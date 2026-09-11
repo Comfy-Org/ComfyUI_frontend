@@ -345,6 +345,28 @@ export class PrimitiveNode extends LGraphNode {
         applyControlValues(widget, [mode, filter], 0)
       }
 
+      const store = useWidgetValueStore()
+      const graphId = this.graph?.rootGraph.id ?? zeroUuid
+      const restoredMode = store.getRestoredWidgetValue(
+        graphId,
+        this.id,
+        'control_after_generate',
+        1
+      )
+      const restoredFilter = store.getRestoredWidgetValue(
+        graphId,
+        this.id,
+        'control_filter_list',
+        2
+      )
+      if (restoredMode) {
+        applyControlValues(
+          widget,
+          [restoredMode.value, restoredFilter?.value],
+          0
+        )
+      }
+
       // Restore any saved control values
       const controlValues = this.controlValues
       if (this.lastType === this.widgets?.[0]?.type && controlValues?.length) {

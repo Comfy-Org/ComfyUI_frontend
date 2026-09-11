@@ -9,7 +9,11 @@ import { parseValueControlMode } from './valueControl'
 export function registerWidgetControlFromConfig(widget: IBaseWidget): void {
   const config = widget.controlConfig
   const targetId = widget.widgetId
-  if (!config || !targetId) return
+  if (!targetId) return
+  if (!config) {
+    useWidgetValueStore().deleteWidgetControl(targetId)
+    return
+  }
 
   useWidgetValueStore().registerWidgetControl(targetId, {
     mode: config.mode,
@@ -36,14 +40,25 @@ export function getWidgetControlView(
 }
 
 export function appendControlValues(
-  targetId: WidgetId | undefined,
+  target:
+    | WidgetId
+    | Pick<IBaseWidget, 'widgetId' | 'controlConfig'>
+    | undefined,
   values: unknown[]
 ): void {
-  if (!targetId) return
-  const control = useWidgetValueStore().getWidgetControl(targetId)
+  const targetId = typeof target === 'string' ? target : target?.widgetId
+  const control =
+    (targetId ? useWidgetValueStore().getWidgetControl(targetId) : undefined) ??
+    (typeof target === 'string' ? undefined : target?.controlConfig)
   if (!control) return
   values.push(control.mode)
-  if (control.filter !== undefined) values.push(control.filter)
+  const filter =
+    'hasFilter' in control
+      ? control.hasFilter
+        ? (control.filter ?? '')
+        : undefined
+      : control.filter
+  if (filter !== undefined) values.push(filter)
 }
 
 export function applyControlValues(

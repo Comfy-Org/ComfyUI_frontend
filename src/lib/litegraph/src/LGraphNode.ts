@@ -204,7 +204,7 @@ function serialiseWidgetValues(widgets: IBaseWidget[]) {
         ? JSON.parse(JSON.stringify(value))
         : (value ?? null)
     positional.push(serialisedValue)
-    appendControlValues(widget.widgetId, positional)
+    appendControlValues(widget, positional)
     named[widget.name] = serialisedValue
   }
   return { widgets_values: positional, widgets_values_named: named }
@@ -1208,6 +1208,36 @@ export class LGraphNode
             )
         }
       }
+
+      const restoredWidgets = new Set<IBaseWidget>()
+      const restoreWidgets = () => {
+        const serializableWidgets = (this.widgets ?? []).filter(
+          (widget) => widget.serialize !== false
+        )
+        const valueLayout = decodeWidgetValueLayout(
+          serializableWidgets,
+          restoration.positional
+        )
+        for (const [index, widget] of serializableWidgets.entries()) {
+          if (restoredWidgets.has(widget)) continue
+          restoredWidgets.add(widget)
+          const { valueIndex, controlValueCount } = valueLayout[index]
+          const restored = useWidgetValueStore().getRestoredWidgetValue(
+            graphId,
+            this.id,
+            widget.name,
+            valueIndex
+          )
+          if (restored) widget.value = restored.value
+          applyControlValues(
+            widget,
+            restoration.positional,
+            valueIndex + 1,
+            controlValueCount
+          )
+        }
+      }
+      restoreWidgets()
       // Sync the state of this.resizable.
       if (this.pinned) this.resizable = false
 
@@ -1220,6 +1250,13 @@ export class LGraphNode
       }
 
       this.onConfigure?.(extensionConfigureView(this, info))
+      while (
+        (this.widgets ?? []).some(
+          (widget) => widget.serialize !== false && !restoredWidgets.has(widget)
+        )
+      ) {
+        restoreWidgets()
+      }
       if (this.widgets && namedValues) {
         const legacyShadow = computeLegacyWidgetShadow(
           this.widgets,
@@ -1229,28 +1266,6 @@ export class LGraphNode
           this,
           diffNamedValuesShadow(namedValues, legacyShadow),
           Boolean(info.widgets_values_named)
-        )
-      }
-      const serializableWidgets = (this.widgets ?? []).filter(
-        (widget) => widget.serialize !== false
-      )
-      for (const [index, widget] of serializableWidgets.entries()) {
-        const { valueIndex, controlValueCount } = decodeWidgetValueLayout(
-          serializableWidgets,
-          restoration.positional
-        )[index]
-        const restored = useWidgetValueStore().getRestoredWidgetValue(
-          graphId,
-          this.id,
-          widget.name,
-          valueIndex
-        )
-        if (restored) widget.value = restored.value
-        applyControlValues(
-          widget,
-          restoration.positional,
-          valueIndex + 1,
-          controlValueCount
         )
       }
     } finally {
@@ -2307,7 +2322,7 @@ export class LGraphNode
       if (candidate === widget) break
       if (candidate.serialize === false) continue
       precedingValues.push(null)
-      appendControlValues(candidate.widgetId, precedingValues)
+      appendControlValues(candidate, precedingValues)
     }
     const positionalIndex = precedingValues.length
     const restored = useWidgetValueStore().getRestoredWidgetValue(
