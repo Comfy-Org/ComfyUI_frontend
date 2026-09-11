@@ -88,9 +88,17 @@ async function setupFlagGate(): Promise<void> {
       import('posthog-js')
     ])
     const source = createPostHogFlagSource(posthog)
+    // Two harnesses force the panel on regardless of the flag: development,
+    // and the standalone (local agent) build. The standalone panel has no
+    // cloud identity for PostHog to evaluate the flag against, so gating it on
+    // the flag left it permanently off in a production bundle — the harness
+    // itself is the opt-in, since the panel is tree-shaken out of every other
+    // non-cloud build (see extensions/core/index.ts).
+    const forcedOn =
+      import.meta.env.MODE === 'development' ||
+      import.meta.env.VITE_AGENT_STANDALONE === 'true'
     const sync = (): void => {
-      const forceInDev = import.meta.env.MODE === 'development'
-      agentPanelStore.enabled = forceInDev || source.isEnabled()
+      agentPanelStore.enabled = forcedOn || source.isEnabled()
       if (!agentPanelStore.enabled) {
         const nodeSelectionStore = useAgentNodeSelectionStore()
         if (nodeSelectionStore.isLoadingWorkflow)
@@ -102,7 +110,7 @@ async function setupFlagGate(): Promise<void> {
       settle()
     })
     sync()
-    if (import.meta.env.MODE === 'development') settle()
+    if (forcedOn) settle()
     else setTimeout(settle, FLAG_SETTLE_TIMEOUT_MS)
   } catch (error) {
     settle()
