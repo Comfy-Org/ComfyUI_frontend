@@ -1,10 +1,9 @@
-// @vitest-environment happy-dom
-import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
+// @vitest-environment jsdom
+import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
-import { onBeforeSignInLeave } from '../../config/workshop-return'
-import { WORKSHOP_CLOUD_BASE_URL } from '../../config/workshop-env'
+import { platformTopUpHref } from '../../lib/workshop/buy-credits'
 import HeaderAccount from './HeaderAccount.vue'
 
 const h = vi.hoisted(() => ({
@@ -14,6 +13,7 @@ const h = vi.hoisted(() => ({
   sessionFailure: undefined as { value: unknown } | undefined,
   balance: undefined as { value: unknown } | undefined,
   ensureFresh: vi.fn(),
+  remint: vi.fn(),
   signOut: vi.fn()
 }))
 
@@ -38,6 +38,7 @@ vi.mock<unknown>(import('../../config/workshop-session-state'), async () => {
       session,
       sessionFailure,
       ensureFresh: h.ensureFresh,
+      remint: h.remint,
       signOut: h.signOut
     })
   }
@@ -47,12 +48,16 @@ vi.mock<unknown>(import('../../config/workshop-credits'), async () => {
   const { ref } = await import('vue')
   const balance = ref<unknown>({ status: 'unknown' })
   h.balance = balance
-  return { useWorkshopCredits: () => ({ balance }) }
+  return {
+    useWorkshopCredits: () => ({ balance }),
+    refreshWorkshopCredits: vi.fn().mockResolvedValue(undefined)
+  }
 })
 
 const workspace = { id: 'ws', name: 'Personal', type: 'personal' as const }
 
 beforeEach(() => {
+  h.remint.mockReset()
   h.flag!.value = true
   h.user!.value = null
   h.session!.value = undefined
@@ -137,12 +142,12 @@ describe('HeaderAccount', () => {
       await userEvent
         .setup()
         .click(screen.getByRole('button', { name: /account/i }))
-      const buy = screen.getByRole('menuitem', { name: 'Buy credits' })
-      expect(buy.getAttribute('href')).toBe(
-        `${WORKSHOP_CLOUD_BASE_URL}/?settings=plan-credits`
-      )
+      const buy = await screen.findByRole('menuitem', {
+        name: /add credits/i
+      })
+      expect(buy.getAttribute('href')).toBe(platformTopUpHref(workspace.id))
       expect(buy.getAttribute('target')).toBe('_blank')
-      expect(screen.getByRole('menuitem', { name: /sign out/i })).toBeTruthy()
+      expect(screen.getByRole('menuitem', { name: /log out/i })).toBeTruthy()
     }
   )
 
@@ -199,76 +204,163 @@ describe('HeaderAccount', () => {
   })
 })
 
-describe('HeaderAccount sign-in link', () => {
-  it('runs the registered stashes before leaving for sign-in', async () => {
-    const assign = vi.fn()
-    vi.spyOn(window.location, 'assign').mockImplementation(assign)
-    const stash = vi.fn()
-    const stop = onBeforeSignInLeave(stash)
-    onTestFinished(stop)
+describe('HeaderAccount menu', () => {
+  function signIn() {
+    h.user!.value = { email: 'a@b.co', displayName: 'Ada' }
+    h.session!.value = { token: 'jwt', uid: 'user-1', workspace, role: 'owner' }
+    h.balance!.value = { status: 'ok', credits: 42 }
+  }
+
+  it('links Add credits to platform for this workspace and settings to Cloud', async () => {
+    signIn()
+    const user = userEvent.setup()
     render(HeaderAccount)
 
-    await userEvent
-      .setup()
-      .click(screen.getByRole('link', { name: /sign in/i }))
+    await user.click(screen.getByTestId('header-account'))
 
-    expect(stash.mock.invocationCallOrder[0]).toBeLessThan(
-      assign.mock.invocationCallOrder[0]
-    )
-  })
-
-  it('sends the visitor to sign in with the current page as the return destination', async () => {
-    const assign = vi.fn()
-    vi.spyOn(window.location, 'assign').mockImplementation(assign)
-    window.history.replaceState({}, '', '/workshop/models/example/?tab=api')
-    render(HeaderAccount)
-
-    await userEvent
-      .setup()
-      .click(screen.getByRole('link', { name: /sign in/i }))
-
-    expect(assign).toHaveBeenCalledWith(
-      '/login/?returnTo=%2Fworkshop%2Fmodels%2Fexample%2F%3Ftab%3Dapi'
-    )
-  })
-
-  it('leaves a modified click to the browser with the return destination already on the link', async () => {
-    const assign = vi.fn()
-    vi.spyOn(window.location, 'assign').mockImplementation(assign)
-    window.history.replaceState({}, '', '/workshop/models/example/?tab=api')
-    render(HeaderAccount)
-
-    const link = screen.getByRole('link', { name: /sign in/i })
+    const topUp = await screen.findByTestId('account-add-credits')
+    expect(topUp.getAttribute('href')).toBe(platformTopUpHref(workspace.id))
+    expect(topUp.getAttribute('target')).toBe('_blank')
     expect(
-      link.getAttribute('href'),
-      'the first render must match the server output'
-    ).toBe('/login/')
+      screen.getByTestId('account-workspace-settings').getAttribute('href')
+    ).toBe('https://cloud.comfy.org')
+  })
 
-    await fireEvent(link, new Event('pointerdown', { bubbles: true }))
-    link.dispatchEvent(
-      new MouseEvent('click', {
-        bubbles: true,
-        cancelable: true,
-        metaKey: true
+  it('hides the top-up row from a member', async () => {
+    signIn()
+    h.session!.value = {
+      token: 'jwt',
+      uid: 'user-1',
+      workspace,
+      role: 'member'
+    }
+    const user = userEvent.setup()
+    render(HeaderAccount)
+
+    await user.click(screen.getByTestId('header-account'))
+
+    await screen.findByTestId('account-workspace-settings')
+    expect(screen.queryByTestId('account-add-credits')).toBeNull()
+  })
+
+  it('closes on Escape and hands focus back to the trigger', async () => {
+    signIn()
+    const user = userEvent.setup()
+    render(HeaderAccount)
+
+    const trigger = screen.getByTestId('header-account')
+    await user.click(trigger)
+    await screen.findByRole('menu')
+
+    await user.keyboard('{Escape}')
+    await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+    // eslint-disable-next-line testing-library/no-node-access
+    expect(document.activeElement).toBe(trigger)
+  })
+})
+
+describe('HeaderAccount workspace switcher', () => {
+  function signIn() {
+    h.user!.value = { email: 'a@b.co', displayName: 'Ada' }
+    h.session!.value = { token: 'jwt', uid: 'user-1', workspace, role: 'owner' }
+    h.balance!.value = { status: 'ok', credits: 42 }
+  }
+
+  const listing = {
+    workspaces: [
+      {
+        id: 'ws',
+        name: 'Personal',
+        role: 'owner',
+        type: 'personal',
+        subscription_tier: 'PRO',
+        created_at: '2026-01-01T00:00:00Z',
+        joined_at: '2026-01-01T00:00:00Z'
+      },
+      {
+        id: 'team-1',
+        name: 'Comfy team',
+        role: 'member',
+        type: 'team',
+        created_at: '2026-02-01T00:00:00Z',
+        joined_at: '2026-02-01T00:00:00Z'
+      }
+    ]
+  }
+
+  async function openSwitcher(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(screen.getByTestId('header-account'))
+    await screen.findByTestId('account-workspace')
+    await user.keyboard('{ArrowDown}')
+    await user.keyboard('{Enter}')
+  }
+
+  it('lists the account workspaces with the current one checked', async () => {
+    signIn()
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(JSON.stringify(listing), { status: 200 })
+        )
+    )
+    onTestFinished(() => {
+      vi.unstubAllGlobals()
+    })
+    const user = userEvent.setup()
+    render(HeaderAccount)
+
+    await openSwitcher(user)
+
+    expect(await screen.findByTestId('account-workspace-team-1')).toBeTruthy()
+    const current = screen.getByTestId('account-workspace-ws')
+    expect(current.textContent).toContain('Personal')
+    expect(current.textContent).toContain('PRO')
+  })
+
+  it('switches by reminting for the picked workspace', async () => {
+    signIn()
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(JSON.stringify(listing), { status: 200 })
+        )
+    )
+    onTestFinished(() => {
+      vi.unstubAllGlobals()
+    })
+    h.remint.mockResolvedValue({ status: 'ok' })
+    const user = userEvent.setup()
+    render(HeaderAccount)
+
+    await openSwitcher(user)
+    await user.click(await screen.findByTestId('account-workspace-team-1'))
+
+    await waitFor(() =>
+      expect(h.remint).toHaveBeenCalledWith(undefined, {
+        workspaceId: 'team-1'
       })
     )
-
-    expect(assign).not.toHaveBeenCalled()
-    expect(
-      link.getAttribute('href'),
-      'open-in-new-tab must land on the model page after sign-in, not the Workshop home'
-    ).toBe('/login/?returnTo=%2Fworkshop%2Fmodels%2Fexample%2F%3Ftab%3Dapi')
+    await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
   })
 
-  it('prepares the destination on focus, so a keyboard open-in-new-tab keeps it too', async () => {
-    window.history.replaceState({}, '', '/workshop/models/example/')
-    render(HeaderAccount)
-    const link = screen.getByRole('link', { name: /sign in/i })
-
-    await fireEvent.focus(link)
-
-    expect(link.getAttribute('href')).toBe(
-      '/login/?returnTo=%2Fworkshop%2Fmodels%2Fexample%2F'
+  it('shows the failure line when the list cannot load', async () => {
+    signIn()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(new Response('', { status: 500 }))
     )
+    onTestFinished(() => {
+      vi.unstubAllGlobals()
+    })
+    const user = userEvent.setup()
+    render(HeaderAccount)
+
+    await openSwitcher(user)
+
+    expect(await screen.findByText('Could not load workspaces.')).toBeTruthy()
   })
 })

@@ -9091,12 +9091,23 @@ Enterprise`
   'nav.buyCredits': { en: 'Buy credits', 'zh-CN': '购买积分' },
   'nav.creditsLabel': { en: 'Credits', 'zh-CN': '积分' },
   'nav.workspaces': { en: 'Workspaces', 'zh-CN': '工作区' },
+  'nav.workspacesError': {
+    en: 'Could not load workspaces.',
+    'zh-CN': '无法加载工作区。'
+  },
+  'nav.workspacesLoading': {
+    en: 'Loading workspaces…',
+    'zh-CN': '正在加载工作区…'
+  },
+  'nav.switchWorkspace': {
+    en: 'Switch workspace',
+    'zh-CN': '切换工作区'
+  },
   'nav.planAndCredits': { en: 'Plan & credits', 'zh-CN': '套餐与积分' },
   'nav.workspaceSettings': {
     en: 'Workspace settings',
     'zh-CN': '工作区设置'
   },
-  'nav.switchWorkspace': { en: 'Switch workspace', 'zh-CN': '切换工作区' },
   'nav.planFree': { en: 'Free', 'zh-CN': '免费' },
   'nav.roleOwner': { en: 'Owner', 'zh-CN': '所有者' },
   'nav.roleMember': { en: 'Member', 'zh-CN': '成员' },

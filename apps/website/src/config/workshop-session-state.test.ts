@@ -140,7 +140,10 @@ describe('useWorkshopSession', () => {
 
     await s.ensureFresh(popupUser)
 
-    expect(h.ensureFresh).toHaveBeenCalledWith(popupUser)
+    expect(h.ensureFresh).toHaveBeenCalledWith(
+      popupUser,
+      expect.objectContaining({ workspaceId: undefined })
+    )
   })
 
   it('clears the session on sign-out', async () => {
