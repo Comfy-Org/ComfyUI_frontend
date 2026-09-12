@@ -44,5 +44,42 @@ test.describe(
         )
       ).toHaveValue('')
     })
+
+    test('an emptied promoted text widget stays empty across a round-trip', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow(
+        'subgraphs/subgraph-with-promoted-text-widget'
+      )
+
+      const promotedTextbox = () =>
+        comfyPage.vueNodes
+          .getNodeLocator('11')
+          .getByRole('textbox', { name: 'text' })
+
+      async function roundTrip() {
+        const serialized = await comfyPage.workflow.getExportedWorkflow()
+        await comfyPage.workflow.loadGraphData(serialized)
+        await comfyPage.vueNodes.waitForNodes()
+      }
+
+      // The fixture ships this widget empty on the host AND on the interior
+      // CLIPTextEncode, so "empty after a round-trip" is also satisfied by a
+      // reset to that default. Round-tripping a non-empty value first is what
+      // lets the second one tell the two apart: if the clear is dropped as
+      // falsy, the reload brings this string back instead of an empty one.
+      const baseline = 'promoted value that must be cleared'
+      await promotedTextbox().fill(baseline)
+      await expect(promotedTextbox()).toHaveValue(baseline)
+
+      await roundTrip()
+      await expect(promotedTextbox()).toHaveValue(baseline)
+
+      await promotedTextbox().fill('')
+      await expect(promotedTextbox()).toHaveValue('')
+
+      await roundTrip()
+      await expect(promotedTextbox()).toHaveValue('')
+    })
   }
 )
