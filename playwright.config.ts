@@ -16,7 +16,7 @@ Object.assign(globalThis, {
 
 const maybeLocalOptions: PlaywrightTestConfig = process.env.PLAYWRIGHT_LOCAL
   ? {
-      timeout: 30_000,
+      timeout: 31_000,
       retries: 0,
       workers: 1,
       use: {

@@ -134,7 +134,8 @@
         "allowInterfaces": "always"
       }
     ],
-    "vue/no-import-compiler-macros": "error"
+    "vue/no-import-compiler-macros": "error",
+    "no-debugger": "error"
   },
   "overrides": [
     {
