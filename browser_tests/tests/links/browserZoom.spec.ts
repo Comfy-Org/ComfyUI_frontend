@@ -8,6 +8,24 @@ test.describe(
   'Link interaction at emulated display scaling',
   { tag: '@canvas' },
   () => {
+    let previousAction: string | undefined
+
+    test.beforeEach(async ({ comfyPage }) => {
+      previousAction = undefined
+      previousAction = await comfyPage.settings.getSetting<string>(
+        'Comfy.LinkRelease.Action'
+      )
+    })
+
+    test.afterEach(async ({ comfyPage }) => {
+      if (previousAction !== undefined) {
+        await comfyPage.settings.setSetting(
+          'Comfy.LinkRelease.Action',
+          previousAction
+        )
+      }
+    })
+
     test('disconnects and reconnects the exact endpoint at 150 percent', async ({
       comfyPage
     }) => {
