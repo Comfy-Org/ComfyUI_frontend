@@ -103,7 +103,7 @@ function dragDrop(e: DragEvent) {
 </script>
 <template>
   <MobileDisplay v-if="mobileDisplay" />
-  <div v-else class="absolute flex size-full flex-row" @dragover.prevent>
+  <div v-else class="absolute flex size-full flex-row">
     <div
       data-testid="linear-workspace-column"
       class="flex min-w-0 flex-1 flex-col overflow-hidden"
