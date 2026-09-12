@@ -5,7 +5,6 @@ import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useExternalLink } from '@/composables/useExternalLink'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import type * as DistributionModule from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -13,7 +12,6 @@ import { useModelStore } from '@/stores/modelStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import type { Mock } from 'vitest'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { fromPartial } from '@total-typescript/shoehorn'
 
@@ -25,6 +23,11 @@ vi.mock<unknown>(
   () => ({
     runMintPortsIntentionalClear: mockRunMintPortsIntentionalClear
   })
+)
+
+vi.mock<unknown>(
+  import('@/components/sidebar/tabs/ModelLibrarySidebarTab.vue'),
+  () => ({ default: {} })
 )
 
 vi.mock<unknown>(import('@/scripts/app'), () => {
@@ -58,7 +61,6 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
   return {
     app: {
       clean: vi.fn(() => {
-        // Simulate app.clean() calling graph.clear() only when not in subgraph
         mockGraphClear()
       }),
       openClipspace: vi.fn(),
@@ -84,19 +86,12 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
   }
 }))
 
-let mockModelStoreRefresh: Mock<ReturnType<typeof useModelStore>['refresh']>
-
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
-vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
-  ...(await importOriginal<typeof DistributionModule>()),
+vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockDistributionState.isCloud
   }
 }))
-
-let mockMissingModelStoreRefresh: Mock<
-  ReturnType<typeof useMissingModelStore>['refreshMissingModels']
->
 
 vi.mock(import('firebase/auth'))
 
@@ -142,7 +137,16 @@ vi.mock<unknown>(
   })
 )
 
-let mockToastAdd: ReturnType<typeof useToastStore>['add']
+const mockFeatureFlagState = vi.hoisted(() => ({ assetsEnabled: false }))
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
+  useFeatureFlags: () => ({
+    flags: {
+      get assetsEnabled() {
+        return mockFeatureFlagState.assetsEnabled
+      }
+    }
+  })
+}))
 
 const mockAssetBrowse = vi.hoisted(() =>
   vi.fn<(options: { onAssetSelected?: (asset: AssetItem) => void }) => void>()
@@ -215,13 +219,9 @@ describe('useCoreCommands', () => {
 
   const createMockSubgraph = () => {
     const mockNodes = [
-      // Mock input node
       createMockNode(1, 'SubgraphInputNode'),
-      // Mock output node
       createMockNode(2, 'SubgraphOutputNode'),
-      // Mock user node
       createMockNode(3, 'SomeUserNode'),
-      // Another mock user node
       createMockNode(4, 'AnotherUserNode')
     ]
 
@@ -263,24 +263,20 @@ describe('useCoreCommands', () => {
       NonNullable<typeof mockWorkflowStore.activeWorkflow>
     >({ changeTracker: mockChangeTracker })
     useCanvasStore().canvas = app.canvas
-    mockModelStoreRefresh = vi.mocked(useModelStore().refresh)
-    mockMissingModelStoreRefresh = vi.mocked(
-      useMissingModelStore().refreshMissingModels
-    )
-    mockToastAdd = useToastStore().add
     mockDistributionState.isCloud = false
+    mockFeatureFlagState.assetsEnabled = false
     mockBillingState.canAccessSubscriptionFeatures = true
     mockBillingState.subscriptionTier = null
     vi.mocked(app.refreshComboInNodes).mockResolvedValue(undefined)
-    mockModelStoreRefresh.mockResolvedValue(true)
-    mockMissingModelStoreRefresh.mockResolvedValue(undefined)
+    vi.mocked(useModelStore().refresh).mockResolvedValue(true)
+    vi.mocked(useMissingModelStore().refreshMissingModels).mockResolvedValue(
+      undefined
+    )
 
-    // Reset app state
     app.canvas.subgraph = undefined
 
     useSettingStore().settingValues['Comfy.ConfirmClear'] = false
 
-    // Mock global confirm
     global.confirm = vi.fn().mockReturnValue(true)
     mockRunMintPortsIntentionalClear.mockClear()
   })
@@ -292,7 +288,6 @@ describe('useCoreCommands', () => {
         (cmd) => cmd.id === 'Comfy.ClearWorkflow'
       )!
 
-      // Execute the command
       await clearCommand.function()
 
       expect(app.clean).toHaveBeenCalled()
@@ -302,7 +297,6 @@ describe('useCoreCommands', () => {
     })
 
     it('should preserve input/output nodes when clearing subgraph', async () => {
-      // Set up subgraph context
       app.canvas.subgraph = mockSubgraph
 
       const commands = useCoreCommands()
@@ -310,39 +304,34 @@ describe('useCoreCommands', () => {
         (cmd) => cmd.id === 'Comfy.ClearWorkflow'
       )!
 
-      // Execute the command
       await clearCommand.function()
 
       expect(app.clean).not.toHaveBeenCalled()
       expect(app.rootGraph.clear).not.toHaveBeenCalled()
       expect(mockRunMintPortsIntentionalClear).not.toHaveBeenCalled()
 
-      // Should only remove user nodes, not input/output nodes
       const subgraph = app.canvas.subgraph
       expect(subgraph.remove).toHaveBeenCalledTimes(2)
-      expect(subgraph.remove).toHaveBeenCalledWith(subgraph.nodes[2]) // user1
-      expect(subgraph.remove).toHaveBeenCalledWith(subgraph.nodes[3]) // user2
-      expect(subgraph.remove).not.toHaveBeenCalledWith(subgraph.nodes[0]) // input1
-      expect(subgraph.remove).not.toHaveBeenCalledWith(subgraph.nodes[1]) // output1
+      expect(subgraph.remove).toHaveBeenCalledWith(subgraph.nodes[2])
+      expect(subgraph.remove).toHaveBeenCalledWith(subgraph.nodes[3])
+      expect(subgraph.remove).not.toHaveBeenCalledWith(subgraph.nodes[0])
+      expect(subgraph.remove).not.toHaveBeenCalledWith(subgraph.nodes[1])
 
       expect(api.dispatchCustomEvent).toHaveBeenCalledWith('graphCleared')
     })
 
     it('should respect confirmation setting', async () => {
-      // Mock confirmation required
       useSettingStore().settingValues['Comfy.ConfirmClear'] = true
 
-      global.confirm = vi.fn().mockReturnValue(false) // User cancels
+      global.confirm = vi.fn().mockReturnValue(false)
 
       const commands = useCoreCommands()
       const clearCommand = commands.find(
         (cmd) => cmd.id === 'Comfy.ClearWorkflow'
       )!
 
-      // Execute the command
       await clearCommand.function()
 
-      // Should not clear anything when user cancels
       expect(app.clean).not.toHaveBeenCalled()
       expect(app.rootGraph.clear).not.toHaveBeenCalled()
       expect(api.dispatchCustomEvent).not.toHaveBeenCalled()
@@ -384,7 +373,6 @@ describe('useCoreCommands', () => {
     it('should select all items', async () => {
       await findCommand('Comfy.Canvas.SelectAll').function()
 
-      // No arguments means "select all items on canvas"
       expect(app.canvas.selectItems).toHaveBeenCalledWith()
     })
 
@@ -616,23 +604,29 @@ describe('useCoreCommands', () => {
         })
         order.push('combo:end')
       })
-      mockModelStoreRefresh.mockImplementation(async () => {
+      vi.mocked(useModelStore().refresh).mockImplementation(async () => {
         order.push('models')
         return true
       })
-      mockMissingModelStoreRefresh.mockImplementation(async () => {
-        order.push('missing')
-      })
+      vi.mocked(useMissingModelStore().refreshMissingModels).mockImplementation(
+        async () => {
+          order.push('missing')
+        }
+      )
 
       const commandPromise = findCmd('Comfy.RefreshNodeDefinitions').function()
 
-      expect(mockMissingModelStoreRefresh).not.toHaveBeenCalled()
+      expect(
+        vi.mocked(useMissingModelStore().refreshMissingModels)
+      ).not.toHaveBeenCalled()
       resolveComboRefresh()
       await commandPromise
 
       expect(app.refreshComboInNodes).toHaveBeenCalled()
-      expect(mockModelStoreRefresh).toHaveBeenCalled()
-      expect(mockMissingModelStoreRefresh).toHaveBeenCalledWith({
+      expect(vi.mocked(useModelStore().refresh)).toHaveBeenCalled()
+      expect(
+        vi.mocked(useMissingModelStore().refreshMissingModels)
+      ).toHaveBeenCalledWith({
         reloadDefs: false
       })
       expect(order.indexOf('missing')).toBeGreaterThan(
@@ -646,7 +640,9 @@ describe('useCoreCommands', () => {
       await expect(
         findCmd('Comfy.RefreshNodeDefinitions').function()
       ).rejects.toThrow('boom')
-      expect(mockMissingModelStoreRefresh).not.toHaveBeenCalled()
+      expect(
+        vi.mocked(useMissingModelStore().refreshMissingModels)
+      ).not.toHaveBeenCalled()
     })
 
     it('Comfy.RefreshNodeDefinitions skips missing model refresh on cloud', async () => {
@@ -655,8 +651,10 @@ describe('useCoreCommands', () => {
       await findCmd('Comfy.RefreshNodeDefinitions').function()
 
       expect(app.refreshComboInNodes).toHaveBeenCalled()
-      expect(mockModelStoreRefresh).toHaveBeenCalled()
-      expect(mockMissingModelStoreRefresh).not.toHaveBeenCalled()
+      expect(vi.mocked(useModelStore().refresh)).toHaveBeenCalled()
+      expect(
+        vi.mocked(useMissingModelStore().refreshMissingModels)
+      ).not.toHaveBeenCalled()
     })
   })
 
@@ -685,7 +683,7 @@ describe('useCoreCommands', () => {
       await findCmd('Comfy.QueueSelectedOutputNodes').function()
 
       expect(mockBillingState.showSubscriptionDialog).not.toHaveBeenCalled()
-      expect(mockToastAdd).toHaveBeenCalledWith(
+      expect(useToastStore().add).toHaveBeenCalledWith(
         expect.objectContaining({ severity: 'error' })
       )
     })
@@ -720,7 +718,7 @@ describe('useCoreCommands', () => {
 
         expect(app.queuePrompt).not.toHaveBeenCalled()
         expect(mockBillingState.showSubscriptionDialog).not.toHaveBeenCalled()
-        expect(mockToastAdd).toHaveBeenCalledWith(
+        expect(useToastStore().add).toHaveBeenCalledWith(
           expect.objectContaining({ severity: 'warn' })
         )
       }
@@ -779,17 +777,25 @@ describe('useCoreCommands', () => {
   describe('BrowseModelAssets command', () => {
     const asset = fromPartial<AssetItem>({ id: 'asset-1' })
 
-    async function selectAssetFromBrowser() {
-      useSettingStore().settingValues['Comfy.Assets.UseAssetAPI'] = true
+    const browseModelAssets = () =>
+      useCoreCommands().find((cmd) => cmd.id === 'Comfy.BrowseModelAssets')!
 
-      const command = useCoreCommands().find(
-        (cmd) => cmd.id === 'Comfy.BrowseModelAssets'
-      )!
-      await command.function()
+    async function selectAssetFromBrowser() {
+      mockFeatureFlagState.assetsEnabled = true
+
+      await browseModelAssets().function()
 
       const { onAssetSelected } = mockAssetBrowse.mock.calls[0][0]
       onAssetSelected?.(asset)
     }
+
+    it('does not open the browser when the assets capability is missing', async () => {
+      mockFeatureFlagState.assetsEnabled = false
+
+      await expect(browseModelAssets().function()).resolves.toBeUndefined()
+
+      expect(mockAssetBrowse).not.toHaveBeenCalled()
+    })
 
     it('starts a model node drag for the selected asset', async () => {
       mockStartModelNodeDrag.mockReturnValue(undefined)
@@ -800,7 +806,7 @@ describe('useCoreCommands', () => {
         asset,
         'asset_browser'
       )
-      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(useToastStore().add).not.toHaveBeenCalled()
     })
 
     it('shows an error toast when the asset cannot start a drag', async () => {
@@ -813,7 +819,7 @@ describe('useCoreCommands', () => {
 
       await selectAssetFromBrowser()
 
-      expect(mockToastAdd).toHaveBeenCalledWith(
+      expect(useToastStore().add).toHaveBeenCalledWith(
         expect.objectContaining({ severity: 'error' })
       )
     })

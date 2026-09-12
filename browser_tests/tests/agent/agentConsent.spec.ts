@@ -144,6 +144,31 @@ test.describe('Agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
     })
   })
 
+  test('keeps the consent card dark in a light app', async ({ comfyPage }) => {
+    const page = comfyPage.page
+
+    await test.step('Switch the app to its light palette', async () => {
+      await comfyPage.settings.setSetting('Comfy.ColorPalette', 'light')
+      await expect(page.locator('html')).not.toHaveClass(/dark-theme/)
+    })
+
+    await test.step('Consent keeps its dark surface and readable heading', async () => {
+      await page
+        .getByRole('button', { name: enMessages.agent.askComfyAgent })
+        .click()
+      await expect(page.getByTestId('agent-consent-card')).toHaveCSS(
+        'background-color',
+        'rgb(23, 23, 24)'
+      )
+      await expect(
+        page.getByRole('heading', { name: enMessages.agent.consent.title })
+      ).toHaveCSS('color', 'rgb(255, 255, 255)')
+      await expect(
+        page.getByRole('button', { name: enMessages.agent.consent.accept })
+      ).toBeEnabled()
+    })
+  })
+
   test.describe('in a narrow viewport', () => {
     test.use({ viewport: { width: 430, height: 900 } })
 

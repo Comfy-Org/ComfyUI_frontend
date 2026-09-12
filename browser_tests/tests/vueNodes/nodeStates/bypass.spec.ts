@@ -7,9 +7,11 @@ const BYPASS_HOTKEY = 'Control+b'
 const BYPASS_CLASS = /before:bg-bypass\/60/
 
 test.describe('Vue Node Bypass', { tag: '@vue-nodes' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.Minimap.Visible', false)
-    await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', true)
+  test.use({
+    initialSettings: {
+      'Comfy.Minimap.Visible': false,
+      'Comfy.Graph.CanvasMenu': true
+    }
   })
 
   test(
