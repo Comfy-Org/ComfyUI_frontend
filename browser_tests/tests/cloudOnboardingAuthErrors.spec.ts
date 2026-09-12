@@ -8,7 +8,10 @@ import {
   CLOUD_SELF_EMAIL,
   CloudAuthHelper
 } from '@e2e/fixtures/helpers/CloudAuthHelper'
-import { mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
+import {
+  mockCloudBoot,
+  preselectCloudUser
+} from '@e2e/fixtures/utils/cloudBootMocks'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 type CreateCustomerResponse =
@@ -24,6 +27,7 @@ type CreateCustomerResponse =
 const test = comfyPageFixture.extend<{ cloudAuth: CloudAuthHelper }>({
   page: async ({ page }, use) => {
     await mockCloudBoot(page, { features: {} })
+    await preselectCloudUser(page)
     await page.route('**/customers', (route) => {
       if (route.request().method() !== 'POST') return route.fallback()
       return route.fulfill({
