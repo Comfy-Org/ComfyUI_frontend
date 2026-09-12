@@ -705,7 +705,7 @@ export const workspaceApi = {
     try {
       const response = await workspaceApiClient.get<BillingOpStatusResponse>(
         workspaceApiUrl(`/billing/ops/${encodeURIComponent(opId)}`),
-        { headers, timeout: 30_000 }
+        { headers, timeout: 31_000 }
       )
       return response.data
     } catch (err) {
