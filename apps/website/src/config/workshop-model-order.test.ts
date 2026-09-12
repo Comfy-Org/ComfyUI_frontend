@@ -45,6 +45,12 @@ describe('the stored model order', () => {
       note: 'Order only, no figures.',
       slugs: []
     },
+    {
+      measuredOn: 'not-a-date',
+      windowDays: 30,
+      note: 'Order only, no figures.',
+      slugs: []
+    },
     { slugs: [] }
   ])('refuses a file of the wrong shape: %#', (malformed) => {
     expect(workshopModelOrderSchema.safeParse(malformed).success).toBe(false)

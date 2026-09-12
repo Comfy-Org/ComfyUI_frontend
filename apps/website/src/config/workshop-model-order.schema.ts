@@ -6,7 +6,7 @@ import { z } from 'zod'
  * from.
  */
 export const workshopModelOrderSchema = z.object({
-  measuredOn: z.string(),
+  measuredOn: z.string().date(),
   windowDays: z.number().int().positive(),
   note: z.string(),
   // A slug listed twice would quietly take its last position and rank one model
