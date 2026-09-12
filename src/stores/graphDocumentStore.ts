@@ -10,6 +10,7 @@ import type {
   DocumentPersistenceState,
   DocumentTrackingState
 } from '@/core/graph/document/documentLifecycle'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { DocumentId } from '@/types/documentId'
 import { createDocumentId } from '@/types/documentId'
 import type { GraphScope } from '@/types/graphScopeId'
@@ -81,6 +82,14 @@ export const useGraphDocumentStore = defineStore('graphDocument', () => {
     return graphLeases.get(documentId)?.lease ?? null
   }
 
+  function disposeLease(lease: DocumentGraphLease): void {
+    try {
+      lease.dispose()
+    } catch (error) {
+      reportError(error, { errorType: 'document_graph_lease_disposal_failure' })
+    }
+  }
+
   function beginGraphHydration(
     documentId: DocumentId
   ): GraphHydrationTicket | null {
@@ -105,7 +114,7 @@ export const useGraphDocumentStore = defineStore('graphDocument', () => {
       entry.state.phase === 'closed' ||
       hydrationGenerations.get(ticket.documentId) !== ticket.generation
     ) {
-      lease.dispose()
+      disposeLease(lease)
       return false
     }
     const previous = graphLeases.get(ticket.documentId)
@@ -113,7 +122,7 @@ export const useGraphDocumentStore = defineStore('graphDocument', () => {
       generation: ticket.generation,
       lease
     })
-    if (previous && previous.lease !== lease) previous.lease.dispose()
+    if (previous && previous.lease !== lease) disposeLease(previous.lease)
     return true
   }
 
@@ -121,7 +130,7 @@ export const useGraphDocumentStore = defineStore('graphDocument', () => {
     const current = graphLeases.get(documentId)
     if (!current) return false
     graphLeases.delete(documentId)
-    current.lease.dispose()
+    disposeLease(current.lease)
     return true
   }
 

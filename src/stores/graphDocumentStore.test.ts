@@ -187,7 +187,9 @@ describe('useGraphDocumentStore', () => {
       store.getDocument(documentId)?.state.revision ?? -1
     const dispose = vi.fn()
     const lease = { graph: {}, dispose }
-    store.completeGraphHydration(store.beginGraphHydration(documentId)!, lease)
+    const hydration = store.beginGraphHydration(documentId)
+    if (hydration === null) throw new Error('beginGraphHydration failed')
+    store.completeGraphHydration(hydration, lease)
     store.markMutated(documentId)
     expect(
       store.closeDocument(documentId, {
@@ -250,8 +252,11 @@ describe('useGraphDocumentStore', () => {
     const store = useGraphDocumentStore()
     const documentId = store.createDocument()
     if (documentId === null) throw new Error('createDocument failed')
-    const first = store.beginGraphHydration(documentId)!
-    const second = store.beginGraphHydration(documentId)!
+    const first = store.beginGraphHydration(documentId)
+    const second = store.beginGraphHydration(documentId)
+    if (first === null || second === null) {
+      throw new Error('beginGraphHydration failed')
+    }
     const staleDispose = vi.fn()
     const winningDispose = vi.fn()
     const stale = { graph: { id: 'stale' }, dispose: staleDispose }
@@ -271,11 +276,15 @@ describe('useGraphDocumentStore', () => {
     store.hydrateDocument(documentId, scope)
     const firstDispose = vi.fn()
     const secondDispose = vi.fn()
-    store.completeGraphHydration(store.beginGraphHydration(documentId)!, {
+    const firstHydration = store.beginGraphHydration(documentId)
+    if (firstHydration === null) throw new Error('beginGraphHydration failed')
+    store.completeGraphHydration(firstHydration, {
       graph: { id: 'first' },
       dispose: firstDispose
     })
-    store.completeGraphHydration(store.beginGraphHydration(documentId)!, {
+    const secondHydration = store.beginGraphHydration(documentId)
+    if (secondHydration === null) throw new Error('beginGraphHydration failed')
+    store.completeGraphHydration(secondHydration, {
       graph: { id: 'second' },
       dispose: secondDispose
     })
@@ -289,11 +298,57 @@ describe('useGraphDocumentStore', () => {
     expect(secondDispose).toHaveBeenCalledOnce()
   })
 
+  it('publishes a replacement when disposing the previous lease throws', () => {
+    const store = useGraphDocumentStore()
+    const documentId = store.createDocument()
+    if (documentId === null) throw new Error('createDocument failed')
+    const firstHydration = store.beginGraphHydration(documentId)
+    if (firstHydration === null) throw new Error('beginGraphHydration failed')
+    store.completeGraphHydration(firstHydration, {
+      graph: { id: 'first' },
+      dispose: () => {
+        throw new Error('dispose failed')
+      }
+    })
+    const replacement = { graph: { id: 'replacement' }, dispose: vi.fn() }
+    const replacementHydration = store.beginGraphHydration(documentId)
+    if (replacementHydration === null) {
+      throw new Error('beginGraphHydration failed')
+    }
+
+    expect(
+      store.completeGraphHydration(replacementHydration, replacement)
+    ).toBe(true)
+    expect(store.graphLeaseOf(documentId)).toBe(replacement)
+  })
+
+  it('closes a document when disposing its graph lease throws', () => {
+    const store = useGraphDocumentStore()
+    const documentId = store.createDocument()
+    if (documentId === null) throw new Error('createDocument failed')
+    store.hydrateDocument(documentId, scope)
+    const hydration = store.beginGraphHydration(documentId)
+    if (hydration === null) throw new Error('beginGraphHydration failed')
+    store.completeGraphHydration(hydration, {
+      graph: {},
+      dispose: () => {
+        throw new Error('dispose failed')
+      }
+    })
+
+    expect(
+      store.closeDocument(documentId, { atRevision: 0, discardChanges: true })
+    ).toBe(true)
+    expect(store.getDocument(documentId)?.state.phase).toBe('closed')
+    expect(store.graphLeaseOf(documentId)).toBeNull()
+  })
+
   it('disposes hydration that completes after close', () => {
     const store = useGraphDocumentStore()
     const documentId = store.createDocument()
     if (documentId === null) throw new Error('createDocument failed')
-    const ticket = store.beginGraphHydration(documentId)!
+    const ticket = store.beginGraphHydration(documentId)
+    if (ticket === null) throw new Error('beginGraphHydration failed')
     const dispose = vi.fn()
 
     expect(
