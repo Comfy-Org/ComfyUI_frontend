@@ -159,14 +159,17 @@ describe('widget slot ownership', () => {
     expect(processedWidget.slotMetadata).toBeUndefined()
   })
 
-  it.for([false, true])(
-    'respects explicit widget ownership on linked same-name sockets (owned: %s)',
-    (ownsWidget) => {
+  it.for(['none', 'widget', 'widgetId'] as const)(
+    'respects explicit widget ownership on linked same-name sockets (%s)',
+    (ownership) => {
       const nodeId = toNodeId(1)
       const { graph, node } = createGraphWithNode([], nodeId)
       node.addInput('model', 'MODEL')
       node.addWidget('custom', 'model', null, () => {})
-      if (ownsWidget) node.inputs[0].widget = { name: 'model' }
+      if (ownership === 'widget') node.inputs[0].widget = { name: 'model' }
+      if (ownership === 'widgetId') {
+        node.inputs[0].widgetId = widgetId(GRAPH_ID, nodeId, 'model')
+      }
       useLinkStore().registerLink(
         {
           rootGraphId: toRootGraphId(GRAPH_ID),
@@ -193,7 +196,7 @@ describe('widget slot ownership', () => {
         ui: noopUi
       })
 
-      if (ownsWidget) {
+      if (ownership !== 'none') {
         expect(processedWidget.slotMetadata?.linked).toBe(true)
         expect(processedWidget.simplified.options?.disabled).toBe(true)
       } else {
