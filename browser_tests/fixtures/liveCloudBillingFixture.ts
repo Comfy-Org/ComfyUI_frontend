@@ -21,6 +21,9 @@ export const liveCloudBillingFixture = base.extend<{
     const origins = new Set([
       new URL(baseURL ?? config.PLAYWRIGHT_TEST_URL).origin,
       config.PLAYWRIGHT_SETUP_API_URL,
+      ...(config.PLAYWRIGHT_SETUP_API_URL === 'https://testcloud.comfy.org'
+        ? ['https://testapi.comfy.org']
+        : []),
       'https://identitytoolkit.googleapis.com',
       'https://securetoken.googleapis.com',
       'https://dreamboothy-dev.firebaseapp.com',
@@ -52,6 +55,20 @@ export const liveCloudBillingFixture = base.extend<{
       const request = route.request()
       const url = new URL(request.url())
       if (
+        config.PLAYWRIGHT_SETUP_API_URL === 'https://testcloud.comfy.org' &&
+        url.origin === 'https://testapi.comfy.org' &&
+        request.method() === 'GET' &&
+        /^\/customers(?:\/balance)?$/.test(url.pathname)
+      ) {
+        await route.fallback()
+        return
+      }
+      if (url.origin === 'https://testapi.comfy.org') {
+        networkPolicy.unexpected.add(`API ${url.origin}${url.pathname}`)
+        await route.abort('blockedbyclient')
+        return
+      }
+      if (
         !networkPolicy.origins.has(url.origin) &&
         url.hostname.endsWith('.comfy.org') &&
         /^\/(api|customers)(\/|$)/.test(url.pathname)
@@ -72,19 +89,24 @@ export const liveCloudBillingFixture = base.extend<{
         url.origin === config.PLAYWRIGHT_TEST_URL &&
         /^\/(api|internal)(\/|$)/.test(url.pathname)
       ) {
-        const response = await route.fetch({
-          url: new URL(
-            url.pathname + url.search,
-            config.PLAYWRIGHT_SETUP_API_URL
-          ).href,
-          maxRedirects: 0
-        })
-        await route.fulfill({ response })
+        try {
+          const response = await route.fetch({
+            url: new URL(
+              url.pathname + url.search,
+              config.PLAYWRIGHT_SETUP_API_URL
+            ).href,
+            maxRedirects: 0
+          })
+          await route.fulfill({ response })
+        } catch {
+          throw new Error(`Cloud proxy request failed: ${url.pathname}`)
+        }
         return
       }
       await route.fallback()
     })
     await use(context)
+    await context.unrouteAll({ behavior: 'ignoreErrors' })
   },
   billingSession: async ({ page }, use) => {
     const config = loadLiveCloudBillingConfig()
