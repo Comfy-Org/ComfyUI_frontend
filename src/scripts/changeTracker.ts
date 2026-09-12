@@ -238,6 +238,19 @@ function reportInactiveTrackerCall(method: string, workflowPath: string) {
   assert(false, `ChangeTracker.${method}() called on inactive tracker`)
 }
 
+function getUndoRedoKey(e: KeyboardEvent) {
+  if ((e.ctrlKey || e.metaKey) && !e.altKey) {
+    const key = e.key.toUpperCase()
+    // Redo: Ctrl + Y, or Ctrl + Shift + Z
+    if ((key === 'Y' && !e.shiftKey) || (key == 'Z' && e.shiftKey)) {
+      return 'redo'
+    } else if (key === 'Z' && !e.shiftKey) {
+      return 'undo'
+    }
+  }
+  return null
+}
+
 export class ChangeTracker {
   static MAX_HISTORY = 50
   /**
@@ -487,18 +500,15 @@ export class ChangeTracker {
     await this.updateState(this.redoQueue, this.undoQueue)
   }
 
-  async undoRedo(e: KeyboardEvent) {
-    if ((e.ctrlKey || e.metaKey) && !e.altKey) {
-      const key = e.key.toUpperCase()
-      // Redo: Ctrl + Y, or Ctrl + Shift + Z
-      if ((key === 'Y' && !e.shiftKey) || (key == 'Z' && e.shiftKey)) {
-        await this.redo()
-        return true
-      } else if (key === 'Z' && !e.shiftKey) {
-        await this.undo()
-        return true
-      }
+  async undoRedo(undoRedo: 'undo' | 'redo' | null) {
+    if (undoRedo === 'undo') {
+      await this.undo()
+      return true
+    } else if (undoRedo === 'redo') {
+      await this.redo()
+      return true
     }
+    return undefined
   }
 
   beforeChange() {
@@ -534,15 +544,25 @@ export class ChangeTracker {
         if (useDialogStore().isDialogOpen(LAYER_EDITOR_DIALOG_KEY)) return
 
         const activeEl = document.activeElement
+
         requestAnimationFrame(async () => {
           let bindInputEl: Element | null = null
+          // Check activeEl type
+          const isNativeTextInput =
+            activeEl instanceof HTMLInputElement ||
+            activeEl instanceof HTMLTextAreaElement
+          const isContentEditable =
+            activeEl instanceof HTMLElement && activeEl.isContentEditable
+          // Check undo / redo (null when neither)
+          const undoRedo = getUndoRedoKey(e)
+          // Check textinput/editable has local undo/redo logic
+          const isLocalUndoRedo =
+            isNativeTextInput || (isContentEditable && e.defaultPrevented)
+
           // If we are auto queue in change mode then we do want to trigger on inputs
           if (!app.ui.autoQueueEnabled || app.ui.autoQueueMode === 'instant') {
-            if (
-              activeEl?.tagName === 'INPUT' ||
-              (activeEl && 'type' in activeEl && activeEl.type === 'textarea')
-            ) {
-              // Ignore events on inputs, they have their native history
+            if (isNativeTextInput) {
+              // Ignore events on native inputs, they have their native history
               return
             }
             bindInputEl = activeEl
@@ -558,8 +578,14 @@ export class ChangeTracker {
           const changeTracker = getCurrentChangeTracker()
           if (!changeTracker) return
 
-          // Check if this is a ctrl+z ctrl+y
-          if (await changeTracker.undoRedo(e)) return
+          // Skip undoRedo check on events on native/custom inputs
+          if (
+            undoRedo !== null &&
+            !isLocalUndoRedo &&
+            (await changeTracker.undoRedo(undoRedo))
+          ) {
+            return
+          }
 
           // If our active element is some type of input then handle changes after they're done
           if (ChangeTracker.bindInput(bindInputEl)) return

@@ -153,6 +153,116 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
         undoQueueSize: 0
       })
     })
+
+    test('Does not graph-undo a custom contenteditable editor undo', async ({
+      comfyPage
+    }) => {
+      const initialNodeCount = await comfyPage.nodeOps.getNodeCount()
+      const initialUndoQueueSize =
+        (await comfyPage.workflow.getUndoQueueSize()) ?? 0
+
+      await comfyPage.page.evaluate(() => {
+        const node = window.LiteGraph!.createNode('Note')
+        window.app!.graph.add(node)
+      })
+      await comfyPage.nextFrame()
+
+      await expect
+        .poll(() => comfyPage.nodeOps.getNodeCount())
+        .toBe(initialNodeCount + 1)
+      await expect
+        .poll(() => comfyPage.workflow.getUndoQueueSize())
+        .toBe(initialUndoQueueSize + 1)
+
+      const editor = comfyPage.page.getByTestId('local-history-editor')
+      await comfyPage.page.evaluate(() => {
+        const editor = document.createElement('div')
+        editor.dataset.testid = 'local-history-editor'
+        editor.contentEditable = 'true'
+        editor.addEventListener('keydown', (event) => {
+          if (
+            (event.ctrlKey || event.metaKey) &&
+            event.key.toLowerCase() === 'z'
+          ) {
+            event.preventDefault()
+            editor.dataset.undoPrevented = String(event.defaultPrevented)
+          }
+        })
+        document.body.append(editor)
+      })
+
+      await editor.focus()
+      await comfyPage.page.keyboard.press('ControlOrMeta+z')
+
+      await expect(editor).toHaveAttribute('data-undo-prevented', 'true')
+      await expect
+        .poll(() => comfyPage.nodeOps.getNodeCount())
+        .toBe(initialNodeCount + 1)
+      await expect
+        .poll(() => comfyPage.workflow.getUndoQueueSize())
+        .toBe(initialUndoQueueSize + 1)
+    })
+
+    test('Does not graph-redo a custom contenteditable editor redo', async ({
+      comfyPage
+    }) => {
+      const initialNodeCount = await comfyPage.nodeOps.getNodeCount()
+      const initialUndoQueueSize =
+        (await comfyPage.workflow.getUndoQueueSize()) ?? 0
+      const initialRedoQueueSize =
+        (await comfyPage.workflow.getRedoQueueSize()) ?? 0
+
+      await comfyPage.page.evaluate(() => {
+        const node = window.LiteGraph!.createNode('Note')
+        window.app!.graph.add(node)
+      })
+      await comfyPage.nextFrame()
+      await expect
+        .poll(() => comfyPage.nodeOps.getNodeCount())
+        .toBe(initialNodeCount + 1)
+      await expect
+        .poll(() => comfyPage.workflow.getUndoQueueSize())
+        .toBe(initialUndoQueueSize + 1)
+
+      await comfyPage.keyboard.undo()
+      await expect
+        .poll(() => comfyPage.nodeOps.getNodeCount())
+        .toBe(initialNodeCount)
+      await expect
+        .poll(() => comfyPage.workflow.getUndoQueueSize())
+        .toBe(initialUndoQueueSize)
+      await expect
+        .poll(() => comfyPage.workflow.getRedoQueueSize())
+        .toBe(initialRedoQueueSize + 1)
+
+      const editor = comfyPage.page.getByTestId('local-history-editor')
+      await comfyPage.page.evaluate(() => {
+        const editor = document.createElement('div')
+        editor.dataset.testid = 'local-history-editor'
+        editor.contentEditable = 'true'
+        editor.addEventListener('keydown', (event) => {
+          if (
+            (event.ctrlKey || event.metaKey) &&
+            event.key.toLowerCase() === 'y'
+          ) {
+            event.preventDefault()
+            editor.dataset.redoPrevented = String(event.defaultPrevented)
+          }
+        })
+        document.body.append(editor)
+      })
+
+      await editor.focus()
+      await comfyPage.keyboard.redo(editor)
+
+      await expect(editor).toHaveAttribute('data-redo-prevented', 'true')
+      await expect
+        .poll(() => comfyPage.nodeOps.getNodeCount())
+        .toBe(initialNodeCount)
+      await expect
+        .poll(() => comfyPage.workflow.getRedoQueueSize())
+        .toBe(initialRedoQueueSize + 1)
+    })
   })
 
   test('Can group multiple change actions into a single transaction', async ({
