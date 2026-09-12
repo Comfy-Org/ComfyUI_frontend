@@ -275,7 +275,9 @@ test.describe('Vue Combo Widget', { tag: ['@vue-nodes', '@widget'] }, () => {
     await expect(schedulerComboAfterReload).toContainText('karras')
   })
 
-  test('a combo value tracks undo and redo', async ({ comfyPage }) => {
+  test('a combo value tracks each undo and redo step', async ({
+    comfyPage
+  }) => {
     await comfyPage.workflow.loadWorkflow('vueNodes/linked-int-widget')
 
     // Read the value off the graph rather than the combobox label. The row is
@@ -290,6 +292,13 @@ test.describe('Vue Combo Widget', { tag: ['@vue-nodes', '@widget'] }, () => {
     const original = await scheduler()
     expect(original, 'fixture should start on a known scheduler').toBe('simple')
 
+    const baseDepth = (await comfyPage.workflow.getUndoQueueSize()) ?? 0
+
+    // One entry per selection is assertable rather than assumed:
+    // `useWidgetSelectActions.updateSelectedItems` sets the value and then
+    // calls `changeTracker.captureCanvasState()` on the same tick, so a
+    // dropdown commit is its own checkpoint. The depth is polled rather than
+    // sampled — reading it before the capture lands would return a short count.
     await comfyPage.vueNodes.selectComboOption(
       'KSampler',
       'scheduler',
@@ -298,22 +307,47 @@ test.describe('Vue Combo Widget', { tag: ['@vue-nodes', '@widget'] }, () => {
     // Precondition: the selection reached the graph. Without it, "undo restored
     // the original" also holds for a selection that never applied at all.
     await expect.poll(scheduler).toBe('karras')
+    await expect
+      .poll(() => comfyPage.workflow.getUndoQueueSize())
+      .toBe(baseDepth + 1)
+
+    await comfyPage.vueNodes.selectComboOption(
+      'KSampler',
+      'scheduler',
+      'exponential'
+    )
+    await expect.poll(scheduler).toBe('exponential')
+    await expect
+      .poll(() => comfyPage.workflow.getUndoQueueSize())
+      .toBe(baseDepth + 2)
 
     // Keystrokes go to the page, not to the canvas locator. `keyboard.undo()`
     // defaults to `canvas.press()`, which runs actionability checks against a
     // canvas the Vue transform pane covers — the click is then intercepted by
     // whichever node sits under it (here the combobox itself).
     await comfyPage.page.keyboard.press('Escape')
+
+    // Each undo lands on the intermediate value, not straight back to the
+    // original: that is what "tracks each step" means, and a tracker that
+    // coalesced the two selections would skip 'karras' entirely.
+    await comfyPage.page.keyboard.press('ControlOrMeta+z')
+    await expect.poll(scheduler).toBe('karras')
     await comfyPage.page.keyboard.press('ControlOrMeta+z')
     await expect.poll(scheduler).toBe(original)
 
     await comfyPage.page.keyboard.press('ControlOrMeta+Shift+z')
     await expect.poll(scheduler).toBe('karras')
+    await comfyPage.page.keyboard.press('ControlOrMeta+Shift+z')
+    await expect.poll(scheduler).toBe('exponential')
 
-    // The redo must not have pushed an entry of its own: one more undo has to
-    // land back on the original, not on an intermediate copy of 'karras'.
+    // The redos must not have pushed entries of their own: two more undos have
+    // to land back on the original, not on an intermediate copy.
+    await comfyPage.page.keyboard.press('ControlOrMeta+z')
     await comfyPage.page.keyboard.press('ControlOrMeta+z')
     await expect.poll(scheduler).toBe(original)
+    await expect
+      .poll(() => comfyPage.workflow.getUndoQueueSize())
+      .toBe(baseDepth)
   })
 
   test('Dropdown displays over Selection Toolbox', async ({ comfyPage }) => {
