@@ -23,6 +23,7 @@ test.describe(
     test('VHS format-dependent widgets survive graph reload', async ({
       comfyPage
     }) => {
+      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
       const before = await comfyPage.page.evaluate(() => {
         const graph = window.app!.graph
         const video = window.LiteGraph!.createNode('VHS_VideoCombine')!
@@ -58,7 +59,7 @@ test.describe(
 
     test('rgthree comparer receives two real backend images and retains them through a tab switch', async ({
       comfyPage
-    }) => {
+    }, testInfo) => {
       test.slow()
       await comfyPage.workflow.setupWorkflowsDirectory({})
       for (const vueNodesEnabled of [false, true] as const) {
@@ -153,6 +154,48 @@ test.describe(
           initialState?.renderedImages?.[1].src
         )
 
+        const visiblePixels = await comfyPage.page.evaluate((nodeId) => {
+          const node = window.app!.graph.nodes.find(
+            (candidate) => String(candidate.id) === nodeId
+          )!
+          const widget = node.widgets![0]
+          const canvas = document.createElement('canvas')
+          canvas.width = 512
+          canvas.height = 512
+          const context = canvas.getContext('2d')!
+          node.size = [512, 512]
+          Object.assign(node, {
+            isPointerOver: true,
+            pointerOverPos: [256, 256]
+          })
+          widget.draw!(context, node, 512, 0, 20)
+          const pixels = context.getImageData(0, 0, 512, 512).data
+          let red = 0
+          let blue = 0
+          for (let index = 0; index < pixels.length; index += 4) {
+            if (pixels[index] > 200 && pixels[index + 2] < 50) red++
+            if (pixels[index] < 50 && pixels[index + 2] > 200) blue++
+          }
+          return { blue, red }
+        }, ids.comparerId)
+        expect(visiblePixels.red).toBeGreaterThan(10_000)
+        expect(visiblePixels.blue).toBeGreaterThan(10_000)
+        await comfyPage.page.evaluate((nodeId) => {
+          window
+            .app!.graph.nodes.find((node) => String(node.id) === nodeId)!
+            .setDirtyCanvas(true, true)
+        }, ids.comparerId)
+        await comfyPage.nextFrame()
+
+        const screenshotPath = testInfo.outputPath(
+          `rgthree-comparer-${vueNodesEnabled ? 'vue' : 'legacy'}.png`
+        )
+        await comfyPage.page.screenshot({ path: screenshotPath })
+        await testInfo.attach(
+          `rgthree comparer ${vueNodesEnabled ? 'Vue' : 'legacy'} renderer`,
+          { path: screenshotPath, contentType: 'image/png' }
+        )
+
         await comfyPage.menu.topbar.saveWorkflow(workflowName)
         await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
         await comfyPage.workflow.waitForWorkflowIdle()
@@ -163,8 +206,28 @@ test.describe(
         await comfyPage.workflow.waitForWorkflowIdle()
         await expect.poll(comparerState).toEqual(expectedComparison)
 
-        await comfyPage.command.executeCommand('Comfy.SaveWorkflow')
+        const [saveRequest] = await Promise.all([
+          comfyPage.page.waitForRequest(
+            (request) =>
+              request.method() === 'POST' &&
+              request.url().includes('/userdata/') &&
+              request.url().includes(encodeURIComponent(workflowName))
+          ),
+          comfyPage.command.executeCommand('Comfy.SaveWorkflow')
+        ])
         await comfyPage.workflow.waitForWorkflowIdle()
+        const savedWorkflow = saveRequest.postDataJSON()
+        expect(savedWorkflow.nodes).toHaveLength(3)
+        expect(
+          savedWorkflow.nodes.find(
+            (node: { type: string }) => node.type === 'Image Comparer (rgthree)'
+          )?.widgets_values
+        ).toEqual([
+          [
+            expect.objectContaining({ name: 'A', selected: true }),
+            expect.objectContaining({ name: 'B', selected: true })
+          ]
+        ])
         await expect(comfyPage.toast.toastErrors).toHaveCount(0)
 
         await comfyPage.page.reload({ waitUntil: 'domcontentloaded' })
