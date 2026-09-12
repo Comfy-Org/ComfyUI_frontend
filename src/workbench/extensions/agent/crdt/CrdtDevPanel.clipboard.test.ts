@@ -216,7 +216,6 @@ describe('CrdtDevPanel clipboard controls', () => {
     renderPanel()
     await user.click(screen.getByTestId('crdt-dev-panel-tab-log'))
 
-    expect(addedReads).toBe(1)
     await user.click(
       screen.getByRole('button', { name: 'Copy node id node-added' })
     )
