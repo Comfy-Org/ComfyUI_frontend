@@ -160,28 +160,22 @@ async function expectRenderedEndpoint(
   await comfyPage.nextFrame()
   await expect
     .poll(() =>
-      comfyPage.page.evaluate(
-        ({ originId, targetId }) => {
-          const renderedLink = [...window.app!.canvas.renderedPaths].find(
-            (segment) =>
-              'origin_id' in segment &&
-              'target_id' in segment &&
-              String(segment.target_id) === targetId &&
-              String(segment.origin_id) === originId
+      comfyPage.page.evaluate((targetId) => {
+        return [
+          ...new Set(
+            [...window.app!.canvas.renderedPaths]
+              .filter(
+                (segment) =>
+                  'origin_id' in segment &&
+                  'target_id' in segment &&
+                  String(segment.target_id) === targetId
+              )
+              .map((segment) => String(segment.origin_id))
           )
-          return (
-            renderedLink &&
-            'origin_id' in renderedLink &&
-            'target_id' in renderedLink && {
-              originId: String(renderedLink.origin_id),
-              targetId: String(renderedLink.target_id)
-            }
-          )
-        },
-        { originId, targetId }
-      )
+        ].sort()
+      }, targetId)
     )
-    .toEqual({ originId, targetId })
+    .toEqual([originId])
 }
 
 async function saveWorkflowAs(comfyPage: ComfyPage, workflowName: string) {
