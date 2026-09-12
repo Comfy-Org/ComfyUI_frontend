@@ -164,7 +164,8 @@ const EVENT_KINDS: readonly DevEventKind[] = [
   'stale_probe',
   'rebind',
   'doc_gap',
-  'doc_stale'
+  'doc_stale',
+  'scope_ready_retry'
 ]
 
 const VERDICT_TONE: Record<string, string> = {

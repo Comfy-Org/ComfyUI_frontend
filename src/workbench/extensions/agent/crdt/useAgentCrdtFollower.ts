@@ -285,6 +285,15 @@ export function useAgentCrdtFollower(
   let subscribeRetryTimer: ReturnType<typeof setTimeout> | null = null
   let subscribeRetryAttempt = 0
 
+  // Scope-ready recovery: a frame the adapter withheld because the layout
+  // scope was not yet available must not stay absent until the NEXT frame
+  // happens to arrive. Poll the adapter's retained frame at a fixed interval
+  // until it projects (scope became ready) or the bounded budget runs out.
+  const SCOPE_RETRY_INTERVAL_MS = 250
+  const SCOPE_RETRY_MAX_ATTEMPTS = 40
+  let scopeRetryTimer: ReturnType<typeof setTimeout> | null = null
+  let scopeRetryAttempt = 0
+
   // The recency heartbeat: armed only while a subscribe is CONFIRMED (bound +
   // healthy by definition), slid forward by every doc-scoped frame, cancelled
   // by the same lifecycle exits as the subscribe retry. The probe is
@@ -354,6 +363,57 @@ export function useAgentCrdtFollower(
     }, delay)
   }
 
+  const clearScopeRetry = (): void => {
+    if (scopeRetryTimer !== null) {
+      clearTimeout(scopeRetryTimer)
+      scopeRetryTimer = null
+    }
+    scopeRetryAttempt = 0
+  }
+
+  const publishDocNodeIds = (): void => {
+    const ids = currentDocNodeIds()
+    const added = [...ids].filter((id) => !knownDocNodeIds.has(id))
+    const removed = [...knownDocNodeIds].filter((id) => !ids.has(id))
+    if (added.length > 0 || removed.length > 0)
+      recordDevEvent('doc_nodes_changed', { added, removed })
+    knownDocNodeIds = ids
+  }
+
+  // A frame withheld because the workflow scope was not yet live must not wait
+  // for the next remote update: if the author goes idle, the node it carried
+  // would stay absent indefinitely. Poll the adapter until scope resolves.
+  const scheduleScopeRetry = (target: string): void => {
+    if (scopeRetryTimer !== null) return
+    if (scopeRetryAttempt >= SCOPE_RETRY_MAX_ATTEMPTS) return
+    scopeRetryAttempt += 1
+    scopeRetryTimer = setTimeout(() => {
+      scopeRetryTimer = null
+      if (subscribedWorkflowId.value !== target || !isTargetActive.value) return
+      const applied = adapter.retryProjection(target)
+      if (applied) {
+        recordDevEvent('scope_ready_retry', {
+          workflowId: target,
+          attempt: scopeRetryAttempt
+        })
+        outcomes.value = {
+          ...outcomes.value,
+          applied: outcomes.value.applied + 1,
+          skipped: outcomes.value.skipped - 1
+        }
+        updatesApplied.value = bridge.follower.updatesApplied
+        publishDocNodeIds()
+        clearScopeRetry()
+        return
+      }
+      if (scopeRetryAttempt < SCOPE_RETRY_MAX_ATTEMPTS) {
+        scheduleScopeRetry(target)
+        return
+      }
+      clearScopeRetry()
+    }, SCOPE_RETRY_INTERVAL_MS)
+  }
+
   const onSubscribed: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     if (!isTargetActive.value) return
@@ -402,18 +462,15 @@ export function useAgentCrdtFollower(
     outcomes.value = applied
       ? { ...outcomes.value, applied: outcomes.value.applied + 1 }
       : { ...outcomes.value, skipped: outcomes.value.skipped + 1 }
+    if (applied) clearScopeRetry()
+    else scheduleScopeRetry(update.workflowId)
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
       seq: update.seq,
       actor: update.actor,
       bytes: update.update instanceof Uint8Array ? update.update.length : null
     })
-    const ids = currentDocNodeIds()
-    const added = [...ids].filter((id) => !knownDocNodeIds.has(id))
-    const removed = [...knownDocNodeIds].filter((id) => !ids.has(id))
-    if (added.length > 0 || removed.length > 0)
-      recordDevEvent('doc_nodes_changed', { added, removed })
-    knownDocNodeIds = ids
+    publishDocNodeIds()
   }
   const onOpsResult: EventListener = (event) => {
     if (staleProbeTimer !== null) {
@@ -454,6 +511,7 @@ export function useAgentCrdtFollower(
     updatesApplied.value = 0
     lastFrameType.value = event.type
     clearStaleProbe()
+    clearScopeRetry()
     knownDocNodeIds = new Set()
     recordDevEvent(
       'doc_reset',
@@ -490,6 +548,7 @@ export function useAgentCrdtFollower(
     connected.value = false
     lastFrameType.value = event.type
     clearStaleProbe()
+    clearScopeRetry()
     const detail =
       event instanceof CustomEvent
         ? (event.detail as { workflowId?: string } | null)
@@ -526,6 +585,7 @@ export function useAgentCrdtFollower(
   const onReconnected: EventListener = () => {
     connected.value = false
     clearStaleProbe()
+    clearScopeRetry()
     recordDevEvent('reconnected', null)
     bridge.resubscribe()
   }
@@ -576,6 +636,7 @@ export function useAgentCrdtFollower(
     ([next, active]) => {
       clearSubscribeRetry()
       clearStaleProbe()
+      clearScopeRetry()
       connected.value = false
       knownDocNodeIds = new Set()
       if (!active) {
@@ -629,6 +690,7 @@ export function useAgentCrdtFollower(
     try {
       clearSubscribeRetry()
       clearStaleProbe()
+      clearScopeRetry()
       api.removeEventListener('reconnected', onReconnected)
       api.removeEventListener('status', onSocketActivity)
       bridge.removeEventListener('doc_subscribed', onSubscribed)

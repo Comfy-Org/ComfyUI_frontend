@@ -114,6 +114,7 @@ function setup(getScope: () => typeof scope | null = () => scope) {
   })
   bridge.subscribe(WORKFLOW_ID)
   return {
+    adapter,
     applyResults,
     bridge,
     createLayout,
@@ -230,6 +231,59 @@ describe('follower seam integration', () => {
         update_b64: encodeBase64(host.add(2))
       })
 
+      expect(seam.applyResults).toEqual([false, true])
+      expect(
+        useNodeDataStore()
+          .getGraphNodesFor('root', 'root')
+          .map((node) => node.id)
+      ).toEqual([toNodeId(1), toNodeId(2)])
+      expect(seam.createLayout).toHaveBeenCalledTimes(2)
+    } finally {
+      host.destroy()
+      seam.destroy()
+    }
+  })
+
+  it('recovers a withheld update via retryProjection without a later frame', () => {
+    let liveScope: typeof scope | null = null
+    const seam = setup(() => liveScope)
+    const host = hostSession()
+    try {
+      seam.transport.deliver('doc_update', {
+        v: 1,
+        workflow_id: WORKFLOW_ID,
+        seq: 1,
+        update_b64: encodeBase64(host.add(1))
+      })
+      expect(seam.applyResults).toEqual([false])
+      expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
+
+      // Scope still missing: retry must not commit or touch the graph.
+      expect(seam.adapter.retryProjection(WORKFLOW_ID)).toBe(false)
+      expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
+      expect(seam.createLayout).not.toHaveBeenCalled()
+
+      // Scope returns with no further frame: retry projects node 1 alone.
+      liveScope = scope
+      expect(seam.adapter.retryProjection(WORKFLOW_ID)).toBe(true)
+      expect(
+        useNodeDataStore()
+          .getGraphNodesFor('root', 'root')
+          .map((node) => node.id)
+      ).toEqual([toNodeId(1)])
+      expect(seam.createLayout).toHaveBeenCalledTimes(1)
+
+      // Nothing left pending after a committed retry.
+      expect(seam.adapter.retryProjection(WORKFLOW_ID)).toBe(false)
+      expect(seam.createLayout).toHaveBeenCalledTimes(1)
+
+      // A later frame still applies incrementally on top of the recovery.
+      seam.transport.deliver('doc_update', {
+        v: 1,
+        workflow_id: WORKFLOW_ID,
+        seq: 2,
+        update_b64: encodeBase64(host.add(2))
+      })
       expect(seam.applyResults).toEqual([false, true])
       expect(
         useNodeDataStore()

@@ -36,6 +36,7 @@ export type DevEventKind =
   | 'stale_probe'
   | 'doc_gap'
   | 'doc_stale'
+  | 'scope_ready_retry'
 
 export interface DevEvent {
   seq: number

@@ -118,6 +118,13 @@ interface TargetSession {
   onLinksChanged: (event: Y.YMapEvent<unknown>) => void
   reconcileNextFrame: boolean
   applying: boolean
+  /**
+   * Last frame whose batch was rejected (typically: graph scope not ready).
+   * The Yjs bytes are already merged into the follower doc, so nothing else
+   * will ever re-project them unless {@link EcsFollowerAdapter.retryProjection}
+   * replays this frame once scope becomes available.
+   */
+  pendingRetryFrame: DocUpdate | undefined
 }
 
 /**
@@ -205,6 +212,7 @@ export class EcsFollowerAdapter {
       changedLinks: new Set<string>(),
       frameQueue: [],
       reconcileNextFrame: true,
+      pendingRetryFrame: undefined,
       applying: false,
       onNodesChanged: (_events): void => undefined,
       onLinksChanged: (_event): void => undefined
@@ -305,9 +313,32 @@ export class EcsFollowerAdapter {
     // A rejected batch (no scope, or validation failure) must leave
     // reconcileNextFrame set so the next frame retries authoritative
     // cleanup instead of falling through to incremental handling with
-    // stale local-only graph state still present.
-    if (committed) session.reconcileNextFrame = false
+    // stale local-only graph state still present. The rejected frame is
+    // remembered so `retryProjection` can re-run it once scope is ready
+    // without waiting for a later frame to arrive.
+    session.reconcileNextFrame = !committed
+    session.pendingRetryFrame = committed ? undefined : update
     return committed
+  }
+
+  /**
+   * Re-run the last rejected projection for a target once the caller
+   * believes the graph scope is ready. Returns true only if a retry ran
+   * and committed; returns false when nothing is pending, the target is
+   * unbound, or a drain is already in progress.
+   */
+  retryProjection(workflowId: string): boolean {
+    const session = this.targets.get(workflowId)
+    if (!session || session.applying || session.frameQueue.length > 0)
+      return false
+    const frame = session.pendingRetryFrame
+    if (!frame) return false
+    session.applying = true
+    try {
+      return this.applyQueuedFrame(session, frame)
+    } finally {
+      session.applying = false
+    }
   }
 
   private discardSessionPending(session: TargetSession): void {
@@ -315,6 +346,7 @@ export class EcsFollowerAdapter {
     session.changedWidgets.clear()
     session.replacedWidgetMaps.clear()
     session.changedLinks.clear()
+    session.pendingRetryFrame = undefined
   }
 
   private onNodesChanged(
