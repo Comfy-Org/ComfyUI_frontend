@@ -5,9 +5,14 @@ import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import { graphToPrompt } from './executionUtil'
 
-function addNode(graph: LGraph, comfyClass: string) {
+function addNode(
+  graph: LGraph,
+  comfyClass: string,
+  properties: Record<string, unknown> = {}
+) {
   const node = new LGraphNode(comfyClass)
   node.comfyClass = comfyClass
+  Object.assign(node.properties, properties)
   graph.add(node)
   return node
 }
@@ -102,5 +107,64 @@ describe('graphToPrompt widget serialization', () => {
     widget.value = null
 
     expect(await promptInputs(graph, node)).not.toHaveProperty('prompt')
+  })
+})
+
+describe('graphToPrompt _meta pack identity', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  it('carries cnr_id and ver from node properties', async () => {
+    const graph = new LGraph()
+    const packNode = addNode(graph, 'PackNode', {
+      cnr_id: 'some-pack',
+      ver: '1.2.0'
+    })
+    const auxNode = addNode(graph, 'AuxNode', { aux_id: 'aux/pack' })
+    const bareNode = addNode(graph, 'BareNode')
+
+    const { output } = await graphToPrompt(graph)
+
+    expect(output[String(packNode.id)]._meta).toEqual({
+      title: 'PackNode',
+      cnr_id: 'some-pack',
+      ver: '1.2.0'
+    })
+    expect(output[String(auxNode.id)]._meta).toEqual({
+      title: 'AuxNode',
+      cnr_id: 'aux/pack'
+    })
+    expect(output[String(bareNode.id)]._meta).toEqual({ title: 'BareNode' })
+  })
+
+  it('omits non-string pack identity properties', async () => {
+    const graph = new LGraph()
+    const node = addNode(graph, 'InvalidIdentityNode', {
+      cnr_id: {},
+      aux_id: [],
+      ver: 123
+    })
+
+    const { output } = await graphToPrompt(graph)
+
+    expect(output[String(node.id)]._meta).toEqual({
+      title: 'InvalidIdentityNode'
+    })
+  })
+
+  it('falls back to a valid aux_id when cnr_id is not a string', async () => {
+    const graph = new LGraph()
+    const node = addNode(graph, 'FallbackIdentityNode', {
+      cnr_id: 123,
+      aux_id: 'aux/pack'
+    })
+
+    const { output } = await graphToPrompt(graph)
+
+    expect(output[String(node.id)]._meta).toEqual({
+      title: 'FallbackIdentityNode',
+      cnr_id: 'aux/pack'
+    })
   })
 })
