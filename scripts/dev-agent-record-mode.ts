@@ -94,7 +94,7 @@ async function containerFor(
     .map((line) => line.split(' '))
     .filter(
       ([, imageName, ...ports]) =>
-        imageName.includes(image) &&
+        imageName.replace(/@.+$/, '').replace(/:[^/]+$/, '') === image &&
         ports.join(' ').includes(`:${portNumber}->`)
     )
     .map(([name]) => name)

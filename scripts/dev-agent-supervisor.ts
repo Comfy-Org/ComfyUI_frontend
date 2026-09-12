@@ -138,10 +138,9 @@ export function waitForStartup(
   ])
 }
 
-// One lifecycle for a spawned group: the first exit reason wins and teardown runs once.
 export function supervise(dataDir: string) {
   const children: ChildProcess[] = []
-  let stopping = false
+  let stopPromise: Promise<void> | null = null
   let requestedExitCode: number | null = null
   let resolveExitRequest: (code: number) => void = () => {}
   const exitRequested = new Promise<number>((resolveExit) => {
@@ -155,19 +154,19 @@ export function supervise(dataDir: string) {
   const onSighup = () => requestExit(129)
   const onSigint = () => requestExit(130)
   const onSigterm = () => requestExit(143)
-  // Repeated signals during teardown must not kill the launcher over its detached children.
   process.on('SIGHUP', onSighup)
   process.on('SIGINT', onSigint)
   process.on('SIGTERM', onSigterm)
   return {
     exitRequested,
     requested: () => requestedExitCode !== null,
-    // Signalled newest first, so a dependent stops before what it was talking to.
     stop: async (exitCode: number): Promise<number> => {
-      if (stopping) return exitCode
-      stopping = true
-      const newestFirst = [...children].reverse()
-      try {
+      if (stopPromise !== null) {
+        await stopPromise
+        return exitCode
+      }
+      stopPromise = (async () => {
+        const newestFirst = [...children].reverse()
         for (const child of newestFirst) stopGroup(child, 'SIGTERM')
         await Promise.all(
           newestFirst.map((child) => waitForGroupExit(child, 2000))
@@ -185,11 +184,12 @@ export function supervise(dataDir: string) {
           )
         }
         await rm(dataDir, { force: true, recursive: true })
-      } finally {
+      })().finally(() => {
         process.removeListener('SIGHUP', onSighup)
         process.removeListener('SIGINT', onSigint)
         process.removeListener('SIGTERM', onSigterm)
-      }
+      })
+      await stopPromise
       return exitCode
     },
     watch: (child: ChildProcess) => {

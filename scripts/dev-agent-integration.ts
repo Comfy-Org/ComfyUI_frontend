@@ -41,8 +41,8 @@ async function assertWorkspacePackage(): Promise<void> {
     )
   }
   if (!dependency.startsWith('workspace:')) {
-    console.warn(
-      '[dev-agent-integration] @comfyorg/comfy-multi-player is the published package; edits to it will not hot-reload until it is an in-workspace dependency'
+    throw new Error(
+      '@comfyorg/comfy-multi-player must use a workspace: dependency'
     )
   }
 }
