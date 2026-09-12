@@ -5,6 +5,7 @@ import { subgraphBreadcrumbFixture } from '@e2e/fixtures/helpers/SubgraphBreadcr
 import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 
 import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { toNodeId } from '@/types/nodeId'
 
 const test = mergeTests(comfyPageFixture, subgraphBreadcrumbFixture)
 
@@ -140,10 +141,6 @@ test.describe(
             test(`surviving ${deleteOriginal ? 'copy' : 'original'} opens and edits after save/reload`, async ({
               comfyPage
             }) => {
-              test.fail(
-                !mode.vueNodesEnabled && deleteOriginal,
-                'LiteGraph serialization retains a deleted original subgraph host'
-              )
               await comfyPage.workflow.setupWorkflowsDirectory({})
               await comfyPage.workflow.loadWorkflow(
                 'subgraphs/subgraph-with-promoted-text-widget'
@@ -171,12 +168,29 @@ test.describe(
                 )
               )
 
-              const removed = await comfyPage.nodeOps.getNodeRefById(
-                deleteOriginal ? '11' : copyId
-              )
               const survivorId = deleteOriginal ? copyId : '11'
-              await removed.delete()
-              await expect.poll(() => removed.exists()).toBe(false)
+              const removedId = toNodeId(deleteOriginal ? '11' : copyId)
+              await comfyPage.page.evaluate((removedId) => {
+                const node = window.app!.rootGraph.getNodeById(removedId)
+                if (!node) throw new Error(`Node ${removedId} not found`)
+                window.app!.canvas.deselectAll()
+                window.app!.canvas.selectNode(node)
+              }, removedId)
+              await comfyPage.page.keyboard.press('Delete')
+              await comfyPage.nextFrame()
+              await expect
+                .poll(() =>
+                  comfyPage.page.evaluate(
+                    (removedId) => ({
+                      isRootGraphActive:
+                        window.app!.canvas.graph === window.app!.rootGraph,
+                      removedNodeExists:
+                        window.app!.rootGraph.getNodeById(removedId) !== null
+                    }),
+                    removedId
+                  )
+                )
+                .toEqual({ isRootGraphActive: true, removedNodeExists: false })
               const workflowName = `${mode.label.toLowerCase()}-${deleteOriginal ? 'copy' : 'original'}-survivor`
               const workflowPath = `/api/userdata/${encodeURIComponent(`workflows/${workflowName}.json`)}`
               const saveResponse = comfyPage.page.waitForResponse(
@@ -185,7 +199,14 @@ test.describe(
                   response.request().method() === 'POST'
               )
               await comfyPage.menu.topbar.saveWorkflow(workflowName)
-              expect((await saveResponse).status()).toBe(200)
+              const encodedSave = await saveResponse
+              expect(encodedSave.status()).toBe(200)
+              expect(encodedSave.request().headers()['comfy-user']).toBe(
+                comfyPage.id
+              )
+              const encodedWorkflow = zComfyWorkflow.parse(
+                encodedSave.request().postDataJSON()
+              )
 
               const persistedResponse = await comfyPage.request.get(
                 `${comfyPage.apiUrl}${workflowPath}`,
@@ -195,15 +216,16 @@ test.describe(
               const persistedWorkflow = zComfyWorkflow.parse(
                 await persistedResponse.json()
               )
-              expect(
-                persistedWorkflow.nodes
+              const serializedHostIds = (workflow: typeof encodedWorkflow) =>
+                workflow.nodes
                   .filter((node) =>
-                    persistedWorkflow.definitions?.subgraphs.some(
+                    workflow.definitions?.subgraphs.some(
                       (subgraph) => subgraph.id === node.type
                     )
                   )
                   .map((node) => String(node.id))
-              ).toEqual([survivorId])
+              expect(serializedHostIds(encodedWorkflow)).toEqual([survivorId])
+              expect(serializedHostIds(persistedWorkflow)).toEqual([survivorId])
 
               await comfyPage.workflow.reloadAndWaitForApp()
               await comfyPage.menu.workflowsTab.open()
