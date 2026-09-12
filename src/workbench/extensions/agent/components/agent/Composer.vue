@@ -488,7 +488,7 @@ defineExpose({
             >
               <DropdownMenuItem
                 v-if="canOpenAssets"
-                class="text-agent-fg data-highlighted:bg-agent-surface-hover box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal outline-none"
+                class="text-agent-fg data-highlighted:bg-agent-surface-hover mb-0.5 box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal outline-none"
                 @select="emit('openAssets')"
               >
                 <span class="icon-[comfy--image-ai-edit] size-4 shrink-0" />
@@ -503,7 +503,7 @@ defineExpose({
                 <DropdownMenuItem
                   :disabled="!!nodeReferenceDisabledReason"
                   :aria-description="nodeReferenceDisabledReason"
-                  class="text-agent-fg data-highlighted:bg-agent-surface-hover mb-0.5 box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+                  class="text-agent-fg data-highlighted:bg-agent-surface-hover box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
                   @select="onSelectNodes"
                 >
                   <span class="icon-[comfy--node] size-4 shrink-0" />
