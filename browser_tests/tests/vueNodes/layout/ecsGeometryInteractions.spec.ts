@@ -252,8 +252,43 @@ test.describe(
           })
           await comfyPage.page.mouse.move(0, 0)
           await comfyPage.nextFrame()
-          await expect(comfyPage.canvas).toHaveScreenshot(
-            `ecs-overlapping-text-${vueNodesEnabled ? 'vue' : 'legacy'}.png`
+          const clip = await comfyPage.page.evaluate(
+            (nodeIds) => {
+              const nodes = nodeIds.map((id) => {
+                const node = window.app!.graph.getNodeById(id)
+                if (!node) throw new Error(`Text node ${id} is unavailable`)
+                const [x, y, width, height] = node.getBounding()
+                const [left, top] = window.app!.canvasPosToClientPos([x, y])
+                const [right, bottom] = window.app!.canvasPosToClientPos([
+                  x + width,
+                  y + height
+                ])
+                return { left, top, right, bottom }
+              })
+              const padding = 20
+              const x = Math.max(
+                0,
+                Math.min(...nodes.map(({ left }) => left)) - padding
+              )
+              const y = Math.max(
+                0,
+                Math.min(...nodes.map(({ top }) => top)) - padding
+              )
+              const right = Math.min(
+                window.innerWidth,
+                Math.max(...nodes.map((node) => node.right)) + padding
+              )
+              const bottom = Math.min(
+                window.innerHeight,
+                Math.max(...nodes.map((node) => node.bottom)) + padding
+              )
+              return { x, y, width: right - x, height: bottom - y }
+            },
+            [toNodeId('6'), toNodeId('7')]
+          )
+          await expect(comfyPage.page).toHaveScreenshot(
+            `ecs-overlapping-text-${vueNodesEnabled ? 'vue' : 'legacy'}.png`,
+            { clip }
           )
         }
       }
