@@ -350,6 +350,19 @@ test.describe('Workflow Persistence', () => {
             .getByRole('spinbutton')
             .first()
         ).toHaveValue(String(savedSeed))
+      } else {
+        await comfyPage.canvasOps.mouseDblclickAt(
+          await reloadedNode.getTitlePosition()
+        )
+        await comfyPage.titleEditor.expectVisible()
+        await expect(comfyPage.titleEditor.input).toHaveValue('Renamed node')
+        await comfyPage.titleEditor.cancel()
+        const reloadedSeed = await reloadedNode.getWidgetByName('seed')
+        await reloadedSeed.click()
+        await expect(
+          comfyPage.page.locator('.graphdialog input[type="text"]')
+        ).toHaveValue(String(savedSeed))
+        await comfyPage.page.keyboard.press('Escape')
       }
     })
 
