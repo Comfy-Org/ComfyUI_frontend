@@ -2,11 +2,17 @@ import { z } from 'astro/zod'
 
 import orderJson from '../content/workshop-model-order.json'
 
-const workshopModelOrderSchema = z.object({
+export const workshopModelOrderSchema = z.object({
   measuredOn: z.string(),
   windowDays: z.number().int().positive(),
   note: z.string(),
-  slugs: z.array(z.string())
+  // A slug listed twice would quietly take its last position and rank one model
+  // wrong, with nothing to show for it.
+  slugs: z
+    .array(z.string())
+    .refine((slugs) => new Set(slugs).size === slugs.length, {
+      message: 'workshop-model-order.json lists a slug more than once'
+    })
 })
 
 const order = workshopModelOrderSchema.parse(orderJson)
