@@ -27,6 +27,7 @@ import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
 const mockData = vi.hoisted(() => ({
   mockExecuting: false,
+  mockActivity: undefined as string | undefined,
   mockLgraphNode: null as Record<string, unknown> | null
 }))
 
@@ -109,6 +110,7 @@ vi.mock(
       executing: computed(() => mockData.mockExecuting),
       progress: computed(() => undefined),
       progressPercentage: computed(() => undefined),
+      activity: computed(() => mockData.mockActivity),
       progressState: computed(() => undefined),
       executionState: computed(() => 'idle' as const)
     }))
@@ -162,7 +164,11 @@ function renderLGraphNode(props: ComponentProps<typeof LGraphNode>) {
     global: {
       plugins: [getActivePinia()!, i18n],
       stubs: {
-        NodeHeader: true,
+        NodeHeader: {
+          props: ['activity'],
+          template:
+            '<div data-testid="node-header" :data-activity="activity" />'
+        },
         NodeSlots: true,
         NodeWidgets: {
           props: ['nodeData', 'widgetIds'],
@@ -200,6 +206,7 @@ const mockRerouteNodeData: NodeState = {
 describe('LGraphNode', () => {
   beforeEach(() => {
     mockData.mockExecuting = false
+    mockData.mockActivity = undefined
     mockData.mockLgraphNode = null
 
     const canvasStore = useCanvasStore()
@@ -312,6 +319,18 @@ describe('LGraphNode', () => {
 
     const overlay = screen.getByTestId('node-state-outline-overlay')
     expect(overlay).toHaveClass('border-node-stroke-executing')
+  })
+
+  it('passes a reported activity through to the node header', () => {
+    mockData.mockExecuting = true
+    mockData.mockActivity = 'loading'
+
+    renderLGraphNode({ nodeData: mockNodeData })
+
+    expect(screen.getByTestId('node-header')).toHaveAttribute(
+      'data-activity',
+      'loading'
+    )
   })
 
   it('hides a linked core LoadImage input preview', () => {

@@ -65,6 +65,7 @@ const zNodeProgressState = z.object({
   value: z.number(),
   max: z.number(),
   state: z.enum(['pending', 'running', 'finished', 'error']),
+  activity: z.string().optional(),
   node_id: zNodeId,
   prompt_id: zJobId,
   display_node_id: zNodeId.optional(),
