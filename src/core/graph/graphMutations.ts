@@ -365,13 +365,17 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           const incumbent = nodes.get(key)
           if (
             mutation.kind === 'reconcileNode' &&
-            incumbent &&
             !hasTitle(mutation.payload)
           ) {
-            if (isUuidShapedSubgraphId(mutation.payload.type)) {
+            if (incumbent && isUuidShapedSubgraphId(mutation.payload.type)) {
               node.state.title = incumbent.title
-            }
-            if (node.state.lastSerialization) {
+              if (node.state.lastSerialization) {
+                node.state.lastSerialization.title = incumbent.title
+              }
+            } else if (
+              !isUuidShapedSubgraphId(mutation.payload.type) &&
+              node.state.lastSerialization
+            ) {
               node.state.lastSerialization.title = node.state.title
             }
           }

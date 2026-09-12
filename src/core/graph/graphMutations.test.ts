@@ -290,6 +290,19 @@ describe('graphMutations', () => {
     expect(createLayout).not.toHaveBeenCalled()
   })
 
+  it('untitled catalog reconcile without an incumbent persists the type as lastSerialization title', () => {
+    const { title: _title, ...untitled } = node(1)
+    expect(
+      mutations().batch(context, (batch) => {
+        batch.reconcileNode(untitled)
+      })
+    ).toBe(true)
+
+    const [state] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    expect(state.title).toBe('Type1')
+    expect(state.lastSerialization?.title).toBe('Type1')
+  })
+
   it('untitled reconcile of a display-named regular node uses the type as title and keeps the output wire', () => {
     const graph = mutations()
     graph.batch(context, (batch) => {
