@@ -32,12 +32,12 @@ test.describe('Item Interaction', { tag: ['@screenshot', '@node'] }, () => {
     comfyPage
   }) => {
     const title = 'CLIP Text Encode (Prompt)'
-    const readPos = async () => {
-      const [node] = await comfyPage.nodeOps.getNodeRefsByTitle(title)
+    async function readPos() {
+      const node = await comfyPage.nodeOps.getNodeRefByTitle(title)
       return node.getProperty<[number, number]>('pos')
     }
 
-    const [node] = await comfyPage.nodeOps.getNodeRefsByTitle(title)
+    const node = await comfyPage.nodeOps.getNodeRefByTitle(title)
     const pinnedOrigin = await readPos()
 
     await comfyPage.nodeOps.selectNodes([title])
@@ -58,17 +58,21 @@ test.describe('Item Interaction', { tag: ['@screenshot', '@node'] }, () => {
     await expect.poll(() => node.isPinned()).toBe(false)
     await node.dragBy(dragDelta)
     await expect.poll(readPos).not.toEqual(pinnedOrigin)
+    const movedPos = await readPos()
 
-    // Re-pin, then confirm the flag survives a reload from the draft.
+    const beforeRepin = Date.now()
     await comfyPage.command.executeCommand(
       'Comfy.Canvas.ToggleSelectedNodes.Pin'
     )
     await expect.poll(() => node.isPinned()).toBe(true)
 
+    await comfyPage.workflow.waitForDraftIndexUpdatedSince(beforeRepin)
     await comfyPage.workflow.reloadAndWaitForApp()
 
-    const [reloaded] = await comfyPage.nodeOps.getNodeRefsByTitle(title)
+    const reloaded = await comfyPage.nodeOps.getNodeRefByTitle(title)
+    expect(reloaded.id).toBe(node.id)
     await expect.poll(() => reloaded.isPinned()).toBe(true)
+    await expect.poll(readPos).toEqual(movedPos)
   })
 
   test('Can pin/unpin items with keyboard shortcut', async ({ comfyPage }) => {
