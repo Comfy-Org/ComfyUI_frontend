@@ -222,7 +222,8 @@ const CASES: Row[] = [
     seed: (op) => {
       const workflow = baseWorkflow();
       const remapped = remapInsertedWorkflowIds((op as { workflow: WorkflowJSON }).workflow, op.op_id);
-      workflow.links!.push([remapped.links![0]![0], 2, 0, 3, 0, "X"]);
+      const [remappedLinkId] = remapped.links![0] as [string, number, number, number, number, string];
+      workflow.links!.push([remappedLinkId, 2, 0, 3, 0, "X"]);
       return workflow;
     },
   },
