@@ -7,6 +7,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useDialogStore } from '@/stores/dialogStore'
+import { i18n } from '@/i18n'
 
 import { useAgentConsent } from './useAgentConsent'
 
@@ -167,7 +168,7 @@ describe('useAgentConsent', () => {
     expect(reportError).toHaveBeenCalledOnce()
     expect(vi.mocked(useToastStore().add)).toHaveBeenCalledWith(
       expect.objectContaining({
-        detail: 'Could not load your Agent preference. Try again.'
+        detail: i18n.global.t('agent.consent.loadError')
       })
     )
   })
@@ -236,7 +237,7 @@ describe('useAgentConsent', () => {
 
     await vi.waitFor(() => {
       expect(dialog.contentProps.error).toBe(
-        'Could not save your preference. Try again.'
+        i18n.global.t('agent.consent.saveError')
       )
     })
     expect(dialog.contentProps.accepting).toBe(false)
@@ -253,7 +254,7 @@ describe('useAgentConsent', () => {
     ;(dialog.contentProps.onAccept as () => void)()
     await vi.waitFor(() =>
       expect(dialog.contentProps.error).toBe(
-        'Could not save your preference. Try again.'
+        i18n.global.t('agent.consent.saveError')
       )
     )
     expect(useDialogStore().dialogStack).toHaveLength(1)
@@ -357,7 +358,7 @@ describe('useAgentConsent', () => {
     })
     expect(useToastStore().add).toHaveBeenCalledWith(
       expect.objectContaining({
-        detail: 'Could not open sign-in. Please try again.'
+        detail: i18n.global.t('agent.consent.signInError')
       })
     )
 

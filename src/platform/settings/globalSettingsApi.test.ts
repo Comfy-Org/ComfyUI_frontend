@@ -49,7 +49,7 @@ describe('Global Settings transport', () => {
       await expect(getGlobalSetting(key, authHeader)).resolves.toEqual(stored)
       expect(fetchWithUnifiedRemint).toHaveBeenCalledWith(
         `${cloud ? '' : 'https://api.comfy.test'}/api/global-settings/${key}`,
-        expect.objectContaining({ headers: authHeader }),
+        expect.objectContaining({ cache: 'no-store', headers: authHeader }),
         false
       )
       expect(fetchApi).not.toHaveBeenCalled()

@@ -63,7 +63,7 @@ export async function getGlobalSetting(
 ): Promise<GlobalSetting | undefined> {
   const response = await fetchWithUnifiedRemint(
     globalSettingsUrl(key),
-    { cache: 'no-cache', headers: authHeader },
+    { cache: 'no-store', headers: authHeader },
     await shouldRemintCloudRequest()
   )
   if (response.status === 404) {

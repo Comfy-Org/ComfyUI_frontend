@@ -149,7 +149,7 @@ async function mockAgentBoot(
     postedMessages,
     agentConsentAccepted,
     agentPanelInitiallyOpen,
-    agentConsentSaveStatus,
+    agentConsentSave,
     agentConsentWrites
   }: AgentFixtures
 ): Promise<void> {
@@ -270,13 +270,14 @@ async function mockAgentBoot(
     const request = route.request()
     if (request.method() !== 'POST') return route.fulfill({ status: 405 })
     const setting = zGlobalSettingValue.parse(request.postDataJSON())
+    const { status, pending } = agentConsentSave
     agentConsentWrites.push(setting.value)
-    if (agentConsentSaveStatus >= 400)
-      return route.fulfill({ status: agentConsentSaveStatus })
+    await pending
+    if (status >= 400) return route.fulfill({ status })
     consentAccepted = setting.value
     return route.fulfill({
       ...jsonRoute(storedConsent),
-      status: agentConsentSaveStatus
+      status
     })
   })
   await page.route('**/api/auth/token', (r) =>
@@ -334,7 +335,7 @@ type AgentFixtures = {
   agentFlagEnabled: boolean
   agentConsentAccepted: boolean
   agentPanelInitiallyOpen: boolean
-  agentConsentSaveStatus: number
+  agentConsentSave: { status: number; pending?: Promise<void> }
   agentConsentWrites: boolean[]
   postedMessages: string[]
 }
@@ -343,7 +344,9 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
   agentFlagEnabled: [true, { option: true }],
   agentConsentAccepted: [true, { option: true }],
   agentPanelInitiallyOpen: [false, { option: true }],
-  agentConsentSaveStatus: [200, { option: true }],
+  agentConsentSave: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
+    await use({ status: 200 })
+  },
   agentConsentWrites: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
     await use([])
   },
@@ -357,7 +360,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
       postedMessages,
       agentConsentAccepted,
       agentPanelInitiallyOpen,
-      agentConsentSaveStatus,
+      agentConsentSave,
       agentConsentWrites
     },
     use
@@ -367,7 +370,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
       postedMessages,
       agentConsentAccepted,
       agentPanelInitiallyOpen,
-      agentConsentSaveStatus,
+      agentConsentSave,
       agentConsentWrites
     })
     await use(page)

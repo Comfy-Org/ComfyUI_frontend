@@ -9,6 +9,7 @@ test.describe('Agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
 
   test('dismisses without activation and persists acceptance before opening', async ({
     comfyPage,
+    agentConsentSave,
     agentConsentWrites
   }) => {
     const page = comfyPage.page
@@ -54,11 +55,23 @@ test.describe('Agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
     })
 
     await test.step('Accept saves consent before opening Agent', async () => {
+      let releaseSave = () => {}
+      agentConsentSave.pending = new Promise<void>((resolve) => {
+        releaseSave = resolve
+      })
       await openButton.click()
-      await dialog
-        .getByRole('button', { name: enMessages.agent.consent.accept })
-        .click()
-      await expect.poll(() => agentConsentWrites).toEqual([true])
+      const accept = dialog.getByRole('button', {
+        name: enMessages.agent.consent.accept
+      })
+      try {
+        await accept.click()
+        await expect.poll(() => agentConsentWrites).toEqual([true])
+        await expect(dialog).toBeVisible()
+        await expect(accept).toBeDisabled()
+        await expect(panel).toHaveCount(0)
+      } finally {
+        releaseSave()
+      }
       await expect(dialog).toHaveCount(0)
       await expect(panel).toBeVisible()
     })
@@ -115,32 +128,42 @@ test.describe('Agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
   })
 
   test.describe('when persistence fails', () => {
-    test.use({ agentConsentSaveStatus: 500 })
-
     test('keeps the card retryable and the panel closed', async ({
       comfyPage,
+      agentConsentSave,
       agentConsentWrites
     }) => {
       const page = comfyPage.page
       const dialog = page.getByRole('dialog', {
         name: enMessages.agent.consent.title
       })
+      const accept = dialog.getByRole('button', {
+        name: enMessages.agent.consent.accept
+      })
+      const panel = page.locator('#agent-panel-root')
 
-      await page
-        .getByRole('button', { name: enMessages.agent.askComfyAgent })
-        .click()
-      await dialog
-        .getByRole('button', { name: enMessages.agent.consent.accept })
-        .click()
+      await test.step('A failed save leaves the panel closed and allows retry', async () => {
+        agentConsentSave.status = 500
+        await page
+          .getByRole('button', { name: enMessages.agent.askComfyAgent })
+          .click()
+        await accept.click()
 
-      await expect.poll(() => agentConsentWrites).toEqual([true])
-      await expect(dialog.getByRole('alert')).toHaveText(
-        enMessages.agent.consent.saveError
-      )
-      await expect(
-        dialog.getByRole('button', { name: enMessages.agent.consent.accept })
-      ).toBeEnabled()
-      await expect(page.locator('#agent-panel-root')).toHaveCount(0)
+        await expect.poll(() => agentConsentWrites).toEqual([true])
+        await expect(dialog.getByRole('alert')).toHaveText(
+          enMessages.agent.consent.saveError
+        )
+        await expect(accept).toBeEnabled()
+        await expect(panel).toHaveCount(0)
+      })
+
+      await test.step('Retry sends another save and opens the panel after recovery', async () => {
+        agentConsentSave.status = 200
+        await accept.click()
+        await expect.poll(() => agentConsentWrites).toEqual([true, true])
+        await expect(dialog).toHaveCount(0)
+        await expect(panel).toBeVisible()
+      })
     })
   })
 
