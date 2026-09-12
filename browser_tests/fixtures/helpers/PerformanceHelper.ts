@@ -42,6 +42,7 @@ export interface PerfMeasurement {
   allFrameDurationsMs: number[]
   fpsP5?: number
   fpsP50?: number
+  fpsP95?: number
   fpsMean?: number
 }
 

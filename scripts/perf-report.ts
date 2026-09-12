@@ -33,6 +33,7 @@ interface PerfMeasurement {
   allFrameDurationsMs?: number[]
   fpsP5?: number
   fpsP50?: number
+  fpsP95?: number
   fpsMean?: number
 }
 
@@ -284,6 +285,13 @@ function renderM2Scoreboard(
     p50Values.length > 0
       ? p50Values.reduce((a, b) => a + b, 0) / p50Values.length
       : null
+  const p95Values = scoredSamples
+    .map((s) => s.fpsP95)
+    .filter((v): v is number => Number.isFinite(v))
+  const avgP95 =
+    p95Values.length > 0
+      ? p95Values.reduce((a, b) => a + b, 0) / p95Values.length
+      : null
   const meanValues = scoredSamples
     .map((s) => s.fpsMean)
     .filter((v): v is number => Number.isFinite(v))
@@ -314,6 +322,7 @@ function renderM2Scoreboard(
     `| **Frame Duration** | **${avgFD.toFixed(1)}ms** | ≤${M2_TARGET_FRAME_DURATION_MS}ms | ${fdIcon} ${fdPassed ? 'PASS' : 'FAIL'} |`
   ]
   if (avgP50 !== null) lines.push(`| P50 FPS | ${avgP50.toFixed(0)} | — | — |`)
+  if (avgP95 !== null) lines.push(`| P95 FPS | ${avgP95.toFixed(0)} | — | — |`)
   if (avgMean !== null)
     lines.push(`| Mean FPS | ${avgMean.toFixed(0)} | — | — |`)
   lines.push(
