@@ -7,13 +7,21 @@ import {
   matchesBillingResponse
 } from '@e2e/fixtures/helpers/LiveCloudBilling'
 import type { NetworkPolicy } from '@e2e/fixtures/networkIsolationFixture'
-import { loadLiveCloudBillingConfig } from '@e2e/fixtures/utils/liveCloudBillingConfig'
+import {
+  loadLiveCloudBillingConfig,
+  loadLiveCloudBillingEndpoints
+} from '@e2e/fixtures/utils/liveCloudBillingConfig'
+
+interface LiveCloudCredentials {
+  email: string
+  password: string
+}
 
 export async function installLiveCloudBillingRouting(
   context: BrowserContext,
   networkPolicy: NetworkPolicy
 ) {
-  const config = loadLiveCloudBillingConfig()
+  const config = loadLiveCloudBillingEndpoints()
   await context.route('**/*', async (route) => {
     const request = route.request()
     const url = new URL(request.url())
@@ -56,27 +64,37 @@ export async function installLiveCloudBillingRouting(
   })
 }
 
-export async function signInToLiveCloud(page: Page) {
-  const config = loadLiveCloudBillingConfig()
+export async function signInToLiveCloud(
+  page: Page,
+  credentials?: LiveCloudCredentials
+) {
+  const endpoints = loadLiveCloudBillingEndpoints()
+  const account =
+    credentials ??
+    (() => {
+      const config = loadLiveCloudBillingConfig()
+      return {
+        email: config.CLOUD_ACCOUNT_EMAIL,
+        password: config.CLOUD_ACCOUNT_PASSWORD
+      }
+    })()
   await new FeatureFlagHelper(page).seedFlags({
     onboarding_survey_enabled: false
   })
-  await page.goto(`${config.PLAYWRIGHT_TEST_URL}/cloud/login`)
+  await page.goto(`${endpoints.PLAYWRIGHT_TEST_URL}/cloud/login`)
   await page
     .getByRole('button', { name: 'Use email instead', exact: true })
     .click()
   await page
     .getByRole('textbox', { name: 'Email', exact: true })
-    .fill(config.CLOUD_ACCOUNT_EMAIL)
-  await page
-    .getByLabel('Password', { exact: true })
-    .fill(config.CLOUD_ACCOUNT_PASSWORD)
+    .fill(account.email)
+  await page.getByLabel('Password', { exact: true }).fill(account.password)
   const [response] = await Promise.all([
     page.waitForResponse(
       (response) =>
         matchesBillingResponse(
           response,
-          config.PLAYWRIGHT_TEST_URL,
+          endpoints.PLAYWRIGHT_TEST_URL,
           '/api/billing/status'
         ) && response.status() === 200
     ),
@@ -87,7 +105,7 @@ export async function signInToLiveCloud(page: Page) {
   if (!authorization) throw new Error('Missing billing authorization')
   return new LiveCloudBillingSession(
     page.request,
-    config.PLAYWRIGHT_SETUP_API_URL,
+    endpoints.PLAYWRIGHT_SETUP_API_URL,
     { authorization }
   )
 }
