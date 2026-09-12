@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Coins, Download, Play } from '@lucide/vue'
-import { useIntervalFn } from '@vueuse/core'
+import { useEventListener, useIntervalFn } from '@vueuse/core'
 import { computed, onBeforeUnmount, onMounted, ref, useSlots, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -151,6 +151,13 @@ const { pause, resume } = useIntervalFn(
   { immediate: false }
 )
 watch(isRunning, (running) => (running ? resume() : pause()))
+
+// A run in flight is money and minutes: leaving the page throws both away, so
+// the browser asks first.
+useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
+  if (!isRunning.value) return
+  event.preventDefault()
+})
 
 // Keeps the form intact across a sign-in or a top-up round trip.
 const storageKey = `comfy-workshop-form:${model.slug}`

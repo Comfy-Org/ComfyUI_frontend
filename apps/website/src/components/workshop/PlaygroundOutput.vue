@@ -287,8 +287,7 @@ const earlierClass = (active: boolean) =>
             currentUrl &&
             !blurred &&
             expandable &&
-            !plays &&
-            !isVideoUrl(currentUrl)
+            !(plays && !isVideoUrl(currentUrl))
           "
           type="button"
           :aria-label="t('workshop.output.expand', locale)"
@@ -467,7 +466,18 @@ const earlierClass = (active: boolean) =>
         >
           <X class="size-4" aria-hidden="true" />
         </button>
+        <video
+          v-if="isVideoUrl(currentUrl)"
+          :src="currentUrl"
+          data-testid="output-expanded-video"
+          class="max-h-full max-w-full rounded-2xl object-contain"
+          controls
+          autoplay
+          loop
+          playsinline
+        />
         <img
+          v-else
           :src="currentUrl"
           :alt="t('workshop.output.title', locale)"
           class="max-h-full max-w-full rounded-2xl object-contain"

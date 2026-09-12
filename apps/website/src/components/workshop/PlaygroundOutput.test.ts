@@ -31,6 +31,26 @@ describe('PlaygroundOutput', () => {
     expect(screen.getByRole('img').getAttribute('src')).toContain('example')
   })
 
+  it('opens a video result full screen, the same as a still', async () => {
+    const user = userEvent.setup()
+    render(PlaygroundOutput, {
+      props: {
+        state: succeeded({
+          kind: 'video',
+          url: 'https://example.com/run.mp4',
+          fileName: 'run.mp4'
+        }),
+        modality: 'video',
+        now: 2_000
+      }
+    })
+
+    await user.click(screen.getByTestId('output-expand'))
+    expect(
+      screen.getByTestId('output-expanded-video').getAttribute('src')
+    ).toContain('run.mp4')
+  })
+
   it('shows the latest run and switches to an earlier one on demand', async () => {
     const user = userEvent.setup()
     render(PlaygroundOutput, {

@@ -49,7 +49,7 @@ const specsOf = (example: PlaygroundExample) => example.specs.join(' · ')
       they fit in a row of their own. -->
     <ul
       v-else
-      class="flex scrollbar-hide snap-x gap-3 overflow-x-auto max-sm:-mx-6 max-sm:-my-1 max-sm:scroll-px-6 max-sm:px-6 max-sm:py-1 sm:grid sm:max-w-2xl sm:grid-cols-3 sm:overflow-visible"
+      class="flex scrollbar-hide snap-x gap-3 overflow-x-auto max-sm:-mx-6 max-sm:-my-1 max-sm:scroll-px-6 max-sm:px-6 max-sm:py-1 sm:grid sm:max-w-5xl sm:grid-cols-3 sm:overflow-visible"
     >
       <li
         v-for="example in examples"
@@ -117,7 +117,7 @@ const specsOf = (example: PlaygroundExample) => example.specs.join(' · ')
             <span
               :class="
                 cn(
-                  'line-clamp-2 text-xs transition-colors',
+                  'line-clamp-1 text-xs transition-colors',
                   example.id === activeId
                     ? 'text-primary-warm-white'
                     : 'text-primary-comfy-canvas group-hover:text-primary-warm-white'
