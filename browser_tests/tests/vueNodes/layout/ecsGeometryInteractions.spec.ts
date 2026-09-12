@@ -263,7 +263,7 @@ test.describe(
           await expect(
             sampler.root.getByText('seed', { exact: true })
           ).toBeVisible()
-          await expect(comfyPage.canvas).toHaveScreenshot(
+          await expect(sampler.root).toHaveScreenshot(
             `ecs-text-zoom-${zoom * 100}.png`
           )
         }
