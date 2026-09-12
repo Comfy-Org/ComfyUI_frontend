@@ -277,6 +277,7 @@ jobs:
       packages: read
     outputs:
       has-new-tests: ${{ steps.detect.outputs.has-new-tests }}
+      project: ${{ steps.detect.outputs.project }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -312,6 +313,10 @@ jobs:
           done <<< "$NEW_FILES"
 
           sort -u -o /tmp/fallback-specs.txt /tmp/fallback-specs.txt
+          PROJECT=chromium
+          if [ -s /tmp/fallback-specs.txt ] && while IFS= read -r file; do grep -q '@cloud' "$file" || exit 1; done < /tmp/fallback-specs.txt; then
+            PROJECT=cloud
+          fi
           if [ ! -s /tmp/fallback-specs.txt ]; then
             echo '::notice::No changed Playwright specs found.'
             echo 'has-new-tests=false' >> "$GITHUB_OUTPUT"
@@ -328,6 +333,7 @@ jobs:
             echo 'fallback-files<<EOF_FALLBACK_SPEC_FILES'
             cat /tmp/fallback-specs.txt
             echo 'EOF_FALLBACK_SPEC_FILES'
+            echo "project=$PROJECT"
           } >> "$GITHUB_OUTPUT"
 
           echo 'Changed spec files:'
@@ -339,7 +345,7 @@ jobs:
         if: steps.detect.outputs.has-new-tests == 'true'
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: frontend-dist
+          name: ${{ steps.detect.outputs.project == 'cloud' && 'frontend-dist-cloud' || 'frontend-dist' }}
           path: dist/
 
       - name: Start ComfyUI server
@@ -358,6 +364,7 @@ jobs:
         shell: bash
         env:
           FALLBACK_SPEC_FILES: ${{ steps.detect.outputs.fallback-files }}
+          VIDEO_PROJECT: ${{ steps.detect.outputs.project }}
         run: |
           mapfile -t FILES < <(printf '%s\n' "$FALLBACK_SPEC_FILES" | sed '/^$/d' | sort -u)
           AUDIT_EXIT=0
@@ -373,7 +380,7 @@ jobs:
           fi
 
           LIST_EXIT=0
-          LIST_OUTPUT=$(pnpm exec playwright test --project=chromium --list --pass-with-no-tests "${FILES[@]}" 2>&1) || LIST_EXIT=$?
+          LIST_OUTPUT=$(pnpm exec playwright test --project="$VIDEO_PROJECT" --list --pass-with-no-tests "${FILES[@]}" 2>&1) || LIST_EXIT=$?
           echo "$LIST_OUTPUT"
 
           if [ "$LIST_EXIT" -ne 0 ]; then
@@ -413,9 +420,10 @@ jobs:
           RECORD_VIDEO: 'true'
           SLOW_MO: '250'
           FALLBACK_SPEC_FILES: ${{ steps.detect.outputs.fallback-files }}
+          VIDEO_PROJECT: ${{ steps.detect.outputs.project }}
         run: |
           mapfile -t FILES < <(printf '%s\n' "$FALLBACK_SPEC_FILES" | sed '/^$/d' | sort -u)
-          pnpm exec playwright test --project=chromium --timeout=180000 --retries=0 "${FILES[@]}"
+          pnpm exec playwright test --project="$VIDEO_PROJECT" --timeout=180000 --retries=0 "${FILES[@]}"
 
       - name: Upload new-test report (with embedded video)
         if: ${{ !cancelled() && steps.recordable.outputs.has-tests == 'true' }}
