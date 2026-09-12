@@ -256,7 +256,6 @@ describe('ModelDetail', () => {
               player
           )
       ).toBe(true)
-      expect(player.hasAttribute('controls')).toBe(true)
       expect(runWorkshopRouter).not.toHaveBeenCalled()
       if (slug === 'bria--replace-video-background--edit-videos')
         expect(

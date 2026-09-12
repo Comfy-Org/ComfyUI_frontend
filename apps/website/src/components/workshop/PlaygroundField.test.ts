@@ -246,7 +246,7 @@ describe('PlaygroundField', () => {
     }
   )
 
-  it('shows a playable source video when an example URL is prefilled', () => {
+  it('shows the source video frame when an example URL is prefilled', () => {
     mountField(
       {
         kind: 'text',
@@ -268,7 +268,6 @@ describe('PlaygroundField', () => {
     const slot = within(screen.getByRole('group', { name: 'Source video' }))
     const player = slot.getByLabelText('source.mp4', { selector: 'video' })
     expect(player.getAttribute('src')).toBe('https://example.com/source.mp4')
-    expect(player.hasAttribute('controls')).toBe(true)
     expect(player.getAttribute('preload')).toBe('metadata')
     expect(
       screen
