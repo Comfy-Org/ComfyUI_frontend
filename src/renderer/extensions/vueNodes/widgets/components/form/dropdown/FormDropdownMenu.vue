@@ -9,7 +9,7 @@ import type {
   OwnershipFilterOption,
   OwnershipOption
 } from '@/platform/assets/types/filterTypes'
-import type { PagedList } from '@/utils/pagedList'
+import type { MaybePaged } from '@/utils/pagedList'
 
 import FormDropdownMenuActions from './FormDropdownMenuActions.vue'
 import FormDropdownMenuFilter from './FormDropdownMenuFilter.vue'
@@ -17,7 +17,7 @@ import FormDropdownMenuItem from './FormDropdownMenuItem.vue'
 import type { FormDropdownItem, LayoutMode, SortOption } from './types'
 
 interface Props {
-  items: readonly FormDropdownItem[] | PagedList<FormDropdownItem>
+  items: MaybePaged<FormDropdownItem>
   isSelected: (item: FormDropdownItem, index: number) => boolean
   uploadable: boolean
   filterOptions: FilterOption[]
