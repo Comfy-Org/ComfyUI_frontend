@@ -250,7 +250,22 @@ test.describe(
             })
           }
 
-          test('nested controls and breadcrumbs preserve exact topology and root undo', async ({
+          test('root movement can be undone', async ({ comfyPage }) => {
+            await comfyPage.workflow.loadWorkflow('subgraphs/nested-subgraph')
+
+            const rootNode = await comfyPage.nodeOps.getNodeRefById('8')
+            const originalPosition = await rootNode.getPosition()
+            await rootNode.dragBy({ x: 80, y: 40 })
+            await expect
+              .poll(() => rootNode.getPosition())
+              .not.toEqual(originalPosition)
+            await comfyPage.keyboard.undo()
+            await expect
+              .poll(() => rootNode.getPosition())
+              .toEqual(originalPosition)
+          })
+
+          test('nested controls and breadcrumbs preserve exact topology', async ({
             comfyPage,
             subgraphBreadcrumb
           }) => {
@@ -281,17 +296,6 @@ test.describe(
                 ['8', 0, '9', 0]
               ]
             })
-
-            const rootNode = await comfyPage.nodeOps.getNodeRefById('8')
-            const originalPosition = await rootNode.getPosition()
-            await rootNode.dragBy({ x: 80, y: 40 })
-            await expect
-              .poll(() => rootNode.getPosition())
-              .not.toEqual(originalPosition)
-            await comfyPage.keyboard.undo()
-            await expect
-              .poll(() => rootNode.getPosition())
-              .toEqual(originalPosition)
 
             const outer = await comfyPage.nodeOps.getNodeRefById('10')
             if (mode.vueNodesEnabled) {
