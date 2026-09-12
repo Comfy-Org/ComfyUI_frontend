@@ -12,6 +12,7 @@ function getArg(name: string): string | undefined {
 const sizeStatus = getArg('size-status') ?? 'pending'
 const perfStatus = getArg('perf-status') ?? 'pending'
 const coverageStatus = getArg('coverage-status') ?? 'skip'
+const COMMENT_SECTION_LIMIT = 60_000
 
 const lines: string[] = []
 
@@ -99,4 +100,9 @@ if (coverageStatus === 'ready' && existsSync('temp/coverage/coverage.lcov')) {
   lines.push('> ⚠️ Coverage collection failed. Check the CI workflow logs.')
 }
 
-process.stdout.write(lines.join('\n') + '\n')
+const report = lines.join('\n') + '\n'
+process.stdout.write(
+  report.length <= COMMENT_SECTION_LIMIT
+    ? report
+    : '## CI report\n\n> ⚠️ Report output exceeded the PR comment limit. Review the workflow artifacts and logs.\n'
+)

@@ -22,7 +22,6 @@ import {
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { MODAL_Z_BASE, MODAL_Z_KEY } from '@/components/dialog/vRekaZIndex'
-import config from '@/config'
 import { isDesktop } from '@/platform/distribution/types'
 import {
   reportPreloadError,
@@ -70,8 +69,6 @@ const showContextMenu = (event: MouseEvent) => {
 }
 
 onMounted(() => {
-  window['__COMFYUI_FRONTEND_VERSION__'] = config.app_version
-
   if (isDesktop) {
     document.addEventListener('contextmenu', showContextMenu)
   }
