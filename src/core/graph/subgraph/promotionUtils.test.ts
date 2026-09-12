@@ -822,7 +822,7 @@ describe('demoteWidget — axiomatic projection retraction', () => {
     expect(host.subgraph.inputs).toHaveLength(1)
     expect(host.inputs[0]?.link).toBe(externalLink.id)
     expect(host.inputs[0]?._widget).toBeUndefined()
-    expect(interiorNode.inputs[0]?.link).toBeNull()
+    expect(interiorNode.inputs[0]?.link).not.toBeNull()
     expect(host.widgets).toHaveLength(0)
     if (!promotedInputId) throw new Error('Missing promoted input widgetId')
     expect(useWidgetValueStore().getWidget(promotedInputId)).toBeUndefined()

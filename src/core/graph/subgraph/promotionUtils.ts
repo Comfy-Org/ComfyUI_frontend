@@ -457,10 +457,20 @@ export function demoteWidget(
   })
   for (const { parent, input } of promotedInputs) {
     const inputIndex = parent.inputs.indexOf(input)
-    if (parent.isInputConnected(inputIndex)) parent.disconnectInput(inputIndex)
+    if (parent.isInputConnected(inputIndex)) {
+      input._widget?.onRemove?.()
+      if (input.widgetId) useWidgetValueStore().deleteWidget(input.widgetId)
+      input.widget = undefined
+      input.widgetId = undefined
+      input._widget = undefined
+    }
   }
-  const linkedInput = promotedInputs[0]?.input._subgraphSlot
-  if (linkedInput) promotedInputs[0].parent.subgraph.removeInput(linkedInput)
+  const unconnectedPromotion = promotedInputs.find(
+    ({ parent, input }) =>
+      !parent.isInputConnected(parent.inputs.indexOf(input))
+  )
+  const linkedInput = unconnectedPromotion?.input._subgraphSlot
+  if (linkedInput) unconnectedPromotion.parent.subgraph.removeInput(linkedInput)
   for (const { input } of promotedInputs) {
     if (input.widgetId) useWidgetValueStore().deleteWidget(input.widgetId)
   }
