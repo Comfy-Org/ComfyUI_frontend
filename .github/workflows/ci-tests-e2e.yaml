@@ -415,7 +415,7 @@ jobs:
           FALLBACK_SPEC_FILES: ${{ steps.detect.outputs.fallback-files }}
         run: |
           mapfile -t FILES < <(printf '%s\n' "$FALLBACK_SPEC_FILES" | sed '/^$/d' | sort -u)
-          pnpm exec playwright test --project=chromium --timeout=60000 "${FILES[@]}"
+          pnpm exec playwright test --project=chromium --timeout=180000 --retries=0 "${FILES[@]}"
 
       - name: Upload new-test report (with embedded video)
         if: ${{ !cancelled() && steps.recordable.outputs.has-tests == 'true' }}
