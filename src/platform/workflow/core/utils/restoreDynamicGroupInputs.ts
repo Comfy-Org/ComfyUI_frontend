@@ -1,3 +1,4 @@
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { ComfyApiWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyInputsSpec } from '@/schemas/nodeDefSchema'
@@ -39,21 +40,29 @@ export function restoreDynamicGroupInputs(
         ...group[1].template.required,
         ...group[1].template.optional
       }
-      const rows = new Map<string, number>()
-      for (const input of Object.keys(inputs)) {
-        if (!input.startsWith(`${name}.`)) continue
-        const suffix = input.slice(name.length + 1)
-        const separator = suffix.indexOf('.')
-        if (separator === -1) continue
-        const index = suffix.slice(0, separator)
-        const field = suffix.slice(separator + 1)
-        if (!/^(0|[1-9][0-9]*)$/.test(index) || !Object.hasOwn(fields, field))
-          continue
-        if (!rows.has(index)) rows.set(index, rows.size)
-        names.set(input, `${name}.${rows.get(index)}.${field}`)
-      }
-      controller.value = rows.size
+      restoreRows(name, fields, controller)
     }
+  }
+
+  function restoreRows(
+    name: string,
+    fields: Record<string, unknown>,
+    controller: IBaseWidget
+  ) {
+    const rows = new Map<string, number>()
+    for (const input of Object.keys(inputs)) {
+      if (!input.startsWith(`${name}.`)) continue
+      const suffix = input.slice(name.length + 1)
+      const separator = suffix.indexOf('.')
+      if (separator === -1) continue
+      const index = suffix.slice(0, separator)
+      const field = suffix.slice(separator + 1)
+      if (!/^(0|[1-9][0-9]*)$/.test(index) || !Object.hasOwn(fields, field))
+        continue
+      if (!rows.has(index)) rows.set(index, rows.size)
+      names.set(input, `${name}.${rows.get(index)}.${field}`)
+    }
+    controller.value = rows.size
   }
 
   if (definition) restore(definition.input)
