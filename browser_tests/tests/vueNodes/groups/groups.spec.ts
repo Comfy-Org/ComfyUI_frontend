@@ -212,7 +212,9 @@ test.describe('Vue Node Groups', { tag: ['@screenshot', '@vue-nodes'] }, () => {
         await comfyPage.canvasOps.getGroupPosition('Outer Group')
       const memberMoved = await readMemberPos()
       expect(groupMoved.x).not.toBeCloseTo(groupBefore.x, 0)
+      expect(groupMoved.y).not.toBeCloseTo(groupBefore.y, 0)
       expect(memberMoved!.x).not.toBeCloseTo(memberBefore!.x, 0)
+      expect(memberMoved!.y).not.toBeCloseTo(memberBefore!.y, 0)
     }).toPass({ timeout: 5000 })
 
     await comfyPage.keyboard.undo()
