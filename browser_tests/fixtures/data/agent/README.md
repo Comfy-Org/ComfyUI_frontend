@@ -44,10 +44,15 @@ without a home directory.
 
 3. Replay the new case:
 
-   Start the cloud-distribution frontend, then replay on its port:
+   Start the cloud-distribution frontend in one terminal:
 
    ```bash
    DISTRIBUTION=cloud DEV_SERVER_COMFYUI_URL=http://127.0.0.1:8188 pnpm dev
+   ```
+
+   Replay on its port from a second terminal:
+
+   ```bash
    PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://localhost:5173 DISTRIBUTION=cloud pnpm exec playwright test browser_tests/tests/agent/agentConversationReplay.spec.ts --project=cloud -g agent-rec-SLUG
    ```
 
