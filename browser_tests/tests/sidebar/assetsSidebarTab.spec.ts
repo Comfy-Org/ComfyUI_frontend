@@ -390,6 +390,13 @@ bulkInsertionTest.describe(
         await tab.contextMenuItem('Insert all assets as nodes').click()
 
         await expect.poll(() => comfyPage.vueNodes.getNodeCount()).toBe(2)
+        const nodes = await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
+        const widgetValues = await Promise.all(
+          nodes.map(async (node) => (await node.getWidget(0)).getValue())
+        )
+        expect(new Set(widgetValues)).toEqual(
+          new Set(['alpha.png [output]', 'beta.png [output]'])
+        )
 
         await expectNoErrorUiAfterVerification(
           comfyPage,
