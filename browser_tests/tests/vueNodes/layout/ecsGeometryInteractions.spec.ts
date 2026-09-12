@@ -173,6 +173,15 @@ test.describe(
         await comfyPage.canvas.click({ position: { x: 900, y: 100 } })
         await expect(linkDropSearch).toBeHidden()
 
+        await sampler.dragBy({ x: 30, y: 15 })
+        await expect
+          .poll(() => sampler.getPosition())
+          .toEqual({
+            x: expect.closeTo(beforePosition.x + 30, -1),
+            y: expect.closeTo(beforePosition.y + 15, -1)
+          })
+        const afterLinkSearchPosition = await sampler.getPosition()
+
         await comfyPage.page
           .context()
           .grantPermissions(['clipboard-read', 'clipboard-write'])
@@ -185,8 +194,8 @@ test.describe(
         await expect
           .poll(() => sampler.getPosition())
           .toEqual({
-            x: expect.closeTo(beforePosition.x + 60, -1),
-            y: expect.closeTo(beforePosition.y + 30, -1)
+            x: expect.closeTo(afterLinkSearchPosition.x + 60, -1),
+            y: expect.closeTo(afterLinkSearchPosition.y + 30, -1)
           })
         await expect(comfyPage.toast.toastErrors).toHaveCount(0)
       })
