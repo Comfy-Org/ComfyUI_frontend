@@ -47,6 +47,15 @@ interface SubgraphNormalizationReservations {
   rerouteIds: Set<number>
 }
 
+export type SubgraphNodeIdRemaps = ReadonlyMap<
+  string,
+  ReadonlyMap<NodeId, SerializedNodeId>
+>
+
+export interface SubgraphNodeDeduplicationResult extends DeduplicationResult {
+  nodeIdRemaps: Map<string, Map<NodeId, SerializedNodeId>>
+}
+
 export function normalizeSubgraphDefinitions(
   subgraphs: ExportedSubgraph[],
   reservations: SubgraphNormalizationReservations,
@@ -203,21 +212,25 @@ function firstById<T, Id>(
  */
 export function deduplicateSubgraphNodeIds(
   subgraphs: ExportedSubgraph[],
-  reservedNodeIds: Set<number>,
+  reservedNodeIds: ReadonlySet<SerializedNodeId>,
   state: LGraphState,
   rootNodes?: ISerialisedNode[]
-): DeduplicationResult {
+): SubgraphNodeDeduplicationResult {
   const clonedSubgraphs = structuredClone(subgraphs)
   const clonedRootNodes = rootNodes ? structuredClone(rootNodes) : undefined
 
-  deduplicateClonedSubgraphNodeIds(
+  const nodeIdRemaps = deduplicateClonedSubgraphNodeIds(
     clonedSubgraphs,
     new Set([...reservedNodeIds].map(toNodeId)),
     state,
     clonedRootNodes
   )
 
-  return { subgraphs: clonedSubgraphs, rootNodes: clonedRootNodes }
+  return {
+    subgraphs: clonedSubgraphs,
+    rootNodes: clonedRootNodes,
+    nodeIdRemaps
+  }
 }
 
 function deduplicateClonedSubgraphNodeIds(
@@ -225,7 +238,7 @@ function deduplicateClonedSubgraphNodeIds(
   reservedNodeIdKeys: Set<NodeId>,
   state: LGraphState,
   clonedRootNodes?: ISerialisedNode[]
-): void {
+): Map<string, Map<NodeId, SerializedNodeId>> {
   const usedNodeIdKeys = new Set(reservedNodeIdKeys)
   const usedNodeIds = new Set<number>()
   for (const id of reservedNodeIdKeys) {
@@ -260,6 +273,7 @@ function deduplicateClonedSubgraphNodeIds(
   if (clonedRootNodes) {
     patchProxyWidgets(clonedRootNodes, subgraphIdSet, remapBySubgraph)
   }
+  return remapBySubgraph
 }
 
 /**
@@ -353,6 +367,13 @@ function patchPromotedWidgets(
     const newId = remappedIds.get(toNodeId(widget.id))
     if (newId !== undefined) widget.id = newId
   }
+}
+
+export function patchSubgraphProxyWidgetIds(
+  rootNodes: ISerialisedNode[],
+  remapBySubgraph: SubgraphNodeIdRemaps
+): void {
+  patchProxyWidgets(rootNodes, new Set(remapBySubgraph.keys()), remapBySubgraph)
 }
 
 export function collectReservedGroupIds(
@@ -584,8 +605,8 @@ export function topologicalSortSubgraphs(
 /** Patches legacy proxyWidgets in root-level SubgraphNode instances. */
 function patchProxyWidgets(
   rootNodes: ISerialisedNode[],
-  subgraphIdSet: Set<string>,
-  remapBySubgraph: Map<string, Map<NodeId, SerializedNodeId>>
+  subgraphIdSet: ReadonlySet<string>,
+  remapBySubgraph: SubgraphNodeIdRemaps
 ): void {
   for (const node of rootNodes) {
     if (!subgraphIdSet.has(node.type)) continue
