@@ -182,22 +182,15 @@ test.describe('Vue Node Groups', { tag: ['@screenshot', '@vue-nodes'] }, () => {
   }) => {
     await comfyPage.workflow.loadWorkflow('groups/nested-groups-1-inner-node')
 
-    const memberNodeId = '17'
-    const readMemberPos = () =>
-      comfyPage.page.evaluate((id) => {
-        const node = window.app!.graph.nodes.find(
-          (candidate) => String(candidate.id) === id
-        )
-        return node ? { x: node.pos[0], y: node.pos[1] } : null
-      }, memberNodeId)
+    const memberNode = await comfyPage.nodeOps.getNodeRefById('17')
+    async function readMemberPos() {
+      const geometry = await comfyPage.canvasOps.getNodeGeometry(memberNode.id)
+      return geometry.pos
+    }
 
     const groupBefore =
       await comfyPage.canvasOps.getGroupPosition('Outer Group')
     const memberBefore = await readMemberPos()
-    expect(
-      memberBefore,
-      'fixture should contain the group member node'
-    ).not.toBeNull()
 
     await comfyPage.canvasOps.dragGroup({
       name: 'Outer Group',
@@ -210,11 +203,8 @@ test.describe('Vue Node Groups', { tag: ['@screenshot', '@vue-nodes'] }, () => {
     await expect(async () => {
       const groupMoved =
         await comfyPage.canvasOps.getGroupPosition('Outer Group')
-      const memberMoved = await readMemberPos()
-      expect(groupMoved.x).not.toBeCloseTo(groupBefore.x, 0)
-      expect(groupMoved.y).not.toBeCloseTo(groupBefore.y, 0)
-      expect(memberMoved!.x).not.toBeCloseTo(memberBefore!.x, 0)
-      expect(memberMoved!.y).not.toBeCloseTo(memberBefore!.y, 0)
+      expect(groupMoved).not.toEqual(groupBefore)
+      expect(await readMemberPos()).not.toEqual(memberBefore)
     }).toPass({ timeout: 5000 })
 
     await comfyPage.keyboard.undo()
@@ -222,11 +212,8 @@ test.describe('Vue Node Groups', { tag: ['@screenshot', '@vue-nodes'] }, () => {
     await expect(async () => {
       const groupAfter =
         await comfyPage.canvasOps.getGroupPosition('Outer Group')
-      const memberAfter = await readMemberPos()
-      expect(groupAfter.x).toBeCloseTo(groupBefore.x, 0)
-      expect(groupAfter.y).toBeCloseTo(groupBefore.y, 0)
-      expect(memberAfter!.x).toBeCloseTo(memberBefore!.x, 0)
-      expect(memberAfter!.y).toBeCloseTo(memberBefore!.y, 0)
+      expect(groupAfter).toEqual(groupBefore)
+      expect(await readMemberPos()).toEqual(memberBefore)
     }).toPass({ timeout: 5000 })
   })
 
