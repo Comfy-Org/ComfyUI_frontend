@@ -459,7 +459,13 @@ const {
     adopted: onWorkflowAdopted,
     restored: onWorkflowRestored,
     prepare: async () => {
-      await refreshCloudWorkflowIds()
+      const target = selectedTarget.value
+      await refreshCloudWorkflowIds({
+        force:
+          target !== null &&
+          !target.isTemporary &&
+          cloudIdFor(target) === undefined
+      })
     },
     tabs: openTabsSnapshot,
     activeTab: enqueueActiveTab,
@@ -587,7 +593,7 @@ async function onNavigateToReferenceWorkflow(
     let target = openWorkflowFor(workflowId)
     if (target === null) {
       await Promise.all([
-        refreshCloudWorkflowIds(),
+        refreshCloudWorkflowIds({ force: true }),
         workflowStore.syncWorkflows()
       ])
       target = storedWorkflowFor(workflowId)

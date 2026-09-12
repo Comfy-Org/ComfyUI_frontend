@@ -256,7 +256,7 @@ describe('Agent workflow resolution', () => {
         { id: 'latest', name: 'Current' }
       ])
       const first = resolver.refreshCloudWorkflowIds()
-      expect(await resolver.refreshCloudWorkflowIds()).toBe(true)
+      expect(await resolver.refreshCloudWorkflowIds({ force: true })).toBe(true)
       if (outcome === 'success')
         resolveFirst([{ id: 'stale', name: 'Current' }])
       else rejectFirst(new Error('Stale failure'))
@@ -276,7 +276,7 @@ describe('Agent workflow resolution', () => {
     await resolver.refreshCloudWorkflowIds()
     const error = new Error('Unavailable')
     listCloudWorkflows.mockRejectedValueOnce(error)
-    expect(await resolver.refreshCloudWorkflowIds()).toBe(false)
+    expect(await resolver.refreshCloudWorkflowIds({ force: true })).toBe(false)
     expect(resolver.availableWorkflowReferences.value).toEqual([
       { id: 'known', name: 'Current' }
     ])
@@ -286,9 +286,50 @@ describe('Agent workflow resolution', () => {
     listCloudWorkflows.mockResolvedValueOnce([
       { id: 'updated', name: 'Current' }
     ])
+    // A failed refresh must not arm the freshness window.
     expect(await resolver.refreshCloudWorkflowIds()).toBe(true)
+    expect(listCloudWorkflows).toHaveBeenCalledTimes(3)
     expect(resolver.availableWorkflowReferences.value).toEqual([
       { id: 'updated', name: 'Current' }
     ])
+  })
+
+  it('shares one cloud listing between concurrent non-forced refreshes', async () => {
+    const { resolver, listCloudWorkflows } = setup(
+      [workflow('workflows/current.json', 'Current')],
+      [{ id: 'current', name: 'Current' }]
+    )
+    const [first, second] = await Promise.all([
+      resolver.refreshCloudWorkflowIds(),
+      resolver.refreshCloudWorkflowIds()
+    ])
+    expect(first).toBe(true)
+    expect(second).toBe(true)
+    expect(listCloudWorkflows).toHaveBeenCalledTimes(1)
+    expect(resolver.availableWorkflowReferences.value).toEqual([
+      { id: 'current', name: 'Current' }
+    ])
+  })
+
+  it('reuses a fresh cloud index until forced or expired', async () => {
+    vi.useFakeTimers()
+    const { resolver, listCloudWorkflows } = setup(
+      [workflow('workflows/current.json', 'Current')],
+      [{ id: 'current', name: 'Current' }]
+    )
+    expect(await resolver.refreshCloudWorkflowIds()).toBe(true)
+    expect(await resolver.refreshCloudWorkflowIds()).toBe(true)
+    expect(listCloudWorkflows).toHaveBeenCalledTimes(1)
+
+    vi.advanceTimersByTime(29_999)
+    expect(await resolver.refreshCloudWorkflowIds()).toBe(true)
+    expect(listCloudWorkflows).toHaveBeenCalledTimes(1)
+
+    expect(await resolver.refreshCloudWorkflowIds({ force: true })).toBe(true)
+    expect(listCloudWorkflows).toHaveBeenCalledTimes(2)
+
+    vi.advanceTimersByTime(30_001)
+    expect(await resolver.refreshCloudWorkflowIds()).toBe(true)
+    expect(listCloudWorkflows).toHaveBeenCalledTimes(3)
   })
 })
