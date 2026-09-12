@@ -25,15 +25,18 @@ export function widgetId(
 }
 
 export function ensureUniqueWidgetNames(
-  widgets: readonly { name: string }[]
+  widgets: readonly ({ name: string } | null | undefined)[]
 ): boolean {
   try {
-    const reserved = new Set(widgets.map(({ name }) => name))
+    const present = widgets.filter(
+      (widget): widget is { name: string } => widget != null
+    )
+    const reserved = new Set(present.map(({ name }) => name))
     const used = new Set<string>()
     const seen = new Set<unknown>()
     const renames: { widget: { name: string }; name: string }[] = []
 
-    for (const widget of widgets) {
+    for (const widget of present) {
       // The same widget object may transiently occupy multiple array slots
       // (e.g. during an index-assignment reorder). Identity duplicates are
       // one widget, not a name collision — never rename them.
