@@ -333,7 +333,11 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       }
 
       if (response.status === 'failed') {
-        handleFailure(opId, response.error_message ?? null)
+        handleFailure(
+          opId,
+          response.error_message ?? null,
+          response.decline_reason
+        )
         return
       }
 
@@ -797,7 +801,11 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     }
   }
 
-  function handleFailure(opId: string, errorMessage: string | null) {
+  function handleFailure(
+    opId: string,
+    errorMessage: string | null,
+    declineReason?: BillingDeclineReason
+  ) {
     const operation = operations.value.get(opId)
     if (!operation) return
 
@@ -815,7 +823,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       : categorizePollFailure(
           operation.type,
           errorMessage,
-          Boolean(operation.downgradeToPersonal)
+          Boolean(operation.downgradeToPersonal),
+          declineReason
         )
     telemetry?.trackBillingEvent({
       operation: 'operation',
@@ -1022,27 +1031,23 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     resolveTerminal(opId)
   }
 
-  /**
-   * No caught JS error here — only the backend's free-form `error_message`, if
-   * any. `cancel` and zero-payment operations (e.g. downgrade-to-personal,
-   * which removes members / changes tier but never touches a card) can't be a
-   * provider decline, so they're always an api rejection. For payment-bearing
-   * `subscription`/`topup` polls, a message naming a connectivity/system
-   * failure isn't a decline either; only fall back to `provider_decline` when
-   * the backend gave no more specific signal.
-   */
   function categorizePollFailure(
     type: OperationType,
     errorMessage: string | null,
-    isZeroPaymentOperation: boolean
+    isZeroPaymentOperation: boolean,
+    declineReason?: BillingDeclineReason
   ): BillingFailure['failure_category'] {
     if (type === 'cancel' || isZeroPaymentOperation) return 'api_rejected'
+
+    if (declineReason && declineReason !== 'generic') {
+      return 'provider_decline'
+    }
 
     if (errorMessage && /network|connection|unreachable/i.test(errorMessage)) {
       return 'network'
     }
 
-    return 'provider_decline'
+    return 'unknown'
   }
 
   function failureMessage(type: OperationType) {
