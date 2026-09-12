@@ -298,7 +298,8 @@ jobs:
             exit 0
           fi
 
-          git fetch --no-tags origin "$BASE_REF"
+          git fetch --no-tags origin \
+            "refs/heads/${BASE_REF}:refs/remotes/origin/${BASE_REF}"
           DIFF_RANGE="origin/${BASE_REF}...HEAD"
           NEW_FILES=$(git diff --name-only --diff-filter=AMR "$DIFF_RANGE" -- 'browser_tests/**/*.spec.ts')
           : > /tmp/fallback-specs.txt
