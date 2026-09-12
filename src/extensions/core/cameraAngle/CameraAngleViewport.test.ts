@@ -378,7 +378,8 @@ describe('CameraAngleViewport', () => {
     expect(deferred.subject.hasImage()).toBe(false)
   })
 
-  it('tears down the viewport on remove', () => {
+  it('tears down the viewport once even when removed twice', () => {
+    viewport.remove()
     viewport.remove()
 
     expect(stub.remove).toHaveBeenCalledOnce()
