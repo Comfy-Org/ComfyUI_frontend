@@ -1,12 +1,16 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
+import type { Ref } from 'vue'
 
 import type { WorkshopSession } from './workshop-session-state'
 
 const h = vi.hoisted(() => {
   const state = {
     initialFlag: true,
-    flag: undefined as { value: boolean } | undefined,
+    initialSettled: true,
+    flag: undefined as Ref<boolean> | undefined,
+    settled: undefined as Ref<boolean> | undefined,
     listeners: new Set<(snapshot: unknown) => void>(),
     snapshot: {
       phase: 'signed-out',
@@ -26,11 +30,11 @@ const h = vi.hoisted(() => {
   return state
 })
 
-vi.mock<unknown>(import('../scripts/posthog'), async () => {
-  const { ref } = await import('vue')
-  const flag = ref(h.initialFlag)
-  h.flag = flag
-  return { useWorkshopAuthFlag: () => flag }
+vi.mock<unknown>(import('../scripts/posthog'), () => {
+  return {
+    useWorkshopAuthFlag: () => h.flag,
+    useWorkshopAuthFlagSettled: () => h.settled
+  }
 })
 
 vi.mock<unknown>(import('./workshop-firebase'), async () => {
@@ -80,6 +84,8 @@ function authenticatedSnapshot() {
 
 async function importFresh() {
   vi.resetModules()
+  h.flag = ref(h.initialFlag)
+  h.settled = ref(h.initialSettled)
   const mod = await import('./workshop-session-state')
   const session = mod.useWorkshopSession()
   if (h.initialFlag) {
@@ -90,8 +96,12 @@ async function importFresh() {
 
 beforeEach(() => {
   h.initialFlag = true
+  h.initialSettled = true
   h.listeners.clear()
   h.snapshot = { phase: 'signed-out', user: null, session: undefined }
+  h.firebaseEvaluated.mockClear()
+  h.attachIdentity.mockClear()
+  h.clearStoredCredential.mockClear()
 })
 
 describe('useWorkshopSession', () => {
@@ -156,7 +166,7 @@ describe('useWorkshopSession', () => {
 
   it('keeps the cached credential on a cold load while the flag is still unanswered', async () => {
     h.initialFlag = false
-    h.clearStoredCredential.mockClear()
+    h.initialSettled = false
 
     await importFresh()
 
@@ -164,6 +174,21 @@ describe('useWorkshopSession', () => {
       h.clearStoredCredential,
       'the flag starts false until PostHog answers; wiping the cache here re-mints on every reload'
     ).not.toHaveBeenCalled()
+  })
+
+  it('clears the cached credential once the flag settles off without ever turning on', async () => {
+    h.initialFlag = false
+    h.initialSettled = false
+    await importFresh()
+
+    h.settled!.value = true
+
+    await vi.waitFor(() =>
+      expect(
+        h.clearStoredCredential,
+        'a settled-off flag means Workshop is disabled; the cache must go even with no on->off transition'
+      ).toHaveBeenCalled()
+    )
   })
 
   it('clears the cache when the flag turns off', async () => {

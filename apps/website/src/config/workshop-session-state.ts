@@ -20,7 +20,10 @@ import type { EffectScope } from 'vue'
 
 import type { SessionSnapshot } from '@comfyorg/account/session'
 
-import { useWorkshopAuthFlag } from '../scripts/posthog'
+import {
+  useWorkshopAuthFlag,
+  useWorkshopAuthFlagSettled
+} from '../scripts/posthog'
 import {
   subscribeAuthRefreshTelemetry,
   workshopSessionClient
@@ -83,17 +86,18 @@ function start(): void {
   // of binding its watcher to whichever component calls this first.
   lifecycle = effectScope(true)
   const enabled = useWorkshopAuthFlag()
+  const settled = useWorkshopAuthFlagSettled()
   lifecycle.run(() => {
     watch(
-      enabled,
-      (on, wasOn) => {
+      [enabled, settled],
+      ([on, isSettled]) => {
         const expectedGeneration = ++generation
         stopListeners()
         snapshot.value = PENDING
         if (!on) {
-          // The flag starts false on every cold load until PostHog answers;
-          // only a real on->off transition means the credential must go.
-          if (wasOn) workshopSessionClient.clearStoredCredential()
+          // Retain the cached credential while the flag is unresolved; only a
+          // settled-off answer means Workshop is disabled and it must go.
+          if (isSettled) workshopSessionClient.clearStoredCredential()
           return
         }
         void begin(expectedGeneration).catch((error: unknown) => {
