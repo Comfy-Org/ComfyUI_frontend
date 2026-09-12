@@ -15,17 +15,15 @@ const RED_GROUP_COLOR = '#A88'
 
 test.describe(
   'Group Color - right-click menu matches toolbar swatch',
-  { tag: ['@screenshot', '@canvas'] },
+  { tag: ['@screenshot', '@canvas', '@vue-nodes'] },
   () => {
+    test.use({
+      initialSettings: {
+        'Comfy.Canvas.SelectionToolbox': true
+      }
+    })
+
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
-      // The right-click Color menu on a group is only routed through the
-      // PrimeVue menu (useGroupContextMenu) when Vue Nodes is enabled;
-      // otherwise litegraph's own canvas-rendered context menu is used,
-      // which nests "Color" under an "Edit Group" submenu instead of
-      // exposing it as a top-level item, and never matches
-      // comfyPage.contextMenu.primeVueMenu ('.p-contextmenu, .p-menu').
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
       await comfyPage.workflow.loadWorkflow('groups/two_groups')
     })
 

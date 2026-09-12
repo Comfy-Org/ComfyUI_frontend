@@ -6,10 +6,6 @@ import { TestIds } from '@e2e/fixtures/selectors'
 
 const test = comfyPageFixture
 
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-})
-
 const BLUE_COLOR = 'rgb(51, 51, 85)'
 const RED_COLOR = 'rgb(85, 51, 51)'
 
@@ -25,8 +21,11 @@ const getColorPickerGroup = (comfyPage: { page: Page }) =>
   })
 
 test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
+  test.use({
+    initialSettings: {
+      'Comfy.UseNewMenu': 'Disabled',
+      'Comfy.Canvas.SelectionToolbox': true
+    }
   })
 
   test('shows selection toolbox', async ({ comfyPage }) => {

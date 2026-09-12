@@ -47,8 +47,6 @@ test.describe(
 
       await test.step('Undo and verify the restored subgraph', async () => {
         await comfyPage.keyboard.undo()
-        await comfyPage.vueNodes.waitForNodes()
-
         await expect(comfyPage.vueNodes.nodes).toHaveCount(1)
         await expect(promotedText).toBeVisible()
         await expect
@@ -132,7 +130,7 @@ test.describe(
       })
 
       await test.step('Undo and redo in the legacy renderer', async () => {
-        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
+        await comfyPage.command.executeCommand('Experimental.ToggleVueNodes')
         await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
         await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(1)
 
@@ -162,8 +160,7 @@ test.describe(
       })
 
       await test.step('Restore Vue nodes and reload the workflow', async () => {
-        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-        await comfyPage.vueNodes.waitForNodes()
+        await comfyPage.command.executeCommand('Experimental.ToggleVueNodes')
         await expect(
           comfyPage.vueNodes
             .getNodeLocator(nodeId)

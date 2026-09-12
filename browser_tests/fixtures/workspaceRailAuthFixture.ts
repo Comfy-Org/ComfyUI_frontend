@@ -38,10 +38,7 @@ export const workspaceRailAuthFixture = base.extend<{ comfyPage: ComfyPage }>({
     const userId = await comfyPage.setupUser(
       `playwright-workspace-rail-${testInfo.parallelIndex}`
     )
-    await comfyPage.setupSettings({
-      'Comfy.TutorialCompleted': true,
-      'Comfy.userId': userId
-    })
+    await comfyPage.setupSettings({ userId })
 
     await comfyPage.cloudAuth.mockAuth()
     await mockWorkspace(page, workspace('personal', 'owner'), [])

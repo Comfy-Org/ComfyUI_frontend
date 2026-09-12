@@ -137,11 +137,8 @@ async function getLinkCount(comfyPage: ComfyPage): Promise<number> {
 }
 
 test.describe('Workflow Persistence', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting(
-      'Comfy.Workflow.WorkflowTabsPosition',
-      'Sidebar'
-    )
+  test.use({
+    initialSettings: { 'Comfy.Workflow.WorkflowTabsPosition': 'Sidebar' }
   })
 
   test.afterEach(async ({ comfyPage }) => {
