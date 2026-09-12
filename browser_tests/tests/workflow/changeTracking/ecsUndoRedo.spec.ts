@@ -253,9 +253,8 @@ test.describe(
 
           const output = await loader.connectOutput(0, sampler, 0)
           await output.expectLinkCount(1)
-          await expect
-            .poll(async () => (await sampler.getInput(0)).getLink())
-            .not.toBeNull()
+          const samplerInput = await sampler.getInput(0)
+          await samplerInput.expectLinkCount(1)
           await comfyPage.page.mouse.click(600, 650)
           await checkpoint()
 
@@ -283,12 +282,11 @@ test.describe(
             .toBe(9.5)
           await checkpoint()
 
-          const samplerInput = await sampler.getInput(0)
           await comfyPage.canvasOps.dragAndDrop(
             await samplerInput.getPosition(),
             { x: 900, y: 650 }
           )
-          await expect.poll(() => samplerInput.getLink()).toBeNull()
+          await samplerInput.expectLinkCount(0)
           await output.expectLinkCount(0)
           await comfyPage.page.mouse.click(600, 650)
           await checkpoint()
@@ -304,7 +302,7 @@ test.describe(
             .toBeGreaterThan(100)
           await loader.connectOutput(0, sampler, 0)
           await output.expectLinkCount(1)
-          await expect.poll(() => samplerInput.getLink()).not.toBeNull()
+          await samplerInput.expectLinkCount(1)
           await comfyPage.page.mouse.click(600, 650)
           await checkpoint()
 
