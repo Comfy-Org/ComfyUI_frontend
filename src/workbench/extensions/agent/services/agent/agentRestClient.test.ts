@@ -221,6 +221,25 @@ describe('agentRestClient route + method', () => {
   })
 })
 
+describe('getIdentity', () => {
+  it('reads the identity the agent authenticated this client as', async () => {
+    respond(
+      jsonResponse(200, { workspace_id: 'w-local', user_id: 'local-user' })
+    )
+
+    const identity = await makeClient().getIdentity()
+
+    expect(identity).toEqual({ workspaceId: 'w-local', userId: 'local-user' })
+    expect(lastCall().route).toBe('/agent/identity')
+  })
+
+  it('rejects a malformed identity rather than returning a partial one', async () => {
+    respond(jsonResponse(200, { workspace_id: 'w-local' }))
+
+    await expect(makeClient().getIdentity()).rejects.toThrow()
+  })
+})
+
 describe('postMessage wire body', () => {
   it('uses snake_case workflow_id and includes only the keys provided', async () => {
     respond(jsonResponse(202, turnAccepted))
@@ -240,6 +259,20 @@ describe('postMessage wire body', () => {
       attachments: ['a1']
     })
     expect(contentType(init)).toBe('application/json')
+  })
+
+  it('sends current_tab_unbound when the turn comes from a tab with no workflow', async () => {
+    respond(jsonResponse(202, turnAccepted))
+    await makeClient().postMessage('t1', {
+      content: 'add a node',
+      currentTabUnbound: true
+    })
+
+    const parsed = JSON.parse(lastCall().init.body as string) as Record<
+      string,
+      unknown
+    >
+    expect(parsed).toEqual({ content: 'add a node', current_tab_unbound: true })
   })
 
   it('omits absent optionals rather than sending them as undefined keys', async () => {

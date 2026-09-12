@@ -23,7 +23,13 @@ type WorkflowResolverDeps = {
     ReturnType<typeof useAgentWorkflowTabBindingStore>,
     'workflowIdFor' | 'tabPathFor' | 'matchesWorkflow'
   >
-  listCloudWorkflows: AgentRestClient['listCloudWorkflows']
+  /**
+   * The cloud workflow index, or null when the target has none. Ingest serves
+   * `/workflows` for the cloud agent; a standalone agent keeps minted drafts
+   * that no name lookup can map to a tab, so its tabs resolve through the tab
+   * binding store alone and no request is made.
+   */
+  listCloudWorkflows: AgentRestClient['listCloudWorkflows'] | null
 }
 
 export function useAgentWorkflowResolver({
@@ -46,6 +52,10 @@ export function useAgentWorkflowResolver({
 
   async function refreshCloudWorkflowIds(): Promise<boolean> {
     const generation = ++refreshGeneration
+    if (listCloudWorkflows === null) {
+      cloudIndex.value = []
+      return true
+    }
     try {
       const entries = await listCloudWorkflows()
       if (generation !== refreshGeneration) return false
@@ -177,6 +187,8 @@ export function useAgentWorkflowResolver({
   }
 
   return {
+    /** False on a target with no cloud workflow index (standalone). */
+    hasCloudIndex: listCloudWorkflows !== null,
     refreshCloudWorkflowIds,
     cloudIdFor,
     cloudWorkflowName,

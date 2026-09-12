@@ -12,7 +12,8 @@ import {
   zAgentThreads,
   zAgentTurnAccepted,
   zCloudWorkflowIndex,
-  zUploadImageResult
+  zUploadImageResult,
+  zAgentIdentityWire
 } from '../../schemas/agentApiSchema'
 import type {
   AgentAnswerAccepted,
@@ -57,9 +58,20 @@ export interface DraftSnapshot {
   version?: number
 }
 
+export interface AgentIdentity {
+  workspaceId: string
+  userId: string
+}
+
 export interface PostMessageInput {
   content: string
   workflowId?: string
+  /**
+   * The turn comes from a tab that has no workflow yet. The server then mints
+   * one for it instead of falling back to the thread's previous workflow —
+   * which would edit a tab the user is not looking at.
+   */
+  currentTabUnbound?: boolean
   selection?: Record<string, unknown>
   attachments?: string[]
   workflowReferences?: AgentPostMessageRequest['workflow_references']
@@ -135,6 +147,7 @@ export function createAgentRestClient() {
   ): Promise<AgentTurnAccepted> {
     const body: Record<string, unknown> = { content: req.content }
     if (req.workflowId !== undefined) body.workflow_id = req.workflowId
+    if (req.currentTabUnbound) body.current_tab_unbound = true
     if (req.tabs !== undefined) {
       body.open_tabs = req.tabs.open_tabs
       if (req.tabs.current_tab !== undefined)
@@ -167,6 +180,20 @@ export function createAgentRestClient() {
       zAgentThreads
     )
     return page.threads
+  }
+
+  /**
+   * The identity the agent authenticated this client as. Standalone bootstraps
+   * a fixed local user the panel cannot otherwise see, and every canvas op
+   * must carry that actor or the writer refuses it.
+   */
+  async function getIdentity(): Promise<AgentIdentity> {
+    const wire = await request(
+      '/agent/identity',
+      { method: 'GET' },
+      zAgentIdentityWire
+    )
+    return { workspaceId: wire.workspace_id, userId: wire.user_id }
   }
 
   async function getRunMode(): Promise<AgentRunModePreference> {
@@ -251,6 +278,7 @@ export function createAgentRestClient() {
     postMessage,
     getMessages,
     listThreads,
+    getIdentity,
     getRunMode,
     putRunMode,
     listCloudWorkflows,

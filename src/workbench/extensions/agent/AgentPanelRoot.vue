@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { reportError } from '@/platform/telemetry/reportError'
 import './agentPanel.css'
 
 import { useClipboard } from '@vueuse/core'
@@ -101,6 +102,8 @@ import {
 } from './crdt/crdtDebugGate'
 import { attachMintPortWiring } from './crdt/mintPortWiring'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
+import { createStandaloneDocFrameTransport } from './crdt/standaloneDocFrameTransport'
+import { turnContextFor } from './turnContext'
 
 const CrdtDevPanel = defineAsyncComponent(
   () => import('./crdt/CrdtDevPanel.vue')
@@ -133,17 +136,63 @@ const paywallPresentation = computed(() =>
 const sidebarTabStore = useSidebarTabStore()
 const { isBuilderMode } = useAppMode()
 
+// Declared here, above its first use: a `const` read before initialisation
+// throws and takes the whole panel down at setup.
+const isStandaloneAgent = import.meta.env.VITE_AGENT_STANDALONE === 'true'
+
 const { resolvedUserInfo, userDisplayName } = useCurrentUser()
+
+/**
+ * Standalone only: the identity the AGENT authenticated this client as.
+ *
+ * Attribution on `POST /doc/ops` is server-derived, and a batch whose ops claim
+ * a different actor is refused with 403. In the cloud the panel's session user
+ * matches what ingest forwards, so the claim agrees. Standalone bootstraps a
+ * fixed local user that the panel cannot see, so it fell back to "anonymous"
+ * and EVERY canvas edit was rejected — silently, which is why the agent kept
+ * reporting an empty canvas no matter what was on screen.
+ *
+ * Asking the agent avoids hardcoding its bootstrap constant here. Null until it
+ * answers; the follower simply attributes nothing until then.
+ */
+const rest = createAgentRestClient()
+
+const standaloneUserId = ref<string | null>(null)
+if (isStandaloneAgent) {
+  void (async () => {
+    try {
+      standaloneUserId.value = (await rest.getIdentity()).userId
+    } catch (error) {
+      // Surfaced, not swallowed: until this resolves the follower below stays
+      // inactive, so a broken identity route reads as "canvas never syncs".
+      reportError(error, {
+        errorType: 'agent_standalone_identity_failed',
+        level: 'warning'
+      })
+    }
+  })()
+}
+
 const userName = computed(
   () => userDisplayName.value?.trim().split(/\s+/)[0] || undefined
 )
 
-const rest = createAgentRestClient()
+const standaloneEvents = isStandaloneAgent
+  ? createStandaloneAgentEventSource()
+  : null
 
-const events =
-  import.meta.env.VITE_AGENT_STANDALONE === 'true'
-    ? createStandaloneAgentEventSource()
-    : createAgentEventSource(api)
+const events = standaloneEvents ?? createAgentEventSource(api)
+
+/**
+ * Standalone document transport. The cloud follower rides ComfyUI's one socket
+ * because ingest multiplexes the agent's document frames onto it. The
+ * standalone agent speaks that same document protocol on its own socket, so
+ * the follower rides the chat stream's socket here — one socket, exactly as in
+ * the cloud, and following a workflow is a frame rather than a reconnect.
+ */
+const standaloneDocTransport = standaloneEvents
+  ? createStandaloneDocFrameTransport(standaloneEvents)
+  : null
 
 function onPaywallAction(action: AgentPaywallAction): void {
   openAccountPrecondition(action === 'addCredits' ? 'credits' : 'subscription')
@@ -161,7 +210,7 @@ const agentNodeSelectionStore = useAgentNodeSelectionStore()
 const workflowResolver = useAgentWorkflowResolver({
   workflows: workflowStore,
   bindings: bindingStore,
-  listCloudWorkflows: () => rest.listCloudWorkflows()
+  listCloudWorkflows: isStandaloneAgent ? null : () => rest.listCloudWorkflows()
 })
 const {
   refreshCloudWorkflowIds,
@@ -361,18 +410,35 @@ function targetWorkflowTurnContext(
   if (workflowDetached.value) return undefined
   const target = originWorkflow(origin)
   if (!target) return undefined
-  const id = cloudIdFor(target)
-  if (id === undefined && !target.isTemporary && origin !== undefined)
-    return undefined
-  return id === undefined
-    ? { tabPath: target.path }
-    : { id, tabPath: target.path }
+  return turnContextFor({
+    id: cloudIdFor(target),
+    tabPath: target.path,
+    isTemporary: target.isTemporary,
+    hasOrigin: origin !== undefined,
+    // Standalone has no ingest workflow list: the tab binding is the only way
+    // a tab resolves, so an unbound saved tab must still be sent (tab-only)
+    // or it can never acquire the workflow adoption would give it — and the
+    // agent mints a fresh one on every message instead.
+    bindingIsAuthoritative: isStandaloneAgent
+  })
 }
 
 function targetWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
   if (workflowDetached.value) return undefined
   const target = originWorkflow(origin)
   if (!target) return undefined
+  // A live document is the source of truth for this workflow; the draft is only
+  // its projection. Seeding it from the canvas is not just redundant there, it
+  // is destructive: this snapshot carries no version, which the backend treats
+  // as authoritative and applies unconditionally, so a canvas that has not yet
+  // caught up silently overwrites whatever the agent just built. The guard is
+  // the follower's INTENT (the document it is bound to), not its connection
+  // state: a reconnect drops `connected` for a moment, and a turn sent in that
+  // window must not seed either.
+  const documentId = cloudIdFor(target)
+  if (documentId !== undefined && crdtStatus.value.workflowId === documentId) {
+    return undefined
+  }
   if (target.path === workflowStore.activeWorkflow?.path)
     target.changeTracker?.prepareForSave()
   const content = target.activeState
@@ -485,6 +551,15 @@ const isBoundWorkflowActive = computed(() => {
 // session's bound workflow while its tab is active. Suspending the background
 // subscription makes reopening pull state-vector catch-up only after the
 // workflow's serialized activeState has hydrated the transient stores.
+// Standalone only: the follower stamps every canvas op with the actor the
+// agent reported; an op sent before that answer arrives would be attributed
+// "anonymous", which the writer refuses. So the follower waits for identity.
+const isFollowerActive = computed(
+  () =>
+    isBoundWorkflowActive.value &&
+    (!isStandaloneAgent || standaloneUserId.value !== null)
+)
+
 const {
   status: crdtStatus,
   debugSnapshot: crdtDebugSnapshot,
@@ -492,13 +567,24 @@ const {
 } = useAgentCrdtFollower(
   boundWorkflowId,
   graphMutations,
-  () => resolvedUserInfo.value?.id ?? null,
-  isBoundWorkflowActive,
+  // Standalone: the agent's own identity, so canvas edits are stamped with the
+  // actor the server derives rather than "anonymous", which it refuses.
+  () => standaloneUserId.value ?? resolvedUserInfo.value?.id ?? null,
+  isFollowerActive,
   // `app.isGraphReady` is a plain getter; reading `canvasStore.canvas` (set
   // right after `app.setup()`) makes the follower's graph watch fire once the
   // root graph exists.
-  () => (canvasStore.canvas && app.isGraphReady ? app.rootGraph : null)
+  () => (canvasStore.canvas && app.isGraphReady ? app.rootGraph : null),
+  // Standalone has no ingest relaying agent frames onto ComfyUI's socket, so
+  // the default transport would listen forever to a socket that never carries
+  // them. Talk to the agent directly instead.
+  standaloneDocTransport ?? undefined
 )
+
+if (standaloneDocTransport) {
+  onBeforeUnmount(() => standaloneDocTransport.destroy())
+}
+
 const mintPortWiring = attachMintPortWiring({
   isEnabled: () => agentPanelStore.enabled,
   isDocBound: () => isBoundWorkflowActive.value,
