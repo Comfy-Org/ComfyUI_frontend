@@ -6,6 +6,7 @@ import { LocalDesktopTarget } from '@e2e/fixtures/customNode/ComfyTarget'
 import { openWorkflowFromSidebar } from '@e2e/fixtures/utils/builderTestUtils'
 
 const target = new LocalDesktopTarget()
+const renderers = [false, true] as const
 
 test.describe(
   'actual custom-pack persistence @custom-nodes',
@@ -57,12 +58,12 @@ test.describe(
         .toEqual(before.names)
     })
 
-    test('rgthree comparer receives two real backend images and retains them through a tab switch', async ({
-      comfyPage
-    }, testInfo) => {
-      test.slow()
-      await comfyPage.workflow.setupWorkflowsDirectory({})
-      for (const vueNodesEnabled of [false, true] as const) {
+    for (const vueNodesEnabled of renderers) {
+      test(`rgthree comparer receives two real backend images and retains them through a tab switch (${vueNodesEnabled ? 'Vue' : 'legacy'} renderer)`, async ({
+        comfyPage
+      }, testInfo) => {
+        test.slow()
+        await comfyPage.workflow.setupWorkflowsDirectory({})
         await comfyPage.settings.setSetting(
           'Comfy.VueNodes.Enabled',
           vueNodesEnabled
@@ -238,7 +239,7 @@ test.describe(
         expect(reloadedState?.renderedImages?.map(({ src }) => src)).toEqual(
           initialState?.renderedImages?.map(({ src }) => src)
         )
-      }
-    })
+      })
+    }
   }
 )
