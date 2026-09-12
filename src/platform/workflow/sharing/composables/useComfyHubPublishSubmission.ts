@@ -1,4 +1,5 @@
-import type { AssetInfo, ComfyHubProfile } from '@/schemas/apiSchema'
+import type { AssetInfo } from '@comfyorg/ingest-types'
+import type { ComfyHubProfile } from '@/schemas/apiSchema'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useComfyHubProfileGate } from '@/platform/workflow/sharing/composables/useComfyHubProfileGate'
 import { useComfyHubService } from '@/platform/workflow/sharing/services/comfyHubService'

@@ -195,8 +195,6 @@ export type NotificationWsMessage = z.infer<typeof zNotificationWsMessage>
 export const zTaskOutput = z.record(zNodeId, zOutputs)
 export type TaskOutput = z.infer<typeof zTaskOutput>
 
-export const zEmbeddingsResponse = z.array(z.string())
-const zExtensionsResponse = z.array(z.string())
 const zError = z.object({
   type: z.string(),
   message: z.string(),
@@ -487,8 +485,6 @@ const zSettings = z.object({
   'LiteGraph.Group.SelectChildrenOnClick': z.boolean()
 })
 
-export type EmbeddingsResponse = z.infer<typeof zEmbeddingsResponse>
-export type ExtensionsResponse = z.infer<typeof zExtensionsResponse>
 export type PromptResponse = z.infer<typeof zPromptResponse>
 export type PromptError = z.infer<typeof zPromptError>
 export type NodeError = z.infer<typeof zNodeError>
@@ -511,21 +507,3 @@ export const zComfyHubProfile = z.object({
 })
 
 export type ComfyHubProfile = z.infer<typeof zComfyHubProfile>
-
-export const zAssetInfo = z.object({
-  id: z.string(),
-  name: z.string(),
-  preview_url: z.string(),
-  storage_url: z.string(),
-  model: z.boolean(),
-  public: z.boolean(),
-  in_library: z.boolean()
-})
-
-export type AssetInfo = z.infer<typeof zAssetInfo>
-
-export const zShareableAssetsResponse = z.object({
-  assets: z.array(zAssetInfo)
-})
-
-export type ShareableAssetsResponse = z.infer<typeof zShareableAssetsResponse>
