@@ -21,6 +21,10 @@ For a local frontend, start `pnpm dev:cloud` and use its Vite URL with
 `PLAYWRIGHT_SETUP_API_URL=https://testcloud.comfy.org`. The local server must
 proxy to the selected sandbox. Production targets are rejected.
 
+The fixture disables `onboarding_survey_enabled` through the existing dev-only
+feature-flag helper before navigation. Deployed builds ignore this override, so
+accounts used against a deployed frontend must have completed the survey.
+
 The account must own a personal workspace with no active paid subscription or saved
 payment method. Use an account reserved for this test. Do not run concurrent
 billing tests against that account.
