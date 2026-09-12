@@ -37,6 +37,8 @@ const RETURN_TO_LOGIN_MS = 3000
 const TOAST_LIFE_MS = 5000
 /** The cloud app's router gives auth this long to answer before its timeout view. */
 const AUTH_FLAG_TIMEOUT_MS = 16_000
+/** A stalled Firebase load or send is dropped here so the controls become retryable again. */
+const RESET_TIMEOUT_MS = 16_000
 
 const enabled = useWorkshopAuthFlag()
 const flagSettled = useWorkshopAuthFlagSettled()
@@ -51,6 +53,13 @@ const state = ref<ResetState>('idle')
 const signInHref = ref('/login/')
 let returnTimer: ReturnType<typeof setTimeout> | undefined
 let flagTimer: ReturnType<typeof setTimeout> | undefined
+let boundTimer: ReturnType<typeof setTimeout> | undefined
+
+// Any rollout-flag transition, an unmount, or a bounding timeout invalidates the
+// in-flight send, so a late resolve of an abandoned request cannot toast success
+// or redirect. Sync so even a same-tick flicker is counted, not collapsed.
+let resetGeneration = 0
+watch(enabled, () => resetGeneration++, { flush: 'sync' })
 
 function signInDestination(): string {
   const destination = requestedReturnPath(window.location.search)
@@ -82,8 +91,19 @@ async function submit() {
   }
   errorMessage.value = ''
   state.value = 'sending'
+  const attempt = resetGeneration
+  const live = () => attempt === resetGeneration && enabled.value
+  // A stalled load or send drops the attempt back to a retryable state; the
+  // generation bump makes the eventual late resolve fall to the !live() guards.
+  boundTimer = setTimeout(() => {
+    resetGeneration++
+    state.value = 'idle'
+  }, RESET_TIMEOUT_MS)
+
   const firebase = await loadWorkshopFirebase().catch(() => undefined)
+  if (!live()) return
   if (!firebase) {
+    clearTimeout(boundTimer)
     state.value = 'error'
     errorMessage.value = t('auth.forgot.error', locale)
     return
@@ -94,9 +114,13 @@ async function submit() {
   try {
     await firebase.sendWorkshopPasswordReset(email.value)
   } catch (error) {
+    if (!live()) return
+    clearTimeout(boundTimer)
     reportSendFailure(error)
     return
   }
+  if (!live()) return
+  clearTimeout(boundTimer)
   reportSent()
 }
 
@@ -142,8 +166,10 @@ watch(flagSettled, (settled) => {
 })
 
 onBeforeUnmount(() => {
+  resetGeneration++
   clearTimeout(returnTimer)
   clearTimeout(flagTimer)
+  clearTimeout(boundTimer)
 })
 </script>
 

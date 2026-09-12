@@ -211,6 +211,65 @@ describe('AuthForgotPassword', () => {
     await waitFor(() => expect(h.sendReset).toHaveBeenCalledOnce())
   })
 
+  it('drops a send abandoned by the flag turning off: no success toast, no redirect', async () => {
+    let release!: () => void
+    h.sendReset.mockImplementation(
+      () => new Promise<void>((resolve) => (release = resolve))
+    )
+    render(AuthForgotPassword)
+    await typeEmail('user@example.com')
+    await clickSend()
+
+    h.flag!.value = false
+    release()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(
+      toasts.value,
+      'a request abandoned mid-flight must not toast success when it resolves late'
+    ).toEqual([])
+    expect(
+      assign,
+      'and must not redirect the visitor back to login'
+    ).not.toHaveBeenCalled()
+  })
+
+  it('drops a send abandoned by unmount: no success toast when it resolves late', async () => {
+    let release!: () => void
+    h.sendReset.mockImplementation(
+      () => new Promise<void>((resolve) => (release = resolve))
+    )
+    const { unmount } = render(AuthForgotPassword)
+    await typeEmail('user@example.com')
+    await clickSend()
+
+    unmount()
+    release()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(
+      toasts.value,
+      'an unmounted flow may not toast success when its request resolves late'
+    ).toEqual([])
+  })
+
+  it('re-enables the send after a stalled reset so it stays retryable', async () => {
+    h.sendReset.mockImplementation(() => new Promise<void>(() => {}))
+    render(AuthForgotPassword)
+    await typeEmail('user@example.com')
+    await clickSend()
+
+    const send = screen.getByRole('button', { name: /send/i })
+    expect(send.hasAttribute('disabled')).toBe(true)
+
+    await vi.advanceTimersByTimeAsync(16_000)
+
+    expect(
+      send.hasAttribute('disabled'),
+      'a reset that never resolves must not leave the control disabled forever'
+    ).toBe(false)
+  })
+
   it('carries a safe return destination back to login on click', async () => {
     window.history.replaceState(
       {},
