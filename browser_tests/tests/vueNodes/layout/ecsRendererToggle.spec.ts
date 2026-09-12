@@ -111,16 +111,16 @@ test.describe(
         await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
         await comfyPage.nextFrame()
         await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
+        await expect
+          .poll(() =>
+            comfyPage.page.evaluate(() => ({
+              nodes: window.app!.graph.nodes.length,
+              links: window.app!.graph.links.size
+            }))
+          )
+          .toEqual(initialCounts)
       }
 
-      await expect
-        .poll(() =>
-          comfyPage.page.evaluate(() => ({
-            nodes: window.app!.graph.nodes.length,
-            links: window.app!.graph.links.size
-          }))
-        )
-        .toEqual(initialCounts)
       await expect(comfyPage.toast.toastErrors).toHaveCount(0)
     })
 
