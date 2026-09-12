@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -22,12 +23,18 @@ const {
 }>()
 defineEmits<{ toggleVisibility: [] }>()
 
+const { t } = useI18n()
+
 const icon = computed(() =>
   isPhysical
     ? 'icon-[lucide--link]'
     : isShown
       ? 'icon-[lucide--eye]'
       : 'icon-[lucide--eye-off]'
+)
+
+const toggleLabel = computed(() =>
+  isShown ? t('rightSidePanel.hideInput') : t('rightSidePanel.showInput')
 )
 </script>
 
@@ -58,7 +65,7 @@ const icon = computed(() =>
       variant="muted-textonly"
       size="sm"
       data-testid="subgraph-widget-toggle"
-      :disabled="isPhysical"
+      :aria-label="toggleLabel"
       @click.stop="$emit('toggleVisibility')"
     >
       <i :class="icon" :data-testid="isPhysical ? 'icon-link' : 'icon-eye'" />
