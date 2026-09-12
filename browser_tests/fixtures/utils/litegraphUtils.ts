@@ -406,6 +406,40 @@ export class NodeReference {
 
     return new NodeWidgetReference(index, this)
   }
+  async getPromotedTextWidget(name: string) {
+    const vueNode = this.comfyPage.vueNodes.getNodeLocator(String(this.id))
+    if ((await vueNode.count()) > 0) {
+      return vueNode.getByRole('textbox', { name, exact: true })
+    }
+
+    const position = await (await this.getWidgetByName(name)).getPosition()
+    const textboxes = this.comfyPage.page.getByRole('textbox', {
+      name,
+      exact: true
+    })
+    const boxes = await textboxes.evaluateAll((elements) =>
+      elements.map((element) => {
+        const { x, y, width, height } = element.getBoundingClientRect()
+        return { x, y, width, height }
+      })
+    )
+    const closestIndex = boxes.reduce(
+      (best, box, index) => {
+        const distance = Math.hypot(
+          box.x + box.width / 2 - position.x,
+          box.y + box.height / 2 - position.y
+        )
+        return distance < best.distance ? { index, distance } : best
+      },
+      { index: -1, distance: Number.POSITIVE_INFINITY }
+    ).index
+    if (closestIndex < 0) {
+      throw new Error(
+        `Text widget "${name}" for node ${this.id} was not rendered`
+      )
+    }
+    return textboxes.nth(closestIndex)
+  }
   async click(
     position: 'title' | 'collapse',
     options?: {

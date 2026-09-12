@@ -2,7 +2,6 @@ import { expect, mergeTests } from '@playwright/test'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { subgraphBreadcrumbFixture } from '@e2e/fixtures/helpers/SubgraphBreadcrumbHelper'
-import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 
 import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { toNodeId } from '@/types/nodeId'
@@ -37,46 +36,7 @@ test.describe(
             )
 
             const original = await comfyPage.nodeOps.getNodeRefById('11')
-            const hostWidget = async (node: NodeReference, nodeId: string) => {
-              if (mode.vueNodesEnabled) {
-                return comfyPage.vueNodes
-                  .getNodeLocator(nodeId)
-                  .getByRole('textbox', { name: 'text', exact: true })
-              }
-
-              const position = await (
-                await node.getWidgetByName('text')
-              ).getPosition()
-              const textboxes = comfyPage.page.getByRole('textbox', {
-                name: 'text',
-                exact: true
-              })
-              const boxes = await textboxes.evaluateAll((elements) =>
-                elements.map((element) => {
-                  const { x, y, width, height } =
-                    element.getBoundingClientRect()
-                  return { x, y, width, height }
-                })
-              )
-              const closestIndex = boxes.reduce(
-                (best, box, index) => {
-                  const distance = Math.hypot(
-                    box.x + box.width / 2 - position.x,
-                    box.y + box.height / 2 - position.y
-                  )
-                  return distance < best.distance ? { index, distance } : best
-                },
-                { index: -1, distance: Number.POSITIVE_INFINITY }
-              ).index
-              if (closestIndex < 0) {
-                throw new Error(
-                  `Text widget for node ${nodeId} was not rendered`
-                )
-              }
-              return textboxes.nth(closestIndex)
-            }
-
-            const parentWidget = await hostWidget(original, '11')
+            const parentWidget = await original.getPromotedTextWidget('text')
             await expect(parentWidget).toHaveCount(1)
             await parentWidget.fill('original parent edit')
             await expect(parentWidget).toHaveValue('original parent edit')
@@ -108,12 +68,12 @@ test.describe(
               return String(copy.id)
             })
             const copy = await comfyPage.nodeOps.getNodeRefById(copyId)
-            const copyWidget = await hostWidget(copy, copyId)
+            const copyWidget = await copy.getPromotedTextWidget('text')
             await expect(copyWidget).toHaveCount(1)
             await copyWidget.fill('copy-only edit')
 
             await expect(copyWidget).toHaveValue('copy-only edit')
-            const originalWidget = await hostWidget(original, '11')
+            const originalWidget = await original.getPromotedTextWidget('text')
             await expect(originalWidget).toHaveValue('original parent edit')
             await expect
               .poll(() =>
