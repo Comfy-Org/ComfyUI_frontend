@@ -1,8 +1,6 @@
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import {
-  workspaceApi,
-  type WorkspaceRole
-} from '@/platform/workspace/api/workspaceApi'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
 /**
