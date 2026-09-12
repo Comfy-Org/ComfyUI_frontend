@@ -2,7 +2,7 @@ import { expect } from '@playwright/test'
 
 import { layerEditorTest as test } from '@e2e/fixtures/helpers/LayerEditorHelper'
 
-test.describe('Layer Editor history', { tag: '@ui' }, () => {
+test.describe('Layer Editor history', { tag: ['@ui', '@vue-nodes'] }, () => {
   test('reorders layers through undo and redo', async ({ layerEditor }) => {
     const originalOrder = await layerEditor.layerNames()
 

@@ -33,7 +33,7 @@ Read the failing assertion and match it against the pattern table. Most flakes f
 | 3   | **nextFrame after menu click**        | `clickMenuItem(x); nextFrame()`                           | `clickMenuItem(x); contextMenu.waitForHidden()`                  |
 | 4   | **Tight poll timeout**                | `expect.poll(..., { timeout: 250 })`                      | ≥2000 ms; prefer default 5000 ms                                 |
 | 5   | **Immediate evaluate after mutation** | `setSetting(k, v); expect(await evaluate()).toBe(x)`      | `await expect.poll(() => evaluate()).toBe(x)`                    |
-| 6   | **Screenshot without readiness**      | `loadWorkflow(); nextFrame(); toHaveScreenshot()`         | `waitForNodes()` or poll state first                             |
+| 6   | **Screenshot without readiness**      | `loadWorkflow(); nextFrame(); toHaveScreenshot()`         | Assert the expected node state with a retrying assertion first   |
 | 7   | **Non-deterministic node order**      | `getNodeRefsByType('X')[0]` with >1 match                 | `getNodeRefById(id)` or guard `toHaveLength(1)`                  |
 | 8   | **Fake readiness helper**             | Helper clicks but doesn't assert state                    | Remove; poll the actual value                                    |
 | 9   | **Immediate graph state after drop**  | `expect(await getLinkCount()).toBe(1)`                    | `await expect.poll(() => getLinkCount()).toBe(1)`                |
@@ -68,6 +68,10 @@ await expect(async () => {
 
 Visible is not always ready. Prefer user-facing assertions when possible; poll internal state only when there is no UI surface to assert on.
 
+Vue-node tests must use `@vue-nodes`; the fixture enables the renderer and waits
+for initial readiness. Never manually set `Comfy.VueNodes.Enabled` or call
+`comfyPage.vueNodes.waitForNodes()` in tests.
+
 Common readiness boundaries:
 
 | After this action...                   | Wait for...                                                  |
@@ -79,7 +83,7 @@ Common readiness boundaries:
 | Node pin/bypass/collapse toggle        | `await expect.poll(() => nodeRef.isPinned()).toBe(true)`     |
 | Graph mutation (add/remove node, link) | Poll link/node count                                         |
 | Clipboard write                        | Poll pasted value                                            |
-| Screenshot                             | Ensure nodes are rendered: `waitForNodes()` or poll state    |
+| Screenshot                             | Assert expected node state with a retrying assertion         |
 
 #### Rule: Expose Locators for Retrying Assertions
 
