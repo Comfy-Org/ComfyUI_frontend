@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import type { ComfyEvent } from '../../data/events'
-import type * as eventsModule from '../../data/events'
+import type { Locale } from '../../i18n/translations'
 
 import EventsDirectorySection from './EventsDirectorySection.vue'
 
@@ -48,9 +48,35 @@ const { NOW, fixtureEvents } = vi.hoisted(() => {
   }
 })
 
-vi.mock(import('../../data/events'), async (importOriginal) => {
-  const actual = await importOriginal<typeof eventsModule>()
-  return { ...actual, directoryEvents: fixtureEvents, eventsDerivedAt: NOW }
+vi.mock(import('../../data/events'), () => {
+  const eventPath = (event: { id: string }) => `/events/${event.id}`
+  const eventVideoId = (event: ComfyEvent) =>
+    event.recordingVideoId ?? event.liveVideoId
+  return {
+    directoryEvents: fixtureEvents,
+    eventsDerivedAt: NOW,
+    eventPath,
+    eventStatus: (event: ComfyEvent, now: Date): 'past' | 'upcoming' => {
+      const end = event.endDateTime
+        ? new Date(event.endDateTime)
+        : new Date(new Date(event.startDateTime).getTime() + 60 * 60 * 1000)
+      return now >= end ? 'past' : 'upcoming'
+    },
+    eventVideoId,
+    toCalendarEvent: (event: ComfyEvent, locale: Locale) => ({
+      title: event.title[locale] || event.title.en,
+      description: event.description[locale] || event.description.en,
+      location: event.location?.[locale] || event.location?.en || '',
+      start: new Date(event.startDateTime),
+      end: event.endDateTime
+        ? new Date(event.endDateTime)
+        : new Date(new Date(event.startDateTime).getTime() + 60 * 60 * 1000)
+    }),
+    youtubeWatchHref: (videoId: string) => {
+      const href = `https://www.youtube.com/watch?v=${videoId}`
+      return { en: href, 'zh-CN': href }
+    }
+  }
 })
 
 // The real map pulls in Leaflet at mount, so it is replaced with one button

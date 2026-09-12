@@ -5,7 +5,6 @@ import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import type { ComfyEvent } from '../../data/events'
-import type * as eventsModule from '../../data/events'
 
 import PastEventsSection from './PastEventsSection.vue'
 
@@ -79,9 +78,13 @@ const { fixturePastEvents } = vi.hoisted(() => {
   }
 })
 
-vi.mock(import('../../data/events'), async (importOriginal) => {
-  const actual = await importOriginal<typeof eventsModule>()
-  return { ...actual, pastEvents: fixturePastEvents }
+vi.mock(import('../../data/events'), () => {
+  return {
+    eventPath: (event: { id: string }) => `/events/${event.id}`,
+    eventVideoId: (event: ComfyEvent) =>
+      event.recordingVideoId ?? event.liveVideoId,
+    pastEvents: fixturePastEvents
+  }
 })
 
 describe('PastEventsSection', () => {
