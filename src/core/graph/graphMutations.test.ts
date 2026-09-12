@@ -290,36 +290,97 @@ describe('graphMutations', () => {
     expect(createLayout).not.toHaveBeenCalled()
   })
 
-  it('keeps the incumbent title when a reconcile payload carries none', () => {
-    const graph = mutations()
-    graph.addNode({ ...node(1), title: 'Load Checkpoint' }, context)
-    const [existing] = useNodeDataStore().getGraphNodesFor('root', 'root')
-    expect(existing.title).toBe('Load Checkpoint')
-
+  it('untitled catalog reconcile without an incumbent persists the type as lastSerialization title', () => {
+    const { title: _title, ...untitled } = node(1)
     expect(
-      graph.batch({ ...context, opId: 'bootstrap' }, (batch) => {
-        const { title: _title, ...untitled } = node(1, { seed: 7 })
+      mutations().batch(context, (batch) => {
         batch.reconcileNode(untitled)
       })
     ).toBe(true)
 
-    const [reconciled] = useNodeDataStore().getGraphNodesFor('root', 'root')
-    expect(reconciled).toBe(existing)
-    expect(reconciled.title).toBe('Load Checkpoint')
-    expect(reconciled.lastSerialization?.title).toBe('Load Checkpoint')
+    const [state] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    expect(state.title).toBe('Type1')
+    expect(state.lastSerialization?.title).toBe('Type1')
+  })
+
+  it('untitled reconcile of a display-named regular node uses the type as title and keeps the output wire', () => {
+    const graph = mutations()
+    graph.batch(context, (batch) => {
+      batch.addNode({ ...node(1), title: 'Load Checkpoint' })
+      batch.addNode(node(2))
+      batch.connect({
+        id: 9,
+        originNodeId: 1,
+        originSlot: 0,
+        targetNodeId: 2,
+        targetSlot: 0,
+        type: 'IMAGE',
+        originOutputs: [{ name: 'out', type: 'IMAGE', links: [9] }],
+        targetInputs: [{ name: 'in', type: 'IMAGE', link: 9 }]
+      })
+    })
+
+    expect(
+      graph.batch({ ...context, opId: 'bootstrap' }, (batch) => {
+        const { title: _title, ...untitled } = {
+          ...node(1, { seed: 7 }),
+          outputs: [{ name: 'out', type: 'IMAGE', links: [9] }]
+        }
+        batch.reconcileNode(untitled)
+      })
+    ).toBe(true)
+
+    const origin = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))
+    expect(origin?.title).toBe('Type1')
+    expect(origin?.lastSerialization?.title).toBe('Type1')
+    expect(origin?.outputs[0]?.links).toEqual([toLinkId(9)])
+    expect(
+      useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
+    ).toMatchObject({
+      originNodeId: toNodeId(1),
+      targetNodeId: toNodeId(2)
+    })
     expect(
       useWidgetValueStore().getWidget(widgetId('root', toNodeId(1), 'seed'))
         ?.value
     ).toBe(7)
   })
 
-  it('keeps a title introduced earlier in the same batch', () => {
+  it('keeps a subgraph instance title when a reconcile payload carries none', () => {
     const graph = mutations()
+    const type = '00000000-0000-4000-8000-000000000002'
+    graph.addNode({ ...node(1), type, title: 'Test Subgraph' }, context)
+    const [existing] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    expect(existing.title).toBe('Test Subgraph')
+
+    expect(
+      graph.batch({ ...context, opId: 'bootstrap' }, (batch) => {
+        const { title: _title, ...untitled } = {
+          ...node(1, { seed: 7 }),
+          type
+        }
+        batch.reconcileNode(untitled)
+      })
+    ).toBe(true)
+
+    const [reconciled] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    expect(reconciled).toBe(existing)
+    expect(reconciled.title).toBe('Test Subgraph')
+    expect(reconciled.lastSerialization?.title).toBe('Test Subgraph')
+    expect(
+      useWidgetValueStore().getWidget(widgetId('root', toNodeId(1), 'seed'))
+        ?.value
+    ).toBe(7)
+  })
+
+  it('keeps a subgraph title introduced earlier in the same batch', () => {
+    const graph = mutations()
+    const type = '00000000-0000-4000-8000-000000000002'
 
     expect(
       graph.batch(context, (batch) => {
-        batch.addNode({ ...node(1), title: 'Batch title' })
-        const { title: _title, ...untitled } = node(1, { seed: 7 })
+        batch.addNode({ ...node(1), type, title: 'Batch title' })
+        const { title: _title, ...untitled } = { ...node(1, { seed: 7 }), type }
         batch.reconcileNode(untitled)
       })
     ).toBe(true)
