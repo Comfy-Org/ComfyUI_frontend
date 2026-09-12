@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import shippedRiskMap from '../../.github/risk.json'
 import {
   applyAiVerdict,
   buildReviewContext,
@@ -70,6 +71,46 @@ describe('runtimePathsFor', () => {
   it('treats unclassified files as runtime instead of silently exempting them', () => {
     expect(
       runtimePathsFor([{ filename: 'src/components/NewUi.vue' }], riskMap)
+    ).toEqual(['src/components/NewUi.vue'])
+  })
+
+  it('keeps repo-root tooling configs outside runtime scope in the shipped map', () => {
+    const toolingFiles = [
+      '.oxfmtrc.json',
+      '.oxlintrc.json',
+      'eslint.config.ts',
+      'eslint-suppressions.json',
+      '.stylelintrc.json',
+      'lint-staged.config.ts',
+      'knip.config.ts',
+      'playwright.config.ts',
+      'playwright.chrome.config.ts',
+      'playwright.i18n.config.ts',
+      'vitest.matrix.config.mts',
+      'vitest.setup.ts',
+      'vitest.timer.setup.ts',
+      '.yamllint',
+      '.editorconfig',
+      '.nvmrc',
+      '.gitignore',
+      '.gitattributes',
+      '.git-blame-ignore-revs',
+      '.husky/pre-commit'
+    ]
+    expect(
+      runtimePathsFor(
+        toolingFiles.map((filename) => ({ filename })),
+        shippedRiskMap
+      )
+    ).toEqual([])
+  })
+
+  it('still treats application source as runtime in the shipped map', () => {
+    expect(
+      runtimePathsFor(
+        [{ filename: 'src/components/NewUi.vue' }],
+        shippedRiskMap
+      )
     ).toEqual(['src/components/NewUi.vue'])
   })
 })
