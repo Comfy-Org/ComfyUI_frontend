@@ -1,4 +1,4 @@
-import { cloneDeep } from 'es-toolkit'
+import { cloneDeep, isEqual } from 'es-toolkit'
 
 import type {
   ISerialisableNodeInput,
@@ -226,6 +226,25 @@ function widgetEntries(payload: SemanticNodePayload): PreparedNode['widgets'] {
   }))
 }
 
+/**
+ * With a named record a widget's slot is the one slot still holding its last
+ * named value, so a placeholder's store order is never guessed at; without a
+ * record the store order is the positional order. -1 leaves the shadow alone.
+ */
+function positionalSlotOf(
+  values: readonly unknown[],
+  index: number,
+  named: unknown,
+  name: string
+): number {
+  if (!isRecord(named) || !(name in named))
+    return index >= 0 && index < values.length ? index : -1
+  const slots = values.flatMap((value, slot) =>
+    isEqual(value, named[name]) ? [slot] : []
+  )
+  return slots.length === 1 ? slots[0] : -1
+}
+
 function syncSerializedWidgetValue(
   state: NodeState,
   name: string,
@@ -238,7 +257,8 @@ function syncSerializedWidgetValue(
   const named: unknown = serialised.widgets_values_named
   const clone = structuredClone(value)
   if (Array.isArray(values)) {
-    if (index >= 0 && index < values.length) values[index] = clone
+    const slot = positionalSlotOf(values, index, named, name)
+    if (slot >= 0) values[slot] = clone
   } else if (isRecord(values)) {
     values[name] = clone
   }
@@ -743,6 +763,10 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
                     : [])
                 ])
                 const named = { ...staleNamed }
+                const staleSlots = Array.isArray(stalePositional)
+                  ? (stalePositional as unknown[])
+                  : undefined
+                const positional = staleSlots && [...staleSlots]
                 const overlay: Record<string, unknown> = {}
                 // existing.lastSerialization can predate incremental
                 // setWidget calls, which only update the widget store and
@@ -752,19 +776,22 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
                 // overlay widgets already present in the stale snapshot —
                 // a node with no prior snapshot (or one already cleared to
                 // empty) must stay untouched here.
-                for (const widget of serializableWidgets) {
-                  if (staleNames.has(widget.name)) {
-                    overlay[widget.name] = widget.value
-                    if (widget.name in named) named[widget.name] = widget.value
-                  }
-                }
-                if (Array.isArray(stalePositional)) {
-                  state.lastSerialization.widgets_values = (
-                    stalePositional as unknown[]
-                  ).map((value, index) => {
-                    const name = stalePositionalNames[index]
-                    return name && name in overlay ? overlay[name] : value
-                  }) as ISerialisedNode['widgets_values']
+                serializableWidgets.forEach((widget, index) => {
+                  if (!staleNames.has(widget.name)) return
+                  overlay[widget.name] = widget.value
+                  if (widget.name in named) named[widget.name] = widget.value
+                  if (!staleSlots || !positional) return
+                  const slot = positionalSlotOf(
+                    staleSlots,
+                    index,
+                    staleNamed,
+                    widget.name
+                  )
+                  if (slot >= 0) positional[slot] = widget.value
+                })
+                if (positional) {
+                  state.lastSerialization.widgets_values =
+                    positional as ISerialisedNode['widgets_values']
                 } else if (isRecord(stalePositional)) {
                   state.lastSerialization.widgets_values = {
                     ...stalePositional,

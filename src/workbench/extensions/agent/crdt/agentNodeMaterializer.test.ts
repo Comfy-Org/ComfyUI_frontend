@@ -68,6 +68,14 @@ class WidgetNode extends LGraphNode {
   }
 }
 
+class TwoWidgetNode extends LGraphNode {
+  constructor() {
+    super('two-widget-node')
+    this.addWidget('number', 'steps', 0, () => {})
+    this.addWidget('number', 'seed', 0, () => {})
+  }
+}
+
 /** Widget values observed by `onConfigure`, in configure order. */
 const configuredWidgetValues: unknown[] = []
 
@@ -600,6 +608,100 @@ describe('reconcileAgentAdapters', () => {
       LiteGraph.registerNodeType('late-widget-node', WidgetNode)
       graph.configure(graph.serialize())
       expect(graph.getNodeById(toNodeId(1))?.widgets?.[0].value).toBe(7)
+    })
+
+    it('places an incremental setWidget by its last value in a two-widget missing node through save, reload and rematerialization', () => {
+      const graph = new LGraph()
+      const mutations = remoteMutations(graphScopeOf(graph))
+      const payload = nodePayload(1, 'late-two-widget-node')
+      graph.configure({
+        ...graph.asSerialisable(),
+        nodes: [
+          {
+            ...new LGraphNode('Missing').serialize(),
+            id: 1,
+            type: payload.type,
+            widgets_values: [20, 4],
+            widgets_values_named: { seed: 4, steps: 20 }
+          }
+        ]
+      })
+
+      expect(
+        mutations.batch(REMOTE, (batch) =>
+          batch.setWidget(toNodeId(1), 'seed', 7)
+        )
+      ).toBe(true)
+      expect(
+        mutations.batch(REMOTE, (batch) =>
+          batch.reconcileNode({ ...payload, pos: [10, 20] })
+        )
+      ).toBe(true)
+
+      const saved = graph.serialize()
+      expect(saved.nodes[0]).toMatchObject({
+        widgets_values: [20, 7],
+        widgets_values_named: { seed: 7, steps: 20 }
+      })
+      graph.configure(saved)
+
+      LiteGraph.registerNodeType('late-two-widget-node', TwoWidgetNode)
+      try {
+        graph.configure(graph.serialize())
+        expect(
+          graph.getNodeById(toNodeId(1))?.widgets?.map((widget) => widget.value)
+        ).toEqual([20, 7])
+      } finally {
+        LiteGraph.unregisterNodeType('late-two-widget-node')
+      }
+    })
+
+    it('keeps the positional shadow of a two-widget missing node when the slot is ambiguous', () => {
+      const graph = new LGraph()
+      const mutations = remoteMutations(graphScopeOf(graph))
+      const payload = nodePayload(1, 'late-two-widget-node')
+      graph.configure({
+        ...graph.asSerialisable(),
+        nodes: [
+          {
+            ...new LGraphNode('Missing').serialize(),
+            id: 1,
+            type: payload.type,
+            widgets_values: [4, 4],
+            widgets_values_named: { seed: 4, steps: 4 }
+          }
+        ]
+      })
+
+      expect(
+        mutations.batch(REMOTE, (batch) =>
+          batch.setWidget(toNodeId(1), 'seed', 7)
+        )
+      ).toBe(true)
+      expect(
+        mutations.batch(REMOTE, (batch) =>
+          batch.reconcileNode({ ...payload, pos: [10, 20] })
+        )
+      ).toBe(true)
+
+      const saved = graph.serialize()
+      expect(saved.nodes[0]).toMatchObject({
+        widgets_values: [4, 4],
+        widgets_values_named: { seed: 7, steps: 4 }
+      })
+
+      LiteGraph.registerNodeType('late-two-widget-node', TwoWidgetNode)
+      const previous = LiteGraph.namedValuesRestore
+      LiteGraph.namedValuesRestore = true
+      try {
+        graph.configure(saved)
+        expect(
+          graph.getNodeById(toNodeId(1))?.widgets?.map((widget) => widget.value)
+        ).toEqual([4, 7])
+      } finally {
+        LiteGraph.namedValuesRestore = previous
+        LiteGraph.unregisterNodeType('late-two-widget-node')
+      }
     })
 
     it('is idempotent once the node is live', () => {
