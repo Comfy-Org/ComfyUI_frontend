@@ -126,6 +126,47 @@ async function expectPromotedWidgetsToResolveToInteriorNodes(
 }
 
 test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
+  for (const vueNodesEnabled of [false, true]) {
+    test(`Empty promoted text survives save and reload with Vue Nodes ${vueNodesEnabled ? 'enabled' : 'disabled'}`, async ({
+      comfyPage
+    }) => {
+      await comfyPage.settings.setSetting(
+        'Comfy.VueNodes.Enabled',
+        vueNodesEnabled
+      )
+      await comfyPage.workflow.setupWorkflowsDirectory({})
+      await comfyPage.workflow.loadWorkflow(
+        'subgraphs/subgraph-with-promoted-text-widget'
+      )
+
+      const promotedText = comfyPage.page.getByRole('textbox', {
+        name: 'text',
+        exact: true
+      })
+      await expect(promotedText).toBeVisible()
+      await promotedText.fill('value removed before saving')
+      await expect(promotedText).toHaveValue('value removed before saving')
+      await promotedText.fill('')
+      await expect(promotedText).toHaveValue('')
+
+      await comfyPage.menu.topbar.saveWorkflow(
+        `empty-promoted-text-${vueNodesEnabled ? 'vue' : 'legacy'}`
+      )
+      await comfyPage.workflow.reloadAndWaitForApp()
+
+      await expect(
+        comfyPage.page.getByRole('textbox', {
+          name: 'text',
+          exact: true
+        })
+      ).toHaveValue('')
+      const host = await comfyPage.nodeOps.getNodeRefById('11')
+      await expect
+        .poll(async () => (await host.getWidgetByName('text')).getValue())
+        .toBe('')
+    })
+  }
+
   test(
     'Legacy primitive proxy widgets migrate to host inputs without proxyWidgets round-trip',
     { tag: ['@vue-nodes'] },
