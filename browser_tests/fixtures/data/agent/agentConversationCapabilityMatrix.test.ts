@@ -76,10 +76,13 @@ const laterTurnReferencesEarlierAddedNode = (
 }
 
 const urlsIn = (text: string): string[] =>
-  text.match(/https?:\/\/[^\s)\]]+/g) ?? []
+  text.match(/(?:https?:\/\/|\/)[^\s)\]]+/g) ?? []
 
 const isMediaAssetUrl = (url: string) =>
   classifyAssetUrl(url, 'http://localhost') !== null
+
+const replyContainsMediaAsset = (text: string) =>
+  urlsIn(text).some(isMediaAssetUrl)
 
 describe('agentConversationCapabilityMatrix', () => {
   it('names at least one recording for every supported capability', () => {
@@ -141,9 +144,17 @@ describe('agentConversationCapabilityMatrix', () => {
       events(c).some(
         (event) =>
           event.type === 'agent_message_delta' &&
-          urlsIn(event.data.delta).some(isMediaAssetUrl)
+          replyContainsMediaAsset(event.data.delta)
       )
   }
+
+  it('classifies relative reply assets against the capability base URL', () => {
+    expect(replyContainsMediaAsset('Preview: [/view?filename=clip.mp4]')).toBe(
+      true
+    )
+    expect(replyContainsMediaAsset('Docs: [/docs/getting-started]')).toBe(false)
+    expect(replyContainsMediaAsset('Broken: [not a URL]')).toBe(false)
+  })
 
   it('lists under each capability exactly the recordings that show it', () => {
     const catalog = listRecordedConversations().map((caseId) => ({
