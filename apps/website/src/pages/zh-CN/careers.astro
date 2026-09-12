@@ -8,8 +8,10 @@ import FAQSection from '../../components/common/FAQSection.vue'
 import { fetchRolesForBuild } from '../../utils/ashby'
 import { reportAshbyOutcome } from '../../utils/ashby.ci'
 import { t } from '../../i18n/translations'
+import { productFaqItems } from '../../data/productFaq'
 import {
   absoluteUrl,
+  faqPageNode,
   itemListNode,
   jsonLdId,
   pageContext,
@@ -32,6 +34,8 @@ const { locale, url } = pageContext(
   Astro.url.pathname,
   Astro.currentLocale,
 )
+// Mirrors the page's own FAQSection below (careers.faq.*, 8 entries).
+const faqPage = faqPageNode(url, productFaqItems('careers.faq', 8, locale))
 const roles = itemListNode(
   url,
   t('breadcrumb.careers', locale),
@@ -53,7 +57,7 @@ const roles = itemListNode(
     },
     { name: t('breadcrumb.careers', locale) },
   ]}
-  extraJsonLd={[roles]}
+  extraJsonLd={[roles, faqPage]}
 >
   <HeroSection locale="zh-CN" />
   <RolesSection locale="zh-CN" departments={departments} client:visible />
