@@ -228,6 +228,8 @@ function makeOp(
           links: [],
         },
       };
+    case "insert_workflow":
+      return { ...env, op: "insert_workflow", workflow: { nodes: [node(140 + serial, "Aux", [], [], [value])], links: [] } };
     case "reset_doc":
       return { ...env, op: "reset_doc", workflow: { nodes: [], links: [] } };
   }

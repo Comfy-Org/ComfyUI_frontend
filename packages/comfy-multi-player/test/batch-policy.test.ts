@@ -42,8 +42,8 @@ import { loadCatalog, loadSession, sessionFiles } from "./helpers.js";
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const batchable = new Set<string>(BATCHABLE_OPS);
 
-/** The two kinds the vocabulary calls standalone-only (§1.5, §1.6). */
-const STANDALONE_ONLY = ["clear", "reset_doc"];
+/** Kinds the vocabulary or ADR-022 calls standalone-only. */
+const STANDALONE_ONLY = ["clear", "insert_workflow", "reset_doc"];
 
 const catalog: WidgetCatalog = { types: { Sampler: { widget_order: ["steps"] } } };
 const base: WorkflowJSON = {

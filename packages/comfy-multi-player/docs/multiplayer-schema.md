@@ -44,6 +44,9 @@ Normative inputs, in precedence order:
    `fixtures/` (the evidence: three replayable sessions, six LWW vectors, the
    exported catalog, machine-captured findings). Every DECISION below cites
    the spike finding that forced it.
+3. **ADR-022 / ADR-T8** — the local decision and accepted in-app-agent program
+   TDD add `insert_workflow` as the seventh implemented op without moving the
+   pinned comfy-cli vocabulary.
 
 ---
 
@@ -2044,3 +2047,26 @@ separate input register still decides whether that identity may occupy the
 requested destination; losing that gate leaves no tuple or dangling reference.
 This adds an internal `__stamps` key, not a root-layout change, so
 `SCHEMA_VERSION` remains 2.
+
+---
+
+## Amendment A19 — 2026-09-11 — atomic workflow-template insertion
+
+ADR-022 adds the standalone-only `insert_workflow` op. Its payload is one
+authoritative workflow containing required top-level `nodes` and optional
+`links`, `groups`, and `definitions`. The applier deterministically remaps every
+inserted id from the immutable `op_id`, graph scope, id kind, and original id,
+then rewrites internal references. Producers emit raw payloads. Distinct ops
+cannot collide; exact replay derives the same ids. Duplicate ids within one raw
+payload remain collision errors. Malformed link tuples are `malformed_op`.
+
+Definition ids and every nested definition-interior graph id are remapped in
+scoped namespaces. Definition-instance `type` values are rewritten with them,
+so a consumer definition id is never used as a live id and no live-definition
+conflict path remains.
+
+The whole merge occurs in one Yjs transaction and claims the
+`("insert_workflow", op_id)` stamp target. Exact replay is stopped by the
+existing applied-op gate and is byte-identical. This adds graph content but no
+new root or node-map layout, so `SCHEMA_VERSION` remains 2. Other op payloads
+remain closed to definition-bearing fields.

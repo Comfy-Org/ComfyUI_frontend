@@ -25,6 +25,7 @@ import type {
   ConnectOp,
   DeleteNodeOp,
   GrowConnectOp,
+  InsertWorkflowOp,
   InteriorSetWidgetOp,
   Op,
   ResetDocOp,
@@ -195,6 +196,13 @@ const resetAsOp: Op = reset;
 declare function applyOpsSignature(ops: Op[]): void;
 // @ts-expect-error #17: the applier cannot be handed an op it always refuses.
 applyOpsSignature([reset]);
+
+const insertWorkflow: InsertWorkflowOp = {
+  op: "insert_workflow",
+  ...env,
+  workflow: { nodes: [], links: [], definitions: { subgraphs: [] } },
+};
+const insertWorkflowAsOp: Op = insertWorkflow;
 
 // ---------------------------------------------------------------------------
 // Positive controls — these MUST compile, or the gate above is vacuous

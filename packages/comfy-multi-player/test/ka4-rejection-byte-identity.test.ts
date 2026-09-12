@@ -187,6 +187,30 @@ const CASES: Row[] = [
       }) as unknown as Op,
   },
 
+  // ---- insert_workflow ----------------------------------------------------
+  {
+    kind: "insert_workflow",
+    why: "duplicate raw node ids are ambiguous before deterministic remapping",
+    code: "node_id_collision",
+    build: () => ({ op: "insert_workflow", ...env(), workflow: { nodes: [{ id: 1, type: "Src" }, { id: 1, type: "Src" }] } }) as Op,
+  },
+  {
+    kind: "insert_workflow",
+    why: "duplicate raw link ids are ambiguous before deterministic remapping",
+    code: "link_id_collision",
+    build: () => ({ op: "insert_workflow", ...env(), workflow: { nodes: [], links: [[7, 2, 0, 3, 0, "X"], [7, 2, 0, 3, 0, "X"]] } }) as Op,
+  },
+  {
+    kind: "insert_workflow",
+    why: "duplicate raw definition ids are ambiguous before deterministic remapping",
+    code: "definition_conflict",
+    build: () => ({
+      op: "insert_workflow",
+      ...env(),
+      workflow: { nodes: [], definitions: { subgraphs: [{ id: "d", nodes: [], links: [] }, { id: "d", nodes: [], links: [] }] } },
+    }) as Op,
+  },
+
   // ---- set_widget ----------------------------------------------------------
   {
     kind: "set_widget",
@@ -657,6 +681,9 @@ const ALL_REJECTION_CODES = [
   "op_deferred",
   "catalog_required",
   "invalid_node_payload",
+  "node_id_collision",
+  "link_id_collision",
+  "definition_conflict",
   "unknown_widget",
   "opaque_widgets",
   "widget_out_of_range",
