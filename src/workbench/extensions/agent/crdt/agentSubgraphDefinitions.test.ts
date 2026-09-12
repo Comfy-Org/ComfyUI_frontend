@@ -161,14 +161,20 @@ describe('readSubgraphDefinitions', () => {
   })
 
   it('reads a node named twice in the order register once', () => {
-    // mintDefinition pushes one register entry per input node, so two interior
-    // nodes sharing an id leave a two-entry register over a one-key map.
     const definition = createTestSubgraphData({
-      nodes: [interiorNode(1), interiorNode(1), interiorNode(2)] as never,
-      links: [interiorLink(5, 1, 2), interiorLink(5, 1, 2)] as never
+      nodes: [interiorNode(1), interiorNode(2)] as never,
+      links: [interiorLink(5, 1, 2)] as never
+    })
+    const doc = seed(definition)
+    doc.transact(() => {
+      const stored = doc
+        .getMap<unknown>('definitions')
+        .get(definition.id) as Y.Map<unknown>
+      stored.set('node_order', ['1', '1', '2'])
+      stored.set('link_order', ['5', '5'])
     })
 
-    const [projected] = readSubgraphDefinitions(seed(definition))
+    const [projected] = readSubgraphDefinitions(doc)
 
     expect(projected.nodes?.map((node) => node.id)).toEqual([1, 2])
     expect(projected.links?.map((link) => link.id)).toEqual([5])

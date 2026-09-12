@@ -220,10 +220,10 @@ function tryProjectNode(value: unknown, catalog: WidgetCatalog): WorkflowNode | 
 }
 
 /** Definition Y.Map → subgraph definition JSON, interior nodes/links in mint order. */
-function projectDefinition(dm: Y.Map<unknown>, catalog: WidgetCatalog): Record<string, unknown> {
+export function projectDefinition(dm: Y.Map<unknown>, catalog: WidgetCatalog): Record<string, unknown> {
   const out: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
   dm.forEach((v, k) => {
-    if (k === "node_order" || k === "link_order") return; // internal order registers
+    if (k === "node_order" || k === "link_order" || k.startsWith("__")) return; // internal registers
     if (k === "nodes" && v instanceof Y.Map) {
       const order = (dm.get("node_order") as string[] | undefined) ?? [...v.keys()].sort();
       out[k] = order
@@ -233,10 +233,34 @@ function projectDefinition(dm: Y.Map<unknown>, catalog: WidgetCatalog): Record<s
     } else if (k === "links" && v instanceof Y.Map) {
       const order = (dm.get("link_order") as string[] | undefined) ?? [...v.keys()].sort();
       out[k] = order.filter((id) => v.has(id)).map((id) => structuredClone(v.get(id)));
+    } else if (k === "definitions" && v instanceof Y.Map) {
+      const nestedOut: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
+      v.forEach((nestedValue, nestedKey) => {
+        if (nestedKey === "subgraph_order") return;
+        if (nestedKey === "subgraphs" && nestedValue instanceof Y.Map) {
+          const order = (v.get("subgraph_order") as string[] | undefined) ?? [...nestedValue.keys()].sort();
+          nestedOut.subgraphs = order
+            .filter((id) => nestedValue.has(id))
+            .map((id) => projectDefinition(nestedValue.get(id) as Y.Map<unknown>, catalog));
+        } else {
+          nestedOut[nestedKey] = structuredClone(nestedValue);
+        }
+      });
+      out[k] = nestedOut;
     } else {
       out[k] = structuredClone(v);
     }
   });
+  return scrubPrivateKeys(out) as Record<string, unknown>;
+}
+
+function scrubPrivateKeys(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(scrubPrivateKeys);
+  if (typeof value !== "object" || value === null) return value;
+  const out: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
+  for (const [key, child] of Object.entries(value)) {
+    if (!key.startsWith("__")) out[key] = scrubPrivateKeys(child);
+  }
   return out;
 }
 
