@@ -164,7 +164,11 @@ function renderLGraphNode(props: ComponentProps<typeof LGraphNode>) {
     global: {
       plugins: [getActivePinia()!, i18n],
       stubs: {
-        NodeHeader: true,
+        NodeHeader: {
+          props: ['activity'],
+          template:
+            '<div data-testid="node-header" :data-activity="activity" />'
+        },
         NodeSlots: true,
         NodeWidgets: {
           props: ['nodeData', 'widgetIds'],
@@ -323,8 +327,9 @@ describe('LGraphNode', () => {
 
     renderLGraphNode({ nodeData: mockNodeData })
 
-    expect(screen.getByTestId('node-activity-badge')).toHaveTextContent(
-      'Loading'
+    expect(screen.getByTestId('node-header')).toHaveAttribute(
+      'data-activity',
+      'loading'
     )
   })
 
