@@ -127,26 +127,35 @@ export function createRefreshScheduler(
     teardownCoordination()
     coordinationKey = key
     const generationAtRequest = coordinationGeneration
-    stopCredentialFeed = crossTab.port.onCredential(
-      key,
-      adoptPublishedCredential
-    )
-    releaseLeadership = crossTab.port.requestLeadership(key, () => {
-      // A grant is honored only for the coordination generation that issued
-      // the request: abandoned requests can still win the grant race in the
-      // lock manager, and after a same-user round trip their key is
-      // byte-identical to the live request's.
-      if (generationAtRequest !== coordinationGeneration) return
+    // Cross-tab coordination is optional: a port that throws during setup
+    // must never propagate past a committed credential. Tear down whatever
+    // partial wiring landed and lead this tab on its own schedule.
+    try {
+      stopCredentialFeed = crossTab.port.onCredential(
+        key,
+        adoptPublishedCredential
+      )
+      releaseLeadership = crossTab.port.requestLeadership(key, () => {
+        // A grant is honored only for the coordination generation that issued
+        // the request: abandoned requests can still win the grant race in the
+        // lock manager, and after a same-user round trip their key is
+        // byte-identical to the live request's.
+        if (generationAtRequest !== coordinationGeneration) return
+        isRefreshLeader = true
+        // Promotion retakes the schedule unconditionally — the follower timer
+        // may be jittered, mid-retry, or already dead from exhausted retries.
+        // The latch skips the redundant re-arm when the grant fires
+        // synchronously inside armScheduledRefresh itself.
+        const live = host.getCredential()
+        if (live !== undefined && !armingScheduledRefresh) {
+          armScheduledRefresh(live.expiresAt, host.now())
+        }
+      })
+    } catch (error) {
+      console.warn('Cross-tab refresh coordination setup failed:', error)
+      teardownCoordination()
       isRefreshLeader = true
-      // Promotion retakes the schedule unconditionally — the follower timer
-      // may be jittered, mid-retry, or already dead from exhausted retries.
-      // The latch skips the redundant re-arm when the grant fires
-      // synchronously inside armScheduledRefresh itself.
-      const live = host.getCredential()
-      if (live !== undefined && !armingScheduledRefresh) {
-        armScheduledRefresh(live.expiresAt, host.now())
-      }
-    })
+    }
   }
 
   /**
@@ -159,7 +168,13 @@ export function createRefreshScheduler(
    */
   function publishToSiblings(session: AccountCredential): void {
     if (coordinationKey === undefined) return
-    crossTab?.port.publishCredential(coordinationKey, session)
+    // Publication is optional: a throwing port must not unwind a mint that
+    // already committed and persisted its credential.
+    try {
+      crossTab?.port.publishCredential(coordinationKey, session)
+    } catch (error) {
+      console.warn('Cross-tab refresh credential publish failed:', error)
+    }
   }
 
   function adoptPublishedCredential(message: unknown): void {
