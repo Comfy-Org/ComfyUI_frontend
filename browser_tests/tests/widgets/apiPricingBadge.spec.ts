@@ -2,6 +2,8 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
+const EXPECTED_PRICE = '12.7 credits/Run'
+
 for (const vueEnabled of [false, true] as const) {
   const renderer = vueEnabled ? 'vue' : 'legacy'
 
@@ -44,12 +46,49 @@ for (const vueEnabled of [false, true] as const) {
         if (vueNode) {
           await comfyPage.vueNodes.waitForNodes(1)
           await expect(vueNode.priceBadge.required).toBeVisible()
+        } else {
+          await comfyPage.page.evaluate(() => {
+            const node = window.app!.graph.nodes.find(
+              ({ title }) => title === 'Flux 1.1 [pro] Ultra Image'
+            )
+            if (!node) throw new Error('Partner API node not found')
+
+            const probe = document.createElement('output')
+            probe.id = 'legacy-pricing-badge-draw-probe'
+            probe.hidden = true
+            probe.dataset.suppress = 'false'
+            document.body.append(probe)
+
+            const drawBadges = node.drawBadges
+            node.drawBadges = function (ctx, options) {
+              const fillText = ctx.fillText
+              ctx.fillText = function (text, ...args) {
+                if (
+                  probe.dataset.suppress === 'true' &&
+                  text === '12.7 credits/Run'
+                ) {
+                  return
+                }
+                fillText.call(this, text, ...args)
+                if (text === '12.7 credits/Run') probe.textContent = text
+              }
+              try {
+                drawBadges.call(this, ctx, options)
+              } finally {
+                ctx.fillText = fillText
+              }
+            }
+            window.app!.graph.setDirtyCanvas(true, true)
+          })
         }
 
-        await comfyPage.nextFrame()
-        const enabledCanvas = vueEnabled
-          ? undefined
-          : await comfyPage.canvas.screenshot()
+        const legacyDrawProbe = comfyPage.page.locator(
+          '#legacy-pricing-badge-draw-probe'
+        )
+        if (!vueEnabled) {
+          await expect(legacyDrawProbe).toHaveText(EXPECTED_PRICE)
+        }
+
         await comfyPage.settingDialog.open()
         await comfyPage.settingDialog.category('Comfy').click()
         await comfyPage.settingDialog.toggleBooleanSetting(
@@ -58,11 +97,12 @@ for (const vueEnabled of [false, true] as const) {
         await comfyPage.settingDialog.close()
 
         if (vueNode) await expect(vueNode.priceBadge.required).toBeHidden()
-        await comfyPage.nextFrame()
-        let disabledCanvas: Buffer | undefined
-        if (enabledCanvas) {
-          disabledCanvas = await comfyPage.canvas.screenshot()
-          expect(disabledCanvas.equals(enabledCanvas)).toBe(false)
+        if (!vueEnabled) {
+          await legacyDrawProbe.evaluate((probe) => {
+            probe.textContent = ''
+          })
+          await comfyPage.nextFrame()
+          await expect(legacyDrawProbe).toHaveText('')
         }
 
         await comfyPage.settingDialog.open()
@@ -73,10 +113,29 @@ for (const vueEnabled of [false, true] as const) {
         await comfyPage.settingDialog.close()
 
         if (vueNode) await expect(vueNode.priceBadge.required).toBeVisible()
-        await comfyPage.nextFrame()
-        if (disabledCanvas) {
-          const reenabledCanvas = await comfyPage.canvas.screenshot()
-          expect(reenabledCanvas.equals(disabledCanvas)).toBe(false)
+        if (!vueEnabled) {
+          await legacyDrawProbe.evaluate((probe) => {
+            probe.dataset.suppress = 'true'
+            probe.textContent = ''
+          })
+          await comfyPage.nextFrame()
+
+          let badgeAssertionFailed = false
+          try {
+            await expect(legacyDrawProbe).toHaveText(EXPECTED_PRICE, {
+              timeout: 500
+            })
+          } catch {
+            badgeAssertionFailed = true
+          }
+          expect(badgeAssertionFailed).toBe(true)
+
+          await legacyDrawProbe.evaluate((probe) => {
+            probe.dataset.suppress = 'false'
+            window.app!.graph.setDirtyCanvas(true, true)
+          })
+          await comfyPage.nextFrame()
+          await expect(legacyDrawProbe).toHaveText(EXPECTED_PRICE)
         }
       })
     }
