@@ -6,7 +6,7 @@ import { HostTelemetrySink } from './providers/host/HostTelemetrySink'
 
 const ENABLE_TELEMETRY_FEATURE = 'enable_telemetry'
 
-function isHostTelemetryEnabled(): boolean {
+export function isHostTelemetryEnabled(): boolean {
   const override = getDevOverride<boolean>(ENABLE_TELEMETRY_FEATURE)
   if (override !== undefined) return override
 

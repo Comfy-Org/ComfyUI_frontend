@@ -6,6 +6,7 @@ import { captureException, isEnabled as isSentryEnabled } from '@sentry/vue'
 import type { ComfyDesktop2TelemetryProperties } from '@comfyorg/comfyui-desktop-bridge-types'
 
 import { isCloud } from '@/platform/distribution/types'
+import { isHostTelemetryEnabled } from '@/platform/telemetry/initHostTelemetry'
 import { toError } from '@/utils/errorUtil'
 
 /**
@@ -32,11 +33,22 @@ export interface ReportErrorOptions {
   logToConsole?: boolean
 }
 
+interface DeliveryState {
+  sentry: boolean
+  datadog: boolean
+  desktop: boolean
+}
+
 interface PendingReport {
   error: Error
   options: ReportErrorOptions
-  sentryDelivered: boolean
-  datadogDelivered: boolean
+  delivered: DeliveryState
+}
+
+const NO_DELIVERY: DeliveryState = {
+  sentry: false,
+  datadog: false,
+  desktop: false
 }
 
 /**
@@ -53,7 +65,12 @@ const definedEntriesOf = (
   tags: ReportErrorOptions['tags']
 ): Record<string, string | number | boolean> =>
   Object.fromEntries(
-    Object.entries(tags ?? {}).filter(([, value]) => value !== undefined)
+    Object.entries(tags ?? {}).filter(
+      ([, value]) =>
+        typeof value === 'string' ||
+        typeof value === 'number' ||
+        typeof value === 'boolean'
+    )
   ) as Record<string, string | number | boolean>
 
 type DesktopCaptureException = (
@@ -61,26 +78,18 @@ type DesktopCaptureException = (
   properties: ComfyDesktop2TelemetryProperties
 ) => void
 
-interface DesktopExceptionTelemetry {
-  captureException?: DesktopCaptureException
-}
-
-/**
- * The one Desktop liveness probe, shared by `dispatch` and the flush gate in
- * `flushErrorReports`. Those two must agree: the gate decides whether to drain
- * the buffer, and a drained report that `dispatch` then declines is lost, not
- * re-buffered.
- *
- * Structural compatibility shim until the optional method ships in
- * @comfyorg/comfyui-desktop-bridge-types. Older Desktop builds simply omit it,
- * while current builds scrub the error and add release context.
- */
 function desktopExceptionSink(): DesktopCaptureException | undefined {
-  const telemetry = window.__comfyDesktop2?.Telemetry as
-    | DesktopExceptionTelemetry
-    | undefined
-  const capture = telemetry?.captureException
-  return capture ? capture.bind(telemetry) : undefined
+  if (!isHostTelemetryEnabled()) return
+
+  const telemetry = window.__comfyDesktop2?.Telemetry
+  if (!telemetry || !('captureException' in telemetry)) return
+
+  const capture = telemetry.captureException
+  if (typeof capture !== 'function') return
+
+  return (error, properties) => {
+    Reflect.apply(capture, telemetry, [error, properties])
+  }
 }
 
 function dispatchToDesktop(
@@ -92,25 +101,37 @@ function dispatchToDesktop(
   const capture = desktopExceptionSink()
   if (!capture) return false
 
-  capture(
-    { message: error.message, ...(error.stack ? { stack: error.stack } : {}) },
-    { ...tags, error_type: errorType, ...(level ? { level } : {}) }
-  )
-  return true
+  try {
+    capture(
+      {
+        message: error.message,
+        ...(error.stack ? { stack: error.stack } : {})
+      },
+      { ...tags, error_type: errorType, ...(level ? { level } : {}) }
+    )
+    return true
+  } catch (reporterFailure) {
+    console.error(
+      '[reportError] Desktop delivery failed',
+      reporterFailure,
+      error
+    )
+    return false
+  }
 }
 
 function dispatch(
   error: Error,
   options: ReportErrorOptions,
-  sentryAlreadyDelivered = false,
-  datadogAlreadyDelivered = false
-): { sentry: boolean; datadog: boolean; desktop: boolean } {
+  alreadyDelivered: DeliveryState = NO_DELIVERY
+): DeliveryState {
   const { errorType, context, level } = options
   const tags = definedEntriesOf(options.tags)
-  const sentryLive = !sentryAlreadyDelivered && isSentryEnabled()
-  const datadogLive = !datadogAlreadyDelivered && isDatadogRumLive()
-  let sentryDelivered = false
-  let datadogDelivered = false
+  const sentryLive = !alreadyDelivered.sentry && isSentryEnabled()
+  const datadogLive = !alreadyDelivered.datadog && isDatadogRumLive()
+  let sentryDelivered = alreadyDelivered.sentry
+  let datadogDelivered = alreadyDelivered.datadog
+  let desktopDelivered = alreadyDelivered.desktop
 
   if (sentryLive) {
     try {
@@ -150,7 +171,9 @@ function dispatch(
       )
     }
   }
-  const desktopDelivered = dispatchToDesktop(error, errorType, tags, level)
+  if (!desktopDelivered) {
+    desktopDelivered = dispatchToDesktop(error, errorType, tags, level)
+  }
 
   return {
     sentry: sentryDelivered,
@@ -163,6 +186,12 @@ function enqueuePendingReport(report: PendingReport): void {
   if (pendingReports.length < MAX_PENDING_REPORTS) {
     pendingReports.push(report)
   }
+}
+
+function isPending(delivered: DeliveryState): boolean {
+  return isCloud
+    ? !delivered.sentry || !delivered.datadog
+    : !delivered.sentry && !delivered.datadog
 }
 
 /**
@@ -182,21 +211,9 @@ export function flushErrorReports(): void {
   for (const report of drained) {
     const { error, options } = report
     try {
-      const delivered = dispatch(
-        error,
-        options,
-        report.sentryDelivered,
-        report.datadogDelivered
-      )
-      const sentryDelivered = report.sentryDelivered || delivered.sentry
-      const datadogDelivered = report.datadogDelivered || delivered.datadog
-      if (isCloud && (!sentryDelivered || !datadogDelivered)) {
-        enqueuePendingReport({
-          error,
-          options,
-          sentryDelivered,
-          datadogDelivered
-        })
+      const delivered = dispatch(error, options, report.delivered)
+      if (isPending(delivered)) {
+        enqueuePendingReport({ error, options, delivered })
       }
     } catch (reporterFailure) {
       enqueuePendingReport(report)
@@ -230,23 +247,9 @@ export function reportError(cause: unknown, options: ReportErrorOptions): void {
 
     const error = toError(cause)
     const delivered = dispatch(error, options)
-    if (isCloud && (!delivered.sentry || !delivered.datadog)) {
-      enqueuePendingReport({
-        error,
-        options,
-        sentryDelivered: delivered.sentry,
-        datadogDelivered: delivered.datadog
-      })
-      return
+    if (isPending(delivered)) {
+      enqueuePendingReport({ error, options, delivered })
     }
-    if (delivered.sentry || delivered.datadog || delivered.desktop) return
-
-    enqueuePendingReport({
-      error,
-      options,
-      sentryDelivered: false,
-      datadogDelivered: false
-    })
   } catch (reporterFailure) {
     console.error('[reportError] failed to report', reporterFailure, cause)
   }
