@@ -784,8 +784,13 @@ function definitionId(value: unknown): string | undefined {
   return undefined;
 }
 
-function validateDefinitionInputs(subgraphs: unknown[]): void {
-  for (const candidate of subgraphs) {
+function validateRawGraphIds(nodes: unknown[], links: unknown[], path: string): void {
+  assertUniqueNormalizedIds(nodes, `${path}.nodes`, true, "insert_workflow");
+  assertUniqueNormalizedIds(links, `${path}.links`, true, "insert_workflow");
+}
+
+function validateDefinitionInputs(subgraphs: unknown[], path = "workflow.definitions.subgraphs"): void {
+  subgraphs.forEach((candidate, index) => {
     if (typeof candidate !== "object" || candidate === null || Array.isArray(candidate)) {
       throw new OpRejectedError("malformed_op", "insert_workflow: every subgraph definition must be an object");
     }
@@ -794,12 +799,17 @@ function validateDefinitionInputs(subgraphs: unknown[]): void {
     if (id === undefined) {
       throw new OpRejectedError("malformed_op", "insert_workflow: every subgraph definition requires a valid id");
     }
+    if (!Array.isArray(sg["nodes"]) || (sg["links"] !== undefined && !Array.isArray(sg["links"]))) {
+      throw new OpRejectedError("malformed_op", "insert_workflow: definition nodes and links must be arrays");
+    }
+    const definitionPath = `${path}[${index}]`;
+    validateRawGraphIds(sg["nodes"], (sg["links"] as unknown[] | undefined) ?? [], definitionPath);
     const nested = (sg["definitions"] as { subgraphs?: unknown } | undefined)?.subgraphs;
     if (nested !== undefined && !Array.isArray(nested)) {
       throw new OpRejectedError("malformed_op", "insert_workflow: nested definitions.subgraphs must be an array");
     }
-    if (Array.isArray(nested)) validateDefinitionInputs(nested);
-  }
+    if (Array.isArray(nested)) validateDefinitionInputs(nested, `${definitionPath}.definitions.subgraphs`);
+  });
 }
 
 function applyInsertWorkflow(doc: Y.Doc, op: InsertWorkflowOp, catalog?: WidgetCatalog): SuccessfulOutcome {
@@ -822,8 +832,7 @@ function applyInsertWorkflow(doc: Y.Doc, op: InsertWorkflowOp, catalog?: WidgetC
   if (wf["groups"] !== undefined && !Array.isArray(wf["groups"])) {
     throw new OpRejectedError("malformed_op", "insert_workflow: groups must be an array");
   }
-  assertUniqueNormalizedIds(wf["nodes"] as unknown[], "workflow.nodes", true, "insert_workflow");
-  assertUniqueNormalizedIds((wf["links"] as unknown[] | undefined) ?? [], "workflow.links", true, "insert_workflow");
+  validateRawGraphIds(wf["nodes"] as unknown[], (wf["links"] as unknown[] | undefined) ?? [], "workflow");
   validateDefinitionInputs((subgraphs as unknown[] | undefined) ?? []);
   wf = remapInsertedWorkflowIds(wf as unknown as import("./types.js").WorkflowJSON, op.op_id) as unknown as Record<string, unknown>;
   const remappedDefinitions = wf["definitions"] as { subgraphs?: unknown[] } | undefined;

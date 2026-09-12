@@ -320,6 +320,81 @@ describe("insert_workflow: rejection (KA-4 byte identity, op_id absent from appl
       code: "malformed_op",
       withCatalog: true,
     },
+    {
+      name: "definition normalized duplicate raw node ids",
+      workflow: {
+        nodes: [],
+        links: [],
+        definitions: { subgraphs: [{ id: "outer", nodes: [{ id: 1 }, { id: "1" }], links: [] }] },
+      },
+      code: "malformed_op",
+      withCatalog: true,
+    },
+    {
+      name: "definition missing raw node id",
+      workflow: {
+        nodes: [],
+        links: [],
+        definitions: { subgraphs: [{ id: "outer", nodes: [{ type: "Inner" }], links: [] }] },
+      },
+      code: "malformed_op",
+      withCatalog: true,
+    },
+    {
+      name: "definition normalized duplicate raw link ids",
+      workflow: {
+        nodes: [],
+        links: [],
+        definitions: {
+          subgraphs: [
+            {
+              id: "outer",
+              nodes: [{ id: 10, type: "Inner" }, { id: 11, type: "Inner" }],
+              links: [[1, 10, 0, 11, 0, "X"], ["1", 10, 0, 11, 0, "X"]],
+            },
+          ],
+        },
+      },
+      code: "malformed_op",
+      withCatalog: true,
+    },
+    {
+      name: "definition missing raw link id",
+      workflow: {
+        nodes: [],
+        links: [],
+        definitions: {
+          subgraphs: [
+            {
+              id: "outer",
+              nodes: [{ id: 10, type: "Inner" }, { id: 11, type: "Inner" }],
+              links: [[undefined, 10, 0, 11, 0, "X"]],
+            },
+          ],
+        },
+      },
+      code: "malformed_op",
+      withCatalog: true,
+    },
+    {
+      name: "nested definition normalized duplicate raw node ids",
+      workflow: {
+        nodes: [],
+        links: [],
+        definitions: {
+          subgraphs: [
+            {
+              id: "outer",
+              nodes: [],
+              links: [],
+              definitions: { subgraphs: [{ id: "inner", nodes: [{ id: 1 }, { id: "1" }], links: [] }] },
+            },
+          ],
+        },
+      },
+      code: "malformed_op",
+      withCatalog: true,
+    },
     { name: "missing workflow", workflow: undefined, code: "malformed_op", withCatalog: true },
     { name: "non-object workflow", workflow: "nope", code: "malformed_op", withCatalog: true },
     { name: "nodes is not an array", workflow: { nodes: {}, links: [] }, code: "malformed_op", withCatalog: true },
@@ -348,6 +423,8 @@ describe("insert_workflow: rejection (KA-4 byte identity, op_id absent from appl
       expect(bytes(doc).equals(before)).toBe(true);
       expect(project(doc, catalog)).toEqual(projectedBefore);
       expect(appliedMap(doc).has(op.op_id)).toBe(false);
+      expect(applyOps(doc, [op], c.withCatalog ? catalog : undefined)).toEqual(result);
+      expect(bytes(doc).equals(before)).toBe(true);
     });
   }
 
