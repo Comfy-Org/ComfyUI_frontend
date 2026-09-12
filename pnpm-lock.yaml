@@ -505,6 +505,9 @@ importers:
       '@comfyorg/tailwind-utils':
         specifier: workspace:*
         version: link:packages/tailwind-utils
+      '@comfyorg/workflow-validation':
+        specifier: workspace:*
+        version: link:packages/workflow-validation
       '@customerio/cdp-analytics-browser':
         specifier: 'catalog:'
         version: 0.5.6
@@ -1199,6 +1202,15 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
+
+  packages/workflow-validation:
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.11(@types/node@25.9.5)(@vitest/coverage-v8@4.1.11)(@vitest/ui@4.1.11)(happy-dom@20.10.6)(jsdom@29.1.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))
 
   tools/test-recorder:
     dependencies:
