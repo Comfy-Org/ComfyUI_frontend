@@ -3,6 +3,10 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
+import {
+  expectNoVisibleErrors,
+  trackVisibleErrors
+} from '@e2e/fixtures/utils/errorSurfaces'
 
 import type { ComfyApiWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 
@@ -174,24 +178,7 @@ test.describe(
     test('shows no error toast after loading, queueing and switching workflows', async ({
       comfyPage
     }) => {
-      await comfyPage.page.evaluate(() => {
-        const errors: Element[] = []
-        new MutationObserver((mutations) => {
-          for (const mutation of mutations) {
-            for (const node of mutation.addedNodes) {
-              if (
-                node instanceof Element &&
-                node.matches('.p-toast-message.p-toast-message-error')
-              ) {
-                errors.push(node)
-              }
-            }
-          }
-        }).observe(document.body, { childList: true, subtree: true })
-        ;(
-          window as typeof window & { __ecsMigrationToastErrors: Element[] }
-        ).__ecsMigrationToastErrors = errors
-      })
+      await trackVisibleErrors(comfyPage.page)
       await comfyPage.workflow.loadWorkflow('default')
       const execution = new ExecutionHelper(comfyPage)
       await execution.run()
@@ -199,16 +186,10 @@ test.describe(
       await comfyPage.workflow.waitForActiveWorkflow()
       await comfyPage.nextFrame()
 
-      expect(
-        await comfyPage.page.evaluate(
-          () =>
-            (
-              window as typeof window & {
-                __ecsMigrationToastErrors: Element[]
-              }
-            ).__ecsMigrationToastErrors.length
-        )
-      ).toBe(0)
+      await expectNoVisibleErrors(
+        comfyPage.page,
+        'after loading, queueing and switching workflows'
+      )
     })
   }
 )
