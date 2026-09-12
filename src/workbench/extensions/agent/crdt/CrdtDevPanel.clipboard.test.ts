@@ -259,6 +259,30 @@ describe('CrdtDevPanel clipboard controls', () => {
     expect(writeText).toHaveBeenNthCalledWith(2, 'node-added')
   })
 
+  it('keeps the log usable when a node-id array cannot be iterated', async () => {
+    const user = userEvent.setup()
+    const unreadableIds = new Proxy(['node-unreadable'], {
+      get: (target, property, receiver) => {
+        if (property === Symbol.iterator) {
+          throw new Error('node ids cannot be iterated')
+        }
+        return Reflect.get(target, property, receiver)
+      }
+    })
+    recordDevEvent('doc_nodes_changed', {
+      added: unreadableIds,
+      removed: ['node-retained']
+    })
+    renderPanel()
+    await user.click(screen.getByTestId('crdt-dev-panel-tab-log'))
+
+    await user.click(
+      screen.getByRole('button', { name: 'Copy node id node-retained' })
+    )
+
+    expect(writeText).toHaveBeenCalledExactlyOnceWith('node-retained')
+  })
+
   it('serializes circular and bigint details without losing their content', async () => {
     const user = userEvent.setup()
     const detail: { count: bigint; self?: unknown } = { count: 7n }

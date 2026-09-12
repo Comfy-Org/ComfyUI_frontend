@@ -628,7 +628,7 @@ function truncateDetail(detail: string, limit = 200): string {
 function readNodeIdList(detail: object, key: 'added' | 'removed'): unknown[] {
   try {
     const value: unknown = Reflect.get(detail, key)
-    return Array.isArray(value) ? value : []
+    return Array.isArray(value) ? [...value] : []
   } catch {
     return []
   }
