@@ -85,10 +85,6 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock(import('@/utils/mouseDownUtil'), () => ({
-  whileMouseDown: vi.fn()
-}))
-
 vi.mock(import('./WorkflowOverflowMenu.vue'), () => ({
   default: defineComponent({
     name: 'WorkflowOverflowMenuStub',
@@ -436,5 +432,80 @@ describe('WorkflowTabs scrolling', () => {
 
     expect(scrollIntoView).not.toHaveBeenCalled()
     unmount()
+  })
+})
+
+describe('WorkflowTabs overflow arrows', () => {
+  async function renderOverflowArrows() {
+    renderComponent()
+    await waitFor(() => expect(overflowObservers).toHaveLength(1))
+    const scrollContent = screen.getByTestId('workflow-tabs-scroll')
+    Object.defineProperties(scrollContent, {
+      clientWidth: { configurable: true, value: 200 },
+      scrollWidth: { configurable: true, value: 1000 },
+      scrollBy: {
+        configurable: true,
+        value: ({ left = 0 }: ScrollToOptions) => {
+          scrollContent.scrollLeft += left
+          scrollContent.dispatchEvent(new Event('scroll'))
+        }
+      }
+    })
+    scrollContent.scrollLeft = 400
+    overflowObservers[0].isOverflowing.value = true
+    await nextTick()
+    await nextTick()
+
+    const rightArrow = screen.getByRole('button', {
+      name: /scroll right/i
+    })
+    await waitFor(() => expect(rightArrow).toBeEnabled())
+
+    vi.useFakeTimers({ shouldAdvanceTime: false })
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    return { user, scrollContent, rightArrow }
+  }
+
+  it('scrolls once on a quick click without repeating after release', async () => {
+    const { user, scrollContent, rightArrow } = await renderOverflowArrows()
+
+    await user.click(rightArrow)
+
+    expect(scrollContent.scrollLeft).toBe(420)
+    await vi.advanceTimersByTimeAsync(350)
+    expect(scrollContent.scrollLeft).toBe(420)
+  })
+
+  it('delays hold-to-repeat scrolling and stops when released outside the arrow', async () => {
+    const { user, scrollContent, rightArrow } = await renderOverflowArrows()
+
+    await user.pointer({ target: rightArrow, keys: '[MouseLeft>]' })
+
+    expect(scrollContent.scrollLeft).toBe(420)
+    await vi.advanceTimersByTimeAsync(299)
+    expect(scrollContent.scrollLeft).toBe(420)
+    await vi.advanceTimersByTimeAsync(1)
+    expect(scrollContent.scrollLeft).toBe(440)
+    await vi.advanceTimersByTimeAsync(60)
+    expect(scrollContent.scrollLeft).toBe(480)
+
+    await user.pointer({ target: document.body, keys: '[/MouseLeft]' })
+    await vi.advanceTimersByTimeAsync(350)
+    expect(scrollContent.scrollLeft).toBe(480)
+  })
+
+  it.for([
+    ['Enter', '{Enter}'],
+    ['Space', ' ']
+  ])('scrolls once when activated with %s', async ([, key]) => {
+    const { user, scrollContent, rightArrow } = await renderOverflowArrows()
+    rightArrow.focus()
+    expect(rightArrow).toHaveFocus()
+
+    await user.keyboard(key)
+
+    expect(scrollContent.scrollLeft).toBe(420)
+    await vi.advanceTimersByTimeAsync(350)
+    expect(scrollContent.scrollLeft).toBe(420)
   })
 })
