@@ -459,7 +459,13 @@ const {
     adopted: onWorkflowAdopted,
     restored: onWorkflowRestored,
     prepare: async () => {
-      await refreshCloudWorkflowIds()
+      const target = selectedTarget.value
+      await refreshCloudWorkflowIds({
+        force:
+          target !== null &&
+          !target.isTemporary &&
+          cloudIdFor(target) === undefined
+      })
     },
     tabs: openTabsSnapshot,
     activeTab: enqueueActiveTab,

@@ -41,6 +41,8 @@ test.describe(
       await composer.fill('Keep this interrupted draft')
       workflowSelection.pauseWorkflowLookups()
       const lookups = workflowSelection.workflowLookups()
+      await page.clock.install({ time: new Date() })
+      await page.clock.fastForward(30_001)
       await composer.press('Enter')
       await expect
         .poll(() => workflowSelection.workflowLookups())
