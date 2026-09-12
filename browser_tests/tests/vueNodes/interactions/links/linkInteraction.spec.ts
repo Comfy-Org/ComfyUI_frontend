@@ -1,6 +1,7 @@
 import type { Locator, Page } from '@playwright/test'
 
 import type { NodeId } from '@/types/nodeId'
+import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import {
   comfyExpect as expect,
@@ -1285,3 +1286,85 @@ test('Floating reroutes', { tag: '@vue-nodes' }, async ({ comfyPage }) => {
     )
     .toBe(false)
 })
+
+test(
+  'Extends a floating reroute chain',
+  { tag: '@vue-nodes' },
+  async ({ comfyPage, comfyMouse }) => {
+    await comfyPage.nodeOps.clearGraph()
+
+    const sourceNode = await test.step('Add an Int node', async () => {
+      await comfyPage.searchBoxV2.addNode('Int', {
+        position: { x: 800, y: 200 }
+      })
+      return comfyPage.nodeOps.getNodeRefByTitle('Int')
+    })
+
+    const firstReroute =
+      await test.step('Create a floating reroute from the Int output', async () => {
+        const primitiveNode = await comfyPage.vueNodes.getFixtureByTitle('Int')
+        await primitiveNode
+          .getSlot('INT')
+          .first()
+          .dragTo(comfyPage.canvas, {
+            targetPosition: { x: 700, y: 400 }
+          })
+        await comfyPage.contextMenu.clickLitegraphMenuItem('Add Reroute')
+
+        return comfyPage.page.evaluate(() => {
+          const reroute = [...window.app!.graph.reroutes.values()][0]
+          const [x, y] = window.app!.canvasPosToClientPos([
+            reroute.pos[0] + window.LiteGraph!.Reroute.slotOffset,
+            reroute.pos[1]
+          ])
+          return { id: reroute.id, position: { x, y } }
+        })
+      })
+
+    await test.step('Extend the reroute while keeping the chain connected', async () => {
+      const reroutePosition = firstReroute.position
+      await comfyMouse.move(reroutePosition)
+      await comfyPage.canvasOps.dragAndDrop(reroutePosition, {
+        x: reroutePosition.x - 120,
+        y: reroutePosition.y + 80
+      })
+      await comfyPage.contextMenu.clickLitegraphMenuItem('Add Reroute')
+
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => {
+            const graph = window.app!.graph
+            const reroutes = [...graph.reroutes.values()]
+            const tip = reroutes.find((reroute) => reroute.floating)
+            const link = [...graph.floatingLinks.values()][0]
+            return {
+              rerouteCount: reroutes.length,
+              floatingLinkCount: graph.floatingLinks.size,
+              regularLinkCount: graph.links.size,
+              linkEndsAtTip: link.parentId === tip?.id,
+              tipParentId: tip?.parentId,
+              originId: link.origin_id,
+              originSlot: link.origin_slot,
+              targetId: link.target_id,
+              targetSlot: link.target_slot,
+              chainMembership: reroutes.every((reroute) =>
+                reroute.floatingLinkIds.has(link.id)
+              )
+            }
+          })
+        )
+        .toEqual({
+          rerouteCount: 2,
+          floatingLinkCount: 1,
+          regularLinkCount: 0,
+          linkEndsAtTip: true,
+          tipParentId: firstReroute.id,
+          originId: sourceNode.id,
+          originSlot: 0,
+          targetId: UNASSIGNED_NODE_ID,
+          targetSlot: -1,
+          chainMembership: true
+        })
+    })
+  }
+)
