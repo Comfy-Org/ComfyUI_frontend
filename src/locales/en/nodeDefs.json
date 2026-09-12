@@ -1959,6 +1959,41 @@
       }
     }
   },
+  "CameraAngle": {
+    "display_name": "Camera Angle",
+    "description": "Pick a camera angle around a subject with a 3D preview. Outputs a camera_info for 3D nodes and a plain-English shot description for prompts.",
+    "inputs": {
+      "horizontal_angle": {
+        "name": "horizontal_angle",
+        "tooltip": "Azimuth around the subject in degrees. 0 is the front, 90 the right side, 180 the back."
+      },
+      "vertical_angle": {
+        "name": "vertical_angle",
+        "tooltip": "Elevation in degrees. Negative looks up from below, positive looks down from above."
+      },
+      "zoom": {
+        "name": "zoom",
+        "tooltip": "How close the camera is: 0 is a wide shot, 10 a close-up."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Optional reference image shown on the front of the subject cube in the 3D preview."
+      },
+      "view": {
+        "name": "view"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "1": {
+        "name": "prompt",
+        "tooltip": null
+      }
+    }
+  },
   "Canny": {
     "display_name": "Detect Edges (Canny)",
     "inputs": {

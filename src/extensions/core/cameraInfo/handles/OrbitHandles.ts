@@ -21,9 +21,19 @@ export type OrbitHandleType = 'yaw' | 'pitch' | 'distance'
 
 const DEG2RAD = Math.PI / 180
 
-function buildArcCurve(): THREE.CatmullRomCurve3 {
+interface PitchLimits {
+  min: number
+  max: number
+}
+
+export interface OrbitHandlesOptions {
+  pitchLimits?: PitchLimits
+  yawRingLatitude?: number
+}
+
+function buildArcCurve({ min, max }: PitchLimits): THREE.CatmullRomCurve3 {
   const points: THREE.Vector3[] = []
-  for (let deg = -ARC_PITCH_LIMIT; deg <= ARC_PITCH_LIMIT; deg += 5) {
+  for (let deg = min; deg <= max; deg += 5) {
     const r = deg * DEG2RAD
     points.push(
       new THREE.Vector3(0, RING_RADIUS * Math.sin(r), RING_RADIUS * Math.cos(r))
@@ -77,15 +87,24 @@ export class OrbitHandles {
   private readonly pitchHandleGlow: THREE.Mesh
   private readonly distanceHandleGlow: THREE.Mesh
 
+  private readonly yawRingRadius: number
+  private readonly yawRingHeight: number
+
   private scene: THREE.Scene | null = null
   private disposed = false
 
-  constructor() {
+  constructor({
+    pitchLimits = { min: -ARC_PITCH_LIMIT, max: ARC_PITCH_LIMIT },
+    yawRingLatitude = 0
+  }: OrbitHandlesOptions = {}) {
     this.root.name = 'CameraInfoOrbitHandles'
     this.root.add(this.yawGroup)
 
+    const latitude = yawRingLatitude * DEG2RAD
+    this.yawRingRadius = RING_RADIUS * Math.cos(latitude)
+    this.yawRingHeight = RING_RADIUS * Math.sin(latitude)
     this.yawRing = new THREE.Mesh(
-      new THREE.TorusGeometry(RING_RADIUS, TUBE_RADIUS, 16, 96),
+      new THREE.TorusGeometry(this.yawRingRadius, TUBE_RADIUS, 16, 96),
       new THREE.MeshBasicMaterial({
         color: YAW_COLOR,
         transparent: true,
@@ -93,11 +112,12 @@ export class OrbitHandles {
       })
     )
     this.yawRing.rotation.x = Math.PI / 2
+    this.yawRing.position.y = this.yawRingHeight
     this.root.add(this.yawRing)
 
     this.pitchArc = new THREE.Mesh(
       new THREE.TubeGeometry(
-        buildArcCurve(),
+        buildArcCurve(pitchLimits),
         ARC_SEGMENTS,
         TUBE_RADIUS,
         8,
@@ -203,9 +223,9 @@ export class OrbitHandles {
     this.yawGroup.rotation.y = yawRad
 
     this.yawHandle.position.set(
-      RING_RADIUS * Math.sin(yawRad),
-      0,
-      RING_RADIUS * Math.cos(yawRad)
+      this.yawRingRadius * Math.sin(yawRad),
+      this.yawRingHeight,
+      this.yawRingRadius * Math.cos(yawRad)
     )
 
     this.pitchHandle.position.set(0, RING_RADIUS * sinP, RING_RADIUS * cosP)
@@ -241,7 +261,10 @@ export class OrbitHandles {
 
   dragPlaneFor(type: OrbitHandleType, state: CameraInfoState): THREE.Plane {
     if (type === 'yaw') {
-      return new THREE.Plane(new THREE.Vector3(0, 1, 0), -state.target.y)
+      return new THREE.Plane(
+        new THREE.Vector3(0, 1, 0),
+        -(state.target.y + this.yawRingHeight)
+      )
     }
     const yawRad = state.orbit.yaw * DEG2RAD
     const normal = new THREE.Vector3(
