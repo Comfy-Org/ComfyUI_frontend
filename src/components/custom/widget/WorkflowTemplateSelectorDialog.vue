@@ -17,7 +17,7 @@
     <template #header>
       <div class="flex min-w-0 flex-1 items-center gap-2">
         <h2
-          class="text-neutral m-0 hidden shrink-0 truncate text-base font-medium min-[880px]:block"
+          class="text-neutral m-0 shrink-0 truncate text-base font-medium max-[880px]:hidden min-[880px]:block"
         >
           {{ pageTitle }}
         </h2>
@@ -62,7 +62,7 @@
           </div>
 
           <div
-            class="ml-auto hidden min-w-0 shrink items-center justify-end gap-2 @[58rem]/filters:flex"
+            class="ml-auto min-w-0 shrink items-center justify-end gap-2 @max-[58rem]/filters:hidden @[58rem]/filters:flex"
           >
             <TemplateFilterControls
               v-bind="filterControlBindings"
