@@ -141,12 +141,15 @@ async function getLinkCount(comfyPage: ComfyPage): Promise<number> {
 
 async function getLinkEndpoints(comfyPage: ComfyPage) {
   return await comfyPage.page.evaluate(() =>
-    Object.values(window.app!.graph.links).map((link) => [
-      link.origin_id,
-      link.origin_slot,
-      link.target_id,
-      link.target_slot
-    ])
+    [...window.app!.graph.links.values()].map(
+      (link) =>
+        [
+          String(link.origin_id),
+          link.origin_slot,
+          String(link.target_id),
+          link.target_slot
+        ] as const
+    )
   )
 }
 
@@ -297,6 +300,10 @@ test.describe('Workflow Persistence', () => {
       }
 
       await rename()
+      await node.click('title')
+      await comfyPage.keyboard.undo()
+      await expect.poll(() => getNodeTitle(comfyPage, 3)).toBe(originalTitle)
+      await rename()
 
       if (vueNodesEnabled) {
         const seedInput = comfyPage.page
@@ -314,15 +321,13 @@ test.describe('Workflow Persistence', () => {
       }
       await expect.poll(() => seed.getValue()).toBe(savedSeed)
 
-      await comfyPage.canvasOps.mouseClickAt({ x: 20, y: 20 })
-
       const name = `renamed-node-${generateUniqueFilename()}`
       await comfyPage.menu.topbar.saveWorkflowAs(name)
-      await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-      await comfyPage.workflow.waitForWorkflowIdle()
+      await comfyPage.workflow.reloadAndWaitForApp()
       const tab = comfyPage.menu.workflowsTab
       await tab.open()
       await tab.getPersistedItem(name).dblclick()
+      await tab.close()
       await comfyPage.workflow.waitForWorkflowIdle()
       await expect.poll(() => getNodeTitle(comfyPage, 3)).toBe('Renamed node')
       const reloadedNode = await comfyPage.nodeOps.getNodeRefById(3)
@@ -359,7 +364,10 @@ test.describe('Workflow Persistence', () => {
       await fitToViewInstant(comfyPage)
 
       const before = await getPersistenceSnapshot(comfyPage)
-      const originalIds = new Set(before.nodes.map(({ id }) => id))
+      const originalIds = new Set(before.nodes.map(({ id }) => String(id)))
+      const originalEndpoints = await getLinkEndpoints(comfyPage)
+      expect(originalIds.size).toBeGreaterThan(0)
+      expect(originalEndpoints.length).toBeGreaterThan(0)
       await comfyPage.canvas.click()
       await comfyPage.keyboard.selectAll()
       await comfyPage.clipboard.copy()
@@ -368,14 +376,16 @@ test.describe('Workflow Persistence', () => {
 
       const copied = await getPersistenceSnapshot(comfyPage)
       const copiedIds = new Set(
-        copied.nodes.map(({ id }) => id).filter((id) => !originalIds.has(id))
+        copied.nodes
+          .map(({ id }) => String(id))
+          .filter((id) => !originalIds.has(id))
       )
       expect(copiedIds.size).toBe(originalIds.size)
       const copiedEndpoints = (await getLinkEndpoints(comfyPage)).filter(
         ([originId, , targetId]) =>
           copiedIds.has(originId) || copiedIds.has(targetId)
       )
-      expect(copiedEndpoints).toHaveLength((await getLinkCount(comfyPage)) / 2)
+      expect(copiedEndpoints).toHaveLength(originalEndpoints.length)
       for (const [originId, , targetId] of copiedEndpoints) {
         expect(copiedIds.has(originId)).toBe(true)
         expect(copiedIds.has(targetId)).toBe(true)
@@ -384,13 +394,17 @@ test.describe('Workflow Persistence', () => {
       }
 
       const expectedEndpointTuples = await getLinkEndpoints(comfyPage)
+      expect(expectedEndpointTuples).toHaveLength(originalEndpoints.length * 2)
+      expect(expectedEndpointTuples).toEqual(
+        expect.arrayContaining(originalEndpoints)
+      )
       const name = `copied-links-${generateUniqueFilename()}`
       await comfyPage.menu.topbar.saveWorkflowAs(name)
-      await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-      await comfyPage.workflow.waitForWorkflowIdle()
+      await comfyPage.workflow.reloadAndWaitForApp()
       const tab = comfyPage.menu.workflowsTab
       await tab.open()
       await tab.getPersistedItem(name).dblclick()
+      await tab.close()
       await comfyPage.workflow.waitForWorkflowIdle()
 
       const reloadedEndpointTuples = await getLinkEndpoints(comfyPage)
