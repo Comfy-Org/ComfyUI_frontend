@@ -2,10 +2,13 @@ import {
   zBillingBalanceResponse,
   zBillingOpStatusResponse,
   zBillingStatusResponse,
+  zCancelSubscriptionAcceptedResponse,
+  zCancelSubscriptionResponse,
   zCurrentWorkspaceResponse,
   zListSavedPaymentMethodsResponse,
   zPaymentPortalResponse,
   zPreviewSubscribeResponse,
+  zResubscribeResponse,
   zSubscribeResponse
 } from '@comfyorg/ingest-types/zod'
 import type {
@@ -15,7 +18,7 @@ import type {
   TestInfo
 } from '@playwright/test'
 import { expect } from '@playwright/test'
-import type { z } from 'zod'
+import { z } from 'zod'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
@@ -42,7 +45,8 @@ export class LiveCloudBillingSession {
   async post<T>(
     path: string,
     data: Record<string, number | string>,
-    schema: z.ZodType<T>
+    schema: z.ZodType<T>,
+    acceptedStatuses = [200]
   ): Promise<T> {
     const response = await this.request
       .post(new URL(path, this.backend).href, {
@@ -53,7 +57,7 @@ export class LiveCloudBillingSession {
       .catch(() => {
         throw new Error(`Cloud billing request failed: ${path}`)
       })
-    expect(response.status(), `POST ${path}`).toBe(200)
+    expect(acceptedStatuses, `POST ${path}`).toContain(response.status())
     return schema.parse(await response.json())
   }
 
@@ -104,6 +108,21 @@ export class LiveCloudBillingSession {
         status: 'pending',
         phase: 'awaiting_payment_method'
       })
+  }
+
+  async expectSucceeded(operationId: string) {
+    await expect
+      .poll(
+        async () => {
+          const operation = await this.read(
+            `/api/billing/ops/${encodeURIComponent(operationId)}`,
+            zBillingOpStatusResponse
+          )
+          return operation.status
+        },
+        { timeout: 60_000 }
+      )
+      .toBe('succeeded')
   }
 
   async ensureProvisioned(returnUrl: string) {
@@ -389,6 +408,78 @@ export class LiveCloudCheckout {
       contentType: 'application/json'
     })
     return { authenticationState: 'failed_retryable' }
+  }
+
+  async verifyCancellationRecovery(
+    session: LiveCloudBillingSession,
+    testInfo: TestInfo
+  ) {
+    const balanceBefore = await session.read(
+      '/api/billing/balance',
+      zBillingBalanceResponse
+    )
+    const cancel = await session.post(
+      '/api/billing/subscription/cancel',
+      { idempotency_key: crypto.randomUUID() },
+      z.union([
+        zCancelSubscriptionResponse,
+        zCancelSubscriptionAcceptedResponse
+      ]),
+      [200, 202]
+    )
+    await session.expectSucceeded(cancel.billing_op_id)
+    await expect
+      .poll(() => session.read('/api/billing/status', zBillingStatusResponse))
+      .toMatchObject({
+        plan_slug: 'creator-monthly',
+        subscription_tier: 'CREATOR'
+      })
+    const canceled = await session.read(
+      '/api/billing/status',
+      zBillingStatusResponse
+    )
+    expect(canceled.cancel_at).toBeTruthy()
+    const resubscribe = await session.post(
+      '/api/billing/subscription/resubscribe',
+      { idempotency_key: crypto.randomUUID() },
+      zResubscribeResponse
+    )
+    if (resubscribe.status === 'pending') {
+      await session.expectSucceeded(resubscribe.billing_op_id)
+    }
+    await expect
+      .poll(async () => {
+        const status = await session.read(
+          '/api/billing/status',
+          zBillingStatusResponse
+        )
+        return {
+          cancelAt: status.cancel_at,
+          planSlug: status.plan_slug,
+          subscriptionStatus: status.subscription_status
+        }
+      })
+      .toMatchObject({
+        cancelAt: undefined,
+        planSlug: 'creator-monthly',
+        subscriptionStatus: 'active'
+      })
+    const balanceAfter = await session.read(
+      '/api/billing/balance',
+      zBillingBalanceResponse
+    )
+    expect(balanceAfter.amount_micros).toBe(balanceBefore.amount_micros)
+    const result = {
+      cancelOperationId: cancel.billing_op_id,
+      reactivateOperationId: resubscribe.billing_op_id,
+      balanceBeforeCents: balanceBefore.amount_micros,
+      balanceAfterCents: balanceAfter.amount_micros
+    }
+    await testInfo.attach('cancellation-recovery.json', {
+      body: JSON.stringify(result),
+      contentType: 'application/json'
+    })
+    return result
   }
 
   private async submitCard(checkout: Page, cardNumber: string) {
