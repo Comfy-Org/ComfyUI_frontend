@@ -208,16 +208,35 @@ describe('reportError', () => {
 
     reportError(new Error('boom'), {
       errorType: 'http_error',
-      context: { requestId: 'abc123', retryAfter: undefined }
+      context: {
+        requestId: 'abc123',
+        retryAfter: undefined,
+        attempts: 0,
+        lastMessage: '',
+        healthy: false,
+        cause: null
+      }
     })
 
     const [, datadogContext] = addError.mock.calls[0]
     expect(datadogContext).not.toHaveProperty('retryAfter')
-    expect(datadogContext).toMatchObject({ requestId: 'abc123' })
+    expect(datadogContext).toMatchObject({
+      requestId: 'abc123',
+      attempts: 0,
+      lastMessage: '',
+      healthy: false,
+      cause: null
+    })
 
     const [, sentryOptions] = captureException.mock.calls[0]
     expect(sentryOptions.extra).not.toHaveProperty('retryAfter')
-    expect(sentryOptions.extra).toMatchObject({ requestId: 'abc123' })
+    expect(sentryOptions.extra).toMatchObject({
+      requestId: 'abc123',
+      attempts: 0,
+      lastMessage: '',
+      healthy: false,
+      cause: null
+    })
   })
 
   it('does not throw out of flushErrorReports when a sink throws', async () => {
