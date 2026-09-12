@@ -48,19 +48,30 @@ function extractPrefill(fields: HubWorkflowDetail): PublishPrefill | null {
   const name = fields.name
   const description = fields.description
   const tags = fields.tags?.map((tag) => tag.display_name)
+  const models = fields.models?.map((model) => model.name)
+  const customNodes = fields.custom_nodes?.map((node) => node.name)
   const thumbnailType = mapApiThumbnailType(fields.thumbnail_type)
   const thumbnailUrl = fields.thumbnail_url
   const thumbnailComparisonUrl = fields.thumbnail_comparison_url
   const sampleImageUrls = fields.sample_image_urls
+  const tutorialUrl = fields.tutorial_url
+  const metadata =
+    fields.metadata && Object.keys(fields.metadata).length > 0
+      ? fields.metadata
+      : undefined
 
   if (
     !name &&
     !description &&
     !tags?.length &&
+    !models?.length &&
+    !customNodes?.length &&
     !thumbnailType &&
     !thumbnailUrl &&
     !thumbnailComparisonUrl &&
-    !sampleImageUrls?.length
+    !sampleImageUrls?.length &&
+    !tutorialUrl &&
+    !metadata
   ) {
     return null
   }
@@ -69,10 +80,14 @@ function extractPrefill(fields: HubWorkflowDetail): PublishPrefill | null {
     name,
     description,
     tags,
+    models,
+    customNodes,
     thumbnailType,
     thumbnailUrl,
     thumbnailComparisonUrl,
-    sampleImageUrls
+    sampleImageUrls,
+    tutorialUrl,
+    metadata
   }
 }
 
