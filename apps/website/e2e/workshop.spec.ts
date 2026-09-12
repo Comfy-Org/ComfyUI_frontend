@@ -4,12 +4,29 @@ import { readFileSync } from 'node:fs'
 
 import { MODEL_PATH, test } from './fixtures/modelsAccount'
 
-const modelOrder = JSON.parse(
-  readFileSync(
-    new URL('../src/content/workshop-model-order.json', import.meta.url),
-    'utf8'
+// Read here rather than imported from the config module: Playwright's loader
+// will not take that module's JSON import. The shape is narrowed rather than
+// asserted, so a malformed file fails here instead of inside a test.
+function orderedSlugs(data: unknown): readonly string[] {
+  if (
+    typeof data === 'object' &&
+    data !== null &&
+    'slugs' in data &&
+    Array.isArray(data.slugs) &&
+    data.slugs.every((slug) => typeof slug === 'string')
   )
-) as { slugs: string[] }
+    return data.slugs
+  throw new Error('workshop-model-order.json is not a list of slugs')
+}
+
+const modelOrder = orderedSlugs(
+  JSON.parse(
+    readFileSync(
+      new URL('../src/content/workshop-model-order.json', import.meta.url),
+      'utf8'
+    )
+  )
+)
 
 test.describe('Retired prototype routes', () => {
   test.beforeEach(async ({ page }) => {
@@ -49,7 +66,7 @@ test.describe('Models catalog', () => {
     await expect(page.getByTestId('workshop-sort')).toContainText(
       'Most popular'
     )
-    const expected = modelOrder.slugs
+    const expected = modelOrder
       .filter((slug) => slug.endsWith('--generate-images'))
       .slice(0, 3)
     expect(expected).toHaveLength(3)
