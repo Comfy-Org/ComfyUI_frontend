@@ -50,16 +50,14 @@ test.describe('Errors tab - Execution errors', { tag: '@ui' }, () => {
 })
 
 test.describe('Errors tab - Execution error lifecycle', { tag: '@ui' }, () => {
+  test.use({
+    initialSettings: {
+      'Comfy.RightSidePanel.ShowErrorsTab': true,
+      'Comfy.Workflow.WorkflowTabsPosition': 'Sidebar'
+    }
+  })
+
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.settings.setSetting(
-      'Comfy.RightSidePanel.ShowErrorsTab',
-      true
-    )
-    await comfyPage.settings.setSetting(
-      'Comfy.Workflow.WorkflowTabsPosition',
-      'Sidebar'
-    )
     await comfyPage.menu.workflowsTab.open()
   })
 
