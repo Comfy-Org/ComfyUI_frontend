@@ -233,6 +233,7 @@ import {
   getTierCredits
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import { computeMonthlyUsage } from '@/platform/cloud/subscription/utils/creditsProgress'
+import { isAnnualDuration } from '@/platform/cloud/subscription/utils/planDuration'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
@@ -277,8 +278,8 @@ const tierKey = computed(() => {
   return toTierKey(tier) ?? DEFAULT_TIER_KEY
 })
 
-const isAnnualBilling = computed(
-  () => subscription.value?.duration === 'ANNUAL'
+const isAnnualBilling = computed(() =>
+  isAnnualDuration(subscription.value?.duration ?? undefined)
 )
 
 const creditPoolTotalCredits = computed<number | null>(() => {

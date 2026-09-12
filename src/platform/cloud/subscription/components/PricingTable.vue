@@ -278,6 +278,7 @@ import type {
   TierKey,
   TierPricing
 } from '@/platform/cloud/subscription/constants/tierPricing'
+import { isAnnualDuration } from '@/platform/cloud/subscription/utils/planDuration'
 import {
   recordPendingSubscriptionCheckoutAttempt,
   withPendingCheckoutAttemptId
@@ -379,8 +380,8 @@ const {
   subscription
 } = useBillingContext()
 
-const isYearlySubscription = computed(
-  () => subscription.value?.duration === 'ANNUAL'
+const isYearlySubscription = computed(() =>
+  isAnnualDuration(subscription.value?.duration ?? undefined)
 )
 const telemetry = useTelemetry()
 const { userId } = storeToRefs(useAuthStore())
