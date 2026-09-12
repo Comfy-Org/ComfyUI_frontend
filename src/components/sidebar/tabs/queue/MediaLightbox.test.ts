@@ -8,6 +8,13 @@ import type { AugmentedResultItem } from '@/utils/resultItem'
 
 import MediaLightbox from './MediaLightbox.vue'
 
+type ResultItemImpl = AugmentedResultItem & {
+  isImage?: boolean
+  isVideo?: boolean
+  isAudio?: boolean
+  isText?: boolean
+}
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -25,8 +32,11 @@ const i18n = createI18n({
   }
 })
 
-type MockResultItem = AugmentedResultItem & {
+type MockResultItem = ResultItemImpl & {
   id?: string
+  isImage?: boolean
+  isVideo?: boolean
+  isAudio?: boolean
 }
 
 describe('MediaLightbox', () => {
