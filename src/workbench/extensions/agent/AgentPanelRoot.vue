@@ -683,6 +683,7 @@ async function onAgentActiveTab(
       // boundOrOpenWorkflowFor can resolve by cloud name, which leaves no binding behind
       // for everything downstream that only reads tabPathFor.
       bindingStore.bind(data.workflow_id, bound.path)
+      if (status.value === 'idle') agentPanelStore.setWorkflowTarget(bound)
       if (status.value !== 'idle') tabActivity.setEditing(bound.path)
       bindWorkflow(data.workflow_id)
       useTelemetry()?.trackAgentWorkflowApplied({
@@ -717,6 +718,7 @@ async function onAgentActiveTab(
     }
     if (status.value !== 'idle') tabActivity.setEditing(tab.path)
     bindingStore.bind(data.workflow_id, tab.path)
+    if (status.value === 'idle') agentPanelStore.setWorkflowTarget(tab)
     bindWorkflow(data.workflow_id)
     useTelemetry()?.trackAgentWorkflowApplied({
       workflow_id: data.workflow_id,
