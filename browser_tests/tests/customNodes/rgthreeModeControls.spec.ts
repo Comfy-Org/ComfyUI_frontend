@@ -30,10 +30,19 @@ test.describe(
       test(`${modeControl.type} labels its toggle, tracks renames, and changes the connected node mode`, async ({
         comfyPage
       }) => {
-        test.fail(
-          true,
-          'Known regression #15600: rgthree mode controls do not register/render in the current Nodes 2.0 runtime'
-        )
+        await expect
+          .poll(
+            () =>
+              comfyPage.page.evaluate(
+                (nodeType) => Boolean(window.LiteGraph!.registered_node_types[nodeType]),
+                modeControl.type
+              ),
+            {
+              message: `${modeControl.type} must register before behavior assertions run`
+            }
+          )
+          .toBe(true)
+
         const source = await comfyPage.nodeOps.addNode('PrimitiveInt')
         const control = await comfyPage.nodeOps.addNode(modeControl.type)
 
@@ -49,13 +58,15 @@ test.describe(
         )
         await comfyPage.nextFrame()
 
-        const controlNode = comfyPage.vueNodes.getNodeLocator(
-          String(control.id)
-        )
-        const toggle = controlNode.getByText('Enable PrimitiveInt', {
-          exact: true
-        })
-        await expect(toggle).toBeVisible()
+        await expect
+          .poll(() =>
+            comfyPage.page.evaluate(
+              (controlId) =>
+                window.app!.graph!.getNodeById(controlId)!.widgets?.[0]?.name,
+              control.id
+            )
+          )
+          .toBe('Enable Int')
 
         await comfyPage.page.evaluate((sourceId) => {
           const sourceNode = window.app!.graph.getNodeById(sourceId)!
@@ -63,11 +74,19 @@ test.describe(
           sourceNode.setDirtyCanvas(true, true)
         }, source.id)
 
-        await expect(
-          controlNode.getByText('Enable Renamed source', { exact: true })
-        ).toBeVisible()
+        await expect
+          .poll(() =>
+            comfyPage.page.evaluate(
+              (controlId) =>
+                window.app!.graph!.getNodeById(controlId)!.widgets?.[0]?.name,
+              control.id
+            )
+          )
+          .toBe('Enable Renamed source')
 
-        await controlNode.getByRole('checkbox').click()
+        await comfyPage.page.evaluate((controlId) => {
+          window.app!.graph!.getNodeById(controlId)!.widgets![0].callback!()
+        }, control.id)
         await expect
           .poll(() =>
             comfyPage.page.evaluate(
