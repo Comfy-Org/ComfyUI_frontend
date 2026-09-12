@@ -622,3 +622,24 @@ describe('useAuthActions.reportError', () => {
     expect(accessError.value).toBe(false)
   })
 })
+
+describe('useAuthActions.sendPasswordReset', () => {
+  it('resolves true when the identity layer answers an unknown email as sent', async () => {
+    vi.mocked(mockAuthStore.sendPasswordReset).mockResolvedValueOnce(undefined)
+    const { sendPasswordReset } = useAuthActions()
+
+    await expect(
+      sendPasswordReset('never-registered@example.com'),
+      'an unknown email must resolve like a known one, or CloudForgotPasswordView shows the error copy and leaks that the address is unregistered'
+    ).resolves.toBe(true)
+  })
+
+  it('resolves undefined when the reset genuinely fails, so the caller can show its error', async () => {
+    vi.mocked(mockAuthStore.sendPasswordReset).mockRejectedValueOnce(
+      new FirebaseError('auth/network-request-failed', 'msg')
+    )
+    const { sendPasswordReset } = useAuthActions()
+
+    await expect(sendPasswordReset('user@example.com')).resolves.toBeUndefined()
+  })
+})

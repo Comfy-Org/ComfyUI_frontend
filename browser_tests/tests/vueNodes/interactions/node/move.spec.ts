@@ -148,7 +148,6 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
         y: 200
       }
     )
-    await comfyPage.vueNodes.waitForNodes()
 
     const node = comfyPage.vueNodes.getNodeByTitle('ModelSamplingFlux')
     const showButton = getAdvancedInputsButton(node)
@@ -187,7 +186,6 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
           y: 200
         }
       )
-      await comfyPage.vueNodes.waitForNodes()
 
       const node = comfyPage.vueNodes.getNodeByTitle('ModelSamplingFlux')
       const showButton = getAdvancedInputsButton(node)

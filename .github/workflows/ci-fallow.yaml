@@ -1,0 +1,43 @@
+name: 'CI: Fallow'
+
+on:
+  pull_request:
+  merge_group:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  fallow:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout ref
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Resolve audit base
+        id: audit-base
+        env:
+          BASE_REF: ${{ github.event_name == 'pull_request' && 'HEAD^1' || github.event.merge_group.base_sha }}
+        run: |
+          base_sha=$(git rev-parse "$BASE_REF")
+          echo "sha=$base_sha" >> "$GITHUB_OUTPUT"
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Audit new findings
+        uses: fallow-rs/fallow@c2da9fcae5388226a87e986b1812f9c872d288c6 # v3.24.1
+        with:
+          command: audit
+          version: '3.24.1'
+          format: json
+          branded-token: false
+          changed-since: ${{ steps.audit-base.outputs.sha }}

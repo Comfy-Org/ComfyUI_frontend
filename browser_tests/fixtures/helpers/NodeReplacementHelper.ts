@@ -26,12 +26,6 @@ export async function setupNodeReplacement(
     route.fulfill({ json: replacements })
   )
 
-  await comfyPage.settings.setSetting(
-    'Comfy.RightSidePanel.ShowErrorsTab',
-    true
-  )
-  await comfyPage.settings.setSetting('Comfy.NodeReplacement.Enabled', true)
-
   await comfyPage.page.addInitScript(() => {
     const proto = window.WebSocket.prototype
     const originalAdd = proto.addEventListener

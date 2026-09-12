@@ -71,7 +71,7 @@ Tests in this project use `comfyPage` fixture, not bare `page`. When healing:
    await node.click('title')
    ```
 
-4. **Settings pollution**: Settings persist across tests on the backend. Always reset changed settings in `afterEach`.
+4. **Settings isolation**: `comfyPageFixture` replaces backend settings before each test. Prefer `test.use({ initialSettings })` for startup values; do not add settings resets in `afterEach`. For manual boots and mocked settings responses, check the [isolation contract](../../browser_tests/README.md#starting-settings-and-isolation).
 
 5. **Drag animation timing**: Use `{ steps: 10 }` option for drag operations, not `{ steps: 1 }`.
 

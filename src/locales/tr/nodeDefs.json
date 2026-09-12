@@ -3065,6 +3065,29 @@
       }
     }
   },
+  "ConcatenateVideo": {
+    "description": "Uyumlu kodlanmış girdilerin kodunu çözmeden videoları sırayla birleştirir.",
+    "display_name": "Videoları Birleştir",
+    "inputs": {
+      "codec": {
+        "name": "codec",
+        "tooltip": "Video tensörlerini kodlamak için kullanılan codec. Auto, H.264 kullanır; önceden kodlanmış videolar değişmeden kalır."
+      },
+      "complete_audio": {
+        "name": "complete_audio",
+        "tooltip": "Birleştirilmiş video için isteğe bağlı tam ses parçası. Girdi videolarının taşıdığı sesin yerine geçer."
+      },
+      "videos": {
+        "name": "videos",
+        "tooltip": "Girdi sırasına göre birleştirilecek video bölümleri."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Birleştirilmiş video."
+      }
+    }
+  },
   "ConditioningAverage": {
     "display_name": "KoşullandırmaOrtalaması",
     "inputs": {
@@ -3098,6 +3121,20 @@
       },
       "conditioning_to": {
         "name": "hedef_koşullandırma"
+      }
+    }
+  },
+  "ConditioningLoader": {
+    "description": "embeddings klasöründen, Save Conditioning ile kaydedilmiş bir koşullandırmayı veya 'conditioning' tensörü içeren herhangi bir safetensors dosyasını yükler.",
+    "display_name": "Koşullandırmayı Yükle",
+    "inputs": {
+      "conditioning_name": {
+        "name": "conditioning_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3908,6 +3945,10 @@
       "bit_depth": {
         "name": "bit_depth",
         "tooltip": "Otomatik, sRGB için 8 bit ve HDR için 10 bit kullanır. Açıkça seçilen 8 bit ve 10 bit seçenekleri renk alanından bağımsızdır."
+      },
+      "codec": {
+        "name": "codec",
+        "tooltip": "İsteğe bağlı olarak videoyu hemen kodlar. None, görüntüleri tensör biçiminde tutar; Auto, H.264 kullanır."
       },
       "color_space": {
         "name": "color_space",
@@ -5026,6 +5067,22 @@
       "batch_size": {
         "name": "batch_size",
         "tooltip": "Toplu işlemdeki latent görüntü sayısı."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyYuE2LatentAudio": {
+    "display_name": "Boş YuE2 Latent Ses",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "seconds": {
+        "name": "seconds"
       }
     },
     "outputs": {
@@ -7979,7 +8036,7 @@
     }
   },
   "ImageColorSpace": {
-    "description": "sRGB (Rec.709), HDR (Rec.2020 HLG) ve HDR PQ'yu (Rec.2020 PQ) dönüştürür. 203 nit SDR beyazı ve 1000 nit HLG referans ekranı kullanır. Daraltma, toplu iş genelindeki fazla parlaklığı ton eşler ve gamut dışı renkleri sıkıştırır. Dönüşümler float32 ile hesaplanır ve ara cihaz ile veri türünü döndürür. Düz alfa renk dönüşümüne tabi tutulmaz.",
+    "description": "sRGB, doğrusal Rec.709, HDR (Rec.2020 HLG) ve HDR PQ'yu (Rec.2020 PQ) dönüştürür. Doğrusal 1.0, sRGB ile aynı 203 nit referans beyazını kullanır; HLG, 1000 nit referans ekran kullanır. Doğrusal çıktı ve doğrusaldan HDR'ye dönüşümler, ton eşleme olmadan genişletilmiş değerleri korur. SDR çıktısı ve PQ'dan HLG'ye dönüşüm, yığın genelindeki fazla parlaklığı ton eşler ve renk gamı dışındaki renkleri sıkıştırır. Dönüşümler float32 ile hesaplanır ve ara aygıtı ile dtype'ı döndürür. Düz alfa renk dönüşümüne tabi tutulmaz.",
     "display_name": "Görüntü Renk Uzayını Dönüştür",
     "inputs": {
       "destination": {
@@ -12374,6 +12431,23 @@
       }
     }
   },
+  "MarigoldV2PostProcess": {
+    "description": "Kodu çözülmüş bir Marigold V2 tahminini görüntüye dönüştürür: yakın bölgeleri parlak olan normalize edilmiş derinlik, birim yüzey normalleri veya sRGB albedo.",
+    "display_name": "Marigold V2 Son İşleme",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "prediction": {
+        "name": "prediction"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MaskComposite": {
     "display_name": "MaskeBirleştirme",
     "inputs": {
@@ -16021,6 +16095,9 @@
     "inputs": {
       "model": {
         "name": "model"
+      },
+      "sampling": {
+        "name": "sampling"
       },
       "shift": {
         "name": "kaydırma"
@@ -20988,6 +21065,24 @@
       }
     }
   },
+  "SaveConditioning": {
+    "description": "Bir koşullandırmayı safetensors olarak output klasörüne kaydeder; Load Conditioning ile yüklemek için dosyayı models/embeddings konumuna taşıyın, örneğin metin kodlayıcısını atlamak için.",
+    "display_name": "Koşullandırmayı Kaydet",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "conditioning",
+        "tooltip": null
+      }
+    }
+  },
   "SaveGLB": {
     "display_name": "GLB Kaydet",
     "inputs": {
@@ -21676,6 +21771,28 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SheetSage2AudioToABC": {
+    "description": "Müzikteki vokal ve enstrümantal melodileri ABC notasyonuna dönüştürür. abc çıktısını YuE2 Generate Music düğümüne bağlayın ve eşleşen modu kullanın.",
+    "display_name": "SheetSage2 Sesi ABC'ye Dönüştür",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "audio_encoder": {
+        "name": "audio_encoder"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "full: melodi ve akorlar üretir; melody: yalnızca melodi üretir, cover'lar için önerilir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
         "tooltip": null
       }
     }
@@ -28528,6 +28645,94 @@
     "outputs": {
       "0": {
         "name": "ağ",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateABC": {
+    "description": "Stil ve şarkı sözlerinden bir şarkının ABC notasyonunu oluşturur. abc'yi YuE2 Generate Music düğümüne bağlayın.",
+    "display_name": "YuE2 ABC Oluştur",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "lyrics": {
+        "name": "lyrics"
+      },
+      "max_abc_tokens": {
+        "name": "max_abc_tokens"
+      },
+      "mode": {
+        "name": "mod",
+        "tooltip": "full: melodi ve akor üretir; melody: yalnızca melodi üretir, cover'lar için önerilir."
+      },
+      "seed": {
+        "name": "tohum"
+      },
+      "style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateMusic": {
+    "description": "Stil, şarkı sözleri ve ABC notasyonundan müzik belirteçleri ve akustik koşullandırma üretir. Oluşturulan saniye değerini Empty YuE2 Latent Audio düğümüne sağlayın. Boş bir ABC girişi seçili modu yok sayar.",
+    "display_name": "YuE2 Müzik Oluştur",
+    "inputs": {
+      "abc": {
+        "name": "abc",
+        "tooltip": "ABC oluşturucuyu bağlayın veya düzenlenmiş bir partisyon sağlayın. Kapalı modu otomatik olarak kullanmak için boş bırakın."
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "lyrics": {
+        "name": "şarkı sözleri"
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "Maksimum süre; oluşturma daha erken durabilir. Sürüm 360 saniyelik bir bütçe kullanır."
+      },
+      "mode": {
+        "name": "mod",
+        "tooltip": "full: melodi ve akor üretir; melody: yalnızca melodi üretir, cover'lar için önerilir."
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "seed": {
+        "name": "tohum"
+      },
+      "style": {
+        "name": "stil"
+      },
+      "temperature": {
+        "name": "sıcaklık"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "saniye",
         "tooltip": null
       }
     }

@@ -115,10 +115,6 @@ async function getNodeGroupCenteringErrors(
 }
 
 test.describe('Vue Node Groups', { tag: ['@screenshot', '@vue-nodes'] }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.Minimap.ShowGroups', true)
-  })
-
   test('should allow creating groups with hotkey', async ({ comfyPage }) => {
     await comfyPage.page.getByText('Load Checkpoint').click()
     await comfyPage.page.getByText('KSampler').click({ modifiers: ['Control'] })
@@ -231,7 +227,6 @@ test.describe('Vue Node Groups', { tag: ['@screenshot', '@vue-nodes'] }, () => {
     comfyPage
   }) => {
     await comfyPage.workflow.loadWorkflow('groups/nested-groups-1-inner-node')
-    await comfyPage.vueNodes.waitForNodes(1)
 
     await expect
       .poll(() =>

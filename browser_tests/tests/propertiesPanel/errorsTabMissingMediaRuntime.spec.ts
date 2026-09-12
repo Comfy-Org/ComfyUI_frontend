@@ -33,6 +33,11 @@ import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { toNodeId } from '@/types/nodeId'
 
 const ossTest = mergeTests(test, jobsRouteFixture)
+
+test.use({
+  initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true }
+})
+
 const outputHash =
   '147257c95a3e957e0deee73a077cfec89da2d906dd086ca70a2b0c897a9591d6e.png'
 const outputVideoHash = 'cloud-video-hash.mp4'
@@ -123,18 +128,20 @@ interface CloudUploadAssetState {
   isUploadedAssetAvailable: boolean
 }
 
-async function routeCloudBootstrapApis(page: Page) {
+async function routeCloudBootstrapApis(
+  page: Page,
+  settings: GetAllSettingsResponse
+) {
   await page.route('**/api/settings**', async (route) => {
     const completedSurveySetting: GetSettingByIdResponse = {
       value: { usage: 'personal' }
     }
-    const allSettings: GetAllSettingsResponse = {}
     const body = route
       .request()
       .url()
       .includes('/api/settings/onboarding_survey')
       ? completedSurveySetting
-      : allSettings
+      : settings
 
     await route.fulfill({
       status: 200,
@@ -162,8 +169,8 @@ const cloudOutputTest = createCloudAssetsFixture([
   cloudOutputAsset,
   cloudOutputVideoAsset
 ]).extend({
-  page: async ({ page }, use) => {
-    await routeCloudBootstrapApis(page)
+  page: async ({ page, initialSettings }, use) => {
+    await routeCloudBootstrapApis(page, initialSettings)
     const unrouteObjectInfo = await routeObjectInfoFromSetupApi(page)
 
     try {
@@ -175,8 +182,8 @@ const cloudOutputTest = createCloudAssetsFixture([
 })
 
 const cloudEmptyMediaInputsTest = createCloudAssetsFixture([]).extend({
-  page: async ({ page }, use) => {
-    await routeCloudBootstrapApis(page)
+  page: async ({ page, initialSettings }, use) => {
+    await routeCloudBootstrapApis(page, initialSettings)
 
     const unrouteObjectInfo = await routeObjectInfoFromSetupApi(
       page,
@@ -200,8 +207,8 @@ const cloudUploadAssetStateByPage = new WeakMap<Page, CloudUploadAssetState>()
 const cloudUploadRaceTest = test.extend<{
   markUploadedCloudAssetAvailable: () => void
 }>({
-  page: async ({ page }, use) => {
-    await routeCloudBootstrapApis(page)
+  page: async ({ page, initialSettings }, use) => {
+    await routeCloudBootstrapApis(page, initialSettings)
     const unrouteObjectInfo = await routeObjectInfoFromSetupApi(page)
 
     const state: CloudUploadAssetState = {
@@ -253,13 +260,6 @@ const cloudUploadRaceTest = test.extend<{
     })
   }
 })
-
-async function enableErrorsTab(comfyPage: ComfyPage) {
-  await comfyPage.settings.setSetting(
-    'Comfy.RightSidePanel.ShowErrorsTab',
-    true
-  )
-}
 
 function getErrorOverlay(comfyPage: ComfyPage) {
   return comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
@@ -463,10 +463,6 @@ ossTest.describe(
   'Errors tab - OSS missing media runtime sources',
   { tag: '@ui' },
   () => {
-    ossTest.beforeEach(async ({ comfyPage }) => {
-      await enableErrorsTab(comfyPage)
-    })
-
     ossTest(
       'resolves annotated output media from job history',
       async ({ comfyPage, jobsRoutes }) => {
@@ -510,10 +506,6 @@ test.describe(
   'Errors tab - promoted missing media',
   { tag: ['@ui', '@vue-nodes', '@widget', '@subgraph'] },
   () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await enableErrorsTab(comfyPage)
-    })
-
     test('shows missing media on the promoted host and not the interior widget', async ({
       comfyPage
     }) => {
@@ -610,7 +602,6 @@ cloudEmptyMediaInputsTest.describe(
   { tag: '@cloud' },
   () => {
     cloudEmptyMediaInputsTest.beforeEach(async ({ comfyPage }) => {
-      await enableErrorsTab(comfyPage)
       await closeTemplatesDialogIfOpen(comfyPage)
     })
 
@@ -648,7 +639,6 @@ cloudOutputTest.describe(
   { tag: '@cloud' },
   () => {
     cloudOutputTest.beforeEach(async ({ comfyPage }) => {
-      await enableErrorsTab(comfyPage)
       await closeTemplatesDialogIfOpen(comfyPage)
     })
 
@@ -689,7 +679,6 @@ cloudUploadRaceTest.describe(
   { tag: '@cloud' },
   () => {
     cloudUploadRaceTest.beforeEach(async ({ comfyPage }) => {
-      await enableErrorsTab(comfyPage)
       await closeTemplatesDialogIfOpen(comfyPage)
     })
 

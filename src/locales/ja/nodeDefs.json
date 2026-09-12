@@ -3065,6 +3065,29 @@
       }
     }
   },
+  "ConcatenateVideo": {
+    "description": "互換性のあるエンコード済み入力をデコードせずに、動画を順番に連結します。",
+    "display_name": "動画を連結",
+    "inputs": {
+      "codec": {
+        "name": "codec",
+        "tooltip": "動画テンソルのエンコードに使用するcodec。AutoはH.264を使用します。すでにエンコード済みの動画は変更されません。"
+      },
+      "complete_audio": {
+        "name": "complete_audio",
+        "tooltip": "連結した動画用の任意の完全なサウンドトラック。入力動画に含まれる音声を上書きします。"
+      },
+      "videos": {
+        "name": "videos",
+        "tooltip": "入力順に連結する動画セグメント。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "連結された動画。"
+      }
+    }
+  },
   "ConditioningAverage": {
     "display_name": "条件付け平均",
     "inputs": {
@@ -3098,6 +3121,20 @@
       },
       "conditioning_to": {
         "name": "条件付け先"
+      }
+    }
+  },
+  "ConditioningLoader": {
+    "description": "embeddingsフォルダーから、Save Conditioningで保存したコンディショニング、または「conditioning」テンソルを含む任意のsafetensorsファイルを読み込みます。",
+    "display_name": "コンディショニングを読み込む",
+    "inputs": {
+      "conditioning_name": {
+        "name": "conditioning_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3908,6 +3945,10 @@
       "bit_depth": {
         "name": "bit_depth",
         "tooltip": "自動ではsRGBに8ビット、HDRに10ビットを使用します。明示的な8ビットおよび10ビットの選択は色空間に依存しません。"
+      },
+      "codec": {
+        "name": "codec",
+        "tooltip": "必要に応じて動画を直ちにエンコードします。Noneでは画像をテンソル形式のまま保持し、AutoではH.264を使用します。"
       },
       "color_space": {
         "name": "color_space",
@@ -5026,6 +5067,22 @@
       "batch_size": {
         "name": "batch_size",
         "tooltip": "バッチ内の潜在画像数。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyYuE2LatentAudio": {
+    "display_name": "空のYuE2 latentオーディオ",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "seconds": {
+        "name": "seconds"
       }
     },
     "outputs": {
@@ -7979,7 +8036,7 @@
     }
   },
   "ImageColorSpace": {
-    "description": "sRGB（Rec.709）、HDR（Rec.2020 HLG）、HDR PQ（Rec.2020 PQ）を変換します。203 nit の SDR ホワイトと 1000 nit の HLG リファレンスディスプレイを使用します。狭域化では、バッチ全体で過剰な輝度をトーンマッピングし、色域外の色を圧縮します。変換は float32 で計算され、中間デバイスと dtype を返します。ストレートアルファには色変換を適用しません。",
+    "description": "sRGB、線形Rec.709、HDR（Rec.2020 HLG）、HDR PQ（Rec.2020 PQ）を変換します。線形1.0はsRGBと同じ203ニトの基準白色を使用します。HLGは1000ニトの基準ディスプレイを使用します。線形出力および線形からHDRへの変換では、トーンマッピングを行わずに拡張値を保持します。SDR出力およびPQからHLGへの変換では、バッチ全体で過剰な輝度をトーンマッピングし、色域外の色を圧縮します。変換はfloat32で計算され、中間デバイスとdtypeを返します。ストレートアルファには色変換を適用しません。",
     "display_name": "画像カラースペースを変換",
     "inputs": {
       "destination": {
@@ -12374,6 +12431,23 @@
       }
     }
   },
+  "MarigoldV2PostProcess": {
+    "description": "デコードされたMarigold V2予測を画像に変換します。近いほど明るい正規化深度、単位表面法線、またはsRGBアルベドです。",
+    "display_name": "Marigold V2 後処理",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "prediction": {
+        "name": "prediction"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MaskComposite": {
     "display_name": "マスク合成",
     "inputs": {
@@ -16021,6 +16095,9 @@
     "inputs": {
       "model": {
         "name": "モデル"
+      },
+      "sampling": {
+        "name": "sampling"
       },
       "shift": {
         "name": "シフト"
@@ -20988,6 +21065,24 @@
       }
     }
   },
+  "SaveConditioning": {
+    "description": "コンディショニングをsafetensorsとしてoutputフォルダーに保存します。Load Conditioningで読み込むには、ファイルをmodels/embeddingsへ移動してください。たとえばテキストエンコーダーをスキップする場合に使用します。",
+    "display_name": "コンディショニングを保存",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "conditioning",
+        "tooltip": null
+      }
+    }
+  },
   "SaveGLB": {
     "display_name": "SaveGLB",
     "inputs": {
@@ -21676,6 +21771,28 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SheetSage2AudioToABC": {
+    "description": "音楽からボーカルと楽器のメロディをABC記譜法に書き起こします。abc出力をYuE2 Generate Musicノードに接続し、対応するモードを使用してください。",
+    "display_name": "SheetSage2 オーディオからABCへ",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "audio_encoder": {
+        "name": "audio_encoder"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "full：メロディとコードを生成します。melody：メロディのみを生成し、カバーに推奨されます。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
         "tooltip": null
       }
     }
@@ -28528,6 +28645,94 @@
     "outputs": {
       "0": {
         "name": "メッシュ",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateABC": {
+    "description": "スタイルと歌詞から曲のABC記譜法を生成します。abcをYuE2 Generate Musicノードに接続してください。",
+    "display_name": "YuE2 ABCを生成",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "lyrics": {
+        "name": "lyrics"
+      },
+      "max_abc_tokens": {
+        "name": "max_abc_tokens"
+      },
+      "mode": {
+        "name": "モード",
+        "tooltip": "full: メロディーとコードを生成します。melody: メロディーのみを生成します。カバーにはこちらを推奨します。"
+      },
+      "seed": {
+        "name": "シード"
+      },
+      "style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ABC",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateMusic": {
+    "description": "スタイル、歌詞、ABC記譜法から音楽トークンと音響コンディショニングを生成します。生成した秒数を Empty YuE2 Latent Audio ノードに指定してください。ABC入力が空の場合、選択したモードは無視されます。",
+    "display_name": "YuE2 音楽生成",
+    "inputs": {
+      "abc": {
+        "name": "ABC",
+        "tooltip": "ABCジェネレーターを接続するか、編集済みのスコアを指定します。空のままにすると、自動的に off モードが使用されます。"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "lyrics": {
+        "name": "歌詞"
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "最大再生時間です。生成はこれより早く終了する場合があります。リリース版では360秒の上限を使用します。"
+      },
+      "mode": {
+        "name": "モード",
+        "tooltip": "full: メロディーとコードを生成します。melody: メロディーのみを生成します。カバーにはこちらを推奨します。"
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "seed": {
+        "name": "シード"
+      },
+      "style": {
+        "name": "スタイル"
+      },
+      "temperature": {
+        "name": "温度"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "秒",
         "tooltip": null
       }
     }

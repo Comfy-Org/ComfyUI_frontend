@@ -286,7 +286,10 @@ app.registerExtension({
           inputName,
           '',
           openFileSelection,
-          { serialize: false, canvasOnly: true }
+          {
+            serialize: false,
+            surfaces: { canvas: 'shown', vueNode: 'never', panel: 'never' }
+          }
         )
         uploadWidget.label = t('g.choose_file_to_upload')
 
@@ -320,7 +323,6 @@ app.registerExtension({
         audio.setAttribute('name', 'media')
         const audioUIWidget: DOMWidget<HTMLAudioElement, string> =
           node.addDOMWidget(inputName, /* name=*/ 'audioUI', audio)
-        audioUIWidget.options.canvasOnly = false
 
         let mediaRecorder: MediaRecorder | null = null
         let isRecording = false
@@ -473,7 +475,7 @@ app.registerExtension({
               handleRecordingStartFailure(err)
             }
           },
-          { serialize: false, canvasOnly: false }
+          { serialize: false }
         )
 
         recordWidget.label = t('g.startRecording')

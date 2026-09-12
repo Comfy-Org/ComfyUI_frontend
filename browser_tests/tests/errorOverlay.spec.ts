@@ -8,12 +8,7 @@ import { TestIds } from '@e2e/fixtures/selectors'
 import { cleanupFakeModel } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 
 test.describe('Error overlay', { tag: '@ui' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting(
-      'Comfy.RightSidePanel.ShowErrorsTab',
-      true
-    )
-  })
+  test.use({ initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true } })
 
   function getOverlay(page: Page) {
     return page.getByTestId(TestIds.dialogs.errorOverlay)

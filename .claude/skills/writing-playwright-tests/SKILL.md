@@ -16,6 +16,12 @@ description: 'Writes Playwright e2e tests for ComfyUI_frontend. Use when creatin
    - Load with `await comfyPage.workflow.loadWorkflow('feature/my_workflow')`
    - Create new assets by starting with `browser_tests/assets/default.json` and manually editing the JSON to match your desired graph state
 
+4. **Seed starting settings with `test.use({ initialSettings })`.** The main
+   fixture replaces backend settings before every test; do not add settings
+   resets in `afterEach`. Keep runtime setters for changes under test. Nested
+   `test.use` replaces the parent's settings object, so include inherited
+   overrides. See [Starting settings and isolation](../../../browser_tests/README.md#starting-settings-and-isolation).
+
 ## Vue Nodes vs LiteGraph: Decision Guide
 
 Choose based on **what you're testing**, not personal preference:
@@ -26,12 +32,10 @@ Choose based on **what you're testing**, not personal preference:
 | Canvas interactions, connections, legacy nodes | `comfyPage.nodeOps.*`            | Canvas-based, use coordinates/references |
 | Both in same test                              | Pick primary, minimize switching | Avoid confusion                          |
 
-**Vue Nodes requires explicit opt-in:**
-
-```typescript
-await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-await comfyPage.vueNodes.waitForNodes()
-```
+Always add `{ tag: '@vue-nodes' }` to the test or `test.describe` when it needs
+Vue Nodes. The fixture enables the renderer before boot and waits for the nodes.
+Never manually set `Comfy.VueNodes.Enabled`, including through `initialSettings`,
+or call `comfyPage.vueNodes.waitForNodes()` in tests.
 
 **Vue Node state uses CSS classes:**
 

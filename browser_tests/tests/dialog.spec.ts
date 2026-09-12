@@ -10,9 +10,7 @@ import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPosit
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-})
+test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
 test.describe('Settings', () => {
   test('@mobile Should be visible on mobile', async ({ comfyPage }) => {
@@ -298,67 +296,71 @@ test.describe('Cloud notification dialog', () => {
   })
 })
 
-test('Blueprint overwrite', { tag: ['@subgraph'] }, async ({ comfyPage }) => {
-  const blueprintName = `test-blueprint-overwrite-${Date.now()}`
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-  await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-  await comfyPage.settings.setSetting(
-    'Comfy.Workflow.WarnBlueprintOverwrite',
-    true
-  )
+test(
+  'Blueprint overwrite',
+  { tag: ['@subgraph', '@vue-nodes'] },
+  async ({ comfyPage }) => {
+    const blueprintName = `test-blueprint-overwrite-${Date.now()}`
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
 
-  const tab = comfyPage.menu.nodeLibraryTabV2
+    await comfyPage.settings.setSetting(
+      'Comfy.Workflow.WarnBlueprintOverwrite',
+      true
+    )
 
-  await test.step('Publish a basic subgraph', async () => {
-    const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
-    await comfyPage.contextMenu.openForVueNode(ksampler.header)
-    await comfyPage.contextMenu.clickMenuItemExact('Convert to Subgraph')
-    await comfyPage.subgraph.publishSubgraph(blueprintName)
+    const tab = comfyPage.menu.nodeLibraryTabV2
 
-    await tab.open()
-    await tab.getFolder('My Blueprints').click()
-    await tab.getFolder('User').click()
-  })
+    await test.step('Publish a basic subgraph', async () => {
+      const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+      await comfyPage.contextMenu.openForVueNode(ksampler.header)
+      await comfyPage.contextMenu.clickMenuItemExact('Convert to Subgraph')
+      await comfyPage.subgraph.publishSubgraph(blueprintName)
 
-  const steps = comfyPage.vueNodes.getWidgetByName('KSampler', 'steps')
-
-  await test.step('Edit the published subgraph', async () => {
-    const blueprintNode = tab.getNode(blueprintName)
-    await expect(blueprintNode, 'blueprint visible in library').toBeVisible()
-    await blueprintNode.getByRole('button', { name: 'Edit' }).click()
-    await steps.waitFor({ state: 'visible' })
-  })
-
-  const confirmDialog = comfyPage.confirmDialog.root
-  const { incrementButton } = comfyPage.vueNodes.getInputNumberControls(steps)
-  const dirtyGraphAndSave = async () => {
-    await incrementButton.click()
-    await comfyPage.page.keyboard.press('Control+s')
-  }
-
-  await test.step('No dialog: user prompted on publish', async () => {
-    await dirtyGraphAndSave()
-    await comfyPage.nextFrame()
-    await expect(confirmDialog).toBeHidden()
-  })
-
-  await test.step('Should show dialog', async () => {
-    await comfyPage.subgraph.setSaveUnpromptedOnActiveBlueprint()
-    await dirtyGraphAndSave()
-    const { noWarnOverwriteToggle } = comfyPage.confirmDialog
-    await expect(noWarnOverwriteToggle).toBeVisible()
-
-    await test.step('Disable overwrite warning', async () => {
-      await noWarnOverwriteToggle.check()
-      await expect(confirmDialog.getByText(/Re-enable in/i)).toBeVisible()
-      await comfyPage.confirmDialog.click('overwrite')
+      await tab.open()
+      await tab.getFolder('My Blueprints').click()
+      await tab.getFolder('User').click()
     })
-  })
 
-  await test.step('No dialog: disabled by setting', async () => {
-    await comfyPage.subgraph.setSaveUnpromptedOnActiveBlueprint()
-    await dirtyGraphAndSave()
-    await comfyPage.nextFrame()
-    await expect(confirmDialog).toBeHidden()
-  })
-})
+    const steps = comfyPage.vueNodes.getWidgetByName('KSampler', 'steps')
+
+    await test.step('Edit the published subgraph', async () => {
+      const blueprintNode = tab.getNode(blueprintName)
+      await expect(blueprintNode, 'blueprint visible in library').toBeVisible()
+      await blueprintNode.getByRole('button', { name: 'Edit' }).click()
+      await steps.waitFor({ state: 'visible' })
+    })
+
+    const confirmDialog = comfyPage.confirmDialog.root
+    const { incrementButton } = comfyPage.vueNodes.getInputNumberControls(steps)
+    const dirtyGraphAndSave = async () => {
+      await incrementButton.click()
+      await comfyPage.page.keyboard.press('Control+s')
+    }
+
+    await test.step('No dialog: user prompted on publish', async () => {
+      await dirtyGraphAndSave()
+      await comfyPage.nextFrame()
+      await expect(confirmDialog).toBeHidden()
+    })
+
+    await test.step('Should show dialog', async () => {
+      await comfyPage.subgraph.setSaveUnpromptedOnActiveBlueprint()
+      await dirtyGraphAndSave()
+      const { noWarnOverwriteToggle } = comfyPage.confirmDialog
+      await expect(noWarnOverwriteToggle).toBeVisible()
+
+      await test.step('Disable overwrite warning', async () => {
+        await noWarnOverwriteToggle.check()
+        await expect(confirmDialog.getByText(/Re-enable in/i)).toBeVisible()
+        await comfyPage.confirmDialog.click('overwrite')
+      })
+    })
+
+    await test.step('No dialog: disabled by setting', async () => {
+      await comfyPage.subgraph.setSaveUnpromptedOnActiveBlueprint()
+      await dirtyGraphAndSave()
+      await comfyPage.nextFrame()
+      await expect(confirmDialog).toBeHidden()
+    })
+  }
+)

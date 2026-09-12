@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import type { HTMLAttributes } from 'vue'
 import { ref } from 'vue'
+
+import { cn } from '@comfyorg/tailwind-utils'
 
 import CardArticle01 from './CardArticle01.vue'
 import type { CardArticleItem } from './CardArticle01.vue'
@@ -26,7 +29,8 @@ const {
   tabs,
   allLabel,
   pageSize,
-  loadMoreLabel
+  loadMoreLabel,
+  class: className
 } = defineProps<{
   title?: string
   titleAlign?: 'start' | 'center'
@@ -37,6 +41,7 @@ const {
   allLabel?: string
   pageSize?: number
   loadMoreLabel?: string
+  class?: HTMLAttributes['class']
 }>()
 
 const activeTab = ref(GALLERY_FILTER_ALL)
@@ -46,10 +51,16 @@ const { visibleItems, hasMore, showMore } = useFilteredGallery({
   filterKey: activeTab,
   pageSize
 })
+
+// Shown inside each tab pill; counts the whole item set, not the paged slice.
+const tabCount = (key: string) =>
+  key === GALLERY_FILTER_ALL
+    ? items.length
+    : items.filter((item) => item.filterKey === key).length
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-6 py-16 lg:py-24">
+  <section :class="cn('max-w-9xl mx-auto px-6 py-16 lg:py-24', className)">
     <h2
       v-if="title && !tabs"
       class="text-3xl font-light tracking-tight text-primary-warm-white lg:text-5xl"
@@ -72,27 +83,32 @@ const { visibleItems, hasMore, showMore } = useFilteredGallery({
         {{ title }}
       </h2>
 
-      <div class="rounded-2xl border-2 border-white/20 p-2">
-        <div class="flex gap-0.5 overflow-clip rounded-lg">
-          <button
-            v-for="tab in [
-              { key: GALLERY_FILTER_ALL, label: allLabel ?? 'ALL' },
-              ...tabs
-            ]"
-            :key="tab.key"
-            type="button"
-            :aria-pressed="activeTab === tab.key"
-            class="h-8 px-4 text-xs font-semibold whitespace-nowrap transition-colors"
-            :class="
-              activeTab === tab.key
-                ? 'bg-primary-comfy-yellow text-primary-comfy-ink'
-                : 'bg-white/8 text-white hover:bg-white/15'
-            "
-            @click="activeTab = tab.key"
+      <!-- Free-floating pills with per-tab counts; wrapping keeps them
+      inside the card column on phones. -->
+      <div class="flex flex-wrap justify-center gap-2">
+        <button
+          v-for="tab in [
+            { key: GALLERY_FILTER_ALL, label: allLabel ?? 'ALL' },
+            ...tabs
+          ]"
+          :key="tab.key"
+          type="button"
+          :aria-pressed="activeTab === tab.key"
+          class="h-8 rounded-full px-4 text-xs font-semibold tracking-wide whitespace-nowrap uppercase transition-colors"
+          :class="
+            activeTab === tab.key
+              ? 'bg-white/20 text-white'
+              : 'bg-white/8 text-primary-comfy-canvas/80 hover:bg-white/15 hover:text-white'
+          "
+          @click="activeTab = tab.key"
+        >
+          {{ tab.label }}
+          <span
+            class="ml-2 hidden font-normal text-primary-comfy-canvas/50 tabular-nums sm:inline"
           >
-            {{ tab.label }}
-          </button>
-        </div>
+            {{ tabCount(tab.key) }}
+          </span>
+        </button>
       </div>
     </div>
 

@@ -30,5 +30,10 @@ export function brandIdentity<TUser extends AccountUser>(
 }
 
 export function isAccountIdentity(value: unknown): value is AccountIdentity {
-  return typeof value === 'object' && value !== null && identityBrand in value
+  if (typeof value !== 'object' || value === null) return false
+  const candidate = value as Record<PropertyKey, unknown>
+  return (
+    candidate[identityBrand] === true &&
+    typeof candidate.onUserChanged === 'function'
+  )
 }

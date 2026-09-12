@@ -15,8 +15,29 @@ export const inlinePromptSchema = new Schema({
       attrs: { id: {}, name: {}, unavailable: { default: false } },
       toDOM: (node) => [
         'span',
-        { 'data-workflow-id': node.attrs.id },
+        {
+          'data-comfy-workflow': '1',
+          'data-workflow-id': node.attrs.id,
+          'data-workflow-unavailable': String(node.attrs.unavailable)
+        },
         node.attrs.name
+      ],
+      parseDOM: [
+        {
+          tag: 'span[data-comfy-workflow="1"]',
+          getAttrs(element) {
+            const id = element.getAttribute('data-workflow-id')?.trim()
+            const name = element.textContent
+            return id && name.trim()
+              ? {
+                  id,
+                  name,
+                  unavailable:
+                    element.getAttribute('data-workflow-unavailable') === 'true'
+                }
+              : false
+          }
+        }
       ]
     }
   }

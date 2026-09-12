@@ -338,10 +338,7 @@ export async function assertRoundtripTier({
         keys,
         `stale ROUNDTRIP_NODE_LOSS_EXPECTATIONS entry: ${ledgered} is not registered by ${entry.pack}`
       ).toContain(ledgered)
-    await comfyPage.settings.setSetting(
-      'Comfy.VueNodes.Enabled',
-      vueNodesEnabled
-    )
+    await comfyPage.menu.topbar.setVueNodesEnabled(vueNodesEnabled)
     using consoleErrors = collectConsoleErrors(comfyPage.page)
     const mismatches: string[] = []
     for (let offset = 0; offset < keys.length; offset += BATCH_SIZE) {

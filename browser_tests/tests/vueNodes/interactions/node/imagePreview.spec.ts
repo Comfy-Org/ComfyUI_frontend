@@ -168,14 +168,13 @@ test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
       await test.step('Inject Previews from different tab', async () => {
         const jobId = await execution.run()
         await comfyPage.menu.topbar.getTab(0).click()
-        await comfyPage.vueNodes.waitForNodes(7)
+        await expect(comfyPage.vueNodes.nodes).toHaveCount(7)
 
         const images = [{ filename: 'example.png', type: 'input' }]
         execution.executed(jobId, '2:1', { images })
         await comfyPage.nextFrame()
 
         await comfyPage.menu.topbar.getTab(1).click()
-        await comfyPage.vueNodes.waitForNodes(1)
       })
 
       await expect(subgraphNode.imagePreview.locator('img')).toHaveCount(1)

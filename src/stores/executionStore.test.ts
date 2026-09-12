@@ -523,17 +523,20 @@ describe('useExecutionStore - reconcileInitializingJobs', () => {
 })
 
 describe('useExecutionStore - workflowStatus', () => {
+  const graphAId = '11111111-1111-4111-8111-111111111111'
+  const graphBId = '22222222-2222-4222-8222-222222222222'
+
   let store: ReturnType<typeof useExecutionStore>
   type Workflow = Parameters<typeof store.storeJob>[0]['workflow']
-  const makeWorkflow = (path: string): Workflow => {
-    const workflow: Partial<Workflow> = {
+  const makeWorkflow = (path: string, graphId: string): Workflow =>
+    ({
       path,
-      filename: path.split('/').pop()
-    }
-    return workflow as Workflow
-  }
-  const workflowA = makeWorkflow('/workflows/a.json')
-  const workflowB = makeWorkflow('/workflows/b.json')
+      filename: path.split('/').pop(),
+      activeState: { id: graphId },
+      initialState: { id: graphId }
+    }) as Workflow
+  const workflowA = makeWorkflow('/workflows/a.json', graphAId)
+  const workflowB = makeWorkflow('/workflows/b.json', graphBId)
 
   function fireExecutionStart(jobId: string) {
     const handler = apiEventHandlers.get('execution_start')
@@ -579,7 +582,9 @@ describe('useExecutionStore - workflowStatus', () => {
   }
 
   function callStoreJob(jobId: string, workflow: Workflow) {
-    store.registerJobWorkflowIdMapping(jobId, workflow.path)
+    const graphId = workflow.activeState?.id ?? workflow.initialState?.id
+    if (!graphId) throw new Error('workflow graph ID missing')
+    store.registerJobWorkflowIdMapping(jobId, graphId)
     store.storeJob({
       nodes: ['1'],
       id: jobId,
@@ -969,17 +974,25 @@ describe('useExecutionStore - workflowStatus', () => {
 describe('useExecutionStore - background workflow error routing', () => {
   const graphAId = '11111111-1111-4111-8111-111111111111'
   const graphBId = '22222222-2222-4222-8222-222222222222'
+  const graphCId = '33333333-3333-4333-8333-333333333333'
+  const graphDId = '44444444-4444-4444-8444-444444444444'
+  const graphEId = '55555555-5555-4555-8555-555555555555'
+  const graphFId = '66666666-6666-4666-8666-666666666666'
 
   let store: ReturnType<typeof useExecutionStore>
   let errorStore: ReturnType<typeof useExecutionErrorStore>
 
   type Workflow = Parameters<typeof store.storeJob>[0]['workflow']
-  const makeWorkflow = (path: string, graphId: string): Workflow =>
+  const makeWorkflow = (
+    path: string,
+    activeId?: string,
+    initialId = activeId
+  ): Workflow =>
     ({
       path,
       filename: path.split('/').pop(),
-      activeState: { id: graphId },
-      initialState: { id: graphId }
+      ...(activeId && { activeState: { id: activeId } }),
+      ...(initialId && { initialState: { id: initialId } })
     }) as Workflow
 
   const workflowA = makeWorkflow('/workflows/a.json', graphAId)
@@ -1206,6 +1219,59 @@ describe('useExecutionStore - background workflow error routing', () => {
     fireExecutionError('job-unknown')
 
     expect(errorStore.lastExecutionError).toBeNull()
+  })
+
+  it('routes a failure under the active graph id, not the initial one', () => {
+    const reloadedWorkflow = makeWorkflow(
+      '/workflows/c.json',
+      graphCId,
+      graphDId
+    )
+    Object.assign(useWorkflowStore(), {
+      openWorkflows: [workflowA, reloadedWorkflow]
+    })
+    callStoreJob('job-c', reloadedWorkflow)
+
+    fireExecutionError('job-c')
+
+    errorStore.setActiveGraph(graphDId, reloadedWorkflow.path)
+    expect(errorStore.lastExecutionError).toBeNull()
+
+    errorStore.setActiveGraph(graphCId, reloadedWorkflow.path)
+    expect(errorStore.lastExecutionError?.prompt_id).toBe('job-c')
+  })
+
+  it('falls back to the initial graph id when there is no active state', () => {
+    const unloadedWorkflow = makeWorkflow(
+      '/workflows/e.json',
+      undefined,
+      graphEId
+    )
+    Object.assign(useWorkflowStore(), {
+      openWorkflows: [workflowA, unloadedWorkflow]
+    })
+    callStoreJob('job-e', unloadedWorkflow)
+
+    fireExecutionError('job-e')
+
+    errorStore.setActiveGraph(graphEId, unloadedWorkflow.path)
+    expect(errorStore.lastExecutionError?.prompt_id).toBe('job-e')
+  })
+
+  it('buffers a failure from a workflow with no graph id until one arrives', () => {
+    const idlessWorkflow = makeWorkflow('/workflows/f.json')
+    Object.assign(useWorkflowStore(), {
+      openWorkflows: [workflowA, idlessWorkflow]
+    })
+    callStoreJob('job-f', idlessWorkflow)
+
+    fireExecutionError('job-f')
+    expect(errorStore.lastExecutionError).toBeNull()
+
+    store.registerJobWorkflowIdMapping('job-f', graphFId)
+    errorStore.setActiveGraph(graphFId, idlessWorkflow.path)
+
+    expect(errorStore.lastExecutionError?.prompt_id).toBe('job-f')
   })
 })
 

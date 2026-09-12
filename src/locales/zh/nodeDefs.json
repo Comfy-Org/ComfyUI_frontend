@@ -3065,6 +3065,29 @@
       }
     }
   },
+  "ConcatenateVideo": {
+    "description": "按顺序拼接视频，无需解码兼容的已编码输入。",
+    "display_name": "拼接视频",
+    "inputs": {
+      "codec": {
+        "name": "codec",
+        "tooltip": "用于编码视频张量的编解码器。自动使用 H.264；已编码的视频保持不变。"
+      },
+      "complete_audio": {
+        "name": "complete_audio",
+        "tooltip": "拼接视频的可选完整音轨。会覆盖输入视频携带的音频。"
+      },
+      "videos": {
+        "name": "videos",
+        "tooltip": "按输入顺序拼接的视频片段。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "拼接后的视频。"
+      }
+    }
+  },
   "ConditioningAverage": {
     "display_name": "条件平均",
     "inputs": {
@@ -3098,6 +3121,20 @@
       },
       "conditioning_to": {
         "name": "条件到"
+      }
+    }
+  },
+  "ConditioningLoader": {
+    "description": "从 embeddings 文件夹加载由保存条件保存的条件，或任何包含“conditioning”张量的 safetensors 文件。",
+    "display_name": "加载条件",
+    "inputs": {
+      "conditioning_name": {
+        "name": "conditioning_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3908,6 +3945,10 @@
       "bit_depth": {
         "name": "bit_depth",
         "tooltip": "自动模式对 sRGB 使用 8 位，对 HDR 使用 10 位。明确选择 8 位或 10 位时不受色彩空间影响。"
+      },
+      "codec": {
+        "name": "codec",
+        "tooltip": "可选立即编码视频。无会将图像保留为张量形式；自动使用 H.264。"
       },
       "color_space": {
         "name": "color_space",
@@ -5026,6 +5067,22 @@
       "batch_size": {
         "name": "batch_size",
         "tooltip": "批次中的潜空间图像数量。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyYuE2LatentAudio": {
+    "display_name": "空 YuE2 潜空间音频",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "seconds": {
+        "name": "seconds"
       }
     },
     "outputs": {
@@ -7979,7 +8036,7 @@
     }
   },
   "ImageColorSpace": {
-    "description": "转换 sRGB (Rec.709)、HDR (Rec.2020 HLG) 和 HDR PQ (Rec.2020 PQ)。使用 203 尼特 SDR 白点和 1000 尼特 HLG 参考显示器。缩窄时会对批次中的过量亮度进行色调映射，并压缩超出色域的颜色。转换以 float32 计算，并返回中间设备和数据类型。直通 alpha 不进行颜色转换。",
+    "description": "转换 sRGB、线性 Rec.709、HDR（Rec.2020 HLG）和 HDR PQ（Rec.2020 PQ）。线性 1.0 使用与 sRGB 相同的 203 尼特参考白；HLG 使用 1000 尼特参考显示器。线性输出和线性到 HDR 的转换会保留扩展值，不进行色调映射。SDR 输出和 PQ 到 HLG 的转换会在批次内对超额亮度进行色调映射，并压缩超出色域的颜色。转换以 float32 进行计算，并返回中间设备和数据类型。直通 Alpha 不进行颜色转换。",
     "display_name": "转换图像色彩空间",
     "inputs": {
       "destination": {
@@ -12374,6 +12431,23 @@
       }
     }
   },
+  "MarigoldV2PostProcess": {
+    "description": "将解码后的 Marigold V2 预测转换为图像：近处更亮的归一化深度、单位表面法线或 sRGB 反照率。",
+    "display_name": "Marigold V2 后处理",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "prediction": {
+        "name": "prediction"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MaskComposite": {
     "display_name": "合成遮罩",
     "inputs": {
@@ -16021,6 +16095,9 @@
     "inputs": {
       "model": {
         "name": "模型"
+      },
+      "sampling": {
+        "name": "sampling"
       },
       "shift": {
         "name": "移位"
@@ -20988,6 +21065,24 @@
       }
     }
   },
+  "SaveConditioning": {
+    "description": "将条件保存为输出文件夹中的 safetensors；将文件移动到 models/embeddings 后，可通过加载条件加载，例如用于跳过文本编码器。",
+    "display_name": "保存条件",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "conditioning",
+        "tooltip": null
+      }
+    }
+  },
   "SaveGLB": {
     "display_name": "保存GLB",
     "inputs": {
@@ -21676,6 +21771,28 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SheetSage2AudioToABC": {
+    "description": "将音乐中的人声和器乐旋律转录为 ABC 记谱法。将 abc 输出连接到 YuE2 Generate Music 节点，并使用匹配的模式。",
+    "display_name": "SheetSage2 音频转 ABC",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "audio_encoder": {
+        "name": "audio_encoder"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "完整：生成旋律和和弦；旋律：仅生成旋律，推荐用于翻唱。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
         "tooltip": null
       }
     }
@@ -28528,6 +28645,94 @@
     "outputs": {
       "0": {
         "name": "网格",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateABC": {
+    "description": "根据风格和歌词生成歌曲的 ABC 记谱法。将 abc 连接到 YuE2 Generate Music 节点。",
+    "display_name": "YuE2 生成 ABC",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "lyrics": {
+        "name": "lyrics"
+      },
+      "max_abc_tokens": {
+        "name": "max_abc_tokens"
+      },
+      "mode": {
+        "name": "模式",
+        "tooltip": "完整：生成旋律和和弦；旋律：仅生成旋律，推荐用于翻唱。"
+      },
+      "seed": {
+        "name": "种子"
+      },
+      "style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateMusic": {
+    "description": "根据风格、歌词和 ABC 记谱法生成音乐 token 和声学条件。将生成的秒数提供给 Empty YuE2 Latent Audio 节点。留空 ABC 输入会忽略所选模式。",
+    "display_name": "YuE2 生成音乐",
+    "inputs": {
+      "abc": {
+        "name": "abc",
+        "tooltip": "连接 ABC 生成器或提供编辑后的乐谱。留空将自动使用关闭模式。"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "lyrics": {
+        "name": "歌词"
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "最大时长；生成可能会提前停止。发布版本使用 360 秒预算。"
+      },
+      "mode": {
+        "name": "模式",
+        "tooltip": "完整：生成旋律和和弦；旋律：仅生成旋律，推荐用于翻唱。"
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "seed": {
+        "name": "种子"
+      },
+      "style": {
+        "name": "风格"
+      },
+      "temperature": {
+        "name": "温度"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "秒数",
         "tooltip": null
       }
     }

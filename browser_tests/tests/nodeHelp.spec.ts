@@ -45,9 +45,7 @@ async function openSelectionToolboxHelp(comfyPage: ComfyPage) {
 }
 
 test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.NodeLibrary.NewDesign', false)
-  })
+  test.use({ initialSettings: { 'Comfy.NodeLibrary.NewDesign': false } })
 
   test.describe('Selection Toolbox', () => {
     test('Should open help menu for selected node', async ({ comfyPage }) => {
@@ -153,8 +151,11 @@ test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
   })
 
   test.describe('Help Content', () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
+    test.use({
+      initialSettings: {
+        'Comfy.NodeLibrary.NewDesign': false,
+        'Comfy.Canvas.SelectionToolbox': true
+      }
     })
 
     test('Should display loading state while fetching help', async ({
@@ -358,7 +359,13 @@ test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
     })
 
     test.describe('Locale-specific documentation', () => {
-      test.use({ initialSettings: { 'Comfy.Locale': 'ja' } })
+      test.use({
+        initialSettings: {
+          'Comfy.NodeLibrary.NewDesign': false,
+          'Comfy.Canvas.SelectionToolbox': true,
+          'Comfy.Locale': 'ja'
+        }
+      })
 
       test('Should handle locale-specific documentation', async ({
         comfyPage

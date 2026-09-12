@@ -3065,6 +3065,29 @@
       }
     }
   },
+  "ConcatenateVideo": {
+    "description": "Fügt Videos der Reihe nach zusammen, ohne kompatible kodierte Eingaben zu dekodieren.",
+    "display_name": "Videos zusammenfügen",
+    "inputs": {
+      "codec": {
+        "name": "codec",
+        "tooltip": "Codec zum Kodieren von Videotensoren. Auto verwendet H.264; bereits kodierte Videos bleiben unverändert."
+      },
+      "complete_audio": {
+        "name": "complete_audio",
+        "tooltip": "Optionaler vollständiger Soundtrack für das zusammengefügte Video. Überschreibt den von den Eingabevideos mitgeführten Ton."
+      },
+      "videos": {
+        "name": "videos",
+        "tooltip": "Zusammenzufügende Videosegmente in der Reihenfolge der Eingabe."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Das zusammengefügte Video."
+      }
+    }
+  },
   "ConditioningAverage": {
     "display_name": "Konditionierung (Durchschnitt)",
     "inputs": {
@@ -3098,6 +3121,20 @@
       },
       "conditioning_to": {
         "name": "conditioning_to"
+      }
+    }
+  },
+  "ConditioningLoader": {
+    "description": "Lädt ein mit Save Conditioning gespeichertes Conditioning oder eine beliebige safetensors-Datei mit einem „conditioning“-Tensor aus dem embeddings-Ordner.",
+    "display_name": "Conditioning laden",
+    "inputs": {
+      "conditioning_name": {
+        "name": "conditioning_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3908,6 +3945,10 @@
       "bit_depth": {
         "name": "Bittiefe",
         "tooltip": "Auto verwendet 8-Bit für sRGB und 10-Bit für HDR. Explizite 8-Bit- und 10-Bit-Auswahlen sind unabhängig vom Farbraum."
+      },
+      "codec": {
+        "name": "codec",
+        "tooltip": "Kodiert das Video optional sofort. None behält die Bilder in Tensorform; Auto verwendet H.264."
       },
       "color_space": {
         "name": "Farbraum",
@@ -5026,6 +5067,22 @@
       "batch_size": {
         "name": "batch_size",
         "tooltip": "Die Anzahl der latenten Bilder im Batch."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyYuE2LatentAudio": {
+    "display_name": "Leeres YuE2-Latent-Audio",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "seconds": {
+        "name": "seconds"
       }
     },
     "outputs": {
@@ -7979,7 +8036,7 @@
     }
   },
   "ImageColorSpace": {
-    "description": "Konvertiert sRGB (Rec.709), HDR (Rec.2020 HLG) und HDR PQ (Rec.2020 PQ). Verwendet einen SDR-Weißpunkt von 203 Nit und ein HLG-Referenzdisplay mit 1000 Nit. Die Einengung führt für überschüssige Luminanz im gesamten Batch ein Tone-Mapping durch und komprimiert Farben außerhalb des Farbumfangs. Konvertierungen werden in float32 berechnet und geben Device und Datentyp des Zwischenergebnisses zurück. Straight Alpha wird nicht farbtransformiert.",
+    "description": "Konvertiert sRGB, lineares Rec.709, HDR (Rec.2020 HLG) und HDR PQ (Rec.2020 PQ). Linear 1.0 verwendet dasselbe Referenzweiß von 203 Nit wie sRGB; HLG verwendet ein Referenzdisplay von 1000 Nit. Lineare Ausgabe und Konvertierungen von linear zu HDR erhalten erweiterte Werte ohne Tone Mapping. SDR-Ausgabe und die Konvertierung von PQ zu HLG führen Tone Mapping für überschüssige Luminanz über den Batch hinweg durch und komprimieren Farben außerhalb des Farbraums. Konvertierungen werden in float32 berechnet und geben das Zwischen-Device und den dtype zurück. Nicht vormultipliziertes Alpha wird nicht farbtransformiert.",
     "display_name": "Bildfarbraum konvertieren",
     "inputs": {
       "destination": {
@@ -12374,6 +12431,23 @@
       }
     }
   },
+  "MarigoldV2PostProcess": {
+    "description": "Wandelt eine dekodierte Marigold V2-Vorhersage in ein Bild um: normalisierte Tiefe mit hell dargestellter Nähe, Einheitsflächennormalen oder sRGB-Albedo.",
+    "display_name": "Marigold V2-Nachbearbeitung",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "prediction": {
+        "name": "prediction"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MaskComposite": {
     "display_name": "Masken kombinieren",
     "inputs": {
@@ -16021,6 +16095,9 @@
     "inputs": {
       "model": {
         "name": "model"
+      },
+      "sampling": {
+        "name": "sampling"
       },
       "shift": {
         "name": "shift"
@@ -20988,6 +21065,24 @@
       }
     }
   },
+  "SaveConditioning": {
+    "description": "Speichert ein Conditioning als safetensors im Ausgabeordner; verschieben Sie die Datei nach models/embeddings, um sie mit Load Conditioning zu laden, z. B. um den Textencoder zu überspringen.",
+    "display_name": "Conditioning speichern",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "conditioning",
+        "tooltip": null
+      }
+    }
+  },
   "SaveGLB": {
     "display_name": "3D-Modell speichern",
     "inputs": {
@@ -21676,6 +21771,28 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SheetSage2AudioToABC": {
+    "description": "Transkribiert Gesangs- und Instrumentalmelodien aus Musik in ABC-Notation. Verbinden Sie die abc-Ausgabe mit dem YuE2 Generate Music-Node und verwenden Sie den passenden Modus.",
+    "display_name": "SheetSage2-Audio zu ABC",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "audio_encoder": {
+        "name": "audio_encoder"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "full: erzeugt Melodie und Akkorde; melody: erzeugt nur eine Melodie, für Covers empfohlen."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
         "tooltip": null
       }
     }
@@ -28528,6 +28645,94 @@
     "outputs": {
       "0": {
         "name": "mesh",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateABC": {
+    "description": "Generiert die ABC-Notation eines Songs aus Stil und Liedtext. Verbinden Sie abc mit dem YuE2 Generate Music-Node.",
+    "display_name": "YuE2 ABC generieren",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "lyrics": {
+        "name": "lyrics"
+      },
+      "max_abc_tokens": {
+        "name": "max_abc_tokens"
+      },
+      "mode": {
+        "name": "Modus",
+        "tooltip": "full: generiert Melodie und Akkorde; melody: generiert nur die Melodie, empfohlen für Coverversionen."
+      },
+      "seed": {
+        "name": "Seed"
+      },
+      "style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateMusic": {
+    "description": "Generiert Musik-Token und akustische Konditionierung aus Stil, Liedtext und einer ABC-Notation. Geben Sie die generierten Sekunden an den Node „Empty YuE2 Latent Audio“ weiter. Eine leere ABC-Eingabe ignoriert den ausgewählten Modus.",
+    "display_name": "YuE2 Musik generieren",
+    "inputs": {
+      "abc": {
+        "name": "abc",
+        "tooltip": "Verbinden Sie den ABC-Generator oder geben Sie eine bearbeitete Partitur an. Lassen Sie das Feld leer, um automatisch den Modus „off“ zu verwenden."
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "lyrics": {
+        "name": "Liedtext"
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "Maximale Dauer; die Generierung kann früher enden. Diese Version verwendet ein Budget von 360 Sekunden."
+      },
+      "mode": {
+        "name": "Modus",
+        "tooltip": "full: generiert Melodie und Akkorde; melody: generiert nur die Melodie, empfohlen für Coverversionen."
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "seed": {
+        "name": "Seed"
+      },
+      "style": {
+        "name": "Stil"
+      },
+      "temperature": {
+        "name": "Temperatur"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "Sekunden",
         "tooltip": null
       }
     }

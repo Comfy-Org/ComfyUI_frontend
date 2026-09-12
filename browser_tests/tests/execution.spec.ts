@@ -59,7 +59,6 @@ async function getValidationErrorMessage(comfyPage: ComfyPage) {
 test.describe('Execution', { tag: ['@smoke', '@workflow'] }, () => {
   test.use({
     initialSettings: {
-      'Comfy.UseNewMenu': 'Top',
       'Comfy.RightSidePanel.ShowErrorsTab': true
     }
   })
@@ -129,7 +128,6 @@ test.describe(
 test.describe('Execution validation errors', { tag: '@workflow' }, () => {
   test.use({
     initialSettings: {
-      'Comfy.UseNewMenu': 'Top',
       'Comfy.RightSidePanel.ShowErrorsTab': true
     }
   })

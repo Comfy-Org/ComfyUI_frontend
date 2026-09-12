@@ -184,6 +184,12 @@
       }
     },
     {
+      "files": ["browser_tests/tests/**/*.spec.ts"],
+      "rules": {
+        "comfy/prefer-initial-settings": "error"
+      }
+    },
+    {
       "files": ["browser_tests/**/*.ts"],
       "excludeFiles": ["browser_tests/fixtures/networkIsolationFixture.ts"],
       "rules": {

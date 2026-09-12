@@ -3,9 +3,7 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-  })
+  test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
   test.describe('Subgraph Clipboard Operations', () => {
     test('Can copy and paste nodes inside a subgraph', async ({

@@ -30,28 +30,48 @@ test.describe('Group node migration', { tag: '@node' }, () => {
     expect(state.hasGroupNodesExtra).toBe(false)
   })
 
+  // QA found this broken on 2026-09-10 while running the 1.54 test plan:
+  // converting a v1.3.3 group node misaligns widget values by two positions, so
+  // denoise receives 'euler' and filename_prefix receives 'normal'. Saving then
+  // writes the wrong values back, silently corrupting the workflow. Pinned with
+  // test.fail() so the fix flips this to passing.
   test('Preserves group node widget values through subgraph conversion', async ({
     comfyPage
   }) => {
+    test.fail()
     await comfyPage.workflow.loadWorkflow('groupnodes/group_node_v1.3.3')
 
-    const interiorValues = await comfyPage.page.evaluate(() =>
+    const interiorNodes = await comfyPage.page.evaluate(() =>
       [...window.app!.graph.subgraphs.values()].flatMap((subgraph) =>
-        subgraph.nodes.flatMap(
-          (node) => node.widgets?.map((widget) => widget.value) ?? []
-        )
+        subgraph.nodes.map((node) => ({
+          type: node.type,
+          widgets: Object.fromEntries(
+            (node.widgets ?? []).map((widget) => [widget.name, widget.value])
+          )
+        }))
       )
     )
 
-    expect(interiorValues).toHaveLength(14)
-    expect(interiorValues).toEqual(
-      expect.arrayContaining([
-        156680208700286,
-        'euler',
-        'v1-5-pruned-emaonly.ckpt',
-        expect.stringContaining('purple galaxy bottle')
-      ])
-    )
+    const ksampler = interiorNodes.find((node) => node.type === 'KSampler')
+    expect(
+      ksampler,
+      'converted subgraph should contain a KSampler'
+    ).toBeDefined()
+    expect(ksampler!.widgets).toMatchObject({
+      seed: 156680208700286,
+      steps: 20,
+      cfg: 8,
+      sampler_name: 'euler',
+      scheduler: 'normal',
+      denoise: 1
+    })
+
+    const saveImage = interiorNodes.find((node) => node.type === 'SaveImage')
+    expect(
+      saveImage,
+      'converted subgraph should contain a SaveImage'
+    ).toBeDefined()
+    expect(saveImage!.widgets).toMatchObject({ filename_prefix: 'ComfyUI' })
   })
 
   test(

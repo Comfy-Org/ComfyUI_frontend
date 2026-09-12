@@ -5,12 +5,7 @@ import { TestIds } from '@e2e/fixtures/selectors'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 
 test.describe('Errors tab - common', { tag: '@ui' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting(
-      'Comfy.RightSidePanel.ShowErrorsTab',
-      true
-    )
-  })
+  test.use({ initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true } })
 
   test.describe('Tab visibility', () => {
     test('Should show Errors tab when errors exist', async ({ comfyPage }) => {

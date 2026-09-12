@@ -1,9 +1,11 @@
+import { DOMParser } from '@tiptap/pm/model'
 import { EditorState } from '@tiptap/pm/state'
 import { describe, expect, it } from 'vitest'
 
 import { parseWorkflowReferences } from '../../../utils/workflowReferenceText'
 
 import {
+  inlinePromptSchema,
   promptDocument,
   promptDocumentPosition,
   promptDraft,
@@ -11,6 +13,24 @@ import {
 } from './inlinePrompt'
 
 describe('inline workflow prompt', () => {
+  it('normalizes clipboard workflow IDs while preserving labels and availability', () => {
+    const content = document.createElement('div')
+    const chip = document.createElement('span')
+    chip.dataset.comfyWorkflow = '1'
+    chip.dataset.workflowId = ' \tworkflow-B\n '
+    chip.dataset.workflowUnavailable = 'true'
+    chip.textContent = ' Reference B '
+    content.append(chip)
+
+    const doc = DOMParser.fromSchema(inlinePromptSchema).parse(content)
+
+    expect(doc.firstChild?.attrs).toEqual({
+      id: 'workflow-B',
+      name: ' Reference B ',
+      unavailable: true
+    })
+  })
+
   it('restores references before, between and after text, including adjacent tokens', () => {
     const draft = {
       text: 'before 😀\nafter',

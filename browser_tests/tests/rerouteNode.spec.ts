@@ -39,9 +39,11 @@ test.describe(
   'LiteGraph Native Reroute Node',
   { tag: ['@screenshot', '@node'] },
   () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-      await comfyPage.settings.setSetting('LiteGraph.Reroute.SplineOffset', 80)
+    test.use({
+      initialSettings: {
+        'Comfy.UseNewMenu': 'Disabled',
+        'LiteGraph.Reroute.SplineOffset': 80
+      }
     })
 
     test('loads from workflow', async ({ comfyPage }) => {

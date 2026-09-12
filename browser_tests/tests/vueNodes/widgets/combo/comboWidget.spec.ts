@@ -81,8 +81,6 @@ test.describe('Vue Combo Widget', { tag: ['@vue-nodes', '@widget'] }, () => {
 
   async function getMixedGraphSamplerCombos(comfyPage: ComfyPage) {
     await comfyPage.workflow.loadWorkflow('groups/mixed_graph_items')
-    await comfyPage.vueNodes.waitForNodes(3)
-
     const nodes = comfyPage.vueNodes.getNodeByTitle('KSampler')
     await expect(nodes).toHaveCount(3)
 
@@ -265,7 +263,6 @@ test.describe('Vue Combo Widget', { tag: ['@vue-nodes', '@widget'] }, () => {
 
     const serialized = await comfyPage.workflow.getExportedWorkflow()
     await comfyPage.workflow.loadGraphData(serialized)
-    await comfyPage.vueNodes.waitForNodes()
 
     const ksamplerNode = await comfyPage.nodeOps.getNodeRefByType('KSampler')
 

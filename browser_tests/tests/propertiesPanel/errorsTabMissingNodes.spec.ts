@@ -5,12 +5,7 @@ import { TestIds } from '@e2e/fixtures/selectors'
 import { loadWorkflowAndOpenErrorsTab } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 
 test.describe('Errors tab - Missing nodes', { tag: ['@ui', '@canvas'] }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting(
-      'Comfy.RightSidePanel.ShowErrorsTab',
-      true
-    )
-  })
+  test.use({ initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true } })
 
   test('Should show missing node pack card with guidance', async ({
     comfyPage

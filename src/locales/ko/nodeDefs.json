@@ -3065,6 +3065,29 @@
       }
     }
   },
+  "ConcatenateVideo": {
+    "description": "호환되는 인코딩된 입력은 디코딩하지 않고 순서대로 비디오를 연결합니다.",
+    "display_name": "비디오 연결",
+    "inputs": {
+      "codec": {
+        "name": "codec",
+        "tooltip": "비디오 텐서를 인코딩하는 데 사용할 코덱입니다. Auto는 H.264를 사용하며, 이미 인코딩된 비디오는 변경되지 않습니다."
+      },
+      "complete_audio": {
+        "name": "complete_audio",
+        "tooltip": "연결된 비디오에 사용할 선택적 전체 사운드트랙입니다. 입력 비디오에 포함된 오디오를 재정의합니다."
+      },
+      "videos": {
+        "name": "videos",
+        "tooltip": "입력 순서대로 연결할 비디오 세그먼트입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "연결된 비디오입니다."
+      }
+    }
+  },
   "ConditioningAverage": {
     "display_name": "조건 (평균)",
     "inputs": {
@@ -3098,6 +3121,20 @@
       },
       "conditioning_to": {
         "name": "대상 조건"
+      }
+    }
+  },
+  "ConditioningLoader": {
+    "description": "embeddings 폴더에서 Save Conditioning으로 저장한 컨디셔닝 또는 'conditioning' 텐서가 포함된 safetensors 파일을 불러옵니다.",
+    "display_name": "컨디셔닝 불러오기",
+    "inputs": {
+      "conditioning_name": {
+        "name": "conditioning_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3908,6 +3945,10 @@
       "bit_depth": {
         "name": "bit_depth",
         "tooltip": "자동은 sRGB에 8비트, HDR에 10비트를 사용합니다. 명시적인 8비트 및 10비트 선택은 색상 공간과 무관합니다."
+      },
+      "codec": {
+        "name": "codec",
+        "tooltip": "선택적으로 비디오를 즉시 인코딩합니다. None은 이미지를 텐서 형식으로 유지하고, Auto는 H.264를 사용합니다."
       },
       "color_space": {
         "name": "color_space",
@@ -5026,6 +5067,22 @@
       "batch_size": {
         "name": "batch_size",
         "tooltip": "배치의 latent 이미지 수입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyYuE2LatentAudio": {
+    "display_name": "빈 YuE2 latent 오디오",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "seconds": {
+        "name": "seconds"
       }
     },
     "outputs": {
@@ -7979,7 +8036,7 @@
     }
   },
   "ImageColorSpace": {
-    "description": "sRGB (Rec.709), HDR (Rec.2020 HLG), HDR PQ (Rec.2020 PQ)를 변환합니다. 203니트 SDR 화이트와 1000니트 HLG 기준 디스플레이를 사용합니다. 축소 시 배치 전체에서 초과 휘도를 톤 매핑하고 색역 밖의 색상을 압축합니다. 변환은 float32로 계산되며 중간 장치 및 dtype을 반환합니다. 스트레이트 알파에는 색상 변환이 적용되지 않습니다.",
+    "description": "sRGB, 선형 Rec.709, HDR(Rec.2020 HLG), HDR PQ(Rec.2020 PQ) 간에 변환합니다. 선형 1.0은 sRGB와 동일한 203니트 기준 백색을 사용하며, HLG는 1000니트 기준 디스플레이를 사용합니다. 선형 출력 및 선형-HDR 변환은 톤 매핑 없이 확장 값을 유지합니다. SDR 출력 및 PQ-HLG 변환은 배치 전체에서 초과 휘도를 톤 매핑하고 색역 밖의 색상을 압축합니다. 변환은 float32로 계산되며 중간 device 및 dtype을 반환합니다. 스트레이트 알파에는 색상 변환이 적용되지 않습니다.",
     "display_name": "이미지 색 공간 변환",
     "inputs": {
       "destination": {
@@ -12374,6 +12431,23 @@
       }
     }
   },
+  "MarigoldV2PostProcess": {
+    "description": "디코딩된 Marigold V2 예측을 이미지로 변환합니다. 가까운 영역은 밝게 표시되는 정규화된 깊이, 단위 표면 법선 또는 sRGB 알베도 중 하나입니다.",
+    "display_name": "Marigold V2 후처리",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "prediction": {
+        "name": "prediction"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MaskComposite": {
     "display_name": "마스크 합성",
     "inputs": {
@@ -16021,6 +16095,9 @@
     "inputs": {
       "model": {
         "name": "모델"
+      },
+      "sampling": {
+        "name": "sampling"
       },
       "shift": {
         "name": "시프트"
@@ -20988,6 +21065,24 @@
       }
     }
   },
+  "SaveConditioning": {
+    "description": "컨디셔닝을 safetensors 형식으로 output 폴더에 저장합니다. Load Conditioning으로 불러오려면 파일을 models/embeddings로 이동하세요. 예를 들어 텍스트 인코더를 건너뛸 수 있습니다.",
+    "display_name": "컨디셔닝 저장",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "conditioning",
+        "tooltip": null
+      }
+    }
+  },
   "SaveGLB": {
     "display_name": "GLB 저장",
     "inputs": {
@@ -21676,6 +21771,28 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SheetSage2AudioToABC": {
+    "description": "음악에서 보컬 및 악기 멜로디를 ABC 표기법으로 전사합니다. abc 출력을 YuE2 Generate Music 노드에 연결하고 일치하는 모드를 사용하세요.",
+    "display_name": "SheetSage2 오디오를 ABC로",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "audio_encoder": {
+        "name": "audio_encoder"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "full: 멜로디와 코드를 생성합니다. melody: 멜로디만 생성하며, 커버곡에 권장됩니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
         "tooltip": null
       }
     }
@@ -28528,6 +28645,94 @@
     "outputs": {
       "0": {
         "name": "mesh",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateABC": {
+    "description": "스타일과 가사로 노래의 ABC 표기법을 생성합니다. abc를 YuE2 Generate Music 노드에 연결하세요.",
+    "display_name": "YuE2 ABC 생성",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "lyrics": {
+        "name": "lyrics"
+      },
+      "max_abc_tokens": {
+        "name": "max_abc_tokens"
+      },
+      "mode": {
+        "name": "모드",
+        "tooltip": "full: 멜로디와 코드를 생성합니다; melody: 멜로디만 생성하며, 커버에 권장됩니다."
+      },
+      "seed": {
+        "name": "시드"
+      },
+      "style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateMusic": {
+    "description": "스타일, 가사 및 ABC 표기법으로 음악 토큰과 음향 컨디셔닝을 생성합니다. 생성된 초 단위 값을 Empty YuE2 Latent Audio 노드에 제공하세요. ABC 입력이 비어 있으면 선택한 모드는 무시됩니다.",
+    "display_name": "YuE2 음악 생성",
+    "inputs": {
+      "abc": {
+        "name": "abc",
+        "tooltip": "ABC 생성기를 연결하거나 편집한 악보를 제공하세요. 비워 두면 자동으로 off 모드가 사용됩니다."
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "lyrics": {
+        "name": "가사"
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "최대 길이이며, 생성은 더 일찍 종료될 수 있습니다. 릴리스 버전은 360초 예산을 사용합니다."
+      },
+      "mode": {
+        "name": "모드",
+        "tooltip": "full: 멜로디와 코드를 생성합니다; melody: 멜로디만 생성하며, 커버에 권장됩니다."
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "seed": {
+        "name": "시드"
+      },
+      "style": {
+        "name": "스타일"
+      },
+      "temperature": {
+        "name": "온도"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "초",
         "tooltip": null
       }
     }
