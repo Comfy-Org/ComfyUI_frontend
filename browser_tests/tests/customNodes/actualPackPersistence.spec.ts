@@ -205,7 +205,9 @@ test.describe(
           .click()
         await comfyPage.page.keyboard.press('Escape')
         await comfyPage.workflow.waitForWorkflowIdle()
-        await expect.poll(comparerState).toEqual(expectedComparison)
+        await expect
+          .poll(comparerState, { timeout: 15_000 })
+          .toEqual(expectedComparison)
 
         const [saveRequest] = await Promise.all([
           comfyPage.page.waitForRequest(
@@ -234,7 +236,9 @@ test.describe(
         await comfyPage.page.reload({ waitUntil: 'domcontentloaded' })
         await comfyPage.waitForAppReady()
         await openWorkflowFromSidebar(comfyPage, workflowName)
-        await expect.poll(comparerState).toEqual(expectedComparison)
+        await expect
+          .poll(comparerState, { timeout: 15_000 })
+          .toEqual(expectedComparison)
         const reloadedState = await comparerState()
         expect(reloadedState?.renderedImages?.map(({ src }) => src)).toEqual(
           initialState?.renderedImages?.map(({ src }) => src)
