@@ -229,6 +229,84 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('starts on flag delivery and stops synchronously on revocation', async () => {
+    const store = useAgentPanelStore()
+    store.enabled = false
+    const { status, workflowId, unmount } = mountFollower('wf-1')
+    expect(bridgeState.current).toBeNull()
+
+    store.enabled = true
+    const first = bridge()
+    expect(first.subscribe).toHaveBeenCalledExactlyOnceWith('wf-1')
+    first.dispatchEvent(
+      new CustomEvent('doc_subscribed', { detail: { ok: true } })
+    )
+    expect(status().connected).toBe(true)
+
+    store.enabled = false
+    expect(first.destroy).toHaveBeenCalledOnce()
+    expect(clientState.destroy).toHaveBeenCalledOnce()
+    expect(adapterState.destroy).toHaveBeenCalledOnce()
+    expect(status()).toMatchObject({
+      enabled: false,
+      connected: false,
+      workflowId: null
+    })
+
+    const applies = adapterState.applyFrame.mock.calls.length
+    first.dispatchEvent(
+      new CustomEvent('doc_update', { detail: { workflowId: 'wf-1', seq: 42 } })
+    )
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    vi.advanceTimersByTime(STALE_AFTER_MS * 2)
+    workflowId.value = 'wf-2'
+    await nextTick()
+    expect(first.subscribe).toHaveBeenCalledTimes(1)
+    expect(first.resubscribe).not.toHaveBeenCalled()
+    expect(adapterState.applyFrame).toHaveBeenCalledTimes(applies)
+
+    store.enabled = true
+    expect(bridge()).not.toBe(first)
+    expect(bridge().subscribe).toHaveBeenCalledExactlyOnceWith('wf-2')
+    unmount()
+    expect(first.destroy).toHaveBeenCalledOnce()
+    expect(bridge().destroy).toHaveBeenCalledOnce()
+  })
+
+  it('cannot enable transport through diagnostic, legacy URL, storage or build controls', async () => {
+    vi.stubEnv('DEV', false)
+    vi.stubEnv('VITE_AGENT_CRDT_FOLLOWER', 'true')
+    window.history.replaceState({}, '', '/?crdtDebug=1&agentCrdtFollower=1')
+    localStorage.setItem('Comfy.Agent.CrdtFollower', 'true')
+    vi.resetModules()
+    const diagnostics = await import('./crdtDebugGate')
+    expect(diagnostics.isCrdtDebugEnabled()).toBe(true)
+    expect(diagnostics.resolveDebugPanelEnabled(false)).toBe(false)
+
+    useAgentPanelStore().enabled = false
+    const { status, unmount } = mountFollower('wf-1')
+    expect(status().enabled).toBe(false)
+    expect(bridgeState.current).toBeNull()
+    expect('__agentCrdtPoc' in window).toBe(false)
+    unmount()
+  })
+
+  it('keeps product transport enabled when diagnostics and legacy controls are off', async () => {
+    vi.stubEnv('DEV', false)
+    vi.stubEnv('VITE_AGENT_CRDT_FOLLOWER', 'false')
+    window.history.replaceState({}, '', '/?crdtDebug=0&agentCrdtFollower=0')
+    vi.resetModules()
+    const diagnostics = await import('./crdtDebugGate')
+    expect(diagnostics.isCrdtDebugEnabled()).toBe(false)
+    expect(diagnostics.resolveDebugPanelEnabled(true)).toBe(false)
+
+    const { status, unmount } = mountFollower('wf-1')
+    expect(status().enabled).toBe(true)
+    expect(bridge().subscribe).toHaveBeenCalledExactlyOnceWith('wf-1')
+    expect('__agentCrdtPoc' in window).toBe(false)
+    unmount()
+  })
+
   it('subscribes immediately to a bound workflow and reports it in status', () => {
     const { unmount, status } = mountFollower('wf-1')
 

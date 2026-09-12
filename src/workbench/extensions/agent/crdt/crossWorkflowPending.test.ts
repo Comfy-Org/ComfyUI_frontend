@@ -5,6 +5,7 @@ import type { Ref } from 'vue'
 
 import type { GraphMutations } from '@/core/graph/graphMutations'
 import { render } from '@testing-library/vue'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import type { GraphOperation } from './graphOperations'
 
@@ -176,6 +177,7 @@ function dispatchOpsResult(detail: unknown): void {
 
 describe('R-73 cross-workflow pending operation characterization', () => {
   beforeEach(() => {
+    useAgentPanelStore().enabled = true
     bridgeState.current = null
     bridgeState.transport.up = true
     clientState.transportUp = true
@@ -184,6 +186,29 @@ describe('R-73 cross-workflow pending operation characterization', () => {
     clientState.sendOps.mockClear()
     devLogState.recordDevEvent.mockClear()
     vi.useFakeTimers()
+  })
+
+  it('cancels pending sends and rejects new operations while the product gate is off', () => {
+    const store = useAgentPanelStore()
+    const { enqueue, status } = mountFollower('wf-a')
+    clientState.transportUp = false
+    enqueue([deleteNode('queued-before-revocation')])
+    expect(clientState.attempts).toHaveLength(1)
+
+    store.enabled = false
+    clientState.transportUp = true
+    enqueue([deleteNode('attempted-while-disabled')])
+    vi.advanceTimersByTime(60_000)
+    expect(status().enabled).toBe(false)
+    expect(clientState.attempts).toHaveLength(1)
+    expect(clientState.sent).toHaveLength(0)
+
+    store.enabled = true
+    enqueue([deleteNode('new-lifetime')])
+    expect(clientState.sent).toHaveLength(1)
+    expect(clientState.sent[0].ops).toMatchObject([
+      { op: 'delete_node', node_id: 'new-lifetime' }
+    ])
   })
 
   it('does not retarget a transport retry after workflow A switches to workflow B', async () => {
