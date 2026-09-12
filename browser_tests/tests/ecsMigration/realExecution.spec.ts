@@ -9,7 +9,19 @@ import {
   expectNoVisibleErrors,
   trackVisibleErrors
 } from '@e2e/fixtures/utils/errorSurfaces'
-import { zLegacyHistoryResponse } from '@/schemas/apiSchema'
+import { z } from 'zod'
+
+import { zTaskOutput } from '@/schemas/apiSchema'
+
+const zLegacyHistoryResponse = z.record(
+  z.object({
+    status: z.object({
+      completed: z.boolean(),
+      status_str: z.string()
+    }),
+    outputs: zTaskOutput.optional()
+  })
+)
 
 type OutputEvidence = {
   promptId: string
