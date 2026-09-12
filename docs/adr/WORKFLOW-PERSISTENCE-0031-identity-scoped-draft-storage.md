@@ -132,9 +132,11 @@ destination `scope`, the source index's `sourceUpdatedAt` generation and the
 winning claim's `nonce`. The winner writes it after publishing the destination
 index and before removing source artifacts. Losing attempts read it when they
 no longer own the claim and only treat it as another same-scope winner when
-both scope and source generation match. It has no TTL and remains for the
-lifetime of the browser's site storage so delayed losing attempts can still
-identify the committed generation.
+both scope and source generation match. The key has no TTL, but stores only the
+latest completion value for each workspace: every later successful migration
+from that workspace replaces it with the new scope, generation and nonce. A
+losing attempt delayed until after that replacement can no longer identify the
+winner for its older generation from the completion record.
 
 The first user to sign in on a browser therefore claims any pre-existing
 workspace-keyed drafts. This is accepted: before this change those drafts were
