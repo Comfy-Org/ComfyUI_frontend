@@ -9382,7 +9382,7 @@ Enterprise`
   },
   'workshop.filter.search': { en: 'Search…', 'zh-CN': '搜索…' },
   'workshop.sort.label': { en: 'Sort', 'zh-CN': '排序' },
-  'workshop.sort.popular': { en: 'Most examples', 'zh-CN': '示例最多' },
+  'workshop.sort.popular': { en: 'Most popular', 'zh-CN': '最受欢迎' },
   'workshop.sort.name': { en: 'Name A to Z', 'zh-CN': '名称 A 到 Z' },
   'workshop.sort.priceAsc': {
     en: 'Price: low to high',

@@ -5,6 +5,7 @@ import type { WorkshopFormDefinition } from './workshop-form-definition'
 import type { WorkshopContract } from './workshop-contract'
 import type { WorkshopInputDefinition } from './workshop-input-definition'
 import { workshopInputDefinitionSchema } from './workshop-input-definition'
+import { modelOrderRank } from './workshop-model-order'
 import { OTHER_FORMAT_USE_CASES } from './workshop-sections'
 import {
   routerWorkshopModels,
@@ -506,11 +507,17 @@ export function sortWorkshopModels(
 ): WorkshopModel[] {
   const byName = (a: WorkshopModel, b: WorkshopModel) =>
     a.name.localeCompare(b.name)
+  const byExamples = (a: WorkshopModel, b: WorkshopModel) =>
+    b.workflowCount - a.workflowCount || byName(a, b)
+  // A model the window never saw has no place in the order, and falls in behind
+  // every model that has one rather than ahead of all of them.
+  const placed = (model: WorkshopModel) =>
+    modelOrderRank.get(model.slug) ?? Number.POSITIVE_INFINITY
   const compare: Record<
     SortOrder,
     (a: WorkshopModel, b: WorkshopModel) => number
   > = {
-    popular: (a, b) => b.workflowCount - a.workflowCount || byName(a, b),
+    popular: (a, b) => placed(a) - placed(b) || byExamples(a, b),
     name: byName,
     priceAsc: (a, b) =>
       (a.creditsPerRun ?? Number.POSITIVE_INFINITY) -
