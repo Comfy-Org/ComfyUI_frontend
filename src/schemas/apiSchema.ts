@@ -361,7 +361,6 @@ const zSettings = z.object({
   'Comfy.Node.ShowDeprecated': z.boolean(),
   'Comfy.Node.ShowExperimental': z.boolean(),
   'Comfy.NodeReplacement.Enabled': z.boolean(),
-  'Comfy.Pointer.ClickBufferTime': z.number(),
   'Comfy.Pointer.ClickDrift': z.number(),
   'Comfy.Pointer.DoubleClickTime': z.number(),
   'Comfy.PreviewFormat': z.string(),
