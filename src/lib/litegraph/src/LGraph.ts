@@ -2489,8 +2489,10 @@ export class LGraph
     const toSelect: Positionable[] = []
     const offsetX = subgraphNode.pos[0] - center[0] + subgraphNode.size[0] / 2
     const offsetY = subgraphNode.pos[1] - center[1] + subgraphNode.size[1] / 2
-    const movedNodes = multiClone(subgraphNode.subgraph.nodes)
+    const inputSlotMarker = `__unpackInputSlot_${createUuidv4()}`
+    const movedNodes = multiClone(subgraphNode.subgraph.nodes, inputSlotMarker)
     const nodeIdMap = new Map<NodeId, NodeId>()
+    const configuredInputSlots = new Map<NodeId, Map<number, INodeInputSlot>>()
     for (const n_info of movedNodes) {
       let node = LiteGraph.createNode(n_info.type, n_info.title)
       if (!node) {
@@ -2529,6 +2531,19 @@ export class LGraph
 
       this.add(node, true)
       node.configure(n_info)
+      const configuredSlots = new Map<number, INodeInputSlot>()
+      for (const input of node.inputs) {
+        const marker: unknown = Object.getOwnPropertyDescriptor(
+          input,
+          inputSlotMarker
+        )?.value
+        Reflect.deleteProperty(input, inputSlotMarker)
+        if (typeof marker === 'number') configuredSlots.set(marker, input)
+      }
+      for (const input of n_info.inputs ?? []) {
+        Reflect.deleteProperty(input, inputSlotMarker)
+      }
+      configuredInputSlots.set(newNodeId, configuredSlots)
       node.setPos(node.pos[0] + offsetX, node.pos[1] + offsetY)
       toSelect.push(node)
     }
@@ -2538,6 +2553,10 @@ export class LGraph
     const presentationStore = useLinkPresentationStore()
     const scope = graphScopeOf(this)
     const subgraphScope = graphScopeOf(subgraphNode.subgraph)
+    type TargetSlotReference = (
+      | { id: UUID }
+      | { name: string; occurrence: number }
+    ) & { input?: INodeInputSlot | null }
     const newLinks: (LinkPresentation & {
       oid: NodeId
       oslot: number
@@ -2547,7 +2566,54 @@ export class LGraph
       iparent?: RerouteId
       eparent?: RerouteId
       externalFirst: boolean
+      targetSlot?: TargetSlotReference
     })[] = []
+    function findTargetSlotIndex(
+      targetNode: LGraphNode,
+      targetSlot: TargetSlotReference
+    ) {
+      if (targetSlot.input) {
+        const index = targetNode.inputs.indexOf(targetSlot.input)
+        if (index !== -1) return index
+        if ('name' in targetSlot) return -1
+      }
+      if (targetSlot.input === null) return -1
+      if ('id' in targetSlot) {
+        return targetNode.isSubgraphNode()
+          ? targetNode.inputs.findIndex(
+              (input) => input._subgraphSlot?.id === targetSlot.id
+            )
+          : -1
+      }
+      let occurrence = 0
+      return targetNode.inputs.findIndex((input) => {
+        if (input.name !== targetSlot.name) return false
+        return occurrence++ === targetSlot.occurrence
+      })
+    }
+    function getTargetSlotReference(
+      targetNode: LGraphNode | null | undefined,
+      targetSlotIndex: number,
+      liveTargetInput?: INodeInputSlot | null
+    ) {
+      const targetSlot = targetNode?.inputs[targetSlotIndex]
+      if (!targetNode || !targetSlot) return
+      const targetSlotId = targetNode.isSubgraphNode()
+        ? targetNode.inputs[targetSlotIndex]?._subgraphSlot?.id
+        : undefined
+      const reference: TargetSlotReference = targetSlotId
+        ? { id: targetSlotId }
+        : {
+            name: targetSlot.name,
+            occurrence: targetNode.inputs
+              .slice(0, targetSlotIndex)
+              .filter((input) => input.name === targetSlot.name).length
+          }
+      return {
+        ...reference,
+        input: liveTargetInput === undefined ? targetSlot : liveTargetInput
+      }
+    }
     for (const [, link] of subgraphNode.subgraph.links) {
       const presentation = presentationStore.getPresentation(
         subgraphScope,
@@ -2608,6 +2674,10 @@ export class LGraph
             iparent: link.parentId,
             eparent: sublink.parentId,
             externalFirst: true,
+            targetSlot: getTargetSlotReference(
+              this.getNodeById(sublink.target_id),
+              sublink.target_slot
+            ),
             ...getAgreedLinkPresentation([presentation, outerPresentation])
           })
           sublink.parentId = undefined
@@ -2637,6 +2707,11 @@ export class LGraph
         iparent: link.parentId,
         eparent: externalParentId,
         externalFirst: false,
+        targetSlot: getTargetSlotReference(
+          subgraphNode.subgraph.getNodeById(link.target_id),
+          link.target_slot,
+          configuredInputSlots.get(targetId)?.get(link.target_slot) ?? null
+        ),
         ...restoredPresentation
       })
     }
@@ -2664,6 +2739,15 @@ export class LGraph
       return true
     })
 
+    function resolveTargetSlot(
+      targetNode: LGraphNode,
+      newLink: (typeof newLinks)[number]
+    ) {
+      const targetSlot = newLink.targetSlot
+      if (!targetSlot) return newLink.tslot
+      return findTargetSlotIndex(targetNode, targetSlot)
+    }
+
     const linkIdMap = new Map<LinkId, LinkId[]>()
     for (const newLink of dedupedNewLinks) {
       let created: LLink | null | undefined
@@ -2675,10 +2759,14 @@ export class LGraph
         if (newLink.tid === UNASSIGNED_NODE_ID) continue
         const tnode = this.getNodeById(newLink.tid)
         if (!tnode) continue
-        created = this.inputNode.slots[newLink.oslot].connect(
-          tnode.inputs[newLink.tslot],
-          tnode
-        )
+        const targetSlot = resolveTargetSlot(tnode, newLink)
+        created =
+          targetSlot === -1
+            ? null
+            : this.inputNode.slots[newLink.oslot].connect(
+                tnode.inputs[targetSlot],
+                tnode
+              )
       } else if (newLink.tid == SUBGRAPH_OUTPUT_ID) {
         if (!(this instanceof Subgraph)) {
           console.error('Ignoring link to subgraph outside subgraph')
@@ -2700,7 +2788,11 @@ export class LGraph
         const originNode = this.getNodeById(newLink.oid)
         const targetNode = this.getNodeById(newLink.tid)
         if (!originNode || !targetNode) continue
-        created = originNode.connect(newLink.oslot, targetNode, newLink.tslot)
+        const targetSlot = resolveTargetSlot(targetNode, newLink)
+        created =
+          targetSlot === -1
+            ? null
+            : originNode.connect(newLink.oslot, targetNode, targetSlot)
       }
       if (!created) {
         console.error('Failed to create link')
