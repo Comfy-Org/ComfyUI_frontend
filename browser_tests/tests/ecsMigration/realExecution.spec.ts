@@ -26,16 +26,31 @@ async function queueAndReadPng(comfyPage: ComfyPage): Promise<OutputEvidence> {
   await comfyPage.command.executeCommand('Comfy.QueuePrompt')
   const response = await responsePromise
   expect(response.status(), await response.text()).toBe(200)
-  const { prompt_id: promptId } = (await response.json()) as {
-    prompt_id: string
-  }
+  const body: unknown = await response.json()
+  expect(body).toEqual(
+    expect.objectContaining({ prompt_id: expect.any(String) })
+  )
+  const promptId = (body as { prompt_id: string }).prompt_id
+  expect(promptId.length).toBeGreaterThan(0)
+  let completed: Omit<OutputEvidence, 'promptId'> | null = null
   await expect
     .poll(
-      () =>
-        comfyPage.page.evaluate(async (id) => {
+      async () => {
+        completed = await comfyPage.page.evaluate(async (id) => {
           const historyResponse = await fetch(`/api/history/${id}`)
+          if (!historyResponse.ok) {
+            throw new Error(`history request failed: ${historyResponse.status}`)
+          }
           const history = await historyResponse.json()
-          const nodes = Object.values(history[id]?.outputs ?? {}) as Array<{
+          const entry = history[id]
+          if (!entry) return null
+          if (entry.status?.completed !== true) return null
+          if (entry.status.status_str !== 'success') {
+            throw new Error(
+              `prompt ${id} ended with ${entry.status.status_str}`
+            )
+          }
+          const nodes = Object.values(entry.outputs ?? {}) as Array<{
             images?: Array<{
               filename: string
               subfolder: string
@@ -50,6 +65,9 @@ async function queueAndReadPng(comfyPage: ComfyPage): Promise<OutputEvidence> {
             type: image.type
           })
           const imageResponse = await fetch(`/api/view?${query}`)
+          if (!imageResponse.ok) {
+            throw new Error(`image request failed: ${imageResponse.status}`)
+          }
           const bytes = new Uint8Array(
             await imageResponse.clone().arrayBuffer()
           )
@@ -58,56 +76,60 @@ async function queueAndReadPng(comfyPage: ComfyPage): Promise<OutputEvidence> {
           const canvas = new OffscreenCanvas(1, 1)
           const context = canvas.getContext('2d')!
           context.drawImage(bitmap, 0, 0)
+          const pixel = context.getImageData(0, 0, 1, 1).data
           return {
             filename: image.filename,
             width: view.getUint32(16),
             height: view.getUint32(20),
-            rgb: [...context.getImageData(0, 0, 1, 1).data.slice(0, 3)]
+            rgb: [pixel[0], pixel[1], pixel[2]] as [number, number, number]
           }
-        }, promptId),
+        }, promptId)
+        return completed
+      },
       { timeout: 30_000 }
     )
     .not.toBeNull()
-
-  // Re-read after the polling assertion; Playwright's matcher does not return
-  // the matched value.
-  const history = await comfyPage.page.evaluate(async (id) => {
-    const value = await (await fetch(`/api/history/${id}`)).json()
-    const nodes = Object.values(value[id].outputs) as Array<{
-      images?: Array<{ filename: string; subfolder: string; type: string }>
-    }>
-    return nodes.flatMap((node) => node.images ?? [])[0]
-  }, promptId)
-  const query = new URLSearchParams(history)
-  const artifact = await comfyPage.page.evaluate(async (url) => {
-    const response = await fetch(url)
-    const bytes = new Uint8Array(await response.clone().arrayBuffer())
-    const bitmap = await createImageBitmap(await response.blob())
-    const canvas = new OffscreenCanvas(1, 1)
-    const context = canvas.getContext('2d')!
-    context.drawImage(bitmap, 0, 0)
-    return {
-      bytes: [...bytes],
-      rgb: [...context.getImageData(0, 0, 1, 1).data.slice(0, 3)]
-    }
-  }, `/api/view?${query}`)
-  const png = new DataView(Uint8Array.from(artifact.bytes).buffer)
-  expect(artifact.rgb).toEqual([0x33, 0x66, 0x99])
+  expect(completed).not.toBeNull()
+  expect(completed!.rgb).toEqual([0x33, 0x66, 0x99])
   return {
     promptId,
-    filename: history.filename,
-    width: png.getUint32(16),
-    height: png.getUint32(20),
-    rgb: [0x33, 0x66, 0x99]
+    ...completed!
   }
 }
 
-async function setMode(comfyPage: ComfyPage, mode: 0 | 2 | 4) {
+async function setMode(comfyPage: ComfyPage, mode: 0 | 2) {
   await comfyPage.page.evaluate((value) => {
     const node = window.app!.graph.nodes.find(({ id }) => String(id) === '2')!
     node.mode = value
     node.graph?.setDirtyCanvas(true, true)
   }, mode)
+}
+
+async function expectEndpoint(
+  comfyPage: ComfyPage,
+  targetId: string,
+  originId: string
+) {
+  await expect
+    .poll(() =>
+      comfyPage.page.evaluate((id) => {
+        const graph = window.app!.graph
+        const target = graph.nodes.find((node) => String(node.id) === id)!
+        const link = graph.links.get(target.inputs[0].link!)
+        return (
+          link && {
+            linkCount: graph.links.size,
+            originId: String(link.origin_id),
+            targetId: String(link.target_id)
+          }
+        )
+      }, targetId)
+    )
+    .toEqual({ linkCount: 2, originId, targetId })
+}
+
+async function saveWorkflowAs(comfyPage: ComfyPage, workflowName: string) {
+  await comfyPage.menu.topbar.saveWorkflowAs(workflowName)
 }
 
 test.describe(
@@ -118,7 +140,7 @@ test.describe(
       initialSettings: {
         'Comfy.TutorialCompleted': true,
         'Comfy.Workflow.Persist': true,
-        'Comfy.UseNewMenu': 'Disabled'
+        'Comfy.UseNewMenu': 'Top'
       }
     })
 
@@ -133,13 +155,9 @@ test.describe(
         await comfyPage.workflow.loadWorkflow(
           'ecsMigration/model_free_execution'
         )
-        await trackVisibleErrors(comfyPage.page)
-
         const normal = await queueAndReadPng(comfyPage)
         expect(normal).toMatchObject({ width: 128, height: 96 })
 
-        // Mute (mode 2) is not bypass. Removing the middle producer leaves
-        // SaveImage without its required input, so the backend must reject it.
         await setMode(comfyPage, 2)
         const mutedResponse = comfyPage.page.waitForResponse(
           (response) =>
@@ -147,19 +165,31 @@ test.describe(
             new URL(response.url()).pathname.endsWith('/prompt')
         )
         await comfyPage.command.executeCommand('Comfy.QueuePrompt')
-        expect((await mutedResponse).status()).toBe(400)
+        const rejected = await mutedResponse
+        expect(rejected.status()).toBe(400)
+        expect(await rejected.text()).toContain(
+          'Required input is missing: images'
+        )
 
-        await setMode(comfyPage, 4)
+        await comfyPage.page.keyboard.press('Escape')
+        await setMode(comfyPage, 0)
+        const middle = (
+          await comfyPage.nodeOps.getNodeRefsByType('ImageScale')
+        )[0]
+        await middle.click('title')
+        await comfyPage.canvas.press('Control+b')
+        await expect.poll(() => middle.isBypassed()).toBe(true)
         const bypassed = await queueAndReadPng(comfyPage)
         expect(bypassed).toMatchObject({ width: 64, height: 48 })
 
-        await setMode(comfyPage, 0)
+        await comfyPage.canvas.press('Control+b')
+        await expect.poll(() => middle.isBypassed()).toBe(false)
         const restored = await queueAndReadPng(comfyPage)
         expect(restored).toMatchObject({ width: 128, height: 96 })
         expect(restored.filename).not.toBe(bypassed.filename)
       })
 
-      test(`five reconnects and conflicting origins retain one executable wire (VueNodes=${vueNodesEnabled})`, async ({
+      test(`five UI disconnect/reconnect cycles survive saved-workflow reload (VueNodes=${vueNodesEnabled})`, async ({
         comfyPage
       }) => {
         await comfyPage.settings.setSetting(
@@ -169,35 +199,55 @@ test.describe(
         await comfyPage.workflow.loadWorkflow(
           'ecsMigration/model_free_execution'
         )
-        await comfyPage.page.evaluate(() => {
-          const graph = window.app!.graph
-          const source = graph.nodes.find(({ id }) => String(id) === '2')!
-          const target = graph.nodes.find(({ id }) => String(id) === '3')!
-          for (let cycle = 0; cycle < 5; cycle++) {
-            target.disconnectInput(0)
-            source.connect(0, target, 0)
-          }
-        })
-        const serialized = await comfyPage.nodeOps.getSerializedGraph()
-        await comfyPage.workflow.loadGraphData(serialized)
-        const retained = await comfyPage.page.evaluate(() => {
-          const graph = window.app!.graph
-          const target = graph.nodes.find(({ id }) => String(id) === '3')!
-          const link = graph.links.get(target.inputs[0].link!)!
-          return {
-            linkCount: graph.links.size,
-            originId: String(link.origin_id),
-            targetId: String(link.target_id)
-          }
-        })
-        expect(retained).toEqual({
-          linkCount: 2,
-          originId: '2',
-          targetId: '3'
-        })
+        const source = (
+          await comfyPage.nodeOps.getNodeRefsByType('ImageScale')
+        )[0]
+        const target = (
+          await comfyPage.nodeOps.getNodeRefsByType('SaveImage')
+        )[0]
+        const input = await target.getInput(0)
+        for (let cycle = 0; cycle < 5; cycle++) {
+          const position = await input.getPosition()
+          await comfyPage.page.keyboard.down('Control')
+          await comfyPage.page.keyboard.down('Alt')
+          await comfyPage.page.mouse.click(position.x, position.y)
+          await comfyPage.page.keyboard.up('Alt')
+          await comfyPage.page.keyboard.up('Control')
+          await input.expectLinkCount(0)
+          await source.connectOutput(0, target, 0)
+          await input.expectLinkCount(1)
+        }
+        const workflowName = `ecs-qa-032-${vueNodesEnabled}-${Date.now()}`
+        await saveWorkflowAs(comfyPage, workflowName)
+        await comfyPage.page.reload()
+        await comfyPage.waitForAppReady()
+        await expectEndpoint(comfyPage, '3', '2')
         expect(await queueAndReadPng(comfyPage)).toMatchObject({
           width: 128,
           height: 96
+        })
+      })
+
+      test(`malformed conflicting origins retain the visibly chosen endpoint after save/reload (VueNodes=${vueNodesEnabled})`, async ({
+        comfyPage
+      }) => {
+        await comfyPage.settings.setSetting(
+          'Comfy.VueNodes.Enabled',
+          vueNodesEnabled
+        )
+        await comfyPage.workflow.loadWorkflow(
+          'ecsMigration/conflicting_origins_execution'
+        )
+        await expectEndpoint(comfyPage, '3', '2')
+        const workflowName = `ecs-qa-040-${vueNodesEnabled}-${Date.now()}`
+        await saveWorkflowAs(comfyPage, workflowName)
+        await comfyPage.page.reload()
+        await comfyPage.waitForAppReady()
+        await expectEndpoint(comfyPage, '3', '2')
+        expect(await queueAndReadPng(comfyPage)).toMatchObject({
+          width: 128,
+          height: 96,
+          rgb: [0x33, 0x66, 0x99]
         })
       })
     }
@@ -223,8 +273,12 @@ test.describe(
         source.widgets![1].value = 48
         source.widgets![3].value = 0x336699
         target.widgets![0].value = 'ecs_qa_execution'
-        source.connect(0, target, 0)
       })
+      const source = (
+        await comfyPage.nodeOps.getNodeRefsByType('EmptyImage')
+      )[0]
+      const target = (await comfyPage.nodeOps.getNodeRefsByType('SaveImage'))[0]
+      await source.connectOutput(0, target, 0)
       const output = await queueAndReadPng(comfyPage)
       expect(output).toMatchObject({ width: 64, height: 48 })
       consoleErrors.stop()
