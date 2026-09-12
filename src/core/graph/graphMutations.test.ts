@@ -40,7 +40,10 @@ function node(id: number, widgets_values: Record<string, unknown> = {}) {
 describe('graphMutations', () => {
   const createLayout = vi.fn()
   const deleteLayouts = vi.fn()
-  const setLiveWidgetValue = vi.fn(() => true)
+  const setLiveWidgetValue = vi.fn((_scope, _nodeId, _name, value) => ({
+    applied: true,
+    resolvedValue: value
+  }))
 
   beforeEach(() => {
     createLayout.mockReset()
@@ -106,7 +109,7 @@ describe('graphMutations', () => {
       expect(
         useWidgetValueStore().getWidget(widgetId('root', toNodeId(7), 'image'))
       ).toBeUndefined()
-      return true
+      return { applied: true, resolvedValue: 'added.png' }
     })
 
     expect(mutations().addNode(node(7, { image: 'added.png' }), context)).toBe(
@@ -119,6 +122,24 @@ describe('graphMutations', () => {
       'added.png',
       context
     )
+  })
+
+  it('converges canonical state on the live widget rollback value, not the remote value', () => {
+    const graph = mutations()
+    expect(graph.addNode(node(7, { image: 'before.png' }), context)).toBe(true)
+    setLiveWidgetValue.mockReset()
+    setLiveWidgetValue.mockReturnValue({
+      applied: false,
+      resolvedValue: 'before.png'
+    })
+
+    expect(graph.setWidget(toNodeId(7), 'image', 'after.png', context)).toBe(
+      true
+    )
+
+    expect(
+      useWidgetValueStore().getWidget(widgetId('root', toNodeId(7), 'image'))
+    ).toMatchObject({ value: 'before.png' })
   })
 
   it('retains supplied link ids and atomically displaces the target occupant', () => {
