@@ -245,87 +245,117 @@ test.describe(
             snapshots.push(snapshot)
           }
 
-          await comfyPage.searchBoxV2.addNode('Load Checkpoint', {
-            position: { x: 250, y: 250 }
+          await test.step('Create a checkpoint loader', async () => {
+            await comfyPage.searchBoxV2.addNode('Load Checkpoint', {
+              position: { x: 250, y: 250 }
+            })
+            await expect
+              .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+              .toBe(1)
+            await checkpoint()
           })
-          await expect
-            .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-            .toBe(1)
-          await checkpoint()
+
           const loader = await comfyPage.nodeOps.getNodeRefByType(
             'CheckpointLoaderSimple'
           )
 
-          await comfyPage.searchBoxV2.addNode('KSampler', {
-            position: { x: 650, y: 250 }
+          await test.step('Create a KSampler', async () => {
+            await comfyPage.searchBoxV2.addNode('KSampler', {
+              position: { x: 650, y: 250 }
+            })
+            await expect
+              .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+              .toBe(2)
+            await checkpoint()
           })
-          await expect
-            .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-            .toBe(2)
-          await checkpoint()
+
           const sampler = await comfyPage.nodeOps.getNodeRefByType('KSampler')
 
-          const output = await loader.connectOutput(0, sampler, 0)
-          await output.expectLinkCount(1)
+          const output = await loader.getOutput(0)
           const samplerInput = await sampler.getInput(0)
-          await samplerInput.expectLinkCount(1)
-          await comfyPage.page.mouse.click(600, 650)
-          await checkpoint()
 
-          await test.step('Move both nodes', async () => {
+          await test.step('Connect the loader to the sampler', async () => {
+            await loader.connectOutput(0, sampler, 0)
+            await output.expectLinkCount(1)
+            await samplerInput.expectLinkCount(1)
+            await comfyPage.page.mouse.click(600, 650)
+            await checkpoint()
+          })
+
+          await test.step('Move the checkpoint loader', async () => {
             await loader.dragBy({ x: 90, y: 60 })
             await checkpoint()
+          })
+
+          await test.step('Move the KSampler', async () => {
             await sampler.dragBy({ x: 70, y: 100 })
             await checkpoint()
           })
 
-          await comfyPage.vueNodes.editAndCommitNumber(
-            'KSampler',
-            'steps',
-            '31'
-          )
-          await expect
-            .poll(async () =>
-              (await sampler.getWidgetByName('steps')).getValue()
+          await test.step('Change the KSampler steps value', async () => {
+            await comfyPage.vueNodes.editAndCommitNumber(
+              'KSampler',
+              'steps',
+              '31'
             )
-            .toBe(31)
-          await checkpoint()
-          await comfyPage.vueNodes.editAndCommitNumber('KSampler', 'cfg', '9.5')
-          await expect
-            .poll(async () => (await sampler.getWidgetByName('cfg')).getValue())
-            .toBe(9.5)
-          await checkpoint()
+            await expect
+              .poll(async () =>
+                (await sampler.getWidgetByName('steps')).getValue()
+              )
+              .toBe(31)
+            await checkpoint()
+          })
 
-          await comfyPage.canvasOps.dragAndDrop(
-            await samplerInput.getPosition(),
-            { x: 900, y: 650 }
-          )
-          await samplerInput.expectLinkCount(0)
-          await output.expectLinkCount(0)
-          await comfyPage.page.mouse.click(600, 650)
-          await checkpoint()
+          await test.step('Change the KSampler CFG value', async () => {
+            await comfyPage.vueNodes.editAndCommitNumber(
+              'KSampler',
+              'cfg',
+              '9.5'
+            )
+            await expect
+              .poll(async () =>
+                (await sampler.getWidgetByName('cfg')).getValue()
+              )
+              .toBe(9.5)
+            await checkpoint()
+          })
 
-          await expect
-            .poll(async () => {
-              const [source, target] = await Promise.all([
-                output.getPosition(),
-                samplerInput.getPosition()
-              ])
-              return target.x - source.x
-            })
-            .toBeGreaterThan(100)
-          await loader.connectOutput(0, sampler, 0)
-          await output.expectLinkCount(1)
-          await samplerInput.expectLinkCount(1)
-          await comfyPage.page.mouse.click(600, 650)
-          await checkpoint()
+          await test.step('Disconnect the loader from the sampler', async () => {
+            await comfyPage.canvasOps.dragAndDrop(
+              await samplerInput.getPosition(),
+              { x: 900, y: 650 }
+            )
+            await samplerInput.expectLinkCount(0)
+            await output.expectLinkCount(0)
+            await comfyPage.page.mouse.click(600, 650)
+            await checkpoint()
+          })
 
-          await sampler.delete()
-          await expect
-            .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-            .toBe(1)
-          await output.expectLinkCount(0)
-          await checkpoint()
+          await test.step('Reconnect the loader to the sampler', async () => {
+            await expect
+              .poll(async () => {
+                const [source, target] = await Promise.all([
+                  output.getPosition(),
+                  samplerInput.getPosition()
+                ])
+                return target.x - source.x
+              })
+              .toBeGreaterThan(100)
+            await loader.connectOutput(0, sampler, 0)
+            await output.expectLinkCount(1)
+            await samplerInput.expectLinkCount(1)
+            await comfyPage.page.mouse.click(600, 650)
+            await checkpoint()
+          })
+
+          await test.step('Delete the KSampler', async () => {
+            await sampler.delete()
+            await expect
+              .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+              .toBe(1)
+            await output.expectLinkCount(0)
+            await checkpoint()
+          })
 
           await test.step('Undo the complete edit chain', async () => {
             for (let index = snapshots.length - 2; index >= 0; index--) {
