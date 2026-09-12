@@ -237,9 +237,8 @@ function syncSerializedWidgetValue(
   const values: unknown = serialised.widgets_values
   const named: unknown = serialised.widgets_values_named
   const clone = structuredClone(value)
-  const position = isRecord(named) ? Object.keys(named).indexOf(name) : index
   if (Array.isArray(values)) {
-    if (position >= 0 && position < values.length) values[position] = clone
+    if (index >= 0 && index < values.length) values[index] = clone
   } else if (isRecord(values)) {
     values[name] = clone
   }

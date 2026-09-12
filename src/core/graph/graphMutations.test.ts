@@ -346,6 +346,35 @@ describe('graphMutations', () => {
     dispose()
   })
 
+  it('updates saved values by widget order when named keys are reversed', () => {
+    const graph = mutations()
+    graph.addNode(node(1, { steps: 20, seed: 4 }), context)
+
+    expect(
+      graph.batch(context, (batch) => {
+        batch.reconcileNode({
+          ...node(1),
+          widgets_values: [20, 4],
+          widgets_values_named: { seed: 4, steps: 20 }
+        })
+        batch.setWidget(toNodeId(1), 'seed', 7)
+      })
+    ).toBe(true)
+
+    expect(
+      useNodeDataStore().getNode('root', toNodeId(1))?.lastSerialization
+    ).toMatchObject({
+      widgets_values: [20, 7],
+      widgets_values_named: { seed: 7, steps: 20 }
+    })
+    expect(
+      useWidgetValueStore().getNodeWidgets('root', toNodeId(1))
+    ).toMatchObject([
+      { name: 'steps', value: 20 },
+      { name: 'seed', value: 7 }
+    ])
+  })
+
   it('restores positional Markdown values to the existing serializable widget', () => {
     const graph = mutations()
     graph.addNode(node(1), context)
