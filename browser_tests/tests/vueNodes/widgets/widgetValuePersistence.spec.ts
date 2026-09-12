@@ -63,11 +63,6 @@ test.describe(
         await comfyPage.vueNodes.waitForNodes()
       }
 
-      // The fixture ships this widget empty on the host AND on the interior
-      // CLIPTextEncode, so "empty after a round-trip" is also satisfied by a
-      // reset to that default. Round-tripping a non-empty value first is what
-      // lets the second one tell the two apart: if the clear is dropped as
-      // falsy, the reload brings this string back instead of an empty one.
       const baseline = 'promoted value that must be cleared'
       await promotedTextbox().fill(baseline)
       await expect(promotedTextbox()).toHaveValue(baseline)
