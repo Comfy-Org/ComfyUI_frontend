@@ -187,19 +187,23 @@ test.describe(
           const image3Source =
             await comfyPage.nodeOps.getNodeRefByTitle(IMAGE_3_SOURCE)
 
-          await expect
-            .poll(() =>
-              getConnectedInputs(
-                comfyPage,
-                unpackedReferenceNodeId,
-                REFERENCE_IMAGES_PREFIX
-              )
+          const connectedInputs = () =>
+            getConnectedInputs(
+              comfyPage,
+              unpackedReferenceNodeId,
+              REFERENCE_IMAGES_PREFIX
             )
-            .toEqual([
+
+          await expect
+            .poll(async () => (await connectedInputs()).length)
+            .toBe(3)
+          await expect.poll(connectedInputs).toEqual(
+            expect.arrayContaining([
               { name: IMAGE_1, originNodeId: String(image1Source.id) },
               { name: IMAGE_2, originNodeId: String(image2Source.id) },
               { name: IMAGE_3, originNodeId: String(image3Source.id) }
             ])
+          )
         }
       )
     })
