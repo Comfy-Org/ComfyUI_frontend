@@ -497,6 +497,151 @@ describe('useAgentSession (v1 composition root)', () => {
     ).toBe(false)
   })
 
+  it('records a 409 resolution after switching threads', async () => {
+    let rejectAnswer: ((reason?: unknown) => void) | undefined
+    const answerAsk = vi.fn<AgentRestClient['answerAsk']>(
+      () =>
+        new Promise<AgentAnswerAccepted>((_, reject) => {
+          rejectAnswer = reject
+        })
+    )
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ answerAsk }),
+      events: source
+    })
+    session.start()
+    await session.sendMessage('build it')
+    emit(runApproval('msg-1'))
+
+    const pendingAnswer = session.answerAsk('turn-1:call-1', 'run')
+    await vi.waitFor(() => expect(answerAsk).toHaveBeenCalledOnce())
+    await session.loadThread('th-2')
+
+    rejectAnswer?.(new AgentApiError('already answered', 409, undefined))
+    await pendingAnswer
+
+    const conversationStore = useAgentConversationStore()
+    expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(false)
+    expect(session.notices.value).toEqual([])
+    expect(reportError).not.toHaveBeenCalled()
+    expect(conversationStore.threadId).toBe('th-2')
+
+    await session.loadThread('th-1')
+    expect(
+      conversationStore.messages[0].parts.some(
+        (part) => part.type === 'runApproval'
+      )
+    ).toBe(false)
+  })
+
+  it('ignores a 409 resolution after the session stops', async () => {
+    let rejectAnswer: ((reason?: unknown) => void) | undefined
+    const answerAsk = vi.fn<AgentRestClient['answerAsk']>(
+      () =>
+        new Promise<AgentAnswerAccepted>((_, reject) => {
+          rejectAnswer = reject
+        })
+    )
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ answerAsk }),
+      events: source
+    })
+    session.start()
+    await session.sendMessage('build it')
+    emit(runApproval('msg-1'))
+
+    const pendingAnswer = session.answerAsk('turn-1:call-1', 'run')
+    await vi.waitFor(() => expect(answerAsk).toHaveBeenCalledOnce())
+    session.stop()
+    session.start()
+
+    const conversationStore = useAgentConversationStore()
+    const ingest = vi.spyOn(conversationStore, 'ingest')
+    rejectAnswer?.(new AgentApiError('already answered', 409, undefined))
+    await pendingAnswer
+
+    expect(ingest).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'agent_ask_resolved' })
+    )
+  })
+
+  it('reports a stale non-409 answer failure without mutating the new thread', async () => {
+    let rejectAnswer: ((reason?: unknown) => void) | undefined
+    const answerAsk = vi.fn<AgentRestClient['answerAsk']>(
+      () =>
+        new Promise<AgentAnswerAccepted>((_, reject) => {
+          rejectAnswer = reject
+        })
+    )
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ answerAsk }),
+      events: source
+    })
+    session.start()
+    await session.sendMessage('build it')
+    emit(runApproval('msg-1'))
+
+    const pendingAnswer = session.answerAsk('turn-1:call-1', 'run')
+    await vi.waitFor(() => expect(answerAsk).toHaveBeenCalledOnce())
+    await session.loadThread('th-2')
+
+    const conversationStore = useAgentConversationStore()
+    const ingest = vi.spyOn(conversationStore, 'ingest')
+    rejectAnswer?.(new AgentApiError('backend blip', 500, undefined))
+    await pendingAnswer
+
+    expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
+      errorType: 'agent_ask_answer_failed'
+    })
+    expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(false)
+    expect(session.notices.value).toEqual([])
+    expect(ingest).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'agent_ask_resolved' })
+    )
+    expect(conversationStore.threadId).toBe('th-2')
+  })
+
+  it('surfaces a non-409 answer failure after returning to the originating thread', async () => {
+    let rejectAnswer: ((reason?: unknown) => void) | undefined
+    const answerAsk = vi.fn<AgentRestClient['answerAsk']>(
+      () =>
+        new Promise<AgentAnswerAccepted>((_, reject) => {
+          rejectAnswer = reject
+        })
+    )
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ answerAsk }),
+      events: source
+    })
+    session.start()
+    await session.sendMessage('build it')
+    emit(runApproval('msg-1'))
+
+    const pendingAnswer = session.answerAsk('turn-1:call-1', 'run')
+    await vi.waitFor(() => expect(answerAsk).toHaveBeenCalledOnce())
+    await session.loadThread('th-2')
+    await session.loadThread('th-1')
+
+    rejectAnswer?.(new AgentApiError('backend blip', 500, undefined))
+    await pendingAnswer
+
+    const conversationStore = useAgentConversationStore()
+    expect(conversationStore.threadId).toBe('th-1')
+    expect(
+      conversationStore.messages[0].parts.some(
+        (part) => part.type === 'runApproval'
+      )
+    ).toBe(true)
+    expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(false)
+    expect(session.notices.value).toEqual([
+      { level: 'error', text: 'backend blip' }
+    ])
+  })
+
   it('retains and re-enables an approval after a non-409 answer failure', async () => {
     const answerAsk = vi
       .fn<AgentRestClient['answerAsk']>()
