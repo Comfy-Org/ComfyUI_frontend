@@ -132,9 +132,7 @@ export const liveCloudBillingFixture = base.extend<{
         (response) =>
           new URL(response.url()).pathname === '/api/billing/preview-subscribe'
       ),
-      page.goto(
-        `${sandbox.PLAYWRIGHT_TEST_URL}/cloud/subscribe?tier=creator&cycle=monthly`
-      )
+      page.goto(`${sandbox.PLAYWRIGHT_TEST_URL}/?pricing=creator&cycle=monthly`)
     ])
     expect(previewResponse.status()).toBe(200)
     const preview = zPreviewSubscribeResponse.parse(
