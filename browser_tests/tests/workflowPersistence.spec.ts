@@ -172,7 +172,9 @@ async function enrichPersistenceWorkflow(comfyPage: ComfyPage) {
     ...structuredClone(node),
     id: 10 + index,
     pos: [node.pos[0], node.pos[1] + 700] as [number, number],
-    flags: index === 0 ? { ...node.flags, collapsed: true } : node.flags
+    flags: index === 0 ? { ...node.flags, collapsed: true } : node.flags,
+    inputs: node.inputs?.map((input) => ({ ...input, link: null })),
+    outputs: node.outputs?.map((output) => ({ ...output, links: [] }))
   }))
   workflow.nodes.push(...extraNodes)
   workflow.groups = [
