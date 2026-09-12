@@ -37,10 +37,6 @@ test.describe('Vue Multiline String Widget', { tag: '@vue-nodes' }, () => {
   }) => {
     const textarea = getFirstMultilineStringWidget(comfyPage)
 
-    // A blank line between paragraphs, plus trailing whitespace on one line.
-    // Both are what a serializer that normalises or trims would silently eat,
-    // and neither is visible in a value that has merely been flattened to one
-    // line, so the round-tripped value is compared exactly, not by substring.
     const paragraphs = [
       'First paragraph, ending in a space ',
       '',
