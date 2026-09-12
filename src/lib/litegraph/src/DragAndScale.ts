@@ -11,6 +11,18 @@ export interface DragAndScaleState {
   scale: number
 }
 
+/**
+ * Insets that reduce the effective viewport area used by fit-to-bounds
+ * calculations. Each value is in CSS pixels and represents the width/height
+ * of UI panels overlaying the canvas on each side.
+ */
+export interface ViewportInsets {
+  left?: number
+  right?: number
+}
+
+export type ViewportInsetsSource = ViewportInsets | (() => ViewportInsets)
+
 export type AnimationOptions = {
   /** Duration of the animation in milliseconds. */
   duration?: number
@@ -18,6 +30,8 @@ export type AnimationOptions = {
   zoom?: number
   /** The animation easing function (curve) */
   easing?: EaseFunction
+  /** Insets that reduce the effective viewport for panel-aware fitting. */
+  insets?: ViewportInsetsSource
   /** CSS-pixel canvas region to fit and center the bounds within. */
   viewport?: ReadOnlyRect
 }
@@ -186,7 +200,10 @@ export class DragAndScale {
    */
   fitToBounds(
     bounds: ReadOnlyRect,
-    { zoom = 0.75 }: { zoom?: number } = {}
+    {
+      zoom = 0.75,
+      insets
+    }: { zoom?: number; insets?: ViewportInsetsSource } = {}
   ): void {
     //If element hasn't initialized (browser tab is in background)
     //it has a size of 300x150 and a more reasonable default is used instead.
@@ -194,8 +211,15 @@ export class DragAndScale {
       this.element.width === 300 && this.element.height === 150
         ? [1920, 1080]
         : [this.element.width, this.element.height]
-    const cw = width / window.devicePixelRatio
-    const ch = height / window.devicePixelRatio
+    const fullCw = width / window.devicePixelRatio
+    const fullCh = height / window.devicePixelRatio
+
+    const currentInsets = typeof insets === 'function' ? insets() : insets
+    const insetLeft = currentInsets?.left ?? 0
+    const insetRight = currentInsets?.right ?? 0
+
+    const cw = fullCw - insetLeft - insetRight
+    const ch = fullCh
     let targetScale = this.scale
 
     if (zoom > 0) {
@@ -210,8 +234,10 @@ export class DragAndScale {
     const scaledWidth = cw / targetScale
     const scaledHeight = ch / targetScale
 
-    // Calculate the target position to center the bounds in the viewport
-    const targetX = -bounds[0] - bounds[2] * 0.5 + scaledWidth * 0.5
+    // Calculate the target position to center the bounds in the visible area
+    // Shift by insetLeft so content is centered within the unobscured region
+    const targetX =
+      -bounds[0] - bounds[2] * 0.5 + scaledWidth * 0.5 + insetLeft / targetScale
     const targetY = -bounds[1] - bounds[3] * 0.5 + scaledHeight * 0.5
 
     // Apply the changes immediately
@@ -231,6 +257,7 @@ export class DragAndScale {
       duration = 350,
       zoom = 0.75,
       easing = EaseFunction.EASE_IN_OUT_QUAD,
+      insets,
       viewport
     }: AnimationOptions = {}
   ) {
@@ -244,15 +271,24 @@ export class DragAndScale {
     }
     const easeFunction = easeFunctions[easing]
 
+    const currentInsets = typeof insets === 'function' ? insets() : insets
+    const insetLeft = currentInsets?.left ?? 0
+    const insetRight = currentInsets?.right ?? 0
+
     const startTimestamp = performance.now()
-    const cw = this.element.width / window.devicePixelRatio
-    const ch = this.element.height / window.devicePixelRatio
-    const [vx, vy, vw, vh] = viewport ?? [0, 0, cw, ch]
+    const fullCw = this.element.width / window.devicePixelRatio
+    const fullCh = this.element.height / window.devicePixelRatio
+    const [vx, vy, vw, vh] = viewport ?? [
+      insetLeft,
+      0,
+      fullCw - insetLeft - insetRight,
+      fullCh
+    ]
     if (vw <= 0 || vh <= 0) return
     const startX = this.offset[0]
     const startY = this.offset[1]
-    const startX2 = startX - cw / this.scale
-    const startY2 = startY - ch / this.scale
+    const startX2 = startX - fullCw / this.scale
+    const startY2 = startY - fullCh / this.scale
     const startScale = this.scale
     let targetScale = startScale
 
@@ -264,13 +300,11 @@ export class DragAndScale {
       // Ensure we don't go over the max scale
       targetScale = Math.min(targetScaleX, targetScaleY, this.max_scale)
     }
-    const scaledWidth = cw / targetScale
-    const scaledHeight = ch / targetScale
 
     const targetX = (vx + vw * 0.5) / targetScale - bounds[0] - bounds[2] * 0.5
     const targetY = (vy + vh * 0.5) / targetScale - bounds[1] - bounds[3] * 0.5
-    const targetX2 = targetX - scaledWidth
-    const targetY2 = targetY - scaledHeight
+    const targetX2 = targetX - fullCw / targetScale
+    const targetY2 = targetY - fullCh / targetScale
 
     const animate = (timestamp: number) => {
       const elapsed = timestamp - startTimestamp
@@ -288,7 +322,7 @@ export class DragAndScale {
         const currentWidth = Math.abs(currentX2 - currentX)
         const currentHeight = Math.abs(currentY2 - currentY)
 
-        this.scale = Math.min(cw / currentWidth, ch / currentHeight)
+        this.scale = Math.min(fullCw / currentWidth, fullCh / currentHeight)
       }
 
       setDirty()
