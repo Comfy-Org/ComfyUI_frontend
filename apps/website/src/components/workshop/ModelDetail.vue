@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Coins, Download, ExternalLink, Play } from '@lucide/vue'
-import { useMounted, useTimestamp } from '@vueuse/core'
-import { computed, onUnmounted, ref, useSlots, watch } from 'vue'
+import { useEventListener, useMounted, useTimestamp } from '@vueuse/core'
+import { computed, onMounted, onUnmounted, ref, useSlots, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -200,6 +200,15 @@ const errors = computed<FieldErrors>(() =>
   runState.value.status === 'failed' ? runState.value.fieldErrors : {}
 )
 const isRunning = computed(() => runState.value.status === 'running')
+// A run in flight is money and minutes: leaving the page throws both away, so
+// the browser asks first.
+useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
+  if (!isRunning.value) return
+  event.preventDefault()
+})
+const hasFileInputs = computed(() =>
+  schema.value.some((field) => field.kind === 'file' || urlUploadField(field))
+)
 const requestId = ref<string | null>(null)
 let controller: AbortController | undefined
 let pendingRequest: { fingerprint: string; key: string } | undefined

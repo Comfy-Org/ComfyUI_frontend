@@ -509,9 +509,9 @@ describe('ModelDetail', () => {
     await user().type(screen.getByTestId('field-prompt'), 'A red teapot')
     await user().click(screen.getByTestId('run-button'))
     await vi.waitFor(() =>
-      expect(screen.getByRole('link', { name: 'Buy credits' })).toBeDefined()
+      expect(screen.getByRole('link', { name: 'Add credits' })).toBeDefined()
     )
-    const link = screen.getByRole('link', { name: 'Buy credits' })
+    const link = screen.getByRole('link', { name: 'Add credits' })
     expect(link.getAttribute('href')).toBe(
       new URL('/?settings=plan-credits', WORKSHOP_CLOUD_BASE_URL).href
     )
@@ -571,7 +571,7 @@ describe('ModelDetail', () => {
       mountDetail({ model: runnable })
       await nextTick()
       expect(screen.getByRole('button', { name: 'Run' })).toBeTruthy()
-      expect(screen.queryByRole('link', { name: 'Buy credits' })).toBeNull()
+      expect(screen.queryByRole('link', { name: 'Add credits' })).toBeNull()
     }
   )
 
@@ -646,7 +646,7 @@ describe('ModelDetail', () => {
         name: 'Switch to personal workspace'
       })
     ).toBeTruthy()
-    expect(screen.queryByRole('link', { name: 'Buy credits' })).toBeNull()
+    expect(screen.queryByRole('link', { name: 'Add credits' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
   })
 
@@ -655,7 +655,7 @@ describe('ModelDetail', () => {
     credits.balance.value = { status: 'ok', credits: 0 }
     mountDetail()
     expect(screen.getByTestId('run-button').hasAttribute('disabled')).toBe(true)
-    expect(screen.queryByRole('link', { name: 'Buy credits' })).toBeNull()
+    expect(screen.queryByRole('link', { name: 'Add credits' })).toBeNull()
   })
 
   it('keeps cancellation available if the balance becomes zero during a run', async () => {
