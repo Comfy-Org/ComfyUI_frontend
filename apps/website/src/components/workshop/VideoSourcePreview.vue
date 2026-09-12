@@ -2,10 +2,9 @@
 import { useMounted, useObjectUrl } from '@vueuse/core'
 import { computed } from 'vue'
 
-const { file, src, kind, name } = defineProps<{
+const { file, src, name } = defineProps<{
   file?: File
   src?: string
-  kind: 'video' | 'audio'
   name: string
 }>()
 const mounted = useMounted()
@@ -15,22 +14,13 @@ const source = computed(() => objectUrl.value ?? src)
 
 <template>
   <video
-    v-if="source && kind === 'video'"
+    v-if="source"
     :key="source"
     :src="source"
     :aria-label="name"
-    controls
+    muted
     playsinline
     preload="metadata"
-    class="bg-transparency-white-t4 h-32 w-full rounded-xl object-contain"
-  />
-  <audio
-    v-else-if="source"
-    :key="source"
-    :src="source"
-    :aria-label="name"
-    controls
-    preload="metadata"
-    class="w-full"
+    class="size-12 shrink-0 rounded-lg bg-transparency-white-t8 object-cover"
   />
 </template>

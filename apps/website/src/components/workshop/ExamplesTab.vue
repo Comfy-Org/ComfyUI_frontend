@@ -73,7 +73,7 @@ function actionFor(example: PlaygroundExample, active = false) {
       they fit in a row of their own. -->
     <ul
       v-else
-      class="flex scrollbar-hide snap-x gap-3 overflow-x-auto max-sm:-mx-6 max-sm:-my-1 max-sm:scroll-px-6 max-sm:px-6 max-sm:py-1 sm:grid sm:max-w-2xl sm:grid-cols-3 sm:overflow-visible"
+      class="flex scrollbar-hide snap-x gap-3 overflow-x-auto max-sm:-mx-6 max-sm:-my-1 max-sm:scroll-px-6 max-sm:px-6 max-sm:py-1 sm:grid sm:max-w-5xl sm:grid-cols-[repeat(auto-fit,minmax(14rem,1fr))] sm:overflow-visible"
     >
       <li
         v-for="example in examples"
@@ -82,15 +82,18 @@ function actionFor(example: PlaygroundExample, active = false) {
       >
         <button
           type="button"
-          :aria-label="
+          :aria-label="`${example.title}: ${
             example.sampleOnly
               ? actionFor(example)
               : t('workshop.examples.open', locale)
-          "
+          }`"
           :aria-current="example.id === activeId ? 'true' : undefined"
           class="group flex w-full cursor-pointer flex-col gap-2 text-left outline-none"
           data-testid="example-card"
-          :title="actionFor(example, example.id === activeId)"
+          :title="`${example.title} · ${actionFor(
+            example,
+            example.id === activeId
+          )}`"
           @click="emit('open', example)"
         >
           <span
@@ -147,7 +150,7 @@ function actionFor(example: PlaygroundExample, active = false) {
             <span
               :class="
                 cn(
-                  'line-clamp-2 text-xs transition-colors',
+                  'line-clamp-1 text-xs transition-colors',
                   example.id === activeId
                     ? 'text-primary-warm-white'
                     : 'text-primary-comfy-canvas group-hover:text-primary-warm-white'

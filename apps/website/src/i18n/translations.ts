@@ -69,6 +69,11 @@ const translations = {
     'zh-CN': '显示更多模型'
   },
   'workshop.model.breadcrumb': { en: 'Models', 'zh-CN': '模型' },
+  'workshop.model.back': { en: 'Back to all models', 'zh-CN': '返回全部模型' },
+  'workshop.model.backTo': {
+    en: 'Back to {category}',
+    'zh-CN': '返回{category}'
+  },
   'workshop.model.inputs': { en: 'Model inputs', 'zh-CN': '模型输入' },
   'workshop.model.select': { en: 'Select an option', 'zh-CN': '选择一个选项' },
   'workshop.model.maxFiles': {
@@ -9257,7 +9262,7 @@ Enterprise`
   'nav.accountMenu': { en: 'Account menu', 'zh-CN': '账户菜单' },
   'nav.credits': { en: 'credits', 'zh-CN': '积分' },
   'nav.noCredits': { en: 'No credits', 'zh-CN': '无积分' },
-  'nav.buyCredits': { en: 'Buy credits', 'zh-CN': '购买积分' },
+  'nav.buyCredits': { en: 'Add credits', 'zh-CN': '添加积分' },
   'nav.creditsLabel': { en: 'Credits', 'zh-CN': '积分' },
   'nav.workspaces': { en: 'Workspaces', 'zh-CN': '工作区' },
   'nav.planAndCredits': { en: 'Plan & credits', 'zh-CN': '套餐与积分' },
@@ -9677,9 +9682,9 @@ Enterprise`
     'zh-CN': '请先登录再上传文件。你的提示词和设置会保留。'
   },
   'workshop.form.requestTooLarge': {
-    en: 'The combined images and prompt exceed Router’s 10 MiB request limit. Use smaller images or a shorter prompt.',
+    en: 'The combined images and prompt exceed Comfy Router’s 10 MiB request limit. Use smaller images or a shorter prompt.',
     'zh-CN':
-      '图片和提示词的总大小超过 Router 的 10 MiB 请求限制。请使用更小的图片或缩短提示词。'
+      '图片和提示词的总大小超过 Comfy Router 的 10 MiB 请求限制。请使用更小的图片或缩短提示词。'
   },
   'workshop.form.badType': {
     en: 'File type not supported',
@@ -9711,8 +9716,8 @@ Enterprise`
   'workshop.dialogue.add': { en: 'Add turn', 'zh-CN': '添加一段' },
   'workshop.dialogue.remove': { en: 'Remove turn', 'zh-CN': '移除此段' },
   'workshop.run.mappingUnavailable': {
-    en: 'Router execution is not enabled for this model yet.',
-    'zh-CN': '此模型尚未启用 Router 执行。'
+    en: 'Comfy Router execution is not enabled for this model yet.',
+    'zh-CN': '此模型尚未启用 Comfy Router 执行。'
   },
   'workshop.model.incomplete': { en: 'Incomplete', 'zh-CN': '尚未完善' },
   'workshop.model.viewDetails': { en: 'View details', 'zh-CN': '查看详情' },
@@ -9721,9 +9726,9 @@ Enterprise`
     'zh-CN': '暂不支持运行'
   },
   'workshop.model.missingInputSchema': {
-    en: 'This model is listed by Router, but its input schema is not available yet. You can browse its known details; Run and API snippets will be enabled when the schema is added.',
+    en: 'This model is listed by Comfy Router, but its input schema is not available yet. You can browse its known details; Run and API snippets will be enabled when the schema is added.',
     'zh-CN':
-      'Router 已列出此模型，但其输入架构尚未提供。你可以查看已有信息；添加架构后将启用运行和 API 代码示例。'
+      'Comfy Router 已列出此模型，但其输入架构尚未提供。你可以查看已有信息；添加架构后将启用运行和 API 代码示例。'
   },
   'workshop.run.requestId': { en: 'Request ID:', 'zh-CN': '请求 ID：' },
   'workshop.run.cancel': { en: 'Cancel', 'zh-CN': '取消' },
@@ -9769,6 +9774,10 @@ Enterprise`
   'workshop.output.earlier': {
     en: 'Earlier runs this session',
     'zh-CN': '本次会话的早前运行'
+  },
+  'workshop.output.earlierRun': {
+    en: 'Earlier run {number}',
+    'zh-CN': '早前运行 {number}'
   },
   'workshop.output.latest': { en: 'Latest', 'zh-CN': '最新' },
   'workshop.output.placeholder': {
@@ -9818,7 +9827,7 @@ Enterprise`
     'zh-CN': '内容或工作区策略阻止了此请求。'
   },
   'workshop.error.noCredits': {
-    en: 'Not enough credits. Buy credits to continue.',
+    en: 'Not enough credits. Add credits to continue.',
     'zh-CN': '积分不足。请购买积分后继续。'
   },
   'workshop.error.unavailable': {
@@ -9835,7 +9844,7 @@ Enterprise`
     'zh-CN': '提供方响应超时。未扣费。'
   },
   'workshop.error.lowCredits': {
-    en: 'You have {credits} credits and this run needs {n}. Buy credits to continue; your inputs stay here.',
+    en: 'You have {credits} credits and this run needs {n}. Add credits to continue; your inputs stay here.',
     'zh-CN':
       '你有 {credits} 积分，本次运行需要 {n}。购买积分后继续，你的输入会保留。'
   },
@@ -9933,8 +9942,9 @@ Enterprise`
     'zh-CN': '输出样例'
   },
   'workshop.examples.samplesSubtitle': {
-    en: 'View a sample without changing your inputs. Verified Router presets are not available for these samples yet.',
-    'zh-CN': '查看样例不会更改你的输入。这些样例尚无已验证的 Router 参数预设。'
+    en: 'View a sample without changing your inputs. Verified Comfy Router presets are not available for these samples yet.',
+    'zh-CN':
+      '查看样例不会更改你的输入。这些样例尚无已验证的 Comfy Router 参数预设。'
   },
   'workshop.examples.view': {
     en: 'View sample',

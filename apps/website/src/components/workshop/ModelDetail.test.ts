@@ -256,7 +256,6 @@ describe('ModelDetail', () => {
               player
           )
       ).toBe(true)
-      expect(player.hasAttribute('controls')).toBe(true)
       expect(runWorkshopRouter).not.toHaveBeenCalled()
       if (slug === 'bria--replace-video-background--edit-videos')
         expect(
@@ -443,9 +442,9 @@ describe('ModelDetail', () => {
     await user().type(screen.getByTestId('field-prompt'), 'A red teapot')
     await user().click(screen.getByTestId('run-button'))
     await vi.waitFor(() =>
-      expect(screen.getByRole('link', { name: 'Buy credits' })).toBeDefined()
+      expect(screen.getByRole('link', { name: 'Add credits' })).toBeDefined()
     )
-    const link = screen.getByRole('link', { name: 'Buy credits' })
+    const link = screen.getByRole('link', { name: 'Add credits' })
     expect(link.getAttribute('href')).toBe(
       new URL('/?settings=plan-credits', WORKSHOP_CLOUD_BASE_URL).href
     )
@@ -468,7 +467,7 @@ describe('ModelDetail', () => {
       'A red teapot'
     )
 
-    const buy = screen.getByRole('link', { name: 'Buy credits' })
+    const buy = screen.getByRole('link', { name: 'Add credits' })
     expect(buy.getAttribute('href')).toBe(
       `${WORKSHOP_CLOUD_BASE_URL}/?settings=plan-credits`
     )
@@ -479,7 +478,7 @@ describe('ModelDetail', () => {
     credits.balance.value = { status: 'ok', credits: 100 }
     await nextTick()
     expect(screen.getByRole('button', { name: 'Run' })).toBeTruthy()
-    expect(screen.queryByRole('link', { name: 'Buy credits' })).toBeNull()
+    expect(screen.queryByRole('link', { name: 'Add credits' })).toBeNull()
     expect(screen.getByRole('textbox', { name: /Prompt/ })).toHaveProperty(
       'value',
       'A red teapot'
@@ -494,7 +493,7 @@ describe('ModelDetail', () => {
       mountDetail({ model: runnable })
       await nextTick()
       expect(screen.getByRole('button', { name: 'Run' })).toBeTruthy()
-      expect(screen.queryByRole('link', { name: 'Buy credits' })).toBeNull()
+      expect(screen.queryByRole('link', { name: 'Add credits' })).toBeNull()
     }
   )
 
@@ -519,7 +518,7 @@ describe('ModelDetail', () => {
       'Keep me'
     )
     expect(screen.getByText(/Studio has no credits left/)).toBeTruthy()
-    expect(screen.queryByRole('link', { name: 'Buy credits' })).toBeNull()
+    expect(screen.queryByRole('link', { name: 'Add credits' })).toBeNull()
     await visitor.click(
       screen.getByRole('button', { name: 'Switch to personal workspace' })
     )
@@ -552,7 +551,7 @@ describe('ModelDetail', () => {
         name: 'Switch to personal workspace'
       })
     ).toBeTruthy()
-    expect(screen.queryByRole('link', { name: 'Buy credits' })).toBeNull()
+    expect(screen.queryByRole('link', { name: 'Add credits' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
   })
 
@@ -561,7 +560,7 @@ describe('ModelDetail', () => {
     credits.balance.value = { status: 'ok', credits: 0 }
     mountDetail()
     expect(screen.getByTestId('run-button').hasAttribute('disabled')).toBe(true)
-    expect(screen.queryByRole('link', { name: 'Buy credits' })).toBeNull()
+    expect(screen.queryByRole('link', { name: 'Add credits' })).toBeNull()
   })
 
   it('keeps cancellation available if the balance becomes zero during a run', async () => {
@@ -585,9 +584,33 @@ describe('ModelDetail', () => {
     expect(
       screen.getByTestId('playground-output').getAttribute('data-state')
     ).toBe('cancelled')
-    expect(screen.getByRole('link', { name: 'Buy credits' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Add credits' })).toBeTruthy()
     pending.resolve(routerResult)
     await vi.waitFor(() => expect(refreshWorkshopCredits).toHaveBeenCalled())
+  })
+
+  it('asks before the tab is closed on a run in flight, and only then', async () => {
+    auth.session.value = credential
+    const pending = Promise.withResolvers<typeof routerResult>()
+    vi.mocked(runWorkshopRouter).mockReturnValue(pending.promise)
+    mountDetail({ model: runnable })
+
+    const leaving = () =>
+      window.dispatchEvent(new Event('beforeunload', { cancelable: true }))
+    expect(leaving()).toBe(true)
+
+    await user().type(screen.getByTestId('field-prompt'), 'A teapot')
+    await user().click(screen.getByTestId('run-button'))
+    await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledTimes(1))
+    expect(leaving()).toBe(false)
+
+    pending.resolve(routerResult)
+    await vi.waitFor(() =>
+      expect(
+        screen.getByTestId('playground-output').getAttribute('data-state')
+      ).toBe('succeeded')
+    )
+    expect(leaving()).toBe(true)
   })
 
   it('retries an unchanged failed request with its original key, but a deliberate new run gets a new key', async () => {
@@ -783,7 +806,7 @@ describe('ModelDetail', () => {
     mountDetail({ model: runnable })
     expect(
       screen.getByRole('button', {
-        name: 'Router execution is not enabled for this model yet.'
+        name: 'Comfy Router execution is not enabled for this model yet.'
       })
     ).toHaveProperty('disabled', true)
     expect(runWorkshopRouter).not.toHaveBeenCalled()
@@ -883,7 +906,7 @@ describe('ModelDetail', () => {
       expect(screen.queryByRole('link', { name: 'Sign in to run' })).toBeNull()
       expect(
         screen.getByRole('button', {
-          name: 'Router execution is not enabled for this model yet.'
+          name: 'Comfy Router execution is not enabled for this model yet.'
         })
       ).toHaveProperty('disabled', true)
     }
@@ -1017,7 +1040,7 @@ describe('ModelDetail', () => {
     expect(button.getAttribute('data-gate')).toBe('unavailable')
     expect(button.hasAttribute('disabled')).toBe(true)
     expect(button.textContent).toContain(
-      'Router execution is not enabled for this model yet'
+      'Comfy Router execution is not enabled for this model yet'
     )
   })
 
@@ -1188,12 +1211,17 @@ describe('ModelDetail', () => {
         ? '{"prompt":"My edited draft"}'
         : 'My edited draft'
       await fireEvent.update(input, edited)
-      await user().click(screen.getByRole('button', { name: 'View sample' }))
+      await user().click(
+        screen.getByRole('button', { name: 'Start and end frame: View sample' })
+      )
       expect(input.value).toBe(edited)
       expect(input.isConnected).toBe(true)
-      expect(screen.getByTestId('example-card').getAttribute('title')).toBe(
-        'Viewing sample'
-      )
+      expect(
+        screen.getByRole('button', {
+          name: 'Start and end frame: View sample',
+          current: true
+        })
+      ).toBeTruthy()
       expect(
         screen.getByTestId('playground-output').getAttribute('data-state')
       ).toBe('example')

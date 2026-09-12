@@ -1,16 +1,14 @@
 <script setup lang="ts">
-import { File as FileIcon, Upload, X } from '@lucide/vue'
+import { Upload } from '@lucide/vue'
 import { useDropZone } from '@vueuse/core'
 import { computed, nextTick, ref, useTemplateRef } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
-import { formatSize } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 import type { FieldSchema, FileValue } from '../../config/workshop-playground'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import ImageSourcePreview from './ImageSourcePreview.vue'
-import MediaSourcePreview from './MediaSourcePreview.vue'
+import SelectedFileRow from './SelectedFileRow.vue'
 
 const {
   field,
@@ -53,6 +51,31 @@ const description = computed(
       .filter(Boolean)
       .join(' ') || undefined
 )
+
+const prompt = computed(() => {
+  const replacing = selectedFiles.value.length > 0 && !field.multiple
+  if (replacing)
+    return imageOnly.value
+      ? 'workshop.field.replaceOrDropImage'
+      : 'workshop.field.replaceOrDropFile'
+  return imageOnly.value
+    ? 'workshop.field.chooseOrDropImages'
+    : 'workshop.field.chooseOrDropFiles'
+})
+
+const acceptedTypes = computed(() =>
+  field.accept
+    .map((type) => type.split('/')[1].replace('x-', '').toUpperCase())
+    .join(', ')
+)
+
+const rejectionMessage = computed(() => {
+  if (!rejection.value) return ''
+  const unchanged = imageOnly.value
+    ? 'workshop.field.imagesUnchanged'
+    : 'workshop.field.filesUnchanged'
+  return `${t(rejection.value, locale).replace('{count}', String(limit.value))} ${t(unchanged, locale)}`
+})
 
 function choose(files: File[], index?: number) {
   if (disabled || !files.length) return
@@ -109,13 +132,6 @@ function remove(index: number) {
     : undefined
   rejection.value = undefined
 }
-
-function fileType(file: FileValue): string {
-  return (
-    /\.([a-z\d]{1,12})$/i.exec(file.name)?.[1].toUpperCase() ??
-    t('workshop.field.file', locale)
-  )
-}
 </script>
 
 <template>
@@ -125,7 +141,7 @@ function fileType(file: FileValue): string {
     :aria-label="field.label"
     :class="
       cn(
-        'focus-within:ring-primary-comfy-yellow flex min-w-0 flex-col gap-3 rounded-2xl border border-dashed p-3 focus-within:ring-2',
+        'focus-within:ring-primary-comfy-yellow flex min-w-0 flex-col gap-3 rounded-2xl border border-dashed focus-within:ring-2',
         isOverDropZone && !disabled
           ? 'border-primary-comfy-yellow'
           : 'border-transparency-white-t20',
@@ -133,113 +149,34 @@ function fileType(file: FileValue): string {
       )
     "
   >
-    <div
+    <ul
       v-if="selectedFiles.length"
-      :class="
-        cn(
-          'grid min-w-0 gap-3',
-          imageOnly && selectedFiles.length > 1 ? 'grid-cols-2' : 'grid-cols-1'
-        )
-      "
+      class="flex min-w-0 flex-col gap-2 px-3 pt-3"
     >
-      <div
+      <SelectedFileRow
         v-for="(file, index) in selectedFiles"
         :key="index"
-        class="flex min-w-0 flex-col gap-2"
-      >
-        <ImageSourcePreview
-          v-if="file.type.startsWith('image/')"
-          :file="file.file"
-          :src="file.previewUrl"
-          :name="file.name"
-          :locale
-        />
-        <MediaSourcePreview
-          v-else-if="
-            file.type.startsWith('video/') || file.type.startsWith('audio/')
-          "
-          :file="file.file"
-          :src="file.previewUrl"
-          :kind="file.type.startsWith('video/') ? 'video' : 'audio'"
-          :name="file.name"
-        />
-        <div
-          v-else
-          class="bg-transparency-white-t4 flex items-center gap-3 rounded-xl p-3 text-sm text-primary-warm-white"
-        >
-          <FileIcon
-            class="size-8 shrink-0 text-primary-warm-gray"
-            aria-hidden="true"
-          />
-          <span class="font-bold">{{ fileType(file) }}</span>
-          <span class="ml-auto text-xs text-primary-warm-gray">{{
-            formatSize(file.size)
-          }}</span>
-        </div>
-        <div class="flex min-w-0 items-center gap-2">
-          <button
-            type="button"
-            :disabled
-            :aria-label="
-              t('workshop.field.replaceFile', locale).replace(
-                '{name}',
-                file.name
-              )
-            "
-            class="focus-visible:outline-primary-comfy-yellow min-w-0 flex-1 cursor-pointer truncate text-left text-xs text-primary-warm-white underline underline-offset-4"
-            @click="replace(index)"
-          >
-            {{ file.name }}
-          </button>
-          <button
-            type="button"
-            :disabled
-            :aria-label="
-              t('workshop.field.removeNamedFile', locale).replace(
-                '{name}',
-                file.name
-              )
-            "
-            class="focus-visible:outline-primary-comfy-yellow flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-primary-warm-gray hover:bg-transparency-white-t8 hover:text-primary-warm-white"
-            @click="remove(index)"
-          >
-            <X class="size-4" aria-hidden="true" />
-          </button>
-        </div>
-      </div>
-    </div>
+        :file
+        :disabled
+        :locale
+        @replace="replace(index)"
+        @remove="remove(index)"
+      />
+    </ul>
     <label
       :for="`field-${field.name}`"
       :class="
         cn(
-          'hover:bg-transparency-white-t4 flex min-h-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl text-xs text-primary-warm-gray',
+          'hover:bg-transparency-white-t4 flex min-h-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-2xl text-xs text-primary-warm-gray',
           disabled && 'pointer-events-none'
         )
       "
       @click="replacement = undefined"
     >
       <Upload class="size-5" aria-hidden="true" />
-      <span>{{
-        t(
-          selectedFiles.length && !field.multiple
-            ? imageOnly
-              ? 'workshop.field.replaceOrDropImage'
-              : 'workshop.field.replaceOrDropFile'
-            : imageOnly
-              ? 'workshop.field.chooseOrDropImages'
-              : 'workshop.field.chooseOrDropFiles',
-          locale
-        )
-      }}</span>
+      <span>{{ t(prompt, locale) }}</span>
       <span>
-        <template v-if="field.accept.length"
-          >{{
-            field.accept
-              .map((type) => type.split('/')[1].replace('x-', '').toUpperCase())
-              .join(', ')
-          }}
-          ·
-        </template>
+        <template v-if="acceptedTypes">{{ acceptedTypes }} · </template>
         {{ t('workshop.field.uploadLimit', locale) }}
       </span>
     </label>
@@ -265,15 +202,7 @@ function fileType(file: FileValue): string {
       role="alert"
       class="text-primary-comfy-red text-xs"
     >
-      {{ t(rejection, locale).replace('{count}', String(limit)) }}
-      {{
-        t(
-          imageOnly
-            ? 'workshop.field.imagesUnchanged'
-            : 'workshop.field.filesUnchanged',
-          locale
-        )
-      }}
+      {{ rejectionMessage }}
     </p>
   </div>
 </template>

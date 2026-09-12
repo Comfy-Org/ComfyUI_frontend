@@ -4,6 +4,7 @@ import { render, screen } from '@testing-library/vue'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import type { WorkshopModel } from '../../config/models-catalogue'
+import { lastShelf } from '../../lib/workshop/shelf-memory'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
 
 const models: WorkshopModel[] = [
@@ -54,6 +55,7 @@ function search() {
 describe('WorkshopModelsGrid', () => {
   afterEach(() => {
     history.replaceState(null, '', '/')
+    sessionStorage.clear()
   })
 
   it('searches by name and provider', async () => {
@@ -152,6 +154,13 @@ describe('WorkshopModelsGrid', () => {
       await screen.findByRole('menuitemradio', { name: 'Name A to Z' })
     )
     expect(cardNames()[0]).toContain('Flux')
+  })
+
+  it('forgets the shelf a previous visit was left on', () => {
+    sessionStorage.setItem('comfy-models-shelf', 'generate-videos')
+    render(WorkshopModelsGrid, { props: { models } })
+
+    expect(lastShelf()).toBe('all')
   })
 
   it('clears search and filters together from the empty state', async () => {

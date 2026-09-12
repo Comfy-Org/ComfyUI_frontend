@@ -85,6 +85,57 @@ test.describe('Models catalog', () => {
     await expect(page.getByTestId('workshop-hero')).toBeVisible()
   })
 
+  test('a model page returns to the shelf it was opened from', async ({
+    page
+  }) => {
+    await page.goto('/models/')
+    await page.getByTestId('section-generate-videos-open').click()
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(
+      'Generate videos'
+    )
+    await page
+      .getByTestId('workshop-models-grid')
+      .getByTestId('workshop-model-card')
+      .first()
+      .click()
+
+    const back = page.getByTestId('model-back')
+    await expect(back).toHaveText('Back to Generate videos')
+    await back.click()
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(
+      'Generate videos'
+    )
+    await expect(page.getByTestId('workshop-sections')).toHaveCount(0)
+  })
+
+  test('the search field stays put as the results swap under it', async ({
+    page
+  }) => {
+    await page.goto('/models/')
+    await expect(page.getByTestId('workshop-sections')).toBeVisible()
+    await page.evaluate(() => window.scrollTo(0, 700))
+    const search = page.getByTestId('workshop-search')
+
+    // Nothing else is clicked between the two measurements: a click scrolls its
+    // own target into view first, which would move the page under the field.
+    await search.fill('kling')
+    await expect(
+      page
+        .getByTestId('workshop-models-grid')
+        .getByTestId('workshop-model-card')
+        .first()
+    ).toContainText('Kling')
+    const searching = await search.boundingBox()
+
+    await search.fill('')
+    await expect(page.getByTestId('workshop-sections')).toBeVisible()
+    const cleared = await search.boundingBox()
+
+    if (!searching || !cleared)
+      throw new Error('the search field was never on screen to measure')
+    expect(cleared.y).toBeCloseTo(searching.y, 0)
+  })
+
   test('cards open canonical model pages with related models', async ({
     page
   }) => {
