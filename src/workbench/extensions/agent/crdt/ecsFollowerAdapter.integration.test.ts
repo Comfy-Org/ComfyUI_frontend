@@ -18,6 +18,10 @@ import type { DocUpdate } from './docFrameClient'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import { FollowerDoc } from './followerDoc'
 
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
+
 const catalog: WidgetCatalog = {
   types: {
     Source: { widget_order: ['seed', 'stale'] },
