@@ -5,6 +5,8 @@ import {
 import { LocalDesktopTarget } from '@e2e/fixtures/customNode/ComfyTarget'
 import { openWorkflowFromSidebar } from '@e2e/fixtures/utils/builderTestUtils'
 
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+
 const target = new LocalDesktopTarget()
 const renderers = [false, true] as const
 
@@ -222,11 +224,11 @@ test.describe(
           comfyPage.command.executeCommand('Comfy.SaveWorkflow')
         ])
         await comfyPage.workflow.waitForWorkflowIdle()
-        const savedWorkflow = saveRequest.postDataJSON()
+        const savedWorkflow = saveRequest.postDataJSON() as ComfyWorkflowJSON
         expect(savedWorkflow.nodes).toHaveLength(3)
         expect(
           savedWorkflow.nodes.find(
-            (node: { type: string }) => node.type === 'Image Comparer (rgthree)'
+            (node) => node.type === 'Image Comparer (rgthree)'
           )?.widgets_values
         ).toEqual([
           [
