@@ -27,6 +27,19 @@ function mockUploadResponse(ok = true, status = 200): Response {
   } as Response
 }
 
+function mockErrorResponse(
+  body: string,
+  status = 500,
+  statusText = 'Internal Server Error'
+): Response {
+  return {
+    ok: false,
+    status,
+    statusText,
+    text: async () => body
+  } as Response
+}
+
 describe('useComfyHubService', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', mockGlobalFetch)
@@ -206,5 +219,44 @@ describe('useComfyHubService', () => {
       profilePictureUrl: 'https://cdn.example.com/avatar.png',
       coverImageUrl: undefined
     })
+  })
+
+  it('surfaces the server message from a failed request', async () => {
+    mockFetchApi.mockResolvedValue(
+      mockErrorResponse(
+        JSON.stringify({ code: 'USERNAME_TAKEN', message: 'Username taken' }),
+        409,
+        'Conflict'
+      )
+    )
+
+    const service = useComfyHubService()
+    await expect(
+      service.createProfile({ workspaceId: 'workspace-1', username: 'builder' })
+    ).rejects.toThrow('Username taken')
+  })
+
+  it('surfaces a plain-text proxy body instead of dropping it', async () => {
+    mockGlobalFetch.mockResolvedValue(
+      mockErrorResponse('upstream connect error', 502, 'Bad Gateway')
+    )
+
+    const service = useComfyHubService()
+    await expect(
+      service.uploadFileToPresignedUrl({
+        uploadUrl: 'https://upload.example.com/object',
+        file: new File(['payload'], 'avatar.png', { type: 'image/png' }),
+        contentType: 'image/png'
+      })
+    ).rejects.toThrow('upstream connect error')
+  })
+
+  it('keeps the operation-specific fallback when the body carries no message', async () => {
+    mockFetchApi.mockResolvedValue(mockErrorResponse('', 502, 'Bad Gateway'))
+
+    const service = useComfyHubService()
+    await expect(service.fetchTagLabels()).rejects.toThrow(
+      'Failed to fetch hub labels'
+    )
   })
 })

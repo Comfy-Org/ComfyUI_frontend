@@ -12,6 +12,8 @@ import type {
 // initiated from /oauth/authorize). The Vite proxy / production ingress is
 // the single point of routing.
 
+import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
+
 export type OAuthWorkspace = OAuthConsentChallengeWorkspace
 
 /**
@@ -73,12 +75,6 @@ export class OAuthApiError extends Error {
   }
 }
 
-async function readErrorMessage(response: Response): Promise<string> {
-  const body: unknown = await response.json().catch(() => null)
-  const message = (body as { message?: unknown } | null)?.message
-  return typeof message === 'string' ? message : response.statusText
-}
-
 function assertChallenge(
   value: unknown
 ): asserts value is OAuthConsentChallenge {
@@ -123,7 +119,8 @@ export async function fetchOAuthConsentChallenge(
   )
 
   if (!response.ok) {
-    throw new OAuthApiError(await readErrorMessage(response), response.status)
+    const { message } = await parseErrorResponse(response)
+    throw new OAuthApiError(message, response.status)
   }
 
   const challenge: unknown = await response.json()
@@ -153,7 +150,8 @@ export async function submitOAuthConsentDecision({
   })
 
   if (!response.ok) {
-    throw new OAuthApiError(await readErrorMessage(response), response.status)
+    const { message } = await parseErrorResponse(response)
+    throw new OAuthApiError(message, response.status)
   }
 
   const body: unknown = await response.json()
