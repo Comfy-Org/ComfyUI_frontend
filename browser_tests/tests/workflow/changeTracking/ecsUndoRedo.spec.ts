@@ -93,12 +93,14 @@ test.describe(
       },
       async ({ comfyPage, comfyMouse }) => {
         await comfyPage.workflow.loadWorkflow('default')
+        await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(0)
         const node = await comfyPage.nodeOps.getNodeRefById('3')
         const initialPosition = await node.getBounding()
         const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
 
         await comfyMouse.dragElementBy(ksampler.title, { x: 100, y: 50 })
         await expect.poll(() => node.getBounding()).not.toEqual(initialPosition)
+        await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(1)
         const movedPosition = await node.getBounding()
 
         const stepsWidget = comfyPage.vueNodes.getWidgetByName(
@@ -107,15 +109,23 @@ test.describe(
         )
         const { input } = comfyPage.vueNodes.getInputNumberControls(stepsWidget)
         const initialSteps = await input.inputValue()
+        await stepsWidget.click()
         await input.fill('31')
         await input.press('Enter')
         await expect(input).toHaveValue('31')
+        await expect
+          .poll(async () => (await node.getWidget(2)).getValue())
+          .toBe(31)
+        // Leave the editor through a real pointer event before the next edit.
+        await ksampler.title.click()
+        await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(2)
 
         const initialNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
         await comfyPage.searchBoxV2.addNode('Note')
         await expect
           .poll(() => comfyPage.nodeOps.getGraphNodesCount())
           .toBe(initialNodeCount + 1)
+        await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(3)
 
         const expectState = async (
           position: typeof initialPosition,
