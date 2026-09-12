@@ -951,7 +951,13 @@ const {
     restored: onWorkflowRestored,
     prepare: async () => {
       try {
-        await refreshCloudWorkflowIds()
+        const target = selectedTarget.value
+        await refreshCloudWorkflowIds({
+          force:
+            target !== null &&
+            !target.isTemporary &&
+            cloudIdFor(target) === undefined
+        })
       } finally {
         // In `finally` so a refresh that fails still reports the send, with
         // whichever id the client already had, rather than losing the event.

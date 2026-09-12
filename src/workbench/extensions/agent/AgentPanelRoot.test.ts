@@ -10649,7 +10649,7 @@ describe('AgentPanelRoot workflow binding', () => {
     })
   })
 
-  it('refreshes the cloud index before each send, not just on mount', async () => {
+  it('refreshes a persisted target missing from the cached cloud index', async () => {
     makeTab()
     const bodies: unknown[] = []
     let workflowsCalls = 0
@@ -10690,6 +10690,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await startVueNodeSelection()
     await sendFromComposer('first message')
 
+    expect(workflowsCalls).toBe(2)
     expect(bodies[0]).toMatchObject({
       workflow_id: 'wf-cloud-current',
       selection: {
@@ -12475,6 +12476,7 @@ describe('AgentPanelRoot workflow binding', () => {
   )
 
   it('cancels and restores the draft when its target closes during preparation', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
     const origin = makeTab('wf-origin')
     origin.activeState = fromPartial<ComfyWorkflowJSON>({ id: 'origin-draft' })
     const replacement = addTab('workflows/replacement.json', {
@@ -12511,6 +12513,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
     renderWithSelectedTarget()
     await vi.waitFor(() => expect(workflowRequests).toBe(1))
+    await vi.advanceTimersByTimeAsync(30_001)
     await userEvent.click(screen.getByRole('textbox'))
     await userEvent.paste('build a graph')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
