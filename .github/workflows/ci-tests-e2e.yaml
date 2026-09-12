@@ -286,6 +286,7 @@ jobs:
 
       - name: Detect newly-added tests
         id: detect
+        shell: bash
         env:
           BASE_REF: ${{ github.base_ref }}
           IS_FORK: ${{ github.event.pull_request.head.repo.fork }}
@@ -364,6 +365,7 @@ jobs:
       - name: Find safely recordable new tests
         if: steps.detect.outputs.has-new-tests == 'true'
         id: recordable
+        shell: bash
         env:
           NEW_SPEC_FILES: ${{ steps.detect.outputs.files }}
           NEW_TEST_TITLES: ${{ steps.detect.outputs.titles }}
@@ -425,6 +427,7 @@ jobs:
 
       - name: Run new test(s) with video recording
         if: steps.recordable.outputs.has-tests == 'true'
+        shell: bash
         env:
           RECORD_VIDEO: 'true'
           SLOW_MO: '1000'
