@@ -59,7 +59,7 @@ const root = process.env.IMPORT_GRAPH_ROOT || dirname(dirname(fileURLToPath(impo
  * not one per change. See `.agents/checks/import-graph.md` and the config's own
  * "NO includeOnly" comment.
  */
-const MIN_MODULES = Number(process.env.IMPORT_GRAPH_MIN_MODULES ?? 10);
+const MIN_MODULES = Number(process.env.IMPORT_GRAPH_MIN_MODULES ?? 11);
 
 const cli = join(root, "node_modules", ".bin", "depcruise");
 const run = spawnSync(cli, ["--output-type", "json", "src"], {

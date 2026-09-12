@@ -25,6 +25,7 @@ import type {
   ConnectOp,
   DeleteNodeOp,
   GrowConnectOp,
+  InsertWorkflowOp,
   InteriorSetWidgetOp,
   Op,
   ResetDocOp,
@@ -32,6 +33,10 @@ import type {
   TopLevelSetWidgetOp,
   WireOp,
 } from "../../src/index.js";
+
+// ID remapping belongs to the applier and is derived from the op envelope.
+// @ts-expect-error producer-side document-state-dependent remapping is not public.
+import { remapWorkflowIds } from "../../src/index.js";
 
 const env = {
   op_id: "0".repeat(32),
@@ -195,6 +200,13 @@ const resetAsOp: Op = reset;
 declare function applyOpsSignature(ops: Op[]): void;
 // @ts-expect-error #17: the applier cannot be handed an op it always refuses.
 applyOpsSignature([reset]);
+
+const insertWorkflow: InsertWorkflowOp = {
+  op: "insert_workflow",
+  ...env,
+  workflow: { nodes: [], links: [], definitions: { subgraphs: [] } },
+};
+const insertWorkflowAsOp: Op = insertWorkflow;
 
 // ---------------------------------------------------------------------------
 // Positive controls — these MUST compile, or the gate above is vacuous

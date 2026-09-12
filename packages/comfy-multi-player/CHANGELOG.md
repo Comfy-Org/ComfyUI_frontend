@@ -5,6 +5,13 @@ All notable changes to `@comfyorg/comfy-multi-player` are documented in this fil
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this package uses semantic versioning.
 
+## Unreleased
+
+### Added
+
+- Added the standalone `insert_workflow` op with deterministic, collision-safe
+  whole-tree id remapping keyed by the operation envelope id.
+
 ## 0.2.0 - 2026-08-30
 
 ### Changed

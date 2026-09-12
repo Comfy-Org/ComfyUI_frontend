@@ -334,7 +334,7 @@ Every op carries the same envelope, minted by its creator before dispatch:
 }
 ```
 
-Six kinds, frozen:
+Eight kinds, frozen:
 
 | Kind | Payload beyond the envelope | Batchable (authoring) |
 |---|---|---|
@@ -345,6 +345,7 @@ Six kinds, frozen:
 | `set_widget` | `node_id`, `widget` (name, never index), `value`, optional `old`; an interior write adds `path` AND `inner_widget` together (`InteriorSetWidgetOp`); a promoted HOST write adds `promoted: {value_index, instance_path, host_widgets_values}` instead — a positional write into a subgraph instance's opaque array (schema Amendment A15) | yes |
 | `delete_node` | `node_id`, `removed_links` | yes |
 | `clear` | `removed_nodes` | no |
+| `insert_workflow` | `workflow` containing required `nodes` and optional `links`, `groups`, and `definitions`; minters submit raw ids and the applier remaps them | no |
 | `reset_doc` | see [open questions](docs/api-contract-proposal.md) — currently rejected `op_deferred` by this package | no |
 
 `FROZEN_OPS`, `DEFERRED_OPS`, and `BATCHABLE_OPS` are exported so you can check
@@ -355,7 +356,20 @@ Compile-time assertions in `src/types.ts` pin that `FROZEN_OPS` is exactly
 is exactly `WireOp["op"]`, and that `BATCHABLE_OPS ⊆ FROZEN_OPS`, so the lists
 and the unions cannot drift apart silently.
 
-**`Op` vs `WireOp`.** `Op` is what `applyOps` implements — the six kinds it
+For `insert_workflow`, submit raw node, link, group, and definition ids without
+inspecting document state. The applier owns deterministic, tree-wide remapping;
+each derived id incorporates the envelope `op_id`, graph scope, id kind, and
+original id. Numeric and string aliases with the same normalized id refer to
+the same node, including in link endpoints. Definition ids are scoped to their
+containing graph, so repeated nested ids in separate branches derive distinct
+ids. A remapped definition id that collides anywhere in the stored
+definition tree rejects the operation with `definition_conflict`. Duplicate or
+missing raw ids reject it atomically with `malformed_op` at every definition
+depth. Links with a missing origin or target node are dropped individually at
+every depth, while valid sibling links remain. Private keys beginning with
+`__` are recursively removed and never appear in the projected workflow.
+
+**`Op` vs `WireOp`.** `Op` is what `applyOps` implements — the eight kinds it
 can actually apply. `WireOp` is `Op` plus the deferred kinds a conforming peer
 may legally put on the wire, and it is what `ApplyFailure.op` and the stamp
 helpers take: a rejected `reset_doc` really does land in `failed.op`, so typing
@@ -410,7 +424,7 @@ implementation to replay it with no failures. If you are building a submission
 surface in front of the applier, that admission layer is where `BATCHABLE_OPS`
 belongs. `test/batch-policy.test.ts` pins all of this.
 
-The normative definition of the op envelope and the six kinds is
+The normative definition of the op envelope and eight kinds is
 `docs/op-vocabulary-v1.md` in
 [comfy-cli](https://github.com/Comfy-Org/comfy-cli), which mints these ops on
 the agent side. The `Op` types here mirror those minted shapes field for field;

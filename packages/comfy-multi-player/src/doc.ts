@@ -911,13 +911,19 @@ export function countDefinitionInstances(doc: Y.Doc, defId: string, catalog?: Wi
     }
     if (aliases.has(String(node.get("type") ?? ""))) count++;
   });
-  definitionsMap(doc).forEach((dm) => {
+  const visit = (dm: Y.Map<unknown>): void => {
     const inner = dm.get("nodes");
     if (inner instanceof Y.Map) {
       inner.forEach((node: unknown) => {
         if (node instanceof Y.Map && aliases.has(String(node.get("type") ?? ""))) count++;
       });
     }
-  });
+    const container = dm.get("definitions");
+    const nested = container instanceof Y.Map ? container.get("subgraphs") : undefined;
+    if (nested instanceof Y.Map) nested.forEach((child) => {
+      if (child instanceof Y.Map) visit(child);
+    });
+  };
+  definitionsMap(doc).forEach(visit);
   return count;
 }

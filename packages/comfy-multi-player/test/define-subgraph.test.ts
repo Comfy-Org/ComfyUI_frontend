@@ -172,6 +172,34 @@ describe("define_subgraph application", () => {
     expect(projected.nodes[0]!.widgets_values).toEqual([9])
   })
 
+  it("preserves nested widget edits across a digest-winning replacement in either legal order", () => {
+    const nestedId = "abcdefab-cdef-4abc-8def-abcdefabcdef"
+    const incumbent = {
+      ...definition(),
+      nodes: [{ id: 20, type: nestedId, inputs: [], outputs: [], widgets_values: [] }],
+      definitions: { subgraphs: [definition(nestedId, 1)] },
+    }
+    const replacement = winningReplacement(incumbent, {
+      ...incumbent,
+      definitions: { subgraphs: [definition(nestedId, 2)] },
+    })
+    const first = { ...define(), subgraph_definition: incumbent }
+    const second = { ...define(), subgraph_definition: replacement }
+    const edit = {
+      op: "set_widget", ...envelope(), node_id: 10, path: [subgraphId, "20", "10"], inner_widget: "value", widget: "value", value: 80,
+    } as Op
+
+    const projections = [[first, edit, second], [second, edit, first]].map((ops) => {
+      const doc = empty()
+      for (const op of ops) applyOps(doc, [op], catalog)
+      return project(doc, catalog)
+    })
+
+    expect(projections[0]).toEqual(projections[1])
+    const projected = (projections[0]!.definitions as { subgraphs: Array<{ definitions: { subgraphs: Array<{ nodes: Array<{ widgets_values: unknown[] }> }> } }> }).subgraphs[0]!
+    expect(projected.definitions.subgraphs[0]!.nodes[0]!.widgets_values).toEqual([80])
+  })
+
   it("rejects an edit to a node that exists only in the replaced definition", () => {
     const first = {
       ...definition(subgraphId, 2),

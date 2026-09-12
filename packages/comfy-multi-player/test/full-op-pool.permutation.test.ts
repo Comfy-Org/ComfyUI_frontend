@@ -45,7 +45,7 @@ const PRECONDITIONS = [
   "interior-or-inputcount",
   "promoted-or-autogrow",
 ] as const;
-const PAIR_EXECUTIONS = 196_608;
+const PAIR_EXECUTIONS = 248_832;
 const SAMPLED_RUNS = 1_696;
 const SAMPLED_EXECUTIONS = SAMPLED_RUNS * 2;
 const TOTAL_EXECUTIONS = PAIR_EXECUTIONS + SAMPLED_EXECUTIONS;
@@ -228,6 +228,8 @@ function makeOp(
           links: [],
         },
       };
+    case "insert_workflow":
+      return { ...env, op: "insert_workflow", workflow: { nodes: [node(140 + serial, "Aux", [], [], [value])], links: [] } };
     case "reset_doc":
       return { ...env, op: "reset_doc", workflow: { nodes: [], links: [] } };
   }
@@ -542,7 +544,7 @@ describe("full op-pool permutation equivalence", () => {
 
     expect(runs).toBe(SAMPLED_RUNS);
     expect(executions).toBe(SAMPLED_EXECUTIONS);
-    expect(TOTAL_EXECUTIONS).toBe(200_000);
+    expect(TOTAL_EXECUTIONS).toBe(252_224);
     for (const [kind, count] of Object.entries(hits)) expect(count, `${kind} was not sampled`).toBeGreaterThan(0);
     expect(Object.values(taxonomy).reduce((sum, count) => sum + count, 0)).toBe(SAMPLED_RUNS);
     console.info("perm-4 sampled taxonomy", {
