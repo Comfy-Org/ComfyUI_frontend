@@ -58,7 +58,11 @@ describe('EcsFollowerAdapter integration', () => {
     )
     const mutations = createGraphMutations({
       getScope: () => scope,
-      layout: { createNode: createLayout, deleteNodes: deleteLayouts }
+      layout: {
+        createNode: createLayout,
+        deleteNodes: deleteLayouts,
+        deleteGroups: vi.fn()
+      }
     })
     mutations.addNode(
       {
@@ -154,7 +158,11 @@ describe('EcsFollowerAdapter integration', () => {
     const deleteLayouts = vi.fn()
     const mutations = createGraphMutations({
       getScope: () => scope,
-      layout: { createNode: vi.fn(), deleteNodes: deleteLayouts }
+      layout: {
+        createNode: vi.fn(),
+        deleteNodes: deleteLayouts,
+        deleteGroups: vi.fn()
+      }
     })
     const context = {
       source: 'agent-remote' as const,
@@ -248,7 +256,11 @@ describe('EcsFollowerAdapter integration', () => {
     let scopeAvailable = false
     const mutations = createGraphMutations({
       getScope: () => (scopeAvailable ? scope : null),
-      layout: { createNode: vi.fn(), deleteNodes: deleteLayouts }
+      layout: {
+        createNode: vi.fn(),
+        deleteNodes: deleteLayouts,
+        deleteGroups: vi.fn()
+      }
     })
     const context = {
       source: 'agent-remote' as const,
@@ -312,7 +324,11 @@ describe('EcsFollowerAdapter integration', () => {
     let activeScope = targetScope
     const mutations = createGraphMutations({
       getScope: () => activeScope,
-      layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+      layout: {
+        createNode: vi.fn(),
+        deleteNodes: vi.fn(),
+        deleteGroups: vi.fn()
+      }
     })
     const context = {
       source: 'agent-remote' as const,
@@ -349,7 +365,11 @@ describe('EcsFollowerAdapter integration', () => {
     const follower = new FollowerDoc()
     const mutations = createGraphMutations({
       getScope: () => scope,
-      layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+      layout: {
+        createNode: vi.fn(),
+        deleteNodes: vi.fn(),
+        deleteGroups: vi.fn()
+      }
     })
     const adapter = new EcsFollowerAdapter(mutations)
     adapter.bind('wf', follower)
@@ -420,7 +440,11 @@ describe('EcsFollowerAdapter integration', () => {
     const follower = new FollowerDoc()
     const mutations = createGraphMutations({
       getScope: () => scope,
-      layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+      layout: {
+        createNode: vi.fn(),
+        deleteNodes: vi.fn(),
+        deleteGroups: vi.fn()
+      }
     })
     const adapter = new EcsFollowerAdapter(mutations)
     adapter.bind('wf', follower)
@@ -522,7 +546,11 @@ describe('EcsFollowerAdapter integration', () => {
     const deleteLayouts = vi.fn()
     const mutations = createGraphMutations({
       getScope: () => scope,
-      layout: { createNode: createLayout, deleteNodes: deleteLayouts }
+      layout: {
+        createNode: createLayout,
+        deleteNodes: deleteLayouts,
+        deleteGroups: vi.fn()
+      }
     })
     const adapter = new EcsFollowerAdapter(mutations)
     adapter.bind('wf', follower)
@@ -718,7 +746,11 @@ describe('EcsFollowerAdapter integration', () => {
       const follower = new FollowerDoc()
       const mutations = createGraphMutations({
         getScope: () => scope,
-        layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+        layout: {
+          createNode: vi.fn(),
+          deleteNodes: vi.fn(),
+          deleteGroups: vi.fn()
+        }
       })
       const adapter = new EcsFollowerAdapter(mutations)
       adapter.bind('wf', follower)
@@ -835,7 +867,7 @@ describe('EcsFollowerAdapter integration', () => {
     const createNode = vi.fn()
     const mutations = createGraphMutations({
       getScope: () => scope,
-      layout: { createNode, deleteNodes: vi.fn() }
+      layout: { createNode, deleteNodes: vi.fn(), deleteGroups: vi.fn() }
     })
     const adapter = new EcsFollowerAdapter(mutations)
     adapter.bind('wf', follower)
@@ -938,7 +970,8 @@ describe('EcsFollowerAdapter integration', () => {
         removeMissing: () => undefined,
         removeLinks: () => undefined,
         deleteNode: () => undefined,
-        clearSemanticGraph: () => undefined
+        clearSemanticGraph: () => undefined,
+        deleteGroups: () => undefined
       }
       return {
         batch: (_context, define) => {
@@ -952,7 +985,8 @@ describe('EcsFollowerAdapter integration', () => {
         setWidget: () => true,
         connect: () => true,
         deleteNode: () => true,
-        clearSemanticGraph: () => true
+        clearSemanticGraph: () => true,
+        deleteGroups: () => true
       }
     }
     const adapter = new EcsFollowerAdapter(createTargetMutations)
@@ -1017,7 +1051,11 @@ describe('EcsFollowerAdapter integration', () => {
       const follower = new FollowerDoc()
       const mutations = createGraphMutations({
         getScope: () => scope,
-        layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+        layout: {
+          createNode: vi.fn(),
+          deleteNodes: vi.fn(),
+          deleteGroups: vi.fn()
+        }
       })
       const adapter = new EcsFollowerAdapter(mutations)
       adapter.bind('wf', follower)
@@ -1101,5 +1139,200 @@ describe('EcsFollowerAdapter integration', () => {
     expect(combined.targetLink).toEqual(singleton.targetLink)
     expect(combined.originLinks).toEqual([toLinkId(9)])
     expect(combined.targetLink).toEqual(toLinkId(9))
+  })
+
+  describe('group-aware clear (bbc #319)', () => {
+    // The pinned applier (0.2.1) empties `meta.groups` wholesale on `clear`
+    // (no per-group target set, no stamp gate — see
+    // reports/audit/2026-09-11-bbc-319-group-aware-clear.md and its
+    // continuation note on the applier's concurrency-unsafety). The follower
+    // can still react correctly to whatever `meta.groups` says AFTER a frame
+    // by diffing group ids against what it saw before, mirroring how it
+    // already diffs `nodesMap`/`linksMap` deep changes rather than trusting
+    // op names.
+    it('deletes the group layout for a group removed from meta.groups by a clear', () => {
+      const deleteGroups = vi.fn()
+      const mutations = createGraphMutations({
+        getScope: () => scope,
+        layout: {
+          createNode: vi.fn(),
+          deleteNodes: vi.fn(),
+          deleteGroups
+        }
+      })
+
+      const host = mint(
+        {
+          nodes: [
+            {
+              id: 1,
+              type: 'Source',
+              pos: [10, 20],
+              inputs: [],
+              outputs: [],
+              widgets_values: {}
+            }
+          ],
+          links: [],
+          groups: [{ id: 5, title: 'Stage 1', bounding: [0, 0, 100, 100] }]
+        },
+        catalog
+      )
+      const follower = new FollowerDoc()
+      const adapter = new EcsFollowerAdapter(mutations)
+      adapter.bind('wf', follower)
+      follower.applyRemoteUpdate(Y.encodeStateAsUpdate(host))
+      adapter.applyFrame({
+        workflowId: 'wf',
+        seq: 1,
+        update: Y.encodeStateAsUpdate(host),
+        actor: 'agent:test',
+        opIds: ['seed']
+      })
+      expect(deleteGroups).not.toHaveBeenCalled()
+
+      applyOps(host, [
+        op('clear-1', 2, { op: 'clear', removed_nodes: [1] })
+      ] as Parameters<typeof applyOps>[1])
+      const update = Y.encodeStateAsUpdate(host)
+      follower.applyRemoteUpdate(update)
+
+      expect(
+        adapter.applyFrame({
+          workflowId: 'wf',
+          seq: 2,
+          update,
+          actor: 'agent:test',
+          opIds: ['clear-1']
+        })
+      ).toBe(true)
+
+      expect(deleteGroups).toHaveBeenCalledOnce()
+      expect(deleteGroups.mock.calls[0]?.[1]).toEqual([5])
+
+      adapter.destroy()
+      follower.destroy()
+      host.destroy()
+    })
+
+    it('does not call deleteGroups when meta.groups is unchanged', () => {
+      const deleteGroups = vi.fn()
+      const mutations = createGraphMutations({
+        getScope: () => scope,
+        layout: { createNode: vi.fn(), deleteNodes: vi.fn(), deleteGroups }
+      })
+
+      const host = mint(
+        {
+          nodes: [
+            {
+              id: 1,
+              type: 'Source',
+              pos: [10, 20],
+              inputs: [],
+              outputs: [],
+              widgets_values: {}
+            },
+            {
+              id: 2,
+              type: 'Source',
+              pos: [40, 20],
+              inputs: [],
+              outputs: [],
+              widgets_values: {}
+            }
+          ],
+          links: [],
+          groups: [{ id: 5, title: 'Stage 1', bounding: [0, 0, 100, 100] }]
+        },
+        catalog
+      )
+      const follower = new FollowerDoc()
+      const adapter = new EcsFollowerAdapter(mutations)
+      adapter.bind('wf', follower)
+      follower.applyRemoteUpdate(Y.encodeStateAsUpdate(host))
+      adapter.applyFrame({
+        workflowId: 'wf',
+        seq: 1,
+        update: Y.encodeStateAsUpdate(host),
+        actor: 'agent:test',
+        opIds: ['seed']
+      })
+
+      // Delete one node, leaving the other and the group intact — an
+      // ordinary partial delete_node must never touch groups.
+      applyOps(host, [
+        op('del-1', 2, { op: 'delete_node', node_id: 1, removed_links: [] })
+      ] as Parameters<typeof applyOps>[1])
+      const update = Y.encodeStateAsUpdate(host)
+      follower.applyRemoteUpdate(update)
+      adapter.applyFrame({
+        workflowId: 'wf',
+        seq: 2,
+        update,
+        actor: 'agent:test',
+        opIds: ['del-1']
+      })
+
+      expect(deleteGroups).not.toHaveBeenCalled()
+
+      adapter.destroy()
+      follower.destroy()
+      host.destroy()
+    })
+
+    it('deletes an empty group with no node delta (group-only clear)', () => {
+      const deleteGroups = vi.fn()
+      const mutations = createGraphMutations({
+        getScope: () => scope,
+        layout: { createNode: vi.fn(), deleteNodes: vi.fn(), deleteGroups }
+      })
+
+      const host = mint(
+        {
+          nodes: [],
+          links: [],
+          groups: [{ id: 7, title: 'Empty group', bounding: [0, 0, 50, 50] }]
+        },
+        catalog
+      )
+      const follower = new FollowerDoc()
+      const adapter = new EcsFollowerAdapter(mutations)
+      adapter.bind('wf', follower)
+      follower.applyRemoteUpdate(Y.encodeStateAsUpdate(host))
+      adapter.applyFrame({
+        workflowId: 'wf',
+        seq: 1,
+        update: Y.encodeStateAsUpdate(host),
+        actor: 'agent:test',
+        opIds: ['seed']
+      })
+
+      // clear with an empty removed_nodes target (no nodes existed) but the
+      // applier still blanks meta.groups: zero nodes does not mean an empty
+      // canvas (bbc #319 requirement).
+      applyOps(host, [
+        op('clear-2', 2, { op: 'clear', removed_nodes: [] })
+      ] as Parameters<typeof applyOps>[1])
+      const update = Y.encodeStateAsUpdate(host)
+      follower.applyRemoteUpdate(update)
+
+      expect(
+        adapter.applyFrame({
+          workflowId: 'wf',
+          seq: 2,
+          update,
+          actor: 'agent:test',
+          opIds: ['clear-2']
+        })
+      ).toBe(true)
+
+      expect(deleteGroups).toHaveBeenCalledOnce()
+      expect(deleteGroups.mock.calls[0]?.[1]).toEqual([7])
+
+      adapter.destroy()
+      follower.destroy()
+      host.destroy()
+    })
   })
 })

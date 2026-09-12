@@ -248,6 +248,20 @@ const graphMutations = (workflowId: string) => {
             timestamp
           }))
         )
+      },
+      deleteGroups(scope, groupIds, context) {
+        const timestamp = Date.now()
+        layoutStore.applyOperations(
+          groupIds.map((groupId) => ({
+            type: 'deleteGroup',
+            graphId: scope.rootGraphId,
+            groupId,
+            source: LayoutSource.AgentRemote,
+            actor: context.actor,
+            opId: context.opId,
+            timestamp
+          }))
+        )
       }
     }
   })
