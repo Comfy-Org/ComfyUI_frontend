@@ -136,6 +136,24 @@ async function getLinkCount(comfyPage: ComfyPage): Promise<number> {
   })
 }
 
+async function getPersistenceSnapshot(comfyPage: ComfyPage) {
+  const workflow = await comfyPage.workflow.getExportedWorkflow()
+  return {
+    nodes: workflow.nodes.map((node) => ({
+      id: node.id,
+      type: node.type,
+      title: node.title,
+      pos: node.pos,
+      size: node.size,
+      flags: node.flags,
+      widgets_values: node.widgets_values
+    })),
+    links: workflow.links,
+    groups: workflow.groups,
+    reroutes: workflow.extra?.reroutes
+  }
+}
+
 test.describe('Workflow Persistence', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.settings.setSetting(
@@ -147,6 +165,55 @@ test.describe('Workflow Persistence', () => {
   test.afterEach(async ({ comfyPage }) => {
     await comfyPage.workflow.setupWorkflowsDirectory({})
   })
+
+  for (const vueNodesEnabled of [false, true]) {
+    test(`Save As and export/import preserve the exact graph with Vue Nodes ${vueNodesEnabled ? 'enabled' : 'disabled'}`, async ({
+      comfyPage
+    }) => {
+      await comfyPage.settings.setSetting(
+        'Comfy.VueNodes.Enabled',
+        vueNodesEnabled
+      )
+      await comfyPage.workflow.loadWorkflow(
+        'reroute/single-native-reroute-default-workflow'
+      )
+      const expected = await getPersistenceSnapshot(comfyPage)
+      expect(expected.nodes.length).toBeGreaterThan(1)
+      expect(expected.links.length).toBeGreaterThan(0)
+      expect(expected.reroutes?.length).toBeGreaterThan(0)
+
+      const suffix = generateUniqueFilename()
+      const nameA = `persistence-A-${suffix}`
+      const nameB = `persistence-B-${suffix}`
+      await comfyPage.menu.topbar.saveWorkflow(nameA)
+      await comfyPage.menu.topbar.saveWorkflowAs(nameB)
+
+      const tab = comfyPage.menu.workflowsTab
+      await tab.open()
+      for (const name of [nameA, nameB]) {
+        await tab.getPersistedItem(name).dblclick()
+        await comfyPage.workflow.waitForWorkflowIdle()
+        expect(await getPersistenceSnapshot(comfyPage)).toEqual(expected)
+      }
+
+      const downloadPromise = comfyPage.page.waitForEvent('download')
+      await comfyPage.menu.topbar.exportWorkflow(`persistence-${suffix}.json`)
+      const download = await downloadPromise
+      const downloadPath = await download.path()
+      expect(downloadPath).not.toBeNull()
+      if (!downloadPath) throw new Error('Exported workflow has no local path')
+
+      await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
+      await comfyPage.workflow.waitForWorkflowIdle()
+      await comfyPage.workflowUploadInput.setInputFiles({
+        name: `persistence-${suffix}.json`,
+        mimeType: 'application/json',
+        buffer: readFileSync(downloadPath)
+      })
+      await comfyPage.workflow.waitForWorkflowIdle()
+      expect(await getPersistenceSnapshot(comfyPage)).toEqual(expected)
+    })
+  }
 
   test('Rapid tab switching does not desync workflow and graph state', async ({
     comfyPage
