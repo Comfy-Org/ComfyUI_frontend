@@ -12,19 +12,16 @@ import { describe, expect, it } from 'vitest'
 import * as Y from 'yjs'
 
 import { createGraphMutations } from '@/core/graph/graphMutations'
-// eslint-disable-next-line import-x/no-restricted-paths
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-// eslint-disable-next-line import-x/no-restricted-paths
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { widgetId } from '@/types/widgetId'
-
-import type { DocUpdate } from './docFrameClient'
-import { EcsFollowerAdapter } from './ecsFollowerAdapter'
-import { FollowerDoc } from './followerDoc'
+import type { DocUpdate } from '@/workbench/extensions/agent/crdt/docFrameClient'
+import { EcsFollowerAdapter } from '@/workbench/extensions/agent/crdt/ecsFollowerAdapter'
+import { FollowerDoc } from '@/workbench/extensions/agent/crdt/followerDoc'
 
 const catalog: WidgetCatalog = {
   types: {
@@ -45,7 +42,6 @@ interface Scenario {
   widgetValues: number[]
   moveMask: boolean[]
   deleteMask: boolean[]
-  orderKeys: number[]
   batchSizes: number[]
 }
 
@@ -72,7 +68,6 @@ const scenarioArbitrary: fc.Arbitrary<Scenario> = fc.record({
   }),
   moveMask: fc.array(fc.boolean(), { minLength: 8, maxLength: 8 }),
   deleteMask: fc.array(fc.boolean(), { minLength: 8, maxLength: 8 }),
-  orderKeys: fc.array(fc.integer(), { minLength: 40, maxLength: 40 }),
   batchSizes: fc.array(fc.integer({ min: 1, max: 5 }), {
     minLength: 1,
     maxLength: 8
@@ -155,15 +150,33 @@ function phases(scenario: Scenario): Op[][] {
       } satisfies Op
     ]
   })
-  const widgets = ids.map((id, index) => ({
-    ...envelope(serial++),
-    op: 'set_widget',
-    node_id: id,
-    widget: index % 2 === 0 ? 'seed' : 'strength',
-    value: scenario.widgetValues[index],
-    path: null,
-    inner_widget: null
-  })) satisfies Op[]
+  const widgets = ids.flatMap((id, index) => {
+    const widget = index % 2 === 0 ? 'seed' : 'strength'
+    const value = scenario.widgetValues[index]
+    const writes = [
+      {
+        ...envelope(serial++),
+        op: 'set_widget',
+        node_id: id,
+        widget,
+        value,
+        path: null,
+        inner_widget: null
+      } satisfies Op
+    ]
+    if (index === 0) {
+      writes.push({
+        ...envelope(serial++),
+        op: 'set_widget',
+        node_id: id,
+        widget,
+        value: value + 1,
+        path: null,
+        inner_widget: null
+      })
+    }
+    return writes
+  })
   const connects = Array.from(
     { length: Math.floor(ids.length / 2) },
     (_, index) =>
@@ -194,23 +207,8 @@ function phases(scenario: Scenario): Op[][] {
   )
 }
 
-function permutePhases(causalPhases: Op[][], keys: number[]): Op[] {
-  let offset = 0
-  return causalPhases.flatMap((phase) => {
-    const ordered = phase
-      .map((operation, index) => ({
-        operation,
-        key: keys[(offset + index) % keys.length]
-      }))
-      .sort(
-        (left, right) =>
-          left.key - right.key ||
-          left.operation.op_id.localeCompare(right.operation.op_id)
-      )
-      .map(({ operation }) => operation)
-    offset += phase.length
-    return ordered
-  })
+function permutePhases(causalPhases: Op[][]): Op[] {
+  return causalPhases.flatMap((phase) => [...phase].reverse())
 }
 
 function jsonSnapshot(value: unknown): unknown {
@@ -328,9 +326,24 @@ describe('FE follower projection convergence (property)', () => {
       fc.property(scenarioArbitrary, (scenario) => {
         const causalPhases = phases(scenario)
         const forward = causalPhases.flat()
-        const reordered = permutePhases(causalPhases, scenario.orderKeys)
+        const reordered = permutePhases(causalPhases)
 
         expect(consume(reordered, [1])).toEqual(consume(forward, [1]))
+      }),
+      propertyOptions
+    )
+  })
+
+  it('keeps canonical stores consistent across generated frame batches', () => {
+    fc.assert(
+      fc.property(scenarioArbitrary, (scenario) => {
+        const operations = phases(scenario).flat()
+        const singleton = consume(operations, [1])
+        const batched = consume(operations, scenario.batchSizes)
+
+        expect(batched.links).toEqual(singleton.links)
+        expect(batched.widgets).toEqual(singleton.widgets)
+        expect(batched.layouts).toEqual(singleton.layouts)
       }),
       propertyOptions
     )
