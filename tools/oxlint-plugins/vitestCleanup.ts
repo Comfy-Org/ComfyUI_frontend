@@ -218,15 +218,13 @@ function mockFactory(
   if (!identifier) return
 
   const variable = resolvedVariable(context, identifier)
-  for (const definition of variable?.defs ?? []) {
-    if (isFunctionExpression(definition.node)) return definition.node
-    if (
-      definition.node.type === 'VariableDeclarator' &&
-      isFunctionExpression(definition.node.init)
-    ) {
-      return definition.node.init
-    }
-  }
+  const definition = variable?.defs.find(
+    ({ node }) =>
+      isFunctionExpression(node) ||
+      (node.type === 'VariableDeclarator' && isFunctionExpression(node.init))
+  )?.node
+  if (isFunctionExpression(definition)) return definition
+  if (definition?.type === 'VariableDeclarator') return definition.init
 }
 
 function isVitestImport(
@@ -481,12 +479,11 @@ export const noImportActual = {
     return {
       CallExpression(node: CallExpression) {
         const methodName = vitestMethodName(context, node)
-        const factory = mockFactory(context, node.arguments[1])
-        if (
-          methodName !== undefined &&
-          PARTIAL_MOCK_METHODS.has(methodName) &&
-          factory !== undefined
-        ) {
+        const factory =
+          methodName !== undefined && PARTIAL_MOCK_METHODS.has(methodName)
+            ? mockFactory(context, node.arguments[1])
+            : undefined
+        if (factory !== undefined) {
           const mockedModule = staticModuleName(node.arguments[0])
           if (mockedModule !== undefined) {
             const modules = mockedModulesByFactory.get(factory) ?? new Set()
@@ -495,10 +492,7 @@ export const noImportActual = {
           }
         }
         const usesImportOriginal =
-          methodName !== undefined &&
-          PARTIAL_MOCK_METHODS.has(methodName) &&
-          factory !== undefined &&
-          factory.params.length > 0
+          factory !== undefined && factory.params.length > 0
 
         if (methodName !== 'importActual' && !usesImportOriginal) return
 
