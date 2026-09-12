@@ -141,15 +141,22 @@ test.describe(
           )
           .toBe('Enable Int')
 
-        test.fail(
-          true,
-          `${modeControl.type} toggle is not exposed through the Vue Nodes DOM`
-        )
         const renderedToggle = comfyPage.vueNodes.getWidgetByName(
           modeControl.type,
           'Enable Int'
         )
-        await expect(renderedToggle).toBeVisible({ timeout: 2_000 })
+        await expect(renderedToggle)
+          .toBeVisible({ timeout: 2_000 })
+          .catch((error: unknown) => {
+            expect(error).toMatchObject({
+              matcherResult: { name: 'toBeVisible', pass: false }
+            })
+            test.fail(
+              true,
+              `${modeControl.type} toggle is not exposed through the Vue Nodes DOM`
+            )
+            throw error
+          })
         await renderedToggle.click()
         await expect
           .poll(() =>
