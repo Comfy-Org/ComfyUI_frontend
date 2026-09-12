@@ -3065,6 +3065,29 @@
       }
     }
   },
+  "ConcatenateVideo": {
+    "description": "يدمج الفيديوهات بالترتيب دون فك ترميز المدخلات المرمّزة المتوافقة.",
+    "display_name": "دمج الفيديوهات",
+    "inputs": {
+      "codec": {
+        "name": "codec",
+        "tooltip": "الـ codec المستخدم لترميز موترات الفيديو. يستخدم Auto ‏H.264؛ وتبقى الفيديوهات المرمّزة مسبقًا دون تغيير."
+      },
+      "complete_audio": {
+        "name": "complete_audio",
+        "tooltip": "مسار صوتي كامل اختياري للفيديو المدمج. يتجاوز الصوت المحمول بواسطة فيديوهات الإدخال."
+      },
+      "videos": {
+        "name": "videos",
+        "tooltip": "مقاطع الفيديو المراد دمجها وفق ترتيب الإدخال."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "الفيديو المدمج."
+      }
+    }
+  },
   "ConditioningAverage": {
     "display_name": "متوسط التهيئة",
     "inputs": {
@@ -3098,6 +3121,20 @@
       },
       "conditioning_to": {
         "name": "تهيئة إلى"
+      }
+    }
+  },
+  "ConditioningLoader": {
+    "description": "يحمّل conditioning محفوظًا باستخدام Save Conditioning، أو أي ملف safetensors يحتوي على موتر 'conditioning'، من مجلد embeddings.",
+    "display_name": "تحميل Conditioning",
+    "inputs": {
+      "conditioning_name": {
+        "name": "conditioning_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3908,6 +3945,10 @@
       "bit_depth": {
         "name": "bit_depth",
         "tooltip": "يستخدم «تلقائي» 8 بت لـ sRGB و10 بت لـ HDR. خيارات 8 بت و10 بت الصريحة مستقلة عن مساحة الألوان."
+      },
+      "codec": {
+        "name": "codec",
+        "tooltip": "يمكن ترميز الفيديو فورًا اختياريًا. يحافظ None على الصور بصيغة موتر؛ ويستخدم Auto ‏H.264."
       },
       "color_space": {
         "name": "color_space",
@@ -5026,6 +5067,22 @@
       "batch_size": {
         "name": "batch_size",
         "tooltip": "عدد صور latent في الدفعة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyYuE2LatentAudio": {
+    "display_name": "صوت YuE2 Latent فارغ",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "seconds": {
+        "name": "seconds"
       }
     },
     "outputs": {
@@ -6451,14 +6508,8 @@
       "model_max_output_tokens": {
         "name": "الحد الأقصى للرموز الناتجة"
       },
-      "model_temperature": {
-        "name": "درجة العشوائية"
-      },
       "model_thinking_level": {
         "name": "مستوى التفكير"
-      },
-      "model_top_p": {
-        "name": "top_p"
       },
       "prompt": {
         "name": "المطالبة",
@@ -7985,7 +8036,7 @@
     }
   },
   "ImageColorSpace": {
-    "description": "يحوّل بين sRGB ‏(Rec.709) وHDR ‏(Rec.2020 HLG) وHDR PQ ‏(Rec.2020 PQ). يستخدم نقطة بياض SDR بقوة 203 نت وشاشة مرجعية HLG بقوة 1000 نت. يؤدي التضييق إلى تعيين لوني للإضاءة الزائدة عبر الدفعة وضغط الألوان خارج النطاق اللوني. تُجرى التحويلات باستخدام float32 وتُرجع الجهاز الوسيط وdtype. لا يتحول alpha المستقيم لونيًا.",
+    "description": "تحويل sRGB وRec.709 الخطي وHDR ‏(Rec.2020 HLG) وHDR PQ ‏(Rec.2020 PQ). يستخدم الخطي 1.0 نفس الأبيض المرجعي بسطوع 203 نيت مثل sRGB؛ ويستخدم HLG شاشة مرجعية بسطوع 1000 نيت. يحافظ الإخراج الخطي وتحويلات الخطي إلى HDR على القيم الممتدة دون تعيين درجات الألوان. يطبّق إخراج SDR وتحويل PQ إلى HLG تعيين درجات الألوان على الإضاءة الزائدة عبر الدفعة ويضغط الألوان خارج النطاق اللوني. تُحسب التحويلات بـ float32 وتُرجع الجهاز الوسيط وdtype. لا يُحوَّل ألفا المستقيم لونيًا.",
     "display_name": "تحويل مساحة ألوان الصورة",
     "inputs": {
       "destination": {
@@ -12380,6 +12431,23 @@
       }
     }
   },
+  "MarigoldV2PostProcess": {
+    "description": "يحوّل تنبؤ Marigold V2 المفكوك إلى صورة: عمق مُطبّع يكون فيه القريب ساطعًا، أو متجهات عمودية سطحية بوحدة طول، أو بياض sRGB.",
+    "display_name": "المعالجة اللاحقة لـ Marigold V2",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "prediction": {
+        "name": "prediction"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MaskComposite": {
     "display_name": "تركيب القناع",
     "inputs": {
@@ -16027,6 +16095,9 @@
     "inputs": {
       "model": {
         "name": "النموذج"
+      },
+      "sampling": {
+        "name": "sampling"
       },
       "shift": {
         "name": "الإزاحة"
@@ -20994,6 +21065,24 @@
       }
     }
   },
+  "SaveConditioning": {
+    "description": "يحفظ conditioning في مجلد الإخراج بصيغة safetensors؛ انقل الملف إلى models/embeddings لتحميله باستخدام Load Conditioning، مثلًا لتجاوز مُرمّز النص.",
+    "display_name": "حفظ Conditioning",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "conditioning",
+        "tooltip": null
+      }
+    }
+  },
   "SaveGLB": {
     "display_name": "حفظ GLB",
     "inputs": {
@@ -21682,6 +21771,28 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SheetSage2AudioToABC": {
+    "description": "ينسخ الألحان الغنائية والآلية من الموسيقى إلى تدوين ABC. صِل خرج abc بعقدة YuE2 Generate Music واستخدم الوضع المطابق.",
+    "display_name": "تحويل صوت SheetSage2 إلى ABC",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "audio_encoder": {
+        "name": "audio_encoder"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "full: يُنشئ اللحن والأوتار؛ melody: يُنشئ اللحن فقط، ويُنصح به للأغاني المعاد أداؤها."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
         "tooltip": null
       }
     }
@@ -24029,7 +24140,7 @@
     }
   },
   "TripoImageToModelNode": {
-    "display_name": "Tripo: الصورة إلى نموذج",
+    "display_name": "Tripo: من صورة إلى نموذج (قديم)",
     "inputs": {
       "auto_size": {
         "name": "auto_size",
@@ -24102,6 +24213,75 @@
       "3": {
         "name": "FBX",
         "tooltip": "يُملأ فقط عند تفعيل quad."
+      }
+    }
+  },
+  "TripoImageToModelNodeV2": {
+    "display_name": "Tripo: من صورة إلى نموذج",
+    "inputs": {
+      "auto_size": {
+        "name": "الحجم التلقائي",
+        "tooltip": "تحجيم النماذج ذات النسيج إلى حجمها الحقيقي بالأمتار. يخزّن Tripo الحجم كتحويل مشهد للنموذج ويضمّنه عند تحويل النموذج أو تجهيزه بهيكل عظمي أو إعادة استهدافه؛ ويُتجاهل بدون نسيج."
+      },
+      "face_limit": {
+        "name": "حد الأوجه",
+        "tooltip": "العدد الأقصى للأوجه. تتيح القيمة -1 لـ Tripo الاختيار التكيفي (نحو 1.4M وجه في v3.x standard و2M في detailed). يقيّد Tripo القيم بصمت: v2.5 عند 500,000، والشبكات الرباعية عند 150,000."
+      },
+      "geometry_quality": {
+        "name": "جودة الهندسة"
+      },
+      "image": {
+        "name": "صورة"
+      },
+      "model_seed": {
+        "name": "بذرة النموذج"
+      },
+      "model_version": {
+        "name": "إصدار النموذج",
+        "tooltip": "إصدار النموذج المراد استخدامه للتوليد"
+      },
+      "orientation": {
+        "name": "الاتجاه"
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "خرائط مواد PBR (اللون الأساسي، المعدني، الخشونة، العادي). تتطلب النسيج."
+      },
+      "quad": {
+        "name": "رباعي",
+        "tooltip": "إخراج شبكة رباعية. يسلّم Tripo الشبكات الرباعية بصيغة FBX، لذا تصل النتيجة عبر مخرج FBX ويبقى مخرج GLB فارغًا."
+      },
+      "smart_low_poly": {
+        "name": "متعدد الأضلاع منخفض ذكي",
+        "tooltip": "شبكة منخفضة الأضلاع ذات طوبولوجيا نظيفة بأسلوب مصمم يدويًا (500-20,000 وجه، ورباعي 500-10,000). الأفضل للمواضيع البسيطة؛ وقد تفشل المواضيع المعقدة."
+      },
+      "texture": {
+        "name": "النسيج",
+        "tooltip": "إنشاء خرائط النسيج. يؤدي إيقافه إلى إرجاع هندسة مجردة ويتجاهل pbr."
+      },
+      "texture_alignment": {
+        "name": "محاذاة النسيج"
+      },
+      "texture_quality": {
+        "name": "جودة النسيج",
+        "tooltip": "detailed = أنسجة HD، extreme = أنسجة Ultra 8K."
+      },
+      "texture_seed": {
+        "name": "بذرة النسيج"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "task_id النموذج",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "فارغ عند تمكين quad."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "يتم ملؤه فقط عند تمكين quad."
       }
     }
   },
@@ -24433,7 +24613,7 @@
       },
       "animation": {
         "name": "الرسوم_المتحركة",
-        "tooltip": "تعمل الرسوم المتحركة preset:* مع كلا نموذجي الهيكل العظمي؛ تتطلب الرسوم المتحركة preset:biped:* هيكلًا عظميًا تم إنشاؤه باستخدام النموذج v1.0-20240301."
+        "tooltip": "تعمل رسوم preset:* المتحركة مع كلا نموذجي الهيكل العظمي. صُممت رسوم preset:biped:* المتحركة للهياكل العظمية من النموذج v1.0-20240301؛ ولا يقبل هيكل v2.5 إلا chop وclimb وdive وfall وhurt وidle وjump وrun وshoot وslash وturn وwalk."
       },
       "export_with_geometry": {
         "name": "export_with_geometry",
@@ -24597,6 +24777,48 @@
       }
     }
   },
+  "TripoSmartSegmentNode": {
+    "description": "يقسّم نموذجًا إلى أجزاء ذات دلالة معنوية ويسميها. من صورة، ينشئ Tripo النموذج أولًا. يمرر segment task_id إلى Tripo: Complete Mesh Parts وTripo: Retopology وTripo: Texture model وTripo: Convert model كما لو كان نتيجة Tripo: Segment Model.",
+    "display_name": "Tripo: التقسيم الذكي",
+    "inputs": {
+      "source": {
+        "name": "المصدر",
+        "tooltip": "قسّم نموذجًا موجودًا، أو أنشئ نموذجًا من صورة ثم قسّمه."
+      },
+      "source_granularity": {
+        "name": "مستوى التفصيل"
+      },
+      "source_hint": {
+        "name": "تلميح"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "segment task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "task_id النموذج",
+        "tooltip": "النموذج الذي تم تقسيمه (المُنشأ من الصورة أو المستورد)."
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "part_names",
+        "tooltip": "أسماء الأجزاء مفصولة بفواصل."
+      },
+      "4": {
+        "name": "الأجزاء",
+        "tooltip": "وصف Tripo للأجزاء التي عثر عليها."
+      },
+      "5": {
+        "name": "قناع",
+        "tooltip": null
+      }
+    }
+  },
   "TripoSplatConditioning": {
     "description": "ترميز الصورة باستخدام DINOv3 وFlux2 VAE إلى تهيئة إيجابية/سلبية لـ TripoSplat، وإنشاء هدف الضوضاء ذو الحجم الثابت (latent + camera) لـ KSampler",
     "display_name": "تهيئة TripoSplat",
@@ -24693,7 +24915,7 @@
     }
   },
   "TripoTextToModelNode": {
-    "display_name": "Tripo: النص إلى نموذج",
+    "display_name": "Tripo: تحويل النص إلى نموذج (قديم)",
     "inputs": {
       "auto_size": {
         "name": "auto_size",
@@ -24769,8 +24991,77 @@
       }
     }
   },
+  "TripoTextToModelNodeV2": {
+    "display_name": "Tripo: تحويل النص إلى نموذج",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "تحجيم النماذج ذات الخامات إلى حجمها الحقيقي بالمتر. يخزّن Tripo الحجم كتحويل مشهد للنموذج ويثبّته عند تحويل النموذج أو تزويده بهيكل عظمي أو إعادة استهدافه؛ يُتجاهل دون texture."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "الحد الأقصى لعدد الوجوه. تتيح القيمة -1 لـ Tripo الاختيار تكيفيًا (نحو 1.4M وجهًا في v3.x القياسي، و2M في detailed). يقيّد Tripo العدد بصمت: v2.5 عند 500,000، والشبكات الرباعية عند 150,000."
+      },
+      "geometry_quality": {
+        "name": "geometry_quality"
+      },
+      "image_seed": {
+        "name": "image_seed"
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "model_version": {
+        "name": "model_version"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "حتى 255 حرفًا."
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "خرائط مواد PBR (اللون الأساسي، المعدني، الخشونة، العادي). تتطلب texture."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "إخراج شبكة رباعية. يسلّم Tripo الشبكات الرباعية بتنسيق FBX، لذا تصل النتيجة إلى مخرج FBX ويبقى مخرج GLB فارغًا."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "شبكة منخفضة المضلعات بطوبولوجيا نظيفة بأسلوب مصنوع يدويًا (500-20,000 وجه، وquad 500-10,000). الأفضل للموضوعات البسيطة؛ قد تفشل الموضوعات المعقدة."
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "إنشاء خرائط الخامات. يؤدي إيقافه إلى إرجاع هندسة مجردة وتجاهل pbr."
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = خامات HD، extreme = خامات Ultra بدقة 8K."
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "معرّف مهمة النموذج",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "فارغ عند تمكين quad."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "يُملأ فقط عند تمكين quad."
+      }
+    }
+  },
   "TripoTextureNode": {
-    "display_name": "Tripo: نموذج الملمس",
+    "display_name": "Tripo: إكساء النموذج (قديم)",
     "inputs": {
       "model_task_id": {
         "name": "معرف_مهمة_النموذج"
@@ -24830,6 +25121,62 @@
       "3": {
         "name": "FBX",
         "tooltip": "يعيد Tripo ملف FBX للشبكات الرباعية وعمليات استيراد FBX؛ ويكون فارغًا بخلاف ذلك."
+      }
+    }
+  },
+  "TripoTextureNodeV2": {
+    "display_name": "Tripo: إكساء النموذج",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "نموذج الخامات: v3.0 للشبكات المُنشأة باستخدام v3.x، وv2.5 للشبكات المُنشأة باستخدام v2.5."
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "أسماء الأجزاء المفصولة بفواصل من Tripo: Segment Model لإكسائها. عند تركه فارغًا، تُكسى جميع الأجزاء."
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "خرائط مواد PBR (اللون الأساسي، المعدني، الخشونة، العادي)؛ يؤدي إيقافه إلى خامة بلون عادي."
+      },
+      "reference": {
+        "name": "reference",
+        "tooltip": "صور مرجعية لتوجيه الخامات. لا يمكن دمجها مع texture_prompt أو style_image."
+      },
+      "style_image": {
+        "name": "style_image",
+        "tooltip": "صورة مرجعية للنمط الفني للخامات. تُستخدم فقط مع texture_prompt."
+      },
+      "texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "إرشاد نصي اختياري للإكساء. مطلوب عمليًا للنماذج المستوردة (Tripo: Import Model)، إذ لا تحتوي على صورة مصدر لاستنتاج الألوان منها. لا يمكن دمجه مع صور مرجعية."
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = خامات HD، extreme = خامات 8K فائقة."
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "فارغ عندما يكون المصدر شبكة رباعية أو استيراد FBX."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "يعيد Tripo ‏FBX للشبكات الرباعية وواردات FBX؛ ويكون فارغًا في غير ذلك."
       }
     }
   },
@@ -28298,6 +28645,94 @@
     "outputs": {
       "0": {
         "name": "شبكة",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateABC": {
+    "description": "ينشئ تدوين ABC لأغنية من النمط وكلمات الأغنية. صِل abc بعقدة YuE2 Generate Music.",
+    "display_name": "إنشاء ABC باستخدام YuE2",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "lyrics": {
+        "name": "lyrics"
+      },
+      "max_abc_tokens": {
+        "name": "max_abc_tokens"
+      },
+      "mode": {
+        "name": "الوضع",
+        "tooltip": "كامل: يولّد اللحن والتآلفات؛ لحن: يولّد اللحن فقط، ويُنصح به للأغاني المغطاة."
+      },
+      "seed": {
+        "name": "البذرة"
+      },
+      "style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateMusic": {
+    "description": "يولّد رموز الموسيقى والتكييف الصوتي من النمط وكلمات الأغنية وتدوين ABC. أدخل الثواني الناتجة في عقدة Empty YuE2 Latent Audio. يتجاهل إدخال ABC الفارغ الوضع المحدد.",
+    "display_name": "YuE2 توليد الموسيقى",
+    "inputs": {
+      "abc": {
+        "name": "abc",
+        "tooltip": "صِل مولّد ABC أو أدخل نوتة معدّلة. اتركه فارغًا لاستخدام وضع الإيقاف تلقائيًا."
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "lyrics": {
+        "name": "كلمات الأغنية"
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "المدة القصوى؛ قد يتوقف التوليد في وقت أبكر. يستخدم الإصدار ميزانية قدرها 360 ثانية."
+      },
+      "mode": {
+        "name": "الوضع",
+        "tooltip": "كامل: يولّد اللحن والتآلفات؛ لحن: يولّد اللحن فقط، ويُنصح به للأغاني المغطاة."
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "seed": {
+        "name": "البذرة"
+      },
+      "style": {
+        "name": "النمط"
+      },
+      "temperature": {
+        "name": "درجة الحرارة"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "ثوانٍ",
         "tooltip": null
       }
     }

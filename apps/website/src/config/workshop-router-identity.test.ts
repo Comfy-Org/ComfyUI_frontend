@@ -15,6 +15,7 @@ import { routerWorkshopModelPaths } from './workshop-browse-content'
 import { getRouterWorkshopModelDetail } from './workshop-router-content'
 import { workshopContract } from './workshop-contract-catalog'
 import { workshopContentInputs } from './workshop-content-inputs'
+import { isWorkshopModelDisabled } from './workshop-model-availability'
 import {
   defaultValues,
   schemaForModel,
@@ -28,6 +29,13 @@ import {
 const audit = workshopIdentityAuditSchema.parse(rawAudit)
 const aliases = workshopRouterAliasesSchema.parse(packedAliases)
 const aliasesById = new Map(aliases.map((alias) => [alias.id, alias]))
+
+function isPublishablePage(entry: { id: string; slug: string }): boolean {
+  return (
+    !workshopContentInputs.get(entry.id)?.unavailableReason &&
+    !isWorkshopModelDisabled(entry.slug)
+  )
+}
 
 describe('legacy content identity repairs', () => {
   it.for(audit.records)(
@@ -46,7 +54,14 @@ describe('legacy content identity repairs', () => {
       const match = record.matches[0]
       expect(alias?.routerId).toBe(match.routerId)
       const contract = workshopContract(match.routerId)
-      if (!contract || Object.hasOwn(availability, match.routerId)) {
+      if (
+        !contract ||
+        Object.hasOwn(availability, match.routerId) ||
+        !display.some(
+          (entry) =>
+            entry.modelId === record.legacyId && isPublishablePage(entry)
+        )
+      ) {
         expect(detail).toBeUndefined()
         expect(routerWorkshopModelPaths).not.toContain(old.slug)
         return
@@ -84,15 +99,15 @@ describe('legacy content identity repairs', () => {
         workshopContract(alias.routerId) &&
         !Object.hasOwn(availability, alias.routerId)
     )
-    const joinedIds = new Set(publishedAliases.map((alias) => alias.routerId))
-    expect(new Set(workshopModels.map((model) => model.routerId))).toEqual(
-      joinedIds
-    )
     const publishedIds = new Set(publishedAliases.map((alias) => alias.id))
     const content = display.filter(
-      (entry) =>
-        publishedIds.has(entry.modelId) &&
-        !workshopContentInputs.get(entry.id)?.unavailableReason
+      (entry) => publishedIds.has(entry.modelId) && isPublishablePage(entry)
+    )
+    const joinedIds = new Set(
+      content.map((entry) => aliasesById.get(entry.modelId)?.routerId)
+    )
+    expect(new Set(workshopModels.map((model) => model.routerId))).toEqual(
+      joinedIds
     )
     expect(workshopModels.map((model) => model.slug).sort()).toEqual(
       content.map((entry) => entry.slug).sort()

@@ -1,8 +1,9 @@
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Vue Reroute Node Size', { tag: '@vue-nodes' }, () => {
+  test.use({ initialSettings: { 'Comfy.Minimap.Visible': false } })
+
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.Minimap.Visible', false)
     await comfyPage.workflow.loadWorkflow('links/single_connected_reroute_node')
   })
 

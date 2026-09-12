@@ -6,9 +6,7 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 const NEW_SUBGRAPH_TITLE = 'New Subgraph'
 
 test.describe('Subgraph CRUD', { tag: ['@slow', '@subgraph'] }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-  })
+  test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
   async function duplicateSubgraphNodeViaAltDrag(
     comfyPage: ComfyPage
