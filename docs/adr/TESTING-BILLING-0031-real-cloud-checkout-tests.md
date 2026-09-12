@@ -31,8 +31,13 @@ can be added separately when required for repeatable CI.
 
 ## Consequences
 
+### Positive
+
 - The browser test requires only sandbox URLs and account credentials.
 - No payment is submitted and no backend billing state is reset.
+
+### Negative
+
 - Unpaid operations can remain pending after a run. Account reuse depends on the
   backend's ability to resume that state, and concurrent runs must be avoided.
 - Cleanup is not a substitute for an assertion about product recovery.

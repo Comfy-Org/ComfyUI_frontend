@@ -1,46 +1,26 @@
-import {
-  zBillingOpStatusResponse,
-  zBillingStatusResponse,
-  zCurrentWorkspaceResponse,
-  zListSavedPaymentMethodsResponse,
-  zPreviewSubscribeResponse
-} from '@comfyorg/ingest-types/zod'
-import type { z } from 'zod'
+import { expect } from '@playwright/test'
 
-import {
-  ComfyPage,
-  comfyExpect as expect,
-  comfyPageFixture as base
-} from '@e2e/fixtures/ComfyPage'
+import { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
+import {
+  LiveCloudBillingSession,
+  LiveCloudCheckout,
+  matchesBillingResponse
+} from '@e2e/fixtures/helpers/LiveCloudBilling'
+import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 import { loadLiveCloudBillingConfig } from '@e2e/fixtures/utils/liveCloudBillingConfig'
 
-interface BillingSandbox {
-  preview: z.infer<typeof zPreviewSubscribeResponse>
-  readOperation: (
-    operationId: string
-  ) => Promise<z.infer<typeof zBillingOpStatusResponse>>
-}
-
 export const liveCloudBillingFixture = base.extend<{
-  billingSandbox: BillingSandbox
+  billingSession: LiveCloudBillingSession
+  comfyPage: ComfyPage
+  checkout: LiveCloudCheckout
 }>({
   baseURL: process.env.PLAYWRIGHT_TEST_URL,
-  networkPolicy: async ({ baseURL }, use) => {
-    const sandbox = loadLiveCloudBillingConfig()
+  networkPolicy: async ({ baseURL }, use, testInfo) => {
+    const config = loadLiveCloudBillingConfig()
     const origins = new Set([
-      new URL(baseURL ?? sandbox.PLAYWRIGHT_TEST_URL).origin,
-      sandbox.PLAYWRIGHT_SETUP_API_URL,
-      'https://testapi.comfy.org',
-      'https://t.comfy.org',
-      'https://mp.comfy.org',
-      'https://browser-intake-us5-datadoghq.com',
-      'https://cdn.sy-d.io',
-      'https://e2.sy-d.io',
-      'https://consumer.cloud.gist.build',
-      'https://realtime.cloud.gist.build',
-      'https://cdp.customer.io',
-      'https://o4507954455314432.ingest.us.sentry.io',
+      new URL(baseURL ?? config.PLAYWRIGHT_TEST_URL).origin,
+      config.PLAYWRIGHT_SETUP_API_URL,
       'https://identitytoolkit.googleapis.com',
       'https://securetoken.googleapis.com',
       'https://dreamboothy-dev.firebaseapp.com',
@@ -56,117 +36,105 @@ export const liveCloudBillingFixture = base.extend<{
     ])
     const unexpected = new Set<string>()
     await use({ origins, unexpected })
+    const blocked = [...unexpected]
+    await testInfo.attach('blocked-egress.json', {
+      body: JSON.stringify(blocked),
+      contentType: 'application/json'
+    })
     expect(
-      [...unexpected],
-      'Add the required sandbox dependency origin'
+      blocked.filter((entry) => /^(API|Navigation) /.test(entry)),
+      'Unexpected API or navigation destination'
     ).toEqual([])
   },
-  billingSandbox: async ({ page }, use, testInfo) => {
-    const sandbox = loadLiveCloudBillingConfig()
+  context: async ({ context, networkPolicy }, use) => {
+    const config = loadLiveCloudBillingConfig()
+    await context.route('**/*', async (route) => {
+      const request = route.request()
+      const url = new URL(request.url())
+      if (
+        !networkPolicy.origins.has(url.origin) &&
+        url.hostname.endsWith('.comfy.org') &&
+        /^\/(api|customers)(\/|$)/.test(url.pathname)
+      ) {
+        networkPolicy.unexpected.add(`API ${url.origin}${url.pathname}`)
+        await route.abort('blockedbyclient')
+        return
+      }
+      if (
+        request.isNavigationRequest() &&
+        !networkPolicy.origins.has(url.origin)
+      ) {
+        networkPolicy.unexpected.add(`Navigation ${url.origin}${url.pathname}`)
+        await route.abort('blockedbyclient')
+        return
+      }
+      if (
+        url.origin === config.PLAYWRIGHT_TEST_URL &&
+        /^\/(api|internal)(\/|$)/.test(url.pathname)
+      ) {
+        const response = await route.fetch({
+          url: new URL(
+            url.pathname + url.search,
+            config.PLAYWRIGHT_SETUP_API_URL
+          ).href,
+          maxRedirects: 0
+        })
+        await route.fulfill({ response })
+        return
+      }
+      await route.fallback()
+    })
+    await use(context)
+  },
+  billingSession: async ({ page }, use) => {
+    const config = loadLiveCloudBillingConfig()
     await new FeatureFlagHelper(page).seedFlags({
       onboarding_survey_enabled: false
     })
-    const documentResponse = await page.goto(
-      `${sandbox.PLAYWRIGHT_TEST_URL}/cloud/login`
-    )
+    await page.goto(`${config.PLAYWRIGHT_TEST_URL}/cloud/login`)
     await page
       .getByRole('button', { name: 'Use email instead', exact: true })
       .click()
     await page
       .getByRole('textbox', { name: 'Email', exact: true })
-      .fill(sandbox.CLOUD_ACCOUNT_EMAIL)
+      .fill(config.CLOUD_ACCOUNT_EMAIL)
     await page
       .getByLabel('Password', { exact: true })
-      .fill(sandbox.CLOUD_ACCOUNT_PASSWORD)
-    const [billingResponse] = await Promise.all([
+      .fill(config.CLOUD_ACCOUNT_PASSWORD)
+    const [response] = await Promise.all([
       page.waitForResponse(
         (response) =>
-          new URL(response.url()).pathname === '/api/billing/status' &&
-          response.status() === 200
+          matchesBillingResponse(
+            response,
+            config.PLAYWRIGHT_TEST_URL,
+            '/api/billing/status'
+          ) && response.status() === 200
       ),
       page.getByRole('button', { name: 'Sign in', exact: true }).click()
     ])
-    const headers = await billingResponse.request().allHeaders()
-
-    async function read<T>(path: string, schema: z.ZodType<T>): Promise<T> {
-      const response = await page.request.get(
-        new URL(path, sandbox.PLAYWRIGHT_TEST_URL).href,
-        { headers }
+    const authorization = await response.request().headerValue('authorization')
+    expect(authorization).toBeTruthy()
+    if (!authorization) throw new Error('Missing billing authorization')
+    await use(
+      new LiveCloudBillingSession(
+        page.request,
+        config.PLAYWRIGHT_SETUP_API_URL,
+        { authorization }
       )
-      expect(response.status(), `GET ${path}`).toBe(200)
-      return schema.parse(await response.json())
-    }
-
-    const workspace = await read(
-      '/api/workspaces/current',
-      zCurrentWorkspaceResponse
     )
-    expect(workspace.type).toBe('personal')
-    expect(workspace.role).toBe('owner')
-
-    async function assertNoCardAccount() {
-      const [status, methods] = await Promise.all([
-        read('/api/billing/status', zBillingStatusResponse),
-        read('/api/billing/payment-methods', zListSavedPaymentMethodsResponse)
-      ])
-      await testInfo.attach('billing-preflight.json', {
-        body: JSON.stringify({
-          workspaceId: workspace.id,
-          isActive: status.is_active,
-          billingStatus: status.billing_status,
-          subscriptionTier: status.subscription_tier,
-          planSlug: status.plan_slug,
-          paymentMethodCount: methods.length
-        }),
-        contentType: 'application/json'
-      })
-      if (status.is_active) {
-        expect(status.subscription_tier).toBe('FREE')
-      } else {
-        expect(['inactive', 'awaiting_payment_method']).toContain(
-          status.billing_status
-        )
-      }
-      expect(methods).toHaveLength(0)
-    }
-
-    await assertNoCardAccount()
-
-    const [previewResponse] = await Promise.all([
-      page.waitForResponse(
-        (response) =>
-          new URL(response.url()).pathname === '/api/billing/preview-subscribe'
-      ),
-      page.goto(`${sandbox.PLAYWRIGHT_TEST_URL}/?pricing=creator&cycle=monthly`)
-    ])
-    expect(previewResponse.status()).toBe(200)
-    const preview = zPreviewSubscribeResponse.parse(
-      await previewResponse.json()
-    )
-    expect(preview.allowed).toBe(true)
-    expect(preview.new_plan.slug).toBe('creator-monthly')
-    await testInfo.attach('sandbox.json', {
-      body: JSON.stringify({
-        baseURL: sandbox.PLAYWRIGHT_TEST_URL,
-        workspaceId: workspace.id,
-        frontendVersion:
-          documentResponse?.headers()['x-frontend-version'] ?? null
-      }),
-      contentType: 'application/json'
-    })
-    await use({
-      preview,
-      readOperation: (operationId) =>
-        read(
-          `/api/billing/ops/${encodeURIComponent(operationId)}`,
-          zBillingOpStatusResponse
-        )
-    })
   },
-  comfyPage: async ({ page, request, billingSandbox }, use) => {
-    expect(billingSandbox.preview.allowed).toBe(true)
+  comfyPage: async ({ page, request }, use) => {
     await use(new ComfyPage(page, request))
+  },
+  checkout: async ({ comfyPage, billingSession }, use, testInfo) => {
+    await billingSession.assertNoCardAccount(testInfo)
+    const checkout = new LiveCloudCheckout(
+      comfyPage,
+      loadLiveCloudBillingConfig().PLAYWRIGHT_TEST_URL
+    )
+    await checkout.open()
+    await use(checkout)
   }
 })
 
-export { comfyExpect } from '@e2e/fixtures/ComfyPage'
+export { expect as comfyExpect } from '@playwright/test'

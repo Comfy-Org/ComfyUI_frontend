@@ -24,7 +24,7 @@ to a section below.
 
 For real Cloud billing checkout recovery, sandbox setup, and remaining release
 criteria, see [Cloud billing E2E coverage](../docs/testing/cloud-billing-e2e.md).
-Its dedicated runner requires real authentication and a backend reset hook;
+Its dedicated runner requires real authentication and a dedicated no-card account;
 the live suite is excluded from the ordinary browser test configurations.
 
 **CRITICAL**: Start the ComfyUI backend with `--multi-user`:
