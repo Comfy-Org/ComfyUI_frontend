@@ -42,6 +42,25 @@ export function useAgentConsent() {
         resolve(result)
       }
 
+      function handleSaveFailure(error: unknown): void {
+        if (settled) return
+        saving = false
+        reportError(error, {
+          errorType: 'agent_consent_setting_write_failure'
+        })
+        dialogStore.updateDialog({
+          key: CONSENT_DIALOG_KEY,
+          contentProps: {
+            accepting: false,
+            error: t('agent.consent.saveError')
+          },
+          dialogComponentProps: {
+            closable: true,
+            dismissableMask: true
+          }
+        })
+      }
+
       const accept = async (): Promise<void> => {
         if (saving || settled) return
         saving = true
@@ -60,21 +79,7 @@ export function useAgentConsent() {
             : true
           closeWith(saved)
         } catch (error) {
-          saving = false
-          reportError(error, {
-            errorType: 'agent_consent_setting_write_failure'
-          })
-          dialogStore.updateDialog({
-            key: CONSENT_DIALOG_KEY,
-            contentProps: {
-              accepting: false,
-              error: t('agent.consent.saveError')
-            },
-            dialogComponentProps: {
-              closable: true,
-              dismissableMask: true
-            }
-          })
+          handleSaveFailure(error)
         }
       }
 
@@ -89,7 +94,7 @@ export function useAgentConsent() {
           docsUrl: DOCS_URL,
           accepting: false,
           error: '',
-          onAccept: () => void accept(),
+          onAccept: accept,
           onReject: () => closeWith(false)
         },
         dialogComponentProps: {
@@ -115,7 +120,19 @@ export function useAgentConsent() {
   async function withConsent(onAccept: () => void): Promise<void> {
     if (!isLoggedIn.value) {
       if (!(await showConsentDialog(false))) return
-      if (!(await dialogService.showSignInDialog())) return
+      try {
+        if (!(await dialogService.showSignInDialog())) return
+      } catch (error) {
+        reportError(error, {
+          errorType: 'agent_consent_sign_in_failure'
+        })
+        toastStore.add({
+          severity: 'error',
+          summary: t('g.error'),
+          detail: t('agent.consent.signInError')
+        })
+        return
+      }
 
       try {
         const decisionIdentity = await consentStore.ensureScope()

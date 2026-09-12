@@ -5288,6 +5288,7 @@
       "accept": "Start using Comfy Agent",
       "videoPlaceholder": "Video unavailable",
       "loadError": "Could not load your Agent preference. Try again.",
+      "signInError": "Could not open sign-in. Please try again.",
       "saveError": "Could not save your preference. Try again."
     },
     "paywall": {

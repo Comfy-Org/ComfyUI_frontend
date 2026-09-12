@@ -416,23 +416,18 @@ describe('AgentPanelRoot first-use experience', () => {
     ws.clear()
     vi.stubGlobal(
       'fetch',
-      vi.fn(
-        async () =>
-          new Response('{"threads":[]}', {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' }
-          })
-      )
+      vi.fn(async () => json(200, agentThreadList()))
     )
   })
 
   it('opens directly to the composer without another dialog', async () => {
+    const history = useAgentChatHistoryStore()
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
     expect(await screen.findByRole('textbox')).toBeInTheDocument()
-    await nextTick()
-    await nextTick()
+    await vi.waitFor(() => expect(history.replaceAll).toHaveBeenCalledWith([]))
 
+    expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 })
@@ -2981,8 +2976,7 @@ describe('AgentPanelRoot workflow binding', () => {
           return json(202, ack('wf-fresh'))
         }
         if (url.includes('/workflows')) return json(500, { error: 'failed' })
-        if (url.includes('/agent/threads'))
-          return json(200, { threads: [], pagination: { page: 1 } })
+        if (url.includes('/agent/threads')) return json(200, agentThreadList())
         return json(200, [])
       })
     )
@@ -3016,8 +3010,7 @@ describe('AgentPanelRoot workflow binding', () => {
             pagination: { offset: 0, limit: 100, total: 0, has_more: false }
           })
         }
-        if (url.includes('/agent/threads'))
-          return json(200, { threads: [], pagination: { page: 1 } })
+        if (url.includes('/agent/threads')) return json(200, agentThreadList())
         return json(200, [])
       })
     )
@@ -3420,8 +3413,7 @@ describe('AgentPanelRoot workflow binding', () => {
           workflowStore.activeWorkflow = background
           return json(202, ack('wf-fresh', 'm-1'))
         }
-        if (url.includes('/agent/threads'))
-          return json(200, { threads: [], pagination: { page: 1 } })
+        if (url.includes('/agent/threads')) return json(200, agentThreadList())
         if (url.includes('/workflows'))
           return json(200, {
             data: [],
@@ -3466,8 +3458,7 @@ describe('AgentPanelRoot workflow binding', () => {
           return json(202, ack('wf-fresh', 'm-1'))
         }
         if (url.includes('/messages')) return json(200, [])
-        if (url.includes('/agent/threads'))
-          return json(200, { threads: [], pagination: { page: 1 } })
+        if (url.includes('/agent/threads')) return json(200, agentThreadList())
         if (url.includes('/workflows')) {
           workflowRequests++
           if (workflowRequests > 1)

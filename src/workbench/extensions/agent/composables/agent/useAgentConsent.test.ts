@@ -10,12 +10,13 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 import { useAgentConsent } from './useAgentConsent'
 
-const authState = vi.hoisted(() => ({
-  loggedIn: false,
-  identity: 'account-a' as string | null,
-  workspaceId: 'workspace-a' as string | null,
-  generation: 0
-}))
+const authState = await vi.hoisted(async () => {
+  const { reactive } = await import('vue')
+  return reactive<{ loggedIn: boolean; identity: string | null }>({
+    loggedIn: false,
+    identity: 'account-a'
+  })
+})
 vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({
     get isLoggedIn() {
@@ -86,6 +87,26 @@ const settingResponse = (accepted: boolean) =>
     { status: accepted ? 200 : 404 }
   )
 const savedResponse = () => settingResponse(true)
+
+function deferred<T>() {
+  let resolve!: (value: T) => void
+  let reject!: (reason: Error) => void
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res
+    reject = rej
+  })
+  return { promise, resolve, reject }
+}
+
+async function startConsent() {
+  const dialog = await waitForConsentDialog()
+  const accept = dialog.contentProps.onAccept
+  if (typeof accept !== 'function') throw new Error('Missing consent action')
+  const completion: unknown = accept()
+  if (!(completion instanceof Promise))
+    throw new Error('Consent action must expose its pending save')
+  return { dialog, completion }
+}
 
 describe('useAgentConsent', () => {
   beforeEach(() => {
@@ -312,6 +333,82 @@ describe('useAgentConsent', () => {
 
     expect(fetchWithUnifiedRemint).not.toHaveBeenCalled()
     expect(onOpen).not.toHaveBeenCalled()
+    expect(reportError).not.toHaveBeenCalled()
+    expect(useToastStore().add).not.toHaveBeenCalled()
+  })
+
+  it('reports sign-in loading failure without saving or opening and allows another attempt', async () => {
+    authState.loggedIn = false
+    authState.identity = null
+    const error = new Error('Sign-in chunk could not load')
+    showSignInDialog.mockRejectedValueOnce(error)
+    const onOpen = vi.fn()
+
+    const request = useAgentConsent().withConsent(onOpen)
+    const outcome = request.catch((error: unknown) => error)
+    await startConsent()
+    expect(await outcome).toBeUndefined()
+
+    expect(fetchWithUnifiedRemint).not.toHaveBeenCalled()
+    expect(onOpen).not.toHaveBeenCalled()
+    expect(useDialogStore().dialogStack).toHaveLength(0)
+    expect(reportError).toHaveBeenCalledWith(error, {
+      errorType: 'agent_consent_sign_in_failure'
+    })
+    expect(useToastStore().add).toHaveBeenCalledWith(
+      expect.objectContaining({
+        detail: 'Could not open sign-in. Please try again.'
+      })
+    )
+
+    showSignInDialog.mockImplementationOnce(async () => {
+      authState.loggedIn = true
+      authState.identity = 'account-a'
+      return true
+    })
+    fetchWithUnifiedRemint.mockResolvedValueOnce(savedResponse())
+    const retry = useAgentConsent().withConsent(onOpen)
+    await startConsent()
+    await retry
+    expect(onOpen).toHaveBeenCalledOnce()
+  })
+
+  it('does not let a closed dialog save failure change a replacement dialog', async () => {
+    const oldSave = deferred<Response>()
+    const newSave = deferred<Response>()
+    fetchWithUnifiedRemint
+      .mockResolvedValueOnce(settingResponse(false))
+      .mockReturnValueOnce(oldSave.promise)
+      .mockReturnValueOnce(newSave.promise)
+    const oldOpen = vi.fn()
+    const first = useAgentConsent().withConsent(oldOpen)
+    const firstAttempt = await startConsent()
+    await vi.waitFor(() =>
+      expect(fetchWithUnifiedRemint).toHaveBeenCalledTimes(2)
+    )
+
+    useDialogStore().closeDialog({ key: 'agent-consent' })
+    await first
+    const newOpen = vi.fn()
+    const second = useAgentConsent().withConsent(newOpen)
+    await startConsent()
+    await vi.waitFor(() =>
+      expect(fetchWithUnifiedRemint).toHaveBeenCalledTimes(3)
+    )
+
+    oldSave.reject(new Error('Old save failed'))
+    await firstAttempt.completion
+    expect(useDialogStore().dialogStack[0].contentProps).toMatchObject({
+      accepting: true,
+      error: ''
+    })
+    expect(reportError).not.toHaveBeenCalled()
+
+    newSave.resolve(savedResponse())
+    await second
+    expect(oldOpen).not.toHaveBeenCalled()
+    expect(newOpen).toHaveBeenCalledOnce()
+    expect(useDialogStore().dialogStack).toHaveLength(0)
   })
 
   it('opens without a card when the account setting is already accepted', async () => {

@@ -186,6 +186,7 @@ async function onAgentEntryClick(): Promise<void> {
 
     agentPanelStore.suppressRestoredOpen()
     await withConsent(() => {
+      if (!agentPanelStore.enabled) return
       useTelemetry()?.trackAgentEntryButtonClicked({
         resulting_state: 'opened'
       })

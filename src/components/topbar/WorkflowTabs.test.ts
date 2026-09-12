@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PropType } from 'vue'
 import { computed, defineComponent, h, nextTick } from 'vue'
@@ -7,6 +8,7 @@ import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTelemetry } from '@/platform/telemetry'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -14,6 +16,7 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 import WorkflowTabs from './WorkflowTabs.vue'
 
 vi.mock(import('firebase/auth'))
+vi.mock(import('@/platform/telemetry'))
 vi.mock<unknown>(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 const distribution = vi.hoisted(() => ({
@@ -92,6 +95,11 @@ const consentChecking = await vi.hoisted(async () =>
 const withConsent = vi.hoisted(() =>
   vi.fn<(onAccept: () => void) => Promise<void>>()
 )
+const telemetry = {
+  trackAgentEntryButtonClicked: vi.fn(),
+  trackAgentPanelOpened: vi.fn(),
+  trackAgentPanelClosed: vi.fn()
+}
 vi.mock(
   import('@/workbench/extensions/agent/composables/agent/useAgentConsent'),
   () => ({
@@ -165,6 +173,7 @@ function renderComponent(errorHandler?: (error: unknown) => void) {
 }
 
 beforeEach(() => {
+  vi.mocked(useTelemetry).mockReturnValue(fromPartial(telemetry))
   consentChecking.value = false
   distribution.isCloud = false
   distribution.isDesktop = false
@@ -279,6 +288,42 @@ describe('WorkflowTabs agent entry button', () => {
     expect(
       screen.getByRole('button', { name: enMessages.agent.askComfyAgent })
     ).toBeInTheDocument()
+  })
+
+  it('does not activate or report an opening when the flag turns off during consent', async () => {
+    const store = useAgentPanelStore()
+    let finishConsent!: () => void
+    withConsent.mockImplementationOnce(
+      (onAccept) =>
+        new Promise<void>((resolve) => {
+          finishConsent = () => {
+            store.consentAccepted = true
+            onAccept()
+            resolve()
+          }
+        })
+    )
+    const { user } = renderComponent()
+    await user.click(
+      screen.getByRole('button', { name: enMessages.agent.askComfyAgent })
+    )
+    expect(withConsent).toHaveBeenCalledOnce()
+
+    store.enabled = false
+    await nextTick()
+    finishConsent()
+    await nextTick()
+
+    expect(store.isOpen).toBe(false)
+    expect(store.isVisible).toBe(false)
+    expect(telemetry.trackAgentEntryButtonClicked).not.toHaveBeenCalled()
+    expect(telemetry.trackAgentPanelOpened).not.toHaveBeenCalled()
+
+    store.enabled = true
+    await nextTick()
+    expect(
+      screen.getByRole('button', { name: enMessages.agent.askComfyAgent })
+    ).toBeEnabled()
   })
 
   it('ignores repeated opens while consent is pending and retries after it settles', async () => {

@@ -35,6 +35,18 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {}
 
+export const Loading: Story = {
+  args: { accepting: true }
+}
+
+export const Error: Story = {
+  args: { error: enMessages.agent.consent.saveError }
+}
+
+export const InLightApp: Story = {
+  globals: { theme: 'light' }
+}
+
 export const WithoutVideo: Story = {
   args: { videoSrc: '' }
 }

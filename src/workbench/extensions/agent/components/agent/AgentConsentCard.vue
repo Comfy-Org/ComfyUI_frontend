@@ -49,9 +49,9 @@ function choose(action: 'accept' | 'reject'): void {
 </script>
 
 <template>
-  <div ref="containerRef" class="@container w-full max-w-[1040px]">
+  <div ref="containerRef" class="dark-theme @container w-full max-w-[1040px]">
     <div
-      class="bg-agent-surface border-agent-border grid max-h-[85dvh] grid-cols-1 overflow-y-auto rounded-2xl border shadow-[0_20px_24px_-4px_rgba(10,13,18,0.4),0_8px_8px_-4px_rgba(10,13,18,0.25),0_3px_3px_-1.5px_rgba(10,13,18,0.2)] @2xl:min-h-[min(543px,85dvh)] @2xl:grid-cols-[555fr_483fr] @2xl:overflow-hidden"
+      class="grid max-h-[85dvh] grid-cols-1 overflow-y-auto rounded-2xl border border-component-node-border bg-base-background shadow-[0_20px_24px_-4px_rgba(10,13,18,0.4),0_8px_8px_-4px_rgba(10,13,18,0.25),0_3px_3px_-1.5px_rgba(10,13,18,0.2)] @2xl:min-h-[min(543px,85dvh)] @2xl:grid-cols-[555fr_483fr] @2xl:overflow-hidden"
     >
       <div class="min-h-0 shrink-0 p-2">
         <video
@@ -67,7 +67,7 @@ function choose(action: 'accept' | 'reject'): void {
         />
         <div
           v-else
-          class="text-agent-fg-muted bg-agent-surface-raised grid aspect-square w-full place-items-center rounded-xl text-xs @2xl:aspect-auto @2xl:size-full"
+          class="grid aspect-square w-full place-items-center rounded-xl bg-secondary-background text-xs text-muted-foreground @2xl:aspect-auto @2xl:size-full"
         >
           {{ $t('agent.consent.videoPlaceholder') }}
         </div>
@@ -81,14 +81,14 @@ function choose(action: 'accept' | 'reject'): void {
         <div class="flex flex-col gap-4">
           <h2
             :id="titleId"
-            class="text-agent-fg my-0 text-xl font-semibold @2xl:text-2xl"
+            class="my-0 text-xl font-semibold text-base-foreground @2xl:text-2xl"
           >
             {{ title }}
           </h2>
           <p
             v-for="(paragraph, index) in paragraphs"
             :key="index"
-            class="text-agent-fg-muted my-0 text-sm/5"
+            class="my-0 text-sm/5 text-muted-foreground"
           >
             {{ paragraph }}
           </p>
@@ -107,7 +107,11 @@ function choose(action: 'accept' | 'reject'): void {
             <span class="icon-[lucide--square-arrow-out-up-right] size-4" />
           </Button>
 
-          <p v-if="error" role="alert" class="text-agent-danger my-0 text-sm/5">
+          <p
+            v-if="error"
+            role="alert"
+            class="my-0 text-sm/5 text-destructive-background"
+          >
             {{ error }}
           </p>
         </div>
