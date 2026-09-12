@@ -246,6 +246,24 @@ describe("define_subgraph application", () => {
     expect(projected.definitions).toEqual({ subgraphs: [nested] })
   })
 
+  it("rejects fresh reuse of an identical nested definition id while exact replay stays idempotent", () => {
+    const nestedId = "abcdefab-cdef-4abc-8def-abcdefabcdef"
+    const nested = definition(nestedId, 4)
+    const outer = { ...definition(), definitions: { subgraphs: [nested] } }
+    const op = { ...define(), subgraph_definition: outer }
+    const doc = empty()
+
+    expect(applyOps(doc, [op], catalog).outcomes[0]?.outcome).toBe("applied")
+    const afterCreate = Y.encodeStateAsUpdate(doc)
+    expect(applyOps(doc, [op], catalog).outcomes[0]?.outcome).toBe("no-op")
+    expect(Y.encodeStateAsUpdate(doc)).toEqual(afterCreate)
+
+    const freshReuse = { ...define(nestedId, 4), subgraph_definition: nested }
+    expect(rejectionCode(doc, freshReuse)).toBe("definition_conflict")
+    expect(Y.encodeStateAsUpdate(doc)).toEqual(afterCreate)
+    expect((project(doc, catalog).definitions as { subgraphs: unknown[] }).subgraphs).toEqual([outer])
+  })
+
   it("applies an id-addressed widget edit to a nested definition", () => {
     const nestedId = "abcdefab-cdef-4abc-8def-abcdefabcdef"
     const outer = { ...definition(), definitions: { subgraphs: [definition(nestedId, 4)] } }
@@ -269,7 +287,7 @@ describe("define_subgraph application", () => {
     } }], catalog)
 
     expect(rejectionCode(doc, define(nestedId, 9))).toBe("definition_conflict")
-    expect(rejectionCode(doc, define(nestedId, 4))).toBeUndefined()
+    expect(rejectionCode(doc, define(nestedId, 4))).toBe("definition_conflict")
   })
 
   it("rejects a nested definition whose id collides with an existing root definition", () => {

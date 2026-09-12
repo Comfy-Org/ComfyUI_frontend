@@ -506,11 +506,9 @@ function applyDefineSubgraph(
   }
   const existingNested = resolveDefinition(doc, op.subgraph_id);
   if (existingNested !== null) {
-    const existingDigest = sha256Hex(canonicalOp(projectDefinition(existingNested, catalog) as unknown as Op));
-    if (existingDigest === digest) return "no-op";
     throw new OpRejectedError(
       "definition_conflict",
-      `define_subgraph: definition id '${op.subgraph_id}' is already registered with different content`,
+      `define_subgraph: definition id '${op.subgraph_id}' is already registered`,
     );
   }
   assertDefinitionIdsAvailable(doc, op.subgraph_definition);
