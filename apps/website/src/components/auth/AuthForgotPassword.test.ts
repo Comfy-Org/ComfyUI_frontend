@@ -326,6 +326,36 @@ describe('AuthForgotPassword', () => {
     ).toBe(false)
   })
 
+  it('re-enables the send after a stalled Firebase load so it stays retryable', async () => {
+    // eslint-disable-next-line no-restricted-properties -- only doMock can suspend a dynamic import for one case; a hoisted vi.mock factory resolves the module once and memoises it
+    vi.doMock(
+      import('../../config/workshop-firebase'),
+      () => new Promise<never>(() => {})
+    )
+    vi.resetModules()
+    try {
+      const { default: FreshAuthForgotPassword } =
+        await import('./AuthForgotPassword.vue')
+      render(FreshAuthForgotPassword)
+      await typeEmail('user@example.com')
+      await clickSend()
+
+      const send = () => screen.getByRole('button', { name: /send/i })
+      expect(send().hasAttribute('disabled')).toBe(true)
+
+      await vi.advanceTimersByTimeAsync(16_000)
+      await flushMicrotasks()
+
+      expect(
+        send().hasAttribute('disabled'),
+        'a Firebase load that never resolves must not leave the control disabled forever'
+      ).toBe(false)
+    } finally {
+      vi.doUnmock(import('../../config/workshop-firebase'))
+      vi.resetModules()
+    }
+  })
+
   it('re-enables the send immediately when the flag flickers off then back on mid-send', async () => {
     h.sendReset.mockImplementation(() => new Promise<void>(() => {}))
     render(AuthForgotPassword)
