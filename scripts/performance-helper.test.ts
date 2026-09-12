@@ -74,6 +74,13 @@ function createPage(send: (method: string) => Promise<unknown>): Page {
 function installPageGlobals() {
   delete window.__perfLongtaskState
   delete window.__perfRafCollectorState
+  const node = {
+    id: 1,
+    type: 'test',
+    inputs: [],
+    outputs: [],
+    widgets: []
+  }
   const observer = {
     disconnect: vi.fn(),
     observe: vi.fn(),
@@ -89,7 +96,7 @@ function installPageGlobals() {
     configurable: true,
     value: fromAny({
       canvas: { graph: null, visible_nodes: [] },
-      graph: { links: new Map(), nodes: [] },
+      graph: { links: new Map(), nodes: [node] },
       extensionManager: { setting: { get: () => undefined } }
     })
   })
@@ -162,6 +169,37 @@ describe('PerformanceHelper', () => {
     expect(collectorArmedDuringGetMetrics).toEqual([false, false])
     expect(result.measurement.rafIntervalsMs.length).toBeGreaterThan(0)
     expect(RAF_STATE_KEY in window).toBe(false)
+  })
+
+  it('accepts visible-node changes during a measurement', async () => {
+    installPageGlobals()
+    const raf = installControlledRaf()
+    const page = createPage(async (method) =>
+      method === 'Performance.getMetrics'
+        ? { metrics: REQUIRED_METRICS.map((name) => ({ name, value: 0 })) }
+        : {}
+    )
+    const helper = new PerformanceHelper(page)
+    await helper.init()
+
+    const start = helper.startMeasuring()
+    await raf.runNext(0)
+    await start
+    await page.evaluate(() => {
+      const app = window.app
+      if (!app) throw new Error('window.app is unavailable')
+      app.canvas.visible_nodes.push(app.graph.nodes[0])
+    })
+    await raf.runNext(16.7)
+    const stop = helper.stopMeasuring('visible-node-change')
+    await raf.runNext(33.4)
+
+    await expect(stop).resolves.toMatchObject({
+      kind: 'accepted',
+      measurement: {
+        workloadIdentity: { topology: { visibleNodes: 1 } }
+      }
+    })
   })
 
   it('rejects a collector that misses its start boundary', async () => {

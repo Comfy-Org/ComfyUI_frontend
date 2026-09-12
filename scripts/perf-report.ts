@@ -346,7 +346,8 @@ function renderFullReport(
 
   const flaggedRows: string[] = []
   const allRows: string[] = []
-  let hasComparableHistory = false
+  let hasComparableBaseline = false
+  let hasInsufficientHistory = false
 
   for (const {
     testName,
@@ -375,7 +376,8 @@ function renderFullReport(
     const cv = computeCV(stats)
     const z = zScore(currentValue, stats)
     const significance = classifyChange(z, cv, absDelta, minAbsDelta)
-    hasComparableHistory ||= stats.n >= 2
+    hasComparableBaseline = true
+    hasInsufficientHistory ||= stats.n < 2
 
     const row = `| ${displayName}: ${label} | ${formatValue(baselineValue, unit)} | ${formatValue(currentValue, unit)} | ${formatDelta(deltaPct)} | ${formatSignificance(significance, z)} |`
     allRows.push(row)
@@ -396,7 +398,7 @@ function renderFullReport(
       '</details>',
       ''
     )
-  } else if (hasComparableHistory) {
+  } else if (hasComparableBaseline && !hasInsufficientHistory) {
     lines.push('✅ No regressions detected.', '')
   } else {
     lines.push(

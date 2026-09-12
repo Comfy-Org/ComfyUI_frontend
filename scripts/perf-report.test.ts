@@ -77,8 +77,15 @@ function measurement(
   }
 }
 
-function accepted(value: number): PerfMeasurementResult {
-  return { kind: 'accepted', measurement: measurement('sample', value) }
+function accepted(
+  value: number,
+  name = 'sample',
+  topologyHash = 'sha256:test'
+): PerfMeasurementResult {
+  return {
+    kind: 'accepted',
+    measurement: measurement(name, value, topologyHash)
+  }
 }
 
 function incompatible(value: number): PerfMeasurementResult {
@@ -313,6 +320,25 @@ describe('performance report', () => {
       report([accepted(20)]),
       [report([incompatible(10)]), report([incompatible(30)])]
     )
+
+    expect(output).toContain('Not enough compatible history')
+    expect(output).not.toContain('No regressions detected')
+  })
+
+  it('does not claim a clean result when one test lacks compatible history', () => {
+    const current = report([accepted(20, 'covered'), accepted(20, 'uncovered')])
+    const baseline = report([
+      accepted(20, 'covered'),
+      accepted(20, 'uncovered')
+    ])
+    const history = [10, 30].map((value) =>
+      report([
+        accepted(value, 'covered'),
+        accepted(value, 'uncovered', 'sha256:other')
+      ])
+    )
+
+    const output = renderPerfReport(current, baseline, history)
 
     expect(output).toContain('Not enough compatible history')
     expect(output).not.toContain('No regressions detected')

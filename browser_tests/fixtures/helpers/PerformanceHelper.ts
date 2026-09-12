@@ -334,8 +334,8 @@ export class PerformanceHelper {
       failureReasons
     )
     if (
-      stableSerialize(workloadIdentity) !==
-      stableSerialize(startingWorkloadIdentity)
+      stableSerialize(workloadIdentity.environment) !==
+      stableSerialize(startingWorkloadIdentity.environment)
     ) {
       failureReasons.push('workload identity changed during measurement')
     }
