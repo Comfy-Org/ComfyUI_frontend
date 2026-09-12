@@ -1,6 +1,9 @@
 <template>
-  <slot v-if="!isArray(items) && items.isLoading" name="loading" />
-  <slot v-else-if="!itemsList.length && slots.placeholder" name="placeholder" />
+  <slot v-if="isPaged(items) && items.isLoading" name="loading" />
+  <slot
+    v-else-if="pagedItems(items).length && slots.placeholder"
+    name="placeholder"
+  />
   <div
     v-else
     ref="container"
@@ -31,7 +34,8 @@ import { clamp, debounce } from 'es-toolkit/compat'
 import { computed, onBeforeUnmount, ref, toValue, watch } from 'vue'
 import type { CSSProperties } from 'vue'
 
-import type { PagedList } from '@/utils/pagedList'
+import { isPaged, pagedItems } from '@/utils/pagedList'
+import type { MaybePaged } from '@/utils/pagedList'
 
 type GridState = {
   start: number
@@ -53,7 +57,7 @@ const {
   defaultItemWidth = 200,
   maxColumns = Infinity
 } = defineProps<{
-  items: readonly T[] | PagedList<T>
+  items: MaybePaged<T>
   gridStyle: CSSProperties
   bufferRows?: number
   resizeDebounce?: number
@@ -61,14 +65,6 @@ const {
   defaultItemWidth?: number
   maxColumns?: number
 }>()
-
-function isArray(list: unknown): list is readonly unknown[] {
-  return Array.isArray(list)
-}
-
-const itemsList = computed(() =>
-  isArray(items) ? items : toValue(items.items)
-)
 
 const itemHeight = ref(defaultItemHeight)
 const itemWidth = ref(defaultItemWidth)
@@ -94,7 +90,7 @@ const mergedGridStyle = computed<CSSProperties>(() => {
 const viewRows = computed(() => Math.ceil(height.value / itemHeight.value))
 const offsetRows = computed(() => Math.floor(scrollY.value / itemHeight.value))
 const isValidGrid = computed(
-  () => height.value && width.value && itemsList.value.length
+  () => height.value && width.value && pagedItems(items).length
 )
 
 const state = computed<GridState>(() => {
@@ -105,13 +101,13 @@ const state = computed<GridState>(() => {
   const toCol = toRow * cols.value
 
   return {
-    start: clamp(fromCol, 0, itemsList.value.length),
-    end: clamp(toCol, fromCol, itemsList.value.length)
+    start: clamp(fromCol, 0, pagedItems(items).length),
+    end: clamp(toCol, fromCol, pagedItems(items).length)
   }
 })
 const renderedItems = computed(() =>
   isValidGrid.value
-    ? itemsList.value.slice(state.value.start, state.value.end)
+    ? pagedItems(items).slice(state.value.start, state.value.end)
     : []
 )
 
@@ -123,20 +119,20 @@ const topSpacerStyle = computed<CSSProperties>(() => ({
   height: rowsToHeight(state.value.start)
 }))
 const bottomSpacerStyle = computed<CSSProperties>(() => ({
-  height: rowsToHeight(itemsList.value.length - state.value.end)
+  height: rowsToHeight(pagedItems(items).length - state.value.end)
 }))
 
 const distance = 2 * defaultItemHeight * (1 + bufferRows)
 const infiniteScrollElement = computed(() =>
-  isArray(items) ? container.value : undefined
+  isPaged(items) ? undefined : container.value
 )
 useInfiniteScroll(
   infiniteScrollElement,
   async () => {
-    if (!isArray(items)) await items.loadMore()
+    if (isPaged(items)) await items.loadMore()
   },
   {
-    canLoadMore: () => !isArray(items) && toValue(items.hasMore),
+    canLoadMore: () => isPaged(items) && toValue(items.hasMore),
     distance
   }
 )
