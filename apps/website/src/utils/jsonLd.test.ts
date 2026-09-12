@@ -318,4 +318,25 @@ describe('escapeJsonLd on a built graph', () => {
     expect(serialized).not.toContain('</script>')
     expect(serialized).toContain('\\u003c')
   })
+
+  it.for([
+    { description: 'U+2028 line', separator: '\u2028', escaped: '\\u2028' },
+    {
+      description: 'U+2029 paragraph',
+      separator: '\u2029',
+      escaped: '\\u2029'
+    }
+  ] as const)(
+    'escapes a $description separator in a page name',
+    ({ separator, escaped }) => {
+      const name = `before${separator}after`
+      const graph = buildPageGraph(
+        { siteUrl, locale: 'en' },
+        { url: `${siteUrl}/x/`, name }
+      )
+      const serialized = escapeJsonLd(graph)
+      expect(serialized).not.toContain(separator)
+      expect(serialized).toContain(`before${escaped}after`)
+    }
+  )
 })

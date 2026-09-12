@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useObjectUrl } from '@vueuse/core'
+import { useMounted, useObjectUrl } from '@vueuse/core'
 import { computed } from 'vue'
 
 const { file, src, kind, name } = defineProps<{
@@ -8,7 +8,8 @@ const { file, src, kind, name } = defineProps<{
   kind: 'video' | 'audio'
   name: string
 }>()
-const objectUrl = useObjectUrl(() => file)
+const mounted = useMounted()
+const objectUrl = useObjectUrl(() => (mounted.value ? file : undefined))
 const source = computed(() => objectUrl.value ?? src)
 </script>
 

@@ -17,6 +17,9 @@ import {
 } from '../src/config/workshop-playground'
 import type { FormValues } from '../src/config/workshop-playground'
 import { prepareWorkshopRouterInput } from '../src/config/workshop-request'
+import { getRouterWorkshopModelDetail } from '../src/config/workshop-router-content'
+import { initialWorkshopPageState } from '../src/config/workshop-page-state'
+import { prepareModelRouterRender } from '../src/config/router-render'
 import {
   parseRouterOpenApiSnapshot,
   routerInputSchema,
@@ -36,6 +39,58 @@ const sources = new Map(
 )
 
 describe('curated model inputs', () => {
+  it('submits the selected HeyGen language codes and leaves automatic detection unset', async () => {
+    const model = getRouterWorkshopModelDetail('heygen--starfish-tts--audio')
+    if (!model) throw new Error('Missing HeyGen page')
+    const initial = initialWorkshopPageState(model)
+    const language = initial.schema.find((field) => field.name === 'language')
+    const locale = initial.schema.find((field) => field.name === 'locale')
+    expect(language).toMatchObject({
+      kind: 'select',
+      options: expect.arrayContaining(['fr'])
+    })
+    expect(locale).toMatchObject({
+      kind: 'select',
+      options: expect.arrayContaining(['fr-FR'])
+    })
+    const automatic = await prepareModelRouterRender(model)
+    expect(automatic.body).not.toHaveProperty('language')
+    expect(automatic.body).not.toHaveProperty('locale')
+    const selected = await prepareModelRouterRender(model, {
+      model_specific: { language: 'fr', locale: 'fr-FR' }
+    })
+    expect(selected.body).toEqual({
+      ...automatic.body,
+      language: 'fr',
+      locale: 'fr-FR'
+    })
+  })
+
+  it('uploads a replacement BRIA Expand source and maps its stored URL into the request', async () => {
+    const model = getRouterWorkshopModelDetail(
+      'bria--expand-image--edit-images'
+    )
+    if (!model) throw new Error('Missing BRIA Expand page')
+    const file = new File(['image bytes'], 'replacement.png', {
+      type: 'image/png'
+    })
+    const uploaded: File[] = []
+    const prepared = await prepareModelRouterRender(
+      model,
+      { source_images: [file] },
+      {
+        uploadFile: async (image) => {
+          uploaded.push(image)
+          return 'https://storage.example/replacement.png'
+        }
+      }
+    )
+    expect(uploaded).toEqual([file])
+    expect(prepared.body).toMatchObject({
+      image: 'https://storage.example/replacement.png'
+    })
+  })
+
   it.for([-1, 0, undefined])(
     'leaves an optional seed unset instead of applying the Router default %s',
     async (seedDefault) => {

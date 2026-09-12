@@ -14,24 +14,14 @@ async function waitForSearchInsertion(
     .toBe(initialNodeCount + 1)
 }
 
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-})
-
 test.describe('Node search box', { tag: '@node' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting(
-      'Comfy.LinkRelease.Action',
-      'search box'
-    )
-    await comfyPage.settings.setSetting(
-      'Comfy.LinkRelease.ActionShift',
-      'search box'
-    )
-    await comfyPage.settings.setSetting(
-      'Comfy.NodeSearchBoxImpl',
-      'v1 (legacy)'
-    )
+  test.use({
+    initialSettings: {
+      'Comfy.UseNewMenu': 'Disabled',
+      'Comfy.LinkRelease.Action': 'search box',
+      'Comfy.LinkRelease.ActionShift': 'search box',
+      'Comfy.NodeSearchBoxImpl': 'v1 (legacy)'
+    }
   })
 
   test(`Can trigger on empty canvas double click`, async ({ comfyPage }) => {
@@ -279,19 +269,13 @@ test.describe('Node search box', { tag: '@node' }, () => {
 })
 
 test.describe('Release context menu', { tag: '@node' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting(
-      'Comfy.LinkRelease.Action',
-      'context menu'
-    )
-    await comfyPage.settings.setSetting(
-      'Comfy.LinkRelease.ActionShift',
-      'search box'
-    )
-    await comfyPage.settings.setSetting(
-      'Comfy.NodeSearchBoxImpl',
-      'v1 (legacy)'
-    )
+  test.use({
+    initialSettings: {
+      'Comfy.UseNewMenu': 'Disabled',
+      'Comfy.LinkRelease.Action': 'context menu',
+      'Comfy.LinkRelease.ActionShift': 'search box',
+      'Comfy.NodeSearchBoxImpl': 'v1 (legacy)'
+    }
   })
 
   test(

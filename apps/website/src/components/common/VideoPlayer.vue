@@ -42,6 +42,7 @@ const {
   controlsOnHover = false,
   playButtonVariant = 'solid',
   fit = 'cover',
+  noCors = false,
   ariaLabel,
   class: className
 } = defineProps<{
@@ -71,6 +72,9 @@ const {
   /** Style of the centered play/pause button in `minimal` mode. */
   playButtonVariant?: 'solid' | 'overlay'
   fit?: 'cover' | 'contain'
+  /** Load without a CORS request, for hosts such as generated-output buckets
+   * that send no CORS headers. Caption tracks still require CORS. */
+  noCors?: boolean
   ariaLabel?: string
   class?: HTMLAttributes['class']
 }>()
@@ -296,7 +300,7 @@ function toggleFullscreen() {
       :src
       :poster
       :preload="autoplay && !lazyAutoplay ? 'auto' : 'metadata'"
-      crossorigin="anonymous"
+      :crossorigin="noCors && !tracks.length ? undefined : 'anonymous'"
       playsinline
       :autoplay="autoplay && !lazyAutoplay"
       :loop
