@@ -21,6 +21,16 @@ function sceneSources(): (string | null)[] {
   ].map((el) => el.getAttribute('src'))
 }
 
+function accordionTriggers(): HTMLElement[] {
+  return screen
+    .getAllByRole('button')
+    .filter((button) => button.hasAttribute('aria-controls'))
+}
+
+function accordionPanels(): HTMLElement[] {
+  return screen.getAllByRole('region', { hidden: true })
+}
+
 describe('ProductShowcaseSection', () => {
   beforeEach(() => {
     stubIntersectionObserver()
@@ -55,5 +65,48 @@ describe('ProductShowcaseSection', () => {
         (src) => src === '/animations/scene-1/scene-01.json'
       )
     ).toHaveLength(1)
+  })
+
+  describe('accordion semantics', () => {
+    it('pairs every trigger with a distinct region it does not contain', () => {
+      renderSection()
+
+      const triggers = accordionTriggers()
+      const panels = accordionPanels()
+
+      expect(triggers).toHaveLength(3)
+      expect(panels).toHaveLength(3)
+      expect(new Set(triggers.map((trigger) => trigger.id)).size).toBe(3)
+      expect(new Set(panels.map((panel) => panel.id)).size).toBe(3)
+
+      expect(
+        triggers.map((trigger) => trigger.getAttribute('aria-controls'))
+      ).toEqual(panels.map((panel) => panel.id))
+      expect(
+        panels.map((panel) => panel.getAttribute('aria-labelledby'))
+      ).toEqual(triggers.map((trigger) => trigger.id))
+
+      const selfNesting = triggers.filter((trigger, index) =>
+        trigger.contains(panels[index] ?? null)
+      )
+      expect(selfNesting).toEqual([])
+    })
+
+    it('exposes exactly the expanded panel and no other', async () => {
+      renderSection()
+
+      const triggers = accordionTriggers()
+      const expandedStates = () =>
+        triggers.map((trigger) => trigger.getAttribute('aria-expanded'))
+
+      expect(expandedStates()).toEqual(['true', 'false', 'false'])
+      expect(screen.getAllByRole('region')).toEqual([accordionPanels()[0]])
+
+      triggers[1]?.click()
+      await nextTick()
+
+      expect(expandedStates()).toEqual(['false', 'true', 'false'])
+      expect(screen.getAllByRole('region')).toEqual([accordionPanels()[1]])
+    })
   })
 })

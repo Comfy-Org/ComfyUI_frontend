@@ -171,40 +171,51 @@ useIntersectionObserver(sectionRef, ([entry]) => {
               class="hidden self-center lg:block"
               aria-hidden="true"
             />
-            <button
-              type="button"
+            <div
               :class="
                 cn(
-                  'rounded-5xl w-full cursor-pointer p-8 text-left transition-colors duration-300',
+                  'rounded-5xl w-full transition-colors duration-300',
                   activeIndex === i
                     ? 'bg-primary-comfy-yellow text-primary-comfy-ink'
                     : 'bg-transparency-white-t4 text-primary-comfy-canvas lg:ml-5'
                 )
               "
-              @click="activeIndex = i"
             >
-              <div class="flex items-center justify-between gap-3">
-                <h3 class="text-2xl/tight font-medium">
-                  {{ feature.title }}
-                </h3>
-                <img
-                  src="/icons/plus.svg"
-                  alt=""
-                  :class="
-                    cn(
-                      'size-5 shrink-0 transition-opacity duration-300',
-                      activeIndex === i ? 'opacity-0' : 'opacity-100'
-                    )
-                  "
-                  aria-hidden="true"
-                />
-              </div>
+              <button
+                :id="`feature-trigger-${i}`"
+                type="button"
+                :aria-expanded="activeIndex === i"
+                :aria-controls="`feature-panel-${i}`"
+                class="w-full cursor-pointer px-8 pt-8 text-left"
+                @click="activeIndex = i"
+              >
+                <div class="flex items-center justify-between gap-3">
+                  <h3 class="text-2xl/tight font-medium">
+                    {{ feature.title }}
+                  </h3>
+                  <img
+                    src="/icons/plus.svg"
+                    alt=""
+                    :class="
+                      cn(
+                        'size-5 shrink-0 transition-opacity duration-300',
+                        activeIndex === i ? 'opacity-0' : 'opacity-100'
+                      )
+                    "
+                    aria-hidden="true"
+                  />
+                </div>
+              </button>
 
               <!-- Animated description (stacked for constant height) -->
               <div
+                :id="`feature-panel-${i}`"
+                role="region"
+                :aria-labelledby="`feature-trigger-${i}`"
+                :aria-hidden="activeIndex !== i"
                 :class="
                   cn(
-                    'grid transition-[grid-template-rows] duration-300',
+                    'grid px-8 pb-8 transition-[grid-template-rows] duration-300',
                     activeIndex === i ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
                   )
                 "
@@ -224,7 +235,7 @@ useIntersectionObserver(sectionRef, ([entry]) => {
                   </p>
                 </div>
               </div>
-            </button>
+            </div>
           </div>
         </template>
       </div>
