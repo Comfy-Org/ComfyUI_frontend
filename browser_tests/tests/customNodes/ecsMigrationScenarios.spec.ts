@@ -40,8 +40,9 @@ test.describe(
         window.app!.graph.add(node)
         const widget = node.widgets?.find(({ name }) => name === 'input_list_1')
         if (!widget) throw new Error('input_list_1 widget is unavailable')
-        widget.value =
-          'third@third prompt\nfirst@first prompt\nsecond@second prompt'
+        widget.value = `third@third prompt
+first@first prompt
+second@second prompt`
         return {
           id: node.id,
           value: widget.value,
@@ -51,21 +52,23 @@ test.describe(
 
       expect(created.widgets).toContain('input_list_1')
       expect(created.value).toBe(
-        'third@third prompt\nfirst@first prompt\nsecond@second prompt'
+        `third@third prompt
+first@first prompt
+second@second prompt`
       )
       await comfyPage.menu.topbar.saveWorkflow('ecs-prompt-combinator')
       await comfyPage.page.reload({ waitUntil: 'domcontentloaded' })
       await comfyPage.waitForAppReady()
 
-      await expect
-        .poll(() =>
-          comfyPage.page.evaluate((id) => {
-            const node = window.app!.graph.getNodeById(id)
-            return node?.widgets?.find(({ name }) => name === 'input_list_1')
-              ?.value
-          }, created.id)
-        )
-        .toBe('third@third prompt\nfirst@first prompt\nsecond@second prompt')
+      await expect.poll(() =>
+        comfyPage.page.evaluate((id) => {
+          const node = window.app!.graph.getNodeById(id)
+          return node?.widgets?.find(({ name }) => name === 'input_list_1')
+            ?.value
+        }, created.id)
+      ).toBe(`third@third prompt
+first@first prompt
+second@second prompt`)
     })
 
     test('VHS Load Video connects to Video Combine and persists widgets', async ({
