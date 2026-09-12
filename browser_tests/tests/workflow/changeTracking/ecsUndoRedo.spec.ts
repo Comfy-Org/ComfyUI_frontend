@@ -183,6 +183,139 @@ test.describe(
       }
     )
 
+    test(
+      'undoes and redoes the complete compound graph edit chain',
+      { tag: ['@vue-nodes', '@widget'] },
+      async ({ comfyPage }) => {
+        test.slow()
+        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+        await comfyPage.settings.setSetting(
+          'Comfy.LinkRelease.Action',
+          'no action'
+        )
+        await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
+        await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+        await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(0)
+
+        const getSnapshot = () =>
+          comfyPage.page.evaluate(() => ({
+            nodes: window
+              .app!.graph.nodes.map((node) => ({
+                id: String(node.id),
+                type: node.type,
+                position: [...node.pos],
+                widgets: (node.widgets ?? []).map(({ name, value }) => ({
+                  name,
+                  value: value ?? null
+                }))
+              }))
+              .sort((left, right) => left.id.localeCompare(right.id)),
+            links: [...window.app!.graph.links.values()]
+              .map((link) => ({
+                originId: String(link.origin_id),
+                originSlot: link.origin_slot,
+                targetId: String(link.target_id),
+                targetSlot: link.target_slot
+              }))
+              .sort((left, right) =>
+                JSON.stringify(left).localeCompare(JSON.stringify(right))
+              )
+          }))
+        const snapshots = [await getSnapshot()]
+        const checkpoint = async () => {
+          for (let frame = 0; frame < 4; frame++) await comfyPage.nextFrame()
+          snapshots.push(await getSnapshot())
+          await expect
+            .poll(() => comfyPage.workflow.getUndoQueueSize())
+            .toBe(snapshots.length - 1)
+        }
+
+        await comfyPage.searchBoxV2.addNode('Load Checkpoint', {
+          position: { x: 250, y: 250 }
+        })
+        await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+        await checkpoint()
+        const loader = await comfyPage.nodeOps.getNodeRefByType(
+          'CheckpointLoaderSimple'
+        )
+
+        await comfyPage.searchBoxV2.addNode('KSampler', {
+          position: { x: 650, y: 250 }
+        })
+        await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(2)
+        await checkpoint()
+        const sampler = await comfyPage.nodeOps.getNodeRefByType('KSampler')
+
+        const output = await loader.connectOutput(0, sampler, 0)
+        await output.expectLinkCount(1)
+        await expect
+          .poll(async () => (await sampler.getInput(0)).getLink())
+          .not.toBeNull()
+        await comfyPage.page.mouse.click(600, 650)
+        await checkpoint()
+
+        await loader.dragBy({ x: 90, y: 60 })
+        await checkpoint()
+        await sampler.dragBy({ x: -70, y: 100 })
+        await checkpoint()
+
+        const samplerFixture =
+          await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+        const editNumber = async (name: string, value: string) => {
+          const widget = comfyPage.vueNodes.getWidgetByName('KSampler', name)
+          const { input } = comfyPage.vueNodes.getInputNumberControls(widget)
+          await widget.click()
+          await input.fill(value)
+          await input.press('Enter')
+          await samplerFixture.title.click()
+          await expect(input).toHaveValue(value)
+        }
+        await editNumber('steps', '31')
+        await expect
+          .poll(async () => (await sampler.getWidgetByName('steps')).getValue())
+          .toBe(31)
+        await checkpoint()
+        await editNumber('cfg', '9.5')
+        await expect
+          .poll(async () => (await sampler.getWidgetByName('cfg')).getValue())
+          .toBe(9.5)
+        await checkpoint()
+
+        const samplerInput = await sampler.getInput(0)
+        await comfyPage.canvasOps.dragAndDrop(
+          await samplerInput.getPosition(),
+          { x: 900, y: 650 }
+        )
+        await expect.poll(() => samplerInput.getLink()).toBeNull()
+        await output.expectLinkCount(0)
+        await comfyPage.page.mouse.click(600, 650)
+        await checkpoint()
+
+        await loader.connectOutput(0, sampler, 0)
+        await output.expectLinkCount(1)
+        await expect.poll(() => samplerInput.getLink()).not.toBeNull()
+        await comfyPage.page.mouse.click(600, 650)
+        await checkpoint()
+
+        await sampler.delete()
+        await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+        await output.expectLinkCount(0)
+        await checkpoint()
+        const finalSnapshot = snapshots.at(-1)!
+
+        for (let index = snapshots.length - 2; index >= 0; index--) {
+          await comfyPage.keyboard.undo()
+          await expect.poll(getSnapshot).toEqual(snapshots[index])
+        }
+        for (let index = 1; index < snapshots.length; index++) {
+          await comfyPage.keyboard.redo()
+          await expect.poll(getSnapshot).toEqual(snapshots[index])
+        }
+        expect(await getSnapshot()).toEqual(finalSnapshot)
+        await expect(comfyPage.toast.toastErrors).toHaveCount(0)
+      }
+    )
+
     test('undo remains scoped to the edited workflow after switching tabs', async ({
       comfyPage
     }) => {
