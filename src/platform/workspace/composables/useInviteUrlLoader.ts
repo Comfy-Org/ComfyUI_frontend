@@ -1,12 +1,7 @@
 import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
-import { useRoute, useRouter } from 'vue-router'
 
-import {
-  clearPreservedQuery,
-  hydratePreservedQuery,
-  mergePreservedQueryIntoQuery
-} from '@/platform/navigation/preservedQueryManager'
+import { usePreservedQueryDeepLink } from '@/platform/navigation/composables/usePreservedQueryDeepLink'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 
 import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
@@ -22,39 +17,11 @@ import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
  * as the template URL loader.
  */
 export function useInviteUrlLoader() {
-  const route = useRoute()
-  const router = useRouter()
   const { t } = useI18n()
   const toast = useToast()
   const workspaceStore = useTeamWorkspaceStore()
   const INVITE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.INVITE
-
-  /**
-   * Hydrates preserved query from sessionStorage and merges into route.
-   * This restores the invite token after login redirects.
-   */
-  const ensureInviteQueryFromIntent = async () => {
-    hydratePreservedQuery(INVITE_NAMESPACE)
-    const mergedQuery = mergePreservedQueryIntoQuery(
-      INVITE_NAMESPACE,
-      route.query
-    )
-
-    if (mergedQuery) {
-      await router.replace({ query: mergedQuery })
-    }
-
-    return mergedQuery ?? route.query
-  }
-
-  /**
-   * Removes invite parameter from URL using Vue Router
-   */
-  const cleanupUrlParams = () => {
-    const newQuery = { ...route.query }
-    delete newQuery.invite
-    void router.replace({ query: newQuery })
-  }
+  const deepLink = usePreservedQueryDeepLink(INVITE_NAMESPACE)
 
   /**
    * Loads and accepts workspace invite from URL query parameters if present.
@@ -68,9 +35,7 @@ export function useInviteUrlLoader() {
    * 5. Clean up URL and preserved query
    */
   const loadInviteFromUrl = async () => {
-    // Restore preserved query from sessionStorage (handles login redirect case)
-    const query = await ensureInviteQueryFromIntent()
-    const inviteParam = query.invite
+    const inviteParam = await deepLink.hydrateAndRead()
     if (!inviteParam || typeof inviteParam !== 'string') {
       return
     }
@@ -100,8 +65,7 @@ export function useInviteUrlLoader() {
         detail: error instanceof Error ? error.message : t('g.unknownError')
       })
     } finally {
-      cleanupUrlParams()
-      clearPreservedQuery(INVITE_NAMESPACE)
+      deepLink.strip()
     }
   }
 

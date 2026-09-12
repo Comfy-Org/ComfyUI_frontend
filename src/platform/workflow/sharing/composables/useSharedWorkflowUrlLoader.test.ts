@@ -208,6 +208,7 @@ beforeEach(() => {
 
 describe('useSharedWorkflowUrlLoader', () => {
   beforeEach(() => {
+    mockRouterReplace.mockResolvedValue(undefined)
     mockQueryParams = {}
     mockIsLoggedIn.value = false
     mockDialogStack.length = 0
