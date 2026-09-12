@@ -41,6 +41,45 @@ vi.mock('@/extensions/core/load3d/Load3dUtils', () => ({
   }
 }))
 
+type ValueChangeListener = (change: {
+  widgetId: string
+  value: unknown
+  oldValue?: unknown
+  context?: unknown
+}) => void
+
+const { widgetValueStoreMock } = vi.hoisted(() => {
+  const listeners = new Set<ValueChangeListener>()
+  const widgets = new Map<string, unknown>()
+  return {
+    widgetValueStoreMock: {
+      listeners,
+      widgets,
+      onValueChange: vi.fn((listener: ValueChangeListener) => {
+        listeners.add(listener)
+        return () => listeners.delete(listener)
+      }),
+      getWidget: vi.fn((id: string) => widgets.get(id)),
+      emit: (change: {
+        widgetId: string
+        value: unknown
+        oldValue?: unknown
+        context?: unknown
+      }) => {
+        for (const listener of [...listeners]) listener(change)
+      },
+      reset: () => {
+        listeners.clear()
+        widgets.clear()
+      }
+    }
+  }
+})
+
+vi.mock('@/stores/widgetValueStore', () => ({
+  useWidgetValueStore: () => widgetValueStoreMock
+}))
+
 type WithPrivate = {
   loadModelConfig(): ModelConfig
   loadSceneConfig(): SceneConfig
@@ -767,5 +806,181 @@ describe('Load3DConfiguration.onSceneInvalidated', () => {
     expect(() => {
       modelWidget.value = 'model.glb'
     }).not.toThrow()
+  })
+})
+
+// PM-1011: after the agent interacts with the graph, Load3D preview capture
+// stopped working. Root cause: the agent/CRDT follower writes widget values
+// straight into widgetValueStore (graphMutations.ts `setWidget`), bypassing
+// this file's `Object.defineProperty` override on `modelWidget.value`. That
+// override is the only thing that reloads the Three.js scene and marks the
+// capture cache dirty, so a remote-origin model_file change left the scene
+// (and the next capture) stale. These tests pin the bridge that fixes it.
+describe('Load3DConfiguration remote (agent) model updates', () => {
+  function makeLoad3dMock(): Load3d {
+    return {
+      loadModel: vi.fn().mockResolvedValue(undefined),
+      clearModel: vi.fn(),
+      setUpDirection: vi.fn(),
+      setMaterialMode: vi.fn(),
+      setTargetSize: vi.fn(),
+      setCameraState: vi.fn(),
+      toggleGrid: vi.fn(),
+      setBackgroundColor: vi.fn(),
+      setBackgroundImage: vi.fn().mockResolvedValue(undefined),
+      setBackgroundRenderMode: vi.fn(),
+      toggleCamera: vi.fn(),
+      setFOV: vi.fn(),
+      setLightIntensity: vi.fn(),
+      setHDRIIntensity: vi.fn(),
+      setHDRIAsBackground: vi.fn(),
+      setHDRIEnabled: vi.fn(),
+      emitModelReady: vi.fn()
+    } as unknown as Load3d
+  }
+
+  async function flush() {
+    await new Promise<void>((resolve) => setTimeout(resolve, 0))
+  }
+
+  const REMOTE_CONTEXT = {
+    source: 'agent-remote',
+    actor: 'agent',
+    opId: 'op-1'
+  }
+
+  beforeEach(() => {
+    widgetValueStoreMock.reset()
+    vi.mocked(Load3dUtils.splitFilePath).mockReturnValue(['', 'model.glb'])
+    vi.mocked(Load3dUtils.getResourceURL).mockReturnValue('/view')
+  })
+
+  it('reloads the model when the agent changes model_file via widgetValueStore', async () => {
+    const load3d = makeLoad3dMock()
+    const onSceneInvalidated = vi.fn()
+    const modelWidget = {
+      value: 'none',
+      widgetId: 'widget-1'
+    } as unknown as IBaseWidget
+    widgetValueStoreMock.widgets.set('widget-1', modelWidget)
+
+    const config = new Load3DConfiguration(load3d)
+    config.configure({
+      modelWidget,
+      loadFolder: 'input',
+      onSceneInvalidated
+    })
+    await flush()
+    vi.mocked(load3d.loadModel).mockClear()
+    onSceneInvalidated.mockClear()
+
+    // Simulate the agent/CRDT follower's setWidget write: the store value
+    // changes but nothing ever assigns `modelWidget.value` directly.
+    widgetValueStoreMock.emit({
+      widgetId: 'widget-1',
+      value: 'agent-model.glb',
+      oldValue: 'none',
+      context: REMOTE_CONTEXT
+    })
+    await flush()
+
+    expect(load3d.loadModel).toHaveBeenCalledWith(
+      expect.any(String),
+      'agent-model.glb',
+      { silentOnNotFound: false }
+    )
+    expect(onSceneInvalidated).toHaveBeenCalled()
+    expect(modelWidget.value).toBe('agent-model.glb')
+  })
+
+  it('ignores local (non-remote) store changes to avoid double-loading', async () => {
+    const load3d = makeLoad3dMock()
+    const modelWidget = {
+      value: 'none',
+      widgetId: 'widget-2'
+    } as unknown as IBaseWidget
+    widgetValueStoreMock.widgets.set('widget-2', modelWidget)
+
+    const config = new Load3DConfiguration(load3d)
+    config.configure({ modelWidget, loadFolder: 'input' })
+    await flush()
+    vi.mocked(load3d.loadModel).mockClear()
+
+    widgetValueStoreMock.emit({
+      widgetId: 'widget-2',
+      value: 'local-change.glb',
+      oldValue: 'none',
+      context: undefined
+    })
+    await flush()
+
+    expect(load3d.loadModel).not.toHaveBeenCalled()
+  })
+
+  it('ignores value changes for a different widget id', async () => {
+    const load3d = makeLoad3dMock()
+    const modelWidget = {
+      value: 'none',
+      widgetId: 'widget-3'
+    } as unknown as IBaseWidget
+    widgetValueStoreMock.widgets.set('widget-3', modelWidget)
+
+    const config = new Load3DConfiguration(load3d)
+    config.configure({ modelWidget, loadFolder: 'input' })
+    await flush()
+    vi.mocked(load3d.loadModel).mockClear()
+
+    widgetValueStoreMock.emit({
+      widgetId: 'some-other-widget',
+      value: 'agent-model.glb',
+      oldValue: 'none',
+      context: REMOTE_CONTEXT
+    })
+    await flush()
+
+    expect(load3d.loadModel).not.toHaveBeenCalled()
+  })
+
+  it('does not register a second listener when configure runs again for the same widget', async () => {
+    const load3d = makeLoad3dMock()
+    const modelWidget = {
+      value: 'none',
+      widgetId: 'widget-4'
+    } as unknown as IBaseWidget
+    widgetValueStoreMock.widgets.set('widget-4', modelWidget)
+
+    const config = new Load3DConfiguration(load3d)
+    config.configure({ modelWidget, loadFolder: 'input' })
+    config.configure({ modelWidget, loadFolder: 'input' })
+    await flush()
+
+    expect(widgetValueStoreMock.onValueChange).toHaveBeenCalledTimes(1)
+  })
+
+  it('detaches once the widget is no longer registered (node removed)', async () => {
+    const load3d = makeLoad3dMock()
+    const modelWidget = {
+      value: 'none',
+      widgetId: 'widget-5'
+    } as unknown as IBaseWidget
+    widgetValueStoreMock.widgets.set('widget-5', modelWidget)
+
+    const config = new Load3DConfiguration(load3d)
+    config.configure({ modelWidget, loadFolder: 'input' })
+    await flush()
+
+    // Node removed: the widget is deregistered from the store.
+    widgetValueStoreMock.widgets.delete('widget-5')
+
+    expect(widgetValueStoreMock.listeners.size).toBe(1)
+
+    widgetValueStoreMock.emit({
+      widgetId: 'widget-5',
+      value: 'ignored.glb',
+      oldValue: 'none',
+      context: REMOTE_CONTEXT
+    })
+
+    expect(widgetValueStoreMock.listeners.size).toBe(0)
   })
 })
