@@ -8990,7 +8990,6 @@ Enterprise`
   'nav.accountMenu': { en: 'Account menu', 'zh-CN': '账户菜单' },
   'nav.credits': { en: 'credits', 'zh-CN': '积分' },
   'nav.noCredits': { en: 'No credits', 'zh-CN': '无积分' },
-  'nav.buyCredits': { en: 'Buy credits', 'zh-CN': '购买积分' },
   'nav.creditsLabel': { en: 'Credits', 'zh-CN': '积分' },
   'nav.workspaces': { en: 'Workspaces', 'zh-CN': '工作区' },
   'nav.planAndCredits': { en: 'Plan & credits', 'zh-CN': '套餐与积分' },
@@ -9050,6 +9049,11 @@ Enterprise`
   'workshop.sections.browseAll': {
     en: 'Browse all models',
     'zh-CN': '浏览所有模型'
+  },
+  'workshop.model.back': { en: 'Back to all models', 'zh-CN': '返回全部模型' },
+  'workshop.model.backTo': {
+    en: 'Back to {category}',
+    'zh-CN': '返回{category}'
   },
   'workshop.sections.allModels': {
     en: 'All models',
@@ -9448,7 +9452,7 @@ Enterprise`
     'zh-CN': '提供方响应超时。未扣费。'
   },
   'workshop.error.lowCredits': {
-    en: 'You have {credits} credits and this run needs {n}. Buy credits to continue; your inputs stay here.',
+    en: 'You have {credits} credits and this run needs {n}. Add credits to continue; your inputs stay here.',
     'zh-CN':
       '你有 {credits} 积分，本次运行需要 {n}。购买积分后继续，你的输入会保留。'
   },

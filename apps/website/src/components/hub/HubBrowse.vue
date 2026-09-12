@@ -22,8 +22,9 @@ import {
 import { tagDisplayName } from '../../lib/hub/tag-aliases'
 import { withFacetFields } from '../../lib/hub/facet-fields'
 import type { HubTemplate } from '../../lib/hub/types'
-import type { Locale, TranslationKey } from '../../i18n/translations'
+import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
 import type {
   FacetGroupConfig,
   SortOption,
@@ -56,18 +57,6 @@ const TABS = ['all', 'nodeGraphs', 'comfyApps', 'models'] as const
 // The hub browses by what a thing makes, the same axis and the same vocabulary
 // as the models list, so a workflow and a model answer to the same use case.
 const useCase = ref<UseCase | 'all'>('all')
-
-const useCaseLabelKey: Record<UseCase | 'all', TranslationKey> = {
-  all: 'workshop.useCase.all',
-  'generate-images': 'workshop.useCase.generateImages',
-  'edit-images': 'workshop.useCase.editImages',
-  'generate-videos': 'workshop.useCase.generateVideos',
-  'animate-images': 'workshop.useCase.animateImages',
-  'edit-videos': 'workshop.useCase.editVideos',
-  '3d': 'workshop.useCase.3d',
-  audio: 'workshop.useCase.audio',
-  text: 'workshop.useCase.text'
-}
 
 // Arriving from the home row means "show me this provider": the models it makes
 // and the workflows that run them. The search panel narrows the same two lists,
