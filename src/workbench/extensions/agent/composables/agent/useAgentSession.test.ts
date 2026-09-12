@@ -1186,7 +1186,21 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(await sending).toBe(false)
       expect(rest.postMessage).not.toHaveBeenCalled()
       expect(adopted).not.toHaveBeenCalled()
-      expect(session.entries.value).toEqual([])
+      expect(session.entries.value).toHaveLength(2)
+      expect(session.entries.value[0]).toMatchObject({
+        role: 'user',
+        text: 'Old draft'
+      })
+      expect(session.entries.value[1]).toMatchObject({
+        role: 'assistant',
+        parts: [
+          {
+            type: 'notice',
+            level: 'error',
+            text: 'Message was not sent because the conversation changed'
+          }
+        ]
+      })
       expect(session.threadId.value).toBe(
         context === 'new-chat' ? null : 'th-history'
       )
