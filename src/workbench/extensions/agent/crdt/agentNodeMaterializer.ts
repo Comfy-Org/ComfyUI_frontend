@@ -385,25 +385,37 @@ function rebindIncumbent(
     !removeDroppedWidgets(graph, orphan, state, widgets)
   )
     return false
+  const detachedState = orphan._state
+  const detachedScope = orphan._graphScope
   if (!adoptRegisteredNodeState(graph, orphan, state)) return false
-  bindNodeWidgets(orphan, state.id)
   try {
-    withNamedValuesRestore(() =>
-      orphan.configure(withNamedWidgetValues(serialised))
+    bindNodeWidgets(orphan, state.id)
+    try {
+      withNamedValuesRestore(() =>
+        orphan.configure(withNamedWidgetValues(serialised))
+      )
+    } catch (cause) {
+      reportError(cause, {
+        errorType: 'agent_node_materialize_configure_failed',
+        context: { graphId: graph.id, nodeId: String(state.id) }
+      })
+    }
+    bindNodeWidgets(orphan, state.id)
+    useWidgetValueStore().setNodeWidgetOrder(
+      graph.rootGraph.id,
+      state.id,
+      getWidgetIds(orphan.widgets ?? [])
     )
+    return true
   } catch (cause) {
+    orphan._state = detachedState
+    orphan._graphScope = detachedScope
     reportError(cause, {
-      errorType: 'agent_node_materialize_configure_failed',
+      errorType: 'agent_node_materialize_rebind_failed',
       context: { graphId: graph.id, nodeId: String(state.id) }
     })
+    return false
   }
-  bindNodeWidgets(orphan, state.id)
-  useWidgetValueStore().setNodeWidgetOrder(
-    graph.rootGraph.id,
-    state.id,
-    getWidgetIds(orphan.widgets ?? [])
-  )
-  return true
 }
 
 function removeDroppedWidgets(

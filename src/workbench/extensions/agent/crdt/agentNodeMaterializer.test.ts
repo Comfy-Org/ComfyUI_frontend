@@ -624,6 +624,54 @@ describe('reconcileAgentAdapters', () => {
       expect(incumbent.widgets?.map(({ name }) => name)).toEqual(['hydrated'])
     })
 
+    it('restores detached ownership and retries when widget binding fails', () => {
+      const graph = new LGraph()
+      const scope = graphScopeOf(graph)
+      const mutations = remoteMutations(scope)
+      mutations.addNode(
+        {
+          ...nodePayload(1, 'api-hydrated-widget-node'),
+          widgets_values: { hydrated: 7 }
+        },
+        REMOTE
+      )
+      reconcileAgentAdapters(graph)
+      const incumbent = graph.getNodeById(toNodeId(1))!
+      const hydrated = incumbent.addWidget('number', 'hydrated', 7, () => {})
+
+      mutations.deleteNode(toNodeId(1), [], REMOTE)
+      mutations.addNode(
+        {
+          ...nodePayload(1, 'api-hydrated-widget-node'),
+          widgets_values: { hydrated: 8 }
+        },
+        { ...REMOTE, opId: 'op-1-again' }
+      )
+      vi.spyOn(
+        hydrated as typeof hydrated & { setNodeId(nodeId: unknown): void },
+        'setNodeId'
+      ).mockImplementationOnce(() => {
+        throw new Error('extension rejected widget binding')
+      })
+
+      expect(reconcileAgentAdapters(graph)).toEqual([])
+      const canonical = useNodeDataStore().getNode(
+        scope.rootGraphId,
+        toNodeId(1)
+      )
+      if (!canonical) throw new Error('canonical node state missing')
+      expect(useNodeDataStore().ownsNode(scope, canonical)).toBe(true)
+      expect(useNodeDataStore().ownsNode(scope, incumbent._state)).toBe(false)
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        errorType: 'agent_node_materialize_rebind_failed',
+        context: { graphId: graph.id, nodeId: '1' }
+      })
+
+      expect(reconcileAgentAdapters(graph)).toEqual([toNodeId(1)])
+      expect(graph.getNodeById(toNodeId(1))).toBe(incumbent)
+      expect(useNodeDataStore().ownsNode(scope, incumbent._state)).toBe(true)
+    })
+
     it('reconfigures the incumbent before completing a same-type rebind', () => {
       const graph = new LGraph()
       const scope = graphScopeOf(graph)
