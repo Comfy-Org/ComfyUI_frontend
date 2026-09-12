@@ -44,7 +44,10 @@
       <ul
         class="m-0 flex max-h-52 list-none flex-col gap-2 overflow-y-auto p-0"
       >
-        <li v-for="workspace in ownedTeamWorkspaces" :key="workspace.id">
+        <li
+          v-for="{ workspace, tierLabel } in ownedTeamWorkspaceRows"
+          :key="workspace.id"
+        >
           <button
             class="focus-visible:ring-secondary-foreground flex w-full cursor-pointer items-center gap-3 rounded-lg border border-border-default bg-transparent px-4 py-3 transition-colors hover:bg-secondary-background-hover focus-visible:ring-1 focus-visible:outline-none"
             @click="handleSwitch(workspace.id)"
@@ -61,9 +64,9 @@
                   {{ workspace.name }}
                 </span>
                 <RoleBadge
-                  v-if="tierLabels.get(workspace.id)"
+                  v-if="tierLabel"
                   class="shrink-0"
-                  :label="tierLabels.get(workspace.id)!"
+                  :label="tierLabel"
                 />
               </div>
             </div>
@@ -169,11 +172,11 @@ const ownedTeamWorkspaces = computed(() =>
   sharedWorkspaces.value.filter((w) => w.role === 'owner')
 )
 
-const tierLabels = computed(
-  () =>
-    new Map(
-      ownedTeamWorkspaces.value.map((w) => [w.id, getTierLabel(w)] as const)
-    )
+const ownedTeamWorkspaceRows = computed(() =>
+  ownedTeamWorkspaces.value.map((workspace) => ({
+    workspace,
+    tierLabel: getTierLabel(workspace)
+  }))
 )
 
 const isValidName = computed(() => {

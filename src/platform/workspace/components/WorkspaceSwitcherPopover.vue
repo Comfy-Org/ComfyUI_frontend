@@ -21,7 +21,10 @@
 
       <!-- Workspace list -->
       <template v-else>
-        <template v-for="workspace in availableWorkspaces" :key="workspace.id">
+        <template
+          v-for="{ workspace, tierLabel } in workspaceRows"
+          :key="workspace.id"
+        >
           <div class="border-b border-border-default p-2">
             <div
               :class="
@@ -50,9 +53,9 @@
                       {{ workspace.name }}
                     </span>
                     <RoleBadge
-                      v-if="resolveTierLabel(workspace)"
+                      v-if="tierLabel"
                       class="shrink-0"
-                      :label="resolveTierLabel(workspace)!"
+                      :label="tierLabel"
                     />
                   </div>
                   <span class="text-xs text-muted-foreground">
@@ -184,6 +187,13 @@ const availableWorkspaces = computed<AvailableWorkspace[]>(() =>
     isSubscribed: w.isSubscribed,
     subscriptionPlan: w.subscriptionPlan,
     subscriptionTier: w.subscriptionTier
+  }))
+)
+
+const workspaceRows = computed(() =>
+  availableWorkspaces.value.map((workspace) => ({
+    workspace,
+    tierLabel: resolveTierLabel(workspace)
   }))
 )
 
