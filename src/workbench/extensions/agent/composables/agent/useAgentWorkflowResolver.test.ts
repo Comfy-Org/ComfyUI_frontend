@@ -292,3 +292,26 @@ describe('Agent workflow resolution', () => {
     ])
   })
 })
+
+describe('Agent workflow resolution without a cloud index', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  it('refreshes to an empty index and reports nothing when the target has no cloud workflow list', async () => {
+    const workflows = reactive({
+      openWorkflows: [workflow('workflows/saved.json', 'Saved')],
+      workflows: [workflow('workflows/saved.json', 'Saved')],
+      getWorkflowByPath: (): ComfyWorkflow | null => null
+    })
+    const resolver = useAgentWorkflowResolver({
+      workflows,
+      bindings: useAgentWorkflowTabBindingStore(),
+      listCloudWorkflows: null
+    })
+    expect(await resolver.refreshCloudWorkflowIds()).toBe(true)
+    expect(resolver.availableWorkflowReferences.value).toEqual([])
+    expect(resolver.cloudIdFor(workflows.openWorkflows[0])).toBeUndefined()
+    expect(reportError).not.toHaveBeenCalled()
+  })
+})
