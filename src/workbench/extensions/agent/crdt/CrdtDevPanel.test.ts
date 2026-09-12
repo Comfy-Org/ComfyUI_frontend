@@ -220,9 +220,11 @@ describe('CrdtDevPanel', () => {
 
     await user.selectOptions(kindFilter, 'agent_node_adapters_materialized')
 
-    const log = screen.getByTestId('crdt-dev-panel-log').textContent
-    expect(log).toContain('agent_node_adapters_materialized')
-    expect(log).not.toContain('doc_update')
+    const log = screen.getByTestId('crdt-dev-panel-log')
+    expect(
+      within(log).getByText('agent_node_adapters_materialized')
+    ).toBeInTheDocument()
+    expect(within(log).queryByText('doc_update')).not.toBeInTheDocument()
   })
 
   it('shows the sensitive-source opt-ins as off, and lets them be turned on', async () => {
