@@ -39,7 +39,7 @@ test.describe(
 
         await comfyPage.page.evaluate(
           ({ sourceId, controlId }) => {
-            const graph = window.app!.graph!
+            const graph = window.app!.graph
             const sourceNode = graph.getNodeById(sourceId)!
             const controlNode = graph.getNodeById(controlId)!
             sourceNode.connect(0, controlNode, 0)
@@ -49,12 +49,16 @@ test.describe(
         )
         await comfyPage.nextFrame()
 
-        const controlNode = comfyPage.vueNodes.getNodeLocator(String(control.id))
-        const toggle = controlNode.getByText('Enable PrimitiveInt', { exact: true })
+        const controlNode = comfyPage.vueNodes.getNodeLocator(
+          String(control.id)
+        )
+        const toggle = controlNode.getByText('Enable PrimitiveInt', {
+          exact: true
+        })
         await expect(toggle).toBeVisible()
 
         await comfyPage.page.evaluate((sourceId) => {
-          const sourceNode = window.app!.graph!.getNodeById(sourceId)!
+          const sourceNode = window.app!.graph.getNodeById(sourceId)!
           sourceNode.title = 'Renamed source'
           sourceNode.setDirtyCanvas(true, true)
         }, source.id)
@@ -67,7 +71,7 @@ test.describe(
         await expect
           .poll(() =>
             comfyPage.page.evaluate(
-              (sourceId) => window.app!.graph!.getNodeById(sourceId)!.mode,
+              (sourceId) => window.app!.graph.getNodeById(sourceId)!.mode,
               source.id
             )
           )
