@@ -117,47 +117,45 @@ export function useAgentConsent() {
     })
   }
 
-  async function withConsent(onAccept: () => void): Promise<void> {
-    if (!isLoggedIn.value) {
-      if (!(await showConsentDialog(false))) return
-      try {
-        if (!(await dialogService.showSignInDialog())) return
-      } catch (error) {
-        reportError(error, {
-          errorType: 'agent_consent_sign_in_failure'
-        })
-        toastStore.add({
-          severity: 'error',
-          summary: t('g.error'),
-          detail: t('agent.consent.signInError')
-        })
-        return
-      }
-
-      try {
-        const decisionIdentity = await consentStore.ensureScope()
-        if (!decisionIdentity || !(await consentStore.accept(decisionIdentity)))
-          return
-        if (identity.value !== decisionIdentity) return
-      } catch (error) {
-        reportError(error, {
-          errorType: 'agent_consent_setting_write_failure'
-        })
-        toastStore.add({
-          severity: 'error',
-          summary: t('g.error'),
-          detail: t('agent.consent.saveError')
-        })
-        return
-      }
-      onAccept()
-      return
+  async function acceptAfterSignIn(): Promise<string | null> {
+    if (!(await showConsentDialog(false))) return null
+    try {
+      if (!(await dialogService.showSignInDialog())) return null
+    } catch (error) {
+      reportError(error, {
+        errorType: 'agent_consent_sign_in_failure'
+      })
+      toastStore.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: t('agent.consent.signInError')
+      })
+      return null
     }
 
+    try {
+      const decisionIdentity = await consentStore.ensureScope()
+      if (!decisionIdentity || !(await consentStore.accept(decisionIdentity)))
+        return null
+      return decisionIdentity
+    } catch (error) {
+      reportError(error, {
+        errorType: 'agent_consent_setting_write_failure'
+      })
+      toastStore.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: t('agent.consent.saveError')
+      })
+      return null
+    }
+  }
+
+  async function requestConsentForCurrentUser(): Promise<string | null> {
     let decisionIdentity: string | null
     try {
       decisionIdentity = await consentStore.ensureScope()
-      if (!decisionIdentity) return
+      if (!decisionIdentity) return null
       await consentStore.load()
     } catch (error) {
       reportError(error, {
@@ -168,13 +166,25 @@ export function useAgentConsent() {
         summary: t('g.error'),
         detail: t('agent.consent.loadError')
       })
-      return
+      return null
     }
 
-    if (identity.value !== decisionIdentity) return
+    if (identity.value !== decisionIdentity) return null
     if (!accepted.value && !(await showConsentDialog(true, decisionIdentity)))
+      return null
+    return decisionIdentity
+  }
+
+  async function withConsent(onAccept: () => void): Promise<void> {
+    const decisionIdentity = isLoggedIn.value
+      ? await requestConsentForCurrentUser()
+      : await acceptAfterSignIn()
+    if (
+      !decisionIdentity ||
+      identity.value !== decisionIdentity ||
+      !accepted.value
+    )
       return
-    if (identity.value !== decisionIdentity || !accepted.value) return
     onAccept()
   }
 
