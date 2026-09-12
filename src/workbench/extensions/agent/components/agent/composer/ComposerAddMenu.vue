@@ -70,7 +70,11 @@ async function pickWorkflow(workflow: WorkflowReferenceOption): Promise<void> {
         width="compact"
         class="agent-scope"
       >
-        <MenuItem v-if="canOpenAssets" @select="emit('openAssets')">
+        <MenuItem
+          v-if="canOpenAssets"
+          class="mb-0.5"
+          @select="emit('openAssets')"
+        >
           <span class="icon-[comfy--image-ai-edit] size-4 shrink-0" />
           <span class="whitespace-nowrap">
             {{ t('agent.addFromAssets') }}
