@@ -14,8 +14,6 @@
   },
   "dependencies": {
     "@comfyorg/design-system": "workspace:*",
-    "@comfyorg/shared-frontend-utils": "workspace:*",
-    "@comfyorg/tailwind-utils": "workspace:*",
     "vue": "catalog:",
     "vue-i18n": "catalog:",
     "vue-router": "catalog:"

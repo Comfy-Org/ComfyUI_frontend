@@ -923,12 +923,6 @@ importers:
       '@comfyorg/design-system':
         specifier: workspace:*
         version: link:../../packages/design-system
-      '@comfyorg/shared-frontend-utils':
-        specifier: workspace:*
-        version: link:../../packages/shared-frontend-utils
-      '@comfyorg/tailwind-utils':
-        specifier: workspace:*
-        version: link:../../packages/tailwind-utils
       vue:
         specifier: 'catalog:'
         version: 3.5.42(typescript@6.0.3)

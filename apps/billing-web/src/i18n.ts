@@ -2,24 +2,33 @@ import { createI18n } from 'vue-i18n'
 
 const messages = {
   en: {
-    billing: {
-      eyebrow: 'Comfy Cloud',
-      title: 'Add credits',
-      description:
-        'Choose an amount to keep your workflows and partner nodes running.',
-      selectAmount: 'Select amount',
-      amountLabel: 'Amount (USD)',
-      creditsLabel: 'Credits',
-      decreaseAmount: 'Decrease amount',
-      increaseAmount: 'Increase amount',
-      creditsPerDollar: '{credits} credits per dollar',
-      minimumPurchase: '${amount} minimum',
-      maximumPurchase: '${amount} maximum',
-      continueToCheckout: 'Continue to checkout',
-      checkoutPending: 'Secure checkout will be connected through Billing SDK.',
-      secureCheckout: 'You will complete payment in a secure checkout.',
-      estimatedCredits: 'You receive',
-      purchaseAmount: 'Purchase amount'
+    checkout: {
+      confirmPayment: 'Confirm your payment',
+      back: 'Back',
+      close: 'Close',
+      perMonth: 'USD per month',
+      billedMonthly: 'Billed monthly',
+      billedYearly: '{amount} billed yearly',
+      startingToday: 'Starting today',
+      creditsRefill: 'Credits refill every month',
+      totalDueToday: 'Total due today',
+      promotionCode: 'Promotion code',
+      apply: 'Apply',
+      paymentMethod: 'Payment method',
+      stripeSecurity: 'Your payment details are handled securely by Stripe.',
+      card: 'Card',
+      cardNumber: 'Card number',
+      cardDetails: 'MM / YY  CVC',
+      country: 'Country',
+      postalCode: 'Postal code',
+      alipay: 'Alipay',
+      payAndSubscribe: 'Pay and subscribe',
+      terms:
+        'By subscribing, you agree to recurring charges until cancellation.',
+      sdkPending: 'Payment actions will be connected through Billing SDK.',
+      successTitle: "You're all set",
+      successBody: 'Your plan was updated. A receipt was sent to your email.',
+      creditsPerMonth: 'credits per month'
     }
   }
 } as const

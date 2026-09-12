@@ -19,11 +19,10 @@ describe('billing app', () => {
     })
 
     expect(
-      screen.getByRole('heading', { name: 'Add credits' })
+      screen.getByRole('heading', { name: 'Confirm your payment' })
     ).toBeInTheDocument()
-    expect(screen.getByLabelText('Amount (USD)')).toHaveValue(50)
     expect(
-      screen.getByRole('button', { name: 'Continue to checkout' })
+      screen.getByRole('button', { name: 'Pay and subscribe' })
     ).toBeDisabled()
   })
 
@@ -40,7 +39,7 @@ describe('billing app', () => {
     })
 
     expect(
-      await screen.findByRole('heading', { name: 'Add credits' })
+      await screen.findByRole('heading', { name: 'Confirm your payment' })
     ).toBeInTheDocument()
   })
 })

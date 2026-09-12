@@ -6,20 +6,22 @@ billing experience.
 ## Current scope
 
 This package contains the application shell, routing, localization, test/build
-tooling, and the hosted top-up presentation. The top-up component owns amount
-selection, credit conversion, purchase limits, and an `amountCents` checkout
-event. It does not contain:
+tooling, and the hosted embedded subscription checkout presentation. The
+checkout component owns the payment-summary and success layouts and emits host
+events for the future Billing SDK adapter. It does not contain:
 
 - a server runtime or BFF
 - authentication or credential handling
 - Billing API calls
-- Billing SDK command or operation state wiring
+- Billing SDK command, quote, or operation state wiring
+- Stripe Elements initialization
 - production deployment configuration
 
-The checkout action stays disabled in the hosted shell until Account/Auth and
-Billing SDK integration lands. Billing data, commands, and operation state must
-come from `@comfyorg/account/billing`; the billing backend remains owned by the
-Cloud repository.
+The payment action stays disabled in the hosted shell until Account/Auth and
+subscription Billing SDK integration lands. Billing data, quotes, commands,
+and operation state must come from `@comfyorg/account/billing`; the billing
+backend remains owned by the Cloud repository. The existing frontend Pinia,
+workspace API, and dialog orchestration are not copied into this app.
 
 ## Commands
 
