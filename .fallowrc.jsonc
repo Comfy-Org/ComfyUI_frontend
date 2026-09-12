@@ -36,7 +36,10 @@
     // Static stylesheet referenced from index.html, resolved by the bundler.
     "./materialdesignicons.min.css",
     // Generated sibling JS for the desktop-bridge type stubs.
-    "./comfyDesktopBridge.js"
+    "./comfyDesktopBridge.js",
+    // Registry-census fixtures are copied under web/extensions before loading,
+    // where this standard custom-node import resolves to the application shim.
+    "../../scripts/app.js"
   ],
 
   "ignoreExports": [
