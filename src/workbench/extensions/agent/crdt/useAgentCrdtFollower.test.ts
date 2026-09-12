@@ -44,14 +44,39 @@ const clientState = vi.hoisted(() => ({
   sendOps: vi.fn(() => true)
 }))
 
-const adapterState = vi.hoisted(() => ({
-  bind: vi.fn(),
-  unbind: vi.fn(),
-  applyFrame: vi.fn(() => true),
-  clearForReset: vi.fn(),
-  discardPending: vi.fn(),
-  destroy: vi.fn()
-}))
+// Session bookkeeping is modelled rather than stubbed permissively: the real
+// adapter only clears a target it currently has a session for, and
+// `clearForReset` reports that back.
+const adapterState = vi.hoisted(() => {
+  const bound = new Set<string>()
+  const bindTarget = (workflowId: string): boolean => {
+    bound.add(workflowId)
+    return true
+  }
+  const unbindTarget = (workflowId: string): void => {
+    bound.delete(workflowId)
+  }
+  const clearTarget = (workflowId: string): boolean => bound.has(workflowId)
+  const state = {
+    bound,
+    bind: vi.fn(bindTarget),
+    unbind: vi.fn(unbindTarget),
+    applyFrame: vi.fn(() => true),
+    clearForReset: vi.fn(clearTarget),
+    discardPending: vi.fn(),
+    destroy: vi.fn(() => bound.clear()),
+    reset(): void {
+      bound.clear()
+      state.bind.mockReset().mockImplementation(bindTarget)
+      state.unbind.mockReset().mockImplementation(unbindTarget)
+      state.applyFrame.mockReset().mockReturnValue(true)
+      state.clearForReset.mockReset().mockImplementation(clearTarget)
+      state.discardPending.mockReset()
+      state.destroy.mockReset().mockImplementation(() => bound.clear())
+    }
+  }
+  return state
+})
 
 const materializerState = vi.hoisted(() => ({
   reconcileAgentAdapters: vi.fn(() => [] as NodeId[])
@@ -207,6 +232,7 @@ describe('useAgentCrdtFollower', () => {
   beforeEach(() => {
     sessionStorage.clear()
     bridgeState.current = null
+    adapterState.reset()
     materializerState.reconcileAgentAdapters.mockReset().mockReturnValue([])
     definitionsState.readSubgraphDefinitionIds.mockClear()
     definitionsState.readSubgraphDefinitions.mockClear()
@@ -215,6 +241,11 @@ describe('useAgentCrdtFollower', () => {
   it('subscribes immediately to a bound workflow and reports it in status', () => {
     const { unmount, status } = mountFollower('wf-1')
 
+    expect(adapterState.bind).toHaveBeenCalledWith('wf-1', bridge().follower, {
+      source: 'agent-remote',
+      actor: 'agent:replay',
+      opId: 'follower-bind:wf-1'
+    })
     expect(bridge().subscribe).toHaveBeenCalledWith('wf-1')
     expect(status().workflowId).toBe('wf-1')
     expect(status().enabled).toBe(true)
@@ -276,6 +307,44 @@ describe('useAgentCrdtFollower', () => {
       expect(bridge().subscribe).toHaveBeenLastCalledWith('wf-2')
       unmount()
     })
+  })
+
+  it('binds a workflow switch only after the bridge replaces its lineage', async () => {
+    const { unmount, workflowId } = mountFollower('wf-1')
+    const oldFollower = bridge().follower
+    const replacementFollower = {
+      updatesApplied: 0,
+      doc: { getMap: () => ({ toJSON: () => ({}) }) }
+    }
+    adapterState.bind.mockClear()
+    bridge().subscribe.mockImplementationOnce((next: string) => {
+      bridge().follower = replacementFollower
+      bridge().dispatchEvent(
+        new CustomEvent('follower_replaced', {
+          detail: { workflowId: next }
+        })
+      )
+    })
+
+    workflowId.value = 'wf-2'
+    await nextTick()
+
+    expect(adapterState.bind).toHaveBeenCalledTimes(1)
+    expect(adapterState.bind).toHaveBeenCalledWith(
+      'wf-2',
+      replacementFollower,
+      {
+        source: 'agent-remote',
+        actor: 'agent:replay',
+        opId: 'follower-bind:wf-2'
+      }
+    )
+    expect(adapterState.bind).not.toHaveBeenCalledWith(
+      'wf-2',
+      oldFollower,
+      expect.anything()
+    )
+    unmount()
   })
 
   it('FE-1902: persists a binding only once the server confirms it', () => {
@@ -480,7 +549,12 @@ describe('useAgentCrdtFollower', () => {
     expect(adapterState.bind).toHaveBeenCalledTimes(2)
     expect(adapterState.bind).toHaveBeenLastCalledWith(
       'wf-1',
-      bridge().follower
+      bridge().follower,
+      {
+        source: 'agent-remote',
+        actor: 'agent:replay',
+        opId: 'follower-bind:wf-1'
+      }
     )
     unmount()
   })
@@ -773,6 +847,29 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
+    it('retries rejected baseline projection when the graph becomes ready', async () => {
+      adapterState.bind.mockReturnValueOnce(false).mockReturnValue(true)
+      const graph = shallowRef<MaterializableGraph | null>(null)
+      const { unmount } = mountFollower('wf-1', true, () => graph.value)
+
+      expect(adapterState.bind).toHaveBeenCalledTimes(1)
+
+      graph.value = fakeGraph
+      await nextTick()
+
+      expect(adapterState.bind).toHaveBeenCalledTimes(2)
+      expect(adapterState.bind).toHaveBeenLastCalledWith(
+        'wf-1',
+        bridge().follower,
+        {
+          source: 'agent-remote',
+          actor: 'agent:replay',
+          opId: 'follower-bind:wf-1'
+        }
+      )
+      unmount()
+    })
+
     it('does not reconcile for a graph that appears while the target is inactive', async () => {
       const graph = shallowRef<MaterializableGraph | null>(null)
       const { unmount } = mountFollower('wf-1', false, () => graph.value)
@@ -838,6 +935,44 @@ describe('useAgentCrdtFollower', () => {
       expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
         fakeGraph,
         fakeDefinitions
+      )
+      unmount()
+    })
+
+    it('never materializes the outgoing target into the replacement during an A->B switch', async () => {
+      // `follower_replaced` fires synchronously inside `bridge.subscribe(B)`,
+      // while the stores still hold A: A was unbound (which does not clear
+      // them) and B has no session for `clearForReset` to clear. Projecting
+      // there writes A's nodes into B's live graph.
+      const { unmount, workflowId } = mountFollower(
+        'wf-a',
+        true,
+        () => fakeGraph
+      )
+      bridge().subscribe.mockImplementationOnce((next: string) => {
+        bridge().follower = {
+          updatesApplied: 0,
+          doc: { getMap: () => ({ toJSON: () => ({}) }) }
+        }
+        bridge().dispatchEvent(
+          new CustomEvent('follower_replaced', { detail: { workflowId: next } })
+        )
+      })
+
+      workflowId.value = 'wf-b'
+      await nextTick()
+
+      expect(adapterState.clearForReset).toHaveBeenCalledWith(
+        'wf-b',
+        expect.anything()
+      )
+      expect(materializerState.reconcileAgentAdapters).not.toHaveBeenCalled()
+
+      dispatchFrame('doc_update', { workflowId: 'wf-b', seq: 1 })
+
+      expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
+        fakeGraph,
+        definitionsState.fakeDefinitions
       )
       unmount()
     })

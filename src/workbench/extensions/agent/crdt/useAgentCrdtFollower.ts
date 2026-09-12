@@ -244,6 +244,15 @@ export function useAgentCrdtFollower(
   const client = new DocFrameClient(transport)
   const bridge = new LayoutFollowerBridge(client)
   const adapter = new EcsFollowerAdapter(graphMutations)
+  let pendingBaselineWorkflowId: string | null = null
+  const bindFollower = (targetWorkflowId: string): void => {
+    const projected = adapter.bind(targetWorkflowId, bridge.follower, {
+      source: 'agent-remote',
+      actor: 'agent:replay',
+      opId: `follower-bind:${targetWorkflowId}`
+    })
+    pendingBaselineWorkflowId = projected ? null : targetWorkflowId
+  }
   const tabId = createUuidv4()
   const sender = createOpSender({
     sendOps: (target, tab, ops) => client.sendOps(target, tab, ops),
@@ -495,7 +504,7 @@ export function useAgentCrdtFollower(
       workflowId === subscribedWorkflowId.value
     ) {
       updatesApplied.value = 0
-      adapter.clearForReset(workflowId, {
+      const cleared = adapter.clearForReset(workflowId, {
         source: 'agent-remote',
         actor: 'agent-lineage',
         opId: `follower-replaced:${workflowId}`
@@ -503,8 +512,13 @@ export function useAgentCrdtFollower(
       // Same reasoning as `onDocReset`: the clear is store-only, so the stale
       // live adapters have to be swept before the replacement doc's frames
       // start landing.
-      reconcileLiveGraph(workflowId)
-      adapter.bind(workflowId, bridge.follower)
+      //
+      // Only when there WAS a session to clear. A target switch replaces the
+      // lineage before the new target is bound, so the stores still hold the
+      // outgoing target and reconciling here would project them into the
+      // incoming one. That target's own first frame reconciles it fully.
+      if (cleared) reconcileLiveGraph(workflowId)
+      bindFollower(workflowId)
     }
   }
   const onSchemaError: EventListener = (event) => {
@@ -612,6 +626,9 @@ export function useAgentCrdtFollower(
   // the bind site instead, once the binding actually exists.
   watch(getGraph, (graph) => {
     if (graph && boundWorkflowId !== null && isTargetActive.value) {
+      if (pendingBaselineWorkflowId === boundWorkflowId) {
+        bindFollower(boundWorkflowId)
+      }
       reconcileLiveGraph(boundWorkflowId)
     }
   })
@@ -623,6 +640,19 @@ export function useAgentCrdtFollower(
     if (next === null) bridge.unsubscribe()
     else bridge.subscribe(next)
     sender.abortIfUnbound()
+  }
+  const bindTarget = (next: string): void => {
+    if (boundWorkflowId === next) {
+      subscribedWorkflowId.value = next
+      retarget(next)
+      return
+    }
+    if (boundWorkflowId !== null) adapter.unbind(boundWorkflowId)
+    boundWorkflowId = next
+    subscribedWorkflowId.value = next
+    const previousFollower = bridge.follower
+    retarget(next)
+    if (bridge.follower === previousFollower) bindFollower(next)
   }
   watch(
     [workflowId, isTargetActive],
@@ -653,13 +683,7 @@ export function useAgentCrdtFollower(
         initialBind = false
         if (persisted !== null) {
           recordDevEvent('rebind', { workflowId: persisted })
-          if (boundWorkflowId !== persisted) {
-            if (boundWorkflowId !== null) adapter.unbind(boundWorkflowId)
-            adapter.bind(persisted, bridge.follower)
-            boundWorkflowId = persisted
-          }
-          subscribedWorkflowId.value = persisted
-          retarget(persisted)
+          bindTarget(persisted)
           if (justActivated) reconcileLiveGraph(persisted)
           return
         }
@@ -673,13 +697,7 @@ export function useAgentCrdtFollower(
         return
       }
       initialBind = false
-      if (boundWorkflowId !== next) {
-        if (boundWorkflowId !== null) adapter.unbind(boundWorkflowId)
-        adapter.bind(next, bridge.follower)
-        boundWorkflowId = next
-      }
-      subscribedWorkflowId.value = next
-      retarget(next)
+      bindTarget(next)
       if (justActivated) reconcileLiveGraph(next)
     },
     { immediate: true }
