@@ -1,4 +1,5 @@
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import { invokePromotedWidgetSourceCallback } from '@/core/graph/subgraph/promotedInputWidget'
 import type { INodeInputSlot, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -157,6 +158,16 @@ export function createPromotedMultilineWidget(
       setValue: (value: string) => {
         element.value = value
         widgetStore.setValue(widgetId, value)
+        // Being a host-owned DOM widget (not the store-backed projection
+        // built by `_projectPromotedWidget`), this widget has no callback
+        // wired by default and its own `input` handler drives a host-only
+        // callback that nothing connects to the interior widget — without
+        // this forwarding call it silently bypasses the same
+        // callback-forwarding bridge `_projectPromotedWidget`'s callback
+        // provides, so an edit here would never reach the interior source
+        // widget's callback. The host store write above always happens
+        // first, so the host stays authoritative (ADR-SUBGRAPH-PROMOTION-0009).
+        invokePromotedWidgetSourceCallback(subgraphNode, input, value)
       }
     }
   })

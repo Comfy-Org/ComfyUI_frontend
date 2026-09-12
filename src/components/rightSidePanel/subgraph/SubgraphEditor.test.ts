@@ -171,7 +171,7 @@ describe('SubgraphEditor', () => {
         kind: 'promoted',
         node: sourceNode,
         input,
-        widget: promotedInputWidget(input)!
+        widget: promotedInputWidget(host, input)!
       }
     }
     const reversed = [rowFor(secondNode), rowFor(firstNode)] as PromotedRow[]
