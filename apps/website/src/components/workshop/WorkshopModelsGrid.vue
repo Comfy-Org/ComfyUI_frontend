@@ -60,6 +60,9 @@ onMounted(() => {
   capabilities.value = [...(initial.capabilities ?? [])]
   providers.value = [...(initial.providers ?? [])]
   modalities.value = [...(initial.modalities ?? [])]
+  // The whole catalogue is a shelf too, and it has to replace the one the tab
+  // was left on, or the way back leads to a category never visited.
+  rememberShelf(useCase.value)
 })
 
 // A row title clicked far down the page opens a much shorter screen, which

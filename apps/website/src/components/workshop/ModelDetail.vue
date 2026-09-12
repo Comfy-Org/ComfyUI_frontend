@@ -188,7 +188,7 @@ const isRunning = computed(() => runState.value.status === 'running')
 
 // A run in flight is money and minutes: leaving the page throws both away, so
 // the browser asks first.
-useEventListener(window, 'beforeunload', (event: BeforeUnloadEvent) => {
+useEventListener('beforeunload', (event: BeforeUnloadEvent) => {
   if (!isRunning.value) return
   event.preventDefault()
 })

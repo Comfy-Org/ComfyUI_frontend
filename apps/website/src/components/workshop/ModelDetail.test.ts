@@ -1188,11 +1188,13 @@ describe('ModelDetail', () => {
         ? '{"prompt":"My edited draft"}'
         : 'My edited draft'
       await fireEvent.update(input, edited)
-      await user().click(screen.getByRole('button', { name: 'View sample' }))
+      await user().click(
+        screen.getByRole('button', { name: 'Start and end frame: View sample' })
+      )
       expect(input.value).toBe(edited)
       expect(input.isConnected).toBe(true)
       expect(screen.getByTestId('example-card').getAttribute('title')).toBe(
-        'Viewing sample'
+        'Start and end frame · Viewing sample'
       )
       expect(
         screen.getByTestId('playground-output').getAttribute('data-state')

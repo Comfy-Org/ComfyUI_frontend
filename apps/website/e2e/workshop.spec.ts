@@ -131,7 +131,9 @@ test.describe('Models catalog', () => {
     await expect(page.getByTestId('workshop-sections')).toBeVisible()
     const cleared = await search.boundingBox()
 
-    expect(cleared?.y).toBeCloseTo(searching?.y ?? 0, 0)
+    if (!searching || !cleared)
+      throw new Error('the search field was never on screen to measure')
+    expect(cleared.y).toBeCloseTo(searching.y, 0)
   })
 
   test('cards open canonical model pages with related models', async ({
