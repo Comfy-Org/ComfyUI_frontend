@@ -1,0 +1,25 @@
+# Description: Fails when a merge commit in the PR's history introduces a
+# docs/adr/*.md file present in neither of its parents ("evil merge" of
+# governance content — invisible to per-commit review tooling).
+name: 'CI: ADR Evil Merge Guard'
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  adr-evil-merge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Check for ADR files introduced inside merge commits
+        run: |
+          base="${{ github.event.pull_request.base.sha }}"
+          if [ -z "$base" ]; then
+            base="${{ github.event.before }}"
+          fi
+          ./scripts/cicd/check-adr-evil-merge.sh "$base" HEAD
