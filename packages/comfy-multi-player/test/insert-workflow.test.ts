@@ -99,6 +99,64 @@ function defIds(wf: WorkflowJSON): string[] {
 }
 
 describe("insert_workflow: happy path", () => {
+  it("drops a depth-2 object link with a missing endpoint and keeps its valid sibling", () => {
+    const nested = {
+      id: "nested",
+      nodes: [{ id: 1, type: "Src" }, { id: 2, type: "Sink" }],
+      links: [
+        { id: 10, origin_id: 1, origin_slot: 0, target_id: 2, target_slot: 0, type: "valid" },
+        { id: 11, origin_id: 1, origin_slot: 0, target_id: 999, target_slot: 0, type: "dangling" },
+      ],
+    };
+    const outer = { id: "outer", nodes: [], links: [], definitions: { subgraphs: [nested] } };
+
+    const remapped = remapInsertedWorkflowIds(
+      { nodes: [], definitions: { subgraphs: [outer] } } as unknown as WorkflowJSON,
+      "object-link-op".padEnd(32, "0"),
+    ) as unknown as { definitions: { subgraphs: Array<{ definitions: { subgraphs: Array<{ links: Array<{ type: string }> }> } }> } };
+    const links = remapped.definitions.subgraphs[0]!.definitions.subgraphs[0]!.links;
+
+    expect(links).toHaveLength(1);
+    expect(links[0]!.type).toBe("valid");
+  });
+
+  it("drops a depth-3 array link with a missing endpoint", () => {
+    const deepest = {
+      id: "deepest",
+      nodes: [{ id: 1, type: "Src" }],
+      links: [[10, 1, 0, 999, 0, "dangling"]],
+    };
+    const middle = { id: "middle", nodes: [], links: [], definitions: { subgraphs: [deepest] } };
+    const outer = { id: "outer", nodes: [], links: [], definitions: { subgraphs: [middle] } };
+
+    const remapped = remapInsertedWorkflowIds(
+      { nodes: [], definitions: { subgraphs: [outer] } } as unknown as WorkflowJSON,
+      "array-link-op".padEnd(32, "0"),
+    ) as unknown as { definitions: { subgraphs: Array<{ definitions: { subgraphs: Array<{ definitions: { subgraphs: Array<{ links: unknown[] }> } }> } }> } };
+
+    expect(remapped.definitions.subgraphs[0]!.definitions.subgraphs[0]!.definitions.subgraphs[0]!.links).toEqual([]);
+  });
+
+  it("keeps valid links at every nested definition depth", () => {
+    const deepest = {
+      id: "deepest",
+      nodes: [{ id: 1, type: "Src" }, { id: 2, type: "Sink" }],
+      links: [[10, 1, 0, 2, 0, "valid"]],
+    };
+    const outer = { id: "outer", nodes: [], links: [], definitions: { subgraphs: [deepest] } };
+
+    const remapped = remapInsertedWorkflowIds(
+      { nodes: [], definitions: { subgraphs: [outer] } } as unknown as WorkflowJSON,
+      "valid-link-op".padEnd(32, "0"),
+    ) as unknown as { definitions: { subgraphs: Array<{ definitions: { subgraphs: Array<{ links: unknown[][] }> } }> } };
+    const links = remapped.definitions.subgraphs[0]!.definitions.subgraphs[0]!.links;
+
+    expect(links).toHaveLength(1);
+    expect(links[0]![5]).toBe("valid");
+    expect(links[0]![1]).toEqual(expect.stringContaining("valid-link-op"));
+    expect(links[0]![3]).toEqual(expect.stringContaining("valid-link-op"));
+  });
+
   it("merges template nodes, links and definitions into the doc in one op", () => {
     const doc = mint(baseWorkflow(), catalog);
     const op = insertOp(template());

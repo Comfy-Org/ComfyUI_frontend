@@ -101,7 +101,7 @@ import {
   stampsMap,
   widgetStorageOf,
 } from "./doc.js";
-import { remapInsertedWorkflowIds } from "./remap.js";
+import { linkHasMissingEndpoint, remapInsertedWorkflowIds } from "./remap.js";
 import { sha256Hex } from "./digest.js";
 import { CMP_EVENT_SCHEMA_VERSION, emitCmpEvent, type CmpCallContext } from "./events.js";
 import { mintDefinition } from "./mint.js";
@@ -790,6 +790,7 @@ function validateRawGraphIds(nodes: unknown[], links: unknown[], path: string): 
 }
 
 function validateDefinitionInputs(subgraphs: unknown[], path = "workflow.definitions.subgraphs"): void {
+  const ids = new Set<string>();
   subgraphs.forEach((candidate, index) => {
     if (typeof candidate !== "object" || candidate === null || Array.isArray(candidate)) {
       throw new OpRejectedError("malformed_op", "insert_workflow: every subgraph definition must be an object");
@@ -799,6 +800,10 @@ function validateDefinitionInputs(subgraphs: unknown[], path = "workflow.definit
     if (id === undefined) {
       throw new OpRejectedError("malformed_op", "insert_workflow: every subgraph definition requires a valid id");
     }
+    if (ids.has(id)) {
+      throw new OpRejectedError("malformed_op", `insert_workflow: duplicate definition id '${id}' at ${path}[${index}]`);
+    }
+    ids.add(id);
     if (!Array.isArray(sg["nodes"]) || (sg["links"] !== undefined && !Array.isArray(sg["links"]))) {
       throw new OpRejectedError("malformed_op", "insert_workflow: definition nodes and links must be arrays");
     }
@@ -883,9 +888,7 @@ function applyInsertWorkflow(doc: Y.Doc, op: InsertWorkflowOp, catalog?: WidgetC
       if (compareStampKeys(stamp, incumbent) <= 0) return "lww-dropped";
     }
     seenLinks.add(key);
-    const source = String(candidate[1]);
-    const target = String(candidate[3]);
-    if ((!nodes.has(source) && !seenNodes.has(source)) || (!nodes.has(target) && !seenNodes.has(target))) {
+    if (linkHasMissingEndpoint(candidate, (id) => nodes.has(String(id)) || seenNodes.has(String(id)))) {
       continue;
     }
     linkWrites.push(candidate);

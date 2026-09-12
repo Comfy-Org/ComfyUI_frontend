@@ -15,12 +15,34 @@ function derivedDefinitionId(opId: string, scope: string, original: unknown): st
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-8${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
 }
 
-function remapGraph(graph: Record<string, unknown>, opId: string, scope: string, definitionIds: Map<string, string>): void {
+function linkEndpoints(link: unknown): [unknown, unknown] | undefined {
+  if (Array.isArray(link) && link[1] !== undefined && link[3] !== undefined) return [link[1], link[3]];
+  if (typeof link === "object" && link !== null) {
+    const record = link as { origin_id?: unknown; target_id?: unknown };
+    if (record.origin_id !== undefined && record.target_id !== undefined) return [record.origin_id, record.target_id];
+  }
+  return undefined;
+}
+
+export function linkHasMissingEndpoint(link: unknown, hasNode: (id: unknown) => boolean): boolean {
+  const endpoints = linkEndpoints(link);
+  return endpoints !== undefined && (!hasNode(endpoints[0]) || !hasNode(endpoints[1]));
+}
+
+function remapGraph(
+  graph: Record<string, unknown>,
+  opId: string,
+  scope: string,
+  definitionIds: Map<string, string>,
+  dropDanglingLinks: boolean,
+): void {
   const nodes = graph["nodes"] as WorkflowNode[];
-  const links = (graph["links"] as unknown[] | undefined) ?? [];
   const nodeIds = new Map<unknown, string>();
   const linkIds = new Map<unknown, string>();
   for (const node of nodes) nodeIds.set(node.id, derivedId(opId, scope, "node", node.id));
+  const links = ((graph["links"] as unknown[] | undefined) ?? []).filter(
+    (link) => !dropDanglingLinks || !linkHasMissingEndpoint(link, (id) => nodeIds.has(id)),
+  );
   for (const link of links) {
     if (Array.isArray(link)) linkIds.set(link[0], derivedId(opId, scope, "link", link[0]));
     else if (typeof link === "object" && link !== null) {
@@ -94,12 +116,12 @@ export function remapInsertedWorkflowIds(wf: WorkflowJSON, opId: string): Workfl
     for (const definition of definitions) {
       const original = String(definition["id"]);
       definition["id"] = definitionIds.get(original)!;
-      remapGraph(definition, opId, `${scope}/definition:${encodeURIComponent(JSON.stringify(original))}`, definitionIds);
+      remapGraph(definition, opId, `${scope}/definition:${encodeURIComponent(JSON.stringify(original))}`, definitionIds, true);
       const nested = (definition["definitions"] as { subgraphs?: Array<Record<string, unknown>> } | undefined)?.subgraphs ?? [];
       rewrite(nested, `${scope}/definition:${encodeURIComponent(JSON.stringify(original))}`);
     }
   };
-  remapGraph(out, opId, "root", definitionIds);
+  remapGraph(out, opId, "root", definitionIds, false);
   rewrite(subgraphs, "root");
   return out;
 }
