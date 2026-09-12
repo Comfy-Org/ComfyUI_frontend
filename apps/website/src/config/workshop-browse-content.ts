@@ -11,6 +11,10 @@ import { workshopRouterIndexSchema } from './workshop-router-index'
 import { workshopRouterAliasesSchema } from './workshop-router-identity'
 import { labelSharedThumbnails } from './workshop-thumbnail-labels'
 import { workshopContentInputs } from './workshop-content-inputs'
+import {
+  isWorkshopModelDisabled,
+  workshopModelAvailability
+} from './workshop-model-availability'
 
 const routerIndex = workshopRouterIndexSchema.parse(indexJson)
 const canonicalNames = new Map(Object.entries(displayNames))
@@ -74,7 +78,11 @@ const legacyCatalog = (catalogJson as unknown[]).map((entry) =>
 const display = workshopDisplayEntriesSchema.parse(displayJson)
 
 const catalogById = new Map(legacyCatalog.map((entry) => [entry.id, entry]))
+for (const slug of workshopModelAvailability.keys())
+  if (!display.some((overlay) => overlay.slug === slug))
+    throw new Error(`Model availability names an unknown page: ${slug}`)
 const contentSources = display.flatMap((overlay) => {
+  if (isWorkshopModelDisabled(overlay.slug)) return []
   const alias = routerAliasById.get(overlay.modelId)
   if (!alias) return []
   const entry = catalogById.get(overlay.modelId)

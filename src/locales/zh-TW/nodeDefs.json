@@ -3065,6 +3065,29 @@
       }
     }
   },
+  "ConcatenateVideo": {
+    "description": "依序串接影片，無須解碼相容的已編碼輸入。",
+    "display_name": "串接影片",
+    "inputs": {
+      "codec": {
+        "name": "codec",
+        "tooltip": "用於編碼影片張量的編解碼器。自動使用 H.264；已編碼的影片維持不變。"
+      },
+      "complete_audio": {
+        "name": "complete_audio",
+        "tooltip": "串接後影片的可選完整音軌。會覆寫輸入影片所附帶的音訊。"
+      },
+      "videos": {
+        "name": "videos",
+        "tooltip": "要依輸入順序串接的影片片段。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "串接後的影片。"
+      }
+    }
+  },
   "ConditioningAverage": {
     "display_name": "條件設定（平均）",
     "inputs": {
@@ -3098,6 +3121,20 @@
       },
       "conditioning_to": {
         "name": "conditioning_to"
+      }
+    }
+  },
+  "ConditioningLoader": {
+    "description": "從 embeddings 資料夾載入以「儲存條件」儲存的條件，或任何包含「conditioning」張量的 safetensors 檔案。",
+    "display_name": "載入條件",
+    "inputs": {
+      "conditioning_name": {
+        "name": "conditioning_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3908,6 +3945,10 @@
       "bit_depth": {
         "name": "bit_depth",
         "tooltip": "自動模式會對 sRGB 使用 8 位元，對 HDR 使用 10 位元。明確選擇 8 位元或 10 位元時，不受色彩空間影響。"
+      },
+      "codec": {
+        "name": "codec",
+        "tooltip": "可選擇立即編碼影片。無會保留影像的張量形式；自動使用 H.264。"
       },
       "color_space": {
         "name": "color_space",
@@ -5026,6 +5067,22 @@
       "batch_size": {
         "name": "batch_size",
         "tooltip": "批次中的 latent 影像數量。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyYuE2LatentAudio": {
+    "display_name": "空白 YuE2 潛空間音訊",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "seconds": {
+        "name": "seconds"
       }
     },
     "outputs": {
@@ -6451,14 +6508,8 @@
       "model_max_output_tokens": {
         "name": "max_output_tokens"
       },
-      "model_temperature": {
-        "name": "temperature"
-      },
       "model_thinking_level": {
         "name": "thinking_level"
-      },
-      "model_top_p": {
-        "name": "top_p"
       },
       "prompt": {
         "name": "prompt",
@@ -7985,7 +8036,7 @@
     }
   },
   "ImageColorSpace": {
-    "description": "轉換 sRGB (Rec.709)、HDR (Rec.2020 HLG) 與 HDR PQ (Rec.2020 PQ)。使用 203 尼特 SDR 白點與 1000 尼特 HLG 參考顯示器。縮窄會對整個批次的過量亮度進行色調映射，並壓縮超出色域的色彩。轉換會以 float32 計算，並傳回中間裝置與 dtype。直通 alpha 不會進行色彩轉換。",
+    "description": "轉換 sRGB、線性 Rec.709、HDR（Rec.2020 HLG）及 HDR PQ（Rec.2020 PQ）。線性 1.0 使用與 sRGB 相同的 203 尼特參考白；HLG 使用 1000 尼特參考顯示器。線性輸出與線性轉 HDR 的轉換會保留延伸值，不進行色調對應。SDR 輸出及 PQ 轉 HLG 會對整個批次的過量亮度進行色調對應，並壓縮超出色域的色彩。轉換會以 float32 計算，並傳回中介裝置與資料型別。非預乘 alpha 不會進行色彩轉換。",
     "display_name": "轉換影像色彩空間",
     "inputs": {
       "destination": {
@@ -12380,6 +12431,23 @@
       }
     }
   },
+  "MarigoldV2PostProcess": {
+    "description": "將解碼後的 Marigold V2 預測轉換為影像：近處較亮的正規化深度、單位表面法線，或 sRGB 反照率。",
+    "display_name": "Marigold V2 後處理",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "prediction": {
+        "name": "prediction"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MaskComposite": {
     "display_name": "遮罩合成",
     "inputs": {
@@ -16027,6 +16095,9 @@
     "inputs": {
       "model": {
         "name": "model"
+      },
+      "sampling": {
+        "name": "sampling"
       },
       "shift": {
         "name": "偏移"
@@ -20994,6 +21065,24 @@
       }
     }
   },
+  "SaveConditioning": {
+    "description": "將條件以 safetensors 格式儲存至輸出資料夾；將檔案移至 models/embeddings，即可使用「載入條件」載入，例如用於略過文字編碼器。",
+    "display_name": "儲存條件",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "conditioning",
+        "tooltip": null
+      }
+    }
+  },
   "SaveGLB": {
     "display_name": "SaveGLB",
     "inputs": {
@@ -21682,6 +21771,28 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SheetSage2AudioToABC": {
+    "description": "將音樂中的人聲與樂器旋律轉錄為 ABC 記譜法。將 abc 輸出連接至 YuE2 Generate Music 節點，並使用相符的模式。",
+    "display_name": "SheetSage2 音訊轉 ABC",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "audio_encoder": {
+        "name": "audio_encoder"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "full：產生旋律與和弦；melody：僅產生旋律，建議用於翻唱。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
         "tooltip": null
       }
     }
@@ -24029,7 +24140,7 @@
     }
   },
   "TripoImageToModelNode": {
-    "display_name": "Tripo：圖像轉模型",
+    "display_name": "Tripo：影像轉模型（舊版）",
     "inputs": {
       "auto_size": {
         "name": "auto_size",
@@ -24102,6 +24213,75 @@
       "3": {
         "name": "FBX",
         "tooltip": "僅在啟用 quad 時才會填入。"
+      }
+    }
+  },
+  "TripoImageToModelNodeV2": {
+    "display_name": "Tripo：影像轉模型",
+    "inputs": {
+      "auto_size": {
+        "name": "自動尺寸",
+        "tooltip": "將有紋理的模型按其以公尺為單位的真實尺寸縮放。Tripo 將尺寸儲存為模型的場景變換，並在模型轉換、綁定骨架或重定向時套用；未啟用紋理時會忽略。"
+      },
+      "face_limit": {
+        "name": "面數上限",
+        "tooltip": "最大面數。-1 讓 Tripo 自動選擇（v3.x standard 約 140 萬面，detailed 為 200 萬面）。Tripo 會自動限制：v2.5 為 500,000，四邊形網格為 150,000。"
+      },
+      "geometry_quality": {
+        "name": "幾何品質"
+      },
+      "image": {
+        "name": "影像"
+      },
+      "model_seed": {
+        "name": "模型種子"
+      },
+      "model_version": {
+        "name": "模型版本",
+        "tooltip": "用於生成的模型版本"
+      },
+      "orientation": {
+        "name": "方向"
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "PBR 材質貼圖（基礎色、金屬度、粗糙度、法線）。需要啟用紋理。"
+      },
+      "quad": {
+        "name": "四邊形網格",
+        "tooltip": "四邊形網格輸出。Tripo 會以 FBX 提供四邊形網格，因此結果會出現在 FBX 輸出，GLB 輸出會保持空白。"
+      },
+      "smart_low_poly": {
+        "name": "智慧低多邊形",
+        "tooltip": "具有乾淨、手工製作風格拓撲的低多邊形網格（500-20,000 面，四邊形網格 500-10,000 面）。最適合簡單主體；複雜主體可能會失敗。"
+      },
+      "texture": {
+        "name": "紋理",
+        "tooltip": "生成紋理貼圖。關閉時會傳回純幾何模型並忽略 pbr。"
+      },
+      "texture_alignment": {
+        "name": "紋理對齊"
+      },
+      "texture_quality": {
+        "name": "紋理品質",
+        "tooltip": "detailed = HD 紋理，extreme = 8K Ultra 紋理。"
+      },
+      "texture_seed": {
+        "name": "紋理種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型 task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "啟用四邊形網格時為空白。"
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "僅在啟用四邊形網格時填入。"
       }
     }
   },
@@ -24433,7 +24613,7 @@
       },
       "animation": {
         "name": "animation",
-        "tooltip": "preset:* 動畫可搭配兩種骨架模型使用；preset:biped:* 動畫需要使用 model v1.0-20240301 建立的骨架。"
+        "tooltip": "preset:* 動畫可搭配兩種骨架模型使用。preset:biped:* 動畫專為模型 v1.0-20240301 的骨架製作；v2.5 骨架僅接受 chop、climb、dive、fall、hurt、idle、jump、run、shoot、slash、turn 和 walk。"
       },
       "export_with_geometry": {
         "name": "export_with_geometry",
@@ -24597,6 +24777,48 @@
       }
     }
   },
+  "TripoSmartSegmentNode": {
+    "description": "將模型分割為具語意意義的部件並為其命名。若輸入影像，Tripo 會先生成模型。分割 task_id 可傳入 Tripo：完成網格部件、Tripo：重新拓撲、Tripo：紋理模型和 Tripo：轉換模型，其效果如同 Tripo：分割模型的結果。",
+    "display_name": "Tripo：智慧分割",
+    "inputs": {
+      "source": {
+        "name": "來源",
+        "tooltip": "分割現有模型，或從影像生成模型後再分割。"
+      },
+      "source_granularity": {
+        "name": "粒度"
+      },
+      "source_hint": {
+        "name": "提示"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "分割 task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "模型 task_id",
+        "tooltip": "已分割的模型（從影像生成或匯入）。"
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "part_names",
+        "tooltip": "以逗號分隔的零件名稱。"
+      },
+      "4": {
+        "name": "零件",
+        "tooltip": "Tripo 對其找到的零件所提供的描述。"
+      },
+      "5": {
+        "name": "遮罩",
+        "tooltip": null
+      }
+    }
+  },
   "TripoSplatConditioning": {
     "description": "使用 DINOv3 與 Flux2 VAE 將圖像編碼為 TripoSplat 正/負條件，並為 KSampler 建立固定大小的噪聲目標（latent + 相機）。",
     "display_name": "TripoSplat 條件編碼",
@@ -24693,7 +24915,7 @@
     }
   },
   "TripoTextToModelNode": {
-    "display_name": "Tripo：文字轉模型",
+    "display_name": "Tripo：文字轉模型（舊版）",
     "inputs": {
       "auto_size": {
         "name": "auto_size",
@@ -24769,8 +24991,77 @@
       }
     }
   },
+  "TripoTextToModelNodeV2": {
+    "display_name": "Tripo：文字轉模型",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "將有紋理的模型依其真實世界尺寸（公尺）進行縮放。Tripo 會將尺寸儲存為模型的場景轉換，並在模型轉換、綁定骨架或重定向時將其烘焙；未啟用 texture 時會忽略。"
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "最大面數。-1 讓 Tripo 自動選擇（v3.x standard 約 140 萬面，detailed 為 200 萬面）。Tripo 會無提示地限制：v2.5 為 500,000，四邊形網格為 150,000。"
+      },
+      "geometry_quality": {
+        "name": "geometry_quality"
+      },
+      "image_seed": {
+        "name": "image_seed"
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "model_version": {
+        "name": "model_version"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "最多 255 個字元。"
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "PBR 材質貼圖（基礎色、金屬度、粗糙度、法線）。需要啟用 texture。"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "四邊形網格輸出。Tripo 會以 FBX 格式提供四邊形網格，因此結果會出現在 FBX 輸出，而 GLB 輸出會維持空白。"
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "具備乾淨手工風格拓撲的低多邊形網格（500 至 20,000 面，quad 為 500 至 10,000 面）。最適合簡單主體；複雜主體可能會失敗。"
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "產生紋理貼圖。關閉時會傳回純幾何體並忽略 pbr。"
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = HD 紋理，extreme = 8K Ultra 紋理。"
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型 task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "啟用 quad 時為空白。"
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "僅在啟用 quad 時填入。"
+      }
+    }
+  },
   "TripoTextureNode": {
-    "display_name": "Tripo：紋理模型",
+    "display_name": "Tripo：模型貼圖（舊版）",
     "inputs": {
       "model_task_id": {
         "name": "模型任務ID"
@@ -24830,6 +25121,62 @@
       "3": {
         "name": "FBX",
         "tooltip": "Tripo 會為四邊形網格與 FBX 匯入回傳 FBX；否則為空。"
+      }
+    }
+  },
+  "TripoTextureNodeV2": {
+    "display_name": "Tripo：模型貼圖",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      },
+      "model_version": {
+        "name": "模型版本",
+        "tooltip": "紋理模型：v3.0 適用於以 v3.x 產生的網格，v2.5 適用於以 v2.5 產生的網格。"
+      },
+      "part_names": {
+        "name": "零件名稱",
+        "tooltip": "要貼圖的 Tripo: Segment Model 零件名稱，以逗號分隔。留空則為所有零件貼圖。"
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "PBR 材質貼圖（基礎色、金屬度、粗糙度、法線）；關閉時會產生純色紋理。"
+      },
+      "reference": {
+        "name": "參考影像",
+        "tooltip": "用於引導紋理的參考影像。無法與 texture_prompt 或 style_image 搭配使用。"
+      },
+      "style_image": {
+        "name": "風格影像",
+        "tooltip": "用於紋理藝術風格的參考影像。僅與 texture_prompt 一起使用。"
+      },
+      "texture_alignment": {
+        "name": "紋理對齊"
+      },
+      "texture_prompt": {
+        "name": "紋理提示詞",
+        "tooltip": "用於貼圖的可選文字引導。對於匯入的模型（Tripo: Import Model），實務上必須提供，因為其沒有可用來推斷顏色的來源影像。無法與參考影像搭配使用。"
+      },
+      "texture_quality": {
+        "name": "紋理品質",
+        "tooltip": "detailed = HD 紋理，extreme = 8K Ultra 紋理。"
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型 task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "當來源為四邊形網格或 FBX 匯入時為空白。"
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Tripo 會為四邊形網格和 FBX 匯入傳回 FBX；否則為空白。"
       }
     }
   },
@@ -28298,6 +28645,94 @@
     "outputs": {
       "0": {
         "name": "mesh",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateABC": {
+    "description": "根據風格和歌詞產生歌曲的 ABC 記譜法。將 abc 連接至 YuE2 Generate Music 節點。",
+    "display_name": "YuE2 產生 ABC",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "lyrics": {
+        "name": "lyrics"
+      },
+      "max_abc_tokens": {
+        "name": "max_abc_tokens"
+      },
+      "mode": {
+        "name": "模式",
+        "tooltip": "完整：產生旋律和和弦；旋律：僅產生旋律，建議用於翻唱。"
+      },
+      "seed": {
+        "name": "種子"
+      },
+      "style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateMusic": {
+    "description": "從風格、歌詞和 ABC 記譜法產生音樂詞元與聲學條件。請將產生的秒數提供給 Empty YuE2 Latent Audio 節點。ABC 輸入留空時會忽略所選模式。",
+    "display_name": "YuE2 生成音樂",
+    "inputs": {
+      "abc": {
+        "name": "abc",
+        "tooltip": "連接 ABC 產生器或提供編輯過的樂譜。留空即可自動使用關閉模式。"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "lyrics": {
+        "name": "歌詞"
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "最長時長；生成可能會提前停止。此版本使用 360 秒的預算。"
+      },
+      "mode": {
+        "name": "模式",
+        "tooltip": "完整：產生旋律和和弦；旋律：僅產生旋律，建議用於翻唱。"
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "seed": {
+        "name": "種子"
+      },
+      "style": {
+        "name": "風格"
+      },
+      "temperature": {
+        "name": "溫度"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "秒數",
         "tooltip": null
       }
     }

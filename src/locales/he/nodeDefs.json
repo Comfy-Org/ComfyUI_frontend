@@ -3065,6 +3065,29 @@
       }
     }
   },
+  "ConcatenateVideo": {
+    "description": "משרשר סרטונים לפי הסדר ללא פענוח של קלטים מקודדים תואמים.",
+    "display_name": "שרשור וידאו",
+    "inputs": {
+      "codec": {
+        "name": "codec",
+        "tooltip": "ה-codec המשמש לקידוד טנזורי וידאו. Auto משתמש ב-H.264; סרטונים שכבר קודדו נותרים ללא שינוי."
+      },
+      "complete_audio": {
+        "name": "complete_audio",
+        "tooltip": "פסקול מלא אופציונלי עבור הווידאו המשורשר. מחליף שמע הכלול בסרטוני הקלט."
+      },
+      "videos": {
+        "name": "סרטונים",
+        "tooltip": "קטעי וידאו לשרשור לפי סדר הקלט."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "הווידאו המשורשר."
+      }
+    }
+  },
   "ConditioningAverage": {
     "display_name": "התניה (ממוצע)",
     "inputs": {
@@ -3098,6 +3121,20 @@
       },
       "conditioning_to": {
         "name": "התניה אל"
+      }
+    }
+  },
+  "ConditioningLoader": {
+    "description": "טוען התניה שנשמרה באמצעות שמירת התניה, או כל קובץ safetensors עם טנזור 'conditioning', מתיקיית embeddings.",
+    "display_name": "טעינת התניה",
+    "inputs": {
+      "conditioning_name": {
+        "name": "conditioning_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3908,6 +3945,10 @@
       "bit_depth": {
         "name": "bit_depth",
         "tooltip": "Auto משתמש ב-8-bit עבור sRGB וב-10-bit עבור HDR. בחירות מפורשות של 8-bit ו-10-bit אינן תלויות במרחב הצבע."
+      },
+      "codec": {
+        "name": "codec",
+        "tooltip": "ניתן לקודד את הווידאו מיד באופן אופציונלי. None שומר את התמונות בצורת טנזורים; Auto משתמש ב-H.264."
       },
       "color_space": {
         "name": "color_space",
@@ -5026,6 +5067,22 @@
       "batch_size": {
         "name": "batch_size",
         "tooltip": "מספר תמונות ה-latent באצווה."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyYuE2LatentAudio": {
+    "display_name": "שמע Latent ריק של YuE2",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "seconds": {
+        "name": "שניות"
       }
     },
     "outputs": {
@@ -6451,14 +6508,8 @@
       "model_max_output_tokens": {
         "name": "max_output_tokens"
       },
-      "model_temperature": {
-        "name": "temperature"
-      },
       "model_thinking_level": {
         "name": "thinking_level"
-      },
-      "model_top_p": {
-        "name": "top_p"
       },
       "prompt": {
         "name": "prompt",
@@ -7985,7 +8036,7 @@
     }
   },
   "ImageColorSpace": {
-    "description": "ממיר בין sRGB (Rec.709), HDR (Rec.2020 HLG) ו-HDR PQ (Rec.2020 PQ). משתמש בלבן SDR של 203 ניט ובתצוגת ייחוס HLG של 1000 ניט. בעת צמצום, מתבצע מיפוי גוונים של בהיקות עודפת על פני האצווה ודחיסה של צבעים שמחוץ לסולם הצבעים. ההמרות מחושבות ב-float32 ומחזירות את ההתקן ואת ה-dtype הביניים. אלפא ישירה אינה עוברת המרת צבע.",
+    "description": "ממיר בין sRGB, ‏Rec.709 ליניארי, HDR ‏(Rec.2020 HLG) ו-HDR PQ ‏(Rec.2020 PQ). Linear 1.0 משתמש באותה נקודת לבן ייחוס של 203 ניט כמו sRGB; ‏HLG משתמש בתצוגת ייחוס של 1000 ניט. פלט ליניארי והמרות מליניארי ל-HDR משמרים ערכים מורחבים ללא מיפוי גוונים. פלט SDR והמרה מ-PQ ל-HLG ממפים גוונים של בהירות עודפת לאורך האצווה ומכווצים צבעים שמחוץ לטווח הצבעים. ההמרות מחושבות ב-float32 ומחזירות את ההתקן ואת dtype של שלב הביניים. אלפא ישרה אינה עוברת המרת צבע.",
     "display_name": "המרת מרחב הצבע של תמונה",
     "inputs": {
       "destination": {
@@ -12380,6 +12431,23 @@
       }
     }
   },
+  "MarigoldV2PostProcess": {
+    "description": "ממיר חיזוי מפוענח של Marigold V2 לתמונה: עומק מנורמל שבו הקרוב בהיר, נורמלי משטח יחידתיים, או albedo מסוג sRGB.",
+    "display_name": "עיבוד לאחר של Marigold V2",
+    "inputs": {
+      "image": {
+        "name": "תמונה"
+      },
+      "prediction": {
+        "name": "חיזוי"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MaskComposite": {
     "display_name": "שילוב מסכות",
     "inputs": {
@@ -16027,6 +16095,9 @@
     "inputs": {
       "model": {
         "name": "מודל"
+      },
+      "sampling": {
+        "name": "דגימה"
       },
       "shift": {
         "name": "היסט"
@@ -20994,6 +21065,24 @@
       }
     }
   },
+  "SaveConditioning": {
+    "description": "שומר התניה בתיקיית הפלט כ-safetensors; העבירו את הקובץ אל models/embeddings כדי לטעון אותו באמצעות טעינת התניה, למשל כדי לדלג על מקודד הטקסט.",
+    "display_name": "שמירת התניה",
+    "inputs": {
+      "conditioning": {
+        "name": "התניה"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "התניה",
+        "tooltip": null
+      }
+    }
+  },
   "SaveGLB": {
     "display_name": "שמירת מודל תלת־ממדי",
     "inputs": {
@@ -21682,6 +21771,28 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SheetSage2AudioToABC": {
+    "description": "מתמלל מלודיות קוליות וכלי נגינה ממוזיקה לתיווי ABC. חברו את פלט abc לצומת YuE2 Generate Music והשתמשו במצב התואם.",
+    "display_name": "SheetSage2: שמע ל-ABC",
+    "inputs": {
+      "audio": {
+        "name": "שמע"
+      },
+      "audio_encoder": {
+        "name": "audio_encoder"
+      },
+      "mode": {
+        "name": "מצב",
+        "tooltip": "full: יוצר מלודיה ואקורדים; melody: יוצר מלודיה בלבד, מומלץ לגרסאות כיסוי."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
         "tooltip": null
       }
     }
@@ -24029,7 +24140,7 @@
     }
   },
   "TripoImageToModelNode": {
-    "display_name": "Tripo: תמונה למודל",
+    "display_name": "Tripo: מתמונה למודל (מדור קודם)",
     "inputs": {
       "auto_size": {
         "name": "auto_size",
@@ -24102,6 +24213,75 @@
       "3": {
         "name": "FBX",
         "tooltip": "מתמלא רק כאשר quad מופעל."
+      }
+    }
+  },
+  "TripoImageToModelNodeV2": {
+    "display_name": "Tripo: מתמונה למודל",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "שינוי קנה מידה של מודלים עם טקסטורה לגודלם בעולם האמיתי במטרים. ‏Tripo שומרת את הגודל כהמרת הסצנה של המודל ומטמיעה אותו בעת המרת המודל, יצירת rig או retargeting; האפשרות מתעלמת מהמודל ללא texture."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "מספר הפאות המרבי. ‎-1 מאפשר ל-Tripo לבחור באופן הסתגלותי (כ-1.4 מיליון פאות ב-v3.x standard, 2 מיליון ב-detailed). ‏Tripo מגביל בשקט: v2.5 ל-500,000, ורשתות quad ל-150,000."
+      },
+      "geometry_quality": {
+        "name": "geometry_quality"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "גרסת המודל שבה ייעשה שימוש ליצירה"
+      },
+      "orientation": {
+        "name": "orientation"
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "מפות חומר PBR ‏(צבע בסיס, מתכתיות, חספוס, נורמל). דורש texture."
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "פלט רשת quad. ‏Tripo מספקת רשתות quad כ-FBX, לכן התוצאה מתקבלת בפלט FBX ופלט GLB נשאר ריק."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "רשת low-poly עם טופולוגיה נקייה בסגנון עיצוב ידני (500–20,000 פאות, quad ‏500–10,000). מתאימה במיוחד לנושאים פשוטים; נושאים מורכבים עלולים להיכשל."
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "יצירת מפות טקסטורה. מצב כבוי מחזיר גאומטריה בלבד ומתעלם מ-pbr."
+      },
+      "texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = טקסטורות HD, extreme = טקסטורות Ultra ‏8K."
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "ריק כאשר quad מופעל."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "מאוכלס רק כאשר quad מופעל."
       }
     }
   },
@@ -24433,7 +24613,7 @@
       },
       "animation": {
         "name": "אנימציה",
-        "tooltip": "הנפשות preset:* פועלות עם שני דגמי ה-rig; הנפשות preset:biped:* דורשות rig שנוצר עם model v1.0-20240301."
+        "tooltip": "הנפשות preset:* פועלות עם שני מודלי ה-rig. הנפשות preset:biped:* מיועדות ל-rigs ממודל v1.0-20240301; rig מסוג v2.5 מקבל רק chop, climb, dive, fall, hurt, idle, jump, run, shoot, slash, turn ו-walk."
       },
       "export_with_geometry": {
         "name": "export_with_geometry",
@@ -24597,6 +24777,48 @@
       }
     }
   },
+  "TripoSmartSegmentNode": {
+    "description": "מפצל מודל לחלקים בעלי משמעות סמנטית ונותן להם שמות. מתמונה, Tripo יוצרת תחילה את המודל. ה-segment task_id מזין את Tripo: Complete Mesh Parts, Tripo: Retopology, Tripo: Texture model ו-Tripo: Convert model, בדומה לתוצאה של Tripo: Segment Model.",
+    "display_name": "Tripo: פילוח חכם",
+    "inputs": {
+      "source": {
+        "name": "source",
+        "tooltip": "פילוח מודל קיים, או יצירת מודל מתמונה ופילוחו."
+      },
+      "source_granularity": {
+        "name": "granularity"
+      },
+      "source_hint": {
+        "name": "hint"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "segment task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
+        "tooltip": "המודל שפולח (נוצר מהתמונה או יובא)."
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "שמות חלקים",
+        "tooltip": "שמות החלקים, מופרדים בפסיקים."
+      },
+      "4": {
+        "name": "חלקים",
+        "tooltip": "התיאור של Tripo לחלקים שאיתרה."
+      },
+      "5": {
+        "name": "מסכה",
+        "tooltip": null
+      }
+    }
+  },
   "TripoSplatConditioning": {
     "description": "קידוד התמונה עם DINOv3 ו-Flux2 VAE ל-TripoSplat conditioning חיובי/שלילי, ויצירת יעד רעש בגודל קבוע (latent + מצלמה) עבור KSampler",
     "display_name": "TripoSplat Conditioning",
@@ -24693,7 +24915,7 @@
     }
   },
   "TripoTextToModelNode": {
-    "display_name": "Tripo: טקסט למודל",
+    "display_name": "Tripo: טקסט למודל (מדור קודם)",
     "inputs": {
       "auto_size": {
         "name": "auto_size",
@@ -24769,8 +24991,77 @@
       }
     }
   },
+  "TripoTextToModelNodeV2": {
+    "display_name": "Tripo: טקסט למודל",
+    "inputs": {
+      "auto_size": {
+        "name": "גודל אוטומטי",
+        "tooltip": "שינוי קנה המידה של מודלים עם מרקם לגודלם בעולם האמיתי במטרים. Tripo מאחסנת את הגודל כהמרת הסצנה של המודל ומטמיעה אותו בעת המרה, rigging או retargeting של המודל; האפשרות אינה נלקחת בחשבון ללא מרקם."
+      },
+      "face_limit": {
+        "name": "מגבלת פאות",
+        "tooltip": "מספר הפאות המרבי. הערך -1 מאפשר ל-Tripo לבחור באופן מסתגל (כ-1.4M פאות ב-v3.x standard, ו-2M ב-detailed). Tripo מגבילה בשקט: v2.5 ל-500,000, ורשתות quad ל-150,000."
+      },
+      "geometry_quality": {
+        "name": "איכות גאומטריה"
+      },
+      "image_seed": {
+        "name": "זרע תמונה"
+      },
+      "model_seed": {
+        "name": "זרע מודל"
+      },
+      "model_version": {
+        "name": "גרסת מודל"
+      },
+      "negative_prompt": {
+        "name": "הנחיה שלילית",
+        "tooltip": "עד 255 תווים."
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "מפות חומר מסוג PBR (צבע בסיס, מתכתיות, חספוס, נורמל). נדרש מרקם."
+      },
+      "prompt": {
+        "name": "הנחיה"
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "פלט רשת quad. ‏Tripo מספקת רשתות quad כ-FBX, לכן התוצאה מתקבלת בפלט FBX ופלט GLB נשאר ריק."
+      },
+      "smart_low_poly": {
+        "name": "low-poly חכם",
+        "tooltip": "רשת low-poly עם טופולוגיה נקייה בסגנון עבודת יד (500-20,000 פאות, quad 500-10,000). מתאים במיוחד לנושאים פשוטים; נושאים מורכבים עשויים להיכשל."
+      },
+      "texture": {
+        "name": "מרקם",
+        "tooltip": "יצירת מפות מרקם. כאשר האפשרות מושבתת, מוחזרת גאומטריה בלבד והמערכת מתעלמת מ-pbr."
+      },
+      "texture_quality": {
+        "name": "איכות מרקם",
+        "tooltip": "detailed = מרקמי HD, extreme = מרקמי Ultra ב-8K."
+      },
+      "texture_seed": {
+        "name": "זרע מרקם"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "מזהה משימת מודל",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "ריק כאשר quad מופעל."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "מתמלא רק כאשר quad מופעל."
+      }
+    }
+  },
   "TripoTextureNode": {
-    "display_name": "Tripo: מרקם למודל",
+    "display_name": "Tripo: הוספת מרקם למודל (מדור קודם)",
     "inputs": {
       "model_task_id": {
         "name": "model_task_id"
@@ -24830,6 +25121,62 @@
       "3": {
         "name": "FBX",
         "tooltip": "Tripo מחזיר FBX עבור רשתות מרובעות וייבואי FBX; אחרת ריק."
+      }
+    }
+  },
+  "TripoTextureNodeV2": {
+    "display_name": "Tripo: הוספת מרקם למודל",
+    "inputs": {
+      "model_task_id": {
+        "name": "מזהה משימת מודל"
+      },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "מודל מרקמים: v3.0 לרשתות שנוצרו באמצעות v3.x, v2.5 לרשתות שנוצרו באמצעות v2.5."
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "שמות חלקים, מופרדים בפסיקים, מ-Tripo: Segment Model, שעליהם יוחלו המרקמים. השארה ריקה יוצרת מרקמים לכל חלק."
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "מפות חומר מסוג PBR (צבע בסיס, מתכתיות, חספוס, נורמל); כאשר האפשרות מושבתת מתקבל מרקם בצבע אחיד."
+      },
+      "reference": {
+        "name": "reference",
+        "tooltip": "תמונות ייחוס המנחות את המרקמים. לא ניתן לשלב עם texture_prompt או style_image."
+      },
+      "style_image": {
+        "name": "style_image",
+        "tooltip": "תמונת ייחוס לסגנון האמנותי של המרקמים. בשימוש רק יחד עם texture_prompt."
+      },
+      "texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "הנחיית טקסט אופציונלית ליצירת מרקמים. נדרשת בפועל עבור מודלים מיובאים (Tripo: Import Model), שאינם כוללים תמונת מקור שממנה ניתן להסיק צבעים. לא ניתן לשלב עם תמונות ייחוס."
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = מרקמים באיכות HD, extreme = מרקמים באיכות Ultra 8K."
+      },
+      "texture_seed": {
+        "name": "זרע מרקם"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "ריק כאשר המקור הוא רשת מרובעת או ייבוא FBX."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Tripo מחזיר FBX עבור רשתות מרובעות וייבוא FBX; ריק אחרת."
       }
     }
   },
@@ -28298,6 +28645,94 @@
     "outputs": {
       "0": {
         "name": "רשת",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateABC": {
+    "description": "יוצר את תיווי ה-ABC של שיר מתוך סגנון ומילים. חברו את abc לצומת YuE2 Generate Music.",
+    "display_name": "YuE2 יצירת ABC",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "lyrics": {
+        "name": "מילים"
+      },
+      "max_abc_tokens": {
+        "name": "max_abc_tokens"
+      },
+      "mode": {
+        "name": "מצב",
+        "tooltip": "full: יוצר מנגינה ואקורדים; melody: יוצר מנגינה בלבד, מומלץ לגרסאות כיסוי."
+      },
+      "seed": {
+        "name": "זרע"
+      },
+      "style": {
+        "name": "סגנון"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateMusic": {
+    "description": "יוצר אסימוני מוזיקה והתניה אקוסטית מתוך סגנון, מילים ותיווי ABC. ספקו את מספר השניות שנוצרו לצומת Empty YuE2 Latent Audio. קלט ABC ריק מתעלם מהמצב שנבחר.",
+    "display_name": "YuE2 יצירת מוזיקה",
+    "inputs": {
+      "abc": {
+        "name": "abc",
+        "tooltip": "חברו את מחולל ABC או ספקו תווים ערוכים. השאירו ריק כדי להשתמש אוטומטית במצב off."
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "lyrics": {
+        "name": "מילים"
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "משך מרבי; היצירה עשויה להסתיים מוקדם יותר. המהדורה משתמשת בתקציב של 360 שניות."
+      },
+      "mode": {
+        "name": "מצב",
+        "tooltip": "full: יוצר מנגינה ואקורדים; melody: יוצר מנגינה בלבד, מומלץ לגרסאות כיסוי."
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "seed": {
+        "name": "זרע"
+      },
+      "style": {
+        "name": "סגנון"
+      },
+      "temperature": {
+        "name": "טמפרטורה"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "שניות",
         "tooltip": null
       }
     }

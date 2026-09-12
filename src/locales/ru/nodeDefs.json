@@ -3065,6 +3065,29 @@
       }
     }
   },
+  "ConcatenateVideo": {
+    "description": "Объединяет видео по порядку без декодирования совместимых закодированных входных данных.",
+    "display_name": "Объединение видео",
+    "inputs": {
+      "codec": {
+        "name": "codec",
+        "tooltip": "Кодек для кодирования тензоров видео. Auto использует H.264; уже закодированные видео остаются без изменений."
+      },
+      "complete_audio": {
+        "name": "complete_audio",
+        "tooltip": "Необязательная полная звуковая дорожка для объединённого видео. Заменяет аудио из входных видео."
+      },
+      "videos": {
+        "name": "videos",
+        "tooltip": "Сегменты видео для объединения в порядке входных данных."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Объединённое видео."
+      }
+    }
+  },
   "ConditioningAverage": {
     "display_name": "Среднее кондиционирование",
     "inputs": {
@@ -3098,6 +3121,20 @@
       },
       "conditioning_to": {
         "name": "условие_к"
+      }
+    }
+  },
+  "ConditioningLoader": {
+    "description": "Загружает кондиционирование, сохранённое с помощью «Сохранить кондиционирование», либо любой файл safetensors с тензором «conditioning» из папки embeddings.",
+    "display_name": "Загрузить кондиционирование",
+    "inputs": {
+      "conditioning_name": {
+        "name": "conditioning_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3908,6 +3945,10 @@
       "bit_depth": {
         "name": "bit_depth",
         "tooltip": "Авто использует 8 бит для sRGB и 10 бит для HDR. Явный выбор 8 или 10 бит не зависит от цветового пространства."
+      },
+      "codec": {
+        "name": "codec",
+        "tooltip": "При необходимости сразу кодирует видео. None сохраняет изображения в виде тензоров; Auto использует H.264."
       },
       "color_space": {
         "name": "color_space",
@@ -5026,6 +5067,22 @@
       "batch_size": {
         "name": "batch_size",
         "tooltip": "Количество latent-изображений в пакете."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyYuE2LatentAudio": {
+    "display_name": "Пустое латентное аудио YuE2",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "seconds": {
+        "name": "seconds"
       }
     },
     "outputs": {
@@ -6451,14 +6508,8 @@
       "model_max_output_tokens": {
         "name": "максимум токенов вывода"
       },
-      "model_temperature": {
-        "name": "temperature"
-      },
       "model_thinking_level": {
         "name": "уровень мышления"
-      },
-      "model_top_p": {
-        "name": "top_p"
       },
       "prompt": {
         "name": "запрос",
@@ -7985,7 +8036,7 @@
     }
   },
   "ImageColorSpace": {
-    "description": "Преобразование между sRGB (Rec.709), HDR (Rec.2020 HLG) и HDR PQ (Rec.2020 PQ). Используются белая точка SDR 203 нит и эталонный HLG-дисплей 1000 нит. Сужение диапазона выполняет тональное отображение избыточной яркости по всему пакету и сжимает цвета вне цветового охвата. Преобразования вычисляются в float32 и возвращают промежуточные устройство и тип данных. Прямой альфа-канал не преобразуется по цвету.",
+    "description": "Преобразует sRGB, линейный Rec.709, HDR (Rec.2020 HLG) и HDR PQ (Rec.2020 PQ). Линейный 1.0 использует тот же опорный белый 203 нит, что и sRGB; HLG использует опорный дисплей 1000 нит. Линейный вывод и преобразования из линейного формата в HDR сохраняют расширенные значения без тонального отображения. Вывод SDR и преобразование PQ в HLG выполняют тональное отображение избыточной яркости для всего пакета и сжимают цвета вне цветового охвата. Преобразования вычисляются в float32 и возвращают промежуточные устройство и dtype. Прямой альфа-канал не преобразуется по цвету.",
     "display_name": "Преобразовать цветовое пространство изображения",
     "inputs": {
       "destination": {
@@ -12380,6 +12431,23 @@
       }
     }
   },
+  "MarigoldV2PostProcess": {
+    "description": "Преобразует декодированное предсказание Marigold V2 в изображение: нормализованную глубину, где ближние области светлые, нормали поверхности единичной длины или альбедо sRGB.",
+    "display_name": "Постобработка Marigold V2",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "prediction": {
+        "name": "prediction"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MaskComposite": {
     "display_name": "Составная маска",
     "inputs": {
@@ -16027,6 +16095,9 @@
     "inputs": {
       "model": {
         "name": "модель"
+      },
+      "sampling": {
+        "name": "sampling"
       },
       "shift": {
         "name": "сдвиг"
@@ -20994,6 +21065,24 @@
       }
     }
   },
+  "SaveConditioning": {
+    "description": "Сохраняет кондиционирование в папку output в формате safetensors; переместите файл в models/embeddings, чтобы загрузить его с помощью «Загрузить кондиционирование», например для пропуска текстового кодировщика.",
+    "display_name": "Сохранить кондиционирование",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "conditioning",
+        "tooltip": null
+      }
+    }
+  },
   "SaveGLB": {
     "display_name": "SaveGLB",
     "inputs": {
@@ -21682,6 +21771,28 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SheetSage2AudioToABC": {
+    "description": "Транскрибирует вокальные и инструментальные мелодии из музыки в нотацию ABC. Подключите выход abc к узлу YuE2 Generate Music и используйте соответствующий режим.",
+    "display_name": "SheetSage2: аудио в ABC",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "audio_encoder": {
+        "name": "audio_encoder"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "full: создаёт мелодию и аккорды; melody: создаёт только мелодию, рекомендуется для каверов."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
         "tooltip": null
       }
     }
@@ -24029,7 +24140,7 @@
     }
   },
   "TripoImageToModelNode": {
-    "display_name": "Tripo: Изображение в модель",
+    "display_name": "Tripo: Из изображения в модель (устаревший)",
     "inputs": {
       "auto_size": {
         "name": "auto_size",
@@ -24100,6 +24211,75 @@
         "tooltip": "Пусто, когда включён quad."
       },
       "3": {
+        "name": "FBX",
+        "tooltip": "Заполняется только при включённом quad."
+      }
+    }
+  },
+  "TripoImageToModelNodeV2": {
+    "display_name": "Tripo: Из изображения в модель",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Масштабировать текстурированные модели до их реального размера в метрах. Tripo сохраняет размер как трансформацию сцены модели и запекает её при конвертации, риггинге или ретаргетинге модели; без texture игнорируется."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "Максимальное число граней. Значение -1 позволяет Tripo выбирать адаптивно (около 1,4 млн граней для стандарта v3.x, 2 млн для detailed). Tripo незаметно ограничивает значения: v2.5 — до 500 000, quad-сетки — до 150 000."
+      },
+      "geometry_quality": {
+        "name": "geometry_quality"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "Версия модели, используемая для генерации"
+      },
+      "orientation": {
+        "name": "orientation"
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "Карты материалов PBR (базовый цвет, металличность, шероховатость, нормали). Требуется texture."
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "Вывод quad-сетки. Tripo предоставляет quad-сетки в формате FBX, поэтому результат поступает на выход FBX, а выход GLB остаётся пустым."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "Низкополигональная сетка с чистой топологией в стиле ручной работы (500-20,000 граней, quad 500-10,000). Лучше всего подходит для простых объектов; сложные могут завершиться ошибкой."
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "Генерировать карты текстур. При выключении возвращается чистая геометрия, а pbr игнорируется."
+      },
+      "texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = текстуры HD, extreme = текстуры 8K Ultra."
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Пусто, когда quad включён."
+      },
+      "2": {
         "name": "FBX",
         "tooltip": "Заполняется только при включённом quad."
       }
@@ -24433,7 +24613,7 @@
       },
       "animation": {
         "name": "анимация",
-        "tooltip": "Анимации preset:* работают с обеими моделями рига; анимации preset:biped:* требуют рига, созданного моделью v1.0-20240301."
+        "tooltip": "Анимации preset:* работают с обоими типами ригов. Анимации preset:biped:* предназначены для ригов моделей v1.0-20240301; риг v2.5 поддерживает только chop, climb, dive, fall, hurt, idle, jump, run, shoot, slash, turn и walk."
       },
       "export_with_geometry": {
         "name": "export_with_geometry",
@@ -24597,6 +24777,48 @@
       }
     }
   },
+  "TripoSmartSegmentNode": {
+    "description": "Разделяет модель на семантически значимые части и присваивает им имена. При использовании изображения Tripo сначала генерирует модель. segment task_id передаётся в Tripo: Complete Mesh Parts, Tripo: Retopology, Tripo: Texture model и Tripo: Convert model, как результат Tripo: Segment Model.",
+    "display_name": "Tripo: Умная сегментация",
+    "inputs": {
+      "source": {
+        "name": "source",
+        "tooltip": "Сегментировать существующую модель либо сгенерировать модель из изображения и сегментировать её."
+      },
+      "source_granularity": {
+        "name": "granularity"
+      },
+      "source_hint": {
+        "name": "hint"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "segment task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
+        "tooltip": "Сегментированная модель (сгенерированная из изображения или импортированная)."
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "part_names",
+        "tooltip": "Имена частей, разделённые запятыми."
+      },
+      "4": {
+        "name": "части",
+        "tooltip": "Описание найденных частей от Tripo."
+      },
+      "5": {
+        "name": "маска",
+        "tooltip": null
+      }
+    }
+  },
   "TripoSplatConditioning": {
     "description": "Кодирует изображение с помощью DINOv3 и Flux2 VAE в TripoSplat положительное/отрицательное кондиционирование и создаёт целевой шум фиксированного размера (latent + камера) для KSampler.",
     "display_name": "TripoSplat кондиционирование",
@@ -24693,7 +24915,7 @@
     }
   },
   "TripoTextToModelNode": {
-    "display_name": "Tripo: Текст в модель",
+    "display_name": "Tripo: Текст в модель (устаревшее)",
     "inputs": {
       "auto_size": {
         "name": "auto_size",
@@ -24769,8 +24991,77 @@
       }
     }
   },
+  "TripoTextToModelNodeV2": {
+    "display_name": "Tripo: Текст в модель",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Масштабировать текстурированные модели до их реального размера в метрах. Tripo сохраняет размер как трансформацию сцены модели и запекает его при конвертации, риггинге или ретаргетинге модели; без текстуры параметр игнорируется."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "Максимальное число граней. Значение -1 позволяет Tripo выбирать адаптивно (около 1,4 млн граней в стандартном v3.x, 2 млн в detailed). Tripo незаметно ограничивает значение: v2.5 — до 500 000, quad-меши — до 150 000."
+      },
+      "geometry_quality": {
+        "name": "geometry_quality"
+      },
+      "image_seed": {
+        "name": "image_seed"
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "model_version": {
+        "name": "model_version"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Не более 255 символов."
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "Карты PBR-материала (базовый цвет, металличность, шероховатость, нормали). Требуются текстуры."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "Вывод quad-меша. Tripo предоставляет quad-меши в формате FBX, поэтому результат поступает на выход FBX, а выход GLB остаётся пустым."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "Низкополигональный меш с чистой топологией в стиле ручной работы (500–20 000 граней, quad — 500–10 000). Лучше всего подходит для простых объектов; обработка сложных может завершиться ошибкой."
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "Генерировать карты текстур. При выключении возвращается только геометрия, а pbr игнорируется."
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = HD-текстуры, extreme = текстуры 8K Ultra."
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ID задачи модели",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Пусто, если quad включён."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Заполняется только при включённом quad."
+      }
+    }
+  },
   "TripoTextureNode": {
-    "display_name": "Tripo: Модель текстур",
+    "display_name": "Tripo: Текстурирование модели (устаревшее)",
     "inputs": {
       "model_task_id": {
         "name": "model_task_id"
@@ -24830,6 +25121,62 @@
       "3": {
         "name": "FBX",
         "tooltip": "Tripo возвращает FBX для четырёхугольных сеток и импортов FBX; в остальных случаях пусто."
+      }
+    }
+  },
+  "TripoTextureNodeV2": {
+    "display_name": "Tripo: Текстурирование модели",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "Модель текстур: v3.0 для сеток, созданных с v3.x, v2.5 для сеток, созданных с v2.5."
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "Разделённые запятыми названия частей из Tripo: Segment Model для текстурирования. Пустое значение текстурирует все части."
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "Карты PBR-материала (базовый цвет, металличность, шероховатость, нормали); при выключении создаётся однотонная текстура."
+      },
+      "reference": {
+        "name": "reference",
+        "tooltip": "Эталонные изображения, направляющие создание текстур. Нельзя использовать вместе с texture_prompt или style_image."
+      },
+      "style_image": {
+        "name": "style_image",
+        "tooltip": "Эталонное изображение художественного стиля текстур. Используется только вместе с texture_prompt."
+      },
+      "texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "Необязательная текстовая подсказка для текстурирования. На практике требуется для импортированных моделей (Tripo: Import Model), у которых нет исходного изображения, по которому можно определить цвета. Не может использоваться вместе с эталонными изображениями."
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = HD-текстуры, extreme = Ultra-текстуры 8K."
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Пусто, если источником является quad mesh или импорт FBX."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Tripo возвращает FBX для quad mesh и импортов FBX; в иных случаях — пусто."
       }
     }
   },
@@ -28298,6 +28645,94 @@
     "outputs": {
       "0": {
         "name": "сетка",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateABC": {
+    "description": "Создаёт ABC-нотацию песни по стилю и тексту. Подключите abc к узлу YuE2 Generate Music.",
+    "display_name": "YuE2: создать ABC",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "lyrics": {
+        "name": "lyrics"
+      },
+      "max_abc_tokens": {
+        "name": "max_abc_tokens"
+      },
+      "mode": {
+        "name": "режим",
+        "tooltip": "full: генерирует мелодию и аккорды; melody: генерирует только мелодию, рекомендуется для каверов."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateMusic": {
+    "description": "Генерирует музыкальные токены и акустическое кондиционирование на основе стиля, текста песни и нотации ABC. Передайте сгенерированное число секунд в узел Empty YuE2 Latent Audio. Пустой вход ABC игнорирует выбранный режим.",
+    "display_name": "YuE2 Генерация музыки",
+    "inputs": {
+      "abc": {
+        "name": "abc",
+        "tooltip": "Подключите генератор ABC или укажите отредактированную партитуру. Оставьте пустым, чтобы автоматически использовать режим off."
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "lyrics": {
+        "name": "текст песни"
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "Максимальная длительность; генерация может завершиться раньше. В релизе используется лимит в 360 секунд."
+      },
+      "mode": {
+        "name": "режим",
+        "tooltip": "full: генерирует мелодию и аккорды; melody: генерирует только мелодию, рекомендуется для каверов."
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "style": {
+        "name": "стиль"
+      },
+      "temperature": {
+        "name": "температура"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "секунды",
         "tooltip": null
       }
     }
