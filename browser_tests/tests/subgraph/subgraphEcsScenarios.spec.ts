@@ -126,6 +126,91 @@ test.describe(
               .toBe('original survives duplicate deletion')
           })
 
+          test('clearing a promoted widget label preserves its value and host after reload', async ({
+            comfyPage
+          }) => {
+            test.slow()
+            await comfyPage.workflow.setupWorkflowsDirectory({})
+            await comfyPage.workflow.loadWorkflow(
+              'subgraphs/subgraph-with-promoted-text-widget'
+            )
+            const host = await comfyPage.nodeOps.getNodeRefById('11')
+            const text = await host.getPromotedTextWidget('text')
+            await text.fill('Value must not be cleared with the label')
+            const identity = await comfyPage.page.evaluate((hostId) => {
+              const node = window.app!.rootGraph.getNodeById(hostId)
+              if (!node?.isSubgraphNode()) throw new Error('Missing host')
+              return { type: node.type, subgraphId: node.subgraph.id }
+            }, toNodeId('11'))
+
+            await host.click('title')
+            const panel = comfyPage.menu.propertiesPanel.root
+            if (!(await panel.isVisible())) {
+              await comfyPage.menu.propertiesPanel.toggleButton.click()
+            }
+            await expect(panel).toBeVisible()
+            await panel.getByText('text', { exact: true }).click()
+            const labelInput = panel.getByPlaceholder('text', { exact: true })
+            await labelInput.fill('Temporary promoted label')
+            await labelInput.press('Enter')
+            await expect(
+              panel.getByText('Temporary promoted label', { exact: true })
+            ).toBeVisible()
+            await panel
+              .getByText('Temporary promoted label', { exact: true })
+              .click()
+            await labelInput.clear()
+            await labelInput.press('Enter')
+            await expect(panel.getByText('text', { exact: true })).toBeVisible()
+            await expect(
+              panel.getByText('Temporary promoted label', { exact: true })
+            ).toHaveCount(0)
+
+            const workflowName = `${mode.label.toLowerCase()}-cleared-promoted-label`
+            const workflowPath = `/api/userdata/${encodeURIComponent(`workflows/${workflowName}.json`)}`
+            const save = comfyPage.page.waitForResponse(
+              (response) =>
+                new URL(response.url()).pathname === workflowPath &&
+                response.request().method() === 'POST'
+            )
+            await comfyPage.menu.topbar.saveWorkflow(workflowName)
+            expect((await save).status()).toBe(200)
+            await expect(comfyPage.toast.toastErrors).toHaveCount(0)
+            await comfyPage.workflow.reloadAndWaitForApp()
+            await comfyPage.menu.workflowsTab.open()
+            await comfyPage.menu.workflowsTab
+              .getPersistedItem(workflowName)
+              .click()
+            await comfyPage.menu.workflowsTab.close()
+
+            await expect
+              .poll(() =>
+                comfyPage.page.evaluate((hostId) => {
+                  const node = window.app!.rootGraph.getNodeById(hostId)
+                  if (!node?.isSubgraphNode()) return null
+                  const widget = node.widgets.find(
+                    (entry) => entry.name === 'text'
+                  )
+                  return {
+                    type: node.type,
+                    subgraphId: node.subgraph.id,
+                    label: widget?.label ?? null,
+                    value: widget?.value
+                  }
+                }, toNodeId('11'))
+              )
+              .toEqual({
+                ...identity,
+                label: null,
+                value: 'Value must not be cleared with the label'
+              })
+            const restored = await comfyPage.nodeOps.getNodeRefById('11')
+            await expect(
+              await restored.getPromotedTextWidget('text')
+            ).toHaveValue('Value must not be cleared with the label')
+            await expect(comfyPage.toast.toastErrors).toHaveCount(0)
+          })
+
           for (const deleteOriginal of [true, false]) {
             test(`surviving ${deleteOriginal ? 'copy' : 'original'} opens and edits after save/reload`, async ({
               comfyPage
