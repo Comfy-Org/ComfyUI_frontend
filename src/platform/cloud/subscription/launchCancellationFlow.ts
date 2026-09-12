@@ -1,3 +1,4 @@
+import { getBillingRailPolicy } from '@/composables/billing/billingRailPolicy'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { t } from '@/i18n'
 import { prepareChurnkey } from '@/platform/cloud/churnkey/churnkeyClient'
@@ -27,7 +28,8 @@ export async function launchCancellationFlow({
   if (
     billing.type.value !== 'workspace' ||
     !launchWorkspaceId ||
-    workspaceStore.activeWorkspaceBillingRail !== 'stripe'
+    !getBillingRailPolicy(workspaceStore.activeWorkspaceBillingRail)
+      .supportsChurnkeyCancellation
   ) {
     await showFallback()
     return

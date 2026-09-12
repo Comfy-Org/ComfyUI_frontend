@@ -4,6 +4,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
+import { getBillingRailPolicy } from './billingRailPolicy'
 import type { BillingType } from './types'
 
 /**
@@ -28,7 +29,8 @@ export function useBillingRouting() {
 
     if (
       workspaceType === 'personal' &&
-      workspaceStore.activeWorkspaceBillingRail === 'legacy_stripe' &&
+      getBillingRailPolicy(workspaceStore.activeWorkspaceBillingRail)
+        .usesLegacyAccountOperations &&
       !flags.legacyBillingMigrationEnabled
     ) {
       return 'legacy'
