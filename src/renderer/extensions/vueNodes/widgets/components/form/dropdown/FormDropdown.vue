@@ -7,7 +7,7 @@ import {
 } from '@vueuse/core'
 import Popover from 'primevue/popover'
 import type { ComponentPublicInstance } from 'vue'
-import { computed, ref, toValue, useTemplateRef } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -18,8 +18,8 @@ import type {
   OwnershipFilterOption,
   OwnershipOption
 } from '@/platform/assets/types/filterTypes'
-import { WrappedList } from '@/utils/pagedList'
-import type { PagedList } from '@/utils/pagedList'
+import { isPaged, pagedItems, WrappedList } from '@/utils/pagedList'
+import type { MaybePaged } from '@/utils/pagedList'
 
 import FormDropdownInput from './FormDropdownInput.vue'
 import FormDropdownMenu from './FormDropdownMenu.vue'
@@ -31,7 +31,7 @@ import {
 import type { FormDropdownItem, LayoutMode, SortOption } from './types'
 
 interface Props {
-  items: readonly FormDropdownItem[] | PagedList<FormDropdownItem>
+  items: MaybePaged<FormDropdownItem>
   placeholder?: string
   /**
    * If true, allows multiple selections. If a number is provided,
@@ -80,13 +80,6 @@ const {
   items
 } = defineProps<Props>()
 
-function isArray(list: unknown): list is readonly unknown[] {
-  return Array.isArray(list)
-}
-
-const itemsList = computed<readonly FormDropdownItem[]>(() =>
-  isArray(items) ? items : toValue(items.items)
-)
 const placeholderText = computed(
   () => placeholder ?? t('widgets.uploadSelect.placeholder')
 )
@@ -133,7 +126,7 @@ const filteredItems = computedAsync<readonly FormDropdownItem[]>(
   async (onCancel): Promise<readonly FormDropdownItem[]> => {
     if (!isOpen.value) {
       displayedSearchQuery.value = ''
-      return itemsList.value
+      return pagedItems(items)
     }
 
     const query = debouncedSearchQuery.value
@@ -144,13 +137,13 @@ const filteredItems = computedAsync<readonly FormDropdownItem[]>(
       cleanupFn?.()
     })
 
-    const result = await searcher(query, itemsList.value, (cb) => {
+    const result = await searcher(query, pagedItems(items), (cb) => {
       cleanupFn = cb
     })
     if (!cancelled) displayedSearchQuery.value = query
     return result
   },
-  itemsList.value,
+  pagedItems(items),
   {
     evaluating: isFiltering
   }
@@ -169,7 +162,7 @@ const selectedSorter = computed<SortOption['sorter']>(() => {
 })
 const sortedItems = computed((): readonly FormDropdownItem[] => {
   if (!isOpen.value) {
-    return itemsList.value
+    return pagedItems(items)
   }
   return selectedSorter.value({ items: filteredItems.value }) || []
 })
@@ -296,7 +289,7 @@ async function getTopSearchResult() {
   const query = searchQuery.value
   if (query.trim() === '') return
 
-  const sourceItems = isArray(items) ? items : toValue(items.items)
+  const sourceItems = pagedItems(items)
   const matches =
     isShowingCurrentSearchResults.value && displayedSearchQuery.value === query
       ? filteredItems.value
@@ -329,9 +322,9 @@ function showPicker() {
   closeDropdown()
 }
 const dropdownItems = computed(() =>
-  isArray(items)
-    ? sortedItems.value
-    : new WrappedList(items, () => sortedItems.value)
+  isPaged(items)
+    ? new WrappedList(items, () => sortedItems.value)
+    : sortedItems.value
 )
 </script>
 
@@ -342,7 +335,7 @@ const dropdownItems = computed(() =>
       :files
       :is-open
       :placeholder="placeholderText"
-      :selected-items="itemsList.filter(internalIsSelected)"
+      :selected-items="pagedItems(items).filter(internalIsSelected)"
       :max-selectable
       :uploadable
       :disabled
