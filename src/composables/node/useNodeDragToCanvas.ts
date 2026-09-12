@@ -3,6 +3,7 @@ import { ref, shallowRef } from 'vue'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { NodeAddSource } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -40,7 +41,24 @@ function applyWidgetValues(node: LGraphNode, values: WidgetValues) {
   for (const [name, value] of Object.entries(values)) {
     const widget = node.widgets?.find((w) => w.name === name)
     if (!widget) {
-      console.error(`Widget ${name} not found on node ${node.type}`)
+      reportError(
+        new Error(`Widget "${name}" is missing from added node ${node.type}`),
+        {
+          errorType: 'failure_setting_dragged_node_widget',
+          tags: {
+            failure_kind: 'bad_state',
+            feature_area: 'nodes',
+            operation: 'configure',
+            outcome: 'failed'
+          },
+          context: {
+            drag_mode: dragMode.value,
+            node_type: node.type,
+            widget_name: name
+          },
+          level: 'error'
+        }
+      )
       useToastStore().add({
         severity: 'warn',
         summary: t('g.warning'),
@@ -79,7 +97,24 @@ function addNodeAtPosition(clientX: number, clientY: number): boolean {
     useLitegraphService().addNodeOnGraph(nodeDef, { pos })
   )
   if (!node) {
-    console.error(`Failed to add node to graph: ${nodeDef.name}`)
+    reportError(
+      new Error(`Failed to add dragged node ${nodeDef.name} to the graph`),
+      {
+        errorType: 'failure_adding_dragged_node',
+        tags: {
+          failure_kind: 'bad_state',
+          feature_area: 'nodes',
+          operation: 'add',
+          outcome: 'failed'
+        },
+        context: {
+          drag_mode: dragMode.value,
+          node_type: nodeDef.name,
+          has_widget_values: pendingWidgetValues.value !== undefined
+        },
+        level: 'error'
+      }
+    )
     useToastStore().add({
       severity: 'error',
       summary: t('g.error'),
