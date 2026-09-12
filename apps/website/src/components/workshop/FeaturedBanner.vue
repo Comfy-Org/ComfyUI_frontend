@@ -118,7 +118,11 @@ const fill = computed(() =>
         class="sm:short:gap-3 relative flex h-full flex-col justify-end gap-4 p-6 pb-16 sm:max-w-2xl sm:justify-center lg:p-8 lg:pb-16"
       >
         <div class="flex flex-wrap items-center gap-2">
-          <Badge variant="subtle" size="md" class="text-primary-comfy-canvas">
+          <Badge
+            variant="subtle"
+            size="md"
+            class="text-primary-comfy-canvas backdrop-blur-md"
+          >
             {{ active.task }}
           </Badge>
           <Badge
@@ -126,19 +130,19 @@ const fill = computed(() =>
             :key="capability"
             variant="subtle"
             size="md"
-            class="text-content-secondary max-sm:hidden"
+            class="text-content-secondary backdrop-blur-md max-sm:hidden"
           >
             {{ capability }}
           </Badge>
         </div>
 
-        <h2 class="text-4xl font-bold text-primary-warm-white">
+        <h2 class="text-2xl font-bold text-primary-warm-white lg:text-3xl">
           {{ active.model.name }}
         </h2>
 
         <p
           v-if="active.model.summary"
-          class="text-content-secondary line-clamp-2 max-w-prose"
+          class="text-content-secondary line-clamp-2 max-w-prose max-sm:line-clamp-1"
         >
           {{ active.model.summary }}
         </p>
