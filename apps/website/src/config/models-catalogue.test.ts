@@ -8,6 +8,7 @@ import { routerAliasById } from './workshop-browse-content'
 import { workshopContract } from './workshop-contract-catalog'
 import { workshopContentInputs } from './workshop-content-inputs'
 import { isWorkshopModelDisabled } from './workshop-model-availability'
+import { modelOrderRank } from './workshop-model-order'
 import { getRouterWorkshopModelDetail as getWorkshopModelDetail } from './workshop-router-content'
 import { schemaForModel } from './workshop-playground'
 import type { GeneratedField, WorkshopModel } from './models-catalogue'
@@ -187,6 +188,18 @@ describe('sortWorkshopModels', () => {
       'Mystery'
     ])
     expect(names(priced)).toEqual(['Kling AI', 'Flux', 'Mystery'])
+  })
+
+  it('leads with the models people run, whatever their example count', () => {
+    const [first, second] = [...modelOrderRank.keys()]
+    const list = [
+      { ...fixture[0], slug: second, workflowCount: 6 },
+      { ...fixture[1], slug: first, workflowCount: 0 },
+      { ...fixture[2], slug: 'never-run', workflowCount: 6 }
+    ]
+    expect(
+      sortWorkshopModels(list, 'popular').map((model) => model.slug)
+    ).toEqual([first, second, 'never-run'])
   })
 })
 

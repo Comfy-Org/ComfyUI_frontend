@@ -1,6 +1,22 @@
 import { expect } from '@playwright/test'
 
+import { readFileSync } from 'node:fs'
+
+import { workshopModelOrderSchema } from '../src/config/workshop-model-order.schema'
 import { MODEL_PATH, test } from './fixtures/modelsAccount'
+
+// Read here rather than imported from the config module: Playwright's loader
+// will not take that module's JSON import. The file still goes through the
+// schema the site is built from, so this test holds the page to the same
+// contract.
+const modelOrder = workshopModelOrderSchema.parse(
+  JSON.parse(
+    readFileSync(
+      new URL('../src/content/workshop-model-order.json', import.meta.url),
+      'utf8'
+    )
+  )
+).slugs
 
 test.describe('Retired prototype routes', () => {
   test.beforeEach(async ({ page }) => {
@@ -31,6 +47,32 @@ test.describe('Retired prototype routes', () => {
 })
 
 test.describe('Models catalog', () => {
+  test('leads each row with the models people run, under a label that says so', async ({
+    page
+  }) => {
+    await page.goto('/models/')
+    const sections = page.getByTestId('workshop-sections')
+    await expect(sections).toBeVisible()
+    await expect(page.getByTestId('workshop-sort')).toContainText(
+      'Most popular'
+    )
+    const expected = modelOrder
+      .filter((slug) => slug.endsWith('--generate-images'))
+      .slice(0, 3)
+    expect(expected).toHaveLength(3)
+    const leading = page
+      .getByTestId('section-generate-images')
+      .getByTestId('workshop-model-card')
+    await expect(leading.first()).toBeVisible()
+    expect(
+      await leading
+        .evaluateAll((cards) =>
+          cards.map((card) => card.getAttribute('href') ?? '')
+        )
+        .then((hrefs) => hrefs.slice(0, 3))
+    ).toEqual(expected.map((slug) => `/models/${slug}/`))
+  })
+
   test('searches the approved catalog and recovers from empty results', async ({
     page
   }) => {
