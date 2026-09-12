@@ -8,6 +8,33 @@ test.describe(
   'Marquee selection at emulated display scaling',
   { tag: '@canvas' },
   () => {
+    let previousSettings: { click: string; mode: string } | undefined
+
+    test.beforeEach(async ({ comfyPage }) => {
+      previousSettings = undefined
+      previousSettings = {
+        click: await comfyPage.settings.getSetting<string>(
+          'Comfy.Canvas.LeftMouseClickBehavior'
+        ),
+        mode: await comfyPage.settings.getSetting<string>(
+          'Comfy.Canvas.NavigationMode'
+        )
+      }
+    })
+
+    test.afterEach(async ({ comfyPage }) => {
+      if (previousSettings) {
+        await comfyPage.settings.setSetting(
+          'Comfy.Canvas.LeftMouseClickBehavior',
+          previousSettings.click
+        )
+        await comfyPage.settings.setSetting(
+          'Comfy.Canvas.NavigationMode',
+          previousSettings.mode
+        )
+      }
+    })
+
     test('selects the exact intersected nodes at 150 percent', async ({
       comfyPage
     }) => {
