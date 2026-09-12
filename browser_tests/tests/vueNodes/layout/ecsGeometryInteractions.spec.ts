@@ -165,13 +165,50 @@ test.describe(
         )
         await fitToViewInstant(comfyPage)
 
-        const readState = () =>
-          comfyPage.page.evaluate(
-            ({ floatingLinkId, linkId, nodeId, rerouteId }) => {
+        const stateIds = {
+          floatingLinkId: toLinkId(10),
+          linkId: toLinkId(3),
+          nodeId: toNodeId('6'),
+          rerouteId: toRerouteId(1)
+        }
+        const readState = async () => {
+          const [graphState, serialisedState] = await Promise.all([
+            comfyPage.page.evaluate(
+              ({ floatingLinkId, linkId, nodeId, rerouteId }) => {
+                const graph = window.app!.graph
+                const link = graph.links.get(linkId)
+                const floatingLink = graph.floatingLinks.get(floatingLinkId)
+                const reroute = graph.reroutes.get(rerouteId)
+                return {
+                  nodeExists: Boolean(graph.getNodeById(nodeId)),
+                  link: link
+                    ? {
+                        id: link.id,
+                        originId: link.origin_id,
+                        originSlot: link.origin_slot,
+                        targetId: link.target_id,
+                        targetSlot: link.target_slot,
+                        parentId: link.parentId
+                      }
+                    : null,
+                  rerouteLinkIds: [...(reroute?.linkIds ?? [])],
+                  floatingLink: floatingLink
+                    ? {
+                        id: floatingLink.id,
+                        originId: floatingLink.origin_id,
+                        originSlot: floatingLink.origin_slot,
+                        targetId: floatingLink.target_id,
+                        targetSlot: floatingLink.target_slot,
+                        parentId: floatingLink.parentId
+                      }
+                    : null,
+                  rerouteFloatingLinkIds: [...(reroute?.floatingLinkIds ?? [])]
+                }
+              },
+              stateIds
+            ),
+            comfyPage.page.evaluate(({ floatingLinkId, linkId, rerouteId }) => {
               const graph = window.app!.graph
-              const link = graph.links.get(linkId)
-              const floatingLink = graph.floatingLinks.get(floatingLinkId)
-              const reroute = graph.reroutes.get(rerouteId)
               const serialised = graph.asSerialisable()
               const serialisedLink = serialised.links?.find(
                 ({ id }) => id === linkId
@@ -183,29 +220,6 @@ test.describe(
                 ({ id }) => id === rerouteId
               )
               return {
-                nodeExists: Boolean(graph.getNodeById(nodeId)),
-                link: link
-                  ? {
-                      id: link.id,
-                      originId: link.origin_id,
-                      originSlot: link.origin_slot,
-                      targetId: link.target_id,
-                      targetSlot: link.target_slot,
-                      parentId: link.parentId
-                    }
-                  : null,
-                rerouteLinkIds: [...(reroute?.linkIds ?? [])],
-                floatingLink: floatingLink
-                  ? {
-                      id: floatingLink.id,
-                      originId: floatingLink.origin_id,
-                      originSlot: floatingLink.origin_slot,
-                      targetId: floatingLink.target_id,
-                      targetSlot: floatingLink.target_slot,
-                      parentId: floatingLink.parentId
-                    }
-                  : null,
-                rerouteFloatingLinkIds: [...(reroute?.floatingLinkIds ?? [])],
                 serialisedLink: serialisedLink ?? null,
                 serialisedFloatingLink: serialisedFloatingLink ?? null,
                 serialisedRerouteLinkIds: serialisedReroute?.linkIds ?? [],
@@ -213,14 +227,10 @@ test.describe(
                   serialisedReroute?.floating
                 )
               }
-            },
-            {
-              floatingLinkId: toLinkId(10),
-              linkId: toLinkId(3),
-              nodeId: toNodeId('6'),
-              rerouteId: toRerouteId(1)
-            }
-          )
+            }, stateIds)
+          ])
+          return { ...graphState, ...serialisedState }
+        }
 
         await expect.poll(readState).toEqual({
           nodeExists: true,
