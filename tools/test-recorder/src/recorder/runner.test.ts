@@ -1,45 +1,58 @@
+import type { SpawnSyncReturns } from 'node:child_process'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-import type * as TemplateModule from './template'
 
 const {
   cleanupRecordedCode,
   cleanupRecordingTemplate,
   ensureStorageStateDir,
   generateRecordingTemplate,
+  recordingTarget,
   removeLegacyCustomStorageState,
   runCommand,
+  storageStateKey,
   storageStatePath
 } = vi.hoisted(() => ({
   cleanupRecordedCode: vi.fn(),
   cleanupRecordingTemplate: vi.fn(),
   ensureStorageStateDir: vi.fn(),
   generateRecordingTemplate: vi.fn(),
+  recordingTarget: vi.fn((): 'cloud' => 'cloud'),
   removeLegacyCustomStorageState: vi.fn(),
-  runCommand: vi.fn(() => ({ status: 1 })),
+  runCommand: vi.fn(
+    (): SpawnSyncReturns<Buffer> => ({
+      pid: 1,
+      output: [],
+      stdout: Buffer.alloc(0),
+      stderr: Buffer.alloc(0),
+      status: 1,
+      signal: null
+    })
+  ),
+  storageStateKey: vi.fn(() => 'custom-key'),
   storageStatePath: vi.fn((key: string) => `/state/storage-state.${key}.json`)
 }))
 
-vi.mock('./template', async (importOriginal) => ({
-  ...(await importOriginal<typeof TemplateModule>()),
+vi.mock(import('./template'), () => ({
+  RECORDING_SPEC_BASENAME: '_recording-session' as const,
   cleanupRecordedCode,
   cleanupRecordingTemplate,
   ensureStorageStateDir,
   generateRecordingTemplate,
   recordedCodePath: vi.fn(() => '/missing-recorded-code'),
+  recordingTarget,
   removeLegacyCustomStorageState,
+  storageStateKey,
   storageStatePath
 }))
-vi.mock('../checks/devServerUrl', () => ({
+vi.mock(import('../checks/devServerUrl'), () => ({
   devServerUrl: vi.fn(() => 'http://localhost:5173')
 }))
-vi.mock('../cli/run', () => ({ runCommand }))
-vi.mock('../featureFlags', () => ({
+vi.mock(import('../cli/run'), () => ({ runCommand }))
+vi.mock(import('../featureFlags'), () => ({
   buildFfQuery: vi.fn(() => '')
 }))
-vi.mock('../ui/logger', () => ({ box: vi.fn(), info: vi.fn() }))
+vi.mock(import('../ui/logger'), () => ({ box: vi.fn(), info: vi.fn() }))
 
-import { storageStateKey } from './template'
 import { runRecording } from './runner'
 
 beforeEach(() => {
@@ -63,9 +76,17 @@ describe('runRecording', () => {
       distribution
     })
 
+    const storageStateFile = '/state/storage-state.custom-key.json'
+    expect(storageStateKey).toHaveBeenCalledWith(distribution)
+    expect(storageStatePath).toHaveBeenCalledWith('custom-key')
     expect(removeLegacyCustomStorageState).toHaveBeenCalledOnce()
     expect(removeLegacyCustomStorageState).toHaveBeenCalledWith(
-      `/state/storage-state.${storageStateKey(distribution)}.json`
+      storageStateFile
+    )
+    expect(ensureStorageStateDir).toHaveBeenCalledWith(storageStateFile)
+    expect(generateRecordingTemplate).toHaveBeenCalledWith(
+      expect.objectContaining({ storageStateFile }),
+      '/project/browser_tests'
     )
   })
 })

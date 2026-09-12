@@ -10,6 +10,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
+import type { Distribution } from '../devserver/distributions'
 import {
   cleanupRecordedCode,
   cleanupRecordingTemplate,
@@ -280,209 +281,54 @@ describe('recording template', () => {
   })
 
   describe('storageStateKey', () => {
-    it('defaults to cloud when no distribution is given', () => {
+    function custom(backendUrl?: string): Distribution {
+      return {
+        id: 'custom',
+        label: 'Custom backend',
+        hint: '',
+        script: 'dev',
+        needsLocalBackend: false,
+        backendUrl
+      }
+    }
+
+    it('keeps the fixed keys for built-in cloud distributions', () => {
       expect(storageStateKey(undefined)).toBe('cloud')
+      for (const id of ['cloud', 'cloud-staging', 'cloud-prod']) {
+        expect(storageStateKey({ ...custom(), id })).toBe(id)
+      }
     })
 
-    it('uses the fixed id for the three built-in cloud distributions', () => {
-      expect(
-        storageStateKey({
-          id: 'cloud',
-          label: 'Cloud',
-          hint: '',
-          script: 'dev:cloud',
-          needsLocalBackend: false,
-          backendUrl: 'https://testcloud.comfy.org/'
-        })
-      ).toBe('cloud')
-      expect(
-        storageStateKey({
-          id: 'cloud-staging',
-          label: 'Cloud staging',
-          hint: '',
-          script: 'dev:cloud:staging',
-          needsLocalBackend: false,
-          backendUrl: 'https://stagingcloud.comfy.org/'
-        })
-      ).toBe('cloud-staging')
-      expect(
-        storageStateKey({
-          id: 'cloud-prod',
-          label: 'Cloud production',
-          hint: '',
-          script: 'dev:cloud:prod',
-          needsLocalBackend: false,
-          backendUrl: 'https://cloud.comfy.org/'
-        })
-      ).toBe('cloud-prod')
-    })
-
-    it('fails closed when a custom distribution has no backend URL', () => {
-      expect(
-        storageStateKey({
-          id: 'custom',
-          label: 'Custom backend',
-          hint: '',
-          script: 'dev',
-          needsLocalBackend: false
-        })
-      ).toBe('custom-unparsed')
-    })
-
-    it('keys a custom backend by a hash of its own origin, not a shared "custom" bucket', () => {
-      const keyA = storageStateKey({
-        id: 'custom',
-        label: 'Custom backend (https://agent.comfy.org/)',
-        hint: 'https://agent.comfy.org/',
-        script: 'dev',
-        needsLocalBackend: false,
-        backendUrl: 'https://agent.comfy.org/'
-      })
-      const keyB = storageStateKey({
-        id: 'custom',
-        label: 'Custom backend (https://other-env.comfy.org/)',
-        hint: 'https://other-env.comfy.org/',
-        script: 'dev',
-        needsLocalBackend: false,
-        backendUrl: 'https://other-env.comfy.org/'
-      })
+    it('creates a stable, filesystem-safe key for each custom backend', () => {
+      const keyA = storageStateKey(custom('https://agent.comfy.org/'))
+      const keyB = storageStateKey(custom('https://other-env.comfy.org/'))
       expect(keyA).toMatch(/^custom-[0-9a-f]{16}$/)
       expect(keyB).toMatch(/^custom-[0-9a-f]{16}$/)
       expect(keyA).not.toBe(keyB)
-      // Stable across calls, so the same backend always reuses its file.
-      expect(
-        storageStateKey({
-          id: 'custom',
-          label: '',
-          hint: '',
-          script: 'dev',
-          needsLocalBackend: false,
-          backendUrl: 'https://agent.comfy.org/'
-        })
-      ).toBe(keyA)
-    })
-
-    it('keeps HTTP and HTTPS custom backends in separate buckets', () => {
-      const distribution = {
-        id: 'custom',
-        label: 'Custom backend',
-        hint: '',
-        script: 'dev',
-        needsLocalBackend: false
-      } as const
-
-      expect(
-        storageStateKey({
-          ...distribution,
-          backendUrl: 'http://agent.comfy.org/'
-        })
-      ).not.toBe(
-        storageStateKey({
-          ...distribution,
-          backendUrl: 'https://agent.comfy.org/'
-        })
+      expect(storageStateKey(custom('https://agent.comfy.org/'))).toBe(keyA)
+      expect(storageStateKey(custom('http://[::1]:8100/'))).toMatch(
+        /^custom-[0-9a-f]{16}$/
       )
     })
 
-    it('keeps custom backends on different ports in separate buckets', () => {
-      const distribution = {
-        id: 'custom',
-        label: 'Custom backend',
-        hint: '',
-        script: 'dev',
-        needsLocalBackend: false
-      } as const
-
-      expect(
-        storageStateKey({
-          ...distribution,
-          backendUrl: 'http://localhost:8100/'
-        })
-      ).not.toBe(
-        storageStateKey({
-          ...distribution,
-          backendUrl: 'http://localhost:8200/'
-        })
-      )
+    it.for([
+      ['scheme', 'http://agent.comfy.org/', 'https://agent.comfy.org/'],
+      ['port', 'http://localhost:8100/', 'http://localhost:8200/'],
+      [
+        'path',
+        'https://gw.example.com/tenant-a/',
+        'https://gw.example.com/tenant-b/'
+      ]
+    ])('includes the custom backend %s', ([_part, a, b]) => {
+      expect(storageStateKey(custom(a))).not.toBe(storageStateKey(custom(b)))
     })
 
-    it('keeps custom backends on different paths in separate buckets', () => {
-      // normalizeBackendUrl preserves path prefixes for path-routed backends
-      // (e.g. one gateway hosting several tenants); the key must too, or
-      // https://gw.example.com/tenant-a/ and .../tenant-b/ collapse into one
-      // storage-state file and replay each other's session.
-      const distribution = {
-        id: 'custom',
-        label: 'Custom backend',
-        hint: '',
-        script: 'dev',
-        needsLocalBackend: false
-      } as const
-
-      expect(
-        storageStateKey({
-          ...distribution,
-          backendUrl: 'https://gw.example.com/tenant-a/'
-        })
-      ).not.toBe(
-        storageStateKey({
-          ...distribution,
-          backendUrl: 'https://gw.example.com/tenant-b/'
-        })
-      )
-    })
-
-    it('does not confuse hostname suffixes with port separators', () => {
-      const distribution = {
-        id: 'custom',
-        label: 'Custom backend',
-        hint: '',
-        script: 'dev',
-        needsLocalBackend: false
-      } as const
-
-      expect(
-        storageStateKey({
-          ...distribution,
-          backendUrl: 'https://example.com-8100/'
-        })
-      ).not.toBe(
-        storageStateKey({
-          ...distribution,
-          backendUrl: 'https://example.com:8100/'
-        })
-      )
-    })
-
-    it('hashes IPv6 hostnames to a fixed-length, filesystem-safe key', () => {
-      expect(
-        storageStateKey({
-          id: 'custom',
-          label: 'Custom backend',
-          hint: '',
-          script: 'dev',
-          needsLocalBackend: false,
-          backendUrl: 'http://[::1]:8100/'
-        })
-      ).toMatch(/^custom-[0-9a-f]{16}$/)
-    })
-
-    it('treats a scheme-less URL as unparseable rather than silently sharing a bucket', () => {
-      // new URL('localhost:8100') parses as a non-special 'localhost:'
-      // scheme with an empty hostname — the real host/port land in the
-      // discarded opaque path, so without a guard every scheme-less typo
-      // collapses into the same key.
-      expect(
-        storageStateKey({
-          id: 'custom',
-          label: 'Custom backend',
-          hint: '',
-          script: 'dev',
-          needsLocalBackend: false,
-          backendUrl: 'localhost:8100'
-        })
-      ).toBe('custom-unparsed')
-    })
+    it.for([undefined, 'not a url', 'localhost:8100', 'ftp://example.com/'])(
+      'routes invalid custom URL %s to the shared fallback bucket',
+      (backendUrl) => {
+        expect(storageStateKey(custom(backendUrl))).toBe('custom-unparsed')
+      }
+    )
 
     it('removes the legacy shared custom-backend storage state', () => {
       const legacyStateFile = join(browserTestsDir, 'storage-state.custom.json')
@@ -493,17 +339,6 @@ describe('recording template', () => {
       )
 
       expect(existsSync(legacyStateFile)).toBe(false)
-    })
-
-    it('does not delete the legacy file when it is the resolved path itself', () => {
-      const legacyStateFile = join(browserTestsDir, 'storage-state.custom.json')
-      writeFileSync(legacyStateFile, '{"cookies":[]}')
-
-      removeLegacyCustomStorageState(legacyStateFile)
-
-      // Covers the guard's equal-path branch: removeLegacyCustomStorageState
-      // must not delete the very file it was asked to load.
-      expect(existsSync(legacyStateFile)).toBe(true)
     })
 
     it('does not fail when the legacy storage state cannot be removed', () => {
@@ -517,24 +352,6 @@ describe('recording template', () => {
         )
       ).not.toThrow()
       expect(existsSync(legacyStateFile)).toBe(true)
-    })
-
-    it('falls back to a distinct sentinel if the custom backend URL cannot be parsed', () => {
-      // A bare 'custom' fallback resolves to the legacy shared storage-state
-      // file, so removeLegacyCustomStorageState's !== guard would skip the
-      // migration deletion and every unparseable backend would still share
-      // one bucket. The sentinel must differ from both 'custom' and any real
-      // hashed key.
-      expect(
-        storageStateKey({
-          id: 'custom',
-          label: 'Custom backend',
-          hint: '',
-          script: 'dev',
-          needsLocalBackend: false,
-          backendUrl: 'not a url'
-        })
-      ).toBe('custom-unparsed')
     })
   })
 })

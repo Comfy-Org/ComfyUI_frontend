@@ -54,9 +54,6 @@ export function storageStateKey(distribution?: Distribution): string {
     const digest = createHash('sha256').update(origin).digest('hex')
     return `custom-${digest.slice(0, 16)}`
   } catch {
-    // Fail closed to a sentinel distinct from a real hashed key, so a
-    // malformed backend URL never resolves to a previously-recorded
-    // session's storage-state file.
     return 'custom-unparsed'
   }
 }
