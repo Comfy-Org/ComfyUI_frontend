@@ -231,11 +231,10 @@ test.describe(
           }))
         const snapshots = [await getSnapshot()]
         const checkpoint = async () => {
-          for (let frame = 0; frame < 4; frame++) await comfyPage.nextFrame()
-          snapshots.push(await getSnapshot())
           await expect
             .poll(() => comfyPage.workflow.getUndoQueueSize())
-            .toBe(snapshots.length - 1)
+            .toBe(snapshots.length)
+          snapshots.push(await getSnapshot())
         }
 
         await comfyPage.searchBoxV2.addNode('Load Checkpoint', {
