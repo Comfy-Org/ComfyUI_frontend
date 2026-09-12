@@ -1,5 +1,5 @@
 import type { ComfyEvent, EventCategory, EventOrganizer } from '../data/events'
-import type { Locale } from '../i18n/translations'
+import type { Locale, LocalizedText } from '../i18n/translations'
 import type { CalendarEvent } from './calendar'
 
 import { localizeHref } from '../config/routes'
@@ -49,6 +49,10 @@ export function defaultDirectoryFilters(): EventsDirectoryFilters {
   }
 }
 
+function localized(text: LocalizedText, locale: Locale): string {
+  return text[locale] || text.en
+}
+
 /** Free text matches the strings the visitor can actually read: the localized
  * title, description, and location. */
 function matchesQuery(
@@ -59,9 +63,9 @@ function matchesQuery(
   const needle = query.trim().toLocaleLowerCase(locale)
   if (!needle) return true
   return [
-    event.title[locale] || event.title.en,
-    event.description[locale] || event.description.en,
-    event.location?.[locale] || event.location?.en || ''
+    localized(event.title, locale),
+    localized(event.description, locale),
+    event.location ? localized(event.location, locale) : ''
   ].some((field) => field.toLocaleLowerCase(locale).includes(needle))
 }
 
@@ -99,7 +103,7 @@ function inEventOffset(startDateTime: string): Date {
 
 /** The hand-written label when the event has one, else the start date. */
 export function eventDateLabel(event: ComfyEvent, locale: Locale): string {
-  const written = event.dateLabel?.[locale] || event.dateLabel?.en
+  const written = event.dateLabel && localized(event.dateLabel, locale)
   if (written) return written
   return new Intl.DateTimeFormat(locale, {
     year: 'numeric',
@@ -139,7 +143,7 @@ function mediaOf(event: ComfyEvent, locale: Locale): DirectoryRow['media'] {
   const isVideo = media.type === 'video'
   return {
     src: media.src,
-    alt: media.alt[locale] || media.alt.en,
+    alt: localized(media.alt, locale),
     poster: isVideo ? media.poster : undefined,
     isVideo
   }
@@ -159,12 +163,11 @@ function registerOf(
 ): DirectoryRow['register'] {
   if (event.link) {
     return {
-      href: event.link.href[locale] || event.link.href.en,
+      href: localized(event.link.href, locale),
       newTab: event.link.newTab ?? false,
-      label:
-        event.ctaLabel?.[locale] ||
-        event.ctaLabel?.en ||
-        t('events.directory.learnMore', locale)
+      label: event.ctaLabel
+        ? localized(event.ctaLabel, locale)
+        : t('events.directory.learnMore', locale)
     }
   }
   // An upcoming livestream without an outbound link still has a public
@@ -173,7 +176,7 @@ function registerOf(
   if (event.category === 'livestream' && event.liveVideoId) {
     const href = youtubeWatchHref(event.liveVideoId)
     return {
-      href: href[locale] || href.en,
+      href: localized(href, locale),
       newTab: true,
       label: t('events.directory.learnMore', locale)
     }
@@ -195,9 +198,36 @@ function watchOf(event: ComfyEvent, locale: Locale): DirectoryRow['watch'] {
   }
   if (!event.link) return undefined
   return {
-    href: event.link.href[locale] || event.link.href.en,
+    href: localized(event.link.href, locale),
     newTab: event.link.newTab ?? false,
     label
+  }
+}
+
+function locationOf(event: ComfyEvent, locale: Locale): string {
+  return event.location
+    ? localized(event.location, locale)
+    : t('events.directory.virtual', locale)
+}
+
+function directoryRow(
+  event: ComfyEvent,
+  locale: Locale,
+  now: Date
+): DirectoryRow {
+  const upcoming = eventStatus(event, now) === 'upcoming'
+  return {
+    event,
+    upcoming,
+    category: t(`events.category.${event.category}`, locale),
+    title: localized(event.title, locale),
+    description: localized(event.description, locale),
+    date: eventDateLabel(event, locale),
+    location: locationOf(event, locale),
+    media: mediaOf(event, locale),
+    watch: upcoming ? undefined : watchOf(event, locale),
+    register: upcoming ? registerOf(event, locale) : undefined,
+    calendar: upcoming ? toCalendarEvent(event, locale) : undefined
   }
 }
 
@@ -206,25 +236,7 @@ export function directoryRows(
   locale: Locale,
   now: Date
 ): DirectoryRow[] {
-  return events.map((event) => {
-    const upcoming = eventStatus(event, now) === 'upcoming'
-    return {
-      event,
-      upcoming,
-      category: t(`events.category.${event.category}`, locale),
-      title: event.title[locale] || event.title.en,
-      description: event.description[locale] || event.description.en,
-      date: eventDateLabel(event, locale),
-      location:
-        event.location?.[locale] ||
-        event.location?.en ||
-        t('events.directory.virtual', locale),
-      media: mediaOf(event, locale),
-      watch: upcoming ? undefined : watchOf(event, locale),
-      register: upcoming ? registerOf(event, locale) : undefined,
-      calendar: upcoming ? toCalendarEvent(event, locale) : undefined
-    }
-  })
+  return events.map((event) => directoryRow(event, locale, now))
 }
 
 export type DirectoryMonth = {

@@ -13,6 +13,7 @@ import CardFooter from '../../components/ui/card/CardFooter.vue'
 import CardHeader from '../../components/ui/card/CardHeader.vue'
 import CardTitle from '../../components/ui/card/CardTitle.vue'
 import { t } from '../../i18n/translations'
+import EventsDirectoryCardMedia from './EventsDirectoryCardMedia.vue'
 import EventsDirectoryCta from './EventsDirectoryCta.vue'
 
 const { rows, locale = 'en' } = defineProps<{
@@ -52,36 +53,7 @@ const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
         data-testid="events-directory-card"
       >
         <CardContent v-if="row.media" class="p-2">
-          <div class="aspect-video w-full overflow-hidden rounded-4xl">
-            <img
-              v-if="!row.media.isVideo"
-              :src="row.media.src"
-              :alt="row.media.alt"
-              loading="lazy"
-              decoding="async"
-              class="size-full object-cover object-center"
-            />
-            <img
-              v-else-if="reducedMotion && row.media.poster"
-              :src="row.media.poster"
-              :alt="row.media.alt"
-              loading="lazy"
-              decoding="async"
-              class="size-full object-cover object-center"
-            />
-            <video
-              v-else
-              :src="row.media.src"
-              :poster="row.media.poster"
-              :aria-label="row.media.alt"
-              :autoplay="!reducedMotion"
-              loop
-              muted
-              playsinline
-              preload="metadata"
-              class="size-full object-cover object-center"
-            />
-          </div>
+          <EventsDirectoryCardMedia :media="row.media" :reduced-motion />
         </CardContent>
 
         <CardHeader class="gap-2 px-6 pt-6">

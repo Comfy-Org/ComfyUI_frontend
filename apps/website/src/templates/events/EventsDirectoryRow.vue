@@ -32,17 +32,36 @@ const metaClass = 'flex items-center gap-1 text-primary-comfy-canvas/70'
 // events, the outbound registration or stream page for upcoming ones — via
 // a CardArticle01-style overlay. The chips and Read more sit above it.
 const rowLink = computed(() => row.watch ?? row.register)
+const rowLinkTarget = computed(() =>
+  rowLink.value?.newTab ? '_blank' : undefined
+)
+const rowLinkRel = computed(() =>
+  rowLinkTarget.value ? resolveRel({ target: rowLinkTarget.value }) : undefined
+)
+
+const thumbnail = computed(() => {
+  const media = row.media
+  if (!media) return undefined
+  if (!media.isVideo) return { src: media.src, alt: media.alt }
+  if (!media.poster) return undefined
+  return { src: media.poster, alt: media.alt }
+})
 
 const descEl = ref<HTMLElement>()
 const clamped = ref(false)
 const expanded = ref(false)
+const expansionLabel = computed(() =>
+  t(
+    expanded.value ? 'events.directory.readLess' : 'events.directory.readMore',
+    locale
+  )
+)
 // A clamped paragraph overflows its own box; re-measuring on resize keeps
 // the Read more affordance honest as the list column changes width. While
 // expanded nothing overflows, so the last measurement is kept.
 useResizeObserver(descEl, ([entry]) => {
   if (expanded.value) return
-  const el = entry.target as HTMLElement
-  clamped.value = el.scrollHeight > el.clientHeight + 1
+  clamped.value = entry.target.scrollHeight > entry.target.clientHeight + 1
 })
 </script>
 
@@ -63,8 +82,8 @@ useResizeObserver(descEl, ([entry]) => {
     <a
       v-if="rowLink"
       :href="rowLink.href"
-      :target="rowLink.newTab ? '_blank' : undefined"
-      :rel="rowLink.newTab ? resolveRel({ target: '_blank' }) : undefined"
+      :target="rowLinkTarget"
+      :rel="rowLinkRel"
       :aria-label="`${row.title} — ${rowLink.label}`"
       class="focus-visible:ring-primary-comfy-yellow absolute inset-0 z-10 focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset"
     />
@@ -72,9 +91,9 @@ useResizeObserver(descEl, ([entry]) => {
     size. Hidden on phones, where the row runs the full page width and the
     text needs every column. -->
     <img
-      v-if="row.media && (!row.media.isVideo || row.media.poster)"
-      :src="row.media.isVideo ? row.media.poster : row.media.src"
-      :alt="row.media.alt"
+      v-if="thumbnail"
+      :src="thumbnail.src"
+      :alt="thumbnail.alt"
       loading="lazy"
       decoding="async"
       class="hidden aspect-16/10 w-36 shrink-0 self-start rounded-xl object-cover sm:block"
@@ -116,14 +135,7 @@ useResizeObserver(descEl, ([entry]) => {
         class="relative z-20 self-start text-[11px] font-semibold text-primary-comfy-canvas/70 transition-colors hover:text-primary-warm-white"
         @click.stop="expanded = !expanded"
       >
-        {{
-          t(
-            expanded
-              ? 'events.directory.readLess'
-              : 'events.directory.readMore',
-            locale
-          )
-        }}
+        {{ expansionLabel }}
       </button>
 
       <div
