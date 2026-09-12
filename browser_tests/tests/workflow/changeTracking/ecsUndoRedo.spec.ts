@@ -193,7 +193,6 @@ test.describe(
         { tag: ['@vue-nodes', '@widget'] },
         async ({ comfyPage }) => {
           test.slow()
-          await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
           await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
           await expect
             .poll(() => comfyPage.nodeOps.getGraphNodesCount())
