@@ -10,7 +10,8 @@ intro(pc.bgCyan(pc.black(' 🎭 ComfyUI Test Recorder ')))
 
 try {
   switch (command) {
-    case 'record': {
+    case 'record':
+    case 'recorder': {
       const { parseFlags } = await import('./cli/flags')
       const { flags } = parseFlags(args.slice(1), [
         'distribution',
@@ -208,7 +209,7 @@ try {
 Usage: comfy-test <command>
 
 Commands:
-  record [--distribution <id>] [--backend <url>] [--workflow <name>]
+  record (alias: recorder) [--distribution <id>] [--backend <url>] [--workflow <name>]
          [--tags <a,b>] [--feature-flags <specs>] [--use-case <id>]
          [--description <text>] [--name <slug>] [--pr <number>]
               Record a browser test; supplied answers skip setup prompts
