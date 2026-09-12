@@ -1,3 +1,4 @@
+import { SELF_STYLED_PANEL_CONTENT_CLASS } from '@/components/ui/dialog/dialog.variants'
 import AssetBrowserModal from '@/platform/assets/components/AssetBrowserModal.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useDialogService } from '@/services/dialogService'
@@ -25,8 +26,7 @@ interface BrowseOptions {
 
 const DIALOG_KEY = 'global-asset-browser'
 const ASSET_BROWSER_DIALOG_PROPS = {
-  contentClass:
-    'w-fit max-w-[calc(100vw-var(--workspace-inset-right,0px)-1rem)] sm:max-w-[calc(100vw-var(--workspace-inset-right,0px)-1rem)] border-none bg-transparent shadow-none'
+  contentClass: SELF_STYLED_PANEL_CONTENT_CLASS
 } satisfies DialogComponentProps
 
 export const useAssetBrowserDialog = () => {

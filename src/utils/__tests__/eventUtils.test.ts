@@ -1,4 +1,8 @@
-import { extractFilesFromDragEvent, getDroppedAsset } from '@/utils/eventUtils'
+import {
+  extractFilesFromDragEvent,
+  fetchDroppedAsset,
+  getDroppedAsset
+} from '@/utils/eventUtils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 describe('eventUtils', () => {
@@ -210,6 +214,77 @@ describe('eventUtils', () => {
       )
 
       expect(getDroppedAsset(dataTransfer)).toBeUndefined()
+    })
+
+    it('passes an absolute preview URL through untouched', () => {
+      const previewUrl = 'https://cloud.example/api/assets/a1/content'
+      const dataTransfer = new DataTransfer()
+      dataTransfer.setData(
+        'application/x-comfy-asset-info',
+        JSON.stringify({ filename: 'a.png', preview_url: previewUrl })
+      )
+      dataTransfer.setData('text/uri-list', previewUrl)
+
+      expect(getDroppedAsset(dataTransfer)?.previewUrl).toBe(previewUrl)
+    })
+
+    it('treats an empty attachment ref as no asset at all', () => {
+      const dataTransfer = new DataTransfer()
+      dataTransfer.setData(
+        'application/x-comfy-asset-info',
+        JSON.stringify({ filename: 'a.png', attachment_ref: '' })
+      )
+
+      expect(getDroppedAsset(dataTransfer)).toBeUndefined()
+    })
+  })
+
+  describe('fetchDroppedAsset', () => {
+    let fetchSpy: ReturnType<typeof vi.fn>
+
+    beforeEach(() => {
+      fetchSpy = vi.fn()
+      vi.stubGlobal('fetch', fetchSpy)
+    })
+
+    it('never fetches when the asset carries no URI', async () => {
+      const actual = await fetchDroppedAsset({
+        name: 'ref-only',
+        ref: 'attachment-1'
+      })
+
+      expect(actual).toBeUndefined()
+      expect(fetchSpy).not.toHaveBeenCalled()
+    })
+
+    it('round-trips a dropped asset into a named File', async () => {
+      const blob = new Blob([new Uint8Array([0x89, 0x50])], {
+        type: 'image/png'
+      })
+      fetchSpy.mockResolvedValue(new Response(blob))
+
+      const actual = await fetchDroppedAsset({
+        name: 'test.png',
+        uri: 'https://example.com/view?f=test.png'
+      })
+
+      expect(fetchSpy).toHaveBeenCalledOnce()
+      expect(actual).toBeInstanceOf(File)
+      expect(actual?.name).toBe('test.png')
+      expect(actual?.type).toBe('image/png')
+    })
+
+    it('returns undefined for a non-OK response instead of wrapping the error body', async () => {
+      fetchSpy.mockResolvedValue(
+        new Response('not found', { status: 404, statusText: 'Not Found' })
+      )
+
+      const actual = await fetchDroppedAsset({
+        name: 'missing.png',
+        uri: 'https://example.com/view?f=missing.png'
+      })
+
+      expect(actual).toBeUndefined()
     })
   })
 })
