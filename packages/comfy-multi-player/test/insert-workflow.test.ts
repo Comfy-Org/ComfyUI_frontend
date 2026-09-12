@@ -243,7 +243,7 @@ describe("insert_workflow: happy path", () => {
   it("rejects a remapped definition id already present anywhere in the stored tree", () => {
     const op = insertOp(template());
     const remapped = remapInsertedWorkflowIds(template(), op.op_id);
-    const remappedId = String(remapped.definitions!.subgraphs![0]!.id);
+    const remappedId = defIds(remapped)[0]!;
     const base = baseWorkflow();
     base.definitions!.subgraphs!.push({ id: remappedId, nodes: [], links: [] });
     const doc = mint(base, catalog);
