@@ -587,7 +587,7 @@ async function onNavigateToReferenceWorkflow(
     let target = openWorkflowFor(workflowId)
     if (target === null) {
       await Promise.all([
-        refreshCloudWorkflowIds(),
+        refreshCloudWorkflowIds({ force: true }),
         workflowStore.syncWorkflows()
       ])
       target = storedWorkflowFor(workflowId)

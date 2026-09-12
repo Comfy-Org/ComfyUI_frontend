@@ -90,7 +90,7 @@ export function useAgentWorkflowSelection({
       if (!isCurrent()) return
       let workflowId = cloudIdFor(tab)
       if (workflowId === undefined) {
-        if (!(await refreshCloudWorkflowIds())) return fail()
+        if (!(await refreshCloudWorkflowIds({ force: true }))) return fail()
         if (!isCurrent()) return
         workflowId = cloudIdFor(tab)
       }
