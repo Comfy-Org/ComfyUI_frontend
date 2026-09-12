@@ -11,7 +11,7 @@
     <div
       v-for="section in sections"
       :key="section.key"
-      :role="section.label ? 'group' : undefined"
+      :role="section.role"
       :aria-label="section.label"
       class="col-span-full grid grid-cols-subgrid grid-rows-subgrid"
       :style="{ gridRow: `span ${section.rows.length}` }"
@@ -153,12 +153,19 @@ const sections = computed(() => {
     key: string
     name?: string
     label?: string
+    role?: 'group'
     rows: typeof renderedRows.value
   }[] = []
   for (const row of renderedRows.value) {
     const { name, type, label } = row.widget.simplified
     if (type === 'dynamic_group_row') {
-      result.push({ key: row.widget.renderKey, name, label, rows: [row] })
+      result.push({
+        key: row.widget.renderKey,
+        name,
+        label,
+        role: label ? 'group' : undefined,
+        rows: [row]
+      })
     } else {
       const section = result.at(-1)
       if (section?.name && name.startsWith(`${section.name}.`))

@@ -127,17 +127,19 @@ export function dynamicGroupWidget(
       const row = Number(oldPrefix.slice(inputName.length + 1))
       if (row <= index) continue
       const newPrefix = `${inputName}.${row - 1}`
-      for (const widget of node.widgets)
-        if (
-          widget.name === oldPrefix ||
-          widget.name.startsWith(`${oldPrefix}.`)
-        )
-          widget.name = newPrefix + widget.name.slice(oldPrefix.length)
-      for (const input of node.inputs) {
-        if (!input.name.startsWith(`${oldPrefix}.`)) continue
-        input.name = newPrefix + input.name.slice(oldPrefix.length)
-        if (input.widget) input.widget.name = input.name
-      }
+      renameRow(oldPrefix, newPrefix)
+    }
+  }
+
+  function renameRow(oldPrefix: string, newPrefix: string) {
+    for (const widget of node.widgets ?? []) {
+      if (widget.name === oldPrefix || widget.name.startsWith(`${oldPrefix}.`))
+        widget.name = newPrefix + widget.name.slice(oldPrefix.length)
+    }
+    for (const input of node.inputs) {
+      if (!input.name.startsWith(`${oldPrefix}.`)) continue
+      input.name = newPrefix + input.name.slice(oldPrefix.length)
+      if (input.widget) input.widget.name = input.name
     }
   }
 
@@ -167,6 +169,35 @@ export function dynamicGroupWidget(
       )
     )
     header.type = 'dynamic_group_row'
+    addRowFields(index)
+    const addedInputs = node.inputs.splice(previous.inputs.length)
+    const inputs = [
+      ...previous.inputs,
+      ...addedInputs.filter(
+        (added) => !previous.inputs.some((input) => input.name === added.name)
+      )
+    ]
+    const result = replaceNodeInputs(node, previous, inputs, previous.links)
+    if (!result.ok) {
+      for (const widget of (node.widgets?.slice(start) ?? []).toReversed())
+        node.removeWidget(widget)
+      node.setSize(previousSize)
+      return false
+    }
+    for (const addedInput of addedInputs) {
+      const existing = previous.inputs.find(
+        (input) => input.name === addedInput.name
+      )
+      if (existing) existing.widget = addedInput.widget
+    }
+    const widgets = node.widgets
+    if (!widgets) return false
+    const added = widgets.splice(start)
+    widgets.splice(widgets.indexOf(add), 0, ...added)
+    return true
+  }
+
+  function addRowFields(index: number) {
     for (const [fields, isOptional] of [
       [template.required, false],
       [template.optional, true]
@@ -189,32 +220,6 @@ export function dynamicGroupWidget(
           })
       }
     }
-    const addedInputs = node.inputs.splice(previous.inputs.length)
-    const inputs = [...previous.inputs]
-    for (const addedInput of addedInputs) {
-      const existing = previous.inputs.find(
-        (input) => input.name === addedInput.name
-      )
-      if (!existing) inputs.push(addedInput)
-    }
-    const result = replaceNodeInputs(node, previous, inputs, previous.links)
-    if (!result.ok) {
-      for (const widget of (node.widgets?.slice(start) ?? []).toReversed())
-        node.removeWidget(widget)
-      node.setSize(previousSize)
-      return false
-    }
-    for (const addedInput of addedInputs) {
-      const existing = previous.inputs.find(
-        (input) => input.name === addedInput.name
-      )
-      if (existing) existing.widget = addedInput.widget
-    }
-    const widgets = node.widgets
-    if (!widgets) return false
-    const added = widgets.splice(start)
-    widgets.splice(widgets.indexOf(add), 0, ...added)
-    return true
   }
 
   Object.defineProperty(controller, 'value', {
