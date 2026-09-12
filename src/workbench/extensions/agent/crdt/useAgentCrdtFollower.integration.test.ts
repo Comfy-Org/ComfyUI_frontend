@@ -1,7 +1,15 @@
 import { mint, nodesMap } from '@comfyorg/comfy-multi-player'
 import { render } from '@testing-library/vue'
 import { pick } from 'es-toolkit'
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { defineComponent, nextTick, ref, shallowRef } from 'vue'
 import * as Y from 'yjs'
 
@@ -173,14 +181,14 @@ describe('useAgentCrdtFollower graph catch-up', () => {
       })
 
       const widgets = nodesMap(host).get(String(live.id))?.get('widgets')
-      if (!(widgets instanceof Y.Map)) throw new Error('missing widgets')
+      assert(widgets instanceof Y.Map, 'missing widgets')
       widgets.set('text_widget', 'remote value')
       deliverUpdate(host, 'wf-b', 2)
       expect(
         useWidgetValueStore().getWidget(
           widgetId(scope.rootGraphId, retained.id, 'text_widget')
-        )?.value
-      ).toBe('remote value')
+        )
+      ).toMatchObject({ value: 'remote value' })
       expect(live.widgets![0].value).toBe('remote value')
     }
   )
