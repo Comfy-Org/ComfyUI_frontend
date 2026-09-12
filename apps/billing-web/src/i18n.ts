@@ -4,12 +4,22 @@ const messages = {
   en: {
     billing: {
       eyebrow: 'Comfy Cloud',
-      title: 'Billing',
+      title: 'Add credits',
       description:
-        'The billing experience is being prepared. Account and billing integrations will be connected after their client contracts are available.',
-      accountIntegration: 'Account integration',
-      billingIntegration: 'Billing integration',
-      pending: 'Pending SDK'
+        'Choose an amount to keep your workflows and partner nodes running.',
+      selectAmount: 'Select amount',
+      amountLabel: 'Amount (USD)',
+      creditsLabel: 'Credits',
+      decreaseAmount: 'Decrease amount',
+      increaseAmount: 'Increase amount',
+      creditsPerDollar: '{credits} credits per dollar',
+      minimumPurchase: '${amount} minimum',
+      maximumPurchase: '${amount} maximum',
+      continueToCheckout: 'Continue to checkout',
+      checkoutPending: 'Secure checkout will be connected through Billing SDK.',
+      secureCheckout: 'You will complete payment in a secure checkout.',
+      estimatedCredits: 'You receive',
+      purchaseAmount: 'Purchase amount'
     }
   }
 } as const

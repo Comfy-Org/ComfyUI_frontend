@@ -5,18 +5,21 @@ billing experience.
 
 ## Current scope
 
-This package contains only the application shell, routing, localization, and
-test/build tooling. It does not contain:
+This package contains the application shell, routing, localization, test/build
+tooling, and the hosted top-up presentation. The top-up component owns amount
+selection, credit conversion, purchase limits, and an `amountCents` checkout
+event. It does not contain:
 
 - a server runtime or BFF
 - authentication or credential handling
 - Billing API calls
-- payment state management
+- Billing SDK command or operation state wiring
 - production deployment configuration
 
-Account/Auth SDK and Billing SDK contracts must be agreed before those
-integrations are added. The billing backend remains owned by the Cloud
-repository.
+The checkout action stays disabled in the hosted shell until Account/Auth and
+Billing SDK integration lands. Billing data, commands, and operation state must
+come from `@comfyorg/account/billing`; the billing backend remains owned by the
+Cloud repository.
 
 ## Commands
 

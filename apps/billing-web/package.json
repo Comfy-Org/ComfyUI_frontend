@@ -14,6 +14,8 @@
   },
   "dependencies": {
     "@comfyorg/design-system": "workspace:*",
+    "@comfyorg/shared-frontend-utils": "workspace:*",
+    "@comfyorg/tailwind-utils": "workspace:*",
     "vue": "catalog:",
     "vue-i18n": "catalog:",
     "vue-router": "catalog:"
@@ -21,6 +23,7 @@
   "devDependencies": {
     "@tailwindcss/vite": "catalog:",
     "@testing-library/jest-dom": "catalog:",
+    "@testing-library/user-event": "catalog:",
     "@testing-library/vue": "catalog:",
     "@types/node": "catalog:",
     "@vitejs/plugin-vue": "catalog:",

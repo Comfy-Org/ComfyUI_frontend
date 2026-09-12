@@ -18,8 +18,13 @@ describe('billing app', () => {
       }
     })
 
-    expect(screen.getByRole('heading', { name: 'Billing' })).toBeInTheDocument()
-    expect(screen.getAllByText('Pending SDK')).toHaveLength(2)
+    expect(
+      screen.getByRole('heading', { name: 'Add credits' })
+    ).toBeInTheDocument()
+    expect(screen.getByLabelText('Amount (USD)')).toHaveValue(50)
+    expect(
+      screen.getByRole('button', { name: 'Continue to checkout' })
+    ).toBeDisabled()
   })
 
   it('recovers unknown static-host paths to the app entry route', async () => {
@@ -35,7 +40,7 @@ describe('billing app', () => {
     })
 
     expect(
-      await screen.findByRole('heading', { name: 'Billing' })
+      await screen.findByRole('heading', { name: 'Add credits' })
     ).toBeInTheDocument()
   })
 })
