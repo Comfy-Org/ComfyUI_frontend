@@ -21,7 +21,6 @@ test.describe(
     }) => {
       await comfyPage.workflow.loadWorkflow('vueNodes/linked-int-widget')
       const [ksampler] = await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-      if (!ksampler) throw new Error('KSampler node not found')
       const scheduler = await ksampler.getWidgetByName('scheduler')
 
       await scheduler.click()
@@ -35,7 +34,6 @@ test.describe(
 
       const [reloadedKsampler] =
         await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-      if (!reloadedKsampler) throw new Error('Reloaded KSampler node not found')
       await expect
         .poll(async () =>
           (await reloadedKsampler.getWidgetByName('scheduler')).getValue()
