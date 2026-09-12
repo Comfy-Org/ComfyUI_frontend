@@ -143,7 +143,7 @@ test.describe(
 
         test.fail(
           true,
-          `${modeControl.type} has no rendered toggle in Vue Nodes`
+          `${modeControl.type} toggle is not exposed through the Vue Nodes DOM`
         )
         const renderedToggle = comfyPage.vueNodes.getWidgetByName(
           modeControl.type,
@@ -151,6 +151,14 @@ test.describe(
         )
         await expect(renderedToggle).toBeVisible({ timeout: 2_000 })
         await renderedToggle.click()
+        await expect
+          .poll(() =>
+            comfyPage.page.evaluate(
+              (sourceId) => window.app!.graph.getNodeById(sourceId)!.mode,
+              source.id
+            )
+          )
+          .toBe(modeControl.disabledMode)
       })
     }
   }
