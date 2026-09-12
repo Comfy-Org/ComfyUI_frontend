@@ -1292,6 +1292,41 @@ describe('AuthSignIn controller lifecycle', () => {
       'a rejected best-effort sign-out must not strand the disabled controls'
     ).toHaveProperty('disabled', false)
   })
+
+  it('discards a provisioning result that settles after the deadline', async () => {
+    let resolveProvision: (() => void) | undefined
+    handles.google.mockResolvedValue(socialUser)
+    handles.provision.mockReturnValue(
+      new Promise<void>((resolve) => (resolveProvision = resolve))
+    )
+    render(AuthSignIn)
+
+    await clickGoogle()
+    await waitFor(() => expect(handles.provision).toHaveBeenCalledOnce())
+
+    await vi.advanceTimersByTimeAsync(16_000)
+    expect(
+      googleButton(),
+      'a provider past its deadline must recover the controls'
+    ).toHaveProperty('disabled', false)
+
+    resolveProvision!()
+    await flush()
+
+    expect(
+      handles.captureAuthCompleted,
+      'a provisioning result settling after the deadline must not continue the flow'
+    ).not.toHaveBeenCalled()
+    expect(
+      handles.ensureFresh,
+      'and must not mint a session for the abandoned attempt'
+    ).not.toHaveBeenCalled()
+    expect(
+      replace,
+      'and must not redirect an abandoned attempt'
+    ).not.toHaveBeenCalled()
+    expect(handles.session!.value).toBeUndefined()
+  })
 })
 
 describe('AuthSignIn region gate', () => {
