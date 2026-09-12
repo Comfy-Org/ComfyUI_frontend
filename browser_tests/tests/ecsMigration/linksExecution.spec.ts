@@ -9,33 +9,13 @@ import {
 } from '@e2e/fixtures/utils/errorSurfaces'
 
 import type { ComfyApiWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { zComfyApiWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 function getQueuedPrompt(body: unknown): ComfyApiWorkflow {
-  if (
-    typeof body !== 'object' ||
-    body === null ||
-    !('prompt' in body) ||
-    typeof body.prompt !== 'object' ||
-    body.prompt === null
-  ) {
+  if (typeof body !== 'object' || body === null || !('prompt' in body)) {
     throw new Error('Expected /api/prompt body to contain a prompt object')
   }
-  for (const node of Object.values(body.prompt)) {
-    if (
-      typeof node !== 'object' ||
-      node === null ||
-      !('inputs' in node) ||
-      typeof node.inputs !== 'object' ||
-      node.inputs === null ||
-      !('class_type' in node) ||
-      typeof node.class_type !== 'string'
-    ) {
-      throw new Error(
-        'Expected every queued node to have inputs and class_type'
-      )
-    }
-  }
-  return body.prompt as ComfyApiWorkflow
+  return zComfyApiWorkflow.parse(body.prompt)
 }
 
 test.describe(
