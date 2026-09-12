@@ -198,6 +198,7 @@ test.describe(
             .poll(() => comfyPage.nodeOps.getGraphNodesCount())
             .toBe(0)
           await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(0)
+          await comfyPage.nextFrame()
 
           const getSnapshot = () =>
             comfyPage.page.evaluate(() => ({
