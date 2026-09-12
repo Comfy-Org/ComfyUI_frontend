@@ -153,7 +153,7 @@ export const STALE_AFTER_MS = 30_000
  * No payload bodies or actor identifiers are recorded here — see
  * `recordDevEvent` call sites for the (dev-only) frame detail surface.
  */
-export interface AgentCrdtOutcomeCounters {
+interface AgentCrdtOutcomeCounters {
   /** Every `doc_update` event the composable's listener was invoked with. */
   received: number
   /** Passed this composable's own filter and the adapter had a bound session to apply it to. */
