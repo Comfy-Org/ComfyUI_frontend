@@ -3065,6 +3065,29 @@
       }
     }
   },
+  "ConcatenateVideo": {
+    "description": "משרשר סרטונים לפי הסדר ללא פענוח של קלטים מקודדים תואמים.",
+    "display_name": "שרשור וידאו",
+    "inputs": {
+      "codec": {
+        "name": "codec",
+        "tooltip": "ה-codec המשמש לקידוד טנזורי וידאו. Auto משתמש ב-H.264; סרטונים שכבר קודדו נותרים ללא שינוי."
+      },
+      "complete_audio": {
+        "name": "complete_audio",
+        "tooltip": "פסקול מלא אופציונלי עבור הווידאו המשורשר. מחליף שמע הכלול בסרטוני הקלט."
+      },
+      "videos": {
+        "name": "סרטונים",
+        "tooltip": "קטעי וידאו לשרשור לפי סדר הקלט."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "הווידאו המשורשר."
+      }
+    }
+  },
   "ConditioningAverage": {
     "display_name": "התניה (ממוצע)",
     "inputs": {
@@ -3098,6 +3121,20 @@
       },
       "conditioning_to": {
         "name": "התניה אל"
+      }
+    }
+  },
+  "ConditioningLoader": {
+    "description": "טוען התניה שנשמרה באמצעות שמירת התניה, או כל קובץ safetensors עם טנזור 'conditioning', מתיקיית embeddings.",
+    "display_name": "טעינת התניה",
+    "inputs": {
+      "conditioning_name": {
+        "name": "conditioning_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3908,6 +3945,10 @@
       "bit_depth": {
         "name": "bit_depth",
         "tooltip": "Auto משתמש ב-8-bit עבור sRGB וב-10-bit עבור HDR. בחירות מפורשות של 8-bit ו-10-bit אינן תלויות במרחב הצבע."
+      },
+      "codec": {
+        "name": "codec",
+        "tooltip": "ניתן לקודד את הווידאו מיד באופן אופציונלי. None שומר את התמונות בצורת טנזורים; Auto משתמש ב-H.264."
       },
       "color_space": {
         "name": "color_space",
@@ -5026,6 +5067,22 @@
       "batch_size": {
         "name": "batch_size",
         "tooltip": "מספר תמונות ה-latent באצווה."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyYuE2LatentAudio": {
+    "display_name": "שמע Latent ריק של YuE2",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "seconds": {
+        "name": "שניות"
       }
     },
     "outputs": {
@@ -7979,7 +8036,7 @@
     }
   },
   "ImageColorSpace": {
-    "description": "ממיר בין sRGB (Rec.709), HDR (Rec.2020 HLG) ו-HDR PQ (Rec.2020 PQ). משתמש בלבן SDR של 203 ניט ובתצוגת ייחוס HLG של 1000 ניט. בעת צמצום, מתבצע מיפוי גוונים של בהיקות עודפת על פני האצווה ודחיסה של צבעים שמחוץ לסולם הצבעים. ההמרות מחושבות ב-float32 ומחזירות את ההתקן ואת ה-dtype הביניים. אלפא ישירה אינה עוברת המרת צבע.",
+    "description": "ממיר בין sRGB, ‏Rec.709 ליניארי, HDR ‏(Rec.2020 HLG) ו-HDR PQ ‏(Rec.2020 PQ). Linear 1.0 משתמש באותה נקודת לבן ייחוס של 203 ניט כמו sRGB; ‏HLG משתמש בתצוגת ייחוס של 1000 ניט. פלט ליניארי והמרות מליניארי ל-HDR משמרים ערכים מורחבים ללא מיפוי גוונים. פלט SDR והמרה מ-PQ ל-HLG ממפים גוונים של בהירות עודפת לאורך האצווה ומכווצים צבעים שמחוץ לטווח הצבעים. ההמרות מחושבות ב-float32 ומחזירות את ההתקן ואת dtype של שלב הביניים. אלפא ישרה אינה עוברת המרת צבע.",
     "display_name": "המרת מרחב הצבע של תמונה",
     "inputs": {
       "destination": {
@@ -12374,6 +12431,23 @@
       }
     }
   },
+  "MarigoldV2PostProcess": {
+    "description": "ממיר חיזוי מפוענח של Marigold V2 לתמונה: עומק מנורמל שבו הקרוב בהיר, נורמלי משטח יחידתיים, או albedo מסוג sRGB.",
+    "display_name": "עיבוד לאחר של Marigold V2",
+    "inputs": {
+      "image": {
+        "name": "תמונה"
+      },
+      "prediction": {
+        "name": "חיזוי"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MaskComposite": {
     "display_name": "שילוב מסכות",
     "inputs": {
@@ -16021,6 +16095,9 @@
     "inputs": {
       "model": {
         "name": "מודל"
+      },
+      "sampling": {
+        "name": "דגימה"
       },
       "shift": {
         "name": "היסט"
@@ -20988,6 +21065,24 @@
       }
     }
   },
+  "SaveConditioning": {
+    "description": "שומר התניה בתיקיית הפלט כ-safetensors; העבירו את הקובץ אל models/embeddings כדי לטעון אותו באמצעות טעינת התניה, למשל כדי לדלג על מקודד הטקסט.",
+    "display_name": "שמירת התניה",
+    "inputs": {
+      "conditioning": {
+        "name": "התניה"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "התניה",
+        "tooltip": null
+      }
+    }
+  },
   "SaveGLB": {
     "display_name": "שמירת מודל תלת־ממדי",
     "inputs": {
@@ -21676,6 +21771,28 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SheetSage2AudioToABC": {
+    "description": "מתמלל מלודיות קוליות וכלי נגינה ממוזיקה לתיווי ABC. חברו את פלט abc לצומת YuE2 Generate Music והשתמשו במצב התואם.",
+    "display_name": "SheetSage2: שמע ל-ABC",
+    "inputs": {
+      "audio": {
+        "name": "שמע"
+      },
+      "audio_encoder": {
+        "name": "audio_encoder"
+      },
+      "mode": {
+        "name": "מצב",
+        "tooltip": "full: יוצר מלודיה ואקורדים; melody: יוצר מלודיה בלבד, מומלץ לגרסאות כיסוי."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
         "tooltip": null
       }
     }
@@ -28528,6 +28645,94 @@
     "outputs": {
       "0": {
         "name": "רשת",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateABC": {
+    "description": "יוצר את תיווי ה-ABC של שיר מתוך סגנון ומילים. חברו את abc לצומת YuE2 Generate Music.",
+    "display_name": "YuE2 יצירת ABC",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "lyrics": {
+        "name": "מילים"
+      },
+      "max_abc_tokens": {
+        "name": "max_abc_tokens"
+      },
+      "mode": {
+        "name": "מצב",
+        "tooltip": "full: יוצר מנגינה ואקורדים; melody: יוצר מנגינה בלבד, מומלץ לגרסאות כיסוי."
+      },
+      "seed": {
+        "name": "זרע"
+      },
+      "style": {
+        "name": "סגנון"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateMusic": {
+    "description": "יוצר אסימוני מוזיקה והתניה אקוסטית מתוך סגנון, מילים ותיווי ABC. ספקו את מספר השניות שנוצרו לצומת Empty YuE2 Latent Audio. קלט ABC ריק מתעלם מהמצב שנבחר.",
+    "display_name": "YuE2 יצירת מוזיקה",
+    "inputs": {
+      "abc": {
+        "name": "abc",
+        "tooltip": "חברו את מחולל ABC או ספקו תווים ערוכים. השאירו ריק כדי להשתמש אוטומטית במצב off."
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "lyrics": {
+        "name": "מילים"
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "משך מרבי; היצירה עשויה להסתיים מוקדם יותר. המהדורה משתמשת בתקציב של 360 שניות."
+      },
+      "mode": {
+        "name": "מצב",
+        "tooltip": "full: יוצר מנגינה ואקורדים; melody: יוצר מנגינה בלבד, מומלץ לגרסאות כיסוי."
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "seed": {
+        "name": "זרע"
+      },
+      "style": {
+        "name": "סגנון"
+      },
+      "temperature": {
+        "name": "טמפרטורה"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "שניות",
         "tooltip": null
       }
     }

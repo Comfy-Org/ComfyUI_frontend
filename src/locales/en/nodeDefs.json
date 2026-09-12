@@ -3065,6 +3065,29 @@
       }
     }
   },
+  "ConcatenateVideo": {
+    "display_name": "Concatenate Video",
+    "description": "Concatenates videos in order without decoding compatible encoded inputs.",
+    "inputs": {
+      "videos": {
+        "name": "videos",
+        "tooltip": "Video segments to concatenate in input order."
+      },
+      "codec": {
+        "name": "codec",
+        "tooltip": "Codec used to encode videos tensors. Auto uses H.264; already encoded videos remain unchanged."
+      },
+      "complete_audio": {
+        "name": "complete_audio",
+        "tooltip": "Optional complete soundtrack for the concatenated video. Overrides audio carried by the input videos."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "The concatenated video."
+      }
+    }
+  },
   "ConditioningAverage": {
     "display_name": "Conditioning (Average)",
     "inputs": {
@@ -3098,6 +3121,20 @@
       },
       "conditioning_from": {
         "name": "conditioning_from"
+      }
+    }
+  },
+  "ConditioningLoader": {
+    "display_name": "Load Conditioning",
+    "description": "Loads a conditioning saved with Save Conditioning, or any safetensors file with a 'conditioning' tensor, from the embeddings folder.",
+    "inputs": {
+      "conditioning_name": {
+        "name": "conditioning_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3919,6 +3956,10 @@
       "color_space": {
         "name": "color_space",
         "tooltip": "Colorspace of the input images. HDR selects BT.2020/HLG and HDR PQ selects BT.2020/PQ."
+      },
+      "codec": {
+        "name": "codec",
+        "tooltip": "Optionally encode the video immediately. None keeps the images in tensor form; Auto uses H.264."
       }
     },
     "outputs": {
@@ -5026,6 +5067,22 @@
       "batch_size": {
         "name": "batch_size",
         "tooltip": "The number of latent images in the batch."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyYuE2LatentAudio": {
+    "display_name": "Empty YuE2 Latent Audio",
+    "inputs": {
+      "seconds": {
+        "name": "seconds"
+      },
+      "batch_size": {
+        "name": "batch_size"
       }
     },
     "outputs": {
@@ -7980,7 +8037,7 @@
   },
   "ImageColorSpace": {
     "display_name": "Convert Image Color Space",
-    "description": "Convert sRGB (Rec.709), HDR (Rec.2020 HLG), and HDR PQ (Rec.2020 PQ). Uses 203-nit SDR white and a 1000-nit HLG reference display. Narrowing tone-maps excess luminance across the batch and compresses out-of-gamut colors. Conversions compute in float32 and return the intermediate device and dtype. Straight alpha is not color-transformed.",
+    "description": "Convert sRGB, linear Rec.709, HDR (Rec.2020 HLG), and HDR PQ (Rec.2020 PQ). Linear 1.0 uses the same 203-nit reference white as sRGB; HLG uses a 1000-nit reference display. Linear output and linear-to-HDR conversions preserve extended values without tone mapping. SDR output and PQ-to-HLG conversion tone-map excess luminance across the batch and compress out-of-gamut colors. Conversions compute in float32 and return the intermediate device and dtype. Straight alpha is not color-transformed.",
     "inputs": {
       "image": {
         "name": "image"
@@ -12374,6 +12431,23 @@
       }
     }
   },
+  "MarigoldV2PostProcess": {
+    "display_name": "Marigold V2 Post-Process",
+    "description": "Turns a decoded Marigold V2 prediction into an image: normalized depth with near as bright, unit surface normals, or sRGB albedo.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "prediction": {
+        "name": "prediction"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MaskComposite": {
     "display_name": "Combine Masks",
     "inputs": {
@@ -15877,6 +15951,9 @@
       },
       "shift": {
         "name": "shift"
+      },
+      "sampling": {
+        "name": "sampling"
       }
     }
   },
@@ -20692,6 +20769,24 @@
       }
     }
   },
+  "SaveConditioning": {
+    "display_name": "Save Conditioning",
+    "description": "Saves a conditioning to the output folder as safetensors; move the file to models/embeddings to load it with Load Conditioning, e.g. to skip the text encoder.",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "conditioning",
+        "tooltip": null
+      }
+    }
+  },
   "SaveGaussianSplat": {
     "display_name": "Save Splat",
     "inputs": {
@@ -21555,6 +21650,28 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SheetSage2AudioToABC": {
+    "display_name": "SheetSage2 Audio to ABC",
+    "description": "Transcribes vocal and instrumental melodies from music into ABC notation. Connect abc output to YuE2 Generate Music node and use the matching mode.",
+    "inputs": {
+      "audio_encoder": {
+        "name": "audio_encoder"
+      },
+      "audio": {
+        "name": "audio"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "full: generates melody and chords; melody: generates melody only, recommended for covers."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
         "tooltip": null
       }
     }
@@ -28567,6 +28684,94 @@
     "outputs": {
       "0": {
         "name": "mesh",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateABC": {
+    "display_name": "YuE2 Generate ABC",
+    "description": "Generates the ABC notation of a song from style and lyrics. Connect abc to YuE2 Generate Music node.",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "style": {
+        "name": "style"
+      },
+      "lyrics": {
+        "name": "lyrics"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "full: generates melody and chords; melody: generates melody only, recommended for covers."
+      },
+      "max_abc_tokens": {
+        "name": "max_abc_tokens"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateMusic": {
+    "display_name": "YuE2 Generate Music",
+    "description": "Generates music tokens and acoustic conditioning from style, lyrics, and an ABC notation. Provide the generated seconds to the Empty YuE2 Latent Audio node. An empty ABC input ignores the selected mode.",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "style": {
+        "name": "style"
+      },
+      "lyrics": {
+        "name": "lyrics"
+      },
+      "abc": {
+        "name": "abc",
+        "tooltip": "Connect the ABC generator or supply an edited score. Leave empty to use off mode automatically."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "full: generates melody and chords; melody: generates melody only, recommended for covers."
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "Maximum duration; generation can stop earlier. The release uses a 360-second budget."
+      },
+      "temperature": {
+        "name": "temperature"
+      },
+      "top_p": {
+        "name": "top_p"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "seconds",
         "tooltip": null
       }
     }
