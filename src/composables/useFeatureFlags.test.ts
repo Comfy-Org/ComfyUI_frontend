@@ -419,6 +419,33 @@ describe('useFeatureFlags', () => {
     })
   })
 
+  describe('emailVerificationNudgeEnabled', () => {
+    afterEach(() => {
+      remoteConfig.value = {}
+    })
+
+    it('defaults to false when nothing enables it', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+
+      const { flags } = useFeatureFlags()
+
+      expect(
+        flags.emailVerificationNudgeEnabled,
+        'This flag gates a topbar nudge; defaulting it on would show the nudge to every unverified user the moment config is unreachable'
+      ).toBe(false)
+    })
+
+    it('turns on from remote config', () => {
+      remoteConfig.value = { email_verification_nudge_enabled: true }
+
+      const { flags } = useFeatureFlags()
+
+      expect(flags.emailVerificationNudgeEnabled).toBe(true)
+    })
+  })
+
   describe('dev override via localStorage', () => {
     it('resolveFlag returns localStorage override over remoteConfig and server value', () => {
       vi.mocked(api.getServerFeature).mockReturnValue(false)
