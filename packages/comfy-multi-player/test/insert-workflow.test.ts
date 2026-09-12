@@ -6,7 +6,7 @@
  * only reach a live doc through a whole-doc reseed, because every other op
  * schema rejects definition-bearing fields (KA-11). This op carries the
  * template as an opaque payload the applier merges under the same guards the
- * six existing kinds obey: collision-free ids (validated BEFORE any mutation,
+ * seven existing kinds obey: collision-free ids (validated BEFORE any mutation,
  * KA-4), definition dedupe/fork by content hash, exact-replay no-op through
  * the op_id gate, and byte-identical doc on rejection.
  *
@@ -22,7 +22,6 @@ import {
   applyOps,
   mint,
   project,
-  remapWorkflowIds,
   type Op,
   type WidgetCatalog,
   type WorkflowJSON,
@@ -710,44 +709,5 @@ describe("insert_workflow: rejection (KA-4 byte identity, op_id absent from appl
     expect(bytes(doc).equals(before)).toBe(false);
     const definitions = (project(doc, catalog) as { definitions: { subgraphs: { id: string; name: string }[] } }).definitions.subgraphs;
     expect(definitions.find((definition) => definition.id === "def-1-deadbeef")!.name).toBe("Occupied");
-  });
-});
-
-describe("remapWorkflowIds (minter-side helper)", () => {
-  it("shifts node and link ids and rewrites every reference, leaving definitions untouched", () => {
-    const out = remapWorkflowIds(template(), { nodeIdStart: 8, linkIdStart: 8 });
-    expect(ids(out)).toEqual([8, 9]);
-    expect(linkIds(out)).toEqual([8]);
-    const link = out.links![0] as unknown[];
-    expect(link.slice(0, 5)).toEqual([8, 8, 0, 9, 0]);
-    expect(out.nodes![1]!.inputs).toEqual([{ name: "a", link: 8 }]);
-    expect(defIds(out)).toEqual(["def-2"]);
-    // Interior definition ids are a separate namespace: unchanged.
-    const inner = (out as { definitions: { subgraphs: { nodes: { id: unknown }[] }[] } }).definitions.subgraphs[0]!;
-    expect(inner.nodes[0]!.id).toBe(5);
-  });
-
-  it("rewrites output links arrays and does not mutate its input", () => {
-    const tpl = {
-      nodes: [
-        { id: 1, type: "Src", outputs: [{ name: "o", links: [1, 2] }] },
-        { id: 2, type: "Sink", inputs: [{ name: "in", link: 1 }] },
-        { id: 3, type: "Sink", inputs: [{ name: "in", link: 2 }] },
-      ],
-      links: [
-        [1, 1, 0, 2, 0, "X"],
-        [2, 1, 0, 3, 0, "X"],
-      ],
-    } as unknown as WorkflowJSON;
-    const snapshot = structuredClone(tpl);
-    const out = remapWorkflowIds(tpl, { nodeIdStart: 10, linkIdStart: 20 });
-    expect(tpl).toEqual(snapshot);
-    expect(ids(out)).toEqual([10, 11, 12]);
-    expect(out.nodes![0]!.outputs).toEqual([{ name: "o", links: [20, 21] }]);
-    expect(out.nodes![2]!.inputs).toEqual([{ name: "in", link: 21 }]);
-    expect(out.links).toEqual([
-      [20, 10, 0, 11, 0, "X"],
-      [21, 10, 0, 12, 0, "X"],
-    ]);
   });
 });

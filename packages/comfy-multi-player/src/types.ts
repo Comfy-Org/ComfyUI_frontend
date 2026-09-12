@@ -1,7 +1,7 @@
 /**
  * Types and constants for @comfyorg/comfy-multi-player.
  *
- * The op vocabulary is frozen at six kinds; the normative contract is
+ * The op vocabulary is frozen at eight kinds; the normative contract is
  * comfy-cli's `docs/op-vocabulary-v1.md` and the stamp shapes minted by
  * `comfy_cli/workflow_ops.py` (`_new_op`), pinned by SHA at comfy-cli
  * `7e732242d971daf0d2d30f22f997abfacd78986e` (FC-10: never by branch — the
@@ -136,7 +136,7 @@ export interface OpBase {
 }
 
 // ---------------------------------------------------------------------------
-// The eight declared op kinds: seven implemented (`Op`) plus the deferred
+// The nine declared op kinds: eight implemented (`Op`) plus the deferred
 // `reset_doc` (`DeferredOp`); together `WireOp`. "Frozen" now means
 // implemented — `FROZEN_OPS` is pinned to `Op["op"]` exactly (issue #17).
 // ---------------------------------------------------------------------------

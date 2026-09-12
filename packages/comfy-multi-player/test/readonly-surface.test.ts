@@ -748,7 +748,6 @@ describe("read-only surface — classification", () => {
     "observedDocCounter",
     "validateLamportCounter",
     "observeLamport",
-    "remapWorkflowIds",
     "tickLamport",
     "persistLamportTick",
     "freezeLamportEnvelope",

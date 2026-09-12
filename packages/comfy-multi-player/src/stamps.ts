@@ -129,7 +129,7 @@ export function writeTarget(op: WireOp): unknown[] {
       return ["definition", op.subgraph_id];
     default:
       // Exhaustiveness guard (issue #21): with every `WireOp` member cased
-      // above — the six `Op` kinds plus the deferred `reset_doc` — `op` is
+      // above — the eight `Op` kinds plus the deferred `reset_doc` — `op` is
       // `never` here, so adding a kind to EITHER union fails `tsc` at this
       // line until it is given a write target.
       //

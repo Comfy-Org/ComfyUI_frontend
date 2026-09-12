@@ -34,6 +34,10 @@ import type {
   WireOp,
 } from "../../src/index.js";
 
+// ID remapping belongs to the applier and is derived from the op envelope.
+// @ts-expect-error producer-side document-state-dependent remapping is not public.
+import { remapWorkflowIds } from "../../src/index.js";
+
 const env = {
   op_id: "0".repeat(32),
   actor: "agent:t:1",

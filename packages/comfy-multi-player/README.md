@@ -369,7 +369,7 @@ depth. Links with a missing origin or target node are dropped individually at
 every depth, while valid sibling links remain. Private keys beginning with
 `__` are recursively removed and never appear in the projected workflow.
 
-**`Op` vs `WireOp`.** `Op` is what `applyOps` implements — the seven kinds it
+**`Op` vs `WireOp`.** `Op` is what `applyOps` implements — the eight kinds it
 can actually apply. `WireOp` is `Op` plus the deferred kinds a conforming peer
 may legally put on the wire, and it is what `ApplyFailure.op` and the stamp
 helpers take: a rejected `reset_doc` really does land in `failed.op`, so typing
@@ -424,7 +424,7 @@ implementation to replay it with no failures. If you are building a submission
 surface in front of the applier, that admission layer is where `BATCHABLE_OPS`
 belongs. `test/batch-policy.test.ts` pins all of this.
 
-The normative definition of the original op envelope and six kinds is
+The normative definition of the op envelope and eight kinds is
 `docs/op-vocabulary-v1.md` in
 [comfy-cli](https://github.com/Comfy-Org/comfy-cli), which mints these ops on
 the agent side. The `Op` types here mirror those minted shapes field for field;

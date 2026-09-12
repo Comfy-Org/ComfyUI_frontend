@@ -9,9 +9,8 @@ this package uses semantic versioning.
 
 ### Added
 
-- Added the standalone `insert_workflow` op and `remapWorkflowIds` helper for
-  deterministic, collision-safe workflow-template insertion, including
-  deterministic whole-tree id remapping keyed by the operation envelope id.
+- Added the standalone `insert_workflow` op with deterministic, collision-safe
+  whole-tree id remapping keyed by the operation envelope id.
 
 ## 0.2.0 - 2026-08-30
 
