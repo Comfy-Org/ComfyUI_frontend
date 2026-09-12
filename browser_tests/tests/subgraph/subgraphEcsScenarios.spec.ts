@@ -126,9 +126,23 @@ test.describe(
               )
               .toBe('original parent edit')
 
+            await originalWidget.fill('original second edit')
+            await expect(originalWidget).toHaveValue('original second edit')
+            await expect(copyWidget).toHaveValue('copy-only edit')
+            await expect
+              .poll(() =>
+                original.getWidgetByName('text').then((w) => w.getValue())
+              )
+              .toBe('original second edit')
+            await expect
+              .poll(() =>
+                copy.getWidgetByName('text').then((w) => w.getValue())
+              )
+              .toBe('copy-only edit')
+
             await copy.delete()
             await expect.poll(() => copy.exists()).toBe(false)
-            await expect(parentWidget).toHaveValue('original parent edit')
+            await expect(parentWidget).toHaveValue('original second edit')
             await parentWidget.fill('original survives duplicate deletion')
             await expect
               .poll(() =>
@@ -169,6 +183,18 @@ test.describe(
               )
 
               const survivorId = deleteOriginal ? copyId : '11'
+              const survivorNodeId = toNodeId(survivorId)
+              const survivorGraphId = await comfyPage.page.evaluate(
+                (survivorNodeId) => {
+                  const survivor =
+                    window.app!.rootGraph.getNodeById(survivorNodeId)
+                  if (!survivor?.isSubgraphNode()) {
+                    throw new Error(`Subgraph host ${survivorNodeId} not found`)
+                  }
+                  return survivor.subgraph.id
+                },
+                survivorNodeId
+              )
               const removedId = toNodeId(deleteOriginal ? '11' : copyId)
               await comfyPage.page.evaluate((removedId) => {
                 const node = window.app!.rootGraph.getNodeById(removedId)
@@ -232,21 +258,38 @@ test.describe(
               await comfyPage.menu.workflowsTab
                 .getPersistedItem(workflowName)
                 .click()
+              await comfyPage.menu.workflowsTab.close()
 
               const survivor =
                 await comfyPage.nodeOps.getNodeRefById(survivorId)
               await expect.poll(() => survivor.exists()).toBe(true)
-              const survivorWidget = comfyPage.page.getByRole('textbox', {
-                name: 'text',
-                exact: true
-              })
-              await expect(survivorWidget).toHaveCount(1)
-              await survivorWidget.fill('editable after reload')
+              if (mode.vueNodesEnabled) {
+                await comfyPage.vueNodes.enterSubgraph(survivorId)
+              } else {
+                await survivor.navigateIntoSubgraph()
+              }
               await expect
                 .poll(() =>
-                  survivor.getWidgetByName('text').then((w) => w.getValue())
+                  comfyPage.page.evaluate(() => window.app!.canvas.graph?.id)
                 )
-                .toBe('editable after reload')
+                .toBe(survivorGraphId)
+
+              const innerId = await comfyPage.page.evaluate(() => {
+                const graph = window.app!.canvas.graph
+                if (!graph) throw new Error('Surviving subgraph did not open')
+                const inner = graph.nodes.find(
+                  (node) => node.type === 'CLIPTextEncode'
+                )
+                if (!inner) throw new Error('Inner text node not found')
+                return String(inner.id)
+              })
+              const inner = await comfyPage.nodeOps.getNodeRefById(innerId)
+              await expect.poll(() => inner.exists()).toBe(true)
+              const originalInnerPosition = await inner.getPosition()
+              await inner.dragBy({ x: 40, y: 20 })
+              await expect
+                .poll(() => inner.getPosition())
+                .not.toEqual(originalInnerPosition)
             })
           }
 
@@ -257,19 +300,21 @@ test.describe(
             await comfyPage.workflow.loadWorkflow('subgraphs/nested-subgraph')
 
             const topology = () =>
-              comfyPage.page.evaluate(() => ({
-                nodes: window
-                  .app!.canvas.graph!.nodes.map((node) => String(node.id))
-                  .sort(),
-                links: [...window.app!.canvas.graph!.links.values()]
-                  .map((link) => [
-                    String(link.origin_id),
-                    link.origin_slot,
-                    String(link.target_id),
-                    link.target_slot
-                  ])
-                  .sort()
-              }))
+              comfyPage.page.evaluate(() => {
+                const graph = window.app!.canvas.graph
+                if (!graph) throw new Error('Canvas graph is not available')
+                return {
+                  nodes: graph.nodes.map((node) => String(node.id)).sort(),
+                  links: [...graph.links.values()]
+                    .map((link) => [
+                      String(link.origin_id),
+                      link.origin_slot,
+                      String(link.target_id),
+                      link.target_slot
+                    ])
+                    .sort()
+                }
+              })
 
             expect(await topology()).toEqual({
               nodes: ['10', '8', '9'],
@@ -281,15 +326,14 @@ test.describe(
             })
 
             const rootNode = await comfyPage.nodeOps.getNodeRefById('8')
-            const originalPosition =
-              await rootNode.getProperty<[number, number]>('pos')
+            const originalPosition = await rootNode.getPosition()
             await rootNode.dragBy({ x: 80, y: 40 })
             await expect
-              .poll(() => rootNode.getProperty<[number, number]>('pos'))
+              .poll(() => rootNode.getPosition())
               .not.toEqual(originalPosition)
             await comfyPage.keyboard.undo()
             await expect
-              .poll(() => rootNode.getProperty<[number, number]>('pos'))
+              .poll(() => rootNode.getPosition())
               .toEqual(originalPosition)
 
             const outer = await comfyPage.nodeOps.getNodeRefById('10')
