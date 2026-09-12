@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import content from '../content/workshop-display.json'
 import { workshopContentInputs } from './workshop-content-inputs'
 import { routerWorkshopModels } from './workshop-browse-content'
+import { isWorkshopModelDisabled } from './workshop-model-availability'
 import { getRouterWorkshopModelDetail } from './workshop-router-content'
 import {
   defaultValues,
@@ -10,8 +11,11 @@ import {
   urlUploadField,
   validateForm
 } from './workshop-playground'
+import type { FormValues } from './workshop-playground'
 import { prepareWorkshopRouterInput } from './workshop-request'
 import { workshopExampleValues } from './workshop-example-values'
+import type { WorkshopUrlEncoder } from './workshop-url-input'
+import { createWorkshopUrlUploader } from './workshop-url-upload'
 
 const image = 'https://example.com/first.png'
 const lastImage = 'https://example.com/last.png'
@@ -25,7 +29,8 @@ function detail(slug: string) {
 
 async function request(
   slug: string,
-  values: Record<string, string | number | boolean> = {}
+  values: FormValues = {},
+  upload?: WorkshopUrlEncoder
 ) {
   const page = detail(slug)
   return prepareWorkshopRouterInput(
@@ -34,7 +39,9 @@ async function request(
       ...defaultValues(schemaForModel(page), page.defaults),
       ...values
     },
-    new AbortController().signal
+    new AbortController().signal,
+    undefined,
+    upload
   )
 }
 
@@ -92,7 +99,8 @@ describe('use-case input contracts', () => {
     for (const [id, definition] of workshopContentInputs) {
       expect(content.find((entry) => entry.id === id)).toBeDefined()
       const page = getRouterWorkshopModelDetail(id)
-      if (definition.unavailableReason) expect(page).toBeUndefined()
+      if (definition.unavailableReason || isWorkshopModelDisabled(id))
+        expect(page).toBeUndefined()
       else
         expect(page).toMatchObject({ execution: { id: definition.routerId } })
     }
@@ -115,12 +123,7 @@ describe('use-case input contracts', () => {
         .filter((field) =>
           field?.accept.some((accept) => accept.startsWith(type))
         )
-      if (model.routerId === 'kling/videos-video-extend') {
-        expect(fields.find((field) => field.name === 'video_id')).toMatchObject(
-          { required: true }
-        )
-      } else
-        expect({ slug: model.slug, media }).not.toMatchObject({ media: [] })
+      expect({ slug: model.slug, media }).not.toMatchObject({ media: [] })
     }
   })
 
@@ -136,11 +139,10 @@ describe('use-case input contracts', () => {
   })
 
   it('keeps Seedance modes distinct, including both frame roles and multiple reference images', async () => {
-    const stem = 'byteplus--seedance-1-0-lite-'
-    const suffix = '--animate-images'
-    const firstLast = detail(`${stem}first-last-frame${suffix}`)
-    const reference = detail(`${stem}image-reference${suffix}`)
-    const single = detail(`${stem}image-to-video${suffix}`)
+    const stem = 'byteplus--seedance-2-fast-'
+    const firstLast = detail(`${stem}first-last-frame--animate-images`)
+    const reference = detail(`${stem}reference--generate-videos`)
+    const single = detail(`${stem}text-to-video--generate-videos`)
     expect(new Set([firstLast.name, reference.name, single.name]).size).toBe(3)
     const body = await request(firstLast.slug, {
       first_frame_url: image,
@@ -183,28 +185,10 @@ describe('use-case input contracts', () => {
       path: 'input.media.0.url'
     },
     {
-      slug: 'wan--reference-to-video-3.0--animate-images',
-      field: 'image_url',
-      value: image,
-      path: 'input.media.0.url'
-    },
-    {
-      slug: 'gemini--omni-1.1-flash--edit-videos',
-      field: 'video_url',
-      value: video,
-      path: 'input.1.uri'
-    },
-    {
       slug: 'gemini--omni-1.1-flash--animate-images',
       field: 'image_url',
       value: image,
       path: 'input.1.uri'
-    },
-    {
-      slug: 'bfl--flux-3-video-continuation--edit-videos',
-      field: 'start_video',
-      value: video,
-      path: 'start_video'
     }
   ])(
     'sends the source asset in the native request: $slug',
@@ -218,6 +202,72 @@ describe('use-case input contracts', () => {
       })
     }
   )
+
+  it('keeps a supplied Wan reference URL and rehosts its authored companion', async () => {
+    const slug = 'wan--reference-to-video-3.0--animate-images'
+    const source = detail(slug).defaults.image_url_2
+    expect(source).toEqual(expect.stringContaining('@'))
+    const stored = 'https://storage.example/reference.png'
+    const transport = vi.fn<typeof fetch>(async (url, init) => {
+      if (init?.method === 'POST') {
+        return Response.json({
+          upload_url: 'https://storage.example/upload',
+          download_url: stored
+        })
+      }
+      if (init?.method === 'PUT') {
+        return new Response(null)
+      }
+      return new Response(String(url), {
+        headers: { 'Content-Type': 'image/png' }
+      })
+    })
+    vi.stubGlobal('fetch', transport)
+    const uploader = createWorkshopUrlUploader()
+    const upload = (file: File, signal: AbortSignal) =>
+      uploader(file, 'token', 'owner:workspace', signal)
+    expect(await request(slug, { image_url: image }, upload)).toMatchObject({
+      input: {
+        media: [
+          { type: 'reference_image', url: image },
+          { type: 'reference_image', url: stored }
+        ]
+      }
+    })
+    expect(transport).toHaveBeenCalledTimes(3)
+    expect(transport.mock.calls[0][0]).toBe(source)
+    expect(String(transport.mock.calls[1][0])).toMatch(/\/customers\/storage$/)
+    expect(transport.mock.calls[2][0]).toBe('https://storage.example/upload')
+    const uploaded = transport.mock.calls[2][1]?.body
+    expect(uploaded).toBeInstanceOf(File)
+    if (!(uploaded instanceof File)) throw new Error('Missing upload')
+    expect(uploaded.type).toBe('image/png')
+    expect(await uploaded.text()).toBe(source)
+    await expect(
+      request(slug, { image_url: '' }, upload)
+    ).rejects.toMatchObject({
+      reason: 'validation'
+    })
+    expect(transport).toHaveBeenCalledTimes(3)
+  })
+
+  it.for([
+    'gemini--omni-1.1-flash--edit-videos',
+    'gemini--omni-flash-preview--edit-videos'
+  ])('sends source video bytes with their MIME type for %s', async (slug) => {
+    const file = new File(['video bytes'], 'clip.mp4', { type: 'video/mp4' })
+    const body = await request(slug, {
+      video: { file, name: file.name, type: file.type, size: file.size }
+    })
+    expect(body).toHaveProperty('input.1', {
+      type: 'video',
+      data: btoa('video bytes'),
+      mime_type: 'video/mp4'
+    })
+    await expect(request(slug, { video: undefined })).rejects.toMatchObject({
+      fieldErrors: { video: 'required' }
+    })
+  })
 
   it.for([
     { slug: 'bfl--flux-video-upscale--edit-videos', field: 'input_video' },

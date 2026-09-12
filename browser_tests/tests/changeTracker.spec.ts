@@ -96,14 +96,13 @@ async function afterChange(comfyPage: ComfyPage) {
   })
 }
 
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-})
+test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
 test.describe('Change Tracker', { tag: '@workflow' }, () => {
   test.describe('Undo/Redo', () => {
+    test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Top' } })
+
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
       await comfyPage.workflow.setupWorkflowsDirectory({})
     })
 

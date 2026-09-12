@@ -4,9 +4,7 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Vue Node Collapse', { tag: '@vue-nodes' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.EnableTooltips', true)
-  })
+  test.use({ initialSettings: { 'Comfy.EnableTooltips': true } })
 
   test('should allow collapsing node with collapse icon', async ({
     comfyPage
