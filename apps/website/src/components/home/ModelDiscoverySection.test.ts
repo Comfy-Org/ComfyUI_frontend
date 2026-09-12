@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { assert, describe, expect, it } from 'vitest'
 
 import { discoveryProviders } from '../../data/modelDiscovery'
 import type { DiscoveryProvider } from '../../data/modelDiscovery'
@@ -20,8 +20,8 @@ describe('ModelDiscoverySection', () => {
   it('only lines up providers that run published models and have a preview', () => {
     expect(discoveryProviders.length).toBeGreaterThan(1)
     for (const provider of discoveryProviders) {
-      expect(provider.modelCount, provider.name).toBeGreaterThan(0)
-      expect(provider.thumbnailUrl, provider.name).toBeTruthy()
+      assert.isAbove(provider.modelCount, 0, provider.name)
+      assert.isOk(provider.thumbnailUrl, provider.name)
     }
   })
 

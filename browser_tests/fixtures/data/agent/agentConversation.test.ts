@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { assert, describe, expect, it } from 'vitest'
 
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
@@ -160,7 +160,7 @@ describe('committed recordings', () => {
     for (const file of files) {
       const raw = load(file)
       const conversation = zAgentConversation.parse(raw)
-      expect(() => assertOpsApply(conversation), file).not.toThrow()
+      assert.doesNotThrow(() => assertOpsApply(conversation), file)
       expect({ file, workflow: conversation.workflow }).toEqual({
         file,
         workflow: (raw as { workflow: unknown }).workflow
