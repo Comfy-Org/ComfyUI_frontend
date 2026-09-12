@@ -212,6 +212,7 @@ useIntersectionObserver(sectionRef, ([entry]) => {
                 :id="`feature-panel-${i}`"
                 role="region"
                 :aria-labelledby="`feature-trigger-${i}`"
+                :aria-hidden="activeIndex !== i"
                 :class="
                   cn(
                     'grid px-8 pb-8 transition-[grid-template-rows] duration-300',
