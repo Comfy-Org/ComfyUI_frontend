@@ -93,8 +93,6 @@ test.describe(
       },
       async ({ comfyPage, comfyMouse }) => {
         await comfyPage.workflow.loadWorkflow('default')
-        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-        await comfyPage.vueNodes.waitForNodes()
         const node = await comfyPage.nodeOps.getNodeRefById('3')
         const initialPosition = await node.getBounding()
         const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
