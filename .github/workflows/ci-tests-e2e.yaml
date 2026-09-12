@@ -288,7 +288,7 @@ jobs:
         id: detect
         shell: bash
         env:
-          BASE_REF: ${{ github.base_ref }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
           IS_FORK: ${{ github.event.pull_request.head.repo.fork }}
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
@@ -298,9 +298,7 @@ jobs:
             exit 0
           fi
 
-          git fetch --no-tags origin \
-            "refs/heads/${BASE_REF}:refs/remotes/origin/${BASE_REF}"
-          DIFF_RANGE="origin/${BASE_REF}...HEAD"
+          DIFF_RANGE="${BASE_SHA}...HEAD"
           NEW_FILES=$(git diff --name-only --diff-filter=AMR "$DIFF_RANGE" -- 'browser_tests/**/*.spec.ts')
           : > /tmp/fallback-specs.txt
 
