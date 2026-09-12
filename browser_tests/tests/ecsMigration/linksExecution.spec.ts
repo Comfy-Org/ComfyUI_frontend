@@ -16,6 +16,21 @@ function getQueuedPrompt(body: unknown): ComfyApiWorkflow {
   ) {
     throw new Error('Expected /api/prompt body to contain a prompt object')
   }
+  for (const node of Object.values(body.prompt)) {
+    if (
+      typeof node !== 'object' ||
+      node === null ||
+      !('inputs' in node) ||
+      typeof node.inputs !== 'object' ||
+      node.inputs === null ||
+      !('class_type' in node) ||
+      typeof node.class_type !== 'string'
+    ) {
+      throw new Error(
+        'Expected every queued node to have inputs and class_type'
+      )
+    }
+  }
   return body.prompt as ComfyApiWorkflow
 }
 
@@ -57,6 +72,10 @@ test.describe(
 
       expect(queuedPrompt).toBeDefined()
       expect(queuedPrompt).not.toHaveProperty('3')
+      expect(queuedPrompt?.['9']).toMatchObject({
+        class_type: 'SaveImage',
+        inputs: { images: ['8', 0] }
+      })
     })
 
     test('bypassing a middle node preserves downstream API links before queueing', async ({
