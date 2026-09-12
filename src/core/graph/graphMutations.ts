@@ -719,7 +719,19 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
                 const stalePositional = cloneDeep(
                   existing.lastSerialization?.widgets_values
                 ) as unknown
-                const stalePositionalNames = Object.keys(staleNamed ?? {})
+                const serializableWidgets = widgetStore
+                  .getNodeWidgets(scope.rootGraphId, state.id)
+                  .filter(
+                    (widget) =>
+                      widget.serialize !== false && widget.type !== 'button'
+                  )
+                const namedKeys = Object.keys(staleNamed ?? {})
+                // A positional-only snapshot carries no names: its slots follow
+                // the serializable-widget order, like the positional remap above.
+                const stalePositionalNames =
+                  namedKeys.length > 0 || !Array.isArray(stalePositional)
+                    ? namedKeys
+                    : serializableWidgets.map((widget) => widget.name)
                 // Names known from either the stale named snapshot or a
                 // record-shaped stale positional value — used only to scope
                 // which widgets are eligible for the live-value overlay
@@ -741,15 +753,8 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
                 // overlay widgets already present in the stale snapshot —
                 // a node with no prior snapshot (or one already cleared to
                 // empty) must stay untouched here.
-                for (const widget of widgetStore.getNodeWidgets(
-                  scope.rootGraphId,
-                  state.id
-                )) {
-                  if (
-                    widget.serialize !== false &&
-                    widget.type !== 'button' &&
-                    staleNames.has(widget.name)
-                  ) {
+                for (const widget of serializableWidgets) {
+                  if (staleNames.has(widget.name)) {
                     overlay[widget.name] = widget.value
                     if (widget.name in named) named[widget.name] = widget.value
                   }
