@@ -319,23 +319,24 @@ describe('escapeJsonLd on a built graph', () => {
     expect(serialized).toContain('\\u003c')
   })
 
-  it('escapes a U+2028 line separator in a page name', () => {
-    const graph = buildPageGraph(
-      { siteUrl, locale: 'en' },
-      { url: `${siteUrl}/x/`, name: 'before\u2028after' }
-    )
-    const serialized = escapeJsonLd(graph)
-    expect(serialized).not.toContain('\u2028')
-    expect(serialized).toContain('\\u2028')
-  })
-
-  it('escapes a U+2029 paragraph separator in a page name', () => {
-    const graph = buildPageGraph(
-      { siteUrl, locale: 'en' },
-      { url: `${siteUrl}/x/`, name: 'before\u2029after' }
-    )
-    const serialized = escapeJsonLd(graph)
-    expect(serialized).not.toContain('\u2029')
-    expect(serialized).toContain('\\u2029')
-  })
+  it.for([
+    { description: 'U+2028 line', separator: '\u2028', escaped: '\\u2028' },
+    {
+      description: 'U+2029 paragraph',
+      separator: '\u2029',
+      escaped: '\\u2029'
+    }
+  ] as const)(
+    'escapes a $description separator in a page name',
+    ({ separator, escaped }) => {
+      const name = `before${separator}after`
+      const graph = buildPageGraph(
+        { siteUrl, locale: 'en' },
+        { url: `${siteUrl}/x/`, name }
+      )
+      const serialized = escapeJsonLd(graph)
+      expect(serialized).not.toContain(separator)
+      expect(serialized).toContain(`before${escaped}after`)
+    }
+  )
 })
