@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   clearPendingSubscriptionCheckoutAttempt,
@@ -54,5 +54,22 @@ describe('subscriptionCheckoutTracker', () => {
 
     expect(metadata).not.toBeNull()
     expect(metadata).not.toHaveProperty('payment_intent_source')
+  })
+
+  it('uses secure random values for attempt IDs on insecure origins', () => {
+    vi.stubGlobal('crypto', {
+      getRandomValues: (bytes: Uint8Array) => {
+        bytes.fill(0)
+        return bytes
+      }
+    })
+
+    const attempt = recordPendingSubscriptionCheckoutAttempt({
+      tier: 'pro',
+      cycle: 'monthly',
+      checkout_type: 'new'
+    })
+
+    expect(attempt.attempt_id).toBe('00000000-0000-4000-8000-000000000000')
   })
 })

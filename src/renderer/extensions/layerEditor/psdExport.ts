@@ -1,4 +1,5 @@
 import type { Layer, LayerMaskData, LinkedFile, Psd } from 'ag-psd'
+import { generateUUID } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 import type { Compositor } from './engine/compositor'
 import type { ContentEntry, ContentStore } from './engine/content'
@@ -32,14 +33,7 @@ export interface PsdExportDeps {
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v))
 
 export function makeGuid(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
-    return crypto.randomUUID()
-  let out = ''
-  for (let i = 0; i < 36; i++) {
-    if (i === 8 || i === 13 || i === 18 || i === 23) out += '-'
-    else out += Math.floor(Math.random() * 16).toString(16)
-  }
-  return out
+  return generateUUID()
 }
 
 export function transformCorners(t: Transform): number[] {

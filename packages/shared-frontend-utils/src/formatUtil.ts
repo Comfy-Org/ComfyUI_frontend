@@ -411,24 +411,25 @@ export const isValidUuid = (value: unknown): value is string =>
   typeof value === 'string' && UUID_PATTERN.test(value)
 
 /**
- * Generates a RFC4122 compliant UUID v4 using the native crypto API when available
+ * Generates an RFC4122 compliant UUID v4 using the Web Crypto API.
  * @returns A properly formatted UUID string
+ * @throws When the Web Crypto API is unavailable
  */
 export const generateUUID = (): string => {
-  // Use native crypto.randomUUID() if available (modern browsers)
-  if (
-    typeof crypto !== 'undefined' &&
-    typeof crypto.randomUUID === 'function'
-  ) {
-    return crypto.randomUUID()
+  const webCrypto = globalThis.crypto
+  if (typeof webCrypto?.randomUUID === 'function') {
+    return webCrypto.randomUUID()
   }
 
-  // Fallback implementation for older browsers
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0
-    const v = c === 'x' ? r : (r & 0x3) | 0x8
-    return v.toString(16)
-  })
+  if (typeof webCrypto?.getRandomValues !== 'function') {
+    throw new Error('Web Crypto is required to generate a UUID')
+  }
+
+  const bytes = webCrypto.getRandomValues(new Uint8Array(16))
+  bytes[6] = (bytes[6] & 0x0f) | 0x40
+  bytes[8] = (bytes[8] & 0x3f) | 0x80
+  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0'))
+  return `${hex.slice(0, 4).join('')}-${hex.slice(4, 6).join('')}-${hex.slice(6, 8).join('')}-${hex.slice(8, 10).join('')}-${hex.slice(10).join('')}`
 }
 
 const isCivitaiHost = (hostname: string): boolean =>
