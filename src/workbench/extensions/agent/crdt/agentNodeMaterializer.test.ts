@@ -491,6 +491,27 @@ describe('reconcileAgentAdapters', () => {
       }
     )
 
+    it.for([{ value: 4 }, [4]])(
+      'materializes the incremental value after reconciling %j without widgets',
+      (widgets_values) => {
+        const graph = new LGraph()
+        const mutations = remoteMutations(graphScopeOf(graph))
+        const payload = nodePayload(1, 'widget-node')
+        mutations.addNode({ ...payload, widgets_values: { value: 3 } }, REMOTE)
+        expect(
+          mutations.batch(REMOTE, (batch) => {
+            batch.reconcileNode({ ...payload, widgets_values })
+            batch.setWidget(toNodeId(1), 'value', 7)
+            batch.reconcileNode({ ...payload, pos: [10, 20] })
+          })
+        ).toBe(true)
+
+        reconcileAgentAdapters(graph)
+
+        expect(graph.getNodeById(toNodeId(1))?.widgets?.[0].value).toBe(7)
+      }
+    )
+
     it.for([{ emptyValues: [] }, { emptyValues: {} }])(
       'preserves missing-node values on save and reload until cleared with $emptyValues',
       ({ emptyValues }) => {
