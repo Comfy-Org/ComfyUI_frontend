@@ -70,9 +70,7 @@ describe('useNodeOutputStore output projection', () => {
 
     const previewUrl = new URL(urls![0], window.location.origin)
     expect(previewUrl.pathname).toBe('/api/view')
-    expect(previewUrl.searchParams.get('filename')).toBe(
-      'execution-result.png'
-    )
+    expect(previewUrl.searchParams.get('filename')).toBe('execution-result.png')
     expect(previewUrl.searchParams.get('subfolder')).toBe('daily outputs')
     expect(previewUrl.searchParams.get('type')).toBe('output')
   })
