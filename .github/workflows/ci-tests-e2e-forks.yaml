@@ -61,7 +61,7 @@ jobs:
           if_no_artifact_found: warn
 
       - name: Upsert new-test video comment
-        if: github.event.action == 'completed' && hashFiles('video-comment/playwright-video-comment.md') != ''
+        if: github.event.action == 'completed' && hashFiles('video-comment/playwright-video-comment.md') != '' && steps.pr.outputs.skip != 'true'
         uses: ./.github/actions/upsert-comment-section
         with:
           pr-number: ${{ steps.pr.outputs.number }}
