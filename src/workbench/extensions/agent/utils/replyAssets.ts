@@ -15,10 +15,13 @@ export interface ReplyAsset {
 
 const ASSET_KINDS = new Set<MediaType>(['image', 'video', 'audio', '3D'])
 
-export function classifyAssetUrl(href: string): ReplyAsset | null {
+export function classifyAssetUrl(
+  href: string,
+  baseUrl = window.location.origin
+): ReplyAsset | null {
   let url: URL
   try {
-    url = new URL(href, window.location.origin)
+    url = new URL(href, baseUrl)
   } catch {
     return null
   }

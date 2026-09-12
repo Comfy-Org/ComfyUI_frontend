@@ -10,6 +10,7 @@ import {
   loadAgentConversation
 } from '@e2e/fixtures/data/agent/agentConversation'
 import { agentConversationCapabilityMatrix } from '@e2e/fixtures/data/agent/agentConversationCapabilityMatrix'
+import { classifyAssetUrl } from '@/workbench/extensions/agent/utils/replyAssets'
 
 const supported = agentConversationCapabilityMatrix.filter(
   (row) => row.status === 'supported'
@@ -77,21 +78,8 @@ const laterTurnReferencesEarlierAddedNode = (
 const urlsIn = (text: string): string[] =>
   text.match(/https?:\/\/[^\s)\]]+/g) ?? []
 
-const MEDIA_EXTENSION = /\.(png|jpe?g|gif|webp|mp4|webm|mp3|wav|ogg|glb|obj)$/i
-
-/** Mirrors classifyAssetUrl: a media filename in the query or pathname. */
-const isMediaAssetUrl = (url: string) => {
-  try {
-    const parsed = new URL(url)
-    const candidate =
-      parsed.searchParams.get('filename') ??
-      parsed.pathname.split('/').pop() ??
-      ''
-    return MEDIA_EXTENSION.test(candidate)
-  } catch {
-    return false
-  }
-}
+const isMediaAssetUrl = (url: string) =>
+  classifyAssetUrl(url, 'http://localhost') !== null
 
 describe('agentConversationCapabilityMatrix', () => {
   it('names at least one recording for every supported capability', () => {
