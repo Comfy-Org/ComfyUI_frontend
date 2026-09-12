@@ -152,6 +152,38 @@ async function expectEndpoint(
     .toEqual({ linkCount: 2, originId, targetId })
 }
 
+async function expectRenderedEndpoint(
+  comfyPage: ComfyPage,
+  targetId: string,
+  originId: string
+) {
+  await comfyPage.nextFrame()
+  await expect
+    .poll(() =>
+      comfyPage.page.evaluate(
+        ({ originId, targetId }) => {
+          const renderedLink = [...window.app!.canvas.renderedPaths].find(
+            (segment) =>
+              'origin_id' in segment &&
+              'target_id' in segment &&
+              String(segment.target_id) === targetId &&
+              String(segment.origin_id) === originId
+          )
+          return (
+            renderedLink &&
+            'origin_id' in renderedLink &&
+            'target_id' in renderedLink && {
+              originId: String(renderedLink.origin_id),
+              targetId: String(renderedLink.target_id)
+            }
+          )
+        },
+        { originId, targetId }
+      )
+    )
+    .toEqual({ originId, targetId })
+}
+
 async function saveWorkflowAs(comfyPage: ComfyPage, workflowName: string) {
   await comfyPage.menu.topbar.saveWorkflowAs(workflowName)
 }
@@ -267,11 +299,13 @@ test.describe(
           'ecsMigration/conflicting_origins_execution'
         )
         await expectEndpoint(comfyPage, '3', '2')
+        await expectRenderedEndpoint(comfyPage, '3', '2')
         const workflowName = `ecs-qa-040-${vueNodesEnabled}-${Date.now()}`
         await saveWorkflowAs(comfyPage, workflowName)
         await comfyPage.page.reload()
         await comfyPage.waitForAppReady()
         await expectEndpoint(comfyPage, '3', '2')
+        await expectRenderedEndpoint(comfyPage, '3', '2')
         expect(await queueAndReadPng(comfyPage)).toMatchObject({
           width: 128,
           height: 96,
