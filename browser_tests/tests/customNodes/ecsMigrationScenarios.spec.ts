@@ -71,7 +71,7 @@ first@first prompt
 second@second prompt`)
     })
 
-    test('VHS Load Video connects to Video Combine and persists widgets', async ({
+    test('VHS Load Video connects to Video Combine and persists frame_rate', async ({
       comfyPage
     }) => {
       // oxlint-disable-next-line playwright/no-skipped-test -- pack availability differs by manifest shard
