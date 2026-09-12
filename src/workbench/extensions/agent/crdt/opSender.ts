@@ -69,6 +69,12 @@ export interface OpSender {
   /** In-flight + queued batch count (observability; 0 = drained). */
   pending(): number
   /**
+   * Reset the sender state for `workflowId` after a lineage break. This clears
+   * its remembered `base_version` clocks and settles its queued and in-flight
+   * batches as undeliverable so old-lineage writes cannot reach the new doc.
+   */
+  resetClock(workflowId: string): void
+  /**
    * Eager abort seam (FE #16637 residual): settle the in-flight batch
    * undeliverable NOW if its mint-time workflow no longer matches
    * `deps.workflowId()`, instead of waiting out the 10 s result-silence
@@ -91,6 +97,7 @@ interface InFlight {
   ops: Op[]
   opIds: Set<string>
   resent: boolean
+  successfulTransmits: number
   timer: ReturnType<typeof setTimeout> | null
 }
 
@@ -105,7 +112,29 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   // beats mis-attribution: a swallowed own-result only costs the idempotent
   // resend cycle, while a mis-attributed settle poisons everything
   // downstream of this seam.
-  let staleAnonymousBudget = 0
+  const staleAnonymousBudgets = new Map<string, number>()
+  const lastMintedVersion = new Map<string, number>()
+
+  function addStaleAnonymousBudget(workflowId: string, count: number): void {
+    if (count === 0) return
+    staleAnonymousBudgets.set(
+      workflowId,
+      (staleAnonymousBudgets.get(workflowId) ?? 0) + count
+    )
+  }
+
+  function consumeStaleAnonymousBudget(workflowId: string): boolean {
+    const budget = staleAnonymousBudgets.get(workflowId) ?? 0
+    if (budget === 0) return false
+    if (budget === 1) staleAnonymousBudgets.delete(workflowId)
+    else staleAnonymousBudgets.set(workflowId, budget - 1)
+    return true
+  }
+
+  function consumeAnyStaleAnonymousBudget(): void {
+    const workflowId = staleAnonymousBudgets.keys().next().value
+    if (workflowId !== undefined) consumeStaleAnonymousBudget(workflowId)
+  }
 
   function settle(outcome: BatchOutcome): void {
     if (inFlight?.timer) clearTimeout(inFlight.timer)
@@ -136,6 +165,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       }
       return
     }
+    batch.successfulTransmits += 1
     armResultTimeout(batch)
   }
 
@@ -150,7 +180,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     batch.timer = setTimeout(() => {
       if (inFlight !== batch) return
       if (batch.resent) {
-        staleAnonymousBudget += 2
+        addStaleAnonymousBudget(batch.workflowId, 2)
         settle({ state: 'unacknowledged', ops: batch.ops })
         return
       }
@@ -170,56 +200,96 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       ops: queued.ops,
       opIds: new Set(queued.ops.map((op) => op.op_id)),
       resent: false,
+      successfulTransmits: 0,
       timer: null
     }
     transmit(inFlight, 0)
   }
 
   const unsubscribe = deps.onOpsResult((result) => {
-    if (
-      !inFlight ||
-      (result.workflowId !== undefined &&
-        result.workflowId !== inFlight.workflowId)
-    ) {
+    if (!inFlight) {
       // A late result with no batch waiting, or addressed to another workflow
       // than the in-flight batch: drain a credit if one is outstanding so it
       // cannot swallow a future batch's own result.
-      if (staleAnonymousBudget > 0) staleAnonymousBudget--
+      if (result.workflowId !== undefined) {
+        consumeStaleAnonymousBudget(result.workflowId)
+      } else consumeAnyStaleAnonymousBudget()
       return
     }
+    if (
+      result.workflowId !== undefined &&
+      result.workflowId !== inFlight.workflowId
+    ) {
+      consumeStaleAnonymousBudget(result.workflowId)
+      return
+    }
+    const workflowId = inFlight.workflowId
     const identified = [...result.applied, ...result.skipped]
     if (result.failure?.op_id) identified.push(result.failure.op_id)
     if (identified.length > 0) {
-      if (!identified.some((opId) => inFlight!.opIds.has(opId))) return
+      if (!identified.some((opId) => inFlight!.opIds.has(opId))) {
+        consumeStaleAnonymousBudget(workflowId)
+        return
+      }
       settle({ state: 'acknowledged', ops: inFlight.ops, result })
       return
     }
     // Anonymous failure (empty lists, no failure op_id): only attribute it
     // to the in-flight batch once no stale credit could explain it.
-    if (staleAnonymousBudget > 0) {
-      staleAnonymousBudget--
-      return
-    }
+    if (consumeStaleAnonymousBudget(workflowId)) return
     settle({ state: 'acknowledged', ops: inFlight.ops, result })
   })
 
   return {
     enqueue(operations) {
       if (detached || operations.length === 0) return
-      const minted = mintWireOps(operations, {
-        actor: deps.actor(),
-        baseVersion: deps.baseVersion()
-      })
       const workflowId = deps.workflowId()
       if (workflowId === null) {
-        deps.onBatchSettled({ state: 'undeliverable', ops: minted })
+        deps.onBatchSettled({ state: 'undeliverable', ops: [] })
         return
       }
+      const actor = deps.actor()
+      const clockKey = `${workflowId}\u0000${actor}`
+      const observedVersion = deps.baseVersion()
+      const baseVersion = Math.max(
+        observedVersion,
+        lastMintedVersion.get(clockKey) ?? observedVersion
+      )
+      lastMintedVersion.set(clockKey, baseVersion)
+      const minted = mintWireOps(operations, {
+        actor,
+        baseVersion
+      })
       queue.push(...chunkWireOps(minted).map((ops) => ({ workflowId, ops })))
       pump()
     },
     pending() {
       return queue.length + (inFlight ? 1 : 0)
+    },
+    resetClock(workflowId) {
+      const prefix = `${workflowId}\u0000`
+      for (const clockKey of lastMintedVersion.keys()) {
+        if (clockKey.startsWith(prefix)) lastMintedVersion.delete(clockKey)
+      }
+
+      const canceled: Op[][] = []
+      if (inFlight?.workflowId === workflowId) {
+        if (inFlight.timer) clearTimeout(inFlight.timer)
+        addStaleAnonymousBudget(workflowId, inFlight.successfulTransmits)
+        canceled.push(inFlight.ops)
+        inFlight = null
+      }
+      const retained = queue.filter((batch) => {
+        if (batch.workflowId !== workflowId) return true
+        canceled.push(batch.ops)
+        return false
+      })
+      queue.length = 0
+      queue.push(...retained)
+      for (const ops of canceled) {
+        deps.onBatchSettled({ state: 'undeliverable', ops })
+      }
+      pump()
     },
     abortIfUnbound() {
       if (inFlight && deps.workflowId() !== inFlight.workflowId) {

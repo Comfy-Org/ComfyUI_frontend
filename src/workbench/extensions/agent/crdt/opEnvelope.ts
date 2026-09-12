@@ -15,6 +15,9 @@ import type { GraphOperation } from './graphOperations'
 
 export const WIRE_MAX_OPS_PER_BATCH = 256
 export const WIRE_MAX_BATCH_BYTES = 4 * 1024 * 1024
+// Reserve space for the doc_ops frame fields outside `ops` (type, protocol,
+// workflow id and tab). The server's identifiers are bounded well below this.
+const WIRE_FRAME_OVERHEAD_BYTES = 1024
 
 export interface MintContext {
   actor: Actor
@@ -56,7 +59,16 @@ function isBatchable(op: Op): boolean {
   return (BATCHABLE_OPS as readonly string[]).includes(op.op)
 }
 
-function wireSize(op: Op): number {
+/** Conservative encoded size of a complete doc_ops frame carrying `ops`. */
+export function wireBatchSize(ops: readonly Op[]): number {
+  return (
+    new TextEncoder().encode(JSON.stringify(ops)).length +
+    WIRE_FRAME_OVERHEAD_BYTES
+  )
+}
+
+/** UTF-8 byte length of a single op's JSON encoding, as it appears inside a batch array. */
+function opBytes(op: Op): number {
   return new TextEncoder().encode(JSON.stringify(op)).length
 }
 
@@ -70,12 +82,14 @@ function wireSize(op: Op): number {
 export function chunkWireOps(ops: Op[]): Op[][] {
   const batches: Op[][] = []
   let current: Op[] = []
-  let currentBytes = 0
+  // Sum of per-op serialized byte lengths in `current`. The full batch size
+  // is this total plus the JSON array's 2 brackets and (length - 1) commas.
+  let currentOpBytes = 0
 
   const flush = (): void => {
     if (current.length > 0) batches.push(current)
     current = []
-    currentBytes = 0
+    currentOpBytes = 0
   }
 
   for (const op of ops) {
@@ -84,13 +98,16 @@ export function chunkWireOps(ops: Op[]): Op[][] {
       batches.push([op])
       continue
     }
-    const bytes = wireSize(op)
     const overOps = current.length + 1 > WIRE_MAX_OPS_PER_BATCH
+    const thisOpBytes = opBytes(op)
+    const candidateArrayBytes =
+      currentOpBytes + thisOpBytes + 2 + current.length
     const overBytes =
-      current.length > 0 && currentBytes + bytes > WIRE_MAX_BATCH_BYTES
+      current.length > 0 &&
+      candidateArrayBytes + WIRE_FRAME_OVERHEAD_BYTES > WIRE_MAX_BATCH_BYTES
     if (overOps || overBytes) flush()
     current.push(op)
-    currentBytes += bytes
+    currentOpBytes += thisOpBytes
   }
   flush()
   return batches

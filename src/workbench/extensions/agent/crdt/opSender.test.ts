@@ -25,6 +25,8 @@ describe('createOpSender', () => {
   let resultListener: ((result: OpsResultView) => void) | null
   let transportUp: boolean
   let boundWorkflow: string | null
+  let actor: string
+  let baseVersion: number
   let sender: ReturnType<typeof createOpSender>
 
   function ackInFlight(): void {
@@ -43,6 +45,8 @@ describe('createOpSender', () => {
     resultListener = null
     transportUp = true
     boundWorkflow = WORKFLOW
+    actor = ACTOR
+    baseVersion = 41
     sender = createOpSender({
       sendOps: (workflowId, tab, ops) => {
         if (!transportUp) return false
@@ -57,8 +61,8 @@ describe('createOpSender', () => {
       },
       workflowId: () => boundWorkflow,
       tab: TAB,
-      actor: () => ACTOR,
-      baseVersion: () => 41,
+      actor: () => actor,
+      baseVersion: () => baseVersion,
       onBatchSettled: (outcome) => settled.push(outcome)
     })
   })
@@ -97,6 +101,180 @@ describe('createOpSender', () => {
     ackInFlight()
     expect(sender.pending()).toBe(0)
     expect(settled).toHaveLength(2)
+  })
+
+  it('never regresses an actor clock when a reconnect reports an older version', () => {
+    sender.enqueue([addNode(1)])
+    expect(sent[0].ops[0].base_version).toBe(41)
+    ackInFlight()
+
+    baseVersion = 3
+    sender.enqueue([addNode(2)])
+
+    expect(sent[1].ops[0].base_version).toBe(41)
+    expect(sent[1].ops[0].stamp).toEqual([41, ACTOR])
+  })
+
+  it('advances an actor clock when the observed version increases', () => {
+    sender.enqueue([addNode(1)])
+    ackInFlight()
+
+    baseVersion = 42
+    sender.enqueue([addNode(2)])
+
+    expect(sent[1].ops[0].base_version).toBe(42)
+    expect(sent[1].ops[0].stamp).toEqual([42, ACTOR])
+  })
+
+  it('keeps actor clocks independent within a workflow', () => {
+    sender.enqueue([addNode(1)])
+    ackInFlight()
+
+    actor = 'human:other-user:tab-1'
+    baseVersion = 3
+    sender.enqueue([addNode(2)])
+
+    expect(sent[1].ops[0].base_version).toBe(3)
+    expect(sent[1].ops[0].stamp).toEqual([3, actor])
+  })
+
+  it('resetClock lets a new lineage mint at a lower base_version after a doc_reset', () => {
+    sender.enqueue([addNode(1)])
+    expect(sent[0].ops[0].base_version).toBe(41)
+    ackInFlight()
+
+    baseVersion = 3
+    sender.resetClock(WORKFLOW)
+    sender.enqueue([addNode(2)])
+
+    expect(sent[1].ops[0].base_version).toBe(3)
+    expect(sent[1].ops[0].stamp).toEqual([3, ACTOR])
+  })
+
+  it('resetClock settles old-lineage in-flight and queued batches before sending new work', () => {
+    sender.enqueue([addNode(1)])
+    sender.enqueue([addNode(2)])
+    expect(sender.pending()).toBe(2)
+    expect(vi.getTimerCount()).toBe(1)
+
+    baseVersion = 3
+    sender.resetClock(WORKFLOW)
+
+    expect(sender.pending()).toBe(0)
+    expect(vi.getTimerCount()).toBe(0)
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'undeliverable',
+      'undeliverable'
+    ])
+    vi.advanceTimersByTime(20_000)
+    expect(sent).toHaveLength(1)
+
+    sender.enqueue([addNode(3)])
+    expect(sent[1].ops[0].base_version).toBe(3)
+
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+    expect(settled).toHaveLength(2)
+    ackInFlight()
+    expect(settled.at(-1)?.state).toBe('acknowledged')
+  })
+
+  it('resetClock only clears the named workflow, leaving other workflows clamped', () => {
+    sender.enqueue([addNode(1)])
+    ackInFlight()
+
+    sender.resetClock('some-other-workflow')
+
+    baseVersion = 3
+    sender.enqueue([addNode(2)])
+
+    expect(sent[1].ops[0].base_version).toBe(41)
+  })
+
+  it('resetClock leaves an in-flight batch for a different workflow untouched', () => {
+    boundWorkflow = 'wf-2'
+    sender.enqueue([addNode(1)])
+    expect(sent[0].workflowId).toBe('wf-2')
+
+    sender.resetClock(WORKFLOW)
+
+    expect(settled).toHaveLength(0)
+    expect(sender.pending()).toBe(1)
+
+    ackInFlight()
+    expect(settled.map((outcome) => outcome.state)).toEqual(['acknowledged'])
+  })
+
+  it('resetClock resumes retained work for a different workflow', () => {
+    sender.enqueue([addNode(1)])
+    boundWorkflow = 'wf-2'
+    sender.enqueue([addNode(2)])
+    expect(sender.pending()).toBe(2)
+
+    sender.resetClock(WORKFLOW)
+
+    expect(settled.map((outcome) => outcome.state)).toEqual(['undeliverable'])
+    expect(sent).toHaveLength(2)
+    expect(sent[1].workflowId).toBe('wf-2')
+    expect(sender.pending()).toBe(1)
+  })
+
+  it('does not consume another workflow result with reset credits', () => {
+    sender.enqueue([addNode(1)])
+    boundWorkflow = 'wf-2'
+    sender.enqueue([addNode(2)])
+
+    sender.resetClock(WORKFLOW)
+    resultListener?.({
+      workflowId: 'wf-2',
+      ok: false,
+      applied: [],
+      skipped: []
+    })
+
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'undeliverable',
+      'acknowledged'
+    ])
+  })
+
+  it('consumes reset credit when an identified stale result arrives', () => {
+    sender.enqueue([addNode(1)])
+    const staleOpId = sent[0].ops[0].op_id
+    sender.resetClock(WORKFLOW)
+    sender.enqueue([addNode(2)])
+
+    resultListener?.({
+      workflowId: WORKFLOW,
+      ok: true,
+      applied: [staleOpId],
+      skipped: []
+    })
+    resultListener?.({
+      workflowId: WORKFLOW,
+      ok: false,
+      applied: [],
+      skipped: []
+    })
+
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'undeliverable',
+      'acknowledged'
+    ])
+  })
+
+  it('does not reserve a stale result for a batch that was never sent', () => {
+    transportUp = false
+    sender.enqueue([addNode(1)])
+    sender.resetClock(WORKFLOW)
+
+    transportUp = true
+    sender.enqueue([addNode(2)])
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'undeliverable',
+      'acknowledged'
+    ])
   })
 
   it('retries a down transport with the SAME minted ops and never re-mints', () => {
