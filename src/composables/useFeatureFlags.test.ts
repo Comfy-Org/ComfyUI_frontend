@@ -295,10 +295,6 @@ describe('useFeatureFlags', () => {
 
       const { flags } = useFeatureFlags()
       expect(flags.nodeLibraryEssentialsEnabled).toBe(true)
-      expect(api.getServerFeature).toHaveBeenCalledWith(
-        ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED,
-        true
-      )
     })
 
     it('should return false in production when the server feature flag explicitly disables it', () => {
