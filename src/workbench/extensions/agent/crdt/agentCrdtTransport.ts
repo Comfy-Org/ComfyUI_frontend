@@ -6,9 +6,6 @@ import type { DocFrameTransport } from './docFrameClient'
 
 export const apiTransport: DocFrameTransport = {
   send(frame) {
-    // Never throws: a closed socket is a recoverable state, not an error. See
-    // DocFrameTransport.send - throwing here aborted both the immediate
-    // subscribe watcher and the unmount hook.
     if (api.socket?.readyState !== WebSocket.OPEN) return false
     api.socket.send(frame)
     return true
@@ -36,11 +33,6 @@ function traceableFrame(frame: string): unknown {
   }
 }
 
-/**
- * Dev-panel tap (poc-4): logs every outbound frame with its delivery result.
- * Wraps `apiTransport` instead of modifying it, so the exported transport's
- * never-throw contract stays exactly what `apiTransport.test.ts` covers.
- */
 export function createLoggedTransport(): DocFrameTransport {
   return {
     send(frame) {

@@ -864,9 +864,6 @@ describe('useAgentCrdtFollower', () => {
     })
 
     it('reconciles a follower_replaced clear against the replacement document', () => {
-      // The bridge mints a new `Y.Doc` for the replacement, so the reconcile
-      // has to re-read `bridge.follower.doc` rather than the doc it saw at
-      // construction — otherwise it keeps projecting the destroyed one.
       const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
       const replacementDoc = { getMap: () => ({ toJSON: () => ({}) }) }
       bridge().follower = { updatesApplied: 0, doc: replacementDoc }

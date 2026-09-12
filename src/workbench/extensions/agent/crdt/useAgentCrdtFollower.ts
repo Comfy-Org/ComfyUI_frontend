@@ -239,8 +239,6 @@ export function useAgentCrdtFollower(
       actor: detail.actor ?? 'agent-reset',
       opId: `doc-reset:${detail.seq ?? 'unknown'}`
     }
-    // Store clear and live-graph sweep travel together; see
-    // `AgentCrdtProjection.clearForReset` for why.
     projection.clearForReset(detail.workflowId, context)
     connected.value = false
     updatesApplied.value = 0
@@ -272,8 +270,6 @@ export function useAgentCrdtFollower(
         actor: 'agent-lineage',
         opId: `follower-replaced:${workflowId}`
       })
-      // The sweep inside `clearForReset` must land before the replacement
-      // doc's frames start arriving through the rebound follower.
       projection.bind(workflowId, bridge.follower)
     }
   }

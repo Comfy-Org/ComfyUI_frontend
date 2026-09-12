@@ -112,7 +112,6 @@ function clearPersistedDocId(): void {
   }
 }
 
-/** Owns retry, recency, and confirmed-document persistence for one follower mount. */
 export class AgentCrdtDocLifecycle {
   private subscribeRetryTimer: ReturnType<typeof setTimeout> | null = null
   private subscribeRetryAttempt = 0
@@ -133,7 +132,6 @@ export class AgentCrdtDocLifecycle {
     private readonly resubscribe: () => void
   ) {}
 
-  /** Returns the persisted doc id only when this page load wrote it and it has not expired. */
   readPersistedDocId(): string | null {
     return readPersistedDocId()
   }
@@ -145,8 +143,6 @@ export class AgentCrdtDocLifecycle {
   onSubscribeConfirmed(): void {
     this.clearSubscribeRetry()
     this.armStaleProbe()
-    // FE-1902 (poc-3): only a CONFIRMED binding is worth rebinding to after a
-    // remount - persist on ok, not on intent.
     const workflowId = this.workflowId()
     if (workflowId !== null) this.persistConfirmedDocId(workflowId)
   }
@@ -226,8 +222,6 @@ export class AgentCrdtDocLifecycle {
     this.subscribeRetryAttempt += 1
     this.subscribeRetryTimer = setTimeout(() => {
       this.subscribeRetryTimer = null
-      // The desired doc changed while we waited - the follower's watch owns
-      // that path.
       if (this.workflowId() !== target) return
       recordDevEvent('subscribe_retry', {
         attempt: this.subscribeRetryAttempt,

@@ -14,7 +14,6 @@ import type { MutationsForTarget } from './ecsFollowerAdapter'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import type { FollowerDoc } from './followerDoc'
 
-/** Projects follower documents into domain stores and reconciles their live graph adapters. */
 export class AgentCrdtProjection {
   private readonly adapter: EcsFollowerAdapter
 

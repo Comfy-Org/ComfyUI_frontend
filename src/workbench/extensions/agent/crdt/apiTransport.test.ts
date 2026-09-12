@@ -1,13 +1,3 @@
-/**
- * The production transport must never throw on send.
- *
- * `apiTransport.send` used to `throw new Error('The ComfyUI WebSocket is not
- * connected')` whenever the socket was not OPEN. That single throw was the root
- * cause of BOTH follower defects: it aborted the `watch(..., {immediate:true})`
- * subscribe (Vue swallows watcher errors, so the follower went silently inert)
- * and it aborted `onBeforeUnmount` before `client.destroy()` (leaking four `api`
- * listeners and a projector still wired to the live canvas).
- */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({ app: { graph: null } }))
@@ -58,8 +48,6 @@ describe('createLoggedTransport.send', () => {
   })
 
   it('leaves the frame unparsed while the debug instrument is off', () => {
-    // Both of wireLog's sinks discard the detail when the gate is closed, so
-    // parsing every `doc_ops` batch on the main thread buys nothing.
     setCrdtDebugEnabled(false)
     const parse = vi.spyOn(JSON, 'parse')
 
