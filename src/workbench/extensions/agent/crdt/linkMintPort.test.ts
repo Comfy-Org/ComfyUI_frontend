@@ -138,7 +138,7 @@ describe('attachLinkMintPort', () => {
     expect(minted).toEqual([])
     expect(consoleError).toHaveBeenCalledOnce()
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
-      errorType: 'agent_crdt_unrepresentable_link_operation',
+      errorType: 'agent_crdt_reporting_unrepresentable_link_operation',
       context: { id: 41 }
     })
     consoleError.mockRestore()

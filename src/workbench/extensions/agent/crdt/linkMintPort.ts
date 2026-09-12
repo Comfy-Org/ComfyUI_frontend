@@ -115,7 +115,7 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
     const message = `[agent-crdt] ${what} has no wire op; the bound doc diverges from the local graph`
     console.error(message, id)
     reportError(new Error(message), {
-      errorType: 'agent_crdt_unrepresentable_link_operation',
+      errorType: 'agent_crdt_reporting_unrepresentable_link_operation',
       context: { id }
     })
   }
