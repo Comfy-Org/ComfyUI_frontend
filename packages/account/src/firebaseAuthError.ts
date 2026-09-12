@@ -91,7 +91,7 @@ export const AUTH_ERROR_MESSAGES: AuthErrorCopy = {
   'auth/wrong-password':
     'Invalid login credentials. Please check your email and password.',
   'auth/email-already-in-use':
-    'An account with this email already exists. Try signing in instead.',
+    "We couldn't create an account with this email. If you already have one, try signing in or resetting your password.",
   'auth/weak-password':
     'Password is too weak. Please use a stronger password with at least 6 characters.',
   'auth/too-many-requests':
@@ -109,7 +109,7 @@ export const AUTH_ERROR_MESSAGES: AuthErrorCopy = {
   'auth/popup-blocked':
     'Your browser blocked the sign-in window. Please allow pop-ups for this site and try again.',
   'auth/account-exists-with-different-credential':
-    'An account already exists with this email address but uses a different sign-in method. Please sign in the way you did originally.',
+    "We couldn't sign you in with this method. Try another sign-in option, or reset your password to continue.",
   generic: 'Something went wrong while signing you in. Please try again.',
   signupBlocked:
     "We couldn't create your account right now. Please try again later. If this keeps happening, email support@comfy.org."
@@ -139,7 +139,8 @@ export const AUTH_ERROR_COPY: Readonly<Record<AuthCopyLocale, AuthErrorCopy>> =
       'auth/user-disabled': '此账户已被禁用。请联系客服。',
       'auth/user-not-found': '登录凭据无效。请检查您的邮箱和密码。',
       'auth/wrong-password': '登录凭据无效。请检查您的邮箱和密码。',
-      'auth/email-already-in-use': '已存在使用此电子邮件的账户。请尝试登录。',
+      'auth/email-already-in-use':
+        '无法使用此电子邮件创建账户。如果您已有账户，请尝试登录或重置密码。',
       'auth/weak-password': '密码强度太弱。请使用至少6个字符的更强密码。',
       'auth/too-many-requests': '登录尝试次数过多。请稍等片刻再试。',
       'auth/operation-not-allowed': '此登录方法目前不受支持。',
@@ -151,7 +152,7 @@ export const AUTH_ERROR_COPY: Readonly<Record<AuthCopyLocale, AuthErrorCopy>> =
       'auth/popup-blocked':
         '您的浏览器阻止了登录窗口。请允许此网站的弹出窗口后重试。',
       'auth/account-exists-with-different-credential':
-        '已存在使用此电子邮件地址的账户，但其使用了其他登录方式。请使用您最初的登录方式登录。',
+        '无法使用此方式登录。请尝试其他登录方式，或重置密码后继续。',
       generic: '登录时出现问题，请重试。',
       signupBlocked:
         '我们目前无法创建您的账户。请稍后再试。如果问题持续，请发送邮件至 support@comfy.org。'
@@ -165,7 +166,7 @@ export const AUTH_ERROR_COPY: Readonly<Record<AuthCopyLocale, AuthErrorCopy>> =
       'auth/wrong-password':
         'ログイン認証情報が無効です。メールアドレスとパスワードを確認してください。',
       'auth/email-already-in-use':
-        'このメールアドレスのアカウントは既に存在します。代わりにサインインをお試しください。',
+        'このメールアドレスではアカウントを作成できませんでした。すでにアカウントをお持ちの場合は、サインインするかパスワードをリセットしてください。',
       'auth/weak-password':
         'パスワードが弱すぎます。6文字以上のより強力なパスワードを使用してください。',
       'auth/too-many-requests':
@@ -183,7 +184,7 @@ export const AUTH_ERROR_COPY: Readonly<Record<AuthCopyLocale, AuthErrorCopy>> =
       'auth/popup-blocked':
         'ブラウザによってサインインウィンドウがブロックされました。このサイトのポップアップを許可して、もう一度お試しください。',
       'auth/account-exists-with-different-credential':
-        'このメールアドレスのアカウントはすでに存在しますが、別のサインイン方法を使用しています。最初に使用した方法でサインインしてください。',
+        'この方法ではサインインできませんでした。別のサインイン方法をお試しいただくか、パスワードをリセットしてください。',
       generic: 'サインイン中に問題が発生しました。もう一度お試しください。',
       signupBlocked:
         '現在アカウントを作成できません。しばらくしてから再度お試しください。繰り返し発生する場合は support@comfy.org までご連絡ください。'
