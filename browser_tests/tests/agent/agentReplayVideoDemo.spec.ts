@@ -4,7 +4,7 @@ import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFi
 
 const RECORDED_CASE = 'agent-rec-two-turn-dependent-edit'
 
-test.describe('Agent replay video demo', () => {
+test.describe('Agent replay video demo', { tag: '@cloud' }, () => {
   test.use({ conversationCase: RECORDED_CASE })
 
   test('replays a recorded two-turn agent session', async ({
