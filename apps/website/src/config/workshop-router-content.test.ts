@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { workshopModels } from './models-catalogue'
 import { deriveWorkshopFields } from './workshop-fields'
@@ -22,6 +22,11 @@ import { resolveSchemaReference } from './workshop-router-openapi'
 import { formForContract } from './workshop-contract'
 import { workshopContract } from './workshop-contract-catalog'
 import { validateWorkshopInput } from './workshop-json-schema'
+import {
+  prepareModelRouterRender,
+  resolveModelRouterRender
+} from './router-render'
+import { initialWorkshopPageState } from './workshop-page-state'
 
 describe('Router catalog form projection', () => {
   it.for([
@@ -293,4 +298,58 @@ describe('Router catalog form projection', () => {
       }
     }
   )
+})
+
+function modelFor(slug: string) {
+  const model = getRouterWorkshopModelDetail(slug)
+  if (!model?.execution) throw new Error(`Missing model: ${slug}`)
+  return { ...model, execution: model.execution }
+}
+
+describe('authored Router task defaults', () => {
+  it.for([
+    ['recraft--v3-text-to-vector--generate-images', 'vector_illustration'],
+    ['recraft--v4-text-to-vector--generate-images', 'vector_illustration'],
+    ['recraft--v4-pro-text-to-vector--generate-images', 'vector_illustration'],
+    ['recraft--v3-text-to-image--generate-images', 'realistic_image']
+  ])('compiles the task style for %s', async ([slug, style]) => {
+    const model = modelFor(slug)
+    const page = initialWorkshopPageState(model)
+    const rendered = await prepareModelRouterRender(model)
+    const pageRequest = await prepareWorkshopRouterInput(
+      model.execution,
+      page.values,
+      new AbortController().signal
+    )
+    expect(rendered.body).toEqual(pageRequest)
+    expect(rendered.body).toHaveProperty('style', style)
+  })
+
+  it('preserves the layer-separation task when the page starts on an example', async () => {
+    const model = modelFor(
+      'byteplus--seedream-5-pro-layer-separation--edit-images'
+    )
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>(
+        async () =>
+          new Response(new Uint8Array([137, 80, 78, 71]), {
+            headers: { 'Content-Type': 'image/png' }
+          })
+      )
+    )
+    const page = initialWorkshopPageState(model)
+    expect(page.firstExample).toBeDefined()
+    expect(resolveModelRouterRender(model).values).toEqual(page.values)
+    const prepared = await prepareModelRouterRender(model)
+    expect(prepared.body).toHaveProperty('layer_decomposition', true)
+  })
+
+  it('lets an explicit style override the authored initial style', async () => {
+    const model = modelFor('recraft--v3-text-to-image--generate-images')
+    const prepared = await prepareModelRouterRender(model, {
+      style: 'digital_illustration'
+    })
+    expect(prepared.body).toHaveProperty('style', 'digital_illustration')
+  })
 })

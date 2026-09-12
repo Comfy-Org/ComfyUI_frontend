@@ -17,9 +17,7 @@ test.describe('Browser tab title', { tag: '@smoke' }, () => {
   })
 
   test.describe('Legacy Menu', () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-    })
+    test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
     test('Can display default title', async ({ comfyPage }) => {
       await expect.poll(() => comfyPage.page.title()).toBe('ComfyUI')

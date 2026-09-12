@@ -21,6 +21,7 @@ function examplesFor(
     const values =
       model.execution && example
         ? {
+            ...model.defaults,
             ...workshopPromptDefaults(model, [
               {
                 ...display,
@@ -68,7 +69,9 @@ const detailBySlug = new Map(
       ...model,
       ...(execution ? { execution, form: formForContract(execution) } : {}),
       fields: [],
-      defaults: {},
+      defaults: execution
+        ? workshopExampleValues(execution, source.alias.nativeDefaults ?? {})
+        : {},
       examples: []
     }
     return [
@@ -79,6 +82,7 @@ const detailBySlug = new Map(
           ? []
           : examplesFor(detail, source.overlay),
         defaults: {
+          ...detail.defaults,
           ...workshopPromptDefaults(
             detail,
             source.alias.contentIssue ? [] : [source.overlay]
