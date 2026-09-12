@@ -5,7 +5,7 @@ import {
   createWebHashHistory,
   createWebHistory
 } from 'vue-router'
-import type { RouteLocationNormalized } from 'vue-router'
+import type { NavigationGuardNext, RouteLocationNormalized } from 'vue-router'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
@@ -59,6 +59,26 @@ const router = createRouter({
       createWebHistory(basePath),
   routes: [
     ...(isCloud ? cloudOnboardingRoutes : []),
+    ...(isCloud
+      ? [
+          {
+            path: '/checkout',
+            name: 'CheckoutPage',
+            component: () =>
+              import('@/platform/cloud/subscription/views/CheckoutPageView.vue'),
+            beforeEnter: async (
+              _to: RouteLocationNormalized,
+              _from: RouteLocationNormalized,
+              next: NavigationGuardNext
+            ) => {
+              const userStore = useUserStore()
+              await userStore.initialize()
+              if (userStore.needsLogin) next('/user-select')
+              else next()
+            }
+          }
+        ]
+      : []),
     {
       path: '/',
       component: LayoutDefault,
