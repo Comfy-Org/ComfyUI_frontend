@@ -95,6 +95,21 @@ describe('WidgetToggleSwitch Value Binding', () => {
       expect(onModelUpdate).toHaveBeenCalledWith(false)
     })
 
+    it('keeps its value when Ctrl+Enter is pressed while focused', async () => {
+      const widget = createToggleWidget(false)
+      const onModelUpdate = vi.fn()
+      const { user } = mountComponent(widget, false, onModelUpdate)
+
+      const control = screen.getByRole('switch')
+      await user.tab()
+      expect(control).toHaveFocus()
+
+      await user.keyboard('{Control>}{Enter}{/Control}')
+
+      expect(onModelUpdate).not.toHaveBeenCalled()
+      expect(control).not.toBeChecked()
+    })
+
     it('handles value changes gracefully', async () => {
       const widget = createToggleWidget(false)
       const onModelUpdate = vi.fn()
