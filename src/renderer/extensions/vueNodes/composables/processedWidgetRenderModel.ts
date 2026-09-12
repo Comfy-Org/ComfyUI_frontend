@@ -161,7 +161,7 @@ function buildSlotMetadata(
       ? linkStore.getInputSlotLink(scope, nodeId, index)
       : undefined
     const widgetName = getSlotWidgetName(input, link !== undefined)
-    if (!widgetName) continue
+    if (!widgetName || metadata.has(widgetName)) continue
     metadata.set(widgetName, createSlotMetadata(input, index, link, graphRef))
   }
   return metadata

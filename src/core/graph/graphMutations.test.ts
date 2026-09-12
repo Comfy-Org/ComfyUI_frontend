@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
@@ -44,7 +42,6 @@ describe('graphMutations', () => {
   const deleteLayouts = vi.fn()
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     createLayout.mockReset()
     deleteLayouts.mockReset()
   })

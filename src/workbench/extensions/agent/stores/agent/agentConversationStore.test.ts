@@ -1,5 +1,4 @@
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { nextTick, watch } from 'vue'
 
 import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
@@ -87,10 +86,6 @@ const partTexts = (store: ReturnType<typeof useAgentConversationStore>) =>
   )
 
 describe('useAgentConversationStore', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
   it('(M1) fires a deep watch on messages when a MID-turn delta event lands', async () => {
     const store = useAgentConversationStore()
     const spy = vi.fn()
@@ -331,6 +326,29 @@ describe('useAgentConversationStore', () => {
     expect(store.threadId).toBeNull()
   })
 
+  it('snapshots local workflow references on the submitted turn', () => {
+    const store = useAgentConversationStore()
+    store.startTurn(T1)
+    Reflect.apply(store.recordUser, store, [
+      T1,
+      'compare these',
+      undefined,
+      undefined,
+      [
+        { id: 'wf-1', name: 'Workflow 1' },
+        { id: 'wf-2', name: 'Workflow 2' }
+      ]
+    ])
+
+    expect(store.entries[0]).toMatchObject({
+      role: 'user',
+      workflowReferences: [
+        { id: 'wf-1', name: 'Workflow 1' },
+        { id: 'wf-2', name: 'Workflow 2' }
+      ]
+    })
+  })
+
   it('revokes transcript blob previews on reset and on hydrate', () => {
     const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
     const store = useAgentConversationStore()
@@ -431,6 +449,24 @@ describe('useAgentConversationStore', () => {
       'turn-b'
     ])
     expect(partTexts(store)).toEqual(['First reply', 'Second reply'])
+  })
+
+  it('hydrates persisted workflow reference chips on their original user turn', () => {
+    const user = historyRow(1, 'user', 'turn-a', 'Compare these')
+    user.content = {
+      text: 'Compare these',
+      workflow_references: [
+        { workflow_id: 'wf-reference', name: 'Reference workflow' }
+      ]
+    }
+    const store = useAgentConversationStore()
+
+    store.hydrate([user, historyRow(2, 'assistant', 'turn-a', 'Done')])
+
+    expect(store.entries[0]).toMatchObject({
+      role: 'user',
+      workflowReferences: [{ id: 'wf-reference', name: 'Reference workflow' }]
+    })
   })
 
   it('keeps hydrated turn identity stable when persisted row ids change', () => {

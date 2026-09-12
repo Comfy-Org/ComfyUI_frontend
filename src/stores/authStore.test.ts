@@ -1,8 +1,10 @@
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { FirebaseError } from 'firebase/app'
 import type { User, UserCredential } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
 import type { Mock } from 'vitest'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as vuefire from 'vuefire'
 
 import { i18n } from '@/i18n'
@@ -41,17 +43,11 @@ const { mockResetSocket } = vi.hoisted(() => ({
   mockResetSocket: vi.fn()
 }))
 
-const mockTeamWorkspaceStore = vi.hoisted(() => ({
-  activeWorkspaceId: null as string | null,
-  resetForIdentityChange: vi.fn()
-}))
+const mockReportError = vi.hoisted(() => vi.fn())
 
-vi.mock<unknown>(
-  import('@/platform/workspace/stores/teamWorkspaceStore'),
-  () => ({
-    useTeamWorkspaceStore: () => mockTeamWorkspaceStore
-  })
-)
+vi.mock<unknown>(import('@/platform/telemetry/reportError'), () => ({
+  reportError: mockReportError
+}))
 
 type MockUser = Omit<User, 'getIdToken' | 'delete'> & {
   getIdToken: Mock
@@ -132,18 +128,6 @@ vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
 }))
 
 // Mock apiKeyAuthStore
-const mockApiKeyGetAuthHeader = vi.fn().mockReturnValue(null)
-const mockApiKeyGetApiKey = vi.fn()
-vi.mock<unknown>(import('@/stores/apiKeyAuthStore'), () => ({
-  useApiKeyAuthStore: () => ({
-    getAuthHeader: mockApiKeyGetAuthHeader,
-    getApiKey: mockApiKeyGetApiKey,
-    currentUser: null,
-    isAuthenticated: false,
-    storeApiKey: vi.fn(),
-    clearStoredApiKey: vi.fn()
-  })
-}))
 
 describe('useAuthStore', () => {
   let store: ReturnType<typeof useAuthStore>
@@ -177,13 +161,16 @@ describe('useAuthStore', () => {
       > as ReturnType<typeof vuefire.useFirebaseAuth>
     )
 
-    // Mock onAuthStateChanged to capture the callback and simulate initial auth state
+    // Every observer registered on the Auth instance (the store's listener
+    // and the package port) gets each auth-state event, as Firebase does.
+    const authStateObservers: Array<(user: User | null) => void> = []
+    authStateCallback = (user) =>
+      authStateObservers.forEach((observer) => observer(user))
     vi.mocked(firebaseAuth.onAuthStateChanged).mockImplementation(
       (_, callback) => {
-        authStateCallback = callback as (user: User | null) => void
-        // Call the callback with our mock user
-        ;(callback as (user: User | null) => void)(mockUser)
-        // Return an unsubscribe function
+        const observer = callback as (user: User | null) => void
+        authStateObservers.push(observer)
+        observer(mockUser)
         return vi.fn()
       }
     )
@@ -217,10 +204,11 @@ describe('useAuthStore', () => {
     mockUser.getIdToken.mockResolvedValue('mock-id-token')
 
     // Default: no API key auth
-    mockApiKeyGetAuthHeader.mockReturnValue(null)
-    mockApiKeyGetApiKey.mockReturnValue(null)
-    mockTeamWorkspaceStore.activeWorkspaceId = null
-    mockTeamWorkspaceStore.resetForIdentityChange.mockReset()
+    vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue(null)
+    vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue(null)
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: null
+    })
   })
 
   describe('token refresh events', () => {
@@ -330,11 +318,74 @@ describe('useAuthStore', () => {
     })
   })
 
+  describe('password update', () => {
+    it('updates the signed-in user through the package identity', async () => {
+      mockAuth.currentUser = mockUser
+
+      await store.updatePassword('hunter22!!')
+
+      expect(firebaseAuth.updatePassword).toHaveBeenCalledWith(
+        mockUser,
+        'hunter22!!'
+      )
+    })
+
+    it('refuses with the translated error when nobody is signed in', async () => {
+      authStateCallback(null)
+
+      await expect(store.updatePassword('hunter22!!')).rejects.toMatchObject({
+        name: 'AuthStoreError',
+        message: i18n.global.t('toastMessages.userNotAuthenticated')
+      })
+      expect(firebaseAuth.updatePassword).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('password reset', () => {
+    it('reports an unknown email as sent, so the reset form cannot be used to enumerate accounts', async () => {
+      vi.mocked(firebaseAuth.sendPasswordResetEmail).mockRejectedValueOnce({
+        code: 'auth/user-not-found',
+        message: 'Firebase: Error (auth/user-not-found).'
+      })
+
+      await expect(
+        store.sendPasswordReset('ghost@example.com')
+      ).resolves.toBeUndefined()
+    })
+
+    it('still surfaces every other reset failure', async () => {
+      vi.mocked(firebaseAuth.sendPasswordResetEmail).mockRejectedValueOnce({
+        code: 'auth/network-request-failed',
+        message: 'Firebase: Error (auth/network-request-failed).'
+      })
+
+      await expect(
+        store.sendPasswordReset('user@example.com')
+      ).rejects.toMatchObject({ code: 'auth/network-request-failed' })
+    })
+  })
+
+  describe('unified identity source', () => {
+    it('the session client listens to the same Auth instance through the package port', async () => {
+      mockFeatureFlags.unifiedCloudAuthEnabled = true
+      vi.mocked(firebaseAuth.onAuthStateChanged).mockClear()
+
+      await useWorkspaceAuthStore().mintAtLogin()
+
+      expect(
+        vi.mocked(firebaseAuth.onAuthStateChanged),
+        'the port registers its own observer on the same Auth instance; identity is not pushed from this store'
+      ).toHaveBeenCalledExactlyOnceWith(mockAuth, expect.any(Function))
+    })
+  })
+
   describe('user-scoped billing endpoints with API-key sessions', () => {
     beforeEach(() => {
       authStateCallback(null)
-      mockApiKeyGetAuthHeader.mockReturnValue({ 'X-API-KEY': 'test-api-key' })
-      mockApiKeyGetApiKey.mockReturnValue('test-api-key')
+      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
+        'X-API-KEY': 'test-api-key'
+      })
+      vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue('test-api-key')
     })
 
     it('fetchBalance sends the stored API key when no Firebase user exists', async () => {
@@ -350,7 +401,7 @@ describe('useAuthStore', () => {
     })
 
     it('fetchBalance throws userNotAuthenticated when neither credential exists', async () => {
-      mockApiKeyGetAuthHeader.mockReturnValue(null)
+      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue(null)
 
       await expect(store.fetchBalance()).rejects.toMatchObject({
         name: 'AuthStoreError',
@@ -368,7 +419,9 @@ describe('useAuthStore', () => {
       )
 
       const request = store.fetchBalance()
-      mockApiKeyGetApiKey.mockReturnValue('another-api-key')
+      vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue(
+        'another-api-key'
+      )
       resolveBalance({ ok: true, json: () => Promise.resolve({ balance: 7 }) })
 
       await expect(request).resolves.toBeNull()
@@ -388,7 +441,9 @@ describe('useAuthStore', () => {
           })
         })
       )
-      expect(mockApiKeyGetAuthHeader).not.toHaveBeenCalled()
+      expect(
+        vi.mocked(useApiKeyAuthStore().getAuthHeader)
+      ).not.toHaveBeenCalled()
     })
 
     it('initiateCreditPurchase sends the stored API key when no Firebase user exists', async () => {
@@ -439,7 +494,7 @@ describe('useAuthStore', () => {
     })
 
     it('accessBillingPortal throws userNotAuthenticated when neither credential exists', async () => {
-      mockApiKeyGetAuthHeader.mockReturnValue(null)
+      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue(null)
 
       await expect(store.accessBillingPortal()).rejects.toMatchObject({
         name: 'AuthStoreError',
@@ -466,8 +521,10 @@ describe('useAuthStore', () => {
       const payload = { amount_micros: 5_000_000, currency: 'usd' }
 
       await store.initiateCreditPurchase(payload)
-      mockApiKeyGetApiKey.mockReturnValue('another-api-key')
-      mockApiKeyGetAuthHeader.mockReturnValue({
+      vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue(
+        'another-api-key'
+      )
+      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
         'X-API-KEY': 'another-api-key'
       })
       await store.initiateCreditPurchase(payload)
@@ -505,8 +562,10 @@ describe('useAuthStore', () => {
 
       const request = store.accessBillingPortal()
       await new Promise<void>((resolve) => setTimeout(resolve, 0))
-      mockApiKeyGetApiKey.mockReturnValue('another-api-key')
-      mockApiKeyGetAuthHeader.mockReturnValue({
+      vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue(
+        'another-api-key'
+      )
+      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
         'X-API-KEY': 'another-api-key'
       })
       resolveCreate(mockCreateCustomerResponse)
@@ -533,8 +592,10 @@ describe('useAuthStore', () => {
         currency: 'usd'
       })
       await new Promise<void>((resolve) => setTimeout(resolve, 0))
-      mockApiKeyGetApiKey.mockReturnValue('another-api-key')
-      mockApiKeyGetAuthHeader.mockReturnValue({
+      vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue(
+        'another-api-key'
+      )
+      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
         'X-API-KEY': 'another-api-key'
       })
       resolveCreate(mockCreateCustomerResponse)
@@ -565,8 +626,10 @@ describe('useAuthStore', () => {
 
       const request = store.accessBillingPortal()
       await billingRequestStarted
-      mockApiKeyGetApiKey.mockReturnValue('another-api-key')
-      mockApiKeyGetAuthHeader.mockReturnValue({
+      vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue(
+        'another-api-key'
+      )
+      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
         'X-API-KEY': 'another-api-key'
       })
       resolveBilling({
@@ -603,8 +666,10 @@ describe('useAuthStore', () => {
         currency: 'usd'
       })
       await creditRequestStarted
-      mockApiKeyGetApiKey.mockReturnValue('another-api-key')
-      mockApiKeyGetAuthHeader.mockReturnValue({
+      vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue(
+        'another-api-key'
+      )
+      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
         'X-API-KEY': 'another-api-key'
       })
       resolveCredit({
@@ -635,8 +700,10 @@ describe('useAuthStore', () => {
 
       const request = store.createCustomer()
       await createRequestStarted
-      mockApiKeyGetApiKey.mockReturnValue('another-api-key')
-      mockApiKeyGetAuthHeader.mockReturnValue({
+      vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue(
+        'another-api-key'
+      )
+      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
         'X-API-KEY': 'another-api-key'
       })
       resolveCreate(mockCreateCustomerResponse)
@@ -669,8 +736,10 @@ describe('useAuthStore', () => {
 
       const request = store.accessBillingPortal()
       await bodyParsingStarted
-      mockApiKeyGetApiKey.mockReturnValue('another-api-key')
-      mockApiKeyGetAuthHeader.mockReturnValue({
+      vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue(
+        'another-api-key'
+      )
+      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
         'X-API-KEY': 'another-api-key'
       })
       resolvePortalBody({ billing_portal_url: 'https://stripe.test/portal' })
@@ -708,8 +777,10 @@ describe('useAuthStore', () => {
         currency: 'usd'
       })
       await bodyParsingStarted
-      mockApiKeyGetApiKey.mockReturnValue('another-api-key')
-      mockApiKeyGetAuthHeader.mockReturnValue({
+      vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue(
+        'another-api-key'
+      )
+      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
         'X-API-KEY': 'another-api-key'
       })
       resolveCreditBody({ checkout_url: 'https://stripe.test/checkout' })
@@ -732,8 +803,10 @@ describe('useAuthStore', () => {
     }
 
     const switchToAnotherApiKey = () => {
-      mockApiKeyGetApiKey.mockReturnValue('another-api-key')
-      mockApiKeyGetAuthHeader.mockReturnValue({
+      vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue(
+        'another-api-key'
+      )
+      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
         'X-API-KEY': 'another-api-key'
       })
     }
@@ -959,6 +1032,35 @@ describe('useAuthStore', () => {
       expect(customerRequestBody()).toEqual({ signup_source: 'cloud' })
     })
 
+    it('provisions with the completed credential, not whatever identity became current', async () => {
+      const completedUser = {
+        uid: 'completed-uid',
+        email: 'completed@example.com',
+        getIdToken: vi.fn().mockResolvedValue('completed-token'),
+        delete: vi.fn().mockResolvedValue(undefined)
+      } as Partial<User> as MockUser
+      const switchedInUser = {
+        uid: 'switched-uid',
+        getIdToken: vi.fn().mockResolvedValue('switched-token')
+      } as Partial<User> as MockUser
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue({
+        user: completedUser
+      } as Partial<UserCredential> as UserCredential)
+      // Auth has already switched to another user by the time provisioning runs.
+      authStateCallback(switchedInUser)
+
+      await store.register('completed@example.com', 'password')
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/customers'),
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            Authorization: 'Bearer completed-token'
+          })
+        })
+      )
+    })
+
     it('rolls back the orphaned Firebase user when customer creation fails', async () => {
       vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue({
         user: mockUser
@@ -980,6 +1082,34 @@ describe('useAuthStore', () => {
 
       // The just-created user is deleted so the email is freed for retry.
       expect(mockUser.delete).toHaveBeenCalledTimes(1)
+    })
+
+    it('reports an orphaning rollback failure to telemetry', async () => {
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue({
+        user: mockUser
+      } as Partial<UserCredential> as UserCredential)
+      mockUser.delete.mockRejectedValue(new Error('delete down'))
+      mockFetch.mockImplementation((url: string) =>
+        url.endsWith('/customers')
+          ? Promise.resolve({
+              ok: false,
+              statusText: 'Forbidden',
+              json: () => Promise.resolve({})
+            })
+          : Promise.reject(new Error('Unexpected API call'))
+      )
+
+      await expect(
+        store.register('new@example.com', 'password', 'turnstile-bad')
+      ).rejects.toThrow()
+
+      expect(mockUser.delete).toHaveBeenCalledTimes(2)
+      expect(
+        mockReportError,
+        'a silently orphaned account bricks every retry with email-already-in-use and nobody learns'
+      ).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+        errorType: 'auth_signup_rollback_failed'
+      })
     })
 
     it('does not delete the user on a successful registration', async () => {
@@ -1184,7 +1314,9 @@ describe('useAuthStore', () => {
 
     it('recovers the workspace token instead of downgrading to personal auth', async () => {
       const workspaceAuth = useWorkspaceAuthStore()
-      mockTeamWorkspaceStore.activeWorkspaceId = 'workspace-123'
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-123'
+      })
       vi.spyOn(workspaceAuth, 'getWorkspaceAuthHeader').mockReturnValue(null)
       const ensureSpy = vi
         .spyOn(workspaceAuth, 'ensureWorkspaceAuthHeader')
@@ -1199,7 +1331,9 @@ describe('useAuthStore', () => {
 
     it('fails closed (no personal Firebase downgrade) when recovery yields no token', async () => {
       const workspaceAuth = useWorkspaceAuthStore()
-      mockTeamWorkspaceStore.activeWorkspaceId = 'workspace-123'
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-123'
+      })
       vi.spyOn(workspaceAuth, 'getWorkspaceAuthHeader').mockReturnValue(null)
       vi.spyOn(workspaceAuth, 'ensureWorkspaceAuthHeader').mockResolvedValue(
         null
@@ -1213,7 +1347,9 @@ describe('useAuthStore', () => {
 
     it('falls back to Firebase when workspace mode is not yet initialized', async () => {
       const workspaceAuth = useWorkspaceAuthStore()
-      mockTeamWorkspaceStore.activeWorkspaceId = null
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: null
+      })
       vi.spyOn(workspaceAuth, 'getWorkspaceAuthHeader').mockReturnValue(null)
       const ensureSpy = vi.spyOn(workspaceAuth, 'ensureWorkspaceAuthHeader')
 
@@ -1227,7 +1363,9 @@ describe('useAuthStore', () => {
   describe('getAuthToken workspace recovery', () => {
     it('recovers the workspace token instead of downgrading to personal auth', async () => {
       const workspaceAuth = useWorkspaceAuthStore()
-      mockTeamWorkspaceStore.activeWorkspaceId = 'workspace-123'
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-123'
+      })
       const ensureSpy = vi
         .spyOn(workspaceAuth, 'ensureWorkspaceToken')
         .mockResolvedValue('recovered-ws-token')
@@ -1241,7 +1379,9 @@ describe('useAuthStore', () => {
 
     it('fails closed (no personal Firebase downgrade) when recovery yields no token', async () => {
       const workspaceAuth = useWorkspaceAuthStore()
-      mockTeamWorkspaceStore.activeWorkspaceId = 'workspace-123'
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-123'
+      })
       vi.spyOn(workspaceAuth, 'ensureWorkspaceToken').mockResolvedValue(null)
 
       const token = await store.getAuthToken()
@@ -1252,7 +1392,9 @@ describe('useAuthStore', () => {
 
     it('falls back to Firebase when workspace mode is not yet initialized', async () => {
       const workspaceAuth = useWorkspaceAuthStore()
-      mockTeamWorkspaceStore.activeWorkspaceId = null
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: null
+      })
       vi.spyOn(workspaceAuth, 'getWorkspaceToken').mockReturnValue(undefined)
       const ensureSpy = vi.spyOn(workspaceAuth, 'ensureWorkspaceToken')
 
@@ -1349,6 +1491,24 @@ describe('useAuthStore', () => {
         expect(store.loading).toBe(false)
       })
     })
+
+    it.for(['loginWithGoogle', 'loginWithGithub'] as const)(
+      '%s aborts provisioning with the explicit gate error when no ID token can be minted',
+      async (method) => {
+        vi.mocked(firebaseAuth.signInWithPopup).mockResolvedValue({
+          user: mockUser
+        } as Partial<UserCredential> as UserCredential)
+        mockUser.getIdToken.mockResolvedValue('')
+
+        await expect(store[method]()).rejects.toThrow(
+          i18n.global.t('toastMessages.userNotAuthenticated')
+        )
+        expect(
+          customerRequestBody(),
+          'provisioning must be gated on a mintable ID token, not attempted and left to fail downstream'
+        ).toBeUndefined()
+      }
+    )
 
     it('should handle concurrent social login attempts correctly', async () => {
       const mockUserCredential = { user: mockUser }
@@ -1619,7 +1779,7 @@ describe('useAuthStore', () => {
 
     it('throws AuthStoreError when not authenticated', async () => {
       authStateCallback(null)
-      mockApiKeyGetAuthHeader.mockReturnValue(null)
+      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue(null)
 
       await expect(store.getAuthHeaderOrThrow()).rejects.toMatchObject({
         name: 'AuthStoreError',
@@ -1662,7 +1822,9 @@ describe('useAuthStore', () => {
 
     it('should use API key auth when no Firebase user is present', async () => {
       authStateCallback(null)
-      mockApiKeyGetAuthHeader.mockReturnValue({ 'X-API-KEY': 'test-api-key' })
+      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
+        'X-API-KEY': 'test-api-key'
+      })
 
       const result = await store.createCustomer()
 
@@ -1695,16 +1857,20 @@ describe('useAuthStore', () => {
 
     it('should not fall back to API key when Firebase token retrieval fails', async () => {
       mockUser.getIdToken.mockResolvedValue(undefined)
-      mockApiKeyGetAuthHeader.mockReturnValue({ 'X-API-KEY': 'test-api-key' })
+      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
+        'X-API-KEY': 'test-api-key'
+      })
 
       await expect(store.createCustomer()).rejects.toThrow()
-      expect(mockApiKeyGetAuthHeader).not.toHaveBeenCalled()
+      expect(
+        vi.mocked(useApiKeyAuthStore().getAuthHeader)
+      ).not.toHaveBeenCalled()
       expect(mockFetch).not.toHaveBeenCalled()
     })
 
     it('should throw when no auth method is available', async () => {
       authStateCallback(null)
-      mockApiKeyGetAuthHeader.mockReturnValue(null)
+      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue(null)
 
       await expect(store.createCustomer()).rejects.toThrow()
       expect(mockFetch).not.toHaveBeenCalled()
@@ -2181,5 +2347,123 @@ describe('useAuthStore', () => {
 
       expect(mockResetSocket).not.toHaveBeenCalled()
     })
+  })
+})
+
+describe('useAuthStore in local/desktop distribution', () => {
+  // Every prior describe block above runs with isCloud: true (see the
+  // top-level mockDistributionTypes). Sign-in itself has no isCloud branch:
+  // login/loginWithGoogle/loginWithGithub call the package's identity
+  // object unconditionally. This block proves that directly instead of
+  // inferring it from the cloud-mode suite, and pins the one thing that
+  // *should* differ: the cloud-only side effects (socket reset, workspace
+  // JWT mint) must not fire when isCloud is false.
+  let store: ReturnType<typeof useAuthStore>
+  let authStateCallback: (user: User | null) => void
+
+  const mockAuth: MockAuth = {/* mock Auth object */}
+  const mockUser: MockUser = {
+    uid: 'local-user-id',
+    email: 'local@example.com',
+    getIdToken: vi.fn().mockResolvedValue('mock-id-token'),
+    delete: vi.fn().mockResolvedValue(undefined)
+  } as Partial<User> as MockUser
+
+  beforeEach(() => {
+    mockDistributionTypes.isCloud = false
+    mockDistributionTypes.isDesktop = false
+    mockDistributionTypes.DISTRIBUTION = 'localhost'
+
+    vi.stubGlobal('fetch', mockFetch)
+    mockFeatureFlags.unifiedCloudAuthEnabled = false
+
+    vi.mocked(useDialogService, { partial: true }).mockReturnValue({
+      showErrorDialog: vi.fn()
+    })
+
+    vi.mocked(vuefire.useFirebaseAuth).mockReturnValue(
+      mockAuth as Partial<
+        ReturnType<typeof vuefire.useFirebaseAuth>
+      > as ReturnType<typeof vuefire.useFirebaseAuth>
+    )
+
+    vi.mocked(firebaseAuth.onAuthStateChanged).mockImplementation(
+      (_, callback) => {
+        authStateCallback = callback as (user: User | null) => void
+        ;(callback as (user: User | null) => void)(mockUser)
+        return vi.fn()
+      }
+    )
+    vi.mocked(firebaseAuth.onIdTokenChanged).mockImplementation(() => vi.fn())
+
+    mockFetch.mockImplementation((url: string) => {
+      if (url.endsWith('/customers')) {
+        return Promise.resolve(mockCreateCustomerResponse)
+      }
+      return Promise.reject(new Error('Unexpected API call'))
+    })
+
+    store = useAuthStore()
+    mockUser.getIdToken.mockResolvedValue('mock-id-token')
+    mockResetSocket.mockClear()
+  })
+
+  afterEach(() => {
+    mockDistributionTypes.isCloud = true
+    mockDistributionTypes.isDesktop = false
+    mockDistributionTypes.DISTRIBUTION = 'cloud'
+  })
+
+  it('signs in with email through the same package identity path as cloud', async () => {
+    vi.mocked(firebaseAuth.signInWithEmailAndPassword).mockResolvedValue({
+      user: mockUser
+    } as Partial<UserCredential> as UserCredential)
+
+    const result = await store.login('local@example.com', 'password')
+
+    expect(result.user).toEqual(mockUser)
+    expect(store.loading).toBe(false)
+  })
+
+  it('signs in with Google through the same package identity path as cloud', async () => {
+    vi.mocked(firebaseAuth.signInWithPopup).mockResolvedValue({
+      user: mockUser
+    } as Partial<UserCredential> as UserCredential)
+
+    const result = await store.loginWithGoogle()
+
+    expect(firebaseAuth.signInWithPopup).toHaveBeenCalledWith(
+      mockAuth,
+      expect.any(firebaseAuth.GoogleAuthProvider)
+    )
+    expect(result.user).toEqual(mockUser)
+  })
+
+  it('does not reset the realtime socket on identity change, unlike cloud', () => {
+    const accountB: MockUser = {
+      uid: 'local-user-b',
+      email: 'local-b@example.com',
+      getIdToken: vi.fn().mockResolvedValue('mock-id-token-b'),
+      delete: vi.fn().mockResolvedValue(undefined)
+    } as Partial<User> as MockUser
+
+    authStateCallback(accountB)
+
+    expect(
+      mockResetSocket,
+      'socket re-handshake is a cloud-only side effect (isCloud && identityChanged); local/desktop has no realtime socket to reset'
+    ).not.toHaveBeenCalled()
+  })
+
+  it('does not attempt to mint a workspace JWT on sign-in, unlike cloud', () => {
+    const workspaceAuth = useWorkspaceAuthStore()
+    const mintSpy = vi.spyOn(workspaceAuth, 'mintAtLogin')
+
+    authStateCallback(mockUser)
+
+    expect(
+      mintSpy,
+      'mintAtLogin is gated on isCloud; local/desktop has no Cloud workspace JWT to mint'
+    ).not.toHaveBeenCalled()
   })
 })

@@ -455,8 +455,10 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
 
 wstest(
   'Will not use stale litegraph previews',
+  { tag: '@vue-nodes' },
   async ({ comfyPage, getWebSocket }) => {
     const executionHelper = new ExecutionHelper(comfyPage, await getWebSocket())
+    await comfyPage.menu.topbar.setVueNodesEnabled(false)
     await comfyPage.menu.topbar.newWorkflowButton.click()
     await comfyPage.searchBoxV2.addNode('Preview Image')
 
@@ -471,7 +473,7 @@ wstest(
     await comfyPage.page.evaluate(() => app!.canvas.setDirty(true))
     await expect.poll(getNodeOutput).toBe('test1.png')
 
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+    await comfyPage.menu.topbar.setVueNodesEnabled(true)
 
     const resolvableFile = { filename: 'example.png', type: 'input' }
     executionHelper.executed('', '1', { images: [resolvableFile] })

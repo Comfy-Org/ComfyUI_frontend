@@ -138,6 +138,15 @@
   },
   "overrides": [
     {
+      "files": [
+        "**/*.{test,spec}.{ts,tsx}",
+        "**/{__test__,__tests__,__fixtures__}/**/*.{ts,tsx}"
+      ],
+      "rules": {
+        "comfy/use-global-pinia": "error"
+      }
+    },
+    {
       "files": ["**/*.{stories,test,spec}.ts", "**/*.stories.vue"],
       "rules": {
         "no-console": "allow"
@@ -172,6 +181,12 @@
       "files": ["browser_tests/tests/**/*.spec.ts", "apps/*/e2e/**/*.spec.ts"],
       "rules": {
         "comfy/no-comfy-page-setup-call": "error"
+      }
+    },
+    {
+      "files": ["browser_tests/tests/**/*.spec.ts"],
+      "rules": {
+        "comfy/prefer-initial-settings": "error"
       }
     },
     {

@@ -1,26 +1,16 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-const mockActiveWorkflow = vi.hoisted(() => ({
-  value: { filename: 'my-workflow.json' } as { filename: string } | null
-}))
-
-vi.mock<unknown>(
-  import('@/platform/workflow/management/stores/workflowStore'),
-  () => ({
-    useWorkflowStore: () => ({
-      get activeWorkflow() {
-        return mockActiveWorkflow.value
-      }
-    })
-  })
-)
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 const { cachePublishPrefill, getCachedPrefill, useComfyHubPublishWizard } =
   await import('./useComfyHubPublishWizard')
 
 describe('useComfyHubPublishWizard', () => {
   beforeEach(() => {
-    mockActiveWorkflow.value = { filename: 'my-workflow.json' }
+    useWorkflowStore().activeWorkflow = fromPartial<LoadedComfyWorkflow>({
+      filename: 'my-workflow.json'
+    })
   })
 
   describe('createDefaultFormData', () => {
@@ -30,7 +20,7 @@ describe('useComfyHubPublishWizard', () => {
     })
 
     it('defaults name to empty string when no active workflow', () => {
-      mockActiveWorkflow.value = null
+      useWorkflowStore().activeWorkflow = null
       const { formData } = useComfyHubPublishWizard()
       expect(formData.value.name).toBe('')
     })
@@ -216,6 +206,40 @@ describe('useComfyHubPublishWizard', () => {
       expect(formData.value.exampleImages[0].url).toBe(
         'https://cdn.example.com/sample.png'
       )
+    })
+
+    it('restores models, customNodes, tutorialUrl, and metadata', () => {
+      const { applyPrefill, formData } = useComfyHubPublishWizard()
+      applyPrefill({
+        models: ['SDXL'],
+        customNodes: ['Impact Pack'],
+        tutorialUrl: 'https://youtube.com/abc',
+        metadata: { extra: 'value' }
+      })
+      expect(formData.value.models).toEqual(['SDXL'])
+      expect(formData.value.customNodes).toEqual(['Impact Pack'])
+      expect(formData.value.tutorialUrl).toBe('https://youtube.com/abc')
+      expect(formData.value.metadata).toEqual({ extra: 'value' })
+    })
+
+    it('does not overwrite models, customNodes, tutorialUrl, or metadata already set by the user', () => {
+      const { applyPrefill, formData } = useComfyHubPublishWizard()
+      formData.value.models = ['User model']
+      formData.value.customNodes = ['User node']
+      formData.value.tutorialUrl = 'https://youtube.com/user'
+      formData.value.metadata = { user: 'value' }
+
+      applyPrefill({
+        models: ['SDXL'],
+        customNodes: ['Impact Pack'],
+        tutorialUrl: 'https://youtube.com/abc',
+        metadata: { extra: 'value' }
+      })
+
+      expect(formData.value.models).toEqual(['User model'])
+      expect(formData.value.customNodes).toEqual(['User node'])
+      expect(formData.value.tutorialUrl).toBe('https://youtube.com/user')
+      expect(formData.value.metadata).toEqual({ user: 'value' })
     })
   })
 
