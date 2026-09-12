@@ -120,17 +120,15 @@ void z
   }
 ]
 
+function hasStringProperty(value: object, property: keyof Diagnostic): boolean {
+  if (!(property in value)) return false
+  return typeof Reflect.get(value, property) === 'string'
+}
+
 function isDiagnostic(value: unknown): value is Diagnostic {
   if (typeof value !== 'object' || value === null) return false
-  return (
-    'code' in value &&
-    typeof value.code === 'string' &&
-    'filename' in value &&
-    typeof value.filename === 'string' &&
-    'message' in value &&
-    typeof value.message === 'string' &&
-    'severity' in value &&
-    typeof value.severity === 'string'
+  return (['code', 'filename', 'message', 'severity'] as const).every(
+    (property) => hasStringProperty(value, property)
   )
 }
 
