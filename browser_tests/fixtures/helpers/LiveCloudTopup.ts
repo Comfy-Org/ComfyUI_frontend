@@ -2,6 +2,7 @@ import {
   zBillingBalanceResponse,
   zBillingOpStatusResponse,
   zBillingStatusResponse,
+  zCreateTopupRequest,
   zCreateTopupResponse,
   zListSavedPaymentMethodsResponse
 } from '@comfyorg/ingest-types/zod'
@@ -53,6 +54,53 @@ export class LiveCloudTopup {
       '/api/billing/balance',
       zBillingBalanceResponse
     )
+    const { topup } = await this.submitPurchase()
+    await this.attachPurchase(testInfo, topup, before.amount_micros)
+    await expect(
+      this.comfyPage.page.getByText('Credits added successfully', {
+        exact: true
+      })
+    ).toBeVisible()
+    await this.expectPurchaseComplete(
+      topup.billing_op_id,
+      before.amount_micros + Number(topup.amount_cents)
+    )
+    await this.comfyPage.attachScreenshot('saved-card-topup.png', {
+      runInCI: true
+    })
+  }
+
+  async verifyIdempotentRetry(testInfo: TestInfo) {
+    const before = await this.session.read(
+      '/api/billing/balance',
+      zBillingBalanceResponse
+    )
+    const { request, topup } = await this.submitPurchase()
+    expect(request.idempotency_key).toBeTruthy()
+    if (!request.idempotency_key) {
+      throw new Error('Missing top-up idempotency key')
+    }
+    const retry = await this.session.post(
+      '/api/billing/topup',
+      {
+        amount_cents: Number(request.amount_cents),
+        idempotency_key: request.idempotency_key
+      },
+      zCreateTopupResponse
+    )
+    expect(retry.billing_op_id).toBe(topup.billing_op_id)
+    expect(retry.topup_id).toBe(topup.topup_id)
+    await this.attachPurchase(testInfo, topup, before.amount_micros, {
+      retryOperationId: retry.billing_op_id,
+      retryTopupId: retry.topup_id
+    })
+    await this.expectPurchaseComplete(
+      topup.billing_op_id,
+      before.amount_micros + Number(topup.amount_cents)
+    )
+  }
+
+  private async submitPurchase() {
     const [response] = await Promise.all([
       this.comfyPage.page.waitForResponse(
         (response) =>
@@ -67,32 +115,44 @@ export class LiveCloudTopup {
         .click()
     ])
     expect(response.status()).toBe(200)
+    const request = zCreateTopupRequest.parse(response.request().postDataJSON())
     const topup = zCreateTopupResponse.parse(await response.json())
     expect(topup.amount_cents).toBe(1000n)
     expect(topup.billing_op_id).not.toBe('')
+    return { request, topup }
+  }
+
+  private async attachPurchase(
+    testInfo: TestInfo,
+    topup: ReturnType<typeof zCreateTopupResponse.parse>,
+    balanceBeforeCents: number,
+    extra: Record<string, string> = {}
+  ) {
     await testInfo.attach('topup.json', {
       body: JSON.stringify({
         operationId: topup.billing_op_id,
         topupId: topup.topup_id,
         amountCents: Number(topup.amount_cents),
-        balanceBeforeCents: before.amount_micros
+        balanceBeforeCents,
+        ...extra
       }),
       contentType: 'application/json'
     })
-    await expect(
-      this.comfyPage.page.getByText('Credits added successfully', {
-        exact: true
-      })
-    ).toBeVisible()
+  }
+
+  private async expectPurchaseComplete(
+    operationId: string,
+    expectedBalanceCents: number
+  ) {
     await expect
       .poll(async () => {
         const operation = await this.session.read(
-          `/api/billing/ops/${encodeURIComponent(topup.billing_op_id)}`,
+          `/api/billing/ops/${encodeURIComponent(operationId)}`,
           zBillingOpStatusResponse
         )
         return { id: operation.id, status: operation.status }
       })
-      .toMatchObject({ id: topup.billing_op_id, status: 'succeeded' })
+      .toMatchObject({ id: operationId, status: 'succeeded' })
     await expect
       .poll(
         async () =>
@@ -103,9 +163,6 @@ export class LiveCloudTopup {
             )
           ).amount_micros
       )
-      .toBe(before.amount_micros + Number(topup.amount_cents))
-    await this.comfyPage.attachScreenshot('saved-card-topup.png', {
-      runInCI: true
-    })
+      .toBe(expectedBalanceCents)
   }
 }
