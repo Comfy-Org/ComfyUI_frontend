@@ -38,7 +38,11 @@ test.describe(
             const original = await comfyPage.nodeOps.getNodeRefById('11')
             const parentWidget = await original.getPromotedTextWidget('text')
             await expect(parentWidget).toHaveCount(1)
-            await parentWidget.fill('original parent edit')
+
+            await test.step('user edits the original host', async () => {
+              await parentWidget.fill('original parent edit')
+            })
+
             await expect(parentWidget).toHaveValue('original parent edit')
             await expect
               .poll(() =>
@@ -46,8 +50,11 @@ test.describe(
               )
               .toBe('original parent edit')
 
-            await original.copy()
-            await comfyPage.clipboard.paste()
+            await test.step('user copies and pastes the host', async () => {
+              await original.copy()
+              await comfyPage.clipboard.paste()
+            })
+
             await expect
               .poll(() =>
                 comfyPage.page.evaluate(
@@ -69,7 +76,10 @@ test.describe(
             const copy = await comfyPage.nodeOps.getNodeRefById(copyId)
             const copyWidget = await copy.getPromotedTextWidget('text')
             await expect(copyWidget).toHaveCount(1)
-            await copyWidget.fill('copy-only edit')
+
+            await test.step('user edits only the copied host', async () => {
+              await copyWidget.fill('copy-only edit')
+            })
 
             await expect(copyWidget).toHaveValue('copy-only edit')
             const originalWidget = await original.getPromotedTextWidget('text')
@@ -85,7 +95,10 @@ test.describe(
               )
               .toBe('original parent edit')
 
-            await originalWidget.fill('original second edit')
+            await test.step('user edits the original host again', async () => {
+              await originalWidget.fill('original second edit')
+            })
+
             await expect(originalWidget).toHaveValue('original second edit')
             await expect(copyWidget).toHaveValue('copy-only edit')
             await expect
@@ -99,7 +112,10 @@ test.describe(
               )
               .toBe('copy-only edit')
 
-            await copy.delete()
+            await test.step('user deletes the copied host', async () => {
+              await copy.delete()
+            })
+
             await expect.poll(() => copy.exists()).toBe(false)
             await expect(parentWidget).toHaveValue('original second edit')
             await parentWidget.fill('original survives duplicate deletion')
@@ -119,8 +135,11 @@ test.describe(
                 'subgraphs/subgraph-with-promoted-text-widget'
               )
               const original = await comfyPage.nodeOps.getNodeRefById('11')
-              await original.copy()
-              await comfyPage.clipboard.paste()
+
+              await test.step('user copies and pastes the host', async () => {
+                await original.copy()
+                await comfyPage.clipboard.paste()
+              })
 
               await expect
                 .poll(() =>
@@ -160,7 +179,11 @@ test.describe(
                 window.app!.canvas.deselectAll()
                 window.app!.canvas.selectNode(node)
               }, removedId)
-              await comfyPage.keyboard.delete()
+
+              await test.step(`user deletes the ${deleteOriginal ? 'original' : 'copy'}`, async () => {
+                await comfyPage.keyboard.delete()
+              })
+
               await expect
                 .poll(() =>
                   comfyPage.page.evaluate(
@@ -181,7 +204,11 @@ test.describe(
                   new URL(response.url()).pathname === workflowPath &&
                   response.request().method() === 'POST'
               )
-              await comfyPage.menu.topbar.saveWorkflow(workflowName)
+
+              await test.step('user saves the surviving host', async () => {
+                await comfyPage.menu.topbar.saveWorkflow(workflowName)
+              })
+
               const encodedSave = await saveResponse
               expect(encodedSave.status()).toBe(200)
               expect(encodedSave.request().headers()['comfy-user']).toBe(
@@ -191,10 +218,12 @@ test.describe(
                 encodedSave.request().postDataJSON()
               )
 
-              const persistedResponse = await comfyPage.request.get(
-                `${comfyPage.apiUrl}${workflowPath}`,
-                { headers: { 'Comfy-User': comfyPage.id } }
-              )
+              const persistedResponse =
+                await test.step('user reads the saved workflow', () =>
+                  comfyPage.request.get(`${comfyPage.apiUrl}${workflowPath}`, {
+                    headers: { 'Comfy-User': comfyPage.id }
+                  }))
+
               expect(persistedResponse.ok()).toBe(true)
               const persistedWorkflow = zComfyWorkflow.parse(
                 await persistedResponse.json()
@@ -210,21 +239,27 @@ test.describe(
               expect(serializedHostIds(encodedWorkflow)).toEqual([survivorId])
               expect(serializedHostIds(persistedWorkflow)).toEqual([survivorId])
 
-              await comfyPage.workflow.reloadAndWaitForApp()
-              await comfyPage.menu.workflowsTab.open()
-              await comfyPage.menu.workflowsTab
-                .getPersistedItem(workflowName)
-                .click()
-              await comfyPage.menu.workflowsTab.close()
+              await test.step('user reloads and opens the saved workflow', async () => {
+                await comfyPage.workflow.reloadAndWaitForApp()
+                await comfyPage.menu.workflowsTab.open()
+                await comfyPage.menu.workflowsTab
+                  .getPersistedItem(workflowName)
+                  .click()
+                await comfyPage.menu.workflowsTab.close()
+              })
 
               const survivor =
                 await comfyPage.nodeOps.getNodeRefById(survivorId)
               await expect.poll(() => survivor.exists()).toBe(true)
-              if (mode.vueNodesEnabled) {
-                await comfyPage.vueNodes.enterSubgraph(survivorId)
-              } else {
-                await survivor.navigateIntoSubgraph()
-              }
+
+              await test.step('user opens the surviving host', async () => {
+                if (mode.vueNodesEnabled) {
+                  await comfyPage.vueNodes.enterSubgraph(survivorId)
+                } else {
+                  await survivor.navigateIntoSubgraph()
+                }
+              })
+
               await expect
                 .poll(() =>
                   comfyPage.page.evaluate(() => window.app!.canvas.graph?.id)
@@ -243,7 +278,11 @@ test.describe(
               const inner = await comfyPage.nodeOps.getNodeRefById(innerId)
               await expect.poll(() => inner.exists()).toBe(true)
               const originalInnerPosition = await inner.getPosition()
-              await inner.dragBy({ x: 40, y: 20 })
+
+              await test.step('user edits the surviving inner graph', async () => {
+                await inner.dragBy({ x: 40, y: 20 })
+              })
+
               await expect
                 .poll(() => inner.getPosition())
                 .not.toEqual(originalInnerPosition)
@@ -255,11 +294,19 @@ test.describe(
 
             const rootNode = await comfyPage.nodeOps.getNodeRefById('8')
             const originalPosition = await rootNode.getPosition()
-            await rootNode.dragBy({ x: 80, y: 40 })
+
+            await test.step('user moves a root node', async () => {
+              await rootNode.dragBy({ x: 80, y: 40 })
+            })
+
             await expect
               .poll(() => rootNode.getPosition())
               .not.toEqual(originalPosition)
-            await comfyPage.keyboard.undo()
+
+            await test.step('user undoes the root movement', async () => {
+              await comfyPage.keyboard.undo()
+            })
+
             await expect
               .poll(() => rootNode.getPosition())
               .toEqual(originalPosition)
@@ -298,11 +345,15 @@ test.describe(
             })
 
             const outer = await comfyPage.nodeOps.getNodeRefById('10')
-            if (mode.vueNodesEnabled) {
-              await comfyPage.vueNodes.enterSubgraph('10')
-            } else {
-              await outer.navigateIntoSubgraph()
-            }
+
+            await test.step('user opens the outer subgraph', async () => {
+              if (mode.vueNodesEnabled) {
+                await comfyPage.vueNodes.enterSubgraph('10')
+              } else {
+                await outer.navigateIntoSubgraph()
+              }
+            })
+
             expect(await topology()).toEqual({
               nodes: ['11', '3', '6'],
               links: [
@@ -317,11 +368,15 @@ test.describe(
             })
 
             const inner = await comfyPage.nodeOps.getNodeRefById('11')
-            if (mode.vueNodesEnabled) {
-              await comfyPage.vueNodes.enterSubgraph('11')
-            } else {
-              await inner.navigateIntoSubgraph()
-            }
+
+            await test.step('user opens the inner subgraph', async () => {
+              if (mode.vueNodesEnabled) {
+                await comfyPage.vueNodes.enterSubgraph('11')
+              } else {
+                await inner.navigateIntoSubgraph()
+              }
+            })
+
             expect(await topology()).toEqual({
               nodes: ['4', '5', '7'],
               links: [
@@ -334,9 +389,12 @@ test.describe(
               ]
             })
 
-            await subgraphBreadcrumb.clickItem(
-              'subgraph-8beb610f-ddd1-4489-ae0d-2f732a4042ae'
-            )
+            await test.step('user navigates back to the outer subgraph', async () => {
+              await subgraphBreadcrumb.clickItem(
+                'subgraph-8beb610f-ddd1-4489-ae0d-2f732a4042ae'
+              )
+            })
+
             expect(await topology()).toEqual({
               nodes: ['11', '3', '6'],
               links: [
@@ -349,7 +407,11 @@ test.describe(
                 ['6', 0, '3', 1]
               ]
             })
-            await subgraphBreadcrumb.clickItem('root')
+
+            await test.step('user navigates back to the root graph', async () => {
+              await subgraphBreadcrumb.clickItem('root')
+            })
+
             expect(await topology()).toEqual({
               nodes: ['10', '8', '9'],
               links: [
