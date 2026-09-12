@@ -1,9 +1,7 @@
 import type { LGraph } from '../LGraph'
 import type { LLink } from '../LLink'
-import type { LinkId } from '@/types/linkId'
-import type { LinkBadgeLayout } from './linkBadges'
+import type { HiddenLinkBadge } from './linkBadges'
 import { graphScopeOf } from '@/types/graphScopeId'
-import { compareNodeIds } from '@/types/nodeId'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { layoutHiddenLinkBadges, queryLinkBadgeAtPoint } from './linkBadges'
 import { getLinkEndpointPositions } from './linkGeometry'
@@ -32,41 +30,27 @@ export function layoutGraphLinkBadges(
   graph: LGraph,
   linkTypeColors: Readonly<Record<string | number, string>>,
   defaultLinkColor: string
-): Map<LinkId, LinkBadgeLayout> {
+): ReturnType<typeof layoutHiddenLinkBadges> {
   const scope = graphScopeOf(graph)
   const presentationStore = useLinkPresentationStore()
-  const hiddenLinks: LLink[] = []
+  const hiddenLinks: HiddenLinkBadge[] = []
   for (const linkId of presentationStore.graphHiddenLinkIds(scope)) {
     const link = graph.getLink(linkId)
-    if (link) hiddenLinks.push(link)
-  }
-  hiddenLinks.sort(
-    (first, second) =>
-      compareNodeIds(first.origin_id, second.origin_id) ||
-      first.origin_slot - second.origin_slot ||
-      first.id - second.id
-  )
-  const layouts = new Map<LinkId, LinkBadgeLayout>()
-  for (const link of hiddenLinks) {
+    if (!link) continue
     const endpoints = getLinkEndpointPositions(graph, link)
     const presentation = presentationStore.getPresentation(scope, link.id)
     if (!endpoints || !presentation) continue
 
-    const [startPos, endPos] = endpoints
-    layouts.set(
-      link.id,
-      layoutHiddenLinkBadges(
-        host,
-        ctx,
-        link,
-        presentation,
-        startPos,
-        endPos,
+    hiddenLinks.push({
+      link,
+      presentation,
+      startPos: endpoints[0],
+      endPos: endpoints[1],
+      color:
         (typeof link.color === 'string' && link.color) ||
-          linkTypeColors[link.type] ||
-          defaultLinkColor
-      )
-    )
+        linkTypeColors[link.type] ||
+        defaultLinkColor
+    })
   }
-  return layouts
+  return layoutHiddenLinkBadges(host, ctx, hiddenLinks)
 }
