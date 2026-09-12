@@ -14,7 +14,7 @@ test.describe('API node pricing badge', { tag: ['@node', '@widget'] }, () => {
   })
 
   test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.NodeBadge.ShowApiPricing', false)
+    await comfyPage.settings.setSetting('Comfy.NodeBadge.ShowApiPricing', true)
     await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
   })
 
