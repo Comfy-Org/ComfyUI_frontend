@@ -208,8 +208,10 @@ is a data loss for the common single-user case.
   before the gate opens, changes made during the transition are lost. This is
   the same window that already existed for the transitioning state.
 - One more key segment in `localStorage`, plus one persistent migration
-  completion record per migrated workspace. Draft storage returns to one copy
-  after migration because source keys are removed.
+  completion record per migrated workspace. Unchanged artifacts from the
+  migrated source generation return to one copy after migration because their
+  source keys are removed. Artifacts changed after the migration snapshot are
+  preserved at the source.
 
 ## Notes
 
