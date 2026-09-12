@@ -2,6 +2,7 @@ import { expect, mergeTests } from '@playwright/test'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { subgraphBreadcrumbFixture } from '@e2e/fixtures/helpers/SubgraphBreadcrumbHelper'
+import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 
 import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { toNodeId } from '@/types/nodeId'
@@ -132,10 +133,33 @@ test.describe(
             test.slow()
             await comfyPage.workflow.setupWorkflowsDirectory({})
             await comfyPage.workflow.loadWorkflow(
-              'subgraphs/subgraph-with-promoted-text-widget'
+              'subgraphs/subgraph-with-text-widget'
             )
             const host = await comfyPage.nodeOps.getNodeRefById('11')
+            await expect.poll(() => host.getProperty('widgets')).toHaveLength(0)
+
+            await test.step('user promotes the inner text widget', async () => {
+              await fitToViewInstant(comfyPage, { zoom: 1 })
+              if (mode.vueNodesEnabled) {
+                await comfyPage.subgraph.editor.ensureOpen(
+                  comfyPage.vueNodes.getNodeLocator('11')
+                )
+              } else {
+                await host.click('title')
+                await host.clickContextMenuOption('Edit Subgraph Widgets')
+                await expect(comfyPage.subgraph.editor.root).toBeVisible()
+              }
+              const item = comfyPage.subgraph.editor.resolveItem({
+                nodeName: 'CLIP Text Encode (Prompt)',
+                widgetName: 'text'
+              })
+              await comfyPage.subgraph.editor.togglePromotionOnItem(item, true)
+              await comfyPage.menu.propertiesPanel.toggleButton.click()
+              await fitToViewInstant(comfyPage, { zoom: 1 })
+            })
+
             const text = await host.getPromotedTextWidget('text')
+            await expect(text).toHaveCount(1)
             await text.fill('Value must not be cleared with the label')
             const identity = await comfyPage.page.evaluate((hostId) => {
               const node = window.app!.rootGraph.getNodeById(hostId)
@@ -143,12 +167,19 @@ test.describe(
               return { type: node.type, subgraphId: node.subgraph.id }
             }, toNodeId('11'))
 
-            await host.click('title')
+            if (mode.vueNodesEnabled) {
+              await comfyPage.vueNodes.selectNode('11')
+            } else {
+              await host.click('title')
+            }
             const panel = comfyPage.menu.propertiesPanel.root
             if (!(await panel.isVisible())) {
               await comfyPage.menu.propertiesPanel.toggleButton.click()
             }
             await expect(panel).toBeVisible()
+            await panel
+              .getByRole('tab', { name: 'Parameters', exact: true })
+              .click()
             await panel.getByText('text', { exact: true }).click()
             const labelInput = panel.getByPlaceholder('text', { exact: true })
             await labelInput.fill('Temporary promoted label')
