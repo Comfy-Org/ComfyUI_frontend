@@ -359,7 +359,10 @@ and the unions cannot drift apart silently.
 For `insert_workflow`, submit raw node, link, group, and definition ids without
 inspecting document state. The applier owns deterministic, tree-wide remapping;
 each derived id incorporates the envelope `op_id`, graph scope, id kind, and
-original id. A remapped definition id that collides anywhere in the stored
+original id. Numeric and string aliases with the same normalized id refer to
+the same node, including in link endpoints. Definition ids are scoped to their
+containing graph, so repeated nested ids in separate branches derive distinct
+ids. A remapped definition id that collides anywhere in the stored
 definition tree rejects the operation with `definition_conflict`. Duplicate or
 missing raw ids reject it atomically with `malformed_op` at every definition
 depth. Links with a missing origin or target node are dropped individually at

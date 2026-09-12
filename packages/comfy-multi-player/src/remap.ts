@@ -24,6 +24,10 @@ function linkEndpoints(link: unknown): [unknown, unknown] | undefined {
   return undefined;
 }
 
+function normalizedId(id: unknown): string {
+  return typeof id === "string" ? id : String(id);
+}
+
 export function linkHasMissingEndpoint(link: unknown, hasNode: (id: unknown) => boolean): boolean {
   const endpoints = linkEndpoints(link);
   return endpoints !== undefined && (!hasNode(endpoints[0]) || !hasNode(endpoints[1]));
@@ -37,28 +41,29 @@ function remapGraph(
   dropDanglingLinks: boolean,
 ): void {
   const nodes = graph["nodes"] as WorkflowNode[];
-  const nodeIds = new Map<unknown, string>();
-  const linkIds = new Map<unknown, string>();
-  for (const node of nodes) nodeIds.set(node.id, derivedId(opId, scope, "node", node.id));
+  const nodeIds = new Map<string, string>();
+  const linkIds = new Map<string, string>();
+  // Numeric and string aliases normalized by validation name the same node.
+  for (const node of nodes) nodeIds.set(normalizedId(node.id), derivedId(opId, scope, "node", node.id));
   const links = ((graph["links"] as unknown[] | undefined) ?? []).filter(
-    (link) => !dropDanglingLinks || !linkHasMissingEndpoint(link, (id) => nodeIds.has(id)),
+    (link) => !dropDanglingLinks || !linkHasMissingEndpoint(link, (id) => nodeIds.has(normalizedId(id))),
   );
   for (const link of links) {
-    if (Array.isArray(link)) linkIds.set(link[0], derivedId(opId, scope, "link", link[0]));
+    if (Array.isArray(link)) linkIds.set(normalizedId(link[0]), derivedId(opId, scope, "link", link[0]));
     else if (typeof link === "object" && link !== null) {
       const record = link as { id?: unknown };
-      linkIds.set(record.id, derivedId(opId, scope, "link", record.id));
+      linkIds.set(normalizedId(record.id), derivedId(opId, scope, "link", record.id));
     }
   }
 
   for (const node of nodes) {
-    node.id = nodeIds.get(node.id)!;
+    node.id = nodeIds.get(normalizedId(node.id))!;
     if (definitionIds.has(node.type)) node.type = definitionIds.get(node.type)!;
     if (Array.isArray(node.inputs)) {
       for (const input of node.inputs) {
         if (typeof input === "object" && input !== null && "link" in input) {
           const record = input as { link?: unknown };
-          if (linkIds.has(record.link)) record.link = linkIds.get(record.link);
+          if (linkIds.has(normalizedId(record.link))) record.link = linkIds.get(normalizedId(record.link));
         }
       }
     }
@@ -66,21 +71,21 @@ function remapGraph(
       for (const output of node.outputs) {
         if (typeof output === "object" && output !== null && Array.isArray((output as { links?: unknown }).links)) {
           const record = output as { links: unknown[] };
-          record.links = record.links.map((id) => linkIds.get(id) ?? id);
+          record.links = record.links.map((id) => linkIds.get(normalizedId(id)) ?? id);
         }
       }
     }
   }
   graph["links"] = links.map((link) => {
     if (Array.isArray(link)) {
-      link[0] = linkIds.get(link[0]) ?? link[0];
-      link[1] = nodeIds.get(link[1]) ?? link[1];
-      link[3] = nodeIds.get(link[3]) ?? link[3];
+      link[0] = linkIds.get(normalizedId(link[0])) ?? link[0];
+      link[1] = nodeIds.get(normalizedId(link[1])) ?? link[1];
+      link[3] = nodeIds.get(normalizedId(link[3])) ?? link[3];
     } else if (typeof link === "object" && link !== null) {
       const record = link as { id?: unknown; origin_id?: unknown; target_id?: unknown };
-      record.id = linkIds.get(record.id) ?? record.id;
-      record.origin_id = nodeIds.get(record.origin_id) ?? record.origin_id;
-      record.target_id = nodeIds.get(record.target_id) ?? record.target_id;
+      record.id = linkIds.get(normalizedId(record.id)) ?? record.id;
+      record.origin_id = nodeIds.get(normalizedId(record.origin_id)) ?? record.origin_id;
+      record.target_id = nodeIds.get(normalizedId(record.target_id)) ?? record.target_id;
     }
     return link;
   });
@@ -101,8 +106,10 @@ export function remapInsertedWorkflowIds(wf: WorkflowJSON, opId: string): Workfl
   out.links ??= [];
   out.groups ??= [];
   const subgraphs = (out.definitions?.subgraphs ?? []) as Array<Record<string, unknown>>;
-  const definitionIds = new Map<string, string>();
+  const definitionIdsByScope = new Map<string, Map<string, string>>();
   const collect = (definitions: Array<Record<string, unknown>>, scope: string): void => {
+    const definitionIds = new Map<string, string>();
+    definitionIdsByScope.set(scope, definitionIds);
     for (const definition of definitions) {
       const original = String(definition["id"]);
       const remapped = derivedDefinitionId(opId, scope, original);
@@ -113,15 +120,17 @@ export function remapInsertedWorkflowIds(wf: WorkflowJSON, opId: string): Workfl
   };
   collect(subgraphs, "root");
   const rewrite = (definitions: Array<Record<string, unknown>>, scope: string): void => {
+    const definitionIds = definitionIdsByScope.get(scope)!;
     for (const definition of definitions) {
       const original = String(definition["id"]);
       definition["id"] = definitionIds.get(original)!;
-      remapGraph(definition, opId, `${scope}/definition:${encodeURIComponent(JSON.stringify(original))}`, definitionIds, true);
+      const definitionScope = `${scope}/definition:${encodeURIComponent(JSON.stringify(original))}`;
+      remapGraph(definition, opId, definitionScope, definitionIdsByScope.get(definitionScope)!, true);
       const nested = (definition["definitions"] as { subgraphs?: Array<Record<string, unknown>> } | undefined)?.subgraphs ?? [];
-      rewrite(nested, `${scope}/definition:${encodeURIComponent(JSON.stringify(original))}`);
+      rewrite(nested, definitionScope);
     }
   };
-  remapGraph(out, opId, "root", definitionIds, false);
+  remapGraph(out, opId, "root", definitionIdsByScope.get("root")!, false);
   rewrite(subgraphs, "root");
   return out;
 }

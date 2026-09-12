@@ -99,6 +99,63 @@ function defIds(wf: WorkflowJSON): string[] {
 }
 
 describe("insert_workflow: happy path", () => {
+  it("resolves string link endpoints to normalized numeric node ids", () => {
+    const doc = mint(baseWorkflow(), catalog);
+    const op = insertOp({
+      nodes: [{ id: 1, type: "Src", title: "alias source" }, { id: 2, type: "Sink", title: "alias sink" }],
+      links: [[3, "1", 0, "2", 0, "alias"]],
+    });
+
+    expect(applyOps(doc, [op], catalog).outcomes[0]).toMatchObject({ outcome: "applied" });
+    const workflow = project(doc, catalog);
+    const source = workflow.nodes!.find((node) => node.title === "alias source")!;
+    const sink = workflow.nodes!.find((node) => node.title === "alias sink")!;
+    const link = workflow.links!.find((candidate) => (candidate as unknown[])[5] === "alias") as unknown[];
+    expect(link).toBeDefined();
+    expect(link[1]).toBe(source.id);
+    expect(link[3]).toBe(sink.id);
+  });
+
+  it("scopes repeated nested definition ids to their sibling definition paths", () => {
+    const doc = mint(baseWorkflow(), catalog);
+    const nested = (name: string) => ({ id: "shared", name, nodes: [], links: [] });
+    const op = insertOp({
+      nodes: [],
+      links: [],
+      definitions: {
+        subgraphs: [
+          {
+            id: "left",
+            name: "Left",
+            nodes: [{ id: 1, type: "shared" }],
+            links: [],
+            definitions: { subgraphs: [nested("Left shared")] },
+          },
+          {
+            id: "right",
+            name: "Right",
+            nodes: [{ id: 1, type: "shared" }],
+            links: [],
+            definitions: { subgraphs: [nested("Right shared")] },
+          },
+        ],
+      },
+    });
+
+    expect(applyOps(doc, [op], catalog).outcomes[0]).toMatchObject({ outcome: "applied" });
+    const definitions = project(doc, catalog).definitions!.subgraphs! as Array<Record<string, unknown>>;
+    const left = definitions.find((definition) => definition["name"] === "Left")!;
+    const right = definitions.find((definition) => definition["name"] === "Right")!;
+    const nestedId = (definition: Record<string, unknown>): string =>
+      String(((definition["definitions"] as { subgraphs: Array<{ id: unknown }> }).subgraphs[0]!).id);
+    const hostType = (definition: Record<string, unknown>): string =>
+      String(((definition["nodes"] as Array<{ type: unknown }>)[0]!).type);
+
+    expect(nestedId(left)).not.toBe(nestedId(right));
+    expect(hostType(left)).toBe(nestedId(left));
+    expect(hostType(right)).toBe(nestedId(right));
+  });
+
   it("drops a depth-2 object link with a missing endpoint and keeps its valid sibling", () => {
     const nested = {
       id: "nested",
