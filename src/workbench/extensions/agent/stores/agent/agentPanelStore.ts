@@ -4,10 +4,17 @@ import { computed, ref, watch } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
 import type { AgentPanelCloseSource } from '@/platform/telemetry/types'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
 const PANEL_MIN_WIDTH = 420
 const PANEL_MAX_WIDTH = 960
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
+
+type WorkflowTargetSelection =
+  | { status: 'uninitialized' }
+  | { status: 'cleared' }
+  | { status: 'selected'; workflow: ComfyWorkflow }
 
 export const useAgentPanelStore = defineStore('agentPanel', () => {
   const enabled = ref(false)
@@ -18,6 +25,39 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const gateSettled = ref(false)
   const width = ref(PANEL_MIN_WIDTH)
   const dismissedSelectionSignature = ref<string | null>(null)
+  const workflowTargetSelection = ref<WorkflowTargetSelection>({
+    status: 'uninitialized'
+  })
+  const selectedWorkflow = computed(() =>
+    workflowTargetSelection.value.status === 'selected'
+      ? workflowTargetSelection.value.workflow
+      : null
+  )
+  const canRestoreWorkflow = computed(
+    () => workflowTargetSelection.value.status === 'uninitialized'
+  )
+
+  function resetWorkflowTarget(): void {
+    workflowTargetSelection.value = { status: 'uninitialized' }
+  }
+
+  function setWorkflowTarget(workflow: ComfyWorkflow | null): void {
+    workflowTargetSelection.value = workflow
+      ? { status: 'selected', workflow }
+      : { status: 'cleared' }
+  }
+
+  const workflowStore = useWorkflowStore()
+  watch(
+    () => [selectedWorkflow.value, ...workflowStore.openWorkflows],
+    () => {
+      if (
+        selectedWorkflow.value !== null &&
+        !workflowStore.openWorkflows.includes(selectedWorkflow.value)
+      )
+        setWorkflowTarget(null)
+    }
+  )
 
   let openedAt: number | null = null
 
@@ -70,6 +110,11 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     width,
     isMaximized,
     dismissedSelectionSignature,
+    workflowTargetSelection,
+    selectedWorkflow,
+    canRestoreWorkflow,
+    resetWorkflowTarget,
+    setWorkflowTarget,
     toggle,
     close,
     setWidth,
