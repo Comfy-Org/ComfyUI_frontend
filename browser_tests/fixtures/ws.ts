@@ -39,7 +39,7 @@ function createWebSocketRouteHandler(
 
 export const webSocketFixture = base.extend<{
   connectWebSocketToServer: boolean
-  getWebSocket: () => Promise<WebSocketRoute>
+  getWebSocket: (after?: WebSocketRoute) => Promise<WebSocketRoute>
   webSocketMessages: string[]
 }>({
   connectWebSocketToServer: [true, { option: true }],
@@ -68,8 +68,8 @@ export const webSocketFixture = base.extend<{
         })
       )
 
-      await use(() => {
-        if (latest) return Promise.resolve(latest)
+      await use((after) => {
+        if (latest && latest !== after) return Promise.resolve(latest)
         return new Promise<WebSocketRoute>((r) => {
           resolve = r
         })
