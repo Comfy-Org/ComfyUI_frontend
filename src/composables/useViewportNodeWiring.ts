@@ -10,7 +10,7 @@ export interface WirableWidget {
   callback?: WidgetCallback
 }
 
-export interface NodeWithWirableWidgets {
+interface NodeWithWirableWidgets {
   widgets?: WirableWidget[]
 }
 
@@ -19,7 +19,7 @@ type ViewportStatus = Pick<
   'updateStatusMouseOnNode' | 'refreshViewport'
 >
 
-export interface NodeWiringHooks {
+interface NodeWiringHooks {
   viewport: () => ViewportStatus | null | undefined
   onConnectionsChange?: () => void
 }

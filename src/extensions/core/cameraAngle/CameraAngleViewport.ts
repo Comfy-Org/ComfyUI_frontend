@@ -172,6 +172,7 @@ export class CameraAngleViewport {
   }
 
   remove(): void {
+    if (this.removed) return
     this.removed = true
     this.input.detach()
     this.input.cancel()
