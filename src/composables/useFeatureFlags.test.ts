@@ -299,8 +299,6 @@ describe('useFeatureFlags', () => {
         ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED,
         true
       )
-
-      vi.unstubAllEnvs()
     })
 
     it('should return false in production when the server feature flag explicitly disables it', () => {
@@ -314,8 +312,6 @@ describe('useFeatureFlags', () => {
 
       const { flags } = useFeatureFlags()
       expect(flags.nodeLibraryEssentialsEnabled).toBe(false)
-
-      vi.unstubAllEnvs()
     })
   })
 
