@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { ComfyInputsSpec } from '@/schemas/nodeDefSchema'
+import type { ComfyInputsSpec, InputSpec } from '@/schemas/nodeDefSchema'
 import { zDynamicGroupInputSpec } from '@/schemas/nodeDefSchema'
 
 import { resolveDynamicInputSpec } from './dynamicInputSpec'
@@ -39,6 +39,28 @@ describe('DynamicGroup input specifications', () => {
       ).toBeUndefined()
     }
   )
+
+  it.for([
+    'constructor',
+    'toString',
+    'loras.0.constructor',
+    'loras.0.toString'
+  ])('does not resolve inherited property %s', (name) => {
+    expect(
+      resolveDynamicInputSpec(inputs, name, () => undefined)
+    ).toBeUndefined()
+  })
+
+  it('resolves an explicitly declared optional constructor field', () => {
+    const spec: InputSpec = ['STRING', {}]
+    expect(
+      resolveDynamicInputSpec(
+        { required: {}, optional: { constructor: spec } },
+        'constructor',
+        () => undefined
+      )
+    ).toEqual({ spec: ['STRING', {}], isOptional: true })
+  })
 
   it('requires a separator before a numeric field name', () => {
     const numeric: ComfyInputsSpec = {
