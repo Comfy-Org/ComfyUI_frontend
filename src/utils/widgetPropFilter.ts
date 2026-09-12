@@ -25,7 +25,10 @@ export const PANEL_EXCLUDED_PROPS = [
   ...STANDARD_EXCLUDED_PROPS,
   'panelClass',
   'panelStyle',
-  'overlayClass'
+  'overlayClass',
+  'nodeType',
+  'values',
+  'getOptionLabel'
 ] as const
 
 // export const IMAGE_EXCLUDED_PROPS = [
