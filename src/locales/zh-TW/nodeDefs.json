@@ -3065,6 +3065,29 @@
       }
     }
   },
+  "ConcatenateVideo": {
+    "description": "依序串接影片，無須解碼相容的已編碼輸入。",
+    "display_name": "串接影片",
+    "inputs": {
+      "codec": {
+        "name": "codec",
+        "tooltip": "用於編碼影片張量的編解碼器。自動使用 H.264；已編碼的影片維持不變。"
+      },
+      "complete_audio": {
+        "name": "complete_audio",
+        "tooltip": "串接後影片的可選完整音軌。會覆寫輸入影片所附帶的音訊。"
+      },
+      "videos": {
+        "name": "videos",
+        "tooltip": "要依輸入順序串接的影片片段。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "串接後的影片。"
+      }
+    }
+  },
   "ConditioningAverage": {
     "display_name": "條件設定（平均）",
     "inputs": {
@@ -3098,6 +3121,20 @@
       },
       "conditioning_to": {
         "name": "conditioning_to"
+      }
+    }
+  },
+  "ConditioningLoader": {
+    "description": "從 embeddings 資料夾載入以「儲存條件」儲存的條件，或任何包含「conditioning」張量的 safetensors 檔案。",
+    "display_name": "載入條件",
+    "inputs": {
+      "conditioning_name": {
+        "name": "conditioning_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3908,6 +3945,10 @@
       "bit_depth": {
         "name": "bit_depth",
         "tooltip": "自動模式會對 sRGB 使用 8 位元，對 HDR 使用 10 位元。明確選擇 8 位元或 10 位元時，不受色彩空間影響。"
+      },
+      "codec": {
+        "name": "codec",
+        "tooltip": "可選擇立即編碼影片。無會保留影像的張量形式；自動使用 H.264。"
       },
       "color_space": {
         "name": "color_space",
@@ -5026,6 +5067,22 @@
       "batch_size": {
         "name": "batch_size",
         "tooltip": "批次中的 latent 影像數量。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyYuE2LatentAudio": {
+    "display_name": "空白 YuE2 潛空間音訊",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "seconds": {
+        "name": "seconds"
       }
     },
     "outputs": {
@@ -7979,7 +8036,7 @@
     }
   },
   "ImageColorSpace": {
-    "description": "轉換 sRGB (Rec.709)、HDR (Rec.2020 HLG) 與 HDR PQ (Rec.2020 PQ)。使用 203 尼特 SDR 白點與 1000 尼特 HLG 參考顯示器。縮窄會對整個批次的過量亮度進行色調映射，並壓縮超出色域的色彩。轉換會以 float32 計算，並傳回中間裝置與 dtype。直通 alpha 不會進行色彩轉換。",
+    "description": "轉換 sRGB、線性 Rec.709、HDR（Rec.2020 HLG）及 HDR PQ（Rec.2020 PQ）。線性 1.0 使用與 sRGB 相同的 203 尼特參考白；HLG 使用 1000 尼特參考顯示器。線性輸出與線性轉 HDR 的轉換會保留延伸值，不進行色調對應。SDR 輸出及 PQ 轉 HLG 會對整個批次的過量亮度進行色調對應，並壓縮超出色域的色彩。轉換會以 float32 計算，並傳回中介裝置與資料型別。非預乘 alpha 不會進行色彩轉換。",
     "display_name": "轉換影像色彩空間",
     "inputs": {
       "destination": {
@@ -12374,6 +12431,23 @@
       }
     }
   },
+  "MarigoldV2PostProcess": {
+    "description": "將解碼後的 Marigold V2 預測轉換為影像：近處較亮的正規化深度、單位表面法線，或 sRGB 反照率。",
+    "display_name": "Marigold V2 後處理",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "prediction": {
+        "name": "prediction"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MaskComposite": {
     "display_name": "遮罩合成",
     "inputs": {
@@ -16021,6 +16095,9 @@
     "inputs": {
       "model": {
         "name": "model"
+      },
+      "sampling": {
+        "name": "sampling"
       },
       "shift": {
         "name": "偏移"
@@ -20988,6 +21065,24 @@
       }
     }
   },
+  "SaveConditioning": {
+    "description": "將條件以 safetensors 格式儲存至輸出資料夾；將檔案移至 models/embeddings，即可使用「載入條件」載入，例如用於略過文字編碼器。",
+    "display_name": "儲存條件",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "conditioning",
+        "tooltip": null
+      }
+    }
+  },
   "SaveGLB": {
     "display_name": "SaveGLB",
     "inputs": {
@@ -21676,6 +21771,28 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SheetSage2AudioToABC": {
+    "description": "將音樂中的人聲與樂器旋律轉錄為 ABC 記譜法。將 abc 輸出連接至 YuE2 Generate Music 節點，並使用相符的模式。",
+    "display_name": "SheetSage2 音訊轉 ABC",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "audio_encoder": {
+        "name": "audio_encoder"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "full：產生旋律與和弦；melody：僅產生旋律，建議用於翻唱。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
         "tooltip": null
       }
     }
@@ -28528,6 +28645,94 @@
     "outputs": {
       "0": {
         "name": "mesh",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateABC": {
+    "description": "根據風格和歌詞產生歌曲的 ABC 記譜法。將 abc 連接至 YuE2 Generate Music 節點。",
+    "display_name": "YuE2 產生 ABC",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "lyrics": {
+        "name": "lyrics"
+      },
+      "max_abc_tokens": {
+        "name": "max_abc_tokens"
+      },
+      "mode": {
+        "name": "模式",
+        "tooltip": "完整：產生旋律和和弦；旋律：僅產生旋律，建議用於翻唱。"
+      },
+      "seed": {
+        "name": "種子"
+      },
+      "style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateMusic": {
+    "description": "從風格、歌詞和 ABC 記譜法產生音樂詞元與聲學條件。請將產生的秒數提供給 Empty YuE2 Latent Audio 節點。ABC 輸入留空時會忽略所選模式。",
+    "display_name": "YuE2 生成音樂",
+    "inputs": {
+      "abc": {
+        "name": "abc",
+        "tooltip": "連接 ABC 產生器或提供編輯過的樂譜。留空即可自動使用關閉模式。"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "lyrics": {
+        "name": "歌詞"
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "最長時長；生成可能會提前停止。此版本使用 360 秒的預算。"
+      },
+      "mode": {
+        "name": "模式",
+        "tooltip": "完整：產生旋律和和弦；旋律：僅產生旋律，建議用於翻唱。"
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "seed": {
+        "name": "種子"
+      },
+      "style": {
+        "name": "風格"
+      },
+      "temperature": {
+        "name": "溫度"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "秒數",
         "tooltip": null
       }
     }
