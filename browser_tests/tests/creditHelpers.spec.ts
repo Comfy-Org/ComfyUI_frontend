@@ -210,6 +210,7 @@ testWithMockedObjectInfo.describe(
           window.app!.graph.add(node)
           return node!.id
         })
+        await comfyPage.nextFrame()
 
         const header = comfyPage.page.locator(
           `[data-testid="node-header-${nodeId}"]`
