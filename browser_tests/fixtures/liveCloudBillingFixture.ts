@@ -55,20 +55,6 @@ export const liveCloudBillingFixture = base.extend<{
       const request = route.request()
       const url = new URL(request.url())
       if (
-        config.PLAYWRIGHT_SETUP_API_URL === 'https://testcloud.comfy.org' &&
-        url.origin === 'https://testapi.comfy.org' &&
-        request.method() === 'GET' &&
-        /^\/customers(?:\/balance)?$/.test(url.pathname)
-      ) {
-        await route.fallback()
-        return
-      }
-      if (url.origin === 'https://testapi.comfy.org') {
-        networkPolicy.unexpected.add(`API ${url.origin}${url.pathname}`)
-        await route.abort('blockedbyclient')
-        return
-      }
-      if (
         !networkPolicy.origins.has(url.origin) &&
         url.hostname.endsWith('.comfy.org') &&
         /^\/(api|customers)(\/|$)/.test(url.pathname)
