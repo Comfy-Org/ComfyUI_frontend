@@ -12,6 +12,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as base
 } from '@e2e/fixtures/ComfyPage'
+import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { loadLiveCloudBillingConfig } from '@e2e/fixtures/utils/liveCloudBillingConfig'
 
 interface BillingSandbox {
@@ -61,6 +62,9 @@ export const liveCloudBillingFixture = base.extend<{
   },
   billingSandbox: async ({ page }, use, testInfo) => {
     const sandbox = loadLiveCloudBillingConfig()
+    await new FeatureFlagHelper(page).seedFlags({
+      onboarding_survey_enabled: false
+    })
     const documentResponse = await page.goto(
       `${sandbox.PLAYWRIGHT_TEST_URL}/cloud/login`
     )
