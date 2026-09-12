@@ -93,32 +93,36 @@ function goToSignIn(event: MouseEvent): void {
   window.location.assign(signInDestination())
 }
 
-async function submit() {
-  if (state.value === 'sending' || state.value === 'sent') return
+function validEmail(): boolean {
   const parsed = authSchemasFor(locale).signInSchema.shape.email.safeParse(
     email.value
   )
-  if (!parsed.success) {
-    errorMessage.value = parsed.error.issues[0]?.message ?? ''
-    return
-  }
-  errorMessage.value = ''
-  state.value = 'sending'
+  if (parsed.success) return true
+  errorMessage.value = parsed.error.issues[0]?.message ?? ''
+  return false
+}
+
+/**
+ * Opens a bounded attempt: a fresh generation and a timer that, if the load or
+ * send stalls, drops the control back to a retryable idle. The returned guard
+ * is false once this attempt is superseded (flag flip, unmount, or the bound
+ * timeout firing), so a late resolve falls through instead of settling the UI.
+ */
+function beginBoundedSend(): () => boolean {
   const attempt = resetGeneration
-  const live = () => attempt === resetGeneration && enabled.value
-  // A stalled load or send drops the attempt back to a retryable state; the
-  // generation bump makes the eventual late resolve fall to the !live() guards.
   boundTimer = setTimeout(() => {
     resetGeneration++
     state.value = 'idle'
   }, RESET_TIMEOUT_MS)
+  return () => attempt === resetGeneration && enabled.value
+}
 
+async function deliverReset(live: () => boolean) {
   const firebase = await loadWorkshopFirebase().catch(() => undefined)
   if (!live()) return
   if (!firebase) {
     clearTimeout(boundTimer)
-    state.value = 'error'
-    errorMessage.value = t('auth.forgot.error', locale)
+    reportLoadFailure()
     return
   }
   // An unknown email already resolves as sent (the package keeps that
@@ -135,6 +139,19 @@ async function submit() {
   if (!live()) return
   clearTimeout(boundTimer)
   reportSent()
+}
+
+async function submit() {
+  if (state.value === 'sending' || state.value === 'sent') return
+  if (!validEmail()) return
+  errorMessage.value = ''
+  state.value = 'sending'
+  await deliverReset(beginBoundedSend())
+}
+
+function reportLoadFailure() {
+  state.value = 'error'
+  errorMessage.value = t('auth.forgot.error', locale)
 }
 
 function reportSendFailure(error: unknown) {
