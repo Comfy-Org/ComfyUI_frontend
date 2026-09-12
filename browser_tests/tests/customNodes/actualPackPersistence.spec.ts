@@ -12,7 +12,6 @@ test.describe(
   { tag: ['@oss', '@node', '@widget'] },
   () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
       await comfyPage.nodeOps.clearGraph()
     })
 
@@ -62,98 +61,121 @@ test.describe(
     }) => {
       test.slow()
       await comfyPage.workflow.setupWorkflowsDirectory({})
-      const workflowName = await comfyPage.page.evaluate(
-        () => `actual-rgthree-comparer-${crypto.randomUUID()}`
-      )
-      const ids = await comfyPage.page.evaluate(() => {
-        const graph = window.app!.graph
-        const first = window.LiteGraph!.createNode('EmptyImage')!
-        const second = window.LiteGraph!.createNode('EmptyImage')!
-        const comparer = window.LiteGraph!.createNode(
-          'Image Comparer (rgthree)'
-        )!
-        graph.add(first)
-        graph.add(second)
-        graph.add(comparer)
-        first.connect(0, comparer, 0)
-        second.connect(0, comparer, 1)
-        return {
-          expectedIds: [
-            String(first.id),
-            String(second.id),
-            String(comparer.id)
+      for (const vueNodesEnabled of [false, true] as const) {
+        await comfyPage.settings.setSetting(
+          'Comfy.VueNodes.Enabled',
+          vueNodesEnabled
+        )
+        await comfyPage.page.reload({ waitUntil: 'domcontentloaded' })
+        await comfyPage.waitForAppReady()
+        await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
+        await comfyPage.workflow.waitForWorkflowIdle()
+        await comfyPage.nodeOps.clearGraph()
+
+        const workflowName = await comfyPage.page.evaluate(
+          (renderer) =>
+            `actual-rgthree-comparer-${renderer}-${crypto.randomUUID()}`,
+          vueNodesEnabled ? 'vue' : 'legacy'
+        )
+        const ids = await comfyPage.page.evaluate(() => {
+          const graph = window.app!.graph
+          const first = window.LiteGraph!.createNode('EmptyImage')!
+          const second = window.LiteGraph!.createNode('EmptyImage')!
+          const comparer = window.LiteGraph!.createNode(
+            'Image Comparer (rgthree)'
+          )!
+          first.widgets!.find((widget) => widget.name === 'color')!.value =
+            0xff0000
+          second.widgets!.find((widget) => widget.name === 'color')!.value =
+            0x0000ff
+          graph.add(first)
+          graph.add(second)
+          graph.add(comparer)
+          first.connect(0, comparer, 0)
+          second.connect(0, comparer, 1)
+          return {
+            expectedIds: [
+              String(first.id),
+              String(second.id),
+              String(comparer.id)
+            ],
+            comparerId: String(comparer.id)
+          }
+        })
+
+        const result = await target.runWorkflow(comfyPage.page, {
+          expectedNodeIds: [ids.comparerId],
+          graphNodeIds: ids.expectedIds,
+          timeoutMs: 15_000
+        })
+        expect(result.outcome).toBe('PASS')
+
+        const comparerState = () =>
+          comfyPage.page.evaluate((nodeId) => {
+            const graph = window.app?.graph
+            const node = graph?.nodes.find(
+              (candidate) => String(candidate.id) === nodeId
+            )
+            if (!node) return undefined
+            const value = node.widgets?.[0]?.value
+            const renderedImages = node.imgs?.map((image) => ({
+              complete: image.complete,
+              naturalHeight: image.naturalHeight,
+              naturalWidth: image.naturalWidth,
+              src: image.src
+            }))
+            return { renderedImages, value }
+          }, ids.comparerId)
+
+        const expectedComparison = {
+          renderedImages: [
+            expect.objectContaining({
+              complete: true,
+              naturalHeight: 512,
+              naturalWidth: 512
+            }),
+            expect.objectContaining({
+              complete: true,
+              naturalHeight: 512,
+              naturalWidth: 512
+            })
           ],
-          comparerId: String(comparer.id)
+          value: {
+            images: [
+              expect.objectContaining({ name: 'A', selected: true }),
+              expect.objectContaining({ name: 'B', selected: true })
+            ]
+          }
         }
-      })
-
-      const result = await target.runWorkflow(comfyPage.page, {
-        expectedNodeIds: [ids.comparerId],
-        graphNodeIds: ids.expectedIds,
-        timeoutMs: 15_000
-      })
-      expect(result.outcome).toBe('PASS')
-
-      const comparerId = ids.comparerId
-      await expect
-        .poll(() =>
-          comfyPage.page.evaluate((nodeId) => {
-            const node = window.app!.graph.nodes.find(
-              (candidate) => String(candidate.id) === nodeId
-            )!
-            return node.widgets?.[0]?.value
-          }, comparerId)
+        await expect.poll(comparerState).toEqual(expectedComparison)
+        const initialState = await comparerState()
+        expect(initialState?.renderedImages?.[0].src).not.toBe(
+          initialState?.renderedImages?.[1].src
         )
-        .toEqual({
-          images: [
-            expect.objectContaining({ name: 'A', selected: true }),
-            expect.objectContaining({ name: 'B', selected: true })
-          ]
-        })
 
-      const tab = comfyPage.menu.workflowsTab
-      await tab.open()
-      await comfyPage.menu.topbar.saveWorkflow(workflowName)
-      await expect(comfyPage.toast.toastErrors).toHaveCount(0)
-      await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-      await comfyPage.workflow.waitForWorkflowIdle()
-      await openWorkflowFromSidebar(comfyPage, workflowName)
+        await comfyPage.menu.topbar.saveWorkflow(workflowName)
+        await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
+        await comfyPage.workflow.waitForWorkflowIdle()
+        await comfyPage.menu.topbar.workflowTabs
+          .getByText(workflowName, { exact: true })
+          .click()
+        await comfyPage.page.keyboard.press('Escape')
+        await comfyPage.workflow.waitForWorkflowIdle()
+        await expect.poll(comparerState).toEqual(expectedComparison)
 
-      await expect
-        .poll(() =>
-          comfyPage.page.evaluate((nodeId) => {
-            const node = window.app!.graph.nodes.find(
-              (candidate) => String(candidate.id) === nodeId
-            )!
-            return node.widgets?.[0]?.value
-          }, comparerId)
+        await comfyPage.command.executeCommand('Comfy.SaveWorkflow')
+        await comfyPage.workflow.waitForWorkflowIdle()
+        await expect(comfyPage.toast.toastErrors).toHaveCount(0)
+
+        await comfyPage.page.reload({ waitUntil: 'domcontentloaded' })
+        await comfyPage.waitForAppReady()
+        await openWorkflowFromSidebar(comfyPage, workflowName)
+        await expect.poll(comparerState).toEqual(expectedComparison)
+        const reloadedState = await comparerState()
+        expect(reloadedState?.renderedImages?.map(({ src }) => src)).toEqual(
+          initialState?.renderedImages?.map(({ src }) => src)
         )
-        .toEqual({
-          images: [
-            expect.objectContaining({ name: 'A', selected: true }),
-            expect.objectContaining({ name: 'B', selected: true })
-          ]
-        })
-
-      await comfyPage.page.reload({ waitUntil: 'domcontentloaded' })
-      await comfyPage.waitForAppReady()
-      await openWorkflowFromSidebar(comfyPage, workflowName)
-
-      await expect
-        .poll(() =>
-          comfyPage.page.evaluate((nodeId) => {
-            const node = window.app!.graph.nodes.find(
-              (candidate) => String(candidate.id) === nodeId
-            )!
-            return node.widgets?.[0]?.value
-          }, comparerId)
-        )
-        .toEqual({
-          images: [
-            expect.objectContaining({ name: 'A', selected: true }),
-            expect.objectContaining({ name: 'B', selected: true })
-          ]
-        })
+      }
     })
   }
 )
