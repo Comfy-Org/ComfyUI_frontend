@@ -707,7 +707,7 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
-    it('does not deep-copy definitions for a frame when all are registered', () => {
+    it('passes definitions for a promotion-only frame after registration', () => {
       const registeredGraph = {
         rootGraph: {
           subgraphs: new Map([[fakeDefinitions[0].id, {}]])
@@ -717,13 +717,12 @@ describe('useAgentCrdtFollower', () => {
 
       dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
 
-      expect(definitionsState.readSubgraphDefinitionIds).toHaveBeenCalledWith(
+      expect(definitionsState.readSubgraphDefinitions).toHaveBeenCalledWith(
         bridge().follower.doc
       )
-      expect(definitionsState.readSubgraphDefinitions).not.toHaveBeenCalled()
       expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
         registeredGraph,
-        []
+        fakeDefinitions
       )
       unmount()
     })

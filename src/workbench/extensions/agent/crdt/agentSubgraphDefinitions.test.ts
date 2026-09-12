@@ -52,6 +52,15 @@ function seed(...definitions: ExportedSubgraph[]): Y.Doc {
   )
 }
 
+function privateKeys(value: unknown): string[] {
+  if (Array.isArray(value)) return value.flatMap(privateKeys)
+  if (typeof value !== 'object' || value === null) return []
+  return Object.entries(value).flatMap(([key, nested]) => [
+    ...(key.startsWith('__') ? [key] : []),
+    ...privateKeys(nested)
+  ])
+}
+
 describe('readSubgraphDefinitions', () => {
   it('returns nothing for a document without definitions', () => {
     expect(readSubgraphDefinitions(new Y.Doc())).toEqual([])
@@ -127,6 +136,31 @@ describe('readSubgraphDefinitions', () => {
     const [projected] = readSubgraphDefinitions(doc)
 
     expect(projected.nodes?.[0]).not.toHaveProperty('__incarnation')
+  })
+
+  it('strips private keys throughout projected definitions', () => {
+    const inner = createTestSubgraphData({
+      nodes: [
+        interiorNode(1, 'dummy', {
+          title: 'legitimate node',
+          __private_node_digest: 'node secret'
+        })
+      ] as never
+    }) as ExportedSubgraph & { __nested_private: string }
+    inner.__nested_private = 'nested secret'
+    const outer = createTestSubgraphData({
+      nodes: [interiorNode(2, inner.id)] as never,
+      definitions: { subgraphs: [inner] }
+    }) as ExportedSubgraph & { __private_definition_digest: string }
+    outer.__private_definition_digest = 'definition secret'
+
+    const [projected] = readSubgraphDefinitions(seed(outer))
+
+    expect(privateKeys(projected)).toEqual([])
+    expect(projected.id).toBe(outer.id)
+    expect(projected.definitions?.subgraphs?.[0]?.nodes?.[0]?.title).toBe(
+      'legitimate node'
+    )
   })
 
   it('passes nested definitions through untouched', () => {

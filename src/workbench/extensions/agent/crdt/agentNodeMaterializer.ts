@@ -1,6 +1,13 @@
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraph, Subgraph } from '@/lib/litegraph/src/LGraph'
 import { materializeLinkAdapter } from '@/lib/litegraph/src/LLink'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  demoteWidget,
+  promoteWidget,
+  reorderSubgraphInputsByName
+} from '@/core/graph/subgraph/promotionUtils'
+import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
+import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { topologicalSortSubgraphs } from '@/lib/litegraph/src/subgraph/subgraphDeduplication'
 import type {
   ExportedSubgraph,
@@ -14,10 +21,12 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { GraphScope } from '@/types/graphScopeId'
 import { graphScopeOf } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetStateInit } from '@/types/widgetState'
 
+import { ambiguousInputNames } from './agentSubgraphHostSlots'
 import { runMintPortsSuppressed } from './mintPortWiring'
 
 export type MaterializableGraph = Pick<
@@ -52,8 +61,265 @@ export function reconcileAgentAdapters(
 ): NodeId[] {
   return runMintPortsSuppressed(() => {
     const pending = registerSubgraphDefinitions(graph, subgraphDefinitions)
-    return reconcile(graph, pending)
+    const materialized = reconcile(graph, pending)
+    reconcileSubgraphPromotions(graph.rootGraph, subgraphDefinitions)
+    return materialized
   })
+}
+
+interface PromotionSource {
+  node: LGraphNode
+  widget: NonNullable<LGraphNode['widgets']>[number]
+  boundaryName: string
+}
+
+function promotionKey(
+  node: LGraphNode,
+  widget: PromotionSource['widget'],
+  boundaryName: string
+) {
+  return `${node.id}\u0000${widget.name}\u0000${boundaryName}`
+}
+
+interface PromotionLink {
+  originId: unknown
+  targetId: unknown
+  targetSlot: number
+}
+
+function promotionLinks(
+  definition: ExportedSubgraph
+): Map<number, PromotionLink> | Error {
+  const links = new Map<number, PromotionLink>()
+  for (const link of definition.links ?? []) {
+    const tuple: unknown = link
+    const id = Number(Array.isArray(tuple) ? tuple[0] : link.id)
+    const targetSlot = Number(
+      Array.isArray(tuple) ? tuple[4] : link.target_slot
+    )
+    if (!Number.isFinite(id) || !Number.isInteger(targetSlot)) {
+      return new Error(
+        `Agent subgraph promotion link is malformed: ${definition.id}`
+      )
+    }
+    links.set(id, {
+      originId: Array.isArray(tuple) ? tuple[1] : link.origin_id,
+      targetId: Array.isArray(tuple) ? tuple[3] : link.target_id,
+      targetSlot
+    })
+  }
+  return links
+}
+
+function resolvePromotionSources(
+  subgraph: Subgraph,
+  definition: ExportedSubgraph
+): PromotionSource[] | Error {
+  const links = promotionLinks(definition)
+  if (links instanceof Error) return links
+  const sources: PromotionSource[] = []
+  const ambiguous = ambiguousInputNames(definition)
+  for (const input of definition.inputs ?? []) {
+    if (ambiguous.has(input.name)) continue
+    const inputSources: PromotionSource[] = []
+    for (const linkId of input.linkIds ?? []) {
+      const link = links.get(linkId)
+      if (!link) {
+        return new Error(
+          `Agent subgraph promotion link is unknown: ${definition.id}/${String(linkId)}/${input.name}`
+        )
+      }
+      if (String(link.originId) !== SUBGRAPH_INPUT_ID) continue
+      const node = subgraph.getNodeById(toNodeId(String(link.targetId)))
+      const slot = node?.inputs[link.targetSlot]
+      if (!node || !slot) {
+        return new Error(
+          `Agent subgraph promotion source is unknown: ${definition.id}/${String(link.targetId)}/${input.name}`
+        )
+      }
+      const widget = node.getWidgetFromSlot(slot)
+      if (widget) inputSources.push({ node, widget, boundaryName: input.name })
+    }
+    const source = inputSources.at(0)
+    if (inputSources.length === 1 && source) sources.push(source)
+  }
+  return sources
+}
+
+function currentPromotionSources(subgraph: Subgraph): PromotionSource[] {
+  return subgraph.inputs.flatMap((input) =>
+    input.linkIds.flatMap((linkId) => {
+      const link = subgraph.getLink(linkId)
+      if (!link) return []
+      const { inputNode, input: targetInput } = link.resolve(subgraph)
+      const widget = targetInput
+        ? inputNode?.getWidgetFromSlot(targetInput)
+        : undefined
+      return inputNode && targetInput && widget
+        ? [{ node: inputNode, widget, boundaryName: input.name }]
+        : []
+    })
+  )
+}
+
+function definitionHosts(rootGraph: LGraph, definitionId: string) {
+  const graphs = [rootGraph, ...rootGraph.subgraphs.values()]
+  return graphs.flatMap((candidate) =>
+    candidate.nodes.filter(
+      (node): node is SubgraphNode =>
+        node.isSubgraphNode() && node.type === definitionId
+    )
+  )
+}
+
+const knownPromotionBoundaryNames = new WeakMap<Subgraph, Set<string>>()
+
+function stalePromotionBoundaryNames(
+  subgraph: Subgraph,
+  definition: ExportedSubgraph
+): Set<string> {
+  const stale = new Set<string>()
+  const known = knownPromotionBoundaryNames.get(subgraph) ?? new Set()
+  const definitionNodeIds = new Set(
+    (definition.nodes ?? []).map(({ id }) => String(id))
+  )
+  const links = promotionLinks(definition)
+  if (links instanceof Error) return stale
+
+  for (const input of definition.inputs ?? []) {
+    if (!known.has(input.name)) continue
+    for (const linkId of input.linkIds ?? []) {
+      const link = links.get(linkId)
+      if (!link || String(link.originId) !== SUBGRAPH_INPUT_ID) continue
+      const node = subgraph.getNodeById(toNodeId(String(link.targetId)))
+      const slot = node?.inputs[link.targetSlot]
+      if (
+        !definitionNodeIds.has(String(link.targetId)) ||
+        !node ||
+        !slot ||
+        !node.getWidgetFromSlot(slot)
+      ) {
+        stale.add(input.name)
+      }
+    }
+  }
+  return stale
+}
+
+function removeStalePromotedInputs(
+  subgraph: Subgraph,
+  hosts: SubgraphNode[],
+  staleBoundaryNames: ReadonlySet<string>
+): void {
+  for (const subgraphInput of [...subgraph.inputs]) {
+    if (!staleBoundaryNames.has(subgraphInput.name)) continue
+    const hostInputs = hosts.flatMap((host) => {
+      const input = host.inputs.find(
+        (candidate) => candidate._subgraphSlot === subgraphInput
+      )
+      return input ? [{ host, input }] : []
+    })
+
+    for (const { host, input } of hostInputs) {
+      const inputIndex = host.inputs.indexOf(input)
+      if (host.isInputConnected(inputIndex)) host.disconnectInput(inputIndex)
+    }
+    subgraph.removeInput(subgraphInput)
+    for (const { input } of hostInputs) {
+      if (input.widgetId) useWidgetValueStore().deleteWidget(input.widgetId)
+    }
+  }
+}
+
+const reportedPromotionFailures = new WeakMap<LGraph, Map<string, string>>()
+
+function reconcileSubgraphPromotions(
+  rootGraph: LGraph,
+  definitions: ExportedSubgraph[]
+): void {
+  const reported =
+    reportedPromotionFailures.get(rootGraph) ??
+    reportedPromotionFailures.set(rootGraph, new Map()).get(rootGraph)!
+  const flattened = flattenDefinitions(definitions)
+  for (const definition of topologicalSortSubgraphs(flattened)) {
+    const live = rootGraph.subgraphs.get(definition.id)
+    if (!live) continue
+    const hosts = definitionHosts(rootGraph, definition.id)
+    const declaredBoundaryNames = new Set(
+      (definition.inputs ?? []).map(({ name }) => name)
+    )
+    const staleBoundaryNames = stalePromotionBoundaryNames(live, definition)
+    for (const input of live.inputs) {
+      if (
+        knownPromotionBoundaryNames.get(live)?.has(input.name) &&
+        !declaredBoundaryNames.has(input.name)
+      ) {
+        staleBoundaryNames.add(input.name)
+      }
+    }
+    removeStalePromotedInputs(live, hosts, staleBoundaryNames)
+    const known = knownPromotionBoundaryNames.get(live)
+    for (const name of staleBoundaryNames) known?.delete(name)
+
+    const desired = resolvePromotionSources(live, definition)
+    if (desired instanceof Error) {
+      if (reported.get(definition.id) !== desired.message) {
+        reported.set(definition.id, desired.message)
+        reportError(desired, {
+          errorType: 'agent_subgraph_promotion_failed',
+          context: { graphId: rootGraph.id, definitionId: definition.id }
+        })
+      }
+      continue
+    }
+
+    reported.delete(definition.id)
+    knownPromotionBoundaryNames.set(
+      live,
+      new Set(desired.map(({ boundaryName }) => boundaryName))
+    )
+
+    if (hosts.length === 0) continue
+    const desiredKeys = new Set(
+      desired.map(({ node, widget, boundaryName }) =>
+        promotionKey(node, widget, boundaryName)
+      )
+    )
+    const current = currentPromotionSources(live)
+    const currentKeys = new Set(
+      current.map(({ node, widget, boundaryName }) =>
+        promotionKey(node, widget, boundaryName)
+      )
+    )
+    for (const { node, widget, boundaryName } of current) {
+      if (!desiredKeys.has(promotionKey(node, widget, boundaryName))) {
+        demoteWidget(node, widget, hosts)
+      }
+    }
+    for (const { node, widget, boundaryName } of desired) {
+      if (currentKeys.has(promotionKey(node, widget, boundaryName))) continue
+      for (const failure of promoteWidget(node, widget, hosts, boundaryName)) {
+        const error = new Error(
+          `Agent subgraph promotion failed: ${definition.id}/${String(failure.host.id)}/${boundaryName}/${failure.reason}`
+        )
+        reportError(error, {
+          errorType: 'agent_subgraph_promotion_failed',
+          context: {
+            graphId: rootGraph.id,
+            definitionId: definition.id,
+            hostId: failure.host.id,
+            reason: failure.reason
+          }
+        })
+      }
+    }
+    for (const host of hosts) {
+      reorderSubgraphInputsByName(
+        host,
+        (definition.inputs ?? []).map(({ name }) => name)
+      )
+    }
+  }
 }
 
 /**
@@ -102,7 +368,10 @@ function registerSubgraphDefinitions(
     reportedDefinitionFailures.set(rootGraph, new Set()).get(rootGraph)!
 
   for (const definition of topologicalSortSubgraphs(missing)) {
-    const failure = tryCreateSubgraph(rootGraph, definition)
+    const failure = tryCreateSubgraph(
+      rootGraph,
+      withoutAmbiguousBoundaryInputs(definition)
+    )
     if (failure === undefined) {
       pending.delete(definition.id)
       reported.delete(definition.id)
@@ -116,6 +385,27 @@ function registerSubgraphDefinitions(
     })
   }
   return pending
+}
+
+function withoutAmbiguousBoundaryInputs(
+  definition: ExportedSubgraph
+): ExportedSubgraph {
+  const ambiguous = ambiguousInputNames(definition)
+  if (ambiguous.size === 0) return definition
+  const omittedLinkIds = new Set(
+    (definition.inputs ?? [])
+      .filter((input) => ambiguous.has(input.name))
+      .flatMap((input) => input.linkIds ?? [])
+  )
+  return {
+    ...definition,
+    inputs: (definition.inputs ?? []).filter(
+      (input) => !ambiguous.has(input.name)
+    ),
+    links: (definition.links ?? []).filter(
+      (link) => !omittedLinkIds.has(link.id)
+    )
+  }
 }
 
 /**

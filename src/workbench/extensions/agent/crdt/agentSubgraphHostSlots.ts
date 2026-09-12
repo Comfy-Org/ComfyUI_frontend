@@ -38,7 +38,7 @@ export function indexSubgraphDefinitions(
  * Declared input names that appear more than once. A repeated name cannot be
  * resolved to a single host slot, so callers treat it as undeclared.
  */
-function ambiguousInputNames(definition: ExportedSubgraph): Set<string> {
+export function ambiguousInputNames(definition: ExportedSubgraph): Set<string> {
   const seen = new Set<string>()
   const ambiguous = new Set<string>()
   for (const input of definition.inputs ?? []) {
