@@ -382,7 +382,7 @@ test.describe(
       await comfyPage.keyboard.undo()
       await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
 
-      await comfyPage.menu.topbar.getWorkflowTab('Undo Tab A').click()
+      await comfyPage.workflow.switchToTab('Undo Tab A')
       await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(7)
       await expect
         .poll(() =>
@@ -405,7 +405,7 @@ test.describe(
         .poll(() => node.getProperty<[number, number]>('pos'))
         .toEqual(initialPosition)
 
-      await tabB.click()
+      await comfyPage.workflow.switchToTab(tabBName)
       await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
       expect(
         await comfyPage.page.evaluate(() =>
