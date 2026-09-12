@@ -121,9 +121,11 @@ second@second prompt`)
           comfyPage.page.evaluate(({ combineId, loadId }) => {
             const graph = window.app!.graph
             const combine = graph.getNodeById(combineId)
-            const link = Object.values(graph.links)[0]
+            const links = Object.values(graph.links)
+            const link = links[0]
             return {
               nodesPresent: Boolean(graph.getNodeById(loadId) && combine),
+              linkCount: links.length,
               frameRate: combine?.widgets?.find(
                 ({ name }) => name === 'frame_rate'
               )?.value,
@@ -138,6 +140,7 @@ second@second prompt`)
         )
         .toEqual({
           nodesPresent: true,
+          linkCount: 1,
           frameRate: 12,
           link: {
             originId: created.loadId,
