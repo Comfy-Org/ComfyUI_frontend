@@ -1628,6 +1628,71 @@ describe('AgentPanelRoot canvas draft on send', () => {
     expect(prepareForSave).toHaveBeenCalledOnce()
   })
 
+  it('T-03 / PM-655 sends the edited visible graph on the next turn', async () => {
+    const messageBodies: unknown[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.includes('/messages') && init?.method === 'POST') {
+          messageBodies.push(JSON.parse(String(init.body)))
+          return json(202, ack('wf-edited', `m-${messageBodies.length}`))
+        }
+        if (url.includes('/assets'))
+          return json(200, { assets: [], total: 0, has_more: false })
+        if (url.includes('/workflows'))
+          return json(200, {
+            data: [{ id: 'wf-edited', name: 'edited-between-turns' }],
+            pagination: {
+              offset: 0,
+              limit: 100,
+              total: 1,
+              has_more: false
+            }
+          })
+        return json(200, agentThreadList())
+      })
+    )
+
+    let visibleGraph = fromPartial<ComfyWorkflowJSON>({
+      nodes: [{ id: 1, type: 'LoadImage' }],
+      links: []
+    })
+    const activeWorkflow = addTab('workflows/edited-between-turns.json', {
+      activeState: visibleGraph
+    })
+    activeWorkflow.changeTracker = createMockChangeTracker({
+      prepareForSave: vi.fn(() => {
+        activeWorkflow.activeState = visibleGraph
+      })
+    })
+    workflowStore.activeWorkflow = activeWorkflow
+
+    renderWithSelectedTarget()
+    await sendFromComposer('first question')
+    expect(messageBodies[0]).toMatchObject({
+      draft: { content: visibleGraph }
+    })
+
+    ws.emit('agent_message_done', {
+      message_id: 'm-1',
+      thread_id: 'th-1'
+    })
+    visibleGraph = fromPartial<ComfyWorkflowJSON>({
+      nodes: [
+        { id: 1, type: 'LoadImage' },
+        { id: 2, type: 'KSampler' }
+      ],
+      links: [[1, 1, 0, 2, 0, 'IMAGE']]
+    })
+
+    await sendFromComposer('what changed?')
+
+    expect(messageBodies[1]).toMatchObject({
+      content: 'what changed?',
+      draft: { content: visibleGraph }
+    })
+  })
+
   it('does not send or clear the prompt when there is no selected target', async () => {
     const messageBodies: unknown[] = []
     vi.stubGlobal(
