@@ -231,6 +231,7 @@ describe('WidgetSelectDropdown', () => {
     const renderedMarkup = document.body.innerHTML
     expect(renderedMarkup).not.toMatch(/ values="/i)
     expect(renderedMarkup).not.toMatch(/ getoptionlabel="/i)
+    expect(renderedMarkup).not.toMatch(/ nodetype="/i)
     expect(consoleWarn.mock.calls.flat().join(' ')).not.toContain(
       'Failed setting prop "nodeType"'
     )
