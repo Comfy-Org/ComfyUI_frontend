@@ -287,9 +287,11 @@ export class VueNodeHelpers {
     widgetName: string,
     value: string
   ): Promise<void> {
-    const widget = this.getWidgetByName(nodeTitle, widgetName)
+    const nodeId = await this.getNodeIdByTitle(nodeTitle)
+    const node = this.getNodeLocator(nodeId)
+    const widget = node.getByLabel(widgetName, { exact: true })
     const { input } = this.getInputNumberControls(widget)
-    const fixture = await this.getFixtureByTitle(nodeTitle)
+    const fixture = new VueNodeFixture(node)
     await nextFrame(this.page)
     await widget.click()
     await input.fill(value)
@@ -297,11 +299,11 @@ export class VueNodeHelpers {
     await expect
       .poll(() =>
         this.page.evaluate(
-          ({ nodeTitle, widgetName }) =>
+          ({ nodeId, widgetName }) =>
             window
-              .app!.graph.nodes.find((node) => node.title === nodeTitle)
+              .app!.graph.getNodeById(nodeId)
               ?.widgets?.find((widget) => widget.name === widgetName)?.value,
-          { nodeTitle, widgetName }
+          { nodeId: toNodeId(nodeId), widgetName }
         )
       )
       .toBe(Number(value))
