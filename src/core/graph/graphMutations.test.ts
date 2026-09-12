@@ -407,6 +407,25 @@ describe('graphMutations', () => {
     expect(store.getWidget(seedId)).toBeUndefined()
   })
 
+  it('retains an incremental setValue over a stale lastSerialization on an omitted-widget reconcile', () => {
+    const graph = mutations()
+    graph.addNode(node(1, { seed: 4 }), context)
+    const store = useWidgetValueStore()
+    const seedId = widgetId('root', toNodeId(1), 'seed')
+
+    // Incremental update: only the widget store changes, not lastSerialization.
+    expect(store.setValue(seedId, 7, context)).toBe(true)
+
+    const { widgets_values: _values, ...payload } = node(1)
+    expect(graph.batch(context, (batch) => batch.reconcileNode(payload))).toBe(
+      true
+    )
+
+    const [state] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    expect(store.getWidget(seedId)?.value).toBe(7)
+    expect(state.lastSerialization?.widgets_values).toMatchObject({ seed: 7 })
+  })
+
   it('skips button widgets when remapping positional values', () => {
     const graph = mutations()
     graph.addNode(node(1), context)

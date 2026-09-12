@@ -690,12 +690,68 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             if (existing.type === state.type) {
               state.inputs = reconcileInputSlots(existing, state)
               if (!widgetsAuthoritative && state.lastSerialization) {
-                state.lastSerialization.widgets_values = cloneDeep(
-                  existing.lastSerialization?.widgets_values
-                )
-                state.lastSerialization.widgets_values_named = cloneDeep(
+                const staleNamed = cloneDeep(
                   existing.lastSerialization?.widgets_values_named
                 )
+                // widgets_values is typed as an array, but this reconciler
+                // also handles legacy/record-shaped payloads (see
+                // widgetEntries above), so treat it as unknown here.
+                const stalePositional = cloneDeep(
+                  existing.lastSerialization?.widgets_values
+                ) as unknown
+                const stalePositionalNames = Object.keys(staleNamed ?? {})
+                // Names known from either the stale named snapshot or a
+                // record-shaped stale positional value — used only to scope
+                // which widgets are eligible for the live-value overlay
+                // below, so a node with no prior snapshot for a widget
+                // isn't given one here.
+                const staleNames = new Set([
+                  ...stalePositionalNames,
+                  ...(isRecord(stalePositional)
+                    ? Object.keys(stalePositional)
+                    : [])
+                ])
+                const named = { ...staleNamed }
+                const overlay: Record<string, unknown> = {}
+                // existing.lastSerialization can predate incremental
+                // setWidget calls, which only update the widget store and
+                // never touch lastSerialization. Overlay the live
+                // widget-store values so a layout-only reconcile can't
+                // resurrect a value that was already superseded. Only
+                // overlay widgets already present in the stale snapshot —
+                // a node with no prior snapshot (or one already cleared to
+                // empty) must stay untouched here.
+                for (const widget of widgetStore.getNodeWidgets(
+                  scope.rootGraphId,
+                  state.id
+                )) {
+                  if (
+                    widget.serialize !== false &&
+                    widget.type !== 'button' &&
+                    staleNames.has(widget.name)
+                  ) {
+                    overlay[widget.name] = widget.value
+                    if (widget.name in named) named[widget.name] = widget.value
+                  }
+                }
+                if (Array.isArray(stalePositional)) {
+                  state.lastSerialization.widgets_values = (
+                    stalePositional as unknown[]
+                  ).map((value, index) => {
+                    const name = stalePositionalNames[index]
+                    return name && name in overlay ? overlay[name] : value
+                  }) as ISerialisedNode['widgets_values']
+                } else if (isRecord(stalePositional)) {
+                  state.lastSerialization.widgets_values = {
+                    ...stalePositional,
+                    ...overlay
+                  } as unknown as ISerialisedNode['widgets_values']
+                } else {
+                  state.lastSerialization.widgets_values =
+                    stalePositional as ISerialisedNode['widgets_values']
+                }
+                state.lastSerialization.widgets_values_named =
+                  staleNamed === undefined ? staleNamed : named
               }
               nodeStore.updateNode(scope, state.id, state, context)
             } else {
