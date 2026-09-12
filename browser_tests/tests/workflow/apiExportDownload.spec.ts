@@ -13,13 +13,10 @@ test.describe('API workflow export download', { tag: ['@workflow'] }, () => {
     await comfyPage.workflow.loadWorkflow('default')
 
     const downloadPromise = comfyPage.page.waitForEvent('download')
-    const exportPromise = comfyPage.command.executeCommand(
-      'Comfy.ExportWorkflowAPI'
-    )
+    await comfyPage.menu.topbar.triggerTopbarCommand(['File', 'Export (API)'])
     await comfyPage.menu.topbar.getSaveDialog().fill('workflow_api')
     await comfyPage.page.keyboard.press('Enter')
     const download = await downloadPromise
-    await exportPromise
     const downloadPath = await download.path()
 
     expect(download.suggestedFilename()).toBe('workflow_api.json')
