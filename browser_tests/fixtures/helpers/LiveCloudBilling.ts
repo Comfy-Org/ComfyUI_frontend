@@ -37,6 +37,24 @@ export class LiveCloudBillingSession {
     return schema.parse(await response.json())
   }
 
+  async post<T>(
+    path: string,
+    data: Record<string, number | string>,
+    schema: z.ZodType<T>
+  ): Promise<T> {
+    const response = await this.request
+      .post(new URL(path, this.backend).href, {
+        data,
+        headers: this.headers,
+        maxRedirects: 0
+      })
+      .catch(() => {
+        throw new Error(`Cloud billing request failed: ${path}`)
+      })
+    expect(response.status(), `POST ${path}`).toBe(200)
+    return schema.parse(await response.json())
+  }
+
   async assertNoCardAccount(testInfo: TestInfo) {
     const workspace = await this.read(
       '/api/workspaces/current',
