@@ -1399,7 +1399,12 @@ describe('ComfyApp', () => {
           isOptional: false,
           min: 0,
           max: 5,
-          template: { required: { strength: ['FLOAT', { default: 1 }] } }
+          template: {
+            required: {
+              strength: ['FLOAT', { default: 1 }],
+              '10': ['STRING', { default: '' }]
+            }
+          }
         } as const
         class ApiDynamicGroup extends LGraphNode {
           constructor() {
@@ -1410,6 +1415,14 @@ describe('ComfyApp', () => {
           }
         }
         LiteGraph.registerNodeType(nodeType, ApiDynamicGroup)
+        const sourceType = 'test/ApiDynamicGroupSource'
+        class ApiDynamicGroupSource extends LGraphNode {
+          constructor() {
+            super('Source')
+            this.addOutput('strength', 'FLOAT')
+          }
+        }
+        LiteGraph.registerNodeType(sourceType, ApiDynamicGroupSource)
         useNodeDefStore().updateNodeDefs([
           {
             name: nodeType,
@@ -1433,7 +1446,20 @@ describe('ComfyApp', () => {
         try {
           await app.loadApiJson(
             {
-              '1': { class_type: nodeType, inputs, _meta: { title: nodeType } }
+              '1': {
+                class_type: nodeType,
+                inputs: {
+                  ...inputs,
+                  [`loras.${indices.at(-1)}.strength`]: ['2', 0],
+                  'loras.10': 'malformed'
+                },
+                _meta: { title: nodeType }
+              },
+              '2': {
+                class_type: sourceType,
+                inputs: {},
+                _meta: { title: sourceType }
+              }
             },
             ''
           )
@@ -1448,14 +1474,26 @@ describe('ComfyApp', () => {
           ).toEqual(
             indices.map((_, position) => [
               `loras.${position}.strength`,
-              position + 0.5
+              position === indices.length - 1 ? 1 : position + 0.5
             ])
           )
+          expect(
+            node?.widgets
+              ?.filter((w) => w.name.endsWith('.10'))
+              .map((w) => w.value)
+          ).toEqual(indices.map(() => ''))
+          const slot = node?.findInputSlot(
+            `loras.${indices.length - 1}.strength`
+          )
+          const link = slot === undefined ? undefined : node?.getInputLink(slot)
+          expect(link?.origin_id).toBe(toNodeId(2))
+          expect(link?.origin_slot).toBe(0)
           expect(Object.keys(inputs)).toEqual(
             indices.map((index) => `loras.${index}.strength`)
           )
         } finally {
           LiteGraph.unregisterNodeType(nodeType)
+          LiteGraph.unregisterNodeType(sourceType)
         }
       }
     )

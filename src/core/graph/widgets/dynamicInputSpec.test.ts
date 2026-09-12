@@ -40,6 +40,23 @@ describe('DynamicGroup input specifications', () => {
     }
   )
 
+  it('requires a separator before a numeric field name', () => {
+    const numeric: ComfyInputsSpec = {
+      required: {
+        loras: [
+          'COMFY_DYNAMICGROUP_V3',
+          { template: { required: { '10': ['STRING', {}] } } }
+        ]
+      }
+    }
+    expect(
+      resolveDynamicInputSpec(numeric, 'loras.10', () => undefined)
+    ).toBeUndefined()
+    expect(
+      resolveDynamicInputSpec(numeric, 'loras.1.10', () => undefined)?.spec
+    ).toEqual(['STRING', {}])
+  })
+
   it('resolves groups inside the selected DynamicCombo option', () => {
     const combo: ComfyInputsSpec = {
       required: {

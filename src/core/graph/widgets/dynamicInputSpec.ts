@@ -22,6 +22,7 @@ export function resolveDynamicInputSpec(
       const group = zDynamicGroupInputSpec.safeParse(spec).data
       if (group) {
         const separator = suffix.indexOf('.')
+        if (separator === -1) continue
         const index = suffix.slice(0, separator)
         if (!/^(0|[1-9][0-9]*)$/.test(index)) continue
         const field = suffix.slice(separator + 1)

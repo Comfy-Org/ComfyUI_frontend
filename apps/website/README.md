@@ -2,6 +2,13 @@
 
 Marketing/brand website built with Astro + Vue.
 
+## Model-page generation tests
+
+See [MODEL_TESTING.md](MODEL_TESTING.md) for setup, maximum account concurrency,
+parallel image/audio/video sweeps, targeted retests and result commits.
+[MODELS_TEST_RESULTS.md](MODELS_TEST_RESULTS.md) records every published page's
+latest check and last successful generation.
+
 ## Ashby careers integration
 
 `/careers` and `/zh-CN/careers` are rendered from Ashby's public job board

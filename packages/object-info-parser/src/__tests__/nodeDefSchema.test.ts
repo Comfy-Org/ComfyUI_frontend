@@ -23,6 +23,74 @@ const EXAMPLE_NODE_DEF: ComfyNodeDef = {
 }
 
 describe('validateNodeDef', () => {
+  it.for([
+    { min: 2, max: 1 },
+    { max: 101 },
+    { max: -1 },
+    { min: 0.5 },
+    { template: 'invalid' },
+    { template: {} },
+    {
+      template: {
+        required: {
+          nested: [
+            'COMFY_DYNAMICGROUP_V3',
+            { min: 1, template: { required: { value: ['STRING', {}] } } }
+          ]
+        }
+      }
+    },
+    { template: { required: { image: ['IMAGE', {}] } } },
+    { template: { required: { value: ['FLOAT', { forceInput: true }] } } },
+    { template: { required: { 'bad.name': ['STRING', {}] } } },
+    {
+      template: {
+        required: { value: ['STRING', {}] },
+        optional: { value: ['STRING', {}] }
+      }
+    }
+  ])(
+    'rejects malformed DynamicGroup definitions at the boundary: %j',
+    (options) => {
+      expect(
+        validateComfyNodeDef(
+          {
+            ...EXAMPLE_NODE_DEF,
+            input: {
+              required: {
+                rows: [
+                  'COMFY_DYNAMICGROUP_V3',
+                  {
+                    template: { required: { value: ['STRING', {}] } },
+                    ...options
+                  }
+                ]
+              }
+            }
+          },
+          () => {}
+        )
+      ).toBeNull()
+    }
+  )
+
+  it('retains valid DynamicGroup template options and supplies count defaults', () => {
+    const template = {
+      required: {
+        model: ['COMBO', { remote: { route: '/models', refresh_button: true } }]
+      },
+      optional: { strength: ['FLOAT', { default: 1 }] }
+    }
+    const parsed = validateComfyNodeDef({
+      ...EXAMPLE_NODE_DEF,
+      input: { required: { rows: ['COMFY_DYNAMICGROUP_V3', { template }] } }
+    })
+    expect(parsed?.input?.required?.rows).toEqual([
+      'COMFY_DYNAMICGROUP_V3',
+      { template, min: 0, max: 50 }
+    ])
+  })
+
   it('accepts a valid node definition', () => {
     expect(validateComfyNodeDef(EXAMPLE_NODE_DEF)).not.toBeNull()
   })

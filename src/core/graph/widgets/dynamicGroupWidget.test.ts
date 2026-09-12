@@ -1,4 +1,6 @@
-import axios from 'axios'
+import axios, { AxiosHeaders } from 'axios'
+import type { AxiosResponse } from 'axios'
+import { useLinkStore } from '@/stores/linkStore'
 import { api } from '@/scripts/api'
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -58,8 +60,41 @@ afterEach(() => {
 })
 
 describe('DynamicGroup widgets', () => {
+  it('rolls back a rejected row addition without losing existing values or links', () => {
+    const { node, graph, widget } = setup()
+    widget('loras').value = 1
+    widget('loras.0.strength').value = 0.5
+    const source = new LGraphNode('Source')
+    source.addOutput('strength', 'FLOAT')
+    graph.add(source)
+    const link = source.connect(0, node, node.findInputSlot('loras.0.strength'))
+    const saved = node.serialize()
+    const previousWidgets = [...(node.widgets ?? [])]
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const update = vi.spyOn(useLinkStore(), 'updateEndpoints').mockReturnValue({
+      ok: false,
+      error: { code: 'unowned-topology', message: 'Rejected' }
+    })
+    update.mockClear()
+
+    widget('loras').value = 3
+
+    expect(update).toHaveBeenCalledOnce()
+    expect(widget('loras').value).toBe(1)
+    expect(node.widgets).toEqual(previousWidgets)
+    expect(node.serialize()).toEqual(saved)
+    expect(node.getInputLink(node.findInputSlot('loras.0.strength'))).toBe(link)
+  })
+
   it('removes remote combo controls and subscriptions with their row', () => {
-    vi.spyOn(axios, 'get').mockResolvedValue({ data: ['A', 'B'] })
+    const response: AxiosResponse<string[]> = {
+      data: ['A', 'B'],
+      status: 200,
+      statusText: 'OK',
+      headers: new AxiosHeaders(),
+      config: { headers: new AxiosHeaders() }
+    }
+    vi.spyOn(axios, 'get').mockResolvedValue(response)
     const { graph, node, widget } = setup()
     useLitegraphService().addNodeInput(node, {
       name: 'remote',

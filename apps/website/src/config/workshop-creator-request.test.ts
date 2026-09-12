@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { routerWorkshopModels } from './workshop-browse-content'
 import { getRouterWorkshopModelDetail } from './workshop-router-content'
@@ -8,11 +8,13 @@ import {
   validateForm
 } from './workshop-playground'
 import type { FileValue, FormValues } from './workshop-playground'
+import type { WorkshopModelDetail } from './models-catalogue'
 import { prepareWorkshopRouterInput } from './workshop-request'
 import { validateWorkshopInput } from './workshop-json-schema'
 import creatorModels from '../data/workshop-creator-models.json'
 import { workshopContract } from './workshop-contract-catalog'
 import { formForContract } from './workshop-contract'
+import { createWorkshopUrlUploader } from './workshop-url-upload'
 
 const imageUrl = 'https://example.invalid/source.png'
 const videoUrl = 'https://example.invalid/source.mp4'
@@ -25,12 +27,31 @@ function upload(type = 'image/png'): FileValue {
   return { file, name: file.name, size: file.size, type: file.type }
 }
 
+function unpublishedModel(id: string): WorkshopModelDetail {
+  const slug = id.replace('/', '--')
+  return {
+    slug,
+    name: id,
+    workflowCount: 0,
+    href: `/models/${slug}/`,
+    routerId: id,
+    capabilities: [],
+    fields: [],
+    defaults: {},
+    examples: []
+  }
+}
+
 function modelFor(id: string) {
   const model = getRouterWorkshopModelDetail(id.replace('/', '--'))
-  if (!model?.execution) throw new Error(`Missing Router contract: ${id}`)
   const contract = workshopContract(id)
   if (contract)
-    return { ...model, execution: contract, form: formForContract(contract) }
+    return {
+      ...(model ?? unpublishedModel(id)),
+      execution: contract,
+      form: formForContract(contract)
+    }
+  if (!model?.execution) throw new Error(`Missing Router contract: ${id}`)
   return { ...model, execution: model.execution }
 }
 
@@ -76,10 +97,13 @@ function valuesFor(id: string): FormValues {
 }
 
 function prepare(id: string, values: FormValues = {}) {
+  const uploader = createWorkshopUrlUploader()
   return prepareWorkshopRouterInput(
     modelFor(id).execution,
     { ...valuesFor(id), ...values },
-    new AbortController().signal
+    new AbortController().signal,
+    undefined,
+    (file, signal) => uploader(file, 'token', 'owner:workspace', signal)
   )
 }
 
@@ -88,6 +112,49 @@ const models = routerWorkshopModels.filter(
 )
 
 describe('creator widgets to native Router requests', () => {
+  beforeEach(() => {
+    let grants = 0
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>(async (_url, init) => {
+        if (init?.method === 'POST') {
+          grants += 1
+          return Response.json({
+            upload_url: `https://storage.example/upload-${grants}`,
+            download_url: `https://storage.example/image-${grants}.png`
+          })
+        }
+        if (init?.method === 'PUT') {
+          return new Response(null)
+        }
+        return new Response('image bytes', {
+          headers: { 'Content-Type': 'image/png' }
+        })
+      })
+    )
+  })
+
+  afterEach(() => {
+    for (const [url, init] of vi.mocked(fetch).mock.calls) {
+      if (init?.method === 'POST') {
+        expect(String(url)).toMatch(/\/customers\/storage$/)
+        expect(new Headers(init.headers).get('Authorization')).toBe(
+          'Bearer token'
+        )
+      } else {
+        expect(new Headers(init?.headers).has('Authorization')).toBe(false)
+        if (init?.method === 'PUT') {
+          expect(String(url)).toMatch(/^https:\/\/storage\.example\/upload-/)
+          expect(init.body).toBeInstanceOf(File)
+        } else {
+          expect(String(url)).toMatch(
+            /^https:\/\/cdn\.jsdelivr\.net\/gh\/Comfy-Org\/workflow_templates@/
+          )
+        }
+      }
+    }
+  })
+
   it.for([
     ...new Map(
       routerWorkshopModels.map((model) => [model.routerId, model])
@@ -196,8 +263,9 @@ describe('creator widgets to native Router requests', () => {
       expect(new Set(fields.map((field) => field.name)).size).toBe(
         fields.length
       )
-      expect(validateForm(fields, valuesFor(model.slug))).toEqual({})
-      const body = await prepare(model.slug)
+      const values = valuesFor(model.slug)
+      expect(validateForm(fields, values)).toEqual({})
+      const body = await prepare(model.slug, values)
       expect(validateWorkshopInput(body, detail.execution.inputSchema)).toBe(
         true
       )

@@ -44,6 +44,7 @@ export function restoreDynamicGroupInputs(
         if (!input.startsWith(`${name}.`)) continue
         const suffix = input.slice(name.length + 1)
         const separator = suffix.indexOf('.')
+        if (separator === -1) continue
         const index = suffix.slice(0, separator)
         const field = suffix.slice(separator + 1)
         if (!/^(0|[1-9][0-9]*)$/.test(index) || !Object.hasOwn(fields, field))

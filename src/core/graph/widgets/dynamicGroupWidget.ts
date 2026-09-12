@@ -142,6 +142,7 @@ export function dynamicGroupWidget(
   }
 
   function addRow(index: number) {
+    const previousSize: [number, number] = [...node.size]
     const start = node.widgets?.length ?? 0
     const previous = captureInputLayout(node)
     const header: IBaseWidget = node.addCustomWidget(
@@ -194,14 +195,26 @@ export function dynamicGroupWidget(
       const existing = previous.inputs.find(
         (input) => input.name === addedInput.name
       )
-      if (existing) existing.widget = addedInput.widget
-      else inputs.push(addedInput)
+      if (!existing) inputs.push(addedInput)
     }
-    replaceNodeInputs(node, previous, inputs, previous.links)
+    const result = replaceNodeInputs(node, previous, inputs, previous.links)
+    if (!result.ok) {
+      for (const widget of (node.widgets?.slice(start) ?? []).toReversed())
+        node.removeWidget(widget)
+      node.setSize(previousSize)
+      return false
+    }
+    for (const addedInput of addedInputs) {
+      const existing = previous.inputs.find(
+        (input) => input.name === addedInput.name
+      )
+      if (existing) existing.widget = addedInput.widget
+    }
     const widgets = node.widgets
-    if (!widgets) return
+    if (!widgets) return false
     const added = widgets.splice(start)
     widgets.splice(widgets.indexOf(add), 0, ...added)
+    return true
   }
 
   Object.defineProperty(controller, 'value', {
@@ -210,7 +223,9 @@ export function dynamicGroupWidget(
       if (typeof value !== 'number' || !Number.isFinite(value)) return
       const count = Math.max(min, Math.trunc(value))
       while (rows().length > count) removeRow(rows().length - 1)
-      while (rows().length < count) addRow(rows().length)
+      while (rows().length < count) {
+        if (!addRow(rows().length)) break
+      }
       publish()
     }
   })

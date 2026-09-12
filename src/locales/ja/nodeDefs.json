@@ -3065,6 +3065,29 @@
       }
     }
   },
+  "ConcatenateVideo": {
+    "description": "互換性のあるエンコード済み入力をデコードせずに、動画を順番に連結します。",
+    "display_name": "動画を連結",
+    "inputs": {
+      "codec": {
+        "name": "codec",
+        "tooltip": "動画テンソルのエンコードに使用するcodec。AutoはH.264を使用します。すでにエンコード済みの動画は変更されません。"
+      },
+      "complete_audio": {
+        "name": "complete_audio",
+        "tooltip": "連結した動画用の任意の完全なサウンドトラック。入力動画に含まれる音声を上書きします。"
+      },
+      "videos": {
+        "name": "videos",
+        "tooltip": "入力順に連結する動画セグメント。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "連結された動画。"
+      }
+    }
+  },
   "ConditioningAverage": {
     "display_name": "条件付け平均",
     "inputs": {
@@ -3098,6 +3121,20 @@
       },
       "conditioning_to": {
         "name": "条件付け先"
+      }
+    }
+  },
+  "ConditioningLoader": {
+    "description": "embeddingsフォルダーから、Save Conditioningで保存したコンディショニング、または「conditioning」テンソルを含む任意のsafetensorsファイルを読み込みます。",
+    "display_name": "コンディショニングを読み込む",
+    "inputs": {
+      "conditioning_name": {
+        "name": "conditioning_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3908,6 +3945,10 @@
       "bit_depth": {
         "name": "bit_depth",
         "tooltip": "自動ではsRGBに8ビット、HDRに10ビットを使用します。明示的な8ビットおよび10ビットの選択は色空間に依存しません。"
+      },
+      "codec": {
+        "name": "codec",
+        "tooltip": "必要に応じて動画を直ちにエンコードします。Noneでは画像をテンソル形式のまま保持し、AutoではH.264を使用します。"
       },
       "color_space": {
         "name": "color_space",
@@ -5026,6 +5067,22 @@
       "batch_size": {
         "name": "batch_size",
         "tooltip": "バッチ内の潜在画像数。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyYuE2LatentAudio": {
+    "display_name": "空のYuE2 latentオーディオ",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "seconds": {
+        "name": "seconds"
       }
     },
     "outputs": {
@@ -6451,14 +6508,8 @@
       "model_max_output_tokens": {
         "name": "max_output_tokens"
       },
-      "model_temperature": {
-        "name": "temperature"
-      },
       "model_thinking_level": {
         "name": "thinking_level"
-      },
-      "model_top_p": {
-        "name": "top_p"
       },
       "prompt": {
         "name": "prompt",
@@ -7985,7 +8036,7 @@
     }
   },
   "ImageColorSpace": {
-    "description": "sRGB（Rec.709）、HDR（Rec.2020 HLG）、HDR PQ（Rec.2020 PQ）を変換します。203 nit の SDR ホワイトと 1000 nit の HLG リファレンスディスプレイを使用します。狭域化では、バッチ全体で過剰な輝度をトーンマッピングし、色域外の色を圧縮します。変換は float32 で計算され、中間デバイスと dtype を返します。ストレートアルファには色変換を適用しません。",
+    "description": "sRGB、線形Rec.709、HDR（Rec.2020 HLG）、HDR PQ（Rec.2020 PQ）を変換します。線形1.0はsRGBと同じ203ニトの基準白色を使用します。HLGは1000ニトの基準ディスプレイを使用します。線形出力および線形からHDRへの変換では、トーンマッピングを行わずに拡張値を保持します。SDR出力およびPQからHLGへの変換では、バッチ全体で過剰な輝度をトーンマッピングし、色域外の色を圧縮します。変換はfloat32で計算され、中間デバイスとdtypeを返します。ストレートアルファには色変換を適用しません。",
     "display_name": "画像カラースペースを変換",
     "inputs": {
       "destination": {
@@ -12380,6 +12431,23 @@
       }
     }
   },
+  "MarigoldV2PostProcess": {
+    "description": "デコードされたMarigold V2予測を画像に変換します。近いほど明るい正規化深度、単位表面法線、またはsRGBアルベドです。",
+    "display_name": "Marigold V2 後処理",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "prediction": {
+        "name": "prediction"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MaskComposite": {
     "display_name": "マスク合成",
     "inputs": {
@@ -16027,6 +16095,9 @@
     "inputs": {
       "model": {
         "name": "モデル"
+      },
+      "sampling": {
+        "name": "sampling"
       },
       "shift": {
         "name": "シフト"
@@ -20994,6 +21065,24 @@
       }
     }
   },
+  "SaveConditioning": {
+    "description": "コンディショニングをsafetensorsとしてoutputフォルダーに保存します。Load Conditioningで読み込むには、ファイルをmodels/embeddingsへ移動してください。たとえばテキストエンコーダーをスキップする場合に使用します。",
+    "display_name": "コンディショニングを保存",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "conditioning",
+        "tooltip": null
+      }
+    }
+  },
   "SaveGLB": {
     "display_name": "SaveGLB",
     "inputs": {
@@ -21682,6 +21771,28 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SheetSage2AudioToABC": {
+    "description": "音楽からボーカルと楽器のメロディをABC記譜法に書き起こします。abc出力をYuE2 Generate Musicノードに接続し、対応するモードを使用してください。",
+    "display_name": "SheetSage2 オーディオからABCへ",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "audio_encoder": {
+        "name": "audio_encoder"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "full：メロディとコードを生成します。melody：メロディのみを生成し、カバーに推奨されます。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
         "tooltip": null
       }
     }
@@ -24029,7 +24140,7 @@
     }
   },
   "TripoImageToModelNode": {
-    "display_name": "Tripo: 画像からモデル",
+    "display_name": "Tripo: 画像からモデルへ（レガシー）",
     "inputs": {
       "auto_size": {
         "name": "auto_size",
@@ -24102,6 +24213,75 @@
       "3": {
         "name": "FBX",
         "tooltip": "quadが有効な場合にのみ出力されます。"
+      }
+    }
+  },
+  "TripoImageToModelNodeV2": {
+    "display_name": "Tripo: 画像からモデルへ",
+    "inputs": {
+      "auto_size": {
+        "name": "自動サイズ",
+        "tooltip": "テクスチャ付きモデルを実世界のメートル単位のサイズにスケーリングします。Tripo はサイズをモデルのシーントランスフォームとして保存し、モデルの変換、リギング、リターゲティング時に適用します。テクスチャがない場合は無視されます。"
+      },
+      "face_limit": {
+        "name": "面数上限",
+        "tooltip": "最大面数。-1 を指定すると Tripo が適応的に選択します（v3.x standard では約140万面、detailed では200万面）。Tripo は上限を自動的に適用します：v2.5 は500,000、四角形メッシュは150,000。"
+      },
+      "geometry_quality": {
+        "name": "ジオメトリ品質"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "model_seed": {
+        "name": "モデルシード"
+      },
+      "model_version": {
+        "name": "モデルバージョン",
+        "tooltip": "生成に使用するモデルバージョン"
+      },
+      "orientation": {
+        "name": "向き"
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "PBRマテリアルマップ（ベースカラー、メタリック、ラフネス、法線）。テクスチャが必要です。"
+      },
+      "quad": {
+        "name": "四角形",
+        "tooltip": "四角形メッシュを出力します。Tripo は四角形メッシュを FBX として提供するため、結果は FBX 出力に届き、GLB 出力は空のままです。"
+      },
+      "smart_low_poly": {
+        "name": "スマート低ポリゴン",
+        "tooltip": "クリーンで手作業風のトポロジーを持つ低ポリゴンメッシュ（500～20,000面、四角形は500～10,000面）。単純な対象に最適です。複雑な対象では失敗する場合があります。"
+      },
+      "texture": {
+        "name": "テクスチャ",
+        "tooltip": "テクスチャマップを生成します。オフの場合はジオメトリのみが返され、pbr は無視されます。"
+      },
+      "texture_alignment": {
+        "name": "テクスチャ配置"
+      },
+      "texture_quality": {
+        "name": "テクスチャ品質",
+        "tooltip": "detailed = HDテクスチャ、extreme = 8K Ultraテクスチャ。"
+      },
+      "texture_seed": {
+        "name": "テクスチャシード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "モデル task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "四角形が有効な場合は空です。"
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "四角形が有効な場合にのみ出力されます。"
       }
     }
   },
@@ -24433,7 +24613,7 @@
       },
       "animation": {
         "name": "animation",
-        "tooltip": "preset:* アニメーションは両方のリグモデルで使用できます。preset:biped:* アニメーションには、model v1.0-20240301 で作成したリグが必要です。"
+        "tooltip": "preset:* アニメーションは両方のリグモデルで使用できます。preset:biped:* アニメーションは model v1.0-20240301 のリグ用に作られています。v2.5 のリグで使用できるのは chop、climb、dive、fall、hurt、idle、jump、run、shoot、slash、turn、walk のみです。"
       },
       "export_with_geometry": {
         "name": "export_with_geometry",
@@ -24597,6 +24777,48 @@
       }
     }
   },
+  "TripoSmartSegmentNode": {
+    "description": "モデルを意味のあるパーツに分割し、名前を付けます。画像からの場合、Tripo はまずモデルを生成します。segment task_id は、Tripo: Complete Mesh Parts、Tripo: Retopology、Tripo: Texture model、Tripo: Convert model において、Tripo: Segment Model の結果と同様に使用できます。",
+    "display_name": "Tripo: スマートセグメント",
+    "inputs": {
+      "source": {
+        "name": "ソース",
+        "tooltip": "既存のモデルをセグメント化するか、画像からモデルを生成してセグメント化します。"
+      },
+      "source_granularity": {
+        "name": "粒度"
+      },
+      "source_hint": {
+        "name": "ヒント"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "セグメント task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "モデル task_id",
+        "tooltip": "セグメント化されたモデル（画像から生成されたモデル、またはインポートされたモデル）。"
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "part_names",
+        "tooltip": "パーツ名（カンマ区切り）。"
+      },
+      "4": {
+        "name": "parts",
+        "tooltip": "Tripoが検出したパーツの説明。"
+      },
+      "5": {
+        "name": "mask",
+        "tooltip": null
+      }
+    }
+  },
   "TripoSplatConditioning": {
     "description": "画像をDINOv3とFlux2 VAEでエンコードし、TripoSplatのポジティブ／ネガティブコンディショニングを作成し、KSampler用の固定サイズノイズターゲット（latent＋カメラ）を生成します。",
     "display_name": "TripoSplatコンディショニング",
@@ -24693,7 +24915,7 @@
     }
   },
   "TripoTextToModelNode": {
-    "display_name": "Tripo: テキストからモデル生成",
+    "display_name": "Tripo: テキストからモデル（旧式）",
     "inputs": {
       "auto_size": {
         "name": "auto_size",
@@ -24769,8 +24991,77 @@
       }
     }
   },
+  "TripoTextToModelNodeV2": {
+    "display_name": "Tripo: テキストからモデル",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "テクスチャ付きモデルを実世界のメートル単位のサイズにスケーリングします。Tripoはサイズをモデルのシーントランスフォームとして保存し、モデルの変換、リギング、リターゲティング時に焼き込みます。textureなしでは無視されます。"
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "最大面数。-1の場合、Tripoが適応的に選択します（v3.x standardでは約140万面、detailedでは200万面）。Tripoは上限を自動的に適用します：v2.5は500,000、四角形メッシュは150,000。"
+      },
+      "geometry_quality": {
+        "name": "geometry_quality"
+      },
+      "image_seed": {
+        "name": "image_seed"
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "model_version": {
+        "name": "model_version"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "最大255文字。"
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "PBRマテリアルマップ（ベースカラー、メタリック、ラフネス、法線）。textureが必要です。"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "四角形メッシュを出力します。Tripoは四角形メッシュをFBXとして提供するため、結果はFBX出力に入り、GLB出力は空のままです。"
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "クリーンで手作り風のトポロジーを持つローポリメッシュ（500～20,000面、四角形は500～10,000面）。単純な被写体に最適です。複雑なものでは失敗する場合があります。"
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "テクスチャマップを生成します。オフの場合はジオメトリのみを返し、pbrは無視されます。"
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = HDテクスチャ、extreme = 8K Ultraテクスチャ。"
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "quadが有効な場合は空です。"
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "quadが有効な場合にのみ値が設定されます。"
+      }
+    }
+  },
   "TripoTextureNode": {
-    "display_name": "Tripo: モデルのテクスチャリング",
+    "display_name": "Tripo: モデルにテクスチャ（旧式）",
     "inputs": {
       "model_task_id": {
         "name": "model_task_id"
@@ -24830,6 +25121,62 @@
       "3": {
         "name": "FBX",
         "tooltip": "Tripo はクアッドメッシュおよび FBX インポートに対して FBX を返します。それ以外は空です。"
+      }
+    }
+  },
+  "TripoTextureNodeV2": {
+    "display_name": "Tripo: モデルにテクスチャ",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "テクスチャモデル: v3.xで生成されたメッシュにはv3.0、v2.5で生成されたメッシュにはv2.5。"
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "テクスチャリングするTripo: Segment Modelのパーツ名をカンマ区切りで指定します。空欄の場合はすべてのパーツにテクスチャを適用します。"
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "PBRマテリアルマップ（ベースカラー、メタリック、ラフネス、法線）。オフの場合は単色のテクスチャになります。"
+      },
+      "reference": {
+        "name": "reference",
+        "tooltip": "テクスチャを誘導する参照画像。texture_promptまたはstyle_imageとは併用できません。"
+      },
+      "style_image": {
+        "name": "style_image",
+        "tooltip": "テクスチャの芸術的スタイル用の参照画像。texture_promptと併用する場合にのみ使用されます。"
+      },
+      "texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "テクスチャリング用の任意のテキストガイダンス。色を推測するための元画像を持たないインポート済みモデル（Tripo: Import Model）では、実質的に必須です。参照画像とは併用できません。"
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = HDテクスチャ、extreme = 8K Ultraテクスチャ。"
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "ソースが四角形メッシュまたはFBXインポートの場合は空です。"
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Tripoは四角形メッシュおよびFBXインポートに対してFBXを返します。それ以外の場合は空です。"
       }
     }
   },
@@ -28298,6 +28645,94 @@
     "outputs": {
       "0": {
         "name": "メッシュ",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateABC": {
+    "description": "スタイルと歌詞から曲のABC記譜法を生成します。abcをYuE2 Generate Musicノードに接続してください。",
+    "display_name": "YuE2 ABCを生成",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "lyrics": {
+        "name": "lyrics"
+      },
+      "max_abc_tokens": {
+        "name": "max_abc_tokens"
+      },
+      "mode": {
+        "name": "モード",
+        "tooltip": "full: メロディーとコードを生成します。melody: メロディーのみを生成します。カバーにはこちらを推奨します。"
+      },
+      "seed": {
+        "name": "シード"
+      },
+      "style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ABC",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateMusic": {
+    "description": "スタイル、歌詞、ABC記譜法から音楽トークンと音響コンディショニングを生成します。生成した秒数を Empty YuE2 Latent Audio ノードに指定してください。ABC入力が空の場合、選択したモードは無視されます。",
+    "display_name": "YuE2 音楽生成",
+    "inputs": {
+      "abc": {
+        "name": "ABC",
+        "tooltip": "ABCジェネレーターを接続するか、編集済みのスコアを指定します。空のままにすると、自動的に off モードが使用されます。"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "lyrics": {
+        "name": "歌詞"
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "最大再生時間です。生成はこれより早く終了する場合があります。リリース版では360秒の上限を使用します。"
+      },
+      "mode": {
+        "name": "モード",
+        "tooltip": "full: メロディーとコードを生成します。melody: メロディーのみを生成します。カバーにはこちらを推奨します。"
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "seed": {
+        "name": "シード"
+      },
+      "style": {
+        "name": "スタイル"
+      },
+      "temperature": {
+        "name": "温度"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "秒",
         "tooltip": null
       }
     }
