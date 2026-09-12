@@ -21,6 +21,7 @@
   "devDependencies": {
     "@tailwindcss/vite": "catalog:",
     "@testing-library/jest-dom": "catalog:",
+    "@testing-library/user-event": "catalog:",
     "@testing-library/vue": "catalog:",
     "@types/node": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
