@@ -180,6 +180,8 @@ function isSectionExpanded(section: HTMLElement) {
 
 describe('ErrorGroupList selection emphasis', () => {
   beforeEach(() => {
+    ROOT_GRAPH.nodes.length = 0
+    SUBGRAPH.nodes.length = 0
     SAMPLER_NODE = createNodeFixture(
       '1',
       'SamplerNode',
