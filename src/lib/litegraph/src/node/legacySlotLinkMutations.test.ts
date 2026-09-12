@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 
+const mockReportError = vi.hoisted(() => vi.fn())
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: mockReportError
+}))
+
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
@@ -205,7 +210,7 @@ describe('comfyui-promptchain indexed slot replacement', () => {
   })
 
   it('keeps the input layout when the endpoint batch is rejected', () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    mockReportError.mockClear()
 
     const forced = autogrowChain(4, [0, 1, 2])
     const layoutBefore = forced.target.inputs.map((input) => input.name)
@@ -215,10 +220,16 @@ describe('comfyui-promptchain indexed slot replacement', () => {
     })
     forced.target.removeInput(0)
 
-    expect(consoleError).toHaveBeenCalledWith('Failed to replace node inputs', {
-      code: 'occupied-target',
-      message: 'forced'
-    })
+    expect(mockReportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'node_input_replace_rejected',
+        context: expect.objectContaining({
+          nodeId: forced.target.id,
+          code: 'occupied-target'
+        })
+      })
+    )
     expect(forced.target.inputs.map((input) => input.name)).toEqual(
       layoutBefore
     )
