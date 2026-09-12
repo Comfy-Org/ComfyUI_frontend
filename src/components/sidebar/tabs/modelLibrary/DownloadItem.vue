@@ -9,8 +9,18 @@
         removable
         @remove="handleRemoveDownload"
       >
-        {{ t('electronFileDownload.cancelled') }}
+        {{
+          download.status === 'error'
+            ? t('electronFileDownload.failed')
+            : t('electronFileDownload.cancelled')
+        }}
       </Chip>
+      <div
+        v-if="download.status === 'error' && download.message"
+        class="text-danger mt-1 text-sm"
+      >
+        {{ download.message }}
+      </div>
     </div>
     <div
       v-if="
