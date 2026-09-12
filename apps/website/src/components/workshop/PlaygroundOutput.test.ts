@@ -188,6 +188,33 @@ describe('PlaygroundOutput', () => {
     ).toContain('latest')
   })
 
+  it('lines the session up in the order it was generated, newest last', async () => {
+    const user = userEvent.setup()
+    render(PlaygroundOutput, {
+      props: {
+        state: succeeded(output('third')),
+        earlier: [
+          { output: output('second'), attachments: [] },
+          { output: output('first'), attachments: [] }
+        ],
+        now: 2_000
+      }
+    })
+    const strip = within(screen.getByTestId('earlier-runs'))
+    expect(
+      strip
+        .getAllByRole('button')
+        .map((button) => button.getAttribute('aria-label'))
+    ).toEqual(['Earlier run 2', 'Earlier run 1', 'Latest'])
+    expect(
+      strip.getByRole('button', { name: 'Latest', pressed: true })
+    ).toBeTruthy()
+    await user.click(strip.getByRole('button', { name: 'Earlier run 2' }))
+    expect(
+      screen.getByTestId('output-download').getAttribute('href')
+    ).toContain('first')
+  })
+
   it('downloads the selected batch item and the selected earlier run', async () => {
     const user = userEvent.setup()
     render(PlaygroundOutput, {

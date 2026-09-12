@@ -9775,6 +9775,10 @@ Enterprise`
     en: 'Earlier runs this session',
     'zh-CN': '本次会话的早前运行'
   },
+  'workshop.output.earlierRun': {
+    en: 'Earlier run {number}',
+    'zh-CN': '早前运行 {number}'
+  },
   'workshop.output.latest': { en: 'Latest', 'zh-CN': '最新' },
   'workshop.output.placeholder': {
     en: 'Your output will appear here.',
