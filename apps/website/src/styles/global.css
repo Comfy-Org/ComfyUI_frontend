@@ -580,6 +580,34 @@ video::-webkit-media-controls-panel {
   }
 }
 
+/* Leaflet renders its own zoom control, unreachable by Tailwind classes on
+   MapPins01's template. The `.map-pins` wrapper keeps these to the map and
+   outranks leaflet.css, which the map island loads after this sheet. */
+.map-pins .leaflet-bar {
+  border: none;
+}
+
+.map-pins .leaflet-bar a {
+  border-color: var(--color-transparency-white-t8);
+  background-color: var(--color-primary-comfy-ink-light);
+  color: var(--color-primary-warm-white);
+}
+
+.map-pins .leaflet-bar a:hover,
+.map-pins .leaflet-bar a:focus {
+  background-color: color-mix(
+    in srgb,
+    var(--color-primary-warm-white) 9%,
+    var(--color-primary-comfy-ink-light)
+  );
+  color: var(--color-primary-comfy-yellow);
+}
+
+.map-pins .leaflet-bar a.leaflet-disabled {
+  background-color: var(--color-primary-comfy-ink-light);
+  color: color-mix(in srgb, var(--color-primary-warm-white) 30%, transparent);
+}
+
 @keyframes soft-in {
   from {
     opacity: 0;

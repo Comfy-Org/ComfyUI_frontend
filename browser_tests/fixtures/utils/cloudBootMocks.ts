@@ -65,6 +65,17 @@ export async function mockCloudBoot(page: Page, options: CloudBootOptions) {
 }
 
 /**
+ * Pre-selects the multi-user server profile so the post-auth root guard lands
+ * on the app instead of `/user-select`. Both the signed-in `bootCloud` and the
+ * signed-out onboarding fixtures need it once a spec authenticates.
+ */
+export async function preselectCloudUser(page: Page) {
+  await page.addInitScript(() => {
+    localStorage.setItem('Comfy.userId', 'test-user-e2e')
+  })
+}
+
+/**
  * Mock Firebase auth and pre-select the e2e user so the cloud app boots
  * signed-in. The signed-in email (`CLOUD_SELF_EMAIL`) is what the
  * original-owner gate matches against the members self-row.
@@ -72,7 +83,5 @@ export async function mockCloudBoot(page: Page, options: CloudBootOptions) {
 export async function bootCloud(page: Page) {
   const auth = new CloudAuthHelper(page)
   await auth.mockAuth()
-  await page.addInitScript(() => {
-    localStorage.setItem('Comfy.userId', 'test-user-e2e')
-  })
+  await preselectCloudUser(page)
 }
