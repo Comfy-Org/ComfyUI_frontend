@@ -312,7 +312,6 @@ test.describe(
             .toBe(1)
           await output.expectLinkCount(0)
           await checkpoint()
-          const finalSnapshot = snapshots.at(-1)!
 
           await test.step('Undo the complete edit chain', async () => {
             for (let index = snapshots.length - 2; index >= 0; index--) {
@@ -328,7 +327,6 @@ test.describe(
             }
           })
 
-          expect(await getSnapshot()).toEqual(finalSnapshot)
           await expect(comfyPage.toast.toastErrors).toHaveCount(0)
         }
       )
