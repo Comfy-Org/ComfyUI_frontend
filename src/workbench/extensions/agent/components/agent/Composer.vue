@@ -428,6 +428,7 @@ defineExpose({
                 ? `agent-reference-item-${mentionActive}`
                 : undefined
             "
+            :editable-workflow-id
             @keydown="onComposerKeydown"
             @update:model-value="composer.replacePrompt"
             @keyup="onComposerKeyup"

@@ -3065,6 +3065,29 @@
       }
     }
   },
+  "ConcatenateVideo": {
+    "description": "Uyumlu kodlanmış girdilerin kodunu çözmeden videoları sırayla birleştirir.",
+    "display_name": "Videoları Birleştir",
+    "inputs": {
+      "codec": {
+        "name": "codec",
+        "tooltip": "Video tensörlerini kodlamak için kullanılan codec. Auto, H.264 kullanır; önceden kodlanmış videolar değişmeden kalır."
+      },
+      "complete_audio": {
+        "name": "complete_audio",
+        "tooltip": "Birleştirilmiş video için isteğe bağlı tam ses parçası. Girdi videolarının taşıdığı sesin yerine geçer."
+      },
+      "videos": {
+        "name": "videos",
+        "tooltip": "Girdi sırasına göre birleştirilecek video bölümleri."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Birleştirilmiş video."
+      }
+    }
+  },
   "ConditioningAverage": {
     "display_name": "KoşullandırmaOrtalaması",
     "inputs": {
@@ -3098,6 +3121,20 @@
       },
       "conditioning_to": {
         "name": "hedef_koşullandırma"
+      }
+    }
+  },
+  "ConditioningLoader": {
+    "description": "embeddings klasöründen, Save Conditioning ile kaydedilmiş bir koşullandırmayı veya 'conditioning' tensörü içeren herhangi bir safetensors dosyasını yükler.",
+    "display_name": "Koşullandırmayı Yükle",
+    "inputs": {
+      "conditioning_name": {
+        "name": "conditioning_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3908,6 +3945,10 @@
       "bit_depth": {
         "name": "bit_depth",
         "tooltip": "Otomatik, sRGB için 8 bit ve HDR için 10 bit kullanır. Açıkça seçilen 8 bit ve 10 bit seçenekleri renk alanından bağımsızdır."
+      },
+      "codec": {
+        "name": "codec",
+        "tooltip": "İsteğe bağlı olarak videoyu hemen kodlar. None, görüntüleri tensör biçiminde tutar; Auto, H.264 kullanır."
       },
       "color_space": {
         "name": "color_space",
@@ -5026,6 +5067,22 @@
       "batch_size": {
         "name": "batch_size",
         "tooltip": "Toplu işlemdeki latent görüntü sayısı."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyYuE2LatentAudio": {
+    "display_name": "Boş YuE2 Latent Ses",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "seconds": {
+        "name": "seconds"
       }
     },
     "outputs": {
@@ -6451,14 +6508,8 @@
       "model_max_output_tokens": {
         "name": "max_output_tokens"
       },
-      "model_temperature": {
-        "name": "temperature"
-      },
       "model_thinking_level": {
         "name": "thinking_level"
-      },
-      "model_top_p": {
-        "name": "top_p"
       },
       "prompt": {
         "name": "prompt",
@@ -7985,7 +8036,7 @@
     }
   },
   "ImageColorSpace": {
-    "description": "sRGB (Rec.709), HDR (Rec.2020 HLG) ve HDR PQ'yu (Rec.2020 PQ) dönüştürür. 203 nit SDR beyazı ve 1000 nit HLG referans ekranı kullanır. Daraltma, toplu iş genelindeki fazla parlaklığı ton eşler ve gamut dışı renkleri sıkıştırır. Dönüşümler float32 ile hesaplanır ve ara cihaz ile veri türünü döndürür. Düz alfa renk dönüşümüne tabi tutulmaz.",
+    "description": "sRGB, doğrusal Rec.709, HDR (Rec.2020 HLG) ve HDR PQ'yu (Rec.2020 PQ) dönüştürür. Doğrusal 1.0, sRGB ile aynı 203 nit referans beyazını kullanır; HLG, 1000 nit referans ekran kullanır. Doğrusal çıktı ve doğrusaldan HDR'ye dönüşümler, ton eşleme olmadan genişletilmiş değerleri korur. SDR çıktısı ve PQ'dan HLG'ye dönüşüm, yığın genelindeki fazla parlaklığı ton eşler ve renk gamı dışındaki renkleri sıkıştırır. Dönüşümler float32 ile hesaplanır ve ara aygıtı ile dtype'ı döndürür. Düz alfa renk dönüşümüne tabi tutulmaz.",
     "display_name": "Görüntü Renk Uzayını Dönüştür",
     "inputs": {
       "destination": {
@@ -12380,6 +12431,23 @@
       }
     }
   },
+  "MarigoldV2PostProcess": {
+    "description": "Kodu çözülmüş bir Marigold V2 tahminini görüntüye dönüştürür: yakın bölgeleri parlak olan normalize edilmiş derinlik, birim yüzey normalleri veya sRGB albedo.",
+    "display_name": "Marigold V2 Son İşleme",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "prediction": {
+        "name": "prediction"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MaskComposite": {
     "display_name": "MaskeBirleştirme",
     "inputs": {
@@ -16027,6 +16095,9 @@
     "inputs": {
       "model": {
         "name": "model"
+      },
+      "sampling": {
+        "name": "sampling"
       },
       "shift": {
         "name": "kaydırma"
@@ -20994,6 +21065,24 @@
       }
     }
   },
+  "SaveConditioning": {
+    "description": "Bir koşullandırmayı safetensors olarak output klasörüne kaydeder; Load Conditioning ile yüklemek için dosyayı models/embeddings konumuna taşıyın, örneğin metin kodlayıcısını atlamak için.",
+    "display_name": "Koşullandırmayı Kaydet",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "conditioning",
+        "tooltip": null
+      }
+    }
+  },
   "SaveGLB": {
     "display_name": "GLB Kaydet",
     "inputs": {
@@ -21682,6 +21771,28 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SheetSage2AudioToABC": {
+    "description": "Müzikteki vokal ve enstrümantal melodileri ABC notasyonuna dönüştürür. abc çıktısını YuE2 Generate Music düğümüne bağlayın ve eşleşen modu kullanın.",
+    "display_name": "SheetSage2 Sesi ABC'ye Dönüştür",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "audio_encoder": {
+        "name": "audio_encoder"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "full: melodi ve akorlar üretir; melody: yalnızca melodi üretir, cover'lar için önerilir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
         "tooltip": null
       }
     }
@@ -24029,7 +24140,7 @@
     }
   },
   "TripoImageToModelNode": {
-    "display_name": "Tripo: Görüntüden Modele",
+    "display_name": "Tripo: Görüntüden Modele (Eski)",
     "inputs": {
       "auto_size": {
         "name": "auto_size",
@@ -24102,6 +24213,75 @@
       "3": {
         "name": "FBX",
         "tooltip": "Yalnızca quad etkinleştirildiğinde doldurulur."
+      }
+    }
+  },
+  "TripoImageToModelNodeV2": {
+    "display_name": "Tripo: Görüntüden Modele",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Dokulu modelleri metre cinsinden gerçek dünya boyutlarına ölçeklendirir. Tripo, boyutu modelin sahne dönüşümü olarak saklar ve model dönüştürüldüğünde, rig'lendiğinde veya yeniden hedeflendiğinde bunu uygular; texture olmadan yok sayılır."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "Maksimum yüz sayısı. -1, Tripo'nun uyarlamalı olarak seçim yapmasını sağlar (v3.x standard'da yaklaşık 1,4M yüz, detailed'da 2M). Tripo sessizce sınırlar: v2.5'te 500,000, quad mesh'lerde 150,000."
+      },
+      "geometry_quality": {
+        "name": "geometry_quality"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "Oluşturma için kullanılacak model sürümü"
+      },
+      "orientation": {
+        "name": "orientation"
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "PBR malzeme haritaları (temel renk, metalik, pürüzlülük, normal). texture gerektirir."
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "Quad mesh çıktısı. Tripo quad mesh'leri FBX olarak sunar; bu nedenle sonuç FBX çıkışına gelir ve GLB çıkışı boş kalır."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "Temiz, elle oluşturulmuş stil topolojiye sahip düşük poligonlu mesh (500-20,000 yüz, quad 500-10,000). Basit nesneler için idealdir; karmaşık olanlar başarısız olabilir."
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "Doku haritaları oluşturur. Kapalı olduğunda çıplak geometri döner ve pbr yok sayılır."
+      },
+      "texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = HD dokular, extreme = 8K Ultra dokular."
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "quad etkin olduğunda boştur."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Yalnızca quad etkin olduğunda doldurulur."
       }
     }
   },
@@ -24433,7 +24613,7 @@
       },
       "animation": {
         "name": "animasyon",
-        "tooltip": "preset:* animasyonları her iki rig modeliyle de çalışır; preset:biped:* animasyonları, model v1.0-20240301 ile oluşturulmuş bir rig gerektirir."
+        "tooltip": "preset:* animasyonları her iki rig modeliyle de çalışır. preset:biped:* animasyonları model v1.0-20240301 rig'leri için yapılmıştır; bir v2.5 rig yalnızca chop, climb, dive, fall, hurt, idle, jump, run, shoot, slash, turn ve walk kabul eder."
       },
       "export_with_geometry": {
         "name": "export_with_geometry",
@@ -24597,6 +24777,48 @@
       }
     }
   },
+  "TripoSmartSegmentNode": {
+    "description": "Bir modeli anlamsal açıdan anlamlı parçalara ayırır ve onları adlandırır. Bir görüntüden Tripo önce modeli oluşturur. Segment task_id, Tripo: Complete Mesh Parts, Tripo: Retopology, Tripo: Texture model ve Tripo: Convert model düğümlerine Tripo: Segment Model sonucu gibi beslenir.",
+    "display_name": "Tripo: Akıllı Segment",
+    "inputs": {
+      "source": {
+        "name": "source",
+        "tooltip": "Mevcut bir modeli segmente ayırın veya bir görüntüden model oluşturup segmente ayırın."
+      },
+      "source_granularity": {
+        "name": "granularity"
+      },
+      "source_hint": {
+        "name": "hint"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "segment task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
+        "tooltip": "Segmente ayrılan model (görüntüden oluşturulan veya içe aktarılan)."
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "part_names",
+        "tooltip": "Parçaların virgülle ayrılmış adları."
+      },
+      "4": {
+        "name": "parts",
+        "tooltip": "Tripo'nun bulduğu parçalara ilişkin açıklaması."
+      },
+      "5": {
+        "name": "maske",
+        "tooltip": null
+      }
+    }
+  },
   "TripoSplatConditioning": {
     "description": "Görseli DINOv3 ve Flux2 VAE ile kodlayarak TripoSplat pozitif/negatif koşullandırma oluşturur ve KSampler için sabit boyutlu gürültü hedefini (latent + kamera) üretir.",
     "display_name": "TripoSplat Koşullandırma",
@@ -24693,7 +24915,7 @@
     }
   },
   "TripoTextToModelNode": {
-    "display_name": "Tripo: Metinden Modele",
+    "display_name": "Tripo: Metinden Modele (Eski)",
     "inputs": {
       "auto_size": {
         "name": "auto_size",
@@ -24769,8 +24991,77 @@
       }
     }
   },
+  "TripoTextToModelNodeV2": {
+    "display_name": "Tripo: Metinden Modele",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Dokulu modelleri metre cinsinden gerçek dünya boyutlarına göre ölçeklendirir. Tripo boyutu modelin sahne dönüşümü olarak saklar; model dönüştürüldüğünde, iskeletlendirildiğinde veya yeniden hedeflendirildiğinde bunu modele işler. texture olmadan yok sayılır."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "Maksimum yüz sayısı. -1, Tripo'nun uyarlanabilir şekilde seçim yapmasını sağlar (v3.x standard sürümünde yaklaşık 1,4M yüz, detailed sürümünde 2M). Tripo sessizce sınırlar: v2.5'te 500.000, quad ağlarda 150.000."
+      },
+      "geometry_quality": {
+        "name": "geometry_quality"
+      },
+      "image_seed": {
+        "name": "image_seed"
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "model_version": {
+        "name": "model_version"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "En fazla 255 karakter."
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "PBR malzeme haritaları (temel renk, metaliklik, pürüzlülük, normal). texture gerektirir."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "Quad ağ çıktısı. Tripo quad ağları FBX olarak sunar; bu nedenle sonuç FBX çıkışına gelir ve GLB çıkışı boş kalır."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "Temiz, el yapımı stil topolojiye sahip düşük poligonlu ağ (500-20.000 yüz, quad için 500-10.000). Basit özneler için en iyisidir; karmaşık olanlar başarısız olabilir."
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "Doku haritaları oluşturur. Kapalıyken yalın geometri döndürür ve pbr'yi yok sayar."
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = HD dokular, extreme = 8K Ultra dokular."
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "quad etkin olduğunda boştur."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Yalnızca quad etkin olduğunda doldurulur."
+      }
+    }
+  },
   "TripoTextureNode": {
-    "display_name": "Tripo: Doku modeli",
+    "display_name": "Tripo: Model Dokulama (Eski)",
     "inputs": {
       "model_task_id": {
         "name": "model_görev_id"
@@ -24830,6 +25121,62 @@
       "3": {
         "name": "FBX",
         "tooltip": "Tripo, dörtgen ağlar ve FBX içe aktarımları için FBX döndürür; aksi halde boştur."
+      }
+    }
+  },
+  "TripoTextureNodeV2": {
+    "display_name": "Tripo: Model Dokulama",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "Doku modeli: v3.x ile oluşturulan ağlar için v3.0, v2.5 ile oluşturulan ağlar için v2.5."
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "Dokulanacak Tripo: Segment Model parça adları, virgülle ayrılır. Boş bırakılırsa her parça dokulanır."
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "PBR malzeme haritaları (temel renk, metaliklik, pürüzlülük, normal); kapalıyken düz renkli bir doku verir."
+      },
+      "reference": {
+        "name": "reference",
+        "tooltip": "Dokulara yön veren referans görüntüler. texture_prompt veya style_image ile birlikte kullanılamaz."
+      },
+      "style_image": {
+        "name": "style_image",
+        "tooltip": "Dokuların sanatsal stili için referans görüntü. Yalnızca texture_prompt ile birlikte kullanılır."
+      },
+      "texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "Dokulama için isteğe bağlı metin yönlendirmesi. Renklerin çıkarılacağı kaynak görüntü taşımayan içe aktarılan modeller (Tripo: Import Model) için pratikte gereklidir. Referans görüntülerle birlikte kullanılamaz."
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = HD dokular, extreme = 8K Ultra dokular."
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Kaynak bir dörtgen ağ veya FBX içe aktarması olduğunda boştur."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Tripo, dörtgen ağlar ve FBX içe aktarmaları için FBX döndürür; aksi hâlde boştur."
       }
     }
   },
@@ -28298,6 +28645,94 @@
     "outputs": {
       "0": {
         "name": "ağ",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateABC": {
+    "description": "Stil ve şarkı sözlerinden bir şarkının ABC notasyonunu oluşturur. abc'yi YuE2 Generate Music düğümüne bağlayın.",
+    "display_name": "YuE2 ABC Oluştur",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "lyrics": {
+        "name": "lyrics"
+      },
+      "max_abc_tokens": {
+        "name": "max_abc_tokens"
+      },
+      "mode": {
+        "name": "mod",
+        "tooltip": "full: melodi ve akor üretir; melody: yalnızca melodi üretir, cover'lar için önerilir."
+      },
+      "seed": {
+        "name": "tohum"
+      },
+      "style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateMusic": {
+    "description": "Stil, şarkı sözleri ve ABC notasyonundan müzik belirteçleri ve akustik koşullandırma üretir. Oluşturulan saniye değerini Empty YuE2 Latent Audio düğümüne sağlayın. Boş bir ABC girişi seçili modu yok sayar.",
+    "display_name": "YuE2 Müzik Oluştur",
+    "inputs": {
+      "abc": {
+        "name": "abc",
+        "tooltip": "ABC oluşturucuyu bağlayın veya düzenlenmiş bir partisyon sağlayın. Kapalı modu otomatik olarak kullanmak için boş bırakın."
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "lyrics": {
+        "name": "şarkı sözleri"
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "Maksimum süre; oluşturma daha erken durabilir. Sürüm 360 saniyelik bir bütçe kullanır."
+      },
+      "mode": {
+        "name": "mod",
+        "tooltip": "full: melodi ve akor üretir; melody: yalnızca melodi üretir, cover'lar için önerilir."
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "seed": {
+        "name": "tohum"
+      },
+      "style": {
+        "name": "stil"
+      },
+      "temperature": {
+        "name": "sıcaklık"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "saniye",
         "tooltip": null
       }
     }

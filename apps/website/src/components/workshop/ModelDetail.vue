@@ -15,15 +15,17 @@ import type {
   PlaygroundExample
 } from '../../config/workshop-playground'
 import {
-  defaultValues,
-  exampleValues,
-  examplesForModel,
   isVideoUrl,
   restoreFormValues,
   schemaForModel,
   urlUploadField,
   validateForm
 } from '../../config/workshop-playground'
+import {
+  initialWorkshopPageState,
+  workshopExampleState,
+  workshopPageSchema
+} from '../../config/workshop-page-state'
 import type { RunOutput, RunRecord, RunState } from '../../config/workshop-run'
 import { IDLE, transition } from '../../config/workshop-run'
 import {
@@ -31,8 +33,7 @@ import {
   useWorkshopCredits
 } from '../../config/workshop-credits'
 import { WORKSHOP_CREDITS_URL } from '../../config/workshop-env'
-import { runWorkshopRouter } from '../../config/workshop-router'
-import { prepareWorkshopRouterInput } from '../../config/workshop-request'
+import { router_render } from '../../config/router-render'
 import { createWorkshopUrlUploader } from '../../config/workshop-url-upload'
 import { WorkshopRouterError } from '../../config/workshop-router-errors'
 import { releaseRouterOutputs } from '../../config/workshop-response'
@@ -82,13 +83,14 @@ const { onKeydown: onTabKeydown } = useTablist(
   activeSection
 )
 
-const examples = examplesForModel(model)
+const initialPageState = initialWorkshopPageState(model)
+const examples = initialPageState.examples
 // A workflow page describes one workflow, so the model's other examples would
 // be beside the point there.
 const showsExamples = computed(() => !slots.details && examples.length > 0)
-const firstExample = examples[0]
+const firstExample = initialPageState.firstExample
 const activeExample = ref<PlaygroundExample | undefined>(
-  firstExample?.fields && !firstExample.sampleOnly ? firstExample : undefined
+  initialPageState.activeExample
 )
 const activeExampleId = ref(firstExample?.id)
 const nativeJson = ref(false)
@@ -104,12 +106,7 @@ const schema = computed(() =>
           advancedFields: []
         }
       })
-    : schemaForModel({
-        fields: activeExample.value?.fields ?? model.fields,
-        modality: model.modality,
-        incompleteReason: model.incompleteReason,
-        form: activeExample.value?.fields ? undefined : model.form
-      })
+    : workshopPageSchema(model, activeExample.value)
 )
 
 function exampleOutput(example: PlaygroundExample): RunOutput {
@@ -127,11 +124,7 @@ function exampleOutput(example: PlaygroundExample): RunOutput {
   }
 }
 
-const fieldValues = ref<FormValues>(
-  firstExample && !firstExample.sampleOnly
-    ? exampleValues(schema.value, firstExample)
-    : defaultValues(schema.value, model.defaults)
-)
+const fieldValues = ref<FormValues>(initialPageState.values)
 const jsonValues = ref<FormValues>({
   request_body: JSON.stringify(
     model.execution?.inputSchema.example ?? {},
@@ -266,38 +259,37 @@ async function run() {
     return credential.session
   }
   try {
-    const body = await prepareWorkshopRouterInput(
-      model.execution,
-      values.value,
-      active.signal,
-      undefined,
-      async (file, signal) => {
-        const credential = await freshCredential()
-        return uploadUrl(
-          file,
-          credential.token,
-          JSON.stringify([startedFor.uid, startedFor.workspace.id]),
-          signal
-        )
+    const result = await router_render(
+      model.slug,
+      {},
+      {
+        model,
+        form: { schema: schema.value, values: values.value },
+        signal: active.signal,
+        token: async () => (await freshCredential()).token,
+        uploadFile: async (file, signal) => {
+          const credential = await freshCredential()
+          return uploadUrl(
+            file,
+            credential.token,
+            JSON.stringify([startedFor.uid, startedFor.workspace.id]),
+            signal
+          )
+        },
+        idempotencyKey: (body) => {
+          const fingerprint = JSON.stringify([
+            startedFor.uid,
+            startedFor.workspace.id,
+            model.routerId,
+            body
+          ])
+          if (pendingRequest?.fingerprint !== fingerprint) {
+            pendingRequest = { fingerprint, key: workshopIdempotencyKey() }
+          }
+          return pendingRequest.key
+        }
       }
     )
-    const credential = await freshCredential()
-    const fingerprint = JSON.stringify([
-      startedFor.uid,
-      startedFor.workspace.id,
-      model.routerId,
-      body
-    ])
-    if (pendingRequest?.fingerprint !== fingerprint) {
-      pendingRequest = { fingerprint, key: workshopIdempotencyKey() }
-    }
-    const result = await runWorkshopRouter({
-      contract: model.execution,
-      body,
-      token: credential.token,
-      idempotencyKey: pendingRequest.key,
-      signal: active.signal
-    })
     if (controller !== active || active.signal.aborted) {
       releaseRouterOutputs(result.outputs)
       return
@@ -389,7 +381,7 @@ function openExample(example: PlaygroundExample) {
   if (!example.sampleOnly) {
     nativeJson.value = false
     activeExample.value = example.fields ? example : undefined
-    values.value = exampleValues(schema.value, example)
+    values.value = workshopExampleState(model, example).values
   }
   activeExampleId.value = example.id
   runState.value = { status: 'example', output: exampleOutput(example) }
