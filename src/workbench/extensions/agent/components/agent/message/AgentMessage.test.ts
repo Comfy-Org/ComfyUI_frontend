@@ -469,6 +469,55 @@ describe('AgentMessage fallback content', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('Could not publish')
   })
 
+  it('renders a retry-after hint on an error notice that carries retryAfterSeconds', () => {
+    const message: AssistantMessage = {
+      ...thinkingMessage(),
+      streaming: false,
+      thinking: false,
+      parts: [
+        {
+          type: 'notice',
+          level: 'error',
+          text: 'Billing status is temporarily unavailable; please retry.',
+          retryAfterSeconds: 30
+        }
+      ]
+    }
+
+    render(AgentMessage, {
+      props: { message },
+      global: { plugins: [i18n] }
+    })
+
+    const alert = screen.getByRole('alert')
+    expect(alert).toHaveTextContent(
+      'Billing status is temporarily unavailable; please retry.'
+    )
+    expect(alert).toHaveTextContent('You can try again in 30s.')
+  })
+
+  it('omits the retry-after hint when the notice has no retryAfterSeconds', () => {
+    const message: AssistantMessage = {
+      ...thinkingMessage(),
+      streaming: false,
+      thinking: false,
+      parts: [
+        {
+          type: 'notice',
+          level: 'error',
+          text: 'This workspace is blocked. Contact support to restore access.'
+        }
+      ]
+    }
+
+    render(AgentMessage, {
+      props: { message },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.queryByText(/try again in/i)).not.toBeInTheDocument()
+  })
+
   it('hides completed thinking when the response did not use tools', () => {
     const message: AssistantMessage = {
       ...thinkingMessage(),

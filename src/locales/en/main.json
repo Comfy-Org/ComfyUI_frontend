@@ -5288,6 +5288,7 @@
     "friend": "there",
     "sendFailed": "Message failed to send",
     "sendBusy": "A message is already being sent",
+    "retryAfterSeconds": "You can try again in {seconds}s.",
     "malformedEvent": "The agent sent an event this panel could not read",
     "coachTitle": "Meet the agent",
     "coachBody": "Ask it to build or edit graphs.",
