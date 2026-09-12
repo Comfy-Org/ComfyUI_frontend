@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest'
+import { setNodePricingFailureReporter } from '@comfyorg/shared-frontend-utils/nodePricingFailure'
+import { describe, expect, it, vi } from 'vitest'
 
 import { CREDITS_PER_USD, formatCredits } from '@/base/credits/comfyCredits'
 import {
@@ -14,6 +15,9 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDef, PriceBadge } from '@/schemas/nodeDefSchema'
 import { toNodeId } from '@/types/nodeId'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+
+const pricingFailureReporter = vi.fn()
+setNodePricingFailureReporter(pricingFailureReporter)
 
 // -----------------------------------------------------------------------------
 // Test Types
@@ -778,14 +782,33 @@ describe('useNodePricing', () => {
 
       // Should not crash, just return empty
       expect(getNodeDisplayPrice(node)).toBe('')
+      expect(pricingFailureReporter).toHaveBeenCalledExactlyOnceWith({
+        operation: 'compile',
+        nodeType: 'TestInvalidExprNode',
+        source: 'node_definition',
+        expr: '{"type":"usd","usd": (widgets.count * 0.01',
+        cause: expect.objectContaining({
+          message: expect.stringContaining('Expected ")"')
+        })
+      })
+    })
+
+    it('should not report a compile failure for an empty expression', () => {
+      const { getNodeDisplayPrice } = useNodePricing()
+      const node = createMockNodeWithPriceBadge(
+        'TestEmptyExprNode',
+        priceBadge('')
+      )
+
+      expect(getNodeDisplayPrice(node)).toBe('')
+      expect(pricingFailureReporter).not.toHaveBeenCalled()
     })
 
     it('should return empty string for expression that throws at runtime', async () => {
       const { getNodeDisplayPrice, pricingRevision } = useNodePricing()
       const node = createMockNodeWithPriceBadge(
         'TestRuntimeErrorNode',
-        // Expression that will fail at runtime (calling function on undefined)
-        priceBadge('$lookup(undefined, "key")')
+        priceBadge('$error("pricing failure")')
       )
 
       const revisionBeforeEvaluation = pricingRevision.value
@@ -798,6 +821,15 @@ describe('useNodePricing', () => {
         { interval: 1 }
       )
       expect(getNodeDisplayPrice(node)).toBe('')
+      expect(pricingFailureReporter).toHaveBeenCalledExactlyOnceWith({
+        operation: 'evaluate',
+        nodeType: 'TestRuntimeErrorNode',
+        source: 'live_node',
+        expr: '$error("pricing failure")',
+        cause: expect.objectContaining({
+          message: expect.stringContaining('pricing failure')
+        })
+      })
     })
 
     it('should return empty string for invalid PricingResult type', async () => {
@@ -1380,12 +1412,21 @@ describe('evaluateNodeDefPricing', () => {
       name: 'ErrorNode',
       price_badge: {
         engine: 'jsonata',
-        expr: '$lookup(undefined, "key")',
+        expr: '$error("pricing failure")',
         depends_on: { widgets: [], inputs: [], input_groups: [] }
       }
     })
     const result = await evaluateNodeDefPricing(nodeDef)
     expect(result).toBe('')
+    expect(pricingFailureReporter).toHaveBeenCalledExactlyOnceWith({
+      operation: 'evaluate',
+      nodeType: 'ErrorNode',
+      source: 'node_definition',
+      expr: '$error("pricing failure")',
+      cause: expect.objectContaining({
+        message: expect.stringContaining('pricing failure')
+      })
+    })
   })
 
   it('should handle range_usd result', async () => {

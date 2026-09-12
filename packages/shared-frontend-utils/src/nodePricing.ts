@@ -8,6 +8,7 @@ import type { Expression } from 'jsonata'
 import jsonata from 'jsonata'
 
 import { CREDITS_PER_USD, formatCredits } from './creditsUtil'
+import { reportNodePricingFailure } from './nodePricingFailure'
 
 /**
  * Determine if a number should display 1 decimal place.
@@ -301,12 +302,21 @@ export const formatPricingResult = (
 // -----------------------------
 // Compile rules (non-fatal)
 // -----------------------------
-const compileRule = (rule: JsonataPricingRule): CompiledJsonataPricingRule => {
+const compileRule = (
+  rule: JsonataPricingRule,
+  nodeType: string
+): CompiledJsonataPricingRule => {
   try {
     return { ...rule, _compiled: jsonata(rule.expr) }
-  } catch (e) {
+  } catch (cause) {
     // Do not crash app on bad expressions; just disable rule.
-    console.error('[pricing/jsonata] failed to compile expr:', rule.expr, e)
+    reportNodePricingFailure({
+      operation: 'compile',
+      nodeType,
+      source: 'node_definition',
+      expr: rule.expr,
+      cause
+    })
     return { ...rule, _compiled: null }
   }
 }
@@ -335,14 +345,14 @@ export const getCompiledRuleForNodeType = (
   nodeName: string,
   priceBadge: PriceBadge | undefined
 ): CompiledJsonataPricingRule | null => {
-  if (!priceBadge) return null
+  if (!priceBadge?.expr) return null
 
   const rule = priceBadgeToRule(priceBadge)
   const signature = JSON.stringify(rule)
   const cached = compiledRulesCache.get(nodeName)
   if (cached?.signature === signature) return cached.rule
 
-  const compiled = compileRule(rule)
+  const compiled = compileRule(rule, nodeName)
   compiledRulesCache.set(nodeName, { signature, rule: compiled })
   return compiled
 }
@@ -355,12 +365,20 @@ export async function evaluatePricingContext(
 ): Promise<string> {
   const rule = getCompiledRuleForNodeType(name, badge)
   if (!rule?._compiled) return ''
+  let result: unknown
   try {
-    const result: unknown = await rule._compiled.evaluate(context)
-    return formatPricingResult(result, options)
-  } catch {
+    result = await rule._compiled.evaluate(context)
+  } catch (cause) {
+    reportNodePricingFailure({
+      operation: 'evaluate',
+      nodeType: name,
+      source: 'pricing_context',
+      expr: rule.expr,
+      cause
+    })
     return ''
   }
+  return formatPricingResult(result, options)
 }
 
 /**
@@ -452,8 +470,14 @@ export const evaluateNodeDefPricing = memoize(
       const context: JsonataEvalContext = { widgets, inputs, inputGroups }
       const result = await rule._compiled.evaluate(context)
       return formatPricingResult(result, { valueOnly: true })
-    } catch (e) {
-      console.error('[evaluateNodeDefPricing] error:', e)
+    } catch (cause) {
+      reportNodePricingFailure({
+        operation: 'evaluate',
+        nodeType: nodeDef.name,
+        source: 'node_definition',
+        expr: priceBadge.expr,
+        cause
+      })
       return ''
     }
   },
