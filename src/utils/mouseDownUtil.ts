@@ -11,8 +11,10 @@ export const whileMouseDown = (
       ? elementOrEvent
       : (elementOrEvent.target as HTMLElement)
   const pointerId =
-    !(elementOrEvent instanceof HTMLElement) && 'pointerId' in elementOrEvent
-      ? (elementOrEvent as PointerEvent).pointerId
+    !(elementOrEvent instanceof HTMLElement) &&
+    'pointerId' in elementOrEvent &&
+    typeof elementOrEvent.pointerId === 'number'
+      ? elementOrEvent.pointerId
       : undefined
 
   let iteration = 0
