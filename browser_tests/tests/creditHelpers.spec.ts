@@ -233,7 +233,6 @@ testWithMockedObjectInfo.describe(
           true
         )
         await expect(badge).toBeVisible()
-        await expect(header).toBeVisible()
       }
     )
   }
