@@ -100,6 +100,7 @@ export async function signInToLiveCloud(
     ),
     page.getByRole('button', { name: 'Sign in', exact: true }).click()
   ])
+  await page.goto(endpoints.PLAYWRIGHT_TEST_URL)
   const authorization = await response.request().headerValue('authorization')
   expect(authorization).toBeTruthy()
   if (!authorization) throw new Error('Missing billing authorization')

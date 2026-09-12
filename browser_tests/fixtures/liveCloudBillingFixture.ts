@@ -42,6 +42,8 @@ export const liveCloudBillingFixture = base.extend<{
       'https://dreamboothy-dev.firebaseapp.com',
       'https://checkout.stripe.com',
       'https://checkout.comfy.org',
+      'https://testmode-acs.stripe.com',
+      'https://hooks.stripe.com',
       'https://api.stripe.com',
       'https://js.stripe.com',
       'https://m.stripe.network',
