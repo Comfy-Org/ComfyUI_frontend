@@ -2,6 +2,7 @@ import { computed, ref } from 'vue'
 
 import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
+import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { createUuidv4 } from '@/utils/uuid'
 import type { AgentActiveTabData, TurnId } from '../../schemas/agentApiSchema'
 import {
@@ -39,6 +40,7 @@ interface SentAttachment {
 
 interface SentTag {
   id: string
+  locatorId?: NodeLocatorId
   title: string
 }
 
@@ -285,7 +287,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
             })),
           selection:
             tags !== undefined && tags.length > 0
-              ? { node_ids: tags.map((tag) => tag.id) }
+              ? { node_ids: tags.map((tag) => tag.locatorId ?? tag.id) }
               : undefined,
           attachments: attachments?.map((attachment) => attachment.ref),
           ...(shouldSendDraft ? { draft } : {})
