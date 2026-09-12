@@ -29,7 +29,6 @@ const TEMPORAL_INSTALL =
 const RECORD_USER_ID = 'rec-local-user'
 const RECORD_WORKSPACE_ID = 'w-1f2e3d4c-5b6a-4798-8899-aabbccddeeff'
 
-// Neither Postgres nor Redis speaks HTTP, so a TCP connect is the whole check.
 function assertListening(portNumber: number, label: string): Promise<void> {
   return new Promise((resolveCheck, rejectCheck) => {
     const socket = createConnection({ host: '127.0.0.1', port: portNumber })
@@ -51,7 +50,6 @@ function assertListening(portNumber: number, label: string): Promise<void> {
   })
 }
 
-// Polls because the Temporal dev server binds a second or two after it starts.
 async function waitForPort(
   portNumber: number,
   label: string,
@@ -93,7 +91,6 @@ export function containerNamesPublishing(
     .map(([name]) => name)
 }
 
-// Neither psql nor redis-cli is on PATH here, so each service is reached through its container.
 async function containerFor(
   portNumber: number,
   service: string,
@@ -127,7 +124,6 @@ async function redisExecCommand(): Promise<string> {
   return `docker exec -i ${name} redis-cli`
 }
 
-// Every value is a module constant, so the statement carries no caller input.
 export function parseExecCommand(command: string): string[] {
   const parts = command.match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g)?.map((part) => {
     const quoted = part.match(/^(?:"([^"]*)"|'([^']*)')$/)
