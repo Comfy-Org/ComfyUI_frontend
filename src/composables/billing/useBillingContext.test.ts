@@ -273,6 +273,34 @@ describe('useBillingContext', () => {
     await expect(fetchBalance()).resolves.toBeUndefined()
   })
 
+  it('does not bump usageLogsRefreshSignal on first hydration or an unchanged refetch', async () => {
+    const context = useBillingContext()
+
+    await vi.waitFor(() => expect(context.balance.value).not.toBeNull())
+    expect(context.usageLogsRefreshSignal.value).toBe(0)
+
+    // getBillingBalance rebuilds a fresh object with the same values on every
+    // call, so this refetch must not bump the signal on identity alone.
+    await context.fetchBalance()
+
+    expect(context.usageLogsRefreshSignal.value).toBe(0)
+  })
+
+  it('bumps usageLogsRefreshSignal only when the balance actually changes', async () => {
+    const context = useBillingContext()
+
+    await vi.waitFor(() => expect(context.balance.value).not.toBeNull())
+    expect(context.usageLogsRefreshSignal.value).toBe(0)
+
+    vi.mocked(workspaceApi.getBillingBalance).mockResolvedValueOnce({
+      amount_micros: 12000000,
+      currency: 'usd'
+    })
+    await context.fetchBalance()
+
+    expect(context.usageLogsRefreshSignal.value).toBe(1)
+  })
+
   it('exposes subscribe action', async () => {
     const { subscribe } = useBillingContext()
     await expect(subscribe('pro-monthly')).resolves.toEqual({
