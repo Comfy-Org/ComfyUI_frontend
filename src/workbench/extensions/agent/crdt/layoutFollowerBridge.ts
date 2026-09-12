@@ -249,6 +249,11 @@ export class LayoutFollowerBridge extends EventTarget {
     if (!(event instanceof CustomEvent)) return
     const update = event.detail as DocUpdate
     if (update.workflowId !== this.sentWorkflowId) return
+    this.dispatchEvent(
+      new CustomEvent('doc_update_received', {
+        detail: { workflowId: update.workflowId, seq: update.seq }
+      })
+    )
 
     // The first incompatible frame is already in the Y.Doc. Same-lineage
     // updates cannot remove those CRDT bytes, so keep the read gate latched
@@ -264,6 +269,15 @@ export class LayoutFollowerBridge extends EventTarget {
     // leave the follower on an empty doc (KA-11).
     const isCatchUp = this.catchUpPending && update.seq === this.ackSeq
     if (!isCatchUp && this.lastSeq !== null && update.seq <= this.lastSeq) {
+      this.dispatchEvent(
+        new CustomEvent('doc_update_skipped', {
+          detail: {
+            workflowId: update.workflowId,
+            seq: update.seq,
+            reason: 'stale'
+          }
+        })
+      )
       this.dispatchEvent(
         new CustomEvent('doc_stale', {
           detail: { workflowId: update.workflowId, seq: update.seq }
@@ -283,6 +297,15 @@ export class LayoutFollowerBridge extends EventTarget {
     const baseline = this.lastSeq ?? this.ackSeq
     if (baseline !== null && update.seq > baseline + 1) {
       this.dispatchEvent(
+        new CustomEvent('doc_update_skipped', {
+          detail: {
+            workflowId: update.workflowId,
+            seq: update.seq,
+            reason: 'gap'
+          }
+        })
+      )
+      this.dispatchEvent(
         new CustomEvent('doc_gap', {
           detail: {
             workflowId: update.workflowId,
@@ -294,11 +317,16 @@ export class LayoutFollowerBridge extends EventTarget {
       this.resubscribe()
       return
     }
-    if (this.lastSeq === null || update.seq > this.lastSeq)
-      this.lastSeq = update.seq
-    if (isCatchUp) this.catchUpPending = false
-    this.follower.applyRemoteUpdate(update.update)
-
+    try {
+      this.follower.applyRemoteUpdate(update.update)
+    } catch {
+      this.dispatchEvent(
+        new CustomEvent('doc_update_error', {
+          detail: { workflowId: update.workflowId, seq: update.seq }
+        })
+      )
+      return
+    }
     // KA-11 read-time gate. The frame must merge before its schema can be
     // checked, but nothing downstream may READ a doc whose declared schema
     // this build was not written against. Failing closed here, before the
@@ -308,6 +336,9 @@ export class LayoutFollowerBridge extends EventTarget {
       assertReadableSchema(this.follower.doc)
     } catch (error) {
       if (!(error instanceof FollowerSchemaError)) throw error
+      if (this.lastSeq === null || update.seq > this.lastSeq)
+        this.lastSeq = update.seq
+      if (isCatchUp) this.catchUpPending = false
       this.schemaError = error
       this.dispatchEvent(
         new CustomEvent('schema_error', {
@@ -317,7 +348,14 @@ export class LayoutFollowerBridge extends EventTarget {
       return
     }
 
-    this.dispatchEvent(new CustomEvent('doc_update', { detail: update }))
+    const accepted = this.dispatchEvent(
+      new CustomEvent('doc_update', { detail: update, cancelable: true })
+    )
+    if (!accepted) return
+
+    if (this.lastSeq === null || update.seq > this.lastSeq)
+      this.lastSeq = update.seq
+    if (isCatchUp) this.catchUpPending = false
   }
 
   /**
