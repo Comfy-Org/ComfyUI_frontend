@@ -42,6 +42,7 @@ const maybeLocalOptions: PlaywrightTestConfig = process.env.PLAYWRIGHT_LOCAL
 export default defineConfig({
   testDir: './browser_tests',
   testIgnore: [
+    '**/liveCloud/**',
     '**/*.test.ts',
     // Untransformed recorder output — still bare codegen, not a runnable spec
     '**/*.raw.spec.ts',
@@ -56,10 +57,36 @@ export default defineConfig({
   reporter: process.env.PLAYWRIGHT_BLOB_OUTPUT_DIR ? 'blob' : 'html',
   ...maybeLocalOptions,
 
-  globalSetup: './browser_tests/globalSetup.ts',
-  globalTeardown: './browser_tests/globalTeardown.ts',
+  globalSetup:
+    process.env.PLAYWRIGHT_CLOUD_LIVE === '1'
+      ? undefined
+      : './browser_tests/globalSetup.ts',
+  globalTeardown:
+    process.env.PLAYWRIGHT_CLOUD_LIVE === '1'
+      ? undefined
+      : './browser_tests/globalTeardown.ts',
 
   projects: [
+    ...(process.env.PLAYWRIGHT_CLOUD_LIVE === '1'
+      ? [
+          {
+            name: 'cloud-live',
+            testMatch: '**/tests/liveCloud/**/*.spec.ts',
+            testIgnore: [],
+            fullyParallel: false,
+            retries: 0,
+            timeout: 120_000,
+            expect: { timeout: 30_000 },
+            use: {
+              ...devices['Desktop Chrome'],
+              locale: 'en-US',
+              trace: 'off',
+              video: 'off',
+              screenshot: 'off'
+            }
+          } satisfies NonNullable<PlaywrightTestConfig['projects']>[number]
+        ]
+      : []),
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
