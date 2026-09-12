@@ -38,6 +38,11 @@ interface PerfMeasurement {
 }
 
 const M2_TARGET_FPS = 52
+const M2_IDLE_BASELINE_FPS = 60
+const M2_ALLOWED_DROP_PCT = (
+  ((M2_IDLE_BASELINE_FPS - M2_TARGET_FPS) / M2_IDLE_BASELINE_FPS) *
+  100
+).toFixed(0)
 const M2_TARGET_TBT_MS = 200
 const M2_TARGET_FRAME_DURATION_MS = 20
 const M2_TEST_NAME = 'large-graph-idle'
@@ -328,7 +333,7 @@ function renderM2Scoreboard(
   lines.push(
     `| Samples | ${scoredSamples.length} | — | — |`,
     '',
-    `> Legacy baseline: ~60 FPS idle, ~70 FPS zoom. Target = <25% regression.`,
+    `> Legacy baseline: ~${M2_IDLE_BASELINE_FPS} FPS idle, ~70 FPS zoom. P5 target of ${M2_TARGET_FPS} FPS allows at most a ${M2_ALLOWED_DROP_PCT}% drop from the idle baseline.`,
     ''
   )
   return lines
