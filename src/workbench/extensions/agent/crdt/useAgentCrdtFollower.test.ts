@@ -16,6 +16,7 @@ import type { GraphMutations } from '@/core/graph/graphMutations'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import type { MaterializableGraph } from './agentNodeMaterializer'
 
@@ -205,11 +206,27 @@ function dispatchFrame(type: string, detail: unknown): void {
 
 describe('useAgentCrdtFollower', () => {
   beforeEach(() => {
+    useAgentPanelStore().enabled = true
     sessionStorage.clear()
     bridgeState.current = null
     materializerState.reconcileAgentAdapters.mockReset().mockReturnValue([])
     definitionsState.readSubgraphDefinitionIds.mockClear()
     definitionsState.readSubgraphDefinitions.mockClear()
+  })
+
+  it('does not construct a follower when the product gate is disabled', () => {
+    useAgentPanelStore().enabled = false
+    const { status, unmount } = mountFollower('wf-1')
+
+    expect(status()).toMatchObject({
+      enabled: false,
+      connected: false,
+      workflowId: null,
+      updatesApplied: 0
+    })
+    expect(bridgeState.current).toBeNull()
+    expect(adapterState.bind).not.toHaveBeenCalled()
+    unmount()
   })
 
   it('subscribes immediately to a bound workflow and reports it in status', () => {
