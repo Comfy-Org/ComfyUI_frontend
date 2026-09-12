@@ -104,12 +104,7 @@ test.describe('Canvas settings', { tag: '@canvas' }, () => {
   })
 
   test.describe('Comfy.Graph.LiveSelection', () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting(
-        'Comfy.Canvas.NavigationMode',
-        'standard'
-      )
-    })
+    test.use({ initialSettings: { 'Comfy.Canvas.NavigationMode': 'standard' } })
 
     test('selects nodes mid-drag when enabled', async ({ comfyPage }) => {
       await comfyPage.settings.setSetting('Comfy.Graph.LiveSelection', true)

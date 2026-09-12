@@ -1,0 +1,14 @@
+{
+  "sourceUrl": "https://docs.comfy.org/tutorials/partner-nodes/pricing#image",
+  "verifiedOn": "2026-09-11",
+  "models": {
+    "bfl/flux-kontext-pro": {
+      "creditsPerRun": 8.44,
+      "useCases": ["generate-images", "edit-images"]
+    },
+    "bfl/flux-kontext-max": {
+      "creditsPerRun": 16.88,
+      "useCases": ["generate-images", "edit-images"]
+    }
+  }
+}

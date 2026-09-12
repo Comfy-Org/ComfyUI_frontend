@@ -1,8 +1,27 @@
 // @vitest-environment happy-dom
 import { render, screen, waitFor } from '@testing-library/vue'
 import { expect, it, vi } from 'vitest'
+import { createSSRApp, h } from 'vue'
+import { renderToString } from 'vue/server-renderer'
 
 import MediaSourcePreview from './MediaSourcePreview.vue'
+
+it('waits until mounting before creating a local media URL', async () => {
+  const create = vi.spyOn(URL, 'createObjectURL')
+  const file = new File(['video'], 'source.mp4', { type: 'video/mp4' })
+  const props = { file, name: 'Source video', kind: 'video' as const }
+  const html = await renderToString(
+    createSSRApp({
+      render: () => h(MediaSourcePreview, props)
+    })
+  )
+  expect(create).not.toHaveBeenCalled()
+  expect(html).not.toContain('blob:')
+  render(MediaSourcePreview, { props })
+  const video = await screen.findByLabelText('Source video')
+  expect(video.getAttribute('src')).toMatch(/^blob:/)
+  expect(create).toHaveBeenCalledWith(file)
+})
 
 it('switches between remote examples and local uploads, revoking only its owned object URLs', async () => {
   const create = vi
