@@ -300,6 +300,50 @@ max_size = feature_flags.get_connection_feature(
 
 ## Adding New Feature Flags
 
+### Cloud rollout review (advisory)
+
+`feature-flag-policy` provides neutral rollout advice. It never reports a
+passing test or blocks a merge. Do not add it to required checks.
+
+The policy reads changed paths and the trusted default branch's risk map.
+It does not consume risk labels, the risk grader's check output, or CI status.
+This removes the dependency cycle between risk grading and flag policy.
+The general risk grader still uses CI health as one advisory axis; its overall
+grade is not a flag requirement or a statement that tests failed.
+
+Test, documentation, tooling, CI, dependency, build, and website paths do not
+require Cloud runtime flags. Their existing checks and reviews still apply.
+Runtime paths matching R2/R3 rules receive rollout advice. Unknown paths need
+human scope review, without automatically demanding a flag. Renames inspect
+both old and new paths, and non-runtime files do not exempt a mixed runtime PR.
+A path rule cannot determine whether shared code executes in Cloud.
+
+For applicable Cloud changes, provide the exact rollout flag:
+
+```markdown
+## Feature flag
+
+- **Flag**: unified_cloud_auth
+```
+
+A declaration is not evidence of safety. Reviewers verify containment,
+fail-closed defaults, production-OFF state for every cohort, OFF-path test
+coverage, and rollback. Client capability flags are not rollout controls.
+If a flag is unsuitable (for example, a repair, removal, or migration), explain
+why and supply validation and rollback evidence for reviewer approval.
+`risk-dispute:*` and `flag-exempt` labels do not bypass or satisfy this advice.
+
+The check lists applicable paths and matched risk classes. Missing declarations
+produce `needs-flag`; declared flags or unclassified runtime paths produce
+`review-required`; non-runtime-only changes produce `not-applicable`. All three
+are neutral. API errors and incomplete file lists fail the workflow visibly
+instead of producing a misleading policy result. Re-run after fixing the error.
+
+This advisory replacement does not verify flags with regex or an AI model and
+does not contact PostHog. Enforcement requires a separate design and approval,
+including independent test evidence, safe exceptions, current-head evaluation,
+and validation against representative real PRs.
+
 ### Backend
 
 1. **For server capabilities**, add to `SERVER_FEATURE_FLAGS` in `comfy_api/feature_flags.py`:

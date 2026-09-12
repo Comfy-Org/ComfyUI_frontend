@@ -12,6 +12,13 @@
 
 <!-- Critical design decisions or edge cases that need attention -->
 
+## Feature flag
+
+For applicable Cloud runtime changes, provide the rollout flag or explain
+validation and rollback when a flag is unsuitable.
+
+- **Flag**:
+
 <!-- If this PR fixes an issue, uncomment and update the line below -->
 <!-- Fixes #ISSUE_NUMBER -->
 
