@@ -227,9 +227,7 @@ testWithMockedObjectInfo.describe(
         )
         await expect(badge).toBeHidden()
 
-        // Turning it back on must restore the badge on the *same* node. The
-        // setting is read once when the badge renders, so a node placed before
-        // the toggle is exactly the case that can end up stuck either way.
+        // Derived badge rows for an existing node must react to live setting changes.
         await comfyPage.settings.setSetting(
           'Comfy.NodeBadge.ShowApiPricing',
           true
