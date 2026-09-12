@@ -27,14 +27,15 @@ test.describe(
         disabledMode: 4
       }
     ]) {
-      test(`${modeControl.type} labels its toggle, tracks renames, and changes the connected node mode`, async ({
+      test(`${modeControl.type} control model tracks labels and changes the connected node mode`, async ({
         comfyPage
       }) => {
         await expect
           .poll(
             () =>
               comfyPage.page.evaluate(
-                (nodeType) => Boolean(window.LiteGraph!.registered_node_types[nodeType]),
+                (nodeType) =>
+                  Boolean(window.LiteGraph!.registered_node_types[nodeType]),
                 modeControl.type
               ),
             {
@@ -62,7 +63,7 @@ test.describe(
           .poll(() =>
             comfyPage.page.evaluate(
               (controlId) =>
-                window.app!.graph!.getNodeById(controlId)!.widgets?.[0]?.name,
+                window.app!.graph.getNodeById(controlId)!.widgets?.[0]?.name,
               control.id
             )
           )
@@ -78,14 +79,16 @@ test.describe(
           .poll(() =>
             comfyPage.page.evaluate(
               (controlId) =>
-                window.app!.graph!.getNodeById(controlId)!.widgets?.[0]?.name,
+                window.app!.graph.getNodeById(controlId)!.widgets?.[0]?.name,
               control.id
             )
           )
           .toBe('Enable Renamed source')
 
         await comfyPage.page.evaluate((controlId) => {
-          window.app!.graph!.getNodeById(controlId)!.widgets![0].callback!()
+          window.app!.graph.getNodeById(controlId)!.widgets![0].callback!(
+            undefined
+          )
         }, control.id)
         await expect
           .poll(() =>
