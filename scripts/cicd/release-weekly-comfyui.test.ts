@@ -56,7 +56,7 @@ describe('weekly ComfyUI release', () => {
         .slice(0, checkoutIndex)
         .map((step) => step.run ?? '')
         .join('\n')
-    ).not.toMatch(/\bgh api\b/)
+    ).not.toMatch(/\bgh\s+api\b/)
     expect(checkout.uses).toMatch(/^actions\/checkout@/)
     expect(checkout.with?.repository).toBe(
       "${{ inputs.comfyui_fork || 'Comfy-Org/ComfyUI' }}"
