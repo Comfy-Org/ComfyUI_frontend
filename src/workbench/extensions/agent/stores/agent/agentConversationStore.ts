@@ -100,10 +100,11 @@ export const useAgentConversationStore = defineStore(
     function recordFailedSend(
       turnId: TurnId,
       text: string,
-      noticeText: string
+      noticeText: string,
+      retryAfterSeconds?: number
     ): void {
       recordSettledReply(turnId, text, [
-        { type: 'notice', level: 'error', text: noticeText }
+        { type: 'notice', level: 'error', text: noticeText, retryAfterSeconds }
       ])
     }
 
