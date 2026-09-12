@@ -1,5 +1,5 @@
 {
-  "unused_files": ["apps/website/src/utils/marketingImage.ts"],
+  "unused_files": [],
   "unused_exports": [
     "apps/website/src/components/ui/button-mask/index.ts:ButtonMask",
     "src/composables/billing/useNextInvoice.ts:useNextInvoice",
