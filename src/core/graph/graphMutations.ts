@@ -238,24 +238,17 @@ function prepareNode(
   const [x, y] = readPair(payload.pos, [0, 0])
   const [width, height] = readPair(payload.size, [270, 100])
   const mode = Number(payload.mode)
-  const title = hasTitle(payload) ? payload.title : payload.type
-  const lastSerialization = structuredClone(
-    payload
-  ) as unknown as ISerialisedNode
-  if (!hasTitle(payload) && !isUuidShapedSubgraphId(payload.type)) {
-    lastSerialization.title = title
-  }
   const state: NodeState = {
     id,
     graphId: scope.owningGraphId,
     type: payload.type,
-    title,
+    title: hasTitle(payload) ? payload.title : payload.type,
     flags: cloneRecord(payload.flags),
     inputs: prepareInputSlots(payload.inputs),
     outputs: prepareOutputSlots(payload.outputs),
     mode: Number.isInteger(mode) ? mode : 0,
     properties: cloneRecord(payload.properties) as NodeState['properties'],
-    lastSerialization,
+    lastSerialization: structuredClone(payload) as unknown as ISerialisedNode,
     ...(typeof payload.bgcolor === 'string' && { bgcolor: payload.bgcolor }),
     ...(typeof payload.boxcolor === 'string' && { boxcolor: payload.boxcolor }),
     ...(typeof payload.color === 'string' && { color: payload.color }),
