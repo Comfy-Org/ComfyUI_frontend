@@ -58,6 +58,17 @@ interface SemanticLayoutMutationPort {
   ): void
 }
 
+interface LiveWidgetMutationResult {
+  /** Whether the value landed on a live widget (false = no live target, or rolled back). */
+  applied: boolean
+  /**
+   * The value canonical state should converge on: the post-callback widget
+   * value on success, or the restored previous value after a rollback.
+   * Undefined when no live widget was found at all.
+   */
+  resolvedValue: WidgetValue | undefined
+}
+
 interface SemanticLiveWidgetMutationPort {
   setValue(
     scope: GraphScope,
@@ -65,7 +76,7 @@ interface SemanticLiveWidgetMutationPort {
     name: string,
     value: WidgetValue,
     context: RemoteMutationContext
-  ): boolean
+  ): LiveWidgetMutationResult
 }
 
 interface GraphMutationBatch {
@@ -662,19 +673,20 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             nodeStore.registerNode(scope, mutation.node.state, context)
           }
           for (const widget of mutation.node.widgets) {
-            deps.liveWidgets?.setValue(
+            const projected = deps.liveWidgets?.setValue(
               scope,
               mutation.node.state.id,
               widget.name,
               widget.value,
               context
             )
+            const resolvedValue = projected?.resolvedValue ?? widget.value
             widgetStore.registerWidget(
               widgetId(scope.rootGraphId, mutation.node.state.id, widget.name),
               {
                 name: widget.name,
                 type: widget.type,
-                value: widget.value,
+                value: resolvedValue,
                 options: {},
                 label: widget.name
               },
@@ -695,20 +707,25 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
         }
         case 'setWidget': {
           const id = widgetId(scope.rootGraphId, mutation.nodeId, mutation.name)
-          deps.liveWidgets?.setValue(
+          const projected = deps.liveWidgets?.setValue(
             scope,
             mutation.nodeId,
             mutation.name,
             mutation.value,
             context
           )
+          // Converge canonical state on whatever the live widget actually
+          // ended up holding: the post-callback value on success, or the
+          // rolled-back previous value on callback failure. Fall back to the
+          // remote value only when no live widget was found at all.
+          const resolvedValue = projected?.resolvedValue ?? mutation.value
           if (!widgetStore.getWidget(id)) {
             widgetStore.registerWidget(
               id,
               {
                 name: mutation.name,
                 type: widgetType(mutation.value),
-                value: mutation.value,
+                value: resolvedValue,
                 options: {},
                 label: mutation.name
               },
@@ -717,7 +734,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
               context
             )
           } else {
-            widgetStore.setValue(id, mutation.value, context)
+            widgetStore.setValue(id, resolvedValue, context)
           }
           break
         }

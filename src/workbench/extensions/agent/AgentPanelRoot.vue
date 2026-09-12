@@ -254,7 +254,7 @@ const graphMutations = (workflowId: string) => {
     liveWidgets: {
       setValue(scope, nodeId, name, value, context) {
         try {
-          const applied = applyLiveWidgetValue(
+          const result = applyLiveWidgetValue(
             app.rootGraphOrUndefined,
             scope,
             nodeId,
@@ -262,14 +262,14 @@ const graphMutations = (workflowId: string) => {
             value,
             context
           )
-          if (applied) app.canvas?.setDirty(true)
-          return applied
+          if (result.applied) app.canvas?.setDirty(true)
+          return result
         } catch (error) {
           console.warn(
             `[agent-crdt] live widget projection failed for node ${nodeId}, widget ${name}`,
             error
           )
-          return false
+          return { applied: false, resolvedValue: undefined }
         }
       }
     }

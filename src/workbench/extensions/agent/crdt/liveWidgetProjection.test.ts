@@ -48,7 +48,7 @@ describe('applyLiveWidgetValue', () => {
         'after',
         remoteContext
       )
-    ).toBe(false)
+    ).toEqual({ applied: false, resolvedValue: undefined })
     expect(console.warn).toHaveBeenCalledWith(
       expect.stringContaining('node 7, widget value: graph is not ready')
     )
@@ -66,7 +66,7 @@ describe('applyLiveWidgetValue', () => {
         'after',
         remoteContext
       )
-    ).toBe(false)
+    ).toEqual({ applied: false, resolvedValue: undefined })
 
     const node = new LGraphNode('Test')
     node.id = toNodeId(7)
@@ -80,7 +80,7 @@ describe('applyLiveWidgetValue', () => {
         'after',
         remoteContext
       )
-    ).toBe(false)
+    ).toEqual({ applied: false, resolvedValue: undefined })
   })
 
   it('updates both the widget value and callbacks with the previous value', () => {
@@ -96,7 +96,7 @@ describe('applyLiveWidgetValue', () => {
         'after',
         remoteContext
       )
-    ).toBe(true)
+    ).toEqual({ applied: true, resolvedValue: 'after' })
     expect(widget.value).toBe('after')
     expect(callback).toHaveBeenCalledWith('after')
     expect(node.onWidgetChanged).toHaveBeenCalledWith(
@@ -105,6 +105,45 @@ describe('applyLiveWidgetValue', () => {
       'before',
       widget
     )
+  })
+
+  it('syncs the backing property for property-linked widgets', () => {
+    const { graph, node, widget } = graphWithWidget()
+    widget.options = { ...widget.options, property: 'mode' }
+    node.properties.mode = 'before'
+
+    expect(
+      applyLiveWidgetValue(
+        graph,
+        rootScope,
+        toNodeId(7),
+        'value',
+        'after',
+        remoteContext
+      )
+    ).toEqual({ applied: true, resolvedValue: 'after' })
+    expect(node.properties.mode).toBe('after')
+  })
+
+  it('restores the backing property when the callback rolls back', () => {
+    const { graph, node, widget, callback } = graphWithWidget()
+    widget.options = { ...widget.options, property: 'mode' }
+    node.properties.mode = 'before'
+    callback.mockImplementation(() => {
+      throw new Error('callback failed')
+    })
+
+    expect(
+      applyLiveWidgetValue(
+        graph,
+        rootScope,
+        toNodeId(7),
+        'value',
+        'after',
+        remoteContext
+      )
+    ).toEqual({ applied: false, resolvedValue: 'before' })
+    expect(node.properties.mode).toBe('before')
   })
 
   it('skips callback-only widgets', () => {
@@ -119,7 +158,7 @@ describe('applyLiveWidgetValue', () => {
         'after',
         remoteContext
       )
-    ).toBe(false)
+    ).toEqual({ applied: false, resolvedValue: undefined })
     expect(widget.value).toBe('before')
     expect(callback).not.toHaveBeenCalled()
   })
@@ -136,7 +175,7 @@ describe('applyLiveWidgetValue', () => {
         { unsupported: true },
         remoteContext
       )
-    ).toBe(false)
+    ).toEqual({ applied: false, resolvedValue: undefined })
     expect(widget.value).toBe('before')
     expect(callback).not.toHaveBeenCalled()
   })
@@ -147,7 +186,7 @@ describe('applyLiveWidgetValue', () => {
       throw new Error('callback failed')
     })
 
-    expect(() =>
+    expect(
       applyLiveWidgetValue(
         graph,
         rootScope,
@@ -156,7 +195,7 @@ describe('applyLiveWidgetValue', () => {
         'after',
         remoteContext
       )
-    ).toThrow('callback failed')
+    ).toEqual({ applied: false, resolvedValue: 'before' })
     expect(widget.value).toBe('before')
   })
 
@@ -166,7 +205,7 @@ describe('applyLiveWidgetValue', () => {
       throw new Error('node callback failed')
     }
 
-    expect(() =>
+    expect(
       applyLiveWidgetValue(
         graph,
         rootScope,
@@ -175,7 +214,7 @@ describe('applyLiveWidgetValue', () => {
         'after',
         remoteContext
       )
-    ).toThrow('node callback failed')
+    ).toEqual({ applied: false, resolvedValue: 'before' })
     expect(widget.value).toBe('before')
   })
 
@@ -203,7 +242,7 @@ describe('applyLiveWidgetValue', () => {
         'after',
         remoteContext
       )
-    ).toBe(true)
+    ).toEqual({ applied: true, resolvedValue: 'callback edit' })
     expect(minted).toEqual([
       {
         op: 'set_widget',
@@ -231,7 +270,7 @@ describe('applyLiveWidgetValue', () => {
       throw new Error('callback failed')
     })
 
-    expect(() =>
+    expect(
       applyLiveWidgetValue(
         graph,
         rootScope,
@@ -240,7 +279,7 @@ describe('applyLiveWidgetValue', () => {
         'after',
         remoteContext
       )
-    ).toThrow('callback failed')
+    ).toEqual({ applied: false, resolvedValue: 'before' })
     expect(widget.value).toBe('before')
     expect(minted).toEqual([])
     wiring.detach()
@@ -283,7 +322,7 @@ describe('applyLiveWidgetValue', () => {
         'after',
         remoteContext
       )
-    ).toBe(true)
+    ).toEqual({ applied: true, resolvedValue: 'after' })
     expect(innerWidget.value).toBe('after')
     expect(rootWidget.value).toBe('root')
   })
