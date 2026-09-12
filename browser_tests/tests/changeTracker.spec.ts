@@ -155,6 +155,112 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
     })
   })
 
+  test('A multi-operation chain survives undo-all then redo-all', async ({
+    comfyPage
+  }) => {
+    const snapshot = () =>
+      comfyPage.page.evaluate(() => {
+        const graph = window.app!.canvas.graph!
+        return {
+          nodes: graph.nodes
+            .map((node) => ({
+              id: String(node.id),
+              pos: [...node.pos],
+              type: node.type
+            }))
+            .sort((left, right) => left.id.localeCompare(right.id)),
+          links: [...graph.links.values()]
+            .map((link) =>
+              [
+                String(link.origin_id),
+                link.origin_slot,
+                String(link.target_id),
+                link.target_slot
+              ].join(':')
+            )
+            .sort()
+        }
+      })
+
+    await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(0)
+    const before = await snapshot()
+
+    const source = await comfyPage.nodeOps.addNode('EmptyImage', undefined, {
+      x: 120,
+      y: 460
+    })
+    const target = await comfyPage.nodeOps.addNode(
+      'ImageCompositeMasked',
+      undefined,
+      { x: 620, y: 460 }
+    )
+    await comfyPage.nextFrame()
+
+    const destinationIndex = await comfyPage.page.evaluate((id) => {
+      const node = window.app!.canvas.graph!.getNodeById(id)!
+      return node.inputs.findIndex((input) => input.name === 'destination')
+    }, target.id)
+    expect(
+      destinationIndex,
+      'ImageCompositeMasked should expose a destination input'
+    ).toBeGreaterThanOrEqual(0)
+
+    await source.connectOutput(0, target, destinationIndex)
+    await source.dragBy({ x: 40, y: 70 })
+    await target.dragBy({ x: -30, y: 45 })
+    await comfyPage.page.evaluate((id) => {
+      const graph = window.app!.canvas.graph!
+      graph.remove(graph.getNodeById(id)!)
+    }, source.id)
+    await comfyPage.nextFrame()
+
+    // Read the depth rather than assuming one entry per operation. How finely
+    // the tracker checkpoints is not what this row is about, and asserting a
+    // count here would turn a round-trip test into a probe of the transaction
+    // model.
+    const depth = (await comfyPage.workflow.getUndoQueueSize()) ?? 0
+    expect(
+      depth,
+      'the chain should have produced several undo steps'
+    ).toBeGreaterThan(1)
+
+    const after = await snapshot()
+    expect(after, 'the chain must actually have changed the graph').not.toEqual(
+      before
+    )
+
+    // Settle on the queue sizes only. `waitForChangeTrackerSettled` also pins
+    // `isModified`, which depends on a saved baseline this describe does not
+    // establish — and which is not what this row is about.
+    const waitForQueues = async (
+      undoQueueSize: number,
+      redoQueueSize: number
+    ) => {
+      await expect
+        .poll(() => getChangeTrackerDebugState(comfyPage))
+        .toMatchObject({
+          changeCount: 0,
+          graphMatchesActiveState: true,
+          isLoadingGraph: false,
+          redoQueueSize,
+          restoringState: false,
+          undoQueueSize
+        })
+    }
+
+    for (let step = 0; step < depth; step++) {
+      await comfyPage.keyboard.undo(null)
+      await waitForQueues(depth - step - 1, step + 1)
+    }
+    expect(await snapshot()).toEqual(before)
+
+    for (let step = 0; step < depth; step++) {
+      await comfyPage.page.keyboard.press('ControlOrMeta+Shift+z')
+      await waitForQueues(step + 1, depth - step - 1)
+    }
+    expect(await snapshot()).toEqual(after)
+  })
+
   test('Can group multiple change actions into a single transaction', async ({
     comfyPage
   }) => {
