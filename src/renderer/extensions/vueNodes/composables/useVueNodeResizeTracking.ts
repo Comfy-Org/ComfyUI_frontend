@@ -8,7 +8,13 @@
  * Supports different element types (nodes, slots, widgets, etc.) with
  * customizable data attributes and update handlers.
  */
-import { getCurrentInstance, onMounted, onUnmounted, watch } from 'vue'
+import {
+  getCurrentInstance,
+  onMounted,
+  onUnmounted,
+  onUpdated,
+  watch
+} from 'vue'
 
 import { useDocumentVisibility } from '@vueuse/core'
 
@@ -45,6 +51,7 @@ interface ElementTrackingConfig {
   /** Data attribute name (e.g., 'nodeId') */
   dataAttribute: string
   syncSlots?: boolean
+  observeChildren?: boolean
   /** Handler for processing bounds updates. Omit for signal-only entries. */
   updateHandler?: (updates: ElementBoundsUpdate[]) => void
 }
@@ -70,7 +77,14 @@ const trackingConfigs = new Map<string, ElementTrackingConfig>([
       }
     }
   ],
-  ['widgets-grid', { dataAttribute: 'widgetsGridNodeId', syncSlots: true }]
+  [
+    'widgets-grid',
+    {
+      dataAttribute: 'widgetsGridNodeId',
+      syncSlots: true,
+      observeChildren: true
+    }
+  ]
 ])
 
 // Elements whose ResizeObserver fired while the tab was hidden
@@ -262,31 +276,44 @@ export function useVueElementTracking(
   appIdentifier: string,
   trackingType: string
 ) {
-  onMounted(() => {
-    const element = getCurrentInstance()?.proxy?.$el
-    if (!(element instanceof HTMLElement) || !appIdentifier) return
+  const config = trackingConfigs.get(trackingType)
+  const observed = new Set<HTMLElement>()
 
-    const config = trackingConfigs.get(trackingType)
-    if (!config) return
-
-    // Set the data attribute expected by the RO pipeline for this type
-    element.dataset[config.dataAttribute] = appIdentifier
-    markElementForFreshMeasurement(element)
-    resizeObserver.observe(element)
-  })
-
-  onUnmounted(() => {
-    const element = getCurrentInstance()?.proxy?.$el
-    if (!(element instanceof HTMLElement)) return
-
-    const config = trackingConfigs.get(trackingType)
-    if (!config) return
-
-    // Remove the data attribute and observer
-    delete element.dataset[config.dataAttribute]
+  function unobserve(element: HTMLElement) {
+    if (config) delete element.dataset[config.dataAttribute]
     cachedNodeMeasurements.delete(element)
     elementsNeedingFreshMeasurement.delete(element)
     deferredElements.delete(element)
     resizeObserver.unobserve(element)
+    observed.delete(element)
+  }
+
+  function observeElements() {
+    const element = getCurrentInstance()?.proxy?.$el
+    if (!(element instanceof HTMLElement) || !appIdentifier || !config) return
+    const elements = new Set([
+      element,
+      ...(config.observeChildren
+        ? Array.from(element.children).filter(
+            (child): child is HTMLElement => child instanceof HTMLElement
+          )
+        : [])
+    ])
+    for (const previous of observed) {
+      if (!elements.has(previous)) unobserve(previous)
+    }
+    for (const current of elements) {
+      if (observed.has(current)) continue
+      current.dataset[config.dataAttribute] = appIdentifier
+      markElementForFreshMeasurement(current)
+      resizeObserver.observe(current)
+      observed.add(current)
+    }
+  }
+
+  onMounted(observeElements)
+  onUpdated(observeElements)
+  onUnmounted(() => {
+    for (const element of observed) unobserve(element)
   })
 }
