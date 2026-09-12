@@ -128,6 +128,18 @@
           <i class="icon-[lucide--layers] size-4" />
         </button>
 
+        <!-- Save to Output Button -->
+        <button
+          v-if="!imageError"
+          :class="actionButtonClass"
+          :disabled="isSavingToOutput"
+          :title="$t('g.saveImageToOutput')"
+          :aria-label="$t('g.saveImageToOutput')"
+          @click="handleSaveToOutput"
+        >
+          <i class="icon-[lucide--save] size-4" />
+        </button>
+
         <!-- Download Button -->
         <button
           v-if="!imageError"
@@ -217,6 +229,7 @@ import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { openHdrViewer } from '@/services/hdrViewerService'
+import { api } from '@/scripts/api'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeId } from '@/types/nodeId'
 import { isHdrImageUrl } from '@/utils/hdrFormatUtil'
@@ -258,6 +271,7 @@ const actualDimensions = ref<string | null>(null)
 const imageError = ref(false)
 const showLoader = ref(false)
 const imageAspectRatio = ref(1)
+const isSavingToOutput = ref(false)
 
 const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
   () => {
@@ -365,6 +379,94 @@ function handleDownload() {
       summary: t('g.error'),
       detail: t('g.failedToDownloadImage')
     })
+  }
+}
+
+function parseImageViewUrl(url: string): {
+  filename: string
+  route: string
+  subfolder: string
+} | null {
+  try {
+    const params = new URL(url, window.location.href).searchParams
+    const filename = params.get('filename')
+    if (!filename || filename !== filename.split(/[\\/]/).pop()) return null
+
+    const sourceParams = new URLSearchParams({ filename })
+    const subfolder = params.get('subfolder') ?? ''
+    const type = params.get('type') ?? ''
+    if (subfolder) sourceParams.set('subfolder', subfolder)
+    if (type) sourceParams.set('type', type)
+
+    return {
+      filename,
+      route: `/view?${sourceParams.toString()}`,
+      subfolder
+    }
+  } catch {
+    return null
+  }
+}
+
+async function handleSaveToOutput() {
+  if (isSavingToOutput.value) return
+
+  function showSaveError() {
+    toastStore.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: t('g.failedToSaveImageToOutput')
+    })
+  }
+
+  const source = parseImageViewUrl(currentImageUrl.value)
+  if (!source) {
+    showSaveError()
+    return
+  }
+
+  isSavingToOutput.value = true
+  try {
+    const response = await api.fetchApi(source.route)
+    if (!response.ok) {
+      showSaveError()
+      return
+    }
+
+    const blob = await response.blob()
+    const body = new FormData()
+    body.append(
+      'image',
+      new File([blob], source.filename, { type: blob.type }),
+      source.filename
+    )
+    body.append('type', 'output')
+    if (source.subfolder) body.append('subfolder', source.subfolder)
+
+    const upload = await api.fetchApi('/upload/image', {
+      method: 'POST',
+      body
+    })
+    if (upload.status !== 200) {
+      showSaveError()
+      return
+    }
+
+    const saved = (await upload.json()) as { name?: string }
+    if (!saved.name) {
+      showSaveError()
+      return
+    }
+
+    toastStore.add({
+      severity: 'success',
+      summary: t('g.imageSavedToOutput'),
+      detail: saved.name
+    })
+  } catch {
+    showSaveError()
+  } finally {
+    isSavingToOutput.value = false
   }
 }
 
