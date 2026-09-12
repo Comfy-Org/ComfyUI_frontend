@@ -4,20 +4,20 @@ import { expect, it, vi } from 'vitest'
 import { createSSRApp, h } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 
-import MediaSourcePreview from './MediaSourcePreview.vue'
+import VideoSourcePreview from './VideoSourcePreview.vue'
 
 it('waits until mounting before creating a local media URL', async () => {
   const create = vi.spyOn(URL, 'createObjectURL')
   const file = new File(['video'], 'source.mp4', { type: 'video/mp4' })
-  const props = { file, name: 'Source video', kind: 'video' as const }
+  const props = { file, name: 'Source video' }
   const html = await renderToString(
     createSSRApp({
-      render: () => h(MediaSourcePreview, props)
+      render: () => h(VideoSourcePreview, props)
     })
   )
   expect(create).not.toHaveBeenCalled()
   expect(html).not.toContain('blob:')
-  render(MediaSourcePreview, { props })
+  render(VideoSourcePreview, { props })
   const video = await screen.findByLabelText('Source video')
   expect(video.getAttribute('src')).toMatch(/^blob:/)
   expect(create).toHaveBeenCalledWith(file)
@@ -30,11 +30,10 @@ it('switches between remote examples and local uploads, revoking only its owned 
     .mockReturnValueOnce('blob:second')
   const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
   const props = {
-    kind: 'video' as const,
     name: 'Input video',
     src: 'https://assets.example/source.mp4'
   }
-  const { rerender, unmount } = render(MediaSourcePreview, { props })
+  const { rerender, unmount } = render(VideoSourcePreview, { props })
   function video() {
     const element = screen.getByLabelText('Input video')
     if (!(element instanceof HTMLVideoElement))
@@ -58,17 +57,4 @@ it('switches between remote examples and local uploads, revoking only its owned 
   expect(revoke).toHaveBeenCalledWith('blob:second')
   unmount()
   expect(revoke).not.toHaveBeenCalledWith(props.src)
-})
-
-it('renders an audio source as an accessible audio element', () => {
-  render(MediaSourcePreview, {
-    props: {
-      kind: 'audio',
-      name: 'Input audio',
-      src: 'https://assets.example/source.mp3'
-    }
-  })
-  const element = screen.getByLabelText('Input audio')
-  expect(element).toBeInstanceOf(HTMLAudioElement)
-  expect(element.getAttribute('src')).toBe('https://assets.example/source.mp3')
 })

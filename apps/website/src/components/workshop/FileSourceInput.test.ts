@@ -68,15 +68,14 @@ describe('file source selection', () => {
         screen.getByLabelText('Images', { selector: 'input' }),
         file
       )
-      if (type.startsWith('video/') || type.startsWith('audio/')) {
+      if (type.startsWith('video/')) {
         const preview = screen.getByLabelText(name)
-        expect(preview).toBeInstanceOf(HTMLMediaElement)
-        expect(preview).toHaveProperty('controls', true)
+        expect(preview).toBeInstanceOf(HTMLVideoElement)
         expect(preview.getAttribute('src')).toMatch(/^blob:/)
       } else {
         expect(screen.getByText(label)).toBeTruthy()
-        expect(screen.getByText('2 KB')).toBeTruthy()
       }
+      expect(screen.getByText('2 KB')).toBeTruthy()
       expect(screen.queryByRole('img')).toBeNull()
       expect(values.value).toMatchObject([{ file }])
       expect(screen.getByText('Choose files or drop them here')).toBeTruthy()

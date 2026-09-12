@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { File as FileIcon, Upload, X } from '@lucide/vue'
+import { Upload, X } from '@lucide/vue'
 import { useDropZone } from '@vueuse/core'
 import { computed, nextTick, ref, useTemplateRef } from 'vue'
 
@@ -10,7 +10,7 @@ import type { FieldSchema, FileValue } from '../../config/workshop-playground'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import ImageSourcePreview from './ImageSourcePreview.vue'
-import MediaSourcePreview from './MediaSourcePreview.vue'
+import VideoSourcePreview from './VideoSourcePreview.vue'
 
 const {
   field,
@@ -133,19 +133,14 @@ function fileType(file: FileValue): string {
       )
     "
   >
-    <div
+    <ul
       v-if="selectedFiles.length"
-      :class="
-        cn(
-          'grid min-w-0 gap-3 px-3 pt-3',
-          imageOnly && selectedFiles.length > 1 ? 'grid-cols-2' : 'grid-cols-1'
-        )
-      "
+      class="flex min-w-0 flex-col gap-2 px-3 pt-3"
     >
-      <div
+      <li
         v-for="(file, index) in selectedFiles"
         :key="index"
-        class="flex min-w-0 flex-col gap-2"
+        class="bg-transparency-white-t4 flex min-w-0 items-center gap-3 rounded-xl p-2"
       >
         <ImageSourcePreview
           v-if="file.type.startsWith('image/')"
@@ -154,60 +149,50 @@ function fileType(file: FileValue): string {
           :name="file.name"
           :locale
         />
-        <MediaSourcePreview
-          v-else-if="
-            file.type.startsWith('video/') || file.type.startsWith('audio/')
-          "
+        <VideoSourcePreview
+          v-else-if="file.type.startsWith('video/')"
           :file="file.file"
           :src="file.previewUrl"
-          :kind="file.type.startsWith('video/') ? 'video' : 'audio'"
           :name="file.name"
         />
-        <div
+        <span
           v-else
-          class="bg-transparency-white-t4 flex items-center gap-3 rounded-xl p-3 text-sm text-primary-warm-white"
+          class="flex size-12 shrink-0 items-center justify-center rounded-lg bg-transparency-white-t8 text-xs font-bold text-primary-warm-gray"
         >
-          <FileIcon
-            class="size-8 shrink-0 text-primary-warm-gray"
-            aria-hidden="true"
-          />
-          <span class="font-bold">{{ fileType(file) }}</span>
-          <span class="ml-auto text-xs text-primary-warm-gray">{{
-            formatSize(file.size)
-          }}</span>
-        </div>
-        <div class="flex min-w-0 items-center gap-2">
-          <button
-            type="button"
-            :disabled
-            :aria-label="
-              t('workshop.field.replaceFile', locale).replace(
-                '{name}',
-                file.name
-              )
-            "
-            class="focus-visible:outline-primary-comfy-yellow min-w-0 flex-1 cursor-pointer truncate text-left text-xs text-primary-warm-white underline underline-offset-4"
-            @click="replace(index)"
-          >
-            {{ file.name }}
-          </button>
-          <button
-            type="button"
-            :disabled
-            :aria-label="
-              t('workshop.field.removeNamedFile', locale).replace(
-                '{name}',
-                file.name
-              )
-            "
-            class="focus-visible:outline-primary-comfy-yellow flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-primary-warm-gray hover:bg-transparency-white-t8 hover:text-primary-warm-white"
-            @click="remove(index)"
-          >
-            <X class="size-4" aria-hidden="true" />
-          </button>
-        </div>
-      </div>
-    </div>
+          {{ fileType(file) }}
+        </span>
+        <button
+          type="button"
+          :disabled
+          :aria-label="
+            t('workshop.field.replaceFile', locale).replace('{name}', file.name)
+          "
+          class="focus-visible:outline-primary-comfy-yellow min-w-0 flex-1 cursor-pointer truncate text-left text-sm text-primary-warm-white underline-offset-4 hover:underline"
+          @click="replace(index)"
+        >
+          {{ file.name }}
+        </button>
+        <span
+          v-if="file.size"
+          class="shrink-0 text-xs text-primary-warm-gray"
+          >{{ formatSize(file.size) }}</span
+        >
+        <button
+          type="button"
+          :disabled
+          :aria-label="
+            t('workshop.field.removeNamedFile', locale).replace(
+              '{name}',
+              file.name
+            )
+          "
+          class="focus-visible:outline-primary-comfy-yellow flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-primary-warm-gray hover:bg-transparency-white-t8 hover:text-primary-warm-white"
+          @click="remove(index)"
+        >
+          <X class="size-4" aria-hidden="true" />
+        </button>
+      </li>
+    </ul>
     <label
       :for="`field-${field.name}`"
       :class="
