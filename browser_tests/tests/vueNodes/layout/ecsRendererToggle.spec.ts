@@ -2,6 +2,80 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import type { Locator } from '@playwright/test'
+
+async function expectRenderedTextUnclipped(
+  text: Locator,
+  screenshotTarget: Locator
+) {
+  const rendered = await screenshotTarget.screenshot({ animations: 'disabled' })
+  const inlineColor = await text.evaluate((element) => {
+    const htmlElement = element as HTMLElement
+    const color = htmlElement.style.color
+    htmlElement.style.color = 'transparent'
+    return color
+  })
+  const withoutText = await screenshotTarget
+    .screenshot({ animations: 'disabled' })
+    .finally(() =>
+      text.evaluate((element, color) => {
+        ;(element as HTMLElement).style.color = color
+      }, inlineColor)
+    )
+
+  const ink = await text.page().evaluate(
+    async ({ rendered, withoutText }) => {
+      const decode = async (base64: string) => {
+        const image = new Image()
+        image.src = `data:image/png;base64,${base64}`
+        await image.decode()
+        const canvas = document.createElement('canvas')
+        canvas.width = image.width
+        canvas.height = image.height
+        const context = canvas.getContext('2d')!
+        context.drawImage(image, 0, 0)
+        return context.getImageData(0, 0, image.width, image.height)
+      }
+      const [visible, hidden] = await Promise.all([
+        decode(rendered),
+        decode(withoutText)
+      ])
+      const bounds = {
+        left: visible.width,
+        top: visible.height,
+        right: -1,
+        bottom: -1
+      }
+      let pixels = 0
+      for (let index = 0; index < visible.data.length; index += 4) {
+        const difference =
+          Math.abs(visible.data[index] - hidden.data[index]) +
+          Math.abs(visible.data[index + 1] - hidden.data[index + 1]) +
+          Math.abs(visible.data[index + 2] - hidden.data[index + 2])
+        if (difference < 24) continue
+        const pixel = index / 4
+        const x = pixel % visible.width
+        const y = Math.floor(pixel / visible.width)
+        bounds.left = Math.min(bounds.left, x)
+        bounds.top = Math.min(bounds.top, y)
+        bounds.right = Math.max(bounds.right, x)
+        bounds.bottom = Math.max(bounds.bottom, y)
+        pixels++
+      }
+      return { bounds, height: visible.height, pixels, width: visible.width }
+    },
+    {
+      rendered: rendered.toString('base64'),
+      withoutText: withoutText.toString('base64')
+    }
+  )
+
+  expect(ink.pixels).toBeGreaterThan(10)
+  expect(ink.bounds.left).toBeGreaterThan(0)
+  expect(ink.bounds.top).toBeGreaterThan(0)
+  expect(ink.bounds.right).toBeLessThan(ink.width - 1)
+  expect(ink.bounds.bottom).toBeLessThan(ink.height - 1)
+}
 
 test.describe(
   'ECS migration: renderer toggle and zoom rendering',
@@ -209,14 +283,19 @@ test.describe(
         const title = vueNode.getByTestId('node-title')
         await expect(title).toBeVisible()
         await expect(title).toHaveText('KSampler')
+        await expectRenderedTextUnclipped(
+          title,
+          vueNode.getByTestId('node-header-3')
+        )
 
         const cfgWidget = comfyPage.vueNodes
           .getWidgetByName('KSampler', 'cfg')
           .first()
         await expect(cfgWidget).toBeVisible()
-        await expect(
-          comfyPage.vueNodes.getWidgetRowByLabel('KSampler', 'cfg')
-        ).toBeVisible()
+        const cfgRow = comfyPage.vueNodes.getWidgetRowByLabel('KSampler', 'cfg')
+        await expect(cfgRow).toBeVisible()
+        const cfgLabel = cfgRow.getByTestId('widget-layout-field-label')
+        await expectRenderedTextUnclipped(cfgLabel, cfgRow)
         const { input } = comfyPage.vueNodes.getInputNumberControls(cfgWidget)
         await input.fill('7.5')
         await input.blur()
