@@ -1,17 +1,16 @@
 // @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 
 import type { ComfyEvent } from '../../data/events'
-import type { Locale } from '../../i18n/translations'
 
 import EventsDirectorySection from './EventsDirectorySection.vue'
 
 // Three fixtures against a fixed clock: an upcoming hackathon and a past
 // meetup with coordinates, plus a virtual workshop without any.
-const { NOW, fixtureEvents } = vi.hoisted(() => {
+const { NOW, fixtureEvents } = (() => {
   const localized = (en: string) => ({ en, 'zh-CN': en })
   const paris: ComfyEvent = {
     id: 'paris',
@@ -46,38 +45,7 @@ const { NOW, fixtureEvents } = vi.hoisted(() => {
     NOW: new Date('2026-06-01T00:00:00Z'),
     fixtureEvents: [paris, online, tokyo]
   }
-})
-
-vi.mock(import('../../data/events'), () => {
-  const eventPath = (event: { id: string }) => `/events/${event.id}`
-  const eventVideoId = (event: ComfyEvent) =>
-    event.recordingVideoId ?? event.liveVideoId
-  return {
-    directoryEvents: fixtureEvents,
-    eventsDerivedAt: NOW,
-    eventPath,
-    eventStatus: (event: ComfyEvent, now: Date): 'past' | 'upcoming' => {
-      const end = event.endDateTime
-        ? new Date(event.endDateTime)
-        : new Date(new Date(event.startDateTime).getTime() + 60 * 60 * 1000)
-      return now >= end ? 'past' : 'upcoming'
-    },
-    eventVideoId,
-    toCalendarEvent: (event: ComfyEvent, locale: Locale) => ({
-      title: event.title[locale] || event.title.en,
-      description: event.description[locale] || event.description.en,
-      location: event.location?.[locale] || event.location?.en || '',
-      start: new Date(event.startDateTime),
-      end: event.endDateTime
-        ? new Date(event.endDateTime)
-        : new Date(new Date(event.startDateTime).getTime() + 60 * 60 * 1000)
-    }),
-    youtubeWatchHref: (videoId: string) => {
-      const href = `https://www.youtube.com/watch?v=${videoId}`
-      return { en: href, 'zh-CN': href }
-    }
-  }
-})
+})()
 
 // The real map pulls in Leaflet at mount, so it is replaced with one button
 // per marker that replays the block's `select` event.
@@ -101,7 +69,7 @@ const stubs = {
 
 function renderSection() {
   return render(EventsDirectorySection, {
-    props: { locale: 'en' },
+    props: { locale: 'en', events: fixtureEvents, derivedAt: NOW },
     global: { stubs }
   })
 }

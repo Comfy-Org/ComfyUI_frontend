@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 
 import type { ComfyEvent } from '../../data/events'
@@ -13,7 +13,7 @@ import PastEventsSection from './PastEventsSection.vue'
 // art, an unrecorded workshop with no art whose only destination is its
 // external page, an untranslated conference, and a destinationless meetup with
 // neither a recording nor a link.
-const { fixturePastEvents } = vi.hoisted(() => {
+const { fixturePastEvents } = (() => {
   const localized = (en: string) => ({ en, 'zh-CN': en })
   const recorded: ComfyEvent = {
     id: 'recorded-livestream',
@@ -76,20 +76,11 @@ const { fixturePastEvents } = vi.hoisted(() => {
   return {
     fixturePastEvents: [recorded, clip, artless, untranslated, destinationless]
   }
-})
-
-vi.mock(import('../../data/events'), () => {
-  return {
-    eventPath: (event: { id: string }) => `/events/${event.id}`,
-    eventVideoId: (event: ComfyEvent) =>
-      event.recordingVideoId ?? event.liveVideoId,
-    pastEvents: fixturePastEvents
-  }
-})
+})()
 
 describe('PastEventsSection', () => {
   it('renders a card for every past event, artless ones included', () => {
-    render(PastEventsSection)
+    render(PastEventsSection, { props: { events: fixturePastEvents } })
 
     expect(screen.getByText('Recorded Livestream')).toBeTruthy()
     expect(screen.getByText('Clip Meetup')).toBeTruthy()
@@ -97,7 +88,7 @@ describe('PastEventsSection', () => {
   })
 
   it('sends a recorded event to its own page under a WATCH NOW label', () => {
-    render(PastEventsSection)
+    render(PastEventsSection, { props: { events: fixturePastEvents } })
 
     const link = screen.getByRole('link', {
       name: 'Recorded Livestream — WATCH NOW'
@@ -107,7 +98,7 @@ describe('PastEventsSection', () => {
   })
 
   it('links an unrecorded event out under LEARN MORE in a new tab', () => {
-    render(PastEventsSection)
+    render(PastEventsSection, { props: { events: fixturePastEvents } })
 
     const link = screen.getByRole('link', {
       name: 'Artless Workshop — LEARN MORE'
@@ -117,7 +108,9 @@ describe('PastEventsSection', () => {
   })
 
   it('falls back to English title, art alt, and link for untranslated events', () => {
-    render(PastEventsSection, { props: { locale: 'zh-CN' } })
+    render(PastEventsSection, {
+      props: { locale: 'zh-CN', events: fixturePastEvents }
+    })
 
     const link = screen.getByRole('link', {
       name: 'English-Only Conference — 了解更多'
@@ -127,7 +120,7 @@ describe('PastEventsSection', () => {
   })
 
   it('offers a filter tab only for categories that have a card', () => {
-    render(PastEventsSection)
+    render(PastEventsSection, { props: { events: fixturePastEvents } })
 
     expect(screen.getByRole('button', { name: /^ALL \d+$/ })).toBeTruthy()
     expect(
@@ -141,7 +134,7 @@ describe('PastEventsSection', () => {
   })
 
   it('narrows the cards to a tab category and restores them via ALL', async () => {
-    render(PastEventsSection)
+    render(PastEventsSection, { props: { events: fixturePastEvents } })
 
     await userEvent.click(
       screen.getByRole('button', { name: /^WORKSHOP \d+$/ })
@@ -163,7 +156,7 @@ describe('PastEventsSection', () => {
   })
 
   it('holds the overflowing card behind LOAD MORE and gives it no CTA', async () => {
-    render(PastEventsSection)
+    render(PastEventsSection, { props: { events: fixturePastEvents } })
 
     // PAST_EVENTS_PAGE_SIZE is 4, so the fifth fixture waits behind the button.
     expect(screen.queryByText('Destinationless Meetup')).toBeNull()
@@ -180,7 +173,9 @@ describe('PastEventsSection', () => {
   })
 
   it('passes each card its own art, poster included for clips', () => {
-    const { container } = render(PastEventsSection)
+    const { container } = render(PastEventsSection, {
+      props: { events: fixturePastEvents }
+    })
 
     expect(
       screen.getByRole('img', { name: 'Livestream art' }).getAttribute('src')
