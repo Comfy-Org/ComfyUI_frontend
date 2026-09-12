@@ -7,6 +7,8 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { dismissErrorOverlay } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 
+import { toNodeId } from '@/types/nodeId'
+
 const generateUniqueFilename = () =>
   `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
 
@@ -142,7 +144,7 @@ async function getNodeTitle(comfyPage: ComfyPage, nodeId: number) {
     const node = window.app!.graph.getNodeById(id)
     if (!node) throw new Error(`Node ${id} not found`)
     return node.title
-  }, nodeId)
+  }, toNodeId(nodeId))
 }
 
 async function getPersistenceSnapshot(comfyPage: ComfyPage) {
@@ -363,6 +365,9 @@ test.describe('Workflow Persistence', () => {
       await expect.poll(() => scheduler.getValue()).toBe(positiveScheduler)
 
       const expected = await getPersistenceSnapshot(comfyPage)
+      if (!expected.links || !expected.groups) {
+        throw new Error('Persistence workflow is missing links or groups')
+      }
       expect(expected.nodes.length).toBeGreaterThanOrEqual(10)
       expect(expected.links.length).toBeGreaterThan(0)
       expect(expected.groups.length).toBeGreaterThanOrEqual(2)
