@@ -16,16 +16,27 @@ test.describe('Hidden link badges', { tag: ['@canvas', '@screenshot'] }, () => {
   }) => {
     await expect(comfyPage.canvas).toHaveScreenshot('link-visible.png')
 
-    await linkVisibility.hideFirstLink()
+    await test.step('Hide the link', async () => {
+      await linkVisibility.hideFirstLink()
+      await expect(comfyPage.canvas).toHaveScreenshot('link-hidden.png')
+    })
 
-    await expect(comfyPage.canvas).toHaveScreenshot('link-hidden.png')
+    await test.step('Hovering the badge reveals the hidden link', async () => {
+      await linkVisibility.hoverFirstHiddenLink()
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'link-hidden-revealed.png'
+      )
+    })
 
-    await linkVisibility.hoverFirstHiddenLink()
-    await expect(comfyPage.canvas).toHaveScreenshot('link-hidden-revealed.png')
+    await test.step('Leaving the badge hides the link again', async () => {
+      await linkVisibility.parkPointer()
+      await expect(comfyPage.canvas).toHaveScreenshot('link-hidden.png')
+    })
 
-    await linkVisibility.showFirstHiddenLink()
-
-    await expect(comfyPage.canvas).toHaveScreenshot('link-visible.png')
+    await test.step('Show the link', async () => {
+      await linkVisibility.showFirstHiddenLink()
+      await expect(comfyPage.canvas).toHaveScreenshot('link-visible.png')
+    })
   })
 
   test('persists a hidden renamed link through graph load and browser reload', async ({
@@ -94,69 +105,41 @@ test.describe(
       await expect(inputSlot).toBeVisible()
       await expect(outputSlot).toBeVisible()
 
-      const midpointHandle = await comfyPage.page.waitForFunction(() => {
-        const graph = window.app?.graph
-        if (!graph) return null
-        const source = graph.nodes.find(
-          (node) => node.title === 'Load Checkpoint'
-        )
-        const target = graph.nodes.find((node) => node.title === 'VAE Decode')
-        if (!source || !target) return null
-        const outputIndex = source.outputs.findIndex(
-          (slot) => slot.name === 'VAE'
-        )
-        const inputIndex = target.inputs.findIndex(
-          (slot) => slot.name === 'vae'
-        )
-        const link = [...graph.links.values()].find(
-          (candidate) =>
-            candidate.origin_id === source.id &&
-            candidate.origin_slot === outputIndex &&
-            candidate.target_id === target.id &&
-            candidate.target_slot === inputIndex
-        )
-        if (!link?.path) return null
-        const pos = link._pos
-        return { x: pos[0], y: pos[1] }
+      await test.step('Hide the link', async () => {
+        await linkVisibility.hideLinkBetween({
+          sourceTitle: 'Load Checkpoint',
+          outputName: 'VAE',
+          targetTitle: 'VAE Decode',
+          inputName: 'vae'
+        })
+        await expect(comfyPage.canvas).toHaveScreenshot('vue-link-hidden.png')
       })
-      const midpoint = await midpointHandle.jsonValue()
-      if (!midpoint) throw new Error('Workflow link was not found')
 
-      await linkVisibility.hideLinkAt([midpoint.x, midpoint.y])
+      await test.step('Input hover reveals the hidden link', async () => {
+        await inputSlot.hover()
+        await comfyPage.nextFrame()
+        await expect(comfyPage.canvas).toHaveScreenshot(
+          'vue-link-revealed-from-input.png'
+        )
+      })
 
-      await expect(comfyPage.canvas).toHaveScreenshot('vue-link-hidden.png')
+      await test.step('Leaving the input hides the link again', async () => {
+        await linkVisibility.parkPointer()
+        await expect(comfyPage.canvas).toHaveScreenshot('vue-link-hidden.png')
+      })
 
-      const inputBounds = await inputSlot.boundingBox()
-      if (!inputBounds) throw new Error('Input slot has no bounding box')
-      await comfyPage.page.mouse.move(
-        inputBounds.x + inputBounds.width / 2,
-        inputBounds.y + inputBounds.height / 2
-      )
-      await comfyPage.nextFrame()
+      await test.step('Output hover reveals the hidden link', async () => {
+        await outputSlot.hover()
+        await comfyPage.nextFrame()
+        await expect(comfyPage.canvas).toHaveScreenshot(
+          'vue-link-revealed-from-output.png'
+        )
+      })
 
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'vue-link-revealed-from-input.png'
-      )
-
-      await linkVisibility.parkPointer()
-
-      await expect(comfyPage.canvas).toHaveScreenshot('vue-link-hidden.png')
-
-      const outputBounds = await outputSlot.boundingBox()
-      if (!outputBounds) throw new Error('Output slot has no bounding box')
-      await comfyPage.page.mouse.move(
-        outputBounds.x + outputBounds.width / 2,
-        outputBounds.y + outputBounds.height / 2
-      )
-      await comfyPage.nextFrame()
-
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'vue-link-revealed-from-output.png'
-      )
-
-      await linkVisibility.parkPointer()
-
-      await expect(comfyPage.canvas).toHaveScreenshot('vue-link-hidden.png')
+      await test.step('Leaving the output hides the link again', async () => {
+        await linkVisibility.parkPointer()
+        await expect(comfyPage.canvas).toHaveScreenshot('vue-link-hidden.png')
+      })
     })
   }
 )

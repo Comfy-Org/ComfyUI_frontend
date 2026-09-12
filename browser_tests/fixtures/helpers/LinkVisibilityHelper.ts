@@ -3,6 +3,7 @@ import type { Locator } from '@playwright/test'
 import { BADGE_GAP } from '@/lib/litegraph/src/canvas/linkBadges'
 import type { Point } from '@/lib/litegraph/src/interfaces'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 
 export class LinkVisibilityHelper {
   public readonly promptInput: Locator
@@ -22,15 +23,50 @@ export class LinkVisibilityHelper {
     })
     const point = await handle.jsonValue()
     if (!point) throw new Error('Rendered link midpoint was not found')
-    await this.hideLinkAt(point)
+    await this.clickMenuAction(point, 'Hide Link')
   }
 
-  async hideLinkAt(point: Point): Promise<void> {
+  async hideLinkBetween(options: {
+    sourceTitle: string
+    outputName: string
+    targetTitle: string
+    inputName: string
+  }): Promise<void> {
+    const handle = await this.comfyPage.page.waitForFunction(
+      ({ sourceTitle, outputName, targetTitle, inputName }) => {
+        const graph = window.app?.graph
+        if (!graph) return null
+        const source = graph.nodes.find((node) => node.title === sourceTitle)
+        const target = graph.nodes.find((node) => node.title === targetTitle)
+        if (!source || !target) return null
+        const outputIndex = source.outputs.findIndex(
+          (slot) => slot.name === outputName
+        )
+        const inputIndex = target.inputs.findIndex(
+          (slot) => slot.name === inputName
+        )
+        const link = [...graph.links.values()].find(
+          (candidate) =>
+            candidate.origin_id === source.id &&
+            candidate.origin_slot === outputIndex &&
+            candidate.target_id === target.id &&
+            candidate.target_slot === inputIndex
+        )
+        if (!link?.path) return null
+        const pos = link._pos
+        return [pos[0], pos[1]] satisfies Point
+      },
+      options
+    )
+    const point = await handle.jsonValue()
+    if (!point) throw new Error('Rendered link midpoint was not found')
     await this.clickMenuAction(point, 'Hide Link')
   }
 
   async parkPointer(): Promise<void> {
-    await this.comfyPage.page.mouse.move(1, 1)
+    await this.comfyPage.canvas.hover({
+      position: DefaultGraphPositions.emptySpaceClick
+    })
     await this.comfyPage.nextFrame()
   }
 

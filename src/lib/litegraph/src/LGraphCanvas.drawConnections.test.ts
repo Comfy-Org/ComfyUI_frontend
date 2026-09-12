@@ -722,6 +722,27 @@ describe('drawConnections hidden links', () => {
     expect(isLinkRevealed(graphScopeOf(graph).rootGraphId, link.id)).toBe(false)
   })
 
+  it('clears a badge-hover reveal and invalidates the background on pointer cancel', () => {
+    const link = createHiddenLink()
+    canvas.drawConnections(createMockCtx())
+    const [badgeX, badgeY] = outputBadgePoint(link)
+    canvas.processMouseMove(
+      new PointerEvent('pointermove', {
+        clientX: badgeX,
+        clientY: badgeY,
+        isPrimary: false
+      })
+    )
+    const scope = graphScopeOf(graph)
+    expect(isLinkRevealed(scope.rootGraphId, link.id)).toBe(true)
+    canvas.dirty_bgcanvas = false
+
+    canvas.processMouseCancel()
+
+    expect(isLinkRevealed(scope.rootGraphId, link.id)).toBe(false)
+    expect(canvas.dirty_bgcanvas).toBe(true)
+  })
+
   it('releases the badge-hover reveal after the last badge disappears', () => {
     vi.stubGlobal('Path2D', StubPath2D)
     const link = createHiddenLink()
