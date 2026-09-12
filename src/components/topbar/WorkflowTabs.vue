@@ -52,6 +52,22 @@
             />
           </template>
         </SelectButton>
+        <div
+          v-if="tabActivity.creatingTab"
+          data-testid="creating-tab-skeleton"
+          class="relative flex h-9 w-39 shrink-0 items-center justify-center gap-2 self-center bg-comfy-menu-bg px-4 py-2 before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-border-default after:absolute after:inset-y-0 after:right-0 after:w-px after:bg-border-default"
+        >
+          <Skeleton
+            aria-hidden="true"
+            data-testid="creating-tab-skeleton-shimmer"
+            class="h-4 w-25 animate-none bg-[linear-gradient(90deg,rgba(0,0,0,0.2)_0%,rgba(102,102,102,0.2)_50.481%,rgba(0,0,0,0.2)_100%),linear-gradient(90deg,#404040_0%,#404040_100%)]"
+          />
+          <i
+            role="img"
+            :aria-label="$t('g.agentWorking')"
+            class="icon-[lucide--loader-circle] size-4 text-smoke-800 motion-safe:animate-spin"
+          />
+        </div>
       </div>
     </div>
     <Button
@@ -103,12 +119,15 @@
         v-if="isCloud || isNightly"
         v-tooltip="{ value: $t('actionbar.feedbackTooltip'), showDelay: 300 }"
         variant="muted-textonly"
-        size="icon"
-        class="shrink-0 text-base-foreground"
+        size="unset"
+        class="size-[32px] shrink-0 rounded-[8px] p-[8px] text-base-foreground"
         :aria-label="$t('actionbar.feedback')"
         @click="openFeedback"
       >
-        <i class="icon-[lucide--megaphone]" />
+        <i
+          data-testid="feedback-icon"
+          class="icon-[hugeicons--megaphone-03] size-[16px]"
+        />
       </Button>
       <CurrentUserButton v-if="showCurrentUser" compact class="shrink-0 p-1" />
       <LoginButton v-else class="p-1" />
@@ -127,6 +146,7 @@ import LoginButton from '@/components/topbar/LoginButton.vue'
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useWorkflowStatusDismissal } from '@/composables/useWorkflowStatusDismissal'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
@@ -337,7 +357,7 @@ onUpdated(checkOverflow)
   border-radius: 0;
   background-color: transparent;
   padding: 0;
-  border-right-color: var(--border-color);
+  border-right-color: var(--border-default);
   min-width: 90px;
 }
 
@@ -365,7 +385,7 @@ onUpdated(checkOverflow)
 :deep(.p-togglebutton:first-child) {
   border-left-style: solid;
   border-left-width: 1px;
-  border-left-color: var(--border-color);
+  border-left-color: var(--border-default);
 }
 
 :deep(.p-togglebutton:not(:first-child)) {
@@ -375,7 +395,7 @@ onUpdated(checkOverflow)
 :deep(.p-togglebutton.p-togglebutton-checked) {
   height: 100%;
   border-bottom-style: solid;
-  border-bottom-width: 1px;
+  border-bottom-width: 2px;
   border-bottom-color: var(--p-button-text-primary-color);
 }
 

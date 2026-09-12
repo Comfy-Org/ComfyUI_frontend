@@ -370,6 +370,17 @@ describe('useCoreCommands', () => {
       expect(app.canvas.pasteFromClipboard).toHaveBeenCalledWith()
     })
 
+    it.for([
+      'Comfy.Canvas.PasteFromClipboard',
+      'Comfy.Canvas.PasteFromClipboardWithConnect'
+    ])('should not run %s in selection-only mode', async (commandId) => {
+      app.canvas.selectOnly = true
+
+      await findCommand(commandId).function()
+
+      expect(app.canvas.pasteFromClipboard).not.toHaveBeenCalled()
+    })
+
     it('should select all items', async () => {
       await findCommand('Comfy.Canvas.SelectAll').function()
 

@@ -921,6 +921,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'icon-[lucide--clipboard-paste]',
       label: 'Paste',
       function: () => {
+        if (app.canvas.selectOnly) return
         app.canvas.pasteFromClipboard()
       }
     },
@@ -929,6 +930,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'icon-[lucide--clipboard-paste]',
       label: () => t('Paste with Connect'),
       function: () => {
+        if (app.canvas.selectOnly) return
         app.canvas.pasteFromClipboard({ connectInputs: true })
       }
     },

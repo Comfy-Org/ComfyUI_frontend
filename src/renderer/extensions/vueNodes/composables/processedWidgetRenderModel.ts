@@ -92,6 +92,7 @@ export interface ComputeProcessedWidgetsOptions {
   widgetIds?: readonly WidgetId[]
   graphId: string | undefined
   showAdvanced: boolean
+  forceDisabled?: boolean
   isGraphReady: boolean
   rootGraph: LGraph | null
   ui: WidgetUiCallbacks
@@ -350,6 +351,7 @@ function widgetNodeLocatorId(
 interface WidgetProcessingContext {
   nodeData: NodeState
   showAdvanced: boolean
+  forceDisabled: boolean
   rootGraph: LGraph | null
   /** Root graph id, known even before `app.isGraphReady`. */
   rootGraphId: string | undefined
@@ -392,7 +394,8 @@ function processWidget(
   const advanced = visibility
     ? visibility.surfaces.vueNode === 'advanced'
     : (options.advanced ?? false)
-  const isDisabled = slotInfo?.linked || widgetState.disabled
+  const isDisabled =
+    ctx.forceDisabled || slotInfo?.linked || widgetState.disabled
   const widgetOptions = isDisabled ? { ...options, disabled: true } : options
   const value = normalizeWidgetValue(widgetState.value)
   const bareWidgetId = stripGraphPrefix(widgetState.nodeId)
@@ -477,6 +480,7 @@ export function computeProcessedWidgets({
   widgetIds,
   graphId,
   showAdvanced,
+  forceDisabled = false,
   isGraphReady,
   rootGraph,
   ui
@@ -519,6 +523,7 @@ export function computeProcessedWidgets({
   const ctx: WidgetProcessingContext = {
     nodeData,
     showAdvanced,
+    forceDisabled,
     rootGraph,
     rootGraphId: graphId,
     hostNode,

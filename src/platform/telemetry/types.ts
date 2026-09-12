@@ -574,6 +574,7 @@ export interface UiButtonClickMetadata {
 export interface AgentMessageFeedbackMetadata extends Record<string, unknown> {
   message_id: string
   vote: 'up' | 'down' | null
+  workflow_id: string | null
 }
 
 export type AgentPanelCloseSource =
@@ -602,7 +603,7 @@ export interface AgentNodeTaggedMetadata extends Record<string, unknown> {
 }
 export interface AgentWorkflowAppliedMetadata extends Record<string, unknown> {
   workflow_id: string
-  target: 'active_tab_switch' | 'active_tab_open'
+  target: 'new_tab' | 'existing_tab' | 'active_tab_open' | 'active_tab_switch'
 }
 
 /**

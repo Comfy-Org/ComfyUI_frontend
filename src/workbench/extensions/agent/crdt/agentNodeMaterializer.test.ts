@@ -385,6 +385,46 @@ describe('reconcileAgentAdapters', () => {
       expect(useNodeDataStore().ownsNode(scope, state!)).toBe(true)
     })
 
+    it('restores named combo and text values before onConfigure', () => {
+      const observed: unknown[] = []
+      class NamedWidgetNode extends LGraphNode {
+        constructor() {
+          super('named-widgets')
+          this.addWidget('combo', 'model', 'default', () => {}, {
+            values: ['default', 'chosen']
+          })
+          this.addWidget('text', 'prompt', '', () => {})
+        }
+        override onConfigure() {
+          observed.push(this.widgets?.map(({ value }) => value))
+        }
+      }
+      LiteGraph.registerNodeType('named-widgets', NamedWidgetNode)
+      const previous = LiteGraph.namedValuesRestore
+      LiteGraph.namedValuesRestore = false
+      try {
+        const graph = new LGraph()
+        remoteMutations(graphScopeOf(graph)).addNode(
+          {
+            ...nodePayload(1, 'named-widgets'),
+            widgets_values: { model: 'chosen', prompt: 'Preserve this prompt' }
+          },
+          REMOTE
+        )
+
+        reconcileAgentAdapters(graph)
+
+        expect(observed).toEqual([['chosen', 'Preserve this prompt']])
+        expect(
+          graph.getNodeById(toNodeId(1))?.widgets?.map(({ value }) => value)
+        ).toEqual(['chosen', 'Preserve this prompt'])
+        expect(LiteGraph.namedValuesRestore).toBe(false)
+      } finally {
+        LiteGraph.namedValuesRestore = previous
+        LiteGraph.unregisterNodeType('named-widgets')
+      }
+    })
+
     it('leaves a locally added node alone', () => {
       const graph = new LGraph()
       graph.add(new DummyNode())

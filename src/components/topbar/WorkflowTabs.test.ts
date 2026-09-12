@@ -6,6 +6,7 @@ import { defineComponent, h, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -74,6 +75,15 @@ vi.mock<unknown>(
     }
   }
 )
+
+const trackAgentEntryButtonClicked = vi.hoisted(() => vi.fn())
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
+  useTelemetry: () => ({
+    trackAgentEntryButtonClicked,
+    trackAgentPanelOpened: vi.fn(),
+    trackAgentPanelClosed: vi.fn()
+  })
+}))
 
 vi.mock<unknown>(
   import('@/platform/workflow/core/services/workflowService'),
@@ -171,7 +181,13 @@ describe('WorkflowTabs feedback button', () => {
     distribution.isNightly = true
     renderComponent()
 
-    expect(screen.getByRole('button', { name: 'Feedback' })).toBeInTheDocument()
+    const button = screen.getByRole('button', { name: 'Feedback' })
+    expect(button).toBeInTheDocument()
+    expect(button).toHaveClass('size-[32px]', 'rounded-[8px]', 'p-[8px]')
+    expect(screen.getByTestId('feedback-icon')).toHaveClass(
+      'icon-[hugeicons--megaphone-03]',
+      'size-[16px]'
+    )
   })
 
   it('does not render the feedback button on non-Cloud/non-Nightly builds', () => {
@@ -233,6 +249,9 @@ describe('WorkflowTabs agent entry button', () => {
 
     await user.click(button)
 
+    expect(trackAgentEntryButtonClicked).toHaveBeenCalledWith({
+      resulting_state: 'opened'
+    })
     expect(useAgentPanelStore().toggle).toHaveBeenCalledTimes(1)
     expect(
       screen.queryByRole('button', { name: enMessages.agent.askComfyAgent })
@@ -265,6 +284,37 @@ describe('WorkflowTabs agent entry button', () => {
     await nextTick()
 
     expect(actions).toHaveAttribute('data-agent-gate-settled', 'true')
+  })
+})
+
+describe('WorkflowTabs creating-tab skeleton', () => {
+  it('renders a skeleton pseudo-tab only while a tab is being created', async () => {
+    const scrollIntoView = vi.spyOn(HTMLElement.prototype, 'scrollIntoView')
+    renderComponent()
+
+    expect(screen.queryByTestId('creating-tab-skeleton')).toBeNull()
+    expect(scrollIntoView).not.toHaveBeenCalled()
+
+    const activity = useWorkflowTabActivityStore()
+    activity.setCreating(true)
+    await waitFor(() =>
+      expect(scrollIntoView).toHaveBeenCalledWith({
+        block: 'nearest',
+        inline: 'nearest'
+      })
+    )
+    expect(screen.getByTestId('creating-tab-skeleton')).toBeInTheDocument()
+    expect(
+      screen.getByTestId('creating-tab-skeleton-shimmer')
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('img', { name: enMessages.g.agentWorking })
+    ).toBeInTheDocument()
+
+    activity.setCreating(false)
+    await nextTick()
+    expect(screen.queryByTestId('creating-tab-skeleton')).toBeNull()
+    expect(scrollIntoView).toHaveBeenCalledTimes(1)
   })
 })
 
