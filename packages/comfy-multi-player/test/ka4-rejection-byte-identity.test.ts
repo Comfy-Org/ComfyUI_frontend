@@ -202,8 +202,8 @@ const CASES: Row[] = [
   },
   {
     kind: "insert_workflow",
-    why: "duplicate raw definition ids are ambiguous before deterministic remapping",
-    code: "definition_conflict",
+    why: "duplicate remapped definition ids violate define_subgraph tree uniqueness",
+    code: "malformed_op",
     build: () => ({
       op: "insert_workflow",
       ...env(),

@@ -104,8 +104,8 @@ import {
 import { remapInsertedWorkflowIds } from "./remap.js";
 import { sha256Hex } from "./digest.js";
 import { CMP_EVENT_SCHEMA_VERSION, emitCmpEvent, type CmpCallContext } from "./events.js";
-import { mint, mintDefinition } from "./mint.js";
-import { project, projectDefinition } from "./project.js";
+import { mintDefinition } from "./mint.js";
+import { projectDefinition } from "./project.js";
 import {
   MAX_OP_COST,
   MAX_OPS_PER_BATCH,

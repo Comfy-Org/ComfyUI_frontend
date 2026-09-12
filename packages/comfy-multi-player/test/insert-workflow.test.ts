@@ -27,6 +27,7 @@ import {
   type WidgetCatalog,
   type WorkflowJSON,
 } from "../src/index.js";
+import { remapInsertedWorkflowIds } from "../src/remap.js";
 import { appliedOpIds, noOpIds, rejectedOutcomeWithIndex } from "./apply-result-helpers.js";
 
 const catalog: WidgetCatalog = {
@@ -108,7 +109,7 @@ describe("insert_workflow: happy path", () => {
     expect(ids(wf).slice(0, 5)).toEqual([1, 2, 3, 4, 6]);
     expect(ids(wf).slice(5).every((id) => typeof id === "string" && id.includes(op.op_id))).toBe(true);
     expect(linkIds(wf)[1]).toEqual(expect.stringContaining(op.op_id));
-    expect(defIds(wf)[1]).toEqual(expect.stringContaining(op.op_id));
+    expect(defIds(wf).find((id) => id !== "def-1")).toMatch(/^[0-9a-f-]{36}$/);
     // Inserted nodes project with their widgets resolved through the catalog.
     const n100 = wf.nodes!.find((n) => n.pos?.[0] === 0)!;
     expect(n100.type).toBe("Src");
@@ -142,8 +143,9 @@ describe("insert_workflow: happy path", () => {
     expect(appliedOpIds(result)).toEqual([op.op_id]);
     const wf = project(doc, catalog);
     expect(defIds(wf)).toHaveLength(2);
-    expect(defIds(wf)[1]).toContain(op.op_id);
-    expect(wf.nodes!.find((n) => n.id !== 6 && n.type === defIds(wf)[1])).toBeDefined();
+    const insertedDefinitionId = defIds(wf).find((id) => id !== "def-1")!;
+    expect(insertedDefinitionId).toMatch(/^[0-9a-f-]{36}$/);
+    expect(wf.nodes!.find((n) => n.id !== 6 && n.type === insertedDefinitionId)).toBeDefined();
   });
 
   it("preserves opaque widgets_values for uncatalogued inserted nodes", () => {
@@ -235,7 +237,25 @@ describe("insert_workflow: happy path", () => {
     expect(deleteThenInsert.links!.filter((link) => (link as unknown[])[5] === "valid")).toHaveLength(1);
     expect(deleteThenInsert.links!.some((link) => (link as unknown[])[5] === "missing endpoint")).toBe(false);
     expect(deleteThenInsert.groups).toContainEqual({ title: "Inserted group" });
-    expect(defIds(deleteThenInsert).some((id) => id.includes(insert.op_id))).toBe(true);
+    expect(defIds(deleteThenInsert).some((id) => id !== "def-1" && /^[0-9a-f-]{36}$/.test(id))).toBe(true);
+  });
+
+  it("rejects a remapped definition id already present anywhere in the stored tree", () => {
+    const op = insertOp(template());
+    const remapped = remapInsertedWorkflowIds(template(), op.op_id);
+    const remappedId = String(remapped.definitions!.subgraphs![0]!.id);
+    const base = baseWorkflow();
+    base.definitions!.subgraphs!.push({ id: remappedId, nodes: [], links: [] });
+    const doc = mint(base, catalog);
+    const before = bytes(doc);
+
+    const result = applyOps(doc, [op], catalog);
+
+    expect(rejectedOutcomeWithIndex(result)).toMatchObject({
+      index: 0,
+      code: "definition_conflict",
+    });
+    expect(bytes(doc).equals(before)).toBe(true);
   });
 
   it("stores nested definitions as addressable maps for later interior set_widget", () => {
