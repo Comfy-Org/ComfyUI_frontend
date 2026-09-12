@@ -216,6 +216,31 @@
       ]
     },
     {
+      "class": "build-config",
+      "tier": "R1",
+      "why": "lint, format and test-runner configs plus git metadata steer developer tooling only — they cannot change what ships in the bundle. Kept out of the R2 build-config rule so a formatter tweak stays in the flagless lane, while the shared class keeps these paths exempt from the feature-flag policy's runtime scope (unmatched paths count as runtime there).",
+      "paths": [
+        "**/.oxfmtrc.json",
+        "**/.oxlintrc.json",
+        "**/eslint.config.*",
+        "eslint-suppressions.json",
+        "**/.stylelintrc*",
+        "**/lint-staged.config.*",
+        "**/knip.config.*",
+        "**/playwright*.config.*",
+        "**/vitest*.config.*",
+        "vitest.setup.ts",
+        "vitest.timer.setup.ts",
+        ".yamllint",
+        ".editorconfig",
+        ".nvmrc",
+        "**/.gitignore",
+        ".gitattributes",
+        ".git-blame-ignore-revs",
+        ".husky/**"
+      ]
+    },
+    {
       "class": "core-infra",
       "tier": "R2",
       "why": "cross-cutting state, API layer, routing, bootstrap, canvas engine and published packages \u2014 blast radius is every feature, and packages/** breaks consumers out of band",
