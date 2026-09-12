@@ -37,11 +37,28 @@ Router request schema, not a replacement for the authoritative snapshot.
   Do not fabricate assets or IDs.
 - Defaulted dropdowns have no empty `—` option. A required choice with no usable
   default asks for that specific value; it must not silently submit a fake one.
+- A dropdown with one fixed value is disabled; an optional choice can still be
+  selected and cleared. `optionLabels` maps native values to display names only.
+  Capitalization and readable language names never change the submitted values.
+- File previews create Blob URLs only after client mounting. Server-created Blob
+  URLs cannot be loaded by a browser.
 - The creator form has no Native JSON mode switch. Native validation and API
   serialization remain intact underneath the widgets.
 - Common or obvious inputs need only a label. Retain short inline guidance for
   unfamiliar inputs or important model-specific constraints, not help popups.
   Longer necessary guidance wraps inline; it is not clipped to one visual line.
+
+HeyGen's curated language choices correspond to languages in the
+[Starfish voice list](https://github.com/Comfy-Org/ComfyUI/blob/b08e6cf35fac50d3ca8470dffb3f9a1fbb7187d2/comfy_api_nodes/apis/heygen.py).
+Language and locale remain unset for automatic detection; a selected locale
+overrides language, as described in the
+[HeyGen speech contract](https://developers.heygen.com/docs/voices/speech).
+Voice ID stays editable in Advanced with the existing tested voice.
+
+Model price estimates prefer the generated node pricing rules. Models whose
+nodes have no price badge can use verified flat rates from
+`src/data/workshop-published-pricing.json`; each snapshot records its source and
+verification date. Do not substitute a flat rate for parameter-dependent billing.
 
 ## Prompt starters
 

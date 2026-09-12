@@ -3065,6 +3065,29 @@
       }
     }
   },
+  "ConcatenateVideo": {
+    "description": "يدمج الفيديوهات بالترتيب دون فك ترميز المدخلات المرمّزة المتوافقة.",
+    "display_name": "دمج الفيديوهات",
+    "inputs": {
+      "codec": {
+        "name": "codec",
+        "tooltip": "الـ codec المستخدم لترميز موترات الفيديو. يستخدم Auto ‏H.264؛ وتبقى الفيديوهات المرمّزة مسبقًا دون تغيير."
+      },
+      "complete_audio": {
+        "name": "complete_audio",
+        "tooltip": "مسار صوتي كامل اختياري للفيديو المدمج. يتجاوز الصوت المحمول بواسطة فيديوهات الإدخال."
+      },
+      "videos": {
+        "name": "videos",
+        "tooltip": "مقاطع الفيديو المراد دمجها وفق ترتيب الإدخال."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "الفيديو المدمج."
+      }
+    }
+  },
   "ConditioningAverage": {
     "display_name": "متوسط التهيئة",
     "inputs": {
@@ -3098,6 +3121,20 @@
       },
       "conditioning_to": {
         "name": "تهيئة إلى"
+      }
+    }
+  },
+  "ConditioningLoader": {
+    "description": "يحمّل conditioning محفوظًا باستخدام Save Conditioning، أو أي ملف safetensors يحتوي على موتر 'conditioning'، من مجلد embeddings.",
+    "display_name": "تحميل Conditioning",
+    "inputs": {
+      "conditioning_name": {
+        "name": "conditioning_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3908,6 +3945,10 @@
       "bit_depth": {
         "name": "bit_depth",
         "tooltip": "يستخدم «تلقائي» 8 بت لـ sRGB و10 بت لـ HDR. خيارات 8 بت و10 بت الصريحة مستقلة عن مساحة الألوان."
+      },
+      "codec": {
+        "name": "codec",
+        "tooltip": "يمكن ترميز الفيديو فورًا اختياريًا. يحافظ None على الصور بصيغة موتر؛ ويستخدم Auto ‏H.264."
       },
       "color_space": {
         "name": "color_space",
@@ -5026,6 +5067,22 @@
       "batch_size": {
         "name": "batch_size",
         "tooltip": "عدد صور latent في الدفعة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyYuE2LatentAudio": {
+    "display_name": "صوت YuE2 Latent فارغ",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "seconds": {
+        "name": "seconds"
       }
     },
     "outputs": {
@@ -7979,7 +8036,7 @@
     }
   },
   "ImageColorSpace": {
-    "description": "يحوّل بين sRGB ‏(Rec.709) وHDR ‏(Rec.2020 HLG) وHDR PQ ‏(Rec.2020 PQ). يستخدم نقطة بياض SDR بقوة 203 نت وشاشة مرجعية HLG بقوة 1000 نت. يؤدي التضييق إلى تعيين لوني للإضاءة الزائدة عبر الدفعة وضغط الألوان خارج النطاق اللوني. تُجرى التحويلات باستخدام float32 وتُرجع الجهاز الوسيط وdtype. لا يتحول alpha المستقيم لونيًا.",
+    "description": "تحويل sRGB وRec.709 الخطي وHDR ‏(Rec.2020 HLG) وHDR PQ ‏(Rec.2020 PQ). يستخدم الخطي 1.0 نفس الأبيض المرجعي بسطوع 203 نيت مثل sRGB؛ ويستخدم HLG شاشة مرجعية بسطوع 1000 نيت. يحافظ الإخراج الخطي وتحويلات الخطي إلى HDR على القيم الممتدة دون تعيين درجات الألوان. يطبّق إخراج SDR وتحويل PQ إلى HLG تعيين درجات الألوان على الإضاءة الزائدة عبر الدفعة ويضغط الألوان خارج النطاق اللوني. تُحسب التحويلات بـ float32 وتُرجع الجهاز الوسيط وdtype. لا يُحوَّل ألفا المستقيم لونيًا.",
     "display_name": "تحويل مساحة ألوان الصورة",
     "inputs": {
       "destination": {
@@ -12374,6 +12431,23 @@
       }
     }
   },
+  "MarigoldV2PostProcess": {
+    "description": "يحوّل تنبؤ Marigold V2 المفكوك إلى صورة: عمق مُطبّع يكون فيه القريب ساطعًا، أو متجهات عمودية سطحية بوحدة طول، أو بياض sRGB.",
+    "display_name": "المعالجة اللاحقة لـ Marigold V2",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "prediction": {
+        "name": "prediction"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MaskComposite": {
     "display_name": "تركيب القناع",
     "inputs": {
@@ -16021,6 +16095,9 @@
     "inputs": {
       "model": {
         "name": "النموذج"
+      },
+      "sampling": {
+        "name": "sampling"
       },
       "shift": {
         "name": "الإزاحة"
@@ -20988,6 +21065,24 @@
       }
     }
   },
+  "SaveConditioning": {
+    "description": "يحفظ conditioning في مجلد الإخراج بصيغة safetensors؛ انقل الملف إلى models/embeddings لتحميله باستخدام Load Conditioning، مثلًا لتجاوز مُرمّز النص.",
+    "display_name": "حفظ Conditioning",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "conditioning",
+        "tooltip": null
+      }
+    }
+  },
   "SaveGLB": {
     "display_name": "حفظ GLB",
     "inputs": {
@@ -21676,6 +21771,28 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SheetSage2AudioToABC": {
+    "description": "ينسخ الألحان الغنائية والآلية من الموسيقى إلى تدوين ABC. صِل خرج abc بعقدة YuE2 Generate Music واستخدم الوضع المطابق.",
+    "display_name": "تحويل صوت SheetSage2 إلى ABC",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "audio_encoder": {
+        "name": "audio_encoder"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "full: يُنشئ اللحن والأوتار؛ melody: يُنشئ اللحن فقط، ويُنصح به للأغاني المعاد أداؤها."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
         "tooltip": null
       }
     }
@@ -28528,6 +28645,94 @@
     "outputs": {
       "0": {
         "name": "شبكة",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateABC": {
+    "description": "ينشئ تدوين ABC لأغنية من النمط وكلمات الأغنية. صِل abc بعقدة YuE2 Generate Music.",
+    "display_name": "إنشاء ABC باستخدام YuE2",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "lyrics": {
+        "name": "lyrics"
+      },
+      "max_abc_tokens": {
+        "name": "max_abc_tokens"
+      },
+      "mode": {
+        "name": "الوضع",
+        "tooltip": "كامل: يولّد اللحن والتآلفات؛ لحن: يولّد اللحن فقط، ويُنصح به للأغاني المغطاة."
+      },
+      "seed": {
+        "name": "البذرة"
+      },
+      "style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateMusic": {
+    "description": "يولّد رموز الموسيقى والتكييف الصوتي من النمط وكلمات الأغنية وتدوين ABC. أدخل الثواني الناتجة في عقدة Empty YuE2 Latent Audio. يتجاهل إدخال ABC الفارغ الوضع المحدد.",
+    "display_name": "YuE2 توليد الموسيقى",
+    "inputs": {
+      "abc": {
+        "name": "abc",
+        "tooltip": "صِل مولّد ABC أو أدخل نوتة معدّلة. اتركه فارغًا لاستخدام وضع الإيقاف تلقائيًا."
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "lyrics": {
+        "name": "كلمات الأغنية"
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "المدة القصوى؛ قد يتوقف التوليد في وقت أبكر. يستخدم الإصدار ميزانية قدرها 360 ثانية."
+      },
+      "mode": {
+        "name": "الوضع",
+        "tooltip": "كامل: يولّد اللحن والتآلفات؛ لحن: يولّد اللحن فقط، ويُنصح به للأغاني المغطاة."
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "seed": {
+        "name": "البذرة"
+      },
+      "style": {
+        "name": "النمط"
+      },
+      "temperature": {
+        "name": "درجة الحرارة"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "ثوانٍ",
         "tooltip": null
       }
     }
