@@ -49,6 +49,7 @@ function makeViewportStub() {
 
   let preRender: (() => void) | null = null
   let postRender: (() => void) | null = null
+  let overlay: { dispose(): void } | null = null
   const controls = { enabled: true }
   return {
     sceneManager: {
@@ -68,7 +69,9 @@ function makeViewportStub() {
       render: vi.fn()
     },
     domElement: canvas,
-    setOverlay: vi.fn(),
+    setOverlay: vi.fn((next: { dispose(): void }) => {
+      overlay = next
+    }),
     setCameraState: vi.fn(),
     addPreRenderCallback: vi.fn((cb: () => void) => {
       preRender = cb
@@ -82,7 +85,7 @@ function makeViewportStub() {
       controls.enabled = camera === null
     }),
     forceRender: vi.fn(),
-    remove: vi.fn(),
+    remove: vi.fn(() => overlay?.dispose()),
     runPreRender: () => preRender?.(),
     runPostRender: () => postRender?.()
   }
@@ -342,15 +345,37 @@ describe('CameraAngleViewport', () => {
     expect(stub.domElement.style.cursor).toBe('grab')
   })
 
-  it('forwards images to the subject card', async () => {
+  it('forwards images to the subject card and re-renders once applied', async () => {
     const setImage = vi
       .spyOn(viewport.subject, 'setImage')
-      .mockResolvedValue(undefined)
+      .mockResolvedValue(true)
+    stub.forceRender.mockClear()
 
     await viewport.setImage('http://example/a.png')
 
     expect(setImage).toHaveBeenCalledWith('http://example/a.png')
-    expect(stub.forceRender).toHaveBeenCalled()
+    expect(stub.forceRender).toHaveBeenCalledOnce()
+  })
+
+  it('does not render an image that finishes loading after removal', async () => {
+    let resolveLoad: (texture: THREE.Texture) => void = () => {}
+    const pending = new Promise<THREE.Texture>((resolve) => {
+      resolveLoad = resolve
+    })
+    const deferred = new CameraAngleViewport(
+      document.createElement('div'),
+      undefined,
+      { loadTexture: () => pending }
+    )
+    const load = deferred.setImage('http://example/late.png')
+
+    deferred.remove()
+    stub.forceRender.mockClear()
+    resolveLoad(new THREE.Texture())
+    await load
+
+    expect(stub.forceRender).not.toHaveBeenCalled()
+    expect(deferred.subject.hasImage()).toBe(false)
   })
 
   it('tears down the viewport on remove', () => {
