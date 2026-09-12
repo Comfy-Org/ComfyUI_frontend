@@ -8,4 +8,7 @@ test('opens the settings menu for the video recording demo', async ({
 }) => {
   await comfyPage.settingDialog.open()
   await expect(comfyPage.settingDialog.root).toBeVisible()
+
+  await comfyPage.settingDialog.close()
+  await expect(comfyPage.settingDialog.root).toBeHidden()
 })
