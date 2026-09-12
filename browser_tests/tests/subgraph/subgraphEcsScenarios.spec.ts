@@ -55,7 +55,7 @@ test.describe(
             .poll(() =>
               comfyPage.page.evaluate(
                 () =>
-                  window.app!.graph!.nodes.filter((node) =>
+                  window.app!.graph.nodes.filter((node) =>
                     node.isSubgraphNode()
                   ).length
               )
@@ -63,7 +63,7 @@ test.describe(
             .toBe(2)
 
           const copyId = await comfyPage.page.evaluate(() => {
-            const copy = window.app!.graph!.nodes.find(
+            const copy = window.app!.graph.nodes.find(
               (node) => node.isSubgraphNode() && String(node.id) !== '11'
             )
             if (!copy) throw new Error('Pasted subgraph host was not created')
@@ -108,7 +108,7 @@ test.describe(
             await expect
               .poll(() =>
                 comfyPage.page.evaluate(() =>
-                  window.app!.graph!.nodes.some(
+                  window.app!.graph.nodes.some(
                     (node) => node.isSubgraphNode() && String(node.id) !== '11'
                   )
                 )
@@ -116,7 +116,7 @@ test.describe(
               .toBe(true)
             const copyId = await comfyPage.page.evaluate(() =>
               String(
-                window.app!.graph!.nodes.find(
+                window.app!.graph.nodes.find(
                   (node) => node.isSubgraphNode() && String(node.id) !== '11'
                 )!.id
               )

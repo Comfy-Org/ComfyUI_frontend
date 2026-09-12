@@ -83,7 +83,7 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
           comfyPage
         }) => {
           const before = await comfyPage.page.evaluate((nodeId) => {
-            const node = window.app!.graph!.getNodeById(nodeId)
+            const node = window.app!.graph.getNodeById(nodeId)
             if (!node)
               throw new Error('Missing-node placeholder was not loaded')
             return { pos: [...node.pos], size: [...node.size] }
