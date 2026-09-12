@@ -1,19 +1,29 @@
+import type { BrowserContext } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
+import type { LiveCloudBillingSession } from '@e2e/fixtures/helpers/LiveCloudBilling'
+import { LiveCloudCheckout } from '@e2e/fixtures/helpers/LiveCloudBilling'
 import {
-  LiveCloudBillingSession,
-  LiveCloudCheckout,
-  matchesBillingResponse
-} from '@e2e/fixtures/helpers/LiveCloudBilling'
-import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
+  installContextNetworkIsolation,
+  networkIsolationFixture as base
+} from '@e2e/fixtures/networkIsolationFixture'
+import {
+  installLiveCloudBillingRouting,
+  signInToLiveCloud
+} from '@e2e/fixtures/utils/liveCloudBillingContext'
 import { loadLiveCloudBillingConfig } from '@e2e/fixtures/utils/liveCloudBillingConfig'
+
+interface FreshBillingSession {
+  billingSession: LiveCloudBillingSession
+  checkout: LiveCloudCheckout
+}
 
 export const liveCloudBillingFixture = base.extend<{
   billingSession: LiveCloudBillingSession
   comfyPage: ComfyPage
   checkout: LiveCloudCheckout
+  freshBillingSession: () => Promise<FreshBillingSession>
 }>({
   baseURL: process.env.PLAYWRIGHT_TEST_URL,
   networkPolicy: async ({ baseURL }, use, testInfo) => {
@@ -50,86 +60,50 @@ export const liveCloudBillingFixture = base.extend<{
     ).toEqual([])
   },
   context: async ({ context, networkPolicy }, use) => {
-    const config = loadLiveCloudBillingConfig()
-    await context.route('**/*', async (route) => {
-      const request = route.request()
-      const url = new URL(request.url())
-      if (
-        !networkPolicy.origins.has(url.origin) &&
-        url.hostname.endsWith('.comfy.org') &&
-        /^\/(api|customers)(\/|$)/.test(url.pathname)
-      ) {
-        networkPolicy.unexpected.add(`API ${url.origin}${url.pathname}`)
-        await route.abort('blockedbyclient')
-        return
-      }
-      if (
-        request.isNavigationRequest() &&
-        !networkPolicy.origins.has(url.origin)
-      ) {
-        networkPolicy.unexpected.add(`Navigation ${url.origin}${url.pathname}`)
-        await route.abort('blockedbyclient')
-        return
-      }
-      if (
-        url.origin === config.PLAYWRIGHT_TEST_URL &&
-        /^\/(api|internal)(\/|$)/.test(url.pathname)
-      ) {
-        try {
-          const response = await route.fetch({
-            url: new URL(
-              url.pathname + url.search,
-              config.PLAYWRIGHT_SETUP_API_URL
-            ).href,
-            maxRedirects: 0
-          })
-          await route.fulfill({ response })
-        } catch {
-          throw new Error(`Cloud proxy request failed: ${url.pathname}`)
-        }
-        return
-      }
-      await route.fallback()
-    })
+    await installLiveCloudBillingRouting(context, networkPolicy)
     await use(context)
     await context.unrouteAll({ behavior: 'ignoreErrors' })
   },
   billingSession: async ({ page }, use) => {
+    await use(await signInToLiveCloud(page))
+  },
+  freshBillingSession: async (
+    { browser, contextOptions, networkPolicy },
+    use
+  ) => {
     const config = loadLiveCloudBillingConfig()
-    await new FeatureFlagHelper(page).seedFlags({
-      onboarding_survey_enabled: false
-    })
-    await page.goto(`${config.PLAYWRIGHT_TEST_URL}/cloud/login`)
-    await page
-      .getByRole('button', { name: 'Use email instead', exact: true })
-      .click()
-    await page
-      .getByRole('textbox', { name: 'Email', exact: true })
-      .fill(config.CLOUD_ACCOUNT_EMAIL)
-    await page
-      .getByLabel('Password', { exact: true })
-      .fill(config.CLOUD_ACCOUNT_PASSWORD)
-    const [response] = await Promise.all([
-      page.waitForResponse(
-        (response) =>
-          matchesBillingResponse(
-            response,
-            config.PLAYWRIGHT_TEST_URL,
-            '/api/billing/status'
-          ) && response.status() === 200
-      ),
-      page.getByRole('button', { name: 'Sign in', exact: true }).click()
-    ])
-    const authorization = await response.request().headerValue('authorization')
-    expect(authorization).toBeTruthy()
-    if (!authorization) throw new Error('Missing billing authorization')
-    await use(
-      new LiveCloudBillingSession(
-        page.request,
-        config.PLAYWRIGHT_SETUP_API_URL,
-        { authorization }
-      )
-    )
+    const contexts: BrowserContext[] = []
+    try {
+      await use(async () => {
+        const context = await browser.newContext({
+          ...contextOptions,
+          baseURL: config.PLAYWRIGHT_TEST_URL,
+          storageState: { cookies: [], origins: [] },
+          serviceWorkers: 'block',
+          recordVideo: undefined,
+          recordHar: undefined
+        })
+        contexts.push(context)
+        await installContextNetworkIsolation(
+          context,
+          networkPolicy,
+          config.PLAYWRIGHT_TEST_URL
+        )
+        await installLiveCloudBillingRouting(context, networkPolicy)
+        const page = await context.newPage()
+        const billingSession = await signInToLiveCloud(page)
+        const comfyPage = new ComfyPage(page, context.request)
+        return {
+          billingSession,
+          checkout: new LiveCloudCheckout(comfyPage, config.PLAYWRIGHT_TEST_URL)
+        }
+      })
+    } finally {
+      for (const context of contexts) {
+        await context.unrouteAll({ behavior: 'ignoreErrors' })
+        await context.close()
+      }
+    }
   },
   comfyPage: async ({ page, request }, use) => {
     await use(new ComfyPage(page, request))

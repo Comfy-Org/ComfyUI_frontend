@@ -8,15 +8,23 @@ test.describe('Real Cloud checkout recovery', { tag: ['@cloud-live'] }, () => {
     checkout,
     billingSession
   }, testInfo) => {
-    await checkout.attachScreenshot('preview.png')
-    const operationId = await checkout.abandonCheckout(testInfo)
-    await billingSession.expectPending(operationId)
-    await expect(checkout.resumePayment).toBeEnabled()
-    await checkout.attachScreenshot('resume-payment.png')
+    const operationId =
+      await test.step('Leave the checkout pending', async () => {
+        await checkout.attachScreenshot('preview.png')
+        return await checkout.abandonCheckout(testInfo)
+      })
 
-    const resumedId = await checkout.abandonCheckout(testInfo, true)
-    expect(resumedId).toBe(operationId)
-    await expect(checkout.resumePayment).toBeEnabled()
-    await billingSession.expectPending(operationId)
+    await test.step('See the pending checkout recovery action', async () => {
+      await billingSession.expectPending(operationId)
+      await expect(checkout.resumePayment).toBeEnabled()
+      await checkout.attachScreenshot('resume-payment.png')
+    })
+
+    await test.step('Retry the same checkout', async () => {
+      const resumedId = await checkout.abandonCheckout(testInfo, true)
+      expect(resumedId).toBe(operationId)
+      await expect(checkout.resumePayment).toBeEnabled()
+      await billingSession.expectPending(operationId)
+    })
   })
 })

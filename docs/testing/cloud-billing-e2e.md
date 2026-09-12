@@ -3,12 +3,12 @@
 Run the opt-in `cloud-live` project through the existing browser-test runner:
 
 ```sh
-pnpm test:browser:cloud-billing --headed
+pnpm exec cross-env DISTRIBUTION=cloud PLAYWRIGHT_CLOUD_LIVE=1 pnpm exec playwright test --project=cloud-live --workers=1 --headed
 pnpm exec playwright show-report
 ```
 
 Set these variables using the existing `.env` convention or inject them with
-`op run --env-file <file-with-secret-references> -- pnpm test:browser:cloud-billing`:
+`op run --env-file <file-with-secret-references> -- zsh -f`:
 
 | Variable                   | Value                                                |
 | -------------------------- | ---------------------------------------------------- |
@@ -16,6 +16,18 @@ Set these variables using the existing `.env` convention or inject them with
 | `PLAYWRIGHT_SETUP_API_URL` | Matching test, staging, or PR sandbox backend origin |
 | `CLOUD_ACCOUNT_EMAIL`      | Sandbox account email                                |
 | `CLOUD_ACCOUNT_PASSWORD`   | Sandbox account password                             |
+
+For repeated local runs, open one credential shell and run all test commands
+inside it. This reuses credentials already loaded by 1Password instead of
+requesting them again for each command:
+
+```sh
+op run --env-file <file-with-secret-references> -- zsh -f
+pnpm exec cross-env DISTRIBUTION=cloud PLAYWRIGHT_CLOUD_LIVE=1 pnpm exec playwright test --project=cloud-live --workers=1
+```
+
+Keep the shell open for the session. Exiting it ends credential reuse. The env
+file contains 1Password references, not passwords.
 
 For a local frontend, start `pnpm dev:cloud` and use its Vite URL with
 `PLAYWRIGHT_SETUP_API_URL=https://testcloud.comfy.org`. The test routes browser API requests and its API checks directly to the selected
@@ -39,6 +51,7 @@ browser leaves the unpaid checkout pending in the backend. The test does not
 reset billing state or claim that the operation expired. The first action accepts either a fresh Subscribe button or the pending
 Complete your payment button, so sequential runs can resume an existing checkout. Backend expiry and fixture reset remain separate work.
 
-The first test covers checkout handoff and retry. Payment completion, page-reload
-recovery, the 24-hour timeout, and CI integration remain follow-up work. A
+The no-card tests cover checkout handoff, retry, page reload, and signing in
+from an empty browser context. Payment completion, the 24-hour timeout, and
+CI integration remain follow-up work. A
 successful sign-in alone does not establish billing coverage.

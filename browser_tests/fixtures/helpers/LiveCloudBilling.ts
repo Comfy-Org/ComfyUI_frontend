@@ -25,10 +25,14 @@ export class LiveCloudBillingSession {
   ) {}
 
   async read<T>(path: string, schema: z.ZodType<T>): Promise<T> {
-    const response = await this.request.get(new URL(path, this.backend).href, {
-      headers: this.headers,
-      maxRedirects: 0
-    })
+    const response = await this.request
+      .get(new URL(path, this.backend).href, {
+        headers: this.headers,
+        maxRedirects: 0
+      })
+      .catch(() => {
+        throw new Error(`Cloud billing request failed: ${path}`)
+      })
     expect(response.status(), `GET ${path}`).toBe(200)
     return schema.parse(await response.json())
   }
