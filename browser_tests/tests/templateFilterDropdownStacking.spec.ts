@@ -19,7 +19,6 @@ const test = mergeTests(comfyPageFixture, templateApiFixture)
  */
 test.describe('Template filter dropdown stacking', () => {
   test.beforeEach(async ({ comfyPage, templateApi }) => {
-    await comfyPage.settings.setSetting('Comfy.Templates.SelectedModels', [])
     templateApi.configure(
       withTemplates([
         makeTemplate({ name: 'wan-1', title: 'Wan One', models: ['Wan 2.2'] }),

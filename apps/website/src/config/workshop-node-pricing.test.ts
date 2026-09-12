@@ -5,6 +5,26 @@ import { workshopNodePricingSchema } from './workshop-node-pricing.schema'
 import pricing from '../data/workshop-node-pricing.json'
 
 describe('node-based Models price estimates', () => {
+  it('uses the published Kontext flat rates when the nodes have no price badge', async () => {
+    expect(
+      await estimateWorkshopNodePrice(
+        { routerId: 'bfl/flux-kontext-pro' },
+        'edit-images'
+      )
+    ).toBe('8.44 credits/Run')
+    expect(
+      await estimateWorkshopNodePrice(
+        { routerId: 'bfl/flux-kontext-max' },
+        'edit-images'
+      )
+    ).toBe('16.88 credits/Run')
+    expect(
+      await estimateWorkshopNodePrice(
+        { routerId: 'bfl/flux-kontext-pro' },
+        'generate-videos'
+      )
+    ).toBeUndefined()
+  })
   it('uses the Seedream 4.5 node formula and preserves the image-count unit', async () => {
     expect(
       await estimateWorkshopNodePrice(
