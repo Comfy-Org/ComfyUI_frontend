@@ -7,6 +7,7 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyExpect, comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { SubgraphHelper } from '@e2e/fixtures/helpers/SubgraphHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
+import type { WorkspaceStore } from '@e2e/types/globals'
 import type { PromotedWidgetEntry } from '@e2e/fixtures/utils/promotedWidgets'
 import {
   getPromotedWidgetCount,
@@ -139,27 +140,45 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
         'subgraphs/subgraph-with-promoted-text-widget'
       )
 
-      const promotedText = comfyPage.page.getByRole('textbox', {
-        name: 'text',
-        exact: true
-      })
-      await expect(promotedText).toBeVisible()
-      await promotedText.fill('value removed before saving')
-      await expect(promotedText).toHaveValue('value removed before saving')
-      await promotedText.fill('')
-      await expect(promotedText).toHaveValue('')
+      const promotedText = () =>
+        comfyPage.page.getByRole('textbox', { name: 'text', exact: true })
+      await expect(promotedText()).toBeVisible()
+
+      // This fixture ships the widget empty on the host AND on the interior
+      // CLIPTextEncode, so "empty after reload" is also satisfied by a reset to
+      // that default. Persisting a non-empty value and reloading once first is
+      // what lets the second reload tell the two apart: if the clear is dropped
+      // as falsy, this string comes back instead of an empty one. The first
+      // reload doubles as a control that promoted text is persisted at all.
+      const baseline = 'value that must be cleared'
+      await promotedText().fill(baseline)
+      await expect(promotedText()).toHaveValue(baseline)
 
       await comfyPage.menu.topbar.saveWorkflow(
         `empty-promoted-text-${vueNodesEnabled ? 'vue' : 'legacy'}`
       )
       await comfyPage.workflow.reloadAndWaitForApp()
+      await expect(promotedText()).toHaveValue(baseline)
 
-      await expect(
-        comfyPage.page.getByRole('textbox', {
-          name: 'text',
-          exact: true
-        })
-      ).toHaveValue('')
+      await promotedText().fill('')
+      await expect(promotedText()).toHaveValue('')
+
+      // The workflow is already persisted, so this saves in place with no
+      // overwrite prompt — unlike a second topbar Save, which reopens the
+      // dialog. Waiting for isModified to clear is the signal it landed.
+      await comfyPage.command.executeCommand('Comfy.SaveWorkflow')
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(
+            () =>
+              (window.app!.extensionManager as WorkspaceStore).workflow
+                .activeWorkflow?.isModified
+          )
+        )
+        .toBe(false)
+      await comfyPage.workflow.reloadAndWaitForApp()
+
+      await expect(promotedText()).toHaveValue('')
       const host = await comfyPage.nodeOps.getNodeRefById('11')
       await expect
         .poll(async () => (await host.getWidgetByName('text')).getValue())
