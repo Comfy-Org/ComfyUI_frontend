@@ -40,7 +40,7 @@ interface ProvisionableUser {
   getIdToken: () => Promise<string>
 }
 
-export class WorkshopProvisioningError extends Error {
+class WorkshopProvisioningError extends Error {
   constructor(
     readonly user: User,
     options: ErrorOptions
