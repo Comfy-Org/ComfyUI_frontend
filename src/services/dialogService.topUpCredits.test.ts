@@ -34,7 +34,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock(import('@/composables/auth/useCurrentUser'), () => ({
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({
     isApiKeyLogin: { value: true },
     userEmail: { value: null }
@@ -86,6 +86,7 @@ import { useDialogService } from '@/services/dialogService'
 
 async function setActiveWorkspaceRole(role: WorkspaceRole) {
   vi.spyOn(workspaceApi, 'getCurrentWorkspace').mockResolvedValue({
+    auth_method: 'comfy_api_key',
     id: 'test-workspace',
     name: 'Test workspace',
     type: 'team',
