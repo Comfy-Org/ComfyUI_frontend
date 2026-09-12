@@ -82,15 +82,18 @@ function actionFor(example: PlaygroundExample, active = false) {
       >
         <button
           type="button"
-          :aria-label="
+          :aria-label="`${example.title}: ${
             example.sampleOnly
               ? actionFor(example)
               : t('workshop.examples.open', locale)
-          "
+          }`"
           :aria-current="example.id === activeId ? 'true' : undefined"
           class="group flex w-full cursor-pointer flex-col gap-2 text-left outline-none"
           data-testid="example-card"
-          :title="actionFor(example, example.id === activeId)"
+          :title="`${example.title} · ${actionFor(
+            example,
+            example.id === activeId
+          )}`"
           @click="emit('open', example)"
         >
           <span
