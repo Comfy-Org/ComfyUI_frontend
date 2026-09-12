@@ -142,6 +142,8 @@ describe('AUTH_ERROR_COPY', () => {
 
 describe('sign-up and provider failures do not confirm an account exists', () => {
   const enumerationTell = /\bexists?\b|different sign-in method/i
+  const signInGuidance = /sign(?:ing)? in|sign-in option/i
+  const resetPasswordGuidance = /reset(?:ting)? your password/i
 
   it.for([
     [
@@ -155,10 +157,22 @@ describe('sign-up and provider failures do not confirm an account exists', () =>
   ] as const)(
     'resolves %s to recovery guidance that never states the email is registered',
     ([code, why]) => {
+      const message = authErrorMessage(
+        classifyAuthError(firebaseError(code)),
+        'en'
+      )
       expect(
-        authErrorMessage(classifyAuthError(firebaseError(code)), 'en'),
+        message,
         `${why}; copy that confirms the account exists is an enumeration oracle`
       ).not.toMatch(enumerationTell)
+      expect(
+        message,
+        `${why}; the neutral copy must still route the user to signing in`
+      ).toMatch(signInGuidance)
+      expect(
+        message,
+        `${why}; the neutral copy must still offer a password reset`
+      ).toMatch(resetPasswordGuidance)
     }
   )
 })
