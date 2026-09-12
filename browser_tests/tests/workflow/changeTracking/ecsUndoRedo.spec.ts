@@ -379,8 +379,9 @@ test.describe(
         await expect
           .poll(() => node.getProperty<[number, number]>('pos'))
           .not.toEqual(initialPosition)
-        await comfyPage.page.mouse.click(600, 650)
-        await comfyPage.keyboard.undo()
+        await expect(async () => {
+          await comfyPage.menu.topbar.triggerTopbarCommand(['Edit', 'Undo'])
+        }).toPass({ timeout: 5000 })
         await expect
           .poll(() => node.getProperty<[number, number]>('pos'))
           .toEqual(initialPosition)
