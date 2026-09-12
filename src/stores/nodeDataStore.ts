@@ -147,6 +147,29 @@ export const useNodeDataStore = defineStore('nodeData', () => {
 
     state.inputs.splice(0, state.inputs.length, ...replacement.inputs)
     state.outputs.splice(0, state.outputs.length, ...replacement.outputs)
+    assignNodeFields(state, replacement)
+    return true
+  }
+
+  /**
+   * Replaces every scalar field of a node from `replacement` while leaving
+   * its `inputs` and `outputs` arrays untouched. Used when the slot layout is
+   * owned elsewhere (e.g. a live subgraph host whose promoted slots are bound
+   * to widgets) and only title/mode/flags/properties/colors may change.
+   */
+  function updateNodeFields(
+    graphScope: GraphScope,
+    nodeId: NodeId,
+    replacement: NodeState,
+    _context?: RemoteMutationContext
+  ): boolean {
+    const state = roots.get(graphScope.rootGraphId)?.byId.get(nodeId)
+    if (!state || state.graphId !== graphScope.owningGraphId) return false
+    assignNodeFields(state, replacement)
+    return true
+  }
+
+  function assignNodeFields(state: NodeState, replacement: NodeState): void {
     const {
       graphId: _graphId,
       id: _id,
@@ -165,7 +188,6 @@ export const useNodeDataStore = defineStore('nodeData', () => {
       titleMode: undefined,
       ...next
     } satisfies Omit<NodeState, 'graphId' | 'id' | 'inputs' | 'outputs'>)
-    return true
   }
 
   function clearGraph(rootGraphId: UUID): void {
@@ -193,6 +215,7 @@ export const useNodeDataStore = defineStore('nodeData', () => {
     ownsNode,
     registerNode,
     updateNode,
+    updateNodeFields,
     updateNodeSlots
   }
 })
