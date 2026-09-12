@@ -93,6 +93,7 @@ import TagsInputItem from '@/components/ui/tags-input/TagsInputItem.vue'
 import TagsInputItemDelete from '@/components/ui/tags-input/TagsInputItemDelete.vue'
 import TagsInputItemText from '@/components/ui/tags-input/TagsInputItemText.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
+import { reportError } from '@/platform/telemetry/reportError'
 import { COMFY_HUB_TAG_OPTIONS } from '@/platform/workflow/sharing/constants/comfyHubTags'
 import { useComfyHubService } from '@/platform/workflow/sharing/services/comfyHubService'
 import { computed, onMounted, ref } from 'vue'
@@ -120,8 +121,19 @@ const { fetchTagLabels } = useComfyHubService()
 onMounted(async () => {
   try {
     tagOptions.value = await fetchTagLabels()
-  } catch {
-    // Fall back to hardcoded tags
+  } catch (error) {
+    reportError(error, {
+      errorType: 'workflow_publish_tags_fallback',
+      tags: {
+        failure_kind: 'degraded',
+        feature_area: 'workflow',
+        operation: 'load',
+        outcome: 'recovered',
+        assert_mode: 'soft'
+      },
+      context: { fallback_tag_count: COMFY_HUB_TAG_OPTIONS.length },
+      level: 'warning'
+    })
   }
 })
 
