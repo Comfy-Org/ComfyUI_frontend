@@ -226,11 +226,20 @@ test.describe(
           const first = await comfyPage.nodeOps.getNodeRefById('6')
           const second = await comfyPage.nodeOps.getNodeRefById('7')
           const firstPosition = await first.getPosition()
-          const secondPosition = await second.getPosition()
-          await second.dragBy({
-            x: firstPosition.x - secondPosition.x + 100,
-            y: firstPosition.y - secondPosition.y + 70
-          })
+          const targetPosition = {
+            x: firstPosition.x + 100,
+            y: firstPosition.y + 70
+          }
+          await comfyPage.page.evaluate(
+            ([nodeId, position]) => {
+              const node = window.app!.graph.getNodeById(nodeId)
+              if (!node) throw new Error('Text node is unavailable')
+              node.pos = [position.x, position.y]
+              node.setDirtyCanvas(true, true)
+            },
+            [toNodeId('7'), targetPosition] as const
+          )
+          await expect.poll(() => second.getPosition()).toEqual(targetPosition)
           await comfyPage.nextFrame()
           await expect(comfyPage.canvas).toHaveScreenshot(
             `ecs-overlapping-text-${vueNodesEnabled ? 'vue' : 'legacy'}.png`
