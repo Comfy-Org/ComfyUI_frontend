@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { setImmediate } from 'node:timers/promises'
 
 import { useDialogStore } from '@/stores/dialogStore'
 import { i18n } from '@/i18n'
@@ -103,10 +104,7 @@ async function startConsent() {
   const dialog = await waitForConsentDialog()
   const accept = dialog.contentProps.onAccept
   if (typeof accept !== 'function') throw new Error('Missing consent action')
-  const completion: unknown = accept()
-  if (!(completion instanceof Promise))
-    throw new Error('Consent action must expose its pending save')
-  return { dialog, completion }
+  accept()
 }
 
 describe('useAgentConsent', () => {
@@ -383,7 +381,7 @@ describe('useAgentConsent', () => {
       .mockReturnValueOnce(newSave.promise)
     const oldOpen = vi.fn()
     const first = useAgentConsent().withConsent(oldOpen)
-    const firstAttempt = await startConsent()
+    await startConsent()
     await vi.waitFor(() =>
       expect(fetchWithUnifiedRemint).toHaveBeenCalledTimes(2)
     )
@@ -398,7 +396,7 @@ describe('useAgentConsent', () => {
     )
 
     oldSave.reject(new Error('Old save failed'))
-    await firstAttempt.completion
+    await setImmediate()
     expect(useDialogStore().dialogStack[0].contentProps).toMatchObject({
       accepting: true,
       error: ''

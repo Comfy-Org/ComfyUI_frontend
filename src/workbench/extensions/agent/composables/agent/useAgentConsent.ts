@@ -94,7 +94,7 @@ export function useAgentConsent() {
           docsUrl: DOCS_URL,
           accepting: false,
           error: '',
-          onAccept: accept,
+          onAccept: () => void accept(),
           onReject: () => closeWith(false)
         },
         dialogComponentProps: {
