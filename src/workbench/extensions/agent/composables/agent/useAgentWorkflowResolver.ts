@@ -187,6 +187,8 @@ export function useAgentWorkflowResolver({
   }
 
   return {
+    /** False on a target with no cloud workflow index (standalone). */
+    hasCloudIndex: listCloudWorkflows !== null,
     refreshCloudWorkflowIds,
     cloudIdFor,
     cloudWorkflowName,

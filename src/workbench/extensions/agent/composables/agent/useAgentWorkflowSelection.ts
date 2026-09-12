@@ -38,6 +38,7 @@ export function useAgentWorkflowSelection({
   const { t } = useI18n()
   const toast = useToastStore()
   const {
+    hasCloudIndex,
     refreshCloudWorkflowIds,
     cloudIdFor,
     cloudWorkflowName,
@@ -62,13 +63,17 @@ export function useAgentWorkflowSelection({
     () => workflowSelection.value?.purpose === 'reference'
   )
   let targetSelectionGeneration = 0
+  // An undefined id is a standalone tab the agent has not minted a workflow
+  // for yet: the first turn from it sends the tab alone, the agent mints, and
+  // the ack binds. Nothing is bound in advance.
   function commitWorkflowTarget(
     workflow: ComfyWorkflow,
-    workflowId: string
+    workflowId: string | undefined
   ): void {
-    bindingStore.bind(workflowId, workflow.path)
+    if (workflowId !== undefined) bindingStore.bind(workflowId, workflow.path)
     panelStore.setWorkflowTarget(workflow)
-    composerStore.removeWorkflowReference(workflowId)
+    if (workflowId !== undefined)
+      composerStore.removeWorkflowReference(workflowId)
   }
 
   async function prepareWorkflowSelection(
@@ -79,6 +84,10 @@ export function useAgentWorkflowSelection({
       if (isCurrent()) warnWorkflowSelectionFailed(detail)
       return undefined
     }
+    // No cloud index: a tab resolves through its binding or not at all, and
+    // an unresolved one is selectable as-is. Saving a temporary tab would not
+    // give it an id here, and there is no list to refresh.
+    if (!hasCloudIndex) return cloudIdFor(tab)
     try {
       if (tab.isTemporary && cloudIdFor(tab) === undefined) {
         if (!(await refreshCloudWorkflowIds())) return fail()
@@ -121,7 +130,8 @@ export function useAgentWorkflowSelection({
       workflowStore.openWorkflows.includes(tab)
     try {
       const workflowId = await prepareWorkflowSelection(tab, isCurrent)
-      if (workflowId === undefined || !isCurrent()) return false
+      if (!isCurrent()) return false
+      if (workflowId === undefined && hasCloudIndex) return false
       if (!(await workflowService.openWorkflow(tab))) {
         if (isCurrent())
           warnWorkflowSelectionFailed(t('agent.targetNavigationUnavailable'))
