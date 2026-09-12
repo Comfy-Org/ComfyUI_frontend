@@ -224,7 +224,12 @@ function mockFactory(
       (node.type === 'VariableDeclarator' && isFunctionExpression(node.init))
   )?.node
   if (isFunctionExpression(definition)) return definition
-  if (definition?.type === 'VariableDeclarator') return definition.init
+  if (
+    definition?.type === 'VariableDeclarator' &&
+    isFunctionExpression(definition.init)
+  ) {
+    return definition.init
+  }
 }
 
 function isVitestImport(
