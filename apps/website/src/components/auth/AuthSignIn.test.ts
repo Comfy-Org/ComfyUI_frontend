@@ -1143,7 +1143,7 @@ describe('AuthSignIn controller lifecycle', () => {
   const socialUser = {
     user: { uid: 'user-1', email: 'user@example.com', displayName: null }
   }
-  const tick = () => new Promise((resolve) => setTimeout(resolve, 0))
+  const flush = () => vi.advanceTimersByTimeAsync(0)
   const googleButton = () =>
     screen.getByRole('button', { name: /log in with google/i })
 
@@ -1160,7 +1160,7 @@ describe('AuthSignIn controller lifecycle', () => {
 
     handles.flag!.value = false
     resolveMint!({ status: 'ok', session: { token: 'workspace-jwt' } })
-    await tick()
+    await flush()
 
     expect(
       replace,
@@ -1181,7 +1181,7 @@ describe('AuthSignIn controller lifecycle', () => {
 
     unmount()
     resolveMint!({ status: 'ok', session: { token: 'workspace-jwt' } })
-    await tick()
+    await flush()
 
     expect(
       replace,
@@ -1202,7 +1202,7 @@ describe('AuthSignIn controller lifecycle', () => {
 
     unmount()
     resolveProvision!()
-    await tick()
+    await flush()
 
     expect(
       handles.captureAuthCompleted,
@@ -1226,7 +1226,7 @@ describe('AuthSignIn controller lifecycle', () => {
 
     unmount()
     resolvePopup!(socialUser)
-    await tick()
+    await flush()
 
     expect(
       handles.provision,
@@ -1247,7 +1247,7 @@ describe('AuthSignIn controller lifecycle', () => {
 
     handles.flag!.value = false
     resolvePopup!(socialUser)
-    await tick()
+    await flush()
 
     expect(
       handles.signOut,
@@ -1269,6 +1269,27 @@ describe('AuthSignIn controller lifecycle', () => {
     expect(
       googleButton(),
       'a hung provider must not disable the controls forever'
+    ).toHaveProperty('disabled', false)
+  })
+
+  it('rolls the identity back once and recovers when provisioning hangs past its deadline, even if sign-out rejects', async () => {
+    handles.google.mockResolvedValue(socialUser)
+    handles.provision.mockReturnValue(new Promise<void>(() => {}))
+    handles.signOut.mockRejectedValue(new Error('sign-out failed'))
+    render(AuthSignIn)
+
+    await clickGoogle()
+    await waitFor(() => expect(handles.provision).toHaveBeenCalledOnce())
+
+    await vi.advanceTimersByTimeAsync(16_000)
+
+    expect(
+      handles.signOut,
+      'a deadline reached after authentication must roll the persisted identity back once'
+    ).toHaveBeenCalledOnce()
+    expect(
+      googleButton(),
+      'a rejected best-effort sign-out must not strand the disabled controls'
     ).toHaveProperty('disabled', false)
   })
 })
