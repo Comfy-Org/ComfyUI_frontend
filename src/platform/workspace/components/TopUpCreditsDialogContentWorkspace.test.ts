@@ -19,12 +19,20 @@ const mockFetchBalance = vi.fn()
 const mockFetchStatus = vi.fn()
 const mockManageSubscription = vi.fn<() => Promise<void>>()
 const mockReportError = vi.hoisted(() => vi.fn())
+const mockCreateUuidv4 = vi.hoisted(() => vi.fn())
+
+vi.mock(import('@/utils/uuid'), () => ({ createUuidv4: mockCreateUuidv4 }))
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 const mockTopup =
-  vi.fn<(amountCents: number) => Promise<CreateTopupResponse | void>>()
+  vi.fn<
+    (
+      amountCents: number,
+      idempotencyKey: string
+    ) => Promise<CreateTopupResponse | void>
+  >()
 
 const mockShowSettings = vi.fn()
 const mockToastAdd = vi.fn()
@@ -60,7 +68,8 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
     fetchBalance: mockFetchBalance,
     fetchStatus: mockFetchStatus,
     manageSubscription: mockManageSubscription,
-    topup: (amountCents: number) => mockTopup(amountCents)
+    topup: (amountCents: number, idempotencyKey: string) =>
+      mockTopup(amountCents, idempotencyKey)
   })
 }))
 
@@ -177,6 +186,7 @@ async function clickAddCredits() {
 }
 
 beforeEach(() => {
+  mockCreateUuidv4.mockReturnValue('topup-attempt-1')
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
 })
 
@@ -745,6 +755,43 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         duration_ms: expect.any(Number)
       })
     )
+  })
+
+  it('reuses the idempotency key after an uncertain request failure', async () => {
+    mockTopup
+      .mockRejectedValueOnce(new Error('connection lost'))
+      .mockResolvedValueOnce(topupResponse('pending'))
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    renderDialog()
+    await clickAddCredits()
+    const payButton = screen.getByRole('button', { name: 'Pay $50.00' })
+    await userEvent.click(payButton)
+    await waitFor(() => expect(payButton).toBeEnabled())
+    await userEvent.click(payButton)
+
+    expect(mockTopup).toHaveBeenNthCalledWith(1, 5000, 'topup-attempt-1')
+    expect(mockTopup).toHaveBeenNthCalledWith(2, 5000, 'topup-attempt-1')
+    consoleError.mockRestore()
+  })
+
+  it('uses a new idempotency key after a definitive failure', async () => {
+    mockCreateUuidv4
+      .mockReturnValueOnce('topup-attempt-1')
+      .mockReturnValueOnce('topup-attempt-2')
+    mockTopup
+      .mockResolvedValueOnce(topupResponse('failed'))
+      .mockResolvedValueOnce(topupResponse('pending'))
+
+    renderDialog()
+    await clickAddCredits()
+    const payButton = screen.getByRole('button', { name: 'Pay $50.00' })
+    await userEvent.click(payButton)
+    await waitFor(() => expect(payButton).toBeEnabled())
+    await userEvent.click(payButton)
+
+    expect(mockTopup).toHaveBeenNthCalledWith(1, 5000, 'topup-attempt-1')
+    expect(mockTopup).toHaveBeenNthCalledWith(2, 5000, 'topup-attempt-2')
   })
 
   it('does not top up after the server capability is revoked', async () => {
