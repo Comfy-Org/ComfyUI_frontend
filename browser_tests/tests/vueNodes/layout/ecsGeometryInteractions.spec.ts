@@ -3,6 +3,7 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
+import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
 
@@ -18,6 +19,7 @@ test.describe(
     })
 
     test.afterEach(async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
       await comfyPage.canvasOps.resetView()
     })
 
@@ -149,6 +151,140 @@ test.describe(
             }, saved.id)
           )
           .toBe(saved.parentId ?? null)
+      })
+
+      test(`deleting a rerouted link target preserves a valid floating chain in ${rendererName(vueNodesEnabled)}`, async ({
+        comfyPage
+      }) => {
+        test.slow()
+        await comfyPage.workflow.loadWorkflow(
+          'reroute/single-native-reroute-default-workflow'
+        )
+        await comfyPage.settings.setSetting(
+          'Comfy.VueNodes.Enabled',
+          vueNodesEnabled
+        )
+        await fitToViewInstant(comfyPage)
+
+        const readState = () =>
+          comfyPage.page.evaluate(
+            ({ floatingLinkId, linkId, nodeId, rerouteId }) => {
+              const graph = window.app!.graph
+              const link = graph.links.get(linkId)
+              const floatingLink = graph.floatingLinks.get(floatingLinkId)
+              const reroute = graph.reroutes.get(rerouteId)
+              const serialised = graph.asSerialisable()
+              const serialisedLink = serialised.links?.find(
+                ({ id }) => id === linkId
+              )
+              const serialisedFloatingLink = serialised.floatingLinks?.find(
+                ({ id }) => id === floatingLinkId
+              )
+              const serialisedReroute = serialised.reroutes?.find(
+                ({ id }) => id === rerouteId
+              )
+              return {
+                nodeExists: Boolean(graph.getNodeById(nodeId)),
+                link: link
+                  ? {
+                      id: link.id,
+                      originId: link.origin_id,
+                      originSlot: link.origin_slot,
+                      targetId: link.target_id,
+                      targetSlot: link.target_slot,
+                      parentId: link.parentId
+                    }
+                  : null,
+                rerouteLinkIds: [...(reroute?.linkIds ?? [])],
+                floatingLink: floatingLink
+                  ? {
+                      id: floatingLink.id,
+                      originId: floatingLink.origin_id,
+                      originSlot: floatingLink.origin_slot,
+                      targetId: floatingLink.target_id,
+                      targetSlot: floatingLink.target_slot,
+                      parentId: floatingLink.parentId
+                    }
+                  : null,
+                rerouteFloatingLinkIds: [...(reroute?.floatingLinkIds ?? [])],
+                serialisedLink: serialisedLink ?? null,
+                serialisedFloatingLink: serialisedFloatingLink ?? null,
+                serialisedRerouteLinkIds: serialisedReroute?.linkIds ?? [],
+                serialisedRerouteIsFloating: Boolean(
+                  serialisedReroute?.floating
+                )
+              }
+            },
+            {
+              floatingLinkId: toLinkId(10),
+              linkId: toLinkId(3),
+              nodeId: toNodeId('6'),
+              rerouteId: toRerouteId(1)
+            }
+          )
+
+        await expect.poll(readState).toEqual({
+          nodeExists: true,
+          link: {
+            id: 3,
+            originId: '4',
+            originSlot: 1,
+            targetId: '6',
+            targetSlot: 0,
+            parentId: 1
+          },
+          rerouteLinkIds: [3],
+          floatingLink: null,
+          rerouteFloatingLinkIds: [],
+          serialisedLink: {
+            id: 3,
+            origin_id: 4,
+            origin_slot: 1,
+            target_id: 6,
+            target_slot: 0,
+            type: 'CLIP',
+            parentId: 1
+          },
+          serialisedFloatingLink: null,
+          serialisedRerouteLinkIds: [3],
+          serialisedRerouteIsFloating: false
+        })
+
+        const target = await comfyPage.nodeOps.getNodeRefById('6')
+        await target.click('title')
+        const beforeDelete = Date.now()
+        await comfyPage.page.keyboard.press('Delete')
+
+        const expectedState = {
+          nodeExists: false,
+          link: null,
+          rerouteLinkIds: [],
+          floatingLink: {
+            id: 10,
+            originId: '4',
+            originSlot: 1,
+            targetId: '-1',
+            targetSlot: -1,
+            parentId: 1
+          },
+          rerouteFloatingLinkIds: [10],
+          serialisedLink: null,
+          serialisedFloatingLink: {
+            id: 10,
+            origin_id: 4,
+            origin_slot: 1,
+            target_id: -1,
+            target_slot: -1,
+            type: 'CLIP',
+            parentId: 1
+          },
+          serialisedRerouteLinkIds: [],
+          serialisedRerouteIsFloating: true
+        }
+        await expect.poll(readState).toEqual(expectedState)
+        await comfyPage.workflow.waitForDraftIndexUpdatedSince(beforeDelete)
+        await comfyPage.workflow.reloadAndWaitForApp()
+        await expect.poll(readState).toEqual(expectedState)
       })
 
       test(`recovers from empty link search and malformed clipboard in ${rendererName(vueNodesEnabled)}`, async ({
