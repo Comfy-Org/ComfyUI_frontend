@@ -159,15 +159,18 @@ test.describe('Product showcase accordion @interaction', () => {
     await secondFeature.click()
 
     await expect(
-      secondFeature.getByText(/If you are new to ComfyUI/)
+      page
+        .getByRole('region', { name: /App mode/i })
+        .first()
+        .getByText(/If you are new to ComfyUI/)
     ).toBeVisible()
 
     const firstFeature = page
       .getByRole('button', { name: /Full Control with Nodes/i })
       .first()
 
-    await expect(firstFeature).not.toHaveClass(/bg-primary-comfy-yellow/)
-    await expect(secondFeature).toHaveClass(/bg-primary-comfy-yellow/)
+    await expect(firstFeature).toHaveAttribute('aria-expanded', 'false')
+    await expect(secondFeature).toHaveAttribute('aria-expanded', 'true')
   })
 
   test('third feature shows the mask scene on mobile @mobile', async ({
