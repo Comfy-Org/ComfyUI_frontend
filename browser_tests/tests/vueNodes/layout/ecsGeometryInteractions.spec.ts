@@ -222,24 +222,35 @@ test.describe(
             'Comfy.VueNodes.Enabled',
             vueNodesEnabled
           )
+          if (vueNodesEnabled) {
+            await comfyPage.vueNodes.waitForNodes()
+          } else {
+            await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
+          }
           await fitToViewInstant(comfyPage)
           const first = await comfyPage.nodeOps.getNodeRefById('6')
           const second = await comfyPage.nodeOps.getNodeRefById('7')
-          const firstPosition = await first.getPosition()
-          const targetPosition = {
-            x: firstPosition.x + 100,
-            y: firstPosition.y + 70
-          }
+          const [firstX, firstY] =
+            await first.getProperty<[number, number]>('pos')
+          const targetPosition: [number, number] = [firstX + 100, firstY + 70]
           await comfyPage.page.evaluate(
             ([nodeId, position]) => {
               const node = window.app!.graph.getNodeById(nodeId)
               if (!node) throw new Error('Text node is unavailable')
-              node.pos = [position.x, position.y]
+              node.pos = position
               node.setDirtyCanvas(true, true)
             },
             [toNodeId('7'), targetPosition] as const
           )
-          await expect.poll(() => second.getPosition()).toEqual(targetPosition)
+          await expect
+            .poll(async () => [
+              ...(await second.getProperty<[number, number]>('pos'))
+            ])
+            .toEqual(targetPosition)
+          await comfyPage.page.evaluate(() => {
+            window.app!.canvas.deselectAllNodes()
+          })
+          await comfyPage.page.mouse.move(0, 0)
           await comfyPage.nextFrame()
           await expect(comfyPage.canvas).toHaveScreenshot(
             `ecs-overlapping-text-${vueNodesEnabled ? 'vue' : 'legacy'}.png`
