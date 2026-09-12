@@ -47,6 +47,13 @@ test.describe('Real Cloud checkout recovery', { tag: ['@cloud-live'] }, () => {
     const subscription = zSubscribeResponse.parse(
       await subscribeResponse.json()
     )
+    await testInfo.attach('billing-operation.json', {
+      body: JSON.stringify({
+        operationId: subscription.billing_op_id,
+        status: subscription.status
+      }),
+      contentType: 'application/json'
+    })
     expect(subscription.status).toBe('needs_payment_method')
     expect(subscription.billing_op_id).not.toBe('')
     expect(subscription.payment_method_url).toMatch(testCheckoutUrl)

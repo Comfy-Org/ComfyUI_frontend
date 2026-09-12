@@ -20,12 +20,7 @@ export const liveCloudBillingConfigSchema = z
     PLAYWRIGHT_TEST_URL: z.string().url(),
     PLAYWRIGHT_SETUP_API_URL: sandboxURL,
     CLOUD_ACCOUNT_EMAIL: z.string().email(),
-    CLOUD_ACCOUNT_PASSWORD: z.string().min(1),
-    SMOKE_DB_DSN: z.string().min(1),
-    SMOKE_STRIPE_TEST_KEY: z.string().startsWith('sk_test_'),
-    TEMPORAL_ADDRESS: z.string().min(1),
-    TEMPORAL_NAMESPACE: z.string().min(1),
-    TEMPORAL_API_KEY: z.string().min(1).optional()
+    CLOUD_ACCOUNT_PASSWORD: z.string().min(1)
   })
   .superRefine((config, ctx) => {
     if (!URL.canParse(config.PLAYWRIGHT_TEST_URL)) return
