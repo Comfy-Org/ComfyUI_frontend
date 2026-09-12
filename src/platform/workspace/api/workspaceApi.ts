@@ -6,7 +6,7 @@ import type {
   BillingOpStatusResponse,
   BillingPlansResponse,
   BillingStatus,
-  BillingStatusResponse,
+  BillingStatusResponse as GeneratedBillingStatusResponse,
   CancelSubscriptionRequest,
   CancelSubscriptionResponse,
   ChurnkeyAuthResponse,
@@ -58,6 +58,12 @@ import { workspaceApiUrl } from './workspaceApiUrl'
 
 export type WorkspaceType = 'personal' | 'team'
 export type WorkspaceRole = 'owner' | 'member'
+
+export type BillingStatusResponse = GeneratedBillingStatusResponse & {
+  /** EDU marker from cloud#8725; drop the augmentation once ingest-types regenerates. */
+  is_edu?: boolean
+}
+
 export type BillingRail = NonNullable<BillingStatusResponse['billing_rail']>
 
 export type Member = GeneratedMember & {
@@ -65,6 +71,8 @@ export type Member = GeneratedMember & {
   // neither usage nor limit yet; persistence and real usage land in FE-1278.
   credits_used_this_month?: number
   monthly_credit_limit?: number | null
+  /** EDU marker for team-eligibility pricing; not exposed by any API yet (FE-1356). */
+  is_edu?: boolean
 }
 
 export interface ListMembersParams {
@@ -114,7 +122,6 @@ export type BillingSubscriptionStatus = NonNullable<
 >
 
 export type { BillingStatus }
-export type { BillingStatusResponse }
 export type { ScheduledPlanChange }
 
 export type { BillingBalanceResponse }

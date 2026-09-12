@@ -68,6 +68,18 @@ const mockPermissions = ref({
 })
 const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
 const mockApiPlans = vi.hoisted(() => ({ value: [] as Plan[] }))
+const mockIsEduPricingActive = ref(false)
+const mockIsTeamEduEligible = ref(false)
+
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useEduPricing'),
+  () => ({
+    useEduPricing: () => ({
+      isEduPricingActive: computed(() => mockIsEduPricingActive.value),
+      isTeamEduEligible: computed(() => mockIsTeamEduEligible.value)
+    })
+  })
+)
 
 vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
@@ -111,7 +123,19 @@ const i18n = createI18n({
   messages: { en: enMessages }
 })
 
-function renderComponent(props: Record<string, unknown> = {}) {
+// Interactive toggle stub: renders a button per option so EDU tests can flip
+// the billing cycle. The default `<div />` stub keeps existing tests inert.
+const InteractiveSelectButton = {
+  template:
+    '<div><button v-for="option in options" :key="option.value" type="button" @click="$emit(\'update:modelValue\', option.value)">{{ option.label }}</button></div>',
+  props: ['modelValue', 'options'],
+  emits: ['update:modelValue']
+}
+
+function renderComponent(
+  props: Record<string, unknown> = {},
+  stubOverrides: Record<string, unknown> = {}
+) {
   return render(UnifiedPricingTable, {
     props,
     global: {
@@ -125,7 +149,8 @@ function renderComponent(props: Record<string, unknown> = {}) {
           template:
             '<button data-testid="team-slider" @click="$emit(\'update:modelValue\', 200)" />',
           emits: ['update:modelValue']
-        }
+        },
+        ...stubOverrides
       }
     }
   })
@@ -133,6 +158,8 @@ function renderComponent(props: Record<string, unknown> = {}) {
 
 beforeEach(() => {
   mockApiPlans.value = []
+  mockIsEduPricingActive.value = false
+  mockIsTeamEduEligible.value = false
 })
 
 describe('UnifiedPricingTable plan CTA labels', () => {
@@ -964,5 +991,104 @@ describe('UnifiedPricingTable plan-scope availability', () => {
     expect(
       screen.queryByRole('button', { name: 'Change to Standard Yearly' })
     ).toBeNull()
+  })
+})
+
+describe('UnifiedPricingTable EDU pricing', () => {
+  const withToggle = { SelectButton: InteractiveSelectButton }
+
+  beforeEach(() => {
+    mockSubscription.value = null
+    mockCurrentPlanSlug.value = null
+    mockCurrentTeamCreditStop.value = null
+    mockIsTeamPlan.value = false
+    mockCanManageSubscription.value = true
+    mockCanDowngradeToPersonal.value = true
+    mockApiPlans.value = []
+    mockIsEduPricingActive.value = false
+    mockIsTeamEduEligible.value = false
+  })
+
+  // Display must match the coupon charge: monthly 10% off list, yearly 6.25%
+  // off the yearly price (= 25% off the monthly list). Yearly strikes the
+  // monthly list.
+  it.for([
+    ['standard', 'monthly', '$18', '$20'],
+    ['creator', 'monthly', '$31.50', '$35'],
+    ['pro', 'monthly', '$90', '$100'],
+    ['standard', 'yearly', '$15', '$20'],
+    ['creator', 'yearly', '$26.25', '$35'],
+    ['pro', 'yearly', '$75', '$100']
+  ] as const)(
+    'discounts %s %s against the struck monthly list',
+    async ([tierKey, cycle, price, struck]) => {
+      mockIsEduPricingActive.value = true
+      renderComponent({}, withToggle)
+
+      if (cycle === 'monthly') {
+        await userEvent.click(screen.getByRole('button', { name: 'Monthly' }))
+      }
+
+      const card = screen.getByTestId(`pricing-tier-${tierKey}`)
+      expect(card.textContent).toContain(price)
+      expect(card.textContent).toContain(struck)
+    }
+  )
+
+  it('keeps list prices when EDU is inactive', () => {
+    renderComponent()
+
+    const card = screen.getByTestId('pricing-tier-standard')
+    expect(card.textContent).toContain('$16')
+    expect(card.textContent).toContain('$20')
+    expect(card.textContent).not.toContain('$15')
+  })
+
+  it('applies the discount to the API-derived price, not just the static fallback', () => {
+    mockIsEduPricingActive.value = true
+    mockApiPlans.value = [
+      { ...apiPlan('STANDARD', 'MONTHLY', 4200), price_cents: 3000 },
+      { ...apiPlan('STANDARD', 'ANNUAL', 50400), price_cents: 24000 }
+    ]
+    renderComponent()
+
+    // API monthly $30 struck; API yearly-equivalent $20 -> EDU $18.75.
+    const card = screen.getByTestId('pricing-tier-standard')
+    expect(card.textContent).toContain('$18.75')
+    expect(card.textContent).toContain('$30')
+  })
+
+  // Team eligibility (any current member carrying is_edu) is a currently
+  // always-false stub pending a separate backend PR; this pins the wiring so
+  // it activates the moment that field ships. Default $700 stop, yearly:
+  // 10% volume discount, +5pp EDU once eligible.
+  it('stacks the team-eligibility extra discount once eligible', async () => {
+    const user = userEvent.setup()
+    mockIsTeamEduEligible.value = true
+
+    const { emitted } = renderComponent({ initialPlanMode: 'team' })
+    await user.click(
+      screen.getByRole('button', { name: 'Subscribe to Team Yearly' })
+    )
+
+    const [teamPayload] = emitted().subscribeTeam[0] as [
+      { stop: { discountedUsd: number } }
+    ]
+    expect(teamPayload.stop.discountedUsd).toBe(595)
+  })
+
+  it('does not stack the team extra discount while ineligible', async () => {
+    const user = userEvent.setup()
+    mockIsTeamEduEligible.value = false
+
+    const { emitted } = renderComponent({ initialPlanMode: 'team' })
+    await user.click(
+      screen.getByRole('button', { name: 'Subscribe to Team Yearly' })
+    )
+
+    const [teamPayload] = emitted().subscribeTeam[0] as [
+      { stop: { discountedUsd: number } }
+    ]
+    expect(teamPayload.stop.discountedUsd).toBe(630)
   })
 })

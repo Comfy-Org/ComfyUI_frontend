@@ -310,6 +310,25 @@ describe('useSubscription', () => {
       expect(isCancelled.value).toBe(true)
       expect(formattedEndDate.value).toBe('Dec 1, 2025')
     })
+
+    it('reads isEduCustomer from the status response is_edu marker', async () => {
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: true,
+        has_funds: true,
+        is_edu: true
+      })
+
+      const { isEduCustomer, fetchStatus } = useSubscriptionWithScope()
+      await fetchStatus()
+
+      expect(isEduCustomer.value).toBe(true)
+    })
+
+    it('defaults isEduCustomer to false when is_edu is absent', () => {
+      const { isEduCustomer } = useSubscriptionWithScope()
+
+      expect(isEduCustomer.value).toBe(false)
+    })
   })
 
   describe('fetchStatus', () => {

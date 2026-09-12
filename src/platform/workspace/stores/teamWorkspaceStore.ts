@@ -32,6 +32,8 @@ export interface WorkspaceMember {
   isOriginalOwner: boolean
   creditsUsedThisMonth?: number
   monthlyCreditLimit?: number | null
+  /** EDU marker; not exposed by any member-list API yet (FE-1356). */
+  isEdu?: boolean
 }
 
 export interface WorkspacePendingInvite {
@@ -62,7 +64,8 @@ function mapApiMemberToWorkspaceMember(member: Member): WorkspaceMember {
     role: member.role,
     isOriginalOwner: member.is_original_owner,
     creditsUsedThisMonth: member.credits_used_this_month,
-    monthlyCreditLimit: member.monthly_credit_limit
+    monthlyCreditLimit: member.monthly_credit_limit,
+    isEdu: member.is_edu
   }
 }
 
