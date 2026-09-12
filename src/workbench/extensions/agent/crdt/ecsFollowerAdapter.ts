@@ -35,8 +35,8 @@ export type FrameProjectionResult =
     }
 
 type QueuedFrameOutcome =
-  /** `reconciledThrough` is 0 unless the frame reconciled the whole document. */
-  | { outcome: 'projected'; reconciledThrough: number }
+  /** `reconciledThrough` is null unless the frame reconciled the whole document. */
+  | { outcome: 'projected'; reconciledThrough: number | null }
   | { outcome: 'rejected' }
   | { outcome: 'exception' }
 
@@ -249,11 +249,15 @@ export class EcsFollowerAdapter {
             reason: 'exception'
           }
         }
-        this.consumeReconciled(session, result.reconciledThrough)
-        projectedSequence = Math.max(
-          pending.update.seq,
-          result.reconciledThrough
-        )
+        if (result.reconciledThrough !== null) {
+          this.consumeReconciled(session, result.reconciledThrough)
+          projectedSequence = Math.max(
+            pending.update.seq,
+            result.reconciledThrough
+          )
+        } else {
+          projectedSequence = Math.max(projectedSequence, pending.update.seq)
+        }
       }
     } finally {
       session.applying = false
@@ -380,13 +384,14 @@ export class EcsFollowerAdapter {
     const removedLinkIds = [...changedLinkIds].flatMap((id) =>
       session.links.has(id) ? [] : [Number(id)]
     )
-    let reconciledThrough = 0
+    let reconciledThrough: number | null = null
     try {
       const committed = session.mutations.batch(
         frameContext(update),
         (batch) => {
           if (reconcile) {
-            reconciledThrough = session.frameQueue.at(-1)?.update.seq ?? 0
+            reconciledThrough =
+              session.frameQueue.at(-1)?.update.seq ?? update.seq
             const nodes = [...session.nodes.keys()].flatMap((id) => {
               const payload = readSemanticNode(session.follower.doc, id)
               return payload ? [payload] : []

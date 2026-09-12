@@ -540,6 +540,104 @@ describe('EcsFollowerAdapter integration', () => {
     host.destroy()
   })
 
+  it('applies a reentrant sequence-zero frame after an incremental frame', () => {
+    const host = mint({ nodes: [], links: [] }, catalog)
+    const follower = new FollowerDoc()
+    const realMutations = createGraphMutations({
+      getScope: () => scope,
+      layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+    })
+    let batchAttempts = 0
+    let queueReentrantFrame = (): void => undefined
+    const mutations: GraphMutations = {
+      ...realMutations,
+      batch: (context, define) => {
+        batchAttempts += 1
+        if (batchAttempts === 2) queueReentrantFrame()
+        return realMutations.batch(context, define)
+      }
+    }
+    const adapter = new EcsFollowerAdapter(mutations)
+    adapter.bind('wf', follower)
+
+    expect(
+      adapter.applyFrame({
+        workflowId: 'wf',
+        seq: 1,
+        update: Y.encodeStateAsUpdate(host)
+      })
+    ).toEqual({ status: 'projected', sequence: 1 })
+
+    const beforeNodeOne = Y.encodeStateVector(host)
+    applyOps(
+      host,
+      [
+        op('node-1', 1, {
+          op: 'add_node',
+          node_id: 1,
+          class_type: 'Source',
+          pos: [10, 20],
+          node: {
+            id: 1,
+            type: 'Source',
+            pos: [10, 20],
+            inputs: [],
+            outputs: []
+          }
+        })
+      ] as Parameters<typeof applyOps>[1],
+      catalog
+    )
+    const nodeOneUpdate = Y.encodeStateAsUpdate(host, beforeNodeOne)
+    follower.applyRemoteUpdate(nodeOneUpdate)
+
+    queueReentrantFrame = () => {
+      const beforeNodeTwo = Y.encodeStateVector(host)
+      applyOps(
+        host,
+        [
+          op('node-2', 2, {
+            op: 'add_node',
+            node_id: 2,
+            class_type: 'Sink',
+            pos: [30, 40],
+            node: {
+              id: 2,
+              type: 'Sink',
+              pos: [30, 40],
+              inputs: [],
+              outputs: []
+            }
+          })
+        ] as Parameters<typeof applyOps>[1],
+        catalog
+      )
+      const nodeTwoUpdate = Y.encodeStateAsUpdate(host, beforeNodeTwo)
+      follower.applyRemoteUpdate(nodeTwoUpdate)
+      expect(
+        adapter.applyFrame({
+          workflowId: 'wf',
+          seq: 0,
+          update: nodeTwoUpdate
+        })
+      ).toEqual({ status: 'queued' })
+    }
+
+    expect(
+      adapter.applyFrame({ workflowId: 'wf', seq: 2, update: nodeOneUpdate })
+    ).toEqual({ status: 'projected', sequence: 2 })
+    expect(batchAttempts).toBe(3)
+    expect(
+      useNodeDataStore()
+        .getGraphNodesFor('root', 'root')
+        .map(({ id }) => id)
+    ).toEqual(['1', '2'])
+
+    adapter.destroy()
+    follower.destroy()
+    host.destroy()
+  })
+
   it('discards a rejected frame after schema validation fails', () => {
     const host = mint(
       {
