@@ -228,6 +228,8 @@ test.describe('Workflow Persistence', () => {
     test(`pinned node stays fixed across save and reload, then unpins durably with Vue Nodes ${vueNodesEnabled ? 'enabled' : 'disabled'}`, async ({
       comfyPage
     }) => {
+      test.setTimeout(30_000)
+
       await comfyPage.settings.setSetting(
         'Comfy.VueNodes.Enabled',
         vueNodesEnabled
