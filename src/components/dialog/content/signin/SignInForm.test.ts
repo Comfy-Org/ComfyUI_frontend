@@ -4,12 +4,12 @@ import { render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
-import ProgressSpinner from 'primevue/progressspinner'
 import ToastService from 'primevue/toastservice'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import ProgressSpinner from '@/components/ui/spinner/Spinner.vue'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useAuthStore } from '@/stores/authStore'
 
@@ -121,7 +121,9 @@ describe('SignInForm', () => {
       useAuthStore().loading = true
       renderComponent()
 
-      expect(screen.getByRole('progressbar')).toBeInTheDocument()
+      expect(
+        screen.getByRole('progressbar', { name: 'Loading' })
+      ).toBeInTheDocument()
       expect(
         screen.queryByRole('button', { name: loginButtonText })
       ).not.toBeInTheDocument()

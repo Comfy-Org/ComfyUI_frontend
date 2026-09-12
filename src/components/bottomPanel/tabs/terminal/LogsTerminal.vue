@@ -1,5 +1,5 @@
 <template>
-  <div class="size-full bg-transparent">
+  <div class="relative size-full bg-transparent">
     <p
       v-if="errorMessage"
       data-testid="terminal-error-message"
@@ -10,7 +10,7 @@
     <ProgressSpinner
       v-else-if="loading"
       data-testid="terminal-loading-spinner"
-      class="relative inset-0 z-10 flex h-full items-center justify-center"
+      class="absolute inset-0 z-10 m-auto size-8"
     />
     <BaseTerminal
       v-show="!loading && !errorMessage"
@@ -21,11 +21,11 @@
 
 <script setup lang="ts">
 import type { Terminal } from '@xterm/xterm'
-import ProgressSpinner from 'primevue/progressspinner'
 import type { Ref } from 'vue'
 import { shallowRef } from 'vue'
 
 import type { useTerminal } from '@/composables/bottomPanelTabs/useTerminal'
+import ProgressSpinner from '@/components/ui/spinner/Spinner.vue'
 import { useLogsTerminal } from '@/composables/bottomPanelTabs/useLogsTerminal'
 
 import BaseTerminal from './BaseTerminal.vue'

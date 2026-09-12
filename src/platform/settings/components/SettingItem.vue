@@ -6,13 +6,18 @@
     @update:form-value="updateSettingValue"
   >
     <template #name-prefix>
-      <Tag v-if="setting.id === 'Comfy.Locale'" class="pi pi-language" />
+      <Tag
+        v-if="setting.id === 'Comfy.Locale'"
+        severity="primary"
+        class="pi pi-language"
+      />
       <Tag
         v-if="setting.experimental"
         v-tooltip="{
           value: $t('g.experimental'),
           showDelay: 600
         }"
+        severity="primary"
       >
         <template #icon>
           <i-material-symbols:experiment-outline />
@@ -23,11 +28,11 @@
 </template>
 
 <script setup lang="ts">
-import Tag from 'primevue/tag'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import FormItem from '@/components/common/FormItem.vue'
+import Tag from '@/components/ui/badge/Badge.vue'
 import { st } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingOption, SettingParams } from '@/platform/settings/types'

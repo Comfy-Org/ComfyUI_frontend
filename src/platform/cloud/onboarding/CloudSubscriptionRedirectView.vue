@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
-import ProgressSpinner from 'primevue/progressspinner'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
+
+import ProgressSpinner from '@/components/ui/spinner/Spinner.vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
@@ -182,7 +183,7 @@ onMounted(() => {
           })
         }}
       </p>
-      <ProgressSpinner v-if="planLabel" class="size-8" stroke-width="4" />
+      <ProgressSpinner v-if="planLabel" class="size-8" />
       <Button
         v-if="planLabel"
         as="a"
