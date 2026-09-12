@@ -205,18 +205,16 @@ testWithMockedObjectInfo.describe(
 
         await comfyPage.nodeOps.clearGraph()
 
-        const nodeId = await comfyPage.page.evaluate(() => {
+        await comfyPage.page.evaluate(() => {
           const node = window.LiteGraph!.createNode('TestCreditApiNodeUsd')
           window.app!.graph.add(node)
-          return node!.id
         })
         await comfyPage.nextFrame()
 
-        const header = comfyPage.page.locator(
-          `[data-testid="node-header-${nodeId}"]`
-        )
+        const { header, priceBadge } =
+          await comfyPage.vueNodes.getFixtureByTitle('Test Credit API Node USD')
         await expect(header).toBeVisible()
-        const badge = header.getByTestId('credit-badge-required')
+        const badge = priceBadge.required
 
         // Precondition: there is a badge to hide. Without it, "hidden after
         // turning the setting off" also holds for a node that never rendered
