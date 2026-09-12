@@ -8,7 +8,6 @@ import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
-const SUBGRAPH_NODE_TITLE = 'New Subgraph'
 
 test.describe(
   'Subgraph unpack recovery',
@@ -32,7 +31,7 @@ test.describe(
         subgraphNode.subgraph.nodes[0].type = type
       }, missingType)
 
-      await comfyPage.subgraph.unpackViaContextMenu(SUBGRAPH_NODE_TITLE)
+      await comfyPage.subgraph.unpackViaContextMenu('New Subgraph')
 
       await expect
         .poll(() =>
@@ -63,27 +62,28 @@ test.describe(
       await comfyPage.workflow.loadWorkflow(
         'subgraphs/subgraph-with-preview-node'
       )
-      new ExecutionHelper(comfyPage, await getWebSocket()).latentPreview(
-        'preview-job',
-        '5:10'
+      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+      execution.latentPreview('preview-job', '5:10')
+      execution.latentPreview('unrelated-preview-job', '11')
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() =>
+            Object.keys(window.app!.nodePreviewImages)
+          )
+        )
+        .toHaveLength(3)
+      const unrelatedPreviews = await comfyPage.page.evaluate(
+        () => window.app!.nodePreviewImages['11']
       )
-      await expect
-        .poll(() =>
-          comfyPage.page.evaluate(() =>
-            Object.keys(window.app!.nodePreviewImages)
-          )
-        )
-        .toHaveLength(2)
+      expect(unrelatedPreviews).toHaveLength(1)
 
-      await comfyPage.subgraph.unpackViaContextMenu(SUBGRAPH_NODE_TITLE)
+      await comfyPage.subgraph.unpackViaContextMenu('New Subgraph')
 
       await expect
         .poll(() =>
-          comfyPage.page.evaluate(() =>
-            Object.keys(window.app!.nodePreviewImages)
-          )
+          comfyPage.page.evaluate(() => window.app!.nodePreviewImages)
         )
-        .toEqual([])
+        .toEqual({ '11': unrelatedPreviews })
     })
   }
 )

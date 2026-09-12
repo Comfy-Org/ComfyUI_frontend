@@ -1,6 +1,7 @@
 import type { Locator, Page } from '@playwright/test'
 
 import type { NodeId } from '@/types/nodeId'
+import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import {
   comfyExpect as expect,
@@ -1299,6 +1300,7 @@ test(
       position: { x: 800, y: 200 }
     })
     const primitiveNode = await comfyPage.vueNodes.getFixtureByTitle('Int')
+    const sourceNode = await comfyPage.nodeOps.getNodeRefByTitle('Int')
 
     await primitiveNode
       .getSlot('INT')
@@ -1308,15 +1310,15 @@ test(
       })
     await comfyPage.contextMenu.clickLitegraphMenuItem('Add Reroute')
 
-    const rerouteOutputSlotOffset = 17
-    const reroutePosition = await comfyPage.page.evaluate((slotOffset) => {
+    const firstReroute = await comfyPage.page.evaluate(() => {
       const reroute = [...window.app!.graph.reroutes.values()][0]
       const [x, y] = window.app!.canvasPosToClientPos([
-        reroute.pos[0] + slotOffset,
+        reroute.pos[0] + window.LiteGraph!.Reroute.slotOffset,
         reroute.pos[1]
       ])
-      return { x, y }
-    }, rerouteOutputSlotOffset)
+      return { id: reroute.id, position: { x, y } }
+    })
+    const reroutePosition = firstReroute.position
     await comfyPage.page.mouse.move(reroutePosition.x, reroutePosition.y)
     await comfyPage.nextFrame()
     await comfyPage.canvasOps.dragAndDrop(reroutePosition, {
@@ -1335,14 +1337,30 @@ test(
           return {
             rerouteCount: reroutes.length,
             floatingLinkCount: graph.floatingLinks.size,
-            linkEndsAtTip: link.parentId === tip?.id
+            regularLinkCount: graph.links.size,
+            linkEndsAtTip: link.parentId === tip?.id,
+            tipParentId: tip?.parentId,
+            originId: link.origin_id,
+            originSlot: link.origin_slot,
+            targetId: link.target_id,
+            targetSlot: link.target_slot,
+            chainMembership: reroutes.every((reroute) =>
+              reroute.floatingLinkIds.has(link.id)
+            )
           }
         })
       )
       .toEqual({
         rerouteCount: 2,
         floatingLinkCount: 1,
-        linkEndsAtTip: true
+        regularLinkCount: 0,
+        linkEndsAtTip: true,
+        tipParentId: firstReroute.id,
+        originId: sourceNode.id,
+        originSlot: 0,
+        targetId: UNASSIGNED_NODE_ID,
+        targetSlot: -1,
+        chainMembership: true
       })
   }
 )
