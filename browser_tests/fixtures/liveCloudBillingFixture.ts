@@ -56,6 +56,9 @@ export const liveCloudBillingFixture = base.extend<{
       `${sandbox.PLAYWRIGHT_TEST_URL}/cloud/login`
     )
     await page
+      .getByRole('button', { name: 'Use email instead', exact: true })
+      .click()
+    await page
       .getByRole('textbox', { name: 'Email', exact: true })
       .fill(sandbox.CLOUD_ACCOUNT_EMAIL)
     await page
