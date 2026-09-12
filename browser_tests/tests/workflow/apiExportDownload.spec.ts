@@ -24,7 +24,7 @@ test.describe('API workflow export download', { tag: ['@workflow'] }, () => {
 
     expect(download.suggestedFilename()).toBe('workflow_api.json')
     expect(downloadPath).not.toBeNull()
-    const contents = await readFile(downloadPath!, 'utf8')
+    const contents = await readFile(downloadPath, 'utf8')
     expect(contents.length).toBeGreaterThan(0)
 
     const workflow = JSON.parse(contents)
