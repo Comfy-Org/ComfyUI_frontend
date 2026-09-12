@@ -9682,9 +9682,9 @@ Enterprise`
     'zh-CN': '请先登录再上传文件。你的提示词和设置会保留。'
   },
   'workshop.form.requestTooLarge': {
-    en: 'The combined images and prompt exceed Router’s 10 MiB request limit. Use smaller images or a shorter prompt.',
+    en: 'The combined images and prompt exceed Comfy Router’s 10 MiB request limit. Use smaller images or a shorter prompt.',
     'zh-CN':
-      '图片和提示词的总大小超过 Router 的 10 MiB 请求限制。请使用更小的图片或缩短提示词。'
+      '图片和提示词的总大小超过 Comfy Router 的 10 MiB 请求限制。请使用更小的图片或缩短提示词。'
   },
   'workshop.form.badType': {
     en: 'File type not supported',
@@ -9716,8 +9716,8 @@ Enterprise`
   'workshop.dialogue.add': { en: 'Add turn', 'zh-CN': '添加一段' },
   'workshop.dialogue.remove': { en: 'Remove turn', 'zh-CN': '移除此段' },
   'workshop.run.mappingUnavailable': {
-    en: 'Router execution is not enabled for this model yet.',
-    'zh-CN': '此模型尚未启用 Router 执行。'
+    en: 'Comfy Router execution is not enabled for this model yet.',
+    'zh-CN': '此模型尚未启用 Comfy Router 执行。'
   },
   'workshop.model.incomplete': { en: 'Incomplete', 'zh-CN': '尚未完善' },
   'workshop.model.viewDetails': { en: 'View details', 'zh-CN': '查看详情' },
@@ -9726,9 +9726,9 @@ Enterprise`
     'zh-CN': '暂不支持运行'
   },
   'workshop.model.missingInputSchema': {
-    en: 'This model is listed by Router, but its input schema is not available yet. You can browse its known details; Run and API snippets will be enabled when the schema is added.',
+    en: 'This model is listed by Comfy Router, but its input schema is not available yet. You can browse its known details; Run and API snippets will be enabled when the schema is added.',
     'zh-CN':
-      'Router 已列出此模型，但其输入架构尚未提供。你可以查看已有信息；添加架构后将启用运行和 API 代码示例。'
+      'Comfy Router 已列出此模型，但其输入架构尚未提供。你可以查看已有信息；添加架构后将启用运行和 API 代码示例。'
   },
   'workshop.run.requestId': { en: 'Request ID:', 'zh-CN': '请求 ID：' },
   'workshop.run.cancel': { en: 'Cancel', 'zh-CN': '取消' },
@@ -9938,8 +9938,9 @@ Enterprise`
     'zh-CN': '输出样例'
   },
   'workshop.examples.samplesSubtitle': {
-    en: 'View a sample without changing your inputs. Verified Router presets are not available for these samples yet.',
-    'zh-CN': '查看样例不会更改你的输入。这些样例尚无已验证的 Router 参数预设。'
+    en: 'View a sample without changing your inputs. Verified Comfy Router presets are not available for these samples yet.',
+    'zh-CN':
+      '查看样例不会更改你的输入。这些样例尚无已验证的 Comfy Router 参数预设。'
   },
   'workshop.examples.view': {
     en: 'View sample',

@@ -807,7 +807,7 @@ describe('ModelDetail', () => {
     mountDetail({ model: runnable })
     expect(
       screen.getByRole('button', {
-        name: 'Router execution is not enabled for this model yet.'
+        name: 'Comfy Router execution is not enabled for this model yet.'
       })
     ).toHaveProperty('disabled', true)
     expect(runWorkshopRouter).not.toHaveBeenCalled()
@@ -907,7 +907,7 @@ describe('ModelDetail', () => {
       expect(screen.queryByRole('link', { name: 'Sign in to run' })).toBeNull()
       expect(
         screen.getByRole('button', {
-          name: 'Router execution is not enabled for this model yet.'
+          name: 'Comfy Router execution is not enabled for this model yet.'
         })
       ).toHaveProperty('disabled', true)
     }
@@ -1041,7 +1041,7 @@ describe('ModelDetail', () => {
     expect(button.getAttribute('data-gate')).toBe('unavailable')
     expect(button.hasAttribute('disabled')).toBe(true)
     expect(button.textContent).toContain(
-      'Router execution is not enabled for this model yet'
+      'Comfy Router execution is not enabled for this model yet'
     )
   })
 
