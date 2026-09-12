@@ -58,6 +58,17 @@ export interface RefreshScheduler {
   stop: () => void
 }
 
+function disposeQuietly(
+  dispose: (() => void) | undefined,
+  label: string
+): void {
+  try {
+    dispose?.()
+  } catch (error) {
+    console.warn(`Cross-tab refresh ${label} teardown failed:`, error)
+  }
+}
+
 export function createRefreshScheduler(
   options: RefreshSchedulerOptions,
   host: RefreshHost
@@ -107,9 +118,9 @@ export function createRefreshScheduler(
 
   function teardownCoordination(): void {
     coordinationGeneration += 1
-    releaseLeadership?.()
+    disposeQuietly(releaseLeadership, 'leadership release')
     releaseLeadership = undefined
-    stopCredentialFeed?.()
+    disposeQuietly(stopCredentialFeed, 'credential feed')
     stopCredentialFeed = undefined
     coordinationKey = undefined
     isRefreshLeader = crossTab === undefined
