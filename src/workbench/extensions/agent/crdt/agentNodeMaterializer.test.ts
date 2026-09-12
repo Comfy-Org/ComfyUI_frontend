@@ -21,6 +21,7 @@ import {
   createTestSubgraphNode,
   enableSubgraphNodeCreation
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import { reportError } from '@/platform/telemetry/reportError'
 // Mirrors the production bridge in AgentPanelRoot.vue, which takes the same
 // exemption to drive the real layout store.
@@ -31,12 +32,14 @@ import { LayoutSource } from '@/renderer/core/layout/types'
 import { useExecutionOrderStore } from '@/stores/executionOrderStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { GraphScope } from '@/types/graphScopeId'
 import { graphScopeOf } from '@/types/graphScopeId'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toLinkId } from '@/types/linkId'
+import type { NodeId } from '@/types/nodeId'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 
@@ -55,6 +58,19 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 class DummyNode extends LGraphNode {
   constructor() {
     super('dummy')
+  }
+}
+
+/** Node ids whose `onRemoved` ran, in call order, one entry per call. */
+const interiorRemovals: NodeId[] = []
+
+class RetirementProbeNode extends LGraphNode {
+  constructor() {
+    super('retirement-probe')
+  }
+
+  override onRemoved(): void {
+    interiorRemovals.push(this.id)
   }
 }
 
@@ -112,6 +128,7 @@ const REMOTE: RemoteMutationContext = {
 const CATALOG: WidgetCatalog = {
   types: {
     dummy: { widget_order: [] },
+    'retirement-probe': { widget_order: [] },
     'widget-node': { widget_order: ['value'] },
     'configure-capture': { widget_order: ['value'] },
     'throws-on-configure': { widget_order: [] }
@@ -188,6 +205,26 @@ function nodePayload(id: number, type = 'dummy') {
   }
 }
 
+/** A definition's interior node, in the authoritative serialized shape. */
+function interiorNode(
+  id: number,
+  type = 'dummy',
+  overrides: Partial<ISerialisedNode> = {}
+): ISerialisedNode {
+  return {
+    id,
+    type,
+    pos: [0, 0],
+    size: [100, 80],
+    flags: {},
+    order: 0,
+    mode: 0,
+    inputs: [],
+    outputs: [],
+    ...overrides
+  }
+}
+
 /** Commit a remote add to the stores only, the way a follower frame does. */
 function seedAgentAddedNode(graph: LGraph, id: number, type = 'dummy') {
   const scope = graphScopeOf(graph)
@@ -204,7 +241,9 @@ beforeEach(() => {
   LiteGraph.registerNodeType('configure-capture', ConfigureCapturingWidgetNode)
   LiteGraph.registerNodeType('throws-on-configure', ThrowsOnConfigureNode)
   LiteGraph.registerNodeType('throws-on-added', ThrowsOnAddedNode)
+  LiteGraph.registerNodeType('retirement-probe', RetirementProbeNode)
   configuredWidgetValues.length = 0
+  interiorRemovals.length = 0
   configureShouldThrow = false
 })
 
@@ -968,6 +1007,136 @@ describe('reconcileAgentAdapters', () => {
       expect(registered?.nodes.map((node) => node.id)).toEqual([toNodeId(7)])
       expect(created).toHaveBeenCalledOnce()
       expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('preserves an uninstantiated pre-existing definition across an agent document reset', () => {
+      const definition = createTestSubgraphData()
+      const preExisting = graph.createSubgraph(definition)
+      reconcileAgentAdapters(graph, [definition])
+
+      reconcileAgentAdapters(graph, [], { replaceSubgraphDefinitions: true })
+
+      expect(graph.subgraphs.get(definition.id)).toBe(preExisting)
+      expect(LiteGraph.registered_node_types[definition.id]).toBeDefined()
+    })
+
+    /**
+     * Retirement only owns definitions this materializer created. A definition
+     * that was already registered when the agent first referenced it keeps its
+     * node-type registration through a reset; it leaves `graph.subgraphs` only
+     * when its last live instance is swept, under the same last-instance rule
+     * `LGraph.remove()` applies to a human deleting that instance by hand.
+     */
+    it('leaves a pre-existing definition to the last-instance rule when the reset sweeps its only host', () => {
+      const definition = createTestSubgraphData({
+        nodes: [interiorNode(7, 'retirement-probe')]
+      })
+      graph.createSubgraph(definition)
+      const { adapter, follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, definition.id)],
+        links: [],
+        definitions: { subgraphs: [definition] }
+      })
+      reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+      expect(graph.getNodeById(toNodeId(1))).toBeInstanceOf(SubgraphNode)
+
+      adapter.clearForReset('workflow', REMOTE)
+      reconcileAgentAdapters(graph, [], { replaceSubgraphDefinitions: true })
+
+      expect(graph.subgraphs.has(definition.id)).toBe(false)
+      expect(LiteGraph.registered_node_types[definition.id]).toBeDefined()
+      expect(interiorRemovals).toEqual([toNodeId(7)])
+    })
+
+    it('fires each interior removal lifecycle once per document reset', () => {
+      const definition = createTestSubgraphData({
+        nodes: [interiorNode(7, 'retirement-probe')]
+      })
+      const { adapter, follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, definition.id), nodePayload(2, definition.id)],
+        links: [],
+        definitions: { subgraphs: [definition] }
+      })
+      reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+      expect(graph.getNodeById(toNodeId(1))).toBeInstanceOf(SubgraphNode)
+      expect(graph.getNodeById(toNodeId(2))).toBeInstanceOf(SubgraphNode)
+
+      adapter.clearForReset('workflow', REMOTE)
+      reconcileAgentAdapters(graph, [], { replaceSubgraphDefinitions: true })
+      reconcileAgentAdapters(graph, [], { replaceSubgraphDefinitions: true })
+
+      expect(interiorRemovals).toEqual([toNodeId(7)])
+    })
+
+    it('retires an agent definition from every registry after a document reset', () => {
+      const definition = createTestSubgraphData({
+        nodes: [interiorNode(7)]
+      })
+      const { adapter, follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, definition.id)],
+        links: [],
+        definitions: { subgraphs: [definition] }
+      })
+      reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+      LiteGraph.registerNodeType(
+        definition.id,
+        LiteGraph.registered_node_types[definition.id]
+      )
+      useNodeDefStore().addNodeDef({
+        name: definition.id,
+        display_name: definition.name,
+        category: 'subgraph',
+        python_module: 'nodes',
+        description: '',
+        input: {},
+        output: [],
+        output_is_list: [],
+        output_name: [],
+        output_node: false
+      })
+
+      expect(graph.subgraphs.has(definition.id)).toBe(true)
+      expect(useNodeDefStore().nodeDefsByName[definition.id]).toBeDefined()
+      expect(LiteGraph.registered_node_types[definition.id]).toBeDefined()
+
+      adapter.clearForReset('workflow', REMOTE)
+      reconcileAgentAdapters(graph, [], { replaceSubgraphDefinitions: true })
+
+      expect(graph.subgraphs.has(definition.id)).toBe(false)
+      expect(useNodeDefStore().nodeDefsByName[definition.id]).toBeUndefined()
+      expect(LiteGraph.registered_node_types[definition.id]).toBeUndefined()
+      expect(graph.getNodeById(toNodeId(1))).toBeFalsy()
+    })
+
+    it('recreates a reused definition id from the replacement document', () => {
+      const definition = createTestSubgraphData({
+        nodes: [interiorNode(7)]
+      })
+      const first = seedDocument(graph, {
+        nodes: [nodePayload(1, definition.id)],
+        links: [],
+        definitions: { subgraphs: [definition] }
+      })
+      reconcileAgentAdapters(graph, readSubgraphDefinitions(first.follower.doc))
+      const stale = graph.subgraphs.get(definition.id)
+
+      first.adapter.clearForReset('workflow', REMOTE)
+      const replacement = { ...definition, nodes: [interiorNode(8)] }
+      const second = seedDocument(graph, {
+        nodes: [nodePayload(1, definition.id)],
+        links: [],
+        definitions: { subgraphs: [replacement] }
+      })
+      reconcileAgentAdapters(
+        graph,
+        readSubgraphDefinitions(second.follower.doc),
+        { replaceSubgraphDefinitions: true }
+      )
+
+      const current = graph.subgraphs.get(definition.id)
+      expect(current).not.toBe(stale)
+      expect(current?.nodes.map((node) => node.id)).toEqual([toNodeId(8)])
+      expect(graph.getNodeById(toNodeId(1))).toBeInstanceOf(SubgraphNode)
     })
 
     it('carries interior widget values into the instantiated subgraph', () => {

@@ -824,7 +824,8 @@ describe('useAgentCrdtFollower', () => {
       expect(adapterState.clearForReset).toHaveBeenCalled()
       expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
         fakeGraph,
-        fakeDefinitions
+        fakeDefinitions,
+        { replaceSubgraphDefinitions: true }
       )
       unmount()
     })
@@ -836,6 +837,51 @@ describe('useAgentCrdtFollower', () => {
 
       expect(adapterState.clearForReset).toHaveBeenCalled()
       expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
+        fakeGraph,
+        fakeDefinitions,
+        { replaceSubgraphDefinitions: true }
+      )
+      unmount()
+    })
+
+    it.for([
+      ['doc_reset', { workflowId: 'wf-1', actor: 'agent:turn', seq: 43 }],
+      ['follower_replaced', { workflowId: 'wf-1' }]
+    ] as const)(
+      'carries a %s replacement to the first reconcile once a graph exists',
+      async ([frameType, detail]) => {
+        const graph = shallowRef<MaterializableGraph | null>(null)
+        const { unmount } = mountFollower('wf-1', true, () => graph.value)
+
+        dispatchFrame(frameType, detail)
+        expect(materializerState.reconcileAgentAdapters).not.toHaveBeenCalled()
+
+        graph.value = fakeGraph
+        await nextTick()
+
+        expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
+          fakeGraph,
+          fakeDefinitions,
+          { replaceSubgraphDefinitions: true }
+        )
+        unmount()
+      }
+    )
+
+    it('replaces definitions only on the first reconcile after the lineage break', async () => {
+      const graph = shallowRef<MaterializableGraph | null>(null)
+      const { unmount } = mountFollower('wf-1', true, () => graph.value)
+
+      dispatchFrame('doc_reset', {
+        workflowId: 'wf-1',
+        actor: 'agent:turn',
+        seq: 43
+      })
+      graph.value = fakeGraph
+      await nextTick()
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 44 })
+
+      expect(materializerState.reconcileAgentAdapters).toHaveBeenLastCalledWith(
         fakeGraph,
         fakeDefinitions
       )
