@@ -220,7 +220,11 @@ export class LiveCloudCheckout {
     return subscription.billing_op_id
   }
 
-  async completeCheckout(session: LiveCloudBillingSession, testInfo: TestInfo) {
+  async completeCheckout(
+    session: LiveCloudBillingSession,
+    testInfo: TestInfo,
+    expectedPaymentMethodCount = 1
+  ) {
     const balanceBefore = await session.read(
       '/api/billing/balance',
       zBillingBalanceResponse
@@ -236,7 +240,8 @@ export class LiveCloudCheckout {
       balanceBefore.amount_micros,
       preview,
       subscription.billing_op_id,
-      'checkout-completed.png'
+      'checkout-completed.png',
+      expectedPaymentMethodCount
     )
   }
 
@@ -318,7 +323,8 @@ export class LiveCloudCheckout {
       '/api/billing/status',
       zBillingStatusResponse
     )
-    expect(status.subscription_tier).toBe('FREE')
+    expect(status.is_active).toBe(false)
+    expect([undefined, 'FREE']).toContain(status.subscription_tier)
     const balanceAfter = await session.read(
       '/api/billing/balance',
       zBillingBalanceResponse
@@ -619,7 +625,8 @@ export class LiveCloudCheckout {
     balanceBeforeCents: number,
     preview: ReturnType<typeof zPreviewSubscribeResponse.parse>,
     operationId: string,
-    screenshotName: string
+    screenshotName: string,
+    expectedPaymentMethodCount = 1
   ) {
     await expect
       .poll(
@@ -657,7 +664,7 @@ export class LiveCloudCheckout {
       '/api/billing/payment-methods',
       zListSavedPaymentMethodsResponse
     )
-    expect(methods).toHaveLength(1)
+    expect(methods).toHaveLength(expectedPaymentMethodCount)
     await testInfo.attach('checkout-completion.json', {
       body: JSON.stringify({
         operationId,
