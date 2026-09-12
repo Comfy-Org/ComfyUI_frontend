@@ -17,13 +17,17 @@ const providers: readonly DiscoveryProvider[] = [
 ]
 
 describe('ModelDiscoverySection', () => {
-  it('only lines up providers that run published models and have a preview', () => {
+  it('lines up multiple providers', () => {
     expect(discoveryProviders.length).toBeGreaterThan(1)
-    for (const provider of discoveryProviders) {
-      expect(provider.modelCount, provider.name).toBeGreaterThan(0)
-      expect(provider.thumbnailUrl, provider.name).toBeTruthy()
-    }
   })
+
+  it.for(discoveryProviders)(
+    '$name runs published models and has a preview',
+    (provider) => {
+      expect(provider.modelCount).toBeGreaterThan(0)
+      expect(provider.thumbnailUrl).toBeTruthy()
+    }
+  )
 
   it('sends every provider to the catalog filtered by that provider', () => {
     render(ModelDiscoverySection, { props: { providers } })

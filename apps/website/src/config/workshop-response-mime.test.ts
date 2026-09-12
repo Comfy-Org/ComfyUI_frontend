@@ -136,10 +136,9 @@ describe('Router output MIME discovery', () => {
       }),
       controller.signal
     )
-    const rejected = expect(parsed).rejects.toThrow('cancelled')
     await started.promise
     controller.abort(new Error('cancelled'))
-    await rejected
+    await expect(parsed).rejects.toThrow('cancelled')
     expect(revoke).toHaveBeenCalledOnce()
   })
 
