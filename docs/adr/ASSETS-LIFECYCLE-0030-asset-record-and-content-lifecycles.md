@@ -34,11 +34,15 @@ mechanism for showing a run's outputs during that session.
 With Assets enabled, the frontend lists input, output, and temp records from the
 Asset API. With Assets disabled, it lists outputs reconstructed from `/history`.
 
-Deletion follows the same flags. Without Assets, deleting an output or temp item
-posts its `jobId` to `/history`. With Assets and asset deletion enabled, the
-frontend calls `DELETE /api/assets/{id}` with asset-record IDs. For grouped
-outputs, it uses the `assetId` values in `user_metadata.allOutputs`. With Assets
-enabled but asset deletion disabled, the frontend rejects deletion.
+Deletion branches on `assetsEnabled` only. Without Assets, deleting an output
+or temp item posts its `jobId` to `/history`. With Assets, the frontend calls
+`DELETE /api/assets/{id}` with asset-record IDs regardless of the
+`assetDeletionEnabled` flag. For grouped outputs, it uses the `assetId` values
+in `user_metadata.allOutputs`. `assetDeletionEnabled` (see
+`useFeatureFlags.ts`) only selects the confirmation copy: permanent deletion
+when set, tombstone deletion when not, and history-only when no asset record is
+planned. The frontend does not refuse to send the request when the flag is
+unset; see "Implementation gaps".
 
 Clear history still posts to `/history`. Product copy says generated assets
 survive. They remain visible in the API-backed panel, but disappear from the
@@ -50,23 +54,30 @@ legacy history-backed panel.
    reference one content row, and records for cached reruns may carry different
    `job_id` values while sharing content.
 2. **Deleting through the Asset API deletes one record.**
-   `DELETE /api/assets/{id}` hard-deletes the target asset record
-   (`delete_asset_route` -> `delete_asset_reference` -> `delete_record` ->
-   `session.delete`, verified at
-   [ComfyUI #15915](https://github.com/Comfy-Org/ComfyUI/pull/15915) head
-   59cf36c). It leaves the content row and file intact and never deletes another
-   asset record. This supersedes the soft-delete model in the pinned intended
-   design; see "Relationship to the pinned intended design" below.
+   `DELETE /api/assets/{id}` hard-deletes the target asset record, verified at
+   [ComfyUI #15915](https://github.com/Comfy-Org/ComfyUI/pull/15915) commit
+   `59cf36cb2c12f6a6ba3f53db0688246cb7a24f98`:
+   [`delete_asset_route`](https://github.com/Comfy-Org/ComfyUI/blob/59cf36cb2c12f6a6ba3f53db0688246cb7a24f98/app/assets/api/routes.py)
+   -> [`delete_asset_reference`](https://github.com/Comfy-Org/ComfyUI/blob/59cf36cb2c12f6a6ba3f53db0688246cb7a24f98/app/assets/services/asset_management.py)
+   -> [`delete_record`](https://github.com/Comfy-Org/ComfyUI/blob/59cf36cb2c12f6a6ba3f53db0688246cb7a24f98/app/assets/database/queries/records.py)
+   -> `session.delete`. It leaves the content row and file intact and never
+   deletes another asset record. This supersedes the soft-delete model in the
+   pinned intended design; see "Relationship to the pinned intended design"
+   below.
 3. **Preview references do not imply ownership.** Deleting a record that names
    a preview leaves the preview record intact. Deleting the preview record
    clears incoming preview references rather than deleting their records.
 4. **`job_id` records provenance only.** It does not make history the lifecycle
    owner of an asset record or make an asset record the owner of history.
-5. **History deletion has no asset-record cascade in this ADR.** Simon's design
-   does not specify such a cascade, and the current frontend copy says assets
-   survive history deletion. Whether another product contract should cascade,
-   retain, or separately disclose records and bytes requires an explicit
-   domain decision and backend evidence.
+5. **History deletion has no asset-record cascade in this ADR.** The OSS
+   `asset-record-content-split` design
+   ([ComfyUI #15915](https://github.com/Comfy-Org/ComfyUI/pull/15915)) specifies
+   no history-to-record cascade, and the current frontend copy says assets
+   survive history deletion. The pinned Cloud intended design does cascade on
+   generation delete; that cascade is Cloud-only (see "Relationship to the
+   pinned intended design"). Whether OSS core should cascade, retain, or
+   separately disclose records and bytes requires an explicit domain decision
+   and backend evidence.
 
 6. **The output Delete action deregisters asset records.** It calls
    `DELETE /api/assets/{id}` with real asset-record IDs and does not delete files
@@ -74,9 +85,14 @@ legacy history-backed panel.
 7. **Batch deletion is non-atomic.** The frontend resolves every target
    asset-record ID before deletion. It does not roll back successful record
    deletions when another deletion fails. It deletes the owning job's history
-   only after every record deletion succeeds.
+   only after every target record is confirmed absent. A target counts as absent
+   when its `DELETE /api/assets/{id}` returned `204`, or returned `404` because
+   the record was already gone (for example, deleted by an earlier partial
+   batch). On any other failure the history is preserved and a retry re-runs the
+   same gate; a retry must not delete history based on a previous batch's
+   partial success.
 8. **Success copy describes record deletion, not file deletion.** The server
-   does not distinguish cases where it deleted nothing, so the copy must not
+   deletes only the record row and never removes bytes, so the copy must not
    imply that it removed files from disk.
 9. **A feature flag selects deletion behavior.** Renaming the poorly named flag
    is separate cleanup.
@@ -84,8 +100,13 @@ legacy history-backed panel.
 ## Implementation gaps
 
 - **History cleanup:** With Assets enabled, deletion deregisters records but
-  does not delete the owning job's history after every target succeeds. This
-  does not yet implement decision 7.
+  does not yet run the confirmed-absent gate from decision 7: it does not
+  delete the owning job's history once every target has returned `204` or an
+  already-gone `404`, and it does not preserve history on other failures.
+- **Asset deletion flag enforcement:** `assetDeletionEnabled` currently only
+  selects the confirmation-dialog copy. The deletion path itself branches on
+  `assetsEnabled` alone, so the flag does not yet gate deletion behavior as
+  decision 9 intends.
 - **Legacy deletion:** With Assets disabled, deleting an output or temp item
   still deletes history by job ID instead of deregistering asset records.
 - **Identifier coverage:** Not every history-derived output has a real
@@ -128,7 +149,7 @@ Decision 5: this ADR asserts no history-to-record cascade for OSS core.
 ## References
 
 - [ComfyUI #15915: asset-record-content-split (code)](https://github.com/Comfy-Org/ComfyUI/pull/15915),
-  verified at head 59cf36c: `Asset`/`AssetContent` split, `delete_record` hard
+  verified at head 59cf36cb2c12f6a6ba3f53db0688246cb7a24f98: `Asset`/`AssetContent` split, `delete_record` hard
   delete of one record row, no soft-delete column
 - [Asset deletion intended behavior](https://github.com/Comfy-Org/ideation-sharing/blob/ab6246440c3234fe315e4fc36145c818e5309868/asset-deletion/intended/index.md) (private `Comfy-Org/ideation-sharing` repo — requires org access)
 - [Asset deletion logical architecture](https://github.com/Comfy-Org/ideation-sharing/blob/ab6246440c3234fe315e4fc36145c818e5309868/asset-deletion/intended/logical.md) (private `Comfy-Org/ideation-sharing` repo — requires org access)
