@@ -2,7 +2,6 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import { getGroupTitlePosition } from '@e2e/fixtures/utils/groupHelpers'
 
 test.describe(
   'ECS migration: undo/redo',
@@ -50,19 +49,15 @@ test.describe(
       })
     }
 
-    test('moving a group by its title can be undone', async ({
-      comfyPage,
-      comfyMouse
-    }) => {
+    test('moving a group by its title can be undone', async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('selection/three-nodes-and-group')
       const initialPosition = await comfyPage.canvasOps.getGroupPosition('Pair')
       const containedNode = await comfyPage.nodeOps.getNodeRefById('2')
       const initialNodePosition = await containedNode.getBounding()
-      const titlePosition = await getGroupTitlePosition(comfyPage, 'Pair')
-
-      await comfyMouse.dragAndDrop(titlePosition, {
-        x: titlePosition.x + 100,
-        y: titlePosition.y + 60
+      await comfyPage.canvasOps.dragGroup({
+        name: 'Pair',
+        deltaX: 100,
+        deltaY: 60
       })
       await expect
         .poll(() => comfyPage.canvasOps.getGroupPosition('Pair'))
