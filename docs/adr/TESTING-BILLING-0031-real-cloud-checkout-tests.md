@@ -8,41 +8,37 @@ Proposed
 
 ## Context
 
-Mocked checkout responses cannot detect disagreement between the frontend,
-Cloud billing operations, and Stripe. Ordinary browser CI must remain independent
-of real billing credentials and mutable customer state.
+Mocked responses cannot detect disagreement between the frontend, Cloud billing,
+and Stripe. The first regression test must exercise the browser against a real
+sandbox without requiring backend administrator credentials.
 
 ## Decision
 
 Add an explicitly enabled `cloud-live` project to the existing Playwright runner.
-Reuse `.env`, frontend/backend URL conventions, and ComfyPage, replacing the
-mock-based Cloud setup with real UI authentication. Capture post-login screenshots.
+Reuse `.env`, frontend/backend URL conventions, and ComfyPage. Sign in through the
+real UI and capture post-login screenshots. Keep normal browser CI independent of
+sandbox credentials.
 
-Use a dedicated inactive personal workspace. Reuse Cloud E2E account variables
-and billing smoke database/Stripe variables. Bundle teardown with the fixture:
-expire test-created Stripe sessions, signal the existing Temporal abandonment
-path, verify terminal operations, and restore inactive billing with a projection
-outbox event. Guard cleanup with workspace state checks and an advisory lock.
+Use a dedicated no-card account and the public billing API. Close the unpaid
+Stripe checkout, resume payment, and assert that the same billing operation is
+reused. Record the pending operation instead of resetting backend state.
 
-A separate JSON configuration and an unimplemented reset executable were rejected:
-they add another setup contract without making the test runnable. Extending mocked
-tests alone cannot expose a broken backend contract. A public-API-only reset is
-not available for a pending checkout. Adding a new backend admin endpoint would
-expand the first test's scope. The fixture therefore depends on existing privileged
-sandbox interfaces, like Cloud's billing smoke tests.
+A separate JSON configuration and an external reset executable add unnecessary
+setup. Embedding database writes and Stripe/Temporal administration in the fixture
+also makes browser coverage depend on privileged access and backend internals.
+Those approaches are rejected for this test. Backend reset and expiry verification
+can be added separately when required for repeatable CI.
 
 ## Consequences
 
-- Normal browser test collection remains independent of sandbox credentials.
-- Test setup can reject missing access before creating a billing operation.
-- The frontend test now depends on backend schema and workflow cleanup contracts;
-  changes to these contracts require updating this fixture.
-- Cleanup is not a product recovery assertion and cannot count as timeout coverage.
-- A dedicated identity and backend credentials remain required for live validation.
+- The browser test requires only sandbox URLs and account credentials.
+- No payment is submitted and no backend billing state is reset.
+- Unpaid operations can remain pending after a run. Account reuse depends on the
+  backend's ability to resume that state, and concurrent runs must be avoided.
+- Cleanup is not a substitute for an assertion about product recovery.
 - Payment completion, reload recovery, timeout behavior, and a release gate remain
   follow-up work.
 
 ## Notes
 
-See the [run instructions](../testing/cloud-billing-e2e.md) and
-[scope discussion](https://comfy-organization.slack.com/archives/C0BNGQG2LCW/p1789164154382169).
+See the [run instructions](../testing/cloud-billing-e2e.md).

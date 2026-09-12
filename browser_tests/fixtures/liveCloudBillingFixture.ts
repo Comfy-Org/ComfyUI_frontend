@@ -12,7 +12,6 @@ import {
   comfyExpect as expect,
   comfyPageFixture as base
 } from '@e2e/fixtures/ComfyPage'
-import { withBillingCleanup } from '@e2e/fixtures/utils/liveCloudBillingCleanup'
 import { loadLiveCloudBillingConfig } from '@e2e/fixtures/utils/liveCloudBillingConfig'
 
 interface BillingSandbox {
@@ -31,6 +30,16 @@ export const liveCloudBillingFixture = base.extend<{
     const origins = new Set([
       new URL(baseURL ?? sandbox.PLAYWRIGHT_TEST_URL).origin,
       sandbox.PLAYWRIGHT_SETUP_API_URL,
+      'https://testapi.comfy.org',
+      'https://t.comfy.org',
+      'https://mp.comfy.org',
+      'https://browser-intake-us5-datadoghq.com',
+      'https://cdn.sy-d.io',
+      'https://e2.sy-d.io',
+      'https://consumer.cloud.gist.build',
+      'https://realtime.cloud.gist.build',
+      'https://cdp.customer.io',
+      'https://o4507954455314432.ingest.us.sentry.io',
       'https://identitytoolkit.googleapis.com',
       'https://securetoken.googleapis.com',
       'https://dreamboothy-dev.firebaseapp.com',
@@ -64,20 +73,15 @@ export const liveCloudBillingFixture = base.extend<{
     await page
       .getByLabel('Password', { exact: true })
       .fill(sandbox.CLOUD_ACCOUNT_PASSWORD)
-    const [workspaceResponse] = await Promise.all([
+    const [billingResponse] = await Promise.all([
       page.waitForResponse(
         (response) =>
-          new URL(response.url()).pathname === '/api/workspaces/current'
+          new URL(response.url()).pathname === '/api/billing/status' &&
+          response.status() === 200
       ),
       page.getByRole('button', { name: 'Sign in', exact: true }).click()
     ])
-    expect(workspaceResponse.status()).toBe(200)
-    const workspace = zCurrentWorkspaceResponse.parse(
-      await workspaceResponse.json()
-    )
-    expect(workspace.type).toBe('personal')
-    expect(workspace.role).toBe('owner')
-    const headers = await workspaceResponse.request().allHeaders()
+    const headers = await billingResponse.request().allHeaders()
 
     async function read<T>(path: string, schema: z.ZodType<T>): Promise<T> {
       const response = await page.request.get(
@@ -88,53 +92,73 @@ export const liveCloudBillingFixture = base.extend<{
       return schema.parse(await response.json())
     }
 
-    async function assertCleanWorkspace() {
+    const workspace = await read(
+      '/api/workspaces/current',
+      zCurrentWorkspaceResponse
+    )
+    expect(workspace.type).toBe('personal')
+    expect(workspace.role).toBe('owner')
+
+    async function assertNoCardAccount() {
       const [status, methods] = await Promise.all([
         read('/api/billing/status', zBillingStatusResponse),
         read('/api/billing/payment-methods', zListSavedPaymentMethodsResponse)
       ])
-      expect(status.is_active).toBe(false)
-      expect(status.billing_status).toBe('inactive')
-      expect(methods).toHaveLength(0)
-    }
-
-    await assertCleanWorkspace()
-    await withBillingCleanup(sandbox, workspace.id, async () => {
-      const [previewResponse] = await Promise.all([
-        page.waitForResponse(
-          (response) =>
-            new URL(response.url()).pathname ===
-            '/api/billing/preview-subscribe'
-        ),
-        page.goto(
-          `${sandbox.PLAYWRIGHT_TEST_URL}/cloud/subscribe?tier=creator&cycle=monthly`
-        )
-      ])
-      expect(previewResponse.status()).toBe(200)
-      const preview = zPreviewSubscribeResponse.parse(
-        await previewResponse.json()
-      )
-      expect(preview.allowed).toBe(true)
-      expect(preview.new_plan.slug).toBe('creator-monthly')
-      await testInfo.attach('sandbox.json', {
+      await testInfo.attach('billing-preflight.json', {
         body: JSON.stringify({
-          baseURL: sandbox.PLAYWRIGHT_TEST_URL,
           workspaceId: workspace.id,
-          frontendVersion:
-            documentResponse?.headers()['x-frontend-version'] ?? null
+          isActive: status.is_active,
+          billingStatus: status.billing_status,
+          subscriptionTier: status.subscription_tier,
+          planSlug: status.plan_slug,
+          paymentMethodCount: methods.length
         }),
         contentType: 'application/json'
       })
-      await use({
-        preview,
-        readOperation: (operationId) =>
-          read(
-            `/api/billing/ops/${encodeURIComponent(operationId)}`,
-            zBillingOpStatusResponse
-          )
-      })
+      if (status.is_active) {
+        expect(status.subscription_tier).toBe('FREE')
+      } else {
+        expect(['inactive', 'awaiting_payment_method']).toContain(
+          status.billing_status
+        )
+      }
+      expect(methods).toHaveLength(0)
+    }
+
+    await assertNoCardAccount()
+
+    const [previewResponse] = await Promise.all([
+      page.waitForResponse(
+        (response) =>
+          new URL(response.url()).pathname === '/api/billing/preview-subscribe'
+      ),
+      page.goto(
+        `${sandbox.PLAYWRIGHT_TEST_URL}/cloud/subscribe?tier=creator&cycle=monthly`
+      )
+    ])
+    expect(previewResponse.status()).toBe(200)
+    const preview = zPreviewSubscribeResponse.parse(
+      await previewResponse.json()
+    )
+    expect(preview.allowed).toBe(true)
+    expect(preview.new_plan.slug).toBe('creator-monthly')
+    await testInfo.attach('sandbox.json', {
+      body: JSON.stringify({
+        baseURL: sandbox.PLAYWRIGHT_TEST_URL,
+        workspaceId: workspace.id,
+        frontendVersion:
+          documentResponse?.headers()['x-frontend-version'] ?? null
+      }),
+      contentType: 'application/json'
     })
-    await assertCleanWorkspace()
+    await use({
+      preview,
+      readOperation: (operationId) =>
+        read(
+          `/api/billing/ops/${encodeURIComponent(operationId)}`,
+          zBillingOpStatusResponse
+        )
+    })
   },
   comfyPage: async ({ page, request, billingSandbox }, use) => {
     expect(billingSandbox.preview.allowed).toBe(true)

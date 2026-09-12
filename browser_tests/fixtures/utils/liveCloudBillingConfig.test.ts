@@ -9,11 +9,7 @@ const sandboxConfig = {
   PLAYWRIGHT_TEST_URL: 'http://localhost:5173',
   PLAYWRIGHT_SETUP_API_URL: 'https://testcloud.comfy.org',
   CLOUD_ACCOUNT_EMAIL: 'billing-e2e@example.com',
-  CLOUD_ACCOUNT_PASSWORD: 'test-password',
-  SMOKE_DB_DSN: 'postgresql://localhost/sandbox',
-  SMOKE_STRIPE_TEST_KEY: 'sk_test_example',
-  TEMPORAL_ADDRESS: 'localhost:7233',
-  TEMPORAL_NAMESPACE: 'default'
+  CLOUD_ACCOUNT_PASSWORD: 'test-password'
 }
 
 describe('Live Cloud billing prerequisites', () => {
@@ -32,20 +28,11 @@ describe('Live Cloud billing prerequisites', () => {
     ).toBe(false)
   })
 
-  it('rejects a production frontend even with sandbox cleanup credentials', () => {
+  it('rejects a production frontend with sandbox account credentials', () => {
     expect(
       liveCloudBillingConfigSchema.safeParse({
         ...sandboxConfig,
         PLAYWRIGHT_TEST_URL: 'https://cloud.comfy.org'
-      }).success
-    ).toBe(false)
-  })
-
-  it('rejects a live Stripe key', () => {
-    expect(
-      liveCloudBillingConfigSchema.safeParse({
-        ...sandboxConfig,
-        SMOKE_STRIPE_TEST_KEY: 'sk_live_example'
       }).success
     ).toBe(false)
   })
@@ -69,7 +56,6 @@ describe('Live Cloud billing prerequisites', () => {
 
   it('reports missing prerequisites without leaking credentials', () => {
     vi.stubEnv('CLOUD_ACCOUNT_PASSWORD', 'private-value')
-    vi.stubEnv('SMOKE_STRIPE_TEST_KEY', 'sk_live_private-value')
     vi.stubEnv('CLOUD_ACCOUNT_EMAIL', undefined)
     expect(loadLiveCloudBillingConfig).toThrow('CLOUD_ACCOUNT_EMAIL')
     expect(loadLiveCloudBillingConfig).not.toThrow('private-value')
