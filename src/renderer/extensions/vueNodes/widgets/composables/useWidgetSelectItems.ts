@@ -25,6 +25,7 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
 import type { AssetKind } from '@/types/widgetTypes'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
+import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import { isPaged, pagedItems, WrappedList } from '@/utils/pagedList'
 import type { MaybePaged } from '@/utils/pagedList'
 
@@ -188,7 +189,12 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
       return [...missingItems.value, ...filteredAssetItems.value]
     }
     const targetKind = toValue(options.assetKind)
-    const kindFilter = (asset: AssetItem) => asset.metadata?.kind === targetKind
+    const targetMediaType = targetKind === 'mesh' ? '3D' : targetKind
+    const kindFilter = (asset: AssetItem) => {
+      const kind = asset.metadata?.kind
+      if (kind !== undefined) return kind === targetKind
+      return getMediaTypeFromFilename(asset.name) === targetMediaType
+    }
 
     const base = baseAssets.value
     const baseItems = pagedItems(base).filter(kindFilter).map(assetToForm)
