@@ -290,6 +290,25 @@ describe('graphMutations', () => {
     expect(createLayout).not.toHaveBeenCalled()
   })
 
+  it('untitled catalog add persists the type so configure cannot fall back to display_name', () => {
+    const { title: _title, ...untitled } = node(1)
+    expect(mutations().addNode(untitled, context)).toBe(true)
+
+    const [state] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    expect(state.title).toBe('Type1')
+    expect(state.lastSerialization?.title).toBe('Type1')
+  })
+
+  it('untitled subgraph add leaves lastSerialization without a title', () => {
+    const type = '00000000-0000-4000-8000-000000000002'
+    const { title: _title, ...untitled } = { ...node(1), type }
+    expect(mutations().addNode(untitled, context)).toBe(true)
+
+    const [state] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    expect(state.title).toBe(type)
+    expect(state.lastSerialization?.title).toBeUndefined()
+  })
+
   it('untitled reconcile of a display-named regular node uses the type as title and keeps the output wire', () => {
     const graph = mutations()
     graph.batch(context, (batch) => {
@@ -319,6 +338,7 @@ describe('graphMutations', () => {
 
     const origin = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))
     expect(origin?.title).toBe('Type1')
+    expect(origin?.lastSerialization?.title).toBe('Type1')
     expect(origin?.outputs[0]?.links).toEqual([toLinkId(9)])
     expect(
       useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
