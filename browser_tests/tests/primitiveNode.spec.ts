@@ -4,9 +4,7 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-})
+test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
 test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
   test('Can load with correct size', async ({ comfyPage }) => {

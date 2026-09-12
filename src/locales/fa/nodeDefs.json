@@ -3065,6 +3065,29 @@
       }
     }
   },
+  "ConcatenateVideo": {
+    "description": "ویدیوها را به‌ترتیب و بدون رمزگشایی ورودی‌های رمزگذاری‌شدهٔ سازگار به هم متصل می‌کند.",
+    "display_name": "الحاق ویدیو",
+    "inputs": {
+      "codec": {
+        "name": "codec",
+        "tooltip": "کُدک مورد استفاده برای رمزگذاری تنسورهای ویدیو. Auto از H.264 استفاده می‌کند؛ ویدیوهای ازپیش رمزگذاری‌شده بدون تغییر می‌مانند."
+      },
+      "complete_audio": {
+        "name": "complete_audio",
+        "tooltip": "موسیقی متن کاملِ اختیاری برای ویدیوی الحاق‌شده. صدای همراه ویدیوهای ورودی را جایگزین می‌کند."
+      },
+      "videos": {
+        "name": "videos",
+        "tooltip": "بخش‌های ویدیو برای الحاق به‌ترتیب ورودی."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "ویدیوی الحاق‌شده."
+      }
+    }
+  },
   "ConditioningAverage": {
     "display_name": "میانگین شرطی‌سازی",
     "inputs": {
@@ -3098,6 +3121,20 @@
       },
       "conditioning_to": {
         "name": "شرطی‌سازی مقصد"
+      }
+    }
+  },
+  "ConditioningLoader": {
+    "description": "یک شرطی‌سازی ذخیره‌شده با «ذخیره شرطی‌سازی»، یا هر فایل safetensors دارای تنسور «conditioning» را از پوشهٔ embeddings بارگذاری می‌کند.",
+    "display_name": "بارگذاری شرطی‌سازی",
+    "inputs": {
+      "conditioning_name": {
+        "name": "conditioning_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3908,6 +3945,10 @@
       "bit_depth": {
         "name": "bit_depth",
         "tooltip": "خودکار برای sRGB از ۸-bit و برای HDR از ۱۰-bit استفاده می‌کند. انتخاب‌های صریح ۸-bit و ۱۰-bit مستقل از فضای رنگ هستند."
+      },
+      "codec": {
+        "name": "codec",
+        "tooltip": "در صورت تمایل، ویدیو را بلافاصله رمزگذاری می‌کند. None تصاویر را به‌شکل تنسور نگه می‌دارد؛ Auto از H.264 استفاده می‌کند."
       },
       "color_space": {
         "name": "color_space",
@@ -5026,6 +5067,22 @@
       "batch_size": {
         "name": "batch_size",
         "tooltip": "تعداد تصاویر latent در batch."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyYuE2LatentAudio": {
+    "display_name": "صوت latent خالی YuE2",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "seconds": {
+        "name": "seconds"
       }
     },
     "outputs": {
@@ -7979,7 +8036,7 @@
     }
   },
   "ImageColorSpace": {
-    "description": "sRGB (Rec.709)، HDR (Rec.2020 HLG) و HDR PQ (Rec.2020 PQ) را تبدیل می‌کند. از سفید SDR با ۲۰۳-nit و نمایشگر مرجع HLG با ۱۰۰۰-nit استفاده می‌کند. باریک‌سازی، روشنایی اضافی را در سراسر batch نگاشت تُن می‌کند و رنگ‌های خارج از گستره را فشرده می‌سازد. تبدیل‌ها با float32 محاسبه می‌شوند و device و dtype میانی را بازمی‌گردانند. آلفای مستقیم تبدیل رنگ نمی‌شود.",
+    "description": "sRGB، Rec.709 خطی، HDR ‏(Rec.2020 HLG) و HDR PQ ‏(Rec.2020 PQ) را تبدیل می‌کند. Linear 1.0 از همان سفید مرجع 203-nit مانند sRGB استفاده می‌کند؛ HLG از نمایشگر مرجع 1000-nit استفاده می‌کند. خروجی خطی و تبدیل‌های خطی‌به-HDR مقادیر گسترده را بدون نگاشت تُن حفظ می‌کنند. خروجی SDR و تبدیل PQ-به-HLG روشنایی اضافی را در سراسر batch نگاشت تُن می‌کنند و رنگ‌های خارج از gamut را فشرده می‌سازند. تبدیل‌ها با float32 محاسبه می‌شوند و device و dtype میانی را بازمی‌گردانند. آلفای مستقیم تبدیل رنگی نمی‌شود.",
     "display_name": "تبدیل فضای رنگ تصویر",
     "inputs": {
       "destination": {
@@ -12374,6 +12431,23 @@
       }
     }
   },
+  "MarigoldV2PostProcess": {
+    "description": "یک پیش‌بینی رمزگشایی‌شدهٔ Marigold V2 را به تصویر تبدیل می‌کند: عمق نرمال‌شده با مقادیر نزدیکِ روشن، نرمال‌های سطحِ واحد، یا آلبدوی sRGB.",
+    "display_name": "پس‌پردازش Marigold V2",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "prediction": {
+        "name": "prediction"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MaskComposite": {
     "display_name": "ترکیب ماسک",
     "inputs": {
@@ -16021,6 +16095,9 @@
     "inputs": {
       "model": {
         "name": "مدل"
+      },
+      "sampling": {
+        "name": "sampling"
       },
       "shift": {
         "name": "شیفت"
@@ -20988,6 +21065,24 @@
       }
     }
   },
+  "SaveConditioning": {
+    "description": "یک شرطی‌سازی را به‌صورت safetensors در پوشهٔ خروجی ذخیره می‌کند؛ برای بارگذاری آن با «بارگذاری شرطی‌سازی»، مثلاً برای رد کردن رمزگذار متن، فایل را به models/embeddings منتقل کنید.",
+    "display_name": "ذخیره شرطی‌سازی",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "conditioning",
+        "tooltip": null
+      }
+    }
+  },
   "SaveGLB": {
     "display_name": "ذخیره GLB",
     "inputs": {
@@ -21676,6 +21771,28 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SheetSage2AudioToABC": {
+    "description": "ملودی‌های آوازی و سازی را از موسیقی به نت‌نویسی ABC تبدیل می‌کند. خروجی abc را به node ‏YuE2 Generate Music متصل کنید و از حالت مطابق استفاده کنید.",
+    "display_name": "صوت SheetSage2 به ABC",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "audio_encoder": {
+        "name": "audio_encoder"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "full: ملودی و آکورد تولید می‌کند؛ melody: فقط ملودی تولید می‌کند و برای کاورها توصیه می‌شود."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
         "tooltip": null
       }
     }
@@ -28528,6 +28645,94 @@
     "outputs": {
       "0": {
         "name": "mesh",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateABC": {
+    "description": "نت‌نویسی ABC یک ترانه را از سبک و متن ترانه تولید می‌کند. abc را به node ‏YuE2 Generate Music متصل کنید.",
+    "display_name": "تولید ABC YuE2",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "lyrics": {
+        "name": "lyrics"
+      },
+      "max_abc_tokens": {
+        "name": "max_abc_tokens"
+      },
+      "mode": {
+        "name": "حالت",
+        "tooltip": "full: ملودی و آکورد تولید می‌کند؛ melody: فقط ملودی تولید می‌کند و برای بازخوانی‌ها توصیه می‌شود."
+      },
+      "seed": {
+        "name": "بذر"
+      },
+      "style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateMusic": {
+    "description": "توکن‌های موسیقی و شرطی‌سازی آکوستیک را از سبک، متن ترانه و نت‌نویسی ABC تولید می‌کند. ثانیه‌های تولیدشده را به node ‏Empty YuE2 Latent Audio بدهید. ورودی خالی ABC حالت انتخاب‌شده را نادیده می‌گیرد.",
+    "display_name": "تولید موسیقی YuE2",
+    "inputs": {
+      "abc": {
+        "name": "abc",
+        "tooltip": "مولد ABC را متصل کنید یا یک پارتیتور ویرایش‌شده ارائه دهید. برای استفاده خودکار از حالت خاموش، آن را خالی بگذارید."
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "lyrics": {
+        "name": "متن ترانه"
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "بیشینهٔ مدت؛ تولید ممکن است زودتر متوقف شود. نسخهٔ منتشرشده از بودجهٔ ۳۶۰ ثانیه‌ای استفاده می‌کند."
+      },
+      "mode": {
+        "name": "حالت",
+        "tooltip": "full: ملودی و آکورد تولید می‌کند؛ melody: فقط ملودی تولید می‌کند و برای بازخوانی‌ها توصیه می‌شود."
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "seed": {
+        "name": "بذر"
+      },
+      "style": {
+        "name": "سبک"
+      },
+      "temperature": {
+        "name": "temperature"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "ثانیه",
         "tooltip": null
       }
     }
