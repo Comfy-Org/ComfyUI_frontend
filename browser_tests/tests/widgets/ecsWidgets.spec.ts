@@ -64,7 +64,14 @@ test.describe(
         )
         .toBe(true)
 
-      await primitiveNode.delete()
+      await comfyPage.page.evaluate(() => {
+        const source = window.app!.graph.nodes.find(
+          (node) => String(node.id) === '1'
+        )
+        if (!source) throw new Error('Primitive source node not found')
+        window.app!.graph.remove(source)
+      })
+      await comfyPage.nextFrame()
 
       await expect
         .poll(() =>
@@ -80,6 +87,25 @@ test.describe(
         )
         .toBe(true)
       await expect.poll(() => seedWidget.getValue()).toBe(originalValue)
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => {
+            const node = window.app!.graph.nodes.find(
+              (node) => String(node.id) === '2'
+            )
+            return node?.widgets?.find(({ name }) => name === 'seed')
+              ?.connectionSuppressed
+          })
+        )
+        .toBe(false)
+      const restoredSeed = comfyPage.vueNodes.getWidgetByName(
+        'KSampler',
+        'seed'
+      )
+      await expect(restoredSeed).toBeVisible()
+      await expect(restoredSeed).toBeEnabled()
+      await restoredSeed.fill('1')
+      await expect.poll(() => seedWidget.getValue()).toBe(1)
     })
 
     test('keeps a cleared text widget empty after save and reload', async ({
