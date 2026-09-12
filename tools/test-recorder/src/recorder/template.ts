@@ -35,9 +35,10 @@ interface TemplateOptions {
  */
 export function storageStateKey(distribution?: Distribution): string {
   if (!distribution) return 'cloud'
-  if (distribution.id !== 'custom' || !distribution.backendUrl) {
+  if (distribution.id !== 'custom') {
     return distribution.id
   }
+  if (!distribution.backendUrl) return 'custom-unparsed'
   try {
     const { protocol, hostname, port, pathname } = new URL(
       distribution.backendUrl

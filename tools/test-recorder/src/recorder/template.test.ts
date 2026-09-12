@@ -305,6 +305,28 @@ describe('recording template', () => {
           backendUrl: 'https://stagingcloud.comfy.org/'
         })
       ).toBe('cloud-staging')
+      expect(
+        storageStateKey({
+          id: 'cloud-prod',
+          label: 'Cloud production',
+          hint: '',
+          script: 'dev:cloud:prod',
+          needsLocalBackend: false,
+          backendUrl: 'https://cloud.comfy.org/'
+        })
+      ).toBe('cloud-prod')
+    })
+
+    it('fails closed when a custom distribution has no backend URL', () => {
+      expect(
+        storageStateKey({
+          id: 'custom',
+          label: 'Custom backend',
+          hint: '',
+          script: 'dev',
+          needsLocalBackend: false
+        })
+      ).toBe('custom-unparsed')
     })
 
     it('keys a custom backend by a hash of its own origin, not a shared "custom" bucket', () => {
