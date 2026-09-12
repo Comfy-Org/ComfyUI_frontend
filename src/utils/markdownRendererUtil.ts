@@ -20,7 +20,7 @@ type RuntimeLinkToken = Omit<Tokens.Link, 'tokens'> & {
 // Captures: 1) opening tag with src=, 2) optional quote, 3) relative path
 // Excludes absolute paths (starting with /) and URLs (http:// or https://)
 const MEDIA_SRC_REGEX =
-  /(<(?:img|source|video)[^>]*\ssrc=)(['"]?)(?!(?:[/#?]|[a-z][a-z0-9+.-]*:))([^'"\s>]+)\2/gi
+  /(<(?:img|source|video)(?:[^>"']|"[^"]*"|'[^']*')*?\ssrc=)(['"]?)(?!(?:[/#?]|[a-z][a-z0-9+.-]*:))([^'"\s>]+)\2/gi
 
 // Rooted paths, fragments, queries, and anything carrying a scheme (http,
 // javascript, data, ...) must keep their original form for sanitizing.

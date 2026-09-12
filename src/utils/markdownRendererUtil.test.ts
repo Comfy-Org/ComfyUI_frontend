@@ -41,6 +41,16 @@ describe('markdownRendererUtil', () => {
       expect(html).toContain('<video src="/api/out.mp4"></video>')
     })
 
+    it('does not treat src text inside another attribute as a media source', () => {
+      const html = renderMarkdownToHtml(
+        '<video title="x src=foo y" src=/keep></video>',
+        '/api'
+      )
+
+      expect(html).toContain('title="x src=foo y"')
+      expect(html).toContain('src="/keep"')
+    })
+
     it('leaves absolute and rooted link hrefs alone', () => {
       const html = renderMarkdownToHtml(
         '[a](https://example.com/x) [b](/api/view?f=1)',
