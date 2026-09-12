@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Auth, User, UserCredential } from 'firebase/auth'
 
+import type { FirebaseIdentityConfig } from './index.js'
+
 const sdk = vi.hoisted(() => {
   const unsubscribe = vi.fn()
   const listeners: Array<(user: unknown) => void> = []
@@ -176,6 +178,51 @@ describe('createFirebaseIdentity action ceilings', () => {
       settled,
       'a user may legitimately take minutes in the popup; the SDK owns its cancellation errors'
     ).not.toHaveBeenCalled()
+  })
+})
+
+describe('createFirebaseIdentity superseded actions', () => {
+  it('never delivers a superseded attempt’s late resolution to its original caller', async () => {
+    let resolveFirst!: (credential: UserCredential) => void
+    sdk.signInWithEmailAndPassword.mockReturnValueOnce(
+      new Promise<UserCredential>((resolve) => {
+        resolveFirst = resolve
+      })
+    )
+    const secondCredential = {
+      user: { uid: 'user-2' }
+    } as Partial<UserCredential> as UserCredential
+    sdk.signInWithEmailAndPassword.mockResolvedValueOnce(secondCredential)
+    const identity = await makeHostBoundIdentity(5_000)
+
+    const firstSettled = vi.fn()
+    identity
+      .signInWithEmail('a@b.example', 'first')
+      .then(firstSettled, firstSettled)
+    const second = identity.signInWithEmail('a@b.example', 'second')
+    resolveFirst(testCredential)
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(
+      firstSettled,
+      'the retry supersedes the first attempt; delivering its late credential would overlap the newer sign-in'
+    ).not.toHaveBeenCalledWith(testCredential)
+    await expect(second).resolves.toBe(secondCredential)
+  })
+})
+
+describe('createFirebaseIdentity exclusive config', () => {
+  it('cannot represent a config carrying both a host Auth and package app options', () => {
+    const both = { auth: hostAuth, options: { apiKey: 'test' } }
+    const asConfig = (config: FirebaseIdentityConfig): FirebaseIdentityConfig =>
+      config
+    // @ts-expect-error a config cannot carry both a host Auth and package app options
+    asConfig(both)
+
+    expect(
+      both,
+      'compile-time exclusivity guard; the runtime body only anchors the @ts-expect-error'
+    ).toBeDefined()
   })
 })
 

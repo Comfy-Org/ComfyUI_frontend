@@ -51,6 +51,8 @@ export interface FirebaseIdentityAppConfig extends ActionCeiling {
   readonly appName?: string
   /** Host-selected persistence; Firebase's default when omitted. */
   readonly persistence?: Persistence
+  /** A host-owned `Auth` and package-owned app options are exclusive. */
+  readonly auth?: never
 }
 
 /**
@@ -59,6 +61,9 @@ export interface FirebaseIdentityAppConfig extends ActionCeiling {
  */
 export interface FirebaseIdentityAuthConfig extends ActionCeiling {
   readonly auth: Auth
+  readonly options?: never
+  readonly appName?: never
+  readonly persistence?: never
 }
 
 export type FirebaseIdentityConfig =
@@ -98,23 +103,46 @@ function githubProvider(): GithubAuthProvider {
   return provider
 }
 
-function withCeiling<T>(run: Promise<T>, timeoutMs: number): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    const timer = setTimeout(
-      () => reject(new Error('Firebase auth action timed out')),
-      timeoutMs
-    )
-    run.then(
-      (value) => {
+/**
+ * A bound the caller can walk away from. The SDK call cannot be cancelled, so
+ * the timeout — and any newer attempt that supersedes this one — only abandons
+ * our side: the caller is rejected and every late resolve or reject from the
+ * abandoned SDK promise is suppressed, so it never reaches the caller or the
+ * downstream handler while a retry is already in flight. One runner per action
+ * so a reset never supersedes a sign-in.
+ */
+function boundedRunner(
+  timeoutMs: number | undefined
+): <T>(run: Promise<T>) => Promise<T> {
+  if (timeoutMs === undefined) return (run) => run
+  let abandonInFlight: ((reason: Error) => void) | undefined
+  return <T>(run: Promise<T>): Promise<T> =>
+    new Promise<T>((resolve, reject) => {
+      abandonInFlight?.(
+        new Error('Firebase auth action superseded by a newer attempt')
+      )
+      let abandoned = false
+      function abandon(reason: Error): void {
+        abandoned = true
         clearTimeout(timer)
-        resolve(value)
-      },
-      (error: unknown) => {
-        clearTimeout(timer)
-        reject(error)
+        reject(reason)
       }
-    )
-  })
+      const timer = setTimeout(
+        () => abandon(new Error('Firebase auth action timed out')),
+        timeoutMs
+      )
+      abandonInFlight = abandon
+      const deliver = (settle: () => void): void => {
+        if (abandoned) return
+        clearTimeout(timer)
+        abandonInFlight = undefined
+        settle()
+      }
+      run.then(
+        (value) => deliver(() => resolve(value)),
+        (error: unknown) => deliver(() => reject(error))
+      )
+    })
 }
 
 /**
@@ -136,7 +164,10 @@ function resolveUnknownEmailAsSent(error: unknown): void {
  * Auth per app.
  */
 function authResolver(config: FirebaseIdentityConfig): () => Auth {
-  if ('auth' in config) return () => config.auth
+  if (config.auth) {
+    const { auth } = config
+    return () => auth
+  }
   const appName = config.appName ?? 'comfy-account'
   let resolved: Auth | undefined
   return () => {
@@ -159,8 +190,8 @@ export function createFirebaseIdentity(
 ): FirebaseIdentity {
   const { actionTimeoutMs } = config
   const auth = authResolver(config)
-  const bounded = <T>(run: Promise<T>): Promise<T> =>
-    actionTimeoutMs === undefined ? run : withCeiling(run, actionTimeoutMs)
+  const boundedSignIn = boundedRunner(actionTimeoutMs)
+  const boundedReset = boundedRunner(actionTimeoutMs)
 
   return {
     [identityBrand]: true,
@@ -168,11 +199,11 @@ export function createFirebaseIdentity(
     signInWithGoogle: () => signInWithPopup(auth(), googleProvider()),
     signInWithGitHub: () => signInWithPopup(auth(), githubProvider()),
     signInWithEmail: (email, password) =>
-      bounded(signInWithEmailAndPassword(auth(), email, password)),
+      boundedSignIn(signInWithEmailAndPassword(auth(), email, password)),
     createUserWithEmail: (email, password) =>
       createUserWithEmailAndPassword(auth(), email, password),
     sendPasswordReset: (email) =>
-      bounded(sendPasswordResetEmail(auth(), email)).catch(
+      boundedReset(sendPasswordResetEmail(auth(), email)).catch(
         resolveUnknownEmailAsSent
       ),
     updatePassword: (newPassword) => {
