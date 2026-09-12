@@ -472,6 +472,104 @@ describe('useAgentSession (v1 composition root)', () => {
     ).toBe(false)
   })
 
+  it('(PM-647) ask_approval leaves a run approval for the user to answer', async () => {
+    const answerAsk = vi.fn(
+      async (): Promise<AgentAnswerAccepted> => ({ status: 'answered' })
+    )
+    const rest = fakeRest({ answerAsk })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest,
+      events: source,
+      runMode: { mode: () => 'ask_approval' }
+    })
+    session.start()
+    await session.sendMessage('build it')
+    emit(runApproval('msg-1'))
+    await nextTick()
+
+    expect(answerAsk).not.toHaveBeenCalled()
+    expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(false)
+    expect(
+      useAgentConversationStore().messages[0].parts.some(
+        (part) => part.type === 'runApproval'
+      )
+    ).toBe(true)
+  })
+
+  it('(PM-647) auto mode answers a run approval itself, exactly once', async () => {
+    const answerAsk = vi.fn(
+      async (): Promise<AgentAnswerAccepted> => ({ status: 'answered' })
+    )
+    const rest = fakeRest({ answerAsk })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest,
+      events: source,
+      runMode: { mode: () => 'auto' }
+    })
+    session.start()
+    await session.sendMessage('build it')
+    emit(runApproval('msg-1'))
+    await nextTick()
+
+    expect(answerAsk).toHaveBeenCalledTimes(1)
+    expect(answerAsk).toHaveBeenCalledWith('th-1', 'turn-1:call-1', ['run'])
+
+    // A duplicate/replayed agent_ask for the same ask_id must not re-fire the
+    // answer - answerAsk's answeringAskIds guard is what makes "applies once"
+    // hold even if the transport redelivers the frame.
+    emit(runApproval('msg-1'))
+    await nextTick()
+    expect(answerAsk).toHaveBeenCalledTimes(1)
+
+    emit(askResolved('msg-1'))
+    expect(
+      useAgentConversationStore().messages[0].parts.some(
+        (part) => part.type === 'runApproval'
+      )
+    ).toBe(false)
+  })
+
+  it('(PM-647) auto_limited leaves a run approval for the user to answer (no cost estimate on the ask yet)', async () => {
+    const answerAsk = vi.fn(
+      async (): Promise<AgentAnswerAccepted> => ({ status: 'answered' })
+    )
+    const rest = fakeRest({ answerAsk })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest,
+      events: source,
+      runMode: { mode: () => 'auto_limited' }
+    })
+    session.start()
+    await session.sendMessage('build it')
+    emit(runApproval('msg-1'))
+    await nextTick()
+
+    expect(answerAsk).not.toHaveBeenCalled()
+    expect(
+      useAgentConversationStore().messages[0].parts.some(
+        (part) => part.type === 'runApproval'
+      )
+    ).toBe(true)
+  })
+
+  it('(PM-647) omitting runMode preserves the pre-existing manual-answer behavior', async () => {
+    const answerAsk = vi.fn(
+      async (): Promise<AgentAnswerAccepted> => ({ status: 'answered' })
+    )
+    const rest = fakeRest({ answerAsk })
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    await session.sendMessage('build it')
+    emit(runApproval('msg-1'))
+    await nextTick()
+
+    expect(answerAsk).not.toHaveBeenCalled()
+  })
+
   it('collapses a stale approval on 409 without surfacing an error', async () => {
     const answerAsk = vi
       .fn<AgentRestClient['answerAsk']>()
