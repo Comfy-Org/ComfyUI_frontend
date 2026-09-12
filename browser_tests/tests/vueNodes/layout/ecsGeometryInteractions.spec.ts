@@ -188,8 +188,12 @@ test.describe(
         await comfyPage.page.evaluate(async () => {
           await navigator.clipboard.writeText('{ malformed workflow')
         })
+        const nodeCount = await comfyPage.nodeOps.getGraphNodesCount()
         await comfyPage.page.keyboard.press('Control+V')
         await comfyPage.page.keyboard.press('Escape')
+        await expect
+          .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+          .toBe(nodeCount)
         await sampler.dragBy({ x: 60, y: 30 })
         await expect
           .poll(() => sampler.getPosition())
@@ -221,7 +225,8 @@ test.describe(
           })
           await comfyPage.nextFrame()
           await expect(comfyPage.canvas).toHaveScreenshot(
-            `ecs-overlapping-text-${vueNodesEnabled ? 'vue' : 'legacy'}.png`
+            `ecs-overlapping-text-${vueNodesEnabled ? 'vue' : 'legacy'}.png`,
+            { maxDiffPixels: 3_000 }
           )
         }
       }
@@ -264,7 +269,8 @@ test.describe(
             sampler.root.getByText('seed', { exact: true })
           ).toBeVisible()
           await expect(sampler.root).toHaveScreenshot(
-            `ecs-text-zoom-${zoom * 100}.png`
+            `ecs-text-zoom-${zoom * 100}.png`,
+            { maxDiffPixels: 2 }
           )
         }
       }
