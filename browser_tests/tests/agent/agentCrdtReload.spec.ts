@@ -104,6 +104,13 @@ test.describe('Agent CRDT reload', { tag: '@cloud' }, () => {
     await page.reload()
     await waitForCloudApp(page)
     await expect(page.locator('#agent-panel-root')).toBeVisible()
+    const reloadedWs = await getWebSocket(ws)
+    reloadedWs.send(
+      JSON.stringify({
+        type: 'status',
+        data: { status: { exec_info: { queue_remaining: 0 } } }
+      })
+    )
     await expect
       .poll(() =>
         countDocFrames(webSocketMessages, 'doc_subscribe', workflowId)
