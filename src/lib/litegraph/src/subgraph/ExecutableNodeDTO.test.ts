@@ -10,6 +10,7 @@ import { toNodeId } from '@/types/nodeId'
 
 import {
   createNestedSubgraphs,
+  createTestRootGraph,
   createTestSubgraph,
   createTestSubgraphNode,
   resetSubgraphFixtureState
@@ -362,6 +363,55 @@ describe('Bypass node output resolution', () => {
     const resolved = bypassedDto.resolveOutput(0, 'IMAGE', new Set())
     expect(resolved).toBeDefined()
     expect(resolved?.node).toBe(upstreamDto)
+  })
+
+  it('should not pair an unrelated subgraph input with a bypassed output', () => {
+    const rootGraph = createTestRootGraph()
+    const subgraph = createTestSubgraph({
+      rootGraph,
+      inputs: [{ name: 'input', type: 'IMAGE' }],
+      outputs: [{ name: 'output', type: 'IMAGE' }]
+    })
+    const subgraphNode = createTestSubgraphNode(subgraph, {
+      id: 1,
+      parentGraph: rootGraph
+    })
+    rootGraph.add(subgraphNode)
+
+    const unrelatedNode = new LGraphNode('Unrelated interior node')
+    unrelatedNode.addOutput('source', 'IMAGE')
+    subgraph.add(unrelatedNode)
+
+    const upstreamNode = new LGraphNode('Upstream')
+    upstreamNode.addOutput('image', 'IMAGE')
+    rootGraph.add(upstreamNode)
+    upstreamNode.connect(0, subgraphNode, 0)
+
+    const nodesByExecutionId = new Map()
+    const upstreamDto = new ExecutableNodeDTO(
+      upstreamNode,
+      [],
+      nodesByExecutionId,
+      undefined
+    )
+    const subgraphDto = new ExecutableNodeDTO(
+      subgraphNode,
+      [],
+      nodesByExecutionId,
+      undefined
+    )
+    nodesByExecutionId.set(upstreamDto.id, upstreamDto)
+    nodesByExecutionId.set(subgraphDto.id, subgraphDto)
+
+    subgraphNode.mode = LGraphEventMode.BYPASS
+    const warningSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const resolved = subgraphDto.resolveOutput(0, 'IMAGE', new Set())
+
+      expect(resolved).toBeUndefined()
+    } finally {
+      warningSpy.mockRestore()
+    }
   })
 })
 
