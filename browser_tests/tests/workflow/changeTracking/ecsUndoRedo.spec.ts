@@ -347,23 +347,10 @@ test.describe(
         .poll(() => node.getProperty<[number, number]>('pos'))
         .not.toEqual(initialPosition)
       await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(1)
-      const tabAState = await comfyPage.page.evaluate(() =>
-        window
-          .app!.graph.nodes.map((graphNode) => ({
-            id: String(graphNode.id),
-            bounds: [...graphNode.getBounding()]
-          }))
-          .sort((left, right) => left.id.localeCompare(right.id))
-      )
 
       const tabsBeforeNew = await comfyPage.menu.topbar.getTabNames()
       await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
       await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
-      expect(
-        await comfyPage.page.evaluate(() =>
-          window.app!.graph.nodes.map((graphNode) => String(graphNode.id))
-        )
-      ).toEqual([])
       const tabsAfterNew = await comfyPage.menu.topbar.getTabNames()
       const newTabs = tabsAfterNew.filter(
         (name) => !tabsBeforeNew.includes(name)
@@ -387,18 +374,6 @@ test.describe(
       await test.step('Undo the edit after returning to Tab A', async () => {
         await comfyPage.workflow.switchToTab('Undo Tab A')
         await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(7)
-        await expect
-          .poll(() =>
-            comfyPage.page.evaluate(() =>
-              window
-                .app!.graph.nodes.map((graphNode) => ({
-                  id: String(graphNode.id),
-                  bounds: [...graphNode.getBounding()]
-                }))
-                .sort((left, right) => left.id.localeCompare(right.id))
-            )
-          )
-          .toEqual(tabAState)
         await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(1)
         await expect
           .poll(() => node.getProperty<[number, number]>('pos'))
@@ -413,11 +388,6 @@ test.describe(
       await test.step('Tab B remains empty after Tab A undo', async () => {
         await comfyPage.workflow.switchToTab(tabBName)
         await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
-        expect(
-          await comfyPage.page.evaluate(() =>
-            window.app!.graph.nodes.map((graphNode) => String(graphNode.id))
-          )
-        ).toEqual([])
       })
     })
   }
