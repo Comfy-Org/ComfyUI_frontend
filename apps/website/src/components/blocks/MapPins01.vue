@@ -40,6 +40,7 @@ const container = ref<HTMLElement | null>(null)
 let leaflet: typeof Leaflet | null = null
 let map: Leaflet.Map | null = null
 let pinLayer: Leaflet.LayerGroup | null = null
+let pendingClusterMoveEnd: (() => void) | null = null
 
 // Aborts the world-shape fetch and stops `mountMap` from touching the cleared
 // template ref when the component unmounts mid-setup.
@@ -154,8 +155,9 @@ function loadStyles(): Promise<void> {
   })
 }
 
-const prefersReducedMotion = () =>
-  window.matchMedia('(prefers-reduced-motion: reduce)').matches
+function prefersReducedMotion() {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+}
 
 /** Moves to the cluster's bounds, then checks whether its members are still
  * pixel-coincident at the landed zoom (capped by `maxZoom`) — if so, flying
@@ -163,12 +165,14 @@ const prefersReducedMotion = () =>
 function onClusterClick(items: MapPinMarker[]) {
   const L = leaflet
   if (!L || !map) return
+  if (pendingClusterMoveEnd) map.off('moveend', pendingClusterMoveEnd)
   const bounds = L.latLngBounds(
     items.map((item) => [item.coords.lat, item.coords.lng])
   )
   // Registered before the move: a non-animated `fitBounds` finishes — and
   // fires `moveend` — synchronously, so a listener added afterwards is late.
-  map.once('moveend', () => {
+  pendingClusterMoveEnd = () => {
+    pendingClusterMoveEnd = null
     if (!map) return
     const anchor = map.latLngToContainerPoint([
       items[0].coords.lat,
@@ -183,7 +187,8 @@ function onClusterClick(items: MapPinMarker[]) {
     if (!stillCoincident) return
     for (const item of items) spiderfiedIds.add(item.id)
     rebuildPins()
-  })
+  }
+  map.once('moveend', pendingClusterMoveEnd)
   const framing: Leaflet.FitBoundsOptions = { padding: [60, 60], maxZoom: 7 }
   if (prefersReducedMotion())
     map.fitBounds(bounds, { ...framing, animate: false })
@@ -273,6 +278,7 @@ onBeforeUnmount(() => {
   disposal.abort()
   map?.remove()
   map = null
+  pendingClusterMoveEnd = null
 })
 </script>
 

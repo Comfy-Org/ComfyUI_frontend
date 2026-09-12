@@ -65,6 +65,11 @@ vi.mock(import('leaflet'), () => {
       moveendCallbacks.push(handler)
       return fakeMap
     },
+    off: (_event: string, handler: () => void) => {
+      const index = moveendCallbacks.indexOf(handler)
+      if (index !== -1) moveendCallbacks.splice(index, 1)
+      return fakeMap
+    },
     flyToBounds: (...args: unknown[]) => {
       flyToBoundsCalls.push(args)
       return fakeMap
@@ -209,6 +214,32 @@ describe('MapPins01', () => {
     const lyon = leafletState.markers.find((marker) => marker.title === 'Lyon')
     lyon?.click?.()
     expect(emitted('select')).toEqual([['lyon']])
+  })
+
+  it('cancels an unfinished cluster check when another cluster is clicked', async () => {
+    const twoClusters: MapPinMarker[] = [
+      ...markers.slice(0, 2),
+      { id: 'tokyo', coords: { lat: 0, lng: 500 }, label: 'Tokyo' },
+      { id: 'osaka', coords: { lat: 0, lng: 510 }, label: 'Osaka' }
+    ]
+    render(MapPins01, {
+      props: { markers: twoClusters, regionLabel: 'Event map' }
+    })
+    await waitForPins(2)
+
+    leafletState.markers
+      .find((marker) => marker.title === 'Paris, Lyon')
+      ?.click?.()
+    leafletState.markers
+      .find((marker) => marker.title === 'Tokyo, Osaka')
+      ?.click?.()
+
+    expect(leafletState.moveendCallbacks).toHaveLength(1)
+    leafletState.moveendCallbacks[0]()
+
+    expect(
+      leafletState.markers.map((marker) => marker.title).toSorted()
+    ).toEqual(['Osaka', 'Paris, Lyon', 'Tokyo'])
   })
 
   it('jumps to the cluster instead of flying when reduced motion is preferred', async () => {
