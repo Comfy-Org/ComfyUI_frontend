@@ -5,11 +5,9 @@
     "REPLACES the generic map wholesale with frontend-specific risk classes.",
     "grade = worst(path_floor, provenance, reversibility); an axis can only raise a tier.",
     "",
-    "Lane mapping to the Comfy CD risk-assessment fork:",
-    "  R0-R1 -> flagless merge lane (copy / docs / tests / storybook only)",
-    "  R2    -> feature flag required (default OFF) + ephemeral env validation",
-    "  R3    -> flag + ephemeral env + Sheriff/QA sign-off; serialization and auth/billing",
-    "           changes also need a (Feature) Test Plan entry"
+    "The overall advisory tier includes provenance and CI health; it is not a flag requirement.",
+    "Feature-flag advice independently uses runtime path rules, never this aggregate grade.",
+    "Runtime R2/R3 paths receive rollout review advice. Test and tooling paths do not require runtime flags."
   ],
   "tiers": ["R0", "R1", "R2", "R3"],
   "default_tier": "R0",
