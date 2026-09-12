@@ -46,8 +46,7 @@ test.describe(
               )
               .toBe('original parent edit')
 
-            await original.click('title')
-            await comfyPage.clipboard.copy()
+            await original.copy()
             await comfyPage.clipboard.paste()
             await expect
               .poll(() =>
@@ -120,8 +119,7 @@ test.describe(
                 'subgraphs/subgraph-with-promoted-text-widget'
               )
               const original = await comfyPage.nodeOps.getNodeRefById('11')
-              await original.click('title')
-              await comfyPage.clipboard.copy()
+              await original.copy()
               await comfyPage.clipboard.paste()
 
               await expect
