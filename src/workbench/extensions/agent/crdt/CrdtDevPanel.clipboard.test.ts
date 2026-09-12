@@ -223,6 +223,38 @@ describe('CrdtDevPanel clipboard controls', () => {
     expect(writeText).toHaveBeenCalledExactlyOnceWith('node-added')
   })
 
+  it('keeps the log usable when node-id properties throw', async () => {
+    const user = userEvent.setup()
+    const addedThrows: { removed: string[] } = {
+      removed: ['node-removed']
+    }
+    Object.defineProperty(addedThrows, 'added', {
+      get: () => {
+        throw new Error('added is unreadable')
+      }
+    })
+    const removedThrows: { added: string[] } = { added: ['node-added'] }
+    Object.defineProperty(removedThrows, 'removed', {
+      get: () => {
+        throw new Error('removed is unreadable')
+      }
+    })
+    recordDevEvent('doc_nodes_changed', addedThrows)
+    recordDevEvent('doc_nodes_changed', removedThrows)
+    renderPanel()
+    await user.click(screen.getByTestId('crdt-dev-panel-tab-log'))
+
+    await user.click(
+      screen.getByRole('button', { name: 'Copy node id node-removed' })
+    )
+    await user.click(
+      screen.getByRole('button', { name: 'Copy node id node-added' })
+    )
+
+    expect(writeText).toHaveBeenNthCalledWith(1, 'node-removed')
+    expect(writeText).toHaveBeenNthCalledWith(2, 'node-added')
+  })
+
   it('serializes circular and bigint details without losing their content', async () => {
     const user = userEvent.setup()
     const detail: { count: bigint; self?: unknown } = { count: 7n }

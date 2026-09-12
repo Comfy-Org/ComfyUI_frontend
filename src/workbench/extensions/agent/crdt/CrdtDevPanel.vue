@@ -625,18 +625,26 @@ function truncateDetail(detail: string, limit = 200): string {
   return end < detail.length ? `${detail.slice(0, end)}…` : detail
 }
 
+function readNodeIdList(detail: object, key: 'added' | 'removed'): unknown[] {
+  try {
+    const value: unknown = Reflect.get(detail, key)
+    return Array.isArray(value) ? value : []
+  } catch {
+    return []
+  }
+}
+
 function eventNodeIds(event: DevEvent): string[] {
   if (event.kind !== 'doc_nodes_changed') return []
   const detail = event.detail
   if (typeof detail !== 'object' || detail === null) return []
-  const added: unknown = Reflect.get(detail, 'added')
-  const removed: unknown = Reflect.get(detail, 'removed')
+  const added = readNodeIdList(detail, 'added')
+  const removed = readNodeIdList(detail, 'removed')
   return [
     ...new Set(
-      [
-        ...(Array.isArray(added) ? added : []),
-        ...(Array.isArray(removed) ? removed : [])
-      ].filter((id): id is string => typeof id === 'string')
+      [...added, ...removed].filter(
+        (id): id is string => typeof id === 'string'
+      )
     )
   ]
 }
