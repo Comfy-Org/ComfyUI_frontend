@@ -590,6 +590,30 @@ describe('ModelDetail', () => {
     await vi.waitFor(() => expect(refreshWorkshopCredits).toHaveBeenCalled())
   })
 
+  it('asks before the tab is closed on a run in flight, and only then', async () => {
+    auth.session.value = credential
+    const pending = Promise.withResolvers<typeof routerResult>()
+    vi.mocked(runWorkshopRouter).mockReturnValue(pending.promise)
+    mountDetail({ model: runnable })
+
+    const leaving = () =>
+      window.dispatchEvent(new Event('beforeunload', { cancelable: true }))
+    expect(leaving()).toBe(true)
+
+    await user().type(screen.getByTestId('field-prompt'), 'A teapot')
+    await user().click(screen.getByTestId('run-button'))
+    await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledTimes(1))
+    expect(leaving()).toBe(false)
+
+    pending.resolve(routerResult)
+    await vi.waitFor(() =>
+      expect(
+        screen.getByTestId('playground-output').getAttribute('data-state')
+      ).toBe('succeeded')
+    )
+    expect(leaving()).toBe(true)
+  })
+
   it('retries an unchanged failed request with its original key, but a deliberate new run gets a new key', async () => {
     auth.session.value = credential
     vi.mocked(runWorkshopRouter)
