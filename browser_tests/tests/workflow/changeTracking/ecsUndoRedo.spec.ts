@@ -228,8 +228,20 @@ test.describe(
             await expect
               .poll(() => comfyPage.workflow.getUndoQueueSize())
               .toBe(snapshots.length)
-            await comfyPage.nextFrame()
-            snapshots.push(await getSnapshot())
+            let snapshot: Awaited<ReturnType<typeof getSnapshot>> | undefined
+            await expect
+              .poll(async () => {
+                const current = await getSnapshot()
+                const isStable =
+                  snapshot !== undefined &&
+                  JSON.stringify(current) === JSON.stringify(snapshot)
+                snapshot = current
+                return isStable
+              })
+              .toBe(true)
+            if (snapshot === undefined)
+              throw new Error('Snapshot was not captured')
+            snapshots.push(snapshot)
           }
 
           await comfyPage.searchBoxV2.addNode('Load Checkpoint', {
