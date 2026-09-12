@@ -281,6 +281,22 @@ export class VueNodeHelpers {
     }
   }
 
+  async editAndCommitNumber(
+    nodeTitle: string,
+    widgetName: string,
+    value: string
+  ): Promise<void> {
+    const widget = this.getWidgetByName(nodeTitle, widgetName)
+    const { input } = this.getInputNumberControls(widget)
+    const fixture = await this.getFixtureByTitle(nodeTitle)
+    await widget.click()
+    await input.fill(value)
+    await input.press('Enter')
+    await this.page.evaluate(() => new Promise(requestAnimationFrame))
+    await fixture.title.click()
+    await expect(input).toHaveValue(value)
+  }
+
   /**
    * Locator for the Enter Subgraph footer button.
    */

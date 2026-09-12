@@ -91,17 +91,11 @@ test.describe(
           const initialValue = await steps.getValue()
 
           if (vueNodesEnabled) {
-            const widget = comfyPage.vueNodes.getWidgetByName(
+            await comfyPage.vueNodes.editAndCommitNumber(
               'KSampler',
-              'steps'
+              'steps',
+              '31'
             )
-            const { input } = comfyPage.vueNodes.getInputNumberControls(widget)
-            await widget.click()
-            await input.fill('31')
-            await input.press('Enter')
-            await (
-              await comfyPage.vueNodes.getFixtureByTitle('KSampler')
-            ).title.click()
           } else {
             await steps.dragHorizontal(80)
           }
@@ -140,15 +134,10 @@ test.describe(
         )
         const { input } = comfyPage.vueNodes.getInputNumberControls(stepsWidget)
         const initialSteps = await input.inputValue()
-        await stepsWidget.click()
-        await input.fill('31')
-        await input.press('Enter')
-        await expect(input).toHaveValue('31')
+        await comfyPage.vueNodes.editAndCommitNumber('KSampler', 'steps', '31')
         await expect
           .poll(async () => (await node.getWidget(2)).getValue())
           .toBe(31)
-        // Leave the editor through a real pointer event before the next edit.
-        await ksampler.title.click()
         await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(2)
 
         const initialNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
@@ -261,23 +250,12 @@ test.describe(
         await sampler.dragBy({ x: 70, y: 100 })
         await checkpoint()
 
-        const samplerFixture =
-          await comfyPage.vueNodes.getFixtureByTitle('KSampler')
-        const editNumber = async (name: string, value: string) => {
-          const widget = comfyPage.vueNodes.getWidgetByName('KSampler', name)
-          const { input } = comfyPage.vueNodes.getInputNumberControls(widget)
-          await widget.click()
-          await input.fill(value)
-          await input.press('Enter')
-          await samplerFixture.title.click()
-          await expect(input).toHaveValue(value)
-        }
-        await editNumber('steps', '31')
+        await comfyPage.vueNodes.editAndCommitNumber('KSampler', 'steps', '31')
         await expect
           .poll(async () => (await sampler.getWidgetByName('steps')).getValue())
           .toBe(31)
         await checkpoint()
-        await editNumber('cfg', '9.5')
+        await comfyPage.vueNodes.editAndCommitNumber('KSampler', 'cfg', '9.5')
         await expect
           .poll(async () => (await sampler.getWidgetByName('cfg')).getValue())
           .toBe(9.5)
