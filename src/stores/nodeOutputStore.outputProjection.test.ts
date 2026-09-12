@@ -41,7 +41,6 @@ function createMockNode(id: number): LGraphNode {
 
 describe('useNodeOutputStore output projection', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     app.nodeOutputs = {}
     app.nodePreviewImages = {}
   })
