@@ -2,31 +2,21 @@ import { expect } from '@playwright/test'
 
 import { readFileSync } from 'node:fs'
 
+import { workshopModelOrderSchema } from '../src/config/workshop-model-order.schema'
 import { MODEL_PATH, test } from './fixtures/modelsAccount'
 
 // Read here rather than imported from the config module: Playwright's loader
-// will not take that module's JSON import. The shape is narrowed rather than
-// asserted, so a malformed file fails here instead of inside a test.
-function orderedSlugs(data: unknown): readonly string[] {
-  if (
-    typeof data === 'object' &&
-    data !== null &&
-    'slugs' in data &&
-    Array.isArray(data.slugs) &&
-    data.slugs.every((slug) => typeof slug === 'string')
-  )
-    return data.slugs
-  throw new Error('workshop-model-order.json is not a list of slugs')
-}
-
-const modelOrder = orderedSlugs(
+// will not take that module's JSON import. The file still goes through the
+// schema the site is built from, so this test holds the page to the same
+// contract.
+const modelOrder = workshopModelOrderSchema.parse(
   JSON.parse(
     readFileSync(
       new URL('../src/content/workshop-model-order.json', import.meta.url),
       'utf8'
     )
   )
-)
+).slugs
 
 test.describe('Retired prototype routes', () => {
   test.beforeEach(async ({ page }) => {
