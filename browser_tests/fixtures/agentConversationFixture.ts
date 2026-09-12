@@ -152,7 +152,8 @@ class AgentConversationHarness {
     private readonly page: Page,
     readonly conversation: AgentConversation,
     readonly replayTiming: ReplayTiming,
-    caseId: string
+    caseId: string,
+    private readonly projectCanvas: boolean
   ) {
     const { workflow } = conversation
     this.host = new HostDoc(workflow.id, workflow.seed, workflow.catalog)
@@ -187,9 +188,11 @@ class AgentConversationHarness {
         })
       )
     })
-    const objectInfo = this.page.waitForResponse((response) =>
-      new URL(response.url()).pathname.endsWith('/api/object_info')
-    )
+    const objectInfo = this.projectCanvas
+      ? this.page.waitForResponse((response) =>
+          new URL(response.url()).pathname.endsWith('/api/object_info')
+        )
+      : undefined
     await bootAgentApp(this.page, agentFlag, {
       // Only the Vue node renderer projects follower edits onto the canvas.
       settings: {
@@ -197,11 +200,15 @@ class AgentConversationHarness {
         'Comfy.Graph.CanvasInfo': false
       },
       // Replayed nodes materialize from registered node types; the recordings use core nodes only.
-      objectInfo: 'server'
+      objectInfo: this.projectCanvas ? 'server' : undefined
     })
-    const definitions = (await (await objectInfo).json()) as ObjectInfoResponse
-    for (const [type, definition] of Object.entries(definitions))
-      this.displayNames.set(type, definition.display_name || definition.name)
+    if (objectInfo) {
+      const definitions = (await (
+        await objectInfo
+      ).json()) as ObjectInfoResponse
+      for (const [type, definition] of Object.entries(definitions))
+        this.displayNames.set(type, definition.display_name || definition.name)
+    }
 
     await this.page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
     await expect(this.panel).toBeVisible({ timeout: PANEL_MOUNT_TIMEOUT })
@@ -304,7 +311,7 @@ class AgentConversationHarness {
       await this.replayResponse(turn)
       await this.waitForTurnComplete()
       await this.expectTurnRendered(turn, before)
-      await this.expectCanvasReplayed(turn)
+      if (this.projectCanvas) await this.expectCanvasReplayed(turn)
     }
   }
 
@@ -630,6 +637,8 @@ interface ConversationFixtures {
   conversationCase: string
   // 'recorded' replays the fixture's at_ms gaps; the default follows AGENT_REPLAY_TIMING.
   replayTiming: ReplayTiming
+  /** Load real node definitions and assert the projected canvas after each turn. */
+  projectCanvas: boolean
   agentConversation: AgentConversationHarness
 }
 
@@ -639,6 +648,7 @@ const VIEWPORT = { width: 2560, height: 1440 }
 export const agentConversationTest = agentTest.extend<ConversationFixtures>({
   conversationCase: ['', { option: true }],
   replayTiming: [defaultReplayTiming(), { option: true }],
+  projectCanvas: [true, { option: true }],
   viewport: VIEWPORT,
   video: {
     mode:
@@ -648,7 +658,7 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
     size: VIEWPORT
   },
   agentConversation: async (
-    { page, agentFlagEnabled, conversationCase, replayTiming },
+    { page, agentFlagEnabled, conversationCase, replayTiming, projectCanvas },
     use
   ) => {
     if (conversationCase.length === 0)
@@ -657,7 +667,8 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
       page,
       loadAgentConversation(conversationCase),
       replayTiming,
-      conversationCase
+      conversationCase,
+      projectCanvas
     )
     await harness.boot(agentFlagEnabled)
     await use(harness)
