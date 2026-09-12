@@ -17,6 +17,7 @@ Our project supports multiple languages using `vue-i18n`. This allows users arou
 - pt-BR (Português (BR))
 - fa (فارسی)
 - he (עברית)
+- hi (हिन्दी)
 - it (Italiano)
 
 ## How to Add a New Language
