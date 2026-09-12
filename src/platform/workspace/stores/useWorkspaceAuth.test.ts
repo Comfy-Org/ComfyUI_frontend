@@ -2900,6 +2900,44 @@ describe('useWorkspaceAuthStore', () => {
       expect(mockFetch).not.toHaveBeenCalled()
     })
 
+    it('destroy stops the flag watcher so a later flag flip cannot reattach or mint', async () => {
+      mockUnifiedCloudAuthEnabled.value = true
+      vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
+        'firebase-token-xyz'
+      )
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(personalTokenResponse)
+      })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      await store.mintAtLogin()
+      expect(portListeners.size).toBe(1)
+
+      store.destroy()
+      expect(portListeners.size, 'destroy must detach the identity port').toBe(
+        0
+      )
+
+      mockFetch.mockClear()
+      mockUnifiedCloudAuthEnabled.value = false
+      await nextTick()
+      mockUnifiedCloudAuthEnabled.value = true
+      await nextTick()
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(
+        portListeners.size,
+        'a destroyed store must not reattach identity when the flag flips'
+      ).toBe(0)
+      expect(
+        mockFetch,
+        'a destroyed store must not mint when the flag flips'
+      ).not.toHaveBeenCalled()
+      expect(store.getUnifiedToken()).toBeUndefined()
+    })
+
     it('turning the flag OFF detaches the identity, clears the slot, and stops refreshing', async () => {
       mockUnifiedCloudAuthEnabled.value = true
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
