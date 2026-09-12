@@ -299,8 +299,12 @@ test.describe('Vue Combo Widget', { tag: ['@vue-nodes', '@widget'] }, () => {
     // the original" also holds for a selection that never applied at all.
     await expect.poll(scheduler).toBe('karras')
 
-    await comfyPage.canvas.click()
-    await comfyPage.keyboard.undo()
+    // Keystrokes go to the page, not to the canvas locator. `keyboard.undo()`
+    // defaults to `canvas.press()`, which runs actionability checks against a
+    // canvas the Vue transform pane covers — the click is then intercepted by
+    // whichever node sits under it (here the combobox itself).
+    await comfyPage.page.keyboard.press('Escape')
+    await comfyPage.page.keyboard.press('ControlOrMeta+z')
     await expect.poll(scheduler).toBe(original)
 
     await comfyPage.page.keyboard.press('ControlOrMeta+Shift+z')
@@ -308,7 +312,7 @@ test.describe('Vue Combo Widget', { tag: ['@vue-nodes', '@widget'] }, () => {
 
     // The redo must not have pushed an entry of its own: one more undo has to
     // land back on the original, not on an intermediate copy of 'karras'.
-    await comfyPage.keyboard.undo()
+    await comfyPage.page.keyboard.press('ControlOrMeta+z')
     await expect.poll(scheduler).toBe(original)
   })
 
