@@ -32,6 +32,18 @@ export interface MintableGraph {
   rootGraph?: { id: string }
   getNodeById(id: NodeId): LGraphNode | null
   _nodes: LGraphNode[]
+  /** Root-graph links; read only to diff an undo/redo restore. */
+  links?: { values(): Iterable<MintableLink> }
+}
+
+/** The link fields an undo/redo restore diff needs. */
+export interface MintableLink {
+  id: string | number
+  origin_id: string | number
+  origin_slot: number
+  target_id: string | number
+  target_slot: number
+  type: unknown
 }
 
 export interface MintPortWiringDeps {
@@ -47,6 +59,13 @@ export interface MintPortWiringDeps {
   localActorPrefix: string
   /** The live root graph, or null when no workflow is open. */
   getGraph(): MintableGraph | null
+  /**
+   * True while the active workflow's ChangeTracker replays an undo/redo
+   * state (`_restoringState`). Such a load is a human intent whose result
+   * must reach the doc, so the wiring diffs the graph across the load bracket
+   * and mints the difference (QAF-51). Optional: absent means never.
+   */
+  isRestoringState?(): boolean
 }
 
 export interface MintPortWiring {
@@ -122,6 +141,117 @@ function serializeForMint(node: LGraphNode): WorkflowNode | null {
     delete serialized.widgets_values_named
   }
   return serialized as unknown as WorkflowNode
+}
+
+/** Root-graph nodes and links keyed by stringified id (undo/redo diff input). */
+interface RestoreSnapshot {
+  nodes: Map<string, WorkflowNode>
+  links: Map<string, MintableLink>
+}
+
+function snapshotGraph(graph: MintableGraph): RestoreSnapshot {
+  const nodes = new Map<string, WorkflowNode>()
+  for (const node of graph._nodes) {
+    const serialized = serializeForMint(node)
+    if (serialized) nodes.set(String(node.id), serialized)
+  }
+  const links = new Map<string, MintableLink>()
+  if (typeof graph.links?.values === 'function') {
+    for (const link of graph.links.values()) links.set(String(link.id), link)
+  }
+  return { nodes, links }
+}
+
+function widgetValuesOf(node: WorkflowNode): Record<string, unknown> {
+  const values = node.widgets_values
+  return values != null && typeof values === 'object' && !Array.isArray(values)
+    ? values
+    : {}
+}
+
+/**
+ * Express an undo/redo restore as the semantic ops a human would have minted
+ * by hand: deletions first (with the links they severed), then additions,
+ * widget changes on surviving nodes, and finally new links. A link that
+ * vanished without its node is not representable as a mint here and is
+ * surfaced, never silently dropped.
+ */
+function diffRestore(
+  before: RestoreSnapshot,
+  after: RestoreSnapshot
+): GraphOperation[] {
+  const operations: GraphOperation[] = []
+
+  for (const [id] of before.nodes) {
+    if (after.nodes.has(id)) continue
+    const removedLinks: Array<string | number> = []
+    for (const link of before.links.values()) {
+      if (String(link.origin_id) === id || String(link.target_id) === id) {
+        removedLinks.push(link.id)
+      }
+    }
+    operations.push({
+      op: 'delete_node',
+      node_id: id,
+      removed_links: removedLinks
+    })
+  }
+
+  for (const [id, node] of after.nodes) {
+    if (before.nodes.has(id)) continue
+    const pos = Array.isArray(node.pos) ? node.pos : [0, 0]
+    operations.push({
+      op: 'add_node',
+      node_id: id,
+      class_type: node.type,
+      pos,
+      node
+    })
+  }
+
+  for (const [id, node] of after.nodes) {
+    const previous = before.nodes.get(id)
+    if (!previous) continue
+    const oldValues = widgetValuesOf(previous)
+    for (const [name, value] of Object.entries(widgetValuesOf(node))) {
+      const old = oldValues[name]
+      if (JSON.stringify(old) === JSON.stringify(value)) continue
+      operations.push({
+        op: 'set_widget',
+        node_id: id,
+        widget: name,
+        value,
+        old
+      })
+    }
+  }
+
+  for (const [id, link] of after.links) {
+    if (before.links.has(id)) continue
+    operations.push({
+      op: 'connect',
+      link_id: link.id,
+      from_node: link.origin_id,
+      from_slot: link.origin_slot,
+      to_node: link.target_id,
+      to_slot: link.target_slot,
+      link_type: String(link.type)
+    })
+  }
+
+  for (const [id, link] of before.links) {
+    if (after.links.has(id)) continue
+    const endpointRemoved =
+      !after.nodes.has(String(link.origin_id)) ||
+      !after.nodes.has(String(link.target_id))
+    if (endpointRemoved) continue
+    console.error(
+      '[agent-crdt] undo/redo restore removed link without its node; doc may diverge',
+      id
+    )
+  }
+
+  return operations
 }
 
 export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
@@ -241,6 +371,14 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
 
   let loadBracketOpen = false
 
+  /**
+   * Graph snapshot taken at the open of an undo/redo restore bracket. Every
+   * mint is suppressed while a graph loads, so without this diff the doc never
+   * learns what the undo removed and the next remote frame re-materialises it
+   * (QAF-51).
+   */
+  let restoreSnapshot: RestoreSnapshot | null = null
+
   const wiring: MintPortWiring = {
     session,
     runIntentionalClear(fn) {
@@ -250,11 +388,23 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
       if (loadBracketOpen) return
       loadBracketOpen = true
       session.beginGraphTeardown()
+      restoreSnapshot = null
+      if (deps.isRestoringState?.() && deps.isEnabled() && deps.isDocBound()) {
+        const graph = deps.getGraph()
+        if (graph) restoreSnapshot = snapshotGraph(graph)
+      }
     },
     onAfterGraphConfigure() {
       if (!loadBracketOpen) return
       loadBracketOpen = false
       session.endGraphTeardown()
+      const before = restoreSnapshot
+      restoreSnapshot = null
+      if (!before) return
+      const graph = deps.getGraph()
+      if (!graph) return
+      const operations = diffRestore(before, snapshotGraph(graph))
+      if (operations.length > 0) deps.enqueue(operations)
     },
     detach() {
       activeWirings.delete(wiring)
