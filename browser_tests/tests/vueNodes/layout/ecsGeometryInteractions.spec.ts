@@ -209,6 +209,14 @@ test.describe(
       'overlapping multiline text remains clipped to each node',
       { tag: '@screenshot' },
       async ({ comfyPage }) => {
+        await comfyPage.page.evaluate((nodeId) => {
+          const sampler = window.app!.graph.getNodeById(nodeId)
+          if (!sampler) throw new Error('KSampler is unavailable')
+          const seed = sampler.widgets?.find((widget) => widget.name === 'seed')
+          if (!seed) throw new Error('Seed widget is unavailable')
+          seed.value = 123456789
+          sampler.setDirtyCanvas(true, true)
+        }, toNodeId('3'))
         for (const vueNodesEnabled of [false, true]) {
           await comfyPage.settings.setSetting(
             'Comfy.VueNodes.Enabled',
@@ -225,8 +233,7 @@ test.describe(
           })
           await comfyPage.nextFrame()
           await expect(comfyPage.canvas).toHaveScreenshot(
-            `ecs-overlapping-text-${vueNodesEnabled ? 'vue' : 'legacy'}.png`,
-            { maxDiffPixels: 3_000 }
+            `ecs-overlapping-text-${vueNodesEnabled ? 'vue' : 'legacy'}.png`
           )
         }
       }
@@ -265,12 +272,13 @@ test.describe(
           )
           await comfyPage.nextFrame()
           await expect(sampler.title).toBeVisible()
-          await expect(
-            sampler.root.getByText('seed', { exact: true })
-          ).toBeVisible()
-          await expect(sampler.root).toHaveScreenshot(
-            `ecs-text-zoom-${zoom * 100}.png`,
-            { maxDiffPixels: 2 }
+          const seedLabel = sampler.root.getByText('seed', { exact: true })
+          await expect(seedLabel).toBeVisible()
+          await expect(sampler.title).toHaveScreenshot(
+            `ecs-title-zoom-${zoom * 100}.png`
+          )
+          await expect(seedLabel).toHaveScreenshot(
+            `ecs-seed-label-zoom-${zoom * 100}.png`
           )
         }
       }
