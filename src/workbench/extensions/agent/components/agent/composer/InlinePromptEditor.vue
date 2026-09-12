@@ -6,7 +6,7 @@ import { keymap } from '@tiptap/pm/keymap'
 import { EditorState, TextSelection } from '@tiptap/pm/state'
 import { Decoration, DecorationSet, EditorView } from '@tiptap/pm/view'
 import { onBeforeUnmount, onMounted, useTemplateRef, watch } from 'vue'
-import DOMPurify from 'dompurify'
+import { default as DOMPurify } from 'dompurify'
 import { useI18n } from 'vue-i18n'
 
 import type { PromptEditor } from '../../../types/promptEditor'

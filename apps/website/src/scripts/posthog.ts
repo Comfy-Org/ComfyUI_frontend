@@ -1,4 +1,4 @@
-import posthog from 'posthog-js'
+import { posthog } from 'posthog-js'
 import { readonly, ref } from 'vue'
 import type { Ref } from 'vue'
 
