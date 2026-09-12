@@ -71,6 +71,22 @@ const testCredential = {
   user: testUser
 } as Partial<UserCredential> as UserCredential
 
+interface Deferred<T> {
+  promise: Promise<T>
+  resolve: (value: T) => void
+  reject: (reason: unknown) => void
+}
+
+function deferred<T>(): Deferred<T> {
+  let resolve!: (value: T) => void
+  let reject!: (reason: unknown) => void
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res
+    reject = rej
+  })
+  return { promise, resolve, reject }
+}
+
 beforeEach(() => {
   sdk.listeners.length = 0
   app.initializeApp.mockClear()
@@ -182,25 +198,26 @@ describe('createFirebaseIdentity action ceilings', () => {
 })
 
 describe('createFirebaseIdentity superseded actions', () => {
-  it('never delivers a superseded attempt’s late resolution to its original caller', async () => {
-    let resolveFirst!: (credential: UserCredential) => void
-    sdk.signInWithEmailAndPassword.mockReturnValueOnce(
-      new Promise<UserCredential>((resolve) => {
-        resolveFirst = resolve
-      })
-    )
+  it('rejects the superseded caller and never delivers its late resolution', async () => {
+    const first = deferred<UserCredential>()
+    sdk.signInWithEmailAndPassword.mockReturnValueOnce(first.promise)
     const secondCredential = {
       user: { uid: 'user-2' }
     } as Partial<UserCredential> as UserCredential
     sdk.signInWithEmailAndPassword.mockResolvedValueOnce(secondCredential)
     const identity = await makeHostBoundIdentity(5_000)
 
+    const firstAttempt = identity.signInWithEmail('a@b.example', 'first')
     const firstSettled = vi.fn()
-    identity
-      .signInWithEmail('a@b.example', 'first')
-      .then(firstSettled, firstSettled)
+    firstAttempt.then(firstSettled, firstSettled)
     const second = identity.signInWithEmail('a@b.example', 'second')
-    resolveFirst(testCredential)
+
+    await expect(
+      firstAttempt,
+      'a superseded caller must reject so the sign-in UI can recover, not hang pending'
+    ).rejects.toThrow(/superseded/)
+
+    first.resolve(testCredential)
     await vi.advanceTimersByTimeAsync(0)
 
     expect(
@@ -208,6 +225,53 @@ describe('createFirebaseIdentity superseded actions', () => {
       'the retry supersedes the first attempt; delivering its late credential would overlap the newer sign-in'
     ).not.toHaveBeenCalledWith(testCredential)
     await expect(second).resolves.toBe(secondCredential)
+  })
+
+  it('suppresses the abandoned attempt late rejection instead of leaking it', async () => {
+    const first = deferred<UserCredential>()
+    sdk.signInWithEmailAndPassword.mockReturnValueOnce(first.promise)
+    sdk.signInWithEmailAndPassword.mockResolvedValueOnce(testCredential)
+    const identity = await makeHostBoundIdentity(5_000)
+
+    const firstAttempt = identity.signInWithEmail('a@b.example', 'first')
+    const second = identity.signInWithEmail('a@b.example', 'second')
+
+    await expect(firstAttempt).rejects.toThrow(/superseded/)
+    first.reject(new Error('auth/network-request-failed'))
+    await vi.advanceTimersByTimeAsync(0)
+
+    await expect(
+      second,
+      'the abandoned SDK promise settling late must not reach the winning attempt or surface as an unhandled rejection'
+    ).resolves.toBe(testCredential)
+  })
+
+  it('keeps an in-flight sign-in and password reset independent', async () => {
+    const signIn = deferred<UserCredential>()
+    sdk.signInWithEmailAndPassword.mockReturnValueOnce(signIn.promise)
+    const reset = deferred<void>()
+    sdk.sendPasswordResetEmail.mockReturnValueOnce(reset.promise)
+    const identity = await makeHostBoundIdentity(5_000)
+
+    const signInSettled = vi.fn()
+    identity
+      .signInWithEmail('a@b.example', 'first')
+      .then(signInSettled, signInSettled)
+    const resetSettled = vi.fn()
+    identity.sendPasswordReset('a@b.example').then(resetSettled, resetSettled)
+
+    signIn.resolve(testCredential)
+    reset.resolve()
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(
+      signInSettled,
+      'a password reset shares no runner with sign-in; it must not abandon the in-flight sign-in'
+    ).toHaveBeenCalledWith(testCredential)
+    expect(
+      resetSettled,
+      'and the in-flight sign-in must not abandon the password reset'
+    ).toHaveBeenCalledWith(undefined)
   })
 })
 
