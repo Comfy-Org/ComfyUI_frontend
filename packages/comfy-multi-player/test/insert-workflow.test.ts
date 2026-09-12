@@ -177,6 +177,82 @@ describe("insert_workflow: happy path", () => {
     expect(links[0]!.type).toBe("valid");
   });
 
+  it("scrubs a dropped depth-2 link from node slot references", () => {
+    const nested = {
+      id: "nested",
+      nodes: [
+        { id: 1, type: "Src", outputs: [{ name: "out", links: [11, 10] }] },
+        { id: 2, type: "Sink", inputs: [{ name: "in", link: 11 }] },
+      ],
+      links: [
+        [10, 1, 0, 2, 0, "valid"],
+        [11, 999, 0, 2, 0, "dangling"],
+      ],
+    };
+    const outer = { id: "outer", nodes: [], links: [], definitions: { subgraphs: [nested] } };
+
+    const remapped = remapInsertedWorkflowIds(
+      { nodes: [], definitions: { subgraphs: [outer] } } as unknown as WorkflowJSON,
+      "nested-slot-op".padEnd(32, "0"),
+    ) as unknown as {
+      definitions: {
+        subgraphs: Array<{
+          definitions: { subgraphs: Array<{ nodes: Array<{ inputs?: Array<{ link: unknown }>; outputs?: Array<{ links: unknown[] }> }>; links: unknown[][] }> };
+        }>;
+      };
+    };
+    const graph = remapped.definitions.subgraphs[0]!.definitions.subgraphs[0]!;
+
+    expect(graph.nodes[0]!.outputs![0]!.links).toEqual([graph.links[0]![0]]);
+    expect(graph.nodes[1]!.inputs![0]!.link).toBeNull();
+  });
+
+  it("scrubs a dropped top-level link from node slot references", () => {
+    const remapped = remapInsertedWorkflowIds(
+      {
+        nodes: [
+          { id: 1, type: "Src", outputs: [{ name: "out", links: [11, 10] }] },
+          { id: 2, type: "Sink", inputs: [{ name: "in", link: 11 }] },
+        ],
+        links: [
+          [10, 1, 0, 2, 0, "valid"],
+          [11, 999, 0, 2, 0, "dangling"],
+        ],
+      } as unknown as WorkflowJSON,
+      "top-level-slot-op".padEnd(32, "0"),
+    );
+
+    const graph = remapped as unknown as {
+      nodes: Array<{ inputs?: Array<{ link: unknown }>; outputs?: Array<{ links: unknown[] }> }>;
+      links: unknown[][];
+    };
+    expect(graph.nodes[0]!.outputs![0]!.links).toEqual([graph.links[0]![0]]);
+    expect(graph.nodes[1]!.inputs![0]!.link).toBeNull();
+  });
+
+  it("normalizes string aliases when scrubbing dropped link slot references", () => {
+    const remapped = remapInsertedWorkflowIds(
+      {
+        nodes: [
+          { id: 1, type: "Src", outputs: [{ name: "out", links: ["11", 10] }] },
+          { id: 2, type: "Sink", inputs: [{ name: "in", link: "11" }] },
+        ],
+        links: [
+          [10, 1, 0, 2, 0, "valid"],
+          [11, 999, 0, 2, 0, "dangling"],
+        ],
+      } as unknown as WorkflowJSON,
+      "string-alias-slot-op".padEnd(32, "0"),
+    );
+
+    const graph = remapped as unknown as {
+      nodes: Array<{ inputs?: Array<{ link: unknown }>; outputs?: Array<{ links: unknown[] }> }>;
+      links: unknown[][];
+    };
+    expect(graph.nodes[0]!.outputs![0]!.links).toEqual([graph.links[0]![0]]);
+    expect(graph.nodes[1]!.inputs![0]!.link).toBeNull();
+  });
+
   it("drops a depth-3 array link with a missing endpoint", () => {
     const deepest = {
       id: "deepest",

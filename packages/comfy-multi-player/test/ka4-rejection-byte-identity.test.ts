@@ -218,7 +218,12 @@ const CASES: Row[] = [
     kind: "insert_workflow",
     why: "remapped link id collides with the live tree",
     code: "link_id_collision",
-    build: () => ({ op: "insert_workflow", ...env(), workflow: { nodes: [], links: [[7, 2, 0, 3, 0, "X"]] } }) as Op,
+    build: () =>
+      ({
+        op: "insert_workflow",
+        ...env(),
+        workflow: { nodes: [{ id: 2, type: "Src" }, { id: 3, type: "Sink" }], links: [[7, 2, 0, 3, 0, "X"]] },
+      }) as Op,
     seed: (op) => {
       const workflow = baseWorkflow();
       const remapped = remapInsertedWorkflowIds((op as { workflow: WorkflowJSON }).workflow, op.op_id);

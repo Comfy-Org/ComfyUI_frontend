@@ -334,7 +334,7 @@ Every op carries the same envelope, minted by its creator before dispatch:
 }
 ```
 
-Seven kinds, frozen:
+Eight kinds, frozen:
 
 | Kind | Payload beyond the envelope | Batchable (authoring) |
 |---|---|---|
