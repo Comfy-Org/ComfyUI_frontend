@@ -22,26 +22,33 @@ test.describe(
       await comfyPage.canvasOps.resetView()
     })
 
-    test('moving a node can be undone and a second redo is a no-op', async ({
-      comfyPage
-    }) => {
-      await comfyPage.workflow.loadWorkflow('default')
-      const node = await comfyPage.nodeOps.getNodeRefById('3')
-      const initialPosition = await node.getBounding()
+    for (const vueNodesEnabled of [false, true]) {
+      test(`moving a node can be undone and a second redo is a no-op (${vueNodesEnabled ? 'Vue' : 'LiteGraph'})`, async ({
+        comfyPage
+      }) => {
+        await comfyPage.settings.setSetting(
+          'Comfy.VueNodes.Enabled',
+          vueNodesEnabled
+        )
+        await comfyPage.workflow.loadWorkflow('default')
+        if (vueNodesEnabled) await comfyPage.vueNodes.waitForNodes()
+        const node = await comfyPage.nodeOps.getNodeRefById('3')
+        const initialPosition = await node.getBounding()
 
-      await node.dragBy({ x: 120, y: 80 })
-      await expect.poll(() => node.getBounding()).not.toEqual(initialPosition)
-      const movedPosition = await node.getBounding()
+        await node.dragBy({ x: 120, y: 80 })
+        await expect.poll(() => node.getBounding()).not.toEqual(initialPosition)
+        const movedPosition = await node.getBounding()
 
-      await comfyPage.keyboard.undo()
-      await expect.poll(() => node.getBounding()).toEqual(initialPosition)
+        await comfyPage.keyboard.undo()
+        await expect.poll(() => node.getBounding()).toEqual(initialPosition)
 
-      await comfyPage.keyboard.redo()
-      await expect.poll(() => node.getBounding()).toEqual(movedPosition)
-      await comfyPage.keyboard.redo()
-      await expect.poll(() => node.getBounding()).toEqual(movedPosition)
-      await expect(comfyPage.toast.toastErrors).toHaveCount(0)
-    })
+        await comfyPage.keyboard.redo()
+        await expect.poll(() => node.getBounding()).toEqual(movedPosition)
+        await comfyPage.keyboard.redo()
+        await expect.poll(() => node.getBounding()).toEqual(movedPosition)
+        await expect(comfyPage.toast.toastErrors).toHaveCount(0)
+      })
+    }
 
     test('moving a group by its title can be undone', async ({
       comfyPage,
@@ -65,26 +72,47 @@ test.describe(
         .toEqual(initialPosition)
     })
 
-    test(
-      'changing a widget value can be undone and redone',
-      { tag: ['@widget'] },
-      async ({ comfyPage }) => {
-        await comfyPage.workflow.loadWorkflow('default')
-        const node = await comfyPage.nodeOps.getNodeRefById('3')
-        const steps = await node.getWidget(2)
-        const initialValue = await steps.getValue()
+    for (const vueNodesEnabled of [false, true]) {
+      test(
+        `changing a widget value can be undone and redone (${vueNodesEnabled ? 'Vue' : 'LiteGraph'})`,
+        { tag: ['@widget'] },
+        async ({ comfyPage }) => {
+          await comfyPage.settings.setSetting(
+            'Comfy.VueNodes.Enabled',
+            vueNodesEnabled
+          )
+          await comfyPage.workflow.loadWorkflow('default')
+          if (vueNodesEnabled) await comfyPage.vueNodes.waitForNodes()
+          const node = await comfyPage.nodeOps.getNodeRefById('3')
+          const steps = await node.getWidget(2)
+          const initialValue = await steps.getValue()
 
-        await steps.dragHorizontal(80)
-        await expect.poll(() => steps.getValue()).not.toBe(initialValue)
-        const changedValue = await steps.getValue()
+          if (vueNodesEnabled) {
+            const widget = comfyPage.vueNodes.getWidgetByName(
+              'KSampler',
+              'steps'
+            )
+            const { input } = comfyPage.vueNodes.getInputNumberControls(widget)
+            await widget.click()
+            await input.fill('31')
+            await input.press('Enter')
+            await (
+              await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+            ).title.click()
+          } else {
+            await steps.dragHorizontal(80)
+          }
+          await expect.poll(() => steps.getValue()).not.toBe(initialValue)
+          const changedValue = await steps.getValue()
 
-        await comfyPage.keyboard.undo()
-        await expect.poll(() => steps.getValue()).toBe(initialValue)
+          await comfyPage.keyboard.undo()
+          await expect.poll(() => steps.getValue()).toBe(initialValue)
 
-        await comfyPage.keyboard.redo()
-        await expect.poll(() => steps.getValue()).toBe(changedValue)
-      }
-    )
+          await comfyPage.keyboard.redo()
+          await expect.poll(() => steps.getValue()).toBe(changedValue)
+        }
+      )
+    }
 
     test(
       'three mixed Vue Nodes edits can be undone and redone in order',
@@ -170,10 +198,23 @@ test.describe(
         .poll(() => node.getProperty<[number, number]>('pos'))
         .not.toEqual(initialPosition)
       await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(1)
+      const tabAState = await comfyPage.page.evaluate(() =>
+        window
+          .app!.graph.nodes.map((graphNode) => ({
+            id: String(graphNode.id),
+            bounds: [...graphNode.getBounding()]
+          }))
+          .sort((left, right) => left.id.localeCompare(right.id))
+      )
 
       const tabsBeforeNew = await comfyPage.menu.topbar.getTabNames()
       await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
       await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+      expect(
+        await comfyPage.page.evaluate(() =>
+          window.app!.graph.nodes.map((graphNode) => String(graphNode.id))
+        )
+      ).toEqual([])
       const tabsAfterNew = await comfyPage.menu.topbar.getTabNames()
       const newTabs = tabsAfterNew.filter(
         (name) => !tabsBeforeNew.includes(name)
@@ -194,6 +235,18 @@ test.describe(
 
       await comfyPage.menu.topbar.getWorkflowTab('Undo Tab A').click()
       await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(7)
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() =>
+            window
+              .app!.graph.nodes.map((graphNode) => ({
+                id: String(graphNode.id),
+                bounds: [...graphNode.getBounding()]
+              }))
+              .sort((left, right) => left.id.localeCompare(right.id))
+          )
+        )
+        .toEqual(tabAState)
       await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(1)
       await expect
         .poll(() => node.getProperty<[number, number]>('pos'))
@@ -205,6 +258,11 @@ test.describe(
 
       await tabB.click()
       await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+      expect(
+        await comfyPage.page.evaluate(() =>
+          window.app!.graph.nodes.map((graphNode) => String(graphNode.id))
+        )
+      ).toEqual([])
     })
   }
 )
