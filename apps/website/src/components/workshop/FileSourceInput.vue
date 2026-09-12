@@ -125,7 +125,7 @@ function fileType(file: FileValue): string {
     :aria-label="field.label"
     :class="
       cn(
-        'focus-within:ring-primary-comfy-yellow flex min-w-0 flex-col gap-3 rounded-2xl border border-dashed p-3 focus-within:ring-2',
+        'focus-within:ring-primary-comfy-yellow flex min-w-0 flex-col gap-3 rounded-2xl border border-dashed focus-within:ring-2',
         isOverDropZone && !disabled
           ? 'border-primary-comfy-yellow'
           : 'border-transparency-white-t20',
@@ -137,7 +137,7 @@ function fileType(file: FileValue): string {
       v-if="selectedFiles.length"
       :class="
         cn(
-          'grid min-w-0 gap-3',
+          'grid min-w-0 gap-3 px-3 pt-3',
           imageOnly && selectedFiles.length > 1 ? 'grid-cols-2' : 'grid-cols-1'
         )
       "
@@ -212,7 +212,7 @@ function fileType(file: FileValue): string {
       :for="`field-${field.name}`"
       :class="
         cn(
-          'hover:bg-transparency-white-t4 flex min-h-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl text-xs text-primary-warm-gray',
+          'hover:bg-transparency-white-t4 flex min-h-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-2xl text-xs text-primary-warm-gray',
           disabled && 'pointer-events-none'
         )
       "
