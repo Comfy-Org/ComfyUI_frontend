@@ -225,20 +225,24 @@ describe('CrdtDevPanel clipboard controls', () => {
 
   it('keeps the log usable when node-id properties throw', async () => {
     const user = userEvent.setup()
-    const addedThrows: { removed: string[] } = {
-      removed: ['node-removed']
-    }
-    Object.defineProperty(addedThrows, 'added', {
-      get: () => {
-        throw new Error('added is unreadable')
+    const addedThrows: unknown = Object.defineProperty(
+      { removed: ['node-removed'] },
+      'added',
+      {
+        get: () => {
+          throw new Error('added is unreadable')
+        }
       }
-    })
-    const removedThrows: { added: string[] } = { added: ['node-added'] }
-    Object.defineProperty(removedThrows, 'removed', {
-      get: () => {
-        throw new Error('removed is unreadable')
+    )
+    const removedThrows: unknown = Object.defineProperty(
+      { added: ['node-added'] },
+      'removed',
+      {
+        get: () => {
+          throw new Error('removed is unreadable')
+        }
       }
-    })
+    )
     recordDevEvent('doc_nodes_changed', addedThrows)
     recordDevEvent('doc_nodes_changed', removedThrows)
     renderPanel()
