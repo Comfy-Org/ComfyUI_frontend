@@ -64,7 +64,10 @@ test.describe(
           if (startInVue) {
             await kSampler.dragBy({ x: 120, y: 80 })
             const cfgWidget = await kSampler.getWidgetByName('cfg')
-            await cfgWidget.dragHorizontal(-20)
+            expect(await cfgWidget.getValue()).not.toBe(7.5)
+            await cfgWidget.click()
+            await comfyPage.nodeOps.fillLegacyWidgetDialog('7.5')
+            await expect.poll(() => cfgWidget.getValue()).toBe(7.5)
           } else {
             const fixture =
               await comfyPage.vueNodes.getFixtureByTitle('KSampler')
