@@ -8,7 +8,6 @@ import type { ResultItem, ResultItemType } from '@/schemas/apiSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { api } from '@/scripts/api'
 
-const PASTED_IMAGE_EXPIRY_MS = 2000
 const UPLOAD_TIMEOUT_MS = 120_000
 
 interface ImageUploadFormFields {
@@ -21,12 +20,10 @@ interface ImageUploadFormFields {
 
 const uploadFile = async (
   file: File,
-  isPasted: boolean,
   formFields: Partial<ImageUploadFormFields> = {}
 ) => {
   const body = new FormData()
   body.append('image', file)
-  if (isPasted) body.append('subfolder', 'pasted')
   if (formFields.type) body.append('type', formFields.type)
 
   const resp = await api.fetchApi('/upload/image', {
@@ -43,7 +40,7 @@ const uploadFile = async (
   const data = await resp.json()
 
   // Update AssetsStore input assets when files are uploaded to input folder
-  if (formFields.type === 'input' || (!formFields.type && !isPasted)) {
+  if (formFields.type === 'input' || !formFields.type) {
     await useAssetsStore().inputAssets.invalidate()
   }
 
@@ -77,13 +74,9 @@ export const useNodeImageUpload = (
 ) => {
   const { fileFilter, onUploadComplete, allow_batch, accept } = options
 
-  const isPastedFile = (file: File): boolean =>
-    file.name === 'image.png' &&
-    file.lastModified - Date.now() < PASTED_IMAGE_EXPIRY_MS
-
   const handleUpload = async (file: File) => {
     try {
-      const path = await uploadFile(file, isPastedFile(file), {
+      const path = await uploadFile(file, {
         type: options.folder
       })
       if (!path) return
