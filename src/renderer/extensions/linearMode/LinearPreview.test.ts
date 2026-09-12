@@ -1,12 +1,14 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { defineComponent } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 
 import LinearPreview from './LinearPreview.vue'
 import type { OutputSelection } from './linearModeTypes'
@@ -22,7 +24,12 @@ const outputHistoryState = vi.hoisted(() => ({
 
 const spies = vi.hoisted(() => ({
   cancelActiveWorkflowJobs: vi.fn(),
-  deleteAssets: vi.fn()
+  deleteAssets: vi.fn(),
+  downloadFileAsync: vi.fn(() => Promise.resolve())
+}))
+
+vi.mock(import('@/base/common/downloadUtil'), () => ({
+  downloadFileAsync: spies.downloadFileAsync
 }))
 
 vi.mock<unknown>(import('@/composables/useAppMode'), async () => {
@@ -65,7 +72,11 @@ const i18n = createI18n({
   locale: 'en',
   messages: {
     en: {
-      g: { download: 'Download' },
+      g: {
+        download: 'Download',
+        error: 'Error',
+        failedToDownloadFile: 'Failed to download file'
+      },
       linearMode: {
         rerun: 'Rerun',
         reuseParameters: 'Reuse Parameters',
@@ -174,5 +185,26 @@ describe('LinearPreview', () => {
     expect(screen.getByTestId('output-popover')).toBeInTheDocument()
     expect(screen.getByText('Rerun')).toBeInTheDocument()
     expect(screen.getByText('Reuse Parameters')).toBeInTheDocument()
+  })
+
+  it('shows a generic file error when a selected output download fails', async () => {
+    spies.downloadFileAsync.mockRejectedValueOnce(new Error('download failed'))
+    const selection: OutputSelection = {
+      output: fromPartial<AugmentedResultItem>({
+        url: 'https://example.com/output'
+      }),
+      canShowPreview: false
+    }
+
+    const { user } = renderPreview({}, selection)
+    await user.click(await screen.findByRole('button', { name: 'Download' }))
+
+    await waitFor(() => {
+      expect(vi.mocked(useToastStore().add)).toHaveBeenCalledWith({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Failed to download file'
+      })
+    })
   })
 })

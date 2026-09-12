@@ -10,6 +10,16 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 // Constants
 const DEFAULT_DOWNLOAD_FILENAME = 'download.png'
 
+export function assertValidDownloadUrl(url: string): void {
+  if (!url || typeof url !== 'string' || url.trim().length === 0) {
+    throw new Error('Invalid URL provided for download')
+  }
+}
+
+export function inferDownloadFilename(url: string, filename?: string): string {
+  return filename || extractFilenameFromUrl(url) || DEFAULT_DOWNLOAD_FILENAME
+}
+
 /**
  * Trigger a download by creating a temporary anchor element
  * @param href - The URL or blob URL to download
@@ -27,24 +37,38 @@ function triggerLinkDownload(href: string, filename: string): void {
 }
 
 /**
- * Download a file from a URL by creating a temporary anchor element
+ * Download a file from a URL by creating a temporary anchor element.
+ * Fire-and-forget: errors on cloud blob fetches are logged but not thrown.
+ * Use {@link downloadFileAsync} when you need to await completion or track loading state.
  * @param url - The URL of the file to download (must be a valid URL string)
  * @param filename - Optional filename override (will use URL filename or default if not provided)
  * @throws {Error} If the URL is invalid or empty
  */
 export function downloadFile(url: string, filename?: string): void {
-  if (!url || typeof url !== 'string' || url.trim().length === 0) {
-    throw new Error('Invalid URL provided for download')
-  }
+  assertValidDownloadUrl(url)
+  void downloadFileAsync(url, filename).catch((error) => {
+    console.error('Failed to download file', error)
+  })
+}
 
-  const inferredFilename =
-    filename || extractFilenameFromUrl(url) || DEFAULT_DOWNLOAD_FILENAME
+/**
+ * Async version of {@link downloadFile} that returns a Promise.
+ * On cloud, the promise resolves after the blob fetch and browser download trigger complete.
+ * On non-cloud, resolves immediately after triggering the anchor download.
+ * Use this when you need to track download completion (e.g. for loading spinners).
+ * @param url - The URL of the file to download (must be a valid URL string)
+ * @param filename - Optional filename override
+ * @throws {Error} If the URL is invalid or empty, or if the cloud blob fetch fails
+ */
+export async function downloadFileAsync(
+  url: string,
+  filename?: string
+): Promise<void> {
+  assertValidDownloadUrl(url)
+  const inferredFilename = inferDownloadFilename(url, filename)
 
   if (isCloud) {
-    // Assets from cross-origin (e.g., GCS) cannot be downloaded this way
-    void downloadViaBlobFetch(url, inferredFilename).catch((error) => {
-      console.error('Failed to download file', error)
-    })
+    await downloadViaBlobFetch(url, inferredFilename)
     return
   }
 
@@ -117,13 +141,30 @@ export function extractFilenameFromContentDisposition(
 }
 
 /**
+ * Origin and path of a URL, without the query string or userinfo that carry
+ * the signature and credentials of a signed cloud asset URL. Errors and toasts
+ * built from a URL must use this, not the URL itself: RUM collects
+ * `console.error`, so a raw URL in an error message is retained telemetry.
+ */
+function redactUrlCredentials(url: string): string {
+  try {
+    const { origin, pathname } = new URL(url, window.location.origin)
+    return `${origin}${pathname}`
+  } catch {
+    return '<malformed url>'
+  }
+}
+
+/**
  * Fetch a URL and return its body as a Blob.
  * Shared by download and open-in-new-tab cloud paths.
  */
 async function fetchAsBlob(url: string): Promise<Response> {
   const response = await fetch(url)
   if (!response.ok) {
-    throw new Error(`Failed to fetch ${url}: ${response.status}`)
+    throw new Error(
+      `Failed to fetch ${redactUrlCredentials(url)}: ${response.status}`
+    )
   }
   return response
 }
