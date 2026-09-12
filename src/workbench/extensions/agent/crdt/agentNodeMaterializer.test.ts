@@ -914,6 +914,7 @@ describe('reconcileAgentAdapters', () => {
       expect(instance.widgets[0].value).toBe(0)
 
       mutations.batch(REMOTE, (batch) => batch.reconcileNode(payload))
+      expect(instance.widgets).toHaveLength(0)
       expect(reconcileAgentAdapters(graph)).toEqual([])
 
       expect(graph.getNodeById(toNodeId(57))).toBe(instance)

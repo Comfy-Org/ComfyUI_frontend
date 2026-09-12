@@ -199,6 +199,36 @@ function withNamedValuesRestore<T>(fn: () => T): T {
   }
 }
 
+function repairPromotedBindings(
+  graph: MaterializableGraph,
+  live: LGraphNode,
+  serialised: ISerialisedNode
+): void {
+  if (
+    !(live instanceof SubgraphNode) ||
+    (live.inputs.length === live.subgraph.inputNode.slots.length &&
+      live.inputs.every(
+        (input, index) =>
+          input._subgraphSlot === live.subgraph.inputNode.slots[index]
+      ))
+  ) {
+    return
+  }
+
+  try {
+    live.configure({
+      ...withNamedWidgetValues(serialised),
+      pos: [...live.pos],
+      size: [...live.size]
+    })
+  } catch (cause) {
+    reportError(cause, {
+      errorType: 'agent_node_materialize_configure_failed',
+      context: { graphId: graph.id, nodeId: String(live.id) }
+    })
+  }
+}
+
 /**
  * @param pendingDefinitions definition ids the document seeds but the root
  * graph could not register. Nodes typed by one stay unmaterialized rather
@@ -238,27 +268,7 @@ function reconcile(
       // serialized slots, losing the bindings that create promoted widgets.
       // Repair only broken bindings: replaying an intact host's serialization
       // would overwrite later set_widget values. Layout remains FE-owned.
-      if (
-        live instanceof SubgraphNode &&
-        (live.inputs.length !== live.subgraph.inputNode.slots.length ||
-          live.inputs.some(
-            (input, index) =>
-              input._subgraphSlot !== live.subgraph.inputNode.slots[index]
-          ))
-      ) {
-        try {
-          live.configure({
-            ...withNamedWidgetValues(serialised),
-            pos: [...live.pos],
-            size: [...live.size]
-          })
-        } catch (cause) {
-          reportError(cause, {
-            errorType: 'agent_node_materialize_configure_failed',
-            context: { graphId: graph.id, nodeId: String(state.id) }
-          })
-        }
-      }
+      repairPromotedBindings(graph, live, serialised)
       continue
     }
     if (pendingDefinitions.has(state.type)) continue
