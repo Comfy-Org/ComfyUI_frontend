@@ -346,6 +346,8 @@ equivalent) rather than deleting it.
 
 - All mock setup, state resets, and fixture arrangement belong in
   `test.beforeEach()` or Playwright fixtures.
+- Prefer `test.use({ initialSettings })` for starting settings rather than
+  `comfyPage.settings.setSetting()` in `beforeEach`.
 - Inside `test()`, only **act** (user actions) and **assert**.
 - Never call `clearAllMocks` or reset mock state mid-test.
 - **Free-standing helpers, constants, and locator wiring don't belong inline in
@@ -392,7 +394,7 @@ Check for existing helpers before writing new ones — most needs are covered:
 - **ComfyPage** — main fixture; delegates to helper objects:
   `comfyPage.workflow.loadWorkflow()`, `comfyPage.settings.setSetting()`,
   `comfyPage.command.executeCommand()`, `comfyPage.nodeOps.getNodeRefById()`,
-  `comfyPage.canvasOps.resetView()`, `comfyPage.vueNodes.waitForNodes()`.
+  `comfyPage.canvasOps.resetView()`.
 - **Component page objects** — `fixtures/components/` (e.g. `Actionbar`,
   `ContextMenu`, `Templates`).
 - **Helper classes** — `fixtures/helpers/` (e.g. `CanvasHelper`,
@@ -482,12 +484,18 @@ Choose based on **what you're testing**:
 | Canvas interactions, connections, legacy nodes | `comfyPage.nodeOps.*`            | Canvas-based; use coordinates/refs   |
 | Both in one test                               | Pick primary, minimize switching | Mixing both is a smell               |
 
-Vue Nodes requires explicit opt-in:
+Always add `{ tag: '@vue-nodes' }` to the test or `test.describe` when it needs
+Vue Nodes. The fixture enables the renderer before boot and waits for the nodes.
+Never manually set `Comfy.VueNodes.Enabled`, including through `initialSettings`,
+or call `comfyPage.vueNodes.waitForNodes()` in tests.
 
-```typescript
-await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-await comfyPage.vueNodes.waitForNodes()
-```
+When renderer switching is the behavior under test, use
+`comfyPage.menu.topbar.setVueNodesEnabled(enabled)`. It clicks the Nodes 2.0
+switch and waits for the renderer. Keep `@vue-nodes` on these tests.
+For command-level transitions, use
+`comfyPage.command.executeCommand('Experimental.ToggleVueNodes')` and assert
+the resulting behavior. This also works when an overlay blocks the menu.
+Untagged tests start in classic mode, regardless of product defaults.
 
 Vue Node state is expressed via CSS classes:
 
@@ -553,9 +561,12 @@ reference pattern.
 
 Organizational tags are used for manual `--grep` filtering (not project
 routing). Common ones in the suite: `@smoke`, `@slow`, `@screenshot`, `@canvas`,
-`@node`, `@widget`, `@vue-nodes`, `@subgraph`, `@ui`. Apply them so a test is
+`@node`, `@widget`, `@subgraph`, `@ui`. Apply them so a test is
 findable by its area; add a project-routing tag whenever the test must run in
 that project.
+
+`@vue-nodes` controls fixture setup, not just filtering. It is required for
+Vue-node tests and owns renderer selection and initial readiness.
 
 ```typescript
 test.describe('Feature', { tag: ['@screenshot', '@canvas'] }, () => {
@@ -631,15 +642,56 @@ await page.evaluate(() => window.app!.registerExtension({ name: 'TestExt' }))
 **Preferred** — helper methods from `fixtures/helpers/` that wrap real user
 interactions.
 
+### Starting settings and isolation
+
+Use `test.use({ initialSettings })` at the narrowest file or describe scope:
+
+```typescript
+test.use({
+  initialSettings: {
+    'Comfy.UseNewMenu': 'Disabled',
+    'Comfy.Canvas.SelectionToolbox': true
+  }
+})
+```
+
+`comfyPageFixture` replaces the worker user's entire settings file before each
+test. It merges the common baseline, the `@vue-nodes` renderer override, and
+`initialSettings`, in that order. Omitted keys from previous tests disappear.
+The browser context is test-scoped, and initial setup clears localStorage and
+sessionStorage. Tests do not need settings resets in `afterEach`.
+
+Nested `test.use` calls **replace**, not merge, the parent's `initialSettings`
+object. Include every suite-specific override needed by a nested scope. Use
+`@vue-nodes` for renderer selection; never put `Comfy.VueNodes.Enabled` in
+`initialSettings`.
+
+Keep runtime `setSetting` calls when a live change or persistence is the behavior
+under test. A same-test reload retains those changes.
+Preserve readiness checks and install any mocks needed by startup settings before
+the `comfyPage` fixture boots.
+
+Use `test.use({ initialUrl: '/?template=template_id' })` to choose the first
+app URL without calling `setup()` again. The fixture clears browser storage
+before this navigation. Use `initialLocalStorage` to seed any required values.
+
+Manual backend boots must call `comfyPage.setupSettings({ userId, settings })`
+before navigation to apply the same baseline. `ComfyPage.setup()` alone does not
+reset backend settings. Use a multi-user backend; separate test runs must not
+share worker users on the same backend.
+
+Mock-only cloud tests use their boot helper's settings response instead. Give
+each test a fresh response; backend seeds cannot affect a mocked settings read.
+Use a stateful mock when testing persistence across reloads.
+
 ### Minimal workflows & cleanup
 
 - Load the smallest workflow the test needs (`loadWorkflow('single_ksampler')`),
   not the full default graph.
-- Server-persisted state (settings, uploaded files, saved workflows) leaks
-  across tests. Reset it in `afterEach` (or a fixture) and clean up files:
+- Uploaded files and saved workflows are not covered by the settings baseline.
+  Keep their cleanup in the owning fixture or `afterEach`:
 
 ```typescript
-await comfyPage.settings.setSetting('Comfy.ColorPalette', 'dark')
 comfyPage.deleteFileAfterTest({ filename: 'image.png' })
 ```
 
@@ -656,6 +708,49 @@ test.afterEach(async ({ comfyPage }) => {
 `comfyPage.debugAddMarker(pos)`, `debugAttachScreenshot(testInfo, name)`,
 `debugShowCanvasOverlay()`, `debugGetCanvasDataURL()` are for local debugging
 only. Never commit them.
+
+## Replay coverage for agent bug fixes
+
+### Playbook
+
+```bash
+DISTRIBUTION=cloud DEV_SERVER_COMFYUI_URL=http://127.0.0.1:8188 pnpm dev
+```
+
+```bash
+PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://localhost:5173 DISTRIBUTION=cloud pnpm exec playwright test agentConversation --project=cloud
+```
+
+Watch one: add `--headed -g <case id>`. Recorded gaps: `AGENT_REPLAY_TIMING=recorded`.
+
+When a fix changes how the agent's turns affect the app (graph edits,
+CRDT frames, panel state), add a conversation replay case alongside the
+fix so the bug stays fixed:
+
+1. **Record the conversation.** Reproduce the bug's turn with
+   `scripts/agentConversationRecord.ts` against the non-standalone local
+   stack (Postgres + doc host). In that mode the agent writes the per-op
+   audit rows (`agent_tool_calls` parent and child rows) to Postgres,
+   which is what a replay asserts; the doc host is a separate required
+   service and writes none of them. That one command records the turn and
+   writes the conversation JSON under
+   `browser_tests/fixtures/data/agent/conversations/`, marked
+   `response_side: 'recorded'`; see `fixtures/data/agent/README.md` for
+   the stack recipe, the command and the capture format. Never write
+   `graph_ops` by hand and never relabel a synthesized response as recorded.
+2. **Add the replay case.** Drive the fixture through the conversation
+   replay fixture (`agentConversationFixture`), asserting the
+   canvas-observable outcome the bug corrupted (graph end-state or
+   panel state - not mock call counts, not model text). Write what a
+   user sees for each turn (complete assistant text, tool rows in order)
+   into `agentConversationExpectations.ts`; the replay asserts those
+   literals and never predicts production rendering.
+3. **Prove it bites.** Before merging, run the case once against the
+   fix's parent commit (red) and once at the fix (green); paste both
+   run lines in the PR description. A replay case that never went red
+   against the bug does not count as regression coverage.
+
+Name the case after the behavior it protects (`agent-<behavior-slug>.json`, with the fix PR cited in the fixture's `source.note`). The recorder writes the provenance the replay keeps: `source.capture` (backend, thread id, export time), `turns[].message_id`, and `source.note` (row ids and the raw capture hash). A bad fixture is re-recorded, never edited.
 
 ## Test Data & Typed API Mocks
 
@@ -809,7 +904,7 @@ node state.
 | **Tight poll timeout**                | `expect.poll(..., { timeout: 250 })`                              | ≥2000 ms; prefer default (5000 ms)                                       |
 | **Immediate count()**                 | `const n = await loc.count(); expect(n).toBe(3)`                  | `await expect(loc).toHaveCount(3)`                                       |
 | **Immediate evaluate after mutation** | `setSetting(); expect(await evaluate()).toBe(x)`                  | `await expect.poll(() => evaluate()).toBe(x)`                            |
-| **Screenshot without readiness**      | `loadWorkflow(); nextFrame(); toHaveScreenshot()`                 | `waitForNodes()` or poll state first                                     |
+| **Screenshot without readiness**      | `loadWorkflow(); nextFrame(); toHaveScreenshot()`                 | Assert the expected node state with a retrying assertion first           |
 | **Non-deterministic node order**      | `getNodeRefsByType('X')[0]` with >1 match                         | `getNodeRefById(id)` or guard `toHaveLength(1)`                          |
 
 ### Local noise (not automatic CI root causes)

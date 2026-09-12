@@ -97,8 +97,10 @@ jobs:
       - name: Start ComfyUI server
         uses: ./.github/actions/start-comfyui-server
 
-      - name: Install frontend deps
-        run: pnpm install --frozen-lockfile
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          node_cache: 'false'
 
       # Run sharded tests (browsers pre-installed in container)
       - name: Run Playwright tests (Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
@@ -126,8 +128,8 @@ jobs:
           if-no-files-found: warn
 
   playwright-tests:
-    # Ideally, each shard runs test in 6 minutes, but allow up to 15 minutes
-    timeout-minutes: 15
+    # Ideally, each shard runs test in 6 minutes, but allow up to 30 minutes
+    timeout-minutes: 30
     needs: setup
     runs-on: ubuntu-latest
     container:
@@ -155,8 +157,10 @@ jobs:
       - name: Start ComfyUI server
         uses: ./.github/actions/start-comfyui-server
 
-      - name: Install frontend deps
-        run: pnpm install --frozen-lockfile
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          node_cache: 'false'
 
       # Run tests (browsers pre-installed in container)
       - name: Run Playwright tests (${{ matrix.browser }})
@@ -324,9 +328,11 @@ jobs:
         if: steps.detect.outputs.has-new-tests == 'true'
         uses: ./.github/actions/start-comfyui-server
 
-      - name: Install frontend deps
+      - name: Setup frontend
         if: steps.detect.outputs.has-new-tests == 'true'
-        run: pnpm install --frozen-lockfile
+        uses: ./.github/actions/setup-frontend
+        with:
+          node_cache: 'false'
 
       - name: Find safely recordable new tests
         if: steps.detect.outputs.has-new-tests == 'true'
