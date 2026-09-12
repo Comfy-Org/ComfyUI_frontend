@@ -248,7 +248,6 @@ export function useAgentCrdtFollower(
       return
     }
     lifecycle.onDocumentUpdate()
-    updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
     const result = projection.applyFrame(update)
     switch (result.status) {
@@ -283,6 +282,7 @@ export function useAgentCrdtFollower(
         settleFrames(update.workflowId, 'applied')
         connected.value = true
         projectedSequence.value = result.sequence
+        updatesApplied.value = bridge.follower.updatesApplied
     }
     projection.reconcileLiveGraph(update.workflowId)
     recordDevEvent('doc_update', {
