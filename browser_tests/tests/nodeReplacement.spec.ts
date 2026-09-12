@@ -82,6 +82,12 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
         test('Replace Node replaces a single group in-place', async ({
           comfyPage
         }) => {
+          const before = await comfyPage.page.evaluate((nodeId) => {
+            const node = window.app!.graph!.getNodeById(nodeId)
+            if (!node)
+              throw new Error('Missing-node placeholder was not loaded')
+            return { pos: [...node.pos], size: [...node.size] }
+          }, toNodeId(1))
           const swapGroup = getSwapNodesGroup(comfyPage.page)
           await swapGroup.getByRole('button', { name: /replace node/i }).click()
           await expect(swapGroup).toBeHidden()
@@ -101,6 +107,8 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
             ksampler?.id,
             'Replaced node should keep the original id'
           ).toBe(1)
+          expect(ksampler?.pos).toEqual(before.pos)
+          expect(ksampler?.size).toEqual(before.size)
 
           const linkFromReplacedToDecode = workflow.links?.find(
             (l) => l[1] === 1 && l[3] === 2
