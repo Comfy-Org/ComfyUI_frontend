@@ -56,6 +56,8 @@ test.describe(
     }) => {
       await comfyPage.workflow.loadWorkflow('selection/three-nodes-and-group')
       const initialPosition = await comfyPage.canvasOps.getGroupPosition('Pair')
+      const containedNode = await comfyPage.nodeOps.getNodeRefById('2')
+      const initialNodePosition = await containedNode.getBounding()
       const titlePosition = await getGroupTitlePosition(comfyPage, 'Pair')
 
       await comfyMouse.dragAndDrop(titlePosition, {
@@ -65,11 +67,17 @@ test.describe(
       await expect
         .poll(() => comfyPage.canvasOps.getGroupPosition('Pair'))
         .not.toEqual(initialPosition)
+      await expect
+        .poll(() => containedNode.getBounding())
+        .not.toEqual(initialNodePosition)
 
       await comfyPage.keyboard.undo()
       await expect
         .poll(() => comfyPage.canvasOps.getGroupPosition('Pair'))
         .toEqual(initialPosition)
+      await expect
+        .poll(() => containedNode.getBounding())
+        .toEqual(initialNodePosition)
     })
 
     for (const vueNodesEnabled of [false, true]) {
