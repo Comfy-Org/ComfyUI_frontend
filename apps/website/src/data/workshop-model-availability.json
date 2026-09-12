@@ -1,0 +1,62 @@
+{
+  "bfl--flux-3-video-continuation--edit-videos": {
+    "disabled": true,
+    "reason": "The provider rejects the default source video as invalid (HTTP 422) with both URL and Base64 MP4 inputs."
+  },
+  "byteplus--seedance-1-0-lite-first-last-frame--animate-images": {
+    "disabled": true,
+    "reason": "BytePlus retired the Seedance 1.0 Lite 250428 version; generation fails with a provider error."
+  },
+  "byteplus--seedance-1-0-lite-image-reference--animate-images": {
+    "disabled": true,
+    "reason": "BytePlus retired the Seedance 1.0 Lite 250428 version; generation fails with a provider error."
+  },
+  "byteplus--seedance-1-0-lite-image-to-video--animate-images": {
+    "disabled": true,
+    "reason": "BytePlus retired the Seedance 1.0 Lite 250428 version; generation fails with a provider error."
+  },
+  "byteplus--seedance-1-0-lite-text-to-video--generate-videos": {
+    "disabled": true,
+    "reason": "BytePlus retired the Seedance 1.0 Lite 250428 version; generation fails with a provider error."
+  },
+  "byteplus--seedream-3--generate-images": {
+    "disabled": true,
+    "reason": "BytePlus retired the Seedream 3 250415 version; generation fails with a provider error."
+  },
+  "elevenlabs--sound-effects--audio": {
+    "disabled": true,
+    "reason": "Router forwards the model ID eleven_sfx_v2, which ElevenLabs rejects; needs the backend alias fix."
+  },
+  "kling--video-extend--edit-videos": {
+    "disabled": true,
+    "reason": "Requires the provider ID of an earlier Kling generation, which a page cannot supply by default."
+  },
+  "meshy--animate--3d": {
+    "disabled": true,
+    "reason": "Untested: the model tester verifies image, video and audio output only."
+  },
+  "meshy--remesh--3d": {
+    "disabled": true,
+    "reason": "Untested: the model tester verifies image, video and audio output only."
+  },
+  "meshy--rig--3d": {
+    "disabled": true,
+    "reason": "Untested: the model tester verifies image, video and audio output only."
+  },
+  "tencent-hunyuan3d--3d-part--3d": {
+    "disabled": true,
+    "reason": "Untested: the model tester verifies image, video and audio output only."
+  },
+  "tencent-hunyuan3d--3d-texture-edit--3d": {
+    "disabled": true,
+    "reason": "Untested: the model tester verifies image, video and audio output only."
+  },
+  "tencent-hunyuan3d--model-to-3d-uv--3d": {
+    "disabled": true,
+    "reason": "Untested: the model tester verifies image, video and audio output only."
+  },
+  "tencent-hunyuan3d--smart-topology--3d": {
+    "disabled": true,
+    "reason": "Untested: the model tester verifies image, video and audio output only."
+  }
+}

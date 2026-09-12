@@ -203,56 +203,56 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
         .toBe(true)
     })
 
-    test('first visit fits viewport to subgraph nodes (Vue)', async ({
-      comfyPage
-    }) => {
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-      await comfyPage.workflow.loadWorkflow(
-        'subgraphs/subgraph-with-promoted-text-widget'
-      )
-      await comfyPage.vueNodes.waitForNodes()
-
-      await comfyPage.vueNodes.enterSubgraph('11')
-
-      await expect
-        .poll(() => comfyPage.page.evaluate(hasVisibleNodeInViewport))
-        .toBe(true)
-    })
-
-    test('viewport is restored when returning to root (Vue)', async ({
-      comfyPage
-    }) => {
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-      await comfyPage.workflow.loadWorkflow(
-        'subgraphs/subgraph-with-promoted-text-widget'
-      )
-      await comfyPage.vueNodes.waitForNodes()
-
-      const rootViewport = await comfyPage.page.evaluate(() => {
-        const ds = window.app!.canvas.ds
-        return { scale: ds.scale, offset: [...ds.offset] }
-      })
-
-      await comfyPage.vueNodes.enterSubgraph('11')
-      await comfyPage.nextFrame()
-
-      await comfyPage.subgraph.exitViaBreadcrumb()
-
-      await expect
-        .poll(() =>
-          comfyPage.page.evaluate(() => {
-            const ds = window.app!.canvas.ds
-            return { scale: ds.scale, offset: [...ds.offset] }
-          })
+    test(
+      'first visit fits viewport to subgraph nodes (Vue)',
+      { tag: '@vue-nodes' },
+      async ({ comfyPage }) => {
+        await comfyPage.workflow.loadWorkflow(
+          'subgraphs/subgraph-with-promoted-text-widget'
         )
-        .toEqual({
-          scale: expect.closeTo(rootViewport.scale, 2),
-          offset: [
-            expect.closeTo(rootViewport.offset[0], 0),
-            expect.closeTo(rootViewport.offset[1], 0)
-          ]
+
+        await comfyPage.vueNodes.enterSubgraph('11')
+
+        await expect
+          .poll(() => comfyPage.page.evaluate(hasVisibleNodeInViewport))
+          .toBe(true)
+      }
+    )
+
+    test(
+      'viewport is restored when returning to root (Vue)',
+      { tag: '@vue-nodes' },
+      async ({ comfyPage }) => {
+        await comfyPage.workflow.loadWorkflow(
+          'subgraphs/subgraph-with-promoted-text-widget'
+        )
+
+        const rootViewport = await comfyPage.page.evaluate(() => {
+          const ds = window.app!.canvas.ds
+          return { scale: ds.scale, offset: [...ds.offset] }
         })
-    })
+
+        await comfyPage.vueNodes.enterSubgraph('11')
+        await comfyPage.nextFrame()
+
+        await comfyPage.subgraph.exitViaBreadcrumb()
+
+        await expect
+          .poll(() =>
+            comfyPage.page.evaluate(() => {
+              const ds = window.app!.canvas.ds
+              return { scale: ds.scale, offset: [...ds.offset] }
+            })
+          )
+          .toEqual({
+            scale: expect.closeTo(rootViewport.scale, 2),
+            offset: [
+              expect.closeTo(rootViewport.offset[0], 0),
+              expect.closeTo(rootViewport.offset[1], 0)
+            ]
+          })
+      }
+    )
   })
 
   test.describe('Subgraph progress clear on navigation', () => {

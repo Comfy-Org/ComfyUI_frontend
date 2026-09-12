@@ -1,0 +1,162 @@
+--- a/services/comfy-api/server/middleware/elevenlabs.go
++++ b/services/comfy-api/server/middleware/elevenlabs.go
+@@ -36,9 +36,8 @@
+ // proxy stop admitting the same set.
+ //
+ // openapi.yml documents `eleven_sfx_v2` as this operation's default model_id;
+-// the two spellings agreeing is what keeps a caller who sends the documented
+-// default from being refused here (BE-11213 reconciled the spec, which had
+-// carried the stale `eleven_text_to_sound_v2`).
++// the public alias is translated to ElevenLabs' upstream model ID only after
++// validation, while usage continues to use the public billing ID.
+ //
+ // ELEMENT ZERO IS THE DEFAULT the Rewrite applies to a body that omits
+ // `model_id`, read from here rather than repeated as a literal, so the default
+@@ -296,11 +295,38 @@
+ 			params["duration"] = *reqBody.DurationSeconds
+ 			comfy_api.SetPromptParam(params, mapper.ElevenLabsSoundGenerationPrompt(*reqBody))
+ 
++			if model == "eleven_sfx_v2" {
++				if err := rewriteElevenLabsSoundGenerationModel(pr.Out); err != nil {
++					cancelProxy(pr, echo.NewHTTPError(http.StatusBadRequest, err.Error()))
++					return
++				}
++			}
++
+ 			pr.Out = pr.Out.WithContext(context.WithValue(pr.Out.Context(), paramCtxKey{}, params))
+ 			p.rewriteRequest(pr, false)
+ 		},
+ 		ModifyResponse: p.trackUsage,
+ 	})
++}
++
++func rewriteElevenLabsSoundGenerationModel(req *http.Request) error {
++	doc, err := copyReqBodyJSON[map[string]json.RawMessage](req)
++	if err != nil {
++		return err
++	}
++	(*doc)["model_id"] = json.RawMessage(`"eleven_text_to_sound_v2"`)
++	body, err := json.Marshal(doc)
++	if err != nil {
++		return err
++	}
++	req.Body = io.NopCloser(bytes.NewReader(body))
++	req.ContentLength = int64(len(body))
++	req.Header.Set("Content-Length", strconv.Itoa(len(body)))
++	req.TransferEncoding = nil
++	req.GetBody = func() (io.ReadCloser, error) {
++		return io.NopCloser(bytes.NewReader(body)), nil
++	}
++	return nil
+ }
+ 
+ func (p *ElevenLabsProvider) textToDialogueProxy() validatingReverseProxy {
+--- /dev/null
++++ b/services/comfy-api/server/middleware/elevenlabs_sound_model_test.go
+@@ -0,0 +1,106 @@
++package middleware
++
++import (
++	"encoding/json"
++	"io"
++	"net/http"
++	"strconv"
++	"testing"
++)
++
++func TestElevenLabsSoundGenerationTranslatesPublicModelForUpstream(t *testing.T) {
++	t.Parallel()
++
++	const route = "/proxy/elevenlabs/v1/sound-generation"
++	for _, tc := range []struct {
++		name   string
++		model  string
++		router bool
++	}{
++		{name: "direct proxy omitted"},
++		{name: "direct proxy null", model: `,"model_id":null`},
++		{name: "direct proxy alias", model: `,"model_id":"eleven_sfx_v2"`},
++		{name: "router omitted", router: true},
++		{name: "router alias", model: `,"model_id":"eleven_sfx_v2"`, router: true},
++	} {
++		t.Run(tc.name, func(t *testing.T) {
++			t.Parallel()
++			body := []byte(`{"text":"a door creaking open","duration_seconds":2,"prompt_influence":0.4,"loop":true,"future_seed":9007199254740993` + tc.model + `}`)
++			if tc.router {
++				target, notFound := ResolveRouterModel("elevenlabs", "eleven_sfx_v2", nil)
++				if notFound != nil {
++					t.Fatal("public sound model no longer resolves")
++				}
++				var err *RouterBodyModelError
++				body, err = RouterBodyForTarget(target, body)
++				if err != nil {
++					t.Fatal(err)
++				}
++			}
++			cancelled, params, out := runElevenLabsRewrite(t, elevenLabsTestProvider().Endpoints()[route], http.MethodPost, route, string(body))
++			if cancelled != nil {
++				t.Fatalf("request refused: %v", cancelled)
++			}
++			if params["model"] != "eleven_sfx_v2" || params["duration"] != float64(2) {
++				t.Fatalf("billing identity or duration changed: %v", params)
++			}
++			if out.URL.Host != "api.elevenlabs.io" || out.URL.Path != "/v1/sound-generation" {
++				t.Fatalf("wrong upstream destination: %s", out.URL)
++			}
++			if out.Header.Get("xi-api-key") != "upstream-elevenlabs-key" {
++				t.Fatal("provider authentication was not applied")
++			}
++			encoded, err := io.ReadAll(out.Body)
++			if err != nil {
++				t.Fatal(err)
++			}
++			var got map[string]json.RawMessage
++			if err := json.Unmarshal(encoded, &got); err != nil {
++				t.Fatal(err)
++			}
++			for key, want := range map[string]string{
++				"model_id":         `"eleven_text_to_sound_v2"`,
++				"text":             `"a door creaking open"`,
++				"duration_seconds": "2",
++				"prompt_influence": "0.4",
++				"loop":             "true",
++				"future_seed":      "9007199254740993",
++			} {
++				if string(got[key]) != want {
++					t.Errorf("upstream %s = %s, want %s", key, got[key], want)
++				}
++			}
++			if out.ContentLength != int64(len(encoded)) || out.Header.Get("Content-Length") != strconv.Itoa(len(encoded)) {
++				t.Fatal("rewritten body's length metadata is stale")
++			}
++			if out.GetBody == nil {
++				t.Fatal("rewritten request has no repeatable body")
++			}
++			replay, err := out.GetBody()
++			if err != nil {
++				t.Fatal(err)
++			}
++			defer replay.Close()
++			replayed, err := io.ReadAll(replay)
++			if err != nil || string(replayed) != string(encoded) {
++				t.Fatal("repeated body differs from outbound body")
++			}
++		})
++	}
++}
++
++func TestElevenLabsSoundGenerationTranslationDoesNotAdmitAnotherModel(t *testing.T) {
++	t.Parallel()
++
++	const route = "/proxy/elevenlabs/v1/sound-generation"
++	for _, model := range []string{"eleven_v3", "eleven_text_to_sound_v2", "eleven_text_to_sound_v3", "unknown"} {
++		t.Run(model, func(t *testing.T) {
++			t.Parallel()
++			body := `{"text":"a door creaking open","duration_seconds":2,"model_id":"` + model + `"}`
++			cancelled, params, _ := runElevenLabsRewrite(t, elevenLabsTestProvider().Endpoints()[route], http.MethodPost, route, body)
++			if cancelled == nil || params != nil {
++				t.Fatalf("unpriced model was admitted: cancelled=%v params=%v", cancelled, params)
++			}
++		})
++	}
++}

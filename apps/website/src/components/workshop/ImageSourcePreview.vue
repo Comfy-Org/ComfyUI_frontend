@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useObjectUrl } from '@vueuse/core'
+import { useMounted, useObjectUrl } from '@vueuse/core'
 import { computed, ref } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
@@ -16,7 +16,8 @@ const {
   name: string
   locale?: Locale
 }>()
-const objectUrl = useObjectUrl(() => file)
+const mounted = useMounted()
+const objectUrl = useObjectUrl(() => (mounted.value ? file : undefined))
 const source = computed(() => objectUrl.value ?? src)
 const failedSource = ref<string>()
 </script>
