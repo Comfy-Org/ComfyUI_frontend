@@ -1,3 +1,4 @@
+import { adoptRegisteredNodeState } from '@/core/graph/nodeShell/nodeShellState'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { materializeLinkAdapter } from '@/lib/litegraph/src/LLink'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -6,6 +7,8 @@ import type {
   ExportedSubgraph,
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
+import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
+import { getWidgetIds } from '@/lib/litegraph/src/utils/widget'
 import { reportError } from '@/platform/telemetry/reportError'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import { useLinkStore } from '@/stores/linkStore'
@@ -50,7 +53,7 @@ export type MaterializableGraph = Pick<
  * @param subgraphDefinitions explicitly created definitions present in the
  * document. Root nodes typed by a definition id can only materialize once the
  * definition is registered on the root graph.
- * @returns ids that received a new live node.
+ * @returns ids that received a new or rebound live node.
  */
 export function reconcileAgentAdapters(
   graph: MaterializableGraph,
@@ -264,10 +267,6 @@ function materialize(
 ): boolean {
   const nodeStore = useNodeDataStore()
   const widgetStore = useWidgetValueStore()
-  const node =
-    LiteGraph.createNode(state.type, state.title) ?? missingNode(state)
-  node.id = state.id
-
   const widgets = widgetStore.getNodeWidgets(scope.rootGraphId, state.id).map(
     (widget): WidgetStateInit => ({
       disabled: widget.disabled,
@@ -280,6 +279,13 @@ function materialize(
       y: widget.y
     })
   )
+
+  if (orphan && canRebindIncumbent(orphan, state, serialised, widgets))
+    return rebindIncumbent(graph, state, serialised, orphan, widgets)
+
+  const node =
+    LiteGraph.createNode(state.type, state.title) ?? missingNode(state)
+  node.id = state.id
   const restore = () => {
     nodeStore.registerNode(scope, state)
     for (const widget of widgets) {
@@ -351,6 +357,93 @@ function materialize(
     })
   }
   return true
+}
+
+function canRebindIncumbent(
+  orphan: LGraphNode,
+  state: NodeState,
+  serialised: ISerialisedNode,
+  widgets: readonly WidgetStateInit[]
+): boolean {
+  if (orphan.type !== state.type || orphan.has_errors) return false
+  if (serialised.widgets_values === undefined) return true
+  const widgetNames = new Set(
+    (orphan.widgets ?? []).map((widget) => widget.name)
+  )
+  return widgets.every((widget) => widgetNames.has(widget.name ?? ''))
+}
+
+function bindNodeWidgets(node: LGraphNode, nodeId: NodeId): void {
+  for (const widget of node.widgets ?? []) {
+    if (isNodeBindable(widget)) widget.setNodeId(nodeId)
+  }
+}
+
+function rebindIncumbent(
+  graph: MaterializableGraph,
+  state: NodeState,
+  serialised: ISerialisedNode,
+  orphan: LGraphNode,
+  widgets: readonly WidgetStateInit[]
+): boolean {
+  if (
+    serialised.widgets_values !== undefined &&
+    !removeDroppedWidgets(graph, orphan, state, widgets)
+  )
+    return false
+  const detachedState = orphan._state
+  const detachedScope = orphan._graphScope
+  if (!adoptRegisteredNodeState(graph, orphan, state)) return false
+  try {
+    bindNodeWidgets(orphan, state.id)
+    try {
+      withNamedValuesRestore(() =>
+        orphan.configure(withNamedWidgetValues(serialised))
+      )
+    } catch (cause) {
+      reportError(cause, {
+        errorType: 'agent_node_materialize_configure_failed',
+        context: { graphId: graph.id, nodeId: String(state.id) }
+      })
+    }
+    bindNodeWidgets(orphan, state.id)
+    useWidgetValueStore().setNodeWidgetOrder(
+      graph.rootGraph.id,
+      state.id,
+      getWidgetIds(orphan.widgets ?? [])
+    )
+    return true
+  } catch (cause) {
+    orphan._state = detachedState
+    orphan._graphScope = detachedScope
+    reportError(cause, {
+      errorType: 'agent_node_materialize_rebind_failed',
+      context: { graphId: graph.id, nodeId: String(state.id) }
+    })
+    return false
+  }
+}
+
+function removeDroppedWidgets(
+  graph: MaterializableGraph,
+  node: LGraphNode,
+  state: NodeState,
+  widgets: readonly WidgetStateInit[]
+): boolean {
+  const successorNames = new Set(widgets.map((widget) => widget.name ?? ''))
+  const dropped = (node.widgets ?? []).filter(
+    (widget) => widget.serialize !== false && !successorNames.has(widget.name)
+  )
+  try {
+    for (const widget of dropped) node.removeWidget(widget)
+    return true
+  } catch (cause) {
+    reportError(cause, {
+      errorType: 'agent_node_materialize_rebind_failed',
+      context: { graphId: graph.id, nodeId: String(state.id) }
+    })
+    return false
+  }
 }
 
 /** Same placeholder `LGraph.configure()` builds for an unregistered type. */
