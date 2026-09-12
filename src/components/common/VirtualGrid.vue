@@ -1,7 +1,6 @@
 <template>
-  <slot v-if="isPaged(items) && items.isLoading" name="loading" />
   <slot
-    v-else-if="pagedItems(items).length && slots.placeholder"
+    v-if="!pagedItems(items).length && slots.placeholder"
     name="placeholder"
   />
   <div
@@ -21,6 +20,10 @@
     </div>
     <div :style="bottomSpacerStyle" />
   </div>
+  <slot
+    v-if="isPaged(items) && items.isLoading && slots.loading"
+    name="loading"
+  />
 </template>
 
 <script setup lang="ts" generic="T extends { id: string }">
@@ -124,7 +127,7 @@ const bottomSpacerStyle = computed<CSSProperties>(() => ({
 
 const distance = 2 * defaultItemHeight * (1 + bufferRows)
 const infiniteScrollElement = computed(() =>
-  isPaged(items) ? undefined : container.value
+  isPaged(items) ? container.value : undefined
 )
 useInfiniteScroll(
   infiniteScrollElement,
