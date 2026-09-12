@@ -367,7 +367,7 @@ export const useDialogService = () => {
           ? 'out_of_credits'
           : 'top_up_blocked'
       })
-      return
+      return presentation.kind
     }
     if (presentation.kind === 'salesManaged') {
       useToastStore().add({
@@ -376,10 +376,10 @@ export const useDialogService = () => {
         detail: t('subscription.salesManagedRunBlockedDetail'),
         life: 5000
       })
-      return
+      return presentation.kind
     }
     if (presentation.kind === 'member') {
-      return dialogStore.showDialog({
+      dialogStore.showDialog({
         key: 'insufficient-credits-member',
         component: InsufficientCreditsMemberDialog,
         props: {
@@ -393,6 +393,7 @@ export const useDialogService = () => {
             'w-[min(360px,95vw)] max-w-[min(360px,95vw)] sm:max-w-[min(360px,95vw)] border-0 bg-transparent shadow-none'
         }
       })
+      return presentation.kind
     }
 
     const component =
@@ -400,7 +401,7 @@ export const useDialogService = () => {
         ? TopUpCreditsDialogContentWorkspace
         : TopUpCreditsDialogContentLegacy
 
-    return dialogStore.showDialog({
+    dialogStore.showDialog({
       key: 'top-up-credits',
       component,
       props: options,
@@ -410,6 +411,7 @@ export const useDialogService = () => {
         contentClass: SELF_STYLED_PANEL_CONTENT_CLASS
       }
     })
+    return presentation.kind
   }
 
   /**

@@ -24,7 +24,7 @@ export function useTopUpUrlLoader() {
   const route = useRoute()
   const router = useRouter()
   const dialogService = useDialogService()
-  const { canTopUp, initialize } = useBillingCapabilities()
+  const { initialize } = useBillingCapabilities()
   const telemetry = useTelemetry()
 
   /** Reads `?topup=`, strips it, and delegates valid values to the dialog. */
@@ -51,11 +51,10 @@ export function useTopUpUrlLoader() {
     // just gets stripped above.
     if (!shouldOpen) return
 
-    if (canTopUp.value) {
+    const presentation = await dialogService.showTopUpCreditsDialog()
+    if (presentation === 'subscribed') {
       telemetry?.trackAddApiCreditButtonClicked({ source: 'deep_link' })
     }
-
-    void dialogService.showTopUpCreditsDialog()
   }
 
   return {

@@ -29,7 +29,7 @@ vi.mock<unknown>(import('vue-router'), () => ({
 }))
 
 const mockShowTopUpCreditsDialog = vi.hoisted(() =>
-  vi.fn(async () => undefined)
+  vi.fn<() => Promise<string | undefined>>(async () => 'subscribed')
 )
 
 vi.mock<unknown>(import('@/services/dialogService'), () => ({
@@ -64,7 +64,7 @@ describe('useTopUpUrlLoader', () => {
     mockRouteQuery.value = {}
     mockCanTopUp.value = true
     mockInitialize.mockResolvedValue(undefined)
-    mockShowTopUpCreditsDialog.mockResolvedValue(undefined)
+    mockShowTopUpCreditsDialog.mockResolvedValue('subscribed')
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(null)
   })
 
@@ -99,6 +99,17 @@ describe('useTopUpUrlLoader', () => {
     })
   })
 
+  it('does not emit purchase telemetry when dialog policy routes a member', async () => {
+    mockRouteQuery.value = { topup: '1' }
+    mockShowTopUpCreditsDialog.mockResolvedValue('member')
+
+    const { loadTopUpFromUrl } = useTopUpUrlLoader()
+    await loadTopUpFromUrl()
+
+    expect(mockShowTopUpCreditsDialog).toHaveBeenCalledOnce()
+    expect(mockTrackAddApiCreditButtonClicked).not.toHaveBeenCalled()
+  })
+
   it('retains the deep link until capability loading settles', async () => {
     let resolveCapabilities!: () => void
     mockRouteQuery.value = { topup: '1' }
@@ -128,6 +139,7 @@ describe('useTopUpUrlLoader', () => {
   it('delegates denied capabilities to the shared dialog policy', async () => {
     mockRouteQuery.value = { topup: '1' }
     mockCanTopUp.value = false
+    mockShowTopUpCreditsDialog.mockResolvedValue('salesManaged')
 
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()
@@ -139,6 +151,7 @@ describe('useTopUpUrlLoader', () => {
   it('routes, strips, and clears together when top-up is denied', async () => {
     mockRouteQuery.value = { topup: '1', other: 'param' }
     mockCanTopUp.value = false
+    mockShowTopUpCreditsDialog.mockResolvedValue('salesManaged')
 
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()

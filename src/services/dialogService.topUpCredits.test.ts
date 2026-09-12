@@ -107,10 +107,11 @@ describe('showTopUpCreditsDialog', () => {
   })
 
   it('shows the purchase dialog to users who can top up', async () => {
-    await useDialogService().showTopUpCreditsDialog({
+    const presentation = await useDialogService().showTopUpCreditsDialog({
       isInsufficientCredits: true
     })
 
+    expect(presentation).toBe('subscribed')
     const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
     expect(args.key).toBe('top-up-credits')
     expect(state.initialize).not.toHaveBeenCalled()
@@ -121,10 +122,11 @@ describe('showTopUpCreditsDialog', () => {
     state.canTopUp = false
     state.canSubscribeSelfServe = false
 
-    await useDialogService().showTopUpCreditsDialog({
+    const presentation = await useDialogService().showTopUpCreditsDialog({
       isInsufficientCredits: true
     })
 
+    expect(presentation).toBe('member')
     const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
     expect(args.key).toBe('insufficient-credits-member')
     // The member notice draws its own header + close button, so it must open
