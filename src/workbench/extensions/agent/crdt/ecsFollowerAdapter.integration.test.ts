@@ -559,17 +559,19 @@ describe('EcsFollowerAdapter integration', () => {
     }
     const adapter = new EcsFollowerAdapter(mutations)
     adapter.bind('wf', follower)
+    const initialUpdate = Y.encodeStateAsUpdate(host)
+    follower.applyRemoteUpdate(initialUpdate)
 
     expect(
       adapter.applyFrame({
         workflowId: 'wf',
         seq: 1,
-        update: Y.encodeStateAsUpdate(host)
+        update: initialUpdate
       })
     ).toEqual({ status: 'projected', sequence: 1 })
 
     const beforeNodeOne = Y.encodeStateVector(host)
-    applyOps(
+    const nodeOneResult = applyOps(
       host,
       [
         op('node-1', 1, {
@@ -588,12 +590,15 @@ describe('EcsFollowerAdapter integration', () => {
       ] as Parameters<typeof applyOps>[1],
       catalog
     )
+    expect(nodeOneResult.outcomes).toEqual([
+      { op_id: 'node-1', outcome: 'applied' }
+    ])
     const nodeOneUpdate = Y.encodeStateAsUpdate(host, beforeNodeOne)
     follower.applyRemoteUpdate(nodeOneUpdate)
 
     queueReentrantFrame = () => {
       const beforeNodeTwo = Y.encodeStateVector(host)
-      applyOps(
+      const nodeTwoResult = applyOps(
         host,
         [
           op('node-2', 2, {
@@ -612,6 +617,9 @@ describe('EcsFollowerAdapter integration', () => {
         ] as Parameters<typeof applyOps>[1],
         catalog
       )
+      expect(nodeTwoResult.outcomes).toEqual([
+        { op_id: 'node-2', outcome: 'applied' }
+      ])
       const nodeTwoUpdate = Y.encodeStateAsUpdate(host, beforeNodeTwo)
       follower.applyRemoteUpdate(nodeTwoUpdate)
       expect(
