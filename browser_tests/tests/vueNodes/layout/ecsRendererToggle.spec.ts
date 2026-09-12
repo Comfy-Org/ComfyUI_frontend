@@ -29,83 +29,129 @@ test.describe(
         await comfyPage.workflow.setupWorkflowsDirectory({})
       })
 
-      test('preserves graph geometry and widget state through a renderer round trip', async ({
-        comfyPage,
-        comfyMouse
-      }) => {
-        const initialGraph = await comfyPage.page.evaluate(() => ({
-          nodeCount: window.app!.graph.nodes.length,
-          positions: window.app!.graph.nodes.map((node) => ({
-            id: node.id,
-            pos: [...node.pos]
-          })),
-          cfg: window
-            .app!.graph.nodes.find((node) => String(node.id) === '3')
-            ?.widgets?.find((widget) => widget.name === 'cfg')?.value
-        }))
-        expect(initialGraph.nodeCount).toBeGreaterThan(0)
-        expect(
-          initialGraph.cfg,
-          'default workflow must expose KSampler cfg'
-        ).toBe(8)
-
-        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-        await comfyPage.vueNodes.waitForNodes(initialGraph.nodeCount)
-        await expect(comfyPage.vueNodes.nodes).toHaveCount(
-          initialGraph.nodeCount
-        )
-
-        const kSampler = await comfyPage.nodeOps.getNodeRefById('3')
-        const initialPosition =
-          await kSampler.getProperty<[number, number]>('pos')
-        const fixture = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
-        await comfyMouse.dragElementBy(fixture.title, { x: 120, y: 80 })
-        await expect
-          .poll(() => kSampler.getProperty<[number, number]>('pos'))
-          .not.toEqual(initialPosition)
-        const movedPosition =
-          await kSampler.getProperty<[number, number]>('pos')
-
-        const cfgWidget = comfyPage.vueNodes
-          .getWidgetByName('KSampler', 'cfg')
-          .first()
-        const { input } = comfyPage.vueNodes.getInputNumberControls(cfgWidget)
-        await input.fill('7.5')
-        await input.blur()
-        await expect(input).toHaveValue('7.5')
-
-        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
-        await comfyPage.nextFrame()
-        await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
-
-        await comfyPage.menu.topbar.saveWorkflow('Renderer Round Trip')
-        await comfyPage.workflow.reloadAndWaitForApp()
-        await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
-
-        await expect
-          .poll(() =>
-            comfyPage.page.evaluate(() => ({
-              nodeCount: window.app!.graph.nodes.length,
-              positions: window.app!.graph.nodes.map((node) => ({
-                id: node.id,
-                pos: [...node.pos]
-              })),
-              cfg: window
-                .app!.graph.nodes.find((node) => String(node.id) === '3')
-                ?.widgets?.find((widget) => widget.name === 'cfg')?.value
-            }))
+      for (const { startInVue, label } of [
+        { startInVue: false, label: 'legacy to Vue to legacy' },
+        { startInVue: true, label: 'Vue to legacy to Vue' }
+      ]) {
+        test(`preserves the complete workflow through ${label}`, async ({
+          comfyPage,
+          comfyMouse
+        }) => {
+          const nodeCount = await comfyPage.page.evaluate(
+            () => window.app!.graph.nodes.length
           )
-          .toEqual({
-            nodeCount: initialGraph.nodeCount,
-            positions: initialGraph.positions.map((node) =>
-              String(node.id) === '3'
-                ? { ...node, pos: [...movedPosition] }
-                : node
-            ),
-            cfg: 7.5
+          expect(nodeCount).toBeGreaterThan(0)
+
+          if (startInVue) {
+            await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+            await comfyPage.vueNodes.waitForNodes(nodeCount)
+          }
+
+          await comfyPage.settings.setSetting(
+            'Comfy.VueNodes.Enabled',
+            !startInVue
+          )
+          if (startInVue) {
+            await comfyPage.nextFrame()
+            await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
+          } else {
+            await comfyPage.vueNodes.waitForNodes(nodeCount)
+          }
+
+          const kSampler = await comfyPage.nodeOps.getNodeRefById('3')
+          const initialPosition =
+            await kSampler.getProperty<[number, number]>('pos')
+          if (startInVue) {
+            await kSampler.dragBy({ x: 120, y: 80 })
+            const cfgWidget = await kSampler.getWidgetByName('cfg')
+            await cfgWidget.dragHorizontal(-20)
+          } else {
+            const fixture =
+              await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+            await comfyMouse.dragElementBy(fixture.title, { x: 120, y: 80 })
+            const cfgWidget = comfyPage.vueNodes
+              .getWidgetByName('KSampler', 'cfg')
+              .first()
+            const { input } =
+              comfyPage.vueNodes.getInputNumberControls(cfgWidget)
+            await input.fill('7.5')
+            await input.blur()
+            await expect(input).toHaveValue('7.5')
+          }
+          await expect
+            .poll(() => kSampler.getProperty<[number, number]>('pos'))
+            .not.toEqual(initialPosition)
+
+          const expectedSerialized =
+            await comfyPage.nodeOps.getSerializedGraph()
+
+          await comfyPage.settings.setSetting(
+            'Comfy.VueNodes.Enabled',
+            startInVue
+          )
+          if (startInVue) {
+            await comfyPage.vueNodes.waitForNodes(nodeCount)
+          } else {
+            await comfyPage.nextFrame()
+            await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
+          }
+
+          const expectedRuntime = await comfyPage.page.evaluate(() => {
+            const graph = window.app!.graph
+            return {
+              widgetValues: graph.nodes.map((node) => ({
+                id: node.id,
+                values: node.widgets?.map((widget) => widget.value) ?? []
+              })),
+              linkEndpoints: [...graph.links.values()].map((link) => ({
+                id: link.id,
+                originId: link.origin_id,
+                originSlot: link.origin_slot,
+                targetId: link.target_id,
+                targetSlot: link.target_slot
+              }))
+            }
           })
-        await expect(comfyPage.toast.toastErrors).toHaveCount(0)
-      })
+          expect(await comfyPage.nodeOps.getSerializedGraph()).toEqual(
+            expectedSerialized
+          )
+
+          await comfyPage.menu.topbar.saveWorkflow(
+            `Renderer Round Trip ${label}`
+          )
+          await comfyPage.workflow.reloadAndWaitForApp()
+          if (startInVue) {
+            await comfyPage.vueNodes.waitForNodes(nodeCount)
+          } else {
+            await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
+          }
+
+          await expect
+            .poll(() =>
+              comfyPage.page.evaluate(() => {
+                const graph = window.app!.graph
+                return {
+                  widgetValues: graph.nodes.map((node) => ({
+                    id: node.id,
+                    values: node.widgets?.map((widget) => widget.value) ?? []
+                  })),
+                  linkEndpoints: [...graph.links.values()].map((link) => ({
+                    id: link.id,
+                    originId: link.origin_id,
+                    originSlot: link.origin_slot,
+                    targetId: link.target_id,
+                    targetSlot: link.target_slot
+                  }))
+                }
+              })
+            )
+            .toEqual(expectedRuntime)
+          expect(await comfyPage.nodeOps.getSerializedGraph()).toEqual(
+            expectedSerialized
+          )
+          await expect(comfyPage.toast.toastErrors).toHaveCount(0)
+        })
+      }
     })
 
     test('keeps node and link counts stable across three serialized renderer round trips', async ({
