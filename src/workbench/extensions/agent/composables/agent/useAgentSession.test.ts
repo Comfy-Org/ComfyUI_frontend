@@ -28,6 +28,7 @@ import type {
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
 
+import { selectedNodeKey } from './useCanvasSelection'
 import type { SelectedNode } from './useCanvasSelection'
 import type { AgentEventSource, TurnOrigin } from './useAgentSession'
 import { useAgentSession } from './useAgentSession'
@@ -856,7 +857,43 @@ describe('useAgentSession (v1 composition root)', () => {
     session.start()
     await session.sendMessage('explain', undefined, tags)
     const body = vi.mocked(rest.postMessage).mock.calls[0][1]
-    expect(body.selection).toEqual({ node_ids: ['5', '6'] })
+    // node_ids must carry the locator-qualified id, not the bare (subgraph-local)
+    // id: two nodes in different subgraphs can share the same bare `id`, so
+    // sending `tag.id` would make the outbound selection ambiguous. PM-680.
+    expect(body.selection).toEqual({
+      node_ids: ['5', '00000000-0000-0000-0000-000000000001:6']
+    })
+  })
+
+  it('(h2b) node_ids match the locator keys the chip UI renders for the same tags', async () => {
+    // Regression guard for PM-680: what the chip UI keys/identifies each tag by
+    // (selectedNodeKey, used for the chip's :key and its remove handler) must be
+    // exactly what rides in the outbound selection.node_ids, so the agent
+    // operates on the same nodes the chips visibly represent.
+    const rest = fakeRest()
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    const tags: SelectedNode[] = [
+      {
+        id: '3',
+        locatorId: createNodeLocatorId(null, toNodeId('3')),
+        title: 'Root node'
+      },
+      {
+        // Same bare id as a node in a different subgraph instance would carry;
+        // only the locator-qualified key disambiguates them.
+        id: '3',
+        locatorId: createNodeLocatorId(
+          '00000000-0000-0000-0000-000000000002',
+          toNodeId('3')
+        ),
+        title: 'Subgraph node'
+      }
+    ]
+    session.start()
+    await session.sendMessage('explain', undefined, tags)
+    const body = vi.mocked(rest.postMessage).mock.calls[0][1]
+    const renderedChipKeys = tags.map(selectedNodeKey)
+    expect(body.selection).toEqual({ node_ids: renderedChipKeys })
   })
 
   it('(h3) sends workflow references separately and keeps them in the local turn', async () => {
