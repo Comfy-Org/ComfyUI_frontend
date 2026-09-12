@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
@@ -67,15 +65,13 @@ function seedUserState(userId: string = 'user-a'): void {
   conversation.startTurn('turn-a' as TurnId)
 
   const composer = useAgentComposerStore()
-  composer.draft = 'unfinished prompt'
-  composer.attachments = [
-    {
-      id: 'attachment-a',
-      name: 'input.png',
-      ref: 'input.png',
-      previewUrl: 'blob:composer-preview'
-    }
-  ]
+  composer.setText('unfinished prompt')
+  composer.addAttachment({
+    id: 'attachment-a',
+    name: 'input.png',
+    ref: 'input.png',
+    previewUrl: 'blob:composer-preview'
+  })
 
   useAgentWorkflowTabBindingStore().bind('workflow-a', 'workflows/a.json')
   rememberAgentSessionMemory('thread-a', userId)
@@ -91,7 +87,6 @@ describe('registerAgentIdentityStateTracker', () => {
   let stop: () => void
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     localStorage.clear()
     setUser(null)
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})

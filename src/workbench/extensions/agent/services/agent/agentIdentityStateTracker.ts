@@ -39,8 +39,11 @@ export function registerAgentIdentityStateTracker(): () => void {
           if (attachment.previewUrl?.startsWith('blob:'))
             URL.revokeObjectURL(attachment.previewUrl)
         }
-        composer.draft = ''
-        composer.attachments = []
+        composer.replaceDraft({
+          text: '',
+          workflowReferences: [],
+          attachments: []
+        })
 
         forgetAgentSessionMemory()
         useAgentWorkflowTabBindingStore().clear()

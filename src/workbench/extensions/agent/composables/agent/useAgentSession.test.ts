@@ -1,7 +1,5 @@
 import type { AgentAdmissionError } from '@comfyorg/ingest-types'
 import { zAgentAdmissionError } from '@comfyorg/ingest-types/zod'
-import { createTestingPinia } from '@pinia/testing'
-import { createPinia, setActivePinia } from 'pinia'
 import { nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -207,7 +205,6 @@ function admissionError(
 
 describe('useAgentSession (v1 composition root)', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     localStorage.clear()
     vi.mocked(reportError).mockClear()
   })
@@ -1279,7 +1276,6 @@ describe('useAgentSession (v1 composition root)', () => {
       'wf-existing',
       'workflows/existing.json'
     )
-    setActivePinia(createPinia())
     localStorage.setItem('Comfy.Agent.ThreadId', 'th-existing')
 
     const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
@@ -2095,7 +2091,6 @@ describe('thread resume (B17)', () => {
   ]
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     localStorage.clear()
   })
 
