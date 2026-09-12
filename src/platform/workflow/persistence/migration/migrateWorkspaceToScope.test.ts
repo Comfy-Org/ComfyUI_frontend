@@ -214,18 +214,21 @@ describe('migrateWorkspaceToScope', () => {
     seedSourceWorkspace()
     const cancelTransition = prepareWorkflowWorkspaceTransition()
 
-    migrateWorkspaceToScope(sourceWorkspaceId, destinationScope)
+    try {
+      migrateWorkspaceToScope(sourceWorkspaceId, destinationScope)
 
-    expect(readJson(StorageKeys.draftIndex(sourceWorkspaceId))).toEqual(
-      buildIndex()
-    )
-    expect(localStorage.getItem(StorageKeys.draftIndex(destinationScope))).toBe(
-      null
-    )
-    expect(
-      localStorage.getItem(StorageKeys.migrationClaim(sourceWorkspaceId))
-    ).toBe(null)
-    cancelTransition()
+      expect(readJson(StorageKeys.draftIndex(sourceWorkspaceId))).toEqual(
+        buildIndex()
+      )
+      expect(
+        localStorage.getItem(StorageKeys.draftIndex(destinationScope))
+      ).toBe(null)
+      expect(
+        localStorage.getItem(StorageKeys.migrationClaim(sourceWorkspaceId))
+      ).toBe(null)
+    } finally {
+      cancelTransition()
+    }
   })
 
   it('keeps the workspace copy and writes no scoped index when a payload copy hits the quota', () => {
