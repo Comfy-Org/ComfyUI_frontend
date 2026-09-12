@@ -56,24 +56,20 @@ for (const vueEnabled of [false, true] as const) {
             const probe = document.createElement('output')
             probe.id = 'legacy-pricing-badge-draw-probe'
             probe.hidden = true
-            probe.dataset.suppress = 'false'
+            probe.dataset.frames = '0'
             document.body.append(probe)
 
             const drawBadges = node.drawBadges
             node.drawBadges = function (ctx, options) {
+              probe.textContent = ''
               const fillText = ctx.fillText
               ctx.fillText = function (text, ...args) {
-                if (
-                  probe.dataset.suppress === 'true' &&
-                  text === '12.7 credits/Run'
-                ) {
-                  return
-                }
                 fillText.call(this, text, ...args)
                 if (text === '12.7 credits/Run') probe.textContent = text
               }
               try {
                 drawBadges.call(this, ctx, options)
+                probe.dataset.frames = String(Number(probe.dataset.frames) + 1)
               } finally {
                 ctx.fillText = fillText
               }
@@ -98,10 +94,15 @@ for (const vueEnabled of [false, true] as const) {
 
         if (vueNode) await expect(vueNode.priceBadge.required).toBeHidden()
         if (!vueEnabled) {
-          await legacyDrawProbe.evaluate((probe) => {
-            probe.textContent = ''
+          const frame = await legacyDrawProbe.evaluate((probe) => {
+            window.app!.graph.setDirtyCanvas(true, true)
+            return Number((probe as HTMLOutputElement).dataset.frames)
           })
-          await comfyPage.nextFrame()
+          await expect
+            .poll(async () =>
+              Number(await legacyDrawProbe.getAttribute('data-frames'))
+            )
+            .toBeGreaterThan(frame)
           await expect(legacyDrawProbe).toHaveText('')
         }
 
@@ -114,27 +115,6 @@ for (const vueEnabled of [false, true] as const) {
 
         if (vueNode) await expect(vueNode.priceBadge.required).toBeVisible()
         if (!vueEnabled) {
-          await legacyDrawProbe.evaluate((probe) => {
-            probe.dataset.suppress = 'true'
-            probe.textContent = ''
-          })
-          await comfyPage.nextFrame()
-
-          let badgeAssertionFailed = false
-          try {
-            await expect(legacyDrawProbe).toHaveText(EXPECTED_PRICE, {
-              timeout: 500
-            })
-          } catch {
-            badgeAssertionFailed = true
-          }
-          expect(badgeAssertionFailed).toBe(true)
-
-          await legacyDrawProbe.evaluate((probe) => {
-            probe.dataset.suppress = 'false'
-            window.app!.graph.setDirtyCanvas(true, true)
-          })
-          await comfyPage.nextFrame()
           await expect(legacyDrawProbe).toHaveText(EXPECTED_PRICE)
         }
       })
