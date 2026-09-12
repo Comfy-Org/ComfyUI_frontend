@@ -11,7 +11,6 @@ import type {
 } from '@/platform/workspace/api/workspaceApi'
 
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
-import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import {
   CLOUD_REMOTE_CONFIG,
   DEFAULT_TEAM_MEMBERS,
@@ -21,6 +20,8 @@ import {
 } from '@e2e/fixtures/data/cloudWorkspace'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { mockCloudBootRoutes } from '@e2e/fixtures/utils/cloudBootMocks'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { mockWorkspaceTokenMint } from '@e2e/fixtures/utils/workspaceMocks'
 
 interface RoleChangeRequest {
@@ -32,12 +33,6 @@ interface MemberMockState {
   members: Member[]
   patches: RoleChangeRequest[]
 }
-
-const jsonRoute = (body: unknown) => ({
-  status: 200,
-  contentType: 'application/json',
-  body: JSON.stringify(body)
-})
 
 /**
  * Boots the cloud app against fully mocked workspace + billing endpoints so
@@ -106,42 +101,18 @@ export class CloudWorkspaceMockHelper {
     }
     const { page } = this
 
-    await page.route('**/api/features', (r) =>
-      r.fulfill(jsonRoute(CLOUD_REMOTE_CONFIG))
-    )
-    await page.route('**/api/system_stats', (r) =>
-      r.fulfill(jsonRoute(mockSystemStats))
-    )
-    await page.route('**/api/users', (r) =>
-      r.fulfill(
-        jsonRoute({
-          storage: 'server',
-          migrated: true,
-          users: { 'test-user-e2e': 'E2E Test User' }
-        })
-      )
-    )
-    // A non-empty settings payload with TutorialCompleted marks the user as
-    // returning, so the new-user Templates dialog never auto-opens to block the
-    // Settings button. Errors tab off suppresses the model-folder 401 toast.
-    await page.route('**/api/settings', (r) =>
-      r.fulfill(
-        jsonRoute({
-          'Comfy.TutorialCompleted': true,
-          'Comfy.RightSidePanel.ShowErrorsTab': false
-        })
-      )
-    )
-    await page.route('**/api/userdata**', (r) => r.fulfill(jsonRoute([])))
-    await page.route('**/api/extensions', (r) => r.fulfill(jsonRoute([])))
-    await page.route('**/api/object_info', (r) => r.fulfill(jsonRoute({})))
-    await page.route('**/api/global_subgraphs', (r) => r.fulfill(jsonRoute({})))
-    await page.route('**/api/i18n', (r) => r.fulfill(jsonRoute({})))
-    await page.route('**/api/auth/session', (r) =>
-      r.fulfill(jsonRoute({ token: 'mock-workspace-token' }))
-    )
+    await mockCloudBootRoutes(page, {
+      features: CLOUD_REMOTE_CONFIG,
+      // A non-empty settings payload with TutorialCompleted marks the user as
+      // returning, so the new-user Templates dialog never auto-opens to block
+      // the Settings button. Errors tab off suppresses the model-folder 401
+      // toast.
+      settings: {
+        'Comfy.TutorialCompleted': true,
+        'Comfy.RightSidePanel.ShowErrorsTab': false
+      }
+    })
     await mockWorkspaceTokenMint(page, activeWorkspace)
-    await page.route('**/releases**', (r) => r.fulfill(jsonRoute([])))
 
     await page.route('**/api/workspaces', (r) =>
       r.fulfill(jsonRoute({ workspaces: [activeWorkspace] }))

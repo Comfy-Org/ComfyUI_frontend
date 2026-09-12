@@ -1,4 +1,11 @@
-import { computed, ref, shallowRef, watch } from 'vue'
+import {
+  computed,
+  getCurrentScope,
+  onScopeDispose,
+  ref,
+  shallowRef,
+  watch
+} from 'vue'
 
 import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
@@ -19,6 +26,7 @@ import {
   WorkspaceApiError,
   workspaceApi
 } from '@/platform/workspace/api/workspaceApi'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
@@ -366,6 +374,44 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     }
   }
 
+  // A cancellation or card change made in the portal tab or window never
+  // pushes back to this one — status has no return refetch and capability
+  // reads are paced — so the next return to the app re-reads everything the
+  // portal could have changed.
+  let stopPortalReturnRefresh: (() => void) | null = null
+  function refreshOnPortalReturn() {
+    stopPortalReturnRefresh?.()
+
+    const stopListening = () => {
+      document.removeEventListener('visibilitychange', onReturn)
+      window.removeEventListener('focus', onReturn)
+      stopPortalReturnRefresh = null
+    }
+    const onReturn = (event: Event) => {
+      if (
+        event.type === 'visibilitychange' &&
+        document.visibilityState !== 'visible'
+      ) {
+        return
+      }
+      stopListening()
+      void Promise.allSettled([
+        fetchStatus(),
+        fetchBalance(),
+        useBillingCapabilities().refresh()
+      ])
+    }
+    stopPortalReturnRefresh = stopListening
+    document.addEventListener('visibilitychange', onReturn)
+    window.addEventListener('focus', onReturn)
+  }
+
+  if (getCurrentScope()) {
+    onScopeDispose(() => {
+      stopPortalReturnRefresh?.()
+    })
+  }
+
   async function manageSubscription(): Promise<void> {
     isLoading.value = true
     error.value = null
@@ -373,7 +419,8 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
       const returnUrl = window.location.href
       const response = await workspaceApi.getPaymentPortalUrl(returnUrl)
       if (response.url) {
-        window.open(response.url, '_blank')
+        const portalWindow = window.open(response.url, '_blank')
+        if (portalWindow) refreshOnPortalReturn()
       }
     } catch (err) {
       error.value =

@@ -3065,6 +3065,29 @@
       }
     }
   },
+  "ConcatenateVideo": {
+    "description": "Concatena i video nell'ordine senza decodificare gli input codificati compatibili.",
+    "display_name": "Concatena video",
+    "inputs": {
+      "codec": {
+        "name": "codec",
+        "tooltip": "Codec usato per codificare i tensori video. Auto usa H.264; i video già codificati restano invariati."
+      },
+      "complete_audio": {
+        "name": "complete_audio",
+        "tooltip": "Colonna sonora completa facoltativa per il video concatenato. Sovrascrive l'audio contenuto nei video di input."
+      },
+      "videos": {
+        "name": "videos",
+        "tooltip": "Segmenti video da concatenare nell'ordine di input."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Il video concatenato."
+      }
+    }
+  },
   "ConditioningAverage": {
     "display_name": "Conditioning (Media)",
     "inputs": {
@@ -3098,6 +3121,20 @@
       },
       "conditioning_to": {
         "name": "conditioning_a"
+      }
+    }
+  },
+  "ConditioningLoader": {
+    "description": "Carica un conditioning salvato con Save Conditioning, oppure qualsiasi file safetensors con un tensore 'conditioning', dalla cartella embeddings.",
+    "display_name": "Carica Conditioning",
+    "inputs": {
+      "conditioning_name": {
+        "name": "conditioning_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3908,6 +3945,10 @@
       "bit_depth": {
         "name": "bit_depth",
         "tooltip": "Auto usa 8 bit per sRGB e 10 bit per HDR. Le opzioni esplicite a 8 bit e 10 bit sono indipendenti dallo spazio colore."
+      },
+      "codec": {
+        "name": "codec",
+        "tooltip": "Codifica facoltativamente il video immediatamente. None mantiene le immagini in formato tensore; Auto usa H.264."
       },
       "color_space": {
         "name": "color_space",
@@ -5026,6 +5067,22 @@
       "batch_size": {
         "name": "batch_size",
         "tooltip": "Il numero di immagini latent nel batch."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyYuE2LatentAudio": {
+    "display_name": "Audio Latent YuE2 vuoto",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "seconds": {
+        "name": "seconds"
       }
     },
     "outputs": {
@@ -6451,14 +6508,8 @@
       "model_max_output_tokens": {
         "name": "max_output_tokens"
       },
-      "model_temperature": {
-        "name": "temperature"
-      },
       "model_thinking_level": {
         "name": "thinking_level"
-      },
-      "model_top_p": {
-        "name": "top_p"
       },
       "prompt": {
         "name": "prompt",
@@ -7985,7 +8036,7 @@
     }
   },
   "ImageColorSpace": {
-    "description": "Converte sRGB (Rec.709), HDR (Rec.2020 HLG) e HDR PQ (Rec.2020 PQ). Usa un bianco SDR da 203 nit e un display di riferimento HLG da 1000 nit. La riduzione della gamma applica il tone mapping alla luminanza in eccesso nell'intero batch e comprime i colori fuori gamma. Le conversioni vengono calcolate in float32 e restituiscono il device e il dtype intermedi. L'alpha non premoltiplicato non viene trasformato nel colore.",
+    "description": "Converte sRGB, Rec.709 lineare, HDR (Rec.2020 HLG) e HDR PQ (Rec.2020 PQ). Il lineare 1.0 usa lo stesso bianco di riferimento di 203 nit di sRGB; HLG usa un display di riferimento di 1000 nit. L'output lineare e le conversioni da lineare a HDR preservano i valori estesi senza tone mapping. L'output SDR e la conversione da PQ a HLG applicano il tone mapping alla luminanza in eccesso sull'intero batch e comprimono i colori fuori gamma. Le conversioni vengono calcolate in float32 e restituiscono il dispositivo intermedio e dtype. L'alpha non premoltiplicato non viene trasformato nel colore.",
     "display_name": "Converti spazio colore dell'immagine",
     "inputs": {
       "destination": {
@@ -12380,6 +12431,23 @@
       }
     }
   },
+  "MarigoldV2PostProcess": {
+    "description": "Trasforma una previsione Marigold V2 decodificata in un'immagine: profondità normalizzata con le aree vicine luminose, normali di superficie unitarie o albedo sRGB.",
+    "display_name": "Post-elaborazione Marigold V2",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "prediction": {
+        "name": "prediction"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MaskComposite": {
     "display_name": "Combina Maschere",
     "inputs": {
@@ -16027,6 +16095,9 @@
     "inputs": {
       "model": {
         "name": "modello"
+      },
+      "sampling": {
+        "name": "sampling"
       },
       "shift": {
         "name": "spostamento"
@@ -20994,6 +21065,24 @@
       }
     }
   },
+  "SaveConditioning": {
+    "description": "Salva un conditioning nella cartella di output come safetensors; sposta il file in models/embeddings per caricarlo con Load Conditioning, ad esempio per saltare il codificatore di testo.",
+    "display_name": "Salva Conditioning",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "conditioning",
+        "tooltip": null
+      }
+    }
+  },
   "SaveGLB": {
     "display_name": "Salva Modello 3D",
     "inputs": {
@@ -21682,6 +21771,28 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SheetSage2AudioToABC": {
+    "description": "Trascrive le melodie vocali e strumentali della musica in notazione ABC. Collega l'output abc al nodo YuE2 Generate Music e usa la modalità corrispondente.",
+    "display_name": "SheetSage2 Audio in ABC",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "audio_encoder": {
+        "name": "audio_encoder"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "full: genera melodia e accordi; melody: genera solo la melodia, consigliato per le cover."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
         "tooltip": null
       }
     }
@@ -24029,7 +24140,7 @@
     }
   },
   "TripoImageToModelNode": {
-    "display_name": "Tripo: Da Immagine a Modello",
+    "display_name": "Tripo: da immagine a modello (legacy)",
     "inputs": {
       "auto_size": {
         "name": "auto_size",
@@ -24100,6 +24211,75 @@
         "tooltip": "Vuoto quando quad è abilitato."
       },
       "3": {
+        "name": "FBX",
+        "tooltip": "Popolato solo quando quad è abilitato."
+      }
+    }
+  },
+  "TripoImageToModelNodeV2": {
+    "display_name": "Tripo: da immagine a modello",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Scala i modelli con texture alle loro dimensioni reali in metri. Tripo memorizza le dimensioni come trasformazione della scena del modello e le incorpora quando il modello viene convertito, dotato di rig o retargetizzato; ignorato senza texture."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "Numero massimo di facce. -1 consente a Tripo di scegliere in modo adattivo (circa 1.4M facce su v3.x standard, 2M su detailed). Tripo limita automaticamente: v2.5 a 500.000, le mesh quad a 150.000."
+      },
+      "geometry_quality": {
+        "name": "geometry_quality"
+      },
+      "image": {
+        "name": "immagine"
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "La versione del modello da usare per la generazione"
+      },
+      "orientation": {
+        "name": "orientamento"
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "Mappe dei materiali PBR (colore base, metallico, rugosità, normale). Richiede texture."
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "Output mesh quad. Tripo fornisce le mesh quad come FBX, quindi il risultato arriva nell'output FBX e l'output GLB resta vuoto."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "Mesh low-poly con topologia pulita in stile artigianale (500-20.000 facce, quad 500-10.000). Ideale per soggetti semplici; quelli complessi potrebbero non riuscire."
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "Genera mappe di texture. Disattivato restituisce la geometria senza rivestimento e ignora pbr."
+      },
+      "texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = texture HD, extreme = texture Ultra 8K."
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "task_id del modello",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Vuoto quando quad è abilitato."
+      },
+      "2": {
         "name": "FBX",
         "tooltip": "Popolato solo quando quad è abilitato."
       }
@@ -24433,7 +24613,7 @@
       },
       "animation": {
         "name": "animazione",
-        "tooltip": "Le animazioni preset:* funzionano con entrambi i modelli rig; le animazioni preset:biped:* richiedono un rig creato con il modello v1.0-20240301."
+        "tooltip": "Le animazioni preset:* funzionano con entrambi i modelli con rig. Le animazioni preset:biped:* sono create per rig del modello v1.0-20240301; un rig v2.5 accetta solo chop, climb, dive, fall, hurt, idle, jump, run, shoot, slash, turn e walk."
       },
       "export_with_geometry": {
         "name": "export_with_geometry",
@@ -24597,6 +24777,48 @@
       }
     }
   },
+  "TripoSmartSegmentNode": {
+    "description": "Divide un modello in parti semanticamente significative e le denomina. Da un'immagine, Tripo genera prima il modello. Il task_id di segmentazione alimenta Tripo: Complete Mesh Parts, Tripo: Retopology, Tripo: Texture model e Tripo: Convert model come un risultato di Tripo: Segment Model.",
+    "display_name": "Tripo: Segmentazione intelligente",
+    "inputs": {
+      "source": {
+        "name": "sorgente",
+        "tooltip": "Segmenta un modello esistente oppure genera un modello da un'immagine e lo segmenta."
+      },
+      "source_granularity": {
+        "name": "granularità"
+      },
+      "source_hint": {
+        "name": "suggerimento"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "task_id di segmentazione",
+        "tooltip": null
+      },
+      "1": {
+        "name": "task_id del modello",
+        "tooltip": "Il modello segmentato (generato dall'immagine o importato)."
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "part_names",
+        "tooltip": "Nomi delle parti separati da virgole."
+      },
+      "4": {
+        "name": "parti",
+        "tooltip": "Descrizione di Tripo delle parti trovate."
+      },
+      "5": {
+        "name": "maschera",
+        "tooltip": null
+      }
+    }
+  },
   "TripoSplatConditioning": {
     "description": "Codifica l'immagine con DINOv3 e il Flux2 VAE in una condizionamento positivo/negativo TripoSplat e crea il target di rumore a dimensione fissa (latent + camera) per il KSampler",
     "display_name": "TripoSplat Conditioning",
@@ -24693,7 +24915,7 @@
     }
   },
   "TripoTextToModelNode": {
-    "display_name": "Tripo: Da testo a modello",
+    "display_name": "Tripo: Da testo a modello (Legacy)",
     "inputs": {
       "auto_size": {
         "name": "auto_size",
@@ -24769,8 +24991,77 @@
       }
     }
   },
+  "TripoTextToModelNodeV2": {
+    "display_name": "Tripo: Da testo a modello",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Ridimensiona i modelli con texture alla loro dimensione reale in metri. Tripo memorizza la dimensione come trasformazione della scena del modello e la incorpora quando il modello viene convertito, riggato o ritargettizzato; ignorato senza texture."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "Numero massimo di facce. -1 consente a Tripo di scegliere in modo adattivo (circa 1,4 M di facce su v3.x standard, 2 M su detailed). Tripo applica silenziosamente un limite: v2.5 a 500.000, mesh quad a 150.000."
+      },
+      "geometry_quality": {
+        "name": "geometry_quality"
+      },
+      "image_seed": {
+        "name": "image_seed"
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "model_version": {
+        "name": "model_version"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Fino a 255 caratteri."
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "Mappe dei materiali PBR (colore di base, metallico, ruvidità, normale). Richiede texture."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "Output mesh quad. Tripo fornisce le mesh quad come FBX, quindi il risultato arriva nell'output FBX e l'output GLB rimane vuoto."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "Mesh low-poly con topologia pulita in stile artigianale (500-20.000 facce, quad 500-10.000). Ideale per soggetti semplici; quelli complessi potrebbero non riuscire."
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "Genera mappe texture. Disattivato restituisce la geometria nuda e ignora pbr."
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = texture HD, extreme = texture Ultra 8K."
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ID attività del modello",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Vuoto quando quad è abilitato."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Valorizzato solo quando quad è abilitato."
+      }
+    }
+  },
   "TripoTextureNode": {
-    "display_name": "Tripo: Modello texture",
+    "display_name": "Tripo: Modello texture (Legacy)",
     "inputs": {
       "model_task_id": {
         "name": "task_id_modello"
@@ -24828,6 +25119,62 @@
         "tooltip": "Vuoto quando la sorgente è una mesh quad o un'importazione FBX."
       },
       "3": {
+        "name": "FBX",
+        "tooltip": "Tripo restituisce FBX per le mesh quad e le importazioni FBX; altrimenti è vuoto."
+      }
+    }
+  },
+  "TripoTextureNodeV2": {
+    "display_name": "Tripo: Modello texture",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "Modello di texture: v3.0 per le mesh generate con v3.x, v2.5 per le mesh generate con v2.5."
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "Nomi delle parti separati da virgole da Tripo: Segment Model da texturizzare. Se vuoto, applica texture a ogni parte."
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "Mappe dei materiali PBR (colore di base, metallico, ruvidità, normale); disattivato fornisce una texture a tinta unita."
+      },
+      "reference": {
+        "name": "reference",
+        "tooltip": "Immagini di riferimento che guidano le texture. Non possono essere combinate con texture_prompt o style_image."
+      },
+      "style_image": {
+        "name": "style_image",
+        "tooltip": "Immagine di riferimento per lo stile artistico delle texture. Utilizzata solo insieme a texture_prompt."
+      },
+      "texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "Guida testuale opzionale per la texturizzazione. In pratica è necessaria per i modelli importati (Tripo: Import Model), che non dispongono di un'immagine sorgente da cui dedurre i colori. Non può essere combinata con immagini di riferimento."
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = texture HD, extreme = texture Ultra 8K."
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "task_id del modello",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Vuoto quando la sorgente è una mesh quad o un'importazione FBX."
+      },
+      "2": {
         "name": "FBX",
         "tooltip": "Tripo restituisce FBX per le mesh quad e le importazioni FBX; altrimenti è vuoto."
       }
@@ -28298,6 +28645,94 @@
     "outputs": {
       "0": {
         "name": "mesh",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateABC": {
+    "description": "Genera la notazione ABC di una canzone dallo stile e dal testo. Collega abc al nodo YuE2 Generate Music.",
+    "display_name": "YuE2 Genera ABC",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "lyrics": {
+        "name": "lyrics"
+      },
+      "max_abc_tokens": {
+        "name": "max_abc_tokens"
+      },
+      "mode": {
+        "name": "modalità",
+        "tooltip": "full: genera melodia e accordi; melody: genera solo la melodia, consigliato per le cover."
+      },
+      "seed": {
+        "name": "seme"
+      },
+      "style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateMusic": {
+    "description": "Genera token musicali e condizionamento acustico da stile, testo e notazione ABC. Fornisci i secondi generati al nodo Empty YuE2 Latent Audio. Un input ABC vuoto ignora la modalità selezionata.",
+    "display_name": "YuE2 Genera musica",
+    "inputs": {
+      "abc": {
+        "name": "abc",
+        "tooltip": "Collega il generatore ABC o fornisci uno spartito modificato. Lascia vuoto per usare automaticamente la modalità off."
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "lyrics": {
+        "name": "testo"
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "Durata massima; la generazione può terminare prima. La versione utilizza un limite di 360 secondi."
+      },
+      "mode": {
+        "name": "modalità",
+        "tooltip": "full: genera melodia e accordi; melody: genera solo la melodia, consigliato per le cover."
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "seed": {
+        "name": "seme"
+      },
+      "style": {
+        "name": "stile"
+      },
+      "temperature": {
+        "name": "temperatura"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "secondi",
         "tooltip": null
       }
     }

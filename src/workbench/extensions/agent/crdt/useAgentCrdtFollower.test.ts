@@ -374,6 +374,20 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('FEC-5: refuses an empty doc id rather than subscribing to it', () => {
+    const setup = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+    setup.unmount()
+    bridgeState.current = null
+    writeRawRecord({ docId: '', nonce: persistedRecord()?.nonce })
+
+    const { unmount, status } = mountFollower(null)
+
+    expect(bridge().subscribe).not.toHaveBeenCalled()
+    expect(status().workflowId).toBeNull()
+    unmount()
+  })
+
   it('FEC-5: refuses a legacy bare-string record', () => {
     sessionStorage.setItem(DOC_ID_KEY, 'wf-legacy')
 
@@ -761,8 +775,29 @@ describe('useAgentCrdtFollower', () => {
     // distinct reference the composable hands through.
     const { fakeDefinitions } = definitionsState
     const fakeGraph = {
-      rootGraph: { subgraphs: new Map() }
+      rootGraph: { subgraphs: new Map() },
+      setDirtyCanvas: vi.fn()
     } as unknown as MaterializableGraph
+
+    it('counts the frame even when a removal hook throws out of the reconcile', () => {
+      // The orphan sweep inside `reconcileAgentAdapters` calls `graph.remove()`,
+      // which runs extension `onRemoved()` uncaught. `received === applied +
+      // skipped` has to survive that, so the outcome must be decided before the
+      // sweep runs.
+      materializerState.reconcileAgentAdapters.mockImplementationOnce(() => {
+        throw new Error('onRemoved threw')
+      })
+      const { unmount, status } = mountFollower('wf-1', true, () => fakeGraph)
+
+      expect(() =>
+        dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
+      ).toThrow('onRemoved threw')
+
+      const { received, applied, skipped } = status().outcomes
+      expect(received).toBe(1)
+      expect(applied + skipped).toBe(received)
+      unmount()
+    })
 
     it('reconciles the live graph after every applied frame', () => {
       const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
@@ -774,6 +809,9 @@ describe('useAgentCrdtFollower', () => {
         fakeGraph,
         fakeDefinitions
       )
+      // A frame that only connects nodes changes no layout, so the repaint
+      // has to come from here or the new wire stays invisible until a pan.
+      expect(fakeGraph.setDirtyCanvas).toHaveBeenCalledWith(true, true)
       // Definitions come from the doc the bridge currently follows, so a
       // doc_reset remint (which swaps the FollowerDoc) is read fresh.
       expect(definitionsState.readSubgraphDefinitions).toHaveBeenCalledWith(
@@ -802,7 +840,8 @@ describe('useAgentCrdtFollower', () => {
       const registeredGraph = {
         rootGraph: {
           subgraphs: new Map([[fakeDefinitions[0].id, {}]])
-        }
+        },
+        setDirtyCanvas: vi.fn()
       } as unknown as MaterializableGraph
       const { unmount } = mountFollower('wf-1', true, () => registeredGraph)
 
@@ -915,12 +954,20 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
-    it('reconciles after a follower_replaced clear', () => {
+    it('reconciles a follower_replaced clear against the replacement document', () => {
       const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
+      const replacementDoc = { getMap: () => ({ toJSON: () => ({}) }) }
+      bridge().follower = { updatesApplied: 0, doc: replacementDoc }
 
       dispatchFrame('follower_replaced', { workflowId: 'wf-1' })
 
       expect(adapterState.clearForReset).toHaveBeenCalled()
+      expect(
+        definitionsState.readSubgraphDefinitionIds
+      ).toHaveBeenLastCalledWith(replacementDoc)
+      expect(definitionsState.readSubgraphDefinitions).toHaveBeenLastCalledWith(
+        replacementDoc
+      )
       expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
         fakeGraph,
         fakeDefinitions

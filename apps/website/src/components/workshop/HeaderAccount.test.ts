@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { onBeforeSignInLeave } from '../../config/workshop-return'
+import { WORKSHOP_CLOUD_BASE_URL } from '../../config/workshop-env'
 import HeaderAccount from './HeaderAccount.vue'
 
 const h = vi.hoisted(() => ({
@@ -119,6 +120,31 @@ describe('HeaderAccount', () => {
     expect(screen.getByRole('button', { name: /account/i })).toBeTruthy()
     expect(screen.getByText(/1,234/)).toBeTruthy()
   })
+
+  it.for([0, 1234])(
+    'offers billing from the account menu with %s credits',
+    async (credits) => {
+      h.user!.value = { email: 'a@b.co', displayName: 'Ada' }
+      h.session!.value = {
+        token: 'jwt',
+        uid: 'user-1',
+        workspace,
+        role: 'owner'
+      }
+      h.balance!.value = { status: 'ok', credits }
+      render(HeaderAccount)
+
+      await userEvent
+        .setup()
+        .click(screen.getByRole('button', { name: /account/i }))
+      const buy = screen.getByRole('menuitem', { name: 'Buy credits' })
+      expect(buy.getAttribute('href')).toBe(
+        `${WORKSHOP_CLOUD_BASE_URL}/?settings=plan-credits`
+      )
+      expect(buy.getAttribute('target')).toBe('_blank')
+      expect(screen.getByRole('menuitem', { name: /sign out/i })).toBeTruthy()
+    }
+  )
 
   it('speaks the balance in the account button name, not just on screen', () => {
     h.user!.value = { email: 'a@b.co', displayName: 'Ada' }
