@@ -138,6 +138,23 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
       try {
         const task = await taskService.getTask(download.taskId)
 
+        if (!task) {
+          handleAssetDownload(
+            new CustomEvent('asset_download', {
+              detail: {
+                task_id: download.taskId,
+                asset_id: download.assetId,
+                asset_name: download.assetName,
+                bytes_total: download.bytesTotal,
+                bytes_downloaded: download.bytesDownloaded,
+                progress: download.progress,
+                status: 'failed'
+              }
+            })
+          )
+          return
+        }
+
         if (task.status === 'completed' || task.status === 'failed') {
           const result = task.result
           handleAssetDownload(
@@ -157,7 +174,7 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
           )
         }
       } catch {
-        // Task not ready or not found
+        return
       }
     }
 

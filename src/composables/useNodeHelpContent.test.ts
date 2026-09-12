@@ -2,31 +2,37 @@
 // dompurify is inert under happy-dom — see the tripwire note in
 // vitest.setup.ts (capricorn86/happy-dom#2182, FE-1189).
 import { render } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useNodeHelpContent as useNodeHelpContentComposable } from '@/composables/useNodeHelpContent'
+import type * as ReportErrorModule from '@/platform/telemetry/reportError'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { getNodeSource } from '@/types/nodeSource'
 
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: { en: {} }
+  messages: {
+    en: { nodeHelpPage: { notFound: 'Help not found' } }
+  }
 })
 
 function useNodeHelpContent(
-  ...args: Parameters<typeof useNodeHelpContentComposable>
+  nodeRef: Parameters<typeof useNodeHelpContentComposable>[0]
 ) {
-  let composable!: ReturnType<typeof useNodeHelpContentComposable>
+  let result: ReturnType<typeof useNodeHelpContentComposable> | undefined
   const Wrapper = defineComponent({
     setup() {
-      composable = useNodeHelpContentComposable(...args)
+      result = useNodeHelpContentComposable(nodeRef)
       return () => null
     }
   })
   render(Wrapper, { global: { plugins: [i18n] } })
-  return composable
+  assert(result)
+  return result
 }
 
 async function flushPromises() {
@@ -45,13 +51,17 @@ function createMockNode(
     display_name: 'Test Node',
     description: 'A test node',
     category: 'test',
-    python_module: 'comfy.test_node',
+    python_module: 'nodes',
     inputs: {},
     outputs: [],
     deprecated: false,
     experimental: false,
     output_node: false,
     api_node: false,
+    nodeSource: getNodeSource(
+      overrides.python_module,
+      overrides.essentials_category
+    ),
     ...overrides
   } as ComfyNodeDefImpl
 }
@@ -62,17 +72,9 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/types/nodeSource'), () => ({
-  NodeSourceType: {
-    Core: 'core',
-    CustomNodes: 'custom_nodes'
-  },
-  getNodeSource: vi.fn((pythonModule) => {
-    if (pythonModule?.startsWith('custom_nodes.')) {
-      return { type: 'custom_nodes' }
-    }
-    return { type: 'core' }
-  })
+vi.mock(import('@/platform/telemetry/reportError'), async (importOriginal) => ({
+  ...(await importOriginal<typeof ReportErrorModule>()),
+  reportError: vi.fn()
 }))
 
 describe('useNodeHelpContent', () => {
@@ -80,7 +82,7 @@ describe('useNodeHelpContent', () => {
     name: 'TestNode',
     display_name: 'Test Node',
     description: 'A test node',
-    python_module: 'comfy.test_node'
+    python_module: 'nodes'
   })
 
   const mockCustomNode = createMockNode({
@@ -128,7 +130,7 @@ describe('useNodeHelpContent', () => {
     expect(renderedHelpHtml.value).toContain('This is test help content')
   })
 
-  it('should handle fetch errors and fall back to description', async () => {
+  it('should show the unavailable state when core help is absent', async () => {
     const nodeRef = ref(mockCoreNode)
     mockFetch.mockResolvedValueOnce(
       new Response(null, { status: 404, statusText: 'Not Found' })
@@ -137,7 +139,140 @@ describe('useNodeHelpContent', () => {
     const { error, renderedHelpHtml } = useNodeHelpContent(nodeRef)
     await flushPromises()
 
-    expect(error.value).toBe('Not Found')
+    expect(error.value).toBe('Help not found')
+    expect(renderedHelpHtml.value).toContain(mockCoreNode.description)
+  })
+
+  it('should show the unavailable state when custom help is absent', async () => {
+    const nodeRef = ref(mockCustomNode)
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 404,
+      statusText: 'Not Found'
+    })
+
+    const { error, renderedHelpHtml } = useNodeHelpContent(nodeRef)
+    await flushPromises()
+
+    expect(error.value).toBe('Help not found')
+    expect(renderedHelpHtml.value).toContain(mockCustomNode.description)
+  })
+
+  it('should use core help for Essentials nodes', async () => {
+    const node = createMockNode({
+      name: 'EssentialsNode',
+      essentials_category: 'image',
+      python_module: 'custom_nodes.test_module'
+    })
+    mockFetch.mockResolvedValueOnce(markdownResponse('# Essentials help'))
+
+    const { renderedHelpHtml } = useNodeHelpContent(ref(node))
+    await flushPromises()
+
+    expect(mockFetch).toHaveBeenCalledWith('/docs/EssentialsNode/en.md')
+    expect(renderedHelpHtml.value).toContain('Essentials help')
+  })
+
+  it('should use the core base URL for relative Essentials images', async () => {
+    const node = createMockNode({
+      name: 'EssentialsNode',
+      essentials_category: 'image',
+      python_module: 'custom_nodes.ComfyUI-Essentials'
+    })
+    mockFetch.mockResolvedValueOnce(markdownResponse('![preview](preview.png)'))
+
+    const { renderedHelpHtml } = useNodeHelpContent(ref(node))
+    await flushPromises()
+
+    expect(renderedHelpHtml.value).toContain(
+      'src="/docs/EssentialsNode/preview.png"'
+    )
+  })
+
+  it('uses a blueprint description even when it has an Essentials category', async () => {
+    const node = createMockNode({
+      description: 'Blueprint help',
+      essentials_category: 'image',
+      python_module: 'blueprint'
+    })
+
+    const { error, renderedHelpHtml } = useNodeHelpContent(ref(node))
+    await flushPromises()
+
+    expect(error.value).toBeNull()
+    expect(renderedHelpHtml.value).toContain('Blueprint help')
+    expect(mockFetch).not.toHaveBeenCalled()
+  })
+
+  it('should show the unavailable state for a blueprint without a description', async () => {
+    const nodeRef = ref(
+      createMockNode({ description: '', python_module: 'blueprint' })
+    )
+
+    const { error, renderedHelpHtml } = useNodeHelpContent(nodeRef)
+    await flushPromises()
+
+    expect(error.value).toBe('Help not found')
+    expect(renderedHelpHtml.value).toBe('')
+    expect(mockFetch).not.toHaveBeenCalled()
+  })
+
+  it('should use core help routing for an unrecognized module', async () => {
+    const nodeRef = ref(
+      createMockNode({
+        name: 'UnknownNode',
+        description: 'Unknown node',
+        python_module: 'custom_nodes.'
+      })
+    )
+    mockFetch.mockResolvedValueOnce(markdownResponse('# Unknown help'))
+
+    const { error, renderedHelpHtml } = useNodeHelpContent(nodeRef)
+    await flushPromises()
+
+    expect(error.value).toBeNull()
+    expect(renderedHelpHtml.value).toContain('Unknown help')
+    expect(mockFetch).toHaveBeenCalledWith('/docs/UnknownNode/en.md')
+  })
+
+  it('should show the unavailable state for HTML fallback responses', async () => {
+    const nodeRef = ref(mockCoreNode)
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      headers: new Headers({ 'content-type': 'text/html' }),
+      text: async () => '<html>SPA fallback</html>'
+    })
+
+    const { error, renderedHelpHtml } = useNodeHelpContent(nodeRef)
+    await flushPromises()
+
+    expect(error.value).toBe('Help not found')
+    expect(renderedHelpHtml.value).toContain(mockCoreNode.description)
+  })
+
+  it('should log and recover from infrastructure failures', async () => {
+    const nodeRef = ref(mockCoreNode)
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      statusText: 'Internal Server Error'
+    })
+
+    const { error, renderedHelpHtml } = useNodeHelpContent(nodeRef)
+    await flushPromises()
+
+    expect(reportError).toHaveBeenCalledWith(
+      new Error(
+        'Failed to fetch node help (500 Internal Server Error) at /docs/TestNode/en.md'
+      ),
+      {
+        errorType: 'node_help_fetch_failure',
+        context: { path: '/docs/TestNode/en.md' }
+      }
+    )
+    expect(error.value).toBe(
+      'Failed to fetch node help (500 Internal Server Error) at /docs/TestNode/en.md'
+    )
     expect(renderedHelpHtml.value).toContain(mockCoreNode.description)
   })
 
@@ -207,6 +342,27 @@ describe('useNodeHelpContent', () => {
     expect(mockFetch).toHaveBeenCalledWith(
       '/extensions/test_module/docs/CustomNode.md'
     )
+  })
+
+  it('should use custom node fallback help after a localized request fails', async () => {
+    const nodeRef = ref(mockCustomNode)
+    const requestError = new Error('network failure')
+    mockFetch
+      .mockRejectedValueOnce(requestError)
+      .mockResolvedValueOnce(markdownResponse('# Fallback content'))
+
+    const { error, renderedHelpHtml } = useNodeHelpContent(nodeRef)
+    await flushPromises()
+
+    expect(error.value).toBeNull()
+    expect(renderedHelpHtml.value).toContain('Fallback content')
+    expect(mockFetch).toHaveBeenCalledTimes(2)
+    expect(reportError).toHaveBeenCalledWith(requestError, {
+      errorType: 'node_help_fetch_failure',
+      context: {
+        path: '/extensions/test_module/docs/CustomNode/en.md'
+      }
+    })
   })
 
   it('should prefix relative source src in custom nodes', async () => {
