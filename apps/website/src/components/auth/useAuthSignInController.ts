@@ -12,7 +12,15 @@ import {
 import type { AuthErrorClassification } from '@comfyorg/account/firebaseAuthError'
 import { until } from '@vueuse/core'
 import type { UserCredential } from 'firebase/auth'
-import { computed, onBeforeUnmount, onMounted, readonly, ref, watch } from 'vue'
+import {
+  computed,
+  onBeforeUnmount,
+  onMounted,
+  onUnmounted,
+  readonly,
+  ref,
+  watch
+} from 'vue'
 
 import type { RegionGateStatus } from '@comfyorg/account/vue'
 import { useRegionGate } from '@comfyorg/account/vue'
@@ -47,6 +55,27 @@ import type { AuthMode } from './AuthSignInPanel.vue'
 const HOME = '/'
 /** The cloud app's router gives auth this long to initialize before its timeout view. */
 const AUTH_INIT_TIMEOUT_MS = 16_000
+/** Ceiling on each non-interactive step (chunk load, provisioning, mint) so a
+ *  hung provider cannot pin the controls; the user-driven popup wait is left
+ *  unbounded and cancellable, never timed out. */
+const OPERATION_TIMEOUT_MS = 16_000
+const OPERATION_TIMED_OUT = Symbol('operation-timed-out')
+
+/** Race a non-interactive step against its deadline; a late resolve of the
+ *  loser is discarded, so the continuation is suppressed. */
+async function withinOperationDeadline<T>(
+  operation: Promise<T>
+): Promise<T | typeof OPERATION_TIMED_OUT> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const deadline = new Promise<typeof OPERATION_TIMED_OUT>((resolve) => {
+    timer = setTimeout(() => resolve(OPERATION_TIMED_OUT), OPERATION_TIMEOUT_MS)
+  })
+  try {
+    return await Promise.race([operation, deadline])
+  } finally {
+    clearTimeout(timer)
+  }
+}
 
 /** Absent in some runtimes and in tests, where only an explicit false is insecure. */
 function currentSecureContext(): boolean | undefined {
@@ -115,6 +144,15 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
     },
     { flush: 'sync' }
   )
+  // Teardown invalidates the attempt too, so auth, provisioning, and minting
+  // all stop instead of continuing to publish and redirect after the page left.
+  onUnmounted(() => {
+    signInGeneration += 1
+  })
+
+  const liveSince = (attempt: number) => () =>
+    attempt === signInGeneration && enabled.value
+  const abandonAttempt = () => dispatch({ type: 'signInAbandoned' })
 
   function dispatch(event: AuthSignInEvent) {
     const before = state.value
@@ -185,16 +223,26 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
     })
   }
 
-  async function runMint(currentUser?: WorkshopSessionUser): Promise<void> {
-    const result = currentUser
-      ? await ensureFresh(currentUser)
-      : await ensureFresh()
+  async function runMint(
+    currentUser: WorkshopSessionUser | undefined,
+    live: () => boolean,
+    onAbandon: () => void
+  ): Promise<void> {
+    const result = await withinOperationDeadline(
+      currentUser ? ensureFresh(currentUser) : ensureFresh()
+    )
     if (state.value.step !== 'minting') return
-    if (result?.status === 'ok') {
-      dispatch({ type: 'mintSucceeded' })
-    } else {
-      dispatch({ type: 'mintFailed' })
+    // A flag flip or teardown during the mint must not redirect or persist a
+    // session for an attempt that is no longer live.
+    if (!live()) {
+      onAbandon()
+      return
     }
+    if (result === OPERATION_TIMED_OUT || result?.status !== 'ok') {
+      dispatch({ type: 'mintFailed' })
+      return
+    }
+    dispatch({ type: 'mintSucceeded' })
   }
 
   async function completeSignIn(
@@ -204,20 +252,29 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
     if (state.value.step === 'pending' || state.value.step === 'minting') return
     dispatch({ type: 'signInStarted', provider })
     const attempt = signInGeneration
-    const live = () => attempt === signInGeneration && enabled.value
-    // Flag flip mid-attempt: drop the attempt so the reducer leaves `pending`.
-    const abandon = () => dispatch({ type: 'signInAbandoned' })
-    let firebase: Awaited<ReturnType<typeof loadWorkshopFirebase>> | undefined
+    const live = liveSince(attempt)
+    let firebase: WorkshopFirebase | undefined
+    let authenticated = false
+    // Drop the attempt so the reducer leaves `pending`. Once Firebase auth has
+    // persisted an identity, rolling the attempt back must sign it out too, or
+    // an abandoned attempt leaves the visitor silently signed in.
+    const abandon = () => {
+      abandonAttempt()
+      // Best-effort rollback; a failed sign-out must not go unhandled.
+      if (authenticated) void firebase?.signOutWorkshop().catch(() => {})
+    }
     try {
-      firebase = await loadWorkshopFirebase()
+      const loaded = await withinOperationDeadline(loadWorkshopFirebase())
       // The rollout flag turning off (or flickering) mid-flight must halt the
       // in-flight auth, not merely hide the UI: no sign-in, provisioning,
       // telemetry, or session.
-      if (!live()) {
+      if (!live() || loaded === OPERATION_TIMED_OUT) {
         abandon()
         return
       }
+      firebase = loaded
       const credential = await authenticate(firebase)
+      authenticated = true
       if (!live()) {
         abandon()
         return
@@ -225,8 +282,10 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
       // Email sign-up provisions atomically inside (its rollback needs it);
       // every other path provisions here so a disable during the popup stops it.
       if (!(provider === 'email' && mode === 'signUp')) {
-        await firebase.provisionWorkshopCustomer(credential)
-        if (!live()) {
+        const provisioned = await withinOperationDeadline(
+          firebase.provisionWorkshopCustomer(credential)
+        )
+        if (!live() || provisioned === OPERATION_TIMED_OUT) {
           abandon()
           return
         }
@@ -242,7 +301,7 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
         type: 'credentialSucceeded',
         email: credential.user.email ?? credential.user.displayName ?? ''
       })
-      await runMint(credential.user)
+      await runMint(credential.user, live, abandon)
     } catch (error) {
       // Single-use token: any attempt consumes it, so refresh before the next.
       if (provider === 'email' && mode === 'signUp') {
@@ -300,7 +359,7 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
 
   async function retryMint(): Promise<void> {
     dispatch({ type: 'mintRetried' })
-    await runMint()
+    await runMint(undefined, liveSince(signInGeneration), abandonAttempt)
   }
 
   const stopUserWatch = watch(
@@ -317,9 +376,9 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
         email: restored.email ?? restored.displayName ?? ''
       })
       if (before !== state.value.step && state.value.step === 'minting') {
-        // No argument: `restored` is a readonly proxy, and the client already
-        // holds the raw current user.
-        void runMint()
+        // No user argument: `restored` is a readonly proxy, and the client
+        // already holds the raw current user.
+        void runMint(undefined, liveSince(signInGeneration), abandonAttempt)
       }
     },
     { immediate: true }
