@@ -160,8 +160,7 @@ test.describe(
                 window.app!.canvas.deselectAll()
                 window.app!.canvas.selectNode(node)
               }, removedId)
-              await comfyPage.page.keyboard.press('Delete')
-              await comfyPage.nextFrame()
+              await comfyPage.keyboard.delete()
               await expect
                 .poll(() =>
                   comfyPage.page.evaluate(
