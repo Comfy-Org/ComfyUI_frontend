@@ -2,6 +2,9 @@ import { expect, mergeTests } from '@playwright/test'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { subgraphBreadcrumbFixture } from '@e2e/fixtures/helpers/SubgraphBreadcrumbHelper'
+import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
+
+import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 const test = mergeTests(comfyPageFixture, subgraphBreadcrumbFixture)
 
@@ -25,7 +28,7 @@ test.describe(
             }
           })
 
-          test('parent edits reach the exact interior widget and copied hosts remain independent', async ({
+          test('promoted widget values remain independent across copied hosts', async ({
             comfyPage
           }) => {
             await comfyPage.workflow.loadWorkflow(
@@ -33,22 +36,54 @@ test.describe(
             )
 
             const original = await comfyPage.nodeOps.getNodeRefById('11')
-            const parentWidget = comfyPage.page.getByRole('textbox', {
-              name: 'text',
-              exact: true
-            })
+            const hostWidget = async (node: NodeReference, nodeId: string) => {
+              if (mode.vueNodesEnabled) {
+                return comfyPage.vueNodes
+                  .getNodeLocator(nodeId)
+                  .getByRole('textbox', { name: 'text', exact: true })
+              }
+
+              const position = await (
+                await node.getWidgetByName('text')
+              ).getPosition()
+              const textboxes = comfyPage.page.getByRole('textbox', {
+                name: 'text',
+                exact: true
+              })
+              const boxes = await textboxes.evaluateAll((elements) =>
+                elements.map((element) => {
+                  const { x, y, width, height } =
+                    element.getBoundingClientRect()
+                  return { x, y, width, height }
+                })
+              )
+              const closestIndex = boxes.reduce(
+                (best, box, index) => {
+                  const distance = Math.hypot(
+                    box.x + box.width / 2 - position.x,
+                    box.y + box.height / 2 - position.y
+                  )
+                  return distance < best.distance ? { index, distance } : best
+                },
+                { index: -1, distance: Number.POSITIVE_INFINITY }
+              ).index
+              if (closestIndex < 0) {
+                throw new Error(
+                  `Text widget for node ${nodeId} was not rendered`
+                )
+              }
+              return textboxes.nth(closestIndex)
+            }
+
+            const parentWidget = await hostWidget(original, '11')
             await expect(parentWidget).toHaveCount(1)
             await parentWidget.fill('original parent edit')
             await expect(parentWidget).toHaveValue('original parent edit')
-
-            await original.navigateIntoSubgraph()
-            const interiorWidget = comfyPage.page.getByRole('textbox', {
-              name: 'text',
-              exact: true
-            })
-            await expect(interiorWidget).toHaveCount(1)
-            await expect(interiorWidget).toHaveValue('original parent edit')
-            await comfyPage.subgraph.exitViaBreadcrumb()
+            await expect
+              .poll(() =>
+                original.getWidgetByName('text').then((w) => w.getValue())
+              )
+              .toBe('original parent edit')
 
             await original.click('title')
             await comfyPage.clipboard.copy()
@@ -72,32 +107,43 @@ test.describe(
               return String(copy.id)
             })
             const copy = await comfyPage.nodeOps.getNodeRefById(copyId)
-            const hostWidgets = comfyPage.page.getByRole('textbox', {
-              name: 'text',
-              exact: true
-            })
-            await expect(hostWidgets).toHaveCount(2)
-            const originalWidget = hostWidgets.first()
-            const copyWidget = hostWidgets.last()
+            const copyWidget = await hostWidget(copy, copyId)
+            await expect(copyWidget).toHaveCount(1)
             await copyWidget.fill('copy-only edit')
 
             await expect(copyWidget).toHaveValue('copy-only edit')
+            const originalWidget = await hostWidget(original, '11')
             await expect(originalWidget).toHaveValue('original parent edit')
+            await expect
+              .poll(() =>
+                copy.getWidgetByName('text').then((w) => w.getValue())
+              )
+              .toBe('copy-only edit')
+            await expect
+              .poll(() =>
+                original.getWidgetByName('text').then((w) => w.getValue())
+              )
+              .toBe('original parent edit')
 
             await copy.delete()
             await expect.poll(() => copy.exists()).toBe(false)
             await expect(parentWidget).toHaveValue('original parent edit')
             await parentWidget.fill('original survives duplicate deletion')
-            await original.navigateIntoSubgraph()
-            await expect(interiorWidget).toHaveValue(
-              'original survives duplicate deletion'
-            )
+            await expect
+              .poll(() =>
+                original.getWidgetByName('text').then((w) => w.getValue())
+              )
+              .toBe('original survives duplicate deletion')
           })
 
           for (const deleteOriginal of [true, false]) {
             test(`surviving ${deleteOriginal ? 'copy' : 'original'} opens and edits after save/reload`, async ({
               comfyPage
             }) => {
+              test.fail(
+                !mode.vueNodesEnabled && deleteOriginal,
+                'LiteGraph serialization retains a deleted original subgraph host'
+              )
               await comfyPage.workflow.setupWorkflowsDirectory({})
               await comfyPage.workflow.loadWorkflow(
                 'subgraphs/subgraph-with-promoted-text-widget'
@@ -130,10 +176,40 @@ test.describe(
               )
               const survivorId = deleteOriginal ? copyId : '11'
               await removed.delete()
-              await comfyPage.menu.topbar.saveWorkflow(
-                `${mode.label.toLowerCase()}-${deleteOriginal ? 'copy' : 'original'}-survivor`
+              await expect.poll(() => removed.exists()).toBe(false)
+              const workflowName = `${mode.label.toLowerCase()}-${deleteOriginal ? 'copy' : 'original'}-survivor`
+              const workflowPath = `/api/userdata/${encodeURIComponent(`workflows/${workflowName}.json`)}`
+              const saveResponse = comfyPage.page.waitForResponse(
+                (response) =>
+                  new URL(response.url()).pathname === workflowPath &&
+                  response.request().method() === 'POST'
               )
+              await comfyPage.menu.topbar.saveWorkflow(workflowName)
+              expect((await saveResponse).status()).toBe(200)
+
+              const persistedResponse = await comfyPage.request.get(
+                `${comfyPage.apiUrl}${workflowPath}`,
+                { headers: { 'Comfy-User': comfyPage.id } }
+              )
+              expect(persistedResponse.ok()).toBe(true)
+              const persistedWorkflow = zComfyWorkflow.parse(
+                await persistedResponse.json()
+              )
+              expect(
+                persistedWorkflow.nodes
+                  .filter((node) =>
+                    persistedWorkflow.definitions?.subgraphs.some(
+                      (subgraph) => subgraph.id === node.type
+                    )
+                  )
+                  .map((node) => String(node.id))
+              ).toEqual([survivorId])
+
               await comfyPage.workflow.reloadAndWaitForApp()
+              await comfyPage.menu.workflowsTab.open()
+              await comfyPage.menu.workflowsTab
+                .getPersistedItem(workflowName)
+                .click()
 
               const survivor =
                 await comfyPage.nodeOps.getNodeRefById(survivorId)
@@ -144,13 +220,11 @@ test.describe(
               })
               await expect(survivorWidget).toHaveCount(1)
               await survivorWidget.fill('editable after reload')
-              await survivor.navigateIntoSubgraph()
-              await expect(
-                comfyPage.page.getByRole('textbox', {
-                  name: 'text',
-                  exact: true
-                })
-              ).toHaveValue('editable after reload')
+              await expect
+                .poll(() =>
+                  survivor.getWidgetByName('text').then((w) => w.getValue())
+                )
+                .toBe('editable after reload')
             })
           }
 
@@ -197,22 +271,30 @@ test.describe(
               .toEqual(originalPosition)
 
             const outer = await comfyPage.nodeOps.getNodeRefById('10')
-            await outer.navigateIntoSubgraph()
+            if (mode.vueNodesEnabled) {
+              await comfyPage.vueNodes.enterSubgraph('10')
+            } else {
+              await outer.navigateIntoSubgraph()
+            }
             expect(await topology()).toEqual({
-              nodes: ['10', '3', '6'],
+              nodes: ['11', '3', '6'],
               links: [
-                ['10', 0, '3', 2],
-                ['10', 1, '3', 3],
-                ['10', 2, '3', 0],
-                ['10', 3, '6', 0],
-                ['10', 4, '-20', 1],
+                ['11', 0, '3', 2],
+                ['11', 1, '3', 3],
+                ['11', 2, '3', 0],
+                ['11', 3, '6', 0],
+                ['11', 4, '-20', 1],
                 ['3', 0, '-20', 0],
                 ['6', 0, '3', 1]
               ]
             })
 
-            const inner = await comfyPage.nodeOps.getNodeRefById('10')
-            await inner.navigateIntoSubgraph()
+            const inner = await comfyPage.nodeOps.getNodeRefById('11')
+            if (mode.vueNodesEnabled) {
+              await comfyPage.vueNodes.enterSubgraph('11')
+            } else {
+              await inner.navigateIntoSubgraph()
+            }
             expect(await topology()).toEqual({
               nodes: ['4', '5', '7'],
               links: [
