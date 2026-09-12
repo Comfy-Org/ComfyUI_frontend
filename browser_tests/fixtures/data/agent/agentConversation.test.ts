@@ -1,4 +1,4 @@
-import { assert, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
@@ -155,21 +155,22 @@ describe('committed recordings', () => {
   const load = (file: string): unknown =>
     JSON.parse(readFileSync(join(dir, file), 'utf8'))
 
-  it('every recording parses against the production event union', () => {
+  it('has committed recordings', () => {
     expect(files.length).toBeGreaterThan(0)
-    for (const file of files) {
-      const raw = load(file)
-      const conversation = zAgentConversation.parse(raw)
-      assert.doesNotThrow(() => assertOpsApply(conversation), file)
-      expect({ file, workflow: conversation.workflow }).toEqual({
-        file,
-        workflow: (raw as { workflow: unknown }).workflow
-      })
-      const frames = conversation.turns
-        .flatMap((turn) => turn.response)
-        .filter((entry) => entry.kind === 'event')
-      expect({ file, frames: frames.length }).not.toEqual({ file, frames: 0 })
-    }
+  })
+
+  it.for(files)('%s parses against the production event union', (file) => {
+    const raw = load(file)
+    const conversation = zAgentConversation.parse(raw)
+    expect(() => assertOpsApply(conversation)).not.toThrow()
+    expect({ file, workflow: conversation.workflow }).toEqual({
+      file,
+      workflow: (raw as { workflow: unknown }).workflow
+    })
+    const frames = conversation.turns
+      .flatMap((turn) => turn.response)
+      .filter((entry) => entry.kind === 'event')
+    expect({ file, frames: frames.length }).not.toEqual({ file, frames: 0 })
   })
 
   it('every recording has explicit visible expectations for each turn', () => {

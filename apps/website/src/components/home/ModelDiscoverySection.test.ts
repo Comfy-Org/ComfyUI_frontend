@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { assert, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { discoveryProviders } from '../../data/modelDiscovery'
 import type { DiscoveryProvider } from '../../data/modelDiscovery'
@@ -17,13 +17,17 @@ const providers: readonly DiscoveryProvider[] = [
 ]
 
 describe('ModelDiscoverySection', () => {
-  it('only lines up providers that run published models and have a preview', () => {
+  it('lines up multiple providers', () => {
     expect(discoveryProviders.length).toBeGreaterThan(1)
-    for (const provider of discoveryProviders) {
-      assert.isAbove(provider.modelCount, 0, provider.name)
-      assert.isOk(provider.thumbnailUrl, provider.name)
-    }
   })
+
+  it.for(discoveryProviders)(
+    '$name runs published models and has a preview',
+    (provider) => {
+      expect(provider.modelCount).toBeGreaterThan(0)
+      expect(provider.thumbnailUrl).toBeTruthy()
+    }
+  )
 
   it('sends every provider to the catalog filtered by that provider', () => {
     render(ModelDiscoverySection, { props: { providers } })
