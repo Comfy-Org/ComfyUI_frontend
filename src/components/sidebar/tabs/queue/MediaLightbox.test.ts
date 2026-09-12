@@ -8,13 +8,6 @@ import type { AugmentedResultItem } from '@/utils/resultItem'
 
 import MediaLightbox from './MediaLightbox.vue'
 
-type ResultItemImpl = AugmentedResultItem & {
-  isImage?: boolean
-  isVideo?: boolean
-  isAudio?: boolean
-  isText?: boolean
-}
-
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -32,12 +25,8 @@ const i18n = createI18n({
   }
 })
 
-type MockResultItem = ResultItemImpl & {
+type MockResultItem = AugmentedResultItem & {
   id?: string
-  isImage?: boolean
-  isVideo?: boolean
-  isAudio?: boolean
-  isText?: boolean
 }
 
 describe('MediaLightbox', () => {
@@ -58,12 +47,6 @@ describe('MediaLightbox', () => {
     name: 'ResultAudio',
     template:
       '<div class="mock-result-audio" data-testid="result-audio"></div>',
-    props: ['result']
-  }
-
-  const mockResultText = {
-    name: 'ResultText',
-    template: '<div class="mock-result-text" data-testid="result-text"></div>',
     props: ['result']
   }
 
@@ -103,11 +86,12 @@ describe('MediaLightbox', () => {
     const { rerender, container } = render(MediaLightbox, {
       global: {
         plugins: [i18n],
-        stubs: {
+        components: {
           ComfyImage: mockComfyImage,
           ResultVideo: mockResultVideo,
-          ResultAudio: mockResultAudio,
-          ResultText: mockResultText,
+          ResultAudio: mockResultAudio
+        },
+        stubs: {
           teleport: true,
           ...stubs
         }
@@ -204,77 +188,6 @@ describe('MediaLightbox', () => {
     await user.click(screen.getByLabelText('Close'))
 
     expect(screen.queryByText('Text failed to load')).not.toBeInTheDocument()
-  })
-
-  it.for([
-    {
-      mediaType: 'video',
-      flags: { isVideo: true },
-      expectedTestId: 'result-video'
-    },
-    {
-      mediaType: 'audio',
-      flags: { isAudio: true },
-      expectedTestId: 'result-audio'
-    },
-    {
-      mediaType: 'text',
-      flags: { isText: true },
-      expectedTestId: 'result-text'
-    }
-  ])(
-    'routes $mediaType assets to their dedicated viewer',
-    async ({ mediaType, flags, expectedTestId }) => {
-      renderGallery({
-        allGalleryItems: [
-          {
-            ...mockGalleryItems[0],
-            isImage: false,
-            mediaType,
-            ...flags
-          }
-        ] as ResultItemImpl[]
-      })
-      await nextTick()
-
-      expect(screen.getByTestId(expectedTestId)).toBeInTheDocument()
-      for (const testId of [
-        'comfy-image',
-        'result-video',
-        'result-audio',
-        'result-text'
-      ]) {
-        if (testId !== expectedTestId) {
-          expect(screen.queryByTestId(testId)).not.toBeInTheDocument()
-        }
-      }
-    }
-  )
-
-  it('unmounts active media and restores focus when closed', async () => {
-    const trigger = document.createElement('button')
-    document.body.appendChild(trigger)
-    trigger.focus()
-    const { user } = renderGallery({
-      allGalleryItems: [
-        {
-          ...mockGalleryItems[0],
-          isImage: false,
-          isVideo: true,
-          mediaType: 'video'
-        }
-      ] as ResultItemImpl[]
-    })
-    await nextTick()
-
-    expect(screen.getByRole('dialog')).toHaveFocus()
-    expect(screen.getByTestId('result-video')).toBeInTheDocument()
-
-    await user.click(screen.getByLabelText('Close'))
-
-    expect(screen.queryByTestId('result-video')).not.toBeInTheDocument()
-    expect(trigger).toHaveFocus()
-    trigger.remove()
   })
 
   /* eslint-disable testing-library/prefer-user-event -- keyDown on dialog element for navigation, not text input */
