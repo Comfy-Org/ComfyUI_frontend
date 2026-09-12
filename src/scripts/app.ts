@@ -34,6 +34,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { installNodeAddedTelemetry } from '@/platform/telemetry/nodeAdded/installNodeAddedTelemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import { normalizeExecutionTriggerSource } from '@/platform/telemetry/types'
 import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
 import { groupMissingNodesByPack } from '@/platform/telemetry/utils/groupMissingNodesByPack'
@@ -2019,11 +2020,13 @@ export class ComfyApp {
             applyPromotedWidgetControl(node, 'afterQueued')
           }
           useFreeTierQuota().trackRun()
-          this.canvas.draw(true, true)
-          await this.ui.queue.update()
         }
 
         if (queuedCount > 0) {
+          this.canvas.draw(true, true)
+          void this.ui.queue.update().catch((error) => {
+            reportError(error, { errorType: 'queue_ui_update_failure' })
+          })
           api.dispatchCustomEvent('promptQueued', {
             number,
             batchCount: queuedCount,
