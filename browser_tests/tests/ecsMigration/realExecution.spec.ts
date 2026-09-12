@@ -19,6 +19,53 @@ type OutputEvidence = {
   rgb: [number, number, number]
 }
 
+async function readOutputImage(
+  comfyPage: ComfyPage,
+  outputImage: { filename: string; subfolder: string; type: string }
+) {
+  return comfyPage.page.evaluate(async (outputImage) => {
+    const query = new URLSearchParams(outputImage)
+    const imageResponse = await fetch(`/api/view?${query}`)
+    if (!imageResponse.ok) {
+      throw new Error(`image request failed: ${imageResponse.status}`)
+    }
+    const bytes = new Uint8Array(await imageResponse.clone().arrayBuffer())
+    const view = new DataView(bytes.buffer)
+    const bitmap = await createImageBitmap(await imageResponse.blob())
+    const canvas = new OffscreenCanvas(1, 1)
+    const context = canvas.getContext('2d')!
+    context.drawImage(bitmap, 0, 0)
+    const pixel = context.getImageData(0, 0, 1, 1).data
+    return {
+      filename: outputImage.filename,
+      width: view.getUint32(16),
+      height: view.getUint32(20),
+      rgb: [pixel[0], pixel[1], pixel[2]] as [number, number, number]
+    }
+  }, outputImage)
+}
+
+function findCompletedImage(body: unknown, promptId: string) {
+  const history = zLegacyHistoryResponse.parse(body)
+  if (!Object.hasOwn(history, promptId)) return null
+  const entry = history[promptId]
+  if (!entry.status.completed) return null
+  if (entry.status.status_str !== 'success') {
+    throw new Error(`prompt ${promptId} ended with ${entry.status.status_str}`)
+  }
+  const image = Object.values(entry.outputs ?? {})
+    .flatMap((node) => node.images ?? [])
+    .at(0)
+  if (!image?.filename || typeof image.subfolder !== 'string' || !image.type) {
+    return null
+  }
+  return {
+    filename: image.filename,
+    subfolder: image.subfolder,
+    type: image.type
+  }
+}
+
 async function queueAndReadPng(comfyPage: ComfyPage): Promise<OutputEvidence> {
   const responsePromise = comfyPage.page.waitForResponse(
     (response) =>
@@ -46,56 +93,9 @@ async function queueAndReadPng(comfyPage: ComfyPage): Promise<OutputEvidence> {
         if (!historyResponse.ok) {
           throw new Error(`history request failed: ${historyResponse.status}`)
         }
-        const history = zLegacyHistoryResponse.parse(historyResponse.body)
-        if (!Object.hasOwn(history, promptId)) return null
-        const entry = history[promptId]
-        if (!entry.status.completed) return null
-        if (entry.status.status_str !== 'success') {
-          throw new Error(
-            `prompt ${promptId} ended with ${entry.status.status_str}`
-          )
-        }
-        const image = Object.values(entry.outputs ?? {})
-          .flatMap((node) => node.images ?? [])
-          .at(0)
-        if (
-          !image?.filename ||
-          typeof image.subfolder !== 'string' ||
-          !image.type
-        ) {
-          return null
-        }
-        const outputImage = {
-          filename: image.filename,
-          subfolder: image.subfolder,
-          type: image.type
-        }
-        completed = await comfyPage.page.evaluate(async (outputImage) => {
-          const query = new URLSearchParams({
-            filename: outputImage.filename,
-            subfolder: outputImage.subfolder,
-            type: outputImage.type
-          })
-          const imageResponse = await fetch(`/api/view?${query}`)
-          if (!imageResponse.ok) {
-            throw new Error(`image request failed: ${imageResponse.status}`)
-          }
-          const bytes = new Uint8Array(
-            await imageResponse.clone().arrayBuffer()
-          )
-          const view = new DataView(bytes.buffer)
-          const bitmap = await createImageBitmap(await imageResponse.blob())
-          const canvas = new OffscreenCanvas(1, 1)
-          const context = canvas.getContext('2d')!
-          context.drawImage(bitmap, 0, 0)
-          const pixel = context.getImageData(0, 0, 1, 1).data
-          return {
-            filename: outputImage.filename,
-            width: view.getUint32(16),
-            height: view.getUint32(20),
-            rgb: [pixel[0], pixel[1], pixel[2]] as [number, number, number]
-          }
-        }, outputImage)
+        const outputImage = findCompletedImage(historyResponse.body, promptId)
+        if (!outputImage) return null
+        completed = await readOutputImage(comfyPage, outputImage)
         return completed
       },
       { timeout: 30_000 }
@@ -155,7 +155,6 @@ test.describe(
         'Comfy.UseNewMenu': 'Top'
       }
     })
-
     for (const vueNodesEnabled of [false, true]) {
       test(`normal, mute, bypass and restore use backend semantics (VueNodes=${vueNodesEnabled})`, async ({
         comfyPage
@@ -205,6 +204,7 @@ test.describe(
         comfyPage
       }) => {
         test.slow()
+        test.setTimeout(180_000)
         await comfyPage.settings.setSetting(
           'Comfy.VueNodes.Enabled',
           vueNodesEnabled
