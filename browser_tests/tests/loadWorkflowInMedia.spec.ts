@@ -3,13 +3,14 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 
-test.beforeEach(async ({ page, comfyPage }) => {
+test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
+
+test.beforeEach(async ({ page }) => {
   await page.route(
     'https://comfyanonymous.github.io/ComfyUI_examples/hidream/hidream_dev_example.png',
     (route) =>
       route.fulfill({ path: assetPath('workflowInMedia/workflow_itxt.png') })
   )
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
 test.describe(
@@ -127,84 +128,82 @@ test.describe(
         expect(nodePos[1]).not.toBe(-9999)
       })
 
-      test('places LoadImage above existing nodes (zIndex)', async ({
-        comfyPage
-      }) => {
-        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-        await comfyPage.vueNodes.waitForNodes()
+      test(
+        'places LoadImage above existing nodes (zIndex)',
+        { tag: '@vue-nodes' },
+        async ({ comfyPage }) => {
+          const initialNodeIds = await comfyPage.vueNodes.getNodeIds()
+          expect(initialNodeIds.length).toBeGreaterThan(0)
 
-        const initialNodeIds = await comfyPage.vueNodes.getNodeIds()
-        expect(initialNodeIds.length).toBeGreaterThan(0)
+          await comfyPage.dragDrop.dragAndDropFile('image32x32.webp', {
+            dropPosition: { x: 540, y: 380 },
+            waitForUpload: true
+          })
 
-        await comfyPage.dragDrop.dragAndDropFile('image32x32.webp', {
-          dropPosition: { x: 540, y: 380 },
-          waitForUpload: true
+          await expect
+            .poll(() => comfyPage.vueNodes.getNodeCount())
+            .toBe(initialNodeIds.length + 1)
+
+          const newNodeIds = await comfyPage.vueNodes.getNodeIds()
+          const addedNodeId = newNodeIds.find(
+            (id) => !initialNodeIds.includes(id)
+          )
+          expect(addedNodeId).toBeDefined()
+
+          const newNodeZ = await comfyPage.vueNodes
+            .getNodeLocator(addedNodeId!)
+            .evaluate((el) => Number((el as HTMLElement).style.zIndex))
+
+          const existingZIndexes = await comfyPage.vueNodes.nodes.evaluateAll(
+            (els, id) =>
+              els
+                .filter((el) => el.getAttribute('data-node-id') !== id)
+                .map((el) => Number((el as HTMLElement).style.zIndex)),
+            addedNodeId!
+          )
+
+          expect(newNodeZ).toBeGreaterThan(Math.max(0, ...existingZIndexes))
+        }
+      )
+    })
+
+    test(
+      'Load workflow from URL dropped onto Vue node',
+      { tag: '@vue-nodes' },
+      async ({ comfyPage }) => {
+        const fakeUrl = 'https://example.com/workflow.png'
+        await comfyPage.page.route(fakeUrl, (route) =>
+          route.fulfill({
+            path: comfyPage.assetPath('workflowInMedia/workflow_itxt.png')
+          })
+        )
+
+        const initialNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
+
+        const node = comfyPage.vueNodes.getNodeByTitle('KSampler')
+        await expect.poll(() => node.boundingBox()).toBeTruthy()
+        const box = (await node.boundingBox())!
+
+        const dropPosition = {
+          x: box.x + box.width / 2,
+          y: box.y + box.height / 2
+        }
+
+        await comfyPage.dragDrop.dragAndDropURL(fakeUrl, {
+          dropPosition,
+          preserveNativePropagation: true
         })
+
+        await comfyPage.page.waitForFunction(
+          (prevCount) => window.app!.graph.nodes.length !== prevCount,
+          initialNodeCount,
+          { timeout: 10000 }
+        )
 
         await expect
-          .poll(() => comfyPage.vueNodes.getNodeCount())
-          .toBe(initialNodeIds.length + 1)
-
-        const newNodeIds = await comfyPage.vueNodes.getNodeIds()
-        const addedNodeId = newNodeIds.find(
-          (id) => !initialNodeIds.includes(id)
-        )
-        expect(addedNodeId).toBeDefined()
-
-        const newNodeZ = await comfyPage.vueNodes
-          .getNodeLocator(addedNodeId!)
-          .evaluate((el) => Number((el as HTMLElement).style.zIndex))
-
-        const existingZIndexes = await comfyPage.vueNodes.nodes.evaluateAll(
-          (els, id) =>
-            els
-              .filter((el) => el.getAttribute('data-node-id') !== id)
-              .map((el) => Number((el as HTMLElement).style.zIndex)),
-          addedNodeId!
-        )
-
-        expect(newNodeZ).toBeGreaterThan(Math.max(0, ...existingZIndexes))
-      })
-    })
-
-    test('Load workflow from URL dropped onto Vue node', async ({
-      comfyPage
-    }) => {
-      const fakeUrl = 'https://example.com/workflow.png'
-      await comfyPage.page.route(fakeUrl, (route) =>
-        route.fulfill({
-          path: comfyPage.assetPath('workflowInMedia/workflow_itxt.png')
-        })
-      )
-
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-      await comfyPage.vueNodes.waitForNodes()
-
-      const initialNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
-
-      const node = comfyPage.vueNodes.getNodeByTitle('KSampler')
-      await expect.poll(() => node.boundingBox()).toBeTruthy()
-      const box = (await node.boundingBox())!
-
-      const dropPosition = {
-        x: box.x + box.width / 2,
-        y: box.y + box.height / 2
+          .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+          .not.toBe(initialNodeCount)
       }
-
-      await comfyPage.dragDrop.dragAndDropURL(fakeUrl, {
-        dropPosition,
-        preserveNativePropagation: true
-      })
-
-      await comfyPage.page.waitForFunction(
-        (prevCount) => window.app!.graph.nodes.length !== prevCount,
-        initialNodeCount,
-        { timeout: 10000 }
-      )
-
-      await expect
-        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-        .not.toBe(initialNodeCount)
-    })
+    )
   }
 )

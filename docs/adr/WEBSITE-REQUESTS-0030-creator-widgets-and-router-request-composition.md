@@ -4,8 +4,13 @@ Date: 2026-09-09
 
 ## Status
 
-Proposed — implemented in the local Models preview following product direction;
-not a claim of completed team architecture review or production rollout.
+Deprecated — retained as the historical proposal introduced in #17382, not a
+claim of completed team architecture review or production rollout.
+
+Current Models-specific implementation guidance lives in
+[Models input presentation](../../apps/website/MODELS_INPUT_SCHEMA.md) and
+[Shared Router rendering](../../apps/website/ROUTER_RENDER.md). PR #17431 moves
+ongoing documentation there; it does not erase the original design record.
 
 ## Context
 
