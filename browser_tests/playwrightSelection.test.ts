@@ -48,7 +48,7 @@ describe('Live billing opt-in', () => {
       const specs = report.suites.flatMap((suite) =>
         suite.suites.flatMap((child) => child.specs)
       )
-      expect(specs).toHaveLength(enabled === '1' ? 1 : 0)
+      expect(specs).toHaveLength(enabled === '1' ? 3 : 0)
       if (enabled === '1') {
         expect(report.config.globalSetup).toBeNull()
         expect(report.config.globalTeardown).toBeNull()
