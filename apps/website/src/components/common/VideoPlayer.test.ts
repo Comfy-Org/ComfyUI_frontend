@@ -20,6 +20,40 @@ describe('VideoPlayer', () => {
     expect(screen.getByRole('button', { name: 'Unmute' })).toBeTruthy()
   })
 
+  it.for([
+    { noCors: true, captions: false, tracks: [], crossOrigin: null },
+    {
+      noCors: true,
+      captions: true,
+      tracks: [
+        {
+          src: 'https://example.com/clip.vtt',
+          kind: 'captions' as const,
+          srclang: 'en',
+          label: 'English'
+        }
+      ],
+      crossOrigin: 'anonymous'
+    },
+    { noCors: false, captions: false, tracks: [], crossOrigin: 'anonymous' }
+  ])(
+    'requests CORS only when captions or the caller need it (noCors: $noCors, captions: $captions)',
+    ({ noCors, tracks, crossOrigin }) => {
+      render(VideoPlayer, {
+        props: {
+          src: 'https://storage.example/output.mp4',
+          ariaLabel: 'Output',
+          noCors,
+          tracks
+        }
+      })
+      const video = screen.getByLabelText('Output')
+      if (!(video instanceof HTMLVideoElement))
+        throw new Error('Expected the labelled video element')
+      expect(video.crossOrigin).toBe(crossOrigin)
+    }
+  )
+
   it('shows play and mute for a paused, unmuted video', async () => {
     render(VideoPlayer, {
       props: { src: 'https://example.com/clip.mp4', muteOnly: true }

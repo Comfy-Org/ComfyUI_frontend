@@ -6,7 +6,6 @@
  * the FE-1901 bounded subscribe retry, the FE-1902 sessionStorage rebind,
  * the frame-handler status surface, and total teardown.
  */
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref, shallowRef } from 'vue'
 import type { Ref } from 'vue'
@@ -65,6 +64,9 @@ const definitionsState = vi.hoisted(() => ({
   fakeDefinitions: [
     { id: '11111111-1111-4111-8111-111111111111' } as ExportedSubgraph
   ],
+  readSubgraphDefinitionIds: vi.fn(() => [
+    '11111111-1111-4111-8111-111111111111'
+  ]),
   readSubgraphDefinitions: vi.fn(() => definitionsState.fakeDefinitions)
 }))
 
@@ -85,7 +87,7 @@ const apiState = vi.hoisted(() => {
   }
 })
 
-vi.mock('./layoutFollowerBridge', () => ({
+vi.mock<unknown>(import('./layoutFollowerBridge'), () => ({
   LayoutFollowerBridge: class {
     constructor() {
       const bridge = new bridgeState.FakeBridge()
@@ -95,14 +97,14 @@ vi.mock('./layoutFollowerBridge', () => ({
   }
 }))
 
-vi.mock('./docFrameClient', () => ({
+vi.mock<unknown>(import('./docFrameClient'), () => ({
   DocFrameClient: class {
     destroy = clientState.destroy
     sendOps = clientState.sendOps
   }
 }))
 
-vi.mock('./ecsFollowerAdapter', () => ({
+vi.mock<unknown>(import('./ecsFollowerAdapter'), () => ({
   EcsFollowerAdapter: class {
     bind = adapterState.bind
     unbind = adapterState.unbind
@@ -113,26 +115,26 @@ vi.mock('./ecsFollowerAdapter', () => ({
   }
 }))
 
-vi.mock('./agentNodeMaterializer', () => ({
+vi.mock(import('./agentNodeMaterializer'), () => ({
   reconcileAgentAdapters: materializerState.reconcileAgentAdapters
 }))
 
-vi.mock('./agentSubgraphDefinitions', () => ({
+vi.mock(import('./agentSubgraphDefinitions'), () => ({
+  readSubgraphDefinitionIds: definitionsState.readSubgraphDefinitionIds,
   readSubgraphDefinitions: definitionsState.readSubgraphDefinitions
 }))
 
-vi.mock('./devPanelLog', () => ({
+vi.mock(import('./devPanelLog'), () => ({
   recordDevEvent: vi.fn()
 }))
 
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: reportErrorMock
 }))
 
-vi.mock('@/scripts/api', () => ({ api: apiState.api }))
-vi.mock('@/scripts/app', () => ({ app: { graph: null, canvas: null } }))
-vi.mock('@/stores/authStore', () => ({
-  useAuthStore: () => ({ userId: 'user-1' })
+vi.mock<unknown>(import('@/scripts/api'), () => ({ api: apiState.api }))
+vi.mock<unknown>(import('@/scripts/app'), () => ({
+  app: { graph: null, canvas: null }
 }))
 
 import { STALE_AFTER_MS, useAgentCrdtFollower } from './useAgentCrdtFollower'
@@ -207,16 +209,18 @@ function bridge(): InstanceType<(typeof bridgeState)['FakeBridge']> {
   return current
 }
 
-function dispatchFrame(type: string, detail: unknown): void {
-  bridge().dispatchEvent(new CustomEvent(type, { detail }))
+function dispatchFrame(type: string, detail: unknown): boolean {
+  return bridge().dispatchEvent(
+    new CustomEvent(type, { detail, cancelable: true })
+  )
 }
 
 describe('useAgentCrdtFollower', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     sessionStorage.clear()
     bridgeState.current = null
     materializerState.reconcileAgentAdapters.mockReset().mockReturnValue([])
+    definitionsState.readSubgraphDefinitionIds.mockClear()
     definitionsState.readSubgraphDefinitions.mockClear()
   })
 
@@ -349,6 +353,20 @@ describe('useAgentCrdtFollower', () => {
       nonce: record?.nonce,
       expiresAt: Date.now() - 1
     })
+
+    const { unmount, status } = mountFollower(null)
+
+    expect(bridge().subscribe).not.toHaveBeenCalled()
+    expect(status().workflowId).toBeNull()
+    unmount()
+  })
+
+  it('FEC-5: refuses an empty doc id rather than subscribing to it', () => {
+    const setup = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+    setup.unmount()
+    bridgeState.current = null
+    writeRawRecord({ docId: '', nonce: persistedRecord()?.nonce })
 
     const { unmount, status } = mountFollower(null)
 
@@ -509,6 +527,19 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('does not bypass refused-subscribe backoff on status frames', () => {
+    vi.useFakeTimers()
+    const { unmount } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: false })
+
+    apiState.target.dispatchEvent(new Event('status'))
+    expect(bridge().reconcile).not.toHaveBeenCalled()
+
+    vi.advanceTimersByTime(500)
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
+    unmount()
+  })
+
   it('drops to disconnected on a schema error without touching the binding', () => {
     const { unmount, status } = mountFollower('wf-1')
     dispatchFrame('doc_subscribed', { ok: true })
@@ -633,11 +664,14 @@ describe('useAgentCrdtFollower', () => {
     bridge().resubscribe.mockClear()
     adapterState.applyFrame.mockReturnValueOnce(false)
 
-    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 7 })
+    const accepted = dispatchFrame('doc_update', {
+      workflowId: 'wf-1',
+      seq: 7
+    })
 
-    // The bridge merged the frame's bytes before dispatch, so a state-vector
-    // resubscribe cannot redeliver it; the adapter already dropped its pending
-    // diff before batching. Neither is a recovery, so neither runs here.
+    // The bridge retains the sequence until projection commits. Retrying the
+    // same frame can therefore use the adapter's authoritative reconcile path.
+    expect(accepted).toBe(false)
     expect(status()).toMatchObject({ projectionErrors: 1, connected: true })
     expect(adapterState.discardPending).not.toHaveBeenCalled()
     expect(bridge().resubscribe).not.toHaveBeenCalled()
@@ -875,8 +909,43 @@ describe('useAgentCrdtFollower', () => {
   describe('live-graph reconcile', () => {
     // The materializer is module-mocked, so the graph only needs to be a
     // distinct reference the composable hands through.
-    const fakeGraph = {} as MaterializableGraph
     const { fakeDefinitions } = definitionsState
+    const fakeGraph = {
+      rootGraph: { subgraphs: new Map() },
+      setDirtyCanvas: vi.fn()
+    } as unknown as MaterializableGraph
+
+    it('rejects the frame when a removal hook throws out of the reconcile', () => {
+      // The orphan sweep inside `reconcileAgentAdapters` can run extension
+      // `onRemoved()` hooks. A failure must remain retryable and visible as an
+      // errored projection rather than consume the document sequence.
+      materializerState.reconcileAgentAdapters.mockImplementationOnce(() => {
+        throw new Error('onRemoved threw')
+      })
+      const { unmount, status } = mountFollower('wf-1', true, () => fakeGraph)
+
+      const accepted = dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 9
+      })
+
+      expect(accepted).toBe(false)
+      const { received, applied, skipped, errored } = status().outcomes
+      expect(received).toBe(1)
+      expect(applied).toBe(0)
+      expect(skipped).toBe(0)
+      expect(errored).toBe(1)
+
+      expect(dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })).toBe(
+        true
+      )
+      expect(status().outcomes).toMatchObject({
+        received: 2,
+        applied: 1,
+        errored: 1
+      })
+      unmount()
+    })
 
     it('reconciles the live graph after every applied frame', () => {
       const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
@@ -888,10 +957,35 @@ describe('useAgentCrdtFollower', () => {
         fakeGraph,
         fakeDefinitions
       )
+      // A frame that only connects nodes changes no layout, so the repaint
+      // has to come from here or the new wire stays invisible until a pan.
+      expect(fakeGraph.setDirtyCanvas).toHaveBeenCalledWith(true, true)
       // Definitions come from the doc the bridge currently follows, so a
       // doc_reset remint (which swaps the FollowerDoc) is read fresh.
       expect(definitionsState.readSubgraphDefinitions).toHaveBeenCalledWith(
         bridge().follower.doc
+      )
+      unmount()
+    })
+
+    it('does not deep-copy definitions for a frame when all are registered', () => {
+      const registeredGraph = {
+        rootGraph: {
+          subgraphs: new Map([[fakeDefinitions[0].id, {}]])
+        },
+        setDirtyCanvas: vi.fn()
+      } as unknown as MaterializableGraph
+      const { unmount } = mountFollower('wf-1', true, () => registeredGraph)
+
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
+
+      expect(definitionsState.readSubgraphDefinitionIds).toHaveBeenCalledWith(
+        bridge().follower.doc
+      )
+      expect(definitionsState.readSubgraphDefinitions).not.toHaveBeenCalled()
+      expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
+        registeredGraph,
+        []
       )
       unmount()
     })
@@ -992,12 +1086,20 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
-    it('reconciles after a follower_replaced clear', () => {
+    it('reconciles a follower_replaced clear against the replacement document', () => {
       const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
+      const replacementDoc = { getMap: () => ({ toJSON: () => ({}) }) }
+      bridge().follower = { doc: replacementDoc }
 
       dispatchFrame('follower_replaced', { workflowId: 'wf-1' })
 
       expect(adapterState.clearForReset).toHaveBeenCalled()
+      expect(
+        definitionsState.readSubgraphDefinitionIds
+      ).toHaveBeenLastCalledWith(replacementDoc)
+      expect(definitionsState.readSubgraphDefinitions).toHaveBeenLastCalledWith(
+        replacementDoc
+      )
       expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
         fakeGraph,
         fakeDefinitions

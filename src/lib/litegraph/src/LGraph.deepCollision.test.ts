@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { parseProxyWidgets } from '@/core/schemas/promotionSchema'
@@ -237,7 +235,6 @@ function scopesOf(graph: LGraph): { name: string; graph: LGraph | Subgraph }[] {
 }
 
 beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   LiteGraph.registerNodeType('dummy', DummyNode)
   vi.spyOn(console, 'warn').mockImplementation(() => {})
 })
@@ -290,14 +287,14 @@ describe('LGraph.configure with simultaneous cross-scope ID collisions', () => {
     // A host node's legacy proxyWidgets must follow its own definition's
     // remap, not another definition's.
     for (const host of graph.nodes) {
-      const definitionId = String(host.type)
+      const definitionId = host.type
       const subgraph = graph.subgraphs.get(definitionId)
       if (!subgraph) continue
 
-      const proxyWidgets = parseProxyWidgets(host.properties?.proxyWidgets)
+      const proxyWidgets = parseProxyWidgets(host.properties.proxyWidgets)
       expect(proxyWidgets).toHaveLength(1)
       for (const entry of proxyWidgets) {
-        expect(subgraph.getNodeById(toNodeId(String(entry[0])))?.title).toBe(
+        expect(subgraph.getNodeById(toNodeId(entry[0]))?.title).toBe(
           `${subgraph.name}#7`
         )
       }

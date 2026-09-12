@@ -770,6 +770,57 @@
       }
     }
   },
+  "BlockSparseAttention": {
+    "description": "対応するモデルのアテンション層にブロックスパースアテンションを適用し、長いシーケンスの計算量を削減します。短いシーケンスでは通常、密なアテンションの方が高速なため、速度向上はシーケンス長に応じて大きくなります。start_percent/end_percent の範囲外、dense_blocks の場合、および min_tokens 未満では、モデルは密なモデルアテンションバックエンドを使用します。このフォールバックの選択には、Model Attention Backend ノードを使用してください。",
+    "display_name": "モデルのブロックスパースアテンション",
+    "inputs": {
+      "dense_blocks": {
+        "name": "dense_blocks",
+        "tooltip": "常にデンス処理を実行する Transformer ブロック。例: '0, 1, 47-49'。"
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "スパースアテンションを終了するパーセント値。この値より後では、アテンションは密な状態に戻ります。"
+      },
+      "extra_tokens": {
+        "name": "extra_tokens",
+        "tooltip": "各クエリブロックが選択したブロックに加えてアテンションを実行する、高スコアの追加トークン数。値を大きくするとデンス処理に近づき、アテンション時間が増加します。256 を推奨し、0 で無効化します。VSA では無視されます。"
+      },
+      "min_tokens": {
+        "name": "min_tokens",
+        "tooltip": "これより短いシーケンスはデンス処理のままです。"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "パッチを適用するモデル。"
+      },
+      "selection": {
+        "name": "selection",
+        "tooltip": "完全なトークンレベルのアテンションに使用するキーブロックを選択する方法。sol-attn: Sparsifying Online Attention は、各アテンションヘッドとクエリブロックに学習不要の適応閾値を使用します。sla: Sparse-Linear Attention は、スコアが最も高いキーブロックの一定割合を維持します。このパターンで学習されたモデルの重みとのみ使用してください。vsa: Video Sparse Attention (FastVideo) は、3D ビデオキューブタイルと学習済みの粗いアテンション分岐を使用します。FastH3 モデルの重みが必要です。"
+      },
+      "selection_tau": {
+        "name": "tau"
+      },
+      "sink_conditioning": {
+        "name": "sink_conditioning",
+        "tooltip": "MiniMax-H3 専用。exact_kv: 各クエリがパックされたテキスト/音声/参照行に対して正確にアテンションを実行します（コスト約 3%）。exact_kv_and_rows: さらにターゲット音声のクエリ行をデンス処理します（生成された音声を維持）。"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "スパースアテンションを開始するパーセント値。この値より前では、アテンションは密なままです。"
+      },
+      "verbose": {
+        "name": "verbose",
+        "tooltip": "各アテンション形状でスパースアテンションが使用されたか、または密なままとなった理由をログに記録します。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model",
+        "tooltip": "ブロックスパースアテンションが適用されたモデル。"
+      }
+    }
+  },
   "BriaEraser": {
     "description": "Briaを使用して、マスクで囲まれたオブジェクトまたは領域を画像から削除します。",
     "display_name": "Bria イレーサー",
@@ -1477,96 +1528,6 @@
       },
       "watermark": {
         "name": "ウォーターマーク",
-        "tooltip": "動画に「AI生成」の透かしを追加するかどうか。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "ByteDanceImageNode": {
-    "description": "プロンプトに基づいてAPI経由でByteDanceモデルを使用して画像を生成",
-    "display_name": "ByteDance画像",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後の制御"
-      },
-      "guidance_scale": {
-        "name": "ガイダンススケール",
-        "tooltip": "値が高いほどプロンプトに忠実な画像になります"
-      },
-      "height": {
-        "name": "高さ",
-        "tooltip": "画像のカスタム高さ。`size_preset`が`Custom`に設定されている場合のみ有効"
-      },
-      "model": {
-        "name": "モデル"
-      },
-      "prompt": {
-        "name": "プロンプト",
-        "tooltip": "画像生成に使用するテキストプロンプト"
-      },
-      "seed": {
-        "name": "シード",
-        "tooltip": "生成に使用するシード値"
-      },
-      "size_preset": {
-        "name": "サイズプリセット",
-        "tooltip": "推奨サイズを選択。カスタムを選択すると下記の幅と高さを使用します"
-      },
-      "watermark": {
-        "name": "透かし",
-        "tooltip": "画像に「AI生成」の透かしを追加するかどうか"
-      },
-      "width": {
-        "name": "幅",
-        "tooltip": "画像のカスタム幅。`size_preset`が`Custom`に設定されている場合のみ有効"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "ByteDanceImageReferenceNode": {
-    "description": "プロンプトと参照画像を使用して動画を生成",
-    "display_name": "ByteDance参照画像から動画生成",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "アスペクト比",
-        "tooltip": "出力動画のアスペクト比"
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration": {
-        "name": "再生時間",
-        "tooltip": "出力動画の再生時間（秒）"
-      },
-      "images": {
-        "name": "画像",
-        "tooltip": "1〜4枚の画像"
-      },
-      "model": {
-        "name": "モデル"
-      },
-      "prompt": {
-        "name": "プロンプト",
-        "tooltip": "動画生成に使用するテキストプロンプト"
-      },
-      "resolution": {
-        "name": "解像度",
-        "tooltip": "出力動画の解像度"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "生成に使用するシード値。"
-      },
-      "watermark": {
-        "name": "watermark",
         "tooltip": "動画に「AI生成」の透かしを追加するかどうか。"
       }
     },
@@ -2763,6 +2724,260 @@
       }
     }
   },
+  "ComfyCloudFlux2TextToImageNode": {
+    "description": "ベータ。Comfy Cloud ノードセットは現在も変更中です。オプションが追加または削除される場合があり、ワークフローが廃止されることもあります。Flux 2 dev を使用して、テキストプロンプトから画像を生成します。Turbo では選択した LoRA と短いスケジュールを使用し、わずかに忠実度を犠牲にして大幅に高速化します。LoRA なしの完全な dev パスを実行するにはオフにしてください。Comfy Cloud GPU で実行され、実行時間に応じて {'$'}0.001295/GPU 秒（0.27 クレジット）が課金されます。クレジット払いで、Cloud サブスクリプションは不要です。",
+    "display_name": "Comfy Cloud Flux 2 テキストから画像 [ベータ]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "総ピクセル予算です。1.0 は正方形比率で約 1024x1024 です。"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "turbo": {
+        "name": "turbo",
+        "tooltip": "Turbo LoRA を短いスケジュールで実行し、わずかに忠実度を犠牲にして大幅に高速化します。オフでは、LoRA なしで完全な dev パスを実行します。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMageFlowTextToImageNode": {
+    "description": "ベータ。Comfy Cloud ノードセットは現在も変更中です。オプションが追加または削除される場合があり、ワークフローが廃止されることもあります。Mage-Flow を使用し、完全な 30 ステップのパスでテキストプロンプトから画像を生成します。ネガティブプロンプトに対応しており、蒸留版 turbo バリアントでは十分に使用できません。Comfy Cloud GPU で実行され、実行時間に応じて {'$'}0.001295/GPU 秒（0.27 クレジット）が課金されます。クレジット払いで、Cloud サブスクリプションは不要です。",
+    "display_name": "Comfy Cloud Mage Flow テキストから画像 [ベータ]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "総ピクセル予算です。1.0 は正方形比率で約 1024x1024 です。"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "このパイプラインのチューニングに使用されたネガティブプロンプトを維持するには、空欄のままにします。"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMageFlowTurboTextToImageNode": {
+    "description": "ベータ。Comfy Cloud ノードセットは現在も変更中です。オプションが追加または削除される場合があり、ワークフローが廃止されることもあります。蒸留版 Mage-Flow を cfg 1、4 ステップで使用して、テキストプロンプトから画像を生成します。完全パスの GPU 時間のおよそ 7 分の 1 で、反復作業に適しています。Comfy Cloud GPU で実行され、実行時間に応じて {'$'}0.001295/GPU 秒（0.27 クレジット）が課金されます。クレジット払いで、Cloud サブスクリプションは不要です。",
+    "display_name": "Comfy Cloud Mage Flow Turbo テキストから画像 [ベータ]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "総ピクセル予算です。1.0 は正方形比率で約 1024x1024 です。"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "このパイプラインのチューニングに使用されたネガティブプロンプトを維持するには、空欄のままにします。"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3FirstLastFrameToVideoNode": {
+    "description": "ベータ。Comfy Cloud ノードセットは現在も変更中です。オプションが追加または削除される場合があり、ワークフローが廃止されることもあります。MiniMax H3 を使用して、2 つのキーフレーム間の動きを、対応するサウンドトラックとともに生成します。開始フレームと終了フレームを指定すると、モデルがその間のショットを補完します。最後のフレームは任意です。省略すると、最初のフレームから離れる方向に動きが生成されます。Comfy Cloud GPU で実行され、実行時間に応じて {'$'}0.001295/GPU 秒（0.27 クレジット）が課金されます。クレジット払いで、Cloud サブスクリプションは不要です。",
+    "display_name": "Comfy Cloud MiniMax H3 最初と最後のフレームから動画 [ベータ]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "duration_seconds": {
+        "name": "duration_seconds",
+        "tooltip": "秒単位の長さです。パイプラインは 24fps で 17 フレーム単位に量子化するため、クリップの長さはこれから約 3 分の 2 秒以内になります。"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "フレームサイズの予算です。720p は 480p のおよそ 2 倍の GPU 秒を要します。"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3ImageToVideoNode": {
+    "description": "BETA。Comfy Cloudノードセットは現在も変更中です。オプションが追加または削除される場合があり、ワークフローが廃止される場合もあります。MiniMax H3を使用して、静止画を対応するサウンドトラック付きの動画にアニメーション化します。クリップの最後のフレームを入力するとシーケンスを継続するため、複数を連結してより長いショットを作成できます。Comfy Cloud GPUで実行され、実行時間に応じて {'$'}0.001295/GPU秒（0.27クレジット）で課金されます。クレジットで支払われ、Cloudサブスクリプションは不要です。",
+    "display_name": "Comfy Cloud MiniMax H3 画像から動画 [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "duration_seconds": {
+        "name": "duration_seconds",
+        "tooltip": "秒単位の長さ。パイプラインは24fpsで17フレーム単位に量子化するため、クリップの長さはこの値から約3分の2秒以内になります。"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "フレームサイズの予算。720pは480pのおよそ2倍のGPU秒を消費します。"
+      },
+      "seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxH3TextToVideoNode": {
+    "description": "BETA。Comfy Cloudノードセットは現在も変更中です。オプションが追加または削除される場合があり、ワークフローが廃止される場合もあります。MiniMax H3を使用して、テキストプロンプトから対応するサウンドトラック付きの動画を生成します。映像と音声は後から吹き替えるのではなく、同じ処理で生成されます。Comfy Cloud GPUで実行され、実行時間に応じて {'$'}0.001295/GPU秒（0.27クレジット）で課金されます。クレジットで支払われ、Cloudサブスクリプションは不要です。",
+    "display_name": "Comfy Cloud MiniMax H3 テキストから動画 [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "duration_seconds": {
+        "name": "duration_seconds",
+        "tooltip": "秒単位の長さ。パイプラインは24fpsで17フレーム単位に量子化するため、クリップの長さはこの値から約3分の2秒以内になります。"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "フレームサイズの予算。720pは480pのおよそ2倍のGPU秒を消費します。"
+      },
+      "seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudMiniMaxMusic3TextToAudioNode": {
+    "description": "BETA。Comfy Cloudノードセットは現在も変更中です。オプションが追加または削除される場合があり、ワークフローが廃止される場合もあります。MiniMax Music 3を使用して、説明から楽曲全体を生成します。プロンプトにはスタイル、楽器編成、ムードを指定します。歌詞は説明ではなく歌われ、歌詞を空欄にするとトラックはインストゥルメンタルになります。Comfy Cloud GPUで実行され、実行時間に応じて {'$'}0.001295/GPU秒（0.27クレジット）で課金されます。クレジットで支払われ、Cloudサブスクリプションは不要です。",
+    "display_name": "Comfy Cloud MiniMax Music 3 テキストからオーディオ [BETA]",
+    "inputs": {
+      "audio_quality": {
+        "name": "audio_quality",
+        "tooltip": "mp3ビットレート。V0は可変ビットレートで、3つの中で最高品質です。"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "lyrics": {
+        "name": "歌詞",
+        "tooltip": "歌う言葉。インストゥルメンタルにする場合は空欄のままにします。"
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "トラックの最大再生時間。モデルはより早く曲を終了する場合があります。"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ComfyCloudZImageTurboNode": {
+    "description": "BETA。Comfy Cloudノードセットは現在も変更中です。オプションが追加または削除される場合があり、ワークフローが廃止される場合もあります。Z-Image Turboを使用して、テキストプロンプトから8ステップで画像を生成します。ここでは最も高速かつ低コストなノードの1つであり、反復調整に最適です。Comfy Cloud GPUで実行され、実行時間に応じて {'$'}0.001295/GPU秒（0.27クレジット）で課金されます。クレジットで支払われ、Cloudサブスクリプションは不要です。",
+    "display_name": "Comfy Cloud Z-Image Turbo テキストから画像 [BETA]",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "megapixels": {
+        "name": "megapixels",
+        "tooltip": "合計ピクセル予算。正方形の比率では、1.0 は約 1024x1024 です。"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ComfyMathExpression": {
     "display_name": "数式",
     "inputs": {
@@ -2850,6 +3065,29 @@
       }
     }
   },
+  "ConcatenateVideo": {
+    "description": "互換性のあるエンコード済み入力をデコードせずに、動画を順番に連結します。",
+    "display_name": "動画を連結",
+    "inputs": {
+      "codec": {
+        "name": "codec",
+        "tooltip": "動画テンソルのエンコードに使用するcodec。AutoはH.264を使用します。すでにエンコード済みの動画は変更されません。"
+      },
+      "complete_audio": {
+        "name": "complete_audio",
+        "tooltip": "連結した動画用の任意の完全なサウンドトラック。入力動画に含まれる音声を上書きします。"
+      },
+      "videos": {
+        "name": "videos",
+        "tooltip": "入力順に連結する動画セグメント。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "連結された動画。"
+      }
+    }
+  },
   "ConditioningAverage": {
     "display_name": "条件付け平均",
     "inputs": {
@@ -2883,6 +3121,20 @@
       },
       "conditioning_to": {
         "name": "条件付け先"
+      }
+    }
+  },
+  "ConditioningLoader": {
+    "description": "embeddingsフォルダーから、Save Conditioningで保存したコンディショニング、または「conditioning」テンソルを含む任意のsafetensorsファイルを読み込みます。",
+    "display_name": "コンディショニングを読み込む",
+    "inputs": {
+      "conditioning_name": {
+        "name": "conditioning_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3693,6 +3945,10 @@
       "bit_depth": {
         "name": "bit_depth",
         "tooltip": "自動ではsRGBに8ビット、HDRに10ビットを使用します。明示的な8ビットおよび10ビットの選択は色空間に依存しません。"
+      },
+      "codec": {
+        "name": "codec",
+        "tooltip": "必要に応じて動画を直ちにエンコードします。Noneでは画像をテンソル形式のまま保持し、AutoではH.264を使用します。"
       },
       "color_space": {
         "name": "color_space",
@@ -4811,6 +5067,22 @@
       "batch_size": {
         "name": "batch_size",
         "tooltip": "バッチ内の潜在画像数。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyYuE2LatentAudio": {
+    "display_name": "空のYuE2 latentオーディオ",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "seconds": {
+        "name": "seconds"
       }
     },
     "outputs": {
@@ -6236,14 +6508,8 @@
       "model_max_output_tokens": {
         "name": "max_output_tokens"
       },
-      "model_temperature": {
-        "name": "temperature"
-      },
       "model_thinking_level": {
         "name": "thinking_level"
-      },
-      "model_top_p": {
-        "name": "top_p"
       },
       "prompt": {
         "name": "prompt",
@@ -6433,7 +6699,7 @@
     }
   },
   "GetImageSize": {
-    "description": "画像の幅と高さを返し、変更せずに通過させます。",
+    "description": "画像の幅、高さ、バッチサイズを返します。",
     "display_name": "画像サイズ取得",
     "inputs": {
       "image": {
@@ -7761,6 +8027,28 @@
       },
       "sigma": {
         "name": "シグマ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageColorSpace": {
+    "description": "sRGB、線形Rec.709、HDR（Rec.2020 HLG）、HDR PQ（Rec.2020 PQ）を変換します。線形1.0はsRGBと同じ203ニトの基準白色を使用します。HLGは1000ニトの基準ディスプレイを使用します。線形出力および線形からHDRへの変換では、トーンマッピングを行わずに拡張値を保持します。SDR出力およびPQからHLGへの変換では、バッチ全体で過剰な輝度をトーンマッピングし、色域外の色を圧縮します。変換はfloat32で計算され、中間デバイスとdtypeを返します。ストレートアルファには色変換を適用しません。",
+    "display_name": "画像カラースペースを変換",
+    "inputs": {
+      "destination": {
+        "name": "destination",
+        "tooltip": "出力ピクセルのカラースペース。保存ノードも同じカラースペースに設定してください。"
+      },
+      "image": {
+        "name": "image"
+      },
+      "source": {
+        "name": "source",
+        "tooltip": "入力ピクセルのカラースペース。"
       }
     },
     "outputs": {
@@ -9335,40 +9623,6 @@
       }
     }
   },
-  "KlingVideoExtendNode": {
-    "description": "Kling Video Extendノード。他のKlingノードで作成された動画を拡張します。video_idは他のKlingノードを使用して作成されます。",
-    "display_name": "Kling Video Extend",
-    "inputs": {
-      "cfg_scale": {
-        "name": "cfg_scale"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt",
-        "tooltip": "拡張動画で避けたい要素のネガティブテキストプロンプト"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "動画拡張をガイドするためのポジティブなテキストプロンプト"
-      },
-      "video_id": {
-        "name": "video_id",
-        "tooltip": "拡張する動画のID。テキストから動画、画像から動画、または以前の動画拡張操作で生成された動画をサポートします。拡張後の合計再生時間は3分を超えることはできません。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      },
-      "1": {
-        "name": "video_id",
-        "tooltip": null
-      },
-      "2": {
-        "name": "duration",
-        "tooltip": null
-      }
-    }
-  },
   "KlingVideoNode": {
     "description": "Kling V3でビデオを生成します。テキストからビデオ、画像からビデオ、オプションでストーリーボードのマルチプロンプトやオーディオ生成に対応しています。",
     "display_name": "Kling 3.0 ビデオ",
@@ -9503,6 +9757,54 @@
       }
     }
   },
+  "LTXVAddGeneratedKeyframes": {
+    "description": "動画latentにディテール用キーフレームを追加します。各キーフレームは、RoPE位置が1つのピクセルフレームにまたがるトークンのlatentフレームです。これらは動画とともにノイズ除去され、デコード出力には含まれません。配置はinterval_framesピクセルごとに1スロットで、I2Vフレーム、既存のガイド、およびcondにすでにあるディテール用キーフレームをスキップします。接続されたキーフレームはコンテンツとしてのみ扱われ、frame_indicesが設定されていない限り、このキャンバス上に再配置されます。LTXV Separate Generated Keyframesで再び取り出せます。生成キーフレーム用に学習されたチェックポイント（keyframes_abs_pos_embeddingを含むもの）が必要です。",
+    "display_name": "LTXV 生成キーフレームを追加",
+    "inputs": {
+      "frame_indices": {
+        "name": "frame_indices",
+        "tooltip": "任意のピクセルフレームインデックス。空欄のままにすると、現在のキャンバスでinterval_framesから配置します。設定した場合、このリストが配置位置になります（接続されたキーフレームは順番に対応付けられます）。最後のフレームは使用できますが、フレーム0は使用できません（すでに独立したトークンであるため）。"
+      },
+      "interval_frames": {
+        "name": "interval_frames",
+        "tooltip": "自動配置のピクセルフレーム間隔。デフォルトの24は、24 fpsではおよそ毎秒1キーフレームです。使用済みのピクセルはスキップされます。frame_indicesが設定されている場合は無視されます。"
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "新しいキーフレームの初期化に使用する任意のコンテンツ。以前のSeparateからのキーフレーム（同じ空間サイズ）を接続するか、プレーンな動画latentを接続して各新規スロットで最も近いフレームをコピーします（例: 時間方向のアップスケール後）。これらもノイズ除去され、ガイドとして固定されません。frame_indicesが設定されていない限り、キーフレームlatentに記録されたインデックスは無視されます。サンプリングがsigma 1未満で開始される場合にのみ効果があります。"
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "キーフレームを併せて生成するプレーンな5D動画latent。Concat AV Latentの前に追加してください。"
+      },
+      "negative": {
+        "name": "negative",
+        "tooltip": "キーフレームを接続するネガティブconditioning。"
+      },
+      "positive": {
+        "name": "positive",
+        "tooltip": "キーフレームを接続するポジティブconditioning。"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "latentのスケール係数の読み取りにのみ使用します。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "生成キーフレームattentionが接続されたポジティブconditioning。"
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "生成キーフレームattentionが接続されたネガティブconditioning。"
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "T方向に生成キーフレームを追加した動画latent。"
+      }
+    }
+  },
   "LTXVAddGuide": {
     "display_name": "LTXVAddGuide",
     "inputs": {
@@ -9549,6 +9851,55 @@
       },
       "2": {
         "name": "潜在",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVAddLatentGuide": {
+    "description": "画像ではなく前段階からガイドが出力される場合に、すでにエンコード済みのlatentをガイドとして固定します。VAEのデコード/エンコード往復処理なしでLTXV Add Guideと同じ効果を得られます。ターゲットより空間サイズが小さいガイド（IC-LoRAまたはディテール用参照）は、疎なグリッド上に拡張され、そのRoPE終端位置も同じ比率で拡張されます。これにより、ターゲットの左上隅だけを指定するのではなく、ターゲットキャンバス全体をカバーします。",
+    "display_name": "LTXV Latentガイドを追加",
+    "inputs": {
+      "attention_mask": {
+        "name": "attention_mask",
+        "tooltip": "任意のピクセル空間の空間mask。self-attentionを通じて領域ごとのconditioningの影響を制御し、strengthが乗算されます。"
+      },
+      "guiding_latent": {
+        "name": "guiding_latent",
+        "tooltip": "ガイドlatent。空間サイズは、両軸で同じ整数比となるようターゲットのサイズを割り切る必要があります。同じサイズの場合はそのまま固定され、半分のサイズはx2 IC-LoRA参照として扱われます。"
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "ガイドを固定する対象の動画latent。"
+      },
+      "latent_idx": {
+        "name": "latent_idx",
+        "tooltip": "ガイドを開始するlatentフレームのインデックス。ピクセルフレームではなくlatentフレームで数えます。負の値は、latentの末尾から逆算するのではなく、latentの開始前のフレームにガイドを配置します。"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "1.0に制限されます。拡張されたガイドはパディング位置を負のdenoise maskでマークするため、モデルはそれらを除外します。1.0を超えると保持する位置も負になり、ガイド全体が除外されます。1.0を超えて増幅するには、代わりにattention_maskを使用してください。"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
         "tooltip": null
       }
     }
@@ -9815,6 +10166,67 @@
       }
     }
   },
+  "LTXVFreezeLatent": {
+    "description": "noise_mask を 0 に設定し、この潜在がサンプリング中にクリーンな状態に保たれるようにします。動画または音声で動作します。一般的な用途: Concat AV の前に音声を固定してクロスアテンションのみを提供させる、またはノイズ除去すべきでない潜在を固定する。",
+    "display_name": "LTXV 潜在を固定",
+    "inputs": {
+      "latent": {
+        "name": "潜在",
+        "tooltip": "固定する動画または音声の潜在。音声は4D、動画は5Dです。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "潜在",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVGeneratedKeyframesToGuides": {
+    "description": "前のステージで生成されたキーフレームを、後のキャンバス上で固定された画像ガイドとしてピン留めします。これらは独立したフレームとしてデコードされ、必要に応じてリサイズされ、noise_mask=0 で書き込まれるため再度ノイズ除去されません。時間方向のアップスケール後は、記録されたインデックスが生成元のキャンバスからこのキャンバスへスケーリングされます（同じ時点）。位置を明示的に設定するには override_frame_indices を使用します。新しい位置でキーフレームの生成（およびノイズ除去）を続けるには、Add Generated Keyframes を使用してください。",
+    "display_name": "LTXV 生成キーフレームをガイドに変換",
+    "inputs": {
+      "keyframes": {
+        "name": "キーフレーム",
+        "tooltip": "各キーフレームが生成されたピクセルフレームのインデックスを保持する、LTXV Separate Generated Keyframes のキーフレーム出力。"
+      },
+      "latent": {
+        "name": "潜在",
+        "tooltip": "ガイドを追加する対象の動画潜在。例: 時間方向にアップスケールされたもの。"
+      },
+      "negative": {
+        "name": "ネガティブ"
+      },
+      "override_frame_indices": {
+        "name": "override_frame_indices",
+        "tooltip": "任意 — 記録済み（または自動スケーリング済み）の位置ではなく、これらのピクセルフレームにピン留めします。キーフレームごとに1つのインデックスを指定してください。空欄の場合は記録済みの位置を再利用するか、対象キャンバスの長さが異なる場合（例: 時間方向 x2 の後）にスケーリングします。"
+      },
+      "positive": {
+        "name": "ポジティブ"
+      },
+      "strength": {
+        "name": "強度",
+        "tooltip": "ガイドの強度。1.0 では強く固定され、値を下げると固定が緩和されます。"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ポジティブ",
+        "tooltip": "キーフレームを画像ガイドとしてピン留めしたポジティブ条件付け。"
+      },
+      "1": {
+        "name": "ネガティブ",
+        "tooltip": "キーフレームを画像ガイドとしてピン留めしたネガティブ条件付け。"
+      },
+      "2": {
+        "name": "潜在",
+        "tooltip": "キーフレームを固定ガイドとして追加した対象動画潜在。"
+      }
+    }
+  },
   "LTXVImgToVideo": {
     "display_name": "LTXV画像からビデオへ",
     "inputs": {
@@ -10042,6 +10454,43 @@
       "1": {
         "name": "オーディオlatent",
         "tooltip": null
+      }
+    }
+  },
+  "LTXVSeparateGeneratedKeyframes": {
+    "description": "LTXV Add Generated Keyframes で追加された生成キーフレームをサンプリング済みの潜在から再び分離し、条件付けから削除します。動画潜在を空間アップスケールする前に分離してください。先に LTXV Crop Guides を実行しないでください。生成キーフレームを破棄可能なガイドとして扱い、削除してしまいます。",
+    "display_name": "LTXV 生成キーフレームを分離",
+    "inputs": {
+      "keyframes_to_batch": {
+        "name": "keyframes_to_batch",
+        "tooltip": "キーフレームを1フレーム潜在のバッチとして返します。オフのままにすると、1つの複数フレーム潜在として取得できます。これは潜在アップサンプラーおよび後続の Add Generated Keyframes が想定する形式です。"
+      },
+      "latent": {
+        "name": "潜在"
+      },
+      "negative": {
+        "name": "ネガティブ"
+      },
+      "positive": {
+        "name": "ポジティブ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ポジティブ",
+        "tooltip": "生成キーフレームのメタデータを削除したポジティブ条件付け。"
+      },
+      "1": {
+        "name": "ネガティブ",
+        "tooltip": "生成キーフレームのメタデータを削除したネガティブ条件付け。"
+      },
+      "2": {
+        "name": "潜在",
+        "tooltip": "生成キーフレームを取り除いた動画潜在。"
+      },
+      "3": {
+        "name": "キーフレーム",
+        "tooltip": "分離されたキーフレーム。generated_keyframe_indices および generated_keyframe_num_frames のラベル付きです。これらを後続の Add Generated Keyframes に渡して新しいスロットを初期化するか、Generated Keyframes To Guides に渡して固定画像ガイドとしてピン留めします（キャンバス長が変更された場合、インデックスは再マッピングされます）。"
       }
     }
   },
@@ -10613,7 +11062,8 @@
     "display_name": "3D読み込み（詳細）",
     "inputs": {
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "ビューポートのレンダー高さ（ピクセル）。"
       },
       "model_file": {
         "name": "model_file"
@@ -10622,29 +11072,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "ビューポートのレンダー幅（ピクセル）。"
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "読み込まれた3Dモデルファイル（glb/obj/stlなど）。"
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "シーン内の各モデルの配置：位置、回転、スケール（Y軸上向きのワールド空間）。"
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "ビューポートカメラ情報：位置、注視点、ズーム、タイプ。"
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "ビューポートのレンダー幅（ピクセル）。"
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "ビューポートのレンダー高さ（ピクセル）。"
       }
     }
   },
@@ -11169,70 +11620,6 @@
       "seed": {
         "name": "シード",
         "tooltip": "ノードを再実行するかどうかを決定するシード。実際の結果はシードに関係なく非決定的です。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LtxvApiImageToVideo": {
-    "description": "開始画像に基づいてカスタマイズ可能な長さと解像度のプロフェッショナル品質の動画。",
-    "display_name": "LTXV 画像から動画へ",
-    "inputs": {
-      "duration": {
-        "name": "長さ"
-      },
-      "fps": {
-        "name": "fps"
-      },
-      "generate_audio": {
-        "name": "オーディオ生成",
-        "tooltip": "trueの場合、生成された動画にはシーンに合ったAI生成オーディオが含まれます。"
-      },
-      "image": {
-        "name": "画像",
-        "tooltip": "動画の最初のフレームとして使用する画像。"
-      },
-      "model": {
-        "name": "モデル"
-      },
-      "prompt": {
-        "name": "プロンプト"
-      },
-      "resolution": {
-        "name": "解像度"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LtxvApiTextToVideo": {
-    "description": "カスタマイズ可能な長さと解像度のプロフェッショナル品質の動画。",
-    "display_name": "LTXV テキストから動画へ",
-    "inputs": {
-      "duration": {
-        "name": "長さ"
-      },
-      "fps": {
-        "name": "fps"
-      },
-      "generate_audio": {
-        "name": "オーディオ生成",
-        "tooltip": "trueの場合、生成された動画にはシーンに合ったAI生成オーディオが含まれます。"
-      },
-      "model": {
-        "name": "モデル"
-      },
-      "prompt": {
-        "name": "プロンプト"
-      },
-      "resolution": {
-        "name": "解像度"
       }
     },
     "outputs": {
@@ -12044,6 +12431,23 @@
       }
     }
   },
+  "MarigoldV2PostProcess": {
+    "description": "デコードされたMarigold V2予測を画像に変換します。近いほど明るい正規化深度、単位表面法線、またはsRGBアルベドです。",
+    "display_name": "Marigold V2 後処理",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "prediction": {
+        "name": "prediction"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MaskComposite": {
     "display_name": "マスク合成",
     "inputs": {
@@ -12710,6 +13114,84 @@
       }
     }
   },
+  "MetaMuseImageEditApi": {
+    "description": "MetaのMuse Imageモデルを使用して、テキストプロンプトに基づき最大10枚の参照画像を編集または結合します。",
+    "display_name": "Meta Muse Image 編集",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "使用するモデル。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_enable_image_search": {
+        "name": "enable_image_search"
+      },
+      "model_enable_shell": {
+        "name": "enable_shell"
+      },
+      "model_enable_web_search": {
+        "name": "enable_web_search"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_reasoning_strength": {
+        "name": "reasoning_strength"
+      },
+      "model_seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MetaMuseImageTextToImageApi": {
+    "description": "レンダリング前にプロンプトを推論するMetaのMuse Imageモデルを使用して、テキストプロンプトから画像を生成します。",
+    "display_name": "Meta Muse Image テキストから画像",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "使用するモデル。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_enable_image_search": {
+        "name": "enable_image_search"
+      },
+      "model_enable_shell": {
+        "name": "enable_shell"
+      },
+      "model_enable_web_search": {
+        "name": "enable_web_search"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_reasoning_strength": {
+        "name": "reasoning_strength"
+      },
+      "model_seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MiniMaxH3AddGuide": {
     "description": "MiniMax H3動画の任意のフレームに、画像、短いclip、音声、または音声トラック付きclipを固定します。複数のフレームを固定するには、複数のノードを連結してください。",
     "display_name": "MiniMax H3用ガイドを追加",
@@ -13372,13 +13854,22 @@
     }
   },
   "ModelAttentionBackend": {
-    "display_name": "ModelAttentionBackend",
+    "description": "モデル用の密なアテンション実装を選択します。Block Sparse Attention と併用した場合、スパースアテンションが非アクティブまたは非対応のときは常にこのバックエンドが使用されます。",
+    "display_name": "モデルアテンションバックエンド",
     "inputs": {
       "attention": {
-        "name": "attention"
+        "name": "attention",
+        "tooltip": "密なアテンションバックエンド。Comfy Kitchen attention は量子化された INT8 アテンションを使用し、Nvidia および AMD GPU でのみ利用できます。"
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "パッチを適用するモデル。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model",
+        "tooltip": "選択したアテンションバックエンドを使用するモデル。"
       }
     }
   },
@@ -15605,6 +16096,9 @@
       "model": {
         "name": "モデル"
       },
+      "sampling": {
+        "name": "sampling"
+      },
       "shift": {
         "name": "シフト"
       }
@@ -15852,7 +16346,11 @@
       },
       "max_output_tokens": {
         "name": "最大出力トークン数",
-        "tooltip": "生成できる応答のトークン数の上限（表示可能な出力トークンを含む）"
+        "tooltip": "表示出力トークンと推論トークンを含む、応答として生成できるトークン数の上限"
+      },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "回答前にモデルがどの程度推論するかを指定します。'default' はモデルに選択を委ねます。対応レベルはモデルごとに異なります: GPT-6 Astra は low-max、GPT-5.6 は none-max（minimal なし）、GPT-5.5 は none-xhigh、GPT-5.5 Pro は medium-xhigh、GPT-5 は minimal-high、o-series は low-high。GPT-4.1 には推論機能がありません。未対応のレベルはリクエスト送信前に拒否されます。"
       },
       "truncation": {
         "name": "切り捨て",
@@ -15892,78 +16390,6 @@
       "prompt": {
         "name": "プロンプト",
         "tooltip": "モデルへのテキスト入力。応答を生成するために使用されます。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIDalle2": {
-    "description": "OpenAIのDALL·E 2エンドポイントを通じて同期的に画像を生成します。",
-    "display_name": "OpenAI DALL·E 2",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後のコントロール"
-      },
-      "image": {
-        "name": "画像",
-        "tooltip": "画像編集用のオプション参照画像。"
-      },
-      "mask": {
-        "name": "マスク",
-        "tooltip": "インペインティング用のオプションマスク（白い部分が置き換えられます）"
-      },
-      "n": {
-        "name": "生成数",
-        "tooltip": "生成する画像の枚数"
-      },
-      "prompt": {
-        "name": "プロンプト",
-        "tooltip": "DALL·E用のテキストプロンプト"
-      },
-      "seed": {
-        "name": "シード",
-        "tooltip": "バックエンドではまだ未実装"
-      },
-      "size": {
-        "name": "サイズ",
-        "tooltip": "画像サイズ"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "OpenAIDalle3": {
-    "description": "OpenAIのDALL·E 3エンドポイントを通じて同期的に画像を生成します。",
-    "display_name": "OpenAI DALL·E 3",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後のコントロール"
-      },
-      "prompt": {
-        "name": "プロンプト",
-        "tooltip": "DALL·E用のテキストプロンプト"
-      },
-      "quality": {
-        "name": "画質",
-        "tooltip": "画像の品質"
-      },
-      "seed": {
-        "name": "シード",
-        "tooltip": "バックエンドではまだ未実装"
-      },
-      "size": {
-        "name": "サイズ",
-        "tooltip": "画像サイズ"
-      },
-      "style": {
-        "name": "スタイル",
-        "tooltip": "「Vivid」はモデルがハイパーリアルでドラマチックな画像を生成する傾向になります。「Natural」はより自然で、ハイパーリアルではない画像を生成します。"
       }
     },
     "outputs": {
@@ -16031,7 +16457,7 @@
   },
   "OpenAIGPTImageNodeV2": {
     "description": "OpenAIのGPT Imageエンドポイントを使って画像を生成します。",
-    "display_name": "OpenAI GPT Image 2",
+    "display_name": "OpenAI GPT Image 2.5",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -16118,6 +16544,36 @@
       },
       "size": {
         "name": "サイズ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenRouterImageNode": {
+    "description": "MicrosoftのMAI-Image-2.6モデルを使用してOpenRouter経由で画像を生成または編集します。テキストから画像を生成するか、最大5枚の参照画像を使用した画像ガイド編集を、1Kまたは1.5Kの7種類のアスペクト比で行えます。",
+    "display_name": "OpenRouter Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "画像の生成に使用するOpenRouter画像モデル。"
+      },
+      "model_aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "model_seed": {
+        "name": "シード"
       }
     },
     "outputs": {
@@ -16547,6 +17003,45 @@
       },
       "1": {
         "name": "ネガティブ",
+        "tooltip": null
+      }
+    }
+  },
+  "Pixal3DMultiViewConditioning": {
+    "display_name": "Pixal3D マルチビュー条件付け",
+    "inputs": {
+      "back": {
+        "name": "back",
+        "tooltip": "オブジェクトの背面の正方形ビュー。アルファ付きまたは黒背景で、リグと同様に構図を設定します。オブジェクトは最も幅の広い箇所でフレームの約1/1.1を占め、すべてのビューで同じスケールになります。最初に接続されたビュー（front、left、back、rightの順）が、メッシュのポーズ基準となる正面です。"
+      },
+      "clip_vision_model": {
+        "name": "clip_vision_model",
+        "tooltip": "同梱のNAF重みを含むDINOv3 ViT-L/16 ClipVision。"
+      },
+      "fov": {
+        "name": "fov",
+        "tooltip": "構図どおりのビューにおける水平方向のFOV（度）。リグレンダーおよびほとんどのマルチビュー生成器では20、写真ではいずれかのビューにMoGeGeometryToFOVを使用します。"
+      },
+      "front": {
+        "name": "front",
+        "tooltip": "オブジェクトの正面の正方形ビュー。アルファ付きまたは黒背景で、リグと同様に構図を設定します。オブジェクトは最も幅の広い箇所でフレームの約1/1.1を占め、すべてのビューで同じスケールになります。最初に接続されたビュー（front、left、back、rightの順）が、メッシュのポーズ基準となる正面です。"
+      },
+      "left": {
+        "name": "left",
+        "tooltip": "オブジェクトの左側面の正方形ビュー。アルファ付きまたは黒背景で、リグと同様に構図を設定します。オブジェクトは最も幅の広い箇所でフレームの約1/1.1を占め、すべてのビューで同じスケールになります。最初に接続されたビュー（front、left、back、rightの順）が、メッシュのポーズ基準となる正面です。"
+      },
+      "right": {
+        "name": "right",
+        "tooltip": "オブジェクトの右側面の正方形ビュー。アルファ付きまたは黒背景で、リグと同様に構図を設定します。オブジェクトは最も幅の広い箇所でフレームの約1/1.1を占め、すべてのビューで同じスケールになります。最初に接続されたビュー（front、left、back、rightの順）が、メッシュのポーズ基準となる正面です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
         "tooltip": null
       }
     }
@@ -16996,10 +17491,12 @@
     "display_name": "3Dプレビュー（詳細）",
     "inputs": {
       "camera_info": {
-        "name": "カメラ情報"
+        "name": "カメラ情報",
+        "tooltip": "ビューポートカメラ情報：位置、注視点、ズーム、タイプ。"
       },
       "height": {
-        "name": "高さ"
+        "name": "高さ",
+        "tooltip": "ビューポートのレンダー高さ（ピクセル）。"
       },
       "model_3d": {
         "name": "model_3d",
@@ -17012,29 +17509,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "幅"
+        "name": "幅",
+        "tooltip": "ビューポートのレンダー幅（ピクセル）。"
       }
     },
     "outputs": {
       "0": {
         "name": "model_file",
-        "tooltip": null
+        "tooltip": "上流の3Dノードからの3Dモデルファイル（glb/obj/stlなど）。"
       },
       "1": {
         "name": "カメラ情報",
-        "tooltip": null
+        "tooltip": "シーン内の各モデルの配置：位置、回転、スケール（Y軸上向きのワールド空間）。"
       },
       "2": {
         "name": "3Dモデル情報",
-        "tooltip": null
+        "tooltip": "ビューポートカメラ情報：位置、注視点、ズーム、タイプ。"
       },
       "3": {
         "name": "幅",
-        "tooltip": null
+        "tooltip": "ビューポートのレンダー幅（ピクセル）。"
       },
       "4": {
         "name": "高さ",
-        "tooltip": null
+        "tooltip": "ビューポートのレンダー高さ（ピクセル）。"
       }
     }
   },
@@ -20373,48 +20871,52 @@
     "display_name": "3Dを保存（詳細）",
     "inputs": {
       "camera_info": {
-        "name": "camera_info"
+        "name": "camera_info",
+        "tooltip": "ビューポートカメラ情報：位置、注視点、ズーム、タイプ。"
       },
       "filename_prefix": {
         "name": "filename_prefix"
       },
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "ビューポートのレンダー高さ（ピクセル）。"
       },
       "model_3d": {
         "name": "model_3d",
         "tooltip": "上流の3Dノードからの3Dモデルファイル。"
       },
       "model_3d_info": {
-        "name": "model_3d_info"
+        "name": "model_3d_info",
+        "tooltip": "シーン内の各モデルの配置：位置、回転、スケール（Y軸上向きのワールド空間）。"
       },
       "viewport_state": {
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "ビューポートのレンダー幅（ピクセル）。"
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "上流の3Dノードからの3Dモデルファイル（glb/obj/stlなど）。"
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "シーン内の各モデルの配置：位置、回転、スケール（Y軸上向きのワールド空間）。"
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "ビューポートカメラ情報：位置、注視点、ズーム、タイプ。"
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "ビューポートのレンダー幅（ピクセル）。"
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "ビューポートのレンダー高さ（ピクセル）。"
       }
     }
   },
@@ -20559,6 +21061,24 @@
     "outputs": {
       "0": {
         "name": "audio",
+        "tooltip": null
+      }
+    }
+  },
+  "SaveConditioning": {
+    "description": "コンディショニングをsafetensorsとしてoutputフォルダーに保存します。Load Conditioningで読み込むには、ファイルをmodels/embeddingsへ移動してください。たとえばテキストエンコーダーをスキップする場合に使用します。",
+    "display_name": "コンディショニングを保存",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "conditioning",
         "tooltip": null
       }
     }
@@ -21251,6 +21771,28 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SheetSage2AudioToABC": {
+    "description": "音楽からボーカルと楽器のメロディをABC記譜法に書き起こします。abc出力をYuE2 Generate Musicノードに接続し、対応するモードを使用してください。",
+    "display_name": "SheetSage2 オーディオからABCへ",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "audio_encoder": {
+        "name": "audio_encoder"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "full：メロディとコードを生成します。melody：メロディのみを生成し、カバーに推奨されます。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
         "tooltip": null
       }
     }
@@ -23492,10 +24034,12 @@
         "name": "その場でアニメーション"
       },
       "bake": {
-        "name": "ベイク"
+        "name": "ベイク",
+        "tooltip": "互換性を広げるため、高度なマテリアルをベーステクスチャにベイクします。"
       },
       "export_orientation": {
-        "name": "エクスポート方向"
+        "name": "エクスポート方向",
+        "tooltip": "エクスポートするモデルの前方軸。defaultではTripoの+xを維持します。"
       },
       "export_vertex_colors": {
         "name": "頂点カラーをエクスポート"
@@ -23504,13 +24048,15 @@
         "name": "face_limit"
       },
       "fbx_preset": {
-        "name": "FBXプリセット"
+        "name": "FBXプリセット",
+        "tooltip": "FBX互換性プリセット。bake_scaleはスケール変換をジオメトリにベイクします。"
       },
       "flatten_bottom": {
         "name": "底面を平坦化"
       },
       "flatten_bottom_threshold": {
-        "name": "底面平坦化しきい値"
+        "name": "底面平坦化しきい値",
+        "tooltip": "flatten_bottomで使用する平坦化の深さ。"
       },
       "force_symmetry": {
         "name": "対称性を強制"
@@ -23543,15 +24089,66 @@
         "name": "texture_size"
       },
       "with_animation": {
-        "name": "アニメーション付き"
+        "name": "アニメーション付き",
+        "tooltip": "リギングまたはリターゲットされたモデルのスケルトンとアニメーションを保持します。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": "指定した形式に変換されたモデル。OBJはTripoからZIPアーカイブ（メッシュ、マテリアル、テクスチャ）として提供されます。"
+      }
+    }
+  },
+  "TripoEditMultiviewNode": {
+    "description": "Tripo: Image to Multiviewの結果のビューを、ビューごとのテキスト指示で編集します。指示のないビューは変更されません。画像をTripo: Multiview to Modelに入力してください。編集済みセットは再編集できません。",
+    "display_name": "Tripo: マルチビューを編集",
+    "inputs": {
+      "back_prompt": {
+        "name": "back_prompt"
+      },
+      "front_prompt": {
+        "name": "front_prompt"
+      },
+      "left_prompt": {
+        "name": "left_prompt"
+      },
+      "multiview_task_id": {
+        "name": "multiview_task_id"
+      },
+      "right_prompt": {
+        "name": "right_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "front",
+        "tooltip": null
+      },
+      "1": {
+        "name": "左",
+        "tooltip": null
+      },
+      "2": {
+        "name": "背面",
+        "tooltip": null
+      },
+      "3": {
+        "name": "右",
+        "tooltip": null
       }
     }
   },
   "TripoImageToModelNode": {
-    "display_name": "Tripo: 画像からモデル",
+    "display_name": "Tripo: 画像からモデルへ（レガシー）",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "テクスチャ付きモデルを実世界のメートル単位サイズにスケーリングします。Tripoはサイズをモデルのシーントランスフォームとして保存し、モデルの変換、リギング、リターゲティング時に適用します。テクスチャなしでは無視されます。"
+      },
       "face_limit": {
-        "name": "face_limit"
+        "name": "face_limit",
+        "tooltip": "最大面数。-1ではTripoが適応的に選択します（v3.x standardでは約140万面、detailedでは200万面）。Tripoは上限を自動的に適用します: v2.5は500,000、クアッドメッシュは150,000。"
       },
       "geometry_quality": {
         "name": "ジオメトリ品質"
@@ -23570,22 +24167,31 @@
         "name": "orientation"
       },
       "pbr": {
-        "name": "pbr"
+        "name": "pbr",
+        "tooltip": "PBRマテリアルマップ（ベースカラー、メタリック、ラフネス、法線）。textureが必要です。"
       },
       "quad": {
-        "name": "quad"
+        "name": "quad",
+        "tooltip": "クアッドメッシュ出力。TripoはクアッドメッシュをFBXとして提供するため、結果はFBX出力に届き、GLB出力は空のままです。"
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "クリーンな手作業風トポロジーを持つローポリメッシュ（500～20,000面、クアッドは500～10,000面）。単純な被写体に最適で、複雑なものは失敗する場合があります。"
       },
       "style": {
-        "name": "style"
+        "name": "style",
+        "tooltip": "Tripoではサポートされなくなり、無視されます。古いワークフローとの互換性のために残されています。"
       },
       "texture": {
-        "name": "texture"
+        "name": "texture",
+        "tooltip": "テクスチャマップを生成します。オフにするとテクスチャなしのジオメトリが返され、pbrは無視されます。"
       },
       "texture_alignment": {
         "name": "texture_alignment"
       },
       "texture_quality": {
-        "name": "texture_quality"
+        "name": "texture_quality",
+        "tooltip": "detailed = HDテクスチャ、extreme = 8K Ultraテクスチャ。"
       },
       "texture_seed": {
         "name": "texture_seed"
@@ -23602,6 +24208,110 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "quadが有効な場合は空です。"
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "quadが有効な場合にのみ出力されます。"
+      }
+    }
+  },
+  "TripoImageToModelNodeV2": {
+    "display_name": "Tripo: 画像からモデルへ",
+    "inputs": {
+      "auto_size": {
+        "name": "自動サイズ",
+        "tooltip": "テクスチャ付きモデルを実世界のメートル単位のサイズにスケーリングします。Tripo はサイズをモデルのシーントランスフォームとして保存し、モデルの変換、リギング、リターゲティング時に適用します。テクスチャがない場合は無視されます。"
+      },
+      "face_limit": {
+        "name": "面数上限",
+        "tooltip": "最大面数。-1 を指定すると Tripo が適応的に選択します（v3.x standard では約140万面、detailed では200万面）。Tripo は上限を自動的に適用します：v2.5 は500,000、四角形メッシュは150,000。"
+      },
+      "geometry_quality": {
+        "name": "ジオメトリ品質"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "model_seed": {
+        "name": "モデルシード"
+      },
+      "model_version": {
+        "name": "モデルバージョン",
+        "tooltip": "生成に使用するモデルバージョン"
+      },
+      "orientation": {
+        "name": "向き"
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "PBRマテリアルマップ（ベースカラー、メタリック、ラフネス、法線）。テクスチャが必要です。"
+      },
+      "quad": {
+        "name": "四角形",
+        "tooltip": "四角形メッシュを出力します。Tripo は四角形メッシュを FBX として提供するため、結果は FBX 出力に届き、GLB 出力は空のままです。"
+      },
+      "smart_low_poly": {
+        "name": "スマート低ポリゴン",
+        "tooltip": "クリーンで手作業風のトポロジーを持つ低ポリゴンメッシュ（500～20,000面、四角形は500～10,000面）。単純な対象に最適です。複雑な対象では失敗する場合があります。"
+      },
+      "texture": {
+        "name": "テクスチャ",
+        "tooltip": "テクスチャマップを生成します。オフの場合はジオメトリのみが返され、pbr は無視されます。"
+      },
+      "texture_alignment": {
+        "name": "テクスチャ配置"
+      },
+      "texture_quality": {
+        "name": "テクスチャ品質",
+        "tooltip": "detailed = HDテクスチャ、extreme = 8K Ultraテクスチャ。"
+      },
+      "texture_seed": {
+        "name": "テクスチャシード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "モデル task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "四角形が有効な場合は空です。"
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "四角形が有効な場合にのみ出力されます。"
+      }
+    }
+  },
+  "TripoImageToMultiviewNode": {
+    "description": "被写体の正面、左、背面、右のビューを生成します。Tripo: Multiview to Modelに入力するか、先にTripo: Edit Multiviewで調整します。",
+    "display_name": "Tripo: 画像からマルチビュー",
+    "inputs": {
+      "image": {
+        "name": "画像"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "multiview task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "正面",
+        "tooltip": null
+      },
+      "2": {
+        "name": "左",
+        "tooltip": null
+      },
+      "3": {
+        "name": "背面",
+        "tooltip": null
+      },
+      "4": {
+        "name": "右",
         "tooltip": null
       }
     }
@@ -23622,11 +24332,43 @@
       }
     }
   },
+  "TripoMeshCompleteNode": {
+    "description": "セグメント化されたモデルのパーツを補完し、欠損領域を修復します。",
+    "display_name": "Tripo: メッシュパーツを補完",
+    "inputs": {
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "補完するパーツ名をカンマ区切りで指定します。空の場合はすべてのパーツを補完します。"
+      },
+      "segment_task_id": {
+        "name": "segment_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: マルチビューからモデル",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "テクスチャ付きモデルを実寸（メートル）にスケールします。Tripo はサイズをモデルのシーントランスフォームとして保存し、モデルの変換、リギング、リターゲティング時に焼き込みます。テクスチャがない場合は無視されます。"
+      },
       "face_limit": {
-        "name": "face_limit"
+        "name": "face_limit",
+        "tooltip": "最大面数。-1ではTripoが適応的に選択します（v3.x standardでは約140万面、detailedでは200万面）。Tripoは上限を自動的に適用します: v2.5は500,000、クアッドメッシュは150,000。"
       },
       "geometry_quality": {
         "name": "ジオメトリ品質"
@@ -23654,20 +24396,27 @@
         "name": "orientation"
       },
       "pbr": {
-        "name": "pbr"
+        "name": "pbr",
+        "tooltip": "PBRマテリアルマップ（ベースカラー、メタリック、ラフネス、法線）。textureが必要です。"
       },
       "quad": {
         "name": "quad",
-        "tooltip": "このパラメータは非推奨であり、何も行いません。"
+        "tooltip": "クアッドメッシュ出力。TripoはクアッドメッシュをFBXとして提供するため、結果はFBX出力に届き、GLB出力は空のままです。"
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "クリーンな手作業風トポロジーを持つローポリメッシュ（500～20,000面、クアッドは500～10,000面）。単純な被写体に最適で、複雑なものは失敗する場合があります。"
       },
       "texture": {
-        "name": "texture"
+        "name": "texture",
+        "tooltip": "テクスチャマップを生成します。オフにするとテクスチャなしのジオメトリが返され、pbrは無視されます。"
       },
       "texture_alignment": {
         "name": "texture_alignment"
       },
       "texture_quality": {
-        "name": "texture_quality"
+        "name": "texture_quality",
+        "tooltip": "detailed = HDテクスチャ、extreme = 8K Ultraテクスチャ。"
       },
       "texture_seed": {
         "name": "texture_seed"
@@ -23684,7 +24433,11 @@
       },
       "2": {
         "name": "GLB",
-        "tooltip": null
+        "tooltip": "quad が有効な場合は空です。"
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "quad が有効な場合にのみ設定されます。"
       }
     }
   },
@@ -23698,7 +24451,7 @@
       },
       "compress_geometry": {
         "name": "ジオメトリ圧縮",
-        "tooltip": "ジオメトリベースの圧縮を適用します。編集前に解凍してください。"
+        "tooltip": "meshopt ジオメトリ圧縮（EXT_meshopt_compression）を適用します。ファイルは小さくなりますが、ComfyUI の 3D プレビューでは表示できません。編集前に展開してください。"
       },
       "enable_image_autofix": {
         "name": "画像自動補正を有効化",
@@ -23748,7 +24501,7 @@
       },
       "compress_geometry": {
         "name": "ジオメトリ圧縮",
-        "tooltip": "ジオメトリベースの圧縮を適用します。編集前に解凍してください。"
+        "tooltip": "meshopt ジオメトリ圧縮（EXT_meshopt_compression）を適用します。ファイルは小さくなりますが、ComfyUI の 3D プレビューでは表示できません。編集前に展開してください。"
       },
       "export_uv": {
         "name": "UV展開を出力",
@@ -23807,7 +24560,7 @@
       },
       "compress_geometry": {
         "name": "ジオメトリ圧縮",
-        "tooltip": "ジオメトリベースの圧縮を適用します。編集前に解凍してください。"
+        "tooltip": "meshopt ジオメトリ圧縮（EXT_meshopt_compression）を適用します。ファイルは小さくなりますが、ComfyUI の 3D プレビューでは表示できません。編集前に展開してください。"
       },
       "export_uv": {
         "name": "UVエクスポート",
@@ -23854,11 +24607,24 @@
   "TripoRetargetNode": {
     "display_name": "Tripo: リグ付きモデルのリターゲット",
     "inputs": {
+      "animate_in_place": {
+        "name": "animate_in_place",
+        "tooltip": "ルートの移動なしで、その場でアニメーションを再生します。"
+      },
       "animation": {
-        "name": "animation"
+        "name": "animation",
+        "tooltip": "preset:* アニメーションは両方のリグモデルで使用できます。preset:biped:* アニメーションは model v1.0-20240301 のリグ用に作られています。v2.5 のリグで使用できるのは chop、climb、dive、fall、hurt、idle、jump、run、shoot、slash、turn、walk のみです。"
+      },
+      "export_with_geometry": {
+        "name": "export_with_geometry",
+        "tooltip": "エクスポートにメッシュを含めます。オフの場合はアニメーション化されたスケルトンのみをエクスポートします。"
       },
       "original_model_task_id": {
         "name": "original_model_task_id"
+      },
+      "out_format": {
+        "name": "out_format",
+        "tooltip": "出力ファイル形式です。結果は対応する出力に送られます。"
       }
     },
     "outputs": {
@@ -23872,15 +24638,97 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "out_format が glb の場合に設定されます。"
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "out_format が fbx の場合に設定されます。"
+      }
+    }
+  },
+  "TripoRetopologyNode": {
+    "description": "高ポリゴンモデルから、クリーンなトポロジーを持つ低ポリゴンメッシュを再構築します。",
+    "display_name": "Tripo: リトポロジー",
+    "inputs": {
+      "bake": {
+        "name": "bake",
+        "tooltip": "ソーステクスチャを低ポリゴンメッシュにベイクします。"
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "目標面数: 500～20,000 三角形、または 500～10,000 四角形。-1 を指定すると Tripo が選択します。"
+      },
+      "model_task_id": {
+        "name": "model_task_id"
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "Tripo: Segment Model のパーツ名をカンマ区切りで指定します。空の場合はモデル全体を処理します。"
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "クアッドメッシュを出力します。Tripo はクアッドメッシュを FBX として提供するため、結果は FBX 出力に送られ、GLB 出力は空のままになります。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
         "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": "quad が有効な場合は空です。"
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "quad が有効な場合にのみ設定されます。"
+      }
+    }
+  },
+  "TripoRigCheckNode": {
+    "description": "モデルをリギングできるかどうか、および Tripo が推奨するスケルトンタイプを確認します。",
+    "display_name": "Tripo: リグチェック",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "riggable",
+        "tooltip": null
+      },
+      "1": {
+        "name": "rig_type",
+        "tooltip": "推奨スケルトン: biped、quadruped、hexapod、octopod、avian、serpentine、または aquatic。モデルをリギングできない場合は 'others'。"
       }
     }
   },
   "TripoRigNode": {
     "display_name": "Tripo: モデルのリグ設定",
     "inputs": {
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "v1.0：ヒューマノイド（二足歩行）キャラクターのみ、90種類以上のアニメーションプリセット。v2.5：非ヒューマノイドのクリーチャー（四足歩行、六脚、八脚、鳥類、蛇形、水生）。"
+      },
       "original_model_task_id": {
         "name": "original_model_task_id"
+      },
+      "out_format": {
+        "name": "out_format",
+        "tooltip": "出力ファイル形式。結果は対応する出力に届きます。"
+      },
+      "rig_type": {
+        "name": "rig_type",
+        "tooltip": "スケルトンの種類。'auto' は最初にTripoの無料リグチェックを実行し、推奨タイプを使用します。"
+      },
+      "spec": {
+        "name": "spec",
+        "tooltip": "ボーン命名：TripoネイティブまたはMixamo互換。Tripoはmixamo specで作成されたv1.0リグにアニメーションプリセットをリターゲットできません。Tripo: リグ済みモデルをリターゲットにはtripoを使用してください。"
       }
     },
     "outputs": {
@@ -23894,6 +24742,79 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "out_format がglbの場合に設定されます。"
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "out_format がfbxの場合に設定されます。"
+      }
+    }
+  },
+  "TripoSegmentNode": {
+    "description": "モデルをパーツに分割します。パーツ名はTripo: メッシュパーツを完成、Tripo: リトポロジー、およびTripo: モデルを変換に入力されます。",
+    "display_name": "Tripo: モデルをセグメント化",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "segment task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "part_names",
+        "tooltip": "パーツ名をカンマ区切りで指定します。"
+      }
+    }
+  },
+  "TripoSmartSegmentNode": {
+    "description": "モデルを意味のあるパーツに分割し、名前を付けます。画像からの場合、Tripo はまずモデルを生成します。segment task_id は、Tripo: Complete Mesh Parts、Tripo: Retopology、Tripo: Texture model、Tripo: Convert model において、Tripo: Segment Model の結果と同様に使用できます。",
+    "display_name": "Tripo: スマートセグメント",
+    "inputs": {
+      "source": {
+        "name": "ソース",
+        "tooltip": "既存のモデルをセグメント化するか、画像からモデルを生成してセグメント化します。"
+      },
+      "source_granularity": {
+        "name": "粒度"
+      },
+      "source_hint": {
+        "name": "ヒント"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "セグメント task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "モデル task_id",
+        "tooltip": "セグメント化されたモデル（画像から生成されたモデル、またはインポートされたモデル）。"
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "part_names",
+        "tooltip": "パーツ名（カンマ区切り）。"
+      },
+      "4": {
+        "name": "parts",
+        "tooltip": "Tripoが検出したパーツの説明。"
+      },
+      "5": {
+        "name": "mask",
         "tooltip": null
       }
     }
@@ -23994,10 +24915,15 @@
     }
   },
   "TripoTextToModelNode": {
-    "display_name": "Tripo: テキストからモデル生成",
+    "display_name": "Tripo: テキストからモデル（旧式）",
     "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "テクスチャ付きモデルを現実世界のメートル単位サイズにスケーリングします。Tripoはサイズをモデルのシーントランスフォームとして保存し、モデルを変換、リグ化、またはリターゲットする際にベイクします。テクスチャがない場合は無視されます。"
+      },
       "face_limit": {
-        "name": "face_limit"
+        "name": "face_limit",
+        "tooltip": "最大面数。-1の場合、Tripoが適応的に選択します（v3.x standardでは約140万面、detailedでは200万面）。Tripoは自動的に上限を適用します：v2.5は500,000、四角形メッシュは150,000。"
       },
       "geometry_quality": {
         "name": "ジオメトリ品質"
@@ -24012,25 +24938,35 @@
         "name": "model_version"
       },
       "negative_prompt": {
-        "name": "negative_prompt"
+        "name": "negative_prompt",
+        "tooltip": "最大255文字。"
       },
       "pbr": {
-        "name": "pbr"
+        "name": "pbr",
+        "tooltip": "PBRマテリアルマップ（ベースカラー、メタリック、ラフネス、法線）。textureが必要です。"
       },
       "prompt": {
         "name": "prompt"
       },
       "quad": {
-        "name": "quad"
+        "name": "quad",
+        "tooltip": "四角形メッシュを出力します。Tripoは四角形メッシュをFBXとして提供するため、結果はFBX出力に届き、GLB出力は空のままです。"
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "クリーンで手作業風のトポロジーを持つ低ポリゴンメッシュ（500～20,000面、quadは500～10,000面）。シンプルな被写体に最適ですが、複雑なものでは失敗する場合があります。"
       },
       "style": {
-        "name": "style"
+        "name": "style",
+        "tooltip": "Tripoではサポートされなくなり、無視されます。古いワークフロー用に保持されています。"
       },
       "texture": {
-        "name": "texture"
+        "name": "texture",
+        "tooltip": "テクスチャマップを生成します。オフの場合はジオメトリのみを返し、pbrは無視されます。"
       },
       "texture_quality": {
-        "name": "texture_quality"
+        "name": "texture_quality",
+        "tooltip": "detailed = HDテクスチャ、extreme = 8K Ultraテクスチャ。"
       },
       "texture_seed": {
         "name": "texture_seed"
@@ -24047,31 +24983,123 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "quadが有効な場合は空です。"
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "quadが有効な場合のみ設定されます。"
+      }
+    }
+  },
+  "TripoTextToModelNodeV2": {
+    "display_name": "Tripo: テキストからモデル",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "テクスチャ付きモデルを実世界のメートル単位のサイズにスケーリングします。Tripoはサイズをモデルのシーントランスフォームとして保存し、モデルの変換、リギング、リターゲティング時に焼き込みます。textureなしでは無視されます。"
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "最大面数。-1の場合、Tripoが適応的に選択します（v3.x standardでは約140万面、detailedでは200万面）。Tripoは上限を自動的に適用します：v2.5は500,000、四角形メッシュは150,000。"
+      },
+      "geometry_quality": {
+        "name": "geometry_quality"
+      },
+      "image_seed": {
+        "name": "image_seed"
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "model_version": {
+        "name": "model_version"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "最大255文字。"
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "PBRマテリアルマップ（ベースカラー、メタリック、ラフネス、法線）。textureが必要です。"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "四角形メッシュを出力します。Tripoは四角形メッシュをFBXとして提供するため、結果はFBX出力に入り、GLB出力は空のままです。"
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "クリーンで手作り風のトポロジーを持つローポリメッシュ（500～20,000面、四角形は500～10,000面）。単純な被写体に最適です。複雑なものでは失敗する場合があります。"
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "テクスチャマップを生成します。オフの場合はジオメトリのみを返し、pbrは無視されます。"
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = HDテクスチャ、extreme = 8K Ultraテクスチャ。"
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
         "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "quadが有効な場合は空です。"
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "quadが有効な場合にのみ値が設定されます。"
       }
     }
   },
   "TripoTextureNode": {
-    "display_name": "Tripo: モデルのテクスチャリング",
+    "display_name": "Tripo: モデルにテクスチャ（旧式）",
     "inputs": {
       "model_task_id": {
         "name": "model_task_id"
       },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "テクスチャモデル：v3.xで生成したメッシュにはv3.0、v2.5で生成したメッシュにはv2.5。"
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "テクスチャリングする、Tripo: Segment Model からのカンマ区切りのパーツ名。空の場合はすべてのパーツをテクスチャリングします。"
+      },
       "pbr": {
-        "name": "pbr"
+        "name": "pbr",
+        "tooltip": "PBRマテリアルマップ（ベースカラー、メタリック、ラフネス、法線）。オフの場合は単色テクスチャになります。"
+      },
+      "reference": {
+        "name": "reference",
+        "tooltip": "テクスチャをガイドする参照画像。texture_prompt または style_image とは併用できません。"
+      },
+      "style_image": {
+        "name": "style_image",
+        "tooltip": "テクスチャの芸術的スタイル用の参照画像。texture_prompt と併用する場合にのみ使用されます。"
       },
       "texture": {
-        "name": "texture"
+        "name": "texture",
+        "tooltip": "無視されます。このノードは常にテクスチャを生成します。古いワークフロー用に保持されています。"
       },
       "texture_alignment": {
         "name": "texture_alignment"
       },
       "texture_prompt": {
         "name": "texture_prompt",
-        "tooltip": "テクスチャ付与のためのオプションのテキストガイダンス。インポートしたモデル（Tripo: Import Model）には参照画像がないため、実際には必須です。"
+        "tooltip": "テクスチャリング用の任意のテキストガイダンス。色を推測する元画像を持たないインポート済みモデル（Tripo: モデルをインポート）では、実質的に必須です。参照画像とは併用できません。"
       },
       "texture_quality": {
-        "name": "texture_quality"
+        "name": "texture_quality",
+        "tooltip": "detailed = HDテクスチャ、extreme = 8K Ultraテクスチャ。"
       },
       "texture_seed": {
         "name": "texture_seed"
@@ -24088,7 +25116,67 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": "ソースがクアッドメッシュまたは FBX インポートの場合は空です。"
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": "Tripo はクアッドメッシュおよび FBX インポートに対して FBX を返します。それ以外は空です。"
+      }
+    }
+  },
+  "TripoTextureNodeV2": {
+    "display_name": "Tripo: モデルにテクスチャ",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "テクスチャモデル: v3.xで生成されたメッシュにはv3.0、v2.5で生成されたメッシュにはv2.5。"
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "テクスチャリングするTripo: Segment Modelのパーツ名をカンマ区切りで指定します。空欄の場合はすべてのパーツにテクスチャを適用します。"
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "PBRマテリアルマップ（ベースカラー、メタリック、ラフネス、法線）。オフの場合は単色のテクスチャになります。"
+      },
+      "reference": {
+        "name": "reference",
+        "tooltip": "テクスチャを誘導する参照画像。texture_promptまたはstyle_imageとは併用できません。"
+      },
+      "style_image": {
+        "name": "style_image",
+        "tooltip": "テクスチャの芸術的スタイル用の参照画像。texture_promptと併用する場合にのみ使用されます。"
+      },
+      "texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "テクスチャリング用の任意のテキストガイダンス。色を推測するための元画像を持たないインポート済みモデル（Tripo: Import Model）では、実質的に必須です。参照画像とは併用できません。"
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = HDテクスチャ、extreme = 8K Ultraテクスチャ。"
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
         "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "ソースが四角形メッシュまたはFBXインポートの場合は空です。"
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Tripoは四角形メッシュおよびFBXインポートに対してFBXを返します。それ以外の場合は空です。"
       }
     }
   },
@@ -27557,6 +28645,94 @@
     "outputs": {
       "0": {
         "name": "メッシュ",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateABC": {
+    "description": "スタイルと歌詞から曲のABC記譜法を生成します。abcをYuE2 Generate Musicノードに接続してください。",
+    "display_name": "YuE2 ABCを生成",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "lyrics": {
+        "name": "lyrics"
+      },
+      "max_abc_tokens": {
+        "name": "max_abc_tokens"
+      },
+      "mode": {
+        "name": "モード",
+        "tooltip": "full: メロディーとコードを生成します。melody: メロディーのみを生成します。カバーにはこちらを推奨します。"
+      },
+      "seed": {
+        "name": "シード"
+      },
+      "style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ABC",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateMusic": {
+    "description": "スタイル、歌詞、ABC記譜法から音楽トークンと音響コンディショニングを生成します。生成した秒数を Empty YuE2 Latent Audio ノードに指定してください。ABC入力が空の場合、選択したモードは無視されます。",
+    "display_name": "YuE2 音楽生成",
+    "inputs": {
+      "abc": {
+        "name": "ABC",
+        "tooltip": "ABCジェネレーターを接続するか、編集済みのスコアを指定します。空のままにすると、自動的に off モードが使用されます。"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "lyrics": {
+        "name": "歌詞"
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "最大再生時間です。生成はこれより早く終了する場合があります。リリース版では360秒の上限を使用します。"
+      },
+      "mode": {
+        "name": "モード",
+        "tooltip": "full: メロディーとコードを生成します。melody: メロディーのみを生成します。カバーにはこちらを推奨します。"
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "seed": {
+        "name": "シード"
+      },
+      "style": {
+        "name": "スタイル"
+      },
+      "temperature": {
+        "name": "温度"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "秒",
         "tooltip": null
       }
     }

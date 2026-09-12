@@ -7,26 +7,36 @@ import { buildAgentTooltipConfig } from '@/composables/useTooltipConfig'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
+import { DEFAULT_AGENT_PAYWALL_PRESENTATION } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
+import type {
+  AgentPaywallAction,
+  AgentPaywallPresentation
+} from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
 import type { TurnId } from '../../schemas/agentApiSchema'
+import type { PromptSnapshot } from '../../types/workflowReference'
 
 import AgentMessage from './message/AgentMessage.vue'
 import UserMessage from './message/UserMessage.vue'
 
 const {
   entries,
+  paywallPresentation = DEFAULT_AGENT_PAYWALL_PRESENTATION,
   editableTurnId = null,
   answeringAskIds = new Set<string>()
 } = defineProps<{
   entries: ConversationEntry[]
+  paywallPresentation?: AgentPaywallPresentation
   editableTurnId?: TurnId | null
   answeringAskIds?: ReadonlySet<string>
 }>()
 const emit = defineEmits<{
   feedback: [turnId: string, vote: 'up' | 'down' | null]
-  editPrompt: [text: string]
+  editPrompt: [prompt: PromptSnapshot]
   answerAsk: [askId: string, selection: 'run' | 'cancel']
   openWorkflow: [workflowId: string, workflowName?: string]
+  openReferenceWorkflow: [workflowId: string, workflowName: string]
+  paywallAction: [action: AgentPaywallAction]
 }>()
 
 const { t } = useI18n()
@@ -87,13 +97,19 @@ watch(
               :text="entry.text"
               :attachments="entry.attachments"
               :tags="entry.tags"
+              :workflow-references="entry.workflowReferences"
               :editable="entry.id === editableTurnId"
               @edit="emit('editPrompt', $event)"
+              @open-reference-workflow="
+                (workflowId: string, workflowName: string) =>
+                  emit('openReferenceWorkflow', workflowId, workflowName)
+              "
             />
             <AgentMessage
               v-else
               :message="entry"
               :answering-ask-ids="answeringAskIds"
+              :paywall-presentation="paywallPresentation"
               @feedback="emit('feedback', entry.id, $event)"
               @answer-ask="
                 (askId: string, selection: 'run' | 'cancel') =>
@@ -103,6 +119,7 @@ watch(
                 (workflowId: string, workflowName?: string) =>
                   emit('openWorkflow', workflowId, workflowName)
               "
+              @paywall-action="emit('paywallAction', $event)"
             />
           </template>
           <div ref="bottom" />

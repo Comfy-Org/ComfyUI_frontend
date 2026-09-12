@@ -2,8 +2,14 @@ import { computed, ref } from 'vue'
 
 import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
+import { createUuidv4 } from '@/utils/uuid'
 import type { AgentActiveTabData, TurnId } from '../../schemas/agentApiSchema'
-import { isAgentEvent, parseAgentWsEvent } from '../../schemas/agentApiSchema'
+import {
+  isAgentEvent,
+  parseAgentWsEvent,
+  toTurnId,
+  zAgentAdmissionError
+} from '../../schemas/agentApiSchema'
 import { AgentApiError } from '../../services/agent/agentRestClient'
 import type {
   AgentRestClient,
@@ -11,6 +17,9 @@ import type {
   OpenTabsSnapshot
 } from '../../services/agent/agentRestClient'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
+import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
+import type { WorkflowReference } from '../../types/workflowReference'
+import { serializeWorkflowReferences } from '../../utils/workflowReferenceText'
 
 export interface AgentEventSource {
   subscribe(listener: (raw: unknown) => void): () => void
@@ -34,9 +43,17 @@ interface SentTag {
 }
 
 export interface WorkflowTurnContext {
-  id: string
+  id?: string
   tabPath: string
 }
+
+/**
+ * Workflow lookup context: omitted resolves the currently selected target,
+ * `null` pins the absence of a target, and `{ tabPath }` pins its identity.
+ * A send captures this before preparation so later selections cannot change
+ * which workflow owns the turn.
+ */
+export type TurnOrigin = { tabPath: string } | null
 
 type PromptEditState =
   | { phase: 'idle' }
@@ -47,12 +64,21 @@ export interface AgentSessionDeps {
   rest: AgentRestClient
   events: AgentEventSource
   workflow?: {
-    current(): WorkflowTurnContext | undefined
+    // origin, when given, pins resolution to the tab that initiated the send
+    // instead of the target selected when this is called - it is read
+    // after prepare() so cloud ids it resolves are fresh, but must still
+    // describe the pre-await originating tab, not a later switch. See
+    // TurnOrigin for why "no origin tab" is a value rather than an omission.
+    current(origin?: TurnOrigin): WorkflowTurnContext | undefined
     adopted(workflowId: string, sent: WorkflowTurnContext | undefined): void
+    restored?(
+      workflowId: string | undefined,
+      isCurrent: () => boolean
+    ): Promise<void> | void
     prepare?(): Promise<void>
-    tabs?(): OpenTabsSnapshot | undefined
+    tabs?(origin?: TurnOrigin): OpenTabsSnapshot | undefined
     activeTab?(data: AgentActiveTabData): void
-    draft?(): DraftSnapshot | undefined
+    draft?(origin?: TurnOrigin): DraftSnapshot | undefined
   }
 }
 
@@ -68,10 +94,17 @@ let sessionGeneration = 0
  */
 let rememberedWorkflowId: string | null = null
 
+function parseAdmissionError(error: unknown) {
+  if (!(error instanceof AgentApiError)) return undefined
+  const parsed = zAgentAdmissionError.safeParse(error.body)
+  return parsed.success ? parsed.data.error : undefined
+}
+
 export function useAgentSession(deps: AgentSessionDeps) {
   const { rest, events, workflow } = deps
 
   const conversationStore = useAgentConversationStore()
+  const bindingStore = useAgentWorkflowTabBindingStore()
   /**
    * The workflow the session is bound to (set on turn ack or an active-tab
    * switch, cleared by newChat/loadThread) - the CRDT follower's subscribe
@@ -91,9 +124,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     answeringAskIds.value = next
   }
 
-  let localErrorCount = 0
   function nextLocalErrorId(): TurnId {
-    return `local-error-${++localErrorCount}` as TurnId
+    return toTurnId(`local-error-${createUuidv4()}`)
   }
 
   let unsubscribe: (() => void) | null = null
@@ -159,6 +191,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       const history = await rest.getMessages(threadId)
       if (conversationStore.threadId !== threadId || !isCurrent()) return false
       conversationStore.hydrate(history)
+      await workflow?.restored?.(conversationStore.latestWorkflowId, isCurrent)
+      if (conversationStore.threadId !== threadId || !isCurrent()) return false
       return true
     } catch (error) {
       if (!isCurrent()) return false
@@ -189,7 +223,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
   async function sendMessage(
     text: string,
     attachments?: SentAttachment[],
-    tags?: SentTag[]
+    tags?: SentTag[],
+    workflowReferences?: WorkflowReference[]
   ): Promise<boolean> {
     if (sending.value) {
       conversationStore.recordFailedSend(
@@ -201,40 +236,83 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
     promptEditState.value = { phase: 'idle' }
     sending.value = true
-    stopRequestedWhileSending = false
-    if (workflow?.prepare)
-      await Promise.race([
-        workflow.prepare().catch(() => undefined),
-        new Promise<void>((resolve) => setTimeout(resolve, PREPARE_TIMEOUT_MS))
-      ])
-    const wfContext = workflow?.current()
-    const tabs = workflow?.tabs?.()
-    async function postTurn(threadId: string) {
-      const draft = workflow?.draft?.()
-      const shouldSendDraft =
-        draft !== undefined && (threadId === 'new' || wfContext !== undefined)
-      const input = {
-        content: text,
-        tabs,
-        selection:
-          tags !== undefined && tags.length > 0
-            ? { node_ids: tags.map((tag) => tag.id) }
-            : undefined,
-        attachments: attachments?.map((attachment) => attachment.ref),
-        ...(shouldSendDraft ? { draft } : {})
-      }
-      return rest.postMessage(
-        threadId,
-        wfContext ? { ...input, workflowId: wfContext.id } : input
-      )
-    }
+    stopRequestedWhileSending.value = false
+    const generation = loadGeneration
+    const threadAtSend = conversationStore.threadId ?? 'new'
+    const originContext = workflow?.current()
+    const origin: TurnOrigin =
+      originContext === undefined ? null : { tabPath: originContext.tabPath }
     try {
-      const ack = await postTurn(conversationStore.threadId ?? 'new')
+      if (workflow?.prepare)
+        await Promise.race([
+          workflow.prepare().catch(() => undefined),
+          new Promise<void>((resolve) =>
+            setTimeout(resolve, PREPARE_TIMEOUT_MS)
+          )
+        ])
+      if (generation !== loadGeneration) return false
+      const wfContext = workflow?.current(origin)
+      if (
+        originContext?.id !== undefined &&
+        wfContext?.id !== originContext.id
+      ) {
+        conversationStore.recordFailedSend(
+          nextLocalErrorId(),
+          text,
+          i18n.global.t('agent.targetNavigationUnavailable')
+        )
+        return false
+      }
+      const tabs = workflow?.tabs?.(origin)
+      async function postTurn(threadId: string) {
+        const draft = workflow?.draft?.(origin)
+        // An unsaved tab now yields a context carrying only its tabPath, so a
+        // merely-defined wfContext no longer implies the tab has a workflow the
+        // thread could own. An existing thread takes a draft only from a tab
+        // with a real workflow id; otherwise an unbound scratch tab would leak
+        // its canvas into someone else's thread.
+        const shouldSendDraft =
+          draft !== undefined &&
+          (threadId === 'new' || wfContext?.id !== undefined)
+        const input = {
+          content: serializeWorkflowReferences(text, workflowReferences ?? []),
+          tabs,
+          workflowReferences: (workflowReferences ?? [])
+            .filter((reference) => reference.id !== wfContext?.id)
+            .map((reference) => ({
+              workflow_id: reference.id,
+              name: reference.name
+            })),
+          selection:
+            tags !== undefined && tags.length > 0
+              ? { node_ids: tags.map((tag) => tag.id) }
+              : undefined,
+          attachments: attachments?.map((attachment) => attachment.ref),
+          ...(shouldSendDraft ? { draft } : {})
+        }
+        return rest.postMessage(
+          threadId,
+          wfContext?.id !== undefined
+            ? { ...input, workflowId: wfContext.id }
+            : input
+        )
+      }
+      const ack = await postTurn(threadAtSend)
+      if (generation !== loadGeneration) return false
       conversationStore.setThreadId(ack.thread_id)
       localStorage.setItem(THREAD_STORAGE_KEY, ack.thread_id)
       if (ack.workflow_id !== undefined) {
+        // The ack does not say whether the server minted a workflow or echoed
+        // the thread's existing one. The persisted binding store preserves
+        // ownership across reloads; the session binding covers a bind that
+        // lands while this request is in flight.
+        const boundAtAck = boundWorkflowId.value
         bindWorkflow(ack.workflow_id)
-        workflow?.adopted(ack.workflow_id, wfContext)
+        const shouldAdopt =
+          wfContext?.id !== undefined ||
+          (ack.workflow_id !== boundAtAck &&
+            bindingStore.tabPathFor(ack.workflow_id) === undefined)
+        if (shouldAdopt) workflow?.adopted(ack.workflow_id, wfContext)
       }
       const turnId = ack.message_id as TurnId
       conversationStore.recordUser(
@@ -245,15 +323,30 @@ export function useAgentSession(deps: AgentSessionDeps) {
           previewUrl,
           ref
         })),
-        tags?.map((tag) => `${tag.title} #${tag.id}`)
+        tags?.map((tag) => `${tag.title} #${tag.id}`),
+        workflowReferences
       )
       conversationStore.startTurn(turnId)
-      if (stopRequestedWhileSending) {
-        stopRequestedWhileSending = false
+      if (wasStopRequestedWhileSending()) {
+        stopRequestedWhileSending.value = false
         void stopTurn()
       }
       return true
     } catch (error) {
+      if (generation !== loadGeneration) return false
+      const admission = parseAdmissionError(error)
+      if (admission?.reason === 'no_funds') {
+        conversationStore.recordPaywall(nextLocalErrorId(), text)
+        return false
+      }
+      if (admission !== undefined) {
+        conversationStore.recordFailedSend(
+          nextLocalErrorId(),
+          text,
+          admission.message
+        )
+        return false
+      }
       const message =
         error instanceof AgentApiError
           ? error.message
@@ -271,14 +364,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
-  let stopRequestedWhileSending = false
+  const stopRequestedWhileSending = ref(false)
+  const wasStopRequestedWhileSending = () => stopRequestedWhileSending.value
 
   async function stopTurn(): Promise<void> {
     const threadId = conversationStore.threadId
     const turnId = conversationStore.activeTurnId
     if (threadId === null || turnId === null) {
       // The POST has not acked yet; remember the intent and cancel on ack.
-      if (sending.value) stopRequestedWhileSending = true
+      if (sending.value) stopRequestedWhileSending.value = true
       return
     }
     promptEditState.value = { phase: 'stopping', turnId }
@@ -404,8 +498,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
           event.type === 'agent_message_done' &&
           promptEditState.value.phase === 'stopping' &&
           event.data.message_id === promptEditState.value.turnId &&
-          (event.data.thread_id === undefined ||
-            event.data.thread_id === conversationStore.threadId)
+          event.data.thread_id === conversationStore.threadId
         )
           promptEditState.value = {
             phase: 'ready',

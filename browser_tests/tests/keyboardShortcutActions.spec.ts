@@ -5,11 +5,6 @@ import {
 
 test.describe('Keyboard shortcut actions', { tag: '@keyboard' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.settings.setSetting(
-      'Comfy.Workflow.WorkflowTabsPosition',
-      'Topbar'
-    )
     // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup()
   })
@@ -91,10 +86,8 @@ test.describe('Keyboard shortcut actions', { tag: '@keyboard' }, () => {
     await comfyPage.page.keyboard.press('ControlOrMeta+a')
 
     const totalNodes = await comfyPage.nodeOps.getNodeCount()
-    const selectedNodes = await comfyPage.page.evaluate(() =>
-      window.app!.canvas?.selected_nodes
-        ? Object.keys(window.app!.canvas.selected_nodes).length
-        : 0
+    const selectedNodes = await comfyPage.page.evaluate(
+      () => Object.keys(window.app!.canvas.selected_nodes).length
     )
 
     expect(selectedNodes).toBe(totalNodes)

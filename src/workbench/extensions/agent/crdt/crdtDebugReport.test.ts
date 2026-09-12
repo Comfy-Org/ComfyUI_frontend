@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useExtensionStore } from '@/stores/extensionStore'
 
 const { getSystemStats, getLogs, getSettings } = vi.hoisted(() => ({
   getSystemStats: vi.fn(),
@@ -10,7 +11,7 @@ const { reportError } = vi.hoisted(() => ({
   reportError: vi.fn()
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getSystemStats: () => getSystemStats(),
     getLogs: () => getLogs(),
@@ -19,11 +20,11 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-vi.mock('@/stores/extensionStore', () => ({
-  useExtensionStore: () => ({ extensions: [{ name: 'Comfy.TestExtension' }] })
-}))
+beforeEach(() => {
+  useExtensionStore().registerExtension({ name: 'Comfy.TestExtension' })
+})
 
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError
 }))
 

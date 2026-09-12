@@ -104,7 +104,7 @@ const zExecutionInterruptedWsMessage = zExecutionWsMessageBase.extend({
   executed: z.array(zNodeId)
 })
 const zExecutionErrorWsMessage = zExecutionWsMessageBase.extend({
-  node_id: zNodeId,
+  node_id: zNodeId.nullish(),
   node_type: zNodeType,
   executed: z.array(zNodeId),
   exception_message: z.string(),
@@ -429,7 +429,6 @@ const zSettings = z.object({
   'Comfy.Canvas.MouseWheelScroll': z.string(),
   'Comfy.VueNodes.Enabled': z.boolean(),
   'Comfy.AppBuilder.VueNodeSwitchDismissed': z.boolean(),
-  'Comfy.Assets.UseAssetAPI': z.boolean(),
   'Comfy.ModelLibrary.UseAssetBrowser': z.boolean(),
   'Comfy.Queue.QPOV2': z.boolean(),
   'Comfy.Queue.ShowRunProgressBar': z.boolean(),

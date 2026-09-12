@@ -38,6 +38,7 @@ export type DevEventKind =
   | 'stale_probe'
   | 'doc_gap'
   | 'doc_stale'
+  | 'frame_send_failed'
   | 'agent_node_adapters_materialized'
 
 export interface DevEvent {

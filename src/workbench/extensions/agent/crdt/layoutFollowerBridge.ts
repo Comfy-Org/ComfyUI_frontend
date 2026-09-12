@@ -1,3 +1,5 @@
+import { reportError } from '@/platform/telemetry/reportError'
+
 import type {
   DocFrameClient,
   DocOp,
@@ -5,6 +7,7 @@ import type {
   DocSubscribed,
   DocUpdate
 } from './docFrameClient'
+import { wireLog } from './crdtLog'
 import { FollowerDoc } from './followerDoc'
 import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
 
@@ -19,7 +22,18 @@ function trySend(send: () => boolean): boolean {
   try {
     return send()
   } catch (error) {
-    console.warn('[agent-crdt] outbound doc frame dropped', error)
+    reportError(error, {
+      errorType: 'failure_sending_agent_doc_frame',
+      logToConsole: false,
+      tags: {
+        failure_kind: 'caught_unexpected',
+        feature_area: 'agent',
+        operation: 'sync',
+        outcome: 'recovered'
+      },
+      level: 'error'
+    })
+    wireLog.warn('frame_send_failed', 'outbound doc frame dropped', error)
     return false
   }
 }
@@ -241,6 +255,11 @@ export class LayoutFollowerBridge extends EventTarget {
       })
     )
 
+    // The first incompatible frame is already in the Y.Doc. Same-lineage
+    // updates cannot remove those CRDT bytes, so keep the read gate latched
+    // until an explicit doc_reset replaces the lineage.
+    if (this.schemaError !== null) return
+
     // A stale/duplicate frame cannot advance the replica. Ignoring it also
     // prevents a replayed Yjs frame from spuriously re-running ECS effects.
     // The one exception is the subscribe's own catch-up (seq == ackSeq) when
@@ -308,19 +327,18 @@ export class LayoutFollowerBridge extends EventTarget {
       )
       return
     }
-    if (this.lastSeq === null || update.seq > this.lastSeq)
-      this.lastSeq = update.seq
-    if (isCatchUp) this.catchUpPending = false
-
-    // KA-11 read-time gate. The merge itself is unconditional — Yjs bytes are
-    // integrated or they are not — but nothing downstream may READ a doc whose
-    // declared schema this build was not written against. Failing closed here,
-    // before the frame is re-dispatched, is what keeps a v2 doc from being
-    // half-projected onto the canvas by a v1 reader.
+    // KA-11 read-time gate. The frame must merge before its schema can be
+    // checked, but nothing downstream may READ a doc whose declared schema
+    // this build was not written against. Failing closed here, before the
+    // frame is re-dispatched, is what keeps a v2 doc from being half-projected
+    // onto the canvas by a v1 reader.
     try {
       assertReadableSchema(this.follower.doc)
     } catch (error) {
       if (!(error instanceof FollowerSchemaError)) throw error
+      if (this.lastSeq === null || update.seq > this.lastSeq)
+        this.lastSeq = update.seq
+      if (isCatchUp) this.catchUpPending = false
       this.schemaError = error
       this.dispatchEvent(
         new CustomEvent('schema_error', {
@@ -330,7 +348,14 @@ export class LayoutFollowerBridge extends EventTarget {
       return
     }
 
-    this.dispatchEvent(new CustomEvent('doc_update', { detail: update }))
+    const accepted = this.dispatchEvent(
+      new CustomEvent('doc_update', { detail: update, cancelable: true })
+    )
+    if (!accepted) return
+
+    if (this.lastSeq === null || update.seq > this.lastSeq)
+      this.lastSeq = update.seq
+    if (isCatchUp) this.catchUpPending = false
   }
 
   /**
