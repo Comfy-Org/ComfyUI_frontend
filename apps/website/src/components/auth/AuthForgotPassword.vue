@@ -48,6 +48,7 @@ const loadWorkshopFirebase = () => import('../../config/workshop-firebase')
 
 type ResetState = 'idle' | 'sending' | 'sent' | 'error'
 const state = ref<ResetState>('idle')
+const signInHref = ref('/login/')
 let returnTimer: ReturnType<typeof setTimeout> | undefined
 let flagTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -128,6 +129,7 @@ function reportSent() {
 }
 
 onMounted(() => {
+  signInHref.value = signInDestination()
   if (flagSettled.value) return
   flagTimer = setTimeout(() => {
     flagTimedOut.value = !flagSettled.value
@@ -211,7 +213,7 @@ onBeforeUnmount(() => {
         </span>
       </button>
 
-      <a href="/login/" :class="AUTH_LINK_BUTTON_CLASS" @click="goToSignIn">
+      <a :href="signInHref" :class="AUTH_LINK_BUTTON_CLASS" @click="goToSignIn">
         {{ t('auth.forgot.backToSignIn', locale) }}
       </a>
     </form>
