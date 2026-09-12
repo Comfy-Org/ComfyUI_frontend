@@ -176,11 +176,13 @@ test.describe(
           })
           widget.draw(context, node, 512, 0, 20)
           const pixels = context.getImageData(0, 0, 512, 512).data
+          const isRed = (red: number, blue: number) => red > 200 && blue < 50
+          const isBlue = (red: number, blue: number) => red < 50 && blue > 200
           let red = 0
           let blue = 0
           for (let index = 0; index < pixels.length; index += 4) {
-            if (pixels[index] > 200 && pixels[index + 2] < 50) red++
-            if (pixels[index] < 50 && pixels[index + 2] > 200) blue++
+            red += Number(isRed(pixels[index], pixels[index + 2]))
+            blue += Number(isBlue(pixels[index], pixels[index + 2]))
           }
           return { blue, red }
         }, ids.comparerId)
