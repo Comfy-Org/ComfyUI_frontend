@@ -228,6 +228,7 @@ test.describe(
             await expect
               .poll(() => comfyPage.workflow.getUndoQueueSize())
               .toBe(snapshots.length)
+            await comfyPage.nextFrame()
             snapshots.push(await getSnapshot())
           }
 
