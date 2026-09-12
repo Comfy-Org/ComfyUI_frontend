@@ -19,8 +19,9 @@ const MODEL_LOAD_TIMEOUT_MS = 15_000
 function redactUrls(text: string): string {
   return text
     .replace(
-      /https?:\/\/(?:[^\s"']*@)?[^\s"']+/g,
-      (match) => match.replace(/^(https?:\/\/)[^@\s"']*@/, '$1').split('?')[0]
+      /(?:https?:)?\/\/(?:[^\s"']*@)?[^\s"']+/g,
+      (match) =>
+        match.replace(/^((?:https?:)?\/\/)[^@\s"']*@/, '$1').split('?')[0]
     )
     .replace(/(\/[^\s"']*)\?[^\s"']*/g, '$1')
 }

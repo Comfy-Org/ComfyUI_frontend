@@ -136,6 +136,30 @@ describe('generateModelThumbnail', () => {
     expect(instance.remove).toHaveBeenCalledTimes(1)
   })
 
+  it('redacts credentials from protocol-relative URLs before reporting', async () => {
+    const instance = mockInstance({
+      loadModel: vi
+        .fn()
+        .mockRejectedValue(
+          new Error(
+            'Could not load //user:secret@example.com/model.glb?token=private'
+          )
+        )
+    })
+    createLoad3d.mockReturnValue(instance)
+
+    await generateModelThumbnail(
+      '//user:secret@example.com/model.glb?token=private',
+      'model.glb'
+    )
+
+    expect(reportError.mock.calls[0][0]).toMatchObject({
+      message: 'Could not load //example.com/model.glb'
+    })
+    expect(reportError.mock.calls[0][0].stack).not.toContain('secret')
+    expect(reportError.mock.calls[0][0].stack).not.toContain('private')
+  })
+
   it('runs generations one at a time', async () => {
     let releaseFirst!: () => void
     const first = mockInstance({
