@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -196,6 +196,33 @@ describe('CrdtDevPanel', () => {
     const log = screen.getByTestId('crdt-dev-panel-log').textContent
     expect(log).toContain('doc_update')
     expect(log).not.toContain('ws_out')
+  })
+
+  it('lists the materialization event in the kind filter and filters by it', async () => {
+    const user = userEvent.setup()
+    recordDevEvent('doc_update', { seq: 1 }, { scope: 'doc' })
+    recordDevEvent(
+      'agent_node_adapters_materialized',
+      { nodeCount: 2 },
+      { scope: 'doc' }
+    )
+    renderPanel()
+
+    await user.click(chip()!)
+    await user.click(screen.getByTestId('crdt-dev-panel-tab-log'))
+
+    const kindFilter = screen.getByTestId('crdt-dev-panel-filter')
+    expect(
+      within(kindFilter)
+        .getAllByRole<HTMLOptionElement>('option')
+        .map((option) => option.value)
+    ).toContain('agent_node_adapters_materialized')
+
+    await user.selectOptions(kindFilter, 'agent_node_adapters_materialized')
+
+    const log = screen.getByTestId('crdt-dev-panel-log').textContent
+    expect(log).toContain('agent_node_adapters_materialized')
+    expect(log).not.toContain('doc_update')
   })
 
   it('shows the sensitive-source opt-ins as off, and lets them be turned on', async () => {
