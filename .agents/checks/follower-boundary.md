@@ -10,6 +10,16 @@ Check changes under `src/workbench/extensions/agent/**` (and anything importing
 [ADR-CRDT-FOLLOWER-0025](../../docs/adr/CRDT-FOLLOWER-0025-in-app-agent-crdt-follower-and-distribution-resolved-boundaries.md) and the CRDT
 layout split in [ADR-CRDT-LAYOUT-0003](../../docs/adr/CRDT-LAYOUT-0003-crdt-layout-intent-and-local-measurement.md).
 
+**Mechanical subset now machine-checked (FE-1968):** the outbound `update_b64` construction
+check, the `op_id`-regeneration-on-retry check, the second-applier-import check, the
+branch-pinned-catalog-citation check, the scattered-distribution-check check, and the
+hardcoded-endpoint check below no longer depend on this LLM pass — run
+`pnpm follower-invariants:check` (`scripts/check-follower-invariants.ts`, tested by
+`scripts/check-follower-invariants.test.ts`). Treat a failure there as the same `issue:`
+severity as a manual finding of the same kind; this review pass should still flag the
+semantic/data-flow judgment calls the script cannot make (e.g. "is this really the shared
+doc", "does this new path count as a second writer").
+
 These are load-bearing: a low-context change that violates one can silently foreclose the
 future P2P / offline / multi-writer / multi-agent story, or ship a follower that renders in
 one distribution and fails as a product in another. Flag violations as `issue:` (blocking),
