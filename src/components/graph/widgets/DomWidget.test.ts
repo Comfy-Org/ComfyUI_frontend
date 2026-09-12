@@ -12,6 +12,11 @@ import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 import DomWidget from './DomWidget.vue'
+import { reportDomWidgetMountFailure } from './domWidgetMountReporting'
+
+vi.mock(import('./domWidgetMountReporting'), () => ({
+  reportDomWidgetMountFailure: vi.fn()
+}))
 
 beforeEach(() => {
   useCanvasStore().canvas = fromPartial({
@@ -266,6 +271,82 @@ describe('DomWidget position update matrix', () => {
 describe('native DOM widget interaction lifecycle', () => {
   afterEach(() => {
     useDomWidgetStore().clear()
+  })
+
+  function renderWithUnmountableElement(widgetState: DomWidgetState) {
+    const input = document.createElement('input')
+    Object.assign(widgetState.widget, { element: input })
+    vi.spyOn(HTMLElement.prototype, 'appendChild').mockImplementation(function (
+      this: HTMLElement,
+      child: Node
+    ) {
+      if (child === input) throw new Error('mount failed')
+      return Node.prototype.appendChild.call(this, child)
+    })
+
+    const escapedErrors: unknown[] = []
+    const rendered = render(DomWidget, {
+      props: { widgetState },
+      global: { config: { errorHandler: (error) => escapedErrors.push(error) } }
+    })
+
+    return { rendered, escapedErrors }
+  }
+
+  it('reports a mount failure on the initial mount', async () => {
+    const widgetState = createWidgetState(false)
+    const { rendered, escapedErrors } =
+      renderWithUnmountableElement(widgetState)
+    await nextTick()
+    await nextTick()
+
+    expect(reportDomWidgetMountFailure).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ message: 'mount failed' }),
+      {
+        nodeId: widgetState.widget.node.id,
+        nodeType: widgetState.widget.node.type,
+        widgetName: 'test_widget'
+      }
+    )
+    expect(escapedErrors).toEqual([])
+
+    rendered.unmount()
+  })
+
+  it('reports a mount failure when the widget becomes visible', async () => {
+    const widgetState = createWidgetState(false)
+    widgetState.visible = false
+    const { rendered, escapedErrors } =
+      renderWithUnmountableElement(widgetState)
+    await nextTick()
+    await nextTick()
+    vi.mocked(reportDomWidgetMountFailure).mockClear()
+
+    widgetState.visible = true
+    await nextTick()
+
+    expect(reportDomWidgetMountFailure).toHaveBeenCalledOnce()
+    expect(escapedErrors).toEqual([])
+
+    rendered.unmount()
+  })
+
+  it('reports a mount failure when linear mode is left', async () => {
+    Object.assign(useCanvasStore(), { linearMode: true })
+    const widgetState = createWidgetState(false)
+    const { rendered, escapedErrors } =
+      renderWithUnmountableElement(widgetState)
+    await nextTick()
+    await nextTick()
+    vi.mocked(reportDomWidgetMountFailure).mockClear()
+
+    Object.assign(useCanvasStore(), { linearMode: false })
+    await nextTick()
+
+    expect(reportDomWidgetMountFailure).toHaveBeenCalledOnce()
+    expect(escapedErrors).toEqual([])
+
+    rendered.unmount()
   })
 
   it('preserves selection and outside-click focus behavior, then removes listeners', async () => {
