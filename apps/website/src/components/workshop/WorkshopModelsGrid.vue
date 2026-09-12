@@ -8,7 +8,7 @@ import {
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { groupModels } from '../../config/model-family'
@@ -31,6 +31,8 @@ import {
 } from '../../config/models-catalogue'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import { rememberShelf } from '../../lib/workshop/shelf-memory'
+import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
 import type { FacetMenuOption } from './WorkshopFilterMenu.vue'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
@@ -62,20 +64,20 @@ onMounted(() => {
 
 // A row title clicked far down the page opens a much shorter screen, which
 // would otherwise leave the viewport parked on the footer.
-watch(useCase, () => void nextTick(() => window.scrollTo({ top: 0 })))
+watch(useCase, (shelf) => {
+  rememberShelf(shelf)
+  void nextTick(() => window.scrollTo({ top: 0 }))
+})
 
-const useCaseLabelKey: Record<UseCase | 'all' | 'other', TranslationKey> = {
-  all: 'workshop.useCase.all',
-  other: 'workshop.sections.otherFormats',
-  'generate-images': 'workshop.useCase.generateImages',
-  'edit-images': 'workshop.useCase.editImages',
-  'generate-videos': 'workshop.useCase.generateVideos',
-  'animate-images': 'workshop.useCase.animateImages',
-  'edit-videos': 'workshop.useCase.editVideos',
-  '3d': 'workshop.useCase.3d',
-  audio: 'workshop.useCase.audio',
-  text: 'workshop.useCase.text'
-}
+// Typing swaps the rows for a grid and clearing swaps them back, which moves
+// everything under the search field. Following the field keeps it in the same
+// place both ways, instead of the page landing wherever the new height falls.
+const toolbar = useTemplateRef<HTMLElement>('toolbar')
+watch(
+  () => query.value.trim() !== '',
+  () => void nextTick(() => toolbar.value?.scrollIntoView({ block: 'start' }))
+)
+
 const sortLabelKey: Record<SortOrder, TranslationKey> = {
   popular: 'workshop.sort.popular',
   name: 'workshop.sort.name',
@@ -227,7 +229,8 @@ const menuItemClass =
       </button>
 
       <div
-        class="bg-page sticky top-20 z-30 mb-8 flex flex-wrap items-center justify-end gap-3 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26"
+        ref="toolbar"
+        class="bg-page sticky top-20 z-30 mb-8 flex scroll-mt-20 flex-wrap items-center justify-end gap-3 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26 lg:scroll-mt-26"
       >
         <h1
           v-if="inSection"

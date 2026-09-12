@@ -117,7 +117,9 @@ const shown = computed(() => selectedAttachment.value ?? primary.value)
 // Only a result the visitor produced opens full screen; the example is a
 // sample of what the model makes, not their picture to inspect.
 const expandable = computed(
-  () => state.status === 'succeeded' && shown.value?.kind === 'image'
+  () =>
+    state.status === 'succeeded' &&
+    (shown.value?.kind === 'image' || shown.value?.kind === 'video')
 )
 const outputs = computed(() =>
   shown.value
@@ -420,7 +422,7 @@ const earlierClass = (active: boolean) =>
           @click="selected = index"
         >
           <video
-            v-if="shown.kind === 'video'"
+            v-if="shown?.kind === 'video'"
             :src="url"
             class="size-full object-cover"
             muted
@@ -588,7 +590,18 @@ const earlierClass = (active: boolean) =>
           >
             <X class="size-4" aria-hidden="true" />
           </button>
+          <video
+            v-if="shown?.kind === 'video'"
+            :src="currentUrl"
+            data-testid="output-expanded-video"
+            class="max-h-full max-w-full rounded-2xl object-contain"
+            controls
+            autoplay
+            loop
+            playsinline
+          />
           <img
+            v-else
             :src="currentUrl"
             :alt="t('workshop.output.title', locale)"
             class="max-h-full max-w-full rounded-2xl object-contain"

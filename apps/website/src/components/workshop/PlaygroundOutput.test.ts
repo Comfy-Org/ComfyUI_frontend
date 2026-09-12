@@ -59,8 +59,8 @@ describe('PlaygroundOutput', () => {
   })
 
   it.for([
-    { locale: 'en' as const, label: 'Buy credits' },
-    { locale: 'zh-CN' as const, label: '购买积分' }
+    { locale: 'en' as const, label: 'Add credits' },
+    { locale: 'zh-CN' as const, label: '添加积分' }
   ])(
     'takes an insufficient-credit failure to billing in $locale',
     ({ locale, label }) => {

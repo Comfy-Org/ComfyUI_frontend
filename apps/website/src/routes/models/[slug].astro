@@ -2,6 +2,7 @@
 import { ArrowRight } from '@lucide/vue'
 import type { GetStaticPaths } from 'astro'
 import BaseLayout from '../../layouts/BaseLayout.astro'
+import CatalogueBackLink from '../../components/workshop/CatalogueBackLink.vue'
 import ModelDetail from '../../components/workshop/ModelDetail.vue'
 import ModelStatus from '../../components/workshop/ModelStatus.vue'
 import ModelSupport from '../../components/workshop/ModelSupport.vue'
@@ -34,23 +35,7 @@ const pillClass =
   noindex
 >
   <div class="mx-auto max-w-10xl px-6 py-10 lg:px-8 lg:py-14">
-    <nav aria-label="Breadcrumb" class="mb-8 text-xs text-primary-warm-gray sm:px-8 lg:px-10">
-      <ol class="flex flex-wrap items-center gap-2">
-        <li>
-          <a href={routes.home} class="hover:text-primary-warm-white">
-            {t('breadcrumb.home')}
-          </a>
-        </li>
-        <li aria-hidden="true">›</li>
-        <li>
-          <a href={`${routes.workshop}?tab=models`} class="hover:text-primary-warm-white">
-            {t('workshop.title')}
-          </a>
-        </li>
-        <li aria-hidden="true">›</li>
-        <li class="text-primary-warm-white" aria-current="page">{model.name}</li>
-      </ol>
-    </nav>
+    <CatalogueBackLink client:load class="mb-8 sm:px-8 lg:px-10" />
     <header class="mb-12 sm:mx-8 lg:mx-10" data-testid="model-hero">
       <div class="flex flex-col gap-6 pr-8 lg:flex-row lg:items-end lg:justify-between lg:pr-10">
         <div class="flex max-w-2xl flex-col gap-4">

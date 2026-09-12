@@ -137,7 +137,7 @@ describe('HeaderAccount', () => {
       await userEvent
         .setup()
         .click(screen.getByRole('button', { name: /account/i }))
-      const buy = screen.getByRole('menuitem', { name: 'Buy credits' })
+      const buy = screen.getByRole('menuitem', { name: 'Add credits' })
       expect(buy.getAttribute('href')).toBe(
         `${WORKSHOP_CLOUD_BASE_URL}/?settings=plan-credits`
       )
