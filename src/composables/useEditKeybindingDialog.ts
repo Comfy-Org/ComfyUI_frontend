@@ -4,7 +4,7 @@ import EditKeybindingContent from '@/components/dialog/content/setting/keybindin
 import EditKeybindingFooter from '@/components/dialog/content/setting/keybinding/EditKeybindingFooter.vue'
 import EditKeybindingHeader from '@/components/dialog/content/setting/keybinding/EditKeybindingHeader.vue'
 import type { KeyComboImpl } from '@/platform/keybindings/keyCombo'
-import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
+import { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useDialogService } from '@/services/dialogService'
 
@@ -14,8 +14,10 @@ export interface EditKeybindingDialogState {
   commandId: string
   newCombo: KeyComboImpl | null
   currentCombo: KeyComboImpl | null
-  mode: 'edit' | 'add'
   existingBinding: KeybindingImpl | null
+  targetElementId?: string
+  dialogKey?: string
+  when?: string
 }
 
 export function useEditKeybindingDialog() {
@@ -26,21 +28,39 @@ export function useEditKeybindingDialog() {
     commandId: string
     commandLabel: string
     currentCombo: KeyComboImpl | null
-    mode?: 'edit' | 'add'
     existingBinding?: KeybindingImpl | null
   }) {
+    const scopeTemplate =
+      options.existingBinding ??
+      keybindingStore.getDefaultKeybindingsByCommandId(options.commandId)[0] ??
+      keybindingStore.getKeybindingByCommandId(options.commandId)
     const dialogState = reactive<EditKeybindingDialogState>({
       commandId: options.commandId,
       newCombo: options.currentCombo,
       currentCombo: options.currentCombo,
-      mode: options.mode ?? 'edit',
-      existingBinding: options.existingBinding ?? null
+      existingBinding: options.existingBinding ?? null,
+      targetElementId: scopeTemplate?.targetElementId,
+      dialogKey: scopeTemplate?.dialogKey,
+      when: scopeTemplate?.when
     })
 
+    const newKeybinding = computed(() =>
+      dialogState.newCombo
+        ? new KeybindingImpl({
+            commandId: dialogState.commandId,
+            combo: dialogState.newCombo,
+            targetElementId: dialogState.targetElementId,
+            dialogKey: dialogState.dialogKey,
+            when: dialogState.when
+          })
+        : null
+    )
+
     const existingKeybindingOnCombo = computed(() => {
-      if (!dialogState.newCombo) return null
-      if (dialogState.currentCombo?.equals(dialogState.newCombo)) return null
-      return keybindingStore.getKeybinding(dialogState.newCombo)
+      const candidate = newKeybinding.value
+      if (!candidate) return null
+      if (dialogState.currentCombo?.equals(candidate.combo)) return null
+      return keybindingStore.findConflictingKeybinding(candidate) ?? null
     })
 
     function onUpdateCombo(combo: KeyComboImpl) {
@@ -59,7 +79,7 @@ export function useEditKeybindingDialog() {
         existingKeybindingOnCombo
       },
       headerProps: {},
-      footerProps: { dialogState, existingKeybindingOnCombo }
+      footerProps: { dialogState, newKeybinding, existingKeybindingOnCombo }
     })
   }
 
