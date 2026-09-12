@@ -3,6 +3,7 @@ import type {
   ISerialisableNodeOutput,
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
+import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
@@ -362,14 +363,11 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             return `node id ${key} belongs to graph ${registered.graphId}`
           }
           const incumbent = nodes.get(key)
-          // A reconcile payload without a title leaves the title unspecified;
-          // it does not rename the node to its type. The incumbent's title
-          // may have come from the node class (`configure()` falls back to
-          // the constructor's static title) rather than from any payload.
           if (
             mutation.kind === 'reconcileNode' &&
             incumbent &&
-            !hasTitle(mutation.payload)
+            !hasTitle(mutation.payload) &&
+            isUuidShapedSubgraphId(mutation.payload.type)
           ) {
             node.state.title = incumbent.title
             if (node.state.lastSerialization) {
