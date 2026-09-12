@@ -15,19 +15,22 @@ const NODE_ORDER = 'node_order'
 const LINK_ORDER = 'link_order'
 
 /**
- * Per-node bookkeeping the op layer's applier stamps on every node record
- * (`NODE_INCARNATION_KEY`, not exported by the package). Its own `project()`
- * drops it; so does this reader.
+ * Private bookkeeping is never part of an exported definition. The prefix
+ * filter also excludes `__proto__`, avoiding prototype mutation when records
+ * are assembled through indexed assignment.
  */
-const NODE_INCARNATION = '__incarnation'
+function isPublicKey(key: string): boolean {
+  return !key.startsWith('__')
+}
 
-/**
- * Own-key filter shared by both record readers. Assigning through
- * `record['__proto__']` swaps the record's prototype, so a document carrying
- * that key would hand LiteGraph an object whose inherited keys it never wrote.
- */
-function isReadableKey(key: string): boolean {
-  return key !== '__proto__'
+function stripPrivateKeys(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(stripPrivateKeys)
+  if (typeof value !== 'object' || value === null) return value
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([key]) => isPublicKey(key))
+      .map(([key, nested]) => [key, stripPrivateKeys(nested)])
+  )
 }
 
 /**
@@ -39,9 +42,9 @@ function isReadableKey(key: string): boolean {
  */
 function plain(value: unknown): unknown {
   if (value instanceof Y.AbstractType || value instanceof Y.Doc) {
-    return value.toJSON()
+    return stripPrivateKeys(value.toJSON())
   }
-  return structuredClone(value)
+  return stripPrivateKeys(structuredClone(value))
 }
 
 /**
@@ -69,11 +72,12 @@ function readInteriorNode(source: unknown): Record<string, unknown> | null {
   }
   const node: Record<string, unknown> = {}
   source.forEach((value, key) => {
-    if (key === NODE_INCARNATION || !isReadableKey(key)) return
-    if (key === 'widgets' && value instanceof Y.Map) {
-      node.widgets_values_named = value.toJSON()
-    } else if (key === OPAQUE_WIDGETS_KEY) {
+    if (key === OPAQUE_WIDGETS_KEY) {
       node.widgets_values = plain(value)
+    } else if (!isPublicKey(key)) {
+      return
+    } else if (key === 'widgets' && value instanceof Y.Map) {
+      node.widgets_values_named = plain(value)
     } else {
       node[key] = plain(value)
     }
@@ -84,7 +88,7 @@ function readInteriorNode(source: unknown): Record<string, unknown> | null {
 function readDefinition(source: Y.Map<unknown>): ExportedSubgraph {
   const definition: Record<string, unknown> = {}
   source.forEach((value, key) => {
-    if (key === NODE_ORDER || key === LINK_ORDER || !isReadableKey(key)) return
+    if (key === NODE_ORDER || key === LINK_ORDER || !isPublicKey(key)) return
     if (key === 'nodes' && value instanceof Y.Map) {
       definition.nodes = orderedKeys(source.get(NODE_ORDER), value).flatMap(
         (id) => {
