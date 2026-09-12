@@ -154,6 +154,41 @@ async function getPersistenceSnapshot(comfyPage: ComfyPage) {
   }
 }
 
+async function enrichPersistenceWorkflow(comfyPage: ComfyPage) {
+  const workflow = await comfyPage.workflow.getExportedWorkflow()
+  const sourceNodes = workflow.nodes.slice(0, 3)
+  const extraNodes = sourceNodes.map((node, index) => ({
+    ...structuredClone(node),
+    id: 10 + index,
+    pos: [node.pos[0], node.pos[1] + 700] as [number, number],
+    flags: index === 0 ? { ...node.flags, collapsed: true } : node.flags
+  }))
+  workflow.nodes.push(...extraNodes)
+  workflow.groups = [
+    {
+      id: 1,
+      title: 'Prompt controls',
+      bounding: [380, 150, 500, 450],
+      color: '#3f789e',
+      font_size: 24,
+      flags: {}
+    },
+    {
+      id: 2,
+      title: 'Generated copies',
+      bounding: [380, 850, 500, 450],
+      color: '#3f789e',
+      font_size: 24,
+      flags: {}
+    }
+  ]
+  await comfyPage.page.evaluate(
+    async (serialized) => await window.app!.loadGraphData(serialized),
+    workflow
+  )
+  await comfyPage.workflow.waitForWorkflowIdle()
+}
+
 test.describe('Workflow Persistence', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.settings.setSetting(
@@ -177,10 +212,71 @@ test.describe('Workflow Persistence', () => {
       await comfyPage.workflow.loadWorkflow(
         'reroute/single-native-reroute-default-workflow'
       )
+      await enrichPersistenceWorkflow(comfyPage)
+
+      const positivePrompt =
+        'Changed through the UI before persistence: café & <exact>.'
+      const positiveWidth = 768
+      const positiveScheduler = 'karras'
+      const positiveNode = await comfyPage.nodeOps.getNodeRefById(6)
+      const positiveText = await positiveNode.getWidgetByName('text')
+      const textBox = vueNodesEnabled
+        ? comfyPage.page
+            .locator('[data-node-id="6"]')
+            .getByRole('textbox', { name: 'text', exact: true })
+        : comfyPage.page
+            .getByRole('textbox', { name: 'text', exact: true })
+            .nth(1)
+      await textBox.fill(positivePrompt)
+      await textBox.blur()
+
+      const latentNode = await comfyPage.nodeOps.getNodeRefById(5)
+      const width = await latentNode.getWidgetByName('width')
+      if (vueNodesEnabled) {
+        const widthInput = comfyPage.page
+          .locator('[data-node-id="5"]')
+          .getByRole('spinbutton')
+          .first()
+        await widthInput.fill(String(positiveWidth))
+        await widthInput.press('Enter')
+      } else {
+        await width.click()
+        await comfyPage.page.keyboard.press('ControlOrMeta+A')
+        await comfyPage.page.keyboard.type(String(positiveWidth))
+        await comfyPage.page.keyboard.press('Enter')
+      }
+
+      const samplerNode = await comfyPage.nodeOps.getNodeRefById(3)
+      const scheduler = await samplerNode.getWidgetByName('scheduler')
+      if (vueNodesEnabled) {
+        await comfyPage.page
+          .locator('[data-node-id="3"]')
+          .getByRole('combobox', { name: 'scheduler' })
+          .click()
+        await comfyPage.page
+          .getByRole('combobox', { name: 'Search' })
+          .fill(positiveScheduler)
+        await comfyPage.page
+          .getByRole('option', { name: positiveScheduler, exact: true })
+          .click()
+      } else {
+        await scheduler.click()
+        await comfyPage.page
+          .getByRole('menuitem', { name: positiveScheduler, exact: true })
+          .click()
+      }
+      await expect.poll(() => positiveText.getValue()).toBe(positivePrompt)
+      await expect.poll(() => width.getValue()).toBe(positiveWidth)
+      await expect.poll(() => scheduler.getValue()).toBe(positiveScheduler)
+
       const expected = await getPersistenceSnapshot(comfyPage)
-      expect(expected.nodes.length).toBeGreaterThan(1)
-      expect(expected.links.length).toBeGreaterThan(0)
+      expect(expected.nodes.length).toBeGreaterThanOrEqual(10)
+      expect(expected.links?.length).toBeGreaterThan(0)
+      expect(expected.groups?.length).toBeGreaterThanOrEqual(2)
       expect(expected.reroutes?.length).toBeGreaterThan(0)
+      expect(
+        expected.nodes.some((node) => node.flags?.collapsed === true)
+      ).toBe(true)
 
       const suffix = generateUniqueFilename()
       const nameA = `persistence-A-${suffix}`
@@ -194,6 +290,20 @@ test.describe('Workflow Persistence', () => {
         await tab.getPersistedItem(name).dblclick()
         await comfyPage.workflow.waitForWorkflowIdle()
         expect(await getPersistenceSnapshot(comfyPage)).toEqual(expected)
+        const reloadedSampler = await comfyPage.nodeOps.getNodeRefById(3)
+        await expect
+          .poll(async () =>
+            (await reloadedSampler.getWidgetByName('scheduler')).getValue()
+          )
+          .toBe(positiveScheduler)
+        if (vueNodesEnabled) {
+          await expect(
+            comfyPage.page
+              .locator('[data-node-id="3"]')
+              .getByRole('combobox')
+              .filter({ hasText: positiveScheduler })
+          ).toBeVisible()
+        }
       }
 
       const downloadPromise = comfyPage.page.waitForEvent('download')
