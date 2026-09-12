@@ -43,6 +43,23 @@ async function getGraphSnapshot(comfyPage: ComfyPage): Promise<GraphSnapshot> {
   }))
 }
 
+async function getPairGroupSnapshot(comfyPage: ComfyPage) {
+  return comfyPage.page.evaluate(() => {
+    const group = window.app!.graph.groups.find(({ title }) => title === 'Pair')
+    if (!group) throw new Error('Expected Pair group')
+    return {
+      group: [...group.pos, ...group.size],
+      members: window
+        .app!.graph.nodes.filter((node) => ['2', '3'].includes(String(node.id)))
+        .map((node) => ({
+          id: String(node.id),
+          bounds: [...node.getBounding()]
+        }))
+        .sort((left, right) => left.id.localeCompare(right.id))
+    }
+  })
+}
+
 async function marqueeNodes(comfyPage: ComfyPage, nodeIds: string[]) {
   const { from, to } = await comfyPage.page.evaluate((ids) => {
     const bounds = ids.map((id) => {
@@ -91,6 +108,45 @@ test.describe(
       await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
       await comfyPage.canvasOps.resetView()
     })
+
+    for (const vueNodesEnabled of [false, true]) {
+      test(`undo restores a dragged group and every member (${vueNodesEnabled ? 'Vue' : 'LiteGraph'})`, async ({
+        comfyPage
+      }) => {
+        await comfyPage.settings.setSetting(
+          'Comfy.VueNodes.Enabled',
+          vueNodesEnabled
+        )
+        await comfyPage.workflow.loadWorkflow('selection/three-nodes-and-group')
+        if (vueNodesEnabled) await comfyPage.vueNodes.waitForNodes(3)
+        const initial = await getPairGroupSnapshot(comfyPage)
+
+        await comfyPage.canvasOps.dragGroup({
+          name: 'Pair',
+          deltaX: 120,
+          deltaY: 90
+        })
+        await expect
+          .poll(() => getPairGroupSnapshot(comfyPage))
+          .not.toEqual(initial)
+        const moved = await getPairGroupSnapshot(comfyPage)
+        expect(
+          moved.group.map((value, index) => value - initial.group[index])
+        ).toEqual([120, 90, 0, 0])
+        for (let index = 0; index < initial.members.length; index++) {
+          expect(
+            moved.members[index].bounds.map(
+              (value, axis) => value - initial.members[index].bounds[axis]
+            )
+          ).toEqual([120, 90, 0, 0])
+        }
+
+        await comfyPage.keyboard.undo()
+        await expect
+          .poll(() => getPairGroupSnapshot(comfyPage))
+          .toEqual(initial)
+      })
+    }
 
     test('undoes and redoes a move, then deletes only the pasted duplicate', async ({
       comfyPage
