@@ -49,7 +49,9 @@ test.describe('Link drop under device scaling', { tag: '@canvas' }, () => {
     const destination = imageInputs.find(
       (input) => input.name === 'destination'
     )
-    expect(destination, 'expected a destination input').toBeDefined()
+    if (!destination) {
+      throw new Error('ImageCompositeMasked should expose a destination input')
+    }
 
     const linkedNames = () =>
       comfyPage.page.evaluate((id) => {
@@ -63,7 +65,7 @@ test.describe('Link drop under device scaling', { tag: '@canvas' }, () => {
 
     expect(await linkedNames(), 'node should start unconnected').toEqual([])
 
-    await source.connectOutput(0, target, destination!.index)
+    await source.connectOutput(0, target, destination.index)
 
     // Exactly the aimed slot, by name. A count would pass for a wire that
     // landed on the neighbouring IMAGE input, which is the failure mode
@@ -77,7 +79,7 @@ test.describe('Link drop under device scaling', { tag: '@canvas' }, () => {
         const link = node.inputs[slot]?.link
         return link == null ? null : (graph.links.get(link)?.origin_id ?? null)
       },
-      { id: target.id, slot: destination!.index }
+      { id: target.id, slot: destination.index }
     )
     expect(String(origin)).toBe(String(source.id))
   })
