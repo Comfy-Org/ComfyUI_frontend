@@ -563,21 +563,36 @@ function definitionWidgetEdits(
     if (!Array.isArray(target) || target[0] !== "widget" || !Array.isArray(target[1])) continue;
     const path = target[1].map(String);
     const widget = target[3];
-    if (path.length !== 2 || typeof widget !== "string") continue;
-    const oldNode = definitionNode(existing, path[0]!, path[1]!);
-    if (!oldNode) continue;
-    const oldWidgets = oldNode.get("widgets");
+    if (path.length < 2 || typeof widget !== "string") continue;
+    const resolved = definitionNodeAtPath(existing, path);
+    if (!resolved) continue;
+    const oldWidgets = resolved.node.get("widgets");
     if (oldWidgets instanceof Y.Map && oldWidgets.has(widget)) {
       edits.push({
         targetKey,
-        definitionId: path[0]!,
-        nodeId: path[1]!,
+        definitionId: resolved.definitionId,
+        nodeId: path.at(-1)!,
         widget,
         value: structuredClone(oldWidgets.get(widget)),
       });
     }
   }
   return edits;
+}
+
+function definitionNodeAtPath(
+  root: Y.Map<unknown>,
+  path: string[],
+): { definitionId: string; node: Y.Map<unknown> } | null {
+  let definitionId = path[0]!;
+  let node = definitionNode(root, definitionId, path[1]!);
+  if (!node) return null;
+  for (const nodeId of path.slice(2)) {
+    definitionId = String(node.get("type"));
+    node = definitionNode(root, definitionId, nodeId);
+    if (!node) return null;
+  }
+  return { definitionId, node };
 }
 
 function restoreDefinitionWidgetEdits(
