@@ -1,67 +1,106 @@
-# Real Cloud checkout recovery
+# Real Cloud billing E2E
 
-Run the opt-in `cloud-live` project through the existing browser-test runner:
+These opt-in Playwright projects run the local frontend against a matching
+Cloud sandbox and Stripe test mode. They reject production targets and
+serialize billing mutations per workspace.
+
+## Accounts
+
+| Account            | Reserved state                                    | Project                 |
+| ------------------ | ------------------------------------------------- | ----------------------- |
+| No-card account    | Personal workspace, no paid plan or saved card    | `cloud-live`            |
+| Saved-card account | Active Creator plan and saved Stripe test card    | `cloud-live-paid`       |
+| Disposable account | Created per state-changing test                   | `cloud-live-disposable` |
+| Team owner         | Team billing owner with a personal workspace      | Blocked                 |
+| Team member        | Member of the same team with a personal workspace | Blocked                 |
+
+Never add a card to the permanent no-card account. Use disposable accounts for
+checkout completion, card failure, 3D Secure, and subscription transitions.
+Never run billing mutations concurrently against one workspace.
+
+## Run
+
+Start the Cloud frontend and keep one 1Password credential shell open:
 
 ```sh
-pnpm test:browser:cloud-billing --headed
+pnpm dev:cloud
+op run --env-file <file-with-1password-references> -- zsh -f
+```
+
+Set `PLAYWRIGHT_TEST_URL` to the local Vite origin and
+`PLAYWRIGHT_SETUP_API_URL=https://testcloud.comfy.org`. Permanent-account
+projects also require `CLOUD_ACCOUNT_EMAIL` and `CLOUD_ACCOUNT_PASSWORD`.
+The env file must contain 1Password references, never plaintext passwords.
+
+```sh
+pnpm test:browser:cloud-billing
+pnpm test:browser:cloud-billing:paid
+pnpm test:browser:cloud-billing:disposable
 pnpm exec playwright show-report
 ```
 
-Set these variables using the existing `.env` convention or inject them with
-`op run --env-file <file-with-secret-references> -- pnpm test:browser:cloud-billing`:
+The disposable project creates a fresh Firebase account and lazily provisions
+its personal workspace through the public billing portal endpoint. It requires
+no reusable account credentials.
 
-| Variable                   | Value                                                |
-| -------------------------- | ---------------------------------------------------- |
-| `PLAYWRIGHT_TEST_URL`      | Local frontend URL or deployed sandbox origin        |
-| `PLAYWRIGHT_SETUP_API_URL` | Matching test, staging, or PR sandbox backend origin |
-| `CLOUD_ACCOUNT_EMAIL`      | Sandbox account email                                |
-| `CLOUD_ACCOUNT_PASSWORD`   | Sandbox account password                             |
+The fixture disables `onboarding_survey_enabled` through the dev-only feature
+flag helper. Deployed frontends ignore this override, so their accounts must
+have completed onboarding.
 
-For repeated local runs, open one credential shell and run all test commands
-inside it. This reuses credentials already loaded by 1Password instead of
-requesting them again for each command:
+## Coverage contract
 
-```sh
-op run --env-file <file-with-secret-references> -- zsh -f
-pnpm test:browser:cloud-billing
-```
+| Priority | Scenario                                                                              | Spec                                                      | Current sandbox proof              |
+| -------- | ------------------------------------------------------------------------------------- | --------------------------------------------------------- | ---------------------------------- |
+| P0       | Abandon, retry, reload, and fresh-context recovery reuse one pending operation        | `checkoutRecovery.spec.ts`, `checkoutPersistence.spec.ts` | Pass, 3 tests                      |
+| P0       | Checkout completion activates Creator and grants the quoted credits exactly once      | `disposable/checkoutCompletion.spec.ts`                   | Pass                               |
+| P0       | Saved-card top-up completes with the exact balance increase and success UI            | `paid/savedCardTopup.spec.ts`                             | Pass                               |
+| P0       | Retrying one top-up reuses its operation and grants once                              | `paid/topupIdempotency.spec.ts`                           | Pass                               |
+| P1       | A declined card leaves the account inactive with no credit change                     | `disposable/cardDecline.spec.ts`                          | Pass                               |
+| P1       | Retrying after decline activates Creator and grants the exact quote                   | `disposable/cardDeclineRecovery.spec.ts`                  | Pass                               |
+| P1       | Successful 3D Secure activates only after authentication                              | `disposable/threeDSComplete.spec.ts`                      | Blocked: operation remains pending |
+| P1       | Failed 3D Secure stays inactive and becomes retryable                                 | `disposable/threeDSFailure.spec.ts`                       | Blocked: operation remains pending |
+| P1       | Team owner can mutate billing; member and cross-workspace writes are rejected         | No executable spec                                        | Blocked: team fixture              |
+| P2       | Creator upgrades to Pro now and schedules a Standard downgrade without an extra grant | `disposable/planTransitions.spec.ts`                      | Pass                               |
+| P2       | Cancellation schedules the end and reactivation clears it without changing balance    | `disposable/cancelReactivate.spec.ts`                     | Pass                               |
+| P2       | Renewal, credit reset, pending-checkout expiry, and subscription expiry converge      | No executable spec                                        | Blocked: clock control             |
+| P2       | Delayed, failed, duplicate, and out-of-order events converge without duplicate grants | No executable spec                                        | Blocked: fault control             |
 
-Keep the shell open for the session. Exiting it ends credential reuse. The env
-file contains 1Password references, not passwords.
+Keep blocked assertions strict. The two 3D Secure specs are executable gap
+reproductions and should turn green only when the Cloud operation reaches its
+expected terminal state.
 
-For a local frontend, start `pnpm dev:cloud` and use its Vite URL with
-`PLAYWRIGHT_SETUP_API_URL=https://testcloud.comfy.org`. The test routes browser API requests and its API checks directly to the selected
-sandbox, independently of the local Vite proxy. Production targets are rejected.
+## Required sandbox controls
 
-The fixture disables `onboarding_survey_enabled` through the existing dev-only
-feature-flag helper before navigation. Deployed builds ignore this override, so
-accounts used against a deployed frontend must have completed the survey.
+### Team fixture
 
-The account must own a personal workspace with no active paid subscription or saved
-payment method. Use an account reserved for this test. Do not run concurrent
-billing tests against that account.
+Provide two service-owned accounts in one resettable Team workspace. The owner
+must have a saved Stripe test card and an active Team subscription. Both users
+must also retain personal workspaces. Setup must restore membership, roles,
+active workspace, subscription, and ledger balance before the suite. The tests
+must prove that owner writes succeed, member writes receive authorization
+errors, and selecting another workspace cannot mutate the Team ledger.
 
-The test signs in, checks the real preview and payment dialog are ready, opens
-Stripe test checkout, closes it without entering a card, and resumes the same
-pending billing operation. The report attaches screenshots and the operation ID.
-Authentication traces and saved credentials are not retained.
+### Clock control
 
-No database, Stripe secret key, or Temporal access is required. Closing the
-browser leaves the unpaid checkout pending in the backend. The test does not
-reset billing state or claim that the operation expired. The first action accepts either a fresh Subscribe button or the pending
-Complete your payment button, so sequential runs can resume an existing checkout. Backend expiry and fixture reset remain separate work.
+Provide a sandbox-only API that creates or resets a disposable billing customer
+under a Stripe test clock, advances it to a requested boundary, and waits until
+Cloud webhook and Temporal processing reach a stable checkpoint. It must cover
+renewal, credit reset, pending-checkout expiry, and subscription expiry. Return
+the workspace, billing operation, event, and clock identifiers for assertions.
+Advancing a Stripe clock alone is insufficient.
 
-The no-card tests cover checkout handoff, retry, page reload, and signing in
-from an empty browser context. Payment completion, the 24-hour timeout, and
-CI integration remain follow-up work. A
-successful sign-in alone does not establish billing coverage.
+### Fault control
 
-## Saved-card billing
+Provide a sandbox-only, operation-scoped fault API with automatic expiry. It
+must delay or fail a named billing phase once, replay duplicate and out-of-order
+events, and report delivery and retry attempts. Tests must then require one
+terminal operation, one charge, one ledger grant, and eventual UI and backend
+agreement.
 
-`pnpm test:browser:cloud-billing:paid` runs the separate `cloud-live-paid`
-project. Inject the saved-card account credentials into `CLOUD_ACCOUNT_EMAIL`
-and `CLOUD_ACCOUNT_PASSWORD`. This project requires an active Creator plan and
-at least one saved sandbox payment method. It purchases $10 of test credits and
-checks the completed billing operation, exact balance increase, and success UI.
-The balance API returns cents despite its `amount_micros` field name. Never
-point this command at the no-card account.
+## Evidence and safety
+
+Retain operation IDs, expected and observed balances, status projections,
+screenshots, and blocked-egress attachments in the Playwright report. Exclude
+credentials, authorization headers, cookies, and payment secrets. Basic runs
+need no database, Stripe secret key, or Temporal admin access. Team, clock, and
+fault cases remain blocked until the sandbox exposes the scoped controls above.
