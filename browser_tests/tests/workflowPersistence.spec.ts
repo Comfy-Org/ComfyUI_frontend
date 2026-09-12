@@ -225,6 +225,87 @@ test.describe('Workflow Persistence', () => {
   })
 
   for (const vueNodesEnabled of [false, true]) {
+    test(`pinned node stays fixed across save and reload, then unpins durably with Vue Nodes ${vueNodesEnabled ? 'enabled' : 'disabled'}`, async ({
+      comfyPage
+    }) => {
+      await comfyPage.settings.setSetting(
+        'Comfy.VueNodes.Enabled',
+        vueNodesEnabled
+      )
+      await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
+      await fitToViewInstant(comfyPage)
+
+      const node = await comfyPage.nodeOps.getNodeRefById(3)
+      await node.clickContextMenuOption('Pin')
+      await comfyPage.contextMenu.waitForHidden()
+      await expect.poll(() => node.isPinned()).toBe(true)
+
+      const name = `pinned-node-${generateUniqueFilename()}`
+      await comfyPage.menu.topbar.saveWorkflowAs(name)
+      await comfyPage.workflow.reloadAndWaitForApp()
+      const tab = comfyPage.menu.workflowsTab
+      await tab.open()
+      await tab.getPersistedItem(name).dblclick()
+      await tab.close()
+      await comfyPage.workflow.waitForWorkflowIdle()
+
+      const pinnedNode = await comfyPage.nodeOps.getNodeRefById(3)
+      await expect.poll(() => pinnedNode.isPinned()).toBe(true)
+      const pinnedPosition = await pinnedNode.getPosition()
+      await pinnedNode.dragBy({ x: 200, y: 160 })
+      await expect.poll(() => pinnedNode.getPosition()).toEqual(pinnedPosition)
+
+      await pinnedNode.clickContextMenuOption('Unpin')
+      await comfyPage.contextMenu.waitForHidden()
+      await expect.poll(() => pinnedNode.isPinned()).toBe(false)
+      await comfyPage.menu.topbar.triggerTopbarCommand(['File', 'Save'])
+      await comfyPage.workflow.waitForWorkflowIdle()
+      await comfyPage.workflow.reloadAndWaitForApp()
+      await tab.open()
+      await tab.getPersistedItem(name).dblclick()
+      await tab.close()
+      await comfyPage.workflow.waitForWorkflowIdle()
+
+      const unpinnedNode = await comfyPage.nodeOps.getNodeRefById(3)
+      await expect.poll(() => unpinnedNode.isPinned()).toBe(false)
+      const unpinnedPosition = await unpinnedNode.getPosition()
+      await unpinnedNode.dragBy({ x: 200, y: 160 })
+      await expect
+        .poll(() => unpinnedNode.getPosition())
+        .not.toEqual(unpinnedPosition)
+    })
+
+    if (!vueNodesEnabled)
+      test('unsaved current workflow restores its autosaved graph value after refresh', async ({
+        comfyPage
+      }) => {
+        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
+        await comfyPage.settings.setSetting('Comfy.Workflow.Persist', true)
+        await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
+        await fitToViewInstant(comfyPage)
+
+        const node = await comfyPage.nodeOps.getNodeRefById(3)
+        const seed = await node.getWidgetByName('seed')
+        const restoredSeed = 246813579
+        const draftSaveStartedAt = Date.now()
+        await seed.click()
+        await comfyPage.page.keyboard.press('ControlOrMeta+A')
+        await comfyPage.page.keyboard.type(String(restoredSeed))
+        await comfyPage.page.keyboard.press('Enter')
+        await expect.poll(() => seed.getValue()).toBe(restoredSeed)
+        await comfyPage.workflow.waitForDraftIndexUpdatedSince(
+          draftSaveStartedAt
+        )
+
+        await comfyPage.workflow.reloadAndWaitForApp()
+        const restoredNode = await comfyPage.nodeOps.getNodeRefById(3)
+        await expect
+          .poll(async () =>
+            (await restoredNode.getWidgetByName('seed')).getValue()
+          )
+          .toBe(restoredSeed)
+      })
+
     test(`missing custom node keeps its placeholder and endpoint tuples with Vue Nodes ${vueNodesEnabled ? 'enabled' : 'disabled'}`, async ({
       comfyPage
     }) => {
