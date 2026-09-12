@@ -7,6 +7,7 @@ import {
   project,
   type DefineSubgraphOp,
   type Op,
+  type SubgraphDefinition,
   type WidgetCatalog,
   type WorkflowJSON,
 } from "../src/index.js"
@@ -55,7 +56,9 @@ const winningReplacement = (
   const incumbentDigest = sha256Hex(canonicalOp(incumbent as unknown as Op))
   for (let nonce = 0; nonce < 1000; nonce++) {
     const candidate = { ...replacement, name: `replacement-${nonce}` }
-    if (sha256Hex(canonicalOp(candidate as unknown as Op)) > incumbentDigest) return candidate
+    if (sha256Hex(canonicalOp(candidate as unknown as Op)) > incumbentDigest) {
+      return candidate as unknown as SubgraphDefinition
+    }
   }
   throw new Error("unable to construct a winning replacement")
 }
