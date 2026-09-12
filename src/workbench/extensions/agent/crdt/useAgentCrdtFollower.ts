@@ -127,6 +127,10 @@ export function useAgentCrdtFollower(
       pending
     }
   }
+  const settleAndUnbind = (workflowId: string): void => {
+    projection.unbind(workflowId)
+    settleFrames(workflowId, 'skipped')
+  }
   const tabId = createUuidv4()
   const sender = createOpSender({
     sendOps: (target, tab, ops) => client.sendOps(target, tab, ops),
@@ -476,7 +480,7 @@ export function useAgentCrdtFollower(
       if (!active) {
         if (next !== null) initialBind = false
         if (boundWorkflowId !== null) {
-          projection.unbind(boundWorkflowId)
+          settleAndUnbind(boundWorkflowId)
           boundWorkflowId = null
         }
         subscribedWorkflowId.value = null
@@ -489,7 +493,7 @@ export function useAgentCrdtFollower(
         if (persisted !== null) {
           recordDevEvent('rebind', { workflowId: persisted })
           if (boundWorkflowId !== persisted) {
-            if (boundWorkflowId !== null) projection.unbind(boundWorkflowId)
+            if (boundWorkflowId !== null) settleAndUnbind(boundWorkflowId)
             projection.bind(persisted, bridge.follower)
             boundWorkflowId = persisted
           }
@@ -500,7 +504,7 @@ export function useAgentCrdtFollower(
         }
         lifecycle.clearPersistedDocId()
         if (boundWorkflowId !== null) {
-          projection.unbind(boundWorkflowId)
+          settleAndUnbind(boundWorkflowId)
           boundWorkflowId = null
         }
         subscribedWorkflowId.value = null
@@ -509,7 +513,7 @@ export function useAgentCrdtFollower(
       }
       initialBind = false
       if (boundWorkflowId !== next) {
-        if (boundWorkflowId !== null) projection.unbind(boundWorkflowId)
+        if (boundWorkflowId !== null) settleAndUnbind(boundWorkflowId)
         projection.bind(next, bridge.follower)
         boundWorkflowId = next
       }
@@ -536,6 +540,7 @@ export function useAgentCrdtFollower(
       bridge.removeEventListener('doc_gap', onGap)
       bridge.removeEventListener('doc_stale', onStale)
       sender.detach()
+      if (boundWorkflowId !== null) settleAndUnbind(boundWorkflowId)
       projection.destroy()
       bridge.destroy()
     } finally {

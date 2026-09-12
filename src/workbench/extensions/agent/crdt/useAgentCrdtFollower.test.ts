@@ -340,6 +340,83 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('settles a pending frame as skipped when switching workflows', async () => {
+    const { unmount, workflowId, status } = mountFollower('wf-1')
+    adapterState.applyFrame.mockReturnValueOnce({
+      status: 'retrying',
+      sequence: 1,
+      attempt: 1
+    })
+    adapterState.pendingFrameCount.mockReturnValue(1)
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 1 })
+
+    adapterState.pendingFrameCount.mockReturnValue(0)
+    workflowId.value = 'wf-2'
+    await nextTick()
+
+    expect(status().outcomes).toMatchObject({
+      received: 1,
+      applied: 0,
+      skipped: 1,
+      pending: 0
+    })
+
+    dispatchFrame('doc_update', { workflowId: 'wf-2', seq: 2 })
+    expect(status().outcomes).toMatchObject({
+      received: 2,
+      applied: 1,
+      skipped: 1,
+      pending: 0
+    })
+    unmount()
+  })
+
+  it('settles a pending frame as skipped when detaching', async () => {
+    const { unmount, workflowId, status } = mountFollower('wf-1')
+    adapterState.applyFrame.mockReturnValueOnce({
+      status: 'retrying',
+      sequence: 1,
+      attempt: 1
+    })
+    adapterState.pendingFrameCount.mockReturnValue(1)
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 1 })
+
+    adapterState.pendingFrameCount.mockReturnValue(0)
+    workflowId.value = null
+    await nextTick()
+
+    expect(status().outcomes).toMatchObject({
+      received: 1,
+      applied: 0,
+      skipped: 1,
+      pending: 0
+    })
+    unmount()
+  })
+
+  it('settles a pending frame as skipped when deactivating', async () => {
+    const { unmount, isTargetActive, status } = mountFollower('wf-1')
+    adapterState.applyFrame.mockReturnValueOnce({
+      status: 'retrying',
+      sequence: 1,
+      attempt: 1
+    })
+    adapterState.pendingFrameCount.mockReturnValue(1)
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 1 })
+
+    adapterState.pendingFrameCount.mockReturnValue(0)
+    isTargetActive.value = false
+    await nextTick()
+
+    expect(status().outcomes).toMatchObject({
+      received: 1,
+      applied: 0,
+      skipped: 1,
+      pending: 0
+    })
+    unmount()
+  })
+
   it('FEC-5: refuses a record from a different page session (e.g. a duplicated tab)', () => {
     const setup = mountFollower('wf-1')
     dispatchFrame('doc_subscribed', { ok: true })
