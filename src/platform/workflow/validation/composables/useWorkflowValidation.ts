@@ -1,5 +1,4 @@
 import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
-import { validateLinkTopology } from '@comfyorg/workflow-validation'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -20,10 +19,6 @@ export function useWorkflowValidation() {
 
     // Collect all logs in an array
     const logs: string[] = []
-    const topologyErrors = validateLinkTopology(graphData)
-    if (topologyErrors.length > 0) {
-      logs.push(`Found ${topologyErrors.length} invalid workflow link(s).`)
-    }
     // Then validate and fix links if schema validation passed
     const linkValidation = fixBadLinks(graphData as ISerialisedGraph, {
       fix: true,

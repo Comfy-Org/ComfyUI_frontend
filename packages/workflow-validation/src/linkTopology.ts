@@ -96,50 +96,85 @@ function validateGraph(
 
   for (const candidate of graph.links ?? []) {
     if (!candidate) continue
-    const link = toLinkContext(candidate, graphPath)
-    const origin = nodesById.get(String(link.originId))
-    const target = nodesById.get(String(link.targetId))
-
-    if (!origin) errors.push({ kind: 'missing-origin-node', link })
-    if (!target) errors.push({ kind: 'missing-target-node', link })
-    if (!origin || !target) continue
-
-    const outputs = origin.outputs ?? []
-    const inputs = target.inputs ?? []
-    const originOutOfBounds =
-      link.originSlot < 0 || link.originSlot >= outputs.length
-    const targetOutOfBounds =
-      link.targetSlot < 0 || link.targetSlot >= inputs.length
-
-    if (originOutOfBounds) {
-      errors.push({
-        kind: 'origin-slot-out-of-bounds',
-        link,
-        slotCount: outputs.length
-      })
-    }
-    if (targetOutOfBounds) {
-      errors.push({
-        kind: 'target-slot-out-of-bounds',
-        link,
-        slotCount: inputs.length
-      })
-    }
-    if (originOutOfBounds || targetOutOfBounds) continue
-
-    if (!(outputs[link.originSlot]?.links ?? []).includes(link.linkId)) {
-      errors.push({ kind: 'origin-link-not-listed', link })
-    }
-    const actualLink = inputs[link.targetSlot]?.link ?? null
-    if (actualLink !== link.linkId) {
-      errors.push({ kind: 'target-link-mismatch', link, actualLink })
-    }
+    validateLink(candidate, graphPath, nodesById, errors)
   }
 
   for (const [index, subgraph] of (
     graph.definitions?.subgraphs ?? []
   ).entries()) {
     validateGraph(subgraph, [...graphPath, graphLabel(subgraph, index)], errors)
+  }
+}
+
+function validateLink(
+  candidate: WorkflowLink,
+  graphPath: readonly string[],
+  nodesById: ReadonlyMap<string, WorkflowNode>,
+  errors: TopologyError[]
+): void {
+  const link = toLinkContext(candidate, graphPath)
+  const origin = nodesById.get(String(link.originId))
+  const target = nodesById.get(String(link.targetId))
+
+  if (!origin) errors.push({ kind: 'missing-origin-node', link })
+  if (!target) errors.push({ kind: 'missing-target-node', link })
+  if (!origin || !target) return
+
+  validateConnectedLink(link, origin, target, errors)
+}
+
+function validateConnectedLink(
+  link: LinkContext,
+  origin: WorkflowNode,
+  target: WorkflowNode,
+  errors: TopologyError[]
+): void {
+  const outputs = origin.outputs ?? []
+  const inputs = target.inputs ?? []
+  if (!validateSlotBounds(link, outputs.length, inputs.length, errors)) return
+
+  validateSlotMembership(link, outputs, inputs, errors)
+}
+
+function validateSlotBounds(
+  link: LinkContext,
+  outputCount: number,
+  inputCount: number,
+  errors: TopologyError[]
+): boolean {
+  const originOutOfBounds =
+    link.originSlot < 0 || link.originSlot >= outputCount
+  const targetOutOfBounds = link.targetSlot < 0 || link.targetSlot >= inputCount
+
+  if (originOutOfBounds) {
+    errors.push({
+      kind: 'origin-slot-out-of-bounds',
+      link,
+      slotCount: outputCount
+    })
+  }
+  if (targetOutOfBounds) {
+    errors.push({
+      kind: 'target-slot-out-of-bounds',
+      link,
+      slotCount: inputCount
+    })
+  }
+  return !originOutOfBounds && !targetOutOfBounds
+}
+
+function validateSlotMembership(
+  link: LinkContext,
+  outputs: NonNullable<WorkflowNode['outputs']>,
+  inputs: NonNullable<WorkflowNode['inputs']>,
+  errors: TopologyError[]
+): void {
+  if (!(outputs[link.originSlot]?.links ?? []).includes(link.linkId)) {
+    errors.push({ kind: 'origin-link-not-listed', link })
+  }
+  const actualLink = inputs[link.targetSlot]?.link ?? null
+  if (actualLink !== link.linkId) {
+    errors.push({ kind: 'target-link-mismatch', link, actualLink })
   }
 }
 

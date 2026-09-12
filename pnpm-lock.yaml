@@ -505,9 +505,6 @@ importers:
       '@comfyorg/tailwind-utils':
         specifier: workspace:*
         version: link:packages/tailwind-utils
-      '@comfyorg/workflow-validation':
-        specifier: workspace:*
-        version: link:packages/workflow-validation
       '@customerio/cdp-analytics-browser':
         specifier: 'catalog:'
         version: 0.5.6
