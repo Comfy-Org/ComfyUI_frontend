@@ -195,6 +195,16 @@ export type NotificationWsMessage = z.infer<typeof zNotificationWsMessage>
 export const zTaskOutput = z.record(zNodeId, zOutputs)
 export type TaskOutput = z.infer<typeof zTaskOutput>
 
+export const zLegacyHistoryResponse = z.record(
+  z.object({
+    status: z.object({
+      completed: z.boolean(),
+      status_str: z.string()
+    }),
+    outputs: zTaskOutput.optional()
+  })
+)
+
 export const zEmbeddingsResponse = z.array(z.string())
 const zExtensionsResponse = z.array(z.string())
 const zError = z.object({

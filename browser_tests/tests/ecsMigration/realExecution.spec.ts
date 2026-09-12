@@ -3,11 +3,13 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { zPromptResponse } from '@comfyorg/ingest-types/zod'
 import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
 import {
   expectNoVisibleErrors,
   trackVisibleErrors
 } from '@e2e/fixtures/utils/errorSurfaces'
+import { zLegacyHistoryResponse } from '@/schemas/apiSchema'
 
 type OutputEvidence = {
   promptId: string
@@ -26,43 +28,53 @@ async function queueAndReadPng(comfyPage: ComfyPage): Promise<OutputEvidence> {
   await comfyPage.command.executeCommand('Comfy.QueuePrompt')
   const response = await responsePromise
   expect(response.status(), await response.text()).toBe(200)
-  const body: unknown = await response.json()
-  expect(body).toEqual(
-    expect.objectContaining({ prompt_id: expect.any(String) })
-  )
-  const promptId = (body as { prompt_id: string }).prompt_id
-  expect(promptId.length).toBeGreaterThan(0)
+  const body = zPromptResponse.parse(await response.json())
+  expect(body.prompt_id).toEqual(expect.any(String))
+  const promptId = body.prompt_id!
   let completed: Omit<OutputEvidence, 'promptId'> | null = null
   await expect
     .poll(
       async () => {
-        completed = await comfyPage.page.evaluate(async (id) => {
-          const historyResponse = await fetch(`/api/history/${id}`)
-          if (!historyResponse.ok) {
-            throw new Error(`history request failed: ${historyResponse.status}`)
+        const historyResponse = await comfyPage.page.evaluate(async (id) => {
+          const response = await fetch(`/api/history/${id}`)
+          return {
+            ok: response.ok,
+            status: response.status,
+            body: await response.json()
           }
-          const history = await historyResponse.json()
-          const entry = history[id]
-          if (!entry) return null
-          if (entry.status?.completed !== true) return null
-          if (entry.status.status_str !== 'success') {
-            throw new Error(
-              `prompt ${id} ended with ${entry.status.status_str}`
-            )
-          }
-          const nodes = Object.values(entry.outputs ?? {}) as Array<{
-            images?: Array<{
-              filename: string
-              subfolder: string
-              type: string
-            }>
-          }>
-          const image = nodes.flatMap((node) => node.images ?? []).at(0)
-          if (!image) return null
+        }, promptId)
+        if (!historyResponse.ok) {
+          throw new Error(`history request failed: ${historyResponse.status}`)
+        }
+        const history = zLegacyHistoryResponse.parse(historyResponse.body)
+        if (!Object.hasOwn(history, promptId)) return null
+        const entry = history[promptId]
+        if (!entry.status.completed) return null
+        if (entry.status.status_str !== 'success') {
+          throw new Error(
+            `prompt ${promptId} ended with ${entry.status.status_str}`
+          )
+        }
+        const image = Object.values(entry.outputs ?? {})
+          .flatMap((node) => node.images ?? [])
+          .at(0)
+        if (
+          !image?.filename ||
+          typeof image.subfolder !== 'string' ||
+          !image.type
+        ) {
+          return null
+        }
+        const outputImage = {
+          filename: image.filename,
+          subfolder: image.subfolder,
+          type: image.type
+        }
+        completed = await comfyPage.page.evaluate(async (outputImage) => {
           const query = new URLSearchParams({
-            filename: image.filename,
-            subfolder: image.subfolder,
-            type: image.type
+            filename: outputImage.filename,
+            subfolder: outputImage.subfolder,
+            type: outputImage.type
           })
           const imageResponse = await fetch(`/api/view?${query}`)
           if (!imageResponse.ok) {
@@ -78,12 +90,12 @@ async function queueAndReadPng(comfyPage: ComfyPage): Promise<OutputEvidence> {
           context.drawImage(bitmap, 0, 0)
           const pixel = context.getImageData(0, 0, 1, 1).data
           return {
-            filename: image.filename,
+            filename: outputImage.filename,
             width: view.getUint32(16),
             height: view.getUint32(20),
             rgb: [pixel[0], pixel[1], pixel[2]] as [number, number, number]
           }
-        }, promptId)
+        }, outputImage)
         return completed
       },
       { timeout: 30_000 }
@@ -192,6 +204,7 @@ test.describe(
       test(`five UI disconnect/reconnect cycles survive saved-workflow reload (VueNodes=${vueNodesEnabled})`, async ({
         comfyPage
       }) => {
+        test.slow()
         await comfyPage.settings.setSetting(
           'Comfy.VueNodes.Enabled',
           vueNodesEnabled
@@ -199,9 +212,10 @@ test.describe(
         await comfyPage.workflow.loadWorkflow(
           'ecsMigration/model_free_execution'
         )
-        const source = (
-          await comfyPage.nodeOps.getNodeRefsByType('ImageScale')
-        )[0]
+        const sources = [
+          (await comfyPage.nodeOps.getNodeRefsByType('EmptyImage'))[0],
+          (await comfyPage.nodeOps.getNodeRefsByType('ImageScale'))[0]
+        ]
         const target = (
           await comfyPage.nodeOps.getNodeRefsByType('SaveImage')
         )[0]
@@ -214,9 +228,11 @@ test.describe(
           await comfyPage.page.keyboard.up('Alt')
           await comfyPage.page.keyboard.up('Control')
           await input.expectLinkCount(0)
-          await source.connectOutput(0, target, 0)
+          await sources[cycle % sources.length].connectOutput(0, target, 0)
           await input.expectLinkCount(1)
         }
+        await sources[1].connectOutput(0, target, 0)
+        await input.expectLinkCount(1)
         const workflowName = `ecs-qa-032-${vueNodesEnabled}-${Date.now()}`
         await saveWorkflowAs(comfyPage, workflowName)
         await comfyPage.page.reload()
