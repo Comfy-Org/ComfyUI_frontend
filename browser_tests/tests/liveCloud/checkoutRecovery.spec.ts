@@ -5,7 +5,8 @@ import {
   liveCloudBillingFixture as test
 } from '@e2e/fixtures/liveCloudBillingFixture'
 
-const testCheckoutUrl = /^https:\/\/checkout\.stripe\.com\/c\/pay\/cs_test_/
+const testCheckoutUrl =
+  /^https:\/\/checkout\.(?:stripe\.com|comfy\.org)\/c\/pay\/cs_test_/
 
 test.describe('Real Cloud checkout recovery', { tag: ['@cloud-live'] }, () => {
   test('resumes an abandoned no-card checkout using the same billing operation', async ({
@@ -23,8 +24,12 @@ test.describe('Real Cloud checkout recovery', { tag: ['@cloud-live'] }, () => {
       Number(preview.amount_due_cents ?? preview.cost_today_cents) / 100
     )
 
+    const confirmation = comfyPage.page.getByRole('dialog')
     await expect(
-      comfyPage.page.getByText(`Total due today ${amountDue}`, { exact: true })
+      confirmation.getByText('Total due today', { exact: true })
+    ).toBeVisible()
+    await expect(
+      confirmation.getByText(amountDue, { exact: true })
     ).toBeVisible()
 
     await testInfo.attach('preview.png', {
