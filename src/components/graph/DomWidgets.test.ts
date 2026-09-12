@@ -1,16 +1,24 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
-import { watch } from 'vue'
+import { nextTick, watch } from 'vue'
 
 import DomWidgets from '@/components/graph/DomWidgets.vue'
+import { useAppMode } from '@/composables/useAppMode'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+import {
+  ComfyWorkflow,
+  useWorkflowStore
+} from '@/platform/workflow/management/stores/workflowStore'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { BaseDOMWidget } from '@/scripts/domWidget'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { toNodeId } from '@/types/nodeId'
+import type { AppMode } from '@/utils/appMode'
+import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 
 type TestWidget = BaseDOMWidget
 
@@ -64,6 +72,19 @@ function createCanvas(graph: LGraph): LGraphCanvas {
     selected_nodes: {},
     selectedItems: new Set()
   })
+}
+
+function createLoadedWorkflow(activeMode: AppMode): LoadedComfyWorkflow {
+  const workflow = new ComfyWorkflow({
+    path: 'workflows/test.json',
+    modified: Date.now(),
+    size: 1
+  })
+  workflow.changeTracker = createMockChangeTracker()
+  workflow.content = '{}'
+  workflow.originalContent = '{}'
+  workflow.activeMode = activeMode
+  return workflow as LoadedComfyWorkflow
 }
 
 function drawFrame(canvas: LGraphCanvas) {
@@ -419,4 +440,46 @@ describe('DomWidgets deterministic update matrix', () => {
       expect(result.sizeChanges).toBe(0)
     }
   )
+})
+
+describe('DomWidgets app mode round-trip', () => {
+  it('restores widget visibility after graph → app → graph without a draw frame', async () => {
+    const canvasStore = useCanvasStore()
+    const domWidgetStore = useDomWidgetStore()
+    const { setMode } = useAppMode()
+
+    const workflowStore = useWorkflowStore()
+    workflowStore.activeWorkflow = createLoadedWorkflow('graph')
+
+    const graph = new LGraph()
+    const node = createNode(graph, 1, 'host', [100, 200])
+    const widget = createWidget('round-trip-widget', node, 14)
+    domWidgetStore.registerWidget(widget)
+
+    const canvas = createCanvas(graph)
+    canvasStore.canvas = canvas
+
+    render(DomWidgets, {
+      global: { stubs: { DomWidget: true } }
+    })
+
+    // Initial draw — widget is visible
+    drawFrame(canvas)
+    const widgetState = domWidgetStore.widgetStates.get(widget.id)!
+    expect(widgetState.visible).toBe(true)
+
+    // Enter app mode — canvas is hidden via v-show so updateWidgets() stops running
+    setMode('app')
+    await nextTick()
+
+    // Simulate the stale state that builds up while the canvas is hidden
+    widgetState.visible = false
+
+    // Return to graph mode — the fix calls updateWidgets() immediately via whenever()
+    setMode('graph')
+    await nextTick()
+
+    // Without the fix, visible stays false because no draw frame has run yet
+    expect(widgetState.visible).toBe(true)
+  })
 })
