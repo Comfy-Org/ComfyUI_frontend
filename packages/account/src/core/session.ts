@@ -57,7 +57,10 @@ export { isPermanentSessionError } from './sessionContracts.js'
 const CachedCredentialSchema = CredentialResponseSchema.omit({
   expires_at: true
 }).extend({
-  expiresAt: z.number(),
+  // Storage and broadcast are untrusted boundaries: an empty token can never
+  // authorize and a non-finite expiry can never lapse, so neither is a session.
+  token: z.string().min(1),
+  expiresAt: z.number().finite(),
   uid: z.string(),
   /** The workspace target the credential was minted for; absent = personal. */
   target: z.string().optional()
@@ -158,6 +161,7 @@ export interface AttachIdentityOptions {
 }
 
 export interface SessionClient<TUser extends AccountUser = AccountUser> {
+  /** @deprecated Transitional Pinia-adapter seam; package-owned identity replaces it (FE-2171, PoC #16639). */
   attachIdentity: (
     identity: AccountIdentity<TUser>,
     options?: AttachIdentityOptions
@@ -166,7 +170,7 @@ export interface SessionClient<TUser extends AccountUser = AccountUser> {
   subscribe: (
     listener: (snapshot: SessionSnapshot<TUser>) => void
   ) => () => void
-  /** The current credential's token, uid-guarded. No freshness promise. */
+  /** The current credential's token, uid-guarded and withheld once expired (zero margin); no `freshMarginMs` or proactive-refresh promise. */
   getToken: () => string | undefined
   /**
    * The valid-on-read entry point: resolves with a session that has more
@@ -265,6 +269,11 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
    * cloud store's unifiedRefreshRequestId guard.
    */
   let mintSequence = 0
+  /**
+   * The result the winning mint published, so a caller joining that same mint
+   * returns it instead of running the commit/publication path a second time.
+   */
+  let committedMint: { mintId: number; session: AccountCredential } | undefined
 
   function getSnapshot(): SessionSnapshot<TUser> {
     if (!currentUser) {
@@ -390,11 +399,16 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     inFlight = undefined
   }
 
+  // `joined` marks a caller that awaits another owner's in-flight mint rather
+  // than starting or cache-serving its own, so it can defer to that owner's
+  // commit instead of re-running the publication path.
+  type MintDispatch = MintHandle & { readonly joined: boolean }
+
   function sharedMint(
     user: AccountUser,
     options: SessionRequestOptions,
     forced: boolean
-  ): MintHandle {
+  ): MintDispatch {
     const target = options.workspaceId ?? clientOptions.workspaceId
     if (
       inFlight !== undefined &&
@@ -402,7 +416,11 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       inFlight.target === target &&
       (!forced || inFlight.forced)
     ) {
-      return { mintId: inFlight.mintId, response: inFlight.promise }
+      return {
+        mintId: inFlight.mintId,
+        response: inFlight.promise,
+        joined: true
+      }
     }
     const mintId = ++mintSequence
     const running = mint(user, options).finally(() => {
@@ -410,13 +428,13 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       inFlight = undefined
     })
     inFlight = { promise: running, uid: user.uid, target, forced, mintId }
-    return { mintId, response: running }
+    return { mintId, response: running, joined: false }
   }
 
   function ensureCore(
     user: AccountUser,
     options: SessionRequestOptions
-  ): MintHandle {
+  ): MintDispatch {
     const now = options.now?.() ?? clientOptions.now?.() ?? Date.now()
     const target = options.workspaceId ?? clientOptions.workspaceId
     // The live credential is authoritative; storage is recovery state, not a
@@ -440,7 +458,8 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     if (fresh) {
       return {
         mintId: mintSequence,
-        response: Promise.resolve({ status: 'ok', session: fresh })
+        response: Promise.resolve({ status: 'ok', session: fresh }),
+        joined: false
       }
     }
     return sharedMint(user, options, false)
@@ -449,7 +468,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
   function remintCore(
     user: AccountUser,
     options: SessionRequestOptions
-  ): MintHandle {
+  ): MintDispatch {
     safeClear()
     return sharedMint(user, options, true)
   }
@@ -483,6 +502,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
             }
             credential = session
             failure = undefined
+            committedMint = { mintId: mintSequence, session }
             persistCredential(session, credentialTarget)
             publish()
             return undefined
@@ -532,7 +552,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       : undefined
 
   async function refreshWith(
-    core: (user: AccountUser, options: SessionRequestOptions) => MintHandle,
+    core: (user: AccountUser, options: SessionRequestOptions) => MintDispatch,
     requestedUser?: AccountUser,
     options: SessionRequestOptions = {}
   ): Promise<SessionResult | undefined> {
@@ -542,7 +562,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
     const startEpoch = identityEpoch
     const startInvalidation = invalidationEpoch
     const startedSignedOut = currentUser === null
-    const { mintId, response } = core(user, options)
+    const { mintId, response, joined } = core(user, options)
     // A caller that joined an in-flight mint still gets its own signal
     // honored: the shared mint runs on, this caller stops waiting for it.
     let result: SessionResult
@@ -583,9 +603,19 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       if (!popupSettled) return undefined
     } else if (
       currentUser?.uid !== user.uid &&
-      (!requestedUser || currentUser !== null)
+      // The explicit-user bypass is the popup path, valid only before the
+      // identity port has ever fired; a settled null identity blocks it.
+      (!requestedUser || currentUser !== null || identitySettled)
     ) {
       return undefined
+    }
+    if (
+      joined &&
+      committedMint !== undefined &&
+      committedMint.mintId === mintId &&
+      credential === committedMint.session
+    ) {
+      return { status: 'ok', session: committedMint.session }
     }
     if (result.status === 'ok') {
       const requestedTarget = options.workspaceId ?? clientOptions.workspaceId
@@ -601,6 +631,7 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       }
       credential = result.session
       credentialTarget = requestedTarget
+      committedMint = { mintId, session: result.session }
       failure = undefined
       persistCredential(result.session, credentialTarget)
       scheduler?.armAfterCommit(
@@ -682,7 +713,10 @@ export function createSessionClient<TUser extends AccountUser = AccountUser>(
       return () => listeners.delete(listener)
     },
     getToken() {
-      return credential !== undefined && currentUser?.uid === credential.uid
+      const now = clientOptions.now?.() ?? Date.now()
+      return credential !== undefined &&
+        currentUser?.uid === credential.uid &&
+        isCredentialFresh(credential, now, 0)
         ? credential.token
         : undefined
     },

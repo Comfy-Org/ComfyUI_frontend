@@ -508,6 +508,56 @@ describe('opt-in refresh scheduler', () => {
       'valid-on-read hosts opted into no timers'
     ).toHaveBeenCalledOnce()
   })
+
+  it('does not republish when a reactive caller joins a mint the scheduler already committed', async () => {
+    let releaseScheduled!: (response: Response) => void
+    let minted = 0
+    const fetchImpl = vi.fn<typeof fetch>(() => {
+      minted += 1
+      return minted === 1
+        ? Promise.resolve(mintResponse('jwt-1'))
+        : new Promise<Response>((resolve) => (releaseScheduled = resolve))
+    })
+    const client = makeClient({ fetchImpl })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+    identity.fire(testUser())
+    await vi.waitFor(() => {
+      expect(client.getToken()).toBe('jwt-1')
+    })
+
+    await vi.advanceTimersByTimeAsync(
+      NINETY_MINUTES_MS - DEFAULT_BUFFER_MS + 10
+    )
+    await vi.waitFor(() => {
+      expect(fetchImpl).toHaveBeenCalledTimes(2)
+    })
+
+    const joiner = client.ensureFresh(testUser(), {})
+
+    let authenticatedJwt2 = 0
+    const unsubscribe = client.subscribe((snapshot) => {
+      if (
+        snapshot.phase === 'authenticated' &&
+        snapshot.session.token === 'jwt-2'
+      ) {
+        authenticatedJwt2 += 1
+      }
+    })
+
+    releaseScheduled(mintResponse('jwt-2'))
+    const joined = await joiner
+    unsubscribe()
+
+    expect(
+      joined,
+      'a joiner resolves to the committed session, not undefined, after the scheduler mints it'
+    ).toMatchObject({ status: 'ok', session: { token: 'jwt-2' } })
+    expect(
+      authenticatedJwt2,
+      'one mint has a single commit owner; a joiner returns the committed result without republishing it'
+    ).toBe(1)
+  })
 })
 
 function fakeCrossTabPort() {
@@ -1067,5 +1117,33 @@ describe('cross-tab refresh coordination', () => {
       client.getToken(),
       'a late own mint resolving after an adoption must not overwrite it'
     ).toBe('jwt-from-leader')
+  })
+
+  it('never adopts a broadcast credential with a non-finite expiry', async () => {
+    const fetchImpl = vi.fn<typeof fetch>(async () => mintResponse('jwt-own'))
+    const tab = fakeCrossTabPort()
+    const client = makeClient({
+      fetchImpl,
+      refreshScheduler: { crossTab: { port: tab.port } }
+    })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+
+    identity.fire(testUser())
+    await vi.waitFor(() => {
+      expect(client.getToken()).toBe('jwt-own')
+    })
+
+    tab.receive(
+      publishedCredential({
+        token: 'jwt-immortal',
+        expiresAt: Number.POSITIVE_INFINITY
+      })
+    )
+
+    expect(
+      client.getToken(),
+      'a non-finite expiry can never lapse; a broadcast carrying one must never replace a good credential'
+    ).toBe('jwt-own')
   })
 })
