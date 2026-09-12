@@ -30,11 +30,6 @@ test.describe(
       test(`${modeControl.type} control model tracks labels and changes the connected node mode`, async ({
         comfyPage
       }) => {
-        test.fail(
-          true,
-          `${modeControl.type} registration is broken in the custom-node test environment`
-        )
-
         await expect
           .poll(
             () =>
@@ -90,9 +85,11 @@ test.describe(
           )
           .toBe('Enable Renamed source')
 
-        await comfyPage.vueNodes
-          .getWidgetByName(modeControl.type, 'Enable Renamed source')
-          .click()
+        await comfyPage.page.evaluate((controlId) => {
+          window.app!.graph.getNodeById(controlId)!.widgets![0].callback!(
+            undefined
+          )
+        }, control.id)
         await expect
           .poll(() =>
             comfyPage.page.evaluate(
@@ -101,6 +98,59 @@ test.describe(
             )
           )
           .toBe(modeControl.disabledMode)
+      })
+
+      test(`${modeControl.type} exposes its toggle in Vue Nodes`, async ({
+        comfyPage
+      }) => {
+        await expect
+          .poll(
+            () =>
+              comfyPage.page.evaluate(
+                (nodeType) =>
+                  Boolean(window.LiteGraph!.registered_node_types[nodeType]),
+                modeControl.type
+              ),
+            {
+              message: `${modeControl.type} must register before checking its rendered toggle`
+            }
+          )
+          .toBe(true)
+
+        const source = await comfyPage.nodeOps.addNode('PrimitiveInt')
+        const control = await comfyPage.nodeOps.addNode(modeControl.type)
+        await comfyPage.page.evaluate(
+          ({ sourceId, controlId }) => {
+            const graph = window.app!.graph
+            graph
+              .getNodeById(sourceId)!
+              .connect(0, graph.getNodeById(controlId), 0)
+            graph.setDirtyCanvas(true, true)
+          },
+          { sourceId: source.id, controlId: control.id }
+        )
+        await comfyPage.nextFrame()
+
+        await expect
+          .poll(() =>
+            comfyPage.page.evaluate(
+              (controlId) =>
+                window.app!.graph.getNodeById(controlId)!.widgets?.[0]?.name,
+              control.id
+            )
+          )
+          .toBe('Enable Int')
+
+        test.fail(
+          true,
+          `${modeControl.type} has no rendered toggle in Vue Nodes`
+        )
+        const renderedToggle = comfyPage.vueNodes.getWidgetByName(
+          modeControl.type,
+          'Enable Int'
+        )
+        await expect(renderedToggle).toBeVisible({ timeout: 2_000 })
+        await renderedToggle.click()
       })
     }
   }
