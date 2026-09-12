@@ -29,10 +29,16 @@ const bridgeState = vi.hoisted(() => {
     sendHumanOps = vi.fn()
     subscribedWorkflowId: string | null = 'wf-1'
     lastSequence = 41
+    nodes = new Map<string, unknown>()
+    nodeMapError: Error | null = null
     follower = {
       updatesApplied: 0,
       doc: {
-        getMap: () => ({ toJSON: () => ({}) })
+        share: new Map<string, unknown>([['nodes', this.nodes]]),
+        getMap: () => {
+          if (this.nodeMapError) throw this.nodeMapError
+          return this.nodes
+        }
       }
     }
   }
@@ -61,7 +67,20 @@ const materializerState = vi.hoisted(() => ({
 // hands whatever it read from the bridge's doc through to the materializer.
 const definitionsState = vi.hoisted(() => ({
   fakeDefinitions: [
-    { id: '11111111-1111-4111-8111-111111111111' } as ExportedSubgraph
+    {
+      id: '11111111-1111-4111-8111-111111111111',
+      name: 'Forwarding fixture',
+      version: 1,
+      revision: 0,
+      state: {
+        lastNodeId: 0,
+        lastLinkId: 0,
+        lastGroupId: 0,
+        lastRerouteId: 0
+      },
+      inputNode: { id: -10, bounding: [0, 0, 75, 100] },
+      outputNode: { id: -20, bounding: [0, 0, 75, 100] }
+    } satisfies ExportedSubgraph
   ],
   readSubgraphDefinitionIds: vi.fn(() => [
     '11111111-1111-4111-8111-111111111111'
@@ -127,10 +146,16 @@ vi.mock(import('./devPanelLog'), () => ({
   recordDevEvent: vi.fn()
 }))
 
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
+
 vi.mock<unknown>(import('@/scripts/api'), () => ({ api: apiState.api }))
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { graph: null, canvas: null }
 }))
+
+import { reportError } from '@/platform/telemetry/reportError'
 
 import { STALE_AFTER_MS, useAgentCrdtFollower } from './useAgentCrdtFollower'
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
@@ -210,6 +235,7 @@ describe('useAgentCrdtFollower', () => {
     materializerState.reconcileAgentAdapters.mockReset().mockReturnValue([])
     definitionsState.readSubgraphDefinitionIds.mockClear()
     definitionsState.readSubgraphDefinitions.mockClear()
+    vi.mocked(reportError).mockClear()
   })
 
   it('subscribes immediately to a bound workflow and reports it in status', () => {
@@ -409,6 +435,71 @@ describe('useAgentCrdtFollower', () => {
 
     expect(bridge().subscribe).toHaveBeenCalledWith('wf-1')
     expect(status().workflowId).toBe('wf-1')
+    unmount()
+  })
+
+  it('records document node additions and removals', async () => {
+    const { recordDevEvent } = await import('./devPanelLog')
+    const { unmount } = mountFollower('wf-1')
+    bridge().nodes.set('1', {})
+
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 1 })
+    bridge().nodes.delete('1')
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 2 })
+
+    const changes = vi
+      .mocked(recordDevEvent)
+      .mock.calls.filter(([event]) => event === 'doc_nodes_changed')
+    expect(changes).toEqual([
+      ['doc_nodes_changed', { added: ['1'], removed: [] }],
+      ['doc_nodes_changed', { added: [], removed: ['1'] }]
+    ])
+    unmount()
+  })
+
+  it('keeps processing an update when the nodes root has another type', () => {
+    const { unmount } = mountFollower('wf-1')
+    bridge().nodeMapError = new Error(
+      'Type with the name nodes has already been defined with a different constructor'
+    )
+
+    expect(() =>
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 1 })
+    ).not.toThrow()
+
+    unmount()
+  })
+
+  it('keeps the known-node baseline when the nodes root cannot be read', async () => {
+    const { recordDevEvent } = await import('./devPanelLog')
+    const { unmount } = mountFollower('wf-1')
+    bridge().nodes.set('1', {})
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 1 })
+
+    const unreadable = new Error(
+      'Type with the name nodes has already been defined with a different constructor'
+    )
+    bridge().nodeMapError = unreadable
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 2 })
+
+    // A frame whose nodes root is unreadable says nothing about membership:
+    // node 1 never left the document, so neither this frame nor the readable
+    // one after it is a change, and the real removal still registers.
+    bridge().nodeMapError = null
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 3 })
+    bridge().nodes.delete('1')
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 4 })
+
+    const changes = vi
+      .mocked(recordDevEvent)
+      .mock.calls.filter(([event]) => event === 'doc_nodes_changed')
+    expect(changes).toEqual([
+      ['doc_nodes_changed', { added: ['1'], removed: [] }],
+      ['doc_nodes_changed', { added: [], removed: ['1'] }]
+    ])
+    expect(reportError).toHaveBeenCalledWith(unreadable, {
+      errorType: 'agent_crdt_follower_doc_nodes_read_failed'
+    })
     unmount()
   })
 

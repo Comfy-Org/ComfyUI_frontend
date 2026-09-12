@@ -1,15 +1,21 @@
 import { mint } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { createTestSubgraphData } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
+import type {
+  ExportedSubgraph,
+  ISerialisedNode,
+  SerialisableLLink
+} from '@/lib/litegraph/src/types/serialisation'
+import { reportError } from '@/platform/telemetry/reportError'
 
-import {
-  readSubgraphDefinitionIds,
-  readSubgraphDefinitions
-} from './agentSubgraphDefinitions'
+import { readSubgraphDefinitions } from './agentSubgraphDefinitions'
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 const CATALOG: WidgetCatalog = {
   types: {
@@ -18,19 +24,30 @@ const CATALOG: WidgetCatalog = {
   }
 }
 
-function interiorNode(id: number, type = 'dummy', extra: object = {}) {
+function interiorNode(
+  id: number,
+  type = 'dummy',
+  extra: Partial<ISerialisedNode> = {}
+): ISerialisedNode {
   return {
     id,
     type,
     pos: [0, 0],
     size: [100, 80],
+    flags: {},
+    order: 0,
+    mode: 0,
     inputs: [],
     outputs: [],
     ...extra
   }
 }
 
-function interiorLink(id: number, origin: number, target: number) {
+function interiorLink(
+  id: number,
+  origin: number,
+  target: number
+): SerialisableLLink {
   return {
     id,
     origin_id: origin,
@@ -39,6 +56,20 @@ function interiorLink(id: number, origin: number, target: number) {
     target_slot: 0,
     type: 'IMAGE'
   }
+}
+
+function expectYMap(value: unknown): Y.Map<unknown> {
+  expect(value).toBeInstanceOf(Y.Map)
+  if (!(value instanceof Y.Map)) throw new TypeError('Expected a Y.Map')
+  return value
+}
+
+function expectStringArray(value: unknown): string[] {
+  expect(Array.isArray(value)).toBe(true)
+  if (!Array.isArray(value) || value.some((item) => typeof item !== 'string')) {
+    throw new TypeError('Expected a string array')
+  }
+  return value
 }
 
 function seed(...definitions: ExportedSubgraph[]): Y.Doc {
@@ -53,6 +84,10 @@ function seed(...definitions: ExportedSubgraph[]): Y.Doc {
 }
 
 describe('readSubgraphDefinitions', () => {
+  beforeEach(() => {
+    vi.mocked(reportError).mockClear()
+  })
+
   it('returns nothing for a document without definitions', () => {
     expect(readSubgraphDefinitions(new Y.Doc())).toEqual([])
     expect(readSubgraphDefinitions(seed())).toEqual([])
@@ -70,8 +105,8 @@ describe('readSubgraphDefinitions', () => {
 
   it('projects a definition back to the shape it was minted from', () => {
     const definition = createTestSubgraphData({
-      nodes: [interiorNode(3), interiorNode(1)] as never,
-      links: [interiorLink(9, 3, 1), interiorLink(4, 1, 3)] as never
+      nodes: [interiorNode(3), interiorNode(1)],
+      links: [interiorLink(9, 3, 1), interiorLink(4, 1, 3)]
     })
 
     const [projected] = readSubgraphDefinitions(seed(definition))
@@ -81,12 +116,12 @@ describe('readSubgraphDefinitions', () => {
 
   it('keeps interior nodes and links in mint order, not key order', () => {
     const definition = createTestSubgraphData({
-      nodes: [interiorNode(10), interiorNode(2), interiorNode(7)] as never,
+      nodes: [interiorNode(10), interiorNode(2), interiorNode(7)],
       links: [
         interiorLink(30, 10, 2),
         interiorLink(5, 2, 7),
         interiorLink(12, 7, 10)
-      ] as never
+      ]
     })
 
     const [projected] = readSubgraphDefinitions(seed(definition))
@@ -100,7 +135,7 @@ describe('readSubgraphDefinitions', () => {
       nodes: [
         interiorNode(1, 'widget-node', { widgets_values: [42, 20] }),
         interiorNode(2, 'unknown-node', { widgets_values: ['a', 'b'] })
-      ] as never
+      ]
     })
 
     const [projected] = readSubgraphDefinitions(seed(definition))
@@ -115,14 +150,15 @@ describe('readSubgraphDefinitions', () => {
 
   it('drops the op layer incarnation stamp from interior nodes', () => {
     const definition = createTestSubgraphData({
-      nodes: [interiorNode(1)] as never
+      nodes: [interiorNode(1)]
     })
     const doc = seed(definition)
-    const stored = doc
-      .getMap<Y.Map<unknown>>('definitions')
-      .get(definition.id)
-      ?.get('nodes') as Y.Map<Y.Map<unknown>>
-    expect(stored.get('1')?.has('__incarnation')).toBe(true)
+    const stored = expectYMap(
+      expectYMap(doc.getMap<unknown>('definitions').get(definition.id)).get(
+        'nodes'
+      )
+    )
+    expect(expectYMap(stored.get('1')).has('__incarnation')).toBe(true)
 
     const [projected] = readSubgraphDefinitions(doc)
 
@@ -130,9 +166,9 @@ describe('readSubgraphDefinitions', () => {
   })
 
   it('passes nested definitions through untouched', () => {
-    const inner = createTestSubgraphData({ nodes: [interiorNode(1)] as never })
+    const inner = createTestSubgraphData({ nodes: [interiorNode(1)] })
     const outer = createTestSubgraphData({
-      nodes: [interiorNode(2, inner.id)] as never,
+      nodes: [interiorNode(2, inner.id)],
       definitions: { subgraphs: [inner] }
     })
 
@@ -141,28 +177,98 @@ describe('readSubgraphDefinitions', () => {
     expect(projected.definitions).toEqual({ subgraphs: [inner] })
   })
 
-  it('projects top-level and nested definition ids without reading bodies', () => {
-    const inner = createTestSubgraphData({ nodes: [interiorNode(1)] as never })
+  it('normalizes string slot indices at every nesting level', () => {
+    const inner = createTestSubgraphData({ nodes: [interiorNode(1)] })
     const outer = createTestSubgraphData({
-      nodes: [interiorNode(2, inner.id)] as never,
-      definitions: { subgraphs: [inner] }
+      nodes: [interiorNode(2, inner.id)]
+    })
+    const doc = seed(outer)
+    const stored = expectYMap(doc.getMap<unknown>('definitions').get(outer.id))
+    stored.set('links', [{ ...interiorLink(9, 2, 2), origin_slot: '3' }])
+    stored.set('definitions', {
+      subgraphs: [
+        { ...inner, links: [{ ...interiorLink(4, 1, 1), target_slot: '5' }] }
+      ]
     })
 
-    expect(readSubgraphDefinitionIds(seed(outer))).toEqual([outer.id, inner.id])
+    const [projected] = readSubgraphDefinitions(doc)
+
+    expect(projected.links?.[0]).toMatchObject({ origin_slot: 3 })
+    expect(projected.definitions?.subgraphs?.[0]?.links?.[0]).toMatchObject({
+      target_slot: 5
+    })
+  })
+
+  it('rejects a definition with malformed nested definitions', () => {
+    const definition = createTestSubgraphData()
+    const doc = seed(definition)
+    const stored = expectYMap(
+      doc.getMap<unknown>('definitions').get(definition.id)
+    )
+    stored.set('definitions', { subgraphs: [null] })
+
+    expect(readSubgraphDefinitions(doc)).toEqual([])
+  })
+
+  it('reports a dropped definition once, and again after it recovers', () => {
+    const definition = createTestSubgraphData()
+    const doc = seed(definition)
+    const stored = expectYMap(
+      doc.getMap<unknown>('definitions').get(definition.id)
+    )
+    const state = stored.get('state')
+    stored.delete('state')
+
+    readSubgraphDefinitions(doc)
+    readSubgraphDefinitions(doc)
+
+    expect(reportError).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'agent_crdt_unreadable_subgraph_definition'
+    })
+
+    stored.set('state', state)
+    expect(readSubgraphDefinitions(doc)).toHaveLength(1)
+    stored.delete('state')
+    readSubgraphDefinitions(doc)
+
+    expect(reportError).toHaveBeenCalledTimes(2)
+  })
+
+  it('rejects a definition whose id counters are not finite integers', () => {
+    const definition = createTestSubgraphData()
+    const doc = seed(definition)
+    const stored = expectYMap(
+      doc.getMap<unknown>('definitions').get(definition.id)
+    )
+    stored.set('state', { ...definition.state, lastNodeId: Infinity })
+
+    expect(readSubgraphDefinitions(doc)).toEqual([])
+  })
+
+  it('rejects a definition with malformed interior nodes', () => {
+    const definition = createTestSubgraphData()
+    const doc = seed(definition)
+    const stored = expectYMap(
+      doc.getMap<unknown>('definitions').get(definition.id)
+    )
+    stored.set('nodes', [null])
+
+    expect(readSubgraphDefinitions(doc)).toEqual([])
   })
 
   it('skips definition and node entries that are not records', () => {
     const definition = createTestSubgraphData({
-      nodes: [interiorNode(1)] as never
+      nodes: [interiorNode(1)]
     })
     const doc = seed(definition)
     doc.transact(() => {
       const definitions = doc.getMap<unknown>('definitions')
       definitions.set('not-a-definition', 'nope')
-      const stored = definitions.get(definition.id) as Y.Map<unknown>
-      ;(stored.get('nodes') as Y.Map<unknown>).set('99', 'nope')
+      const stored = expectYMap(definitions.get(definition.id))
+      expectYMap(stored.get('nodes')).set('99', 'nope')
       stored.set('node_order', [
-        ...(stored.get('node_order') as string[]),
+        ...expectStringArray(stored.get('node_order')),
         '99'
       ])
     })
@@ -177,8 +283,8 @@ describe('readSubgraphDefinitions', () => {
     // mintDefinition pushes one register entry per input node, so two interior
     // nodes sharing an id leave a two-entry register over a one-key map.
     const definition = createTestSubgraphData({
-      nodes: [interiorNode(1), interiorNode(1), interiorNode(2)] as never,
-      links: [interiorLink(5, 1, 2), interiorLink(5, 1, 2)] as never
+      nodes: [interiorNode(1), interiorNode(1), interiorNode(2)],
+      links: [interiorLink(5, 1, 2), interiorLink(5, 1, 2)]
     })
 
     const [projected] = readSubgraphDefinitions(seed(definition))
@@ -189,16 +295,14 @@ describe('readSubgraphDefinitions', () => {
 
   it('skips a node whose widgets entry is not a map, as the package does', () => {
     const definition = createTestSubgraphData({
-      nodes: [interiorNode(1), interiorNode(2)] as never
+      nodes: [interiorNode(1), interiorNode(2)]
     })
     const doc = seed(definition)
     doc.transact(() => {
-      const stored = doc
-        .getMap<unknown>('definitions')
-        .get(definition.id) as Y.Map<unknown>
-      const first = (stored.get('nodes') as Y.Map<unknown>).get(
-        '1'
-      ) as Y.Map<unknown>
+      const stored = expectYMap(
+        doc.getMap<unknown>('definitions').get(definition.id)
+      )
+      const first = expectYMap(expectYMap(stored.get('nodes')).get('1'))
       first.set('widgets', 'nope')
     })
 
@@ -213,16 +317,14 @@ describe('readSubgraphDefinitions', () => {
     // node on the canvas. `structuredClone` throws on any Y type; a doc host
     // folding in a raw update can put any of them into a value slot.
     const definition = createTestSubgraphData({
-      nodes: [interiorNode(1)] as never
+      nodes: [interiorNode(1)]
     })
     const doc = seed(definition)
     doc.transact(() => {
-      const stored = doc
-        .getMap<unknown>('definitions')
-        .get(definition.id) as Y.Map<unknown>
-      const node = (stored.get('nodes') as Y.Map<unknown>).get(
-        '1'
-      ) as Y.Map<unknown>
+      const stored = expectYMap(
+        doc.getMap<unknown>('definitions').get(definition.id)
+      )
+      const node = expectYMap(expectYMap(stored.get('nodes')).get('1'))
       const text = new Y.Text()
       node.set('title', text)
       text.insert(0, 'from text')
@@ -241,17 +343,15 @@ describe('readSubgraphDefinitions', () => {
 
   it('drops a `__proto__` key instead of assigning through it', () => {
     const definition = createTestSubgraphData({
-      nodes: [interiorNode(1)] as never
+      nodes: [interiorNode(1)]
     })
     const doc = seed(definition)
     doc.transact(() => {
-      const stored = doc
-        .getMap<unknown>('definitions')
-        .get(definition.id) as Y.Map<unknown>
+      const stored = expectYMap(
+        doc.getMap<unknown>('definitions').get(definition.id)
+      )
       stored.set('__proto__', { polluted: true })
-      const node = (stored.get('nodes') as Y.Map<unknown>).get(
-        '1'
-      ) as Y.Map<unknown>
+      const node = expectYMap(expectYMap(stored.get('nodes')).get('1'))
       node.set('__proto__', { polluted: true })
     })
 

@@ -97,7 +97,7 @@ function registerSubgraphDefinitions(
   // Filter after flattening: a live nested definition must not be recreated
   // just because its outer is missing, and a missing nested definition must
   // still register when its outer is already live.
-  const missing = flattenDefinitions(definitions).filter(
+  const missing = uniqueDefinitions(flattenDefinitions(definitions)).filter(
     (definition) => !rootGraph.subgraphs.has(definition.id)
   )
   const pending = new Set(missing.map((definition) => definition.id))
@@ -148,11 +148,9 @@ function tryCreateSubgraph(
     withNamedValuesRestore(() => rootGraph.createSubgraph(definition))
     return undefined
   } catch (cause) {
-    // createSubgraph registers the definition before configuring it. Tear the
-    // half-built entry down through the same path node removal uses: a bare
-    // map delete would leave its graph metadata behind, and the Subgraph
-    // constructor remints the id on the next attempt when it finds that
-    // metadata, so the retry would never land under the document's id.
+    // Tear the half-built graph down through the same path node removal uses:
+    // a bare map delete would leave its graph metadata behind, and the next
+    // attempt would remint its id.
     const halfBuilt = rootGraph.subgraphs.get(definition.id)
     if (halfBuilt) {
       try {
@@ -171,14 +169,38 @@ function tryCreateSubgraph(
 /**
  * Each definition plus every definition nested under its `definitions`, with
  * the nesting stripped so each one registers on its own.
+ *
+ * Shallowest first, so that `uniqueDefinitions` resolves an id carried both at
+ * the top level and inside another definition in favour of the top-level copy.
+ * A depth-first walk would hand that decision to the order the CRDT happens to
+ * yield the definitions root in, which is stable neither across a fresh
+ * state-vector catch-up nor an incremental frame sequence.
  */
 function flattenDefinitions(
   definitions: ExportedSubgraph[]
 ): ExportedSubgraph[] {
-  return definitions.flatMap((definition) => [
-    { ...definition, definitions: undefined },
-    ...flattenDefinitions(definition.definitions?.subgraphs ?? [])
-  ])
+  const flattened: ExportedSubgraph[] = []
+  for (let level = definitions; level.length > 0;) {
+    flattened.push(
+      ...level.map((definition) => ({ ...definition, definitions: undefined }))
+    )
+    level = level.flatMap(
+      (definition) => definition.definitions?.subgraphs ?? []
+    )
+  }
+  return flattened
+}
+
+/** Keep the first occurrence, matching LiteGraph's definition normalization. */
+function uniqueDefinitions(
+  definitions: ExportedSubgraph[]
+): ExportedSubgraph[] {
+  const seen = new Set<string>()
+  return definitions.filter((definition) => {
+    if (seen.has(definition.id)) return false
+    seen.add(definition.id)
+    return true
+  })
 }
 
 /**
@@ -225,15 +247,25 @@ function reconcile(
     scope.rootGraphId,
     scope.owningGraphId
   )
-  const orphans = graph._nodes.filter(
-    (node) => !nodeStore.ownsNode(scope, node._state)
-  )
+  const orphans = graph._nodes.filter((node) => {
+    const registeredType = LiteGraph.registered_node_types[node.type]
+    return (
+      !nodeStore.ownsNode(scope, node._state) ||
+      Object.getPrototypeOf(node).constructor !== registeredType
+    )
+  })
   const orphansById = new Map(orphans.map((node) => [node.id, node]))
 
   const materialized: NodeId[] = []
   for (const state of records) {
     const live = graph._nodes_by_id[state.id]
-    if (live && nodeStore.ownsNode(scope, live._state)) continue
+    if (
+      live &&
+      nodeStore.ownsNode(scope, live._state) &&
+      !orphansById.has(state.id)
+    ) {
+      continue
+    }
     const serialised = state.lastSerialization
     if (!serialised) continue
     if (pendingDefinitions.has(state.type)) continue
@@ -350,6 +382,7 @@ function materialize(
       context: { graphId: graph.id, nodeId: String(state.id) }
     })
   }
+  node.last_serialization = serialised
   return true
 }
 
