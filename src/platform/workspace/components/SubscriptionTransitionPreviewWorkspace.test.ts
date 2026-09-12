@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createI18n } from 'vue-i18n'
 import { describe, expect, it, vi } from 'vitest'
@@ -28,6 +28,7 @@ const i18n = createI18n({
     en: {
       subscription: {
         preview: {
+          eachMonthCreditsRefill: 'Each month credits refill to',
           renewsAt: 'Renews at {amount} on {date}. Cancel anytime.',
           renewsAtAmount: 'Renews at {amount}. Cancel anytime.'
         }
@@ -151,11 +152,32 @@ describe('SubscriptionTransitionPreviewWorkspace', () => {
     })
     expect(screen.getByText('$100')).toBeTruthy()
     expect(screen.getByText('subscription.billedMonthly')).toBeTruthy()
-    expect(
-      screen.getByText('subscription.preview.eachMonthCreditsRefill')
-    ).toBeTruthy()
+    expect(screen.getByText('Each month credits refill to')).toBeTruthy()
     expect(screen.getByText('21,100')).toBeTruthy()
     expect(screen.getByText('$82.50')).toBeTruthy()
+  })
+
+  it('renders a separator-bearing unknown tier as readable words', () => {
+    const futurePlan = {
+      ...plan('CREATOR', 'MONTHLY', 3500),
+      slug: 'some-future-tier-monthly',
+      tier: 'SOME_FUTURE_TIER' as unknown as SubscriptionTier
+    }
+    render(SubscriptionTransitionPreviewWorkspace, {
+      props: {
+        previewData: preview({ new_plan: futurePlan })
+      },
+      global: globalOptions
+    })
+
+    expect(screen.getByText('Some Future Tier')).toBeTruthy()
+    expect(
+      within(
+        screen.getByRole('group', {
+          name: 'Each month credits refill to'
+        })
+      ).getByText('0', { exact: true })
+    ).toBeTruthy()
   })
 
   it('opens verification only from its button without exposing the URL', async () => {
