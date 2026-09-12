@@ -400,7 +400,7 @@ jobs:
             echo
             echo 'Detected files:'
             echo '```text'
-            echo "$NEW_SPEC_FILES"
+            echo "$FALLBACK_SPEC_FILES"
             echo '```'
             echo
             echo 'Playwright discovery output:'
