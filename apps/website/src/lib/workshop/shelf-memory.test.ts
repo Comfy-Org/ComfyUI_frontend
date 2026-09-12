@@ -34,9 +34,11 @@ describe('shelf memory', () => {
         throw new Error('access to storage is denied')
       })
 
-    expect(() => rememberShelf('generate-videos')).not.toThrow()
-    expect(lastShelf()).toBeUndefined()
-
-    denied.mockRestore()
+    try {
+      expect(() => rememberShelf('generate-videos')).not.toThrow()
+      expect(lastShelf()).toBeUndefined()
+    } finally {
+      denied.mockRestore()
+    }
   })
 })

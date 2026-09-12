@@ -1217,9 +1217,12 @@ describe('ModelDetail', () => {
       )
       expect(input.value).toBe(edited)
       expect(input.isConnected).toBe(true)
-      expect(screen.getByTestId('example-card').getAttribute('title')).toBe(
-        'Start and end frame · Viewing sample'
-      )
+      expect(
+        screen.getByRole('button', {
+          name: 'Start and end frame: View sample',
+          current: true
+        })
+      ).toBeTruthy()
       expect(
         screen.getByTestId('playground-output').getAttribute('data-state')
       ).toBe('example')

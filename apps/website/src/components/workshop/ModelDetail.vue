@@ -187,11 +187,14 @@ const errors = computed<FieldErrors>(() =>
 const isRunning = computed(() => runState.value.status === 'running')
 
 // A run in flight is money and minutes: leaving the page throws both away, so
-// the browser asks first.
-useEventListener('beforeunload', (event: BeforeUnloadEvent) => {
-  if (!isRunning.value) return
-  event.preventDefault()
-})
+// the browser asks first. The listener only exists while the run does, since a
+// standing one costs the idle page its place in the back/forward cache.
+// globalThis.window, not window: on the server the island has neither.
+useEventListener(
+  () => (isRunning.value ? globalThis.window : undefined),
+  'beforeunload',
+  (event: BeforeUnloadEvent) => event.preventDefault()
+)
 const hasFileInputs = computed(() =>
   schema.value.some((field) => field.kind === 'file' || urlUploadField(field))
 )
