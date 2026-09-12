@@ -256,7 +256,7 @@ test.describe(
 
         await loader.dragBy({ x: 90, y: 60 })
         await checkpoint()
-        await sampler.dragBy({ x: -70, y: 100 })
+        await sampler.dragBy({ x: 70, y: 100 })
         await checkpoint()
 
         const samplerFixture =
@@ -291,6 +291,15 @@ test.describe(
         await comfyPage.page.mouse.click(600, 650)
         await checkpoint()
 
+        await expect
+          .poll(async () => {
+            const [source, target] = await Promise.all([
+              output.getPosition(),
+              samplerInput.getPosition()
+            ])
+            return target.x - source.x
+          })
+          .toBeGreaterThan(100)
         await loader.connectOutput(0, sampler, 0)
         await output.expectLinkCount(1)
         await expect.poll(() => samplerInput.getLink()).not.toBeNull()
