@@ -4,9 +4,7 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-})
+test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
 test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
   test('Can load with correct size', async ({ comfyPage }) => {
@@ -16,7 +14,9 @@ test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
 
   // When link is dropped on widget, it should automatically convert the widget
   // to input.
-  test('Can connect to widget', async ({ comfyPage }) => {
+  test('Can connect to widget without restoring a stale value', async ({
+    comfyPage
+  }) => {
     await comfyPage.workflow.loadWorkflow(
       'primitive/primitive_node_unconnected'
     )
@@ -26,6 +26,8 @@ test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
       await comfyPage.nodeOps.getNodeRefById(2)
     // Connect the output of the primitive node to the input of first widget of the ksampler node
     await primitiveNode.connectWidget(0, ksamplerNode, 0)
+    const primitiveWidget = await primitiveNode.getWidget(0)
+    expect(await primitiveWidget.getValue()).toBe(0)
     await expect(comfyPage.canvas).toHaveScreenshot(
       'primitive_node_connected.png'
     )

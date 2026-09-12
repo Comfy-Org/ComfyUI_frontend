@@ -1,42 +1,48 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type {
+  LGraph,
+  LGraphCanvas,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import { fromPartial } from '@total-typescript/shoehorn'
 
 const viewport = [0, 0, 900, 700] as const
-const { canvasStore, createCanvas } = vi.hoisted(() => {
-  function createCanvas() {
-    const canvas = {
-      graph: undefined as unknown,
-      subgraph: undefined as unknown,
-      setGraph: vi.fn(),
-      animateToBounds: vi.fn()
-    }
-    canvas.setGraph.mockImplementation((graph) => {
-      canvas.graph = graph
-    })
-    return canvas
-  }
-
-  const canvasStore: {
-    canvas: ReturnType<typeof createCanvas> | undefined
-  } = { canvas: createCanvas() }
-  return {
-    canvasStore,
-    createCanvas
-  }
+const routeHash = await vi.hoisted(async () => {
+  const { ref } = await import('vue')
+  return ref('')
 })
-const navigateToGraph = vi.hoisted(() => vi.fn())
+function createCanvas() {
+  const canvas = fromPartial<LGraphCanvas>({
+    graph: null,
+    subgraph: undefined,
+    setGraph: vi.fn(),
+    animateToBounds: vi.fn()
+  })
+  vi.mocked(canvas.setGraph).mockImplementation((graph) => {
+    canvas.graph = graph
+  })
+  return canvas
+}
+let canvasStore: ReturnType<typeof useCanvasStore>
+let navigationStore: ReturnType<typeof useSubgraphNavigationStore>
 const animationFrame = vi.hoisted(() => vi.fn())
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => canvasStore
-}))
-vi.mock('@/composables/canvas/visibleCanvasViewport', () => ({
+vi.mock(import('@/composables/canvas/visibleCanvasViewport'), () => ({
   visibleCanvasViewport: () => viewport
 }))
-vi.mock('@/scripts/app', () => ({ app: { rootGraph: {} } }))
-vi.mock('@/stores/subgraphNavigationStore', () => ({
-  useSubgraphNavigationStore: () => ({ navigateToGraph })
+vi.mock<unknown>(import('@/scripts/app'), () => ({ app: { rootGraph: {} } }))
+vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => routeHash }))
+vi.mock<unknown>(import('vue-router'), () => ({
+  NavigationFailureType: { cancelled: 8, duplicated: 16 },
+  isNavigationFailure: vi.fn(() => false),
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    options: { history: { state: {} } }
+  })
 }))
 
 import { useFocusNode } from './useFocusNode'
@@ -45,13 +51,17 @@ describe('useFocusNode', () => {
   let animationFrames: FrameRequestCallback[]
 
   beforeEach(() => {
+    canvasStore = useCanvasStore()
     canvasStore.canvas = createCanvas()
+    navigationStore = useSubgraphNavigationStore()
     animationFrames = []
-    navigateToGraph.mockReset()
-    navigateToGraph.mockImplementation(async (graph: LGraph) => {
-      canvasStore.canvas!.graph = graph
-      return true
-    })
+    vi.mocked(navigationStore.navigateToGraph).mockReset()
+    vi.mocked(navigationStore.navigateToGraph).mockImplementation(
+      async (graph: LGraph) => {
+        canvasStore.canvas!.graph = graph
+        return true
+      }
+    )
     animationFrame.mockReset()
     animationFrame.mockImplementation((callback: FrameRequestCallback) => {
       return animationFrames.push(callback)
@@ -76,7 +86,7 @@ describe('useFocusNode', () => {
     await finishNavigationFrames()
     await focusPromise
 
-    expect(navigateToGraph).toHaveBeenCalledWith(graph)
+    expect(navigationStore.navigateToGraph).toHaveBeenCalledWith(graph)
     expect(canvasStore.canvas!.setGraph).not.toHaveBeenCalled()
     expect(canvasStore.canvas!.animateToBounds).toHaveBeenCalledWith(bounds, {
       viewport
@@ -118,7 +128,7 @@ describe('useFocusNode', () => {
     const focusPromise = useFocusNode().focusNodeInstance(node)
 
     await vi.waitFor(() => expect(animationFrames).toHaveLength(1))
-    canvasStore.canvas = undefined
+    canvasStore.canvas = null
     await finishNavigationFrames()
     await focusPromise
 
@@ -168,7 +178,7 @@ describe('useFocusNode', () => {
       boundingRect: [1, 2, 3, 4]
     } as unknown as LGraphNode
     graph.nodes.push(node)
-    navigateToGraph.mockImplementation(async () => {
+    vi.mocked(navigationStore.navigateToGraph).mockImplementation(async () => {
       canvasStore.canvas!.graph = graph
       return false
     })
@@ -199,7 +209,7 @@ describe('useFocusNode', () => {
       boundingRect: [1, 2, 3, 4]
     } as unknown as LGraphNode
     graph.nodes.push(node)
-    navigateToGraph.mockImplementation(async () => {
+    vi.mocked(navigationStore.navigateToGraph).mockImplementation(async () => {
       canvasStore.canvas!.graph = graph
       graph.nodes.length = 0
       return true
@@ -218,8 +228,8 @@ describe('useFocusNode', () => {
     } as unknown as LGraphNode
     graph.nodes.push(node)
     const staleCanvas = canvasStore.canvas!
-    navigateToGraph.mockImplementation(async () => {
-      canvasStore.canvas = undefined
+    vi.mocked(navigationStore.navigateToGraph).mockImplementation(async () => {
+      canvasStore.canvas = null
       return true
     })
     const focusPromise = useFocusNode().focusNodeInstance(node)
@@ -239,7 +249,7 @@ describe('useFocusNode', () => {
       boundingRect: [1, 2, 3, 4]
     } as unknown as LGraphNode
     graph.nodes.push(node)
-    navigateToGraph.mockImplementation(async () => {
+    vi.mocked(navigationStore.navigateToGraph).mockImplementation(async () => {
       canvasStore.canvas!.graph = otherGraph
       return true
     })

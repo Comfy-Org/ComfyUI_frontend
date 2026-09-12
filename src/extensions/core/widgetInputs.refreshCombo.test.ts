@@ -1,7 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraph, LLink } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -122,10 +120,6 @@ function defsWithSpec(
 }
 
 describe('PrimitiveNode.refreshComboInNode', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it.each<[string, InputSpec]>([
     ['V1', [FRESH_OPTIONS, {}]],
     ['V2', ['COMBO', { options: FRESH_OPTIONS }]]

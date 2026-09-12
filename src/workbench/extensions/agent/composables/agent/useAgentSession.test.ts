@@ -1,5 +1,6 @@
-import { createPinia, setActivePinia } from 'pinia'
+import type { AgentAdmissionError } from '@comfyorg/ingest-types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import { reportError } from '@/platform/telemetry/reportError'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
@@ -15,19 +16,25 @@ import type {
   TurnId,
   UploadImageResult
 } from '../../schemas/agentApiSchema'
-import { zAgentWsEvent } from '../../schemas/agentApiSchema'
+import {
+  zAgentAdmissionError,
+  zAgentWsEvent
+} from '../../schemas/agentApiSchema'
 import { AgentApiError } from '../../services/agent/agentRestClient'
 import type {
   AgentRestClient,
   PostMessageInput
 } from '../../services/agent/agentRestClient'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
+import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
 
 import type { SelectedNode } from './useCanvasSelection'
-import type { AgentEventSource } from './useAgentSession'
+import type { AgentEventSource, TurnOrigin } from './useAgentSession'
 import { useAgentSession } from './useAgentSession'
 
-vi.mock('@/platform/telemetry/reportError', () => ({ reportError: vi.fn() }))
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
   const base: AgentRestClient = {
@@ -92,6 +99,15 @@ function fakeEvents() {
     status: (live: boolean) => statusListener?.(live)
   }
 }
+
+// Mirrors AgentPanelRoot's originWorkflow(): an explicit `null` origin means
+// the send had no origin tab and must resolve to nothing, while an omitted
+// origin falls back to whatever tab is active right now.
+const pathFor = (
+  origin: TurnOrigin | undefined,
+  activePath: string | undefined
+): string | undefined =>
+  origin === null ? undefined : (origin?.tabPath ?? activePath)
 
 const wire = (raw: unknown): unknown => zAgentWsEvent.parse(raw)
 const thinking = (id: string, delta: string) =>
@@ -168,9 +184,25 @@ const historyRow = (
   content: { text }
 })
 
+type AgentAdmissionReason = AgentAdmissionError['error']['reason']
+
+function admissionError(
+  reason: AgentAdmissionReason,
+  message: string
+): AgentApiError {
+  const serviceUnavailable = reason === 'funds_unavailable'
+  const body = zAgentAdmissionError.parse({
+    error: {
+      message,
+      type: serviceUnavailable ? 'SERVICE_UNAVAILABLE' : 'PAYMENT_REQUIRED',
+      reason
+    }
+  })
+  return new AgentApiError(message, serviceUnavailable ? 503 : 402, body)
+}
+
 describe('useAgentSession (v1 composition root)', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     localStorage.clear()
     vi.mocked(reportError).mockClear()
   })
@@ -185,6 +217,7 @@ describe('useAgentSession (v1 composition root)', () => {
 
     expect(rest.postMessage).toHaveBeenCalledWith('new', {
       content: 'make me a cat',
+      workflowReferences: [],
       selection: undefined,
       attachments: undefined
     })
@@ -493,6 +526,148 @@ describe('useAgentSession (v1 composition root)', () => {
     ).toBe(true)
   })
 
+  it('renders no_funds as the paywall reply while keeping the rejected prompt', async () => {
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockRejectedValue(
+        admissionError(
+          'no_funds',
+          "You're out of credits. Add credits to keep running the agent."
+        )
+      )
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    expect(await session.sendMessage('make a cat')).toBe(false)
+    expect(session.entries.value).toMatchObject([
+      { role: 'user', text: 'make a cat' },
+      {
+        role: 'assistant',
+        streaming: false,
+        parts: [{ type: 'paywall' }]
+      }
+    ])
+    expect(session.threadId.value).toBeNull()
+    expect(session.isStreaming.value).toBe(false)
+  })
+
+  it.for(['paywall', 'notice'] as const)(
+    'preserves both rejected prompts and distinct %s replies across a panel remount',
+    async (partType) => {
+      const error =
+        partType === 'paywall'
+          ? admissionError('no_funds', 'Out of credits')
+          : new AgentApiError('Request failed', 500, undefined)
+      const rest = fakeRest({
+        postMessage: vi
+          .fn<AgentRestClient['postMessage']>()
+          .mockRejectedValue(error)
+      })
+      const first = useAgentSession({ rest, events: fakeEvents().source })
+      first.start()
+      expect(await first.sendMessage('first prompt')).toBe(false)
+      const firstReplyId = first.entries.value[1].id
+      first.stop()
+      await Promise.resolve()
+
+      const second = useAgentSession({ rest, events: fakeEvents().source })
+      second.start()
+      expect(await second.sendMessage('second prompt')).toBe(false)
+
+      expect(second.entries.value).toMatchObject([
+        { role: 'user', text: 'first prompt' },
+        { role: 'assistant', streaming: false, parts: [{ type: partType }] },
+        { role: 'user', text: 'second prompt' },
+        { role: 'assistant', streaming: false, parts: [{ type: partType }] }
+      ])
+      expect(second.entries.value[3].id).not.toBe(firstReplyId)
+      second.stop()
+      await Promise.resolve()
+    }
+  )
+
+  it('renders manual_block as its contact-support error instead of a paywall', async () => {
+    const message =
+      'This workspace is blocked. Contact support to restore access.'
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockRejectedValue(admissionError('manual_block', message))
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    expect(await session.sendMessage('make a cat')).toBe(false)
+    const assistant = session.entries.value.at(-1)
+    expect(assistant).toMatchObject({
+      role: 'assistant',
+      parts: [{ type: 'notice', level: 'error', text: message }]
+    })
+  })
+
+  it('does not retry a funds_unavailable denial even when a draft is attached', async () => {
+    const message = 'Billing status is temporarily unavailable; please retry.'
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockRejectedValue(admissionError('funds_unavailable', message))
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source,
+      workflow: {
+        current: () => undefined,
+        adopted: () => {},
+        draft: () => ({ content: { nodes: [] }, version: 1 })
+      }
+    })
+    session.start()
+
+    expect(await session.sendMessage('make a cat')).toBe(false)
+    expect(postMessage).toHaveBeenCalledOnce()
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [{ type: 'notice', level: 'error', text: message }]
+    })
+  })
+
+  it('does not infer no_funds from a 402 without an admission reason', async () => {
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockRejectedValue(
+        new AgentApiError('payment required', 402, {
+          error: { message: 'payment required', type: 'PAYMENT_REQUIRED' }
+        })
+      )
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    await session.sendMessage('make a cat')
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [
+        {
+          type: 'notice',
+          level: 'error',
+          text: 'Message failed to send: payment required'
+        }
+      ]
+    })
+  })
+
   it('(d) stopTurn cancels the active turn; a 409 is swallowed and the socket settles it', async () => {
     const postMessage = vi
       .fn<
@@ -654,6 +829,7 @@ describe('useAgentSession (v1 composition root)', () => {
 
     expect(rest.postMessage).toHaveBeenCalledWith('new', {
       content: 'with files',
+      workflowReferences: [],
       selection: undefined,
       attachments: ['upload_a.png', 'upload_b.png']
     })
@@ -681,6 +857,58 @@ describe('useAgentSession (v1 composition root)', () => {
     await session.sendMessage('explain', undefined, tags)
     const body = vi.mocked(rest.postMessage).mock.calls[0][1]
     expect(body.selection).toEqual({ node_ids: ['5', '6'] })
+  })
+
+  it('(h3) sends workflow references separately and keeps them in the local turn', async () => {
+    const rest = fakeRest()
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    const references = [
+      { id: 'wf-context', name: 'Context workflow', textOffset: 0 }
+    ]
+    session.start()
+
+    await session.sendMessage('compare this', undefined, undefined, references)
+
+    expect(vi.mocked(rest.postMessage).mock.calls[0][1]).toEqual({
+      content: '[Context workflow](workflow://wf-context)compare this',
+      workflowReferences: [
+        { workflow_id: 'wf-context', name: 'Context workflow' }
+      ],
+      selection: undefined,
+      attachments: undefined
+    })
+    expect(useAgentConversationStore().entries[0]).toMatchObject({
+      role: 'user',
+      workflowReferences: references
+    })
+  })
+
+  it('sends inline workflow identities in sentence order while retaining the local chip draft', async () => {
+    const rest = fakeRest()
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    const references = [
+      { id: 'wf-a', name: 'A', textOffset: 5 },
+      { id: 'wf-b', name: 'B', textOffset: 11 }
+    ]
+    session.start()
+
+    await session.sendMessage('Copy  into .', undefined, undefined, references)
+
+    expect(rest.postMessage).toHaveBeenCalledWith(
+      'new',
+      expect.objectContaining({
+        content: 'Copy [A](workflow://wf-a) into [B](workflow://wf-b).',
+        workflowReferences: [
+          { workflow_id: 'wf-a', name: 'A' },
+          { workflow_id: 'wf-b', name: 'B' }
+        ]
+      })
+    )
+    expect(useAgentConversationStore().entries[0]).toMatchObject({
+      role: 'user',
+      text: 'Copy  into .',
+      workflowReferences: references
+    })
   })
 
   it('(h4) the turn post never carries a draft field (upload retired)', async () => {
@@ -759,6 +987,313 @@ describe('useAgentSession (v1 composition root)', () => {
     await session.sendMessage('what is on my canvas')
 
     expect(vi.mocked(postMessage).mock.calls[0][1]).not.toHaveProperty('draft')
+  })
+
+  it.for(['new-chat', 'history'])(
+    'cancels preparation after switching conversation: %s',
+    async (context) => {
+      const rest = fakeRest()
+      const { source } = fakeEvents()
+      let releasePrepare = () => {}
+      const prepare = vi.fn(
+        () =>
+          new Promise<void>((resolve) => {
+            releasePrepare = resolve
+          })
+      )
+      const adopted = vi.fn()
+      const session = useAgentSession({
+        rest,
+        events: source,
+        workflow: {
+          current: () => ({ id: 'wf-a', tabPath: 'tab-a' }),
+          prepare,
+          adopted
+        }
+      })
+      session.start()
+      const sending = session.sendMessage('Old draft')
+      expect(prepare).toHaveBeenCalledOnce()
+      if (context === 'new-chat') session.newChat()
+      else await session.loadThread('th-history')
+      releasePrepare()
+      expect(await sending).toBe(false)
+      expect(rest.postMessage).not.toHaveBeenCalled()
+      expect(adopted).not.toHaveBeenCalled()
+      expect(session.entries.value).toEqual([])
+      expect(session.threadId.value).toBe(
+        context === 'new-chat' ? null : 'th-history'
+      )
+      expect(session.isSending.value).toBe(false)
+      session.stop()
+    }
+  )
+
+  it('(h7) a tab switch while prepare() is pending does not reattribute the send to the new tab', async () => {
+    const postMessage = vi.fn(async () => ({
+      thread_id: 'th-1',
+      message_id: 'msg-1',
+      workflow_id: 'wf-1'
+    })) as unknown as AgentRestClient['postMessage']
+    const rest = fakeRest({ postMessage })
+    const { source } = fakeEvents()
+    const adopted = vi.fn()
+    let releasePrepare: () => void = () => undefined
+    const prepare = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          releasePrepare = resolve
+        })
+    )
+    let activePath = 'tab-a'
+    const idForPath = (path: string) => (path === 'tab-a' ? 'wf-a' : 'wf-b')
+    const session = useAgentSession({
+      rest,
+      events: source,
+      workflow: {
+        // Mirrors the real deps: honor an explicit origin (resolved
+        // post-prepare) and fall back to whatever tab is active right now
+        // when called with no argument (the pre-await identity capture).
+        current: (origin) => {
+          const path = pathFor(origin, activePath)
+          return path === undefined
+            ? undefined
+            : { id: idForPath(path), tabPath: path }
+        },
+        adopted,
+        prepare,
+        tabs: (origin) => {
+          const path = pathFor(origin, activePath)
+          return {
+            open_tabs: [{ workflow_id: 'wf-a', name: 'tab-a' }],
+            current_tab: path === undefined ? undefined : idForPath(path)
+          }
+        }
+      }
+    })
+    session.start()
+
+    const sendPromise = session.sendMessage('hello')
+    // Simulate the user switching tabs while prepare() is still in flight.
+    activePath = 'tab-b'
+    releasePrepare()
+    await sendPromise
+
+    expect(adopted).toHaveBeenCalledWith('wf-1', {
+      id: 'wf-a',
+      tabPath: 'tab-a'
+    })
+    expect(vi.mocked(postMessage).mock.calls[0][1]).toMatchObject({
+      workflowId: 'wf-a',
+      tabs: { current_tab: 'wf-a' }
+    })
+  })
+
+  it('(h8) the draft snapshot follows the originating tab, not the tab switched to during prepare()', async () => {
+    const postMessage = vi.fn(async () => ({
+      thread_id: 'th-1',
+      message_id: 'msg-1',
+      workflow_id: 'wf-1'
+    })) as unknown as AgentRestClient['postMessage']
+    const rest = fakeRest({ postMessage })
+    const { source } = fakeEvents()
+    let releasePrepare: () => void = () => undefined
+    const prepare = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          releasePrepare = resolve
+        })
+    )
+    let activePath = 'tab-a'
+    const idForPath = (path: string) => (path === 'tab-a' ? 'wf-a' : 'wf-b')
+    const session = useAgentSession({
+      rest,
+      events: source,
+      workflow: {
+        current: (origin) => {
+          const path = pathFor(origin, activePath)
+          return path === undefined
+            ? undefined
+            : { id: idForPath(path), tabPath: path }
+        },
+        adopted: vi.fn(),
+        prepare,
+        // The draft is read on the same post-await leg as current()/tabs(), so
+        // it has to honor the same pinned identity or the turn ships one tab's
+        // canvas under another tab's workflow id.
+        draft: (origin) => {
+          const path = pathFor(origin, activePath)
+          return path === undefined
+            ? undefined
+            : { content: { nodes: [{ id: 1, type: path }], links: [] } }
+        }
+      }
+    })
+    session.start()
+
+    const sendPromise = session.sendMessage('what is on my canvas')
+    activePath = 'tab-b'
+    releasePrepare()
+    await sendPromise
+
+    expect(vi.mocked(postMessage).mock.calls[0][1]).toMatchObject({
+      workflowId: 'wf-a',
+      draft: { content: { nodes: [{ id: 1, type: 'tab-a' }], links: [] } }
+    })
+  })
+
+  it('(h9) a send that starts with no origin tab is not reattributed to a tab attached during prepare()', async () => {
+    const postMessage = vi.fn(async () => ({
+      thread_id: 'th-1',
+      message_id: 'msg-1',
+      workflow_id: 'wf-b'
+    })) as unknown as AgentRestClient['postMessage']
+    const rest = fakeRest({ postMessage })
+    const { source } = fakeEvents()
+    const adopted = vi.fn()
+    let releasePrepare: () => void = () => undefined
+    const prepare = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          releasePrepare = resolve
+        })
+    )
+    // The panel is detached when the user hits send, so there is no origin
+    // tab: activeWorkflowTurnContext() returns undefined for every lookup
+    // while `detached` holds, exactly like the real deps.
+    let detached = true
+    let activePath: string | undefined = undefined
+    const resolve = (origin: TurnOrigin | undefined) =>
+      detached ? undefined : pathFor(origin, activePath)
+    const session = useAgentSession({
+      rest,
+      events: source,
+      workflow: {
+        current: (origin) => {
+          const path = resolve(origin)
+          return path === undefined ? undefined : { id: 'wf-b', tabPath: path }
+        },
+        adopted,
+        prepare,
+        tabs: (origin) => {
+          const path = resolve(origin)
+          return {
+            open_tabs: [{ workflow_id: 'wf-b', name: 'tab-b' }],
+            current_tab: path === undefined ? undefined : 'wf-b'
+          }
+        },
+        draft: (origin) => {
+          const path = resolve(origin)
+          return path === undefined
+            ? undefined
+            : { content: { nodes: [{ id: 1, type: path }], links: [] } }
+        }
+      }
+    })
+    session.start()
+
+    const sendPromise = session.sendMessage('hello')
+    // The user re-attaches (onSelectTab clears workflowDetached) and selects
+    // tab-b while prepare() is still in flight.
+    detached = false
+    activePath = 'tab-b'
+    releasePrepare()
+    await sendPromise
+
+    const sent = vi.mocked(postMessage).mock.calls[0][1]
+    expect(sent).not.toHaveProperty('workflowId')
+    expect(sent).not.toHaveProperty('draft')
+    expect(sent.tabs?.current_tab).toBeUndefined()
+    // open_tabs is context, not attribution, so it still travels.
+    expect(sent.tabs?.open_tabs).toEqual([
+      { workflow_id: 'wf-b', name: 'tab-b' }
+    ])
+    // The ack echoes wf-b; with no origin tab there is nothing to bind it to.
+    expect(adopted).toHaveBeenCalledWith('wf-b', undefined)
+  })
+
+  it('(h6) a bind landing in the prepare()/POST window makes an echoed id read as an echo', async () => {
+    // Regression for the r3929083595 race: priorWorkflowId was snapshotted
+    // before prepare(), so a bindWorkflow() landing in that window (a late
+    // agent_active_tab frame, loadThread, an overlapping send) left the guard
+    // comparing the echoed id against a stale pre-turn binding and
+    // re-binding the origin tab to a workflow the mid-turn event had already
+    // bound elsewhere.
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(
+      () =>
+        new Promise<AgentTurnAccepted>((resolve) =>
+          resolve({
+            thread_id: 'th-1',
+            message_id: 'msg-1',
+            workflow_id: 'wf-x'
+          })
+        )
+    )
+    const rest = fakeRest({ postMessage })
+    const { source } = fakeEvents()
+    const adopted = vi.fn()
+    const session = useAgentSession({
+      rest,
+      events: source,
+      workflow: {
+        current: () => undefined,
+        adopted
+      }
+    })
+    session.start()
+
+    const sendPromise = session.sendMessage('hello')
+    // The mid-turn bind establishes the thread's existing workflow while the
+    // POST is in flight; the ack then echoes exactly that id.
+    session.bindWorkflow('wf-x')
+    await sendPromise
+
+    // An echo of the current binding is not a mint: no re-adoption.
+    expect(adopted).not.toHaveBeenCalled()
+    expect(session.boundWorkflowId.value).toBe('wf-x')
+  })
+
+  it('(h10) reload does not adopt a resumed thread workflow onto an unsaved tab', async () => {
+    useAgentWorkflowTabBindingStore().bind(
+      'wf-existing',
+      'workflows/existing.json'
+    )
+    await nextTick()
+    useAgentWorkflowTabBindingStore().$dispose()
+    localStorage.setItem('Comfy.Agent.ThreadId', 'th-existing')
+
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
+      thread_id: 'th-existing',
+      message_id: 'msg-1',
+      workflow_id: 'wf-existing'
+    }))
+    const getMessages = vi.fn<AgentRestClient['getMessages']>(async () => [])
+    const adopted = vi.fn()
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage, getMessages }),
+      events: fakeEvents().source,
+      workflow: {
+        current: () => ({ tabPath: 'workflows/scratch.json' }),
+        adopted
+      }
+    })
+    session.start()
+    await vi.waitFor(() =>
+      expect(getMessages).toHaveBeenCalledWith('th-existing')
+    )
+    await session.loadThread('th-existing')
+
+    expect(session.boundWorkflowId.value).toBeNull()
+    await session.sendMessage('resume here')
+
+    expect(postMessage).toHaveBeenCalledWith(
+      'th-existing',
+      expect.not.objectContaining({ workflowId: expect.anything() })
+    )
+    expect(adopted).not.toHaveBeenCalled()
+    expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-existing')).toBe(
+      'workflows/existing.json'
+    )
   })
 
   it("(i2) loadThread drops the previous thread's workflow binding", async () => {
@@ -1540,7 +2075,6 @@ describe('thread resume (B17)', () => {
   ]
 
   beforeEach(() => {
-    setActivePinia(createPinia())
     localStorage.clear()
   })
 
@@ -1646,13 +2180,111 @@ describe('thread resume (B17)', () => {
     })
   })
 
+  it('invalidates an in-flight workflow restoration when starting a new chat', async () => {
+    let finishRestore = () => {}
+    let stillCurrent = () => true
+    const restored = vi.fn(
+      async (_id: string | undefined, isCurrent: () => boolean) => {
+        stillCurrent = isCurrent
+        await new Promise<void>((resolve) => {
+          finishRestore = resolve
+        })
+      }
+    )
+    const session = useAgentSession({
+      rest: fakeRest({
+        getMessages: vi.fn(async () => [
+          historyRow(1, 'user', 'turn-a', 'Prompt')
+        ])
+      }),
+      events: fakeEvents().source,
+      workflow: { current: () => undefined, adopted: vi.fn(), restored }
+    })
+    session.start()
+    const first = session.loadThread('first')
+    await vi.waitFor(() => expect(restored).toHaveBeenCalledOnce())
+    expect(stillCurrent()).toBe(true)
+    session.newChat()
+    expect(stillCurrent()).toBe(false)
+    finishRestore()
+    await first
+  })
+
+  it('keeps the first restoration stale when a later thread finishes loading', async () => {
+    let releaseFirst = () => {}
+    let firstIsCurrent = () => true
+    const restored = vi
+      .fn(async (_id: string | undefined, _isCurrent: () => boolean) => {})
+      .mockImplementationOnce(
+        async (_id: string | undefined, isCurrent: () => boolean) => {
+          firstIsCurrent = isCurrent
+          await new Promise<void>((resolve) => {
+            releaseFirst = resolve
+          })
+        }
+      )
+    const session = useAgentSession({
+      rest: fakeRest({
+        getMessages: vi.fn(async () => [
+          historyRow(1, 'user', 'turn', 'Prompt')
+        ])
+      }),
+      events: fakeEvents().source,
+      workflow: { current: () => undefined, adopted: vi.fn(), restored }
+    })
+    session.start()
+    const first = session.loadThread('first')
+    await vi.waitFor(() => expect(restored).toHaveBeenCalledOnce())
+    await session.loadThread('second')
+    expect(firstIsCurrent()).toBe(false)
+    releaseFirst()
+    await first
+    expect(session.threadId.value).toBe('second')
+  })
+
+  it('restores the target from the latest persisted user message', async () => {
+    const older = historyRow(1, 'user', 'turn-a', 'First')
+    older.workflow_id = 'wf-a'
+    const latest = historyRow(3, 'user', 'turn-b', 'Second')
+    latest.workflow_id = 'wf-b'
+    const restored = vi.fn()
+    const session = useAgentSession({
+      rest: fakeRest({
+        getMessages: vi.fn(
+          async (): Promise<AgentMessages> => [
+            latest,
+            historyRow(2, 'assistant', 'turn-a', 'Done'),
+            older
+          ]
+        )
+      }),
+      events: fakeEvents().source,
+      workflow: {
+        current: () => undefined,
+        adopted: vi.fn(),
+        restored
+      }
+    })
+    session.start()
+
+    await session.loadThread('th-9')
+
+    expect(restored).toHaveBeenCalledWith('wf-b', expect.any(Function))
+  })
+
   it('listThreads returns the REST client thread list', async () => {
     const listThreads = vi.fn(
       async (): Promise<AgentThreadSummary[]> => [
         {
+          created_at: '2026-07-07T00:00:00Z',
           id: 'th-9',
+          last_message_at: '2026-07-07T00:00:00Z',
+          message_count: 2,
+          preview: 'build a duck',
+          status: 'active',
           title: 'build a duck',
-          updated_at: '2026-07-07T00:00:00Z'
+          updated_at: '2026-07-07T00:00:00Z',
+          workflow_id: 'wf-9'
         }
       ]
     )

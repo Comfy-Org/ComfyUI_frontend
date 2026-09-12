@@ -345,11 +345,11 @@ export const useSubgraphNavigationStore = defineStore(
             )
           } catch (err) {
             if (navigationId !== navigationIntentId) return
-            console.warn(
-              '[subgraphNavigation] openWorkflow rejected during recovery',
-              err
-            )
-            reportError(err, { errorType: 'workflow_navigation_failure' })
+            reportError(err, {
+              errorType: 'workflow_navigation_failure',
+              level: 'warning',
+              context: { stage: 'recovery' }
+            })
             return redirectToRoot('workflow load failed', navigationId)
           }
           if (navigationId !== navigationIntentId) return
@@ -442,7 +442,7 @@ export const useSubgraphNavigationStore = defineStore(
     }
 
     async function navigateToGraph(targetGraph: LGraph): Promise<boolean> {
-      const canvas = canvasStore.canvas
+      const canvas = currentCanvas(canvasStore.getCanvas())
       const targetId = targetGraph.id
       const belongsToCurrentWorkflow =
         targetGraph === app.rootGraph ||
@@ -464,7 +464,7 @@ export const useSubgraphNavigationStore = defineStore(
       if (
         !hashWritten &&
         intent.id === navigationIntentId &&
-        canvasStore.canvas?.graph === targetGraph
+        canvas.graph === targetGraph
       ) {
         await withNavBlocked(
           async () => canvas.setGraph(previousGraph),
@@ -474,7 +474,7 @@ export const useSubgraphNavigationStore = defineStore(
       return (
         hashWritten &&
         intent.id === navigationIntentId &&
-        canvasStore.canvas?.graph === targetGraph
+        canvas.graph === targetGraph
       )
     }
 
