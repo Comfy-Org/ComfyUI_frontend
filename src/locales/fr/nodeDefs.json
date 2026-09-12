@@ -3065,6 +3065,29 @@
       }
     }
   },
+  "ConcatenateVideo": {
+    "description": "Concatène les vidéos dans l’ordre sans décoder les entrées encodées compatibles.",
+    "display_name": "Concaténer des vidéos",
+    "inputs": {
+      "codec": {
+        "name": "codec",
+        "tooltip": "Codec utilisé pour encoder les tenseurs vidéo. Auto utilise H.264 ; les vidéos déjà encodées restent inchangées."
+      },
+      "complete_audio": {
+        "name": "complete_audio",
+        "tooltip": "Piste audio complète facultative pour la vidéo concaténée. Remplace l’audio des vidéos d’entrée."
+      },
+      "videos": {
+        "name": "videos",
+        "tooltip": "Segments vidéo à concaténer dans l’ordre des entrées."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "La vidéo concaténée."
+      }
+    }
+  },
   "ConditioningAverage": {
     "display_name": "Moyenne de Conditionnement",
     "inputs": {
@@ -3098,6 +3121,20 @@
       },
       "conditioning_to": {
         "name": "conditionnement_vers"
+      }
+    }
+  },
+  "ConditioningLoader": {
+    "description": "Charge un conditionnement enregistré avec Enregistrer le conditionnement, ou tout fichier safetensors contenant un tenseur « conditioning », depuis le dossier embeddings.",
+    "display_name": "Charger le conditionnement",
+    "inputs": {
+      "conditioning_name": {
+        "name": "conditioning_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3908,6 +3945,10 @@
       "bit_depth": {
         "name": "bit_depth",
         "tooltip": "Auto utilise 8 bits pour sRGB et 10 bits pour HDR. Les choix explicites de 8 bits et 10 bits sont indépendants de l’espace colorimétrique."
+      },
+      "codec": {
+        "name": "codec",
+        "tooltip": "Encode éventuellement la vidéo immédiatement. None conserve les images sous forme de tenseurs ; Auto utilise H.264."
       },
       "color_space": {
         "name": "color_space",
@@ -5026,6 +5067,22 @@
       "batch_size": {
         "name": "batch_size",
         "tooltip": "Le nombre d’images latentes dans le lot."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyYuE2LatentAudio": {
+    "display_name": "Audio latent YuE2 vide",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "seconds": {
+        "name": "seconds"
       }
     },
     "outputs": {
@@ -7979,7 +8036,7 @@
     }
   },
   "ImageColorSpace": {
-    "description": "Convertit sRGB (Rec.709), HDR (Rec.2020 HLG) et HDR PQ (Rec.2020 PQ). Utilise un blanc SDR de 203 nits et un écran de référence HLG de 1000 nits. La compression applique un mappage tonal à la luminance excédentaire sur l’ensemble du lot et compresse les couleurs hors gamme. Les conversions sont calculées en float32 et renvoient l’appareil intermédiaire et le type de données. L’alpha direct n’est pas transformé dans l’espace colorimétrique.",
+    "description": "Convertit sRGB, Rec.709 linéaire, HDR (Rec.2020 HLG) et HDR PQ (Rec.2020 PQ). La valeur 1,0 en linéaire utilise le même blanc de référence à 203 nits que sRGB ; HLG utilise un écran de référence à 1 000 nits. La sortie linéaire et les conversions de linéaire vers HDR préservent les valeurs étendues sans mappage de tons. La sortie SDR et la conversion de PQ vers HLG appliquent un mappage de tons à la luminance excédentaire sur l’ensemble du lot et compressent les couleurs hors gamut. Les conversions sont calculées en float32 et renvoient le périphérique intermédiaire et le dtype. L’alpha non prémultiplié n’est pas transformé par la couleur.",
     "display_name": "Convertir l’espace colorimétrique de l’image",
     "inputs": {
       "destination": {
@@ -12374,6 +12431,23 @@
       }
     }
   },
+  "MarigoldV2PostProcess": {
+    "description": "Transforme une prédiction Marigold V2 décodée en image : profondeur normalisée avec les zones proches claires, normales de surface unitaires ou albédo sRGB.",
+    "display_name": "Post-traitement Marigold V2",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "prediction": {
+        "name": "prediction"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MaskComposite": {
     "display_name": "MaskComposite",
     "inputs": {
@@ -16021,6 +16095,9 @@
     "inputs": {
       "model": {
         "name": "modèle"
+      },
+      "sampling": {
+        "name": "sampling"
       },
       "shift": {
         "name": "décalage"
@@ -20988,6 +21065,24 @@
       }
     }
   },
+  "SaveConditioning": {
+    "description": "Enregistre un conditionnement dans le dossier de sortie au format safetensors ; déplacez le fichier vers models/embeddings pour le charger avec Charger le conditionnement, par ex. pour ignorer l’encodeur de texte.",
+    "display_name": "Enregistrer le conditionnement",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "conditioning",
+        "tooltip": null
+      }
+    }
+  },
   "SaveGLB": {
     "display_name": "SaveGLB",
     "inputs": {
@@ -21676,6 +21771,28 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SheetSage2AudioToABC": {
+    "description": "Transcrit les mélodies vocales et instrumentales de la musique en notation ABC. Connectez la sortie abc au nœud YuE2 Generate Music et utilisez le mode correspondant.",
+    "display_name": "SheetSage2 Audio vers ABC",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "audio_encoder": {
+        "name": "audio_encoder"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "full : génère la mélodie et les accords ; melody : génère uniquement la mélodie, recommandé pour les reprises."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
         "tooltip": null
       }
     }
@@ -28528,6 +28645,94 @@
     "outputs": {
       "0": {
         "name": "maillage",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateABC": {
+    "description": "Génère la notation ABC d’une chanson à partir du style et des paroles. Connectez abc au nœud YuE2 Generate Music.",
+    "display_name": "YuE2 Generate ABC",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "lyrics": {
+        "name": "lyrics"
+      },
+      "max_abc_tokens": {
+        "name": "max_abc_tokens"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "complet : génère la mélodie et les accords ; mélodie : génère uniquement la mélodie, recommandé pour les reprises."
+      },
+      "seed": {
+        "name": "graine"
+      },
+      "style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateMusic": {
+    "description": "Génère des tokens musicaux et un conditionnement acoustique à partir du style, des paroles et d’une notation ABC. Indiquez les secondes générées au nœud Empty YuE2 Latent Audio. Une entrée ABC vide ignore le mode sélectionné.",
+    "display_name": "YuE2 Générer de la musique",
+    "inputs": {
+      "abc": {
+        "name": "abc",
+        "tooltip": "Connectez le générateur ABC ou fournissez une partition modifiée. Laissez vide pour utiliser automatiquement le mode désactivé."
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "lyrics": {
+        "name": "paroles"
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "Durée maximale ; la génération peut s’arrêter plus tôt. Cette version utilise un budget de 360 secondes."
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "complet : génère la mélodie et les accords ; mélodie : génère uniquement la mélodie, recommandé pour les reprises."
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "seed": {
+        "name": "graine"
+      },
+      "style": {
+        "name": "style"
+      },
+      "temperature": {
+        "name": "temperature"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "secondes",
         "tooltip": null
       }
     }
