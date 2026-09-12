@@ -352,9 +352,12 @@ describe('useBillingContext', () => {
     vi.clearAllMocks()
 
     expect(context.type.value).toBe('workspace')
-    await context.topup(500)
+    await context.topup(500, 'topup-attempt-1')
 
-    expect(workspaceApi.createTopup).toHaveBeenCalledWith(500)
+    expect(workspaceApi.createTopup).toHaveBeenCalledWith(
+      500,
+      'topup-attempt-1'
+    )
     expect(mockPurchaseCredits).not.toHaveBeenCalled()
   })
 
