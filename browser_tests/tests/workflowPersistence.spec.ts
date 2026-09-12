@@ -4,6 +4,7 @@ import { expect } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { dismissErrorOverlay } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 
 const generateUniqueFilename = () =>
@@ -136,6 +137,14 @@ async function getLinkCount(comfyPage: ComfyPage): Promise<number> {
   })
 }
 
+async function getNodeTitle(comfyPage: ComfyPage, nodeId: number) {
+  return comfyPage.page.evaluate((id) => {
+    const node = window.app!.graph.getNodeById(id)
+    if (!node) throw new Error(`Node ${id} not found`)
+    return node.title
+  }, nodeId)
+}
+
 async function getPersistenceSnapshot(comfyPage: ComfyPage) {
   const workflow = await comfyPage.workflow.getExportedWorkflow()
   return {
@@ -202,6 +211,90 @@ test.describe('Workflow Persistence', () => {
   })
 
   for (const vueNodesEnabled of [false, true]) {
+    test(`missing custom node keeps its placeholder and endpoint tuples with Vue Nodes ${vueNodesEnabled ? 'enabled' : 'disabled'}`, async ({
+      comfyPage
+    }) => {
+      await comfyPage.settings.setSetting(
+        'Comfy.VueNodes.Enabled',
+        vueNodesEnabled
+      )
+      await comfyPage.settings.setSetting(
+        'Comfy.RightSidePanel.ShowErrorsTab',
+        true
+      )
+      await comfyPage.workflow.loadWorkflow('missing/named_unknown_connected')
+      await dismissErrorOverlay(comfyPage)
+
+      const expectedLinks = [
+        [1, 10, 0, 1, 0, 'IMAGE'],
+        [2, 1, 0, 11, 0, 'IMAGE']
+      ]
+      const assertMissingGraph = async () => {
+        const snapshot = await getPersistenceSnapshot(comfyPage)
+        expect(snapshot.links).toEqual(expectedLinks)
+        expect(snapshot.nodes.find((node) => node.id === 1)).toMatchObject({
+          type: 'UNKNOWN NODE',
+          widgets_values: ['preserve this missing-pack value']
+        })
+        if (vueNodesEnabled) {
+          await expect(comfyPage.vueNodes.getNodeInnerWrapper('1')).toHaveClass(
+            /ring-destructive-background/
+          )
+        }
+      }
+
+      await assertMissingGraph()
+      const name = `missing-connected-${generateUniqueFilename()}`
+      await comfyPage.menu.topbar.saveWorkflowAs(name)
+      await comfyPage.workflow.reloadAndWaitForApp()
+      await comfyPage.workflow.waitForWorkflowIdle()
+      await assertMissingGraph()
+    })
+
+    test(`node title rename, undo, and saved reload use the real UI with Vue Nodes ${vueNodesEnabled ? 'enabled' : 'disabled'}`, async ({
+      comfyPage
+    }) => {
+      await comfyPage.settings.setSetting(
+        'Comfy.VueNodes.Enabled',
+        vueNodesEnabled
+      )
+      await comfyPage.settings.setSetting(
+        'Comfy.Node.DoubleClickTitleToEdit',
+        true
+      )
+      await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
+      await fitToViewInstant(comfyPage)
+      const node = await comfyPage.nodeOps.getNodeRefById(3)
+      const originalTitle = await getNodeTitle(comfyPage, 3)
+
+      const rename = async () => {
+        if (vueNodesEnabled) {
+          await (
+            await comfyPage.vueNodes.getFixtureByTitle(originalTitle)
+          ).setTitle('Renamed node')
+        } else {
+          await comfyPage.canvasOps.mouseDblclickAt(
+            await node.getTitlePosition()
+          )
+          await comfyPage.titleEditor.expectVisible()
+          await comfyPage.titleEditor.setTitle('Renamed node')
+        }
+        await expect.poll(() => getNodeTitle(comfyPage, 3)).toBe('Renamed node')
+      }
+
+      await rename()
+      await comfyPage.canvasOps.mouseClickAt({ x: 20, y: 20 })
+      await comfyPage.keyboard.undo()
+      await expect.poll(() => getNodeTitle(comfyPage, 3)).toBe(originalTitle)
+      await rename()
+
+      const name = `renamed-node-${generateUniqueFilename()}`
+      await comfyPage.menu.topbar.saveWorkflowAs(name)
+      await comfyPage.workflow.reloadAndWaitForApp()
+      await comfyPage.workflow.waitForWorkflowIdle()
+      await expect.poll(() => getNodeTitle(comfyPage, 3)).toBe('Renamed node')
+    })
+
     test(`Save As and export/import preserve the exact graph with Vue Nodes ${vueNodesEnabled ? 'enabled' : 'disabled'}`, async ({
       comfyPage
     }) => {
@@ -271,12 +364,12 @@ test.describe('Workflow Persistence', () => {
 
       const expected = await getPersistenceSnapshot(comfyPage)
       expect(expected.nodes.length).toBeGreaterThanOrEqual(10)
-      expect(expected.links?.length).toBeGreaterThan(0)
-      expect(expected.groups?.length).toBeGreaterThanOrEqual(2)
+      expect(expected.links.length).toBeGreaterThan(0)
+      expect(expected.groups.length).toBeGreaterThanOrEqual(2)
       expect(expected.reroutes?.length).toBeGreaterThan(0)
-      expect(
-        expected.nodes.some((node) => node.flags?.collapsed === true)
-      ).toBe(true)
+      expect(expected.nodes.some((node) => node.flags.collapsed === true)).toBe(
+        true
+      )
 
       const suffix = generateUniqueFilename()
       const nameA = `persistence-A-${suffix}`
