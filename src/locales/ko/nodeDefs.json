@@ -3065,6 +3065,29 @@
       }
     }
   },
+  "ConcatenateVideo": {
+    "description": "호환되는 인코딩된 입력은 디코딩하지 않고 순서대로 비디오를 연결합니다.",
+    "display_name": "비디오 연결",
+    "inputs": {
+      "codec": {
+        "name": "codec",
+        "tooltip": "비디오 텐서를 인코딩하는 데 사용할 코덱입니다. Auto는 H.264를 사용하며, 이미 인코딩된 비디오는 변경되지 않습니다."
+      },
+      "complete_audio": {
+        "name": "complete_audio",
+        "tooltip": "연결된 비디오에 사용할 선택적 전체 사운드트랙입니다. 입력 비디오에 포함된 오디오를 재정의합니다."
+      },
+      "videos": {
+        "name": "videos",
+        "tooltip": "입력 순서대로 연결할 비디오 세그먼트입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "연결된 비디오입니다."
+      }
+    }
+  },
   "ConditioningAverage": {
     "display_name": "조건 (평균)",
     "inputs": {
@@ -3098,6 +3121,20 @@
       },
       "conditioning_to": {
         "name": "대상 조건"
+      }
+    }
+  },
+  "ConditioningLoader": {
+    "description": "embeddings 폴더에서 Save Conditioning으로 저장한 컨디셔닝 또는 'conditioning' 텐서가 포함된 safetensors 파일을 불러옵니다.",
+    "display_name": "컨디셔닝 불러오기",
+    "inputs": {
+      "conditioning_name": {
+        "name": "conditioning_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3908,6 +3945,10 @@
       "bit_depth": {
         "name": "bit_depth",
         "tooltip": "자동은 sRGB에 8비트, HDR에 10비트를 사용합니다. 명시적인 8비트 및 10비트 선택은 색상 공간과 무관합니다."
+      },
+      "codec": {
+        "name": "codec",
+        "tooltip": "선택적으로 비디오를 즉시 인코딩합니다. None은 이미지를 텐서 형식으로 유지하고, Auto는 H.264를 사용합니다."
       },
       "color_space": {
         "name": "color_space",
@@ -5026,6 +5067,22 @@
       "batch_size": {
         "name": "batch_size",
         "tooltip": "배치의 latent 이미지 수입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyYuE2LatentAudio": {
+    "display_name": "빈 YuE2 latent 오디오",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "seconds": {
+        "name": "seconds"
       }
     },
     "outputs": {
@@ -6451,14 +6508,8 @@
       "model_max_output_tokens": {
         "name": "max_output_tokens"
       },
-      "model_temperature": {
-        "name": "temperature"
-      },
       "model_thinking_level": {
         "name": "thinking_level"
-      },
-      "model_top_p": {
-        "name": "top_p"
       },
       "prompt": {
         "name": "prompt",
@@ -7985,7 +8036,7 @@
     }
   },
   "ImageColorSpace": {
-    "description": "sRGB (Rec.709), HDR (Rec.2020 HLG), HDR PQ (Rec.2020 PQ)를 변환합니다. 203니트 SDR 화이트와 1000니트 HLG 기준 디스플레이를 사용합니다. 축소 시 배치 전체에서 초과 휘도를 톤 매핑하고 색역 밖의 색상을 압축합니다. 변환은 float32로 계산되며 중간 장치 및 dtype을 반환합니다. 스트레이트 알파에는 색상 변환이 적용되지 않습니다.",
+    "description": "sRGB, 선형 Rec.709, HDR(Rec.2020 HLG), HDR PQ(Rec.2020 PQ) 간에 변환합니다. 선형 1.0은 sRGB와 동일한 203니트 기준 백색을 사용하며, HLG는 1000니트 기준 디스플레이를 사용합니다. 선형 출력 및 선형-HDR 변환은 톤 매핑 없이 확장 값을 유지합니다. SDR 출력 및 PQ-HLG 변환은 배치 전체에서 초과 휘도를 톤 매핑하고 색역 밖의 색상을 압축합니다. 변환은 float32로 계산되며 중간 device 및 dtype을 반환합니다. 스트레이트 알파에는 색상 변환이 적용되지 않습니다.",
     "display_name": "이미지 색 공간 변환",
     "inputs": {
       "destination": {
@@ -12380,6 +12431,23 @@
       }
     }
   },
+  "MarigoldV2PostProcess": {
+    "description": "디코딩된 Marigold V2 예측을 이미지로 변환합니다. 가까운 영역은 밝게 표시되는 정규화된 깊이, 단위 표면 법선 또는 sRGB 알베도 중 하나입니다.",
+    "display_name": "Marigold V2 후처리",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "prediction": {
+        "name": "prediction"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MaskComposite": {
     "display_name": "마스크 합성",
     "inputs": {
@@ -16027,6 +16095,9 @@
     "inputs": {
       "model": {
         "name": "모델"
+      },
+      "sampling": {
+        "name": "sampling"
       },
       "shift": {
         "name": "시프트"
@@ -20994,6 +21065,24 @@
       }
     }
   },
+  "SaveConditioning": {
+    "description": "컨디셔닝을 safetensors 형식으로 output 폴더에 저장합니다. Load Conditioning으로 불러오려면 파일을 models/embeddings로 이동하세요. 예를 들어 텍스트 인코더를 건너뛸 수 있습니다.",
+    "display_name": "컨디셔닝 저장",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "conditioning",
+        "tooltip": null
+      }
+    }
+  },
   "SaveGLB": {
     "display_name": "GLB 저장",
     "inputs": {
@@ -21682,6 +21771,28 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SheetSage2AudioToABC": {
+    "description": "음악에서 보컬 및 악기 멜로디를 ABC 표기법으로 전사합니다. abc 출력을 YuE2 Generate Music 노드에 연결하고 일치하는 모드를 사용하세요.",
+    "display_name": "SheetSage2 오디오를 ABC로",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "audio_encoder": {
+        "name": "audio_encoder"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "full: 멜로디와 코드를 생성합니다. melody: 멜로디만 생성하며, 커버곡에 권장됩니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
         "tooltip": null
       }
     }
@@ -24029,7 +24140,7 @@
     }
   },
   "TripoImageToModelNode": {
-    "display_name": "Tripo: 이미지를 모델로",
+    "display_name": "Tripo: 이미지에서 모델로 (레거시)",
     "inputs": {
       "auto_size": {
         "name": "auto_size",
@@ -24100,6 +24211,75 @@
         "tooltip": "quad가 활성화되면 비어 있습니다."
       },
       "3": {
+        "name": "FBX",
+        "tooltip": "quad가 활성화된 경우에만 채워집니다."
+      }
+    }
+  },
+  "TripoImageToModelNodeV2": {
+    "display_name": "Tripo: 이미지에서 모델로",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "텍스처가 적용된 모델을 실제 미터 단위 크기로 조정합니다. Tripo는 크기를 모델의 장면 변환으로 저장하며, 모델을 변환, 리깅 또는 리타기팅할 때 적용합니다. texture가 없으면 무시됩니다."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "최대 면 수입니다. -1이면 Tripo가 적응형으로 선택합니다(v3.x standard에서 약 1.4M면, detailed에서 2M면). Tripo는 자동으로 제한합니다. v2.5는 500,000개, quad 메시는 150,000개입니다."
+      },
+      "geometry_quality": {
+        "name": "geometry_quality"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "생성에 사용할 모델 버전"
+      },
+      "orientation": {
+        "name": "orientation"
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "PBR 머티리얼 맵(기본 색상, 메탈릭, 거칠기, 노멀)입니다. texture가 필요합니다."
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "Quad 메시 출력입니다. Tripo는 quad 메시를 FBX로 제공하므로 결과는 FBX 출력으로 전달되고 GLB 출력은 비어 있습니다."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "깔끔한 수작업 스타일 토폴로지를 갖춘 로우 폴리 메시입니다(500~20,000면, quad는 500~10,000면). 단순한 대상에 가장 적합하며, 복잡한 대상은 실패할 수 있습니다."
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "텍스처 맵을 생성합니다. 끄면 텍스처 없는 지오메트리만 반환되며 pbr은 무시됩니다."
+      },
+      "texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = HD 텍스처, extreme = 8K Ultra 텍스처."
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "quad가 활성화되면 비어 있습니다."
+      },
+      "2": {
         "name": "FBX",
         "tooltip": "quad가 활성화된 경우에만 채워집니다."
       }
@@ -24433,7 +24613,7 @@
       },
       "animation": {
         "name": "애니메이션",
-        "tooltip": "preset:* 애니메이션은 두 리그 모델 모두에서 작동합니다. preset:biped:* 애니메이션에는 model v1.0-20240301으로 만든 리그가 필요합니다."
+        "tooltip": "preset:* 애니메이션은 두 리그 모델 모두에서 작동합니다. preset:biped:* 애니메이션은 모델 v1.0-20240301의 리그용으로 제작되었으며, v2.5 리그는 chop, climb, dive, fall, hurt, idle, jump, run, shoot, slash, turn 및 walk만 지원합니다."
       },
       "export_with_geometry": {
         "name": "export_with_geometry",
@@ -24597,6 +24777,48 @@
       }
     }
   },
+  "TripoSmartSegmentNode": {
+    "description": "모델을 의미 있는 부분으로 분할하고 이름을 지정합니다. 이미지에서는 Tripo가 먼저 모델을 생성합니다. segment task_id는 Tripo: Segment Model 결과와 마찬가지로 Tripo: Complete Mesh Parts, Tripo: Retopology, Tripo: Texture model 및 Tripo: Convert model에 연결됩니다.",
+    "display_name": "Tripo: 스마트 세그먼트",
+    "inputs": {
+      "source": {
+        "name": "source",
+        "tooltip": "기존 모델을 세그먼트하거나, 이미지에서 모델을 생성한 후 세그먼트합니다."
+      },
+      "source_granularity": {
+        "name": "granularity"
+      },
+      "source_hint": {
+        "name": "hint"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "segment task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
+        "tooltip": "세그먼트된 모델입니다(이미지에서 생성되었거나 가져온 모델)."
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "파트 이름",
+        "tooltip": "파트 이름을 쉼표로 구분합니다."
+      },
+      "4": {
+        "name": "파트",
+        "tooltip": "Tripo가 찾은 파트에 대한 설명입니다."
+      },
+      "5": {
+        "name": "마스크",
+        "tooltip": null
+      }
+    }
+  },
   "TripoSplatConditioning": {
     "description": "이미지를 DINOv3와 Flux2 VAE로 인코딩하여 TripoSplat의 positive/negative 컨디셔닝을 생성하고, KSampler를 위한 고정 크기 노이즈 타겟(latent + 카메라)을 만듭니다.",
     "display_name": "TripoSplat 컨디셔닝",
@@ -24693,7 +24915,7 @@
     }
   },
   "TripoTextToModelNode": {
-    "display_name": "Tripo: 텍스트에서 모델 생성",
+    "display_name": "Tripo: 텍스트를 모델로 (레거시)",
     "inputs": {
       "auto_size": {
         "name": "auto_size",
@@ -24769,8 +24991,77 @@
       }
     }
   },
+  "TripoTextToModelNodeV2": {
+    "display_name": "Tripo: 텍스트를 모델로",
+    "inputs": {
+      "auto_size": {
+        "name": "자동 크기",
+        "tooltip": "텍스처가 적용된 모델을 실제 크기(미터)로 조정합니다. Tripo는 크기를 모델의 씬 변환으로 저장하고 모델을 변환, 리깅 또는 리타게팅할 때 적용합니다. 텍스처가 없으면 무시됩니다."
+      },
+      "face_limit": {
+        "name": "면 제한",
+        "tooltip": "최대 면 수입니다. -1이면 Tripo가 적응적으로 선택합니다(v3.x standard에서 약 140만 면, detailed에서 200만 면). Tripo는 자동으로 제한합니다. v2.5는 500,000, 쿼드 메시는 150,000입니다."
+      },
+      "geometry_quality": {
+        "name": "지오메트리 품질"
+      },
+      "image_seed": {
+        "name": "이미지 시드"
+      },
+      "model_seed": {
+        "name": "모델 시드"
+      },
+      "model_version": {
+        "name": "모델 버전"
+      },
+      "negative_prompt": {
+        "name": "네거티브 프롬프트",
+        "tooltip": "최대 255자입니다."
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "PBR 머티리얼 맵(기본 색상, 메탈릭, 거칠기, 노멀)입니다. 텍스처가 필요합니다."
+      },
+      "prompt": {
+        "name": "프롬프트"
+      },
+      "quad": {
+        "name": "쿼드",
+        "tooltip": "쿼드 메시 출력입니다. Tripo는 쿼드 메시를 FBX로 제공하므로 결과는 FBX 출력에 표시되고 GLB 출력은 비어 있습니다."
+      },
+      "smart_low_poly": {
+        "name": "스마트 로우 폴리",
+        "tooltip": "깔끔한 수작업 스타일 토폴로지를 갖춘 로우 폴리 메시입니다(500~20,000면, 쿼드는 500~10,000면). 단순한 피사체에 가장 적합하며, 복잡한 피사체는 실패할 수 있습니다."
+      },
+      "texture": {
+        "name": "텍스처",
+        "tooltip": "텍스처 맵을 생성합니다. 끄면 기본 지오메트리를 반환하고 pbr을 무시합니다."
+      },
+      "texture_quality": {
+        "name": "텍스처 품질",
+        "tooltip": "detailed = HD 텍스처, extreme = 8K Ultra 텍스처입니다."
+      },
+      "texture_seed": {
+        "name": "텍스처 시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "모델 task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "쿼드가 활성화되면 비어 있습니다."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "쿼드가 활성화된 경우에만 채워집니다."
+      }
+    }
+  },
   "TripoTextureNode": {
-    "display_name": "Tripo: 텍스처 모델",
+    "display_name": "Tripo: 모델 텍스처링 (레거시)",
     "inputs": {
       "model_task_id": {
         "name": "모델 작업 ID"
@@ -24830,6 +25121,62 @@
       "3": {
         "name": "FBX",
         "tooltip": "Tripo는 쿼드 메시 및 FBX 가져오기에 대해 FBX를 반환하며, 그 외에는 비어 있습니다."
+      }
+    }
+  },
+  "TripoTextureNodeV2": {
+    "display_name": "Tripo: 모델 텍스처링",
+    "inputs": {
+      "model_task_id": {
+        "name": "모델 task_id"
+      },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "텍스처 모델: v3.x로 생성된 메시에는 v3.0, v2.5로 생성된 메시에는 v2.5를 사용합니다."
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "텍스처링할 Tripo: Segment Model의 쉼표로 구분된 파트 이름입니다. 비워 두면 모든 파트를 텍스처링합니다."
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "PBR 머티리얼 맵(기본 색상, 메탈릭, 거칠기, 노멀)입니다. 끄면 단색 텍스처가 생성됩니다."
+      },
+      "reference": {
+        "name": "reference",
+        "tooltip": "텍스처를 안내하는 참조 이미지입니다. texture_prompt 또는 style_image와 함께 사용할 수 없습니다."
+      },
+      "style_image": {
+        "name": "style_image",
+        "tooltip": "텍스처의 예술적 스타일을 위한 참조 이미지입니다. texture_prompt와 함께만 사용됩니다."
+      },
+      "texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "텍스처링을 위한 선택적 텍스트 안내입니다. 색상을 추론할 원본 이미지가 없는 가져온 모델(Tripo: Import Model)에는 사실상 필수입니다. 참조 이미지와 함께 사용할 수 없습니다."
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = HD 텍스처, extreme = 8K Ultra 텍스처."
+      },
+      "texture_seed": {
+        "name": "텍스처 시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "소스가 쿼드 메시 또는 FBX 가져오기인 경우 비어 있습니다."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Tripo는 쿼드 메시와 FBX 가져오기에 대해 FBX를 반환하며, 그 외에는 비어 있습니다."
       }
     }
   },
@@ -28298,6 +28645,94 @@
     "outputs": {
       "0": {
         "name": "mesh",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateABC": {
+    "description": "스타일과 가사로 노래의 ABC 표기법을 생성합니다. abc를 YuE2 Generate Music 노드에 연결하세요.",
+    "display_name": "YuE2 ABC 생성",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "lyrics": {
+        "name": "lyrics"
+      },
+      "max_abc_tokens": {
+        "name": "max_abc_tokens"
+      },
+      "mode": {
+        "name": "모드",
+        "tooltip": "full: 멜로디와 코드를 생성합니다; melody: 멜로디만 생성하며, 커버에 권장됩니다."
+      },
+      "seed": {
+        "name": "시드"
+      },
+      "style": {
+        "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateMusic": {
+    "description": "스타일, 가사 및 ABC 표기법으로 음악 토큰과 음향 컨디셔닝을 생성합니다. 생성된 초 단위 값을 Empty YuE2 Latent Audio 노드에 제공하세요. ABC 입력이 비어 있으면 선택한 모드는 무시됩니다.",
+    "display_name": "YuE2 음악 생성",
+    "inputs": {
+      "abc": {
+        "name": "abc",
+        "tooltip": "ABC 생성기를 연결하거나 편집한 악보를 제공하세요. 비워 두면 자동으로 off 모드가 사용됩니다."
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "lyrics": {
+        "name": "가사"
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "최대 길이이며, 생성은 더 일찍 종료될 수 있습니다. 릴리스 버전은 360초 예산을 사용합니다."
+      },
+      "mode": {
+        "name": "모드",
+        "tooltip": "full: 멜로디와 코드를 생성합니다; melody: 멜로디만 생성하며, 커버에 권장됩니다."
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "seed": {
+        "name": "시드"
+      },
+      "style": {
+        "name": "스타일"
+      },
+      "temperature": {
+        "name": "온도"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "초",
         "tooltip": null
       }
     }
