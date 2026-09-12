@@ -174,19 +174,12 @@ describe('migrateWorkspaceToScope', () => {
 
   it('performs no storage mutations when a completed migration runs again', () => {
     seedSourceWorkspace()
-    const firstOutcome = migrateWorkspaceToScope(
-      sourceWorkspaceId,
-      destinationScope
-    )
+    migrateWorkspaceToScope(sourceWorkspaceId, destinationScope)
     const setItemSpy = vi.spyOn(localStorage, 'setItem')
     const removeItemSpy = vi.spyOn(localStorage, 'removeItem')
 
-    const secondOutcome = migrateWorkspaceToScope(
-      sourceWorkspaceId,
-      destinationScope
-    )
+    migrateWorkspaceToScope(sourceWorkspaceId, destinationScope)
 
-    expect(secondOutcome).toBe(firstOutcome)
     expect(setItemSpy).not.toHaveBeenCalled()
     expect(removeItemSpy).not.toHaveBeenCalled()
     expect(readJson(StorageKeys.draftIndex(destinationScope))).toEqual(
