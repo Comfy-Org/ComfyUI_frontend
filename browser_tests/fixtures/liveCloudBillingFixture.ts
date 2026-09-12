@@ -12,7 +12,10 @@ import {
   installLiveCloudBillingRouting,
   signInToLiveCloud
 } from '@e2e/fixtures/utils/liveCloudBillingContext'
-import { loadLiveCloudBillingConfig } from '@e2e/fixtures/utils/liveCloudBillingConfig'
+import {
+  loadLiveCloudBillingConfig,
+  loadLiveCloudBillingEndpoints
+} from '@e2e/fixtures/utils/liveCloudBillingConfig'
 
 interface FreshBillingSession {
   billingSession: LiveCloudBillingSession
@@ -27,7 +30,7 @@ export const liveCloudBillingFixture = base.extend<{
 }>({
   baseURL: process.env.PLAYWRIGHT_TEST_URL,
   networkPolicy: async ({ baseURL }, use, testInfo) => {
-    const config = loadLiveCloudBillingConfig()
+    const config = loadLiveCloudBillingEndpoints()
     const origins = new Set([
       new URL(baseURL ?? config.PLAYWRIGHT_TEST_URL).origin,
       config.PLAYWRIGHT_SETUP_API_URL,
