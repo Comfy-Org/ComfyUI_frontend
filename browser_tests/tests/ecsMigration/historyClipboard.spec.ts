@@ -203,6 +203,108 @@ test.describe(
       ])
     })
 
+    test('partial-name search places the selected node on Enter', async ({
+      comfyPage
+    }) => {
+      const initialIds = await comfyPage.page.evaluate(() =>
+        window.app!.graph.nodes.map((node) => String(node.id))
+      )
+      const position = { x: 640, y: 420 }
+
+      await comfyPage.searchBoxV2.setup()
+      await comfyPage.page.mouse.move(position.x, position.y)
+      await comfyPage.searchBoxV2.open()
+      await comfyPage.searchBoxV2.input.fill('KSamp')
+      await expect(comfyPage.searchBoxV2.results.first()).toContainText(
+        'KSampler'
+      )
+      await comfyPage.page.keyboard.press('Enter')
+      await expect(comfyPage.searchBoxV2.dialog).toBeHidden()
+
+      const added = await comfyPage.page.evaluate((ids) => {
+        const node = window.app!.graph.nodes.find(
+          (candidate) => !ids.includes(String(candidate.id))
+        )
+        return node
+          ? { id: String(node.id), type: node.type, position: [...node.pos] }
+          : null
+      }, initialIds)
+      expect(added).not.toBeNull()
+      expect(added?.type).toBe('KSampler')
+      expect(added?.position).toEqual([position.x - 135, position.y + 10])
+    })
+
+    test('pan, zoom and linked-node drag preserve exact link endpoints', async ({
+      comfyPage
+    }) => {
+      const ids = ['3', '8']
+      const before = await getGraphSnapshot(comfyPage)
+      const beforeView = await comfyPage.page.evaluate(() => ({
+        scale: window.app!.canvas.ds.scale,
+        offset: [...window.app!.canvas.ds.offset]
+      }))
+
+      await comfyPage.settings.setSetting(
+        'Comfy.Canvas.LeftMouseClickBehavior',
+        'panning'
+      )
+      await comfyPage.canvasOps.pan({ x: 73, y: 41 })
+      const pannedView = await comfyPage.page.evaluate(() => ({
+        scale: window.app!.canvas.ds.scale,
+        offset: [...window.app!.canvas.ds.offset]
+      }))
+      expect(pannedView.offset).not.toEqual(beforeView.offset)
+      await comfyPage.canvasOps.zoom(100, 2)
+      const zoomedView = await comfyPage.page.evaluate(() => ({
+        scale: window.app!.canvas.ds.scale,
+        offset: [...window.app!.canvas.ds.offset]
+      }))
+      expect(zoomedView.scale).not.toBe(pannedView.scale)
+
+      await comfyPage.settings.setSetting(
+        'Comfy.Canvas.LeftMouseClickBehavior',
+        'select'
+      )
+      await marqueeNodes(comfyPage, ids)
+      await expect
+        .poll(async () =>
+          (await comfyPage.nodeOps.getSelectedNodeIds()).map(String).sort()
+        )
+        .toEqual(ids)
+      await (
+        await comfyPage.nodeOps.getNodeRefById('3')
+      ).dragBy({ x: 111, y: 69 })
+
+      const moved = await getGraphSnapshot(comfyPage)
+      const firstBefore = before.nodes.find(({ id }) => id === '3')!
+      const firstMoved = moved.nodes.find(({ id }) => id === '3')!
+      const delta = [
+        firstMoved.position[0] - firstBefore.position[0],
+        firstMoved.position[1] - firstBefore.position[1]
+      ]
+      expect(delta[0]).not.toBe(0)
+      expect(delta[1]).not.toBe(0)
+      for (const id of ids) {
+        const nodeBefore = before.nodes.find((node) => node.id === id)!
+        const nodeMoved = moved.nodes.find((node) => node.id === id)!
+        expect(nodeMoved.position[0] - nodeBefore.position[0]).toBeCloseTo(
+          delta[0],
+          8
+        )
+        expect(nodeMoved.position[1] - nodeBefore.position[1]).toBeCloseTo(
+          delta[1],
+          8
+        )
+      }
+      expect(moved.links).toEqual(before.links)
+      expect(moved.links).toContainEqual({
+        originId: '3',
+        originSlot: 0,
+        targetId: '8',
+        targetSlot: 0
+      })
+    })
+
     for (const vueNodesEnabled of [false, true]) {
       test(`box-select drag and delete undo restores three linked nodes (${vueNodesEnabled ? 'Vue' : 'LiteGraph'})`, async ({
         comfyPage
