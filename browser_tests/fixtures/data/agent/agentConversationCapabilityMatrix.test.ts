@@ -153,7 +153,7 @@ describe('agentConversationCapabilityMatrix', () => {
       true
     )
     expect(replyContainsMediaAsset('Docs: [/docs/getting-started]')).toBe(false)
-    expect(replyContainsMediaAsset('Broken: [not a URL]')).toBe(false)
+    expect(replyContainsMediaAsset('Broken: [/view/%ZZ]')).toBe(false)
   })
 
   it('lists under each capability exactly the recordings that show it', () => {

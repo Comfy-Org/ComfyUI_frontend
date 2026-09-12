@@ -25,9 +25,12 @@ export function classifyAssetUrl(
   } catch {
     return null
   }
-  const filename =
-    url.searchParams.get('filename') ??
-    decodeURIComponent(url.pathname.split('/').at(-1) ?? '')
+  let filename = url.searchParams.get('filename')
+  try {
+    filename ??= decodeURIComponent(url.pathname.split('/').at(-1) ?? '')
+  } catch {
+    return null
+  }
   if (!filename) return null
   const kind = getMediaTypeFromFilename(filename)
   if (!ASSET_KINDS.has(kind)) return null
