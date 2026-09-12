@@ -5,6 +5,7 @@ import {
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { getGroupTitlePosition } from '@e2e/fixtures/utils/groupHelpers'
+import { openMoreOptions } from '@e2e/fixtures/utils/selectionToolbox'
 
 const CREATE_GROUP_HOTKEY = 'Control+g'
 
@@ -40,6 +41,23 @@ function expectWithinBaseline(
   tolerance: number
 ) {
   expect(Math.abs(actual - baseline)).toBeLessThan(tolerance)
+}
+
+async function getPairSnapshot(comfyPage: ComfyPage) {
+  return comfyPage.page.evaluate(() => {
+    const group = window.app!.graph.groups.find(({ title }) => title === 'Pair')
+    if (!group) throw new Error('Expected Pair group')
+    return {
+      group: [...group.pos, ...group.size],
+      members: window
+        .app!.graph.nodes.filter((node) => ['2', '3'].includes(String(node.id)))
+        .map((node) => ({
+          id: String(node.id),
+          bounds: [...node.getBounding()]
+        }))
+        .sort((left, right) => left.id.localeCompare(right.id))
+    }
+  })
 }
 
 async function getNodeGroupCenteringErrors(
@@ -299,6 +317,80 @@ test.describe('Vue Node Groups', { tag: ['@screenshot', '@vue-nodes'] }, () => {
 
     await toggleBypass()
     await expect.poll(bypassCount, "won't toggle double selected node").toBe(7)
+  })
+
+  test('visible controls update group title and color before both members drag', async ({
+    comfyPage
+  }) => {
+    await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
+    await comfyPage.workflow.loadWorkflow('selection/three-nodes-and-group')
+    await comfyPage.vueNodes.waitForNodes(3)
+    const initial = await getPairSnapshot(comfyPage)
+    const groupTitle = await getGroupTitlePosition(comfyPage, 'Pair')
+    await comfyPage.page.mouse.click(groupTitle.x, groupTitle.y)
+
+    const menu = await openMoreOptions(comfyPage)
+    await menu.getByText('Rename', { exact: true }).click()
+    await comfyPage.nodeOps.promptDialogInput.fill('Renamed Pair')
+    await comfyPage.nodeOps.promptDialogInput.press('Enter')
+    await expect
+      .poll(() =>
+        comfyPage.page.evaluate(() =>
+          window.app!.graph.groups.some(({ title }) => title === 'Renamed Pair')
+        )
+      )
+      .toBe(true)
+
+    const renamedTitle = await getGroupTitlePosition(comfyPage, 'Renamed Pair')
+    await comfyPage.page.mouse.click(renamedTitle.x, renamedTitle.y, {
+      button: 'right'
+    })
+    await expect(comfyPage.contextMenu.primeVueMenu).toBeVisible()
+    await comfyPage.page.getByText('Color', { exact: true }).click()
+    await comfyPage.page.getByTitle('Red').first().click()
+    await expect
+      .poll(() =>
+        comfyPage.page.evaluate(
+          () =>
+            window.app!.graph.groups.find(
+              ({ title }) => title === 'Renamed Pair'
+            )?.color
+        )
+      )
+      .toBe('#A88')
+
+    await comfyPage.canvasOps.dragGroup({
+      name: 'Renamed Pair',
+      deltaX: 110,
+      deltaY: 70
+    })
+    const moved = await comfyPage.page.evaluate(() => {
+      const group = window.app!.graph.groups.find(
+        ({ title }) => title === 'Renamed Pair'
+      )!
+      return {
+        group: [...group.pos, ...group.size],
+        members: window
+          .app!.graph.nodes.filter((node) =>
+            ['2', '3'].includes(String(node.id))
+          )
+          .map((node) => ({
+            id: String(node.id),
+            bounds: [...node.getBounding()]
+          }))
+          .sort((left, right) => left.id.localeCompare(right.id))
+      }
+    })
+    expect(
+      moved.group.map((value, index) => value - initial.group[index])
+    ).toEqual([110, 70, 0, 0])
+    for (let index = 0; index < initial.members.length; index++) {
+      expect(
+        moved.members[index].bounds.map(
+          (value, axis) => value - initial.members[index].bounds[axis]
+        )
+      ).toEqual([110, 70, 0, 0])
+    }
   })
 })
 
