@@ -302,6 +302,7 @@ describe('recording template', () => {
     it('creates a stable, filesystem-safe key for each custom backend', () => {
       const keyA = storageStateKey(custom('https://agent.comfy.org/'))
       const keyB = storageStateKey(custom('https://other-env.comfy.org/'))
+      expect(keyA).toBe('custom-7bf9f2e4d13ea71f')
       expect(keyA).toMatch(/^custom-[0-9a-f]{16}$/)
       expect(keyB).toMatch(/^custom-[0-9a-f]{16}$/)
       expect(keyA).not.toBe(keyB)
