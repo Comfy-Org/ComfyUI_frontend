@@ -4,7 +4,6 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 
 test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
   await comfyPage.workflow.setupWorkflowsDirectory({})
 })
 
@@ -13,6 +12,11 @@ test.describe(
   { tag: ['@canvas', '@node', '@widget', '@workflow'] },
   () => {
     test.describe.configure({ timeout: 30_000 })
+    test.use({
+      initialSettings: {
+        'Comfy.UseNewMenu': 'Top'
+      }
+    })
 
     test.afterEach(async ({ comfyPage }) => {
       await comfyPage.canvasOps.resetView()
@@ -22,6 +26,7 @@ test.describe(
     test('converts a widget to a connected input and restores it on disconnect', async ({
       comfyPage
     }) => {
+      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
       await comfyPage.workflow.loadWorkflow(
         'primitive/primitive_node_unconnected'
       )
