@@ -6,6 +6,7 @@ import { parse } from 'yaml'
 interface WorkflowStep {
   name?: string
   uses?: string
+  run?: string
   with?: {
     repository?: string
     ref?: string
@@ -19,6 +20,7 @@ const isWorkflowStep = (value: unknown): value is WorkflowStep =>
   isRecord(value) &&
   (value.name === undefined || typeof value.name === 'string') &&
   (value.uses === undefined || typeof value.uses === 'string') &&
+  (value.run === undefined || typeof value.run === 'string') &&
   (value.with === undefined || isRecord(value.with))
 
 const readCreateComfyUiPrSteps = (): WorkflowStep[] => {
@@ -42,14 +44,23 @@ const readCreateComfyUiPrSteps = (): WorkflowStep[] => {
 
 describe('weekly ComfyUI release', () => {
   it('checks out the known ComfyUI base branch without API discovery', () => {
-    const checkout = readCreateComfyUiPrSteps().find(
+    const steps = readCreateComfyUiPrSteps()
+    const checkoutIndex = steps.findIndex(
       (step) => step.name === 'Checkout ComfyUI fork'
     )
+    const checkout = steps[checkoutIndex]
 
-    expect(checkout?.uses).toMatch(/^actions\/checkout@/)
-    expect(checkout?.with?.repository).toBe(
+    expect(checkoutIndex).toBeGreaterThanOrEqual(0)
+    expect(
+      steps
+        .slice(0, checkoutIndex)
+        .map((step) => step.run ?? '')
+        .join('\n')
+    ).not.toMatch(/\bgh api\b/)
+    expect(checkout.uses).toMatch(/^actions\/checkout@/)
+    expect(checkout.with?.repository).toBe(
       "${{ inputs.comfyui_fork || 'Comfy-Org/ComfyUI' }}"
     )
-    expect(checkout?.with?.ref).toBe('master')
+    expect(checkout.with?.ref).toBe('master')
   })
 })
