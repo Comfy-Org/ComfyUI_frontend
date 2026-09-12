@@ -3,7 +3,11 @@ import { computed, ref } from 'vue'
 import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
 import { createUuidv4 } from '@/utils/uuid'
-import type { AgentActiveTabData, TurnId } from '../../schemas/agentApiSchema'
+import type {
+  AgentActiveTabData,
+  AgentRunModeValue,
+  TurnId
+} from '../../schemas/agentApiSchema'
 import {
   isAgentEvent,
   parseAgentWsEvent,
@@ -63,6 +67,19 @@ type PromptEditState =
 export interface AgentSessionDeps {
   rest: AgentRestClient
   events: AgentEventSource
+  /**
+   * Run-mode gate for `agent_ask` (kind `run_approval`): omitted or
+   * `ask_approval` leaves the existing manual RunApprovalCard flow untouched.
+   * `auto` answers the ask with `run` automatically, exactly once, with no
+   * user interaction. `auto_limited` is intentionally treated like
+   * `ask_approval` here: the ask payload carries no cost estimate to compare
+   * against `creditLimit`, so auto-applying it would silently spend past a
+   * limit the user set specifically to bound spend. Revisit once the ask
+   * payload carries an estimated cost.
+   */
+  runMode?: {
+    mode(): AgentRunModeValue
+  }
   workflow?: {
     // origin, when given, pins resolution to the tab that initiated the send
     // instead of the target selected when this is called - it is read
@@ -101,7 +118,7 @@ function parseAdmissionError(error: unknown) {
 }
 
 export function useAgentSession(deps: AgentSessionDeps) {
-  const { rest, events, workflow } = deps
+  const { rest, events, workflow, runMode } = deps
 
   const conversationStore = useAgentConversationStore()
   const bindingStore = useAgentWorkflowTabBindingStore()
@@ -491,6 +508,21 @@ export function useAgentSession(deps: AgentSessionDeps) {
           event.data.thread_id === conversationStore.threadId
         )
           workflow?.activeTab?.(event.data)
+        return
+      case 'agent_ask':
+        conversationStore.ingest(event)
+        // Auto mode answers a run-approval ask itself, exactly once, with no
+        // user interaction; answerAsk's answeringAskIds guard is what makes
+        // this idempotent against a duplicate/replayed agent_ask frame.
+        // ask_approval and auto_limited fall through to the existing manual
+        // RunApprovalCard flow (see AgentSessionDeps.runMode for why
+        // auto_limited is not auto-applied yet).
+        if (
+          event.data.kind === 'run_approval' &&
+          runMode?.mode() === 'auto' &&
+          event.data.thread_id === conversationStore.threadId
+        )
+          void answerAsk(event.data.ask_id, 'run')
         return
       default:
         conversationStore.ingest(event)
