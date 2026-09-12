@@ -62,11 +62,15 @@ test.describe(
         await comfyPage.command.executeCommand('Comfy.Undo')
         await expect
           .poll(() =>
-            comfyPage.page.evaluate(() =>
-              window.app!.graph.nodes.map(({ id }) => String(id))
+            comfyPage.page.evaluate(
+              (previousIds) =>
+                window.app!.graph.nodes.some(({ id }) =>
+                  previousIds.includes(String(id))
+                ),
+              priorIds
             )
           )
-          .not.toEqual(expect.arrayContaining(priorIds))
+          .toBe(false)
       }
     })
   }

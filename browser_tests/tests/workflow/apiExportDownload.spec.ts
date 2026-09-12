@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises'
 
+import type { ComfyApiWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
   comfyPageFixture as test,
   comfyExpect as expect
@@ -24,7 +25,13 @@ test.describe('API workflow export download', { tag: ['@workflow'] }, () => {
     const contents = await readFile(downloadPath, 'utf8')
     expect(contents.length).toBeGreaterThan(0)
 
-    const workflow = JSON.parse(contents)
+    const parsed: unknown = JSON.parse(contents)
+    const isApiWorkflow = await comfyPage.page.evaluate(
+      (data) => window.app!.isApiJson(data),
+      parsed
+    )
+    expect(isApiWorkflow).toBe(true)
+    const workflow = parsed as ComfyApiWorkflow
     expect(Object.keys(workflow).length).toBeGreaterThan(0)
     for (const node of Object.values(workflow)) {
       expect(node).toEqual(
