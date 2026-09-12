@@ -2387,6 +2387,34 @@ describe('ComfyApp', () => {
 
       expect(mockCanvas.graph?.change).toHaveBeenCalledTimes(1)
     })
+
+    it('stacks non-LoadImage nodes without the LoadImage height allowance', () => {
+      const mockNode1 = createMockNode({
+        pos: [100, 200],
+        type: 'LoadAudio',
+        getBounding: vi.fn(() => new Float64Array([100, 200, 300, 400]))
+      })
+      const mockNode2 = createMockNode({ pos: [0, 0], type: 'LoadAudio' })
+      const mockBatchNode = createMockNode({ pos: [0, 0] })
+
+      app.positionBatchNodes([mockNode1, mockNode2], mockBatchNode)
+
+      expect(mockNode2.pos).toEqual([100, 250])
+    })
+  })
+
+  describe('positionNodes', () => {
+    it('leaves a lone node in place and does not dirty the graph', () => {
+      const mockNode = createMockNode({
+        pos: [100, 200],
+        getBounding: vi.fn(() => new Float64Array([100, 200, 200, 100]))
+      })
+
+      app.positionNodes([mockNode])
+
+      expect(mockNode.pos).toEqual([100, 200])
+      expect(mockCanvas.graph?.change).not.toHaveBeenCalled()
+    })
   })
 
   describe('handleFile', () => {

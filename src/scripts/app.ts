@@ -12,6 +12,7 @@ import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConc
 import { setBackendNodeText, st, t } from '@/i18n'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { ChangeTracker } from '@/scripts/changeTracker'
+import { isApiJson, sanitizeNodeName } from '@/scripts/appUtil'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import { createMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'
 import {
@@ -190,20 +191,7 @@ function isMeshModelFile(file: File): boolean {
   return SUPPORTED_MESH_EXTENSIONS.has(name.slice(name.lastIndexOf('.')))
 }
 
-export function sanitizeNodeName(string: string) {
-  let entityMap = {
-    '&': '',
-    '<': '',
-    '>': '',
-    '"': '',
-    "'": '',
-    '`': '',
-    '=': ''
-  }
-  return String(string).replace(/[&<>"'`=]/g, function fromEntityMap(s) {
-    return entityMap[s as keyof typeof entityMap]
-  })
-}
+export { isApiJson, sanitizeNodeName }
 
 function syncPromotedComboHostOptions(rootGraph: LGraph): void {
   const widgetValueStore = useWidgetValueStore()
@@ -2309,22 +2297,9 @@ export class ComfyApp {
     this.canvas.graph?.change()
   }
 
-  // @deprecated
+  /** @deprecated Use {@link isApiJson} from @/scripts/appUtil instead */
   isApiJson(data: unknown): data is ComfyApiWorkflow {
-    if (!_.isObject(data) || Array.isArray(data)) {
-      return false
-    }
-    if (Object.keys(data).length === 0) return false
-
-    return Object.values(data).every((node) => {
-      if (!node || typeof node !== 'object' || Array.isArray(node)) {
-        return false
-      }
-
-      const { class_type: classType, inputs } = node as Record<string, unknown>
-      const inputsIsRecord = _.isObject(inputs) && !Array.isArray(inputs)
-      return typeof classType === 'string' && inputsIsRecord
-    })
+    return isApiJson(data)
   }
 
   async loadApiJson(
