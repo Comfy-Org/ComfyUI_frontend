@@ -275,7 +275,6 @@ jobs:
     permissions:
       contents: read
       packages: read
-      pull-requests: write
     outputs:
       has-new-tests: ${{ steps.detect.outputs.has-new-tests }}
     steps:
@@ -300,26 +299,23 @@ jobs:
 
           git fetch --no-tags origin "$BASE_REF"
           DIFF_RANGE="origin/${BASE_REF}...HEAD"
-          NEW_FILES=$(git diff --name-only --diff-filter=AM "$DIFF_RANGE" -- 'browser_tests/**/*.spec.ts')
-          : > /tmp/new-test-titles.txt
+          NEW_FILES=$(git diff --name-only --diff-filter=AMR "$DIFF_RANGE" -- 'browser_tests/**/*.spec.ts')
           : > /tmp/fallback-specs.txt
 
           while IFS= read -r file; do
             [ -z "$file" ] && continue
-            ADDED_TEST_LINES=$(git diff --unified=0 "$DIFF_RANGE" -- "$file" | grep -E '^\+[[:space:]]*test(\.only|\.skip)?\(|^\+[[:space:]]*test\.describe' || true)
+            ADDED_TEST_LINES=$(git diff --unified=0 "$DIFF_RANGE" -- "$file" | grep -E '^\+[[:space:]]*test(\.only|\.skip|\.fail)?\(|^\+[[:space:]]*test\.describe' || true)
             [ -z "$ADDED_TEST_LINES" ] && continue
 
-            TITLES=$(printf '%s\n' "$ADDED_TEST_LINES" | sed -nE "s/^\+[[:space:]]*test(\.(only|skip))?(\.describe)?\([[:space:]]*(['\"])([^'\"]+)\4.*/\5/p")
-            if [ -n "$TITLES" ]; then
-              printf '%s\n' "$TITLES" >> /tmp/new-test-titles.txt
-            else
-              printf '%s\n' "$file" >> /tmp/fallback-specs.txt
-            fi
+            # A leaf title is not a stable Playwright identity: duplicate or
+            # short titles can select unrelated tests through --grep. Run the
+            # changed spec as a whole instead, which is the safe fallback for
+            # both parsed and unparsed added declarations.
+            printf '%s\n' "$file" >> /tmp/fallback-specs.txt
           done <<< "$NEW_FILES"
 
-          sort -u -o /tmp/new-test-titles.txt /tmp/new-test-titles.txt
           sort -u -o /tmp/fallback-specs.txt /tmp/fallback-specs.txt
-          if [ ! -s /tmp/new-test-titles.txt ] && [ ! -s /tmp/fallback-specs.txt ]; then
+          if [ ! -s /tmp/fallback-specs.txt ]; then
             echo '::notice::No newly-added Playwright tests found.'
             echo 'has-new-tests=false' >> "$GITHUB_OUTPUT"
           else
@@ -331,7 +327,6 @@ jobs:
             echo "$NEW_FILES"
             echo 'EOF_NEW_SPEC_FILES'
             echo 'titles<<EOF_NEW_TEST_TITLES'
-            cat /tmp/new-test-titles.txt
             echo 'EOF_NEW_TEST_TITLES'
             echo 'fallback-files<<EOF_FALLBACK_SPEC_FILES'
             cat /tmp/fallback-specs.txt
@@ -340,8 +335,6 @@ jobs:
 
           echo 'Changed spec files:'
           echo "${NEW_FILES:-<none>}"
-          echo 'New test titles:'
-          cat /tmp/new-test-titles.txt
           echo 'Whole-file fallbacks:'
           cat /tmp/fallback-specs.txt
 
@@ -367,18 +360,11 @@ jobs:
         id: recordable
         shell: bash
         env:
-          NEW_SPEC_FILES: ${{ steps.detect.outputs.files }}
-          NEW_TEST_TITLES: ${{ steps.detect.outputs.titles }}
           FALLBACK_SPEC_FILES: ${{ steps.detect.outputs.fallback-files }}
         run: |
-          mapfile -t FILES < <(printf '%s\n%s\n' "$NEW_SPEC_FILES" "$FALLBACK_SPEC_FILES" | sed '/^$/d' | sort -u)
-          GREP_ARGS=()
-          if [ -n "$NEW_TEST_TITLES" ]; then
-            GREP_PATTERN=$(printf '%s\n' "$NEW_TEST_TITLES" | sed 's/[][\\.^$*+?(){}|]/\\&/g' | paste -sd '|' -)
-            GREP_ARGS=("--grep=$GREP_PATTERN")
-          fi
+          mapfile -t FILES < <(printf '%s\n' "$FALLBACK_SPEC_FILES" | sed '/^$/d' | sort -u)
           AUDIT_EXIT=0
-          AUDIT_OUTPUT=$(pnpm exec playwright test --project=audit --list --pass-with-no-tests "${GREP_ARGS[@]}" "${FILES[@]}" 2>&1) || AUDIT_EXIT=$?
+          AUDIT_OUTPUT=$(pnpm exec playwright test --project=audit --list --pass-with-no-tests "${FILES[@]}" 2>&1) || AUDIT_EXIT=$?
           echo "$AUDIT_OUTPUT"
 
           if [ "$AUDIT_EXIT" -ne 0 ]; then
@@ -386,13 +372,11 @@ jobs:
           fi
 
           if ! echo "$AUDIT_OUTPUT" | grep -Fxq 'Total: 0 tests in 0 files'; then
-            echo '::notice::New tests are audit-routed; video recording is skipped successfully.'
-            echo 'has-tests=false' >> "$GITHUB_OUTPUT"
-            exit 0
+            echo '::notice::Some new tests are audit-routed; continuing Chromium discovery.'
           fi
 
           LIST_EXIT=0
-          LIST_OUTPUT=$(pnpm exec playwright test --project=chromium --list --pass-with-no-tests "${GREP_ARGS[@]}" "${FILES[@]}" 2>&1) || LIST_EXIT=$?
+          LIST_OUTPUT=$(pnpm exec playwright test --project=chromium --list --pass-with-no-tests "${FILES[@]}" 2>&1) || LIST_EXIT=$?
           echo "$LIST_OUTPUT"
 
           if [ "$LIST_EXIT" -ne 0 ]; then
@@ -431,17 +415,10 @@ jobs:
         env:
           RECORD_VIDEO: 'true'
           SLOW_MO: '1000'
-          NEW_SPEC_FILES: ${{ steps.detect.outputs.files }}
-          NEW_TEST_TITLES: ${{ steps.detect.outputs.titles }}
           FALLBACK_SPEC_FILES: ${{ steps.detect.outputs.fallback-files }}
         run: |
-          mapfile -t FILES < <(printf '%s\n%s\n' "$NEW_SPEC_FILES" "$FALLBACK_SPEC_FILES" | sed '/^$/d' | sort -u)
-          if [ -n "$NEW_TEST_TITLES" ]; then
-            GREP_PATTERN=$(printf '%s\n' "$NEW_TEST_TITLES" | sed 's/[][\\.^$*+?(){}|]/\\&/g' | paste -sd '|' -)
-            pnpm exec playwright test --project=chromium --timeout=60000 --grep="$GREP_PATTERN" "${FILES[@]}"
-          else
-            pnpm exec playwright test --project=chromium --timeout=60000 "${FILES[@]}"
-          fi
+          mapfile -t FILES < <(printf '%s\n' "$FALLBACK_SPEC_FILES" | sed '/^$/d' | sort -u)
+          pnpm exec playwright test --project=chromium --timeout=60000 "${FILES[@]}"
 
       - name: Upload new-test report (with embedded video)
         if: ${{ !cancelled() && steps.recordable.outputs.has-tests == 'true' }}
@@ -473,15 +450,13 @@ jobs:
             fi
           } > /tmp/playwright-video-comment.md
 
-      - name: Upsert video comment
+      - name: Upload video comment
         if: ${{ !cancelled() && steps.recordable.outputs.has-tests == 'true' }}
-        uses: ./.github/actions/upsert-comment-section
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
-          pr-number: ${{ github.event.pull_request.number }}
-          section-name: new-test-videos
-          section-content-file: /tmp/playwright-video-comment.md
-          comment-marker: '<!-- playwright-video-new-tests -->'
-          token: ${{ github.token }}
+          name: playwright-video-comment
+          path: /tmp/playwright-video-comment.md
+          retention-days: 1
 
   #### BEGIN Deployment and commenting (PRs with direct secret access)
   # when using pull_request event, we have permission to comment directly
