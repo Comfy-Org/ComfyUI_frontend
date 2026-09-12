@@ -2,6 +2,7 @@ import { expect, mergeTests } from '@playwright/test'
 import type { Page, Response } from '@playwright/test'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { expectNoErrorUiAfterVerification } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import {
   createRouteMockJob,
@@ -12,6 +13,7 @@ import {
 import { TestIds } from '@e2e/fixtures/selectors'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import type { AssetResponse } from '@/platform/assets/schemas/assetSchema'
 import type {
   JobDetail,
   RawJobListItem
@@ -150,6 +152,47 @@ async function mockInputFiles(page: Page, files: readonly string[]) {
   })
 }
 
+async function mockAssetApiFiles(page: Page) {
+  await page.route(/\/api\/assets(?:\?.*)?$/, async (route) => {
+    const response = {
+      assets: generatedJobs.map((job, index) => {
+        const filename = job.preview_output?.filename
+        if (!filename) throw new Error(`Missing preview filename for ${job.id}`)
+
+        return {
+          id: `00000000-0000-4000-a000-${String(index + 1).padStart(12, '0')}`,
+          name: filename,
+          job_id: `00000000-0000-4000-a000-${String(index + 1).padStart(12, '0')}`,
+          mime_type: 'image/png',
+          tags: ['output'],
+          preview_url: `/api/view?filename=${filename}&type=output`,
+          created_at: new Date(job.create_time).toISOString(),
+          updated_at: new Date(job.create_time).toISOString()
+        }
+      }),
+      total: generatedJobs.length,
+      has_more: false
+    } satisfies AssetResponse
+
+    await route.fulfill({ json: response })
+  })
+}
+async function verifyMobileTouchActions(comfyPage: ComfyPage) {
+  const tab = comfyPage.menu.assetsTab
+
+  await tab.open()
+
+  await tab.getAssetCardByName('alpha').tap()
+  await expect(tab.selectedCards).toHaveCount(1)
+  await expect(tab.selectionFooter).toBeInViewport({ ratio: 1 })
+  await expect(tab.downloadSelectedButton).toBeInViewport({ ratio: 1 })
+  await expect(tab.deleteSelectedButton).toBeInViewport({ ratio: 1 })
+
+  await tab.deleteSelectedButton.tap()
+  await expect(comfyPage.confirmDialog.root).toBeVisible()
+  await expect(comfyPage.confirmDialog.delete).toBeInViewport({ ratio: 1 })
+  await expect(comfyPage.confirmDialog.reject).toBeInViewport({ ratio: 1 })
+}
 function isGeneratedAssetVerificationResponse(response: Response): boolean {
   const url = new URL(response.url())
   return (
@@ -175,6 +218,7 @@ test.describe('FE-130 assets sidebar route mocks', () => {
   test.beforeEach(async ({ jobsRoutes, page }) => {
     await jobsRoutes.mockJobsQueue([])
     await jobsRoutes.mockJobsHistory(generatedJobs)
+    await mockAssetApiFiles(page)
     await mockInputFiles(page, ['imported.png'])
     await mockViewFiles(page, viewFiles)
   })
@@ -254,6 +298,18 @@ test.describe('FE-130 assets sidebar route mocks', () => {
     await expect(tab.selectionCountButton).toHaveText(/\b2 selected\b/)
     await expect(tab.deleteSelectedButton).toBeVisible()
     await expect(tab.downloadSelectedButton).toBeVisible()
+  })
+
+  test('@mobile touch selection keeps actions reachable', async ({
+    comfyPage
+  }) => {
+    await verifyMobileTouchActions(comfyPage)
+  })
+
+  test('@mobile-ios @cloud touch selection keeps actions reachable', async ({
+    comfyPage
+  }) => {
+    await verifyMobileTouchActions(comfyPage)
   })
 
   test('loads full generated job outputs from job detail', async ({
