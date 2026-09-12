@@ -4,17 +4,21 @@ import { describe, expect, it } from 'vitest'
 import { z } from 'zod'
 
 describe('Live billing opt-in', () => {
-  it.for(['0', '1'])(
-    'collects live billing only when explicitly enabled (%s)',
+  it.for([
+    { enabled: '0', project: 'cloud-live', count: 0 },
+    { enabled: '1', project: 'cloud-live', count: 3 },
+    { enabled: '1', project: 'cloud-live-paid', count: 1 }
+  ])(
+    'collects $project only when explicitly enabled ($enabled)',
     { timeout: 90_000 },
-    (enabled) => {
+    ({ enabled, project, count }) => {
       const result = spawnSync(
         'pnpm',
         [
           'exec',
           'playwright',
           'test',
-          ...(enabled === '1' ? ['--project=cloud-live'] : ['tests/liveCloud']),
+          ...(enabled === '1' ? [`--project=${project}`] : ['tests/liveCloud']),
           '--list',
           '--reporter=json'
         ],
@@ -48,7 +52,7 @@ describe('Live billing opt-in', () => {
       const specs = report.suites.flatMap((suite) =>
         suite.suites.flatMap((child) => child.specs)
       )
-      expect(specs).toHaveLength(enabled === '1' ? 3 : 0)
+      expect(specs).toHaveLength(count)
       if (enabled === '1') {
         expect(report.config.globalSetup).toBeNull()
         expect(report.config.globalTeardown).toBeNull()

@@ -59,6 +59,7 @@
     "test:assets-flag-artifact": "tsx scripts/checkAssetsFlagArtifact.ts",
     "test:browser": "pnpm exec playwright test",
     "test:browser:cloud-billing": "cross-env DISTRIBUTION=cloud PLAYWRIGHT_CLOUD_LIVE=1 pnpm exec playwright test --project=cloud-live --workers=1",
+    "test:browser:cloud-billing:paid": "cross-env DISTRIBUTION=cloud PLAYWRIGHT_CLOUD_LIVE=1 pnpm exec playwright test --project=cloud-live-paid --workers=1",
     "test:browser:coverage": "cross-env COLLECT_COVERAGE=true pnpm test:browser",
     "test:browser:local": "cross-env PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://localhost:5173 pnpm test:browser",
     "custom-node-quarantine": "tsx scripts/customNodeQuarantine.ts",

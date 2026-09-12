@@ -69,23 +69,29 @@ export default defineConfig({
   projects: [
     ...(process.env.PLAYWRIGHT_CLOUD_LIVE === '1'
       ? [
+          { name: 'cloud-live', testMatch: '**/tests/liveCloud/*.spec.ts' },
           {
-            name: 'cloud-live',
-            testMatch: '**/tests/liveCloud/**/*.spec.ts',
-            testIgnore: [],
-            fullyParallel: false,
-            retries: 0,
-            timeout: 120_000,
-            expect: { timeout: 30_000 },
-            use: {
-              ...devices['Desktop Chrome'],
-              locale: 'en-US',
-              trace: 'off',
-              video: 'off',
-              screenshot: 'off'
-            }
-          } satisfies NonNullable<PlaywrightTestConfig['projects']>[number]
-        ]
+            name: 'cloud-live-paid',
+            testMatch: '**/tests/liveCloud/paid/*.spec.ts'
+          }
+        ].map(
+          (project) =>
+            ({
+              ...project,
+              testIgnore: [],
+              fullyParallel: false,
+              retries: 0,
+              timeout: 120_000,
+              expect: { timeout: 30_000 },
+              use: {
+                ...devices['Desktop Chrome'],
+                locale: 'en-US',
+                trace: 'off',
+                video: 'off',
+                screenshot: 'off'
+              }
+            }) satisfies NonNullable<PlaywrightTestConfig['projects']>[number]
+        )
       : []),
     {
       name: 'chromium',
