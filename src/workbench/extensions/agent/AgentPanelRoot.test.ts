@@ -198,7 +198,10 @@ vi.mock<unknown>(import('@/utils/litegraphUtil'), async (importOriginal) => ({
 }))
 
 vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => ({ userDisplayName: { value: 'Jo Rivera' } })
+  useCurrentUser: () => ({
+    userDisplayName: { value: 'Jo Rivera' },
+    resolvedUserInfo: { value: { id: 'user-jo' } }
+  })
 }))
 
 const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))

@@ -55,6 +55,13 @@ vi.mock(
   })
 )
 
+vi.mock(
+  import('@/workbench/extensions/agent/services/agent/agentIdentityStateTracker'),
+  () => ({
+    registerAgentIdentityStateTracker: vi.fn(() => () => {})
+  })
+)
+
 vi.mock('posthog-js', () => ({
   default: {
     isFeatureEnabled: () => mocks.flagEnabled,
