@@ -214,6 +214,20 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
     }, source.id)
     await comfyPage.nextFrame()
 
+    // The last mutation goes straight to the graph, so the tracker has not
+    // necessarily captured it yet. `graphMatchesActiveState` is the signal that
+    // it has: sampling `depth` before that returns a short count, and the first
+    // undo then fires into a pending capture and is swallowed — which is exactly
+    // how this failed on CI (undo=2/redo=0 where undo=1/redo=1 was expected).
+    await expect
+      .poll(() => getChangeTrackerDebugState(comfyPage))
+      .toMatchObject({
+        changeCount: 0,
+        graphMatchesActiveState: true,
+        isLoadingGraph: false,
+        restoringState: false
+      })
+
     // Read the depth rather than assuming one entry per operation. How finely
     // the tracker checkpoints is not what this row is about, and asserting a
     // count here would turn a round-trip test into a probe of the transaction
