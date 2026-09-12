@@ -19,7 +19,6 @@ test.describe(
     })
 
     test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
       await comfyPage.canvasOps.resetView()
     })
 
@@ -294,6 +293,10 @@ test.describe(
           'Comfy.VueNodes.Enabled',
           vueNodesEnabled
         )
+        await comfyPage.settings.setSetting(
+          'Comfy.LinkRelease.Action',
+          'search box'
+        )
         const sampler = await comfyPage.nodeOps.getNodeRefById('3')
         const output = await sampler.getOutput(0)
         const beforePosition = await sampler.getPosition()
@@ -302,12 +305,9 @@ test.describe(
           x: 1000,
           y: 600
         })
-        const linkDropSearch = comfyPage.page.locator(
-          '.litecontextmenu:visible, .litemenu:visible, [role="search"]:visible'
-        )
-        await expect(linkDropSearch).toBeVisible()
-        await comfyPage.canvas.click({ position: { x: 900, y: 100 } })
-        await expect(linkDropSearch).toBeHidden()
+        await expect(comfyPage.searchBoxV2.input).toBeVisible()
+        await comfyPage.page.keyboard.press('Escape')
+        await expect(comfyPage.searchBoxV2.input).toBeHidden()
 
         await sampler.dragBy({ x: 30, y: 15 })
         await expect
