@@ -59,7 +59,20 @@ let boundTimer: ReturnType<typeof setTimeout> | undefined
 // in-flight send, so a late resolve of an abandoned request cannot toast success
 // or redirect. Sync so even a same-tick flicker is counted, not collapsed.
 let resetGeneration = 0
-watch(enabled, () => resetGeneration++, { flush: 'sync' })
+watch(
+  enabled,
+  (isEnabled) => {
+    resetGeneration++
+    // Disabling mid-send abandons the request; drop the control back to idle so
+    // a flag flicker back on leaves the form immediately retryable, not stuck
+    // disabled until the bounding timeout elapses.
+    if (!isEnabled) {
+      clearTimeout(boundTimer)
+      state.value = 'idle'
+    }
+  },
+  { flush: 'sync' }
+)
 
 function signInDestination(): string {
   const destination = requestedReturnPath(window.location.search)

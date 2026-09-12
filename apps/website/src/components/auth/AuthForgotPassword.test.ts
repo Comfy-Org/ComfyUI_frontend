@@ -2,6 +2,7 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import { removeAllToasts, useAuthToasts } from '../../config/auth-toast-state'
 import AuthForgotPassword from './AuthForgotPassword.vue'
@@ -39,6 +40,13 @@ const clickSend = () =>
   userEvent
     .setup()
     .click(screen.getByRole('button', { name: /send reset link/i }))
+
+// Fake timers are on, so a late resolve settles on the microtask queue rather
+// than any real delay; drain the queue and let Vue react without a sleep.
+const flushMicrotasks = async () => {
+  await Promise.resolve()
+  await nextTick()
+}
 
 beforeEach(() => {
   h.flag!.value = true
@@ -222,15 +230,16 @@ describe('AuthForgotPassword', () => {
 
     h.flag!.value = false
     release()
-    await new Promise((resolve) => setTimeout(resolve, 0))
+    await flushMicrotasks()
 
     expect(
       toasts.value,
       'a request abandoned mid-flight must not toast success when it resolves late'
     ).toEqual([])
+    await vi.advanceTimersByTimeAsync(3000)
     expect(
       assign,
-      'and must not redirect the visitor back to login'
+      'and must not schedule a redirect back to login'
     ).not.toHaveBeenCalled()
   })
 
@@ -245,11 +254,58 @@ describe('AuthForgotPassword', () => {
 
     unmount()
     release()
-    await new Promise((resolve) => setTimeout(resolve, 0))
+    await flushMicrotasks()
 
     expect(
       toasts.value,
       'an unmounted flow may not toast success when its request resolves late'
+    ).toEqual([])
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(
+      assign,
+      'an unmounted flow may not schedule a redirect when its request resolves late'
+    ).not.toHaveBeenCalled()
+  })
+
+  it('drops a send abandoned by the flag turning off when it rejects late: no error toast', async () => {
+    let reject!: (reason: unknown) => void
+    h.sendReset.mockImplementation(
+      () => new Promise<void>((_resolve, rejectFn) => (reject = rejectFn))
+    )
+    render(AuthForgotPassword)
+    await typeEmail('user@example.com')
+    await clickSend()
+
+    h.flag!.value = false
+    reject({ code: 'auth/network-request-failed', message: 'x' })
+    await flushMicrotasks()
+
+    expect(
+      toasts.value,
+      'a request abandoned mid-flight must not toast an error when it rejects late'
+    ).toEqual([])
+    expect(
+      h.captureAuthFailed,
+      'and must not report a failure for a request nobody is waiting on'
+    ).not.toHaveBeenCalled()
+  })
+
+  it('drops a send abandoned by unmount when it rejects late: no error toast', async () => {
+    let reject!: (reason: unknown) => void
+    h.sendReset.mockImplementation(
+      () => new Promise<void>((_resolve, rejectFn) => (reject = rejectFn))
+    )
+    const { unmount } = render(AuthForgotPassword)
+    await typeEmail('user@example.com')
+    await clickSend()
+
+    unmount()
+    reject({ code: 'auth/network-request-failed', message: 'x' })
+    await flushMicrotasks()
+
+    expect(
+      toasts.value,
+      'an unmounted flow may not toast an error when its request rejects late'
     ).toEqual([])
   })
 
@@ -267,6 +323,25 @@ describe('AuthForgotPassword', () => {
     expect(
       send.hasAttribute('disabled'),
       'a reset that never resolves must not leave the control disabled forever'
+    ).toBe(false)
+  })
+
+  it('re-enables the send immediately when the flag flickers off then back on mid-send', async () => {
+    h.sendReset.mockImplementation(() => new Promise<void>(() => {}))
+    render(AuthForgotPassword)
+    await typeEmail('user@example.com')
+    await clickSend()
+
+    const send = screen.getByRole('button', { name: /send/i })
+    expect(send.hasAttribute('disabled')).toBe(true)
+
+    h.flag!.value = false
+    h.flag!.value = true
+    await nextTick()
+
+    expect(
+      screen.getByRole('button', { name: /send/i }).hasAttribute('disabled'),
+      'a flag that flickers back on before the bounding timeout must leave the form retryable, not stuck disabled'
     ).toBe(false)
   })
 
