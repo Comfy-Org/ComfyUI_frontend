@@ -158,18 +158,21 @@ test.describe(
         const visiblePixels = await comfyPage.page.evaluate((nodeId) => {
           const node = window.app!.graph.nodes.find(
             (candidate) => String(candidate.id) === nodeId
-          )!
-          const widget = node.widgets![0]
+          )
+          const widget = node?.widgets?.[0]
           const canvas = document.createElement('canvas')
           canvas.width = 512
           canvas.height = 512
-          const context = canvas.getContext('2d')!
+          const context = canvas.getContext('2d')
+          if (!node || !widget?.draw || !context) {
+            throw new Error('Comparer canvas widget is not ready')
+          }
           node.size = [512, 512]
           Object.assign(node, {
             isPointerOver: true,
             pointerOverPos: [256, 256]
           })
-          widget.draw!(context, node, 512, 0, 20)
+          widget.draw(context, node, 512, 0, 20)
           const pixels = context.getImageData(0, 0, 512, 512).data
           let red = 0
           let blue = 0
