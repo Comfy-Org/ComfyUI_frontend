@@ -1,0 +1,25 @@
+---
+// PROTOTYPE ROUTE — throwaway. Three redesign variants of the /learning page
+// (category filters vfx/animations/ads, featured element, category-labelled
+// cards), switchable via ?variant=a|b|c. The real /learning page is untouched.
+// Delete this file once a variant has been chosen and folded into /learning.
+import BaseLayout from '../layouts/BaseLayout.astro'
+import LearningRedesignPrototype from '../components/prototype/learning-redesign/LearningRedesignPrototype.vue'
+import CallToActionSection from '../components/common/CallToActionSection.vue'
+import { getRoutes } from '../config/routes'
+import { externalLinks } from '../config/routes'
+
+const routes = getRoutes('en')
+---
+
+<BaseLayout title="Learning (Prototype) — Comfy">
+  <LearningRedesignPrototype client:only="vue" />
+  <CallToActionSection
+    headingKey="learning.cta.heading"
+    primaryLabelKey="learning.cta.contactSales"
+    primaryHref={routes.contact}
+    secondaryLabelKey="cta.tryWorkflow"
+    secondaryHref={externalLinks.workflows}
+    client:visible
+  />
+</BaseLayout>
