@@ -1,4 +1,13 @@
 import cloneDeep from 'es-toolkit/compat/cloneDeep'
+import {
+  appendControlValues,
+  applyControlValues,
+  decodeWidgetValueLayout
+} from '@/core/graph/widgets/control/widgetControl'
+import {
+  clearPromotedWidgetControl,
+  copyPromotedWidgetControl
+} from '@/core/graph/subgraph/promotedWidgetControl'
 import type { BaseLGraph, LGraph, SubgraphId } from '@/lib/litegraph/src/LGraph'
 import type { LGraphButton } from '@/lib/litegraph/src/LGraphButton'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
@@ -412,7 +421,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   override configure(info: ExportedSubgraphInstance): void {
     for (const input of this.inputs) {
-      this._clearPromotedWidget(input)
+      clearPromotedWidgetControl(input)
       if (
         input._listenerController &&
         typeof input._listenerController.abort === 'function'
@@ -462,25 +471,38 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     )
 
     super.configure(info)
-    if (!info.widgets_values_named || !LiteGraph.namedValuesRestore)
-      this._applyPromotedWidgetValues(info.widgets_values)
+    this._applyPromotedWidgetValues(
+      info.widgets_values,
+      !info.widgets_values_named || !LiteGraph.namedValuesRestore
+    )
   }
 
   private _applyPromotedWidgetValues(
-    widgetValues: ExportedSubgraphInstance['widgets_values']
+    widgetValues: ExportedSubgraphInstance['widgets_values'],
+    restoreTargetValues = true
   ): void {
     const quarantineValuesByInputName = this._readQuarantineHostValuesByName()
 
-    let valueIndex = 0
-    for (const input of this.inputs) {
-      if (!input.widgetId) continue
+    const promotedInputs = this.inputs.filter(
+      (input): input is INodeInputSlot & { widgetId: WidgetId } =>
+        Boolean(input.widgetId)
+    )
+    const values = widgetValues ?? []
+    const valueLayout = decodeWidgetValueLayout(promotedInputs, values)
+    for (const [index, input] of promotedInputs.entries()) {
+      const { valueIndex, controlValueCount } = valueLayout[index]
       const value = quarantineValuesByInputName.has(input.name)
         ? quarantineValuesByInputName.get(input.name)
-        : widgetValues?.[valueIndex]
-      if (value !== undefined) {
+        : values[valueIndex]
+      if (restoreTargetValues && value !== undefined) {
         useWidgetValueStore().setValue(input.widgetId, value)
       }
-      valueIndex += 1
+      applyControlValues(
+        input.widgetId,
+        values,
+        valueIndex + 1,
+        controlValueCount
+      )
     }
   }
 
@@ -559,11 +581,20 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     for (const input of this.inputs) {
       const subgraphInput = input._subgraphSlot
-      if (!subgraphInput) continue
-      this._resolveInputWidget(subgraphInput, input)
+      if (!subgraphInput) {
+        clearPromotedWidgetControl(input)
+        delete input.widget
+        delete input.pos
+        delete input.widgetId
+        continue
+      }
+      const resolved = this._resolveInputWidget(subgraphInput, input)
       const previous = previousBindings.get(input)
-      if (previous && input.widgetId) {
-        store.setValue(input.widgetId, previous.value)
+      if (resolved && previous) {
+        store.setValue(
+          widgetId(this.rootGraph.id, this.id, input.name),
+          previous.value
+        )
       }
     }
 
@@ -578,7 +609,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   private _resolveInputWidget(
     subgraphInput: SubgraphInput,
     input: INodeInputSlot
-  ) {
+  ): boolean {
     for (const linkId of subgraphInput.linkIds) {
       const link = this.subgraph.getLink(linkId)
       if (!link) {
@@ -603,7 +634,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       const widget = inputNode.getWidgetFromSlot(targetInput)
       if (widget) {
         this._setWidget(subgraphInput, input, widget, targetInput.widget)
-        break
+        return Boolean(input.widgetId)
       }
 
       // Nested promotion: the source is itself a promoted subgraph input with
@@ -612,9 +643,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       const nested = this._resolveNestedPromotedSource(inputNode, targetInput)
       if (nested) {
         this._setWidget(subgraphInput, input, nested.widget, targetInput.widget)
-        break
+        return Boolean(input.widgetId)
       }
     }
+    return false
   }
 
   private _resolveNestedPromotedSource(
@@ -642,7 +674,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   ) {
     this.invalidatePromotedViews()
 
-    this._clearPromotedWidget(input)
+    clearPromotedWidgetControl(input)
 
     input.widget ??= { name: subgraphInput.name }
     input.widget.name = subgraphInput.name
@@ -686,6 +718,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     }
 
     input.widgetId = id
+    copyPromotedWidgetControl(interiorWidget, id)
     input._widget =
       this.createPromotedHostWidget(input, id, interiorWidget) ??
       this._projectPromotedWidget(input)
@@ -707,16 +740,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     _sourceWidget: Readonly<IBaseWidget>
   ): IBaseWidget | undefined {
     return undefined
-  }
-
-  /**
-   * Runs the host widget's `onRemove` (unregistering DOM widgets) and clears it.
-   * Unlike {@link ensureWidgetRemoved}, dispatches no demotion event, so it is
-   * safe on re-resolution.
-   */
-  private _clearPromotedWidget(input: INodeInputSlot): void {
-    input._widget?.onRemove?.()
-    input._widget = undefined
   }
 
   override onAdded(_graph: LGraph): void {
@@ -751,7 +774,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       store.setValue(nextId, state.value)
       store.deleteWidget(previousId)
       input.widgetId = nextId
-      this._clearPromotedWidget(input)
+      clearPromotedWidgetControl(input)
       if (input._subgraphSlot) {
         this._resolveInputWidget(input._subgraphSlot, input)
       }
@@ -935,7 +958,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       ) {
         input._listenerController.abort()
       }
-      this._clearPromotedWidget(input)
+      clearPromotedWidgetControl(input)
     }
     for (const widget of this._extraWidgets) widget.onRemove?.()
   }
@@ -1001,11 +1024,13 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     serialized.properties = serializedProperties
 
-    const widgetValues = this.inputs.flatMap((input) => {
-      if (!input.widgetId) return []
+    const widgetValues: TWidgetValue[] = []
+    for (const input of this.inputs) {
+      if (!input.widgetId) continue
       const value = useWidgetValueStore().getWidget(input.widgetId)?.value
-      return [isWidgetValue(value) ? value : undefined]
-    })
+      widgetValues.push(isWidgetValue(value) ? value : undefined)
+      appendControlValues(input.widgetId, widgetValues)
+    }
 
     if (widgetValues.some((value) => value !== undefined)) {
       serialized.widgets_values = widgetValues

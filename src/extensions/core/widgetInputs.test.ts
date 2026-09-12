@@ -18,6 +18,7 @@ import { assetService } from '@/platform/assets/services/assetService'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
 import { useLinkStore } from '@/stores/linkStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { serializeNodeId, toNodeId } from '@/types/nodeId'
@@ -183,7 +184,12 @@ describe('PrimitiveNode', () => {
     })
 
     expect(primitive.widgets?.[0].value).toBe(333)
-    expect(primitive.widgets?.[1].value).toBe('fixed')
+    const targetWidget = primitive.widgets?.[0]
+    expect(
+      targetWidget?.widgetId
+        ? useWidgetValueStore().getWidgetControl(targetWidget.widgetId)?.mode
+        : undefined
+    ).toBe('fixed')
   })
 
   it('does not apply a serialized value left over from an unresolved output type', () => {

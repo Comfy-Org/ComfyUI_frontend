@@ -3534,10 +3534,13 @@
       "randomizeDesc": "Shuffles the value randomly after each generation",
       "increment": "Increment Value",
       "incrementDesc": "Adds 1 to value or selects the next option",
+      "increment-wrap": "Increment with Wrap",
       "decrement": "Decrement Value",
       "decrementDesc": "Subtracts 1 from value or selects the previous option",
       "fixed": "Fixed Value",
       "fixedDesc": "Leaves value unchanged",
+      "modeTooltip": "Allows the linked widget to be changed automatically, for example randomizing the noise seed.",
+      "filterTooltip": "Allows for filtering the list of values when changing the value via the control generate mode. Allows for RegEx matches in the format /abc/ to only filter to values containing 'abc'.",
       "editSettings": "Edit control settings"
     }
   },

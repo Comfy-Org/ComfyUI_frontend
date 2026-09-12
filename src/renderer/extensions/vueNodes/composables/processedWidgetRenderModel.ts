@@ -1,6 +1,7 @@
 import type { TooltipOptions } from 'primevue'
 
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
+import { getWidgetControlView } from '@/core/graph/widgets/control/widgetControl'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -34,7 +35,6 @@ import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import type { NodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
 import type { LinkTopology } from '@/types/linkTopology'
-import { getControlWidget } from '@/types/simplifiedWidget'
 import { isWidgetVisibleOnSurface } from '@/types/widgetVisibility'
 import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
 import type {
@@ -311,9 +311,9 @@ function resolveLiveWidgetContext(
         }
       : undefined
   const controlWidget =
-    getControlWidget(liveWidget) ??
+    getWidgetControlView(liveWidget) ??
     (promotedSource?.sourceWidget
-      ? getControlWidget(promotedSource.sourceWidget)
+      ? getWidgetControlView(promotedSource.sourceWidget)
       : undefined)
 
   return {

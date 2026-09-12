@@ -1,6 +1,7 @@
 import { intersection } from 'es-toolkit/compat'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import { applyControlValues } from '@/core/graph/widgets/control/widgetControl'
 import { createWidgetRestorationState } from '@/lib/litegraph/src/LGraphNode'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
@@ -24,6 +25,7 @@ import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
+import { zeroUuid } from '@/utils/uuid'
 import {
   ComfyWidgets,
   addValueControlWidgets,
@@ -328,20 +330,47 @@ export class PrimitiveNode extends LGraphNode {
         !inputData?.[1]?.control_after_generate &&
         (widget.type === 'number' || widget.type === 'combo')
       ) {
-        addValueControlWidgets(this, widget, 'fixed', undefined, inputData)
-        if (this.widgets?.[1]) widget.linkedWidgets = [this.widgets[1]]
+        const store = useWidgetValueStore()
+        const mode = store.getPositionalRestoredWidgetValue(
+          this.graph?.rootGraph.id ?? zeroUuid,
+          this.id,
+          1
+        )
+        const filter = store.getPositionalRestoredWidgetValue(
+          this.graph?.rootGraph.id ?? zeroUuid,
+          this.id,
+          2
+        )
+        addValueControlWidgets(widget, String(mode ?? 'fixed'))
+        applyControlValues(widget, [mode, filter], 0)
+      }
+
+      const store = useWidgetValueStore()
+      const graphId = this.graph?.rootGraph.id ?? zeroUuid
+      const restoredMode = store.getRestoredWidgetValue(
+        graphId,
+        this.id,
+        'control_after_generate',
+        1
+      )
+      const restoredFilter = store.getRestoredWidgetValue(
+        graphId,
+        this.id,
+        'control_filter_list',
+        2
+      )
+      if (restoredMode) {
+        applyControlValues(
+          widget,
+          [restoredMode.value, restoredFilter?.value],
+          0
+        )
       }
 
       // Restore any saved control values
       const controlValues = this.controlValues
-      if (
-        this.widgets &&
-        this.lastType === this.widgets[0]?.type &&
-        controlValues?.length === this.widgets.length - 1
-      ) {
-        for (let i = 0; i < controlValues.length; i++) {
-          this.widgets[i + 1].value = controlValues[i]
-        }
+      if (this.lastType === this.widgets?.[0]?.type && controlValues?.length) {
+        applyControlValues(widget, controlValues, 0)
       }
 
       this._finalizeWidget(widget, oldWidth, oldHeight, recreating)
@@ -458,12 +487,16 @@ export class PrimitiveNode extends LGraphNode {
         }
       }
 
-      // Temporarily store the current values in case the node is being recreated
-      this.controlValues = []
       this.lastType = this.widgets[0]?.type
-      for (let i = 1; i < this.widgets.length; i++) {
-        this.controlValues.push(this.widgets[i].value)
-      }
+      const targetId = this.widgets[0]?.widgetId
+      const control = targetId
+        ? useWidgetValueStore().getWidgetControl(targetId)
+        : undefined
+      this.controlValues = control
+        ? control.filter === undefined
+          ? [control.mode]
+          : [control.mode, control.filter]
+        : []
       setTimeout(() => {
         delete this.lastType
         delete this.controlValues

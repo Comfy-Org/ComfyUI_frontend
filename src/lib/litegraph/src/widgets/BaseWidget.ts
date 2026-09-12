@@ -1,4 +1,5 @@
 import { t } from '@/i18n'
+import { registerWidgetControlFromConfig } from '@/core/graph/widgets/control/widgetControl'
 import { drawTextInArea } from '@/lib/litegraph/src/draw'
 import { cachedMeasureText } from '@/lib/litegraph/src/utils/textMeasureCache'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
@@ -410,6 +411,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     )
     if (!registered) return
     this._state = registered
+    registerWidgetControlFromConfig(this)
     const visibility = useWidgetValueStore().getWidgetVisibility(
       widgetId(graphId, nodeId, this.name)
     )
@@ -422,7 +424,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     // Private fields
     this._node = node ?? widget.node
 
-    this._visibility = deriveWidgetVisibility(widget)
+    this._visibility = widget.visibility ?? deriveWidgetVisibility(widget)
 
     // The set and get functions for DOM widget values are hacked on to the options object;
     // attempting to set value before options will throw.
@@ -454,6 +456,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       // @ts-expect-error Prevent naming conflicts with custom nodes.
       labelBaseline,
       label,
+      visibility,
       hidden,
       disabled,
       value,
