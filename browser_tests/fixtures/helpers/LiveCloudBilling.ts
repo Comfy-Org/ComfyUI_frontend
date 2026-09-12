@@ -318,6 +318,79 @@ export class LiveCloudCheckout {
     return { status: 'failed', failureKind: 'card_declined_ui' }
   }
 
+  async failAuthenticatedCheckout(
+    session: LiveCloudBillingSession,
+    testInfo: TestInfo
+  ) {
+    const balanceBefore = await session.read(
+      '/api/billing/balance',
+      zBillingBalanceResponse
+    )
+    await this.open(true)
+    const { checkout, subscription } = await this.startCheckout(
+      this.subscribe.or(this.resumePayment)
+    )
+    await this.submitCard(checkout, '4000000000003220')
+    const challengeOrigin = 'https://testmode-acs.stripe.com'
+    await expect
+      .poll(() =>
+        checkout
+          .frames()
+          .some((frame) => frame.url().startsWith(challengeOrigin))
+      )
+      .toBe(true)
+    const challenge = checkout
+      .frames()
+      .find((frame) => frame.url().startsWith(challengeOrigin))
+    if (!challenge) throw new Error('3D Secure challenge did not load')
+    const failAuthentication = challenge.getByRole('button', { name: /fail/i })
+    await expect(failAuthentication).toBeVisible()
+    await testInfo.attach('3ds-failure-challenge.png', {
+      body: await checkout.screenshot(),
+      contentType: 'image/png'
+    })
+    await failAuthentication.click()
+    await expect
+      .poll(
+        async () => {
+          const operation = await session.read(
+            `/api/billing/ops/${encodeURIComponent(subscription.billing_op_id)}`,
+            zBillingOpStatusResponse
+          )
+          return {
+            status: operation.status,
+            authenticationState: operation.authentication_state,
+            declineReason: operation.decline_reason
+          }
+        },
+        { timeout: 60_000 }
+      )
+      .toMatchObject({
+        status: 'failed',
+        authenticationState: 'failed_retryable'
+      })
+    const status = await session.read(
+      '/api/billing/status',
+      zBillingStatusResponse
+    )
+    expect(status.subscription_tier).toBe('FREE')
+    const balanceAfter = await session.read(
+      '/api/billing/balance',
+      zBillingBalanceResponse
+    )
+    expect(balanceAfter.amount_micros).toBe(balanceBefore.amount_micros)
+    await testInfo.attach('3ds-failure.json', {
+      body: JSON.stringify({
+        operationId: subscription.billing_op_id,
+        balanceBeforeCents: balanceBefore.amount_micros,
+        balanceAfterCents: balanceAfter.amount_micros,
+        authenticationState: 'failed_retryable'
+      }),
+      contentType: 'application/json'
+    })
+    return { authenticationState: 'failed_retryable' }
+  }
+
   private async submitCard(checkout: Page, cardNumber: string) {
     await checkout.getByLabel('Card number', { exact: true }).fill(cardNumber)
     await checkout.getByLabel('Expiration', { exact: true }).fill('1230')
