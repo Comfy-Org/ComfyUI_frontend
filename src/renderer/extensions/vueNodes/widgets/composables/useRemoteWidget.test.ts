@@ -715,4 +715,122 @@ describe('useRemoteWidget', () => {
       )
     })
   })
+  describe('inventory', () => {
+    it('reports loading until the in-flight request settles', async () => {
+      const hook = createHookWithData(['option1'])
+      hook.getValue()
+
+      expect(hook.getInventoryStatus()).toBe('loading')
+      await hook.waitForInventory()
+
+      expect(hook.getInventoryStatus()).toBe('ready')
+      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
+    })
+
+    it('reports error when the request fails', async () => {
+      mockAxiosError('Network error')
+      const hook = useRemoteWidget(createMockOptions())
+
+      await hook.waitForInventory()
+
+      expect(hook.getInventoryStatus()).toBe('error')
+    })
+
+    it('treats expired data as loading until the refresh settles', async () => {
+      const refresh = 4096
+      const { hook } = await setupHookWithResponse(['option1'], { refresh })
+
+      vi.advanceTimersByTime(refresh)
+      expect(hook.getInventoryStatus()).toBe('loading')
+
+      mockAxiosError('Network error')
+      await hook.waitForInventory()
+
+      expect(hook.getInventoryStatus()).toBe('error')
+    })
+
+    it('reports loading while a retry after a failed stale refresh is in flight', async () => {
+      const refresh = 4096
+      const { hook } = await setupHookWithResponse(['option1'], { refresh })
+      mockAxiosError('Network error')
+      vi.advanceTimersByTime(refresh)
+      await hook.waitForInventory()
+      expect(hook.getInventoryStatus()).toBe('error')
+
+      vi.advanceTimersByTime(FIRST_BACKOFF)
+      mockAxiosResponse(['option2'])
+      const waiting = hook.waitForInventory()
+      expect(hook.getInventoryStatus()).toBe('loading')
+      await waiting
+
+      expect(hook.getInventoryStatus()).toBe('ready')
+    })
+
+    it('settles even when the widget callback throws on first load', async () => {
+      const options = createMockOptions()
+      options.widget.callback = () => {
+        throw new Error('callback failed')
+      }
+      mockAxiosResponse(['option1'])
+      const hook = useRemoteWidget(options)
+
+      await hook.waitForInventory()
+
+      expect(hook.getInventoryStatus()).toBe('ready')
+    })
+
+    it('follows a replacement request that interrupts its own request', async () => {
+      let resolveOriginal: (value: unknown) => void = () => undefined
+      vi.mocked(axios.get).mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveOriginal = resolve
+        })
+      )
+      const hook = useRemoteWidget(createMockOptions())
+      const waiting = hook.waitForInventory()
+
+      mockAxiosResponse(['replacement'])
+      hook.refreshValue()
+      resolveOriginal({ data: ['original'], status: 200 })
+      await waiting
+
+      expect(hook.getInventoryStatus()).toBe('ready')
+      expect(hook.getCachedValue()).toEqual(['replacement'])
+    })
+
+    it('stays loading for a new widget until its own first load settles on a warm cache', async () => {
+      const route = '/api/shared-inventory'
+      await setupHookWithResponse(['first', 'restored'], { route })
+      const options = createMockOptions({ route })
+      options.widget.value = 'restored'
+      const hook = useRemoteWidget(options)
+
+      expect(hook.getInventoryStatus()).toBe('loading')
+      await hook.waitForInventory()
+
+      expect(hook.getInventoryStatus()).toBe('ready')
+      expect(options.widget.value).toBe('first')
+      expect(vi.mocked(axios.get)).toHaveBeenCalledTimes(1)
+    })
+
+    it('follows a replacement request started by a refresh', async () => {
+      let resolveOriginal: (value: unknown) => void = () => undefined
+      vi.mocked(axios.get).mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveOriginal = resolve
+        })
+      )
+      const hook = useRemoteWidget(createMockOptions())
+      hook.getValue()
+      const waiting = hook.waitForInventory()
+
+      mockAxiosResponse(['replacement'])
+      hook.refreshValue()
+      resolveOriginal({ data: ['original'], status: 200 })
+      await waiting
+
+      expect(hook.getInventoryStatus()).toBe('ready')
+      expect(hook.getCachedValue()).toEqual(['replacement'])
+    })
+  })
 })

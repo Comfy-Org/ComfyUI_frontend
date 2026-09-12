@@ -22,7 +22,7 @@ export interface MissingModelCandidate {
   /**
    * - `true`  — confirmed missing
    * - `false` — confirmed installed
-   * - `undefined` — pending async verification (asset-supported nodes only)
+   * - `undefined` — pending async verification
    */
   isMissing: boolean | undefined
 }
