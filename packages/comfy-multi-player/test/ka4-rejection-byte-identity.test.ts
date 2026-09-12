@@ -49,6 +49,7 @@ import {
   type WorkflowJSON,
 } from "../src/index.js";
 import { appliedMap } from "../src/doc.js";
+import { remapInsertedWorkflowIds } from "../src/remap.js";
 
 const catalog: WidgetCatalog = {
   types: {
@@ -108,6 +109,7 @@ interface Row {
   /** The rejected outcome code the applier must return. */
   code: string;
   build: () => Op;
+  seed?: (op: Op) => WorkflowJSON;
 }
 
 const CASES: Row[] = [
@@ -191,14 +193,38 @@ const CASES: Row[] = [
   {
     kind: "insert_workflow",
     why: "duplicate raw node ids are ambiguous before deterministic remapping",
-    code: "node_id_collision",
+    code: "malformed_op",
     build: () => ({ op: "insert_workflow", ...env(), workflow: { nodes: [{ id: 1, type: "Src" }, { id: 1, type: "Src" }] } }) as Op,
   },
   {
     kind: "insert_workflow",
     why: "duplicate raw link ids are ambiguous before deterministic remapping",
-    code: "link_id_collision",
+    code: "malformed_op",
     build: () => ({ op: "insert_workflow", ...env(), workflow: { nodes: [], links: [[7, 2, 0, 3, 0, "X"], [7, 2, 0, 3, 0, "X"]] } }) as Op,
+  },
+  {
+    kind: "insert_workflow",
+    why: "remapped node id collides with the live tree",
+    code: "node_id_collision",
+    build: () => ({ op: "insert_workflow", ...env(), workflow: { nodes: [{ id: 1, type: "Src" }], links: [] } }) as Op,
+    seed: (op) => {
+      const workflow = baseWorkflow();
+      const remapped = remapInsertedWorkflowIds((op as { workflow: WorkflowJSON }).workflow, op.op_id);
+      workflow.nodes!.push({ id: remapped.nodes![0]!.id, type: "Src" });
+      return workflow;
+    },
+  },
+  {
+    kind: "insert_workflow",
+    why: "remapped link id collides with the live tree",
+    code: "link_id_collision",
+    build: () => ({ op: "insert_workflow", ...env(), workflow: { nodes: [], links: [[7, 2, 0, 3, 0, "X"]] } }) as Op,
+    seed: (op) => {
+      const workflow = baseWorkflow();
+      const remapped = remapInsertedWorkflowIds((op as { workflow: WorkflowJSON }).workflow, op.op_id);
+      workflow.links!.push([remapped.links![0]![0], 2, 0, 3, 0, "X"]);
+      return workflow;
+    },
   },
   {
     kind: "insert_workflow",
@@ -493,10 +519,10 @@ const KNOWN_KA4_VIOLATIONS: readonly string[] = [];
 
 describe("KA-4: a rejected op leaves the doc byte-identical and does not consume its op_id", () => {
   it.each(CASES.map((c) => [`${c.kind}: ${c.why} → ${c.code}`, c] as const))("%s", (_name, row) => {
-    const doc = mint(baseWorkflow(), catalog);
+    const op = row.build();
+    const doc = mint(row.seed?.(op) ?? baseWorkflow(), catalog);
     const before = bytes(doc);
     const beforeProjection = project(doc, catalog);
-    const op = row.build();
 
     const res = applyOps(doc, [op], catalog);
 

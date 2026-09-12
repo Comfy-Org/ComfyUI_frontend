@@ -285,17 +285,47 @@ describe("insert_workflow: happy path", () => {
 describe("insert_workflow: rejection (KA-4 byte identity, op_id absent from applied)", () => {
   const cases: { name: string; workflow: unknown; code: string; withCatalog: boolean }[] = [
     {
-      name: "duplicate node id inside the template itself",
+      name: "exact duplicate raw node ids",
       workflow: { nodes: [{ id: 100, type: "Src" }, { id: 100, type: "Src" }], links: [] },
-      code: "node_id_collision",
+      code: "malformed_op",
+      withCatalog: true,
+    },
+    {
+      name: "normalized duplicate raw node ids",
+      workflow: { nodes: [{ id: 1, type: "Src" }, { id: "1", type: "Src" }], links: [] },
+      code: "malformed_op",
+      withCatalog: true,
+    },
+    {
+      name: "missing raw node id",
+      workflow: { nodes: [{ type: "Src" }], links: [] },
+      code: "malformed_op",
+      withCatalog: true,
+    },
+    {
+      name: "exact duplicate raw link ids",
+      workflow: { nodes: [], links: [[7, 1, 0, 2, 0, "X"], [7, 1, 0, 2, 0, "X"]] },
+      code: "malformed_op",
+      withCatalog: true,
+    },
+    {
+      name: "normalized duplicate raw link ids",
+      workflow: { nodes: [], links: [[1, 1, 0, 2, 0, "X"], ["1", 1, 0, 2, 0, "X"]] },
+      code: "malformed_op",
+      withCatalog: true,
+    },
+    {
+      name: "missing raw link id",
+      workflow: { nodes: [], links: [[undefined, 1, 0, 2, 0, "X"]] },
+      code: "malformed_op",
       withCatalog: true,
     },
     { name: "missing workflow", workflow: undefined, code: "malformed_op", withCatalog: true },
     { name: "non-object workflow", workflow: "nope", code: "malformed_op", withCatalog: true },
     { name: "nodes is not an array", workflow: { nodes: {}, links: [] }, code: "malformed_op", withCatalog: true },
     {
-      name: "node without id/type",
-      workflow: { nodes: [{ pos: [0, 0] }], links: [] },
+      name: "node without type",
+      workflow: { nodes: [{ id: 100, pos: [0, 0] }], links: [] },
       code: "invalid_node_payload",
       withCatalog: true,
     },
@@ -311,10 +341,12 @@ describe("insert_workflow: rejection (KA-4 byte identity, op_id absent from appl
     it(`rejects: ${c.name} → ${c.code}`, () => {
       const doc = mint(baseWorkflow(), catalog);
       const before = bytes(doc);
+      const projectedBefore = project(doc, catalog);
       const op = insertOp(c.workflow);
       const result = applyOps(doc, [op], c.withCatalog ? catalog : undefined);
       expect(rejectedOutcomeWithIndex(result)!.code).toBe(c.code);
       expect(bytes(doc).equals(before)).toBe(true);
+      expect(project(doc, catalog)).toEqual(projectedBefore);
       expect(appliedMap(doc).has(op.op_id)).toBe(false);
     });
   }

@@ -705,17 +705,17 @@ function validateSubgraphDefinition(definition: Record<string, unknown>, path: s
   });
 }
 
-function assertUniqueNormalizedIds(values: unknown[], path: string, required = false): void {
+function assertUniqueNormalizedIds(values: unknown[], path: string, required = false, operation = "define_subgraph"): void {
   const ids = new Set<string>();
   values.forEach((value, index) => {
     const id = Array.isArray(value) ? value[0] : isPlainRecord(value) ? value.id : undefined;
     if (id === undefined || id === null) {
-      if (required) throw new OpRejectedError("malformed_op", `define_subgraph: missing id at ${path}[${index}]`);
+      if (required) throw new OpRejectedError("malformed_op", `${operation}: missing id at ${path}[${index}]`);
       return;
     }
     const normalized = String(id);
     if (ids.has(normalized)) {
-      throw new OpRejectedError("malformed_op", `define_subgraph: duplicate normalized id '${normalized}' at ${path}[${index}]`);
+      throw new OpRejectedError("malformed_op", `${operation}: duplicate normalized id '${normalized}' at ${path}[${index}]`);
     }
     ids.add(normalized);
   });
@@ -822,6 +822,8 @@ function applyInsertWorkflow(doc: Y.Doc, op: InsertWorkflowOp, catalog?: WidgetC
   if (wf["groups"] !== undefined && !Array.isArray(wf["groups"])) {
     throw new OpRejectedError("malformed_op", "insert_workflow: groups must be an array");
   }
+  assertUniqueNormalizedIds(wf["nodes"] as unknown[], "workflow.nodes", true, "insert_workflow");
+  assertUniqueNormalizedIds((wf["links"] as unknown[] | undefined) ?? [], "workflow.links", true, "insert_workflow");
   validateDefinitionInputs((subgraphs as unknown[] | undefined) ?? []);
   wf = remapInsertedWorkflowIds(wf as unknown as import("./types.js").WorkflowJSON, op.op_id) as unknown as Record<string, unknown>;
   const remappedDefinitions = wf["definitions"] as { subgraphs?: unknown[] } | undefined;
