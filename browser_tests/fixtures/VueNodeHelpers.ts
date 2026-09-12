@@ -5,6 +5,7 @@ import type { Locator, Page } from '@playwright/test'
 
 import { TestIds } from '@e2e/fixtures/selectors'
 import { comfyExpect as expect } from '@e2e/fixtures/utils/customMatchers'
+import { nextFrame } from '@e2e/fixtures/utils/timing'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { toNodeId } from '@/types/nodeId'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
@@ -289,10 +290,21 @@ export class VueNodeHelpers {
     const widget = this.getWidgetByName(nodeTitle, widgetName)
     const { input } = this.getInputNumberControls(widget)
     const fixture = await this.getFixtureByTitle(nodeTitle)
+    await nextFrame(this.page)
     await widget.click()
     await input.fill(value)
     await input.press('Enter')
-    await this.page.evaluate(() => new Promise(requestAnimationFrame))
+    await expect
+      .poll(() =>
+        this.page.evaluate(
+          ({ nodeTitle, widgetName }) =>
+            window
+              .app!.graph.nodes.find((node) => node.title === nodeTitle)
+              ?.widgets?.find((widget) => widget.name === widgetName)?.value,
+          { nodeTitle, widgetName }
+        )
+      )
+      .toBe(Number(value))
     await fixture.title.click()
     await expect(input).toHaveValue(value)
   }
