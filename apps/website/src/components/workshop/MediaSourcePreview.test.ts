@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { render, screen, waitFor } from '@testing-library/vue'
 import { expect, it, vi } from 'vitest'
 import { createSSRApp, h } from 'vue'

@@ -388,7 +388,7 @@ async function sendFromComposer(text: string): Promise<void> {
   const textbox = screen.getByRole('textbox')
   await userEvent.click(textbox)
   await userEvent.keyboard('{ArrowRight}')
-  await userEvent.keyboard(text)
+  await userEvent.paste(text)
   await userEvent.click(screen.getByRole('button', { name: 'Send' }))
   await screen.findByRole('button', { name: 'Stop' })
 }
@@ -677,7 +677,8 @@ async function openAddMenu(): Promise<void> {
 }
 
 async function openMentionPicker(): Promise<void> {
-  await userEvent.type(screen.getByRole('textbox'), '@')
+  await userEvent.click(screen.getByRole('textbox'))
+  await userEvent.paste('@')
   await userEvent.click(screen.getByRole('menuitem', { name: 'Nodes' }))
 }
 
@@ -903,7 +904,8 @@ describe('AgentPanelRoot attach flow', () => {
 
     expect(await screen.findByText('cat.png')).toBeInTheDocument()
 
-    await userEvent.type(screen.getByRole('textbox'), 'make it pop')
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('make it pop')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
 
     expect(messageBodies).toHaveLength(1)
@@ -1253,7 +1255,8 @@ describe('AgentPanelRoot attach flow', () => {
 
       expect(await screen.findByText(filename)).toBeInTheDocument()
 
-      await userEvent.type(screen.getByRole('textbox'), 'describe this')
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.paste('describe this')
       await userEvent.click(screen.getByRole('button', { name: 'Send' }))
 
       expect(messageBodies).toHaveLength(1)
@@ -1444,7 +1447,8 @@ describe('AgentPanelRoot attach flow', () => {
     expect(
       screen.getByLabelText(i18n.global.t('agent.uploading'))
     ).toBeInTheDocument()
-    await userEvent.type(screen.getByRole('textbox'), 'make it pop')
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('make it pop')
     expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled()
 
     settleUpload()
@@ -1622,7 +1626,8 @@ describe('AgentPanelRoot canvas draft on send', () => {
 
     renderWithSelectedTarget()
 
-    await userEvent.type(screen.getByRole('textbox'), "what's on my canvas")
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste("what's on my canvas")
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
 
     expect(messageBodies).toHaveLength(1)
@@ -1649,7 +1654,8 @@ describe('AgentPanelRoot canvas draft on send', () => {
     renderWithSelectedTarget()
 
     const textbox = screen.getByRole('textbox')
-    await userEvent.type(textbox, 'hello')
+    await userEvent.click(textbox)
+    await userEvent.paste('hello')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
 
     expect(messageBodies).toHaveLength(0)
@@ -2271,7 +2277,9 @@ describe('AgentPanelRoot workflow binding', () => {
     const bodies = mockMessagesEndpoint('wf-new')
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     const textbox = screen.getByRole('textbox')
-    await userEvent.type(textbox, 'build here{Enter}')
+    await userEvent.click(textbox)
+    await userEvent.paste('build here')
+    await userEvent.keyboard('{Enter}')
     expect(
       await screen.findByPlaceholderText(i18n.global.t('agent.searchWorkflows'))
     ).toHaveFocus()
@@ -2298,7 +2306,8 @@ describe('AgentPanelRoot workflow binding', () => {
     })
     renderWithSelectedTarget()
     const textbox = screen.getByRole('textbox')
-    await userEvent.type(textbox, 'keep this prompt')
+    await userEvent.click(textbox)
+    await userEvent.paste('keep this prompt')
     await userEvent.click(
       screen.getByRole('button', {
         name: i18n.global.t('agent.switchWorkflow')
@@ -2344,7 +2353,8 @@ describe('AgentPanelRoot workflow binding', () => {
     })
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     const textbox = screen.getByRole('textbox')
-    await userEvent.type(textbox, 'keep draft')
+    await userEvent.click(textbox)
+    await userEvent.paste('keep draft')
     await userEvent.click(
       screen.getByRole('button', {
         name: i18n.global.t('agent.switchWorkflow')
@@ -2589,7 +2599,8 @@ describe('AgentPanelRoot workflow binding', () => {
         await screen.findByRole('menuitemradio', { name: 'current' })
       )
       await vi.waitFor(() => expect(selector()).toHaveTextContent('current'))
-      await userEvent.type(screen.getByRole('textbox'), 'Keep this draft')
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.paste('Keep this draft')
       workflowStore.activeWorkflow = viewed
       first.unmount()
       if (panelState === 'hidden') await workflowStore.closeWorkflow(target)
@@ -2754,7 +2765,8 @@ describe('AgentPanelRoot workflow binding', () => {
       data: { message_id: oldTurn, thread_id: 'th-1' }
     })
     for (const name of ['reference-b', 'reference-c']) {
-      await userEvent.type(screen.getByRole('textbox'), '@')
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.paste('@')
       await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
       await userEvent.click(await screen.findByRole('menuitem', { name }))
     }
@@ -3098,7 +3110,8 @@ describe('AgentPanelRoot workflow binding', () => {
 
     renderWithSelectedTarget()
     const textbox = screen.getByRole('textbox')
-    await userEvent.type(textbox, 'keep this draft')
+    await userEvent.click(textbox)
+    await userEvent.paste('keep this draft')
     await userEvent.click(
       screen.getByRole('button', {
         name: i18n.global.t('agent.switchWorkflow')
@@ -3389,7 +3402,8 @@ describe('AgentPanelRoot workflow binding', () => {
 
     renderWithSelectedTarget()
     const textbox = screen.getByRole('textbox')
-    await userEvent.type(textbox, 'do not lose this')
+    await userEvent.click(textbox)
+    await userEvent.paste('do not lose this')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
 
     expect(bodies).toHaveLength(0)
@@ -4060,7 +4074,8 @@ describe('AgentPanelRoot workflow binding', () => {
 
     renderWithSelectedTarget()
     await vi.waitFor(() => expect(workflowRequests).toBe(1))
-    await userEvent.type(screen.getByRole('textbox'), 'first message')
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('first message')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await vi.waitFor(() => expect(workflowRequests).toBe(2))
     await vi.advanceTimersByTimeAsync(3000)
@@ -4196,12 +4211,13 @@ describe('AgentPanelRoot workflow binding', () => {
       )
       renderWithSelectedTarget()
       const textbox = screen.getByRole('textbox')
-      await userEvent.type(textbox, '@')
+      await userEvent.click(textbox)
+      await userEvent.paste('@')
       await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
       await userEvent.click(
         await screen.findByRole('menuitem', { name: 'reference' })
       )
-      await userEvent.keyboard('Keep this draft')
+      await userEvent.paste('Keep this draft')
       const workflowLookups = () =>
         vi
           .mocked(fetch)
@@ -4231,7 +4247,8 @@ describe('AgentPanelRoot workflow binding', () => {
       ])
       renderWithSelectedTarget()
       if (picker === 'mention') {
-        await userEvent.type(screen.getByRole('textbox'), '@')
+        await userEvent.click(screen.getByRole('textbox'))
+        await userEvent.paste('@')
       } else {
         await userEvent.click(
           screen.getByRole('button', { name: 'Add to prompt' })
@@ -4275,7 +4292,8 @@ describe('AgentPanelRoot workflow binding', () => {
       }
     )
     renderWithSelectedTarget()
-    await userEvent.type(screen.getByRole('textbox'), 'Compare @')
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Compare @')
     await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
     await userEvent.click(
       await screen.findByRole('menuitem', { name: /scratch\s*Unsaved/ })
@@ -4316,10 +4334,8 @@ describe('AgentPanelRoot workflow binding', () => {
       })
       renderWithSelectedTarget()
       const textbox = screen.getByRole('textbox')
-      await userEvent.type(
-        textbox,
-        picker === 'mention' ? 'Compare @' : 'Compare'
-      )
+      await userEvent.click(textbox)
+      await userEvent.paste(picker === 'mention' ? 'Compare @' : 'Compare')
       if (picker === 'plus')
         await userEvent.click(
           screen.getByRole('button', { name: 'Add to prompt' })
@@ -4377,7 +4393,8 @@ describe('AgentPanelRoot workflow binding', () => {
       })
       const view = renderWithSelectedTarget()
       const textbox = screen.getByRole('textbox')
-      await userEvent.type(textbox, 'Compare @')
+      await userEvent.click(textbox)
+      await userEvent.paste('Compare @')
       await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
       await userEvent.click(
         await screen.findByRole('menuitem', { name: /scratch\s*Unsaved/ })
@@ -4443,7 +4460,8 @@ describe('AgentPanelRoot workflow binding', () => {
       useAgentWorkflowTabBindingStore().bind('wf-reference', reference.path)
       mockMessagesEndpoint('wf-current')
       renderWithSelectedTarget()
-      await userEvent.type(screen.getByRole('textbox'), '@')
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.paste('@')
       await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
       await userEvent.click(
         await screen.findByRole('menuitem', { name: 'reference' })
@@ -4471,12 +4489,13 @@ describe('AgentPanelRoot workflow binding', () => {
       ])
       const first = renderWithSelectedTarget()
       useAgentPanelStore().isOpen = true
-      await userEvent.type(screen.getByRole('textbox'), '@')
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.paste('@')
       await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
       await userEvent.click(
         await screen.findByRole('menuitem', { name: 'reference' })
       )
-      await userEvent.keyboard('Keep this draft')
+      await userEvent.paste('Keep this draft')
       expect(
         screen.getByRole('button', { name: 'Open reference' })
       ).toBeVisible()
@@ -4540,12 +4559,13 @@ describe('AgentPanelRoot workflow binding', () => {
       await openMentionPicker()
       await userEvent.click(await screen.findByText('KSampler'))
       const textbox = screen.getByRole('textbox')
-      await userEvent.type(textbox, '@')
+      await userEvent.click(textbox)
+      await userEvent.paste('@')
       await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
       await userEvent.click(
         await screen.findByRole('menuitem', { name: 'reference' })
       )
-      await userEvent.keyboard('Keep this draft')
+      await userEvent.paste('Keep this draft')
       if (tabState === 'closed') await workflowStore.closeWorkflow(reference)
 
       await userEvent.click(
@@ -4600,12 +4620,13 @@ describe('AgentPanelRoot workflow binding', () => {
       ])
       renderWithSelectedTarget()
       const textbox = screen.getByRole('textbox')
-      await userEvent.type(textbox, '@')
+      await userEvent.click(textbox)
+      await userEvent.paste('@')
       await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
       await userEvent.click(
         await screen.findByRole('menuitem', { name: 'reference' })
       )
-      await userEvent.keyboard('Keep this draft')
+      await userEvent.paste('Keep this draft')
       if (failure === 'false')
         workflowService.openWorkflow.mockResolvedValueOnce(false)
       else
@@ -4716,7 +4737,8 @@ describe('AgentPanelRoot workflow binding', () => {
     const bodies = mockMessagesEndpoint('wf-42')
 
     renderWithSelectedTarget()
-    await userEvent.type(screen.getByRole('textbox'), '@')
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('@')
     await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
     await userEvent.click(
       await screen.findByRole('menuitem', { name: 'reference' })
@@ -4871,7 +4893,8 @@ describe('AgentPanelRoot workflow binding', () => {
     renderWithSelectedTarget()
 
     const textbox = screen.getByRole('textbox')
-    await userEvent.type(textbox, '@')
+    await userEvent.click(textbox)
+    await userEvent.paste('@')
     await userEvent.keyboard('{Enter}')
     expect(screen.getByText('#5')).toBeInTheDocument()
     expect(screen.getByText('#7')).toBeInTheDocument()
@@ -4894,7 +4917,8 @@ describe('AgentPanelRoot workflow binding', () => {
 
     renderWithSelectedTarget()
     const textbox = screen.getByRole('textbox')
-    await userEvent.type(textbox, '@')
+    await userEvent.click(textbox)
+    await userEvent.paste('@')
 
     expect(screen.getByRole('menuitem', { name: 'Nodes' })).toBeVisible()
     expect(screen.getByRole('menuitem', { name: 'Workflows' })).toBeVisible()
@@ -4911,7 +4935,8 @@ describe('AgentPanelRoot workflow binding', () => {
     ])
 
     renderWithSelectedTarget()
-    await userEvent.type(screen.getByRole('textbox'), '@')
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('@')
     await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
 
     expect(await screen.findByRole('menuitem', { name: 'other' })).toBeVisible()
@@ -4930,7 +4955,8 @@ describe('AgentPanelRoot workflow binding', () => {
 
     renderWithSelectedTarget()
     const textbox = screen.getByRole('textbox')
-    await userEvent.type(textbox, '@')
+    await userEvent.click(textbox)
+    await userEvent.paste('@')
     await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
     expect(
       screen.getByRole('menuitem', { name: /video_minimax_h3_i2v\s*Unsaved/ })
@@ -4946,7 +4972,8 @@ describe('AgentPanelRoot workflow binding', () => {
       name: 'video_minimax_h3_i2v'
     })
 
-    await userEvent.type(textbox, '@')
+    await userEvent.click(textbox)
+    await userEvent.paste('@')
     await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
 
     expect(
@@ -4987,7 +5014,8 @@ describe('AgentPanelRoot workflow binding', () => {
     )
 
     renderWithSelectedTarget()
-    await userEvent.type(screen.getByRole('textbox'), '@')
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('@')
     await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
     expect(
       await screen.findByRole('menuitem', { name: 'video_minimax_h3_i2v' })
@@ -5204,7 +5232,8 @@ describe('AgentPanelRoot workflow binding', () => {
       await openMentionPicker()
       await userEvent.click(await screen.findByText('KSampler'))
       let textbox = screen.getByRole('textbox')
-      await userEvent.type(textbox, '  Compare @')
+      await userEvent.click(textbox)
+      await userEvent.paste('  Compare @')
       await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
       await userEvent.click(
         await screen.findByRole('menuitem', { name: 'reference' })
@@ -5215,7 +5244,7 @@ describe('AgentPanelRoot workflow binding', () => {
         name: 'cat.png',
         ref: 'uploaded_cat.png'
       })
-      await userEvent.keyboard('  Keep this draft  ')
+      await userEvent.paste('  Keep this draft  ')
       const originalReferences = [...composer.workflowReferences]
       await userEvent.click(screen.getByRole('button', { name: 'Send' }))
       await vi.waitFor(() => expect(bodies).toHaveLength(1))
@@ -5235,7 +5264,8 @@ describe('AgentPanelRoot workflow binding', () => {
         expect(screen.getByRole('button', { name: 'Stop' })).toBeVisible()
       }
       if (nextAction === 'new-draft' || nextAction === 'cleared-draft')
-        await userEvent.type(textbox, 'New input')
+        await userEvent.click(textbox)
+      await userEvent.paste('New input')
       if (nextAction === 'cleared-draft') await userEvent.clear(textbox)
       if (nextAction === 'removed-reference') {
         await userEvent.click(
@@ -5382,7 +5412,8 @@ describe('AgentPanelRoot workflow binding', () => {
 
     renderWithSelectedTarget()
     await vi.waitFor(() => expect(workflowRequests).toBe(1))
-    await userEvent.type(screen.getByRole('textbox'), 'build a graph')
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('build a graph')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await vi.waitFor(() => expect(workflowRequests).toBe(2))
     await workflowStore.closeWorkflow(

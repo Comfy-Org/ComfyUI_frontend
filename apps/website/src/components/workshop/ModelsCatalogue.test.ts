@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { render, screen } from '@testing-library/vue'
 import { afterEach, describe, expect, it } from 'vitest'
 import ModelsCatalogue from './ModelsCatalogue.vue'
