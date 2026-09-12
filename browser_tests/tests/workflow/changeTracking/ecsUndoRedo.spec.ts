@@ -160,19 +160,23 @@ test.describe(
             .toBe(nodeCount)
         }
 
-        await comfyPage.keyboard.undo()
-        await expectState(movedPosition, '31', initialNodeCount)
-        await comfyPage.keyboard.undo()
-        await expectState(movedPosition, initialSteps, initialNodeCount)
-        await comfyPage.keyboard.undo()
-        await expectState(initialPosition, initialSteps, initialNodeCount)
+        await test.step('Undo each mixed edit in order', async () => {
+          await comfyPage.keyboard.undo()
+          await expectState(movedPosition, '31', initialNodeCount)
+          await comfyPage.keyboard.undo()
+          await expectState(movedPosition, initialSteps, initialNodeCount)
+          await comfyPage.keyboard.undo()
+          await expectState(initialPosition, initialSteps, initialNodeCount)
+        })
 
-        await comfyPage.keyboard.redo()
-        await expectState(movedPosition, initialSteps, initialNodeCount)
-        await comfyPage.keyboard.redo()
-        await expectState(movedPosition, '31', initialNodeCount)
-        await comfyPage.keyboard.redo()
-        await expectState(movedPosition, '31', initialNodeCount + 1)
+        await test.step('Redo each mixed edit in order', async () => {
+          await comfyPage.keyboard.redo()
+          await expectState(movedPosition, initialSteps, initialNodeCount)
+          await comfyPage.keyboard.redo()
+          await expectState(movedPosition, '31', initialNodeCount)
+          await comfyPage.keyboard.redo()
+          await expectState(movedPosition, '31', initialNodeCount + 1)
+        })
       }
     )
 
@@ -256,10 +260,12 @@ test.describe(
           await comfyPage.page.mouse.click(600, 650)
           await checkpoint()
 
-          await loader.dragBy({ x: 90, y: 60 })
-          await checkpoint()
-          await sampler.dragBy({ x: 70, y: 100 })
-          await checkpoint()
+          await test.step('Move both nodes', async () => {
+            await loader.dragBy({ x: 90, y: 60 })
+            await checkpoint()
+            await sampler.dragBy({ x: 70, y: 100 })
+            await checkpoint()
+          })
 
           await comfyPage.vueNodes.editAndCommitNumber(
             'KSampler',
@@ -311,14 +317,20 @@ test.describe(
           await checkpoint()
           const finalSnapshot = snapshots.at(-1)!
 
-          for (let index = snapshots.length - 2; index >= 0; index--) {
-            await comfyPage.keyboard.undo()
-            await expect.poll(getSnapshot).toEqual(snapshots[index])
-          }
-          for (let index = 1; index < snapshots.length; index++) {
-            await comfyPage.keyboard.redo()
-            await expect.poll(getSnapshot).toEqual(snapshots[index])
-          }
+          await test.step('Undo the complete edit chain', async () => {
+            for (let index = snapshots.length - 2; index >= 0; index--) {
+              await comfyPage.keyboard.undo()
+              await expect.poll(getSnapshot).toEqual(snapshots[index])
+            }
+          })
+
+          await test.step('Redo the complete edit chain', async () => {
+            for (let index = 1; index < snapshots.length; index++) {
+              await comfyPage.keyboard.redo()
+              await expect.poll(getSnapshot).toEqual(snapshots[index])
+            }
+          })
+
           expect(await getSnapshot()).toEqual(finalSnapshot)
           await expect(comfyPage.toast.toastErrors).toHaveCount(0)
         }
@@ -371,40 +383,47 @@ test.describe(
 
       // Undo in the fresh tab must be a no-op: its queue is empty and it must
       // not reach back into Tab A's history.
-      await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(0)
-      await comfyPage.keyboard.undo()
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+      await test.step('Undo is isolated in the fresh tab', async () => {
+        await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(0)
+        await comfyPage.keyboard.undo()
+        await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+      })
 
-      await comfyPage.workflow.switchToTab('Undo Tab A')
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(7)
-      await expect
-        .poll(() =>
-          comfyPage.page.evaluate(() =>
-            window
-              .app!.graph.nodes.map((graphNode) => ({
-                id: String(graphNode.id),
-                bounds: [...graphNode.getBounding()]
-              }))
-              .sort((left, right) => left.id.localeCompare(right.id))
+      await test.step('Undo the edit after returning to Tab A', async () => {
+        await comfyPage.workflow.switchToTab('Undo Tab A')
+        await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(7)
+        await expect
+          .poll(() =>
+            comfyPage.page.evaluate(() =>
+              window
+                .app!.graph.nodes.map((graphNode) => ({
+                  id: String(graphNode.id),
+                  bounds: [...graphNode.getBounding()]
+                }))
+                .sort((left, right) => left.id.localeCompare(right.id))
+            )
           )
-        )
-        .toEqual(tabAState)
-      await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(1)
-      await expect
-        .poll(() => node.getProperty<[number, number]>('pos'))
-        .not.toEqual(initialPosition)
-      await comfyPage.menu.topbar.triggerTopbarCommand(['Edit', 'Undo'])
-      await expect
-        .poll(() => node.getProperty<[number, number]>('pos'))
-        .toEqual(initialPosition)
+          .toEqual(tabAState)
+        await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(1)
+        await expect
+          .poll(() => node.getProperty<[number, number]>('pos'))
+          .not.toEqual(initialPosition)
+        await comfyPage.page.mouse.click(600, 650)
+        await comfyPage.keyboard.undo()
+        await expect
+          .poll(() => node.getProperty<[number, number]>('pos'))
+          .toEqual(initialPosition)
+      })
 
-      await comfyPage.workflow.switchToTab(tabBName)
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
-      expect(
-        await comfyPage.page.evaluate(() =>
-          window.app!.graph.nodes.map((graphNode) => String(graphNode.id))
-        )
-      ).toEqual([])
+      await test.step('Tab B remains empty after Tab A undo', async () => {
+        await comfyPage.workflow.switchToTab(tabBName)
+        await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+        expect(
+          await comfyPage.page.evaluate(() =>
+            window.app!.graph.nodes.map((graphNode) => String(graphNode.id))
+          )
+        ).toEqual([])
+      })
     })
   }
 )
