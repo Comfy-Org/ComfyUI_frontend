@@ -193,5 +193,51 @@ testWithMockedObjectInfo.describe(
           .toContain('4.2/10.6')
       }
     )
+
+    testWithMockedObjectInfo(
+      'hides and restores the pricing badge on an existing node when the setting is toggled',
+      { tag: '@vue-nodes' },
+      async ({ comfyPage }) => {
+        await comfyPage.settings.setSetting(
+          'Comfy.NodeBadge.ShowApiPricing',
+          true
+        )
+
+        await comfyPage.nodeOps.clearGraph()
+
+        const nodeId = await comfyPage.page.evaluate(() => {
+          const node = window.LiteGraph!.createNode('TestCreditApiNodeUsd')
+          window.app!.graph.add(node)
+          return node!.id
+        })
+
+        const header = comfyPage.page.locator(
+          `[data-testid="node-header-${nodeId}"]`
+        )
+        await expect(header).toBeVisible()
+        const badge = header.getByTestId('credit-badge-required')
+
+        // Precondition: there is a badge to hide. Without it, "hidden after
+        // turning the setting off" also holds for a node that never rendered
+        // one, which is the way this test would pass vacuously.
+        await expect(badge).toBeVisible()
+
+        await comfyPage.settings.setSetting(
+          'Comfy.NodeBadge.ShowApiPricing',
+          false
+        )
+        await expect(badge).toBeHidden()
+
+        // Turning it back on must restore the badge on the *same* node. The
+        // setting is read once when the badge renders, so a node placed before
+        // the toggle is exactly the case that can end up stuck either way.
+        await comfyPage.settings.setSetting(
+          'Comfy.NodeBadge.ShowApiPricing',
+          true
+        )
+        await expect(badge).toBeVisible()
+        await expect(header).toBeVisible()
+      }
+    )
   }
 )
