@@ -114,8 +114,29 @@ test.describe(
       const tab = comfyPage.menu.workflowsTab
       await tab.open()
       await comfyPage.menu.topbar.saveWorkflow(workflowName)
+      await expect(comfyPage.toast.toastErrors).toHaveCount(0)
       await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
       await comfyPage.workflow.waitForWorkflowIdle()
+      await openWorkflowFromSidebar(comfyPage, workflowName)
+
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate((nodeId) => {
+            const node = window.app!.graph.nodes.find(
+              (candidate) => String(candidate.id) === nodeId
+            )!
+            return node.widgets?.[0]?.value
+          }, comparerId)
+        )
+        .toEqual({
+          images: [
+            expect.objectContaining({ name: 'A', selected: true }),
+            expect.objectContaining({ name: 'B', selected: true })
+          ]
+        })
+
+      await comfyPage.page.reload({ waitUntil: 'domcontentloaded' })
+      await comfyPage.waitForAppReady()
       await openWorkflowFromSidebar(comfyPage, workflowName)
 
       await expect
