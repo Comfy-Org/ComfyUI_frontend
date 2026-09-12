@@ -10,6 +10,8 @@ import {
   type WidgetCatalog,
   type WorkflowJSON,
 } from "../src/index.js"
+import { canonicalOp } from "../src/applier.js"
+import { sha256Hex } from "../src/digest.js"
 import { definitionsMap } from "../src/doc.js"
 
 const catalog: WidgetCatalog = {
@@ -45,6 +47,18 @@ const define = (id = subgraphId, value = 1): DefineSubgraphOp => ({
 const empty = () => mint({ nodes: [], links: [] } as unknown as WorkflowJSON, catalog)
 const rejectionCode = (doc: Y.Doc, op: Op) =>
   applyOps(doc, [op], catalog).outcomes.find((outcome) => outcome.outcome === "rejected")?.reason.code
+
+const winningReplacement = (
+  incumbent: Record<string, unknown>,
+  replacement: Record<string, unknown>,
+) => {
+  const incumbentDigest = sha256Hex(canonicalOp(incumbent as unknown as Op))
+  for (let nonce = 0; nonce < 1000; nonce++) {
+    const candidate = { ...replacement, name: `replacement-${nonce}` }
+    if (sha256Hex(canonicalOp(candidate as unknown as Op)) > incumbentDigest) return candidate
+  }
+  throw new Error("unable to construct a winning replacement")
+}
 
 describe("define_subgraph schema", () => {
   const forbidden = [
@@ -264,6 +278,83 @@ describe("define_subgraph application", () => {
     }
 
     expect(rejectionCode(doc, { ...define(newRootId), subgraph_definition: colliding })).toBe("definition_conflict")
+  })
+
+  it("rejects a winning replacement whose nested id collides with another root and preserves the incumbent", () => {
+    const otherRootId = "abcdefab-cdef-4abc-8def-abcdefabcdef"
+    const incumbent = definition()
+    const replacement = winningReplacement(incumbent, {
+      ...definition(), definitions: { subgraphs: [definition(otherRootId, 9)] },
+    })
+    const doc = empty()
+    applyOps(doc, [define(), define(otherRootId, 4)], catalog)
+
+    expect(rejectionCode(doc, { ...define(), subgraph_definition: replacement })).toBe("definition_conflict")
+    expect((project(doc, catalog).definitions as { subgraphs: unknown[] }).subgraphs).toEqual([
+      incumbent,
+      definition(otherRootId, 4),
+    ])
+  })
+
+  it.each(["ancestor", "sibling"])("rejects a winning replacement whose nested id collides with an %s branch", (collision) => {
+    const branchId = "abcdefab-cdef-4abc-8def-abcdefabcdef"
+    const siblingId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+    const incumbent = definition()
+    const otherRootId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
+    const otherRoot = { ...definition(otherRootId), definitions: { subgraphs: [
+      { ...definition(branchId, 2), definitions: { subgraphs: [definition(siblingId, 3)] } },
+    ] } }
+    const collidingId = collision === "ancestor" ? branchId : siblingId
+    const replacement = winningReplacement(incumbent, {
+      ...definition(), definitions: { subgraphs: [definition(collidingId, 6)] },
+    })
+    const doc = empty()
+    applyOps(doc, [
+      { ...define(), subgraph_definition: incumbent },
+      { ...define(otherRootId), subgraph_definition: otherRoot },
+    ], catalog)
+
+    expect(rejectionCode(doc, { ...define(), subgraph_definition: replacement })).toBe("definition_conflict")
+    expect((project(doc, catalog).definitions as { subgraphs: unknown[] }).subgraphs).toEqual([incumbent, otherRoot])
+  })
+
+  it("accepts a winning replacement that reuses only ids owned by the incumbent", () => {
+    const nestedId = "abcdefab-cdef-4abc-8def-abcdefabcdef"
+    const incumbent = { ...definition(), definitions: { subgraphs: [definition(nestedId, 2)] } }
+    const replacement = winningReplacement(incumbent, {
+      ...definition(), nodes: [{ id: 11, type: "Inner", inputs: [], outputs: [], widgets_values: [7] }],
+      definitions: { subgraphs: [definition(nestedId, 8)] },
+    })
+    const doc = empty()
+    applyOps(doc, [{ ...define(), subgraph_definition: incumbent }], catalog)
+
+    expect(applyOps(doc, [{ ...define(), subgraph_definition: replacement }], catalog).outcomes[0]?.outcome).toBe("applied")
+    expect((project(doc, catalog).definitions as { subgraphs: unknown[] }).subgraphs).toEqual([replacement])
+  })
+
+  it("projects a rejected colliding winner identically in both op orders", () => {
+    const otherRootId = "abcdefab-cdef-4abc-8def-abcdefabcdef"
+    const incumbent = definition()
+    const replacement = winningReplacement(incumbent, {
+      ...definition(), definitions: { subgraphs: [definition(otherRootId, 9)] },
+    })
+    const incumbentOp = define()
+    const replacementOp = { ...define(), subgraph_definition: replacement }
+    const seed = empty()
+    applyOps(seed, [define(otherRootId, 4)], catalog)
+    const snapshot = Y.encodeStateAsUpdate(seed)
+
+    const projections = [[incumbentOp, replacementOp], [replacementOp, incumbentOp]].map((ops) => {
+      const doc = new Y.Doc()
+      Y.applyUpdate(doc, snapshot)
+      for (const op of ops) applyOps(doc, [op], catalog)
+      return project(doc, catalog)
+    })
+
+    expect(projections[0]).toEqual(projections[1])
+    const projected = (projections[0]!.definitions as { subgraphs: Array<{ id: string }> }).subgraphs
+    expect(projected.find(({ id }) => id === subgraphId)).toEqual(incumbent)
+    expect(projected.find(({ id }) => id === otherRootId)).toEqual(definition(otherRootId, 4))
   })
 
   it("rejects a direct edit to a definition with multiple live instances", () => {

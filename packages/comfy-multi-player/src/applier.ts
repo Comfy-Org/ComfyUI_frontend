@@ -486,6 +486,7 @@ function applyDefineSubgraph(
     if (existingDigest === digest) return "no-op";
     // The lexicographically larger canonical digest wins, independent of delivery order.
     if (digest > existingDigest) {
+      assertDefinitionIdsAvailable(doc, op.subgraph_definition, op.subgraph_id);
       let replacement: Y.Map<unknown>;
       try {
         replacement = mintDefinition(op.subgraph_definition, catalog);
@@ -614,7 +615,11 @@ function definitionNode(
   return null;
 }
 
-function assertDefinitionIdsAvailable(doc: Y.Doc, definition: Record<string, unknown>): void {
+function assertDefinitionIdsAvailable(
+  doc: Y.Doc,
+  definition: Record<string, unknown>,
+  excludedRootId?: string,
+): void {
   const submitted = new Set<string>();
   const visit = (candidate: Record<string, unknown>, path: string): void => {
     const id = String(candidate.id);
@@ -627,10 +632,32 @@ function assertDefinitionIdsAvailable(doc: Y.Doc, definition: Record<string, unk
   };
   visit(definition, "subgraph_definition");
   for (const id of submitted) {
-    if (resolveDefinition(doc, id)) {
+    if (definitionIdExistsOutsideRoot(doc, id, excludedRootId)) {
       throw new OpRejectedError("definition_conflict", `define_subgraph: definition id '${id}' is already registered`);
     }
   }
+}
+
+function definitionIdExistsOutsideRoot(
+  doc: Y.Doc,
+  id: string,
+  excludedRootId?: string,
+): boolean {
+  const containsId = (definition: Y.Map<unknown>): boolean => {
+    if (String(definition.get("id")) === id) return true;
+    const container = definition.get("definitions");
+    const nested = container instanceof Y.Map ? container.get("subgraphs") : undefined;
+    if (!(nested instanceof Y.Map)) return false;
+    for (const child of nested.values()) {
+      if (child instanceof Y.Map && containsId(child)) return true;
+    }
+    return false;
+  };
+
+  for (const [rootId, definition] of definitionsMap(doc)) {
+    if (rootId !== excludedRootId && definition instanceof Y.Map && containsId(definition)) return true;
+  }
+  return false;
 }
 
 function isUuid(value: unknown): value is string {
