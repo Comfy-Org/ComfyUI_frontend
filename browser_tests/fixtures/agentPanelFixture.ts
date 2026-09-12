@@ -1,13 +1,15 @@
-import type { Page } from '@playwright/test'
+import type { Page, WebSocketRoute } from '@playwright/test'
 
 import type { ListAssetsResponse } from '@comfyorg/ingest-types'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { cloudAppFixture, waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import type { WorkspaceStore } from '@e2e/types/globals'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
@@ -75,6 +77,20 @@ type AgentFixtures = {
 export const agentTest = cloudAppFixture.extend<AgentFixtures>({
   agentFlagEnabled: [true, { option: true }]
 })
+
+export function pushAgentEvent(ws: WebSocketRoute, event: AgentWsEvent): void {
+  ws.send(JSON.stringify(event))
+}
+
+export async function getAgentActiveWorkflowPath(
+  page: Page
+): Promise<string | undefined> {
+  return await page.evaluate(
+    () =>
+      (window.app!.extensionManager as WorkspaceStore).workflow.activeWorkflow
+        ?.path
+  )
+}
 
 export async function bootAgentApp(
   page: Page,

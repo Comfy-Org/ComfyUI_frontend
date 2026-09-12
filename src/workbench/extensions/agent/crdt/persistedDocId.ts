@@ -13,7 +13,6 @@ import { AGENT_CRDT_DOC_ID_SESSION_KEY } from '@/platform/workflow/persistence/b
 // explicit reload may adopt the previous page load's unexpired record.
 export const DOC_ID_SESSION_KEY = AGENT_CRDT_DOC_ID_SESSION_KEY
 export const DOC_ID_TTL_MS = 5 * 60 * 1000
-export const DOC_ID_REFRESH_INTERVAL_MS = DOC_ID_TTL_MS / 2
 
 let pageSessionNonce: string | undefined
 

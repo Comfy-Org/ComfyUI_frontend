@@ -9,11 +9,12 @@ type SubscriptionFrame = Extract<
 >
 
 export function countDocFrames(
-  messages: string[],
+  messagesBySocket: Map<WebSocketRoute, string[]>,
+  ws: WebSocketRoute,
   type: SubscriptionFrame['type'],
   workflowId: string
 ): number {
-  return messages.filter((message) => {
+  return (messagesBySocket.get(ws) ?? []).filter((message) => {
     const frame = JSON.parse(message) as ClientDocFrame
     return frame.type === type && frame.data.workflow_id === workflowId
   }).length
@@ -40,12 +41,12 @@ function createWebSocketRouteHandler(
 export const webSocketFixture = base.extend<{
   connectWebSocketToServer: boolean
   getWebSocket: (after?: WebSocketRoute) => Promise<WebSocketRoute>
-  webSocketMessages: string[]
+  webSocketMessages: Map<WebSocketRoute, string[]>
 }>({
   connectWebSocketToServer: [true, { option: true }],
   // oxlint-disable-next-line no-empty-pattern -- Playwright requires an object pattern.
   webSocketMessages: async ({}, use) => {
-    await use([])
+    await use(new Map())
   },
   getWebSocket: [
     async ({ context, connectWebSocketToServer, webSocketMessages }, use) => {
@@ -55,12 +56,14 @@ export const webSocketFixture = base.extend<{
       await context.routeWebSocket(
         /\/ws/,
         createWebSocketRouteHandler(connectWebSocketToServer, (ws, server) => {
+          const messages: string[] = []
+          webSocketMessages.set(ws, messages)
           // Registering a page-side handler switches off Playwright's automatic
           // page-to-server forwarding, so recording has to re-send the frame
           // itself. Without this every spec merging the fixture drops the
           // `feature_flags` handshake and leaves `api.serverFeatureFlags` empty.
           ws.onMessage((message) => {
-            if (typeof message === 'string') webSocketMessages.push(message)
+            if (typeof message === 'string') messages.push(message)
             server?.send(message)
           })
           latest = ws

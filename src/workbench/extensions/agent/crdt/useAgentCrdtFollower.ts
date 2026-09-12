@@ -83,6 +83,7 @@ export function useAgentCrdtFollower(
    */
   getGraph: () => MaterializableGraph | null = () => null
 ) {
+  const acknowledgedWorkflowId = ref<string | null>(null)
   const connected = ref(false)
   const updatesApplied = ref(0)
   const lastFrameType = ref<string | null>(null)
@@ -157,6 +158,7 @@ export function useAgentCrdtFollower(
     if (!isTargetActive.value) return
     const ok = event.detail?.ok === true
     connected.value = ok
+    acknowledgedWorkflowId.value = ok ? bridge.subscribedWorkflowId : null
     lastFrameType.value = event.type
     recordDevEvent('doc_subscribed', event.detail ?? null)
     if (ok) {
@@ -241,6 +243,7 @@ export function useAgentCrdtFollower(
     }
     projection.clearForReset(detail.workflowId, context)
     connected.value = false
+    acknowledgedWorkflowId.value = null
     updatesApplied.value = 0
     lastFrameType.value = event.type
     lifecycle.clearStaleProbe()
@@ -278,6 +281,7 @@ export function useAgentCrdtFollower(
     // nothing was projected. Surface it as its own status rather than as a
     // generic "disconnected", which is indistinguishable from "never connected".
     connected.value = false
+    acknowledgedWorkflowId.value = null
     lastFrameType.value = event.type
     lifecycle.clearStaleProbe()
     const detail =
@@ -308,6 +312,7 @@ export function useAgentCrdtFollower(
   }
   const onReconnected: EventListener = () => {
     connected.value = false
+    acknowledgedWorkflowId.value = null
     lifecycle.clearStaleProbe()
     recordDevEvent('reconnected', null)
     bridge.resubscribe()
@@ -379,6 +384,7 @@ export function useAgentCrdtFollower(
       const justActivated = active && previous?.[1] === false
       lifecycle.clearForRetarget()
       connected.value = false
+      acknowledgedWorkflowId.value = null
       knownDocNodeIds = new Set()
       if (!active) {
         if (next !== null) initialBind = false
@@ -470,6 +476,7 @@ export function useAgentCrdtFollower(
   return {
     status: readonly(status),
     debugSnapshot,
+    acknowledgedWorkflowId: readonly(acknowledgedWorkflowId),
     enqueueHumanOperations: (operations: GraphOperation[]) =>
       sender.enqueue(operations)
   }

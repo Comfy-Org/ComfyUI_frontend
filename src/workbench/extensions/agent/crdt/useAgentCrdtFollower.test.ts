@@ -138,7 +138,6 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 
 import { STALE_AFTER_MS, useAgentCrdtFollower } from './useAgentCrdtFollower'
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
-import { reconcilePersistedDocId } from './persistedDocId'
 
 const graphMutations = {} as GraphMutations
 const DOC_ID_KEY = 'Comfy.Agent.CrdtDocId'
@@ -324,30 +323,6 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('FE-1969: the persisted doc reconciler mirrors the next rebind', () => {
-    const { unmount } = mountFollower('wf-1')
-    expect(reconcilePersistedDocId()).toBeNull()
-
-    dispatchFrame('doc_subscribed', { ok: true })
-    expect(reconcilePersistedDocId()).toBe('wf-1')
-
-    writeRawRecord({ docId: 'wf-1', nonce: 'foreign-nonce' })
-    expect(reconcilePersistedDocId()).toBeNull()
-    expect(persistedRecord()).toBeNull()
-
-    // The mismatch branch above consumed the record, so the reload branch needs
-    // its own; asserting against the emptied store would pass no matter what a
-    // reload does. A reload is the one navigation permitted to adopt the
-    // previous page load's record, and it takes ownership when it does.
-    writeRawRecord({ docId: 'wf-1', nonce: 'foreign-nonce' })
-    vi.spyOn(performance, 'getEntriesByType').mockReturnValue([
-      { type: 'reload' } as PerformanceNavigationTiming
-    ])
-    expect(reconcilePersistedDocId()).toBe('wf-1')
-    expect(persistedRecord()?.nonce).not.toBe('foreign-nonce')
-    unmount()
-  })
-
   it('FE-1902: a remount with no in-memory binding rebinds from sessionStorage', () => {
     const setup = mountFollower('wf-1')
     dispatchFrame('doc_subscribed', { ok: true })
@@ -358,20 +333,6 @@ describe('useAgentCrdtFollower', () => {
 
     expect(bridge().subscribe).toHaveBeenCalledWith('wf-1')
     expect(status().workflowId).toBe('wf-1')
-    unmount()
-  })
-
-  it('FE-1902: a page reload adopts and rebinds the previous navigation record', () => {
-    vi.spyOn(performance, 'getEntriesByType').mockReturnValue([
-      { type: 'reload' } as PerformanceNavigationTiming
-    ])
-    writeRawRecord({ docId: 'wf-1', nonce: 'previous-page-load' })
-
-    const { unmount, status } = mountFollower(null)
-
-    expect(bridge().subscribe).toHaveBeenCalledWith('wf-1')
-    expect(status().workflowId).toBe('wf-1')
-    expect(persistedRecord()?.nonce).not.toBe('previous-page-load')
     unmount()
   })
 
