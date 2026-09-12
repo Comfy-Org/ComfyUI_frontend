@@ -157,28 +157,31 @@ describe('WidgetGrid', () => {
     )
   })
 
-  const nonTargetCases = [
-    ['inactive drag', false, 'input', '1', 0, true],
-    ['incompatible candidate', true, 'input', '1', 0, false],
-    ['output candidate', true, 'output', '1', 0, true],
-    ['different node', true, 'input', '2', 0, true],
-    ['different slot', true, 'input', '1', 1, true]
-  ] as const
-
-  for (const [
-    name,
-    active,
-    type,
-    nodeId,
-    index,
+  const candidate = (
+    type: string,
+    nodeId: string,
+    index: number,
+    compatible: boolean
+  ): NonNullable<typeof mockDragState.candidate> => ({
+    layout: { nodeId, index, type },
     compatible
-  ] of nonTargetCases) {
+  })
+
+  const nonTargetCases: ReadonlyArray<
+    readonly [string, boolean, typeof mockDragState.candidate]
+  > = [
+    ['inactive drag', false, candidate('input', '1', 0, true)],
+    ['incompatible candidate', true, candidate('input', '1', 0, false)],
+    ['output candidate', true, candidate('output', '1', 0, true)],
+    ['different node', true, candidate('input', '2', 0, true)],
+    ['different slot', true, candidate('input', '1', 1, true)],
+    ['cleared candidate', true, null]
+  ]
+
+  for (const [name, active, dragCandidate] of nonTargetCases) {
     it(`does not highlight for ${name}`, () => {
       mockDragState.active = active
-      mockDragState.candidate = {
-        layout: { nodeId, index, type },
-        compatible
-      }
+      mockDragState.candidate = dragCandidate
 
       render(WidgetGrid, {
         props: {
@@ -193,6 +196,9 @@ describe('WidgetGrid', () => {
       })
 
       expect(screen.getByTestId('node-widget')).not.toHaveClass('ring')
+      expect(screen.getByTestId('node-widget')).not.toHaveClass(
+        'ring-component-node-widget-linked'
+      )
     })
   }
 
