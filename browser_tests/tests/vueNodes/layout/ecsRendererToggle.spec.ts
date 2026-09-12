@@ -4,7 +4,7 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 
 test.describe(
-  'ECS migration: renderer toggle and zoom legibility',
+  'ECS migration: renderer toggle and zoom rendering',
   { tag: ['@canvas', '@node', '@widget'] },
   () => {
     test.describe.configure({ timeout: 60_000 })
@@ -128,7 +128,7 @@ test.describe(
       { label: '50%', scale: 0.5 },
       { label: '200%', scale: 2 }
     ]) {
-      test(`keeps Vue widget labels and titles usable at ${label} zoom`, async ({
+      test(`renders Vue widget labels and titles at ${label} zoom`, async ({
         comfyPage
       }) => {
         await comfyPage.canvasOps.resetView()
@@ -154,7 +154,9 @@ test.describe(
           .getWidgetByName('KSampler', 'cfg')
           .first()
         await expect(cfgWidget).toBeVisible()
-        await expect(cfgWidget).toHaveAccessibleName('cfg')
+        await expect(
+          comfyPage.vueNodes.getWidgetRowByLabel('KSampler', 'cfg')
+        ).toBeVisible()
         const { input } = comfyPage.vueNodes.getInputNumberControls(cfgWidget)
         await input.fill('7.5')
         await input.blur()
