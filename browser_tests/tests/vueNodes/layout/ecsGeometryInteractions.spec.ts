@@ -3,6 +3,10 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
+import { toNodeId } from '@/types/nodeId'
+import { toRerouteId } from '@/types/rerouteId'
+
+const rendererName = (enabled: boolean) => (enabled ? 'Nodes 2.0' : 'legacy')
 
 test.describe(
   'ECS migration geometry interactions',
@@ -81,6 +85,10 @@ test.describe(
         const output = await sampler.getOutput(0)
         const incompatibleInput = await prompt.getInput(0)
         const beforePosition = await sampler.getPosition()
+        const originalOutputLink = await output.getLink()
+        const originalInputLink = await incompatibleInput.getLink()
+        expect(originalOutputLink).not.toBeNull()
+        expect(originalInputLink).not.toBeNull()
 
         await comfyPage.canvasOps.dragAndDrop(
           await output.getPosition(),
@@ -88,6 +96,8 @@ test.describe(
         )
         await output.expectLinkCount(1)
         await incompatibleInput.expectLinkCount(1)
+        expect(await output.getLink()).toEqual(originalOutputLink)
+        expect(await incompatibleInput.getLink()).toEqual(originalInputLink)
 
         await sampler.dragBy({ x: 80, y: 40 })
         await expect(async () => {
@@ -98,5 +108,157 @@ test.describe(
         await expect(comfyPage.toast.toastErrors).toHaveCount(0)
       })
     }
+
+    for (const vueNodesEnabled of [false, true]) {
+      test(`reroute position and parent survive reload in ${rendererName(vueNodesEnabled)}`, async ({
+        comfyPage
+      }) => {
+        test.slow()
+        await comfyPage.workflow.loadWorkflow(
+          'reroute/single-native-reroute-default-workflow'
+        )
+        await comfyPage.settings.setSetting(
+          'Comfy.VueNodes.Enabled',
+          vueNodesEnabled
+        )
+        await fitToViewInstant(comfyPage)
+        await expect
+          .poll(() =>
+            comfyPage.page.evaluate(() => window.app!.graph.reroutes.size)
+          )
+          .toBe(1)
+        const saved = await comfyPage.page.evaluate(() => {
+          const reroute = window.app!.graph.reroutes.values().next().value
+          if (!reroute) throw new Error('Reroute was not created')
+          return {
+            id: reroute.id,
+            parentId: reroute.parentId,
+            pos: [...reroute.pos]
+          }
+        })
+
+        await comfyPage.workflow.reloadAndWaitForApp()
+        await comfyPage.canvasOps.expectRootReroutePositions({
+          [toRerouteId(saved.id)]: { x: saved.pos[0], y: saved.pos[1] }
+        })
+        await expect
+          .poll(() =>
+            comfyPage.page.evaluate((id) => {
+              const reroute = window.app!.graph.reroutes.get(id)
+              return reroute?.parentId ?? null
+            }, saved.id)
+          )
+          .toBe(saved.parentId ?? null)
+      })
+
+      test(`recovers from empty link search and malformed clipboard in ${rendererName(vueNodesEnabled)}`, async ({
+        comfyPage
+      }) => {
+        await comfyPage.settings.setSetting(
+          'Comfy.VueNodes.Enabled',
+          vueNodesEnabled
+        )
+        const sampler = await comfyPage.nodeOps.getNodeRefById('3')
+        const output = await sampler.getOutput(0)
+        const beforePosition = await sampler.getPosition()
+        const outputPosition = await output.getPosition()
+        await comfyPage.canvasOps.dragAndDrop(outputPosition, {
+          x: 1000,
+          y: 600
+        })
+        const linkDropSearch = comfyPage.page.locator(
+          '.litecontextmenu:visible, .litemenu:visible, [role="search"]:visible'
+        )
+        await expect(linkDropSearch).toBeVisible()
+        await comfyPage.canvas.click({ position: { x: 900, y: 100 } })
+        await expect(linkDropSearch).toBeHidden()
+
+        await comfyPage.page
+          .context()
+          .grantPermissions(['clipboard-read', 'clipboard-write'])
+        await comfyPage.page.evaluate(async () => {
+          await navigator.clipboard.writeText('{ malformed workflow')
+        })
+        await comfyPage.page.keyboard.press('Control+V')
+        await comfyPage.page.keyboard.press('Escape')
+        await sampler.dragBy({ x: 60, y: 30 })
+        await expect
+          .poll(() => sampler.getPosition())
+          .toEqual({
+            x: expect.closeTo(beforePosition.x + 60, -1),
+            y: expect.closeTo(beforePosition.y + 30, -1)
+          })
+        await expect(comfyPage.toast.toastErrors).toHaveCount(0)
+      })
+    }
+
+    test(
+      'overlapping multiline text remains clipped to each node',
+      { tag: '@screenshot' },
+      async ({ comfyPage }) => {
+        for (const vueNodesEnabled of [false, true]) {
+          await comfyPage.settings.setSetting(
+            'Comfy.VueNodes.Enabled',
+            vueNodesEnabled
+          )
+          await fitToViewInstant(comfyPage)
+          const first = await comfyPage.nodeOps.getNodeRefById('6')
+          const second = await comfyPage.nodeOps.getNodeRefById('7')
+          const firstPosition = await first.getPosition()
+          const secondPosition = await second.getPosition()
+          await second.dragBy({
+            x: firstPosition.x - secondPosition.x + 100,
+            y: firstPosition.y - secondPosition.y + 70
+          })
+          await comfyPage.nextFrame()
+          await expect(comfyPage.canvas).toHaveScreenshot(
+            `ecs-overlapping-text-${vueNodesEnabled ? 'vue' : 'legacy'}.png`
+          )
+        }
+      }
+    )
+
+    test(
+      'node title and widget labels remain rendered at text zoom extremes',
+      { tag: '@screenshot' },
+      async ({ comfyPage }) => {
+        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+        const sampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+        await comfyPage.page.evaluate((nodeId) => {
+          const node = window.app!.graph.getNodeById(nodeId)
+          if (!node) throw new Error('KSampler is unavailable')
+          const seed = node.widgets?.find((widget) => widget.name === 'seed')
+          if (!seed) throw new Error('Seed widget is unavailable')
+          seed.value = 123456789
+          node.setDirtyCanvas(true, true)
+        }, toNodeId('3'))
+        await comfyPage.vueNodes.selectNode('3')
+        for (const zoom of [0.5, 2]) {
+          await comfyPage.page.evaluate(
+            ([scale, nodeId]) => {
+              const canvas = window.app!.canvas
+              const node = window.app!.graph.getNodeById(nodeId)
+              if (!node) throw new Error('KSampler is unavailable')
+              const [x, y, width, height] = node.boundingRect
+              canvas.ds.scale = scale
+              canvas.ds.offset = [
+                canvas.canvas.width / 2 / scale - (x + width / 2),
+                canvas.canvas.height / 2 / scale - (y + height / 2)
+              ]
+              canvas.setDirty(true, true)
+            },
+            [zoom, toNodeId('3')] as const
+          )
+          await comfyPage.nextFrame()
+          await expect(sampler.title).toBeVisible()
+          await expect(
+            sampler.root.getByText('seed', { exact: true })
+          ).toBeVisible()
+          await expect(comfyPage.canvas).toHaveScreenshot(
+            `ecs-text-zoom-${zoom * 100}.png`
+          )
+        }
+      }
+    )
   }
 )
