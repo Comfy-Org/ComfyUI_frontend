@@ -171,6 +171,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
         op.workspaceId === workspaceStore.activeWorkspaceId &&
         ((op.status === 'pending' &&
           (op.actionUrl !== null ||
+            op.phase === 'awaiting_payment_method' ||
             op.authenticationState === 'requires_action' ||
             op.authenticationState === 'failed_retryable')) ||
           op.status === 'reconciliation_needed')
