@@ -8,6 +8,64 @@ async function expectRenderedTextUnclipped(
   text: Locator,
   screenshotTarget: Locator
 ) {
+  const clipping = await text.evaluate(
+    (element, target) => {
+      const range = document.createRange()
+      range.selectNodeContents(element)
+      const laidOut = range.getBoundingClientRect()
+      const style = getComputedStyle(element)
+      const natural = document.createElement('span')
+      natural.textContent = element.textContent
+      natural.style.cssText =
+        'position:fixed;visibility:hidden;width:max-content;max-width:none;white-space:pre'
+      natural.style.font = style.font
+      natural.style.letterSpacing = style.letterSpacing
+      natural.style.textTransform = style.textTransform
+      document.body.append(natural)
+      range.selectNodeContents(natural)
+      const naturalWidth = range.getBoundingClientRect().width
+      natural.remove()
+      const scaleX =
+        element instanceof HTMLElement && element.offsetWidth > 0
+          ? element.getBoundingClientRect().width / element.offsetWidth
+          : 1
+      const visible = (target as HTMLElement).getBoundingClientRect().toJSON()
+      let ancestor: Element | null = element
+
+      while (ancestor) {
+        const ancestorStyle = getComputedStyle(ancestor)
+        if (
+          [
+            ancestorStyle.overflow,
+            ancestorStyle.overflowX,
+            ancestorStyle.overflowY
+          ].some((overflow) =>
+            ['hidden', 'clip', 'scroll', 'auto'].includes(overflow)
+          )
+        ) {
+          const bounds = ancestor.getBoundingClientRect()
+          visible.bottom = Math.min(visible.bottom, bounds.bottom)
+          visible.left = Math.max(visible.left, bounds.left)
+          visible.right = Math.min(visible.right, bounds.right)
+          visible.top = Math.max(visible.top, bounds.top)
+        }
+        ancestor = ancestor.parentElement
+      }
+
+      return (
+        laidOut.left >= visible.left - 1 &&
+        laidOut.top >= visible.top - 1 &&
+        laidOut.left + naturalWidth * scaleX <= visible.right + 1 &&
+        laidOut.bottom <= visible.bottom + 1
+      )
+    },
+    await screenshotTarget.elementHandle()
+  )
+
+  expect(clipping, 'complete text layout must fit within clipping bounds').toBe(
+    true
+  )
+
   const rendered = await screenshotTarget.screenshot({ animations: 'disabled' })
   const inlineColor = await text.evaluate((element) => {
     const htmlElement = element as HTMLElement
@@ -296,6 +354,44 @@ test.describe(
         await expect(cfgRow).toBeVisible()
         const cfgLabel = cfgRow.getByTestId('widget-layout-field-label')
         await expectRenderedTextUnclipped(cfgLabel, cfgRow)
+        if (scale === 2) {
+          for (const { container, text } of [
+            { container: vueNode.getByTestId('node-header-3'), text: title },
+            { container: cfgRow, text: cfgLabel }
+          ]) {
+            const originalStyle = await text.getAttribute('style')
+            await text.evaluate((element) => {
+              const htmlElement = element as HTMLElement
+              const width = document.createRange()
+              width.selectNodeContents(element)
+              const scaleX =
+                htmlElement.offsetWidth > 0
+                  ? htmlElement.getBoundingClientRect().width /
+                    htmlElement.offsetWidth
+                  : 1
+              const halfWidth = `${width.getBoundingClientRect().width / scaleX / 2}px`
+              htmlElement.style.width = halfWidth
+              htmlElement.style.minWidth = '0'
+              htmlElement.style.maxWidth = halfWidth
+              htmlElement.style.flex = `0 0 ${halfWidth}`
+              htmlElement.style.display = 'inline-block'
+              htmlElement.style.position = 'absolute'
+              htmlElement.style.overflow = 'hidden'
+              htmlElement.style.whiteSpace = 'nowrap'
+            })
+            await expect(text).toBeVisible()
+            await expect(
+              expectRenderedTextUnclipped(text, container)
+            ).rejects.toThrow(
+              'complete text layout must fit within clipping bounds'
+            )
+            await text.evaluate((element, style) => {
+              if (style === null) element.removeAttribute('style')
+              else element.setAttribute('style', style)
+            }, originalStyle)
+            await expectRenderedTextUnclipped(text, container)
+          }
+        }
         const { input } = comfyPage.vueNodes.getInputNumberControls(cfgWidget)
         await input.fill('7.5')
         await input.blur()
