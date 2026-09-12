@@ -304,19 +304,16 @@ jobs:
 
           while IFS= read -r file; do
             [ -z "$file" ] && continue
-            ADDED_TEST_LINES=$(git diff --unified=0 "$DIFF_RANGE" -- "$file" | grep -E '^\+[[:space:]]*test(\.only|\.skip|\.fail)?\(|^\+[[:space:]]*test\.describe' || true)
-            [ -z "$ADDED_TEST_LINES" ] && continue
-
             # A leaf title is not a stable Playwright identity: duplicate or
-            # short titles can select unrelated tests through --grep. Run the
-            # changed spec as a whole instead, which is the safe fallback for
-            # both parsed and unparsed added declarations.
+            # short titles can select unrelated tests through --grep. Run every
+            # changed spec as a whole so assertion-only improvements are also
+            # recorded.
             printf '%s\n' "$file" >> /tmp/fallback-specs.txt
           done <<< "$NEW_FILES"
 
           sort -u -o /tmp/fallback-specs.txt /tmp/fallback-specs.txt
           if [ ! -s /tmp/fallback-specs.txt ]; then
-            echo '::notice::No newly-added Playwright tests found.'
+            echo '::notice::No changed Playwright specs found.'
             echo 'has-new-tests=false' >> "$GITHUB_OUTPUT"
           else
             echo 'has-new-tests=true' >> "$GITHUB_OUTPUT"
