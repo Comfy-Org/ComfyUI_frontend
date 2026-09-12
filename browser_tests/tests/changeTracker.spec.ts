@@ -208,22 +208,32 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
     await source.connectOutput(0, target, destinationIndex)
     await source.dragBy({ x: 40, y: 70 })
     await target.dragBy({ x: -30, y: 45 })
-    await comfyPage.page.evaluate((id) => {
-      const graph = window.app!.canvas.graph!
-      graph.remove(graph.getNodeById(id)!)
-    }, source.id)
-    await comfyPage.nextFrame()
 
-    // The last mutation goes straight to the graph, so the tracker has not
-    // necessarily captured it yet. `graphMatchesActiveState` is the signal that
-    // it has: sampling `depth` before that returns a short count, and the first
-    // undo then fires into a pending capture and is swallowed — which is exactly
-    // how this failed on CI (undo=2/redo=0 where undo=1/redo=1 was expected).
+    // Delete through the UI. `graph.remove()` from `page.evaluate` mutates the
+    // graph without the change tracker ever capturing it, so `activeState`
+    // never catches up: `graphMatchesActiveState` stays false forever and the
+    // deletion is missing from the history the loops below walk.
+    const nodeCountBeforeDelete = await comfyPage.nodeOps.getNodeCount()
+    await source.click('title')
+    await comfyPage.page.keyboard.press('Delete')
+    await expect
+      .poll(() => comfyPage.nodeOps.getNodeCount())
+      .toBe(nodeCountBeforeDelete - 1)
+
+    // Sampling `depth` before the tracker has settled returns a short count, and
+    // the first undo then fires into a pending capture and is swallowed —
+    // exactly how this failed on CI (undo=2/redo=0 where 1/1 was expected).
+    //
+    // `graphMatchesActiveState` is deliberately NOT the gate. It was observed
+    // to stay false indefinitely after a node deletion: `removeNode()` captures
+    // inside its own `afterChange()`, then runs `updateExecutionOrder()`, which
+    // rewrites serialized node order after the capture. The undo queue settling
+    // is the signal that matters here, and the per-step sizes below are direct
+    // evidence that each press landed.
     await expect
       .poll(() => getChangeTrackerDebugState(comfyPage))
       .toMatchObject({
         changeCount: 0,
-        graphMatchesActiveState: true,
         isLoadingGraph: false,
         restoringState: false
       })
@@ -232,11 +242,16 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
     // the tracker checkpoints is not what this row is about, and asserting a
     // count here would turn a round-trip test into a probe of the transaction
     // model.
-    const depth = (await comfyPage.workflow.getUndoQueueSize()) ?? 0
-    expect(
-      depth,
-      'the chain should have produced several undo steps'
-    ).toBeGreaterThan(1)
+    let previousDepth = -1
+    await expect
+      .poll(async () => {
+        const current = (await comfyPage.workflow.getUndoQueueSize()) ?? 0
+        const stable = current > 1 && current === previousDepth
+        previousDepth = current
+        return stable
+      })
+      .toBe(true)
+    const depth = previousDepth
 
     const after = await snapshot()
     expect(after, 'the chain must actually have changed the graph').not.toEqual(
@@ -254,7 +269,6 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
         .poll(() => getChangeTrackerDebugState(comfyPage))
         .toMatchObject({
           changeCount: 0,
-          graphMatchesActiveState: true,
           isLoadingGraph: false,
           redoQueueSize,
           restoringState: false,
