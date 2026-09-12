@@ -725,7 +725,7 @@ export const comfyPageFixture = base.extend<{
         })
       }
 
-      if (isVueNodes) {
+      if (isVueNodes && !isCustomNodes) {
         await comfyPage.vueNodes.waitForNodes()
       }
 

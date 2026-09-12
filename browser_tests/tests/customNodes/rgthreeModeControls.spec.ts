@@ -5,15 +5,13 @@ import {
 
 test.describe(
   'rgthree mode controls @custom-nodes',
-  { tag: ['@oss', '@node', '@widget'] },
+  { tag: ['@oss', '@node', '@widget', '@vue-nodes'] },
   () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
       await comfyPage.nodeOps.clearGraph()
     })
 
     test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
       await comfyPage.canvasOps.resetView()
     })
 
@@ -30,19 +28,21 @@ test.describe(
       test(`${modeControl.type} control model tracks labels and changes the connected node mode`, async ({
         comfyPage
       }) => {
-        await expect
-          .poll(
-            () =>
-              comfyPage.page.evaluate(
-                (nodeType) =>
-                  Boolean(window.LiteGraph!.registered_node_types[nodeType]),
-                modeControl.type
-              ),
-            {
-              message: `${modeControl.type} must register before behavior assertions run`
-            }
-          )
-          .toBe(true)
+        await test.step('verify custom node registration', async () => {
+          await expect
+            .poll(
+              () =>
+                comfyPage.page.evaluate(
+                  (nodeType) =>
+                    Boolean(window.LiteGraph!.registered_node_types[nodeType]),
+                  modeControl.type
+                ),
+              {
+                message: `${modeControl.type} must register before behavior assertions run`
+              }
+            )
+            .toBe(true)
+        })
 
         const source = await comfyPage.nodeOps.addNode('PrimitiveInt')
         const control = await comfyPage.nodeOps.addNode(modeControl.type)
@@ -58,6 +58,10 @@ test.describe(
           { sourceId: source.id, controlId: control.id }
         )
         await comfyPage.nextFrame()
+
+        await expect(
+          comfyPage.vueNodes.getNodeLocator(String(control.id))
+        ).toBeVisible()
 
         await expect
           .poll(() =>
@@ -103,19 +107,21 @@ test.describe(
       test(`${modeControl.type} exposes its toggle in Vue Nodes`, async ({
         comfyPage
       }) => {
-        await expect
-          .poll(
-            () =>
-              comfyPage.page.evaluate(
-                (nodeType) =>
-                  Boolean(window.LiteGraph!.registered_node_types[nodeType]),
-                modeControl.type
-              ),
-            {
-              message: `${modeControl.type} must register before checking its rendered toggle`
-            }
-          )
-          .toBe(true)
+        await test.step('verify custom node registration', async () => {
+          await expect
+            .poll(
+              () =>
+                comfyPage.page.evaluate(
+                  (nodeType) =>
+                    Boolean(window.LiteGraph!.registered_node_types[nodeType]),
+                  modeControl.type
+                ),
+              {
+                message: `${modeControl.type} must register before checking its rendered toggle`
+              }
+            )
+            .toBe(true)
+        })
 
         const source = await comfyPage.nodeOps.addNode('PrimitiveInt')
         const control = await comfyPage.nodeOps.addNode(modeControl.type)
@@ -130,6 +136,10 @@ test.describe(
           { sourceId: source.id, controlId: control.id }
         )
         await comfyPage.nextFrame()
+
+        await expect(
+          comfyPage.vueNodes.getNodeLocator(String(control.id))
+        ).toBeVisible()
 
         await expect
           .poll(() =>
