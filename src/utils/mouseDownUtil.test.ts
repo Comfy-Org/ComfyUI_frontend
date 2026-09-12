@@ -49,7 +49,31 @@ describe('whileMouseDown', () => {
     expect(callback).toHaveBeenCalledOnce()
   })
 
-  it('does not repeat when the initiating pointer is released', () => {
+  it.for([
+    { label: 'null', properties: { pointerId: null } },
+    { label: 'a string', properties: { pointerId: '7' } },
+    { label: 'missing', properties: {} }
+  ])('stops on mouse release when pointerId is $label', ({ properties }) => {
+    const element = document.createElement('button')
+    const callback = vi.fn()
+    const event = Object.assign(new MouseEvent('mousedown'), properties)
+    element.dispatchEvent(event)
+
+    const { dispose } = whileMouseDown(event, callback, 30, 300)
+    try {
+      vi.advanceTimersByTime(300)
+      expect(callback).toHaveBeenCalledOnce()
+
+      document.dispatchEvent(new MouseEvent('mouseup'))
+      vi.advanceTimersByTime(300)
+
+      expect(callback).toHaveBeenCalledOnce()
+    } finally {
+      dispose()
+    }
+  })
+
+  it.for([0, 7])('does not repeat when pointer %i is released', (pointerId) => {
     const element = document.createElement('button')
     const callback = vi.fn()
 
@@ -59,11 +83,11 @@ describe('whileMouseDown', () => {
       { once: true }
     )
     element.dispatchEvent(
-      new PointerEvent('pointerdown', { bubbles: true, pointerId: 7 })
+      new PointerEvent('pointerdown', { bubbles: true, pointerId })
     )
 
     vi.advanceTimersByTime(299)
-    document.dispatchEvent(new PointerEvent('pointerup', { pointerId: 7 }))
+    document.dispatchEvent(new PointerEvent('pointerup', { pointerId }))
     vi.advanceTimersByTime(300)
 
     expect(callback).not.toHaveBeenCalled()
