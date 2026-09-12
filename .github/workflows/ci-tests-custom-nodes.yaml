@@ -426,6 +426,7 @@ jobs:
 
       - name: Upload Playwright report and raw diagnostics
         if: always()
+        continue-on-error: true
         uses: actions/upload-artifact@v6
         with:
           # Shard-scoped: artifact names are unique per run, so matrix jobs
