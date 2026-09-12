@@ -210,28 +210,7 @@ export class LiveCloudCheckout {
     const { checkout, subscription } = await this.startCheckout(
       this.subscribe.or(this.resumePayment)
     )
-    await checkout
-      .getByLabel('Card number', { exact: true })
-      .fill('4242424242424242')
-    await checkout.getByLabel('Expiration', { exact: true }).fill('1230')
-    await checkout
-      .getByRole('textbox', {
-        name: 'Credit or debit card CVC/CVV',
-        exact: true
-      })
-      .fill('123')
-    await checkout
-      .getByPlaceholder('Full name on card', { exact: true })
-      .fill('Comfy Billing Test')
-    await checkout
-      .getByRole('button', { name: 'Enter address manually', exact: true })
-      .click()
-    await checkout.locator('#billingAddressLine1').fill('123 Test Street')
-    await checkout.getByLabel('City', { exact: true }).fill('San Francisco')
-    await checkout.getByLabel('State', { exact: true }).selectOption('CA')
-    await checkout.getByLabel('ZIP', { exact: true }).fill('94107')
-    await checkout.locator('#enableStripePass').uncheck()
-    await checkout.getByRole('button', { name: /^Save/ }).click()
+    await this.submitCard(checkout, '4242424242424242')
     await expect
       .poll(async () => {
         const operation = await session.read(
@@ -281,6 +260,82 @@ export class LiveCloudCheckout {
       grantCents: Number(preview.credits_today_cents),
       paymentMethodCount: methods.length
     }
+  }
+
+  async declineCheckout(session: LiveCloudBillingSession, testInfo: TestInfo) {
+    const balanceBefore = await session.read(
+      '/api/billing/balance',
+      zBillingBalanceResponse
+    )
+    await this.open(true)
+    const { checkout, subscription } = await this.startCheckout(
+      this.subscribe.or(this.resumePayment)
+    )
+    const observeFailure = async () => {
+      await expect(
+        this.page.getByText('Your bank declined this payment', { exact: false })
+      ).toBeVisible()
+      await this.attachScreenshot('checkout-declined.png')
+    }
+    await Promise.all([
+      observeFailure(),
+      this.submitCard(checkout, '4000000000000341')
+    ])
+    await expect
+      .poll(async () => {
+        const operation = await session.read(
+          `/api/billing/ops/${encodeURIComponent(subscription.billing_op_id)}`,
+          zBillingOpStatusResponse
+        )
+        return {
+          status: operation.status
+        }
+      })
+      .toMatchObject({ status: 'failed' })
+    const status = await session.read(
+      '/api/billing/status',
+      zBillingStatusResponse
+    )
+    expect(status.subscription_tier).toBe('FREE')
+    const balanceAfter = await session.read(
+      '/api/billing/balance',
+      zBillingBalanceResponse
+    )
+    expect(balanceAfter.amount_micros).toBe(balanceBefore.amount_micros)
+    await testInfo.attach('checkout-decline.json', {
+      body: JSON.stringify({
+        operationId: subscription.billing_op_id,
+        balanceBeforeCents: balanceBefore.amount_micros,
+        balanceAfterCents: balanceAfter.amount_micros,
+        status: 'failed',
+        failureKind: 'card_declined_ui'
+      }),
+      contentType: 'application/json'
+    })
+    return { status: 'failed', failureKind: 'card_declined_ui' }
+  }
+
+  private async submitCard(checkout: Page, cardNumber: string) {
+    await checkout.getByLabel('Card number', { exact: true }).fill(cardNumber)
+    await checkout.getByLabel('Expiration', { exact: true }).fill('1230')
+    await checkout
+      .getByRole('textbox', {
+        name: 'Credit or debit card CVC/CVV',
+        exact: true
+      })
+      .fill('123')
+    await checkout
+      .getByPlaceholder('Full name on card', { exact: true })
+      .fill('Comfy Billing Test')
+    await checkout
+      .getByRole('button', { name: 'Enter address manually', exact: true })
+      .click()
+    await checkout.locator('#billingAddressLine1').fill('123 Test Street')
+    await checkout.getByLabel('City', { exact: true }).fill('San Francisco')
+    await checkout.getByLabel('State', { exact: true }).selectOption('CA')
+    await checkout.getByLabel('ZIP', { exact: true }).fill('94107')
+    await checkout.locator('#enableStripePass').uncheck()
+    await checkout.getByRole('button', { name: /^Save/ }).click()
   }
 
   private async startCheckout(action = this.subscribe.or(this.resumePayment)) {
