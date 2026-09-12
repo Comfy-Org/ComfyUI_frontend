@@ -546,9 +546,13 @@ describe('opt-in refresh scheduler', () => {
     })
 
     releaseScheduled(mintResponse('jwt-2'))
-    await joiner
+    const joined = await joiner
     unsubscribe()
 
+    expect(
+      joined,
+      'a joiner resolves to the committed session, not undefined, after the scheduler mints it'
+    ).toMatchObject({ status: 'ok', session: { token: 'jwt-2' } })
     expect(
       authenticatedJwt2,
       'one mint has a single commit owner; a joiner returns the committed result without republishing it'
