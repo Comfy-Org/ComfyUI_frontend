@@ -58,6 +58,14 @@ function readNodes(update: Uint8Array): Record<string, unknown> {
 const acceptAll: TargetFrameApplyPort = { apply: () => true }
 const rejectAll: TargetFrameApplyPort = { apply: () => false }
 
+function captureError(action: () => unknown): unknown {
+  try {
+    action()
+  } catch (error) {
+    return error
+  }
+}
+
 describe('createDetachedTargetSession', () => {
   it('commits queued frames in order and reproduces the host state byte-exactly', () => {
     const source = createFrameSource()
@@ -387,16 +395,43 @@ describe('createDetachedTargetSession', () => {
     expect(session.snapshot()).toEqual(beforeDestroy)
   })
 
-  it('rejects frames addressed to another target loudly', () => {
+  it('rejects frames addressed to another target with a TypeError in production', () => {
     vi.stubEnv('DEV', false)
     const session = createDetachedTargetSession(WORKFLOW_ID)
     const stranger = createFrameSource('wf-other')
 
-    expect(() =>
+    const thrown = captureError(() =>
       session.enqueue(
         stranger.frame((doc) => setNode(doc, '1', { type: 'Source' }))
       )
-    ).toThrow(/frames must never cross targets/)
+    )
+
+    expect(thrown).toBeInstanceOf(TypeError)
+    expect(thrown).toEqual(
+      expect.objectContaining({
+        message: expect.stringMatching(/frames must never cross targets/)
+      })
+    )
+  })
+
+  it('rejects frames addressed to another target with an assertion error in development', () => {
+    vi.stubEnv('DEV', true)
+    const session = createDetachedTargetSession(WORKFLOW_ID)
+    const stranger = createFrameSource('wf-other')
+
+    const thrown = captureError(() =>
+      session.enqueue(
+        stranger.frame((doc) => setNode(doc, '1', { type: 'Source' }))
+      )
+    )
+
+    expect(thrown).toBeInstanceOf(Error)
+    expect(thrown).not.toBeInstanceOf(TypeError)
+    expect(thrown).toEqual(
+      expect.objectContaining({
+        message: expect.stringMatching(/frames must never cross targets/)
+      })
+    )
   })
 
   it('isCommitted answers for any sequence at or below the committed head of the same lineage', () => {
