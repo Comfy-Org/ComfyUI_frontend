@@ -8,16 +8,25 @@ const sandboxURL = z
     const url = new URL(value)
     return (
       url.protocol === 'https:' &&
-      url.origin === value &&
+      url.href === `${url.origin}/` &&
       (url.hostname === 'testcloud.comfy.org' ||
         url.hostname === 'stagingcloud.comfy.org' ||
         /^pr-\d+\.testenvs\.comfy\.org$/.test(url.hostname))
     )
   }, 'Use a Cloud test, staging, or PR preview origin')
+  .transform((value) => new URL(value).origin)
 
 export const liveCloudBillingConfigSchema = z
   .object({
-    PLAYWRIGHT_TEST_URL: z.string().url(),
+    PLAYWRIGHT_TEST_URL: z
+      .string()
+      .url()
+      .refine((value) => {
+        if (!URL.canParse(value)) return false
+        const url = new URL(value)
+        return url.href === `${url.origin}/`
+      }, 'Use an origin without a path, query, credentials, or fragment')
+      .transform((value) => new URL(value).origin),
     PLAYWRIGHT_SETUP_API_URL: sandboxURL,
     CLOUD_ACCOUNT_EMAIL: z.string().email(),
     CLOUD_ACCOUNT_PASSWORD: z.string().min(1)

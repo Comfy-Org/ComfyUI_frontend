@@ -18,8 +18,8 @@ Set these variables using the existing `.env` convention or inject them with
 | `CLOUD_ACCOUNT_PASSWORD`   | Sandbox account password                             |
 
 For a local frontend, start `pnpm dev:cloud` and use its Vite URL with
-`PLAYWRIGHT_SETUP_API_URL=https://testcloud.comfy.org`. The local server must
-proxy to the selected sandbox. Production targets are rejected.
+`PLAYWRIGHT_SETUP_API_URL=https://testcloud.comfy.org`. The test routes browser API requests and its API checks directly to the selected
+sandbox, independently of the local Vite proxy. Production targets are rejected.
 
 The fixture disables `onboarding_survey_enabled` through the existing dev-only
 feature-flag helper before navigation. Deployed builds ignore this override, so
@@ -29,16 +29,15 @@ The account must own a personal workspace with no active paid subscription or sa
 payment method. Use an account reserved for this test. Do not run concurrent
 billing tests against that account.
 
-The test signs in, checks the displayed amount against the real preview, opens
+The test signs in, checks the real preview and payment dialog are ready, opens
 Stripe test checkout, closes it without entering a card, and resumes the same
 pending billing operation. The report attaches screenshots and the operation ID.
 Authentication traces and saved credentials are not retained.
 
 No database, Stripe secret key, or Temporal access is required. Closing the
 browser leaves the unpaid checkout pending in the backend. The test does not
-reset billing state or claim that the operation expired. A subsequent run may
-resume the pending operation if the backend permits it; otherwise use a fresh
-no-card test account. Backend expiry and fixture reset remain separate work.
+reset billing state or claim that the operation expired. The first action accepts either a fresh Subscribe button or the pending
+Complete your payment button, so sequential runs can resume an existing checkout. Backend expiry and fixture reset remain separate work.
 
 The first test covers checkout handoff and retry. Payment completion, page-reload
 recovery, the 24-hour timeout, and CI integration remain follow-up work. A

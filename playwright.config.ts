@@ -57,8 +57,14 @@ export default defineConfig({
   reporter: process.env.PLAYWRIGHT_BLOB_OUTPUT_DIR ? 'blob' : 'html',
   ...maybeLocalOptions,
 
-  globalSetup: './browser_tests/globalSetup.ts',
-  globalTeardown: './browser_tests/globalTeardown.ts',
+  globalSetup:
+    process.env.PLAYWRIGHT_CLOUD_LIVE === '1'
+      ? undefined
+      : './browser_tests/globalSetup.ts',
+  globalTeardown:
+    process.env.PLAYWRIGHT_CLOUD_LIVE === '1'
+      ? undefined
+      : './browser_tests/globalTeardown.ts',
 
   projects: [
     ...(process.env.PLAYWRIGHT_CLOUD_LIVE === '1'
@@ -74,11 +80,11 @@ export default defineConfig({
             use: {
               ...devices['Desktop Chrome'],
               locale: 'en-US',
-              trace: 'off' as const,
-              video: 'off' as const,
-              screenshot: 'off' as const
+              trace: 'off',
+              video: 'off',
+              screenshot: 'off'
             }
-          }
+          } satisfies NonNullable<PlaywrightTestConfig['projects']>[number]
         ]
       : []),
     {

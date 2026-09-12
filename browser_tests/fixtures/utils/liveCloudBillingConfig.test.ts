@@ -61,3 +61,29 @@ describe('Live Cloud billing prerequisites', () => {
     expect(loadLiveCloudBillingConfig).not.toThrow('private-value')
   })
 })
+
+describe('Frontend origins', () => {
+  it.for([
+    'http://localhost:5173/app',
+    'http://localhost:5173/?x=1',
+    'http://localhost:5173/#x',
+    'http://user:pass@localhost:5173'
+  ])('rejects non-origin frontend %s', (PLAYWRIGHT_TEST_URL) => {
+    expect(
+      liveCloudBillingConfigSchema.safeParse({
+        ...sandboxConfig,
+        PLAYWRIGHT_TEST_URL
+      }).success
+    ).toBe(false)
+  })
+
+  it('normalizes root trailing slashes on both origins', () => {
+    const config = liveCloudBillingConfigSchema.parse({
+      ...sandboxConfig,
+      PLAYWRIGHT_TEST_URL: 'http://localhost:5173/',
+      PLAYWRIGHT_SETUP_API_URL: 'https://testcloud.comfy.org/'
+    })
+    expect(config.PLAYWRIGHT_TEST_URL).toBe('http://localhost:5173')
+    expect(config.PLAYWRIGHT_SETUP_API_URL).toBe('https://testcloud.comfy.org')
+  })
+})
