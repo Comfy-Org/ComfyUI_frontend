@@ -191,6 +191,26 @@ describe('useWorkshopSession', () => {
     )
   })
 
+  it('keeps the live session when the flag settles on without ever turning off', async () => {
+    h.initialSettled = false
+    const s = await importFresh()
+    h.publish(authenticatedSnapshot())
+    await vi.waitFor(() => expect(s.session.value).toEqual(okSession))
+    const attachesBefore = h.attachIdentity.mock.calls.length
+
+    h.settled!.value = true
+
+    await vi.waitFor(() => expect(h.settled!.value).toBe(true))
+    expect(
+      h.attachIdentity.mock.calls.length,
+      'a settlement-only change while enabled stays on must not re-attach the identity listener'
+    ).toBe(attachesBefore)
+    expect(
+      s.session.value,
+      'the live session must survive a settlement-only change; restarting would reset it to PENDING'
+    ).toEqual(okSession)
+  })
+
   it('clears the cache when the flag turns off', async () => {
     await importFresh()
     const callsBefore = h.clearStoredCredential.mock.calls.length
