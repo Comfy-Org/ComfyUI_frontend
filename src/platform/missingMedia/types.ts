@@ -1,4 +1,5 @@
 import type { SerializedNodeId } from '@/types/nodeId'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
 
 export type MediaType = 'image' | 'video' | 'audio'
 
@@ -10,6 +11,13 @@ export interface MissingMediaCandidate {
   nodeId: SerializedNodeId
   nodeType: string
   widgetName: string
+  /**
+   * For a promoted widget, the interior node and widget the value really
+   * belongs to. Node-level validation errors are never lifted to the host, so
+   * matching them needs the source identity the host name hides.
+   */
+  sourceExecutionId?: NodeExecutionId
+  sourceWidgetName?: string
   mediaType: MediaType
   /** Display name (plain filename for OSS, asset hash for cloud). */
   name: string
