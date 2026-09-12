@@ -14,6 +14,12 @@ function subjectMesh(scene: THREE.Scene): THREE.Mesh {
   return scene.getObjectByName('CameraAngleSubject')?.children[0] as THREE.Mesh
 }
 
+function disposeListener(resource: THREE.Texture) {
+  const listener = vi.fn()
+  resource.addEventListener('dispose', listener)
+  return listener
+}
+
 function boxSize(scene: THREE.Scene): THREE.Vector3 {
   const geometry = subjectMesh(scene).geometry
   geometry.computeBoundingBox()
@@ -68,15 +74,19 @@ describe('SubjectBox', () => {
     const wide = frontTexture(scene)!
     expect(wide.repeat.toArray()).toEqual([0.25, 1])
     expect(wide.offset.toArray()).toEqual([0.375, 0])
+    const wideDisposed = disposeListener(wide)
 
-    await box.setImage('http://example/tall.png')
+    await expect(box.setImage('http://example/tall.png')).resolves.toBe(true)
     const tall = frontTexture(scene)!
     expect(tall.repeat.toArray()).toEqual([1, 0.25])
     expect(tall.offset.toArray()).toEqual([0, 0.375])
+    expect(wideDisposed).toHaveBeenCalledOnce()
+    const tallDisposed = disposeListener(tall)
 
-    await box.setImage(null)
+    await expect(box.setImage(null)).resolves.toBe(true)
     expect(box.hasImage()).toBe(false)
     expect(frontTexture(scene)).toBeNull()
+    expect(tallDisposed).toHaveBeenCalledOnce()
   })
 
   it('keeps only the latest requested image when loads overlap', async () => {
@@ -91,18 +101,21 @@ describe('SubjectBox', () => {
     const box = new SubjectBox(undefined, { loadTexture })
 
     const firstLoad = box.setImage('first')
-    await box.setImage('second')
-    resolveFirst(fakeTexture(300, 100))
-    await firstLoad
+    await expect(box.setImage('second')).resolves.toBe(true)
+    const stale = fakeTexture(300, 100)
+    const staleDisposed = disposeListener(stale)
+    resolveFirst(stale)
 
+    await expect(firstLoad).resolves.toBe(false)
     expect(box.getAspect()).toBeCloseTo(1 / 3)
+    expect(staleDisposed).toHaveBeenCalledOnce()
   })
 
   it('ignores a failed image load', async () => {
     const box = new SubjectBox(undefined, {
       loadTexture: () => Promise.reject(new Error('network'))
     })
-    await expect(box.setImage('broken')).resolves.toBeUndefined()
+    await expect(box.setImage('broken')).resolves.toBe(false)
     expect(box.hasImage()).toBe(false)
   })
 

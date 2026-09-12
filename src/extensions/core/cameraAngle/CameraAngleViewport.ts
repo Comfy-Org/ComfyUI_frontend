@@ -64,6 +64,7 @@ export class CameraAngleViewport {
   private readonly input: PointerInteraction<OrbitHandleType>
   private overviewAspect: number | null = null
   private previewVisible = false
+  private removed = false
 
   constructor(
     container: HTMLElement,
@@ -165,11 +166,13 @@ export class CameraAngleViewport {
     return this.previewVisible
   }
 
-  setImage(url: string | null): Promise<void> {
-    return this.subject.setImage(url).then(() => this.viewport.forceRender())
+  async setImage(url: string | null): Promise<void> {
+    const applied = await this.subject.setImage(url)
+    if (applied && !this.removed) this.viewport.forceRender()
   }
 
   remove(): void {
+    this.removed = true
     this.input.detach()
     this.input.cancel()
     this.canvas.style.cursor = ''

@@ -200,25 +200,26 @@ export class SubjectBox implements SceneOverlay {
     this.placeSubjectCamera()
   }
 
-  async setImage(url: string | null): Promise<void> {
+  async setImage(url: string | null): Promise<boolean> {
     const token = ++this.loadToken
     if (!url) {
       this.applyTexture(null)
-      return
+      return true
     }
     let texture: THREE.Texture
     try {
       texture = await this.loadTexture(url)
     } catch {
-      return
+      return false
     }
     if (token !== this.loadToken || this.disposed) {
       texture.dispose()
-      return
+      return false
     }
     texture.colorSpace = THREE.SRGBColorSpace
     centerCropToSquare(texture)
     this.applyTexture(texture)
+    return true
   }
 
   private applyTexture(texture: THREE.Texture | null): void {
