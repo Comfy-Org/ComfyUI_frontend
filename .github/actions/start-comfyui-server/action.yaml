@@ -14,10 +14,22 @@ inputs:
 runs:
   using: 'composite'
   steps:
+    - name: Check out the DynamicGroup backend contract
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        repository: Comfy-Org/ComfyUI
+        ref: 47e136368149719a3ceb078ce605c5636bfccb87
+        path: .ci-backend
+        persist-credentials: false
+
+    - name: Install the pinned backend requirements
+      shell: bash
+      run: python3 -m pip install -r "$GITHUB_WORKSPACE/.ci-backend/requirements.txt"
+
     - name: Copy devtools and start server
       shell: bash
       run: |
         set -euo pipefail
         cp -r ./tools/devtools/* /ComfyUI/custom_nodes/ComfyUI_devtools/
-        cd /ComfyUI && python3 main.py --cpu --multi-user --front-end-root "${{ inputs.front_end_root }}" &
+        cd "$GITHUB_WORKSPACE/.ci-backend" && python3 main.py --base-directory /ComfyUI --cpu --multi-user --front-end-root "${{ inputs.front_end_root }}" &
         wait-for-it --service 127.0.0.1:8188 -t ${{ inputs.timeout }}
