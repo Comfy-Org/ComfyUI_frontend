@@ -2639,7 +2639,7 @@
       "auth/user-disabled": "This account has been disabled. Please contact support.",
       "auth/user-not-found": "Invalid login credentials. Please check your email and password.",
       "auth/wrong-password": "Invalid login credentials. Please check your email and password.",
-      "auth/email-already-in-use": "An account with this email already exists. Try signing in instead.",
+      "auth/email-already-in-use": "We couldn't create an account with this email. If you already have one, try signing in or resetting your password.",
       "auth/weak-password": "Password is too weak. Please use a stronger password with at least 6 characters.",
       "auth/too-many-requests": "Too many login attempts. Please wait a moment and try again.",
       "auth/operation-not-allowed": "This sign-in method is not currently supported.",
@@ -2648,7 +2648,7 @@
       "auth/popup-closed-by-user": "The sign-in window closed before sign-in finished. Please try again.",
       "auth/cancelled-popup-request": "Another sign-in window was already open, so this one was cancelled. Please try again.",
       "auth/popup-blocked": "Your browser blocked the sign-in window. Please allow pop-ups for this site and try again.",
-      "auth/account-exists-with-different-credential": "An account already exists with this email address but uses a different sign-in method. Please sign in the way you did originally.",
+      "auth/account-exists-with-different-credential": "We couldn't sign you in with this method. Try another sign-in option, or reset your password to continue.",
       "generic": "Something went wrong while signing you in. Please try again.",
       "signupBlocked": "We couldn't create your account right now. Please try again later. If this keeps happening, email support@comfy.org."
     },

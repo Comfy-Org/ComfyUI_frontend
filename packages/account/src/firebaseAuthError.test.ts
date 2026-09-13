@@ -140,6 +140,43 @@ describe('AUTH_ERROR_COPY', () => {
   )
 })
 
+describe('sign-up and provider failures do not confirm an account exists', () => {
+  const enumerationTell = /\bexists?\b|different sign-in method/i
+  const signInGuidance = /sign(?:ing)? in|sign-in option/i
+  const resetPasswordGuidance = /reset(?:ting)? your password/i
+
+  it.for([
+    [
+      'auth/email-already-in-use',
+      'sign-up only rejects an email that is already registered'
+    ],
+    [
+      'auth/account-exists-with-different-credential',
+      'a provider collision only happens for an already-registered email'
+    ]
+  ] as const)(
+    'resolves %s to recovery guidance that never states the email is registered',
+    ([code, why]) => {
+      const message = authErrorMessage(
+        classifyAuthError(firebaseError(code)),
+        'en'
+      )
+      expect(
+        message,
+        `${why}; copy that confirms the account exists is an enumeration oracle`
+      ).not.toMatch(enumerationTell)
+      expect(
+        message,
+        `${why}; the neutral copy must still route the user to signing in`
+      ).toMatch(signInGuidance)
+      expect(
+        message,
+        `${why}; the neutral copy must still offer a password reset`
+      ).toMatch(resetPasswordGuidance)
+    }
+  )
+})
+
 describe('authErrorMessage', () => {
   it('returns the coded line for a known code in the requested locale', () => {
     expect(
