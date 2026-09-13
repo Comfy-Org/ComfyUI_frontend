@@ -11,11 +11,6 @@ test.describe(
   'ECS migration geometry interactions',
   { tag: ['@canvas', '@node', '@vue-nodes'] },
   () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.workflow.loadWorkflow('default')
-      await fitToViewInstant(comfyPage)
-    })
-
     test.afterEach(async ({ comfyPage }) => {
       await comfyPage.canvasOps.resetView()
     })
@@ -23,6 +18,8 @@ test.describe(
     test('slot dots track the node edge while resize is still active', async ({
       comfyPage
     }) => {
+      await comfyPage.workflow.loadWorkflow('default')
+      await fitToViewInstant(comfyPage)
       const node = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
       const handle = node.getResizeHandle('SE')
       const outputDot = comfyPage.vueNodes.getOutputSlotConnectionDot('3', 0)
@@ -69,6 +66,8 @@ test.describe(
       test(`remains interactive after an incompatible link gesture in ${vueNodesEnabled ? 'Nodes 2.0' : 'legacy'} mode`, async ({
         comfyPage
       }) => {
+        await comfyPage.workflow.loadWorkflow('default')
+        await fitToViewInstant(comfyPage)
         await comfyPage.settings.setSetting(
           'Comfy.VueNodes.Enabled',
           vueNodesEnabled
@@ -297,6 +296,8 @@ test.describe(
       test(`recovers from empty link search and malformed clipboard in ${vueNodesEnabled ? 'Nodes 2.0' : 'legacy'}`, async ({
         comfyPage
       }) => {
+        await comfyPage.workflow.loadWorkflow('default')
+        await fitToViewInstant(comfyPage)
         await comfyPage.settings.setSetting(
           'Comfy.VueNodes.Enabled',
           vueNodesEnabled
@@ -353,6 +354,8 @@ test.describe(
       'overlapping multiline text remains clipped to each node',
       { tag: '@screenshot' },
       async ({ comfyPage }) => {
+        await comfyPage.workflow.loadWorkflow('default')
+        await fitToViewInstant(comfyPage)
         await comfyPage.page.evaluate((nodeId) => {
           const sampler = window.app!.graph.getNodeById(nodeId)
           if (!sampler) throw new Error('KSampler is unavailable')
@@ -442,6 +445,8 @@ test.describe(
       'node title and widget labels remain rendered at text zoom extremes',
       { tag: '@screenshot' },
       async ({ comfyPage }) => {
+        await comfyPage.workflow.loadWorkflow('default')
+        await fitToViewInstant(comfyPage)
         await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
         const sampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
         await comfyPage.page.evaluate((nodeId) => {
