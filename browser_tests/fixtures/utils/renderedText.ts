@@ -87,7 +87,8 @@ export async function expectRenderedTextUnclipped(
         const canvas = document.createElement('canvas')
         canvas.width = image.width
         canvas.height = image.height
-        const context = canvas.getContext('2d')!
+        const context = canvas.getContext('2d')
+        if (!context) throw new Error('Failed to create 2D canvas context')
         context.drawImage(image, 0, 0)
         return context.getImageData(0, 0, image.width, image.height)
       }
