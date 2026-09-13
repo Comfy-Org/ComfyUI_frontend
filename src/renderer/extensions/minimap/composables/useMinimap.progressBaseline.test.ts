@@ -1,9 +1,9 @@
-import type * as VueUse from '@vueuse/core'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { fromPartial } from '@total-typescript/shoehorn'
+import * as VueUse from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, shallowRef } from 'vue'
 import { toNodeId } from '@/types/nodeId'
@@ -78,32 +78,36 @@ const {
   }
 })
 
-vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => ({
-  ...(await importOriginal<typeof VueUse>()),
-  useDocumentVisibility: () => ({ value: 'visible' }),
-  useIntervalFn: (callback: () => void) => {
-    counters.pollRegistrations++
-    // The callback is driven explicitly so WS fanout and 100 ms poll cadence
-    // remain separate deterministic axes in this baseline.
-    pollControl.current = () => {
-      counters.pollCallbacks++
-      callback()
+vi.mock(import('@vueuse/core'), { spy: true })
+function setupVueUseMocks() {
+  vi.mocked(VueUse.useDocumentVisibility).mockReturnValue(shallowRef('visible'))
+  vi.mocked(VueUse.useIntervalFn, { partial: true }).mockImplementation(
+    (callback) => {
+      counters.pollRegistrations++
+      pollControl.current = () => {
+        counters.pollCallbacks++
+        callback()
+      }
+      return {
+        isActive: shallowRef(false),
+        pause: () => void counters.pollPauses++,
+        resume: () => void counters.pollResumes++
+      }
     }
-    return {
-      pause: () => counters.pollPauses++,
-      resume: () => counters.pollResumes++
-    }
-  },
-  useRafFn: () => ({
+  )
+  vi.mocked(VueUse.useRafFn, { partial: true }).mockReturnValue({
+    isActive: shallowRef(false),
     pause: vi.fn(),
     resume: vi.fn()
-  }),
-  useThrottleFn: (callback: () => void) => () => {
-    counters.throttleRequests++
-    counters.throttleCallbacks++
-    callback()
-  }
-}))
+  })
+  vi.mocked(VueUse.useThrottleFn, { partial: true }).mockImplementation(
+    (callback) => () => {
+      counters.throttleRequests++
+      counters.throttleCallbacks++
+      return callback()
+    }
+  )
+}
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
@@ -362,6 +366,7 @@ async function runCell(
 }
 
 beforeEach(() => {
+  setupVueUseMocks()
   Object.assign(useExecutionStore(), {
     nodeLocationProgressStates: useExecutionStore().nodeProgressStates
   })

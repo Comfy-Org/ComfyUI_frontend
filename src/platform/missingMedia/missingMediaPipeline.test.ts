@@ -115,10 +115,4 @@ describe('runMissingMediaPipeline', () => {
     expect(activeWorkflow.pendingWarnings).toBeNull()
   })
 })
-
-vi.mock(import('firebase/auth'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  setPersistence: vi.fn().mockResolvedValue(undefined),
-  onAuthStateChanged: vi.fn(),
-  onIdTokenChanged: vi.fn()
-}))
+vi.mock(import('firebase/auth'))

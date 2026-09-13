@@ -12,10 +12,13 @@ import { TestIds } from '@e2e/fixtures/selectors'
 import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 import type { WorkspaceStore } from '@e2e/types/globals'
 
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
+test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
+
+test.beforeEach(async ({ comfyPage, initialSettings }) => {
   // Wait for the legacy menu to appear and canvas to settle after layout shift.
-  await comfyPage.page.locator('.comfy-menu').waitFor({ state: 'visible' })
+  if (initialSettings['Comfy.UseNewMenu'] === 'Disabled') {
+    await comfyPage.page.locator('.comfy-menu').waitFor({ state: 'visible' })
+  }
   await comfyPage.nextFrame()
 })
 
@@ -167,12 +170,6 @@ test.describe('Node Interaction', () => {
   })
 
   test.describe('Node Duplication', () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      // Pin this suite to the legacy canvas path so Alt+drag exercises
-      // LGraphCanvas, not the Vue node drag handler.
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
-    })
-
     test('Can duplicate a regular node via Alt+drag', async ({ comfyPage }) => {
       const before = await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
       expect(
@@ -208,15 +205,12 @@ test.describe('Node Interaction', () => {
   })
 
   test.describe('Edge Interaction', { tag: '@screenshot' }, () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting(
-        'Comfy.LinkRelease.Action',
-        'no action'
-      )
-      await comfyPage.settings.setSetting(
-        'Comfy.LinkRelease.ActionShift',
-        'no action'
-      )
+    test.use({
+      initialSettings: {
+        'Comfy.UseNewMenu': 'Disabled',
+        'Comfy.LinkRelease.Action': 'no action',
+        'Comfy.LinkRelease.ActionShift': 'no action'
+      }
     })
 
     // Test both directions of edge connection.
@@ -234,6 +228,53 @@ test.describe('Node Interaction', () => {
           maxDiffPixels: 50
         })
       })
+    })
+
+    test('Repeated disconnect/connect leaves exactly one link', async ({
+      comfyPage
+    }) => {
+      test.slow()
+      await comfyPage.workflow.loadWorkflow('default')
+
+      const checkpoint = await comfyPage.nodeOps.getNodeRefByType(
+        'CheckpointLoaderSimple'
+      )
+      const clipOutput = await checkpoint.getOutput(1)
+      const targetNode = await comfyPage.nodeOps.getNodeRefById(6)
+      const targetInput = await targetNode.getInput(0)
+      const targetLink = await targetInput.getLink()
+      if (!targetLink) throw new Error('Default workflow link not found')
+
+      const targetEndpoints = {
+        origin_id: targetLink.origin_id,
+        origin_slot: targetLink.origin_slot,
+        target_id: targetLink.target_id,
+        target_slot: targetLink.target_slot
+      }
+      const initial = await clipOutput.getLinkCount()
+      expect(initial, 'default workflow should have links').toBeGreaterThan(0)
+
+      for (let cycle = 0; cycle < 5; cycle++) {
+        await comfyPage.canvasOps.disconnectEdge()
+        await clipOutput.expectLinkCount(initial - 1)
+        await expect.poll(() => targetInput.getLink()).toBeNull()
+        await comfyPage.canvasOps.connectEdge()
+        await clipOutput.expectLinkCount(initial)
+        await expect
+          .poll(() => targetInput.getLink())
+          .toMatchObject(targetEndpoints)
+      }
+
+      // End disconnected so the reload assertion cannot pass by restoring a
+      // pristine default instead of the edited draft.
+      await comfyPage.canvasOps.disconnectEdge()
+      await comfyPage.canvasOps.moveMouseToEmptyArea()
+      await clipOutput.expectLinkCount(initial - 1)
+      await expect.poll(() => targetInput.getLink()).toBeNull()
+
+      await comfyPage.workflow.reloadAndWaitForApp()
+      await clipOutput.expectLinkCount(initial - 1)
+      await expect.poll(() => targetInput.getLink()).toBeNull()
     })
 
     test('Can move link', async ({ comfyPage }) => {
@@ -881,11 +922,12 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
     `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}${extension}`
 
   test.describe('Restore all open workflows on reload', () => {
+    test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Top' } })
+
     let workflowA: string
     let workflowB: string
 
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
       workflowA = generateUniqueFilename()
       await comfyPage.menu.topbar.saveWorkflow(workflowA)
       workflowB = generateUniqueFilename()
@@ -956,11 +998,12 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
   })
 
   test.describe('Restore workflow tabs after browser restart', () => {
+    test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Top' } })
+
     let workflowA: string
     let workflowB: string
 
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
       workflowA = generateUniqueFilename()
       await comfyPage.menu.topbar.saveWorkflow(workflowA)
       workflowB = generateUniqueFilename()
@@ -1064,13 +1107,13 @@ test.describe('Load duplicate workflow', () => {
 })
 
 test.describe('Viewport settings', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.settings.setSetting(
-      'Comfy.Workflow.WorkflowTabsPosition',
-      'Topbar'
-    )
+  test.use({
+    initialSettings: {
+      'Comfy.UseNewMenu': 'Top'
+    }
+  })
 
+  test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.workflow.setupWorkflowsDirectory({})
   })
 
@@ -1140,11 +1183,11 @@ test.describe('Viewport settings', () => {
 
 test.describe('Canvas Navigation', { tag: '@screenshot' }, () => {
   test.describe('Legacy Mode', () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting(
-        'Comfy.Canvas.NavigationMode',
-        'legacy'
-      )
+    test.use({
+      initialSettings: {
+        'Comfy.UseNewMenu': 'Disabled',
+        'Comfy.Canvas.NavigationMode': 'legacy'
+      }
     })
 
     test('Left-click drag in empty area should pan canvas', async ({
@@ -1200,11 +1243,11 @@ test.describe('Canvas Navigation', { tag: '@screenshot' }, () => {
   })
 
   test.describe('Standard Mode', () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting(
-        'Comfy.Canvas.NavigationMode',
-        'standard'
-      )
+    test.use({
+      initialSettings: {
+        'Comfy.UseNewMenu': 'Disabled',
+        'Comfy.Canvas.NavigationMode': 'standard'
+      }
     })
 
     test('Left-click drag in empty area should select nodes', async ({

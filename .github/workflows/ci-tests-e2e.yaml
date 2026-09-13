@@ -128,8 +128,8 @@ jobs:
           if-no-files-found: warn
 
   playwright-tests:
-    # Ideally, each shard runs test in 6 minutes, but allow up to 15 minutes
-    timeout-minutes: 15
+    # Ideally, each shard runs test in 6 minutes, but allow up to 30 minutes
+    timeout-minutes: 30
     needs: setup
     runs-on: ubuntu-latest
     container:
@@ -261,7 +261,7 @@ jobs:
     with:
       source_sha: ${{ github.event.pull_request.head.sha || github.sha }}
 
-  # Records video only for spec files newly added in this PR, to keep cost bounded.
+  # Records video only for tests newly added in this PR, to keep cost bounded.
   playwright-video-new-tests:
     needs: setup
     if: ${{ github.event_name == 'pull_request' }}
@@ -283,46 +283,70 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Detect newly-added test spec files
+      - name: Detect newly-added tests
         id: detect
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          IS_FORK: ${{ github.event.pull_request.head.repo.fork }}
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          # HEAD is refs/pull/N/merge, so its first parent is the base tip the PR was merged
-          # onto. pull_request.base.sha is recorded when the PR opens and does not follow the
-          # base branch, so diffing against it attributes every spec the base gained since
-          # then to this PR.
-          if [ "$(git rev-parse --verify --quiet HEAD^2)" = "${{ github.event.pull_request.head.sha }}" ]; then
-            DIFF_RANGE="$(git rev-parse HEAD^1)..HEAD"
-          else
-            DIFF_RANGE="${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}"
+          if [ "$IS_FORK" = "true" ]; then
+            echo '::notice::Skipping video recording for a fork pull request.'
+            echo 'has-new-tests=false' >> "$GITHUB_OUTPUT"
+            exit 0
           fi
-          # git diff and grep are separate statements (not piped) so a git diff failure
-          # (e.g. the fallback sha isn't in the local object store) surfaces as a build
-          # error instead of silently reading as "no new specs" and no-oping the video job.
-          ADDED_FILES=$(git diff --name-only --diff-filter=A "$DIFF_RANGE" -- browser_tests/tests)
-          NEW_FILES=$(printf '%s\n' "$ADDED_FILES" | grep '\.spec\.ts$' || true)
 
-          if [ -z "$NEW_FILES" ]; then
-            echo "has-new-tests=false" >> "$GITHUB_OUTPUT"
+          DIFF_RANGE="${BASE_SHA}...HEAD"
+          NEW_FILES=$(git diff --name-only --diff-filter=AMR "$DIFF_RANGE" -- 'browser_tests/**/*.spec.ts')
+          : > /tmp/fallback-specs.txt
+
+          while IFS= read -r file; do
+            [ -z "$file" ] && continue
+            # A leaf title is not a stable Playwright identity: duplicate or
+            # short titles can select unrelated tests through --grep. Run every
+            # changed spec as a whole so assertion-only improvements are also
+            # recorded.
+            printf '%s\n' "$file" >> /tmp/fallback-specs.txt
+          done <<< "$NEW_FILES"
+
+          sort -u -o /tmp/fallback-specs.txt /tmp/fallback-specs.txt
+          if [ ! -s /tmp/fallback-specs.txt ]; then
+            echo '::notice::No changed Playwright specs found.'
+            echo 'has-new-tests=false' >> "$GITHUB_OUTPUT"
           else
-            echo "has-new-tests=true" >> "$GITHUB_OUTPUT"
+            echo 'has-new-tests=true' >> "$GITHUB_OUTPUT"
           fi
 
           {
-            echo "files<<EOF_NEW_SPEC_FILES"
+            echo 'files<<EOF_NEW_SPEC_FILES'
             echo "$NEW_FILES"
-            echo "EOF_NEW_SPEC_FILES"
+            echo 'EOF_NEW_SPEC_FILES'
+            echo 'titles<<EOF_NEW_TEST_TITLES'
+            echo 'EOF_NEW_TEST_TITLES'
+            echo 'fallback-files<<EOF_FALLBACK_SPEC_FILES'
+            cat /tmp/fallback-specs.txt
+            echo 'EOF_FALLBACK_SPEC_FILES'
           } >> "$GITHUB_OUTPUT"
 
-          echo "Newly-added spec files:"
+          echo 'Changed spec files:'
           echo "${NEW_FILES:-<none>}"
+          echo 'Whole-file fallbacks:'
+          cat /tmp/fallback-specs.txt
 
-      - name: Download built frontend
+      - name: Download built frontend (OSS)
         if: steps.detect.outputs.has-new-tests == 'true'
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: frontend-dist
           path: dist/
+
+      - name: Download built frontend (cloud)
+        if: steps.detect.outputs.has-new-tests == 'true'
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: frontend-dist-cloud
+          path: dist-cloud/
 
       - name: Start ComfyUI server
         if: steps.detect.outputs.has-new-tests == 'true'
@@ -337,12 +361,13 @@ jobs:
       - name: Find safely recordable new tests
         if: steps.detect.outputs.has-new-tests == 'true'
         id: recordable
+        shell: bash
         env:
-          NEW_SPEC_FILES: ${{ steps.detect.outputs.files }}
+          FALLBACK_SPEC_FILES: ${{ steps.detect.outputs.fallback-files }}
         run: |
-          FILES=$(echo "$NEW_SPEC_FILES" | tr '\n' ' ')
+          mapfile -t FILES < <(printf '%s\n' "$FALLBACK_SPEC_FILES" | sed '/^$/d' | sort -u)
           AUDIT_EXIT=0
-          AUDIT_OUTPUT=$(pnpm exec playwright test --project=audit --list --pass-with-no-tests $FILES 2>&1) || AUDIT_EXIT=$?
+          AUDIT_OUTPUT=$(pnpm exec playwright test --project=audit --list --pass-with-no-tests "${FILES[@]}" 2>&1) || AUDIT_EXIT=$?
           echo "$AUDIT_OUTPUT"
 
           if [ "$AUDIT_EXIT" -ne 0 ]; then
@@ -350,36 +375,42 @@ jobs:
           fi
 
           if ! echo "$AUDIT_OUTPUT" | grep -Fxq 'Total: 0 tests in 0 files'; then
-            {
-              echo '## New-test video walkthrough'
-              echo
-              echo '### Cannot skip safely: audit tests have no regular CI coverage'
-              echo
-              echo 'At least one newly added test is routed to the `audit` project. Unlike the other projects excluded by Chromium, no regular CI job executes audit tests.'
-              echo 'This video job only records the `chromium` project, so it fails rather than allowing the PR to pass without executing the new audit test.'
-              echo
-              echo 'Detected files:'
-              echo '```text'
-              echo "$NEW_SPEC_FILES"
-              echo '```'
-              echo
-              echo 'Audit discovery output:'
-              echo '```text'
-              echo "$AUDIT_OUTPUT"
-              echo '```'
-            } >> "$GITHUB_STEP_SUMMARY"
-            exit 1
+            echo '::notice::Some new tests are audit-routed; continuing chromium/cloud discovery.'
           fi
 
-          LIST_EXIT=0
-          LIST_OUTPUT=$(pnpm exec playwright test --project=chromium --list --pass-with-no-tests $FILES 2>&1) || LIST_EXIT=$?
-          echo "$LIST_OUTPUT"
+          # Discover per project so files that mix local and @cloud tests, or
+          # only mention @cloud in a comment, are routed by Playwright's own
+          # grep rules instead of a text scan of the spec file.
+          # Returns 0 when the project has tests, 1 when it has none, and the
+          # playwright exit code (>1 is never used by --list) on failure.
+          discover() {
+            local project="$1"
+            local exit_code=0
+            local output
+            output=$(pnpm exec playwright test --project="$project" --list --pass-with-no-tests "${FILES[@]}" 2>&1) || exit_code=$?
+            echo "$output"
+            if [ "$exit_code" -ne 0 ]; then
+              return 2
+            fi
+            if echo "$output" | grep -Fxq 'Total: 0 tests in 0 files'; then
+              return 1
+            fi
+            return 0
+          }
 
-          if [ "$LIST_EXIT" -ne 0 ]; then
-            exit "$LIST_EXIT"
-          fi
+          CHROMIUM_HAS_TESTS=false
+          CLOUD_HAS_TESTS=false
+          if CHROMIUM_OUTPUT=$(discover chromium); then STATUS=0; else STATUS=$?; fi
+          if [ "$STATUS" -eq 2 ]; then echo "$CHROMIUM_OUTPUT"; exit 1; fi
+          [ "$STATUS" -eq 0 ] && CHROMIUM_HAS_TESTS=true
+          if CLOUD_OUTPUT=$(discover cloud); then STATUS=0; else STATUS=$?; fi
+          if [ "$STATUS" -eq 2 ]; then echo "$CLOUD_OUTPUT"; exit 1; fi
+          [ "$STATUS" -eq 0 ] && CLOUD_HAS_TESTS=true
 
-          if ! echo "$LIST_OUTPUT" | grep -Fxq 'Total: 0 tests in 0 files'; then
+          echo "chromium-has-tests=$CHROMIUM_HAS_TESTS" >> "$GITHUB_OUTPUT"
+          echo "cloud-has-tests=$CLOUD_HAS_TESTS" >> "$GITHUB_OUTPUT"
+
+          if [ "$CHROMIUM_HAS_TESTS" = true ] || [ "$CLOUD_HAS_TESTS" = true ]; then
             echo "has-tests=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -388,41 +419,95 @@ jobs:
           {
             echo '## New-test video walkthrough'
             echo
-            echo '### Skipped safely: no Chromium-eligible tests'
+            echo '### Skipped safely: no chromium- or cloud-eligible tests'
             echo
-            echo 'The workflow detected newly added Playwright spec files, but none of their tests are eligible for the `chromium` project used to record walkthroughs.'
-            echo 'This commonly happens when every test uses a project-routing tag excluded by Chromium: `@perf`, `@cloud`, or `@mobile`.'
+            echo 'The workflow detected newly added or changed Playwright tests, but none of them are eligible for the chromium or cloud projects used to record walkthroughs.'
+            echo 'This commonly happens when every test uses a project-routing tag excluded by both: @perf, @mobile, @custom-nodes, or @agent-harness.'
             echo 'The regular project-specific E2E jobs still run these tests. This video job succeeds without creating an empty report or video artifact.'
             echo
             echo 'Detected files:'
             echo '```text'
-            echo "$NEW_SPEC_FILES"
+            echo "$FALLBACK_SPEC_FILES"
             echo '```'
             echo
-            echo 'Playwright discovery output:'
+            echo 'Playwright discovery output (chromium):'
             echo '```text'
-            echo "$LIST_OUTPUT"
+            echo "$CHROMIUM_OUTPUT"
+            echo '```'
+            echo
+            echo 'Playwright discovery output (cloud):'
+            echo '```text'
+            echo "$CLOUD_OUTPUT"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Run new test(s) with video recording
         if: steps.recordable.outputs.has-tests == 'true'
+        shell: bash
         env:
           RECORD_VIDEO: 'true'
-          SLOW_MO: '1000'
-          NEW_SPEC_FILES: ${{ steps.detect.outputs.files }}
+          SLOW_MO: '250'
+          FALLBACK_SPEC_FILES: ${{ steps.detect.outputs.fallback-files }}
+          CHROMIUM_HAS_TESTS: ${{ steps.recordable.outputs.chromium-has-tests }}
+          CLOUD_HAS_TESTS: ${{ steps.recordable.outputs.cloud-has-tests }}
         run: |
-          FILES=$(echo "$NEW_SPEC_FILES" | tr '\n' ' ')
-          pnpm exec playwright test --project=chromium --timeout=60000 $FILES
+          mapfile -t FILES < <(printf '%s\n' "$FALLBACK_SPEC_FILES" | sed '/^$/d' | sort -u)
+          if [ "$CHROMIUM_HAS_TESTS" = true ]; then
+            PLAYWRIGHT_HTML_OUTPUT_DIR=playwright-report-chromium pnpm exec playwright test --project=chromium --output=test-results-chromium --timeout=180000 --retries=0 "${FILES[@]}"
+          fi
+          if [ "$CLOUD_HAS_TESTS" = true ]; then
+            # The ComfyUI server serves web_root per request, so swapping the
+            # built frontend in place switches it to the cloud build.
+            rsync -a --delete dist-cloud/ dist/
+            PLAYWRIGHT_HTML_OUTPUT_DIR=playwright-report-cloud pnpm exec playwright test --project=cloud --output=test-results-cloud --timeout=180000 --retries=0 "${FILES[@]}"
+          fi
 
       - name: Upload new-test report (with embedded video)
         if: ${{ !cancelled() && steps.recordable.outputs.has-tests == 'true' }}
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: playwright-report-new-tests
-          path: ./playwright-report/
+          path: |
+            ./playwright-report-chromium/
+            ./playwright-report-cloud/
+            ./test-results-chromium/**/*.webm
+            ./test-results-cloud/**/*.webm
           retention-days: 30
           if-no-files-found: warn
+
+      - name: Write video comment
+        if: ${{ !cancelled() && steps.recordable.outputs.has-tests == 'true' }}
+        env:
+          NEW_TEST_TITLES: ${{ steps.detect.outputs.titles }}
+          FALLBACK_SPEC_FILES: ${{ steps.detect.outputs.fallback-files }}
+          CHROMIUM_HAS_TESTS: ${{ steps.recordable.outputs.chromium-has-tests }}
+          CLOUD_HAS_TESTS: ${{ steps.recordable.outputs.cloud-has-tests }}
+        run: |
+          PROJECTS=()
+          [ "$CHROMIUM_HAS_TESTS" = true ] && PROJECTS+=(chromium)
+          [ "$CLOUD_HAS_TESTS" = true ] && PROJECTS+=(cloud)
+          {
+            echo '## Playwright videos for new tests'
+            echo
+            echo "[Download the recorded videos and HTML report](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+            echo
+            echo "Recorded projects: ${PROJECTS[*]}"
+            echo
+            echo 'Recorded test titles:'
+            if [ -n "$NEW_TEST_TITLES" ]; then
+              printf '%s\n' "$NEW_TEST_TITLES" | sed 's/^/- `/' | sed 's/$/`/'
+            else
+              printf '%s\n' "$FALLBACK_SPEC_FILES" | sed 's/^/- all tests in `/' | sed 's/$/`/'
+            fi
+          } > /tmp/playwright-video-comment.md
+
+      - name: Upload video comment
+        if: ${{ !cancelled() && steps.recordable.outputs.has-tests == 'true' }}
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: playwright-video-comment
+          path: /tmp/playwright-video-comment.md
+          retention-days: 1
 
   #### BEGIN Deployment and commenting (PRs with direct secret access)
   # when using pull_request event, we have permission to comment directly

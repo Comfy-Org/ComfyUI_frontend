@@ -117,7 +117,8 @@ function primitiveOptions(schema: Record<string, unknown>): FieldOption[] {
 function openStringVariant(
   schema: Record<string, unknown>
 ): Record<string, unknown> | undefined {
-  if (!Array.isArray(schema.anyOf)) return undefined
+  if (Array.isArray(schema.enum) || !Array.isArray(schema.anyOf))
+    return undefined
   return schema.anyOf.find(
     (variant): variant is Record<string, unknown> =>
       isRecord(variant) &&
@@ -258,7 +259,8 @@ function acceptFor(role: string): 'image' | 'video' | 'audio' | 'file' {
 
 export function deriveWorkshopFields(
   parameters: WorkshopModelEntry['parameters'],
-  roles: readonly MediaRole[]
+  roles: readonly MediaRole[],
+  omittedFields: readonly string[] = ['model', 'medias', 'dispatch_mode']
 ): WorkshopCatalogField[] {
   const properties = isRecord(parameters.properties)
     ? parameters.properties
@@ -267,12 +269,7 @@ export function deriveWorkshopFields(
     isStringArray(parameters.required) ? parameters.required : []
   )
   const fields = Object.entries(properties).flatMap(([name, schema]) => {
-    if (
-      name === 'model' ||
-      name === 'medias' ||
-      name === 'dispatch_mode' ||
-      !isRecord(schema)
-    ) {
+    if (omittedFields.includes(name) || !isRecord(schema)) {
       return []
     }
     return [fieldFor(name, schema, required.has(name))]

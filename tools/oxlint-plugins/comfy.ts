@@ -1,9 +1,13 @@
 import { createRequire } from 'node:module'
 
-import type { noComfyPageSetupCall as NoComfyPageSetupCall } from './comfyPageSetup'
+import type {
+  noComfyPageSetupCall as NoComfyPageSetupCall,
+  preferInitialSettings as PreferInitialSettings
+} from './comfyPageSetup'
 import type { noDuplicateIngestType as NoDuplicateIngestType } from './comfyIngestTypes'
 import type { useGlobalPinia as UseGlobalPinia } from './globalPinia'
 import type {
+  noImportActual as NoImportActual,
   noModuleScopeVitestMocks as NoModuleScopeVitestMocks,
   noPersistentLiteGraphRegistration as NoPersistentLiteGraphRegistration,
   noRedundantLiteGraphCleanup as NoRedundantLiteGraphCleanup,
@@ -12,8 +16,11 @@ import type {
 import type { noRenderInWatchEffect as NoRenderInWatchEffect } from './watchEffectRendering'
 
 const requireFrom = createRequire(import.meta.url)
-const { noComfyPageSetupCall } = requireFrom('./comfyPageSetup.ts') as {
+const { noComfyPageSetupCall, preferInitialSettings } = requireFrom(
+  './comfyPageSetup.ts'
+) as {
   noComfyPageSetupCall: typeof NoComfyPageSetupCall
+  preferInitialSettings: typeof PreferInitialSettings
 }
 const { noDuplicateIngestType } = requireFrom('./comfyIngestTypes.ts') as {
   noDuplicateIngestType: typeof NoDuplicateIngestType
@@ -22,11 +29,13 @@ const { useGlobalPinia } = requireFrom('./globalPinia.ts') as {
   useGlobalPinia: typeof UseGlobalPinia
 }
 const {
+  noImportActual,
   noModuleScopeVitestMocks,
   noPersistentLiteGraphRegistration,
   noRedundantLiteGraphCleanup,
   noRedundantVitestCleanup
 } = requireFrom('./vitestCleanup.ts') as {
+  noImportActual: typeof NoImportActual
   noModuleScopeVitestMocks: typeof NoModuleScopeVitestMocks
   noPersistentLiteGraphRegistration: typeof NoPersistentLiteGraphRegistration
   noRedundantLiteGraphCleanup: typeof NoRedundantLiteGraphCleanup
@@ -40,7 +49,9 @@ export default {
   meta: { name: 'comfy' },
   rules: {
     'no-comfy-page-setup-call': noComfyPageSetupCall,
+    'prefer-initial-settings': preferInitialSettings,
     'no-duplicate-ingest-type': noDuplicateIngestType,
+    'no-import-actual': noImportActual,
     'no-module-scope-vitest-mocks': noModuleScopeVitestMocks,
     'no-persistent-litegraph-registration': noPersistentLiteGraphRegistration,
     'no-render-in-watch-effect': noRenderInWatchEffect,

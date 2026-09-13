@@ -1,5 +1,6 @@
 import {
   existsSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
@@ -9,12 +10,15 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
+import type { Distribution } from '../devserver/distributions'
 import {
   cleanupRecordedCode,
   cleanupRecordingTemplate,
   generateRecordingTemplate,
   recordedCodePath,
-  recordingTarget
+  recordingTarget,
+  removeLegacyCustomStorageState,
+  storageStateKey
 } from './template'
 
 describe('recording template', () => {
@@ -273,6 +277,82 @@ describe('recording template', () => {
 
     it('uses the bare-page template for cloud and custom backends', () => {
       expect(recordingTarget({ needsLocalBackend: false })).toBe('cloud')
+    })
+  })
+
+  describe('storageStateKey', () => {
+    function custom(backendUrl?: string): Distribution {
+      return {
+        id: 'custom',
+        label: 'Custom backend',
+        hint: '',
+        script: 'dev',
+        needsLocalBackend: false,
+        backendUrl
+      }
+    }
+
+    it('keeps the fixed keys for built-in cloud distributions', () => {
+      expect(storageStateKey(undefined)).toBe('cloud')
+      for (const id of ['cloud', 'cloud-staging', 'cloud-prod']) {
+        expect(storageStateKey({ ...custom(), id })).toBe(id)
+      }
+    })
+
+    it('creates a stable, filesystem-safe key for each custom backend', () => {
+      const keyA = storageStateKey(custom('https://agent.comfy.org/'))
+      const keyB = storageStateKey(custom('https://other-env.comfy.org/'))
+      expect(keyA).toBe('custom-7bf9f2e4d13ea71f')
+      expect(keyA).toMatch(/^custom-[0-9a-f]{16}$/)
+      expect(keyB).toMatch(/^custom-[0-9a-f]{16}$/)
+      expect(keyA).not.toBe(keyB)
+      expect(storageStateKey(custom('https://agent.comfy.org/'))).toBe(keyA)
+      expect(storageStateKey(custom('http://[::1]:8100/'))).toMatch(
+        /^custom-[0-9a-f]{16}$/
+      )
+    })
+
+    it.for([
+      ['scheme', 'http://agent.comfy.org/', 'https://agent.comfy.org/'],
+      ['port', 'http://localhost:8100/', 'http://localhost:8200/'],
+      [
+        'path',
+        'https://gw.example.com/tenant-a/',
+        'https://gw.example.com/tenant-b/'
+      ]
+    ])('includes the custom backend %s', ([_part, a, b]) => {
+      expect(storageStateKey(custom(a))).not.toBe(storageStateKey(custom(b)))
+    })
+
+    it.for([undefined, 'not a url', 'localhost:8100', 'ftp://example.com/'])(
+      'routes invalid custom URL %s to the shared fallback bucket',
+      (backendUrl) => {
+        expect(storageStateKey(custom(backendUrl))).toBe('custom-unparsed')
+      }
+    )
+
+    it('removes the legacy shared custom-backend storage state', () => {
+      const legacyStateFile = join(browserTestsDir, 'storage-state.custom.json')
+      writeFileSync(legacyStateFile, '{"cookies":[]}')
+
+      removeLegacyCustomStorageState(
+        join(browserTestsDir, 'storage-state.custom-0123456789abcdef.json')
+      )
+
+      expect(existsSync(legacyStateFile)).toBe(false)
+    })
+
+    it('does not fail when the legacy storage state cannot be removed', () => {
+      const legacyStateFile = join(browserTestsDir, 'storage-state.custom.json')
+      mkdirSync(legacyStateFile)
+      writeFileSync(join(legacyStateFile, 'locked'), '')
+
+      expect(() =>
+        removeLegacyCustomStorageState(
+          join(browserTestsDir, 'storage-state.custom-0123456789abcdef.json')
+        )
+      ).not.toThrow()
+      expect(existsSync(legacyStateFile)).toBe(true)
     })
   })
 })

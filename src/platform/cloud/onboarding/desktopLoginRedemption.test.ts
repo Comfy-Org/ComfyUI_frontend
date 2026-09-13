@@ -1,4 +1,3 @@
-import type * as I18nModule from '@/i18n'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -26,15 +25,7 @@ const mockToastAdd = vi.hoisted(() => vi.fn())
 const mockUserGetIdToken = vi.hoisted(() => vi.fn())
 const mockStoreGetIdToken = vi.hoisted(() => vi.fn())
 
-vi.mock(import('firebase/auth'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  setPersistence: vi.fn().mockResolvedValue(undefined),
-  onAuthStateChanged: vi.fn(),
-  onIdTokenChanged: vi.fn()
-}))
-
-vi.mock(import('@/i18n'), async (importOriginal) => ({
-  ...(await importOriginal<typeof I18nModule>()),
+vi.mock<unknown>(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
@@ -677,3 +668,4 @@ describe('installDesktopLoginRedemption', () => {
     expect(mockFetch).toHaveBeenCalledTimes(1)
   })
 })
+vi.mock(import('firebase/auth'))

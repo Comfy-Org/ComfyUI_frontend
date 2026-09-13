@@ -2,6 +2,11 @@ import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore' // eslint-disable-line import-x/no-restricted-paths
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
+import {
+  onAuthStateChanged,
+  onIdTokenChanged,
+  setPersistence
+} from 'firebase/auth'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -31,6 +36,14 @@ import type { AppMode } from '@/utils/appMode'
 import { isValidUuid } from '@/utils/formatUtil'
 import { zeroUuid } from '@/utils/uuid'
 import { t } from '@/i18n'
+
+vi.mock(import('firebase/auth'), { spy: true })
+
+beforeEach(() => {
+  vi.mocked(setPersistence).mockResolvedValue(undefined)
+  vi.mocked(onAuthStateChanged).mockImplementation(vi.fn())
+  vi.mocked(onIdTokenChanged).mockImplementation(vi.fn())
+})
 
 function createModeTestWorkflow(
   options: {
@@ -1616,6 +1629,118 @@ describe('useWorkflowService', () => {
     })
   })
 
+  describe('insertWorkflow', () => {
+    it('inserts into the canvas with its requested position when nothing changes while loading', async () => {
+      const canvas = app.canvas
+      const priorGraph = canvas.graph
+      const priorDeserialize = canvas._deserializeItems
+      const originalGraph = {}
+      const deserialize = vi.fn()
+      Reflect.set(canvas, 'graph', originalGraph)
+      Reflect.set(canvas, '_deserializeItems', deserialize)
+      const workflow = {
+        load: vi.fn(async () => ({ initialState: { nodes: [], links: [] } }))
+      } as unknown as ComfyWorkflow
+
+      try {
+        const options = { position: [120, 240] as [number, number] }
+        await useWorkflowService().insertWorkflow(workflow, options)
+
+        expect(deserialize).toHaveBeenCalledOnce()
+        expect(deserialize).toHaveBeenCalledWith(
+          expect.objectContaining({ nodes: [], links: [] }),
+          options
+        )
+      } finally {
+        Reflect.set(canvas, 'graph', priorGraph)
+        Reflect.set(canvas, '_deserializeItems', priorDeserialize)
+      }
+    })
+
+    it('does not insert after the canvas itself is replaced while loading', async () => {
+      const originalCanvas = app.canvas
+      const priorGraph = originalCanvas.graph
+      const priorDeserialize = originalCanvas._deserializeItems
+      const originalGraph = {}
+      const deserialize = vi.fn()
+      Reflect.set(originalCanvas, 'graph', originalGraph)
+      Reflect.set(originalCanvas, '_deserializeItems', deserialize)
+      let finishLoad: (value: unknown) => void = () => {}
+      const workflow = {
+        load: vi.fn(
+          () =>
+            new Promise((resolve) => {
+              finishLoad = resolve
+            })
+        )
+      } as unknown as ComfyWorkflow
+
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      try {
+        const pending = useWorkflowService().insertWorkflow(workflow)
+        Reflect.set(app, 'canvas', {
+          graph: originalGraph,
+          _deserializeItems: vi.fn()
+        })
+        finishLoad({ initialState: { nodes: [], links: [] } })
+        await pending
+
+        expect(deserialize).not.toHaveBeenCalled()
+        expect(app.canvas._deserializeItems).not.toHaveBeenCalled()
+        expect(warnSpy).toHaveBeenCalledWith(
+          expect.stringContaining(
+            'insertWorkflow aborted: canvas or graph was replaced'
+          )
+        )
+      } finally {
+        warnSpy.mockRestore()
+        Reflect.set(app, 'canvas', originalCanvas)
+        Reflect.set(originalCanvas, 'graph', priorGraph)
+        Reflect.set(originalCanvas, '_deserializeItems', priorDeserialize)
+      }
+    })
+
+    it('does not insert after the canvas graph changes while loading', async () => {
+      const canvas = app.canvas
+      const priorGraph = canvas.graph
+      const priorDeserialize = canvas._deserializeItems
+      const originalGraph = {}
+      const deserialize = vi.fn()
+      Reflect.set(canvas, 'graph', originalGraph)
+      Reflect.set(canvas, '_deserializeItems', deserialize)
+      let finishLoad: (value: unknown) => void = () => {}
+      const workflow = {
+        load: vi.fn(
+          () =>
+            new Promise((resolve) => {
+              finishLoad = resolve
+            })
+        )
+      } as unknown as ComfyWorkflow
+
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      try {
+        const pending = useWorkflowService().insertWorkflow(workflow)
+        Reflect.set(canvas, 'graph', {})
+        finishLoad({ initialState: { nodes: [], links: [] } })
+        await pending
+
+        expect(deserialize).not.toHaveBeenCalled()
+        expect(warnSpy).toHaveBeenCalledWith(
+          expect.stringContaining(
+            'insertWorkflow aborted: canvas or graph was replaced'
+          )
+        )
+      } finally {
+        warnSpy.mockRestore()
+        Reflect.set(canvas, 'graph', priorGraph)
+        Reflect.set(canvas, '_deserializeItems', priorDeserialize)
+      }
+    })
+  })
+
   describe('saveWorkflow', () => {
     let workflowStore: ReturnType<typeof useWorkflowStore>
 
@@ -2720,10 +2845,3 @@ vi.mock(import('@vueuse/router'), async () => {
   const { ref } = await import('vue')
   return { useRouteHash: () => ref('') }
 })
-
-vi.mock(import('firebase/auth'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  setPersistence: vi.fn().mockResolvedValue(undefined),
-  onAuthStateChanged: vi.fn(() => vi.fn()),
-  onIdTokenChanged: vi.fn(() => vi.fn())
-}))

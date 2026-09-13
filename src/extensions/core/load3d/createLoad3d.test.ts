@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import * as THREE from 'three'
 
 import { DEFAULT_MODEL_CAPABILITIES } from './ModelAdapter'
 import type { ModelAdapter, ModelAdapterCapabilities } from './ModelAdapter'
@@ -8,28 +9,27 @@ const { rendererCtor } = vi.hoisted(() => ({
   rendererCtor: vi.fn()
 }))
 
-vi.mock('three', async () => {
-  const actual = await vi.importActual<typeof import('three')>('three')
-  return {
-    ...actual,
-    WebGLRenderer: class {
-      domElement = document.createElement('canvas')
-      autoClear = false
-      outputColorSpace = ''
-      constructor(opts: unknown) {
-        rendererCtor(opts)
-      }
-      setSize() {}
-      setPixelRatio() {}
-      setClearColor() {}
+vi.mock('three', { spy: true })
+
+beforeEach(() => {
+  function MockWebGLRenderer(opts: unknown) {
+    rendererCtor(opts)
+    return {
+      domElement: document.createElement('canvas'),
+      autoClear: false,
+      outputColorSpace: '',
+      setSize() {},
+      setPixelRatio() {},
+      setClearColor() {},
       getSize(target: { set(x: number, y: number): unknown }) {
         target.set(300, 300)
         return target
-      }
-      forceContextLoss() {}
+      },
+      forceContextLoss() {},
       dispose() {}
     }
   }
+  vi.spyOn(THREE, 'WebGLRenderer').mockImplementation(MockWebGLRenderer)
 })
 
 vi.mock('./SceneManager', () => ({

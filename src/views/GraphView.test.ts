@@ -2,11 +2,9 @@ import { render, screen } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import type * as VueUseCore from '@vueuse/core'
 import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
 import type * as DistributionTypes from '@/platform/distribution/types'
-import type * as I18nModule from '@/i18n'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
@@ -51,12 +49,27 @@ const distribution = vi.hoisted(
 )
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({ api: apiMock }))
-vi.mock(import('firebase/auth'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  setPersistence: vi.fn(async () => {}),
-  onAuthStateChanged: vi.fn(() => () => {}),
-  onIdTokenChanged: vi.fn(() => () => {})
-}))
+vi.mock<unknown>(import('firebase/auth'), () => {
+  class AuthProvider {
+    addScope() {}
+    setCustomParameters() {}
+  }
+
+  return {
+    AuthErrorCodes: {
+      POPUP_CLOSED_BY_USER: 'auth/popup-closed-by-user',
+      EXPIRED_POPUP_REQUEST: 'auth/cancelled-popup-request',
+      POPUP_BLOCKED: 'auth/popup-blocked',
+      CREDENTIAL_TOO_OLD_LOGIN_AGAIN: 'auth/requires-recent-login'
+    },
+    GoogleAuthProvider: AuthProvider,
+    GithubAuthProvider: AuthProvider,
+    browserLocalPersistence: {},
+    setPersistence: vi.fn(async () => {}),
+    onAuthStateChanged: vi.fn(() => () => {}),
+    onIdTokenChanged: vi.fn(() => () => {})
+  }
+})
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
@@ -81,11 +94,6 @@ vi.mock(import('@/composables/useReconnectingNotification'), () => {
   }
 })
 
-vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => {
-  const actual = await importOriginal<typeof VueUseCore>()
-  return { ...actual, useIntervalFn: vi.fn(() => ({ pause: vi.fn() })) }
-})
-
 vi.mock(import('@/base/common/async'), () => ({ runWhenGlobalIdle: vi.fn() }))
 vi.mock(import('@/composables/useBrowserTabTitle'), () => ({
   useBrowserTabTitle: vi.fn()
@@ -105,10 +113,6 @@ vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
 vi.mock(import('@/composables/useProgressFavicon'), () => ({
   useProgressFavicon: vi.fn()
 }))
-vi.mock(import('@/i18n'), async (importOriginal) => {
-  const actual = await importOriginal<typeof I18nModule>()
-  return { ...actual, loadLocale: vi.fn().mockResolvedValue(undefined) }
-})
 vi.mock(import('@/platform/distribution/types'), () => distribution)
 
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
