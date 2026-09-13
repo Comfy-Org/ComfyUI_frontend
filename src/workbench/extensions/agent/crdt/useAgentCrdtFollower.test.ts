@@ -278,6 +278,41 @@ describe('useAgentCrdtFollower', () => {
     })
   })
 
+  it('FE-2158: one follower retargets across a tab switch and releases on unmount', async () => {
+    // AgentPanelRoot.vue creates a SINGLE follower and drives it with the
+    // reactive boundWorkflowId / isBoundWorkflowActive. Exercising the switch
+    // as two mounted followers would leave a broken direct A-to-B retarget
+    // green, because no one follower would ever change workflow.
+    const { unmount, workflowId, isTargetActive, status } =
+      mountFollower('wf-a')
+    expect(bridge().subscribe).toHaveBeenLastCalledWith('wf-a')
+
+    isTargetActive.value = false
+    await nextTick()
+
+    workflowId.value = 'wf-b'
+    isTargetActive.value = true
+    await nextTick()
+    expect(bridge().subscribe).toHaveBeenLastCalledWith('wf-b')
+
+    // A frame for the workflow this follower just left must be counted and
+    // dropped, never applied to the newly bound graph.
+    dispatchFrame('doc_update', { workflowId: 'wf-a', seq: 99 })
+    expect(status().outcomes.applied).toBe(0)
+    expect(status().outcomes.skipped).toBeGreaterThan(0)
+    expect(adapterState.applyFrame).not.toHaveBeenCalled()
+
+    // Control: the retarget really did bind B, so the filter above
+    // discriminated on workflow id rather than having gone silent.
+    dispatchFrame('doc_update', { workflowId: 'wf-b', seq: 1 })
+    expect(status().outcomes.applied).toBe(1)
+    expect(adapterState.applyFrame).toHaveBeenCalledTimes(1)
+
+    unmount()
+    await nextTick()
+    expect(bridge().unsubscribe).toHaveBeenCalled()
+  })
+
   it('FE-1902: persists a binding only once the server confirms it', () => {
     const { unmount } = mountFollower('wf-1')
     expect(persistedRecord()).toBeNull()
