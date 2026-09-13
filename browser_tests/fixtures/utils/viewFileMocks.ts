@@ -4,7 +4,7 @@ type RouteFulfillOptions = NonNullable<Parameters<Route['fulfill']>[0]>
 
 type ViewFile = Pick<RouteFulfillOptions, 'body' | 'contentType' | 'path'>
 
-const transparentPng = Buffer.from(
+export const transparentPng = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAFgwJ/lwPIRwAAAABJRU5ErkJggg==',
   'base64'
 )

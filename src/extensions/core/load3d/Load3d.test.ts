@@ -5,7 +5,8 @@ import type { Load3dDeps } from '@/extensions/core/load3d/Load3d'
 import Load3d from '@/extensions/core/load3d/Load3d'
 import type {
   CameraState,
-  GizmoMode
+  GizmoMode,
+  LoadModelOutcome
 } from '@/extensions/core/load3d/interfaces'
 import type { PointerNdcSource } from '@/extensions/core/load3d/load3dViewport'
 
@@ -954,7 +955,9 @@ describe('Load3d', () => {
       }))
       const setCameraState = vi.fn()
       const getCurrentCameraType = vi.fn(() => 'perspective' as const)
-      const loaderLoadModel = vi.fn().mockResolvedValue(undefined)
+      const loaderLoadModel = vi.fn<() => Promise<LoadModelOutcome>>(
+        async () => 'loaded'
+      )
       Object.assign(ctx.load3d, {
         cameraManager: {
           ...ctx.cameraManager,
