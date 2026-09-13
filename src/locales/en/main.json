@@ -3496,8 +3496,8 @@
       "layoutSwitcherAriaLabel": "Layout switcher",
       "layoutList": "List view",
       "layoutGrid": "Grid view",
-      "playAudioPreview": "Play audio preview",
-      "pauseAudioPreview": "Pause audio preview"
+      "playAudioPreview": "Play audio preview for {item}",
+      "pauseAudioPreview": "Pause audio preview for {item}"
     },
     "valueControl": {
       "header": {

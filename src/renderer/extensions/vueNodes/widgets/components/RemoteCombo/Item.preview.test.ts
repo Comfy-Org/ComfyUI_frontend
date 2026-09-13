@@ -17,8 +17,8 @@ const i18n = createI18n({
     en: {
       widgets: {
         remoteCombo: {
-          playAudioPreview: 'Play audio preview',
-          pauseAudioPreview: 'Pause audio preview'
+          playAudioPreview: 'Play audio preview for {item}',
+          pauseAudioPreview: 'Pause audio preview for {item}'
         }
       }
     }
@@ -82,7 +82,7 @@ describe('RemoteCombo.Item preview rendering', () => {
       'audio'
     )
     expect(
-      screen.getByRole('button', { name: /play audio preview/i })
+      screen.getByRole('button', { name: 'Play audio preview for Voice' })
     ).toBeInTheDocument()
   })
 

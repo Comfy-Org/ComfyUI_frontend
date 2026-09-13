@@ -172,8 +172,12 @@ function handleVideoLoad(event: Event) {
         type="button"
         :aria-label="
           isPlayingAudio
-            ? t('widgets.remoteCombo.pauseAudioPreview')
-            : t('widgets.remoteCombo.playAudioPreview')
+            ? t('widgets.remoteCombo.pauseAudioPreview', {
+                item: label || name
+              })
+            : t('widgets.remoteCombo.playAudioPreview', {
+                item: label || name
+              })
         "
         :aria-pressed="isPlayingAudio"
         class="flex size-full cursor-pointer items-center justify-center bg-component-node-widget-background hover:bg-component-node-widget-background-hovered"

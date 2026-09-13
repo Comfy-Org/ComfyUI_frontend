@@ -84,8 +84,8 @@ function handleAudioEnded() {
           class="focus-visible:ring-ring flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary-background-hover text-base-foreground hover:bg-secondary-background-selected focus-visible:ring-1 focus-visible:outline-none"
           :aria-label="
             isPlaying
-              ? t('widgets.remoteCombo.pauseAudioPreview')
-              : t('widgets.remoteCombo.playAudioPreview')
+              ? t('widgets.remoteCombo.pauseAudioPreview', { item: label })
+              : t('widgets.remoteCombo.playAudioPreview', { item: label })
           "
           :aria-pressed="isPlaying"
           @click.stop="toggleAudio"
