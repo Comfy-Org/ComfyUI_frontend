@@ -6216,6 +6216,40 @@
       }
     }
   },
+  "FluxVideoEditNode": {
+    "description": "依據文字指示編輯 clip：移除、新增或替換物件、變更場景、重新設定影片風格、變更畫面文字，或替換口語對白。長度、取景、鏡頭運動與音訊皆來自來源 clip。",
+    "display_name": "Flux 影片編輯",
+    "inputs": {
+      "auto_downscale": {
+        "name": "自動縮小",
+        "tooltip": "上傳前自動縮小像素面積大於 1280x704 的來源影片。會保留長寬比；較小的影片不會變更。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "以自然語言描述要變更的內容，最多 4096 個字元。未提及的內容會維持原樣。替換的對白必須符合原始語音所佔的時間，且靜音 clip 會維持靜音。"
+      },
+      "safety_tolerance": {
+        "name": "安全容忍度",
+        "tooltip": "內容審核容忍度，0 最嚴格。"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "用於判斷節點是否應重新執行的種子；FLUX 會自行選擇種子，因此實際結果不受此值影響且不具決定性。"
+      },
+      "video": {
+        "name": "影片",
+        "tooltip": "來源 clip 長度須為 0.7 至 15 秒，且至少為 160x160 像素。輸出會以 24 fps 算繪，每個影格上限約為 0.9 百萬像素，因此較大的來源會以較小尺寸傳回。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "FluxVideoUpscaleNode": {
     "description": "使用 FLUX 超解析度將影片放大 1.5 至 3 倍，可精確保留來源內容或創意強化細節。",
     "display_name": "Flux 影片放大",
