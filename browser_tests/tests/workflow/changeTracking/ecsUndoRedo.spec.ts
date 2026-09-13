@@ -9,12 +9,9 @@ test.describe(
   () => {
     test.use({
       initialSettings: {
+        'Comfy.UseNewMenu': 'Top',
         'Comfy.Workflow.WorkflowTabsPosition': 'Topbar'
       }
-    })
-
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     })
 
     test.afterEach(async ({ comfyPage }) => {
@@ -124,10 +121,17 @@ test.describe(
         const initialPosition = await node.getBounding()
         const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
 
-        await comfyMouse.dragElementBy(ksampler.title, { x: 100, y: 50 })
-        await expect.poll(() => node.getBounding()).not.toEqual(initialPosition)
-        await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(1)
-        const movedPosition = await node.getBounding()
+        const movedPosition =
+          await test.step('Move the KSampler node', async () => {
+            await comfyMouse.dragElementBy(ksampler.title, { x: 100, y: 50 })
+            await expect
+              .poll(() => node.getBounding())
+              .not.toEqual(initialPosition)
+            await expect
+              .poll(() => comfyPage.workflow.getUndoQueueSize())
+              .toBe(1)
+            return node.getBounding()
+          })
 
         const stepsWidget = comfyPage.vueNodes.getWidgetByName(
           'KSampler',
@@ -135,18 +139,28 @@ test.describe(
         )
         const { input } = comfyPage.vueNodes.getInputNumberControls(stepsWidget)
         const initialSteps = await input.inputValue()
-        await comfyPage.vueNodes.editAndCommitNumber('KSampler', 'steps', '31')
-        await expect
-          .poll(async () => (await node.getWidget(2)).getValue())
-          .toBe(31)
-        await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(2)
+
+        await test.step('Change the KSampler steps value', async () => {
+          await comfyPage.vueNodes.editAndCommitNumber(
+            'KSampler',
+            'steps',
+            '31'
+          )
+          await expect
+            .poll(async () => (await node.getWidget(2)).getValue())
+            .toBe(31)
+          await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(2)
+        })
 
         const initialNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
-        await comfyPage.searchBoxV2.addNode('Note')
-        await expect
-          .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-          .toBe(initialNodeCount + 1)
-        await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(3)
+
+        await test.step('Add a Note node', async () => {
+          await comfyPage.searchBoxV2.addNode('Note')
+          await expect
+            .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+            .toBe(initialNodeCount + 1)
+          await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(3)
+        })
 
         const expectState = async (
           position: typeof initialPosition,
@@ -160,20 +174,28 @@ test.describe(
             .toBe(nodeCount)
         }
 
-        await test.step('Undo each mixed edit in order', async () => {
+        await test.step('Undo removes only the Note node', async () => {
           await comfyPage.keyboard.undo()
           await expectState(movedPosition, '31', initialNodeCount)
+        })
+        await test.step('Undo restores only the steps value', async () => {
           await comfyPage.keyboard.undo()
           await expectState(movedPosition, initialSteps, initialNodeCount)
+        })
+        await test.step('Undo restores only the node position', async () => {
           await comfyPage.keyboard.undo()
           await expectState(initialPosition, initialSteps, initialNodeCount)
         })
 
-        await test.step('Redo each mixed edit in order', async () => {
+        await test.step('Redo reapplies only the node move', async () => {
           await comfyPage.keyboard.redo()
           await expectState(movedPosition, initialSteps, initialNodeCount)
+        })
+        await test.step('Redo reapplies only the steps value', async () => {
           await comfyPage.keyboard.redo()
           await expectState(movedPosition, '31', initialNodeCount)
+        })
+        await test.step('Redo restores only the Note node', async () => {
           await comfyPage.keyboard.redo()
           await expectState(movedPosition, '31', initialNodeCount + 1)
         })
@@ -183,6 +205,7 @@ test.describe(
     test.describe('compound graph history', () => {
       test.use({
         initialSettings: {
+          'Comfy.UseNewMenu': 'Top',
           'Comfy.Workflow.WorkflowTabsPosition': 'Topbar',
           'Comfy.LinkRelease.Action': 'no action'
         }
@@ -386,15 +409,19 @@ test.describe(
       const node = await comfyPage.nodeOps.getNodeRefById('3')
       const initialPosition = await node.getProperty<[number, number]>('pos')
 
-      await node.dragBy({ x: 100, y: 50 })
-      await expect
-        .poll(() => node.getProperty<[number, number]>('pos'))
-        .not.toEqual(initialPosition)
-      await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(1)
+      await test.step('Move a node in Tab A', async () => {
+        await node.dragBy({ x: 100, y: 50 })
+        await expect
+          .poll(() => node.getProperty<[number, number]>('pos'))
+          .not.toEqual(initialPosition)
+        await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(1)
+      })
 
       const tabsBeforeNew = await comfyPage.menu.topbar.getTabNames()
-      await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+      await test.step('Open a fresh Tab B', async () => {
+        await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
+        await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+      })
       const tabsAfterNew = await comfyPage.menu.topbar.getTabNames()
       const newTabs = tabsAfterNew.filter(
         (name) => !tabsBeforeNew.includes(name)
