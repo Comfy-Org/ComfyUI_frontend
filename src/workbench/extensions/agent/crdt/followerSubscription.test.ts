@@ -1187,6 +1187,51 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
     error.mockRestore()
   })
 
+  it('clears the read gate when a newer update implies the lineage reset', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { transport, bridge, projected } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+
+    const incompatibleUpdate = hostDocUpdate((doc) =>
+      doc.getMap('meta').set('schema_version', SCHEMA_VERSION + 1)
+    )
+    transport.deliver('doc_update', docUpdateFrame(incompatibleUpdate))
+    const incompatibleFollower = bridge.follower
+
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 2, 2)
+    )
+
+    expect(bridge.follower).not.toBe(incompatibleFollower)
+    expect(bridge.lastSchemaError).toBeNull()
+    const subscribes = transport.framesOfType('doc_subscribe') as {
+      data: { state_vector_b64: string }
+    }[]
+    expect(subscribes).toHaveLength(2)
+    expect(subscribes[1].data.state_vector_b64).toBe(
+      encodeBase64(Y.encodeStateVector(new Y.Doc()))
+    )
+
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 2,
+      lineage_seq: 2
+    })
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 2, 2)
+    )
+
+    expect(bridge.follower.updatesApplied).toBe(1)
+    expect(projected).toEqual([expect.objectContaining({ seq: 2 })])
+    expect(bridge.lastSchemaError).toBeNull()
+    error.mockRestore()
+  })
+
   it('refuses a doc that declares no schema_version at all', () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { transport, bridge, projected, schemaErrors } = wire()
