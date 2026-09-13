@@ -6,11 +6,12 @@ import { i18n } from '@/i18n'
 
 import AgentPaywallCard from './AgentPaywallCard.vue'
 
-describe('AgentPaywallCard', () => {
-  it('offers Upgrade plan and Add credits for a subscribed owner', async () => {
+describe('AgentPaywallCard visual contract', () => {
+  it('makes Add credits primary for a subscribed owner', async () => {
     const user = userEvent.setup()
     const onPaywallAction = vi.fn()
     render(AgentPaywallCard, {
+      props: { presentation: { kind: 'subscribed', showUpgrade: true } },
       attrs: {
         'aria-label': 'Out of credits card',
         onPaywallAction
@@ -18,7 +19,9 @@ describe('AgentPaywallCard', () => {
       global: { plugins: [i18n] }
     })
 
-    expect(screen.getByLabelText('Out of credits card')).toBeInTheDocument()
+    const card = screen.getByLabelText('Out of credits card')
+    expect(card).toHaveClass('w-full')
+    expect(card).not.toHaveClass('max-w-[372px]')
     expect(screen.getByText('Out of credits')).toBeInTheDocument()
     expect(
       screen.getByText(
@@ -26,13 +29,30 @@ describe('AgentPaywallCard', () => {
       )
     ).toBeInTheDocument()
 
-    const [upgrade, addCredits] = screen.getAllByRole('button')
+    const upgrade = screen.getByRole('button', { name: 'Upgrade plan' })
+    const addCredits = screen.getByRole('button', { name: 'Add credits' })
     expect(upgrade).toHaveAccessibleName('Upgrade plan')
+    expect(upgrade).toHaveClass(
+      'text-secondary-foreground',
+      'bg-secondary-background'
+    )
     expect(addCredits).toHaveAccessibleName('Add credits')
+    expect(addCredits).toHaveClass('bg-base-foreground', 'text-base-background')
 
     await user.click(upgrade)
     await user.click(addCredits)
     expect(onPaywallAction.mock.calls).toEqual([['upgrade'], ['addCredits']])
+  })
+
+  it('announces the server denial without purchase actions when capabilities are unknown', () => {
+    render(AgentPaywallCard, {
+      props: { message: 'Your workspace spend limit was reached.' },
+      global: { plugins: [i18n] }
+    })
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Your workspace spend limit was reached.'
+    )
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 
   it.for([

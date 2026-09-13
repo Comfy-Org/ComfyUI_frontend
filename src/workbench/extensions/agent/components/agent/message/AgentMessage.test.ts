@@ -36,7 +36,10 @@ function paywallMessage(): AssistantMessage {
 describe('AgentMessage paywall reply', () => {
   it('renders the usage-limit card as an inline assistant reply', () => {
     render(AgentMessage, {
-      props: { message: paywallMessage() },
+      props: {
+        message: paywallMessage(),
+        paywallPresentation: { kind: 'subscribed', showUpgrade: true }
+      },
       global: { plugins: [i18n] }
     })
 
@@ -58,7 +61,10 @@ describe('AgentMessage paywall reply', () => {
     const user = userEvent.setup()
     const onPaywallAction = vi.fn()
     render(AgentMessage, {
-      props: { message: paywallMessage() },
+      props: {
+        message: paywallMessage(),
+        paywallPresentation: { kind: 'subscribed', showUpgrade: true }
+      },
       attrs: { onPaywallAction },
       global: { plugins: [i18n] }
     })
