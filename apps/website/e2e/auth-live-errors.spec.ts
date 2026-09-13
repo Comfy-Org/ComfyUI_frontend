@@ -1,3 +1,4 @@
+import { authErrorMessage } from '@comfyorg/account/firebaseAuthError'
 import { expect } from '@playwright/test'
 import type { Page, Route } from '@playwright/test'
 
@@ -148,7 +149,10 @@ test.describe('Live sign-up error codes and password checklist', () => {
 
     await expect(
       page.getByText(
-        "We couldn't create an account with this email. If you already have one, try signing in or resetting your password."
+        authErrorMessage(
+          { kind: 'auth', code: 'auth/email-already-in-use' },
+          'en'
+        )
       )
     ).toBeVisible()
     await expect(page).toHaveURL(/\/signup\//)
