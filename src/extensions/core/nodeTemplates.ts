@@ -140,7 +140,7 @@ class ManageTemplates extends ComfyDialog {
     } catch (error) {
       this.loadState = { status: 'error' }
       reportError(error, {
-        errorType: 'error_loading_node_templates',
+        errorType: 'failure_loading_node_templates',
         tags: {
           failure_kind: 'caught_unexpected',
           feature_area: 'extensions',
