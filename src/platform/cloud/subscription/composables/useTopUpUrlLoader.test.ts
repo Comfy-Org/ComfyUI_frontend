@@ -123,6 +123,7 @@ describe('useTopUpUrlLoader', () => {
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()
 
+    expect(mockShowTopUpCreditsDialog).toHaveBeenCalledOnce()
     expect(mockTrackAddApiCreditButtonClicked).not.toHaveBeenCalled()
     expect(mockRouterReplace).toHaveBeenCalledWith({
       query: { other: 'param' }
