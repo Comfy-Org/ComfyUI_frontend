@@ -74,6 +74,7 @@ minimaxTest.describe(
     minimaxTest(
       'keeps widget links after a reference input grows',
       async ({ agentConversation, page }) => {
+        await agentConversation.runTurns()
         await agentConversation.applyGraphOps([
           {
             op: 'add_node',
