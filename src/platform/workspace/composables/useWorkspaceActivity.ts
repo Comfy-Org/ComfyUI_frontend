@@ -15,7 +15,7 @@ export interface ActivityEvent {
   credited?: boolean
 }
 
-export interface UserSummary {
+interface UserSummary {
   totalCredits: number
   lastActivity: Date
 }
