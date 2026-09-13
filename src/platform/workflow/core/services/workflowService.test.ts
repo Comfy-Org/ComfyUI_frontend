@@ -1625,9 +1625,7 @@ describe('useWorkflowService', () => {
       const deserialize = vi.fn()
       Reflect.set(canvas, 'graph', originalGraph)
       Reflect.set(canvas, '_deserializeItems', deserialize)
-      const workflow = {
-        load: vi.fn(async () => ({ initialState: { nodes: [], links: [] } }))
-      } as unknown as ComfyWorkflow
+      const workflow = createModeTestWorkflow()
 
       try {
         const options = { position: [120, 240] as [number, number] }
@@ -1652,15 +1650,14 @@ describe('useWorkflowService', () => {
       const deserialize = vi.fn()
       Reflect.set(originalCanvas, 'graph', originalGraph)
       Reflect.set(originalCanvas, '_deserializeItems', deserialize)
-      let finishLoad: (value: unknown) => void = () => {}
-      const workflow = {
-        load: vi.fn(
-          () =>
-            new Promise((resolve) => {
-              finishLoad = resolve
-            })
-        )
-      } as unknown as ComfyWorkflow
+      const workflow = createModeTestWorkflow()
+      let finishLoad: (value: LoadedComfyWorkflow) => void = () => {}
+      vi.spyOn(workflow, 'load').mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            finishLoad = resolve
+          })
+      )
 
       reportErrorMock.mockClear()
 
@@ -1670,7 +1667,7 @@ describe('useWorkflowService', () => {
           graph: originalGraph,
           _deserializeItems: vi.fn()
         })
-        finishLoad({ initialState: { nodes: [], links: [] } })
+        finishLoad(workflow)
         await pending
 
         expect(deserialize).not.toHaveBeenCalled()
@@ -1703,22 +1700,21 @@ describe('useWorkflowService', () => {
       const deserialize = vi.fn()
       Reflect.set(canvas, 'graph', originalGraph)
       Reflect.set(canvas, '_deserializeItems', deserialize)
-      let finishLoad: (value: unknown) => void = () => {}
-      const workflow = {
-        load: vi.fn(
-          () =>
-            new Promise((resolve) => {
-              finishLoad = resolve
-            })
-        )
-      } as unknown as ComfyWorkflow
+      const workflow = createModeTestWorkflow()
+      let finishLoad: (value: LoadedComfyWorkflow) => void = () => {}
+      vi.spyOn(workflow, 'load').mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            finishLoad = resolve
+          })
+      )
 
       reportErrorMock.mockClear()
 
       try {
         const pending = useWorkflowService().insertWorkflow(workflow)
         Reflect.set(canvas, 'graph', {})
-        finishLoad({ initialState: { nodes: [], links: [] } })
+        finishLoad(workflow)
         await pending
 
         expect(deserialize).not.toHaveBeenCalled()
