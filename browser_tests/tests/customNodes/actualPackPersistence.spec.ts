@@ -60,6 +60,142 @@ test.describe(
       { name: 'legacy', tags: [] },
       { name: 'Vue', tags: ['@vue-nodes'] }
     ]) {
+      if (renderer.name === 'Vue')
+        test(
+          `PromptChain visible reorder and saved connections survive reload (${renderer.name} renderer)`,
+          { tag: renderer.tags },
+          async ({ comfyPage, packPersistence, savedWorkflows }) => {
+            test.slow()
+            await comfyPage.settings.setSetting(
+              'Comfy.VueNodes.Enabled',
+              renderer.name === 'Vue'
+            )
+            await comfyPage.workflow.setupWorkflowsDirectory({})
+            await comfyPage.workflow.reloadAndWaitForApp()
+            await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
+            await comfyPage.workflow.waitForWorkflowIdle()
+            await comfyPage.nodeOps.clearGraph()
+
+            const workflowName = `actual-promptchain-${renderer.name.toLowerCase()}-${crypto.randomUUID()}`
+            savedWorkflows.track(workflowName)
+            const ids = await comfyPage.page.evaluate(() => {
+              const graph = window.app!.graph
+              const makeNode = (title: string) => {
+                const node = window.LiteGraph!.createNode(
+                  'PromptChain_PromptChain'
+                )!
+                node.title = title
+                graph.add(node)
+                return node
+              }
+              const root = makeNode('Chain Root')
+              const children = [
+                makeNode('Chain Alpha'),
+                makeNode('Chain Beta'),
+                makeNode('Chain Gamma')
+              ]
+              for (const child of children) {
+                const targetSlot = root.inputs.findIndex(
+                  (input) => input.name.includes('in_') && input.link == null
+                )
+                child.connect(0, root, targetSlot)
+              }
+              return {
+                root: String(root.id),
+                children: children.map((node) => String(node.id))
+              }
+            })
+
+            const inputLinks = () => packPersistence.projectInputLinks(ids.root)
+            const expectedSources = [...ids.children].sort()
+            await expect
+              .poll(async () =>
+                (await inputLinks()).map(([source]) => source).sort()
+              )
+              .toEqual(expectedSources)
+
+            const onboardingSkip = comfyPage.page.getByText('Skip', {
+              exact: true
+            })
+            if (await onboardingSkip.isVisible()) await onboardingSkip.click()
+            const rootNode = comfyPage.page.locator(
+              `[data-node-id="${ids.root}"]`
+            )
+            await rootNode.getByTitle('Fullscreen editor').click()
+            const tree = comfyPage.page.locator('.pcr-nettree-items')
+            const visibleOrder = () =>
+              tree.locator('.pcr-nettree-name').allTextContents()
+            await expect
+              .poll(visibleOrder)
+              .toEqual([
+                'Chain Root',
+                'Chain Alpha',
+                'Chain Beta',
+                'Chain Gamma'
+              ])
+
+            const alpha = tree
+              .locator('.pcr-nettree-row')
+              .filter({ hasText: 'Chain Alpha' })
+            const gamma = tree
+              .locator('.pcr-nettree-row')
+              .filter({ hasText: 'Chain Gamma' })
+            await alpha.dragTo(gamma, { targetPosition: { x: 40, y: 24 } })
+            await expect
+              .poll(visibleOrder)
+              .toEqual([
+                'Chain Root',
+                'Chain Beta',
+                'Chain Gamma',
+                'Chain Alpha'
+              ])
+            await expect
+              .poll(async () =>
+                (await inputLinks()).map(([source]) => source).sort()
+              )
+              .toEqual(expectedSources)
+            await comfyPage.page.getByTitle('Close (Escape)').click()
+
+            await comfyPage.menu.topbar.saveWorkflow(workflowName)
+            await comfyPage.workflow.reloadAndWaitForApp()
+            await openWorkflowFromSidebar(comfyPage, workflowName)
+
+            await expect
+              .poll(async () => (await inputLinks()).map(([source]) => source))
+              .toEqual([ids.children[1], ids.children[2], ids.children[0]])
+            await expect
+              .poll(() =>
+                comfyPage.page.evaluate(
+                  (nodeIds) => {
+                    return nodeIds.map((nodeId) => {
+                      const node = window.app!.graph.nodes.find(
+                        (candidate) => String(candidate.id) === nodeId
+                      )!
+                      return {
+                        title: node.title,
+                        type: node.type,
+                        widgets: node.widgets!.map((widget) => widget.name)
+                      }
+                    })
+                  },
+                  [ids.root, ...ids.children]
+                )
+              )
+              .toEqual([
+                expect.objectContaining({
+                  type: 'PromptChain_PromptChain',
+                  widgets: expect.arrayContaining(['prompt', 'mode'])
+                }),
+                ...ids.children.map(() =>
+                  expect.objectContaining({
+                    type: 'PromptChain_PromptChain',
+                    widgets: expect.arrayContaining(['prompt', 'mode'])
+                  })
+                )
+              ])
+          }
+        )
+
       test(
         `VHS uploads and combines a real video with format controls (${renderer.name} renderer)`,
         { tag: renderer.tags },
