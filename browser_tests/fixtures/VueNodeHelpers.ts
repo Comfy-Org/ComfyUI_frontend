@@ -5,7 +5,6 @@ import type { Locator, Page } from '@playwright/test'
 
 import { TestIds } from '@e2e/fixtures/selectors'
 import { comfyExpect as expect } from '@e2e/fixtures/utils/customMatchers'
-import { nextFrame } from '@e2e/fixtures/utils/timing'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { toNodeId } from '@/types/nodeId'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
@@ -292,7 +291,6 @@ export class VueNodeHelpers {
     const widget = node.getByLabel(widgetName, { exact: true })
     const { input } = this.getInputNumberControls(widget)
     const fixture = new VueNodeFixture(node)
-    await nextFrame(this.page)
     await widget.click()
     await input.fill(value)
     await input.press('Enter')
