@@ -1,5 +1,6 @@
 import { useAuthStore } from '@/stores/authStore'
-import axios from 'axios'
+import axios, { AxiosHeaders } from 'axios'
+import type { AxiosResponse } from 'axios'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { IWidget } from '@/lib/litegraph/src/litegraph'
@@ -66,7 +67,14 @@ const createMockOptions = (inputOverrides = {}) => ({
 })
 
 function mockAxiosResponse(data: unknown, status = 200) {
-  vi.mocked(axios.get).mockResolvedValueOnce({ data, status })
+  const response: AxiosResponse<unknown> = {
+    data,
+    status,
+    statusText: '',
+    headers: new AxiosHeaders(),
+    config: { headers: new AxiosHeaders() }
+  }
+  vi.mocked(axios.get).mockResolvedValueOnce(response)
 }
 
 function mockAxiosError(error: Error | string) {
@@ -677,6 +685,33 @@ describe('useRemoteWidget', () => {
       executionSuccessHandler?.()
 
       expect(refreshSpy).not.toHaveBeenCalled()
+    })
+
+    it('does not apply a pending response after the owning widget is removed', async () => {
+      let resolveResponse!: (value: AxiosResponse<string[]>) => void
+      const response = new Promise<AxiosResponse<string[]>>((resolve) => {
+        resolveResponse = resolve
+      })
+      vi.mocked(axios.get).mockReturnValueOnce(response)
+      const options = createMockOptions()
+      options.widget.value = 'saved'
+      const cleanup = vi.fn()
+      options.widget.onRemove = cleanup
+      const hook = useRemoteWidget(options)
+      hook.getValue()
+      options.widget.onRemove()
+      resolveResponse({
+        data: ['replacement'],
+        status: 200,
+        statusText: 'OK',
+        headers: new AxiosHeaders(),
+        config: { headers: new AxiosHeaders() }
+      })
+      await vi.waitFor(() =>
+        expect(hook.getCacheEntry()?.data).toEqual(['replacement'])
+      )
+      expect(options.widget.value).toBe('saved')
+      expect(cleanup).toHaveBeenCalledOnce()
     })
 
     it('should cleanup event listener on node removal', async () => {

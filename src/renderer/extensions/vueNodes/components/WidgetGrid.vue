@@ -8,73 +8,86 @@
       flex: gridTemplateRows.includes('auto') ? 1 : undefined
     }"
   >
-    <template v-for="row in renderedRows" :key="row.widget.renderKey">
-      <div
-        :data-testid="row.testId"
-        :class="
-          cn(
-            'group col-span-full grid grid-cols-subgrid items-stretch',
-            row.showsControl && 'lg-node-widget'
-          )
-        "
-      >
+    <div
+      v-for="section in sections"
+      :key="section.key"
+      :role="section.role"
+      :aria-label="section.label"
+      class="col-span-full grid grid-cols-subgrid grid-rows-subgrid"
+      :style="{ gridRow: `span ${section.rows.length}` }"
+    >
+      <template v-for="row in section.rows" :key="row.widget.renderKey">
         <div
+          :data-testid="row.testId"
+          :data-widget-name="row.widget.simplified.name"
           :class="
             cn(
-              'z-10 flex w-3 items-stretch opacity-0 transition-opacity duration-150 group-hover:opacity-100',
-              row.widget.slotMetadata?.linked && 'opacity-100'
+              'group col-span-full grid grid-cols-subgrid items-stretch',
+              row.showsControl && 'lg-node-widget'
             )
           "
         >
-          <InputSlot
-            v-if="row.widget.slotMetadata"
-            :key="`widget-slot-${row.widget.simplified.name}-${row.widget.slotMetadata.index}`"
-            :slot-data="{
-              name: row.widget.simplified.name,
-              type: row.widget.slotMetadata.type,
-              boundingRect: [0, 0, 0, 0]
-            }"
-            :node-id
-            :has-error="row.widget.hasError"
-            :index="row.widget.slotMetadata.index"
-            :socketless="row.widget.simplified.spec?.socketless"
-            :standalone="row.standalone"
-            dot-only
-          />
-        </div>
-        <AppInput
-          v-if="row.showsControl"
-          :widget-id="row.widget.widgetId"
-          :name="row.widget.simplified.name"
-          :enable="canSelectInputs && !row.widget.simplified.options?.disabled"
-        >
-          <component
-            :is="row.widget.vueComponent"
-            v-tooltip.left="row.widget.tooltipConfig ?? EMPTY_TOOLTIP"
-            :model-value="row.widget.simplified.value"
-            :widget="row.widget.simplified"
-            :node-id
-            :node-type
-            :invalid="row.widget.hasError"
-            :aria-invalid="row.widget.hasError || undefined"
+          <div
             :class="
               cn(
-                'col-span-2',
-                row.widget.hasError && 'font-bold text-node-stroke-error'
+                'z-10 flex w-3 items-stretch opacity-0 transition-opacity duration-150 group-hover:opacity-100',
+                row.widget.slotMetadata?.linked && 'opacity-100'
               )
             "
-            @update:model-value="row.widget.updateHandler"
-            @contextmenu="row.widget.handleContextMenu"
-          />
-        </AppInput>
-      </div>
-    </template>
+          >
+            <InputSlot
+              v-if="row.widget.slotMetadata"
+              :key="`widget-slot-${row.widget.simplified.name}-${row.widget.slotMetadata.index}`"
+              :slot-data="{
+                name: row.widget.simplified.name,
+                type: row.widget.slotMetadata.type,
+                boundingRect: [0, 0, 0, 0]
+              }"
+              :node-id
+              :has-error="row.widget.hasError"
+              :index="row.widget.slotMetadata.index"
+              :socketless="row.widget.simplified.spec?.socketless"
+              :standalone="row.standalone"
+              dot-only
+            />
+          </div>
+          <AppInput
+            v-if="row.showsControl"
+            :widget-id="row.widget.widgetId"
+            :name="row.widget.simplified.name"
+            :enable="
+              canSelectInputs && !row.widget.simplified.options?.disabled
+            "
+          >
+            <component
+              :is="row.widget.vueComponent"
+              v-tooltip.left="row.widget.tooltipConfig ?? EMPTY_TOOLTIP"
+              :model-value="row.widget.simplified.value"
+              :widget="row.widget.simplified"
+              :node-id
+              :node-type
+              :invalid="row.widget.hasError"
+              :aria-invalid="row.widget.hasError || undefined"
+              :class="
+                cn(
+                  'col-span-2',
+                  row.widget.hasError && 'font-bold text-node-stroke-error'
+                )
+              "
+              @update:model-value="row.widget.updateHandler"
+              @contextmenu="row.widget.handleContextMenu"
+              @removed="restoreRowFocus"
+            />
+          </AppInput>
+        </div>
+      </template>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import type { TooltipOptions } from 'primevue'
-import { computed, useTemplateRef, watch } from 'vue'
+import { computed, nextTick, useTemplateRef, watch } from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
@@ -134,6 +147,57 @@ const renderedRows = computed(() =>
     ]
   })
 )
+
+const sections = computed(() => {
+  const result: {
+    key: string
+    name?: string
+    label?: string
+    role?: 'group'
+    rows: typeof renderedRows.value
+  }[] = []
+  for (const row of renderedRows.value) {
+    const { name, type, label } = row.widget.simplified
+    if (type === 'dynamic_group_row') {
+      result.push({
+        key: row.widget.renderKey,
+        name,
+        label,
+        role: label ? 'group' : undefined,
+        rows: [row]
+      })
+    } else {
+      const section = result.at(-1)
+      if (section?.name && name.startsWith(`${section.name}.`))
+        section.rows.push(row)
+      else result.push({ key: row.widget.renderKey, rows: [row] })
+    }
+  }
+  return result
+})
+
+async function restoreRowFocus(name: string) {
+  const group = name.slice(0, name.lastIndexOf('.'))
+  await nextTick()
+  const remaining = sections.value.filter((section) =>
+    section.name?.startsWith(`${group}.`)
+  )
+  const candidates = [
+    name,
+    ...remaining.map((section) => section.name).reverse(),
+    `${group}.$add`
+  ]
+  for (const candidate of candidates) {
+    if (!candidate) continue
+    const button = grid.value?.querySelector<HTMLButtonElement>(
+      `[data-widget-name="${CSS.escape(candidate)}"] button:not(:disabled)`
+    )
+    if (button) {
+      button.focus()
+      return
+    }
+  }
+}
 
 const gridTemplateRows = computed(() =>
   renderedRows.value.map((row) => row.rowSize).join(' ')
