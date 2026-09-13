@@ -14,11 +14,11 @@ test.describe(
   () => {
     test.describe.configure({ timeout: 45_000 })
 
+    test.use({
+      initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true }
+    })
+
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting(
-        'Comfy.RightSidePanel.ShowErrorsTab',
-        true
-      )
       await cleanupFakeModel(comfyPage)
     })
 

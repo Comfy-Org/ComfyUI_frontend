@@ -14,11 +14,6 @@ test.describe(
     test.describe.configure({ timeout: 120_000 })
     test.use({ actionTimeout: 15_000 })
 
-    test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.Locale', 'en')
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
-    })
-
     test('Chinese reload, edit, save, and English restore preserve geometry in both renderers', async ({
       comfyPage
     }) => {
