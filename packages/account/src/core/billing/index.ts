@@ -46,3 +46,12 @@ export type {
   CreditsSnapshot
 } from './credits.js'
 export { CREDITS_ROUTE, createCreditsReader } from './credits.js'
+export type {
+  BillingStatusData,
+  BillingStatusReader,
+  BillingStatusReaderOptions,
+  BillingStatusReadOptions,
+  BillingStatusScope,
+  BillingStatusSnapshot
+} from './status.js'
+export { BILLING_STATUS_ROUTE, createBillingStatusReader } from './status.js'
