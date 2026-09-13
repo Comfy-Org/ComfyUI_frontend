@@ -18,7 +18,12 @@ import { i18n } from '@/i18n'
 
 import UserMessage from './UserMessage.vue'
 
-const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
+const clipboard = vi.hoisted(() => ({
+  text: '',
+  copy: vi.fn((value: string) => {
+    clipboard.text = value
+  })
+}))
 
 vi.mock<unknown>(import('@vueuse/core'), () => ({
   createSharedComposable: (composable: () => unknown) => composable,
@@ -213,7 +218,7 @@ describe('UserMessage', () => {
       workflowReferences: [{ id: 'wf', name: 'Portrait', textOffset: 0 }]
     })
     await userEvent.click(screen.getByRole('button', { name: t('agent.copy') }))
-    expect(clipboard.copy).toHaveBeenCalledWith('@[Workflow: Portrait]')
+    expect(clipboard.text).toBe('@[Workflow: Portrait]')
   })
 
   it.for([true, false])(
@@ -275,6 +280,6 @@ describe('UserMessage', () => {
     renderMessage({ text: '', attachments: [{ name: 'clip.bin' }] })
 
     await userEvent.click(screen.getByRole('button', { name: t('agent.copy') }))
-    expect(clipboard.copy).toHaveBeenCalledWith('@[File: clip.bin]')
+    expect(clipboard.text).toBe('@[File: clip.bin]')
   })
 })
