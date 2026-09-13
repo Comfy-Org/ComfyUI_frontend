@@ -9,7 +9,7 @@ export const DefaultGraphPositions = {
   textEncodeNode1: { x: 618, y: 191 },
   textEncodeNode2: { x: 622, y: 400 },
   textEncodeNodeToggler: { x: 430, y: 171 },
-  emptySpaceClick: { x: 600, y: 650 },
+  emptySpaceClick: { x: 35, y: 31 },
   emptyCanvasClick: { x: 50, y: 500 },
 
   // Slot positions

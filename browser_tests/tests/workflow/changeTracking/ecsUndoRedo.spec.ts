@@ -331,7 +331,7 @@ test.describe(
             await loader.connectOutput(0, sampler, 0)
             await output.expectLinkCount(1)
             await samplerInput.expectLinkCount(1)
-            await comfyPage.canvasOps.clickEmptySpace()
+            await comfyPage.canvasOps.clickEmptySpace({ x: 600, y: 650 })
             await checkpoint('nodes connected')
           })
 
@@ -380,7 +380,7 @@ test.describe(
             )
             await samplerInput.expectLinkCount(0)
             await output.expectLinkCount(0)
-            await comfyPage.canvasOps.clickEmptySpace()
+            await comfyPage.canvasOps.clickEmptySpace({ x: 600, y: 650 })
             await checkpoint('nodes disconnected')
           })
 
@@ -397,7 +397,7 @@ test.describe(
             await loader.connectOutput(0, sampler, 0)
             await output.expectLinkCount(1)
             await samplerInput.expectLinkCount(1)
-            await comfyPage.canvasOps.clickEmptySpace()
+            await comfyPage.canvasOps.clickEmptySpace({ x: 600, y: 650 })
             await checkpoint('nodes reconnected')
           })
 
@@ -456,17 +456,14 @@ test.describe(
       await test.step('Open a fresh Tab B', async () => {
         await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
         await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+        await comfyPage.menu.topbar.saveWorkflow('Undo Tab B')
       })
 
+      const tabBName = 'Undo Tab B'
       const tabsAfterNew = await comfyPage.menu.topbar.getTabNames()
-      const newTabs = tabsAfterNew.filter(
-        (name) => !tabsBeforeNew.includes(name)
-      )
-      expect(newTabs, 'New must create exactly one workflow tab').toHaveLength(
-        1
-      )
-      if (newTabs.length !== 1) throw new Error('Expected one new workflow tab')
-      const [tabBName] = newTabs
+      expect(
+        tabsAfterNew.filter((name) => !tabsBeforeNew.includes(name))
+      ).toEqual([tabBName])
       const tabB = comfyPage.menu.topbar.getWorkflowTab(tabBName)
       await expect(tabB).toBeVisible()
 
