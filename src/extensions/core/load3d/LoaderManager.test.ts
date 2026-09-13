@@ -1,6 +1,8 @@
 import * as THREE from 'three'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useToastStore } from '@/platform/updates/common/toastStore'
+
 import type {
   EventManagerInterface,
   MaterialMode,
@@ -12,6 +14,7 @@ import type {
   ModelAdapterCapabilities,
   ModelLoadContext
 } from './ModelAdapter'
+import { fetchModelData } from './ModelAdapter'
 
 function makeEventManagerStub() {
   return {
@@ -56,15 +59,13 @@ const {
   splatLoad,
   pointCloudLoad,
   fetchModelDataMock,
-  isGaussianSplatPLYMock,
-  addAlert
+  isGaussianSplatPLYMock
 } = vi.hoisted(() => ({
   meshLoad: vi.fn(),
   splatLoad: vi.fn(),
   pointCloudLoad: vi.fn(),
   fetchModelDataMock: vi.fn<() => Promise<ArrayBuffer>>(),
-  isGaussianSplatPLYMock: vi.fn<(b: ArrayBuffer) => Promise<boolean>>(),
-  addAlert: vi.fn()
+  isGaussianSplatPLYMock: vi.fn<(b: ArrayBuffer) => Promise<boolean>>()
 }))
 
 vi.mock('./MeshModelAdapter', () => ({
@@ -101,11 +102,7 @@ vi.mock('./SplatModelAdapter', () => ({
   }
 }))
 
-vi.mock('./ModelAdapter', async () => {
-  const actual =
-    await vi.importActual<typeof import('./ModelAdapter')>('./ModelAdapter')
-  return { ...actual, fetchModelData: fetchModelDataMock }
-})
+vi.mock('./ModelAdapter', { spy: true })
 
 vi.mock('@/scripts/metadata/ply', () => ({
   isGaussianSplatPLY: isGaussianSplatPLYMock
@@ -113,10 +110,6 @@ vi.mock('@/scripts/metadata/ply', () => ({
 
 vi.mock('@/i18n', () => ({
   t: (key: string) => key
-}))
-
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({ addAlert })
 }))
 
 type LoaderManagerInternals = {
@@ -143,6 +136,7 @@ function makeLoaderManager() {
 
 describe('LoaderManager', () => {
   beforeEach(() => {
+    vi.mocked(fetchModelData).mockImplementation(fetchModelDataMock)
     meshLoad.mockResolvedValue(null)
     splatLoad.mockResolvedValue(null)
     pointCloudLoad.mockResolvedValue(null)
@@ -370,7 +364,7 @@ describe('LoaderManager', () => {
 
       await lm.loadModel('api/view?other=1')
 
-      expect(addAlert).toHaveBeenCalledWith(
+      expect(useToastStore().addAlert).toHaveBeenCalledWith(
         'toastMessages.couldNotDetermineFileType'
       )
       expect(modelManager.setupModel).not.toHaveBeenCalled()
@@ -537,7 +531,9 @@ describe('LoaderManager', () => {
         'modelLoadingEnd',
         null
       )
-      expect(addAlert).toHaveBeenCalledWith('toastMessages.errorLoadingModel')
+      expect(useToastStore().addAlert).toHaveBeenCalledWith(
+        'toastMessages.errorLoadingModel'
+      )
       expect(consoleError).toHaveBeenCalled()
     })
 
@@ -556,7 +552,7 @@ describe('LoaderManager', () => {
       })
 
       expect(consoleError).toHaveBeenCalled()
-      expect(addAlert).not.toHaveBeenCalledWith(
+      expect(useToastStore().addAlert).not.toHaveBeenCalledWith(
         'toastMessages.errorLoadingModel'
       )
     })
@@ -573,7 +569,7 @@ describe('LoaderManager', () => {
         silentOnNotFound: true
       })
 
-      expect(addAlert).not.toHaveBeenCalledWith(
+      expect(useToastStore().addAlert).not.toHaveBeenCalledWith(
         'toastMessages.errorLoadingModel'
       )
     })
@@ -587,7 +583,9 @@ describe('LoaderManager', () => {
         silentOnNotFound: true
       })
 
-      expect(addAlert).toHaveBeenCalledWith('toastMessages.errorLoadingModel')
+      expect(useToastStore().addAlert).toHaveBeenCalledWith(
+        'toastMessages.errorLoadingModel'
+      )
     })
 
     it('discards the result of a stale load when a newer one has started', async () => {
@@ -698,7 +696,7 @@ describe('LoaderManager', () => {
 
       await Promise.all([firstPromise, secondPromise])
 
-      expect(addAlert).not.toHaveBeenCalled()
+      expect(useToastStore().addAlert).not.toHaveBeenCalled()
       const endEmits = eventManager.emitEvent.mock.calls.filter(
         (call: unknown[]) => call[0] === 'modelLoadingEnd'
       )

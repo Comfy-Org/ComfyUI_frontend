@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -8,19 +6,32 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
-import { LLink } from '@/lib/litegraph/src/LLink'
+import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
+import type { LLink } from '@/lib/litegraph/src/LLink'
+import {
+  BADGE_GAP,
+  queryLinkBadgeAtPoint
+} from '@/lib/litegraph/src/canvas/linkBadges'
+import type { Point } from '@/lib/litegraph/src/interfaces'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
-import { toLinkId } from '@/types/linkId'
-import { createMockCanvas2DContext } from '@/utils/__tests__/litegraphTestUtils'
+import { graphScopeOf } from '@/types/graphScopeId'
+import { toNodeId } from '@/types/nodeId'
+import {
+  createMockCanvas2DContext,
+  createTestCanvas,
+  createTestLink
+} from '@/utils/__tests__/litegraphTestUtils'
 
-vi.mock('@/renderer/core/layout/store/layoutStore')
+vi.mock(import('@/renderer/core/layout/store/layoutStore'))
 
 function createMockCtx(): CanvasRenderingContext2D {
   return createMockCanvas2DContext({
     translate: vi.fn(),
     scale: vi.fn(),
+    drawImage: vi.fn(),
     fillText: vi.fn(),
     measureText: vi.fn().mockReturnValue({ width: 50 }),
     closePath: vi.fn(),
@@ -48,39 +59,12 @@ function createMockCtx(): CanvasRenderingContext2D {
   })
 }
 
-/**
- * Creates a link between two nodes by directly mutating graph state,
- * bypassing the layout store integration in connect().
- */
-function createTestLink(
-  graph: LGraph,
-  sourceNode: LGraphNode,
-  outputSlot: number,
-  targetNode: LGraphNode,
-  inputSlot: number
-): LLink {
-  const linkId = toLinkId(Number(graph.state.lastLinkId) + 1)
-  graph.state.lastLinkId = linkId
-  const link = new LLink(
-    linkId,
-    sourceNode.outputs[outputSlot].type,
-    sourceNode.id,
-    outputSlot,
-    targetNode.id,
-    inputSlot
-  )
-  graph._addLink(link)
-  return link
-}
-
 describe('drawConnections', () => {
   let graph: LGraph
   let canvas: LGraphCanvas
   let canvasElement: HTMLCanvasElement
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
     canvasElement = document.createElement('canvas')
     canvasElement.width = 800
     canvasElement.height = 600
@@ -96,6 +80,9 @@ describe('drawConnections', () => {
     canvas = new LGraphCanvas(canvasElement, graph, {
       skip_render: true
     })
+    Object.defineProperty(canvas.ctx, 'canvas', { value: canvasElement })
+    canvas.bgctx = createMockCtx()
+    Object.defineProperty(canvas.bgctx, 'canvas', { value: canvas.bgcanvas })
 
     LiteGraph.vueNodesMode = false
     vi.mocked(layoutStore.getNodeLayout).mockReturnValue(null)
@@ -164,7 +151,7 @@ describe('drawConnections', () => {
     expect(arrangeSpy).not.toHaveBeenCalled()
   })
 
-  it('renders links in target z-order instead of generated id order', () => {
+  it('preserves target z-order for standalone and both-layer draws', () => {
     const sourceNode = new LGraphNode('Source')
     sourceNode.pos = [100, 100]
     sourceNode.addOutput('out', 'STRING')
@@ -198,6 +185,184 @@ describe('drawConnections', () => {
 
     canvas.drawConnections(createMockCtx())
 
+    expect([...canvas.renderedPaths]).toEqual([secondLink, firstLink])
+
+    canvas.draw(true, true)
+
+    expect([...canvas.renderedPaths]).toEqual([secondLink, firstLink])
+  })
+
+  it('uses the new graph render order when a render callback swaps graphs', () => {
+    const oldSource = new LGraphNode('Old source')
+    oldSource.addOutput('out', 'STRING')
+    graph.add(oldSource)
+    const oldTarget = new LGraphNode('Old target')
+    oldTarget.addInput('in', 'STRING')
+    graph.add(oldTarget)
+    createTestLink(graph, oldSource, 0, oldTarget, 0)
+
+    const newGraph = new LGraph()
+    const newSource = new LGraphNode('New source')
+    newSource.addOutput('out', 'STRING')
+    newGraph.add(newSource)
+    const newTarget = new LGraphNode('New target')
+    newTarget.addInput('in', 'STRING')
+    newGraph.add(newTarget)
+    createTestLink(newGraph, newSource, 0, newTarget, 0)
+
+    const oldTargetPosition = vi.spyOn(oldTarget, 'getInputPos')
+    const newTargetPosition = vi.spyOn(newTarget, 'getInputPos')
+    vi.spyOn(canvas, 'renderLink').mockImplementation(() => {})
+    const drawNode = vi.spyOn(canvas, 'drawNode').mockImplementation(() => {})
+    canvas.bgcanvas = canvas.canvas
+    canvas.bgctx = canvas.ctx
+    canvas.visible_area.set([0, 0, 800, 600])
+    canvas.onRenderBackground = () => {
+      canvas.setGraph(newGraph)
+      return false
+    }
+
+    canvas.draw(true, true)
+
+    expect(oldTargetPosition).not.toHaveBeenCalled()
+    expect(newTargetPosition).toHaveBeenCalled()
+    expect(drawNode.mock.calls.map(([node]) => node)).toEqual([
+      newSource,
+      newTarget
+    ])
+  })
+
+  it('defers a graph swap in onRender until its background can be drawn', () => {
+    const oldSource = new LGraphNode('Old source')
+    oldSource.addOutput('out', 'STRING')
+    graph.add(oldSource)
+    const oldTarget = new LGraphNode('Old target')
+    oldTarget.addInput('in', 'STRING')
+    graph.add(oldTarget)
+    createTestLink(graph, oldSource, 0, oldTarget, 0)
+
+    const newGraph = new LGraph()
+    const newSource = new LGraphNode('New source')
+    newSource.addOutput('out', 'STRING')
+    newGraph.add(newSource)
+    const newTarget = new LGraphNode('New target')
+    newTarget.addInput('in', 'STRING')
+    newGraph.add(newTarget)
+    createTestLink(newGraph, newSource, 0, newTarget, 0)
+    const oldTargetPosition = vi.spyOn(oldTarget, 'getInputPos')
+    const newTargetPosition = vi.spyOn(newTarget, 'getInputPos')
+    vi.spyOn(canvas, 'renderLink').mockImplementation(() => {})
+    const drawNode = vi.spyOn(canvas, 'drawNode').mockImplementation(() => {})
+    canvas.visible_area.set([0, 0, 800, 600])
+    canvas.onRender = () => canvas.setGraph(newGraph)
+
+    canvas.draw(true, true)
+
+    expect(oldTargetPosition).toHaveBeenCalled()
+    expect(newTargetPosition).not.toHaveBeenCalled()
+    expect(drawNode).not.toHaveBeenCalled()
+
+    oldTargetPosition.mockClear()
+    drawNode.mockClear()
+    canvas.draw(true, true)
+
+    expect(oldTargetPosition).not.toHaveBeenCalled()
+    expect(newTargetPosition).toHaveBeenCalled()
+    expect(drawNode.mock.calls.map(([node]) => node)).toEqual([
+      newSource,
+      newTarget
+    ])
+  })
+
+  it('rejects a cached render order from a replaced graph', () => {
+    const oldSource = new LGraphNode('Old source')
+    oldSource.id = toNodeId(1)
+    oldSource.addOutput('out', 'STRING')
+    graph.add(oldSource)
+    const oldTarget = new LGraphNode('Old target')
+    oldTarget.id = toNodeId(2)
+    oldTarget.addInput('in', 'STRING')
+    graph.add(oldTarget)
+    createTestLink(graph, oldSource, 0, oldTarget, 0)
+
+    const newGraph = new LGraph()
+    const newSource = new LGraphNode('New source')
+    newSource.id = toNodeId(1)
+    newSource.addOutput('out', 'STRING')
+    newGraph.add(newSource)
+    const newTarget = new LGraphNode('New target')
+    newTarget.id = toNodeId(2)
+    newTarget.addInput('in', 'STRING')
+    newGraph.add(newTarget)
+    createTestLink(newGraph, newSource, 0, newTarget, 0)
+
+    const oldTargetPosition = vi.spyOn(oldTarget, 'getInputPos')
+    const newTargetPosition = vi.spyOn(newTarget, 'getInputPos')
+    vi.spyOn(canvas, 'renderLink').mockImplementation(() => {})
+    canvas.setGraph(newGraph)
+
+    canvas.drawConnections(createMockCtx(), [oldSource, oldTarget], graph)
+
+    expect(oldTargetPosition).not.toHaveBeenCalled()
+    expect(newTargetPosition).toHaveBeenCalled()
+  })
+
+  it.for([245, 500, 1_000])(
+    'builds render order once for a both-layer draw at %i nodes',
+    { timeout: 10_000 },
+    (nodeCount) => {
+      for (let index = 0; index < nodeCount; index++) {
+        const node = new LGraphNode(`Node ${index}`)
+        vi.spyOn(node, 'updateArea').mockImplementation(() => {})
+        graph.add(node)
+      }
+      canvas.visible_area.set([0, 0, 800, 600])
+      vi.mocked(layoutStore.getNodeLayout).mockClear()
+      const sort = vi.spyOn(Array.prototype, 'sort')
+
+      canvas.draw(true, true)
+
+      expect(layoutStore.getNodeLayout).toHaveBeenCalledTimes(nodeCount)
+      expect(
+        sort.mock.instances.filter(
+          (items) => Array.isArray(items) && items.length === nodeCount
+        )
+      ).toHaveLength(1)
+    }
+  )
+
+  it('shares render order with same-canvas and links-on-top passes', () => {
+    const sourceNode = new LGraphNode('Source')
+    sourceNode.addOutput('out', 'STRING')
+    graph.add(sourceNode)
+    const firstTarget = new LGraphNode('First target')
+    firstTarget.addInput('in', 'STRING')
+    graph.add(firstTarget)
+    const secondTarget = new LGraphNode('Second target')
+    secondTarget.addInput('in', 'STRING')
+    graph.add(secondTarget)
+    const secondLink = createTestLink(graph, sourceNode, 0, secondTarget, 0)
+    const firstLink = createTestLink(graph, sourceNode, 0, firstTarget, 0)
+    vi.mocked(layoutStore.getNodeLayout).mockImplementation(
+      (_graphId, nodeId) => ({
+        id: nodeId,
+        position: { x: 0, y: 0 },
+        size: { width: 100, height: 100 },
+        zIndex: nodeId === firstTarget.id ? 2 : 1,
+        visible: true,
+        bounds: { x: 0, y: 0, width: 100, height: 100 }
+      })
+    )
+    canvas.bgcanvas = canvas.canvas
+    canvas.bgctx = canvas.ctx
+    graph.config.links_ontop = true
+    canvas.visible_area.set([0, 0, 800, 600])
+    vi.mocked(layoutStore.getNodeLayout).mockClear()
+    vi.spyOn(canvas, 'renderLink').mockImplementation(() => {})
+
+    canvas.draw(true, true)
+
+    expect(layoutStore.getNodeLayout).toHaveBeenCalledTimes(3)
     expect([...canvas.renderedPaths]).toEqual([secondLink, firstLink])
   })
 
@@ -236,7 +401,7 @@ describe('drawConnections', () => {
   })
 
   it.for([245, 500, 1_000])(
-    'rebuilds render order independently for both passes at %i nodes',
+    'reuses render order across both passes at %i nodes',
     { timeout: 10_000 },
     (nodeCount) => {
       for (let index = 0; index < nodeCount; index++) {
@@ -258,13 +423,13 @@ describe('drawConnections', () => {
         .length
 
       expect(foregroundLayoutReads).toBe(nodeCount)
-      expect(totalLayoutReads - foregroundLayoutReads).toBe(nodeCount)
+      expect(totalLayoutReads - foregroundLayoutReads).toBe(0)
       expect(foregroundSorts).toBe(1)
       expect(
         sort.mock.instances.filter(
           (items) => Array.isArray(items) && items.length === nodeCount
         )
-      ).toHaveLength(2)
+      ).toHaveLength(1)
     }
   )
 
@@ -440,5 +605,254 @@ describe('drawConnections', () => {
     expect(input.pos).toBeDefined()
     const offset = LiteGraph.NODE_SLOT_HEIGHT * 0.5
     expect(input.pos![1]).toBe(widget.y + offset)
+  })
+})
+
+describe('drawConnections hidden links', () => {
+  let graph: LGraph
+  let canvas: LGraphCanvas
+
+  beforeEach(() => {
+    graph = new LGraph()
+    canvas = createTestCanvas(graph, createMockCtx())
+    canvas.visible_area.set([0, 0, 800, 600])
+    LiteGraph.vueNodesMode = false
+  })
+
+  afterEach(() => {
+    LiteGraph.vueNodesMode = false
+  })
+
+  function createHiddenLink(sourceId?: string): LLink {
+    const sourceNode = new LGraphNode('Source')
+    if (sourceId !== undefined) sourceNode.id = toNodeId(sourceId)
+    sourceNode.pos = [0, 100]
+    sourceNode.size = [150, 60]
+    sourceNode.addOutput('out', 'STRING')
+    graph.add(sourceNode)
+
+    const targetNode = new LGraphNode('Target')
+    targetNode.pos = [300, 100]
+    targetNode.size = [150, 60]
+    targetNode.addInput('in', 'STRING')
+    graph.add(targetNode)
+
+    const link = createTestLink(graph, sourceNode, 0, targetNode, 0)
+    useLinkPresentationStore().patch(graphScopeOf(graph), link.id, {
+      hidden: true
+    })
+    return link
+  }
+
+  function outputBadgePoint(link: LLink): Point {
+    const source = graph.getNodeById(link.origin_id)
+    if (!source) throw new Error('Missing hidden link source node')
+    const [x, y] = source.getOutputPos(link.origin_slot)
+    return [x + BADGE_GAP + 4, y]
+  }
+
+  it('draws two endpoint badges instead of a curve', () => {
+    const link = createHiddenLink()
+
+    const ctx = createMockCtx()
+    canvas.drawConnections(ctx)
+
+    expect(canvas.renderedPaths.has(link)).toBe(false)
+    expect(queryLinkBadgeAtPoint(canvas, ...outputBadgePoint(link))).toBe(
+      link.id
+    )
+    expect(ctx.fillText).toHaveBeenCalledTimes(2)
+  })
+
+  it.for([
+    ['10', '2'],
+    ['ä', 'z']
+  ])('orders overlapping badges for node IDs %s and %s', ([later, earlier]) => {
+    createHiddenLink(later)
+    const firstLink = createHiddenLink(earlier)
+
+    canvas.drawConnections(createMockCtx())
+
+    expect(queryLinkBadgeAtPoint(canvas, ...outputBadgePoint(firstLink))).toBe(
+      firstLink.id
+    )
+  })
+
+  it('keeps offscreen badge rows for stable stacking but skips their paint', () => {
+    const link = createHiddenLink()
+    const source = graph.getNodeById(link.origin_id)
+    const target = graph.getNodeById(link.target_id)
+    if (!source || !target) throw new Error('Missing hidden link test nodes')
+    source.pos = [-1000, -1000]
+    target.pos = [-700, -1000]
+
+    const ctx = createMockCtx()
+    canvas.drawConnections(ctx)
+
+    expect(queryLinkBadgeAtPoint(canvas, ...outputBadgePoint(link))).toBe(
+      link.id
+    )
+    expect(ctx.fillText).not.toHaveBeenCalled()
+  })
+
+  it('skips node occlusion lookup in Vue mode when there are no badges', () => {
+    LiteGraph.vueNodesMode = true
+    const getNodeOnPos = vi.spyOn(graph, 'getNodeOnPos')
+
+    canvas.processMouseMove(
+      new PointerEvent('pointermove', {
+        clientX: 100,
+        clientY: 100,
+        isPrimary: false
+      })
+    )
+
+    expect(getNodeOnPos).not.toHaveBeenCalled()
+  })
+
+  it('keeps legacy node hit testing active when badges exist', () => {
+    createHiddenLink()
+    canvas.drawConnections(createMockCtx())
+    const getNodeOnPos = vi.spyOn(graph, 'getNodeOnPos')
+
+    canvas.processMouseMove(
+      new PointerEvent('pointermove', {
+        clientX: 100,
+        clientY: 100,
+        isPrimary: false
+      })
+    )
+
+    expect(getNodeOnPos).toHaveBeenCalled()
+  })
+
+  it('opens rename from a badge double-click', () => {
+    const link = createHiddenLink()
+    canvas.drawConnections(createMockCtx())
+    const [badgeX, badgeY] = outputBadgePoint(link)
+    const event = new PointerEvent('pointerdown', {
+      button: 0,
+      clientX: badgeX,
+      clientY: badgeY,
+      isPrimary: false
+    })
+    const prompt = vi
+      .spyOn(canvas, 'prompt')
+      .mockReturnValue(document.createElement('div'))
+
+    canvas.processMouseDown(event)
+    canvas.pointer.onDoubleClick?.(event as CanvasPointerEvent)
+
+    expect(prompt).toHaveBeenCalledWith(
+      'Rename',
+      '',
+      expect.any(Function),
+      event
+    )
+    prompt.mock.calls[0][2]('Checkpoint')
+    expect(
+      useLinkPresentationStore().getPresentation(graphScopeOf(graph), link.id)
+        ?.label
+    ).toBe('Checkpoint')
+  })
+
+  it('pans when dragging from a badge', () => {
+    const link = createHiddenLink()
+    canvas.drawConnections(createMockCtx())
+    const [badgeX, badgeY] = outputBadgePoint(link)
+    const event = new PointerEvent('pointerdown', {
+      button: 0,
+      clientX: badgeX,
+      clientY: badgeY,
+      isPrimary: false
+    })
+
+    canvas.processMouseDown(event)
+    canvas.pointer.onDragStart?.(canvas.pointer)
+
+    expect(canvas.dragging_canvas).toBe(true)
+    canvas.pointer.finally?.()
+    expect(canvas.dragging_canvas).toBe(false)
+  })
+
+  it('groups output badges by source slot regardless of target node order', () => {
+    const sourceNode = new LGraphNode('Source')
+    sourceNode.pos = [0, 100]
+    sourceNode.size = [150, 80]
+    sourceNode.addOutput('image', 'IMAGE')
+    sourceNode.addOutput('mask', 'MASK')
+    graph.add(sourceNode)
+
+    const firstImageTarget = new LGraphNode('First image target')
+    firstImageTarget.pos = [500, 100]
+    firstImageTarget.addInput('image', 'IMAGE')
+    graph.add(firstImageTarget)
+    const firstImageLink = createTestLink(
+      graph,
+      sourceNode,
+      0,
+      firstImageTarget,
+      0
+    )
+
+    const maskTarget = new LGraphNode('Mask target')
+    maskTarget.pos = [500, 200]
+    maskTarget.addInput('mask', 'MASK')
+    graph.add(maskTarget)
+    const maskLink = createTestLink(graph, sourceNode, 1, maskTarget, 0)
+
+    const secondImageTarget = new LGraphNode('Second image target')
+    secondImageTarget.pos = [500, 300]
+    secondImageTarget.addInput('image', 'IMAGE')
+    graph.add(secondImageTarget)
+    const secondImageLink = createTestLink(
+      graph,
+      sourceNode,
+      0,
+      secondImageTarget,
+      0
+    )
+
+    const thirdImageTarget = new LGraphNode('Third image target')
+    thirdImageTarget.pos = [500, 400]
+    thirdImageTarget.addInput('image', 'IMAGE')
+    graph.add(thirdImageTarget)
+    const thirdImageLink = createTestLink(
+      graph,
+      sourceNode,
+      0,
+      thirdImageTarget,
+      0
+    )
+    const scope = graphScopeOf(graph)
+    const presentationStore = useLinkPresentationStore()
+    for (const link of [
+      thirdImageLink,
+      secondImageLink,
+      maskLink,
+      firstImageLink
+    ]) {
+      presentationStore.patch(scope, link.id, { hidden: true })
+    }
+
+    const ctx = createMockCtx()
+    canvas.drawConnections(ctx)
+
+    const outputSocketX = sourceNode.getOutputPos(0)[0]
+    const inputSocketX = firstImageTarget.getInputPos(0)[0]
+    const outputBadgeLinkIds = vi
+      .mocked(ctx.fillText)
+      .mock.calls.filter(
+        ([, x]) => Math.abs(x - outputSocketX) < Math.abs(x - inputSocketX)
+      )
+      .sort((first, second) => first[2] - second[2])
+      .map(([, x, y]) => queryLinkBadgeAtPoint(canvas, x, y))
+
+    expect(outputBadgeLinkIds).toEqual([
+      firstImageLink.id,
+      secondImageLink.id,
+      thirdImageLink.id,
+      maskLink.id
+    ])
   })
 })

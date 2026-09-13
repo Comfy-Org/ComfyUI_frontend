@@ -1,3 +1,4 @@
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { SubscriptionInfo } from '@/composables/billing/types'
@@ -21,7 +22,7 @@ const mocks = vi.hoisted(() => ({
   trackCancellation: vi.fn()
 }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     type: mocks.billingType,
     tier: mocks.tier,
@@ -30,26 +31,17 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
-vi.mock('@/i18n', () => ({ t: (key: string) => key }))
+vi.mock<unknown>(import('@/i18n'), () => ({
+  t: (key: string) => key
+}))
 
-vi.mock('@/platform/cloud/churnkey/churnkeyClient', () => ({
+vi.mock(import('@/platform/cloud/churnkey/churnkeyClient'), () => ({
   prepareChurnkey: mocks.prepare
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackSubscriptionCancellation: mocks.trackCancellation
-  })
-}))
-
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    get activeWorkspaceId() {
-      return mocks.activeWorkspaceId
-    },
-    get activeWorkspaceBillingRail() {
-      return mocks.billingRail
-    }
   })
 }))
 
@@ -60,6 +52,23 @@ function session(
 ): ChurnkeySession {
   return { show }
 }
+
+beforeEach(() => {
+  vi.spyOn(
+    useTeamWorkspaceStore(),
+    'activeWorkspaceId',
+    'get'
+  ).mockImplementation(() => {
+    return mocks.activeWorkspaceId
+  })
+  vi.spyOn(
+    useTeamWorkspaceStore(),
+    'activeWorkspaceBillingRail',
+    'get'
+  ).mockImplementation(() => {
+    return mocks.billingRail
+  })
+})
 
 describe('launchCancellationFlow', () => {
   beforeEach(() => {

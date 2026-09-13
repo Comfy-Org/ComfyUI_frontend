@@ -20,10 +20,10 @@ test.describe(
       const { baseline, interiorLinkCount, promotedText } =
         await test.step('Capture the initial promoted subgraph state', async () => {
           const baseline = await comfyPage.page.evaluate(() =>
-            window.app!.graph!.serialize()
+            window.app!.graph.serialize()
           )
           const interiorLinkCount = await comfyPage.page.evaluate((id) => {
-            const host = window.app!.graph!.getNodeById(id)
+            const host = window.app!.graph.getNodeById(id)
             if (!host?.isSubgraphNode()) {
               throw new Error(`Host node ${id} is not a SubgraphNode`)
             }
@@ -47,13 +47,11 @@ test.describe(
 
       await test.step('Undo and verify the restored subgraph', async () => {
         await comfyPage.keyboard.undo()
-        await comfyPage.vueNodes.waitForNodes()
-
         await expect(comfyPage.vueNodes.nodes).toHaveCount(1)
         await expect(promotedText).toBeVisible()
         await expect
           .poll(() =>
-            comfyPage.page.evaluate(() => window.app!.graph!.serialize())
+            comfyPage.page.evaluate(() => window.app!.graph.serialize())
           )
           .toEqual(baseline)
 
@@ -132,7 +130,7 @@ test.describe(
       })
 
       await test.step('Undo and redo in the legacy renderer', async () => {
-        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
+        await comfyPage.command.executeCommand('Experimental.ToggleVueNodes')
         await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
         await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(1)
 
@@ -162,8 +160,7 @@ test.describe(
       })
 
       await test.step('Restore Vue nodes and reload the workflow', async () => {
-        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-        await comfyPage.vueNodes.waitForNodes()
+        await comfyPage.command.executeCommand('Experimental.ToggleVueNodes')
         await expect(
           comfyPage.vueNodes
             .getNodeLocator(nodeId)

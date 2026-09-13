@@ -2,49 +2,35 @@ import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import type * as AssetServiceModule from '@/platform/assets/services/assetService'
-import type * as FetchJobsModule from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import {
   getAssetDetectionNames,
   resolveMissingMediaAssetSources
 } from './missingMediaAssetResolver'
 
-const { mockGetInputAssetsIncludingPublic, mockGetAssetsPageByTag } =
-  vi.hoisted(() => ({
-    mockGetInputAssetsIncludingPublic: vi.fn(),
-    mockGetAssetsPageByTag: vi.fn()
-  }))
+const { mockGetAllAssetsByTag, mockGetAssetsPageByTag } = vi.hoisted(() => ({
+  mockGetAllAssetsByTag: vi.fn(),
+  mockGetAssetsPageByTag: vi.fn()
+}))
 
 const { mockFetchHistoryPage } = vi.hoisted(() => ({
   mockFetchHistoryPage: vi.fn()
 }))
 
-vi.mock('@/platform/assets/services/assetService', async () => {
-  const actual = await vi.importActual<typeof AssetServiceModule>(
-    '@/platform/assets/services/assetService'
-  )
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
+  useFeatureFlags: () => ({ flags: { assetsEnabled: true } })
+}))
 
-  return {
-    ...actual,
-    assetService: {
-      ...actual.assetService,
-      getInputAssetsIncludingPublic: mockGetInputAssetsIncludingPublic,
-      getAssetsPageByTag: mockGetAssetsPageByTag
-    }
+vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
+  assetService: {
+    getAllAssetsByTag: mockGetAllAssetsByTag,
+    getAssetsPageByTag: mockGetAssetsPageByTag
   }
-})
+}))
 
-vi.mock('@/platform/remote/comfyui/jobs/fetchJobs', async () => {
-  const actual = await vi.importActual<typeof FetchJobsModule>(
-    '@/platform/remote/comfyui/jobs/fetchJobs'
-  )
-
-  return {
-    ...actual,
-    fetchHistoryPage: mockFetchHistoryPage
-  }
-})
+vi.mock<unknown>(import('@/platform/remote/comfyui/jobs/fetchJobs'), () => ({
+  fetchHistoryPage: mockFetchHistoryPage
+}))
 
 function makeAsset(name: string, assetHash?: string): AssetItem {
   return fromPartial({
@@ -100,14 +86,14 @@ function makeAssetPage(
 
 describe('resolveMissingMediaAssetSources', () => {
   beforeEach(() => {
-    mockGetInputAssetsIncludingPublic.mockResolvedValue([])
+    mockGetAllAssetsByTag.mockResolvedValue([])
     mockGetAssetsPageByTag.mockResolvedValue(makeAssetPage([]))
     mockFetchHistoryPage.mockResolvedValue(makeHistoryPage([]))
   })
 
-  it('loads cloud input assets when requested', async () => {
+  it('loads cloud input assets via a public-inclusive query', async () => {
     const inputAsset = makeAsset('photo.png')
-    mockGetInputAssetsIncludingPublic.mockResolvedValue([inputAsset])
+    mockGetAllAssetsByTag.mockResolvedValue([inputAsset])
 
     const result = await resolveMissingMediaAssetSources({
       isCloud: true,
@@ -116,11 +102,13 @@ describe('resolveMissingMediaAssetSources', () => {
       allowCompactSuffix: true
     })
 
+    expect(mockGetAllAssetsByTag).toHaveBeenCalledWith(
+      'input',
+      true,
+      expect.objectContaining({ signal: expect.any(AbortSignal) })
+    )
     expect(result.inputAssets).toEqual([inputAsset])
     expect(result.generatedAssets).toEqual([])
-    expect(mockGetInputAssetsIncludingPublic).toHaveBeenCalledWith(
-      expect.any(AbortSignal)
-    )
     expect(mockFetchHistoryPage).not.toHaveBeenCalled()
   })
 
@@ -219,7 +207,7 @@ describe('resolveMissingMediaAssetSources', () => {
     const inputError = new Error('input failed')
     let rejectInputAssets!: (err: Error) => void
     let resolveOutputAssets!: (page: ReturnType<typeof makeAssetPage>) => void
-    mockGetInputAssetsIncludingPublic.mockReturnValueOnce(
+    mockGetAllAssetsByTag.mockReturnValueOnce(
       new Promise<AssetItem[]>((_, reject) => {
         rejectInputAssets = reject
       })

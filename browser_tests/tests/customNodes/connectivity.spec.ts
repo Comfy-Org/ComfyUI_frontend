@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test'
 
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
@@ -7,6 +8,8 @@ import {
 import {
   customNodeSuiteSettings,
   drainBackendToIdle,
+  runWithCollectedCleanup,
+  submittedPromptCount,
   trackSubmittedPrompts
 } from '@e2e/fixtures/utils/customNodeSuite'
 import {
@@ -48,16 +51,13 @@ import {
 } from '@e2e/fixtures/utils/errorSurfaces'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 
-// Budget the sweep per pair instead of flat: the corpus grows with every pack
-// added, and a flat cap silently becomes a hang the day it stops fitting. Run
-// 30961895204 swept 16832 pairs and did not finish inside a flat 120s cap, so
-// the real rate is above 6.5ms/pair; the multiplier below carries margin over
-// that floor and the sweep logs its actual rate so it can be tightened.
 const PLAN_SETUP_MS = 120_000
-const SWEEP_MS_PER_PAIR = 40
+const SWEEP_MS_PER_PAIR = 70
 const ISOLATED_MS_PER_PAIR = PLAN_SETUP_MS
 const DYNAMIC_CLEANUP_SETTLE_MS = 50
-const PAIRS_PER_BATCH = 100
+const PAIRS_PER_BATCH = 25
+const BATCH_STALL_MS = 45_000
+const PAIRS_PER_PAGE = 1_000
 // Same discipline for the drag pass, whose edge list grows with every
 // connectivity pack: one drag per edge per renderer. This test carried a flat
 // 120s cap over today's 6 packs (16 drags) until the since-removed cloud
@@ -117,10 +117,19 @@ test.beforeEach(async ({ comfyPage }) => {
 // round-trip; it stays as the guard for pack JS that queues one behind our
 // back, which would otherwise run on into the next test.
 test.afterEach(async ({ comfyPage }) => {
-  expect(
-    await drainBackendToIdle(comfyPage.page, 10_000),
-    'connectivity probe left test-owned backend work running'
-  ).toBe(0)
+  await runWithCollectedCleanup(async () => {
+    expect(
+      await submittedPromptCount(comfyPage.page),
+      'connectivity probe submitted a prompt'
+    ).toBe(0)
+  }, [
+    async () => {
+      expect(
+        await drainBackendToIdle(comfyPage.page, 10_000),
+        'connectivity probe left test-owned backend work running'
+      ).toBe(0)
+    }
+  ])
 })
 
 function isEntryInstalled(
@@ -151,10 +160,15 @@ async function runPairsInIsolatedPages(
       await trackVisibleErrors(probe)
       await probe.goto(page.url())
       await probe.waitForFunction(
-        ([producerType, consumerType]) =>
-          window.app?.extensionManager !== undefined &&
-          window.LiteGraph?.registered_node_types[producerType] !== undefined &&
-          window.LiteGraph.registered_node_types[consumerType] !== undefined,
+        ([producerType, consumerType]) => {
+          const liteGraph = window.LiteGraph
+          return (
+            window.app?.extensionManager !== undefined &&
+            liteGraph !== undefined &&
+            producerType in liteGraph.registered_node_types &&
+            consumerType in liteGraph.registered_node_types
+          )
+        },
         [pair.producer.nodeType, pair.consumer.nodeType],
         { timeout: 60_000 }
       )
@@ -312,7 +326,6 @@ test('connectivity: representative edges cover every enrolled pairable slot thro
   // serialize/configure survival - all renderer-independent paths (widget
   // values and links flow through the same stores in both renderers). The
   // curated drag test below covers real pointer wiring under BOTH renderers.
-  const consoleErrors = collectConsoleErrors(comfyPage.page)
   test.setTimeout(
     PLAN_SETUP_MS +
       sharedPairs.length * SWEEP_MS_PER_PAIR +
@@ -320,14 +333,13 @@ test('connectivity: representative edges cover every enrolled pairable slot thro
   )
   const sweepStart = Date.now()
   const sharedStart = Date.now()
-  const sharedResults = await runPairsInPage(comfyPage.page, sharedPairs)
+  const shared = await runPairsAcrossPages(comfyPage, sharedPairs)
   console.log(
     `connectivity shared sweep: ${sharedPairs.length} pairs in ${Date.now() - sharedStart}ms`
   )
   const isolated = await runPairsInIsolatedPages(comfyPage.page, isolatedPairs)
-  const results = [...sharedResults, ...isolated.results]
+  const results = [...shared.results, ...isolated.results]
   const sweepMs = Date.now() - sweepStart
-  consoleErrors.stop()
   expect(
     results,
     'the executor must return one outcome for every planned pair'
@@ -372,7 +384,7 @@ test('connectivity: representative edges cover every enrolled pairable slot thro
   // wiring sweep queues no prompts, so a prompt-execution error here is a
   // prior tier's async stray, not this test's (isForeignExecutionNoise;
   // ARCHITECTURE section 9 principle).
-  const sweepErrors = [...consoleErrors.errors, ...isolated.errors].filter(
+  const sweepErrors = [...shared.errors, ...isolated.errors].filter(
     (error) => !isForeignExecutionNoise(error)
   )
   const unledgered = unallowlistedConnectivityErrorsForPacks(
@@ -463,17 +475,32 @@ function firstMaterializedPair(
   page: Page,
   pairs: PlannedPair[]
 ): Promise<PlannedPair | null> {
-  return page.evaluate((pairsInPage) => {
+  return page.evaluate(async (pairsInPage) => {
+    const graph = window.app!.graph
+    const settle = async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    }
     for (const pair of pairsInPage) {
-      const producer = window.LiteGraph!.createNode(pair.producer.nodeType)
-      const consumer = window.LiteGraph!.createNode(pair.consumer.nodeType)
-      const outFound = producer?.outputs.some(
-        (slot) => slot.name === pair.producer.slotName
-      )
-      const inFound = consumer?.inputs.some(
-        (slot) => slot.name === pair.consumer.slotName
-      )
-      if (outFound && inFound) return pair
+      graph.clear()
+      try {
+        const producer = window.LiteGraph!.createNode(pair.producer.nodeType)
+        const consumer = window.LiteGraph!.createNode(pair.consumer.nodeType)
+        if (!producer || !consumer) continue
+        graph.add(producer)
+        graph.add(consumer)
+        await settle()
+        const outFound = producer.outputs.some(
+          (slot) => slot.name === pair.producer.slotName
+        )
+        const inFound = consumer.inputs.some(
+          (slot) => slot.name === pair.consumer.slotName
+        )
+        if (outFound && inFound) return pair
+      } finally {
+        graph.clear()
+        await settle()
+      }
     }
     return null
   }, pairs)
@@ -497,7 +524,73 @@ async function runPairsInPage(
   return results
 }
 
-function evaluatePairs(
+async function runPairsAcrossPages(
+  comfyPage: ComfyPage,
+  pairs: PlannedPair[]
+): Promise<{ results: PairResult[]; errors: string[] }> {
+  const results: PairResult[] = []
+  const errors: string[] = []
+  for (let start = 0; start < pairs.length; start += PAIRS_PER_PAGE) {
+    if (start > 0) {
+      await comfyPage.page.reload({ waitUntil: 'domcontentloaded' })
+      await comfyPage.waitForAppReady()
+    }
+    const pagePairs = pairs.slice(start, start + PAIRS_PER_PAGE)
+    console.log(
+      `connectivity shared page: ${start + 1}-${start + pagePairs.length}/${pairs.length}`
+    )
+    const consoleErrors = collectConsoleErrors(comfyPage.page)
+    try {
+      results.push(...(await runPairsInPage(comfyPage.page, pagePairs)))
+    } finally {
+      consoleErrors.stop()
+      errors.push(...consoleErrors.errors)
+    }
+  }
+  return { results, errors }
+}
+
+async function evaluatePairs(
+  page: Page,
+  pairs: PlannedPair[],
+  options: { resetAfter?: boolean; stalledCleanupKeys?: string[] } = {}
+): Promise<PairResult[]> {
+  const stall = Symbol('stall')
+  let timerId: ReturnType<typeof setTimeout> | undefined
+  const timer = new Promise<typeof stall>((resolve) => {
+    timerId = setTimeout(() => resolve(stall), BATCH_STALL_MS)
+  })
+  const batch = evaluatePairsInPage(page, pairs, options)
+  let outcome: PairResult[] | typeof stall
+  try {
+    outcome = await Promise.race([batch, timer])
+  } finally {
+    if (timerId !== undefined) clearTimeout(timerId)
+  }
+  if (outcome !== stall) return outcome
+  const probe = async () =>
+    page
+      .evaluate(
+        () => (window as unknown as { __cnPairCursor?: string }).__cnPairCursor,
+        { timeout: 10_000 }
+      )
+      .catch(() => null)
+  const first = await probe()
+  await new Promise((resolve) => setTimeout(resolve, 2_000))
+  const second = await probe()
+  if (first === null || second === null)
+    throw new Error(
+      `connectivity batch wedged the renderer after ${BATCH_STALL_MS}ms; the page stopped answering, so a pack ran a synchronous loop. Batch started at ${pairs[0] ? `${pairs[0].producer.nodeType}.${pairs[0].producer.slotName}` : 'unknown'}`
+    )
+  const advanced = first !== second
+  throw new Error(
+    advanced
+      ? `connectivity batch is progressing but too slow for ${BATCH_STALL_MS}ms: the cursor moved '${first}' -> '${second}' during a 2s sample, so no single pair is stuck and the batch simply needs longer than the budget allows`
+      : `connectivity batch stalled after ${BATCH_STALL_MS}ms on pair '${second ?? 'none recorded'}' - the page answers and the cursor did not move across a 2s sample, so that one pair is awaiting something that never settles`
+  )
+}
+
+function evaluatePairsInPage(
   page: Page,
   pairs: PlannedPair[],
   {
@@ -528,6 +621,7 @@ function evaluatePairs(
     }> = []
     for (const pair of pairsInPage) {
       const key = `${pair.producer.nodeType}.${pair.producer.slotName} -> ${pair.consumer.nodeType}.${pair.consumer.slotName}`
+      Object.assign(window, { __cnPairCursor: key })
       try {
         resetGraph()
         const producer = window.LiteGraph!.createNode(pair.producer.nodeType)
@@ -619,7 +713,7 @@ function evaluatePairs(
         const serialized = graph.serialize()
         graph.configure(serialized)
         const restored = graph.getNodeById(consumer.id)
-        if (restored?.inputs?.[inIndex]?.link == null) {
+        if (restored?.inputs[inIndex]?.link == null) {
           report.push({
             key,
             outcome: 'ROUNDTRIP_LOST',
@@ -631,7 +725,7 @@ function evaluatePairs(
           output?: Record<string, { inputs?: Record<string, unknown> }>
         }
         try {
-          prompt = (await window.app!.graphToPrompt()) as typeof prompt
+          prompt = await window.app!.graphToPrompt()
         } catch (error) {
           const detail = String(error)
           if (
@@ -695,224 +789,231 @@ test('connectivity self-check: the executor rejects broken pairs @custom-nodes',
   ])
 })
 
-test('connectivity drags: one materialized in-pack link per applicable pack connects under both renderers @custom-nodes', async ({
-  comfyPage
-}) => {
-  test.setTimeout(PLAN_SETUP_MS)
-  const defs = (await comfyPage.page.evaluate(() =>
-    window.app!.api.getNodeDefs()
-  )) as unknown as Record<string, RawNodeDef>
-  const nodes = normalizeNodeDefs(defs)
+for (const vueNodesEnabled of [false, true]) {
+  test(
+    `connectivity drags: one materialized in-pack link per applicable pack connects with VueNodes=${vueNodesEnabled} @custom-nodes`,
+    { tag: vueNodesEnabled ? ['@vue-nodes'] : [] },
+    async ({ comfyPage }) => {
+      test.setTimeout(PLAN_SETUP_MS)
+      const defs = (await comfyPage.page.evaluate(() =>
+        window.app!.api.getNodeDefs()
+      )) as unknown as Record<string, RawNodeDef>
+      const nodes = normalizeNodeDefs(defs)
+      using consoleErrors = collectConsoleErrors(comfyPage.page)
 
-  // Native anchor pair plus one in-pack, link-typed pair per connectivity
-  // pack (derived from the same generator the breadth sweep uses).
-  const dragEdges: PlannedPair[] = [
-    {
-      producer: {
-        nodeType: 'EmptyLatentImage',
-        pack: 'core',
-        slotName: 'LATENT',
-        slotType: 'LATENT'
-      },
-      consumer: {
-        nodeType: 'KSampler',
-        pack: 'core',
-        slotName: 'latent_image',
-        slotType: 'LATENT'
-      }
-    },
-    // Second-slot anchor: ImageBatch has two IMAGE inputs (image1, image2)
-    // and we target the SECOND. A slot hit-test regression that falls back
-    // to the first compatible input would land on image1, leaving image2
-    // (the asserted index) unlinked - so this pair, unlike a first-slot
-    // pair, actually discriminates a broken drop-to-slot resolution.
-    {
-      producer: {
-        nodeType: 'EmptyImage',
-        pack: 'core',
-        slotName: 'IMAGE',
-        slotType: 'IMAGE'
-      },
-      consumer: {
-        nodeType: 'ImageBatch',
-        pack: 'core',
-        slotName: 'image2',
-        slotType: 'IMAGE'
-      }
-    }
-  ]
-  const nodeTypes = new Set(nodes.map((node) => node.type))
-  const observedZeroPairPacks = new Set<string>()
-  for (const entry of connectivityEntries) {
-    if (!isEntryInstalled(nodeTypes, entry)) {
-      console.log(
-        `connectivity drag: ${entry.pack} not installed on this backend`
-      )
-      continue
-    }
-    // Restrict the partner pool to the pack itself so the drag proves an
-    // in-pack wiring; widget-backed primitive inputs render real slot dots
-    // in Vue (verified empirically), so no slot type is excluded at plan time.
-    const registeredPackNodes = nodes.filter((node) => node.pack === entry.pack)
-    const eligiblePackNodeTypes = new Set(
-      eligibleNodeTypesForTier(
-        { identity: packIdentity(entry), pack: entry.pack },
-        'S5',
-        registeredPackNodes.map((node) => node.type)
-      )
-    )
-    const packNodes = registeredPackNodes.filter((node) =>
-      eligiblePackNodeTypes.has(node.type)
-    )
-    const packPlan = planPairs(packNodes, entry.expectedNodes)
-    if (packPlan.pairs.length === 0) {
-      expect(
-        zeroPairDragExpectedNodeCounts[entry.pack],
-        `${entry.pack} registers ${packNodes.length} nodes but contributes no in-pack draggable pair - drag coverage lost`
-      ).toBe(packNodes.length)
-      observedZeroPairPacks.add(entry.pack)
-      console.log(
-        `connectivity drag: ${entry.pack} is the verified ${packNodes.length}-node pack with no self-pair; S4 cross-pack coverage applies, S5 in-pack drag is not applicable`
-      )
-      continue
-    }
-    // The plan comes from object_info, but a pack's own JS can rebuild a
-    // declared input as widget-only on the instance (rgthree's Seed does).
-    // Drag the first pair whose slots actually materialize; a pack whose
-    // every planned pair is customized away has no socket contract to drag.
-    const inPack = await firstMaterializedPair(comfyPage.page, packPlan.pairs)
-    if (!inPack)
-      throw new Error(
-        `${entry.pack} has planned pairs but every declared socket is widget-only on instances - add an exact reviewed applicability expectation`
-      )
-    dragEdges.push(inPack)
-  }
-  for (const pack of Object.keys(zeroPairDragExpectedNodeCounts)) {
-    // Existence is a manifest-wide fact; whether this shard owns the pack is
-    // a separate question. Checking both against the slice made every shard
-    // that does not own a listed pack report it as stale.
-    expect(
-      loadAllManifestPackNames().includes(pack),
-      `${pack} has a zero-pair expectation but is not a manifest entry`
-    ).toBe(true)
-    const entry = connectivityEntries.find((entry) => entry.pack === pack)
-    if (!entry || !isEntryInstalled(nodeTypes, entry)) continue
-    expect(
-      observedZeroPairPacks.has(entry.pack),
-      `${pack} now contributes an in-pack draggable pair - remove the stale zero-pair expectation`
-    ).toBe(true)
-  }
-
-  const rendererPasses = [false, true]
-  test.setTimeout(
-    PLAN_SETUP_MS + dragEdges.length * rendererPasses.length * DRAG_MS_PER_DRAG
-  )
-  for (const vueNodesEnabled of rendererPasses) {
-    const consoleErrors = collectConsoleErrors(comfyPage.page)
-    await comfyPage.settings.setSetting(
-      'Comfy.VueNodes.Enabled',
-      vueNodesEnabled
-    )
-
-    for (const edge of dragEdges) {
-      await comfyPage.nodeOps.clearGraph()
-      const producer = await comfyPage.nodeOps.addNode(
-        edge.producer.nodeType,
-        undefined,
-        { x: 150, y: 200 }
-      )
-      await comfyPage.nextFrame()
-      const producerWidth = (await producer.getSize()).width
-      const consumer = await comfyPage.nodeOps.addNode(
-        edge.consumer.nodeType,
-        undefined,
-        { x: 150 + producerWidth + 150, y: 200 }
-      )
-      await comfyPage.nextFrame()
-      await fitToViewInstant(comfyPage)
-
-      const [outIndex, inIndex] = await comfyPage.page.evaluate(
-        ([producerId, consumerId, outName, inName]) => {
-          const byId = (id: string) =>
-            window.app!.graph.nodes.find((node) => String(node.id) === id)!
-          const src = byId(producerId)
-          const dst = byId(consumerId)
-          return [
-            src.outputs.findIndex((slot) => slot.name === outName),
-            dst.inputs.findIndex((slot) => slot.name === inName)
-          ]
+      // Native anchor pair plus one in-pack, link-typed pair per connectivity
+      // pack (derived from the same generator the breadth sweep uses).
+      const dragEdges: PlannedPair[] = [
+        {
+          producer: {
+            nodeType: 'EmptyLatentImage',
+            pack: 'core',
+            slotName: 'LATENT',
+            slotType: 'LATENT'
+          },
+          consumer: {
+            nodeType: 'KSampler',
+            pack: 'core',
+            slotName: 'latent_image',
+            slotType: 'LATENT'
+          }
         },
-        [
-          String(producer.id),
-          String(consumer.id),
-          edge.producer.slotName,
-          edge.consumer.slotName
-        ] as const
-      )
-      const key = `${edge.producer.nodeType}.${edge.producer.slotName} -> ${edge.consumer.nodeType}.${edge.consumer.slotName}`
-      expect(outIndex, `${key}: producer slot on instance`).toBeGreaterThan(-1)
-      expect(inIndex, `${key}: consumer slot on instance`).toBeGreaterThan(-1)
-
-      if (vueNodesEnabled) {
-        await comfyPage.vueNodes.waitForNodes(2)
-        // Slot-key-addressed dots so shared-label ambiguity cannot misfire
-        // the drag.
-        const outDot = comfyPage.vueNodes.getOutputSlotConnectionDot(
-          String(producer.id),
-          outIndex
-        )
-        const inDot = comfyPage.vueNodes.getInputSlotConnectionDot(
-          String(consumer.id),
-          inIndex
-        )
-        await outDot.dragTo(inDot)
-      } else {
-        await producer.connectOutput(outIndex, consumer, inIndex)
-      }
-
-      const linked = await comfyPage.page.evaluate(
-        ([consumerId, index]) => {
-          const node = window.app!.graph.nodes.find(
-            (candidate) => String(candidate.id) === consumerId
+        // Second-slot anchor: ImageBatch has two IMAGE inputs (image1, image2)
+        // and we target the SECOND. A slot hit-test regression that falls back
+        // to the first compatible input would land on image1, leaving image2
+        // (the asserted index) unlinked - so this pair, unlike a first-slot
+        // pair, actually discriminates a broken drop-to-slot resolution.
+        {
+          producer: {
+            nodeType: 'EmptyImage',
+            pack: 'core',
+            slotName: 'IMAGE',
+            slotType: 'IMAGE'
+          },
+          consumer: {
+            nodeType: 'ImageBatch',
+            pack: 'core',
+            slotName: 'image2',
+            slotType: 'IMAGE'
+          }
+        }
+      ]
+      const nodeTypes = new Set(nodes.map((node) => node.type))
+      const observedZeroPairPacks = new Set<string>()
+      for (const entry of connectivityEntries) {
+        if (!isEntryInstalled(nodeTypes, entry)) {
+          console.log(
+            `connectivity drag: ${entry.pack} not installed on this backend`
           )
-          return node?.inputs?.[Number(index)]?.link != null
-        },
-        [String(consumer.id), String(inIndex)] as const
-      )
-      expect(linked, `${key} with VueNodes=${vueNodesEnabled}`).toBe(true)
-    }
+          continue
+        }
+        // Restrict the partner pool to the pack itself so the drag proves an
+        // in-pack wiring; widget-backed primitive inputs render real slot dots
+        // in Vue (verified empirically), so no slot type is excluded at plan time.
+        const registeredPackNodes = nodes.filter(
+          (node) => node.pack === entry.pack
+        )
+        const eligiblePackNodeTypes = new Set(
+          eligibleNodeTypesForTier(
+            { identity: packIdentity(entry), pack: entry.pack },
+            'S5',
+            registeredPackNodes.map((node) => node.type)
+          )
+        )
+        const packNodes = registeredPackNodes.filter((node) =>
+          eligiblePackNodeTypes.has(node.type)
+        )
+        const packPlan = planPairs(packNodes, entry.expectedNodes)
+        if (packPlan.pairs.length === 0) {
+          expect(
+            zeroPairDragExpectedNodeCounts[entry.pack],
+            `${entry.pack} registers ${packNodes.length} nodes but contributes no in-pack draggable pair - drag coverage lost`
+          ).toBe(packNodes.length)
+          observedZeroPairPacks.add(entry.pack)
+          console.log(
+            `connectivity drag: ${entry.pack} is the verified ${packNodes.length}-node pack with no self-pair; S4 cross-pack coverage applies, S5 in-pack drag is not applicable`
+          )
+          continue
+        }
+        // The plan comes from object_info, but a pack's own JS can rebuild a
+        // declared input as widget-only on the instance (rgthree's Seed does).
+        // Drag the first pair whose slots actually materialize; a pack whose
+        // every planned pair is customized away has no socket contract to drag.
+        const inPack = await firstMaterializedPair(
+          comfyPage.page,
+          packPlan.pairs
+        )
+        if (!inPack)
+          throw new Error(
+            `${entry.pack} has planned pairs but every declared socket is widget-only on instances - add an exact reviewed applicability expectation`
+          )
+        dragEdges.push(inPack)
+      }
+      for (const pack of Object.keys(zeroPairDragExpectedNodeCounts)) {
+        // Existence is a manifest-wide fact; whether this shard owns the pack is
+        // a separate question. Checking both against the slice made every shard
+        // that does not own a listed pack report it as stale.
+        expect(
+          loadAllManifestPackNames().includes(pack),
+          `${pack} has a zero-pair expectation but is not a manifest entry`
+        ).toBe(true)
+        const entry = connectivityEntries.find((entry) => entry.pack === pack)
+        if (!entry || !isEntryInstalled(nodeTypes, entry)) continue
+        expect(
+          observedZeroPairPacks.has(entry.pack),
+          `${pack} now contributes an in-pack draggable pair - remove the stale zero-pair expectation`
+        ).toBe(true)
+      }
 
-    consoleErrors.stop()
-    const dragPacks = [
-      ...new Set(
-        dragEdges.flatMap((edge) => [edge.producer.pack, edge.consumer.pack])
+      test.setTimeout(PLAN_SETUP_MS + dragEdges.length * DRAG_MS_PER_DRAG)
+
+      for (const edge of dragEdges) {
+        await comfyPage.nodeOps.clearGraph()
+        const producer = await comfyPage.nodeOps.addNode(
+          edge.producer.nodeType,
+          undefined,
+          { x: 150, y: 200 }
+        )
+        await comfyPage.nextFrame()
+        const producerWidth = (await producer.getSize()).width
+        const consumer = await comfyPage.nodeOps.addNode(
+          edge.consumer.nodeType,
+          undefined,
+          { x: 150 + producerWidth + 150, y: 200 }
+        )
+        await comfyPage.nextFrame()
+        await fitToViewInstant(comfyPage)
+
+        const [outIndex, inIndex] = await comfyPage.page.evaluate(
+          ([producerId, consumerId, outName, inName]) => {
+            const byId = (id: string) =>
+              window.app!.graph.nodes.find((node) => String(node.id) === id)!
+            const src = byId(producerId)
+            const dst = byId(consumerId)
+            return [
+              src.outputs.findIndex((slot) => slot.name === outName),
+              dst.inputs.findIndex((slot) => slot.name === inName)
+            ]
+          },
+          [
+            String(producer.id),
+            String(consumer.id),
+            edge.producer.slotName,
+            edge.consumer.slotName
+          ] as const
+        )
+        const key = `${edge.producer.nodeType}.${edge.producer.slotName} -> ${edge.consumer.nodeType}.${edge.consumer.slotName}`
+        expect(outIndex, `${key}: producer slot on instance`).toBeGreaterThan(
+          -1
+        )
+        expect(inIndex, `${key}: consumer slot on instance`).toBeGreaterThan(-1)
+
+        if (vueNodesEnabled) {
+          await expect(comfyPage.vueNodes.nodes).toHaveCount(2)
+          // Slot-key-addressed dots so shared-label ambiguity cannot misfire
+          // the drag.
+          const outDot = comfyPage.vueNodes.getOutputSlotConnectionDot(
+            String(producer.id),
+            outIndex
+          )
+          const inDot = comfyPage.vueNodes.getInputSlotConnectionDot(
+            String(consumer.id),
+            inIndex
+          )
+          await outDot.dragTo(inDot)
+        } else {
+          await producer.connectOutput(outIndex, consumer, inIndex)
+        }
+
+        await expect
+          .poll(
+            () =>
+              comfyPage.page.evaluate(
+                ([consumerId, index]) => {
+                  const node = window.app!.graph.nodes.find(
+                    (candidate) => String(candidate.id) === consumerId
+                  )
+                  return node?.inputs[Number(index)]?.link != null
+                },
+                [String(consumer.id), String(inIndex)] as const
+              ),
+            { message: `${key} with VueNodes=${vueNodesEnabled}` }
+          )
+          .toBe(true)
+      }
+
+      consoleErrors.stop()
+      const dragPacks = [
+        ...new Set(
+          dragEdges.flatMap((edge) => [edge.producer.pack, edge.consumer.pack])
+        )
+      ]
+      const dragErrors = consoleErrors.errors.filter(
+        (error) => !isForeignExecutionNoise(error)
       )
-    ]
-    const dragErrors = consoleErrors.errors.filter(
-      (error) => !isForeignExecutionNoise(error)
-    )
-    const unledgered = unallowlistedErrorsForPacks(dragPacks, dragErrors)
-    if (dragErrors.length > unledgered.length)
-      console.log(
-        `connectivity drag: ${dragErrors.length - unledgered.length} console error(s) matched the exact environment or installed-pack ledger`
+      const unledgered = unallowlistedErrorsForPacks(dragPacks, dragErrors)
+      if (dragErrors.length > unledgered.length)
+        console.log(
+          `connectivity drag: ${dragErrors.length - unledgered.length} console error(s) matched the exact environment or installed-pack ledger`
+        )
+      if (unledgered.length > 0)
+        await attachPageDiagnosticEvidence(
+          test.info(),
+          'connectivity-drag-console-errors.json',
+          unledgered
+        )
+      expect(
+        unledgered.length === 0,
+        failureSummary(
+          `console errors with VueNodes=${vueNodesEnabled}`,
+          unledgered,
+          'connectivity-drag-console-errors.json'
+        )
+      ).toBe(true)
+      await expectNoVisibleErrors(
+        comfyPage.page,
+        `after drag pass VueNodes=${vueNodesEnabled}`
       )
-    if (unledgered.length > 0)
-      await attachPageDiagnosticEvidence(
-        test.info(),
-        'connectivity-drag-console-errors.json',
-        unledgered
-      )
-    expect(
-      unledgered.length === 0,
-      failureSummary(
-        `console errors with VueNodes=${vueNodesEnabled}`,
-        unledgered,
-        'connectivity-drag-console-errors.json'
-      )
-    ).toBe(true)
-    await expectNoVisibleErrors(
-      comfyPage.page,
-      `after drag pass VueNodes=${vueNodesEnabled}`
-    )
-  }
-})
+    }
+  )
+}

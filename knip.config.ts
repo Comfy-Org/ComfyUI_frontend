@@ -24,8 +24,7 @@ const config: KnipConfig = {
       ],
       ignore: ['scripts/registry-census/detection-proof/**']
     },
-    'apps/desktop-ui': {
-      entry: ['src/i18n.ts'],
+    'packages/account': {
       project: ['src/**/*.{js,ts,vue}']
     },
     'packages/design-system': {
@@ -48,7 +47,8 @@ const config: KnipConfig = {
       vite: { config: ['vite.config.ts'] }
     },
     'apps/website': {
-      entry: ['src/scripts/**/*.ts']
+      // Models pages are registered by the release-gate integration.
+      entry: ['src/scripts/**/*.ts', 'src/routes/models/*.astro']
     },
     'tools/test-recorder': {
       project: ['src/**/*.ts']
@@ -66,8 +66,6 @@ const config: KnipConfig = {
     // Auto generated API types
     'src/workbench/extensions/manager/types/generatedManagerTypes.ts',
     'packages/ingest-types/src/zod.gen.ts',
-    // Workflow files contain license names that knip misinterprets as binaries
-    '.github/workflows/ci-oss-assets-validation.yaml',
     // Pending integration in stacked PR
     'src/components/sidebar/tabs/nodeLibrary/CustomNodesPanel.vue',
     // Marketing media tooling — adopted by pages in a follow-up PR

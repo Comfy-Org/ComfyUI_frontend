@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import type { INodeOutputSlot } from '@/lib/litegraph/src/interfaces'
 import type { IWidget } from '@/lib/litegraph/src/litegraph'
@@ -31,16 +29,10 @@ function createConnectedGraph(linkIds: number[]) {
 }
 
 describe('outputAsSerialisable', () => {
-  beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
-
   it('serialises the links leaving the slot, ascending by id', () => {
     const { source } = createConnectedGraph([10, 2])
 
-    const serialised = outputAsSerialisable(
-      source.outputs[0] as OutputSlotParam,
-      source,
-      0
-    )
+    const serialised = outputAsSerialisable(source.outputs[0], source, 0)
 
     expect(serialised.links).toEqual(
       [...serialised.links!].sort((a, b) => a - b)
@@ -51,11 +43,7 @@ describe('outputAsSerialisable', () => {
   it('returns a snapshot unaffected by later graph changes', () => {
     const { source } = createConnectedGraph([1, 2])
 
-    const serialised = outputAsSerialisable(
-      source.outputs[0] as OutputSlotParam,
-      source,
-      0
-    )
+    const serialised = outputAsSerialisable(source.outputs[0], source, 0)
     expect(serialised.links).toHaveLength(2)
 
     source.disconnectOutput(0)
@@ -65,11 +53,7 @@ describe('outputAsSerialisable', () => {
   it('serialises null when the slot has no links', () => {
     const { source } = createConnectedGraph([])
 
-    const serialised = outputAsSerialisable(
-      source.outputs[0] as OutputSlotParam,
-      source,
-      0
-    )
+    const serialised = outputAsSerialisable(source.outputs[0], source, 0)
     expect(serialised.links).toBeNull()
   })
 
@@ -90,24 +74,41 @@ describe('outputAsSerialisable', () => {
     const { source, targets } = createConnectedGraph([1])
     source.disconnectOutput(0, targets[0])
 
-    const serialised = outputAsSerialisable(
-      source.outputs[0] as OutputSlotParam,
-      source,
-      0
-    )
+    const serialised = outputAsSerialisable(source.outputs[0], source, 0)
 
     expect(serialised.links).toEqual([])
+  })
+
+  it('preserves link presence when a targeted disconnect matches no link', () => {
+    const { source, targets } = createConnectedGraph([1])
+    const unrelated = new LGraphNode('Unrelated')
+    unrelated.addInput('in', 'number')
+    source.graph!.add(unrelated)
+
+    expect(source.disconnectOutput(0, unrelated)).toBe(false)
+
+    const serialised = outputAsSerialisable(source.outputs[0], source, 0)
+    expect(serialised.links).toEqual([1])
+    expect(targets[0].inputs[0].link).toBe(toLinkId(1))
   })
 
   it('serialises null for a node with no graph', () => {
     const node = new LGraphNode('Detached')
     node.addOutput('out', 'number')
 
-    const serialised = outputAsSerialisable(
-      node.outputs[0] as OutputSlotParam,
-      node,
-      0
-    )
+    const serialised = outputAsSerialisable(node.outputs[0], node, 0)
     expect(serialised.links).toBeNull()
+  })
+
+  it('ignores stale ids on a detached plain-object slot', () => {
+    const node = new LGraphNode('Detached')
+    const output = {
+      name: 'out',
+      type: 'number',
+      links: [toLinkId(404)]
+    } as OutputSlotParam
+    node.outputs = [output]
+
+    expect(outputAsSerialisable(output, node, 0).links).toBeNull()
   })
 })

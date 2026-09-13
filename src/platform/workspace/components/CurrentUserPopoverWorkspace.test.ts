@@ -1,4 +1,5 @@
-import { createTestingPinia } from '@pinia/testing'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { getActivePinia } from 'pinia'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
@@ -23,6 +24,7 @@ const state = vi.hoisted(() => ({
   canManageSubscriptionLifecycle: false,
   canReactivate: false,
   canReactivatePlan: false,
+  canOpenPricingSurface: false,
   shouldUseWorkspaceBilling: true,
   showCreateWorkspaceDialog: vi.fn(),
   showTopUpCreditsDialog: vi.fn(),
@@ -30,25 +32,7 @@ const state = vi.hoisted(() => ({
   showSettingsDialog: vi.fn()
 }))
 
-const workspaceStoreMock = vi.hoisted(() => ({
-  store: null as null | {
-    initState: string
-    workspaceName: string
-    isInPersonalWorkspace: boolean
-  }
-}))
-
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', async () => {
-  const { reactive, ref } = await import('vue')
-  workspaceStoreMock.store = reactive({
-    initState: ref('ready'),
-    workspaceName: ref('Personal Workspace'),
-    isInPersonalWorkspace: ref(true)
-  })
-  return { useTeamWorkspaceStore: () => workspaceStoreMock.store }
-})
-
-vi.mock('@/composables/auth/useCurrentUser', () => ({
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({
     userDisplayName: ref('Liz'),
     userEmail: ref('liz@example.com'),
@@ -57,7 +41,7 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
   })
 }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     billingStatus: computed(() => state.billingStatus),
     canAccessSubscriptionFeatures: computed(
@@ -73,59 +57,69 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({
-    permissions: computed(() => ({
-      canManageSubscription: state.canManageSubscription,
-      canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
-    })),
-    canReactivatePlan: computed(() => state.canReactivatePlan)
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceUI'),
+  () => ({
+    useWorkspaceUI: () => ({
+      permissions: computed(() => ({
+        canManageSubscription: state.canManageSubscription,
+        canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
+      })),
+      canReactivatePlan: computed(() => state.canReactivatePlan),
+      canOpenPricingSurface: computed(() => state.canOpenPricingSurface)
+    })
   })
-}))
+)
 
-vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
-  useBillingCapabilities: () => ({
-    canTopUp: computed(() => state.canTopUp),
-    canSubscribeSelfServe: computed(() => state.canSubscribeSelfServe),
-    canReactivate: computed(() => state.canReactivate)
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingCapabilities'),
+  () => ({
+    useBillingCapabilities: () => ({
+      canTopUp: computed(() => state.canTopUp),
+      canSubscribeSelfServe: computed(() => state.canSubscribeSelfServe),
+      canReactivate: computed(() => state.canReactivate)
+    })
   })
-}))
+)
 
-vi.mock('@/composables/billing/useBillingRouting', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
   useBillingRouting: () => ({
     shouldUseWorkspaceBilling: computed(() => state.shouldUseWorkspaceBilling)
   })
 }))
 
-vi.mock(
-  '@/platform/cloud/subscription/composables/useSubscriptionDialog',
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
   () => ({
     useSubscriptionDialog: () => ({ showPricingTable: state.showPricingTable })
   })
 )
 
-vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
-  useSettingsDialog: () => ({ show: state.showSettingsDialog })
-}))
+vi.mock<unknown>(
+  import('@/platform/settings/composables/useSettingsDialog'),
+  () => ({
+    useSettingsDialog: () => ({ show: state.showSettingsDialog })
+  })
+)
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return state.isCloud
   }
 }))
 
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({
     showCreateWorkspaceDialog: state.showCreateWorkspaceDialog,
     showTopUpCreditsDialog: state.showTopUpCreditsDialog
   })
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => undefined
 }))
 
-vi.mock('@/composables/useExternalLink', () => ({
+vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
   useExternalLink: () => ({
     buildDocsUrl: vi.fn(() => 'https://docs.comfy.org'),
     docsPaths: { partnerNodesPricing: 'partner-nodes' }
@@ -159,19 +153,17 @@ function renderComponent(
   type: 'personal' | 'team' = 'personal',
   accountActionsOnly = false
 ) {
-  if (!workspaceStoreMock.store) throw new Error('Workspace store not ready')
-  workspaceStoreMock.store.workspaceName = `${type === 'personal' ? 'Personal' : 'Team'} Workspace`
-  workspaceStoreMock.store.isInPersonalWorkspace = type === 'personal'
+  useTeamWorkspaceStore().initState = 'ready'
+  Object.assign(useTeamWorkspaceStore(), {
+    workspaceName: `${type === 'personal' ? 'Personal' : 'Team'} Workspace`
+  })
+  Object.assign(useTeamWorkspaceStore(), {
+    isInPersonalWorkspace: type === 'personal'
+  })
   return render(CurrentUserPopoverWorkspace, {
     props: { accountActionsOnly },
     global: {
-      plugins: [
-        createTestingPinia({
-          createSpy: vi.fn
-        }),
-        PrimeVue,
-        i18n
-      ],
+      plugins: [getActivePinia()!, PrimeVue, i18n],
       directives: {
         tooltip: Tooltip
       },
@@ -198,6 +190,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.canSubscribeSelfServe = false
     state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false
+    state.canOpenPricingSurface = false
     state.canReactivate = false
     state.shouldUseWorkspaceBilling = true
   })
@@ -361,9 +354,8 @@ describe('CurrentUserPopoverWorkspace', () => {
       screen.queryByRole('button', { name: 'Subscribe' })
     ).not.toBeInTheDocument()
 
-    if (!workspaceStoreMock.store) throw new Error('Workspace store not ready')
-    workspaceStoreMock.store.workspaceName = 'Team Workspace'
-    workspaceStoreMock.store.isInPersonalWorkspace = false
+    Object.assign(useTeamWorkspaceStore(), { workspaceName: 'Team Workspace' })
+    Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: false })
     await rerender({})
 
     expect(screen.getByTestId('workspace-switcher-trigger')).toHaveTextContent(
@@ -537,6 +529,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     state.canManageSubscription = true
     state.canManageSubscriptionLifecycle = true
     state.canReactivatePlan = true
+    state.canOpenPricingSurface = true
     renderComponent('team')
 
     expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()
@@ -546,6 +539,33 @@ describe('CurrentUserPopoverWorkspace', () => {
     await user.click(screen.getByRole('button', { name: 'Resubscribe' }))
 
     expect(state.showPricingTable).toHaveBeenCalledOnce()
+  })
+
+  it('hides Plans & pricing on a sales-managed plan but keeps Manage plan', () => {
+    // Server-resolved for Enterprise/unrecognized tiers: no self-serve
+    // catalog, so canOpenPricingSurface resolves false while the plan is
+    // still manageable through settings.
+    state.canManageSubscription = true
+    state.canOpenPricingSurface = false
+    renderComponent('team')
+
+    expect(
+      screen.queryByTestId('plans-pricing-menu-item')
+    ).not.toBeInTheDocument()
+    expect(screen.getByTestId('manage-plan-menu-item')).toBeInTheDocument()
+  })
+
+  it('hides Resubscribe for a cancelled sales-managed plan', () => {
+    state.isCancelled = true
+    state.canManageSubscription = true
+    state.canManageSubscriptionLifecycle = true
+    state.canReactivate = false
+    state.canReactivatePlan = false
+    renderComponent('team')
+
+    expect(
+      screen.queryByRole('button', { name: 'Resubscribe' })
+    ).not.toBeInTheDocument()
   })
 
   it('reads the derived reactivate policy, not the raw server capability', () => {

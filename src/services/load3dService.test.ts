@@ -12,15 +12,15 @@ const { nodeMap, useLoad3dViewerMock, skeletonCloneMock } = vi.hoisted(() => ({
   skeletonCloneMock: vi.fn()
 }))
 
-vi.mock('@/composables/useLoad3d', () => ({
+vi.mock(import('@/composables/useLoad3d'), () => ({
   nodeToLoad3dMap: nodeMap
 }))
 
-vi.mock('@/composables/useLoad3dViewer', () => ({
+vi.mock(import('@/composables/useLoad3dViewer'), () => ({
   useLoad3dViewer: useLoad3dViewerMock
 }))
 
-vi.mock('three/examples/jsm/utils/SkeletonUtils', () => ({
+vi.mock(import('three/examples/jsm/utils/SkeletonUtils'), () => ({
   clone: skeletonCloneMock
 }))
 
@@ -193,14 +193,8 @@ describe('load3dService', () => {
       const viewer = makeViewer()
       const factory = vi.fn().mockReturnValue(viewer)
 
-      const first = svc.getOrCreateViewerSync(
-        node,
-        factory as unknown as typeof useLoad3dViewerMock
-      )
-      const second = svc.getOrCreateViewerSync(
-        node,
-        factory as unknown as typeof useLoad3dViewerMock
-      )
+      const first = svc.getOrCreateViewerSync(node, factory)
+      const second = svc.getOrCreateViewerSync(node, factory)
 
       expect(first).toBe(viewer)
       expect(second).toBe(viewer)
@@ -423,7 +417,7 @@ describe('load3dService', () => {
         scene.add(o)
       })
       const modelManager = {
-        currentModel: existingModel as THREE.Object3D | null,
+        currentModel: existingModel,
         originalModel: null as unknown,
         materialMode: 'original',
         currentUpDirection: 'original',

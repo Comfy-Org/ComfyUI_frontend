@@ -11,7 +11,8 @@ import {
   categoryLabelKeys,
   filterByCategory,
   learningCrumbs,
-  learningDescription,
+  learningKeywords,
+  learningMetaDescription,
   learningMetaTitle,
   tutorialPath
 } from '../../data/learningTutorials'
@@ -38,13 +39,14 @@ const { locale, url } = pageContext(
 const learningTitle = t('learning.title', locale)
 const label = category ? t(categoryLabelKeys[category], locale) : undefined
 const title = learningMetaTitle(locale, category)
-const description = learningDescription(locale, category)
+const description = learningMetaDescription(locale, category)
+const keywords = learningKeywords(category)
 
 const tutorialList = itemListNode(
   url,
   label ?? learningTitle,
   filterByCategory(category).map((tutorial) => ({
-    name: tutorial.title[locale],
+    name: tutorial.title[locale] || tutorial.title.en,
     url: absoluteUrl(Astro.site, localizeHref(tutorialPath(tutorial), locale))
   }))
 )
@@ -60,6 +62,7 @@ const breadcrumbs = learningCrumbs(locale, category).map((crumb) => ({
 <BaseLayout
   title={title}
   description={description}
+  keywords={keywords}
   pageType="CollectionPage"
   mainEntityId={jsonLdId(url, 'itemlist')}
   breadcrumbs={breadcrumbs}

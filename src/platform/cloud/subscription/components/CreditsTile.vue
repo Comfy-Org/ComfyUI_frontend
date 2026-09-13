@@ -58,9 +58,7 @@
         :class="cn('flex flex-col gap-2', isMonthlyDepleted && 'opacity-30')"
       >
         <div class="flex items-center justify-between text-sm">
-          <span class="text-text-primary">{{
-            $t('subscription.monthly')
-          }}</span>
+          <span class="text-text-primary">{{ allowanceLabel }}</span>
           <span class="text-muted">
             {{ refillsLabel }}
           </span>
@@ -97,7 +95,7 @@
             <span class="@max-[180px]:hidden">
               {{
                 $t('subscription.creditsLeftOfTotal', {
-                  remaining: monthlyBonusCredits,
+                  remaining: monthlyRemainingDisplay,
                   total: creditPoolTotalDisplay
                 })
               }}
@@ -151,12 +149,12 @@
           </span>
         </div>
         <span class="text-sm text-muted @max-[300px]:hidden">
-          {{ $t('subscription.usedAfterMonthly') }}
+          {{ usedAfterAllowanceLabel }}
         </span>
       </div>
     </template>
 
-    <template v-else-if="inactivePlan">
+    <template v-else-if="showsInactivePlanState">
       <div class="h-px w-full bg-interface-stroke" />
       <div class="flex flex-col gap-2">
         <div class="flex items-center justify-between gap-2 text-sm">
@@ -230,6 +228,7 @@ import { useSubscriptionCredits } from '@/platform/cloud/subscription/composable
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import {
   DEFAULT_TIER_KEY,
+  isSalesManagedTier,
   toTierKey,
   getTierCredits
 } from '@/platform/cloud/subscription/constants/tierPricing'
@@ -259,7 +258,6 @@ const {
 } = useBillingContext()
 const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
 const {
-  monthlyBonusCredits,
   prepaidCredits,
   totalCredits,
   monthlyBonusCreditsValue,
@@ -279,15 +277,28 @@ const tierKey = computed(() => {
   return toTierKey(tier) ?? DEFAULT_TIER_KEY
 })
 
+const isAnnualBilling = computed(
+  () => subscription.value?.duration === 'ANNUAL'
+)
+
 const creditPoolTotalCredits = computed<number | null>(() => {
   const monthlyCredits =
     currentTeamCreditStop.value?.credits_monthly ??
-    getTierCredits(tierKey.value)
+    (isSalesManagedTier(subscription.value?.tier)
+      ? null
+      : getTierCredits(tierKey.value))
   if (monthlyCredits === null) return null
-  return subscription.value?.duration === 'ANNUAL'
-    ? monthlyCredits * 12
-    : monthlyCredits
+  return isAnnualBilling.value ? monthlyCredits * 12 : monthlyCredits
 })
+
+// The reactivate-to-use-credits treatment sells a self-serve reactivation, so
+// it applies only where one exists. Tier decides that, as it does for the
+// credit pool above: can_top_up is a rollout-defaulted capability that also
+// fails open for owners on an unreadable snapshot, which would drop a lapsed
+// self-serve team out of this state during a capabilities outage.
+const showsInactivePlanState = computed(
+  () => inactivePlan === true && !isSalesManagedTier(subscription.value?.tier)
+)
 
 const usage = computed(() =>
   computeMonthlyUsage(
@@ -313,6 +324,18 @@ const refillsLabel = computed(() =>
     : t('subscription.refillsNextCycle')
 )
 
+const allowanceLabel = computed(() =>
+  t(isAnnualBilling.value ? 'subscription.yearly' : 'subscription.monthly')
+)
+
+const usedAfterAllowanceLabel = computed(() =>
+  t(
+    isAnnualBilling.value
+      ? 'subscription.usedAfterYearly'
+      : 'subscription.usedAfterMonthly'
+  )
+)
+
 const formatCreditCount = (value: number) =>
   formatCredits({
     value,
@@ -326,12 +349,15 @@ const creditPoolTotalDisplay = computed(() => {
 })
 
 const usedDisplay = computed(() => formatCreditCount(usage.value.used))
+const monthlyRemainingDisplay = computed(() =>
+  formatCreditCount(usage.value.remaining)
+)
 
 const compactNumber = computed(
   () => new Intl.NumberFormat(locale.value, { notation: 'compact' })
 )
 const monthlyRemainingCompact = computed(() =>
-  compactNumber.value.format(monthlyBonusCreditsValue.value)
+  compactNumber.value.format(usage.value.remaining)
 )
 const creditPoolTotalCompact = computed(() => {
   const total = creditPoolTotalCredits.value
@@ -339,23 +365,35 @@ const creditPoolTotalCompact = computed(() => {
 })
 
 const displayTotal = computed(() =>
-  zeroState || inactivePlan ? formatCreditCount(0) : totalCredits.value
+  zeroState || showsInactivePlanState.value
+    ? formatCreditCount(0)
+    : totalCredits.value
 )
 const displayPrepaid = computed(() =>
-  zeroState || inactivePlan ? formatCreditCount(0) : prepaidCredits.value
+  zeroState || showsInactivePlanState.value
+    ? formatCreditCount(0)
+    : prepaidCredits.value
 )
 const usedBarWidth = computed(
   () => `${(usage.value.usedFraction * 100).toFixed(2)}%`
 )
 const monthlyUsageLabel = computed(() =>
-  t('subscription.monthlyUsageProgress', {
-    used: usedDisplay.value,
-    total: creditPoolTotalDisplay.value
-  })
+  t(
+    isAnnualBilling.value
+      ? 'subscription.yearlyUsageProgress'
+      : 'subscription.monthlyUsageProgress',
+    {
+      used: usedDisplay.value,
+      total: creditPoolTotalDisplay.value
+    }
+  )
 )
 
 const showBreakdown = computed(
-  () => canAccessSubscriptionFeatures.value && !zeroState && !inactivePlan
+  () =>
+    canAccessSubscriptionFeatures.value &&
+    !zeroState &&
+    !showsInactivePlanState.value
 )
 // The monthly allowance bar is a Cloud-only presentation; Local/Desktop shows
 // only the total and additional-credit balances.
@@ -370,7 +408,7 @@ const showActionButton = computed(
   () =>
     (canTopUp.value || canSubscribeSelfServe.value) &&
     !zeroState &&
-    !inactivePlan
+    !showsInactivePlanState.value
 )
 
 const isMonthlyDepleted = computed(
@@ -399,10 +437,19 @@ const emptyStateNotice = computed(() => {
   if (isMonthlyDepleted.value) {
     return {
       title: hasRefillsDate.value
-        ? t('subscription.monthlyCreditsUsedUpTitle', {
-            date: refillsDateShort.value
-          })
-        : t('subscription.monthlyCreditsUsedUpTitleNoDate'),
+        ? t(
+            isAnnualBilling.value
+              ? 'subscription.yearlyCreditsUsedUpTitle'
+              : 'subscription.monthlyCreditsUsedUpTitle',
+            {
+              date: refillsDateShort.value
+            }
+          )
+        : t(
+            isAnnualBilling.value
+              ? 'subscription.yearlyCreditsUsedUpTitleNoDate'
+              : 'subscription.monthlyCreditsUsedUpTitleNoDate'
+          ),
       description: t('subscription.monthlyCreditsUsedUpDescription')
     }
   }

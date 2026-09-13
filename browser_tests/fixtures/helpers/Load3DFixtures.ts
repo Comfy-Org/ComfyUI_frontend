@@ -6,9 +6,7 @@ export const load3dTest = comfyPageFixture.extend<{
   load3d: Load3DHelper
 }>({
   load3d: async ({ comfyPage }, use) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
     await comfyPage.workflow.loadWorkflow('3d/load3d_node')
-    await comfyPage.vueNodes.waitForNodes()
 
     const node = comfyPage.vueNodes.getNodeLocator('1')
     await use(new Load3DHelper(node))

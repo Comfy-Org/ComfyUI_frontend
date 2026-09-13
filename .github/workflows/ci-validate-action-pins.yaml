@@ -1,7 +1,9 @@
 name: Validate Action SHA Pins
 
 on:
-  # A PR only re-checks the pins it edits, so a stale major merges green and reddens every later workflow PR.
+  # pull_request builds against the base at event time, so a stale base can merge
+  # green; merge_group rebuilds against main's tip and push catches queue bypasses.
+  merge_group:
   push:
     branches:
       - main

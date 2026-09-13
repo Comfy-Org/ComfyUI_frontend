@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { nextTick, reactive, ref } from 'vue'
 
 import { assetService } from '@/platform/assets/services/assetService'
+import type * as DistributionTypes from '@/platform/distribution/types'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import { useSettingStore } from '@/platform/settings/settingStore'
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { api } from '@/scripts/api'
 import {
   ResourceState,
@@ -13,22 +14,37 @@ import {
   useModelStore
 } from '@/stores/modelStore'
 
-const { isCloudRef } = vi.hoisted(() => ({ isCloudRef: { value: false } }))
+const mockDistribution = vi.hoisted(
+  (): { isCloud: typeof DistributionTypes.isCloud } => ({ isCloud: false })
+)
 
-vi.mock('@/platform/distribution/types', async (importOriginal) => ({
-  ...(await importOriginal<Record<string, unknown>>()),
-  get isCloud() {
-    return isCloudRef.value
+vi.mock<unknown>(
+  import('@/platform/distribution/types'),
+  () => mockDistribution
+)
+
+const remoteConfigHolder = await vi.hoisted(async () => {
+  const { ref } = await import('vue')
+  return { current: ref<RemoteConfig>({}) }
+})
+
+vi.mock<unknown>(import('@/platform/remoteConfig/remoteConfig'), () => ({
+  get remoteConfig() {
+    return remoteConfigHolder.current
   }
 }))
 
-// Mock the api
-vi.mock('@/scripts/api', () => ({
+const featureState = vi.hoisted(() => ({
+  serverFeatures: {} as Record<string, unknown>
+}))
+
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getModels: vi.fn(),
     getModelFolders: vi.fn(),
     getServerFeature: vi.fn(
-      (_path: string, defaultValue?: unknown) => defaultValue
+      (path: string, defaultValue?: unknown) =>
+        featureState.serverFeatures[path] ?? defaultValue
     ),
     viewMetadata: vi.fn(),
     apiURL: vi.fn((path: string) => `http://localhost:8188${path}`),
@@ -39,7 +55,7 @@ vi.mock('@/scripts/api', () => ({
 }))
 
 // Mock the assetService
-vi.mock('@/platform/assets/services/assetService', () => ({
+vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
     getAssetModels: vi.fn(),
     invalidateModelBuckets: vi.fn(),
@@ -48,24 +64,9 @@ vi.mock('@/platform/assets/services/assetService', () => ({
   }
 }))
 
-// Mock the settingStore
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: vi.fn()
-}))
-
-function enableMocks(useAssetAPI = false) {
-  // Mock settingStore to return the useAssetAPI setting
-  const mockSettingStore = {
-    get: vi.fn().mockImplementation((key: string) => {
-      if (key === 'Comfy.Assets.UseAssetAPI') {
-        return useAssetAPI
-      }
-      return false
-    })
-  }
-  vi.mocked(useSettingStore, { partial: true }).mockReturnValue(
-    mockSettingStore
-  )
+function enableMocks(assetsEnabled = false) {
+  // Reactive so the store's `watch(() => flags.assetsEnabled)` can fire.
+  featureState.serverFeatures.assets = assetsEnabled
 
   // Mock experimental API - returns objects with name and folders properties
   vi.mocked(api.getModels).mockResolvedValue([
@@ -110,8 +111,9 @@ describe('useModelStore', () => {
   let store: ReturnType<typeof useModelStore>
 
   beforeEach(async () => {
-    isCloudRef.value = false
-    remoteConfig.value = {}
+    mockDistribution.isCloud = false
+    featureState.serverFeatures = reactive({ assets: false })
+    remoteConfigHolder.current = ref({})
   })
 
   it('should load models', async () => {
@@ -121,6 +123,13 @@ describe('useModelStore', () => {
     const folderStore = await store.getLoadedModelFolder('checkpoints')
     expect(folderStore).toBeDefined()
     expect(Object.keys(folderStore!.models)).toHaveLength(3)
+  })
+
+  it('returns null when a model folder is unavailable', async () => {
+    enableMocks()
+    store = useModelStore()
+
+    await expect(store.getLoadedModelFolder('unknown')).resolves.toBeNull()
   })
 
   it('should load model metadata', async () => {
@@ -510,7 +519,7 @@ describe('useModelStore', () => {
       )
       const eagerLoad = store.getLoadedModelFolder('checkpoints')
 
-      await getScanCallback()!()
+      await getScanCallback()()
       await flushScanReload()
 
       // The rebuilt folder must have been re-loaded, not left uninitialized
@@ -535,7 +544,7 @@ describe('useModelStore', () => {
 
       const scanCallback = getScanCallback()
       expect(scanCallback).toBeDefined()
-      await scanCallback!()
+      await scanCallback()
       await flushScanReload()
 
       expect(assetService.getAssetModels).toHaveBeenCalledTimes(2)
@@ -550,7 +559,7 @@ describe('useModelStore', () => {
       await store.getLoadedModelFolder('checkpoints')
       expect(api.getModelFolders).toHaveBeenCalledTimes(1)
 
-      const scanCallback = getScanCallback()!
+      const scanCallback = getScanCallback()
       await scanCallback()
       await scanCallback()
       await scanCallback()
@@ -564,7 +573,7 @@ describe('useModelStore', () => {
       enableMocks(true)
       store = useModelStore()
 
-      await getScanCallback()!()
+      await getScanCallback()()
       await flushScanReload()
 
       // The bucket cache is still dropped so the eventual first read is
@@ -582,7 +591,7 @@ describe('useModelStore', () => {
         new Error('transient network failure')
       )
 
-      await getScanCallback()!()
+      await getScanCallback()()
       await flushScanReload()
 
       expect(error).toHaveBeenCalledWith(
@@ -590,6 +599,59 @@ describe('useModelStore', () => {
         expect.any(Error)
       )
       error.mockRestore()
+    })
+  })
+
+  describe('assets capability change', () => {
+    it('rebuilds the library when a late handshake turns the capability on', async () => {
+      enableMocks(false)
+      vi.mocked(assetService.getAssetModels).mockResolvedValue([
+        { name: 'asset-only.safetensors', pathIndex: 0 }
+      ])
+      store = useModelStore()
+      await store.loadModelFolders()
+      const legacyFolder = await store.getLoadedModelFolder('checkpoints')
+      expect(Object.keys(legacyFolder!.models)).toContain('0/sdxl.safetensors')
+      expect(api.getModels).toHaveBeenCalledTimes(1)
+      expect(assetService.getAssetModels).not.toHaveBeenCalled()
+
+      featureState.serverFeatures.assets = true
+
+      await vi.waitFor(() => {
+        expect(assetService.getAssetModels).toHaveBeenCalledWith('checkpoints')
+      })
+      expect(api.getModelFolders).toHaveBeenCalledTimes(2)
+      await vi.waitFor(async () => {
+        const rebuilt = await store.getLoadedModelFolder('checkpoints')
+        const names = Object.keys(rebuilt!.models)
+        expect(names).toContain('0/asset-only.safetensors')
+        expect(names).not.toContain('0/sdxl.safetensors')
+      })
+    })
+
+    // Guards the stale-closure risk: createGetModelsFunc() captures its data
+    // source when the folder is built, so a folder that existed before the
+    // handshake must not keep serving the legacy endpoint after it.
+    it('serves folders built before the handshake from the asset API after it', async () => {
+      enableMocks(false)
+      vi.mocked(assetService.getAssetModels).mockResolvedValue([
+        { name: 'asset-only.safetensors', pathIndex: 0 }
+      ])
+      store = useModelStore()
+      await store.loadModelFolders()
+      expect(assetService.getAssetModels).not.toHaveBeenCalled()
+
+      featureState.serverFeatures.assets = true
+      await vi.waitFor(() => {
+        expect(api.getModelFolders).toHaveBeenCalledTimes(2)
+      })
+
+      const folder = await store.getLoadedModelFolder('checkpoints')
+      expect(assetService.getAssetModels).toHaveBeenCalledWith('checkpoints')
+      expect(api.getModels).toHaveBeenCalledTimes(0)
+      const names = Object.keys(folder!.models)
+      expect(names).toContain('0/asset-only.safetensors')
+      expect(names).not.toContain('0/sdxl.safetensors')
     })
   })
 
@@ -677,7 +739,7 @@ describe('useModelStore', () => {
 
   describe('cloud gating', () => {
     beforeEach(() => {
-      isCloudRef.value = true
+      mockDistribution.isCloud = true
     })
 
     it('does not read safetensors metadata from disk on cloud', async () => {
@@ -714,8 +776,8 @@ describe('useModelStore', () => {
   })
 
   describe('API switching functionality', () => {
-    it('should use experimental API for complete workflow when UseAssetAPI setting is false', async () => {
-      enableMocks(false) // useAssetAPI = false
+    it('should use experimental API for complete workflow when the assets flag is off', async () => {
+      enableMocks(false)
       store = useModelStore()
       await store.loadModelFolders()
       const folderStore = await store.getLoadedModelFolder('checkpoints')
@@ -728,8 +790,8 @@ describe('useModelStore', () => {
       expect(Object.keys(folderStore!.models)).toHaveLength(3)
     })
 
-    it('should use asset API for model contents but /experiment/models for folders when UseAssetAPI is true', async () => {
-      enableMocks(true) // useAssetAPI = true
+    it('should use asset API for model contents but /experiment/models for folders when the assets flag is on', async () => {
+      enableMocks(true)
       store = useModelStore()
       await store.loadModelFolders()
       const folderStore = await store.getLoadedModelFolder('checkpoints')

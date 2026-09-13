@@ -5,9 +5,10 @@
 // CollectionPage + ItemList of the event detail pages, plus an Event node per
 // dated upcoming event.
 import BaseLayout from '../../layouts/BaseLayout.astro'
+import EventsDirectorySection from './EventsDirectorySection.vue'
 import EventsHeroSection from './EventsHeroSection.vue'
+import HostEventSection from './HostEventSection.vue'
 import PastEventsSection from './PastEventsSection.vue'
-import UpcomingEventsSection from './UpcomingEventsSection.vue'
 import { localizeHref } from '../../config/routes'
 import {
   eventJsonLdNode,
@@ -29,7 +30,7 @@ const eventList = itemListNode(
   url,
   t('events.past.title', locale),
   watchablePastEvents.map((event) => ({
-    name: event.title[locale],
+    name: event.title[locale] || event.title.en,
     url: absoluteUrl(Astro.site, localizeHref(eventPath(event), locale))
   }))
 )
@@ -56,6 +57,7 @@ const breadcrumbs = [
   extraJsonLd={[eventList, ...upcomingEventNodes]}
 >
   <EventsHeroSection locale={locale} client:load />
-  <UpcomingEventsSection locale={locale} client:visible />
+  <EventsDirectorySection locale={locale} client:visible />
+  <HostEventSection locale={locale} client:visible />
   <PastEventsSection locale={locale} client:visible />
 </BaseLayout>

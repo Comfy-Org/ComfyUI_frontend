@@ -86,24 +86,23 @@ async function waitForChangeTrackerSettled(
 
 async function beforeChange(comfyPage: ComfyPage) {
   await comfyPage.page.evaluate(() => {
-    window.app!.canvas!.emitBeforeChange()
+    window.app!.canvas.emitBeforeChange()
   })
 }
 
 async function afterChange(comfyPage: ComfyPage) {
   await comfyPage.page.evaluate(() => {
-    window.app!.canvas!.emitAfterChange()
+    window.app!.canvas.emitAfterChange()
   })
 }
 
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-})
+test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
 test.describe('Change Tracker', { tag: '@workflow' }, () => {
   test.describe('Undo/Redo', () => {
+    test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Top' } })
+
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
       await comfyPage.workflow.setupWorkflowsDirectory({})
     })
 
@@ -261,7 +260,7 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
   test('Can detect changes in workflow.extra', async ({ comfyPage }) => {
     await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(0)
     await comfyPage.page.evaluate(() => {
-      window.app!.graph!.extra.foo = 'bar'
+      window.app!.graph.extra.foo = 'bar'
     })
     // Click empty space to trigger a change detection.
     await comfyPage.canvasOps.clickEmptySpace()

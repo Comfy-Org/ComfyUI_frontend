@@ -7,13 +7,13 @@ import { toNodeId } from '@/types/nodeId'
 const getGizmoConfig = (page: Page) =>
   page.evaluate((nodeId) => {
     const n = window.app!.graph.getNodeById(nodeId)
-    const modelConfig = n?.properties?.['Model Config'] as
+    const modelConfig = n?.properties['Model Config'] as
       | { gizmo?: { enabled: boolean; mode: string } }
       | undefined
     return modelConfig?.gizmo
   }, toNodeId(1))
 
-test.describe('Load3D Gizmo Controls', () => {
+test.describe('Load3D Gizmo Controls', { tag: '@vue-nodes' }, () => {
   test(
     'Gizmo category appears in the controls menu',
     { tag: '@smoke' },

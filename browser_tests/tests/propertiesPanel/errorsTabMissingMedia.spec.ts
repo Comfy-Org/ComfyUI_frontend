@@ -14,12 +14,7 @@ function getErrorOverlay(comfyPage: ComfyPage) {
 }
 
 test.describe('Errors tab - Missing media', { tag: '@ui' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting(
-      'Comfy.RightSidePanel.ShowErrorsTab',
-      true
-    )
-  })
+  test.use({ initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true } })
 
   test.describe('Detection', () => {
     test('Shows missing media group in errors tab', async ({ comfyPage }) => {
@@ -80,7 +75,7 @@ test.describe('Errors tab - Missing media', { tag: '@ui' }, () => {
 
       const offsetBefore = await comfyPage.page.evaluate(() => {
         const canvas = window['app']?.canvas
-        return canvas?.ds?.offset
+        return canvas?.ds.offset
           ? [canvas.ds.offset[0], canvas.ds.offset[1]]
           : null
       })
@@ -93,7 +88,7 @@ test.describe('Errors tab - Missing media', { tag: '@ui' }, () => {
         .poll(async () => {
           return await comfyPage.page.evaluate(() => {
             const canvas = window['app']?.canvas
-            return canvas?.ds?.offset
+            return canvas?.ds.offset
               ? [canvas.ds.offset[0], canvas.ds.offset[1]]
               : null
           })
@@ -113,7 +108,7 @@ test.describe('Errors tab - Missing media', { tag: '@ui' }, () => {
 
       const offsetBefore = await comfyPage.page.evaluate(() => {
         const canvas = window['app']?.canvas
-        return canvas?.ds?.offset
+        return canvas?.ds.offset
           ? [canvas.ds.offset[0], canvas.ds.offset[1]]
           : null
       })
@@ -128,7 +123,7 @@ test.describe('Errors tab - Missing media', { tag: '@ui' }, () => {
         .poll(async () => {
           return await comfyPage.page.evaluate(() => {
             const canvas = window['app']?.canvas
-            return canvas?.ds?.offset
+            return canvas?.ds.offset
               ? [canvas.ds.offset[0], canvas.ds.offset[1]]
               : null
           })

@@ -9,10 +9,25 @@ const REDUNDANT_TIMER_CLEANUP_METHODS = new Set([
   'clearAllTimers',
   'useRealTimers'
 ])
+const REDUNDANT_LITEGRAPH_CLEANUP_METHODS = new Set([
+  'clearRegisteredTypes',
+  'unregisterNodeType'
+])
 
 const MODULE_SCOPE_MOCK_METHODS = new Set(['spyOn', 'stubGlobal'])
+const PARTIAL_MOCK_METHODS = new Set(['doMock', 'mock'])
 const AFTER_EACH_IMPORTS = new Set(['afterEach'])
-const BEFORE_ALL_IMPORTS = new Set(['beforeAll'])
+const BEFORE_TEST_IMPORTS = new Set(['beforeAll', 'describe', 'suite'])
+const SUITE_CALLBACK_MODIFIERS = new Set([
+  'concurrent',
+  'only',
+  'sequential',
+  'shuffle',
+  'skip',
+  'todo'
+])
+const SUITE_CALLBACK_FACTORIES = new Set(['each', 'for', 'runIf', 'skipIf'])
+const TEARDOWN_IMPORTS = new Set(['afterAll', 'afterEach', 'onTestFinished'])
 const HOOK_IMPORTS = new Set([
   'afterAll',
   'afterEach',
@@ -20,7 +35,7 @@ const HOOK_IMPORTS = new Set([
   'beforeEach'
 ])
 const VI_IMPORTS = new Set(['vi'])
-const VITEST_GLOBALS = new Set([...HOOK_IMPORTS, 'vi'])
+const VITEST_GLOBALS = new Set([...HOOK_IMPORTS, ...BEFORE_TEST_IMPORTS, 'vi'])
 
 interface Node {
   readonly type: string
@@ -33,6 +48,19 @@ interface Identifier extends Node {
 
 interface StringLiteral extends Node {
   readonly value: string
+}
+
+interface TemplateLiteral extends Node {
+  readonly type: 'TemplateLiteral'
+  readonly expressions: readonly Expression[]
+  readonly quasis: readonly {
+    readonly value: { readonly cooked?: string; readonly raw: string }
+  }[]
+}
+
+interface ImportExpression extends Node {
+  readonly type: 'ImportExpression'
+  readonly source: Expression
 }
 
 interface PropertyDefinition extends Node {
@@ -56,6 +84,7 @@ type Expression =
   | Node
   | Identifier
   | StringLiteral
+  | TemplateLiteral
   | MemberExpression
   | ChainExpression
 
@@ -65,9 +94,49 @@ interface CallExpression extends Node {
   readonly arguments: readonly Expression[]
 }
 
+interface FunctionExpression extends Node {
+  readonly type:
+    | 'ArrowFunctionExpression'
+    | 'FunctionDeclaration'
+    | 'FunctionExpression'
+  readonly params: readonly Node[]
+}
+
+function isImportExpression(node: Node | undefined): node is ImportExpression {
+  return node?.type === 'ImportExpression'
+}
+
+function isTemplateLiteral(node: Node): node is TemplateLiteral {
+  return node.type === 'TemplateLiteral'
+}
+
+function staticModuleName(node: Node | undefined): string | undefined {
+  if (!node) return
+  if (isImportExpression(node)) return staticModuleName(node.source)
+  if ('value' in node && typeof node.value === 'string') return node.value
+  if (isTemplateLiteral(node)) {
+    if (node.expressions.length === 0) {
+      return node.quasis[0]?.value.cooked ?? node.quasis[0]?.value.raw
+    }
+  }
+}
+
+function isFunctionExpression(
+  node: Node | undefined
+): node is FunctionExpression {
+  return (
+    node?.type === 'ArrowFunctionExpression' ||
+    node?.type === 'FunctionDeclaration' ||
+    node?.type === 'FunctionExpression'
+  )
+}
+
 interface ScopeVariableDefinition {
   readonly type: string
-  readonly node: Node & { readonly imported?: Identifier }
+  readonly node: Node & {
+    readonly imported?: Identifier
+    readonly init?: Expression
+  }
   readonly parent: Node & { readonly source?: StringLiteral }
 }
 
@@ -140,6 +209,29 @@ function resolvedVariable(
   }
 }
 
+function mockFactory(
+  context: RuleContext,
+  expression: Expression | undefined
+): FunctionExpression | undefined {
+  if (isFunctionExpression(expression)) return expression
+  const identifier = expression && asIdentifier(expression)
+  if (!identifier) return
+
+  const variable = resolvedVariable(context, identifier)
+  const definition = variable?.defs.find(
+    ({ node }) =>
+      isFunctionExpression(node) ||
+      (node.type === 'VariableDeclarator' && isFunctionExpression(node.init))
+  )?.node
+  if (isFunctionExpression(definition)) return definition
+  if (
+    definition?.type === 'VariableDeclarator' &&
+    isFunctionExpression(definition.init)
+  ) {
+    return definition.init
+  }
+}
+
 function isVitestImport(
   context: RuleContext,
   expression: Expression,
@@ -166,6 +258,27 @@ function isVitestImport(
     }
     const importedName = definition.node.imported?.name
     return importedName !== undefined && importedNames?.has(importedName)
+  })
+}
+
+function isLiteGraphSingleton(
+  context: RuleContext,
+  expression: Expression
+): boolean {
+  const identifier = asIdentifier(expression)
+  if (!identifier) return false
+  const variable = resolvedVariable(context, identifier)
+  if (!variable) return false
+
+  return variable.defs.some((definition) => {
+    if (definition.type !== 'ImportBinding') return false
+    const source = definition.parent.source?.value
+    return (
+      definition.node.imported?.name === 'LiteGraph' &&
+      typeof source === 'string' &&
+      ((source.startsWith('.') && source.endsWith('/litegraph')) ||
+        /(?:^|\/)lib\/litegraph(?:\/src)?\/litegraph$/.test(source))
+    )
   })
 }
 
@@ -197,6 +310,15 @@ function vitestMethodName(
   }
 }
 
+function liteGraphMethodName(
+  context: RuleContext,
+  call: CallExpression
+): string | undefined {
+  const member = asMemberExpression(call.callee)
+  if (!member || !isLiteGraphSingleton(context, member.object)) return
+  return staticMemberName(member)
+}
+
 function isFunction(node: Node): boolean {
   return (
     node.type === 'ArrowFunctionExpression' ||
@@ -216,23 +338,64 @@ function enclosingExecutionBoundaryIndex(ancestors: readonly Node[]): number {
   return ancestors.findLastIndex(isDeferredBoundary)
 }
 
-function isHookCall(
+function isSuiteFactoryCallback(
   context: RuleContext,
-  node: Node | undefined,
-  hookImports: ReadonlySet<string> = HOOK_IMPORTS
-): node is CallExpression {
-  if (node?.type !== 'CallExpression') return false
-  const call = node as CallExpression
-  if (isVitestImport(context, call.callee, hookImports)) return true
-  return [...hookImports].some((hook) =>
-    isVitestNamespaceMember(context, call.callee, hook)
+  expression: Expression,
+  callbackImports: ReadonlySet<string>
+): boolean {
+  const unwrapped = unwrapChain(expression)
+  if (unwrapped.type !== 'CallExpression') return false
+
+  const factory = asMemberExpression((unwrapped as CallExpression).callee)
+  const factoryName = factory && staticMemberName(factory)
+  return (
+    factory !== undefined &&
+    factoryName !== undefined &&
+    SUITE_CALLBACK_FACTORIES.has(factoryName) &&
+    isVitestCallback(context, factory.object, callbackImports)
   )
 }
 
-function runsDirectlyInHook(
+function isVitestCallback(
+  context: RuleContext,
+  expression: Expression,
+  callbackImports: ReadonlySet<string>
+): boolean {
+  if (
+    isVitestImport(context, expression, callbackImports) ||
+    [...callbackImports].some((callback) =>
+      isVitestNamespaceMember(context, expression, callback)
+    )
+  ) {
+    return true
+  }
+
+  if (isSuiteFactoryCallback(context, expression, callbackImports)) return true
+
+  const modifier = asMemberExpression(expression)
+  const modifierName = modifier && staticMemberName(modifier)
+  return (
+    modifier !== undefined &&
+    modifierName !== undefined &&
+    SUITE_CALLBACK_MODIFIERS.has(modifierName) &&
+    isVitestCallback(context, modifier.object, callbackImports)
+  )
+}
+
+function isVitestCallbackCall(
+  context: RuleContext,
+  node: Node | undefined,
+  callbackImports: ReadonlySet<string> = HOOK_IMPORTS
+): node is CallExpression {
+  if (node?.type !== 'CallExpression') return false
+  const call = node as CallExpression
+  return isVitestCallback(context, call.callee, callbackImports)
+}
+
+function runsDirectlyInVitestCallback(
   context: RuleContext,
   node: CallExpression,
-  hookImports: ReadonlySet<string> = HOOK_IMPORTS
+  callbackImports: ReadonlySet<string> = HOOK_IMPORTS
 ): boolean {
   const ancestors = context.sourceCode.getAncestors(node)
   const boundaryIndex = enclosingExecutionBoundaryIndex(ancestors)
@@ -242,8 +405,8 @@ function runsDirectlyInHook(
   if (!isFunction(callback)) return false
   const parent = ancestors[boundaryIndex - 1]
   return (
-    isHookCall(context, parent, hookImports) &&
-    parent.arguments.includes(callback as Expression)
+    isVitestCallbackCall(context, parent, callbackImports) &&
+    parent.arguments.includes(callback)
   )
 }
 
@@ -259,7 +422,7 @@ function runsAtModuleScope(
 function runsBeforeTests(context: RuleContext, node: CallExpression): boolean {
   return (
     runsAtModuleScope(context, node) ||
-    runsDirectlyInHook(context, node, BEFORE_ALL_IMPORTS)
+    runsDirectlyInVitestCallback(context, node, BEFORE_TEST_IMPORTS)
   )
 }
 
@@ -272,9 +435,9 @@ export const noRedundantVitestCleanup = {
           !methodName ||
           !(
             (REDUNDANT_CLEANUP_METHODS.has(methodName) &&
-              runsDirectlyInHook(context, node)) ||
+              runsDirectlyInVitestCallback(context, node)) ||
             (REDUNDANT_TIMER_CLEANUP_METHODS.has(methodName) &&
-              runsDirectlyInHook(context, node, AFTER_EACH_IMPORTS))
+              runsDirectlyInVitestCallback(context, node, AFTER_EACH_IMPORTS))
           )
         ) {
           return
@@ -303,6 +466,105 @@ export const noModuleScopeVitestMocks = {
         context.report({
           node,
           message: `Install vi.${methodName}() in beforeEach or a test because automatic Vitest cleanup removes earlier mock installations before assertions run.`
+        })
+      }
+    }
+  }
+}
+
+export const noImportActual = {
+  create(context: RuleContext) {
+    const mockedModulesByFactory = new Map<FunctionExpression, Set<string>>()
+    const importsInFactories: {
+      node: ImportExpression
+      factory: FunctionExpression
+      importedModule: string
+    }[] = []
+
+    return {
+      CallExpression(node: CallExpression) {
+        const methodName = vitestMethodName(context, node)
+        const factory =
+          methodName !== undefined && PARTIAL_MOCK_METHODS.has(methodName)
+            ? mockFactory(context, node.arguments[1])
+            : undefined
+        if (factory !== undefined) {
+          const mockedModule = staticModuleName(node.arguments[0])
+          if (mockedModule !== undefined) {
+            const modules = mockedModulesByFactory.get(factory) ?? new Set()
+            modules.add(mockedModule)
+            mockedModulesByFactory.set(factory, modules)
+          }
+        }
+        const usesImportOriginal =
+          factory !== undefined && factory.params.length > 0
+
+        if (methodName !== 'importActual' && !usesImportOriginal) return
+
+        context.report({
+          node,
+          message:
+            'Avoid importOriginal() and vi.importActual(). Import the module normally and use vi.spyOn(), vi.mock(..., { spy: true }), or a focused full mock.'
+        })
+      },
+      ImportExpression(node: ImportExpression) {
+        const importedModule = staticModuleName(node.source)
+        if (importedModule === undefined) return
+        const ancestors = context.sourceCode.getAncestors(node)
+        const factory = ancestors.findLast(isFunctionExpression)
+        if (factory === undefined) return
+        importsInFactories.push({ node, factory, importedModule })
+      },
+      'Program:exit'() {
+        for (const { node, factory, importedModule } of importsInFactories) {
+          if (!mockedModulesByFactory.get(factory)?.has(importedModule))
+            continue
+          context.report({
+            node,
+            message:
+              'Do not dynamically import the original module in a vi.mock() factory. Delete the mock, use vi.mock(..., { spy: true }), or provide a focused full mock.'
+          })
+        }
+      }
+    }
+  }
+}
+
+export const noPersistentLiteGraphRegistration = {
+  create(context: RuleContext) {
+    return {
+      CallExpression(node: CallExpression) {
+        if (
+          liteGraphMethodName(context, node) !== 'registerNodeType' ||
+          !runsBeforeTests(context, node)
+        ) {
+          return
+        }
+        context.report({
+          node,
+          message:
+            'Register LiteGraph node types in beforeEach or a test because automatic cleanup clears the registry after every test.'
+        })
+      }
+    }
+  }
+}
+
+export const noRedundantLiteGraphCleanup = {
+  create(context: RuleContext) {
+    return {
+      CallExpression(node: CallExpression) {
+        const methodName = liteGraphMethodName(context, node)
+        if (
+          !methodName ||
+          !REDUNDANT_LITEGRAPH_CLEANUP_METHODS.has(methodName) ||
+          !runsDirectlyInVitestCallback(context, node, TEARDOWN_IMPORTS)
+        ) {
+          return
+        }
+        context.report({
+          node,
+          message: `LiteGraph.${methodName}() is redundant because the project test setup clears registered node types after every test.`
         })
       }
     }

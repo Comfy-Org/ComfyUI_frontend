@@ -1,23 +1,21 @@
-import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
+import { debounce } from 'es-toolkit/compat'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
+import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
 
 import PackEnableToggle from './PackEnableToggle.vue'
 
-vi.mock('es-toolkit/compat', async () => {
-  const actual = await vi.importActual('es-toolkit/compat')
-  return {
-    ...actual,
-    debounce: <T extends (...args: unknown[]) => unknown>(fn: T) => fn
-  }
-})
+vi.mock(import('es-toolkit/compat'), { spy: true })
+vi.mocked(debounce).mockImplementation((fn) =>
+  Object.assign(fn, { cancel: vi.fn(), flush: vi.fn() })
+)
 
 const {
   acknowledgmentState,
@@ -37,8 +35,9 @@ const {
   mockShowNodeConflictDialog: vi.fn()
 }))
 
-vi.mock(
-  '@/workbench/extensions/manager/composables/useConflictAcknowledgment',
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/composables/useConflictAcknowledgment'),
+
   () => ({
     useConflictAcknowledgment: () => ({
       acknowledgmentState,
@@ -47,8 +46,9 @@ vi.mock(
   })
 )
 
-vi.mock(
-  '@/workbench/extensions/manager/composables/useImportFailedDetection',
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/composables/useImportFailedDetection'),
+
   () => ({
     useImportFailedDetection: () => ({
       showImportFailedDialog: mockShowImportFailedDialog
@@ -56,8 +56,9 @@ vi.mock(
   })
 )
 
-vi.mock(
-  '@/workbench/extensions/manager/composables/useNodeConflictDialog',
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/composables/useNodeConflictDialog'),
+
   () => ({
     useNodeConflictDialog: () => ({ show: mockShowNodeConflictDialog })
   })
@@ -72,32 +73,29 @@ const mockNodePack = {
   }
 }
 
-const mockIsPackEnabled = vi.fn()
-const mockEnablePack = vi.fn().mockResolvedValue(undefined)
-const mockDisablePack = vi.fn().mockResolvedValue(undefined)
-const mockGetConflictsForPackageByID = vi.fn()
-
-vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
-  useComfyManagerStore: vi.fn(() => ({
-    isPackEnabled: mockIsPackEnabled,
-    enablePack: mockEnablePack,
-    disablePack: mockDisablePack,
-    installedPacks: {}
-  }))
-}))
-
-vi.mock('@/workbench/extensions/manager/stores/conflictDetectionStore', () => ({
-  useConflictDetectionStore: vi.fn(() => ({
-    getConflictsForPackageByID: mockGetConflictsForPackageByID
-  }))
-}))
+let mockGetConflictsForPackageByID: ReturnType<
+  typeof vi.mocked<
+    ReturnType<typeof useConflictDetectionStore>['getConflictsForPackageByID']
+  >
+>
 
 describe('PackEnableToggle', () => {
   const user = userEvent.setup()
 
   beforeEach(() => {
-    mockEnablePack.mockReset().mockResolvedValue(undefined)
-    mockDisablePack.mockReset().mockResolvedValue(undefined)
+    vi.mocked(debounce).mockImplementation((fn) =>
+      Object.assign(fn, { cancel: vi.fn(), flush: vi.fn() })
+    )
+    mockGetConflictsForPackageByID = vi.fn()
+    Object.assign(useConflictDetectionStore(), {
+      getConflictsForPackageByID: mockGetConflictsForPackageByID
+    })
+    vi.mocked(useComfyManagerStore().enablePack)
+      .mockReset()
+      .mockResolvedValue(undefined)
+    vi.mocked(useComfyManagerStore().disablePack)
+      .mockReset()
+      .mockResolvedValue(undefined)
     mockGetConflictsForPackageByID.mockReset().mockReturnValue(undefined)
     acknowledgmentState.value.modal_dismissed = false
   })
@@ -107,7 +105,7 @@ describe('PackEnableToggle', () => {
     installedPacks = {}
   }: {
     props?: Record<string, unknown>
-    installedPacks?: Record<string, unknown>
+    installedPacks?: ReturnType<typeof useComfyManagerStore>['installedPacks']
   } = {}) {
     const i18n = createI18n({
       legacy: false,
@@ -115,14 +113,7 @@ describe('PackEnableToggle', () => {
       messages: { en: enMessages }
     })
 
-    vi.mocked(useComfyManagerStore).mockReturnValue({
-      isPackEnabled: mockIsPackEnabled,
-      enablePack: mockEnablePack,
-      disablePack: mockDisablePack,
-      installedPacks
-    } as Partial<ReturnType<typeof useComfyManagerStore>> as ReturnType<
-      typeof useComfyManagerStore
-    >)
+    useComfyManagerStore().installedPacks = installedPacks
 
     return render(PackEnableToggle, {
       props: {
@@ -130,13 +121,13 @@ describe('PackEnableToggle', () => {
         ...props
       },
       global: {
-        plugins: [PrimeVue, createTestingPinia({ stubActions: false }), i18n]
+        plugins: [PrimeVue, i18n]
       }
     })
   }
 
   it('renders a toggle switch', () => {
-    mockIsPackEnabled.mockReturnValue(true)
+    vi.mocked(useComfyManagerStore().isPackEnabled).mockReturnValue(true)
     renderComponent()
 
     expect(
@@ -145,33 +136,35 @@ describe('PackEnableToggle', () => {
   })
 
   it('checks if pack is enabled on mount', () => {
-    mockIsPackEnabled.mockReturnValue(true)
+    vi.mocked(useComfyManagerStore().isPackEnabled).mockReturnValue(true)
     renderComponent()
 
-    expect(mockIsPackEnabled).toHaveBeenCalledWith(mockNodePack.id)
+    expect(
+      vi.mocked(useComfyManagerStore().isPackEnabled)
+    ).toHaveBeenCalledWith(mockNodePack.id)
   })
 
   it('sets toggle to on when pack is enabled', () => {
-    mockIsPackEnabled.mockReturnValue(true)
+    vi.mocked(useComfyManagerStore().isPackEnabled).mockReturnValue(true)
     renderComponent()
 
     expect(screen.getByRole('switch')).toBeChecked()
   })
 
   it('sets toggle to off when pack is disabled', () => {
-    mockIsPackEnabled.mockReturnValue(false)
+    vi.mocked(useComfyManagerStore().isPackEnabled).mockReturnValue(false)
     renderComponent()
 
     expect(screen.getByRole('switch')).not.toBeChecked()
   })
 
   it('calls enablePack when toggle is switched on', async () => {
-    mockIsPackEnabled.mockReturnValue(false)
+    vi.mocked(useComfyManagerStore().isPackEnabled).mockReturnValue(false)
     renderComponent()
 
     await user.click(screen.getByRole('switch'))
 
-    expect(mockEnablePack).toHaveBeenCalledWith(
+    expect(vi.mocked(useComfyManagerStore().enablePack)).toHaveBeenCalledWith(
       expect.objectContaining({
         id: mockNodePack.id,
         version: mockNodePack.latest_version.version
@@ -180,12 +173,12 @@ describe('PackEnableToggle', () => {
   })
 
   it('calls disablePack when toggle is switched off', async () => {
-    mockIsPackEnabled.mockReturnValue(true)
+    vi.mocked(useComfyManagerStore().isPackEnabled).mockReturnValue(true)
     renderComponent()
 
     await user.click(screen.getByRole('switch'))
 
-    expect(mockDisablePack).toHaveBeenCalledWith(
+    expect(vi.mocked(useComfyManagerStore().disablePack)).toHaveBeenCalledWith(
       expect.objectContaining({
         id: mockNodePack.id,
         version: mockNodePack.latest_version.version
@@ -198,9 +191,9 @@ describe('PackEnableToggle', () => {
     const pendingPromise = new Promise<void>((resolve) => {
       resolvePendingPromise = resolve
     })
-    mockEnablePack.mockReturnValue(pendingPromise)
+    vi.mocked(useComfyManagerStore().enablePack).mockReturnValue(pendingPromise)
 
-    mockIsPackEnabled.mockReturnValue(false)
+    vi.mocked(useComfyManagerStore().isPackEnabled).mockReturnValue(false)
     renderComponent()
 
     await user.click(screen.getByRole('switch'))
@@ -227,7 +220,7 @@ describe('PackEnableToggle', () => {
       ],
       is_compatible: false
     })
-    mockIsPackEnabled.mockReturnValue(true)
+    vi.mocked(useComfyManagerStore().isPackEnabled).mockReturnValue(true)
     renderComponent()
 
     const control = screen.getByRole('switch')
@@ -254,7 +247,7 @@ describe('PackEnableToggle', () => {
         is_compatible: false
       })
 
-      mockIsPackEnabled.mockReturnValue(true)
+      vi.mocked(useComfyManagerStore().isPackEnabled).mockReturnValue(true)
       const { container } = renderComponent()
 
       // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
@@ -266,9 +259,9 @@ describe('PackEnableToggle', () => {
     })
 
     it('should not show warning icon when package has no conflicts', () => {
-      mockGetConflictsForPackageByID.mockReturnValue(null)
+      mockGetConflictsForPackageByID.mockReturnValue(undefined)
 
-      mockIsPackEnabled.mockReturnValue(true)
+      vi.mocked(useComfyManagerStore().isPackEnabled).mockReturnValue(true)
       const { container } = renderComponent()
 
       // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access

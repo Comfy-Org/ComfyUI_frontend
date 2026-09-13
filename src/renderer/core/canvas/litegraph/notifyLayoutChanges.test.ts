@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { notifyLayoutChanges } from '@/renderer/core/canvas/litegraph/notifyLayoutChanges'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
@@ -9,8 +7,6 @@ import { LayoutSource } from '@/renderer/core/layout/types'
 import { toGroupId } from '@/types/groupId'
 import { createUuidv4 } from '@/utils/uuid'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-
-beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 
 function setup() {
   const graph = new LGraph()
@@ -187,6 +183,49 @@ describe('notifyLayoutChanges', () => {
       source: LayoutSource.Vue
     })
 
+    await vi.waitFor(() => expect(setDirty).toHaveBeenCalledWith(true, true))
+  })
+
+  it('invalidates rendering only when slot offsets change', async () => {
+    using context = setup()
+    const { graph, node, setDirty } = context
+    const offsets = [
+      { index: 0, type: 'input' as const, position: { x: 0, y: 10 } }
+    ]
+
+    layoutStore.updateNodeSlotOffsets(
+      graph.rootGraph.id,
+      node.id,
+      offsets,
+      'expanded'
+    )
+    await vi.waitFor(() => expect(setDirty).toHaveBeenCalledWith(true, true))
+    setDirty.mockClear()
+
+    layoutStore.updateNodeSlotOffsets(
+      graph.rootGraph.id,
+      node.id,
+      offsets,
+      'expanded'
+    )
+    await Promise.resolve()
+    expect(setDirty).not.toHaveBeenCalled()
+
+    layoutStore.updateNodeSlotOffsets(
+      graph.rootGraph.id,
+      node.id,
+      [],
+      'collapsed'
+    )
+    await Promise.resolve()
+    expect(setDirty).not.toHaveBeenCalled()
+
+    layoutStore.updateNodeSlotOffsets(
+      graph.rootGraph.id,
+      node.id,
+      [{ ...offsets[0], position: { x: 0, y: 20 } }],
+      'expanded'
+    )
     await vi.waitFor(() => expect(setDirty).toHaveBeenCalledWith(true, true))
   })
 
