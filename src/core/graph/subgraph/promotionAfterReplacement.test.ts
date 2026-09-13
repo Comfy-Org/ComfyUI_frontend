@@ -13,7 +13,7 @@ import {
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetId } from '@/types/widgetId'
 
-vi.mock('@/services/litegraphService', () => ({
+vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: () => ({ updatePreviews: () => ({}) })
 }))
 

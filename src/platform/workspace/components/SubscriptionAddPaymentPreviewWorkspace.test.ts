@@ -1,6 +1,7 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
 import type {
   PreviewSubscribeResponse,
@@ -44,23 +45,25 @@ function previewFixture(
   }
 }
 
-// Interpolation values are appended so assertions can verify what a message
-// was given, not just which message was chosen.
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string, named?: Record<string, unknown>) =>
-      named
-        ? `${key}|${Object.entries(named)
-            .map(([name, value]) => `${name}=${String(value)}`)
-            .join(',')}`
-        : key,
-    n: (value: number) => value.toLocaleString('en-US'),
-    locale: { value: 'en' }
-  })
-}))
+// Only the renewal messages are supplied, so the renewal assertions verify
+// real interpolated output while every other key still renders as itself.
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: {
+    en: {
+      subscription: {
+        preview: {
+          renewsAt: 'Renews at {amount} on {date}. Cancel anytime.',
+          renewsAtAmount: 'Renews at {amount}. Cancel anytime.'
+        }
+      }
+    }
+  }
+})
 
 const globalOptions = {
-  mocks: { $t: (key: string) => key },
+  plugins: [i18n],
   stubs: {
     'i18n-t': { template: '<span />' },
     Button: {
@@ -296,7 +299,7 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
     await userEvent.click(
       screen.getByText('subscription.preview.applyPromoCode')
     )
-    expect(emitted().applyPromotionCode?.at(-1)).toEqual(['SAVE20'])
+    expect(emitted().applyPromotionCode.at(-1)).toEqual(['SAVE20'])
   })
 
   it('offers Add new payment method from the saved-method picker', async () => {
@@ -359,6 +362,87 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
       '_blank',
       'noopener,noreferrer'
     )
+  })
+
+  it('hides the capture-mode payment surface during parked-checkout recovery', () => {
+    render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: {
+        tierKey: 'creator',
+        parkedCheckoutRecovery: true,
+        usePaymentElement: true,
+        // A ready quote, so the selector is absent because recovery hides it
+        // rather than because there is nothing to price.
+        previewData: {
+          ...previewFixture('MONTHLY', 50_000),
+          quote_id: 'quote_parked',
+          quote_version: 1
+        }
+      },
+      global: globalOptions
+    })
+
+    expect(screen.queryByTestId('payment-selector')).toBeNull()
+    expect(
+      screen.queryByRole('button', {
+        name: /subscription\.preview\.(subscribeToPlan|payAndSubscribe)/
+      })
+    ).toBeNull()
+  })
+
+  it('hides the saved-method payment action during parked-checkout recovery', () => {
+    render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: {
+        tierKey: 'creator',
+        parkedCheckoutRecovery: true,
+        savedMethods: [
+          {
+            type: 'card',
+            id: 'pm_1',
+            brand: 'visa',
+            last4: '4242',
+            is_default: true
+          }
+        ]
+      },
+      global: globalOptions
+    })
+
+    expect(
+      screen.queryByRole('button', {
+        name: /subscription\.preview\.(subscribeToPlan|payAndSubscribe)/
+      })
+    ).toBeNull()
+  })
+
+  it('hides the standard subscribe action during parked-checkout recovery', () => {
+    render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: { tierKey: 'creator', parkedCheckoutRecovery: true },
+      global: globalOptions
+    })
+
+    // Both emit addCreditCard; rendering them together offers the same action twice.
+    expect(
+      screen.queryByRole('button', {
+        name: /subscription\.preview\.(subscribeToPlan|payAndSubscribe)/
+      })
+    ).toBeNull()
+  })
+
+  it('retries the subscribe from the parked-checkout prompt', async () => {
+    const { emitted } = render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: { tierKey: 'creator', parkedCheckoutRecovery: true },
+      global: globalOptions
+    })
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'subscription.preview.parkedCheckoutDetail'
+    )
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: 'subscription.preview.completePayment'
+      })
+    )
+    expect(emitted().addCreditCard).toBeTruthy()
   })
 
   it('reports failed verification without offering to resume it', () => {
@@ -451,9 +535,7 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
 
     expect(screen.getByText('$20.00')).toBeTruthy()
     expect(
-      screen.getByText(
-        'subscription.preview.renewsAt|amount=$20.00,date=Jun 19, 2027'
-      )
+      screen.getByText('Renews at $20.00 on Jun 19, 2027. Cancel anytime.')
     ).toBeTruthy()
   })
 })

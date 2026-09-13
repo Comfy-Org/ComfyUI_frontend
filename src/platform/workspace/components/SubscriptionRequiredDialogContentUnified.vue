@@ -101,6 +101,7 @@
         :authentication-state
         :authentication-error
         :reconciliation-operation-id
+        :parked-checkout-recovery
         :use-payment-element="stripePaymentElementEnabled"
         :saved-methods="savedMethodsForConfirm"
         :selected-saved-method-id="selectedSavedPaymentMethodId"
@@ -126,6 +127,7 @@
         :authentication-state
         :authentication-error
         :reconciliation-operation-id
+        :parked-checkout-recovery
         :use-payment-element="stripePaymentElementEnabled"
         :saved-methods="savedMethodsForConfirm"
         :selected-saved-method-id="selectedSavedPaymentMethodId"
@@ -234,6 +236,7 @@ const {
   authenticationState,
   authenticationError,
   reconciliationOperationId,
+  parkedCheckoutRecovery,
   isPolling,
   isTeamCheckout,
   previewVariant,

@@ -1,9 +1,7 @@
-import { createTestingPinia } from '@pinia/testing'
 import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import axios from 'axios'
-import type * as AxiosModule from 'axios'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -13,27 +11,12 @@ import type {
   RemoteComboConfig,
   RemoteItemSchema
 } from '@/schemas/nodeDefSchema'
+import { useAuthStore } from '@/stores/authStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import { createMockWidget } from './widgetTestUtils'
 
-vi.mock('axios', async (importOriginal) => {
-  const actual = await importOriginal<typeof AxiosModule>()
-  return {
-    ...actual,
-    default: { ...actual.default, get: vi.fn() }
-  }
-})
-
-vi.mock('@/platform/workspace/stores/workspaceAuthStore', () => ({
-  useWorkspaceAuthStore: () => ({ currentWorkspace: null })
-}))
-vi.mock('@/stores/authStore', () => ({
-  useAuthStore: () => ({
-    userId: undefined,
-    getAuthHeader: vi.fn(() => Promise.resolve(null))
-  })
-}))
+vi.mock(import('firebase/auth'))
 
 const i18n = createI18n({
   legacy: false,
@@ -100,18 +83,15 @@ function renderWithProviders(
   })
   return render(component, {
     global: {
-      plugins: [
-        i18n,
-        createTestingPinia({ createSpy: vi.fn }),
-        [VueQueryPlugin, { queryClient }]
-      ]
+      plugins: [i18n, [VueQueryPlugin, { queryClient }]]
     },
     props
   })
 }
 
 beforeEach(() => {
-  vi.mocked(axios.get).mockReset()
+  vi.spyOn(axios, 'get').mockReset()
+  vi.mocked(useAuthStore().getAuthHeader).mockResolvedValue(null)
 })
 
 describe('RichComboWidget', () => {
@@ -154,7 +134,7 @@ describe('RichComboWidget', () => {
     const { emitted } = renderWithProviders(RichComboWidget, { widget })
     await waitFor(() => {
       const events = emitted<unknown[]>('update:modelValue')
-      expect(events?.[0]?.[0]).toBe('one')
+      expect(events[0]?.[0]).toBe('one')
     })
   })
 
@@ -167,7 +147,7 @@ describe('RichComboWidget', () => {
     const { emitted } = renderWithProviders(RichComboWidget, { widget })
     await waitFor(() => {
       const events = emitted<unknown[]>('update:modelValue')
-      expect(events?.[0]?.[0]).toBe('valid')
+      expect(events[0]?.[0]).toBe('valid')
     })
   })
 
@@ -184,7 +164,7 @@ describe('RichComboWidget', () => {
     const { emitted } = renderWithProviders(RichComboWidget, { widget })
     await waitFor(() => {
       const events = emitted<unknown[]>('update:modelValue')
-      expect(events?.[0]?.[0]).toBe('c')
+      expect(events[0]?.[0]).toBe('c')
     })
   })
 

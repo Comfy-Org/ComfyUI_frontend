@@ -1,23 +1,12 @@
-import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { ResultItemImpl } from '@/stores/queueStore'
-import type { SerializedNodeId } from '@/types/nodeId'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 
 import MediaLightbox from './MediaLightbox.vue'
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({ get: () => undefined })
-}))
-vi.mock('@/stores/extensionStore', () => ({
-  useExtensionStore: () => ({
-    isExtensionInstalled: () => false,
-    isExtensionEnabled: () => false
-  })
-}))
 
 const i18n = createI18n({
   legacy: false,
@@ -36,17 +25,8 @@ const i18n = createI18n({
   }
 })
 
-type MockResultItem = Partial<ResultItemImpl> & {
-  filename: string
-  subfolder: string
-  type: string
-  nodeId: SerializedNodeId
-  mediaType: string
+type MockResultItem = AugmentedResultItem & {
   id?: string
-  url?: string
-  isImage?: boolean
-  isVideo?: boolean
-  isAudio?: boolean
 }
 
 describe('MediaLightbox', () => {
@@ -77,9 +57,6 @@ describe('MediaLightbox', () => {
       type: 'output',
       nodeId: '123',
       mediaType: 'images',
-      isImage: true,
-      isVideo: false,
-      isAudio: false,
       url: 'image1.jpg',
       id: '1'
     },
@@ -89,9 +66,6 @@ describe('MediaLightbox', () => {
       type: 'output',
       nodeId: '456',
       mediaType: 'images',
-      isImage: true,
-      isVideo: false,
-      isAudio: false,
       url: 'image2.jpg',
       id: '2'
     },
@@ -101,9 +75,6 @@ describe('MediaLightbox', () => {
       type: 'output',
       nodeId: '789',
       mediaType: 'images',
-      isImage: true,
-      isVideo: false,
-      isAudio: false,
       url: 'image3.jpg',
       id: '3'
     }
@@ -126,7 +97,7 @@ describe('MediaLightbox', () => {
         }
       },
       props: {
-        allGalleryItems: mockGalleryItems as ResultItemImpl[],
+        allGalleryItems: mockGalleryItems,
         activeIndex: 0,
         'onUpdate:activeIndex': onUpdateActiveIndex,
         ...props
@@ -155,7 +126,7 @@ describe('MediaLightbox', () => {
 
   it('hides navigation buttons for single item', async () => {
     renderGallery({
-      allGalleryItems: [mockGalleryItems[0]] as ResultItemImpl[]
+      allGalleryItems: [mockGalleryItems[0]]
     })
     await nextTick()
 
@@ -171,7 +142,7 @@ describe('MediaLightbox', () => {
     /* eslint-enable testing-library/no-container, testing-library/no-node-access */
 
     await rerender({
-      allGalleryItems: mockGalleryItems as ResultItemImpl[],
+      allGalleryItems: mockGalleryItems,
       activeIndex: 0
     })
     await nextTick()
@@ -202,12 +173,11 @@ describe('MediaLightbox', () => {
         allGalleryItems: [
           {
             ...mockGalleryItems[0],
-            isImage: false,
-            isText: true,
+            filename: 'failed.txt',
             mediaType: 'text',
             url: '/api/view?filename=failed.txt'
           }
-        ] as ResultItemImpl[]
+        ]
       },
       { ResultText: false }
     )
@@ -280,9 +250,6 @@ describe('MediaLightbox', () => {
       type: 'output',
       nodeId: `${n}`,
       mediaType: 'video',
-      isImage: false,
-      isVideo: true,
-      isAudio: false,
       url: `http://assets.test/v${n}.mp4`,
       id: `v${n}`
     })
@@ -291,13 +258,13 @@ describe('MediaLightbox', () => {
       const { rerender } = render(MediaLightbox, {
         global: { plugins: [i18n] },
         props: {
-          allGalleryItems: items as ResultItemImpl[],
+          allGalleryItems: items,
           activeIndex: 0
         }
       })
       const show = async (activeIndex: number) => {
         await rerender({
-          allGalleryItems: items as ResultItemImpl[],
+          allGalleryItems: items,
           activeIndex
         })
         await nextTick()

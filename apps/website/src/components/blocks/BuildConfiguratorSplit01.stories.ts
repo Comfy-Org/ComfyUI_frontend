@@ -42,7 +42,6 @@ const meta: Meta<typeof BuildConfiguratorSplit01> = {
       'Assign approved builds through company identity'
     ],
     eyebrow: 'MANAGED BUILDS',
-    panelTitle: 'Define your build',
     releasesLabel: 'COMFYUI RELEASE',
     releases: ['v0.34.2', 'v0.34.0', 'v0.33.1'],
     environmentsLabel: 'PYTHON · PYTORCH · CUDA',
@@ -86,6 +85,10 @@ export const Default: Story = {}
 
 export const WithoutFeatures: Story = {
   args: { features: [] }
+}
+
+export const WithPanelTitle: Story = {
+  args: { panelTitle: 'Define your build' }
 }
 
 export const Mobile: Story = {

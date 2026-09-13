@@ -149,7 +149,7 @@ const statusBadge = computed((): NodeBadgeProps | undefined =>
       : undefined
 )
 
-const isPinned = computed(() => Boolean(nodeData?.flags?.pinned))
+const isPinned = computed(() => Boolean(nodeData?.flags.pinned))
 
 const headerShapeClass = computed(() => {
   if (collapsed) {

@@ -60,6 +60,6 @@ describe('CoachmarkLanding', () => {
     await screen.findByText('Welcome to Apps')
     await user.keyboard('{Escape}')
     // The explicit listener and Reka's own dismiss may both fire here.
-    expect(emitted().skip?.length).toBeGreaterThanOrEqual(1)
+    expect(emitted().skip.length).toBeGreaterThanOrEqual(1)
   })
 })

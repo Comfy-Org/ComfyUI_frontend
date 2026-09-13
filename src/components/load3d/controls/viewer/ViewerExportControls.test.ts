@@ -5,11 +5,11 @@ import { createI18n } from 'vue-i18n'
 
 import ViewerExportControls from '@/components/load3d/controls/viewer/ViewerExportControls.vue'
 
-vi.mock('@/components/ui/select/Select.vue')
-vi.mock('@/components/ui/select/SelectContent.vue')
-vi.mock('@/components/ui/select/SelectItem.vue')
-vi.mock('@/components/ui/select/SelectTrigger.vue')
-vi.mock('@/components/ui/select/SelectValue.vue')
+vi.mock(import('@/components/ui/select/Select.vue'))
+vi.mock(import('@/components/ui/select/SelectContent.vue'))
+vi.mock(import('@/components/ui/select/SelectItem.vue'))
+vi.mock(import('@/components/ui/select/SelectTrigger.vue'))
+vi.mock(import('@/components/ui/select/SelectValue.vue'))
 
 const i18n = createI18n({
   legacy: false,

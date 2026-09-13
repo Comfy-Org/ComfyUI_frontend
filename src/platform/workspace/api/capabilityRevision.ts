@@ -21,7 +21,7 @@ export function onCapabilityRevision(
 }
 
 function isMutationResponse(response: AxiosResponse | undefined): boolean {
-  const method = response?.config?.method
+  const method = response?.config.method
   return (
     typeof method === 'string' && MUTATION_METHODS.has(method.toLowerCase())
   )

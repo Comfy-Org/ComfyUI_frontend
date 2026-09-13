@@ -106,7 +106,7 @@ export function useRemoteCombo(args: UseRemoteComboArgs) {
 
   const fieldLabel = computed(() => toValue(args.fieldLabel) ?? '')
   const previewType = computed<RemoteComboPreviewType>(
-    () => toValue(args.config)?.item_schema?.preview_type ?? 'image'
+    () => toValue(args.config)?.item_schema.preview_type ?? 'image'
   )
 
   function applyAutoSelect(config: RemoteComboConfig) {

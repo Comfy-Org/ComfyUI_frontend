@@ -1,15 +1,13 @@
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { fromPartial } from '@total-typescript/shoehorn'
-import type * as VueUse from '@vueuse/core'
-import type * as Pinia from 'pinia'
+import * as VueUse from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
-import type { Ref } from 'vue'
 
 import { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeLayout } from '@/renderer/core/layout/types'
 import { toNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
 
 // TODO: Simplify test setup — use real layoutStore + createTestingPinia instead
@@ -17,13 +15,7 @@ import type { UUID } from '@/utils/uuid'
 const ROOT_GRAPH_ID = vi.hoisted<UUID>(() => 'root-graph')
 
 const testState = vi.hoisted(() => {
-  // Imports are unavailable inside vi.hoisted() so shoehorn's fromAny cannot
-  // be used here. This local identity function serves the same purpose
-  // (runtime no-op cast) until the test is rewritten to use real stores.
-  const placeholder = <T>(v: unknown): T => v as T
   return {
-    selectedNodeIds: placeholder<Ref<Set<NodeId>>>(null),
-    selectedItems: placeholder<Ref<unknown[]>>(null),
     nodeLayouts: new Map<string, Pick<NodeLayout, 'position' | 'size'>>(),
     mutationFns: {
       moveNode: vi.fn(),
@@ -50,48 +42,18 @@ const testState = vi.hoisted(() => {
   }
 })
 
-vi.mock('pinia', async (importOriginal) => ({
-  ...(await importOriginal<typeof Pinia>()),
-  storeToRefs: <T>(store: T) => store
+vi.mock<unknown>(import('@/renderer/core/canvas/useAutoPan'), () => ({
+  AutoPanController: vi.fn()
 }))
 
-vi.mock('@/renderer/core/canvas/useAutoPan', () => ({
-  AutoPanController: class {
-    updatePointer = vi.fn()
-    start = vi.fn()
-    stop = vi.fn()
-    constructor(opts: { onPan: (dx: number, dy: number) => void }) {
-      testState.capturedOnPan.current = opts.onPan
-      testState.capturedAutoPanInstance.current = this
-    }
-  }
-}))
-
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({
-    rootGraphId: ROOT_GRAPH_ID,
-    selectedNodeIds: testState.selectedNodeIds,
-    selectedItems: testState.selectedItems,
-    canvas: {
-      ds: testState.mockDs,
-      auto_pan_speed: 10,
-      canvas: {
-        getBoundingClientRect: () => ({
-          left: 0,
-          top: 0,
-          right: 800,
-          bottom: 600
-        })
-      }
-    }
+vi.mock<unknown>(
+  import('@/renderer/core/layout/operations/layoutMutations'),
+  () => ({
+    useLayoutMutations: () => testState.mutationFns
   })
-}))
+)
 
-vi.mock('@/renderer/core/layout/operations/layoutMutations', () => ({
-  useLayoutMutations: () => testState.mutationFns
-}))
-
-vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
+vi.mock<unknown>(import('@/renderer/core/layout/store/layoutStore'), () => ({
   layoutStore: {
     getNodeLayout: (_rootGraphId: string, nodeId: string) =>
       testState.nodeLayouts.get(nodeId) ?? null,
@@ -99,32 +61,41 @@ vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   }
 }))
 
-vi.mock('@/renderer/extensions/vueNodes/composables/useNodeSnap', () => ({
-  useNodeSnap: () => testState.nodeSnap
-}))
-
-vi.mock('@/renderer/extensions/vueNodes/composables/useShiftKeySync', () => ({
-  useShiftKeySync: () => ({
-    trackShiftKey: () => () => {}
+vi.mock<unknown>(
+  import('@/renderer/extensions/vueNodes/composables/useNodeSnap'),
+  () => ({
+    useNodeSnap: () => testState.nodeSnap
   })
-}))
+)
 
-vi.mock('@/renderer/core/layout/transform/useTransformState', () => ({
-  useTransformState: () => ({
-    screenToCanvas: ({ x, y }: { x: number; y: number }) => ({
-      x: x / (testState.mockDs.scale || 1) - testState.mockDs.offset[0],
-      y: y / (testState.mockDs.scale || 1) - testState.mockDs.offset[1]
+vi.mock(
+  import('@/renderer/extensions/vueNodes/composables/useShiftKeySync'),
+  () => ({
+    useShiftKeySync: () => ({
+      trackShiftKey: () => () => {}
     })
   })
-}))
+)
 
-vi.mock('@vueuse/core', async (importOriginal) => ({
-  ...(await importOriginal<typeof VueUse>()),
-  createSharedComposable: (fn: () => unknown) => fn,
-  whenever: vi.fn()
-}))
+vi.mock<unknown>(
+  import('@/renderer/core/layout/transform/useTransformState'),
+  () => ({
+    useTransformState: () => ({
+      screenToCanvas: ({ x, y }: { x: number; y: number }) => ({
+        x: x / (testState.mockDs.scale || 1) - testState.mockDs.offset[0],
+        y: y / (testState.mockDs.scale || 1) - testState.mockDs.offset[1]
+      })
+    })
+  })
+)
 
-import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
+vi.mock(import('@vueuse/core'), { spy: true })
+vi.mocked(VueUse.createSharedComposable).mockImplementation(
+  (composable) => composable
+)
+
+const { useNodeDrag } =
+  await import('@/renderer/extensions/vueNodes/layout/useNodeDrag')
 
 const node1 = toNodeId('1')
 
@@ -136,8 +107,25 @@ function pointerEvent(clientX: number, clientY: number): PointerEvent {
 }
 
 beforeEach(() => {
-  testState.selectedNodeIds = ref(new Set<NodeId>())
-  testState.selectedItems = ref<unknown[]>([])
+  vi.mocked(VueUse.whenever).mockImplementation(() =>
+    Object.assign(vi.fn(), {
+      pause: vi.fn(),
+      resume: vi.fn(),
+      stop: vi.fn()
+    })
+  )
+  vi.mocked(AutoPanController).mockImplementation(function (opts) {
+    const controller = {
+      updatePointer: vi.fn(),
+      start: vi.fn(),
+      stop: vi.fn()
+    }
+    testState.capturedOnPan.current = opts.onPan
+    testState.capturedAutoPanInstance.current = controller
+    return fromPartial<AutoPanController>(controller)
+  })
+  Object.assign(useCanvasStore(), { selectedNodeIds: new Set() })
+  useCanvasStore().selectedItems = []
   testState.nodeLayouts.clear()
   testState.nodeSnap.shouldSnap.mockReturnValue(false)
   testState.nodeSnap.applySnapToPosition.mockImplementation(
@@ -156,9 +144,20 @@ beforeEach(() => {
   vi.stubGlobal('cancelAnimationFrame', testState.cancelAnimationFrame)
 })
 
+beforeEach(() => {
+  Object.assign(useCanvasStore(), { rootGraphId: ROOT_GRAPH_ID })
+  useCanvasStore().canvas = fromPartial({
+    ds: testState.mockDs,
+    auto_pan_speed: 10,
+    canvas: { getBoundingClientRect: () => new DOMRect(0, 0, 800, 600) }
+  })
+})
+
 describe('useNodeDrag', () => {
   it('batches multi-node drag updates into one mutation call per frame', () => {
-    testState.selectedNodeIds.value = new Set([node1, toNodeId('2')])
+    Object.assign(useCanvasStore(), {
+      selectedNodeIds: new Set([node1, toNodeId('2')])
+    })
     testState.nodeLayouts.set('1', {
       position: { x: 100, y: 100 },
       size: { width: 200, height: 120 }
@@ -186,7 +185,7 @@ describe('useNodeDrag', () => {
   })
 
   it('uses the same batched mutation path for single-node drags', () => {
-    testState.selectedNodeIds.value = new Set([node1])
+    Object.assign(useCanvasStore(), { selectedNodeIds: new Set([node1]) })
     testState.nodeLayouts.set('1', {
       position: { x: 50, y: 80 },
       size: { width: 180, height: 110 }
@@ -211,8 +210,8 @@ describe('useNodeDrag', () => {
     selectedNode.pos = [300, 400]
     const selectedGroup = new LGraphGroup('selected')
     selectedGroup.pos = [500, 600]
-    testState.selectedNodeIds.value = new Set([node1])
-    testState.selectedItems.value = [selectedNode, selectedGroup]
+    Object.assign(useCanvasStore(), { selectedNodeIds: new Set([node1]) })
+    useCanvasStore().selectedItems = [selectedNode, selectedGroup]
     testState.nodeLayouts.set('1', {
       position: { x: 100, y: 100 },
       size: { width: 200, height: 120 }
@@ -229,7 +228,7 @@ describe('useNodeDrag', () => {
   })
 
   it('cancels pending RAF and applies snap updates on endDrag', () => {
-    testState.selectedNodeIds.value = new Set([node1])
+    Object.assign(useCanvasStore(), { selectedNodeIds: new Set([node1]) })
     testState.nodeLayouts.set('1', {
       position: { x: 50, y: 80 },
       size: { width: 180, height: 110 }
@@ -269,8 +268,8 @@ describe('useNodeDrag', () => {
 
 describe('useNodeDrag auto-pan', () => {
   beforeEach(() => {
-    testState.selectedNodeIds = ref(new Set([node1]))
-    testState.selectedItems = ref<unknown[]>([])
+    Object.assign(useCanvasStore(), { selectedNodeIds: new Set([node1]) })
+    useCanvasStore().selectedItems = []
     testState.nodeLayouts.clear()
     testState.nodeLayouts.set('1', {
       position: { x: 100, y: 200 },
@@ -321,7 +320,9 @@ describe('useNodeDrag auto-pan', () => {
   })
 
   it('moves all selected nodes when auto-pan fires', () => {
-    testState.selectedNodeIds.value = new Set([node1, toNodeId('2')])
+    Object.assign(useCanvasStore(), {
+      selectedNodeIds: new Set([node1, toNodeId('2')])
+    })
     const drag = useNodeDrag()
 
     drag.startDrag(pointerEvent(750, 300), node1)
@@ -416,12 +417,12 @@ describe('useNodeDrag non-node positionables', () => {
         pos[1] += deltaY
       }
     }
-    testState.selectedItems.value = [group]
+    useCanvasStore().selectedItems = [fromPartial(group)]
     return group
   }
 
   function dragNodeBy(delta: number) {
-    testState.selectedNodeIds.value = new Set([node1])
+    Object.assign(useCanvasStore(), { selectedNodeIds: new Set([node1]) })
     testState.nodeLayouts.set('1', {
       position: { x: 0, y: 0 },
       size: { width: 100, height: 50 }

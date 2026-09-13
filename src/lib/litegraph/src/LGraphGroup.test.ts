@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, vi } from 'vitest'
+import { afterEach, describe, expect, vi } from 'vitest'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import {
@@ -19,10 +17,7 @@ import { createUuidv4 } from '@/utils/uuid'
 
 import { test } from './__fixtures__/testExtensions'
 
-vi.mock('@/utils/colorUtil', async (importOriginal) => {
-  const actual = await importOriginal<typeof colorUtil>()
-  return { ...actual, readableTextColor: vi.fn(actual.readableTextColor) }
-})
+vi.mock(import('@/utils/colorUtil'), { spy: true })
 
 function createMockContext() {
   return {
@@ -43,8 +38,6 @@ function createMockContext() {
 }
 
 const graphCanvas = { editor_alpha: 1 } as Partial<LGraphCanvas> as LGraphCanvas
-
-beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 
 describe('LGraphGroup', () => {
   test('serializes to the existing format', () => {

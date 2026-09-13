@@ -44,7 +44,10 @@ function makeNode() {
     onRemoved: priorOnRemoved,
     constructor: { comfyClass: 'ImageCompositor' },
     widgets: [compositorWidget],
-    graph: { setDirtyCanvas: vi.fn() }
+    graph: {
+      rootGraph: { id: 'test-graph' },
+      setDirtyCanvas: vi.fn()
+    }
   } as unknown as LGraphNode
   return { node, compositorWidget, priorOnExecuted, priorOnRemoved }
 }

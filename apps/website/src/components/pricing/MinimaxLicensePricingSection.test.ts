@@ -38,10 +38,8 @@ describe('MinimaxLicensePricingSection', () => {
     // Skip the header row, so body rows line up with the data rows by index.
     const [, ...bodyRows] = screen.getAllByRole('row')
     for (const [rowIndex, row] of rows.entries()) {
-      const scope = within(bodyRows[rowIndex]!)
-      expect(scope.getByRole('rowheader').textContent?.trim()).toBe(
-        row.label.en
-      )
+      const scope = within(bodyRows[rowIndex])
+      expect(scope.getByRole('rowheader').textContent.trim()).toBe(row.label.en)
       const cells = scope.getAllByRole('cell')
       expect(cells).toHaveLength(row.cells.length)
       for (const [index, cell] of row.cells.entries()) {

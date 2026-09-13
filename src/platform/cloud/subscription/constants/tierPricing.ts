@@ -41,6 +41,17 @@ export const TIER_PRICING: Record<
   pro: { monthly: 100, yearly: 80, credits: 21100, videoEstimate: 1915 }
 }
 
+const MONTHS_PER_YEAR = 12
+
+// Annual plans grant the whole year up front (catalog `*-annual` credit_grant
+// is 12x the monthly grant), so a yearly cycle shows the year's total.
+export function amountForBillingCycle(
+  monthlyAmount: number,
+  isYearly: boolean
+): number {
+  return isYearly ? monthlyAmount * MONTHS_PER_YEAR : monthlyAmount
+}
+
 interface TierFeatures {
   customLoRAs: boolean
   maxMembers: number
@@ -127,7 +138,7 @@ export function getTierPrice(tierKey: TierKey, isYearly = false): number {
 export function getTierCredits(tierKey: TierKey): number | null {
   if (tierKey === 'free') return remoteConfig.value.free_tier_credits ?? null
   if (tierKey === 'founder') return FOUNDER_MONTHLY_CREDITS
-  return TIER_PRICING[tierKey]?.credits ?? null
+  return TIER_PRICING[tierKey]?.credits
 }
 
 export function getTierFeatures(tierKey: TierKey): TierFeatures {

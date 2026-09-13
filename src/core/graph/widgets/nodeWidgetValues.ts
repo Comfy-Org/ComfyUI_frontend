@@ -5,7 +5,7 @@ import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
 
 function nodeWidgetId(node: LGraphNode, name: string): WidgetId | null {
-  const graphId = node.graph?.rootGraph?.id
+  const graphId = node.graph?.rootGraph.id
   return graphId ? widgetId(graphId, node.id, name) : null
 }
 

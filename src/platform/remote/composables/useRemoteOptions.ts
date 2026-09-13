@@ -22,25 +22,21 @@ function resolveUrl(
   descriptor: RemoteRequestDescriptor,
   baseUrl: string
 ): string {
-  if (descriptor.client === 'comfyApi') {
-    return baseUrl + descriptor.route
-  }
-  return descriptor.route
+  return baseUrl + descriptor.route
 }
 
 async function executeRemoteRequest(
   descriptor: RemoteRequestDescriptor,
   signal: AbortSignal
 ): Promise<unknown> {
-  let headers: Record<string, string> | undefined
-  if (descriptor.client === 'comfyApi') {
-    const authStore = useAuthStore()
-    const authHeader = await authStore.getAuthHeader()
-    if (signal.aborted) {
-      throw new DOMException('Aborted', 'AbortError')
-    }
-    headers = authHeader ? { ...authHeader } : undefined
+  const authStore = useAuthStore()
+  const authHeader = await authStore.getAuthHeader()
+  if (signal.aborted) {
+    throw new DOMException('Aborted', 'AbortError')
   }
+  const headers: Record<string, string> | undefined = authHeader
+    ? { ...authHeader }
+    : undefined
   const url = resolveUrl(descriptor, getComfyApiBaseUrl())
   const response = await axios.get(url, {
     params: descriptor.params,

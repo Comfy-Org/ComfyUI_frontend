@@ -9,21 +9,24 @@ const mockIsFreeTier = ref(true)
 const mockAvailable = ref(3)
 const mockShowSubscriptionDialog = vi.fn()
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     isFreeTier: mockIsFreeTier,
     showSubscriptionDialog: mockShowSubscriptionDialog
   })
 }))
 
-vi.mock('@/platform/cloud/subscription/composables/useFreeTierQuota', () => ({
-  useFreeTierQuota: () => ({
-    available: computed(() => mockAvailable.value),
-    hasInvalidNodes: computed(() => false),
-    maxAvailable: computed(() => 5),
-    quotaEnabled: computed(() => true)
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useFreeTierQuota'),
+  () => ({
+    useFreeTierQuota: () => ({
+      available: computed(() => mockAvailable.value),
+      hasInvalidNodes: computed(() => false),
+      maxAvailable: computed(() => 5),
+      quotaEnabled: computed(() => true)
+    })
   })
-}))
+)
 
 const i18n = createI18n({
   legacy: false,

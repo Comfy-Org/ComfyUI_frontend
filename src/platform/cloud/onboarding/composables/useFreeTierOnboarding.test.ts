@@ -6,7 +6,7 @@ const mockRemoteConfig = vi.hoisted(() => ({
   value: { free_tier_credits: 50 } as Record<string, unknown>
 }))
 
-vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
+vi.mock<unknown>(import('@/platform/remoteConfig/remoteConfig'), () => ({
   remoteConfig: mockRemoteConfig
 }))
 

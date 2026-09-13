@@ -21,7 +21,7 @@ export function buildTree<T>(items: T[], key: (item: T) => string[]): TreeNode {
       if (k === '' && i === keys.length - 1) break
 
       const id = parent.key + '/' + k
-      if (!map[id]) {
+      if (!Object.hasOwn(map, id)) {
         const node: TreeNode = {
           key: id,
           label: k,
@@ -92,11 +92,9 @@ export function sortedTree(
 
       // Sort folders and files separately by label
       const sortedFolders = folders.sort((a, b) =>
-        (a.label ?? '').localeCompare(b.label ?? '')
+        a.label.localeCompare(b.label)
       )
-      const sortedFiles = files.sort((a, b) =>
-        (a.label ?? '').localeCompare(b.label ?? '')
-      )
+      const sortedFiles = files.sort((a, b) => a.label.localeCompare(b.label))
 
       // Recursively sort folder children
       newNode.children = [
@@ -107,7 +105,7 @@ export function sortedTree(
       ]
     } else {
       const sortedChildren = [...node.children].sort((a, b) =>
-        (a.label ?? '').localeCompare(b.label ?? '')
+        a.label.localeCompare(b.label)
       )
       newNode.children = [
         ...sortedChildren.map((child) =>

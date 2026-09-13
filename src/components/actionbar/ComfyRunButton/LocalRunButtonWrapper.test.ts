@@ -16,28 +16,34 @@ const showApiNodesSignInDialog = vi.hoisted(() =>
   vi.fn(() => Promise.resolve(false))
 )
 
-vi.mock('@/composables/billing/usePartnerNodesRunGate', async () => {
-  const { ref } = await import('vue')
-  gateState.gate = ref<'sign-in' | 'none'>('none')
-  gateState.partnerNodes = ref<PartnerNode[]>([])
-  return {
-    usePartnerNodesRunGate: () => ({
-      gate: gateState.gate,
-      partnerNodes: gateState.partnerNodes
-    })
+vi.mock<unknown>(
+  import('@/composables/billing/usePartnerNodesRunGate'),
+  async () => {
+    const { ref } = await import('vue')
+    gateState.gate = ref<'sign-in' | 'none'>('none')
+    gateState.partnerNodes = ref<PartnerNode[]>([])
+    return {
+      usePartnerNodesRunGate: () => ({
+        gate: gateState.gate,
+        partnerNodes: gateState.partnerNodes
+      })
+    }
   }
-})
+)
 
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({ showApiNodesSignInDialog })
 }))
 
-vi.mock('@/components/actionbar/ComfyRunButton/ComfyQueueButton.vue', () => ({
-  default: {
-    name: 'ComfyQueueButton',
-    template: '<button data-testid="queue-button" />'
-  }
-}))
+vi.mock<unknown>(
+  import('@/components/actionbar/ComfyRunButton/ComfyQueueButton.vue'),
+  () => ({
+    default: {
+      name: 'ComfyQueueButton',
+      template: '<button data-testid="queue-button" />'
+    }
+  })
+)
 
 const i18n = createI18n({
   legacy: false,

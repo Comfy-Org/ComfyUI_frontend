@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { AgentWsEvent } from '../../schemas/agentApiSchema'
 import { toTurnId, zAgentWsEvent } from '../../schemas/agentApiSchema'
 
 import type { AgentChatEvent } from './agentEventTransport'
@@ -36,23 +35,10 @@ function chatEventsFor(fixture: string, messageId: string): AgentChatEvent[] {
     const parsed = zAgentWsEvent.safeParse(frame)
     if (!parsed.success) continue
     const event = parsed.data
-    if (!isChatEvent(event)) continue
     if (event.data.message_id !== messageId) continue
     events.push(event)
   }
   return events
-}
-
-function isChatEvent(event: AgentWsEvent): event is AgentChatEvent {
-  return (
-    event.type === 'agent_thinking' ||
-    event.type === 'agent_tool_call' ||
-    event.type === 'agent_message_delta' ||
-    event.type === 'agent_message_done' ||
-    event.type === 'agent_active_tab' ||
-    event.type === 'agent_ask' ||
-    event.type === 'agent_ask_resolved'
-  )
 }
 
 const T = toTurnId('t1')
@@ -166,7 +152,7 @@ describe('agentEventTransport fixture replay', () => {
     )
     const replyText = events
       .filter((e) => e.type === 'agent_message_delta')
-      .map((e) => (e.type === 'agent_message_delta' ? e.data.delta : ''))
+      .map((e) => e.data.delta)
       .join('')
 
     const message = drive(events)

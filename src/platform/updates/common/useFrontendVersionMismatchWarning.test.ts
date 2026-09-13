@@ -1,19 +1,21 @@
 import { render } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
 
-vi.mock('@/config', () => ({
+vi.mock(import('@/config'), () => ({
   default: {
     app_title: 'ComfyUI',
     app_version: '1.0.0'
   }
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     ui: {
       settings: {
@@ -23,55 +25,34 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getSettings: vi.fn(() => Promise.resolve({})),
     storeSetting: vi.fn(() => Promise.resolve(undefined))
   }
 }))
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string, params?: Record<string, string | number> | unknown) => {
-      if (key === 'g.versionMismatchWarning')
-        return 'Version Compatibility Warning'
-      if (key === 'g.versionMismatchWarningMessage' && params) {
-        const p = params as Record<string, string>
-        return `${p.warning}: ${p.detail} Visit https://docs.comfy.org/installation/update_comfyui#common-update-issues for update instructions.`
-      }
-      if (key === 'g.frontendOutdated' && params) {
-        const p = params as Record<string, string>
-        return `Frontend version ${p.frontendVersion} is outdated. Backend requires ${p.requiredVersion} or higher.`
-      }
-      if (key === 'g.frontendNewer' && params) {
-        const p = params as Record<string, string>
-        return `Frontend version ${p.frontendVersion} may not be compatible with backend version ${p.backendVersion}.`
-      }
-      if (key === 'g.comfyPackageOutdated' && params) {
-        const p = params as Record<string, string>
-        return `Installed ${p.name} version ${p.installedVersion} is lower than the required version ${p.requiredVersion}.`
-      }
-      return key
-    }
-  }),
-  createI18n: vi.fn(() => ({
-    global: {
-      locale: { value: 'en' },
-      t: vi.fn()
-    }
-  }))
-}))
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: enMessages }
+})
 
 function mountVersionWarning(
   ...options: Parameters<typeof useFrontendVersionMismatchWarning>
 ) {
   let result: ReturnType<typeof useFrontendVersionMismatchWarning> | undefined
-  const { unmount } = render({
-    setup() {
-      result = useFrontendVersionMismatchWarning(...options)
-      return () => null
+  const { unmount } = render(
+    {
+      setup() {
+        result = useFrontendVersionMismatchWarning(...options)
+        return () => null
+      }
+    },
+    {
+      global: { plugins: [i18n] }
     }
-  })
+  )
 
   if (!result) throw new Error('Failed to mount version warning')
   return { ...result, unmount }

@@ -10,6 +10,7 @@ import { createAgentEventTransport } from '../../services/agent/agentEventTransp
 import type { AssistantMessage } from '../../services/agent/agentMessageParts'
 import { createAssistantMessage } from '../../services/agent/agentMessageParts'
 import { normalizeAgentTranscript } from '../../services/agent/agentTranscript'
+import type { WorkflowReference } from '../../types/workflowReference'
 
 export type ConversationStatus = 'idle' | 'thinking' | 'streaming'
 
@@ -26,6 +27,7 @@ interface UserEntry {
   text: string
   attachments?: UserAttachment[]
   tags?: string[]
+  workflowReferences?: WorkflowReference[]
 }
 
 export type ConversationEntry = UserEntry | AssistantMessage
@@ -47,6 +49,8 @@ export const useAgentConversationStore = defineStore(
     const userTexts = ref(new Map<TurnId, string>())
     const userAttachments = ref(new Map<TurnId, UserAttachment[]>())
     const userTags = ref(new Map<TurnId, string[]>())
+    const userWorkflowReferences = ref(new Map<TurnId, WorkflowReference[]>())
+    const latestWorkflowId = ref<string>()
 
     let transport: AgentEventTransport | null = null
     let liveMessage: AssistantMessage | null = null
@@ -65,17 +69,32 @@ export const useAgentConversationStore = defineStore(
       turnId: TurnId,
       text: string,
       attachments?: UserAttachment[],
-      tags?: string[]
+      tags?: string[],
+      workflowReferences?: WorkflowReference[]
     ): void {
       userTexts.value.set(turnId, text)
       if (attachments !== undefined && attachments.length > 0)
         userAttachments.value.set(turnId, attachments)
       if (tags !== undefined && tags.length > 0)
         userTags.value.set(turnId, tags)
+      if (workflowReferences !== undefined && workflowReferences.length > 0)
+        userWorkflowReferences.value.set(turnId, workflowReferences)
     }
 
     function setThreadId(id: string | null): void {
       threadId.value = id
+    }
+
+    function recordSettledReply(
+      turnId: TurnId,
+      text: string,
+      parts: AssistantMessage['parts']
+    ): void {
+      userTexts.value.set(turnId, text)
+      const message = createAssistantMessage(turnId)
+      message.streaming = false
+      message.parts = parts
+      messages.value.push(message)
     }
 
     function recordFailedSend(
@@ -83,11 +102,13 @@ export const useAgentConversationStore = defineStore(
       text: string,
       noticeText: string
     ): void {
-      userTexts.value.set(turnId, text)
-      const message = createAssistantMessage(turnId)
-      message.streaming = false
-      message.parts = [{ type: 'notice', level: 'error', text: noticeText }]
-      messages.value.push(message)
+      recordSettledReply(turnId, text, [
+        { type: 'notice', level: 'error', text: noticeText }
+      ])
+    }
+
+    function recordPaywall(turnId: TurnId, text: string): void {
+      recordSettledReply(turnId, text, [{ type: 'paywall' }])
     }
 
     function startTurn(turnId: TurnId): void {
@@ -231,6 +252,8 @@ export const useAgentConversationStore = defineStore(
       messages.value = []
       userTexts.value = new Map()
       userTags.value = new Map()
+      userWorkflowReferences.value = new Map()
+      latestWorkflowId.value = undefined
       dropAttachmentPreviews()
       threadId.value = null
       hydratedMessageIds = new Set()
@@ -244,6 +267,8 @@ export const useAgentConversationStore = defineStore(
       messages.value = transcript.messages
       userTexts.value = transcript.userTexts
       userTags.value = new Map()
+      userWorkflowReferences.value = transcript.userWorkflowReferences
+      latestWorkflowId.value = transcript.latestWorkflowId
       hydratedMessageIds = transcript.rowIds
       hydratedAssistantTurnIds = transcript.assistantTurnIds
       dropAttachmentPreviews()
@@ -269,7 +294,8 @@ export const useAgentConversationStore = defineStore(
                 role: 'user',
                 text,
                 attachments: userAttachments.value.get(message.id),
-                tags: userTags.value.get(message.id)
+                tags: userTags.value.get(message.id),
+                workflowReferences: userWorkflowReferences.value.get(message.id)
               },
               message
             ]
@@ -293,9 +319,11 @@ export const useAgentConversationStore = defineStore(
       threadId,
       isStreaming,
       status,
+      latestWorkflowId,
       recordUser,
       setThreadId,
       recordFailedSend,
+      recordPaywall,
       startTurn,
       ingest,
       abortActiveTurn,

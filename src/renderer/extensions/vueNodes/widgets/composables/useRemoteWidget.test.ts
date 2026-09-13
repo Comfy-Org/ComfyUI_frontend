@@ -5,24 +5,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IWidget } from '@/lib/litegraph/src/litegraph'
 import { useRemoteWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useRemoteWidget'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 
-const authState = vi.hoisted(() => ({ apiKeySessionId: 1 }))
 const getAppQueryClient = vi.hoisted(() => vi.fn())
 
-vi.mock('@/platform/remote/queryClient', () => ({ getAppQueryClient }))
-vi.mock('@/platform/distribution/types', () => ({ isCloud: false }))
-vi.mock('@/stores/authStore', () => ({
-  useAuthStore: () => ({ userId: null })
-}))
-vi.mock('@/stores/apiKeyAuthStore', () => ({
-  useApiKeyAuthStore: () => ({
-    getApiKey: () => 'api-key',
-    get apiKeySessionId() {
-      return authState.apiKeySessionId
-    }
-  })
-}))
-vi.mock('@/scripts/api', () => ({
+vi.mock(import('firebase/auth'))
+vi.mock(import('@/platform/remote/queryClient'), () => ({ getAppQueryClient }))
+vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: false }))
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     addEventListener: vi.fn(),
     removeEventListener: vi.fn()
@@ -33,7 +23,9 @@ describe('useRemoteWidget', () => {
   let queryClient: QueryClient
 
   beforeEach(() => {
-    authState.apiKeySessionId = 1
+    const apiKeyStore = useApiKeyAuthStore()
+    apiKeyStore.apiKeySessionId = 1
+    vi.mocked(apiKeyStore.getApiKey).mockReturnValue('api-key')
     queryClient = new QueryClient()
     getAppQueryClient.mockReturnValue(queryClient)
   })
@@ -64,7 +56,7 @@ describe('useRemoteWidget', () => {
     queryClient.setQueryData(remote.getQueryKey(), ['session-a'])
     expect(remote.getCachedValue()).toEqual(['session-a'])
 
-    authState.apiKeySessionId = 2
+    useApiKeyAuthStore().apiKeySessionId = 2
     expect(remote.getCachedValue()).toEqual([])
   })
 })

@@ -1,30 +1,14 @@
-import { createTestingPinia } from '@pinia/testing'
 import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
-import type * as AxiosModule from 'axios'
+import axios from 'axios'
 import { describe, expect, it, vi } from 'vitest'
 import { createApp, effectScope, h } from 'vue'
 
 import { useRemoteOptions } from '@/platform/remote/composables/useRemoteOptions'
 import { remoteOptionKeys } from '@/platform/remote/queryKeys'
 import type { RemoteRequestDescriptor } from '@/platform/remote/schema/remoteRequestSchema'
+import { useAuthStore } from '@/stores/authStore'
 
-vi.mock('axios', async (importOriginal) => {
-  const actual = await importOriginal<typeof AxiosModule>()
-  return {
-    ...actual,
-    default: { ...actual.default, get: vi.fn() }
-  }
-})
-
-vi.mock('@/platform/workspace/stores/workspaceAuthStore', () => ({
-  useWorkspaceAuthStore: () => ({ currentWorkspace: null })
-}))
-vi.mock('@/stores/authStore', () => ({
-  useAuthStore: () => ({
-    userId: 'u1',
-    getAuthHeader: vi.fn(() => Promise.resolve(null))
-  })
-}))
+vi.mock(import('firebase/auth'))
 
 function createTestQueryClient() {
   return new QueryClient({
@@ -41,7 +25,6 @@ function withSetup<T>(setup: () => T): { result: T; cleanup: () => void } {
       return () => h('div')
     }
   })
-  app.use(createTestingPinia({ createSpy: vi.fn }))
   app.use(VueQueryPlugin, { queryClient })
   const container = document.createElement('div')
   app.mount(container)
@@ -165,6 +148,8 @@ describe('useRemoteOptions', () => {
   })
 
   it('returns disabled state when descriptor is null', async () => {
+    vi.mocked(useAuthStore().getAuthHeader).mockResolvedValue(null)
+    vi.spyOn(axios, 'get').mockResolvedValue({ data: [], status: 200 })
     const scope = effectScope()
     let result!: ReturnType<typeof useRemoteOptions>
     let cleanup = () => {}

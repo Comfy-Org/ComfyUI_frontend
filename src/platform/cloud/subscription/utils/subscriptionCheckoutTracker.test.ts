@@ -17,22 +17,31 @@ describe('subscriptionCheckoutTracker', () => {
     clearPendingSubscriptionCheckoutAttempt()
   })
 
-  it('round-trips payment_intent_source from attempt to success metadata', () => {
-    recordPendingSubscriptionCheckoutAttempt({
-      tier: 'pro',
-      cycle: 'monthly',
-      checkout_type: 'new',
-      payment_intent_source: 'subscribe_to_run'
-    })
+  it.for([
+    'subscribe_to_run',
+    'upload_model_upgrade',
+    'team_upgrade_resume',
+    'free_tier_quota'
+  ] as const)(
+    'round-trips %s from attempt to success metadata',
+    (paymentIntentSource) => {
+      recordPendingSubscriptionCheckoutAttempt({
+        tier: 'pro',
+        cycle: 'monthly',
+        checkout_type: 'new',
+        payment_intent_source: paymentIntentSource
+      })
 
-    const metadata = consumePendingSubscriptionCheckoutSuccess(activeProStatus)
+      const metadata =
+        consumePendingSubscriptionCheckoutSuccess(activeProStatus)
 
-    expect(metadata).toMatchObject({
-      tier: 'pro',
-      checkout_type: 'new',
-      payment_intent_source: 'subscribe_to_run'
-    })
-  })
+      expect(metadata).toMatchObject({
+        tier: 'pro',
+        checkout_type: 'new',
+        payment_intent_source: paymentIntentSource
+      })
+    }
+  )
 
   it('omits payment_intent_source when the attempt had none', () => {
     recordPendingSubscriptionCheckoutAttempt({

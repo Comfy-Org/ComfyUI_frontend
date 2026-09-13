@@ -137,7 +137,7 @@ export function useRemoteWidget<
       .catch((err) => {
         console.error(err)
       })
-    return getCachedValue() ?? defaultValue
+    return getCachedValue()
   }
 
   widget.refresh = function () {

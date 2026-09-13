@@ -346,9 +346,7 @@ test.describe('Topbar commands', () => {
   })
 
   test.describe('Selection Toolbox', () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
-    })
+    test.use({ initialSettings: { 'Comfy.Canvas.SelectionToolbox': true } })
 
     test('Should allow adding commands to selection toolbox', async ({
       comfyPage
