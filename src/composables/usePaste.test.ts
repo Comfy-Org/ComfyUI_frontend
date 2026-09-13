@@ -98,10 +98,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   }
 }))
 
-vi.mock(import('@/utils/litegraphUtil'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  createNode: vi.fn()
-}))
+vi.mock(import('@/utils/litegraphUtil'), { spy: true })
 
 vi.mock(
   import('@/workbench/eventHelpers'),
@@ -113,6 +110,7 @@ vi.mock(
 
 describe('pasteImageNode', () => {
   beforeEach(() => {
+    vi.mocked(createNode).mockImplementation(vi.fn())
     vi.mocked(mockCanvas.graph!.add).mockImplementation(
       (node: LGraphNode | LGraphGroup | null) => node as LGraphNode
     )
