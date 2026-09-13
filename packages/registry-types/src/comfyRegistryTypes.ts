@@ -6749,8 +6749,8 @@ export interface components {
                 image_url?: string;
                 /** @description Original prompt. */
                 prompt?: string;
-                /** @description Refined version of the prompt. */
-                refined_prompt?: string;
+                /** @description Refined version of the prompt, or null on a COMPLETED generation Bria did not refine. Nullable because the key is PRESENT carrying null rather than omitted; observed live on bria/image-edit-gen-fill. */
+                refined_prompt?: string | null;
                 /** @description Seed used for generation. */
                 seed?: number;
                 /** @description The detailed JSON structured prompt. */
@@ -9769,22 +9769,42 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /**
+         * @description The Gemini Interactions fields, shared by the v1 `POST /proxy/gemini-interactions` request body and the Comfy Router input schema for the `gemini-interactions/*` models. Mirrors the upstream `/v1beta/interactions` schema with strict typing only on the fields the proxy reads (model, `input` for prompt extraction); all other fields (`response_format`, `generation_config`, `store`, `safety_settings`, ...) pass through unchanged via `additionalProperties`. TWO EXCEPTIONS, refused rather than forwarded: `background` and `stream`. Both are honoured by Google and both produce a 2xx this proxy cannot meter — `background: true` answers a queued `in_progress` document carrying no `usage`, whose finished generation is only ever reachable through `GET /proxy/gemini-interactions/{id}`, which meters nothing; `stream: true` answers a `text/event-stream` the billing path cannot decode. Naming either with a value other than `false` or `null` is a 400; omitting them, or sending them false/null, is the synchronous request this surface serves. On the Comfy Router route `POST /v2/models/gemini-interactions/{model}` both fields are settled to `false` before dispatch (routerSettledBoolFields) rather than refused. `required` here is the ROUTER-SAFE floor: `model` is absent from it because Router writes the path's model into the body after routervalidate.Guard has already validated the caller's bytes; the v1 wrapper `GeminiInteractionRequest` re-adds it.
+         * @example {
+         *       "input": "Reply with the single word: ok",
+         *       "stream": false
+         *     }
+         */
+        GeminiInteractionInputs: {
+            /** @description Either a prompt string or an array of typed content parts (text, image, audio, video, document). */
+            input: unknown;
+            /** @description Gemini model identifier (e.g. `gemini-omni-flash-preview`). On the Comfy Router route `POST /v2/models/gemini-interactions/{model}` it is supplied from the path and may be omitted. The spellings this operation serves — the set Comfy Router addresses as `gemini-interactions/<model>` — are gemini-omni-flash-preview and gemini-omni-1.1-flash (supportedGeminiInteractionModels); they are written out here rather than constrained to an enum, because the proxy validates the model itself and answers its own 400 for a spelling it does not serve. */
+            model?: string | null;
+            /** @description ID of a prior stored interaction, enabling stateful multi-turn video editing. */
+            previous_interaction_id?: string;
+        } & {
+            [key: string]: unknown;
+        };
         /** @description Token count for one modality. */
         GeminiInteractionModalityTokens: {
             /** @description One of `text`, `image`, `audio`, `video`, `document`. */
             modality?: string;
             tokens?: number;
         };
-        /** @description Request body for the Gemini Interactions API (`/v1beta/interactions`). Mirrors the upstream schema with strict typing only on the fields the proxy reads (model, `input` for prompt extraction); all other fields (`response_format`, `generation_config`, `store`, `safety_settings`, ...) pass through unchanged via `additionalProperties`. TWO EXCEPTIONS, refused rather than forwarded: `background` and `stream`. Both are honoured by Google and both produce a 2xx this proxy cannot meter — `background: true` answers a queued `in_progress` document carrying no `usage`, whose finished generation is only ever reachable through `GET /proxy/gemini-interactions/{id}`, which meters nothing; `stream: true` answers a `text/event-stream` the billing path cannot decode. Naming either with a value other than `false` or `null` is a 400; omitting them, or sending them false/null, is the synchronous request this surface serves. */
-        GeminiInteractionRequest: {
-            /** @description Either a prompt string or an array of typed content parts (text, image, audio, video, document). */
-            input: unknown;
-            /** @description Gemini model identifier (e.g. `gemini-omni-flash-preview`). */
+        /**
+         * @description Request body for the v1 `POST /proxy/gemini-interactions` operation.
+         *     It composes `GeminiInteractionInputs` rather than restating its fields, and adds back the one field only the v1 surface can demand. `model` is load-bearing: this route carries no path segment supplying it, so a caller must send it (createInteractionProxy answers 400 "model parameter is missing" when it is absent), whereas the Comfy Router route `POST /v2/models/gemini-interactions/{model}` supplies it from the path and its input schema must NOT require it.
+         *     Read the note above `GeminiInteractionInputs` for the full rule and the guards that enforce it.
+         * @example {
+         *       "input": "Reply with the single word: ok",
+         *       "model": "gemini-omni-flash-preview",
+         *       "stream": false
+         *     }
+         */
+        GeminiInteractionRequest: components["schemas"]["GeminiInteractionInputs"] & {
+            /** @description Gemini model identifier (e.g. `gemini-omni-flash-preview`). Required on this route, which carries no path segment supplying it. */
             model: string;
-            /** @description ID of a prior stored interaction, enabling stateful multi-turn video editing. */
-            previous_interaction_id?: string;
-        } & {
-            [key: string]: unknown;
         };
         /** @description Token usage for a Gemini interaction. */
         GeminiInteractionUsage: {
@@ -9819,6 +9839,8 @@ export interface components {
         GeminiPart: {
             fileData?: components["schemas"]["GeminiFileData"];
             inlineData?: components["schemas"]["GeminiInlineData"];
+            /** @description How the model reads this part's video. Set "AGENTIC" to let the model decide which segments to inspect, instead of fixed-rate frame sampling. Omit for the default fixed-rate sampling. Supported on gemini-3.7-flash and newer Flash models. */
+            mediaProcessing?: string;
             /**
              * @description A text prompt or code snippet.
              * @example Write a story about a robot learning to paint
@@ -10663,6 +10685,49 @@ export interface components {
             style_reference_images?: string[];
             style_type?: components["schemas"]["IdeogramStyleType"];
         };
+        IdeogramV3Fields: {
+            /**
+             * @description Aspect ratio in format WxH
+             * @example 1x3
+             */
+            aspect_ratio?: string;
+            color_palette?: {
+                /** @description Explicit colors with optional weights */
+                members?: {
+                    /** @description Hexadecimal color code */
+                    color?: string;
+                    /** @description Optional weight for the color (0-1) */
+                    weight?: number;
+                }[];
+                /**
+                 * @description Name of the color palette
+                 * @example PASTEL
+                 */
+                name?: string;
+            };
+            /**
+             * @description Whether to enable magic prompt enhancement
+             * @enum {string}
+             */
+            magic_prompt?: "AUTO" | "ON" | "OFF";
+            /** @description Text prompt specifying what to avoid in the generation */
+            negative_prompt?: string;
+            /** @description Number of images to generate */
+            num_images?: number;
+            /** @description The text prompt for image generation */
+            prompt: string;
+            rendering_speed: components["schemas"]["RenderingSpeed"];
+            /**
+             * @description Image resolution in format WxH
+             * @example 1280x800
+             */
+            resolution?: string;
+            /** @description Seed value for reproducible generation */
+            seed?: number;
+            /** @description Array of style codes in hexadecimal format */
+            style_codes?: string[];
+            style_type?: components["schemas"]["IdeogramStyleType"];
+        };
         IdeogramV3IdeogramResponse: {
             /** Format: date-time */
             created?: string;
@@ -10722,47 +10787,18 @@ export interface components {
             style_codes?: string[];
             style_reference_images?: string[];
         };
-        IdeogramV3Request: {
-            /**
-             * @description Aspect ratio in format WxH
-             * @example 1x3
-             */
-            aspect_ratio?: string;
+        /**
+         * @description Parameters for Ideogram V3 image generation — the v1 `POST /proxy/ideogram/ideogram-v3/generate` body.
+         *     It composes `IdeogramV3Fields` rather than restating its fields, and adds the three reference-image arrays only the v1 surface can carry. They are `format: binary` file parts, sent as `multipart/form-data`; Comfy Router dispatches `application/json` only, so its input schema is `IdeogramV3Inputs`, which composes the same fields and refuses these three.
+         *     Read the note above `IdeogramV3Fields` for the full rule.
+         */
+        IdeogramV3Request: components["schemas"]["IdeogramV3Fields"] & {
             /** @description Generations with character reference are subject to the character reference pricing. A set of images to use as character references (maximum total size 10MB across all character references), currently only supports 1 character reference image. The images should be in JPEG, PNG or WebP format. */
             character_reference_images?: string[];
             /** @description Optional masks for character reference images. When provided, must match the number of character_reference_images. Each mask should be a grayscale image of the same dimensions as the corresponding character reference image. The images should be in JPEG, PNG or WebP format. */
             character_reference_images_mask?: string[];
-            color_palette?: {
-                /**
-                 * @description Name of the color palette
-                 * @example PASTEL
-                 */
-                name: string;
-            };
-            /**
-             * @description Whether to enable magic prompt enhancement
-             * @enum {string}
-             */
-            magic_prompt?: "ON" | "OFF";
-            /** @description Text prompt specifying what to avoid in the generation */
-            negative_prompt?: string;
-            /** @description Number of images to generate */
-            num_images?: number;
-            /** @description The text prompt for image generation */
-            prompt: string;
-            rendering_speed: components["schemas"]["RenderingSpeed"];
-            /**
-             * @description Image resolution in format WxH
-             * @example 1280x800
-             */
-            resolution?: string;
-            /** @description Seed value for reproducible generation */
-            seed?: number;
-            /** @description Array of style codes in hexadecimal format */
-            style_codes?: string[];
             /** @description Array of reference image URLs or identifiers */
             style_reference_images?: string[];
-            style_type?: components["schemas"]["IdeogramStyleType"];
         };
         /**
          * @description Parameters for the Ideogram 4.0 (V4) text-to-image generation proxy request. Supply exactly one of text_prompt or json_prompt.
@@ -11368,6 +11404,8 @@ export interface components {
             data?: {
                 /** @description Task creation time */
                 created_at?: number;
+                /** @description The deduction units of task */
+                final_unit_deduction?: string;
                 /** @description Task ID */
                 task_id?: string;
                 task_info?: {
@@ -12178,6 +12216,8 @@ export interface components {
             data?: {
                 /** @description Task creation time */
                 created_at?: number;
+                /** @description The deduction units of task */
+                final_unit_deduction?: string;
                 /** @description Task ID */
                 task_id?: string;
                 task_info?: {
@@ -12411,7 +12451,18 @@ export interface components {
              */
             resolution: "1280x720" | "720x1280" | "1920x1080" | "1080x1920" | "2560x1440" | "1440x2560" | "3840x2160" | "2160x3840";
         };
-        LTXText2VideoRequest: {
+        /**
+         * @description The LTX text-to-video fields, shared by the v1 `POST /proxy/ltx/v1/text-to-video` and `POST /proxy/ltx/v2/text-to-video` request bodies and the Comfy Router input schema for the `ltx/*` models. See the note above this component for why the two surfaces share properties but not `required`.
+         *     `required` here is the ROUTER-SAFE floor: `model` is absent from it because Router writes the path's model into the body after routervalidate.Guard has already validated the caller's bytes. The v1 wrapper `LTXText2VideoRequest` re-adds it.
+         * @example {
+         *       "duration": 2,
+         *       "fps": 24,
+         *       "generate_audio": false,
+         *       "prompt": "A single red maple leaf resting on a plain white background.",
+         *       "resolution": "1280x720"
+         *     }
+         */
+        LTXText2VideoInputs: {
             /**
              * @description Video duration in seconds (maximum depends on resolution and frame rate)
              * @enum {integer}
@@ -12428,11 +12479,8 @@ export interface components {
              * @default true
              */
             generate_audio: boolean;
-            /**
-             * @description Model to use for generation
-             * @enum {string}
-             */
-            model: "ltx-2-5-fast" | "ltx-2-5-pro";
+            /** @description Model to use for generation. On the Comfy Router route `POST /v2/models/ltx/{model}` this field is supplied from the path and may be omitted. The spellings LTX serves on this operation -- the set Comfy Router addresses as `ltx/<model>` -- are ltx-2-5-fast and ltx-2-5-pro; they are written out here rather than constrained to an enum for the reason the comment above gives. Which resolutions each one admits is the `x-comfy-model-resolutions` matrix on the `resolution` property below. */
+            model?: string | null;
             /** @description Text prompt describing the desired video content */
             prompt: string;
             /**
@@ -12440,6 +12488,26 @@ export interface components {
              * @enum {string}
              */
             resolution: "1280x720" | "720x1280" | "1920x1080" | "1080x1920" | "2560x1440" | "1440x2560" | "3840x2160" | "2160x3840";
+        };
+        /**
+         * @description Request body for the v1 `POST /proxy/ltx/v1/text-to-video` and `POST /proxy/ltx/v2/text-to-video` operations.
+         *     It composes `LTXText2VideoInputs` rather than restating its fields, and adds back the one field only the v1 surface can demand. `model` is load-bearing: neither route carries a path segment supplying it, so a caller must send it and the published `enum` still describes what the proxy accepts, whereas the Comfy Router route `POST /v2/models/ltx/{model}` supplies it from the path and its input schema must neither require nor enum-constrain it.
+         *     Read the note above `LTXText2VideoInputs` for the full rule and the guards that enforce it.
+         * @example {
+         *       "duration": 2,
+         *       "fps": 24,
+         *       "generate_audio": false,
+         *       "model": "ltx-2-5-fast",
+         *       "prompt": "A single red maple leaf resting on a plain white background.",
+         *       "resolution": "1280x720"
+         *     }
+         */
+        LTXText2VideoRequest: components["schemas"]["LTXText2VideoInputs"] & {
+            /**
+             * @description Model to use for generation
+             * @enum {string}
+             */
+            model: "ltx-2-5-fast" | "ltx-2-5-pro";
         };
         /**
          * @description Output aspect ratio. The ray-3.2 video models support the subset 9:16, 3:4, 1:1, 4:3, 16:9, 21:9.
@@ -13826,8 +13894,22 @@ export interface components {
         MinimaxV2TaskResultResponse: {
             task?: components["schemas"]["MinimaxV2TaskResult"];
         };
-        /** @description Parameters for the Minimax V2 (Hailuo 03) video generation proxy request. */
-        MinimaxV2VideoGenerationRequest: {
+        /**
+         * @description The MiniMax V2 (Hailuo 03) video-generation fields, shared by the v1 `POST /proxy/minimax/v2/video_generation` request body and the Comfy Router input schema for `minimax/minimax-h3`.
+         *     `required` here is the ROUTER-SAFE floor: `model` is absent from it because Router writes the path's model into the body after routervalidate.Guard has already validated the caller's bytes. The v1 wrapper `MinimaxV2VideoGenerationRequest` re-adds it -- see the note there for why that route can demand what this one must not.
+         * @example {
+         *       "content": [
+         *         {
+         *           "text": "A single red maple leaf resting on a plain white background.",
+         *           "type": "text"
+         *         }
+         *       ],
+         *       "duration": 5,
+         *       "ratio": "16:9",
+         *       "resolution": "768P"
+         *     }
+         */
+        MinimaxV2VideoGenerationInputs: {
             /** @description Whether to add an AIGC watermark to the output. Defaults to false. */
             aigc_watermark?: boolean;
             /** @description Optional. URL to receive task state changes after challenge verification. */
@@ -13836,9 +13918,9 @@ export interface components {
             content: components["schemas"]["MinimaxV2ContentItem"][];
             /** @description Video length in seconds, 5 to 15. */
             duration: number;
-            /** @description Required. ID of model. Options: MiniMax-H3 */
-            model: string;
-            /** @description Aspect ratio. Options: adaptive (default), 21:9, 16:9, 4:3, 1:1, 3:4, 9:16. Ignored (treated as adaptive) for first-frame or last-frame generation. */
+            /** @description ID of model. Options: MiniMax-H3. Router callers may omit this field or send null; Router injects the model selected by the request path before provider dispatch. */
+            model?: string | null;
+            /** @description Aspect ratio. Options: adaptive (default), 21:9, 16:9, 4:3, 1:1, 3:4, 9:16. Required and must not be adaptive for text-to-video; ignored (treated as adaptive) for first-frame or last-frame generation. */
             ratio?: string;
             /** @description Video resolution. Options: 2K, 768P. */
             resolution: string;
@@ -13847,6 +13929,27 @@ export interface components {
              * @description Random seed in [-1, 2^32 - 1]; omitted or -1 is random.
              */
             seed?: number;
+        };
+        /**
+         * @description Parameters for the Minimax V2 (Hailuo 03) video generation proxy request -- the v1 `POST /proxy/minimax/v2/video_generation` body.
+         *     It composes `MinimaxV2VideoGenerationInputs` rather than restating its fields, and adds back the one field only the v1 surface can demand. `model` is load-bearing: this route carries no path segment supplying it and videoGenerationProxy refuses a body without it (`supportedModel("")` matches nothing and the call is cancelled with `unsupported model`), whereas the Comfy Router route `POST /v2/models/minimax/{model}` supplies it from the path and its input schema must not require it.
+         *     Read the note above `MinimaxV2VideoGenerationInputs` for the full rule and the guards that enforce it.
+         * @example {
+         *       "content": [
+         *         {
+         *           "text": "A single red maple leaf resting on a plain white background.",
+         *           "type": "text"
+         *         }
+         *       ],
+         *       "duration": 5,
+         *       "model": "MiniMax-H3",
+         *       "ratio": "16:9",
+         *       "resolution": "768P"
+         *     }
+         */
+        MinimaxV2VideoGenerationRequest: components["schemas"]["MinimaxV2VideoGenerationInputs"] & {
+            /** @description ID of model. Options: MiniMax-H3. */
+            model: string;
         };
         /** @description Response from the Minimax V2 video generation API. */
         MinimaxV2VideoGenerationResponse: {
@@ -19869,7 +19972,7 @@ export interface components {
                 duration?: number;
                 /** @description Frame rate of the generated video (wan3.0-video tasks) */
                 fps?: number;
-                /** @description Number of generated images (T2I tasks) */
+                /** @description Number of generated images (T2I and I2I tasks) */
                 image_count?: number;
                 /** @description Duration of the input video in seconds, 0.0 when no video input (wan3.0-video tasks) */
                 input_video_duration?: number;
@@ -19877,7 +19980,7 @@ export interface components {
                 output_video_duration?: number;
                 /** @description Aspect ratio of the generated video, e.g. 16:9 (wan3.0-video tasks) */
                 ratio?: string;
-                /** @description Image resolution (T2I tasks) */
+                /** @description Image resolution (T2I and I2I tasks) */
                 size?: string;
                 /** @description Number of generated videos (T2V tasks) */
                 video_count?: number;
@@ -20354,7 +20457,7 @@ export interface components {
         };
         /** @description Request body for xAI Grok Imagine video editing */
         XAIVideoEditRequest: {
-            /** @description Model to be used */
+            /** @description Model to be used. Supported: grok-imagine-video (default), grok-imagine-video-1.5-preview, grok-imagine-video-1.5. The deprecated grok-imagine-video-beta id is aliased to grok-imagine-video. */
             model?: string | null;
             /** @description Optional output destination for generated video */
             output?: Record<string, never> | null;
@@ -20371,7 +20474,7 @@ export interface components {
              * @default 6
              */
             duration: number | null;
-            /** @description Model to use */
+            /** @description Model to be used. Supported: grok-imagine-video (default), grok-imagine-video-1.5-preview, grok-imagine-video-1.5. The deprecated grok-imagine-video-beta id is aliased to grok-imagine-video. */
             model?: string | null;
             /** @description Text description of what should happen next in the video */
             prompt: string;
@@ -20400,7 +20503,7 @@ export interface components {
              */
             duration: number | null;
             image?: components["schemas"]["XAIImageObject"];
-            /** @description Model to be used */
+            /** @description Model to be used. Supported: grok-imagine-video (default), grok-imagine-video-1.5-preview, grok-imagine-video-1.5. The deprecated grok-imagine-video-beta id is aliased to grok-imagine-video. */
             model?: string | null;
             /** @description Optional output destination for generated video */
             output?: Record<string, never> | null;
