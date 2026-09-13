@@ -48,7 +48,7 @@ describe('applyLiveWidgetValue', () => {
         'after',
         remoteContext
       )
-    ).toEqual({ applied: false, resolvedValue: undefined })
+    ).toEqual({ status: 'skipped' })
     expect(console.warn).toHaveBeenCalledWith(
       expect.stringContaining('node 7, widget value: graph is not ready')
     )
@@ -66,7 +66,7 @@ describe('applyLiveWidgetValue', () => {
         'after',
         remoteContext
       )
-    ).toEqual({ applied: false, resolvedValue: undefined })
+    ).toEqual({ status: 'skipped' })
 
     const node = new LGraphNode('Test')
     node.id = toNodeId(7)
@@ -80,7 +80,7 @@ describe('applyLiveWidgetValue', () => {
         'after',
         remoteContext
       )
-    ).toEqual({ applied: false, resolvedValue: undefined })
+    ).toEqual({ status: 'skipped' })
   })
 
   it('updates both the widget value and callbacks with the previous value', () => {
@@ -96,7 +96,7 @@ describe('applyLiveWidgetValue', () => {
         'after',
         remoteContext
       )
-    ).toEqual({ applied: true, resolvedValue: 'after' })
+    ).toEqual({ status: 'applied', resolvedValue: 'after' })
     expect(widget.value).toBe('after')
     expect(callback).toHaveBeenCalledWith('after')
     expect(node.onWidgetChanged).toHaveBeenCalledWith(
@@ -121,8 +121,28 @@ describe('applyLiveWidgetValue', () => {
         'after',
         remoteContext
       )
-    ).toEqual({ applied: true, resolvedValue: 'after' })
+    ).toEqual({ status: 'applied', resolvedValue: 'after' })
     expect(node.properties.mode).toBe('after')
+  })
+
+  it('creates an undefined backing property and syncs callback edits', () => {
+    const { graph, node, widget } = graphWithWidget()
+    widget.options = { ...widget.options, property: 'mode' }
+    widget.callback = () => {
+      widget.value = 'callback edit'
+    }
+
+    expect(
+      applyLiveWidgetValue(
+        graph,
+        rootScope,
+        toNodeId(7),
+        'value',
+        'after',
+        remoteContext
+      )
+    ).toEqual({ status: 'applied', resolvedValue: 'callback edit' })
+    expect(node.properties.mode).toBe('callback edit')
   })
 
   it('restores the backing property when the callback rolls back', () => {
@@ -142,7 +162,7 @@ describe('applyLiveWidgetValue', () => {
         'after',
         remoteContext
       )
-    ).toEqual({ applied: false, resolvedValue: 'before' })
+    ).toEqual({ status: 'rolledBack', resolvedValue: 'before' })
     expect(node.properties.mode).toBe('before')
   })
 
@@ -158,9 +178,26 @@ describe('applyLiveWidgetValue', () => {
         'after',
         remoteContext
       )
-    ).toEqual({ applied: false, resolvedValue: undefined })
+    ).toEqual({ status: 'skipped' })
     expect(widget.value).toBe('before')
     expect(callback).not.toHaveBeenCalled()
+  })
+
+  it('updates serializable scalar widget types outside the legacy allowlist', () => {
+    const { graph, widget, callback } = graphWithWidget('color')
+
+    expect(
+      applyLiveWidgetValue(
+        graph,
+        rootScope,
+        toNodeId(7),
+        'value',
+        '#ffffff',
+        remoteContext
+      )
+    ).toEqual({ status: 'applied', resolvedValue: '#ffffff' })
+    expect(widget.value).toBe('#ffffff')
+    expect(callback).toHaveBeenCalledWith('#ffffff')
   })
 
   it('skips object values for a text widget', () => {
@@ -175,7 +212,7 @@ describe('applyLiveWidgetValue', () => {
         { unsupported: true },
         remoteContext
       )
-    ).toEqual({ applied: false, resolvedValue: undefined })
+    ).toEqual({ status: 'skipped' })
     expect(widget.value).toBe('before')
     expect(callback).not.toHaveBeenCalled()
   })
@@ -195,7 +232,7 @@ describe('applyLiveWidgetValue', () => {
         'after',
         remoteContext
       )
-    ).toEqual({ applied: false, resolvedValue: 'before' })
+    ).toEqual({ status: 'rolledBack', resolvedValue: 'before' })
     expect(widget.value).toBe('before')
   })
 
@@ -214,7 +251,7 @@ describe('applyLiveWidgetValue', () => {
         'after',
         remoteContext
       )
-    ).toEqual({ applied: false, resolvedValue: 'before' })
+    ).toEqual({ status: 'rolledBack', resolvedValue: 'before' })
     expect(widget.value).toBe('before')
   })
 
@@ -242,7 +279,7 @@ describe('applyLiveWidgetValue', () => {
         'after',
         remoteContext
       )
-    ).toEqual({ applied: true, resolvedValue: 'callback edit' })
+    ).toEqual({ status: 'applied', resolvedValue: 'callback edit' })
     expect(minted).toEqual([
       {
         op: 'set_widget',
@@ -279,7 +316,38 @@ describe('applyLiveWidgetValue', () => {
         'after',
         remoteContext
       )
-    ).toEqual({ applied: false, resolvedValue: 'before' })
+    ).toEqual({ status: 'rolledBack', resolvedValue: 'before' })
+    expect(widget.value).toBe('before')
+    expect(minted).toEqual([])
+    wiring.detach()
+  })
+
+  it('does not mint a callback edit when the callback later throws', () => {
+    const { graph, widget } = graphWithWidget()
+    const minted: GraphOperation[] = []
+    const wiring = attachMintPortWiring({
+      isEnabled: () => true,
+      isDocBound: () => true,
+      enqueue: (operations) => minted.push(...operations),
+      layoutChanges: () => () => undefined,
+      localActorPrefix: 'user-',
+      getGraph: () => graph
+    })
+    widget.callback = () => {
+      widget.value = 'callback edit'
+      throw new Error('callback failed')
+    }
+
+    expect(
+      applyLiveWidgetValue(
+        graph,
+        rootScope,
+        toNodeId(7),
+        'value',
+        'after',
+        remoteContext
+      )
+    ).toEqual({ status: 'rolledBack', resolvedValue: 'before' })
     expect(widget.value).toBe('before')
     expect(minted).toEqual([])
     wiring.detach()
@@ -322,7 +390,7 @@ describe('applyLiveWidgetValue', () => {
         'after',
         remoteContext
       )
-    ).toEqual({ applied: true, resolvedValue: 'after' })
+    ).toEqual({ status: 'applied', resolvedValue: 'after' })
     expect(innerWidget.value).toBe('after')
     expect(rootWidget.value).toBe('root')
   })

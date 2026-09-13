@@ -40,10 +40,20 @@ function node(id: number, widgets_values: Record<string, unknown> = {}) {
 describe('graphMutations', () => {
   const createLayout = vi.fn()
   const deleteLayouts = vi.fn()
-  const setLiveWidgetValue = vi.fn((_scope, _nodeId, _name, value) => ({
-    applied: true,
-    resolvedValue: value
-  }))
+  const setLiveWidgetValue = vi.fn(
+    (
+      _scope,
+      _nodeId,
+      _name,
+      value
+    ): {
+      status: 'applied' | 'rolledBack'
+      resolvedValue: typeof value
+    } => ({
+      status: 'applied',
+      resolvedValue: value
+    })
+  )
 
   beforeEach(() => {
     createLayout.mockReset()
@@ -109,7 +119,7 @@ describe('graphMutations', () => {
       expect(
         useWidgetValueStore().getWidget(widgetId('root', toNodeId(7), 'image'))
       ).toBeUndefined()
-      return { applied: true, resolvedValue: 'added.png' }
+      return { status: 'applied', resolvedValue: 'added.png' }
     })
 
     expect(mutations().addNode(node(7, { image: 'added.png' }), context)).toBe(
@@ -129,7 +139,7 @@ describe('graphMutations', () => {
     expect(graph.addNode(node(7, { image: 'before.png' }), context)).toBe(true)
     setLiveWidgetValue.mockReset()
     setLiveWidgetValue.mockReturnValue({
-      applied: false,
+      status: 'rolledBack',
       resolvedValue: 'before.png'
     })
 
@@ -141,6 +151,50 @@ describe('graphMutations', () => {
       useWidgetValueStore().getWidget(widgetId('root', toNodeId(7), 'image'))
     ).toMatchObject({ value: 'before.png' })
   })
+
+  it.for([null, undefined])(
+    'preserves a nullish live widget result of %s',
+    (resolvedValue) => {
+      const graph = mutations()
+      expect(graph.addNode(node(7, { image: 'before.png' }), context)).toBe(
+        true
+      )
+      setLiveWidgetValue.mockReset()
+      setLiveWidgetValue.mockReturnValue({
+        status: 'applied',
+        resolvedValue
+      })
+
+      expect(graph.setWidget(toNodeId(7), 'image', 'after.png', context)).toBe(
+        true
+      )
+      expect(
+        useWidgetValueStore().getWidget(widgetId('root', toNodeId(7), 'image'))
+      ).toMatchObject({ value: resolvedValue })
+    }
+  )
+
+  it.for([null, undefined])(
+    'preserves a nullish rollback value of %s',
+    (resolvedValue) => {
+      const graph = mutations()
+      expect(graph.addNode(node(7, { image: 'before.png' }), context)).toBe(
+        true
+      )
+      setLiveWidgetValue.mockReset()
+      setLiveWidgetValue.mockReturnValue({
+        status: 'rolledBack',
+        resolvedValue
+      })
+
+      expect(graph.setWidget(toNodeId(7), 'image', 'after.png', context)).toBe(
+        true
+      )
+      expect(
+        useWidgetValueStore().getWidget(widgetId('root', toNodeId(7), 'image'))
+      ).toMatchObject({ value: resolvedValue })
+    }
+  )
 
   it('retains supplied link ids and atomically displaces the target occupant', () => {
     const graph = mutations()
