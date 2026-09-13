@@ -317,7 +317,7 @@ describe('useNodeDragToCanvas', () => {
             'Widget "ckpt_name" is missing from added node CheckpointLoaderSimple'
         }),
         {
-          errorType: 'failure_setting_dragged_node_widget',
+          errorType: 'nodes_drag_widget_missing',
           tags: {
             failure_kind: 'bad_state',
             feature_area: 'nodes',
@@ -331,6 +331,37 @@ describe('useNodeDragToCanvas', () => {
           },
           level: 'error'
         }
+      )
+    })
+
+    it('bounds node and widget identifiers independently', () => {
+      mockCanvas.canvas.getBoundingClientRect.mockReturnValue({
+        left: 0,
+        right: 500,
+        top: 0,
+        bottom: 500
+      })
+      const nodeType = 'n'.repeat(200)
+      const widgetName = 'w'.repeat(220)
+      mockAddNodeOnGraph.mockReturnValue({ id: 1, type: nodeType, widgets: [] })
+
+      useNodeDragToCanvas().startDrag(mockNodeDef, {
+        widgetValues: { [widgetName]: 'value' }
+      })
+      document.dispatchEvent(
+        new PointerEvent('pointerup', { clientX: 250, clientY: 250 })
+      )
+
+      expect(mockReportError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: `Widget "${'w'.repeat(128)}" is missing from added node ${'n'.repeat(128)}`
+        }),
+        expect.objectContaining({
+          context: expect.objectContaining({
+            node_type: 'n'.repeat(128),
+            widget_name: 'w'.repeat(128)
+          })
+        })
       )
     })
 
@@ -366,7 +397,7 @@ describe('useNodeDragToCanvas', () => {
           message: 'Failed to add dragged node TestNode to the graph'
         }),
         {
-          errorType: 'failure_adding_dragged_node',
+          errorType: 'nodes_drag_add_failed',
           tags: {
             failure_kind: 'bad_state',
             feature_area: 'nodes',
@@ -380,6 +411,18 @@ describe('useNodeDragToCanvas', () => {
           },
           level: 'error'
         }
+      )
+
+      mockReportError.mockClear()
+      startDrag(mockNodeDef, { widgetValues: { ckpt_name: 'model' } })
+      document.dispatchEvent(
+        new PointerEvent('pointerup', { clientX: 250, clientY: 250 })
+      )
+      expect(mockReportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          context: expect.objectContaining({ has_widget_values: true })
+        })
       )
     })
 

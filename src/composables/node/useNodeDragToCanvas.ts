@@ -27,6 +27,10 @@ const lastNativeDragPosition = shallowRef<Position>()
 const pendingWidgetValues = shallowRef<WidgetValues>()
 const pendingSource = ref<NodeAddSource>('sidebar_drag')
 let listenersSetup = false
+const MAX_DIAGNOSTIC_FIELD_LENGTH = 128
+
+const boundDiagnosticField = (value: string) =>
+  value.slice(0, MAX_DIAGNOSTIC_FIELD_LENGTH)
 
 // Firefox dragend can report stale clientX/Y and `drag` can fire with
 // (0, 0). dragover on the target reliably reports real client coords.
@@ -41,10 +45,14 @@ function applyWidgetValues(node: LGraphNode, values: WidgetValues) {
   for (const [name, value] of Object.entries(values)) {
     const widget = node.widgets?.find((w) => w.name === name)
     if (!widget) {
+      const nodeType = boundDiagnosticField(node.type)
+      const widgetName = boundDiagnosticField(name)
       reportError(
-        new Error(`Widget "${name}" is missing from added node ${node.type}`),
+        new Error(
+          `Widget "${widgetName}" is missing from added node ${nodeType}`
+        ),
         {
-          errorType: 'failure_setting_dragged_node_widget',
+          errorType: 'nodes_drag_widget_missing',
           tags: {
             failure_kind: 'bad_state',
             feature_area: 'nodes',
@@ -53,8 +61,8 @@ function applyWidgetValues(node: LGraphNode, values: WidgetValues) {
           },
           context: {
             drag_mode: dragMode.value,
-            node_type: node.type,
-            widget_name: name
+            node_type: nodeType,
+            widget_name: widgetName
           },
           level: 'error'
         }
@@ -97,10 +105,11 @@ function addNodeAtPosition(clientX: number, clientY: number): boolean {
     useLitegraphService().addNodeOnGraph(nodeDef, { pos })
   )
   if (!node) {
+    const nodeType = boundDiagnosticField(nodeDef.name)
     reportError(
-      new Error(`Failed to add dragged node ${nodeDef.name} to the graph`),
+      new Error(`Failed to add dragged node ${nodeType} to the graph`),
       {
-        errorType: 'failure_adding_dragged_node',
+        errorType: 'nodes_drag_add_failed',
         tags: {
           failure_kind: 'bad_state',
           feature_area: 'nodes',
@@ -109,7 +118,7 @@ function addNodeAtPosition(clientX: number, clientY: number): boolean {
         },
         context: {
           drag_mode: dragMode.value,
-          node_type: nodeDef.name,
+          node_type: nodeType,
           has_widget_values: pendingWidgetValues.value !== undefined
         },
         level: 'error'
