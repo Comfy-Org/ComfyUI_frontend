@@ -12,16 +12,13 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 export function adoptPromotedWidgetValue(
   hostInput: INodeInputSlot,
   targetNode: LGraphNode,
-  targetSlot: number
+  targetInput: INodeInputSlot
 ): void {
   const { widgetId } = hostInput
   if (!widgetId) return
 
   const value = useWidgetValueStore().getWidget(widgetId)?.value
   if (value === undefined || !isWidgetValue(value)) return
-
-  if (targetSlot < 0 || targetSlot >= targetNode.inputs.length) return
-  const targetInput = targetNode.inputs[targetSlot]
 
   const widget = targetNode.getWidgetFromSlot(targetInput)
   if (!widget) return

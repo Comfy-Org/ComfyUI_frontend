@@ -34,8 +34,14 @@ import {
   resetSubgraphFixtureState
 } from './__fixtures__/subgraphHelpers'
 
+const mockReportError = vi.hoisted(() => vi.fn())
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: mockReportError
+}))
+
 beforeEach(() => {
   resetSubgraphFixtureState()
+  mockReportError.mockClear()
 })
 
 function expectUnpackRejected(graph: LGraph, subgraphNode: SubgraphNode): void {
@@ -472,22 +478,31 @@ describe('SubgraphConversion', () => {
 
       it('Should not report a missing link for a promoted widget input', () => {
         const { graph, subgraphNode } = createPromotedWidgetSubgraph()
-        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
         graph.unpackSubgraph(subgraphNode)
 
-        expect(errorSpy).not.toHaveBeenCalled()
+        expect(mockReportError).not.toHaveBeenCalled()
       })
 
       it('Should report a missing host input and continue unpacking', () => {
         const { graph, subgraphNode } = createPromotedWidgetSubgraph()
+        const [link] = subgraphNode.subgraph.links.values()
+        assert(link)
         subgraphNode.removeInput(0)
-        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
         graph.unpackSubgraph(subgraphNode)
 
-        expect(errorSpy).toHaveBeenCalledWith(
-          'Missing host input when unpacking subgraph'
+        expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
+          expect.objectContaining({
+            message: 'Missing host input when unpacking subgraph'
+          }),
+          {
+            errorType: 'subgraph_unpack_missing_host_input',
+            context: {
+              linkId: link.id,
+              subgraphNodeId: subgraphNode.id
+            }
+          }
         )
         expect(graph.nodes.length).toBe(1)
       })
@@ -516,15 +531,40 @@ describe('SubgraphConversion', () => {
         assert(secondWidgetId)
         useWidgetValueStore().setValue(secondWidgetId, 'second host')
         subgraphNode.removeInput(0)
-        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
         graph.unpackSubgraph(subgraphNode)
 
-        expect(errorSpy).toHaveBeenCalledTimes(1)
+        expect(mockReportError).toHaveBeenCalledTimes(1)
         expect(readUnpackedWidgetValues(graph)).toEqual([
           'interior 0',
           'second host'
         ])
+      })
+
+      it('Should report a missing interior target input and continue unpacking', () => {
+        const { graph, subgraphNode } = createPromotedWidgetSubgraph()
+        const [link] = subgraphNode.subgraph.links.values()
+        assert(link)
+        link.target_slot = 1
+
+        graph.unpackSubgraph(subgraphNode)
+        const [targetNode] = graph.nodes
+        assert(targetNode)
+
+        expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
+          expect.objectContaining({
+            message: 'Missing target input when unpacking subgraph'
+          }),
+          {
+            errorType: 'subgraph_unpack_missing_target_input',
+            context: {
+              linkId: link.id,
+              targetNodeId: targetNode.id,
+              targetSlot: 1
+            }
+          }
+        )
+        expect(graph.nodes.length).toBe(1)
       })
 
       it('Should hand the promoted host value to the interior widget', () => {
@@ -570,11 +610,10 @@ describe('SubgraphConversion', () => {
 
         const inner = createTestNode(subgraph, ['number'])
         subgraph.inputNode.slots[0].connect(inner.inputs[0], inner)
-        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
         graph.unpackSubgraph(subgraphNode)
 
-        expect(errorSpy).not.toHaveBeenCalled()
+        expect(mockReportError).not.toHaveBeenCalled()
         expect(graph.nodes.length).toBe(1)
       })
     })

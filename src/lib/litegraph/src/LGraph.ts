@@ -2563,7 +2563,10 @@ export class LGraph
           )
         : undefined
       if (link.origin_id === SUBGRAPH_INPUT_ID && !hostInput) {
-        console.error('Missing host input when unpacking subgraph')
+        reportError(new Error('Missing host input when unpacking subgraph'), {
+          errorType: 'subgraph_unpack_missing_host_input',
+          context: { linkId: link.id, subgraphNodeId: subgraphNode.id }
+        })
         continue
       }
       const outerLink =
@@ -2573,7 +2576,25 @@ export class LGraph
       if (link.origin_id === SUBGRAPH_INPUT_ID && !outerLink) {
         const interiorNode = this.getNodeById(nodeIdMap.get(link.target_id))
         if (hostInput && interiorNode) {
-          adoptPromotedWidgetValue(hostInput, interiorNode, link.target_slot)
+          if (
+            link.target_slot < 0 ||
+            link.target_slot >= interiorNode.inputs.length
+          ) {
+            reportError(
+              new Error('Missing target input when unpacking subgraph'),
+              {
+                errorType: 'subgraph_unpack_missing_target_input',
+                context: {
+                  linkId: link.id,
+                  targetNodeId: interiorNode.id,
+                  targetSlot: link.target_slot
+                }
+              }
+            )
+            continue
+          }
+          const targetInput = interiorNode.inputs[link.target_slot]
+          adoptPromotedWidgetValue(hostInput, interiorNode, targetInput)
         }
         continue
       }
