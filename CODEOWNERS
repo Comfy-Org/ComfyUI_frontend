@@ -12,7 +12,6 @@
 
 # Mask Editor
 /src/extensions/core/maskeditor.ts                @trsommer @brucew4yn3rp @jtydhr88 @Comfy-Org/comfy_frontend_devs
-/src/extensions/core/maskEditorLayerFilenames.ts  @trsommer @brucew4yn3rp @jtydhr88 @Comfy-Org/comfy_frontend_devs
 /src/components/maskeditor/                       @trsommer @brucew4yn3rp @jtydhr88 @Comfy-Org/comfy_frontend_devs
 /src/composables/maskeditor/                      @trsommer @brucew4yn3rp @jtydhr88 @Comfy-Org/comfy_frontend_devs
 /src/stores/maskEditorStore.ts                    @trsommer @brucew4yn3rp @jtydhr88 @Comfy-Org/comfy_frontend_devs
