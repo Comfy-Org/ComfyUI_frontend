@@ -137,7 +137,6 @@ watch(open, (value) => {
 })
 
 function finish() {
-  stopAutoClose()
   cancelPendingCheckout()
   clearTopUpWatch()
   latchedReturn.value = undefined
@@ -146,52 +145,14 @@ function finish() {
   open.value = false
 }
 
-// The landed card closes itself after a beat - the one state with nothing
-// left to decide. The countdown runs only while the tab is being looked at,
-// and any interaction cancels it, so nobody loses the ledger mid-read.
-const AUTO_CLOSE_MS = 3_600
-let autoCloseTimer: ReturnType<typeof setTimeout> | undefined
-
-function stopAutoClose() {
-  if (autoCloseTimer) clearTimeout(autoCloseTimer)
-  autoCloseTimer = undefined
-}
-
-function scheduleAutoClose() {
-  stopAutoClose()
-  if (typeof document !== 'undefined' && document.hidden) return
-  autoCloseTimer = setTimeout(() => finish(), AUTO_CLOSE_MS)
-}
-
-function onVisibilityChange() {
-  if (step.value !== 'landed') return
-  if (document.hidden) stopAutoClose()
-  else scheduleAutoClose()
-}
-
-function cancelAutoClose() {
-  if (step.value === 'landed') stopAutoClose()
-}
-
-watch(step, (value) => {
-  if (value !== 'landed' || !open.value) {
-    stopAutoClose()
-    return
-  }
-  scheduleAutoClose()
-})
-
 onMounted(() => {
-  document.addEventListener('visibilitychange', onVisibilityChange)
   unsubscribeFromTopUpReturns = subscribeToTopUpReturns(onTopUpReturn)
   announceTopUpReturnFromLocation()
 })
 
 onBeforeUnmount(() => {
-  stopAutoClose()
   cancelPendingCheckout()
   unsubscribeFromTopUpReturns?.()
-  document.removeEventListener('visibilitychange', onVisibilityChange)
 })
 
 function setAmount(next: number) {
@@ -356,6 +317,7 @@ function releaseCheckoutAttempt(
 
 async function continueToCheckout() {
   if (state.value === 'pending') return
+  const amountCents = clampTopUp(usd.value) * 100
   const scope = captureCheckoutScope()
   if (!scope) return
   const controller = new AbortController()
@@ -369,7 +331,7 @@ async function continueToCheckout() {
     const attemptId = crypto.randomUUID()
     const checkout = await createTopUpCheckout({
       token,
-      amountCents: usd.value * 100,
+      amountCents,
       returnUrl: topUpReturnUrl(window.location.href, attemptId),
       idempotencyKey: attemptId,
       signal: controller.signal
@@ -389,7 +351,7 @@ async function continueToCheckout() {
 const format = (value: number) => value.toLocaleString(locale)
 const packClass = (selected: boolean) =>
   cn(
-    'flex cursor-pointer flex-col gap-1 rounded-2xl px-4 py-3 text-left transition-colors',
+    'flex cursor-pointer flex-col gap-1 rounded-2xl px-4 py-3 text-left transition-colors disabled:cursor-wait disabled:opacity-60',
     selected
       ? 'bg-primary-comfy-yellow text-primary-comfy-ink'
       : 'bg-transparency-white-t4 text-primary-comfy-canvas hover:bg-transparency-white-t8'
@@ -404,8 +366,6 @@ const stepperClass =
       :close-label="t('workshop.credits.close', locale)"
       class="flex flex-col gap-6 sm:max-w-xl"
       data-testid="buy-credits-dialog"
-      @pointerdown="cancelAutoClose"
-      @keydown="cancelAutoClose"
     >
       <template v-if="step === 'checkout'">
         <DialogTitle class="pr-16">
@@ -609,61 +569,63 @@ const stepperClass =
           {{ t('workshop.credits.body', locale) }}
         </DialogDescription>
 
-        <div
-          class="grid grid-cols-2 gap-2 sm:grid-cols-4"
-          data-testid="buy-credits-packs"
-        >
-          <button
-            v-for="pack in TOP_UP_PACKS"
-            :key="pack"
-            type="button"
-            :aria-pressed="usd === pack"
-            :class="packClass(usd === pack)"
-            :data-testid="`buy-credits-pack-${pack}`"
-            @click="setAmount(pack)"
+        <fieldset :disabled="state === 'pending'" class="contents">
+          <div
+            class="grid grid-cols-2 gap-2 sm:grid-cols-4"
+            data-testid="buy-credits-packs"
           >
-            <span class="text-lg font-bold">${{ pack }}</span>
-            <span class="text-xs tabular-nums opacity-70">
-              {{ format(usdToCredits(pack)) }}
-            </span>
-          </button>
-        </div>
+            <button
+              v-for="pack in TOP_UP_PACKS"
+              :key="pack"
+              type="button"
+              :aria-pressed="usd === pack"
+              :class="packClass(usd === pack)"
+              :data-testid="`buy-credits-pack-${pack}`"
+              @click="setAmount(pack)"
+            >
+              <span class="text-lg font-bold">${{ pack }}</span>
+              <span class="text-xs tabular-nums opacity-70">
+                {{ format(usdToCredits(pack)) }}
+              </span>
+            </button>
+          </div>
 
-        <div
-          class="bg-transparency-white-t4 flex items-center justify-between gap-3 rounded-2xl px-4 py-3"
-          data-testid="buy-credits-custom"
-        >
-          <span class="text-sm text-primary-warm-gray">
-            {{ t('workshop.credits.custom', locale) }}
-          </span>
-          <span class="flex items-center gap-3">
-            <button
-              type="button"
-              :class="stepperClass"
-              :disabled="usd <= MIN_TOP_UP_USD"
-              :aria-label="t('workshop.credits.less', locale)"
-              data-testid="buy-credits-less"
-              @click="setAmount(usd - 5)"
-            >
-              <Minus class="size-3.5" aria-hidden="true" />
-            </button>
-            <span
-              class="w-28 text-right text-sm text-primary-comfy-canvas tabular-nums"
-            >
-              ${{ format(usd) }} · {{ format(credits) }}
+          <div
+            class="bg-transparency-white-t4 flex items-center justify-between gap-3 rounded-2xl px-4 py-3"
+            data-testid="buy-credits-custom"
+          >
+            <span class="text-sm text-primary-warm-gray">
+              {{ t('workshop.credits.custom', locale) }}
             </span>
-            <button
-              type="button"
-              :class="stepperClass"
-              :disabled="usd >= MAX_TOP_UP_USD"
-              :aria-label="t('workshop.credits.more', locale)"
-              data-testid="buy-credits-more"
-              @click="setAmount(usd + 5)"
-            >
-              <Plus class="size-3.5" aria-hidden="true" />
-            </button>
-          </span>
-        </div>
+            <span class="flex items-center gap-3">
+              <button
+                type="button"
+                :class="stepperClass"
+                :disabled="usd <= MIN_TOP_UP_USD"
+                :aria-label="t('workshop.credits.less', locale)"
+                data-testid="buy-credits-less"
+                @click="setAmount(usd - 5)"
+              >
+                <Minus class="size-3.5" aria-hidden="true" />
+              </button>
+              <span
+                class="w-28 text-right text-sm text-primary-comfy-canvas tabular-nums"
+              >
+                ${{ format(usd) }} · {{ format(credits) }}
+              </span>
+              <button
+                type="button"
+                :class="stepperClass"
+                :disabled="usd >= MAX_TOP_UP_USD"
+                :aria-label="t('workshop.credits.more', locale)"
+                data-testid="buy-credits-more"
+                @click="setAmount(usd + 5)"
+              >
+                <Plus class="size-3.5" aria-hidden="true" />
+              </button>
+            </span>
+          </div>
+        </fieldset>
 
         <p
           v-if="state === 'failed'"

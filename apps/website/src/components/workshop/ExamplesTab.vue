@@ -25,6 +25,11 @@ const specsOf = (example: PlaygroundExample) => example.specs.join(' · ')
 const samplesOnly = computed(
   () => examples.length > 0 && examples.every((example) => example.sampleOnly)
 )
+const desktopGridColumns = computed(() =>
+  examples.length === 3
+    ? 'sm:grid-cols-[repeat(auto-fit,minmax(14rem,1fr))]'
+    : 'sm:grid-cols-[repeat(auto-fill,minmax(14rem,1fr))]'
+)
 
 function actionFor(example: PlaygroundExample, active = false) {
   const key = example.sampleOnly
@@ -73,7 +78,12 @@ function actionFor(example: PlaygroundExample, active = false) {
       they fit in a row of their own. -->
     <ul
       v-else
-      class="flex scrollbar-hide snap-x gap-3 overflow-x-auto max-sm:-mx-6 max-sm:-my-1 max-sm:scroll-px-6 max-sm:px-6 max-sm:py-1 sm:grid sm:max-w-5xl sm:grid-cols-[repeat(auto-fill,minmax(14rem,1fr))] sm:justify-start sm:overflow-visible"
+      :class="
+        cn(
+          'flex scrollbar-hide snap-x gap-3 overflow-x-auto max-sm:-mx-6 max-sm:-my-1 max-sm:scroll-px-6 max-sm:px-6 max-sm:py-1 sm:grid sm:max-w-5xl sm:justify-start sm:overflow-visible',
+          desktopGridColumns
+        )
+      "
     >
       <li
         v-for="example in examples"

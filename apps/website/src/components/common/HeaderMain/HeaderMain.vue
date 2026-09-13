@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { defineAsyncComponent } from 'vue'
+import { defineAsyncComponent, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import type { Locale } from '../../../i18n/translations.ts'
 import { t } from '../../../i18n/translations.ts'
 import { externalLinks, getRoutes } from '../../../config/routes.ts'
+import { subscribeToWorkshopBuyCredits } from '../../../config/workshop-buy-credits.ts'
 import { useWorkshopAuthFlag } from '../../../scripts/posthog.ts'
 import GitHubStarBadge from '../GitHubStarBadge.vue'
 import HeaderMainDesktop from './HeaderMainDesktop.vue'
@@ -24,6 +25,18 @@ const workshopAuthEnabled = useWorkshopAuthFlag()
 const HeaderAccount = defineAsyncComponent(
   () => import('../../workshop/HeaderAccount.vue')
 )
+const BuyCreditsDialog = defineAsyncComponent(
+  () => import('../../workshop/BuyCreditsDialog.vue')
+)
+const buyingCredits = ref(false)
+let stopBuyCreditsRequests: (() => void) | undefined
+
+onMounted(() => {
+  stopBuyCreditsRequests = subscribeToWorkshopBuyCredits(() => {
+    buyingCredits.value = true
+  })
+})
+onBeforeUnmount(() => stopBuyCreditsRequests?.())
 
 const ctaButtons = [
   {
@@ -108,4 +121,9 @@ const ctaButtons = [
       <HeaderAccount v-if="workshopAuthEnabled" :locale="locale" />
     </div>
   </nav>
+  <BuyCreditsDialog
+    v-if="workshopAuthEnabled"
+    v-model:open="buyingCredits"
+    :locale
+  />
 </template>

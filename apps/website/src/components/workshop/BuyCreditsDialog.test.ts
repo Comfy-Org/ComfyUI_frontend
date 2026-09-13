@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
+import '@testing-library/jest-dom/vitest'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
-import { defineComponent, h } from 'vue'
+import { defineComponent, h, nextTick } from 'vue'
 import type { Ref } from 'vue'
 
 import {
@@ -183,6 +184,28 @@ describe('BuyCreditsDialog', () => {
     expect(credits.clearTopUpWatch).toHaveBeenCalled()
   })
 
+  it('keeps the payment receipt open until the user resumes', async () => {
+    renderOpenDialog()
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+
+    credits.topUp!.value = {
+      status: 'landed',
+      ...topUpScope,
+      newCredits: 5_375,
+      landedAt: Date.now()
+    }
+    await nextTick()
+    expect(screen.getByTestId('buy-credits-done')).toBeTruthy()
+
+    await vi.advanceTimersByTimeAsync(60_000)
+
+    expect(screen.getByTestId('buy-credits-done')).toBeTruthy()
+    expect(credits.clearTopUpWatch).not.toHaveBeenCalled()
+  })
+
   it('describes an unresolved return without claiming payment succeeded', async () => {
     renderOpenDialog()
 
@@ -215,6 +238,37 @@ describe('BuyCreditsDialog', () => {
     expect(
       screen.getByTestId('buy-credits-less').hasAttribute('disabled')
     ).toBe(true)
+  })
+
+  it('locks and snapshots the selected amount while checkout is prepared', async () => {
+    const user = userEvent.setup()
+    claimTab()
+    const fetchCheckout = stubCheckout()
+    let releaseRefresh: (() => void) | undefined
+    credits.refresh.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          releaseRefresh = resolve
+        })
+    )
+    renderOpenDialog()
+
+    await user.click(await screen.findByTestId('buy-credits-pack-50'))
+    await user.click(screen.getByTestId('buy-credits-continue'))
+    await vi.waitFor(() => expect(credits.refresh).toHaveBeenCalledOnce())
+
+    const pack10 = screen.getByTestId('buy-credits-pack-10')
+    expect(pack10).toBeDisabled()
+    expect(screen.getByTestId('buy-credits-less')).toBeDisabled()
+    expect(screen.getByTestId('buy-credits-more')).toBeDisabled()
+    await user.click(pack10)
+    releaseRefresh?.()
+
+    await vi.waitFor(() => expect(fetchCheckout).toHaveBeenCalledOnce())
+    const [, init] = fetchCheckout.mock.calls[0] as [URL, RequestInit]
+    expect(JSON.parse(String(init.body))).toMatchObject({
+      amount_cents: 5_000
+    })
   })
 
   it('creates checkout with a fresh scoped token and a known balance baseline', async () => {

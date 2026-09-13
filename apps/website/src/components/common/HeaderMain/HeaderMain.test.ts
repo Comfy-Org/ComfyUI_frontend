@@ -2,6 +2,7 @@
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { requestWorkshopBuyCredits } from '../../../config/workshop-buy-credits'
 import HeaderMain from './HeaderMain.vue'
 
 const hoisted = vi.hoisted(() => ({
@@ -22,6 +23,19 @@ vi.mock<unknown>(import('../../workshop/HeaderAccount.vue'), async () => {
     default: defineComponent({
       name: 'HeaderAccountStub',
       render: () => h('div', { 'data-testid': 'header-account' })
+    })
+  }
+})
+
+vi.mock<unknown>(import('../../workshop/BuyCreditsDialog.vue'), async () => {
+  const { defineComponent, h } = await import('vue')
+  return {
+    __esModule: true,
+    default: defineComponent({
+      name: 'BuyCreditsDialogStub',
+      props: { open: { type: Boolean, required: true } },
+      setup: (props) => () =>
+        props.open ? h('div', { 'data-testid': 'buy-credits-dialog' }) : null
     })
   }
 })
@@ -82,5 +96,19 @@ describe('HeaderMain workshop gating', () => {
         'header-account'
       )
     ).toBeTruthy()
+  })
+
+  it('owns one credits dialog for both account placements and page requests', async () => {
+    hoisted.flag!.value = true
+    render(HeaderMain)
+    await waitFor(() =>
+      expect(screen.getAllByTestId('header-account')).toHaveLength(2)
+    )
+
+    requestWorkshopBuyCredits()
+
+    await waitFor(() =>
+      expect(screen.getAllByTestId('buy-credits-dialog')).toHaveLength(1)
+    )
   })
 })

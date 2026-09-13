@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
+import { subscribeToWorkshopBuyCredits } from '../../config/workshop-buy-credits'
 import HeaderAccount from './HeaderAccount.vue'
 
 const h = vi.hoisted(() => ({
@@ -58,6 +59,13 @@ vi.mock<unknown>(import('../../config/workshop-credits'), async () => {
 })
 
 const workspace = { id: 'ws', name: 'Personal', type: 'personal' as const }
+
+function captureBuyCreditsRequest() {
+  const requested = vi.fn()
+  const stop = subscribeToWorkshopBuyCredits(requested)
+  onTestFinished(stop)
+  return requested
+}
 
 beforeEach(() => {
   h.remint.mockReset()
@@ -140,6 +148,7 @@ describe('HeaderAccount', () => {
         role: 'owner'
       }
       h.balance!.value = { status: 'ok', credits }
+      const requested = captureBuyCreditsRequest()
       render(HeaderAccount)
 
       const user = userEvent.setup()
@@ -150,7 +159,7 @@ describe('HeaderAccount', () => {
       expect(screen.getByRole('menuitem', { name: /log out/i })).toBeTruthy()
 
       await user.click(buy)
-      expect(await screen.findByTestId('buy-credits-dialog')).toBeTruthy()
+      expect(requested).toHaveBeenCalledOnce()
     }
   )
 
@@ -216,6 +225,7 @@ describe('HeaderAccount menu', () => {
 
   it('opens the amount picker from Add credits without inventing a settings destination', async () => {
     signIn()
+    const requested = captureBuyCreditsRequest()
     const user = userEvent.setup()
     render(HeaderAccount)
 
@@ -227,7 +237,7 @@ describe('HeaderAccount menu', () => {
 
     await user.click(screen.getByTestId('account-add-credits'))
 
-    expect(await screen.findByTestId('buy-credits-dialog')).toBeTruthy()
+    expect(requested).toHaveBeenCalledOnce()
   })
 
   it('hides the top-up row from a member', async () => {

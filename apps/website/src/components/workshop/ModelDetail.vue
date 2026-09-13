@@ -32,6 +32,7 @@ import {
   refreshWorkshopCredits,
   useWorkshopCredits
 } from '../../config/workshop-credits'
+import { requestWorkshopBuyCredits } from '../../config/workshop-buy-credits'
 import { router_render } from '../../config/router-render'
 import { createWorkshopUrlUploader } from '../../config/workshop-url-upload'
 import { WorkshopRouterError } from '../../config/workshop-router-errors'
@@ -47,7 +48,6 @@ import {
   useWorkshopAuthFlagSettled
 } from '../../scripts/posthog'
 import ApiTab from './ApiTab.vue'
-import BuyCreditsDialog from './BuyCreditsDialog.vue'
 import ExamplesTab from './ExamplesTab.vue'
 import PlaygroundForm from './PlaygroundForm.vue'
 import PlaygroundOutput from './PlaygroundOutput.vue'
@@ -169,7 +169,6 @@ const authFlagSettled = useWorkshopAuthFlagSettled()
 const mounted = useMounted()
 const signInHref = useSignInHref(locale)
 const docsHref = modelDocsHref(model)
-const buyCreditsOpen = ref(false)
 
 const gate = computed(() => {
   if (
@@ -604,7 +603,7 @@ function useInCode() {
               class="w-full px-5"
               data-testid="run-button"
               data-gate="noCredits"
-              @click="buyCreditsOpen = true"
+              @click="requestWorkshopBuyCredits"
             >
               {{ t('workshop.run.buyCredits', locale) }}
             </Button>
@@ -701,7 +700,7 @@ function useInCode() {
             session?.role === 'member' ? session.workspace.name : undefined
           "
           @switch-personal="switchToPersonal"
-          @buy-credits="buyCreditsOpen = true"
+          @buy-credits="requestWorkshopBuyCredits"
           @retry="gate === 'ready' ? run() : reset()"
           @use-in-code="useInCode"
         />
@@ -761,5 +760,4 @@ function useInCode() {
       <ApiTab :contract="model.execution" :values :locale />
     </section>
   </div>
-  <BuyCreditsDialog v-model:open="buyCreditsOpen" :locale />
 </template>

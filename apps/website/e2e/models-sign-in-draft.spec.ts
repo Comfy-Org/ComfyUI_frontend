@@ -170,3 +170,38 @@ test('unavailable draft storage does not trap sign-in and reports missing files 
     page.getByRole('button', { name: 'Replace placeholder-1x1.webp' })
   ).toHaveCount(0)
 })
+
+test.describe('Narrow account menu', () => {
+  test.use({ viewport: { width: 320, height: 720 } })
+
+  test('stays inside the viewport after sign-in', async ({
+    page,
+    modelsAccount
+  }) => {
+    await page.goto('/login/')
+    await page.getByRole('button', { name: 'Use email instead' }).click()
+    await page.getByLabel('Email').fill(modelsAccount.email)
+    await page
+      .getByLabel('Password', { exact: true })
+      .fill(modelsAccount.password)
+    await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+    await expect(page).toHaveURL('/')
+
+    await page
+      .getByTestId('mobile-nav-cta')
+      .getByTestId('header-account')
+      .click()
+    const menu = page.getByTestId('header-account-menu')
+    await expect(menu).toBeVisible()
+    await expect
+      .poll(async () => {
+        const [box, viewport] = await Promise.all([
+          menu.boundingBox(),
+          page.evaluate(() => window.innerWidth)
+        ])
+        if (!box) return false
+        return box.x >= 0 && box.x + box.width <= viewport
+      })
+      .toBe(true)
+  })
+})

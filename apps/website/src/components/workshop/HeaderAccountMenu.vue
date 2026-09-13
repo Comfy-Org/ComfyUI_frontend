@@ -124,7 +124,8 @@ const surfaceClass =
       <DropdownMenuContent
         align="end"
         :side-offset="10"
-        :class="cn(surfaceClass, 'w-96')"
+        :class="cn(surfaceClass, 'w-96 max-w-[calc(100vw-1rem)]')"
+        data-testid="header-account-menu"
       >
         <DropdownMenuSub v-model:open="workspacesOpen">
           <DropdownMenuSubTrigger

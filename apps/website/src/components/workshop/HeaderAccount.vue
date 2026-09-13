@@ -5,6 +5,7 @@ import {
   refreshWorkshopCredits,
   useWorkshopCredits
 } from '../../config/workshop-credits'
+import { requestWorkshopBuyCredits } from '../../config/workshop-buy-credits'
 import { leaveForSignIn } from '../../config/workshop-return'
 import type { WorkspaceWithRole } from '../../lib/workshop/workspaces'
 import { listWorkspaces } from '../../lib/workshop/workspaces'
@@ -12,7 +13,6 @@ import { useWorkshopSession } from '../../config/workshop-session-state'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { useWorkshopAuthFlag } from '../../scripts/posthog'
-import BuyCreditsDialog from './BuyCreditsDialog.vue'
 import HeaderAccountMenu from './HeaderAccountMenu.vue'
 
 const { locale = 'en' } = defineProps<{
@@ -48,7 +48,6 @@ async function goToSignIn(event: MouseEvent): Promise<void> {
 }
 
 const menuOpen = ref(false)
-const buyingCredits = ref(false)
 
 // Mar's switcher from #16556, on real rails: the list is the account's own
 // workspaces, the switch is a remint for the picked one, and the balance
@@ -292,10 +291,8 @@ async function signOutFromMenu() {
       :locale
       @retry="retryWorkspaceList"
       @switch-workspace="switchWorkspace"
-      @buy-credits="buyingCredits = true"
+      @buy-credits="requestWorkshopBuyCredits"
       @sign-out="signOutFromMenu"
     />
-
-    <BuyCreditsDialog v-model:open="buyingCredits" :locale />
   </div>
 </template>
