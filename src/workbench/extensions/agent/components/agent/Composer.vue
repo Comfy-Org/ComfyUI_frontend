@@ -459,7 +459,7 @@ defineExpose({
                 @click="onSelectNodes"
               >
                 <span
-                  class="icon-[lucide--mouse-pointer-click] size-[14px] shrink-0"
+                  class="icon-[lucide--mouse-pointer-click] size-3.5 shrink-0"
                 />
                 <span class="underline decoration-dashed underline-offset-2">{{
                   placeholderHint.mentionNodes
