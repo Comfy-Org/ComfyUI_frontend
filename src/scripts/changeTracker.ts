@@ -270,7 +270,11 @@ export class ChangeTracker {
    * previous workflow's graph would be written into the new workflow's
    * activeState and persisted as its draft.
    */
-  static canvasTracker: ChangeTracker | null = null
+  static canvasTracker: ChangeTracker | null | false = null
+
+  static invalidateCanvasTracker() {
+    ChangeTracker.canvasTracker = false
+  }
 
   static resetCanvasTrackerForTest() {
     ChangeTracker.canvasTracker = null

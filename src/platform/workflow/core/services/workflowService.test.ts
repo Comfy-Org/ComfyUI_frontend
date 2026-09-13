@@ -29,6 +29,7 @@ import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { app } from '@/scripts/app'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { useAppMode } from '@/composables/useAppMode'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
@@ -474,6 +475,7 @@ describe('useWorkflowService', () => {
         path: 'workflows/active-noop.json'
       })
       workflowStore.activeWorkflow = active as LoadedComfyWorkflow
+      ChangeTracker.canvasTracker = active.changeTracker
       const service = useWorkflowService()
 
       await service.openWorkflow(active)
@@ -481,6 +483,19 @@ describe('useWorkflowService', () => {
 
       await service.openWorkflow(active, { force: true })
       expect(app.loadGraphData).toHaveBeenCalledTimes(1)
+    })
+
+    it('loads an active workflow that does not own the canvas', async () => {
+      const workflowStore = useWorkflowStore()
+      const active = createWorkflow(null, {
+        loadable: true,
+        path: 'workflows/store-selected.json'
+      })
+      workflowStore.activeWorkflow = active as LoadedComfyWorkflow
+
+      await useWorkflowService().openWorkflow(active)
+
+      expect(app.loadGraphData).toHaveBeenCalledOnce()
     })
 
     it('re-opens a workflow normally once its close has settled', async () => {
@@ -1867,6 +1882,7 @@ describe('useWorkflowService', () => {
 
       await useWorkflowService().afterLoadNewGraph('repeat', makeWorkflowData())
 
+      expect(ChangeTracker.canvasTracker).toBe(existingWorkflow.changeTracker)
       expect(
         useNodeOutputStore().restorePreviewsForWorkflow
       ).toHaveBeenCalledWith(existingWorkflow.path)

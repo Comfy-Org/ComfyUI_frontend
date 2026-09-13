@@ -401,6 +401,7 @@ export const useWorkflowService = () => {
     if (
       pendingWorkflowLoads === 0 &&
       workflowStore.isActive(workflow) &&
+      ChangeTracker.canvasTracker === workflow.changeTracker &&
       !options.force
     ) {
       return Promise.resolve(true)
@@ -416,6 +417,7 @@ export const useWorkflowService = () => {
           await workflow.load()
         }
 
+        ChangeTracker.invalidateCanvasTracker()
         const loaded = await app.loadGraphData(
           toRaw(workflow.activeState) as ComfyWorkflowJSON,
           /* clean=*/ true,
