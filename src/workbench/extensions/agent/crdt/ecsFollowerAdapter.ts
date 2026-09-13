@@ -23,7 +23,11 @@ import {
 } from './agentSubgraphHostSlots'
 import type { SubgraphDefinitionIndex } from './agentSubgraphHostSlots'
 import type { MaterializableGraph } from './agentNodeMaterializer'
-import type { GraphOperation } from './graphOperations'
+import type {
+  DocumentGraphOperation,
+  DocumentInputSlot,
+  LocalGraphOperation
+} from './graphOperations'
 import type { DocUpdate } from './docFrameClient'
 import type { FollowerDoc } from './followerDoc'
 
@@ -275,13 +279,15 @@ function readNodeSlots<TKey extends 'inputs' | 'outputs'>(
 export function mapLocalInputSlots(
   doc: Y.Doc,
   graph: Pick<MaterializableGraph, '_nodes_by_id'>,
-  operations: GraphOperation[]
-): GraphOperation[] {
-  return operations.flatMap((operation): GraphOperation[] => {
-    if (operation.op !== 'connect' || operation.grow != null) return [operation]
+  operations: LocalGraphOperation[]
+): DocumentGraphOperation[] {
+  return operations.flatMap((operation): DocumentGraphOperation[] => {
+    if (operation.op !== 'connect' || operation.grow != null)
+      return [operation as unknown as DocumentGraphOperation]
     const nodeId = String(operation.to_node)
     // A local add_node can still be awaiting its first document echo.
-    if (!nodesMap(doc).has(nodeId)) return [operation]
+    if (!nodesMap(doc).has(nodeId))
+      return [operation as unknown as DocumentGraphOperation]
     const name = graph._nodes_by_id[toNodeId(nodeId)]?.inputs.at(
       operation.to_slot
     )?.name
@@ -298,7 +304,12 @@ export function mapLocalInputSlots(
       )
       return []
     }
-    return [{ ...operation, to_slot: slot }]
+    return [
+      {
+        ...operation,
+        to_slot: slot as DocumentInputSlot
+      } as unknown as DocumentGraphOperation
+    ]
   })
 }
 
