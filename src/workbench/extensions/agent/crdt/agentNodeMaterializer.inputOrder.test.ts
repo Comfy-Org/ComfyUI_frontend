@@ -155,12 +155,11 @@ async function setup(
       })
   }
 
-  return { graph, host, follower, wiring, minted, deliver, apply, targets }
+  return { graph, host, follower, minted, deliver, apply, targets }
 }
 
 it('preserves named input targets and serialization without changing the shared document', async () => {
-  const { graph, host, follower, wiring, minted, deliver, targets } =
-    await setup()
+  const { graph, host, follower, minted, deliver, targets } = await setup()
   const originalNode = nodesMap(host).get('2')?.toJSON()
   const originalLinks = linksMap(host).toJSON()
   deliver()
@@ -181,7 +180,6 @@ it('preserves named input targets and serialization without changing the shared 
   })
   expect(minted).toEqual([])
 
-  wiring.detach()
   graph.configure(saved)
   expect(targets()).toEqual(connections.map(({ name }) => name))
 })
