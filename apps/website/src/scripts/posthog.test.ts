@@ -62,10 +62,12 @@ describe('Workshop visibility', () => {
     vi.resetModules()
   })
 
-  it('requires an explicit enable and responds to remote disable and load failures', async () => {
+  it('requires an explicit enable and keeps the last answer through load failures', async () => {
     const { initPostHog, useWorkshopEnabled } = await import('./posthog')
     const enabled = useWorkshopEnabled()
     initPostHog()
+    expect(enabled.value).toBe(false)
+    emitFeatureFlags(true)
     expect(enabled.value).toBe(false)
 
     for (const answer of [undefined, false, 'true', true, false, true]) {
@@ -76,11 +78,11 @@ describe('Workshop visibility', () => {
       expect(enabled.value).toBe(answer === true)
     }
     emitFeatureFlags(true)
-    expect(enabled.value).toBe(false)
+    expect(enabled.value).toBe(true)
   })
 
   it('does not let preview auth or production visibility overrides bypass PostHog', async () => {
-    vi.stubEnv('DEV', false)
+    vi.stubEnv('DEV', true)
     vi.stubEnv('PUBLIC_WORKSHOP_AUTH_FLAG', '1')
     vi.stubEnv('PUBLIC_WORKSHOP_ENABLED', '1')
     const { initPostHog, useWorkshopEnabled } = await import('./posthog')
@@ -90,7 +92,7 @@ describe('Workshop visibility', () => {
   })
 
   it('allows local development to preview the feature without PostHog', async () => {
-    vi.stubEnv('DEV', true)
+    vi.stubEnv('WORKSHOP_LOCAL_DEV', '1')
     vi.stubEnv('PUBLIC_WORKSHOP_ENABLED', '1')
     const { useWorkshopEnabled } = await import('./posthog')
     expect(useWorkshopEnabled().value).toBe(true)
@@ -115,9 +117,48 @@ describe('Workshop visibility', () => {
     emitFeatureFlags()
     identifyWorkshopUser(null)
     expect(useWorkshopEnabled().value).toBe(false)
-    expect(hoisted.mockReset).toHaveBeenCalledOnce()
+    expect(hoisted.mockReset).toHaveBeenCalledTimes(2)
     expect(hoisted.mockReloadFeatureFlags).toHaveBeenCalledTimes(3)
   })
+
+  it('keeps confirmed access when Firebase restores the same PostHog user', async () => {
+    hoisted.mockGetProperty.mockReturnValue('staff-uid')
+    hoisted.mockIsFeatureEnabled.mockReturnValue(true)
+    const { initPostHog, identifyWorkshopUser, useWorkshopEnabled } =
+      await import('./posthog')
+    initPostHog()
+    emitFeatureFlags()
+    identifyWorkshopUser('staff-uid')
+    expect(useWorkshopEnabled().value).toBe(true)
+    expect(hoisted.mockIdentify).not.toHaveBeenCalled()
+    expect(hoisted.mockReloadFeatureFlags).not.toHaveBeenCalled()
+  })
+
+  it.for(['identify', 'reset'] as const)(
+    'retries a failed %s transition without restoring the old access',
+    async (operation) => {
+      const { initPostHog, identifyWorkshopUser, useWorkshopEnabled } =
+        await import('./posthog')
+      initPostHog()
+      identifyWorkshopUser('staff-uid')
+      hoisted.mockIsFeatureEnabled.mockReturnValue(true)
+      emitFeatureFlags()
+      vi.spyOn(console, 'error').mockImplementation(() => undefined)
+      const call =
+        operation === 'identify' ? hoisted.mockIdentify : hoisted.mockReset
+      call.mockImplementationOnce(() => {
+        throw new Error('Unavailable')
+      })
+      const uid = operation === 'identify' ? 'another-uid' : null
+      identifyWorkshopUser(uid)
+      expect(useWorkshopEnabled().value).toBe(false)
+      const attempts = call.mock.calls.length
+      identifyWorkshopUser(uid)
+      expect(call).toHaveBeenCalledTimes(attempts + 1)
+      emitFeatureFlags(true)
+      expect(useWorkshopEnabled().value).toBe(false)
+    }
+  )
 
   it('preserves anonymous identity across page loads and resets a restored signed-out identity', async () => {
     const { initPostHog, identifyWorkshopUser } = await import('./posthog')
@@ -365,6 +406,21 @@ describe('useWorkshopAuthFlag', () => {
     const { useWorkshopAuthFlagSettled } = await import('./posthog')
 
     expect(useWorkshopAuthFlagSettled().value).toBe(true)
+  })
+
+  it('keeps the production auth kill switch despite a configured override', async () => {
+    vi.stubEnv('WORKSHOP_DEPLOY_ENV', 'production')
+    vi.stubEnv('PUBLIC_WORKSHOP_AUTH_FLAG', '1')
+    const { initPostHog, useWorkshopAuthFlag } = await import('./posthog')
+    initPostHog()
+    const enabled = useWorkshopAuthFlag()
+    expect(enabled.value).toBe(false)
+    hoisted.mockIsFeatureEnabled.mockReturnValue(true)
+    emitFeatureFlags()
+    expect(enabled.value).toBe(true)
+    hoisted.mockIsFeatureEnabled.mockReturnValue(false)
+    emitFeatureFlags()
+    expect(enabled.value).toBe(false)
   })
 
   it('honors the build override and keeps it sticky against a remote disable', async () => {

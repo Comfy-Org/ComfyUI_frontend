@@ -1,11 +1,17 @@
 // @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import { discoveryProviders } from '../../data/modelDiscovery'
 import type { DiscoveryProvider } from '../../data/modelDiscovery'
 import ModelDiscoverySection from './ModelDiscoverySection.vue'
+
+vi.mock(import('../../scripts/posthog'), async () => {
+  const { ref } = await import('vue')
+  return { useWorkshopEnabled: () => ref(true) }
+})
 
 const providers: readonly DiscoveryProvider[] = [
   {
@@ -16,8 +22,8 @@ const providers: readonly DiscoveryProvider[] = [
   }
 ]
 
-describe('ModelDiscoverySection', () => {
-  it('only lines up providers that run published models and have a preview', () => {
+describe('ModelDiscoverySection', async () => {
+  it('only lines up providers that run published models and have a preview', async () => {
     expect(discoveryProviders.length).toBeGreaterThan(1)
     for (const provider of discoveryProviders) {
       expect(provider.modelCount, provider.name).toBeGreaterThan(0)
@@ -25,8 +31,9 @@ describe('ModelDiscoverySection', () => {
     }
   })
 
-  it('sends every provider to the catalog filtered by that provider', () => {
+  it('sends every provider to the catalog filtered by that provider', async () => {
     render(ModelDiscoverySection, { props: { providers } })
+    await nextTick()
 
     const provider = screen.getByRole('link', { name: /Fixture Studio & Co/ })
     expect(provider.getAttribute('href')).toBe(
@@ -38,8 +45,9 @@ describe('ModelDiscoverySection', () => {
     expect(browse.getAttribute('href')).toBe('/models')
   })
 
-  it('hides the looping copy of the row from assistive tech', () => {
+  it('hides the looping copy of the row from assistive tech', async () => {
     render(ModelDiscoverySection, { props: { providers } })
+    await nextTick()
 
     const visible = screen.getAllByRole('link', { name: /Fixture Studio & Co/ })
     const all = screen.getAllByRole('link', {
@@ -55,16 +63,18 @@ describe('ModelDiscoverySection', () => {
   it('loads a provider preview only once its card is hovered', async () => {
     const user = userEvent.setup()
     render(ModelDiscoverySection, { props: { providers } })
+    await nextTick()
 
     expect(screen.queryByTestId('static-frame')).toBeNull()
     await user.hover(screen.getByRole('link', { name: /Fixture Studio & Co/ }))
     expect(screen.getAllByTestId('static-frame').length).toBeGreaterThan(0)
   })
 
-  it('localizes copy while keeping the English-only Workshop route', () => {
+  it('localizes copy while keeping the English-only Workshop route', async () => {
     render(ModelDiscoverySection, {
       props: { locale: 'zh-CN', providers }
     })
+    await nextTick()
 
     const browse = screen.getByRole('link', { name: '浏览全部模型' })
     expect(browse.getAttribute('href')).toBe('/models')

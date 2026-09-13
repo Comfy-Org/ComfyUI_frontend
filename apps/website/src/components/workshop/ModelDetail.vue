@@ -185,8 +185,8 @@ watch(
   },
   { once: true }
 )
-watch(activeSection, (section) => {
-  if (section === 'api') {
+watch([activeSection, workshopEnabled], ([section, enabled]) => {
+  if (enabled && section === 'api') {
     captureWorkshopEvent({ name: 'api_viewed', properties: modelAnalytics })
   }
 })
@@ -328,10 +328,6 @@ function cancelRun() {
 
 const personalSwitchPending = ref(false)
 const personalSwitchError = ref(false)
-
-watch(workshopEnabled, (enabled) => {
-  if (!enabled) cancelRun()
-})
 
 async function switchToPersonal() {
   if (personalSwitchPending.value) return

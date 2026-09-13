@@ -64,7 +64,7 @@ jobs:
           PUBLIC_WORKSHOP_AUTH_FLAG: '1'
           PUBLIC_WORKSHOP_ROUTER_RUN: '1'
           PUBLIC_WORKSHOP_CLOUD_ENV: ${{ contains(github.event.pull_request.labels.*.name, 'workshop-test') && 'test' || 'staging' }}
-        run: VERCEL_ENV=preview vercel build
+        run: NODE_ENV=production VERCEL_ENV=preview vercel build
 
       - name: Fetch head commit metadata
         id: head-commit
@@ -179,10 +179,9 @@ jobs:
           WEBSITE_ASHBY_JOB_BOARD_NAME: ${{ secrets.WEBSITE_ASHBY_JOB_BOARD_NAME }}
           WEBSITE_CLOUD_API_KEY: ${{ secrets.WEBSITE_CLOUD_API_KEY }}
           WORKSHOP_IN_BUILD: '1'
-          PUBLIC_WORKSHOP_AUTH_FLAG: '1'
           PUBLIC_WORKSHOP_ROUTER_RUN: '1'
           PUBLIC_WORKSHOP_CLOUD_ENV: prod
-        run: vercel build --prod
+        run: NODE_ENV=production VERCEL_ENV=production vercel build --prod
 
       - name: Deploy project artifacts to Vercel
         id: deploy

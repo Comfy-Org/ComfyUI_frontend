@@ -24,6 +24,7 @@ import type { SessionSnapshot } from '@comfyorg/account/session'
 import { isPermanentSessionError } from '@comfyorg/account/session'
 
 import {
+  identifyWorkshopUser,
   useWorkshopAuthFlag,
   useWorkshopAuthFlagSettled
 } from '../scripts/posthog'
@@ -222,6 +223,9 @@ async function begin(expectedGeneration: number): Promise<void> {
 
   running = true
   stopSnapshot = workshopSessionClient.subscribe((next) => {
+    if (next.phase !== 'pending') {
+      identifyWorkshopUser(next.user?.uid ?? null)
+    }
     if (holdsForRestore(next)) return
     snapshot.value = next
     keepWorkspaceRemembered()

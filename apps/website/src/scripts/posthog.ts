@@ -105,7 +105,8 @@ const WORKSHOP_ENABLED_FLAG = 'workshop-enabled'
 const WORKSHOP_TURNSTILE_FLAG = 'workshop-signup-turnstile'
 
 const VISIBILITY_OVERRIDE =
-  import.meta.env.DEV && import.meta.env.PUBLIC_WORKSHOP_ENABLED === '1'
+  import.meta.env.WORKSHOP_LOCAL_DEV === '1' &&
+  import.meta.env.PUBLIC_WORKSHOP_ENABLED === '1'
 const workshopEnabled = ref(VISIBILITY_OVERRIDE)
 let workshopUserId: string | null | undefined
 
@@ -119,12 +120,14 @@ export function identifyWorkshopUser(uid: string | null): void {
   workshopUserId = uid
   if (!initialized) return
   try {
-    if (!uid && !previousUid && !posthog.get_property('$user_id')) return
+    const persistedUid = posthog.get_property('$user_id') ?? previousUid
+    if (uid === persistedUid || (!uid && !persistedUid)) return
     workshopEnabled.value = VISIBILITY_OVERRIDE
+    if (persistedUid) posthog.reset()
     if (uid) posthog.identify(uid)
-    else posthog.reset()
     posthog.reloadFeatureFlags()
   } catch (error) {
+    workshopUserId = previousUid
     workshopEnabled.value = VISIBILITY_OVERRIDE
     console.error('PostHog identity failed', error)
   }
@@ -137,7 +140,9 @@ export function identifyWorkshopUser(uid: string | null): void {
  * off. Otherwise the ref tracks PostHog's answer both ways, so disabling the
  * flag remotely actually takes the surfaces down.
  */
-const OVERRIDDEN_ON = import.meta.env.PUBLIC_WORKSHOP_AUTH_FLAG === '1'
+const OVERRIDDEN_ON =
+  import.meta.env.WORKSHOP_DEPLOY_ENV !== 'production' &&
+  import.meta.env.PUBLIC_WORKSHOP_AUTH_FLAG === '1'
 const workshopAuthEnabled = ref(OVERRIDDEN_ON)
 /** True once PostHog has answered (or the override stands in for it). */
 const workshopAuthFlagSettled = ref(OVERRIDDEN_ON)
@@ -173,10 +178,10 @@ export function initPostHog() {
     })
     initialized = true
     posthog.onFeatureFlags((_flags, _variants, context) => {
+      if (context?.errorsLoading) return
       workshopEnabled.value =
         VISIBILITY_OVERRIDE ||
-        (!context?.errorsLoading &&
-          posthog.isFeatureEnabled(WORKSHOP_ENABLED_FLAG) === true)
+        posthog.isFeatureEnabled(WORKSHOP_ENABLED_FLAG) === true
       workshopAuthFlagSettled.value = true
       if (!OVERRIDDEN_ON) {
         workshopAuthEnabled.value =

@@ -166,12 +166,15 @@ with the refreshed snapshot.
 Models is included in production and preview builds by default. The boolean
 PostHog flag **`workshop-enabled`** controls visibility, independently of the
 build and authentication switches. It defaults off, including while flags are
-loading, missing, or unavailable. Disabling it restores the public site:
+loading, missing, or unavailable. A failed refresh preserves the last confirmed
+answer for the same identity. Disabling it restores the public site:
 
 - The header and homepage retain their existing navigation and model links.
 - `/models` shows the existing Models marketing page.
 - Model render pages show the public marketing content until enabled.
-- The catalogue and render pages stay out of sitemaps and markdown exports.
+- Public HTML contains only the fallback; catalogue and playground components
+  load after enablement. `/models` remains indexable with its marketing content.
+- Render pages stay out of sitemaps and markdown exports.
 
 Create `workshop-enabled` in the website's PostHog project with a release
 condition targeting only the Comfy staff cohort. Enable that condition for
@@ -179,19 +182,25 @@ condition targeting only the Comfy staff cohort. Enable that condition for
 rollout condition. Expand that audience when ready for the public release.
 
 The website identifies signed-in people with their Firebase UID, matching
-Cloud's PostHog identity. Staff can sign in at `/login/` first, then visit
-`/models/`. Returning users are identified when their session is restored,
-even while the Models entry points are hidden. Account changes and sign-out
-clear visibility and reevaluate the flag. No email-domain allowlist is baked
-into the frontend.
+Cloud's PostHog identity. Enable the separate `workshop-auth` flag for the
+sign-in pages, then give staff the `/login/` link before sending them to
+`/models/`. The public header deliberately has no new sign-in entry point.
+Returning users retain access when Firebase confirms the same PostHog identity.
+Account changes and sign-out clear visibility and reevaluate the flag. Firebase
+starts only on auth pages or after Models becomes visible.
 
-Vercel CI always builds Models, enables the existing auth and Router execution
-switches, and selects production Cloud for production or staging Cloud for
-previews. The `workshop` PR label is no longer needed. `workshop-test` only
+Visibility revocation hides the page and blocks new runs, while a render already
+in progress finishes and reports its outcome. Sign-out, workspace changes, and
+leaving the page still cancel the browser's wait.
+
+Vercel CI always builds Models and enables Router execution, selecting production
+Cloud for production or staging Cloud for previews. Production authentication
+remains controlled by `workshop-auth`; the auth build override applies only
+outside production. The `workshop` PR label is no longer needed. `workshop-test` only
 selects test Cloud; neither label bypasses the PostHog visibility flag.
 
 `WORKSHOP_IN_BUILD=0` remains an explicit build exclusion for diagnostics.
-`PUBLIC_WORKSHOP_AUTH_FLAG=1` enables sign-in and
+`PUBLIC_WORKSHOP_AUTH_FLAG=1` enables sign-in outside production and
 `PUBLIC_WORKSHOP_ROUTER_RUN=1` enables execution; neither grants Models
 visibility. For local development without PostHog:
 
@@ -200,7 +209,7 @@ PUBLIC_WORKSHOP_ENABLED=1 PUBLIC_WORKSHOP_AUTH_FLAG=1 PUBLIC_WORKSHOP_ROUTER_RUN
   pnpm --filter @comfyorg/website dev
 ```
 
-`PUBLIC_WORKSHOP_ENABLED` is honored only by the development server. Built
+`PUBLIC_WORKSHOP_ENABLED` is honored only by a local `astro dev` command. Built
 previews and production always use PostHog. This is a frontend visibility
 control; the APIs continue to enforce authentication and billing.
 

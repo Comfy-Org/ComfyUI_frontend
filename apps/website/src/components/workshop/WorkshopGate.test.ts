@@ -1,19 +1,26 @@
 // @vitest-environment happy-dom
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it, vi } from 'vitest'
-import { createSSRApp, h, nextTick, ref } from 'vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createSSRApp, h, nextTick } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 
 import { htmlToTwin } from '../../lib/markdown-twin'
 import WorkshopGate from './WorkshopGate.vue'
 
-const enabled = ref(false)
+const { enabled } = await vi.hoisted(async () => {
+  const { ref } = await import('vue')
+  return { enabled: ref(false) }
+})
 vi.mock(import('../../scripts/posthog'), () => ({
   useWorkshopEnabled: () => enabled
 }))
 
 describe('WorkshopGate', () => {
-  it('keeps gated sections out of public Markdown exports', async () => {
+  beforeEach(() => {
+    enabled.value = false
+  })
+
+  it('keeps gated sections out of public HTML and Markdown exports', async () => {
     const html = await renderToString(
       createSSRApp({
         render: () =>
@@ -28,6 +35,8 @@ describe('WorkshopGate', () => {
           )
       })
     )
+    expect(html).not.toContain('Private catalogue')
+    expect(html).not.toContain('/models/private/')
     const page = htmlToTwin(
       `<html><body><main>${html}</main></body></html>`,
       'https://comfy.org/'
@@ -45,11 +54,13 @@ describe('WorkshopGate', () => {
       }
     })
     expect(screen.getByRole('heading').textContent).toBe('Public models')
+    expect(screen.queryByText('Instant render')).toBeNull()
     enabled.value = true
     await nextTick()
     expect(screen.getByRole('heading').textContent).toBe('Instant render')
     enabled.value = false
     await nextTick()
     expect(screen.getByRole('heading').textContent).toBe('Public models')
+    expect(screen.queryByRole('heading', { name: 'Instant render' })).toBeNull()
   })
 })

@@ -1,9 +1,15 @@
 // @vitest-environment happy-dom
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import type { WorkshopBrowseModel } from '../../config/workshop'
 import WorkshopSection from './WorkshopSection.vue'
+
+vi.mock(import('../../scripts/posthog'), async () => {
+  const { ref } = await import('vue')
+  return { useWorkshopEnabled: () => ref(true) }
+})
 
 const models: WorkshopBrowseModel[] = [
   {
@@ -26,13 +32,14 @@ const models: WorkshopBrowseModel[] = [
   }
 ]
 
-function renderSection() {
+async function renderSection() {
   render(WorkshopSection, { props: { models } })
+  await nextTick()
 }
 
-describe('WorkshopSection', () => {
-  it('links each featured model to its own page', () => {
-    renderSection()
+describe('WorkshopSection', async () => {
+  it('links each featured model to its own page', async () => {
+    await renderSection()
 
     expect(
       screen.getByRole('link', { name: /FLUX 2 Pro/ }).getAttribute('href')
@@ -42,8 +49,8 @@ describe('WorkshopSection', () => {
     ).toBe('/workshop/models/kling--text-to-video/')
   })
 
-  it('offers a way through to the whole catalog', () => {
-    renderSection()
+  it('offers a way through to the whole catalog', async () => {
+    await renderSection()
 
     expect(
       screen
@@ -52,8 +59,8 @@ describe('WorkshopSection', () => {
     ).toBe('/workshop/')
   })
 
-  it('shows what each model produces alongside who makes it', () => {
-    renderSection()
+  it('shows what each model produces alongside who makes it', async () => {
+    await renderSection()
 
     const card = screen.getByRole('link', { name: /FLUX 2 Pro/ })
     expect(card.textContent).toContain('bfl')

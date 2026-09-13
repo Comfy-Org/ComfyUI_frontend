@@ -18,6 +18,7 @@ const h = vi.hoisted(() => {
       session: undefined
     } as unknown,
     firebaseEvaluated: vi.fn(),
+    identifyWorkshopUser: vi.fn(),
     attachIdentity: vi.fn(() => () => undefined),
     ensureFresh: vi.fn(),
     remint: vi.fn(),
@@ -32,6 +33,7 @@ const h = vi.hoisted(() => {
 
 vi.mock<unknown>(import('../scripts/posthog'), () => {
   return {
+    identifyWorkshopUser: h.identifyWorkshopUser,
     useWorkshopAuthFlag: () => h.flag,
     useWorkshopAuthFlagSettled: () => h.settled
   }
@@ -124,6 +126,8 @@ describe('useWorkshopSession', () => {
     h.publish(authenticatedSnapshot())
 
     await vi.waitFor(() => expect(s.session.value).toEqual(okSession))
+
+    expect(h.identifyWorkshopUser).toHaveBeenLastCalledWith('user-1')
     expect(s.signedIn.value).toBe(true)
   })
 
@@ -373,6 +377,7 @@ describe('useWorkshopSession', () => {
 
     await vi.waitFor(() => expect(s.session.value).toBeUndefined())
     expect(s.signedIn.value).toBe(false)
+    expect(h.identifyWorkshopUser).toHaveBeenLastCalledWith(null)
   })
 
   it('keeps the cached credential on a cold load while the flag is still unanswered', async () => {

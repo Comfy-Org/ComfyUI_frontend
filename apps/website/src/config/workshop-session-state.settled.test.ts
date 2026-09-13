@@ -25,6 +25,7 @@ vi.mock<unknown>(import('../scripts/posthog'), async () => {
   const settled = ref(true)
   h.flag = flag
   return {
+    identifyWorkshopUser: vi.fn(),
     useWorkshopAuthFlag: () => flag,
     useWorkshopAuthFlagSettled: () => settled
   }

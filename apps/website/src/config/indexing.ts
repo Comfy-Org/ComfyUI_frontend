@@ -1,9 +1,5 @@
 import { models } from './models'
-import {
-  isLegacyWorkshopRoute,
-  isWorkshopInBuild,
-  isWorkshopRoute
-} from './workshop-release'
+import { isLegacyWorkshopRoute, isWorkshopRoute } from './workshop-release'
 
 const LOCALES = ['en', 'zh-CN'] as const
 const DEFAULT_LOCALE = 'en'
@@ -55,7 +51,6 @@ export function isExcludedFromSitemap(page: string): boolean {
     isNoindexPathname(pathname) ||
     isLegacyWorkshopRoute(pathname) ||
     MODEL_REDIRECT_PATHNAMES.has(pathname) ||
-    (isWorkshopInBuild() && pathname === '/models') ||
     (isWorkshopRoute(pathname) && pathname !== '/models/showcase')
   )
 }

@@ -33,8 +33,20 @@ export function workshopReleaseGate(): AstroIntegration {
   return {
     name: 'workshop-release-gate',
     hooks: {
-      'astro:config:setup': ({ injectRoute, updateConfig }) => {
-        updateConfig({ vite: { plugins: [workshopClientBoundary()] } })
+      'astro:config:setup': ({ injectRoute, updateConfig, command }) => {
+        updateConfig({
+          vite: {
+            plugins: [workshopClientBoundary()],
+            define: {
+              'import.meta.env.WORKSHOP_LOCAL_DEV': JSON.stringify(
+                command === 'dev' && !process.env.VERCEL_ENV ? '1' : ''
+              ),
+              'import.meta.env.WORKSHOP_DEPLOY_ENV': JSON.stringify(
+                process.env.VERCEL_ENV ?? ''
+              )
+            }
+          }
+        })
         for (const route of modelsBuildRoutes(isWorkshopInBuild()))
           injectRoute(route)
       },
