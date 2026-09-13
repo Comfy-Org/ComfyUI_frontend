@@ -357,6 +357,20 @@ describe('AgentPanel extension flag gate', () => {
     expect(nodeSelectionStore.finishWorkflowLoad).toHaveBeenCalledOnce()
   })
 
+  it('leaves mint suppression open when graph loading fails', async () => {
+    const { registerAgentPanelExtension } = await import('./agentPanel')
+    registerAgentPanelExtension()
+    const extension = mocks.capturedExtensions.find(
+      (item) => item.name === 'Comfy.AgentPanel'
+    )
+
+    extension!.beforeLoadGraph!({} as never)
+    extension!.onGraphLoadError!(new Error('bad workflow json'), {} as never)
+
+    expect(mocks.notifyBeforeGraphLoad).toHaveBeenCalledOnce()
+    expect(mocks.notifyAfterGraphConfigure).not.toHaveBeenCalled()
+  })
+
   it('finishes restoration when selection restoration throws', async () => {
     const { registerAgentPanelExtension } = await import('./agentPanel')
     registerAgentPanelExtension()

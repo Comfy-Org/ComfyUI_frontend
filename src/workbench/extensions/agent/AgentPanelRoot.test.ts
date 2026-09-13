@@ -3365,6 +3365,34 @@ describe('AgentPanelRoot workflow binding', () => {
     })
   })
 
+  it('restores an explicitly detached workflow after a remount', async () => {
+    makeTab('wf-42')
+    const bodies = mockMessagesEndpoint('wf-42')
+    const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await sendFromComposer('attached turn')
+    expect(bodies[0]).toHaveProperty('workflow_id', 'wf-42')
+    ws.emit('agent_message_done', {
+      message_id: 'm-1',
+      thread_id: 'th-1'
+    })
+    await screen.findByRole('button', { name: 'Send' })
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.dontWorkInWorkflow')
+      })
+    )
+    expect(
+      await screen.findAllByText(i18n.global.t('agent.chooseWorkflow'))
+    ).not.toHaveLength(0)
+
+    panel.unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await sendFromComposer('still detached')
+
+    expect(bodies[1]).toHaveProperty('workflow_id', 'wf-42')
+  })
+
   it('re-attaches by picking a row so the next send carries the workflow again', async () => {
     makeTab('wf-42')
     const bodies = mockMessagesEndpoint('wf-42')
