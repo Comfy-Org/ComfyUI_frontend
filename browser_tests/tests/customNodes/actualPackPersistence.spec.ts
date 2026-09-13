@@ -1,6 +1,9 @@
+import { readFile } from 'node:fs/promises'
+
 import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
 import { packPersistenceTest as test } from '@e2e/fixtures/customNode/packPersistenceFixture'
 import { openWorkflowFromSidebar } from '@e2e/fixtures/utils/builderTestUtils'
+import { assetPath } from '@e2e/fixtures/utils/paths'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
@@ -57,6 +60,165 @@ test.describe(
       { name: 'legacy', tags: [] },
       { name: 'Vue', tags: ['@vue-nodes'] }
     ]) {
+      test(
+        `VHS uploads and combines a real video with format controls (${renderer.name} renderer)`,
+        { tag: renderer.tags },
+        async ({ comfyPage, packPersistence }) => {
+          test.slow()
+          const useVueNodes = renderer.name === 'Vue'
+          await comfyPage.settings.setSetting(
+            'Comfy.VueNodes.Enabled',
+            useVueNodes
+          )
+          await comfyPage.workflow.reloadAndWaitForApp()
+          await comfyPage.nodeOps.clearGraph()
+
+          const ids = await comfyPage.page.evaluate(() => {
+            const graph = window.app!.graph
+            const load = window.LiteGraph!.createNode('VHS_LoadVideo')!
+            const combine = window.LiteGraph!.createNode('VHS_VideoCombine')!
+            graph.add(load)
+            graph.add(combine)
+            load.pos = [0, 0]
+            combine.pos = [520, 0]
+            load.connect(0, combine, 0)
+            return { combine: String(combine.id), load: String(load.id) }
+          })
+
+          const videoName = `vhs-controls-${crypto.randomUUID()}.mp4`
+          const upload = await comfyPage.request.post(
+            `${comfyPage.apiUrl}/upload/image`,
+            {
+              multipart: {
+                image: {
+                  name: videoName,
+                  mimeType: 'video/mp4',
+                  buffer: await readFile(assetPath('plain_video.mp4'))
+                },
+                type: 'input',
+                overwrite: 'true'
+              }
+            }
+          )
+          expect(upload.ok()).toBe(true)
+          await comfyPage.page.evaluate(
+            ({ loadId, videoName }) => {
+              const load = window.app!.graph.nodes.find(
+                (node) => String(node.id) === loadId
+              )!
+              const video = load.widgets!.find(
+                (widget) => widget.name === 'video'
+              )!
+              video.options.values = [
+                ...(video.options.values as string[]),
+                videoName
+              ]
+              video.value = videoName
+              video.callback?.(videoName)
+            },
+            { loadId: ids.load, videoName }
+          )
+          await expect
+            .poll(() =>
+              comfyPage.page.evaluate(
+                (loadId) =>
+                  window
+                    .app!.graph.nodes.find((node) => String(node.id) === loadId)
+                    ?.widgets?.find((widget) => widget.name === 'video')?.value,
+                ids.load
+              )
+            )
+            .toBe(videoName)
+
+          const setFormat = async (value: string) =>
+            comfyPage.page.evaluate(
+              ({ combineId, value }) => {
+                const node = window.app!.graph.nodes.find(
+                  (candidate) => String(candidate.id) === combineId
+                )!
+                const format = node.widgets!.find(
+                  (widget) => widget.name === 'format'
+                )!
+                format.value = value
+                format.callback?.(value)
+                node.setDirtyCanvas(true, true)
+              },
+              { combineId: ids.combine, value }
+            )
+
+          const controls = () =>
+            comfyPage.page.evaluate((combineId) => {
+              const node = window.app!.graph.nodes.find(
+                (candidate) => String(candidate.id) === combineId
+              )!
+              return node.widgets!.map((widget) => widget.label ?? widget.name)
+            }, ids.combine)
+
+          await setFormat('video/h264-mp4')
+          let controlsError: unknown
+          await expect
+            .poll(controls)
+            .toEqual(
+              expect.arrayContaining(['pix_fmt', 'crf', 'save_metadata'])
+            )
+            .catch((error: unknown) => {
+              controlsError = error
+            })
+
+          if (controlsError === undefined) {
+            await setFormat('image/gif')
+            await expect
+              .poll(controls)
+              .not.toEqual(
+                expect.arrayContaining(['pix_fmt', 'crf', 'save_metadata'])
+              )
+            await setFormat('video/h264-mp4')
+          } else {
+            await setFormat('image/gif')
+          }
+
+          if (useVueNodes && controlsError === undefined) {
+            const node = comfyPage.vueNodes.getNodeLocator(ids.combine)
+            for (const label of ['pix_fmt', 'crf', 'save_metadata']) {
+              await expect(node.getByText(label, { exact: true })).toBeVisible()
+            }
+          } else {
+            await comfyPage.page.evaluate((combineId) => {
+              const node = window.app!.graph.nodes.find(
+                (candidate) => String(candidate.id) === combineId
+              )!
+              window.app!.canvas.centerOnNode(node)
+              node.setDirtyCanvas(true, true)
+            }, ids.combine)
+            await comfyPage.nextFrame()
+            await expect(comfyPage.page.locator('#graph-canvas')).toBeVisible()
+          }
+
+          const result = await packPersistence.target.runWorkflow(
+            comfyPage.page,
+            {
+              expectedNodeIds: [ids.combine],
+              graphNodeIds: [ids.load, ids.combine],
+              timeoutMs: 30_000
+            }
+          )
+          expect(result.outcome).toBe('PASS')
+          expect(result.executedNodes).toEqual(
+            expect.arrayContaining([ids.load, ids.combine])
+          )
+          if (controlsError !== undefined) {
+            expect(controlsError).toMatchObject({
+              matcherResult: { name: 'toEqual', pass: false }
+            })
+            test.fail(
+              true,
+              'VHS format callback does not expose its labelled controls after app reload'
+            )
+            throw controlsError
+          }
+        }
+      )
+
       test(
         `rgthree comparer receives two real backend images and retains them through a tab switch (${renderer.name} renderer)`,
         { tag: renderer.tags },
