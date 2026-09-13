@@ -50,6 +50,7 @@ export function createAgentRuntime(options: AgentRuntimeOptions) {
   const history = useAgentChatHistoryStore()
   let started = false
   let generation = 0
+  let historyRequest = 0
   let noticesSeen = 0
   let watchers: WatchHandle[] = []
 
@@ -59,16 +60,27 @@ export function createAgentRuntime(options: AgentRuntimeOptions) {
 
   async function refreshHistory(): Promise<void> {
     const requestGeneration = generation
+    const requestId = ++historyRequest
     try {
       const threads = await session.listThreads()
-      if (!started || requestGeneration !== generation) return
+      if (
+        !started ||
+        requestGeneration !== generation ||
+        requestId !== historyRequest
+      )
+        return
       history.replaceAll(
         threads.map((thread) =>
           toChatSession(thread, options.untitledChatTitle)
         )
       )
     } catch (error) {
-      if (started && requestGeneration === generation) propagate(error)
+      if (
+        started &&
+        requestGeneration === generation &&
+        requestId === historyRequest
+      )
+        propagate(error)
     }
   }
 

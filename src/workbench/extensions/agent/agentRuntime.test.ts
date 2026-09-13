@@ -228,4 +228,29 @@ describe('agentRuntime', () => {
       'current'
     ])
   })
+
+  it('ignores history returned by a superseded refresh', async () => {
+    const oldHistory = createDeferred<AgentThreadSummary[]>()
+    const currentHistory = createDeferred<AgentThreadSummary[]>()
+    const listThreads = vi
+      .fn<() => Promise<AgentThreadSummary[]>>()
+      .mockReturnValueOnce(oldHistory.promise)
+      .mockReturnValueOnce(currentHistory.promise)
+    const runtime = createAgentRuntime({
+      createRest: () => fakeRest({ listThreads }),
+      createEvents: () => fakeEvents().source,
+      untitledChatTitle: 'Untitled chat'
+    })
+
+    runtime.start()
+    const currentRefresh = runtime.refreshHistory()
+    currentHistory.resolve([{ id: 'current', title: 'Current' }])
+    await currentRefresh
+
+    oldHistory.resolve([{ id: 'stale', title: 'Stale' }])
+    await oldHistory.promise
+    await Promise.resolve()
+
+    expect(runtime.history.sessions.map(({ id }) => id)).toEqual(['current'])
+  })
 })
