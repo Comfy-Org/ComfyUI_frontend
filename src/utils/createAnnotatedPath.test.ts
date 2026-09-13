@@ -134,7 +134,7 @@ const roundTripCases = [
 
 describe('parseAnnotatedPath', () => {
   it.for(roundTripCases)(
-    'inverts createAnnotatedPath for $path',
+    'parses paths formatted by createAnnotatedPath for $path',
     ({ path, filepath, rootFolder }) => {
       expect(parseAnnotatedPath(path)).toEqual({ filepath, rootFolder })
       expect(createAnnotatedPath(filepath, { rootFolder })).toBe(path)

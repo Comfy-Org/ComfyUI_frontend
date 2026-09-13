@@ -23,12 +23,11 @@ type AnnotatedPathOptions = {
 }
 
 /**
- * Inverse of {@link createAnnotatedPath}: splits an annotated filepath back
- * into its path and the root folder the annotation names.
+ * Parses the annotation suffix emitted by {@link createAnnotatedPath} into its
+ * path and normalized root folder.
  *
- * `createAnnotatedPath` omits the annotation for the implicit `input` root, so
- * an unannotated path is indistinguishable from an `input` one and resolves to
- * `fallbackRoot`.
+ * Input roots are omitted by the formatter, so unannotated paths resolve to
+ * `fallbackRoot`. Accepted annotation case and whitespace are normalized.
  */
 export function parseAnnotatedPath(
   filepath: string,
