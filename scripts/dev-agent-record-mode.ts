@@ -23,7 +23,6 @@ const PG_PORT = 54331
 const REDIS_PORT = 6379
 const CLOUD_QUICKSTART =
   'start the cloud stack first: `cloud up` from the cloud checkout, or scripts/start-all.sh'
-// Fixed so a rerun seeds nothing and the printed recorder command never moves.
 const TEMPORAL_INSTALL =
   'brew install temporal, or: https://docs.temporal.io/cli#install'
 // Fixed so a rerun seeds nothing and the printed recorder command never moves.
