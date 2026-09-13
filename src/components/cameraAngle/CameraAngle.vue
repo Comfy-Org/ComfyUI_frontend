@@ -4,6 +4,7 @@
     bottom-class="h-12"
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
+    @viewport-pointerdown="openPreset = null"
   >
     <template #top>
       <button
@@ -50,7 +51,9 @@
         v-for="group in presetGroups"
         :key="group.field"
         :model-value="group.current"
+        :open="openPreset === group.field"
         @update:model-value="(key) => selectPreset(group.field, key)"
+        @update:open="(open) => setPresetOpen(group.field, open)"
       >
         <SelectTrigger
           size="md"
@@ -207,6 +210,13 @@ const presetGroups = computed<PresetGroup[]>(() => [
     current: distanceTerm(state.value.zoom).key
   }
 ])
+
+const openPreset = ref<CameraAngleField | null>(null)
+
+function setPresetOpen(field: CameraAngleField, open: boolean) {
+  if (open) openPreset.value = field
+  else if (openPreset.value === field) openPreset.value = null
+}
 
 function selectPreset(field: CameraAngleField, key: unknown) {
   const group = presetGroups.value.find((g) => g.field === field)

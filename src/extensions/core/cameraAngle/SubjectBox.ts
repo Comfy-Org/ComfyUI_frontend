@@ -236,11 +236,12 @@ export class SubjectBox implements SceneOverlay {
   }
 
   private placeSubjectCamera(): void {
-    const { position, quaternion } = computeSubjectTransform(
-      toOrbitCameraInfoState(this.state)
-    )
+    const cameraState = toOrbitCameraInfoState(this.state)
+    const { position, quaternion } = computeSubjectTransform(cameraState)
     this.subjectCamera.position.copy(position)
     this.subjectCamera.quaternion.copy(quaternion)
+    this.subjectCamera.zoom = cameraState.zoom
+    this.subjectCamera.updateProjectionMatrix()
     this.subjectCamera.updateMatrixWorld(true)
   }
 }

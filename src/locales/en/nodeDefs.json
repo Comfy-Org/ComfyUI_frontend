@@ -1973,7 +1973,7 @@
       },
       "zoom": {
         "name": "zoom",
-        "tooltip": "How close the camera is: 0 is a wide shot, 10 a close-up."
+        "tooltip": "Lens zoom on the subject: 0 is a wide shot, 10 a close-up. Carried into camera_info.zoom."
       },
       "image": {
         "name": "image",

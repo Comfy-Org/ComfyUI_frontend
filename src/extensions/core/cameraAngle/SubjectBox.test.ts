@@ -2,7 +2,12 @@ import * as THREE from 'three'
 import { describe, expect, it, vi } from 'vitest'
 
 import { SubjectBox } from './SubjectBox'
-import { MAX_SUBJECT_DISTANCE, SUBJECT_CENTER, SUBJECT_HEIGHT } from './types'
+import {
+  MAX_LENS_ZOOM,
+  SUBJECT_CENTER,
+  SUBJECT_DISTANCE,
+  SUBJECT_HEIGHT
+} from './types'
 
 function fakeTexture(width: number, height: number): THREE.Texture {
   const texture = new THREE.Texture()
@@ -38,7 +43,7 @@ describe('SubjectBox', () => {
 
     expect(camera.position.x).toBeCloseTo(SUBJECT_CENTER.x)
     expect(camera.position.y).toBeCloseTo(SUBJECT_CENTER.y)
-    expect(camera.position.z).toBeCloseTo(MAX_SUBJECT_DISTANCE)
+    expect(camera.position.z).toBeCloseTo(SUBJECT_DISTANCE)
 
     const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(
       camera.quaternion
@@ -50,8 +55,22 @@ describe('SubjectBox', () => {
     const box = new SubjectBox()
     box.applyState({ horizontal: 90, vertical: 0, zoom: 0 })
 
-    expect(box.getSubjectCamera().position.x).toBeCloseTo(MAX_SUBJECT_DISTANCE)
+    expect(box.getSubjectCamera().position.x).toBeCloseTo(SUBJECT_DISTANCE)
     expect(box.getState()).toEqual({ horizontal: 90, vertical: 0, zoom: 0 })
+  })
+
+  it('zooms the lens instead of moving the camera closer', () => {
+    const box = new SubjectBox({ horizontal: 0, vertical: 0, zoom: 0 })
+    const camera = box.getSubjectCamera()
+    const wideScale = camera.projectionMatrix.elements[5]
+
+    box.applyState({ horizontal: 0, vertical: 0, zoom: 10 })
+
+    expect(camera.position.z).toBeCloseTo(SUBJECT_DISTANCE)
+    expect(camera.zoom).toBe(MAX_LENS_ZOOM)
+    expect(camera.projectionMatrix.elements[5]).toBeCloseTo(
+      wideScale * MAX_LENS_ZOOM
+    )
   })
 
   it('stays a unit cube and centre-crops the image onto the front face', async () => {

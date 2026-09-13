@@ -14,15 +14,18 @@ function renderShell(withBottom: boolean) {
     components: { ViewportWidgetShell },
     setup: () => ({ shellRef, events, withBottom }),
     template: `
+      <div @pointerdown="events.push('outer-pointerdown')">
       <ViewportWidgetShell
         ref="shellRef"
         bottom-class="h-12"
         @mouseenter="events.push('enter')"
         @mouseleave="events.push('leave')"
+        @viewport-pointerdown="events.push('viewport-pointerdown')"
       >
         <template #top><button type="button">Top action</button></template>
         <template v-if="withBottom" #bottom><span>Bottom content</span></template>
       </ViewportWidgetShell>
+      </div>
     `
   })
   render(Harness)
@@ -44,6 +47,24 @@ describe('ViewportWidgetShell', () => {
     await user.hover(container)
     await user.unhover(container)
     expect(events).toEqual(['enter', 'leave'])
+  })
+
+  it('confines viewport presses to the shell but lets toolbar presses bubble', async () => {
+    const { shellRef, events } = renderShell(true)
+    const user = userEvent.setup()
+    const presses = () => events.filter((e) => e.endsWith('pointerdown'))
+
+    await user.pointer({
+      keys: '[MouseLeft>]',
+      target: shellRef.value!.container!
+    })
+    expect(presses()).toEqual(['viewport-pointerdown'])
+
+    await user.pointer({
+      keys: '[/MouseLeft][MouseLeft>]',
+      target: screen.getByRole('button', { name: 'Top action' })
+    })
+    expect(presses()).toEqual(['viewport-pointerdown', 'outer-pointerdown'])
   })
 
   it('renders the bottom bar only when the slot is provided', () => {
