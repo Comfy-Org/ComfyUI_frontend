@@ -5,6 +5,12 @@ import userEvent from '@testing-library/user-event'
 
 import AssetsListItem from './AssetsListItem.vue'
 
+const SELECTION_MODIFIERS = [
+  ['shift', '{Shift>}'],
+  ['meta', '{Meta>}'],
+  ['ctrl', '{Control>}']
+] as const
+
 describe('AssetsListItem', () => {
   it('renders video element with play overlay for video previews', () => {
     const { container } = render(AssetsListItem, {
@@ -75,4 +81,25 @@ describe('AssetsListItem', () => {
 
     expect(emitted()['preview-click']).toHaveLength(1)
   })
+
+  it.for(SELECTION_MODIFIERS)(
+    'still emits preview-click with the event when %s is held over the preview',
+    async ([modifierKey, heldModifier]) => {
+      const user = userEvent.setup()
+      const { emitted } = render(AssetsListItem, {
+        props: {
+          previewUrl: 'https://example.com/preview.jpg',
+          previewAlt: 'image.png'
+        }
+      })
+
+      await user.keyboard(heldModifier)
+      await user.click(screen.getByRole('img'))
+
+      const events = emitted()['preview-click']
+      expect(events).toHaveLength(1)
+      const [event] = events![0] as [MouseEvent]
+      expect(event[`${modifierKey}Key`]).toBe(true)
+    }
+  )
 })
