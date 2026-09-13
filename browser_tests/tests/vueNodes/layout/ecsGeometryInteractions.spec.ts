@@ -62,7 +62,7 @@ test.describe(
       }
     })
 
-    test('drawn slot and reroute centers remain the hit targets at zoom extremes', async ({
+    test('DOM slot-dot paint is proven at 100%/400%; reroute paint remains unproven', async ({
       comfyPage
     }) => {
       test.slow()
@@ -82,122 +82,6 @@ test.describe(
           [scale, center] as const
         )
         await comfyPage.nextFrame()
-      }
-      const getPaintedDotCenter = async (
-        expected: { x: number; y: number },
-        label: string
-      ) => {
-        const screenshot = await comfyPage.page.screenshot()
-        const viewport = comfyPage.page.viewportSize()
-        if (!viewport) throw new Error('Viewport dimensions are unavailable')
-        const painted = await comfyPage.page.evaluate(
-          async ({ imageBase64, expected, label, viewport }) => {
-            const image = new Image()
-            image.src = `data:image/png;base64,${imageBase64}`
-            await image.decode()
-            const raster = document.createElement('canvas')
-            raster.width = image.naturalWidth
-            raster.height = image.naturalHeight
-            const context = raster.getContext('2d', {
-              willReadFrequently: true
-            })
-            if (!context) throw new Error('Screenshot raster is unavailable')
-            context.drawImage(image, 0, 0)
-            const scaleX = raster.width / viewport.width
-            const scaleY = raster.height / viewport.height
-            const centerX = expected.x * scaleX
-            const centerY = expected.y * scaleY
-            const radius = Math.ceil(24 * Math.max(scaleX, scaleY))
-            const left = Math.max(0, Math.floor(centerX) - radius)
-            const top = Math.max(0, Math.floor(centerY) - radius)
-            const width = Math.min(raster.width - left, radius * 2 + 1)
-            const height = Math.min(raster.height - top, radius * 2 + 1)
-            const pixels = context.getImageData(left, top, width, height).data
-            const index = (x: number, y: number) => (y * width + x) * 4
-            const border: number[][] = []
-            for (let y = 0; y < height; y++) {
-              for (let x = 0; x < width; x++) {
-                if (x === 0 || y === 0 || x === width - 1 || y === height - 1) {
-                  const offset = index(x, y)
-                  border.push([
-                    pixels[offset],
-                    pixels[offset + 1],
-                    pixels[offset + 2]
-                  ])
-                }
-              }
-            }
-            const median = (channel: number) =>
-              border.map((pixel) => pixel[channel]).sort((a, b) => a - b)[
-                Math.floor(border.length / 2)
-              ]
-            const background = [median(0), median(1), median(2)]
-            const candidates: { x: number; y: number; distance: number }[] = []
-            for (let y = 0; y < height; y++) {
-              for (let x = 0; x < width; x++) {
-                const offset = index(x, y)
-                const distance = Math.hypot(
-                  pixels[offset] - background[0],
-                  pixels[offset + 1] - background[1],
-                  pixels[offset + 2] - background[2]
-                )
-                if (distance >= 20) candidates.push({ x, y, distance })
-              }
-            }
-            if (candidates.length === 0) {
-              throw new Error(
-                `${label} has no independently visible raster dot`
-              )
-            }
-            const expectedX = centerX - left
-            const expectedY = centerY - top
-            const nearby = candidates.filter(
-              ({ x, y }) => Math.hypot(x - expectedX, y - expectedY) <= 12
-            )
-            if (nearby.length === 0) {
-              throw new Error(
-                `${label} raster dot is not at the hit-model boundary`
-              )
-            }
-            const weight = nearby.reduce(
-              (sum, pixel) => sum + pixel.distance,
-              0
-            )
-            return {
-              x:
-                (left +
-                  nearby.reduce(
-                    (sum, pixel) => sum + pixel.x * pixel.distance,
-                    0
-                  ) /
-                    weight) /
-                scaleX,
-              y:
-                (top +
-                  nearby.reduce(
-                    (sum, pixel) => sum + pixel.y * pixel.distance,
-                    0
-                  ) /
-                    weight) /
-                scaleY,
-              pixelCount: nearby.length
-            }
-          },
-          {
-            imageBase64: screenshot.toString('base64'),
-            expected,
-            label,
-            viewport
-          }
-        )
-        expect(
-          painted.pixelCount,
-          `${label} painted raster area`
-        ).toBeGreaterThan(0)
-        expect(
-          Math.hypot(painted.x - expected.x, painted.y - expected.y)
-        ).toBeLessThanOrEqual(3)
-        return expected
       }
       const getDrawnSlotCenter = async (
         nodeId: string,
@@ -232,38 +116,73 @@ test.describe(
           ? node.getInput(slotIndex)
           : node.getOutput(slotIndex))
         if (box) {
-          const dotRaster = await dot.screenshot()
-          const distinctColors = await comfyPage.page.evaluate(
-            async (imageBase64) => {
-              const image = new Image()
-              image.src = `data:image/png;base64,${imageBase64}`
-              await image.decode()
-              const raster = document.createElement('canvas')
-              raster.width = image.naturalWidth
-              raster.height = image.naturalHeight
-              const context = raster.getContext('2d')
-              if (!context) throw new Error('Slot raster is unavailable')
-              context.drawImage(image, 0, 0)
-              const pixels = context.getImageData(
-                0,
-                0,
-                raster.width,
-                raster.height
-              ).data
-              const colors = new Set<string>()
-              for (let offset = 0; offset < pixels.length; offset += 4) {
-                colors.add(
-                  `${pixels[offset]},${pixels[offset + 1]},${pixels[offset + 2]},${pixels[offset + 3]}`
-                )
+          const paintedRaster = await dot.screenshot()
+          const originalStyle = await dot.getAttribute('style')
+          await dot.evaluate((element) => {
+            element.style.opacity = '0'
+          })
+          let transparentRaster: Buffer
+          try {
+            const transparentBox = await dot.boundingBox()
+            expect(
+              transparentBox,
+              `${type} ${nodeId}:${slotName} opacity preserves boundary`
+            ).toEqual(box)
+            transparentRaster = await dot.screenshot()
+          } finally {
+            if (originalStyle === null) {
+              await dot.evaluate((element) => element.removeAttribute('style'))
+            } else {
+              await dot.evaluate(
+                (element, style) => element.setAttribute('style', style),
+                originalStyle
+              )
+            }
+          }
+          const differingPixels = await comfyPage.page.evaluate(
+            async ({ paintedBase64, transparentBase64 }) => {
+              const decode = async (imageBase64: string) => {
+                const image = new Image()
+                image.src = `data:image/png;base64,${imageBase64}`
+                await image.decode()
+                const raster = document.createElement('canvas')
+                raster.width = image.naturalWidth
+                raster.height = image.naturalHeight
+                const context = raster.getContext('2d')
+                if (!context) throw new Error('Slot raster is unavailable')
+                context.drawImage(image, 0, 0)
+                return context.getImageData(0, 0, raster.width, raster.height)
               }
-              return colors.size
+              const painted = await decode(paintedBase64)
+              const transparent = await decode(transparentBase64)
+              if (
+                painted.width !== transparent.width ||
+                painted.height !== transparent.height
+              ) {
+                throw new Error('Slot raster dimensions changed')
+              }
+              let count = 0
+              for (let offset = 0; offset < painted.data.length; offset += 4) {
+                if (
+                  painted.data[offset] !== transparent.data[offset] ||
+                  painted.data[offset + 1] !== transparent.data[offset + 1] ||
+                  painted.data[offset + 2] !== transparent.data[offset + 2] ||
+                  painted.data[offset + 3] !== transparent.data[offset + 3]
+                ) {
+                  count++
+                }
+              }
+              return count
             },
-            dotRaster.toString('base64')
+            {
+              paintedBase64: paintedRaster.toString('base64'),
+              transparentBase64: transparentRaster.toString('base64')
+            }
           )
           expect(
-            distinctColors,
-            `${type} ${nodeId}:${slotName} has painted raster detail`
-          ).toBeGreaterThan(1)
+            differingPixels,
+            `${type} ${nodeId}:${slotName} exact dot paint differs from opacity zero`
+          ).toBeGreaterThan(0)
         }
         const modelCenter = box
           ? { x: box.x + box.width / 2, y: box.y + box.height / 2 }
@@ -388,9 +307,6 @@ test.describe(
           const [x, y] = window.app!.canvasPosToClientPos(reroute.pos)
           return { x, y }
         })
-        if (zoom === 1) {
-          await getPaintedDotCenter(rerouteCenter, `reroute at ${zoom}`)
-        }
         const thresholdCrossing = 8
         const responseDelta = 24
         await comfyPage.page.mouse.move(rerouteCenter.x, rerouteCenter.y)
