@@ -17,7 +17,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       {{ t('brand.questions.heading', locale) }}
     </SectionHeader>
 
-    <p class="text-primary-warm-gray mt-6 max-w-2xl text-sm leading-[1.6]">
+    <p class="mt-6 max-w-2xl text-sm leading-[1.6] text-primary-warm-gray">
       {{ t('brand.questions.body', locale) }}
       <Button
         as="a"

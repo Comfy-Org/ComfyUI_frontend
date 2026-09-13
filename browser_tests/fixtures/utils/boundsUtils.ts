@@ -39,7 +39,7 @@ export async function measureSelectionBounds(
             }
           : null
 
-      const canvasEl = canvas.canvas as HTMLCanvasElement
+      const canvasEl = canvas.canvas
       const canvasRect = canvasEl.getBoundingClientRect()
       const nodeVisualBounds: Record<
         string,
@@ -89,7 +89,7 @@ export async function measureSelectionBounds(
       return { selectionBounds, nodeVisualBounds }
     },
     { ids: nodeIds, padding: SELECTION_BOUNDS_PADDING }
-  ) as Promise<MeasureResult>
+  )
 }
 
 export async function intersection(a: Locator, b: Locator) {

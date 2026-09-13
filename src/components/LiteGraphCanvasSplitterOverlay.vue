@@ -8,11 +8,12 @@
       <slot name="workflow-tabs" />
 
       <div
-        class="pointer-events-none flex flex-1 overflow-hidden"
-        :class="{
-          'flex-row': sidebarLocation === 'left',
-          'flex-row-reverse': sidebarLocation === 'right'
-        }"
+        :class="
+          cn('pointer-events-none flex flex-1 overflow-hidden', {
+            'flex-row': sidebarLocation === 'left',
+            'flex-row-reverse': sidebarLocation === 'right'
+          })
+        "
       >
         <div class="side-toolbar-container">
           <slot name="side-toolbar" />
@@ -93,7 +94,7 @@
                 v-show="
                   bottomPanelVisible && !focusMode && !agentNodeSelectionActive
                 "
-                class="bottom-panel pointer-events-auto max-w-full overflow-x-auto rounded-lg border border-(--p-panel-border-color) bg-comfy-menu-bg focus-visible:outline-hidden"
+                class="bottom-panel pointer-events-auto max-w-full overflow-x-auto rounded-lg border border-interface-stroke bg-comfy-menu-bg focus-visible:outline-hidden"
               >
                 <slot name="bottom-panel" />
               </SplitterPanel>
@@ -182,7 +183,7 @@ const { isSelectMode, isBuilderMode } = useAppMode()
 const { activeSidebarTabId, activeSidebarTab } = storeToRefs(sidebarTabStore)
 const { bottomPanelVisible } = storeToRefs(useBottomPanelStore())
 const { isOpen: rightSidePanelVisible } = storeToRefs(rightSidePanelStore)
-const { isOpen: agentPanelOpen } = storeToRefs(agentPanelStore)
+const { isVisible: agentPanelOpen } = storeToRefs(agentPanelStore)
 // The agent docks in its own `agent-panel` slot outside the splitter, so it is
 // not an offside trigger; it only discriminates the saved layout key below.
 const showOffsideSplitter = computed(

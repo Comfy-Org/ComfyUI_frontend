@@ -12,14 +12,14 @@ const { appModeState } = vi.hoisted(() => ({
   appModeState: {} as { isAppMode: Ref<boolean> }
 }))
 
-vi.mock('@/composables/useAppMode', () => ({
+vi.mock<unknown>(import('@/composables/useAppMode'), () => ({
   useAppMode: () => ({
     isAppMode: appModeState.isAppMode,
     setMode: vi.fn()
   })
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     canvas: {
       ds: {
@@ -93,7 +93,7 @@ describe('useCanvasStore', () => {
       store.initScaleSync()
 
       app.canvas.ds.scale = 2.0
-      app.canvas.ds.onChanged!(app.canvas.ds.scale, app.canvas.ds.offset)
+      app.canvas.ds.onChanged(app.canvas.ds.scale, app.canvas.ds.offset)
 
       expect(originalHandler).toHaveBeenCalledWith(2.0, app.canvas.ds.offset)
     })

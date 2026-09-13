@@ -1,9 +1,9 @@
 import type { APIRequestContext, Locator, Page } from '@playwright/test'
-import { test as base } from '@playwright/test'
 import { config as dotenvConfig } from 'dotenv'
 import MCR from 'monocart-coverage-reports'
 
 import { COVERAGE_OUTPUT_DIR } from '@e2e/coverageConfig'
+import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 import {
   ENTRY_PATHS,
   TOUR_SEEN_SETTING
@@ -155,7 +155,7 @@ class ComfyMenu {
     await this.modeToggleButton.click()
     await this.page.waitForFunction(
       (prevTheme) => {
-        const settings = window.app?.ui?.settings
+        const settings = window.app?.ui.settings
         return (
           settings &&
           settings.getSettingValue('Comfy.ColorPalette') !== prevTheme
@@ -313,11 +313,34 @@ export class ComfyPage {
     return await resp.json()
   }
 
-  async setupSettings(settings: Record<string, unknown>) {
+  async setupSettings({
+    userId,
+    settings = {}
+  }: {
+    userId: string
+    settings?: Record<string, unknown>
+  }) {
     const resp = await this.request.post(
       `${this.apiUrl}/api/devtools/set_settings`,
       {
-        data: settings
+        data: {
+          'Comfy.UseNewMenu': 'Top',
+          'Comfy.VueNodes.Enabled': false,
+          'Comfy.Graph.CanvasInfo': false,
+          'Comfy.Graph.CanvasMenu': false,
+          'Comfy.Canvas.SelectionToolbox': false,
+          'Comfy.NodeBadge.NodeIdBadgeMode': NodeBadgeMode.None,
+          'Comfy.NodeBadge.NodeSourceBadgeMode': NodeBadgeMode.None,
+          'Comfy.EnableTooltips': false,
+          'Comfy.TutorialCompleted': true,
+          [TOUR_SEEN_SETTING]: [...ENTRY_PATHS],
+          'Comfy.Queue.MaxHistoryItems': 64,
+          'Comfy.SnapToGrid.GridSize': testComfySnapToGridGridSize,
+          'Comfy.VersionCompatibility.DisableWarnings': true,
+          'Comfy.RightSidePanel.ShowErrorsTab': false,
+          ...settings,
+          'Comfy.userId': userId
+        }
       }
     )
 
@@ -328,10 +351,12 @@ export class ComfyPage {
 
   async setup({
     clearStorage = true,
+    initialLocalStorage = {},
     mockReleases = true,
     url
   }: {
     clearStorage?: boolean
+    initialLocalStorage?: Record<string, string>
     mockReleases?: boolean
     url?: string
   } = {}) {
@@ -349,7 +374,7 @@ export class ComfyPage {
             body: JSON.stringify([])
           })
         } else {
-          await route.continue()
+          await route.fallback()
         }
       })
     }
@@ -363,6 +388,9 @@ export class ComfyPage {
         sessionStorage.clear()
         localStorage.setItem('Comfy.userId', id)
       }, this.id)
+
+      for (const [k, v] of Object.entries(initialLocalStorage))
+        await this.page.localStorage.setItem(k, v)
     }
 
     await this.goto({ url })
@@ -373,8 +401,8 @@ export class ComfyPage {
 
   /**
    * Wait for the app to finish initializing after navigation/reload:
-   * `window.app.extensionManager` is present, the PrimeVue block-UI mask is
-   * hidden, and one animation frame has elapsed. Shared by `setup()` and
+   * `window.app.extensionManager` is present, the app loading overlay is hidden,
+   * and one animation frame has elapsed. Shared by `setup()` and
    * `WorkflowHelper.reloadAndWaitForApp()`.
    */
   async waitForAppReady() {
@@ -387,9 +415,12 @@ export class ComfyPage {
         null,
         { timeout: readyFuseMs }
       )
-      await this.page
-        .locator('.p-blockui-mask')
-        .waitFor({ state: 'hidden', timeout: readyFuseMs })
+      const loadingOverlay = this.page.getByTestId(TestIds.app.loadingOverlay)
+      await loadingOverlay.waitFor({
+        state: 'attached',
+        timeout: readyFuseMs
+      })
+      await loadingOverlay.waitFor({ state: 'hidden', timeout: readyFuseMs })
     } catch (error) {
       const state = await this.describeUnreadyApp()
       throw new Error(`app never became ready: ${state}`, { cause: error })
@@ -407,21 +438,27 @@ export class ComfyPage {
    */
   private async describeUnreadyApp(): Promise<string> {
     try {
-      const state = await this.page.evaluate(() => ({
-        url: location.href,
-        title: document.title,
-        hasApp: !!window.app,
-        hasExtensionManager: !!window.app?.extensionManager,
-        blockUiVisible: !!document.querySelector('.p-blockui-mask'),
-        signInVisible: !!document.querySelector(
-          '[data-testid*="sign-in"], [class*="SignIn"], form[action*="signin"]'
-        ),
-        bodyText: document.body?.innerText?.slice(0, 300) ?? ''
-      }))
+      const state = await this.page.evaluate(
+        (loadingOverlayTestId) => ({
+          url: location.href,
+          title: document.title,
+          hasApp: !!window.app,
+          hasExtensionManager: !!window.app?.extensionManager,
+          loadingOverlayVisible:
+            document
+              .querySelector(`[data-testid="${loadingOverlayTestId}"]`)
+              ?.getAttribute('aria-busy') === 'true',
+          signInVisible: !!document.querySelector(
+            '[data-testid*="sign-in"], [class*="SignIn"], form[action*="signin"]'
+          ),
+          bodyText: document.body.innerText.slice(0, 300)
+        }),
+        TestIds.app.loadingOverlay
+      )
       return (
         `url=${state.url} title=${JSON.stringify(state.title)} ` +
         `window.app=${state.hasApp} extensionManager=${state.hasExtensionManager} ` +
-        `blockUiMask=${state.blockUiVisible} signInView=${state.signInVisible} ` +
+        `loadingOverlay=${state.loadingOverlayVisible} signInView=${state.signInVisible} ` +
         `body=${JSON.stringify(state.bodyText)}`
       )
     } catch (probeError) {
@@ -557,7 +594,9 @@ const COLLECT_COVERAGE = process.env.COLLECT_COVERAGE === 'true'
 
 export const comfyPageFixture = base.extend<{
   initialFeatureFlags: Record<string, unknown>
+  initialLocalStorage: Record<string, string>
   initialSettings: Record<string, unknown>
+  initialUrl: string | undefined
   comfyPage: ComfyPage
   comfyMouse: ComfyMouse
   comfyFiles: ComfyFiles
@@ -565,10 +604,13 @@ export const comfyPageFixture = base.extend<{
   // Allows configuring feature flags for tests with before initial setup:
   // `test.use({ initialFeatureFlags: { my_flag: true } })`.
   initialFeatureFlags: [{}, { option: true }],
+
+  initialLocalStorage: [{}, { option: true }],
   // Allows seeding user settings before initial page load:
   // `test.use({ initialSettings: { 'Comfy.Locale': 'zh' } })`. Merged on top of
   // the fixture's defaults so per-test values win.
   initialSettings: [{}, { option: true }],
+  initialUrl: [undefined, { option: true }],
 
   page: async ({ page, browserName }, use) => {
     if (browserName !== 'chromium' || !COLLECT_COVERAGE) {
@@ -589,7 +631,14 @@ export const comfyPageFixture = base.extend<{
   },
 
   comfyPage: async (
-    { page, request, initialFeatureFlags, initialSettings },
+    {
+      page,
+      request,
+      initialFeatureFlags,
+      initialLocalStorage,
+      initialSettings,
+      initialUrl
+    },
     use,
     testInfo
   ) => {
@@ -619,34 +668,13 @@ export const comfyPageFixture = base.extend<{
       const isVueNodes = testInfo.tags.includes('@vue-nodes')
       comfyPage.isVueNodes = isVueNodes
 
-      const startupSettings: Record<string, unknown> = {
-        'Comfy.UseNewMenu': 'Top',
-        // Hide canvas menu/info/selection toolbox by default.
-        'Comfy.Graph.CanvasInfo': false,
-        'Comfy.Graph.CanvasMenu': false,
-        'Comfy.Canvas.SelectionToolbox': false,
-        // Hide all badges by default.
-        'Comfy.NodeBadge.NodeIdBadgeMode': NodeBadgeMode.None,
-        'Comfy.NodeBadge.NodeSourceBadgeMode': NodeBadgeMode.None,
-        // Disable tooltips by default to avoid flakiness.
-        'Comfy.EnableTooltips': false,
-        'Comfy.userId': userId,
-        // Set tutorial completed to true to avoid loading the tutorial workflow.
-        'Comfy.TutorialCompleted': true,
-        // An auto-opened tour's blocker would break unrelated tests.
-        [TOUR_SEEN_SETTING]: [...ENTRY_PATHS],
-        'Comfy.Queue.MaxHistoryItems': 64,
-        'Comfy.SnapToGrid.GridSize': testComfySnapToGridGridSize,
-        // Disable toast warning about version compatibility, as they may or
-        // may not appear - depending on upstream ComfyUI dependencies
-        'Comfy.VersionCompatibility.DisableWarnings': true,
-        // Disable errors tab to prevent missing model detection from
-        // rendering error indicators on nodes during unrelated tests.
-        'Comfy.RightSidePanel.ShowErrorsTab': false,
-        ...(isVueNodes && { 'Comfy.VueNodes.Enabled': true }),
-        ...initialSettings
-      }
-      await comfyPage.setupSettings(startupSettings)
+      await comfyPage.setupSettings({
+        userId,
+        settings: {
+          ...(isVueNodes && { 'Comfy.VueNodes.Enabled': true }),
+          ...initialSettings
+        }
+      })
       if (testInfo.tags.includes('@cloud')) {
         const context = page.context()
         await context.route('**/api/auth/session', (route) =>
@@ -683,7 +711,7 @@ export const comfyPageFixture = base.extend<{
         await comfyPage.featureFlags.seedFlags(initialFeatureFlags)
       }
 
-      await comfyPage.setup()
+      await comfyPage.setup({ initialLocalStorage, url: initialUrl })
 
       if (startupErrorCollector) {
         startupErrorCollector.stop()

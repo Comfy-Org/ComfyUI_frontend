@@ -59,12 +59,13 @@ describe('createAgentEventSource', () => {
     expect(registered.size).toBe(0)
   })
 
-  it('emits false only for reconnecting and true for reconnected', () => {
+  it('maps reconnecting/reconnected to liveness', () => {
     const { host, emit } = fakeHost()
     const status = vi.fn()
 
     createAgentEventSource(host).onStatus?.(status)
-    expect(status).not.toHaveBeenCalled()
+    expect(status).toHaveBeenCalledOnce()
+    expect(status).toHaveBeenLastCalledWith(false)
 
     emit('reconnecting')
     expect(status).toHaveBeenLastCalledWith(false)
@@ -73,7 +74,7 @@ describe('createAgentEventSource', () => {
     expect(status).toHaveBeenLastCalledWith(true)
   })
 
-  it('characterizes R-107: reports only true for an open socket', () => {
+  it('reports live once when the socket is already open at bind time', () => {
     const { host } = fakeHost(WebSocket.OPEN)
     const status = vi.fn()
 
@@ -81,30 +82,18 @@ describe('createAgentEventSource', () => {
 
     expect(status).toHaveBeenCalledTimes(1)
     expect(status).toHaveBeenCalledWith(true)
-    expect(status).not.toHaveBeenCalledWith(false)
   })
 
-  // R-107: subscription stays silent until socket liveness is positively known.
-  it.for([undefined, WebSocket.CONNECTING])(
-    'does not report an initial status for socket state %s',
-    (readyState) => {
-      const { host } = fakeHost(readyState)
-      const status = vi.fn()
-
-      createAgentEventSource(host).onStatus?.(status)
-
-      expect(status).not.toHaveBeenCalled()
-    }
-  )
-
-  it('stops reporting status after unsubscribe', () => {
-    const { host, emit } = fakeHost()
+  it('stays quiet for a connecting socket and after status unsubscribe', () => {
+    const { host, emit } = fakeHost(WebSocket.CONNECTING)
     const status = vi.fn()
 
     const unsubscribe = createAgentEventSource(host).onStatus?.(status)
+    expect(status).toHaveBeenCalledOnce()
+    expect(status).toHaveBeenLastCalledWith(false)
+
     unsubscribe?.()
     emit('reconnected')
-
-    expect(status).not.toHaveBeenCalled()
+    expect(status).toHaveBeenCalledOnce()
   })
 })

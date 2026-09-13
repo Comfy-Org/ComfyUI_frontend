@@ -3,50 +3,20 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useAuthStore } from '@/stores/authStore'
 
 import UserCredit from './UserCredit.vue'
-
-vi.mock('firebase/app', () => ({
-  initializeApp: vi.fn(),
-  getApp: vi.fn()
-}))
-
-vi.mock('firebase/auth', () => ({
-  getAuth: vi.fn(),
-  setPersistence: vi.fn(),
-  browserLocalPersistence: {},
-  onAuthStateChanged: vi.fn(),
-  signInWithEmailAndPassword: vi.fn(),
-  signOut: vi.fn()
-}))
-
-vi.mock('pinia')
-
-const mockBalance = vi.hoisted(() => ({
-  value: {
-    amount_micros: 100_000,
-    effective_balance_micros: 100_000,
-    currency: 'usd'
-  }
-}))
-
-const mockIsFetchingBalance = vi.hoisted(() => ({ value: false }))
-
-vi.mock('@/stores/authStore', () => ({
-  useAuthStore: vi.fn(() => ({
-    balance: mockBalance.value,
-    isFetchingBalance: mockIsFetchingBalance.value
-  }))
-}))
+vi.mock(import('firebase/auth'))
+vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 describe('UserCredit', () => {
   beforeEach(() => {
-    mockBalance.value = {
+    useAuthStore().balance = {
       amount_micros: 100_000,
       effective_balance_micros: 100_000,
       currency: 'usd'
     }
-    mockIsFetchingBalance.value = false
+    useAuthStore().isFetchingBalance = false
   })
 
   const renderComponent = (props = {}) => {
@@ -70,7 +40,7 @@ describe('UserCredit', () => {
 
   describe('effective_balance_micros handling', () => {
     it('uses effective_balance_micros when present (positive balance)', () => {
-      mockBalance.value = {
+      useAuthStore().balance = {
         amount_micros: 200_000,
         effective_balance_micros: 150_000,
         currency: 'usd'
@@ -81,7 +51,7 @@ describe('UserCredit', () => {
     })
 
     it('uses effective_balance_micros when zero', () => {
-      mockBalance.value = {
+      useAuthStore().balance = {
         amount_micros: 100_000,
         effective_balance_micros: 0,
         currency: 'usd'
@@ -92,7 +62,7 @@ describe('UserCredit', () => {
     })
 
     it('uses effective_balance_micros when negative', () => {
-      mockBalance.value = {
+      useAuthStore().balance = {
         amount_micros: 0,
         effective_balance_micros: -50_000,
         currency: 'usd'
@@ -103,19 +73,19 @@ describe('UserCredit', () => {
     })
 
     it('falls back to amount_micros when effective_balance_micros is missing', () => {
-      mockBalance.value = {
+      useAuthStore().balance = {
         amount_micros: 100_000,
         currency: 'usd'
-      } as typeof mockBalance.value
+      }
 
       renderComponent()
       expect(screen.getByText(/Credits/)).toBeInTheDocument()
     })
 
     it('falls back to 0 when both effective_balance_micros and amount_micros are missing', () => {
-      mockBalance.value = {
+      useAuthStore().balance = {
         currency: 'usd'
-      } as typeof mockBalance.value
+      } as ReturnType<typeof useAuthStore>['balance']
 
       renderComponent()
       expect(screen.getByText(/\b0\b/)).toBeInTheDocument()
@@ -124,7 +94,7 @@ describe('UserCredit', () => {
 
   describe('loading state', () => {
     it('shows skeleton when loading', () => {
-      mockIsFetchingBalance.value = true
+      useAuthStore().isFetchingBalance = true
 
       renderComponent()
       expect(screen.getAllByTestId('skeleton').length).toBeGreaterThan(0)

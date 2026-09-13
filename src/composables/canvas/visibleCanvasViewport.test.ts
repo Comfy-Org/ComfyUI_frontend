@@ -1,4 +1,3 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
@@ -6,12 +5,13 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 
 import { visibleCanvasViewport } from './visibleCanvasViewport'
 
-vi.mock('@/platform/telemetry', () => ({ useTelemetry: () => undefined }))
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
+  useTelemetry: () => undefined
+}))
 
 describe('visibleCanvasViewport', () => {
   beforeEach(() => {
     localStorage.clear()
-    setActivePinia(createPinia())
     vi.stubGlobal('devicePixelRatio', 2)
   })
 
@@ -26,6 +26,7 @@ describe('visibleCanvasViewport', () => {
   it('T-06 / PM-669 / FE-1633 excludes the docked Agent panel width from Fit View', () => {
     const panel = useAgentPanelStore()
     panel.enabled = true
+    panel.consentAccepted = true
     panel.isOpen = true
     panel.setWidth(500)
     const canvas = {

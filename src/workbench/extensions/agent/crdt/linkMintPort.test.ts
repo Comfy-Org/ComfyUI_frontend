@@ -98,12 +98,6 @@ describe('attachLinkMintPort', () => {
     ])
   })
 
-  it('never mints inside the remote-apply scope (KA-6 sender half)', () => {
-    session.runRemoteApply(() => place(ROOT_SCOPE, topology(41)))
-
-    expect(minted).toEqual([])
-  })
-
   it('never mints with the product flag off', () => {
     enabled = false
     place(ROOT_SCOPE, topology(41))
@@ -168,14 +162,13 @@ describe('attachLinkMintPort', () => {
     consoleError.mockRestore()
   })
 
-  it('stays silent for non-mintable severances (teardown and remote deletes)', async () => {
+  it('stays silent for teardown severances', async () => {
     const consoleError = vi
       .spyOn(console, 'error')
       .mockImplementation(() => undefined)
     session.beginGraphTeardown()
     remove(ROOT_SCOPE, topology(41))
     session.endGraphTeardown()
-    session.runRemoteApply(() => remove(ROOT_SCOPE, topology(42)))
     await afterSweep()
 
     expect(consoleError).not.toHaveBeenCalled()

@@ -1,6 +1,5 @@
 import { render, screen } from '@testing-library/vue'
 import { createI18n } from 'vue-i18n'
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -9,20 +8,22 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 
 import DockedAgentPanel from './DockedAgentPanel.vue'
 
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
+}))
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
+  useTelemetry: () => undefined
 }))
 
 // The mocked module factory throws, so the dynamic import itself rejects -
 // the chunk-load failure path, distinct from a runtime error inside a
 // resolved panel (covered in DockedAgentPanel.test.ts).
-vi.mock('@/workbench/extensions/agent/AgentPanelRoot.vue', () => {
+vi.mock(import('@/workbench/extensions/agent/AgentPanelRoot.vue'), () => {
   throw new Error('agent panel chunk failed to load')
 })
 
 describe('DockedAgentPanel chunk-load failure', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     localStorage.clear()
     vi.mocked(reportError).mockClear()
   })
@@ -30,6 +31,7 @@ describe('DockedAgentPanel chunk-load failure', () => {
   it('reports the failure and shows the error state when the chunk cannot load', async () => {
     const store = useAgentPanelStore()
     store.enabled = true
+    store.consentAccepted = true
     store.isOpen = true
     const i18n = createI18n({
       legacy: false,
