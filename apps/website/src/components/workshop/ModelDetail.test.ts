@@ -1188,6 +1188,7 @@ describe('ModelDetail', () => {
     const late = Promise.withResolvers<typeof routerResult>()
     vi.mocked(runWorkshopRouter).mockReturnValue(late.promise)
     render(WorkshopGate, {
+      props: { keepMounted: true },
       slots: { default: () => h(ModelDetail, { model: runnable }) }
     })
     await nextTick()

@@ -4,6 +4,7 @@ import { ref, watch } from 'vue'
 
 import { useWorkshopEnabled } from '../../scripts/posthog'
 
+const { keepMounted = false } = defineProps<{ keepMounted?: boolean }>()
 const enabled = useWorkshopEnabled()
 const mounted = useMounted()
 const activated = ref(false)
@@ -18,7 +19,11 @@ watch(
 </script>
 
 <template>
-  <div v-if="activated" v-show="enabled" :aria-hidden="!enabled">
+  <div
+    v-if="activated && (enabled || keepMounted)"
+    v-show="enabled"
+    :aria-hidden="!enabled"
+  >
     <slot />
   </div>
   <div v-if="!mounted || !enabled">

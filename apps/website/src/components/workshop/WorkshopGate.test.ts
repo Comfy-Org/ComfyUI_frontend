@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createSSRApp, h, nextTick } from 'vue'
+import { Teleport, createSSRApp, h, nextTick } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 
 import { htmlToTwin } from '../../lib/markdown-twin'
@@ -62,5 +62,19 @@ describe('WorkshopGate', () => {
     await nextTick()
     expect(screen.getByRole('heading').textContent).toBe('Public models')
     expect(screen.queryByRole('heading', { name: 'Instant render' })).toBeNull()
+  })
+
+  it('removes portalled catalogue controls when access is revoked', async () => {
+    render(WorkshopGate, {
+      slots: {
+        default: () => h(Teleport, { to: 'body' }, h('h1', 'Model search'))
+      }
+    })
+    enabled.value = true
+    await nextTick()
+    expect(screen.getByRole('heading', { name: 'Model search' })).toBeTruthy()
+    enabled.value = false
+    await nextTick()
+    expect(screen.queryByRole('heading', { name: 'Model search' })).toBeNull()
   })
 })

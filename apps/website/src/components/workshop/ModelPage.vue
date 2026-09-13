@@ -1,52 +1,41 @@
 <script setup lang="ts">
 import { ArrowRight } from '@lucide/vue'
+import { computed } from 'vue'
 
 import { catalogSearch } from '../../config/models-catalogue'
 import { getRoutes } from '../../config/routes'
 import type { ModelsPageData } from '../../config/models-page-data'
 import { t } from '../../i18n/translations'
+import { useWorkshopEnabled } from '../../scripts/posthog'
+import CatalogueBackLink from './CatalogueBackLink.vue'
 import ModelDetail from './ModelDetail.vue'
 import ModelStatus from './ModelStatus.vue'
 import ModelSupport from './ModelSupport.vue'
 import SplitReveal from './SplitReveal.vue'
+import TagOverflow from './TagOverflow.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 
 const { page } = defineProps<{ page: ModelsPageData }>()
 const routes = getRoutes()
+const enabled = useWorkshopEnabled()
 const pillClass =
   'inline-flex h-7 items-center rounded-full border border-transparency-white-t20 px-3 text-xs leading-none text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow'
+const restTags = computed(() =>
+  page.restTags.map((tag) => ({
+    label: tag.label,
+    href: `${routes.workshop}${tag.search}`
+  }))
+)
 </script>
 
 <template>
   <div class="max-w-10xl mx-auto px-6 py-10 lg:px-8 lg:py-14">
-    <nav
-      aria-label="Breadcrumb"
-      class="mb-8 text-xs text-primary-warm-gray sm:px-8 lg:px-10"
-    >
-      <ol class="flex flex-wrap items-center gap-2">
-        <li>
-          <a :href="routes.home" class="hover:text-primary-warm-white">
-            {{ t('breadcrumb.home') }}
-          </a>
-        </li>
-        <li aria-hidden="true">›</li>
-        <li>
-          <a
-            :href="`${routes.workshop}?tab=models`"
-            class="hover:text-primary-warm-white"
-          >
-            {{ t('workshop.title') }}
-          </a>
-        </li>
-        <li aria-hidden="true">›</li>
-        <li class="text-primary-warm-white" aria-current="page">
-          {{ page.model.name }}
-        </li>
-      </ol>
-    </nav>
+    <div class="mb-8 sm:px-8 lg:px-10">
+      <CatalogueBackLink />
+    </div>
     <header class="mb-12 sm:mx-8 lg:mx-10" data-testid="model-hero">
       <div
-        class="flex flex-col gap-6 pr-8 lg:flex-row lg:items-end lg:justify-between lg:pr-10"
+        class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between"
       >
         <div class="flex max-w-2xl flex-col gap-4">
           <div class="flex flex-wrap items-center gap-3">
@@ -80,19 +69,6 @@ const pillClass =
         </div>
 
         <div class="flex flex-col gap-4 lg:items-end">
-          <ul
-            class="flex scrollbar-hide items-center gap-2 max-sm:overflow-x-auto sm:flex-wrap lg:justify-end"
-            data-testid="model-tags"
-          >
-            <li v-for="tag in page.tags" :key="tag.search">
-              <a
-                :href="`${routes.workshop}${tag.search}`"
-                class="hover:text-primary-comfy-yellow inline-flex h-7 shrink-0 items-center rounded-full bg-transparency-white-t8 px-3 text-xs/none whitespace-nowrap text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t20"
-              >
-                {{ tag.label }}
-              </a>
-            </li>
-          </ul>
           <p
             class="flex items-baseline gap-2 text-sm text-primary-comfy-canvas/60"
             data-testid="model-price"
@@ -109,17 +85,30 @@ const pillClass =
           <p v-if="page.priceEstimate" class="text-xs text-primary-warm-gray">
             {{ t('workshop.model.nodePriceDefaults') }}
           </p>
+          <ul
+            v-if="page.shownTags.length > 0"
+            class="flex scrollbar-hide items-center gap-2 max-sm:overflow-x-auto sm:flex-wrap lg:justify-end"
+            data-testid="model-tags"
+          >
+            <li v-for="tag in page.shownTags" :key="tag.search">
+              <a
+                :href="`${routes.workshop}${tag.search}`"
+                class="hover:text-primary-comfy-yellow inline-flex h-7 shrink-0 items-center rounded-full bg-transparency-white-t8 px-3 text-xs/none whitespace-nowrap text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t20"
+              >
+                {{ tag.label }}
+              </a>
+            </li>
+            <li v-if="page.restTagCount > 0">
+              <TagOverflow v-if="enabled" :tags="restTags" />
+            </li>
+          </ul>
         </div>
       </div>
 
       <ModelStatus
         variant="banner"
         :status="page.model.status"
-        :successor="
-          page.successor
-            ? { name: page.successor.name, href: page.successor.href }
-            : undefined
-        "
+        :successor="page.successor"
       />
     </header>
 

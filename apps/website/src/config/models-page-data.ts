@@ -8,6 +8,7 @@ const modelSchema = z.object({
   slug: z.string(),
   name: z.string(),
   workflowCount: z.number(),
+  recommendedRank: z.number().optional(),
   href: z.string(),
   routerId: z.string(),
   incompleteReason: z.literal('missing-input-schema').optional(),
@@ -49,6 +50,8 @@ const detailSchema = generatedModelSchema
     ...(model.execution ? { form: formForContract(model.execution) } : {})
   }))
 
+const tagSchema = z.object({ label: z.string(), search: z.string() })
+
 const modelsPageDataSchema = z.object({
   kind: z.literal('page'),
   model: detailSchema,
@@ -58,7 +61,10 @@ const modelsPageDataSchema = z.object({
   successor: modelSchema.optional(),
   priceEstimate: z.string().optional(),
   modalityLabel: z.record(z.enum(MODALITIES), z.string()),
-  tags: z.array(z.object({ label: z.string(), search: z.string() }))
+  tags: z.array(tagSchema),
+  shownTags: z.array(tagSchema),
+  restTags: z.array(tagSchema),
+  restTagCount: z.number()
 })
 
 export type ModelsPageData = z.output<typeof modelsPageDataSchema>

@@ -29,7 +29,7 @@ const Content = defineAsyncComponent({
         'div',
         {
           class:
-            'max-w-10xl lg:short:pt-14 mx-auto px-6 py-16 max-sm:py-10 lg:px-8 lg:py-24'
+            'max-w-10xl mx-auto px-6 pt-8 pb-16 max-sm:pt-5 max-sm:pb-10 lg:px-8 lg:pt-12 lg:pb-24'
         },
         [h(ModelsCatalogue, { models })]
       )
@@ -41,7 +41,7 @@ const Content = defineAsyncComponent({
 </script>
 
 <template>
-  <WorkshopGate>
+  <WorkshopGate :keep-mounted="Boolean(slug)">
     <Content />
     <template #fallback>
       <slot name="fallback" />

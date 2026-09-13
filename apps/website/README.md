@@ -190,9 +190,9 @@ Returning users retain access when Firebase confirms the same PostHog identity.
 Account changes and sign-out clear visibility and reevaluate the flag. Firebase
 starts only on auth pages or after Models becomes visible.
 
-Visibility revocation hides the page and blocks new runs, while a render already
-in progress finishes and reports its outcome. Sign-out, workspace changes, and
-leaving the page still cancel the browser's wait.
+Visibility revocation hides the page, closes its dialogs, and blocks new runs,
+while a render already in progress finishes and reports its outcome. Sign-out,
+workspace changes, and leaving the page still cancel the browser's wait.
 
 Vercel CI always builds Models and enables Router execution, selecting production
 Cloud for production or staging Cloud for previews. Production authentication

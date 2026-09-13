@@ -206,6 +206,7 @@ describe('useWorkshopSession', () => {
 
     await vi.waitFor(() => expect(h.remint).toHaveBeenCalledOnce())
     expect(s.session.value, 'the personal boot must not flash').toBeUndefined()
+    expect(h.identifyWorkshopUser).toHaveBeenLastCalledWith('user-1')
 
     const restored = {
       ...okSession,
