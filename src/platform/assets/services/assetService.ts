@@ -31,7 +31,7 @@ import { api } from '@/scripts/api'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 
-export interface PaginationOptions {
+interface PaginationOptions {
   limit?: number
   offset?: number
 }
@@ -198,8 +198,6 @@ const INPUT_ASSETS_WITH_PUBLIC_LIMIT = 500
 const MAX_PAGINATION_BATCHES = 1000
 
 export const MODELS_TAG = 'models'
-export const INPUT_TAG = 'input'
-export const OUTPUT_TAG = 'output'
 /** Asset tag used by the backend for placeholder records that are not installed. */
 export const MISSING_TAG = 'missing'
 const DEFAULT_EXCLUDED_ASSET_TAGS = [MISSING_TAG]
