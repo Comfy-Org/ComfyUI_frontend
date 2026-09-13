@@ -78,6 +78,9 @@ minimaxTest.describe(
         await agentConversation.applyGraphOps([
           {
             op: 'add_node',
+            node_id: 100,
+            class_type: 'LoadImage',
+            pos: [0, 500],
             node: {
               id: 100,
               type: 'LoadImage',
@@ -90,6 +93,9 @@ minimaxTest.describe(
           },
           {
             op: 'add_node',
+            node_id: 101,
+            class_type: BYTEDANCE_REFERENCE_NODE_TYPE,
+            pos: [400, 500],
             node: {
               id: 101,
               type: BYTEDANCE_REFERENCE_NODE_TYPE,
