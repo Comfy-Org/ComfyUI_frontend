@@ -134,7 +134,8 @@ export function useAgentCrdtFollower(
     tab: tabId,
     actor: () => `human:${userId() ?? 'anonymous'}:${tabId}`,
     baseVersion: () => bridge.lastSequence,
-    onBatchSettled: (outcome) => recordDevEvent('human_ops_settled', outcome)
+    onBatchSettled: (outcome) =>
+      recordDevEvent('human_ops_settled', outcome, { scope: 'ops' })
   })
 
   // Dev-panel tap (poc-4): track the doc's node-id set so the panel can show
@@ -204,7 +205,7 @@ export function useAgentCrdtFollower(
     const added = [...ids].filter((id) => !knownDocNodeIds.has(id))
     const removed = [...knownDocNodeIds].filter((id) => !ids.has(id))
     if (added.length > 0 || removed.length > 0)
-      recordDevEvent('doc_nodes_changed', { added, removed })
+      recordDevEvent('doc_nodes_changed', { added, removed }, { scope: 'ecs' })
     knownDocNodeIds = ids
   }
   const onOpsResult: EventListener = (event) => {
@@ -217,7 +218,7 @@ export function useAgentCrdtFollower(
       return
     lifecycle.onDocumentResult()
     lastFrameType.value = event.type
-    recordDevEvent('doc_ops_result', event.detail ?? null)
+    recordDevEvent('doc_ops_result', event.detail ?? null, { scope: 'ops' })
   }
   const onDocReset: EventListener = (event) => {
     const detail =

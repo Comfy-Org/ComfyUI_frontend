@@ -900,7 +900,8 @@ describe('useAgentCrdtFollower', () => {
       expect(materializedEvents).toEqual([
         [
           'agent_node_adapters_materialized',
-          { workflowId: 'wf-1', nodeIds: [toNodeId(1)] }
+          { workflowId: 'wf-1', nodeIds: [toNodeId(1)] },
+          { scope: 'ecs' }
         ]
       ])
       unmount()
@@ -991,6 +992,13 @@ describe('useAgentCrdtFollower', () => {
       .mock.calls.filter(([event]) => event === 'human_ops_settled')
       .map(([, detail]) => (detail as { state: string }).state)
     expect(settledStates).toEqual(['undeliverable'])
+    const settledScopes = vi
+      .mocked(recordDevEvent)
+      .mock.calls.filter(([event]) => event === 'human_ops_settled')
+      .map(
+        ([, , options]) => (options as { scope?: string } | undefined)?.scope
+      )
+    expect(settledScopes).toEqual(['ops'])
     unmount()
   })
 

@@ -76,10 +76,11 @@ export class AgentCrdtProjection {
     // else asks the canvas to paint the new links.
     graph.setDirtyCanvas(true, true)
     if (nodeIds.length > 0) {
-      recordDevEvent('agent_node_adapters_materialized', {
-        workflowId,
-        nodeIds
-      })
+      recordDevEvent(
+        'agent_node_adapters_materialized',
+        { workflowId, nodeIds },
+        { scope: 'ecs' }
+      )
     }
   }
 
