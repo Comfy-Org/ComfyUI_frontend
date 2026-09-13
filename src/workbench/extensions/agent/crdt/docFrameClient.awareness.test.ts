@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest'
 
-import { parseServerDocFrame } from './docFrameClient'
+import type { DocFrameTransport } from './docFrameClient'
+import { DocFrameClient, parseServerDocFrame } from './docFrameClient'
+
+class TestTransport extends EventTarget implements DocFrameTransport {
+  readonly sent: string[] = []
+
+  send(frame: string): boolean {
+    this.sent.push(frame)
+    return true
+  }
+}
 
 function awarenessFrame(state: unknown, expiresAt: unknown = 123) {
   return {
@@ -94,5 +104,109 @@ describe('awareness frame validation', () => {
         expiresAt: 456
       }
     })
+  })
+
+  it('refuses to send awareness with an invalid actor or oversized state', () => {
+    const transport = new TestTransport()
+    const client = new DocFrameClient(transport)
+
+    expect(client.sendAwareness('wf-1', 'not-an-actor', {})).toBe(false)
+    expect(
+      client.sendAwareness('wf-1', 'human:user:tab-a', {
+        value: 'x'.repeat(8 * 1024)
+      })
+    ).toBe(false)
+    expect(transport.sent).toHaveLength(0)
+  })
+
+  it('refuses to send awareness with an invalid workflow id', () => {
+    const transport = new TestTransport()
+    const client = new DocFrameClient(transport)
+
+    expect(client.sendAwareness('', 'human:user:tab-a')).toBe(false)
+    expect(client.sendAwareness('wf 1', 'human:user:tab-a')).toBe(false)
+    expect(client.sendAwareness('wf:1', 'human:user:tab-a')).toBe(false)
+    expect(transport.sent).toHaveLength(0)
+  })
+
+  it('refuses to publish awareness as the reserved system actor', () => {
+    const transport = new TestTransport()
+    const client = new DocFrameClient(transport)
+
+    expect(
+      client.sendAwareness('wf-1', 'system:mint', { cursor: [1, 2] })
+    ).toBe(false)
+    expect(transport.sent).toHaveLength(0)
+  })
+
+  it('refuses to send awareness state that is not a plain object', () => {
+    const transport = new TestTransport()
+    const client = new DocFrameClient(transport)
+
+    expect(
+      client.sendAwareness('wf-1', 'human:user:tab-a', [
+        1, 2
+      ] as unknown as Record<string, unknown>)
+    ).toBe(false)
+    expect(transport.sent).toHaveLength(0)
+  })
+
+  it('treats a null state as absent, matching the inbound parser', () => {
+    const transport = new TestTransport()
+    const client = new DocFrameClient(transport)
+
+    expect(client.sendAwareness('wf-1', 'human:user:tab-a', null)).toBe(true)
+    expect(JSON.parse(transport.sent[0]).data).not.toHaveProperty('state')
+  })
+
+  it('refuses to send cyclic awareness state without throwing', () => {
+    const transport = new TestTransport()
+    const client = new DocFrameClient(transport)
+    const cyclic: Record<string, unknown> = {}
+    cyclic.self = cyclic
+
+    expect(client.sendAwareness('wf-1', 'human:user:tab-a', cyclic)).toBe(false)
+    expect(transport.sent).toHaveLength(0)
+  })
+
+  it('does not throw when state serializes differently on a second pass', () => {
+    const transport = new TestTransport()
+    const client = new DocFrameClient(transport)
+    let passes = 0
+    const state = {
+      toJSON() {
+        passes += 1
+        if (passes >= 2) throw new Error('second serialization pass')
+        return { cursor: [1, 2] }
+      }
+    }
+
+    expect(client.sendAwareness('wf-1', 'human:user:tab-a', state)).toBe(true)
+    expect(transport.sent).toHaveLength(1)
+  })
+
+  it('sends the exact state that passed the size check', () => {
+    const transport = new TestTransport()
+    const client = new DocFrameClient(transport)
+    const state = {
+      toJSON(key: string) {
+        return key === 'state' ? 'x'.repeat(9 * 1024) : { cursor: [1, 2] }
+      }
+    }
+
+    expect(client.sendAwareness('wf-1', 'human:user:tab-a', state)).toBe(true)
+    expect(JSON.parse(transport.sent[0]).data.state).toEqual({ cursor: [1, 2] })
+  })
+
+  it('rejects state the server would reject after HTML escaping', () => {
+    const transport = new TestTransport()
+    const client = new DocFrameClient(transport)
+
+    expect(
+      client.sendAwareness('wf-1', 'human:user:tab-a', {
+        value: '<'.repeat(1400)
+      })
+    ).toBe(false)
+    expect(transport.sent).toHaveLength(0)
   })
 })
