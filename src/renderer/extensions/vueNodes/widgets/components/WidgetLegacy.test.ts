@@ -14,6 +14,150 @@ import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import WidgetLegacy from './WidgetLegacy.vue'
 
 describe('WidgetLegacy', () => {
+  it('preserves the final legacy widget paint extent through the host body', async () => {
+    const draw = vi.fn()
+    const widget = fromPartial<IBaseWidget>({
+      name: 'compare',
+      type: 'custom',
+      y: 40,
+      computeSize: () => [200, 20],
+      draw
+    })
+    const host = fromAny<LGraphNode, unknown>({
+      pos: [0, 0],
+      size: [200, 240],
+      widgets: [widget]
+    })
+    const canvasStore = useCanvasStore()
+    canvasStore.canvas = fromPartial<LGraphCanvas>({
+      graph: { getNodeById: () => host }
+    })
+    canvasStore.linearMode = true
+
+    render(WidgetLegacy, {
+      props: {
+        widget: fromPartial<SimplifiedWidget<undefined>>({
+          name: 'compare',
+          type: 'custom',
+          value: undefined,
+          options: {}
+        }),
+        nodeId: toNodeId(7)
+      }
+    })
+    await nextTick()
+
+    const canvasElement = screen.getByTestId<HTMLCanvasElement>(
+      'legacy-widget-canvas'
+    )
+    expect(canvasElement.height).toBe(404)
+    expect(fromAny<{ canvasHeight?: number }, unknown>(host).canvasHeight).toBe(
+      200
+    )
+    expect(widget.y).toBe(40)
+  })
+
+  it('stops an expanded paint extent at the adjacent widget boundary', async () => {
+    const draw = vi.fn()
+    const widget = fromPartial<IBaseWidget>({
+      name: 'compare',
+      type: 'custom',
+      y: 40,
+      computeSize: () => [200, 20],
+      draw
+    })
+    const adjacent = fromPartial<IBaseWidget>({
+      name: 'after',
+      type: 'custom',
+      y: 90
+    })
+    const host = fromAny<LGraphNode, unknown>({
+      pos: [0, 0],
+      size: [200, 240],
+      widgets: [widget, adjacent]
+    })
+    const canvasStore = useCanvasStore()
+    canvasStore.canvas = fromPartial<LGraphCanvas>({
+      graph: { getNodeById: () => host }
+    })
+    canvasStore.linearMode = true
+
+    render(WidgetLegacy, {
+      props: {
+        widget: fromPartial<SimplifiedWidget<undefined>>({
+          name: 'compare',
+          type: 'custom',
+          value: undefined,
+          options: {}
+        }),
+        nodeId: toNodeId(7)
+      }
+    })
+    await nextTick()
+
+    expect(
+      screen.getByTestId<HTMLCanvasElement>('legacy-widget-canvas').height
+    ).toBe(104)
+    expect(fromAny<{ canvasHeight?: number }, unknown>(host).canvasHeight).toBe(
+      50
+    )
+    expect(widget.y).toBe(40)
+  })
+
+  it('uses the promoted host paint boundary instead of an interior source', async () => {
+    const hostDraw = vi.fn()
+    const sourceDraw = vi.fn()
+    const hostWidget = fromPartial<IBaseWidget>({
+      name: 'promoted',
+      type: 'custom',
+      y: 30,
+      computeSize: () => [200, 20],
+      draw: hostDraw
+    })
+    const sourceWidget = fromPartial<IBaseWidget>({
+      name: 'promoted',
+      type: 'custom',
+      y: 5,
+      draw: sourceDraw
+    })
+    const source = fromAny<LGraphNode, unknown>({
+      size: [100, 100],
+      widgets: [sourceWidget]
+    })
+    const host = fromAny<LGraphNode, unknown>({
+      pos: [0, 0],
+      size: [200, 180],
+      widgets: [hostWidget],
+      promotedSource: source
+    })
+    const canvasStore = useCanvasStore()
+    canvasStore.canvas = fromPartial<LGraphCanvas>({
+      graph: { getNodeById: () => host }
+    })
+    canvasStore.linearMode = true
+
+    render(WidgetLegacy, {
+      props: {
+        widget: fromPartial<SimplifiedWidget<undefined>>({
+          name: 'promoted',
+          type: 'custom',
+          value: undefined,
+          options: {}
+        }),
+        nodeId: toNodeId(7)
+      }
+    })
+    await nextTick()
+
+    expect(fromAny<{ canvasHeight?: number }, unknown>(host).canvasHeight).toBe(
+      150
+    )
+    expect(
+      fromAny<{ canvasHeight?: number }, unknown>(source).canvasHeight
+    ).toBeUndefined()
+    expect(sourceDraw).not.toHaveBeenCalled()
+  })
+
   it('forwards node-local movement to the rebound host and retains pointer movement', async () => {
     const pointerMove = vi.spyOn(CanvasPointer.prototype, 'move')
     const widget = fromPartial<IBaseWidget>({ name: 'compare', type: 'custom' })

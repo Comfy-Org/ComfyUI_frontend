@@ -90,18 +90,36 @@ function draw() {
   } else if (widgetInstance.computeSize) {
     height = widgetInstance.computeSize(width)[1]
   }
+  const widgetY = widgetInstance.y ?? widgetInstance.last_y
+  if (widgetY !== undefined) {
+    const widgetIndex = node.widgets?.indexOf(widgetInstance) ?? -1
+    const nextWidgetY = node.widgets
+      ?.slice(widgetIndex + 1)
+      .map((widget) => widget.y ?? widget.last_y)
+      .find((y) => y !== undefined && y > widgetY)
+    const paintBoundary = nextWidgetY ?? node.size[1]
+    height = Math.max(height, paintBoundary - widgetY)
+  }
   containerHeight.value = height
   // Set node.canvasHeight for legacy widgets that use it (e.g., Impact Pack)
   // @ts-expect-error canvasHeight is a custom property used by some extensions
   node.canvasHeight = height
+  const originalY = widgetInstance.y
   widgetInstance.y = 0
   widgetInstance.width = width
   canvasEl.value.height = (height + 2) * scaleFactor
   canvasEl.value.width = width * scaleFactor
   const ctx = canvasEl.value?.getContext('2d')
-  if (!ctx) return
+  if (!ctx) {
+    widgetInstance.y = originalY
+    return
+  }
   ctx.scale(scaleFactor, scaleFactor)
-  widgetInstance.draw?.(ctx, node, width, 1, height)
+  try {
+    widgetInstance.draw?.(ctx, node, width, 1, height)
+  } finally {
+    widgetInstance.y = originalY
+  }
 }
 //See LGraphCanvas.processWidgetClick
 function handleDown(e: PointerEvent) {
@@ -132,6 +150,7 @@ function handleMove(e: PointerEvent) {
     canvas
   )
   pointer.move(e)
+  draw()
 }
 </script>
 <template>
