@@ -933,7 +933,12 @@ type DowngradeToPersonalBillingEvent = {
   duration_ms?: number
 } & (BillingStarted | BillingSucceeded | BillingFailed)
 
+type CapabilityReadBillingEvent = {
+  operation: 'capability_read'
+} & (BillingSucceeded | Pick<BillingFailed, 'stage' | 'outcome'>)
+
 export type BillingTelemetryEvent =
+  | CapabilityReadBillingEvent
   | SubscriptionCheckoutBillingEvent
   | BillingOperationBillingEvent
   | ResubscribeBillingEvent
@@ -1199,6 +1204,8 @@ export const TelemetryEvents = {
     'billing.subscription_checkout.succeeded',
   BILLING_SUBSCRIPTION_CHECKOUT_FAILED: 'billing.subscription_checkout.failed',
   BILLING_OPERATION_STARTED: 'billing.operation.started',
+  BILLING_CAPABILITY_READ_SUCCEEDED: 'billing.capability_read.succeeded',
+  BILLING_CAPABILITY_READ_FAILED: 'billing.capability_read.failed',
   BILLING_OPERATION_SUCCEEDED: 'billing.operation.succeeded',
   BILLING_OPERATION_FAILED: 'billing.operation.failed',
   BILLING_OPERATION_TIMEOUT: 'billing.operation.timeout',
