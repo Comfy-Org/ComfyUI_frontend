@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
+import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/stores/partnerNodesEducationStore'
 import type {
   TemplateGroup,
   TemplateInfo,
@@ -94,8 +95,7 @@ export function useTemplateWorkflows() {
    * Gets formatted template title
    */
   const getTemplateTitle = (template: TemplateInfo, sourceModule: string) => {
-    const fallback =
-      template.title ?? template.name ?? `${sourceModule} Template`
+    const fallback = template.title ?? template.name
     return sourceModule === 'default'
       ? (template.localizedTitle ?? fallback)
       : fallback
@@ -105,11 +105,9 @@ export function useTemplateWorkflows() {
    * Gets formatted template description
    */
   const getTemplateDescription = (template: TemplateInfo) => {
-    return (
-      (template.localizedDescription || template.description)
-        ?.replace(/[-_]/g, ' ')
-        .trim() ?? ''
-    )
+    return (template.localizedDescription || template.description)
+      .replace(/[-_]/g, ' ')
+      .trim()
   }
 
   const prepareWorkflowTemplate = async (
@@ -161,9 +159,24 @@ export function useTemplateWorkflows() {
       })
 
       if (closeDialog) dialogStore.closeDialog()
-      await app.loadGraphData(workflow, true, true, workflowName, {
-        openSource: 'template'
-      })
+      const loadedWorkflow = await app.loadGraphData(
+        workflow,
+        true,
+        true,
+        workflowName,
+        { openSource: 'template' }
+      )
+
+      const template = workflowTemplatesStore.enhancedTemplates.find(
+        (template) =>
+          template.name === id && template.sourceModule === sourceModule
+      )
+      const educationStore = usePartnerNodesEducationStore()
+      if (template?.isPartnerNode && typeof loadedWorkflow === 'object') {
+        educationStore.requestCard(loadedWorkflow.key)
+      } else {
+        educationStore.dismissCard()
+      }
 
       return true
     } catch (error) {

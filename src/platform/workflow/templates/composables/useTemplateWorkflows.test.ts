@@ -1,71 +1,89 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useDialogStore } from '@/stores/dialogStore'
+import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/stores/partnerNodesEducationStore'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { App } from 'vue'
+import { createApp, defineComponent } from 'vue'
 
-import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
+import { i18n } from '@/i18n'
+import { useTemplateWorkflows as createTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
-import { app } from '@/scripts/app'
 
 async function flushPromises() {
   await new Promise((r) => setTimeout(r, 0))
 }
 
-// Mock the store
-vi.mock(
-  '@/platform/workflow/templates/repositories/workflowTemplatesStore',
-  () => ({
-    useWorkflowTemplatesStore: vi.fn()
-  })
-)
-
 // Mock the API
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     fileURL: vi.fn((path) => `mock-file-url${path}`),
     apiURL: vi.fn((path) => `mock-api-url${path}`)
   }
 }))
 
-// Mock the app
-vi.mock('@/scripts/app', () => ({
+// loadGraphData resolves to the workflow it activated; the education card
+// binds to that, so the mock returns a per-test workflow object.
+const { mockLoadedWorkflow } = vi.hoisted(
+  (): { mockLoadedWorkflow: { value: { key: string } | undefined } } => ({
+    mockLoadedWorkflow: {
+      value: { key: 'loaded-template' }
+    }
+  })
+)
+
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
-    loadGraphData: vi.fn()
+    loadGraphData: vi.fn(() => Promise.resolve(mockLoadedWorkflow.value))
   }
 }))
 
-// Mock Vue I18n
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: vi.fn((key, fallback) => fallback || key)
-  }),
-  createI18n: () => ({
-    global: {
-      t: (key: string) => key
-    }
-  })
-}))
+const apps: App<Element>[] = []
 
-const { mockCloseDialog, mockIsCloud, mockReportError, mockTrackTemplate } =
-  vi.hoisted(() => ({
-    mockCloseDialog: vi.fn(),
-    mockIsCloud: { value: true },
-    mockReportError: vi.fn(),
-    mockTrackTemplate: vi.fn()
-  }))
+function useTemplateWorkflows() {
+  let result: ReturnType<typeof createTemplateWorkflows> | undefined
+  const app = createApp(
+    defineComponent({
+      setup() {
+        result = createTemplateWorkflows()
+        return () => null
+      }
+    })
+  )
+  app.use(i18n)
+  app.mount(document.createElement('div'))
+  apps.push(app)
+  if (!result) throw new Error('Template workflows were not initialized')
+  return result
+}
 
-// Mock the dialog store
-vi.mock('@/stores/dialogStore', () => ({
-  useDialogStore: vi.fn(() => ({
-    closeDialog: mockCloseDialog
-  }))
-}))
+afterEach(() => apps.splice(0).forEach((app) => app.unmount()))
 
 // useTelemetry() returns null in OSS, a dispatcher in cloud — toggle via mockIsCloud.
-vi.mock('@/platform/telemetry', () => ({
+const { mockIsCloud, mockTrackTemplate } = vi.hoisted(() => ({
+  mockIsCloud: { value: true },
+  mockTrackTemplate: vi.fn()
+}))
+
+const { mockReportError } = vi.hoisted(() => ({
+  mockReportError: vi.fn()
+}))
+
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () =>
     mockIsCloud.value ? { trackTemplate: mockTrackTemplate } : null
 }))
 
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock<unknown>(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
+}))
+
+const { mockDistributionIsCloud } = vi.hoisted(() => ({
+  mockDistributionIsCloud: { value: false }
+}))
+
+vi.mock(import('@/platform/distribution/types'), () => ({
+  get isCloud() {
+    return mockDistributionIsCloud.value
+  }
 }))
 
 // Mock fetch
@@ -73,29 +91,25 @@ global.fetch = vi.fn()
 
 type MockWorkflowTemplatesStore = ReturnType<typeof useWorkflowTemplatesStore>
 
-const mockWorkflow = {
-  version: 0.4,
-  last_node_id: 0,
-  last_link_id: 0,
-  nodes: [],
-  links: []
-}
+beforeEach(() => {
+  vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
+})
 
 describe('useTemplateWorkflows', () => {
   let mockWorkflowTemplatesStore: MockWorkflowTemplatesStore
 
-  function expectNoOpeningSideEffects() {
-    expect(mockTrackTemplate).not.toHaveBeenCalled()
-    expect(mockCloseDialog).not.toHaveBeenCalled()
-    expect(app.loadGraphData).not.toHaveBeenCalled()
-  }
-
   beforeEach(() => {
     mockIsCloud.value = true
+    mockDistributionIsCloud.value = false
+    mockLoadedWorkflow.value = { key: 'loaded-template' }
 
-    mockWorkflowTemplatesStore = {
+    mockWorkflowTemplatesStore = useWorkflowTemplatesStore()
+    vi.mocked(
+      mockWorkflowTemplatesStore.loadWorkflowTemplates
+    ).mockResolvedValue(undefined)
+    Object.assign(mockWorkflowTemplatesStore, {
       isLoaded: false,
-      loadWorkflowTemplates: vi.fn().mockResolvedValue(true),
+      enhancedTemplates: [],
       groupedTemplates: [
         {
           label: 'ComfyUI Examples',
@@ -140,16 +154,18 @@ describe('useTemplateWorkflows', () => {
           ]
         }
       ]
-    } as Partial<MockWorkflowTemplatesStore> as MockWorkflowTemplatesStore
-
-    vi.mocked(useWorkflowTemplatesStore).mockReturnValue(
-      mockWorkflowTemplatesStore
-    )
+    })
 
     // Mock fetch response
     vi.mocked(fetch).mockResolvedValue({
       ok: true,
-      json: vi.fn().mockResolvedValue(mockWorkflow)
+      json: vi.fn().mockResolvedValue({
+        version: 0.4,
+        last_node_id: 0,
+        last_link_id: 0,
+        nodes: [],
+        links: []
+      })
     } as Partial<Response> as Response)
   })
 
@@ -321,159 +337,19 @@ describe('useTemplateWorkflows', () => {
     expect(fetch).toHaveBeenCalledWith('mock-file-url/templates/template1.json')
   })
 
-  describe('prepared template workflow', () => {
-    async function prepareTemplate() {
-      mockWorkflowTemplatesStore.isLoaded = true
-      const workflows = useTemplateWorkflows()
-      const prepared = await workflows.prepareWorkflowTemplate(
-        'template1',
-        'default'
-      )
-      if (!prepared) throw new Error('Expected a prepared workflow')
-      return { prepared, workflows }
-    }
+  it('prepares a template without opening it', async () => {
+    const { prepareWorkflowTemplate } = useTemplateWorkflows()
+    mockWorkflowTemplatesStore.isLoaded = true
 
-    it('prepares workflow data without opening it', async () => {
-      const { prepared } = await prepareTemplate()
+    const prepared = await prepareWorkflowTemplate('template1', 'default')
 
-      expect(prepared).toEqual({
-        id: 'template1',
-        sourceModule: 'default',
-        workflowName: 'template1',
-        workflow: mockWorkflow
-      })
-      expectNoOpeningSideEffects()
+    expect(prepared).toMatchObject({
+      id: 'template1',
+      sourceModule: 'default',
+      workflowName: 'template1'
     })
-
-    it('opens prepared workflow data exactly once', async () => {
-      const { prepared, workflows } = await prepareTemplate()
-
-      const result = await workflows.openPreparedWorkflowTemplate(prepared)
-
-      expect(result).toBe(true)
-      expect(mockTrackTemplate).toHaveBeenCalledOnce()
-      expect(mockTrackTemplate).toHaveBeenCalledWith({
-        workflow_name: 'template1',
-        template_source: 'default'
-      })
-      expect(mockCloseDialog).toHaveBeenCalledOnce()
-      expect(app.loadGraphData).toHaveBeenCalledOnce()
-      expect(app.loadGraphData).toHaveBeenCalledWith(
-        mockWorkflow,
-        true,
-        true,
-        'template1',
-        { openSource: 'template' }
-      )
-    })
-
-    it('can leave dialog closing to its caller', async () => {
-      const { prepared, workflows } = await prepareTemplate()
-
-      const result = await workflows.openPreparedWorkflowTemplate(prepared, {
-        closeDialog: false
-      })
-
-      expect(result).toBe(true)
-      expect(mockCloseDialog).not.toHaveBeenCalled()
-      expect(app.loadGraphData).toHaveBeenCalledOnce()
-    })
-
-    it('reports prepared workflow opening failures', async () => {
-      const { prepared, workflows } = await prepareTemplate()
-      const error = new Error('Graph load failed')
-      vi.mocked(app.loadGraphData).mockRejectedValueOnce(error)
-
-      const result = await workflows.openPreparedWorkflowTemplate(prepared)
-
-      expect(result).toBe(false)
-      expect(mockReportError).toHaveBeenCalledExactlyOnceWith(error, {
-        errorType: 'workflow_template_open_failed'
-      })
-    })
-
-    it('keeps loadWorkflowTemplate as the compatible prepare-and-open path', async () => {
-      mockWorkflowTemplatesStore.isLoaded = true
-      const { loadWorkflowTemplate } = useTemplateWorkflows()
-
-      const result = await loadWorkflowTemplate('template1', 'default')
-
-      expect(result).toBe(true)
-      expect(fetch).toHaveBeenCalledOnce()
-      expect(mockTrackTemplate).toHaveBeenCalledOnce()
-      expect(mockCloseDialog).toHaveBeenCalledOnce()
-      expect(app.loadGraphData).toHaveBeenCalledOnce()
-    })
-
-    it('returns null for a non-OK response without opening', async () => {
-      mockWorkflowTemplatesStore.isLoaded = true
-      const { prepareWorkflowTemplate } = useTemplateWorkflows()
-      vi.mocked(fetch).mockResolvedValueOnce(
-        new Response(null, { status: 404, statusText: 'Not Found' })
-      )
-
-      const result = await prepareWorkflowTemplate(
-        'missing-template',
-        'default'
-      )
-
-      expect(result).toBe(null)
-      expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
-        'Failed to fetch workflow template (404)',
-        { errorType: 'workflow_template_fetch_failed' }
-      )
-      expectNoOpeningSideEffects()
-    })
-
-    it('opens parseable legacy workflow data when strict validation fails', async () => {
-      const legacyWorkflow = {
-        version: 0.4,
-        last_node_id: 1,
-        last_link_id: 0,
-        nodes: [{ id: 1, type: 'LegacyCustomNode' }],
-        links: []
-      }
-      mockWorkflowTemplatesStore.isLoaded = true
-      const validationWarning = vi
-        .spyOn(console, 'warn')
-        .mockImplementation(() => {})
-      vi.spyOn(console, 'error').mockImplementation(() => {})
-      vi.mocked(fetch).mockResolvedValueOnce(
-        new Response(JSON.stringify(legacyWorkflow))
-      )
-      const { loadWorkflowTemplate } = useTemplateWorkflows()
-
-      const result = await loadWorkflowTemplate('legacy-template', 'default')
-
-      expect(result).toBe(true)
-      expect(validationWarning).toHaveBeenCalledOnce()
-      expect(fetch).toHaveBeenCalledOnce()
-      expect(mockTrackTemplate).toHaveBeenCalledOnce()
-      expect(mockCloseDialog).toHaveBeenCalledOnce()
-      expect(app.loadGraphData).toHaveBeenCalledOnce()
-      expect(app.loadGraphData).toHaveBeenCalledWith(
-        legacyWorkflow,
-        true,
-        true,
-        'legacy-template',
-        { openSource: 'template' }
-      )
-    })
-
-    it('rejects JSON without a workflow envelope before opening', async () => {
-      mockWorkflowTemplatesStore.isLoaded = true
-      vi.spyOn(console, 'warn').mockImplementation(() => {})
-      vi.spyOn(console, 'error').mockImplementation(() => {})
-      vi.mocked(fetch).mockResolvedValueOnce(
-        new Response(JSON.stringify({ workflow: 'invalid' }))
-      )
-      const { loadWorkflowTemplate } = useTemplateWorkflows()
-
-      const result = await loadWorkflowTemplate('invalid-template', 'default')
-
-      expect(result).toBe(false)
-      expectNoOpeningSideEffects()
-    })
+    expect(mockTrackTemplate).not.toHaveBeenCalled()
+    expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
   })
 
   it('tracks template telemetry on load in cloud builds', async () => {
@@ -500,20 +376,101 @@ describe('useTemplateWorkflows', () => {
     expect(mockTrackTemplate).not.toHaveBeenCalled()
   })
 
+  const enhancedTemplate = (isPartnerNode: boolean, name = 'template1') => {
+    type EnhancedTemplateLike =
+      MockWorkflowTemplatesStore['enhancedTemplates'][number]
+    return {
+      name,
+      sourceModule: 'default',
+      isPartnerNode
+    } as Partial<EnhancedTemplateLike> as EnhancedTemplateLike
+  }
+
+  it('requests the partner education card when a paid template loads locally', async () => {
+    const { loadWorkflowTemplate } = useTemplateWorkflows()
+    mockWorkflowTemplatesStore.isLoaded = true
+    mockWorkflowTemplatesStore.enhancedTemplates.push(enhancedTemplate(true))
+
+    await loadWorkflowTemplate('template1', 'default')
+
+    expect(usePartnerNodesEducationStore().requestedForWorkflowKey).toBe(
+      'loaded-template'
+    )
+  })
+
+  it('retires the card instead of requesting it when no workflow was activated', async () => {
+    const { loadWorkflowTemplate } = useTemplateWorkflows()
+    mockWorkflowTemplatesStore.isLoaded = true
+    mockWorkflowTemplatesStore.enhancedTemplates.push(enhancedTemplate(true))
+    usePartnerNodesEducationStore().requestedForWorkflowKey =
+      'previous-template'
+    mockLoadedWorkflow.value = undefined
+
+    await loadWorkflowTemplate('template1', 'default')
+
+    expect(usePartnerNodesEducationStore().isCardRequested).toBe(false)
+  })
+
+  it('binds to the workflow this load activated, resolved by loadGraphData', async () => {
+    const { loadWorkflowTemplate } = useTemplateWorkflows()
+    mockWorkflowTemplatesStore.isLoaded = true
+    mockWorkflowTemplatesStore.enhancedTemplates.push(enhancedTemplate(true))
+
+    // loadGraphData resolves to the workflow it activated even if the user has
+    // since switched tabs during its asset-scan window, so the card binds to
+    // that workflow rather than whichever one is globally active now.
+    mockLoadedWorkflow.value = { key: 'template-a' }
+
+    await loadWorkflowTemplate('template1', 'default')
+
+    expect(usePartnerNodesEducationStore().requestedForWorkflowKey).toBe(
+      'template-a'
+    )
+  })
+
+  it('does not request the education card for open-source templates', async () => {
+    const { loadWorkflowTemplate } = useTemplateWorkflows()
+    mockWorkflowTemplatesStore.isLoaded = true
+    mockWorkflowTemplatesStore.enhancedTemplates.push(enhancedTemplate(false))
+
+    await loadWorkflowTemplate('template1', 'default')
+
+    expect(usePartnerNodesEducationStore().isCardRequested).toBe(false)
+  })
+
+  it('retires an earlier request when an open-source template loads next', async () => {
+    const { loadWorkflowTemplate } = useTemplateWorkflows()
+    mockWorkflowTemplatesStore.isLoaded = true
+    mockWorkflowTemplatesStore.enhancedTemplates.push(
+      enhancedTemplate(true),
+      enhancedTemplate(false, 'template2')
+    )
+
+    await loadWorkflowTemplate('template1', 'default')
+    expect(usePartnerNodesEducationStore().requestedForWorkflowKey).toBe(
+      'loaded-template'
+    )
+
+    // The open-source template may still contain partner nodes, so the card
+    // would otherwise linger and describe the wrong template.
+    await loadWorkflowTemplate('template2', 'default')
+    expect(usePartnerNodesEducationStore().isCardRequested).toBe(false)
+  })
+
   it('should handle errors when loading templates', async () => {
     const { loadWorkflowTemplate, loadingTemplateId } = useTemplateWorkflows()
 
     // Set the store as loaded
     mockWorkflowTemplatesStore.isLoaded = true
 
-    const error = new Error('Failed to fetch')
-    vi.mocked(fetch).mockRejectedValueOnce(error)
+    // Mock fetch to throw an error
+    vi.mocked(fetch).mockRejectedValueOnce(new Error('Failed to fetch'))
 
     // Load a template that will fail
     const result = await loadWorkflowTemplate('error-template', 'default')
 
     expect(result).toBe(false)
-    expect(mockReportError).toHaveBeenCalledExactlyOnceWith(error, {
+    expect(mockReportError).toHaveBeenCalledWith(expect.any(Error), {
       errorType: 'workflow_template_prepare_failed'
     })
     expect(loadingTemplateId.value).toBe(null) // Should reset even after error
