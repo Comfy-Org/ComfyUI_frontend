@@ -325,4 +325,33 @@ describe('R-73 cross-workflow pending operation characterization', () => {
       result: { workflowId: 'wf-b', ok: false, applied: [], skipped: [] }
     })
   })
+
+  it.fails('M7 retains a target-keyed operation beyond the transport retry budget and resends its original ID after reconnect', () => {
+    const { enqueue } = mountFollower('wf-a')
+    clientState.transportUp = false
+
+    enqueue([deleteNode('survive-outage')])
+    const operationId = clientState.attempts[0].ops[0].op_id
+    vi.advanceTimersByTime(500 * 6)
+
+    clientState.transportUp = true
+    apiState.target.dispatchEvent(new Event('reconnected'))
+
+    expect(clientState.sent.at(-1)?.ops[0].op_id).toBe(operationId)
+  })
+
+  it.fails('M7 restores a target-keyed operation after remount without reminting its ID', () => {
+    clientState.transportUp = false
+    const firstMount = mountFollower('wf-a')
+
+    firstMount.enqueue([deleteNode('survive-remount')])
+    const operationId = clientState.attempts[0].ops[0].op_id
+    vi.advanceTimersByTime(500 * 6)
+    firstMount.unmount()
+
+    clientState.transportUp = true
+    mountFollower('wf-a')
+
+    expect(clientState.sent.at(-1)?.ops[0].op_id).toBe(operationId)
+  })
 })
