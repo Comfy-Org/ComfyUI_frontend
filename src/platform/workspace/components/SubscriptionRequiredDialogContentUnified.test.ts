@@ -219,7 +219,10 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
   it('collects a new method when none is selected', () => {
     mockCheckoutStep.value = 'preview'
     mockPreviewVariant.value = 'personal-new'
-    mockPreviewData.value = makePreview({ amount_due_cents: 1600, currency: 'usd' })
+    mockPreviewData.value = makePreview({
+      amount_due_cents: 1600,
+      currency: 'usd'
+    })
     mockSavedPaymentMethods.value = [
       { id: 'pm_first', type: 'card', last4: '1111', is_default: false }
     ]
@@ -233,7 +236,10 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
   it('does not initialize the payment element while embedded checkout is off', () => {
     mockCheckoutStep.value = 'preview'
     mockPreviewVariant.value = 'personal-new'
-    mockPreviewData.value = makePreview({ amount_due_cents: 1600, currency: 'usd' })
+    mockPreviewData.value = makePreview({
+      amount_due_cents: 1600,
+      currency: 'usd'
+    })
 
     renderComponent({ embeddedCheckoutEnabled: false })
 
@@ -315,7 +321,10 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
 
       expect(screen.queryByTestId('transition-preview')).toBeNull()
 
-      mockPreviewData.value = makePreview({ amount_due_cents: 1600, currency: 'usd' })
+      mockPreviewData.value = makePreview({
+        amount_due_cents: 1600,
+        currency: 'usd'
+      })
       await nextTick()
 
       expect(screen.getByTestId('transition-preview')).toBeTruthy()
