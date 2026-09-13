@@ -440,6 +440,9 @@ test.describe(
       await comfyPage.workflow.loadWorkflow('default')
       await comfyPage.workflow.setupWorkflowsDirectory({})
       await comfyPage.menu.topbar.saveWorkflow('Undo Tab A')
+      if (await comfyPage.confirmDialog.overwrite.isVisible()) {
+        await comfyPage.confirmDialog.click('overwrite')
+      }
       await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(0)
       const node = await comfyPage.nodeOps.getNodeRefById('3')
       const initialPosition = await node.getProperty<[number, number]>('pos')
@@ -465,6 +468,9 @@ test.describe(
         await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
         await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
         await comfyPage.menu.topbar.saveWorkflow('Undo Tab B')
+        if (await comfyPage.confirmDialog.overwrite.isVisible()) {
+          await comfyPage.confirmDialog.click('overwrite')
+        }
       })
 
       const tabBName = 'Undo Tab B'
