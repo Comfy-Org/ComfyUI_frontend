@@ -12,10 +12,7 @@ import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 
 import type { GraphOperation } from './graphOperations'
-import {
-  applyLiveWidgetValue,
-  rebindLiveWidgetState
-} from './liveWidgetProjection'
+import { applyLiveWidgetValue } from './liveWidgetProjection'
 import { attachMintPortWiring } from './mintPortWiring'
 
 const rootScope = {
@@ -55,8 +52,6 @@ describe('applyLiveWidgetValue', () => {
       getScope: () => rootScope,
       layout: { createNode: vi.fn(), deleteNodes: vi.fn() },
       liveWidgets: {
-        rebind: (scope, nodeId, name) =>
-          rebindLiveWidgetState(graph, scope, nodeId, name),
         setValue: (scope, nodeId, name, value, context) =>
           applyLiveWidgetValue(graph, scope, nodeId, name, value, context)
       }
@@ -81,6 +76,7 @@ describe('applyLiveWidgetValue', () => {
         widgetId(rootScope.rootGraphId, toNodeId(7), 'value')
       )
     ).toMatchObject({ type: 'string', value: 'text' })
+    expect(widget.type).toBe('number')
     expect(widget.value).toBe('text')
     expect(
       mutations.setWidget(toNodeId(7), 'value', 'updated', remoteContext)

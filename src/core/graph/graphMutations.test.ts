@@ -40,7 +40,6 @@ function node(id: number, widgets_values: Record<string, unknown> = {}) {
 describe('graphMutations', () => {
   const createLayout = vi.fn()
   const deleteLayouts = vi.fn()
-  const rebindLiveWidget = vi.fn()
   const setLiveWidgetValue = vi.fn(
     (
       _scope,
@@ -59,7 +58,6 @@ describe('graphMutations', () => {
   beforeEach(() => {
     createLayout.mockReset()
     deleteLayouts.mockReset()
-    rebindLiveWidget.mockReset()
     setLiveWidgetValue.mockReset()
   })
 
@@ -68,8 +66,7 @@ describe('graphMutations', () => {
       getScope: () => scope,
       layout: { createNode: createLayout, deleteNodes: deleteLayouts },
       liveWidgets: {
-        setValue: setLiveWidgetValue,
-        rebind: rebindLiveWidget
+        setValue: setLiveWidgetValue
       }
     })
   }
@@ -417,16 +414,22 @@ describe('graphMutations', () => {
     expect(createLayout).not.toHaveBeenCalled()
   })
 
-  it('rebinds a live widget when reconciliation changes its type', () => {
+  it('preserves live widget state when reconciliation changes its type', () => {
     const graph = mutations()
     graph.addNode(node(1, { seed: 1 }), context)
+    const liveWidgetState = useWidgetValueStore().getWidget(
+      widgetId('root', toNodeId(1), 'seed')
+    )
 
     expect(
       graph.batch(context, (batch) => {
         batch.reconcileNode(node(1, { seed: 'text' }))
       })
     ).toBe(true)
-    expect(rebindLiveWidget).toHaveBeenCalledWith(scope, toNodeId(1), 'seed')
+    expect(
+      useWidgetValueStore().getWidget(widgetId('root', toNodeId(1), 'seed'))
+    ).toBe(liveWidgetState)
+    expect(liveWidgetState).toMatchObject({ type: 'string', value: 'text' })
   })
 
   it('updates endpoint slot records while retaining the supplied link id', () => {

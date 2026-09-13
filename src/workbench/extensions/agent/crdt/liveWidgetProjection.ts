@@ -6,7 +6,6 @@ import type { GraphScope } from '@/types/graphScopeId'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import type { NodeId } from '@/types/nodeId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
-import { widgetId } from '@/types/widgetId'
 
 import { runMintPortsSuppressed } from './mintPortWiring'
 
@@ -27,30 +26,6 @@ export type LiveWidgetProjectionResult =
   | { status: 'skipped' }
   | { status: 'applied'; resolvedValue: WidgetValue }
   | { status: 'rolledBack'; resolvedValue: WidgetValue }
-
-export function rebindLiveWidgetState(
-  rootGraph: LGraph | undefined,
-  scope: GraphScope,
-  nodeId: NodeId,
-  name: string
-): void {
-  if (!rootGraph) return
-  const widget = owningGraph(rootGraph, scope)
-    ?.getNodeById(nodeId)
-    ?.widgets?.find((candidate) => candidate.name === name)
-  const state = useWidgetValueStore().getWidget(
-    widgetId(scope.rootGraphId, nodeId, name)
-  )
-  if (
-    widget &&
-    state &&
-    'setNodeId' in widget &&
-    typeof widget.setNodeId === 'function'
-  ) {
-    widget.type = state.type
-    widget.setNodeId(nodeId)
-  }
-}
 
 function skipped(
   nodeId: NodeId,
