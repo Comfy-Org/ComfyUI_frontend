@@ -1,9 +1,9 @@
 import type { Locator, Page } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { BaseDialog } from '@e2e/fixtures/components/BaseDialog'
+import { comfyExpect as expect } from '@e2e/fixtures/utils/customMatchers'
 
 export class SettingDialog extends BaseDialog {
   public readonly searchBox: Locator
