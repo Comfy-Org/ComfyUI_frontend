@@ -32,23 +32,23 @@ const telemetry = vi.hoisted(() => ({
 const mockTrackFeatureFlagEvaluation = telemetry.trackFeatureFlagEvaluation
 
 // Mock the API module
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getServerFeature: vi.fn()
   }
 }))
 
-vi.mock('@/utils/sessionFeatureFlagOverride', () => ({
+vi.mock(import('@/utils/sessionFeatureFlagOverride'), () => ({
   getSessionOverride: vi.fn()
 }))
 
 // Mock the distribution types module
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false,
   isNightly: false
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () =>
     telemetry.enabled
       ? { trackFeatureFlagEvaluation: telemetry.trackFeatureFlagEvaluation }
@@ -308,6 +308,26 @@ describe('useFeatureFlags', () => {
       const { flags } = useFeatureFlags()
       expect(flags.nodeLibraryEssentialsEnabled).toBe(false)
     })
+  })
+
+  describe('assetsEnabled', () => {
+    it.for([
+      ['stable cohort without the flag', undefined, false],
+      ['beta cohort with the flag', true, true],
+      ['beta cohort after the kill switch', false, false]
+    ] as const)(
+      'maps the %s response to the expected state',
+      ([, servedValue, expected]) => {
+        vi.mocked(api.getServerFeature).mockImplementation(
+          (path, defaultValue) =>
+            path === 'assets' && servedValue !== undefined
+              ? servedValue
+              : defaultValue
+        )
+
+        expect(useFeatureFlags().flags.assetsEnabled).toBe(expected)
+      }
+    )
   })
 
   describe('partnerNodeGovernanceEnabled', () => {

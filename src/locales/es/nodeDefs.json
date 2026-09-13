@@ -770,6 +770,134 @@
       }
     }
   },
+  "BlockSparseAttention": {
+    "description": "Aplica atención dispersa por bloques a las capas de atención del modelo aptas, reduciendo el cómputo para secuencias largas. La mejora de velocidad aumenta con la longitud de la secuencia, ya que las secuencias cortas suelen ser más rápidas con atención densa. Fuera de start/end_percent, con dense_blocks y por debajo de min_tokens, el modelo usa el backend de atención densa del modelo. Use el nodo Backend de atención del modelo para seleccionar esa alternativa.",
+    "display_name": "Atención dispersa por bloques del modelo",
+    "inputs": {
+      "dense_blocks": {
+        "name": "dense_blocks",
+        "tooltip": "Bloques del transformador que siempre se ejecutan de forma densa, p. ej., '0, 1, 47-49'."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "Punto porcentual en el que termina la atención dispersa. Después de este punto, la atención vuelve a ser densa."
+      },
+      "extra_tokens": {
+        "name": "extra_tokens",
+        "tooltip": "Tokens adicionales con mayor puntuación a los que atiende cada bloque de consulta además de sus bloques seleccionados. Más cercano a denso para dedicar más tiempo a la atención; se recomiendan 256, 0 lo desactiva. Se ignora para VSA."
+      },
+      "min_tokens": {
+        "name": "min_tokens",
+        "tooltip": "Las secuencias más cortas que esto permanecen densas."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "El modelo que se va a modificar."
+      },
+      "selection": {
+        "name": "selection",
+        "tooltip": "Método utilizado para elegir bloques de claves para la atención completa a nivel de token. sol-attn: Sparsifying Online Attention usa un umbral adaptativo sin entrenamiento para cada cabeza de atención y bloque de consulta. sla: Sparse-Linear Attention mantiene un porcentaje fijo de los bloques de claves con mayor puntuación; úselo solo con pesos de modelo entrenados para este patrón. vsa: Video Sparse Attention (FastVideo) usa mosaicos 3D de cubos de vídeo y una rama de atención gruesa aprendida; requiere pesos de modelo FastH3."
+      },
+      "selection_tau": {
+        "name": "tau"
+      },
+      "sink_conditioning": {
+        "name": "sink_conditioning",
+        "tooltip": "Solo MiniMax-H3. exact_kv: cada consulta atiende exactamente a las filas compactadas de texto/audio/referencia (~3 % de coste). exact_kv_and_rows: además ejecuta de forma densa las filas de consulta del audio objetivo (mantiene intacto el audio generado)."
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "Punto porcentual en el que comienza la atención dispersa. Antes de este punto, la atención permanece densa."
+      },
+      "verbose": {
+        "name": "verbose",
+        "tooltip": "Registra si cada forma de atención utilizó atención dispersa o por qué permaneció densa."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model",
+        "tooltip": "El modelo con atención dispersa por bloques aplicada."
+      }
+    }
+  },
+  "BriaAddObject": {
+    "description": "Inserta en una imagen un objeto descrito en texto simple con Bria. Bria vuelve a renderizar todo el fotograma a aproximadamente 1 megapíxel, por lo que el resultado no queda alineado a píxeles con la entrada.",
+    "display_name": "Bria Añadir objeto",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "image": {
+        "name": "imagen"
+      },
+      "instruction": {
+        "name": "instrucción",
+        "tooltip": "Qué añadir y dónde, por ejemplo, «Coloca un jarrón rojo con flores sobre la mesa»."
+      },
+      "moderation": {
+        "name": "moderación",
+        "tooltip": "Ajustes de moderación"
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "Bria no acepta ninguna semilla aquí y reimagina la edición en cada llamada, por lo que las ejecuciones repetidas pueden diferir. El valor nunca se envía: solo cambia la clave de caché de este nodo para que un grafo idéntico ejecute la edición de nuevo en lugar de devolver el resultado almacenado en caché."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Descripción estructurada de la imagen editada para una edición posterior con Bria FIBO Image Edit."
+      }
+    }
+  },
+  "BriaEraseByText": {
+    "description": "Elimina de una imagen con Bria un objeto nombrado en texto simple. Bria vuelve a renderizar todo el fotograma a aproximadamente 1 megapíxel, por lo que el resultado no queda alineado a píxeles con la entrada.",
+    "display_name": "Bria Borrar por texto",
+    "inputs": {
+      "image": {
+        "name": "imagen"
+      },
+      "moderation": {
+        "name": "moderación",
+        "tooltip": "Ajustes de moderación"
+      },
+      "object_name": {
+        "name": "object_name",
+        "tooltip": "Nombre del objeto que se va a eliminar, por ejemplo, «la lámpara». Se pueden nombrar varios objetos a la vez, por ejemplo, «el teléfono y los lápices». Nombrar algo que no está en la imagen aun así devuelve y factura una imagen renderizada de nuevo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Descripción estructurada de la imagen editada para una edición posterior con Bria FIBO Image Edit."
+      }
+    }
+  },
+  "BriaEraseForeground": {
+    "description": "Elimina el primer plano de una imagen con Bria y genera un fondo en su lugar. Se elimina todo lo que Bria interpreta como primer plano, no solo las personas. Los píxeles intactos se conservan, pero la salida se vuelve a renderizar a un tamaño estándar cercano a 1 megapíxel.",
+    "display_name": "Bria Borrar primer plano",
+    "inputs": {
+      "image": {
+        "name": "imagen"
+      },
+      "moderation": {
+        "name": "moderación",
+        "tooltip": "Ajustes de moderación"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaEraser": {
     "description": "Elimina de una imagen objetos o áreas delimitadas por una máscara mediante Bria.",
     "display_name": "Borrador Bria",
@@ -953,6 +1081,36 @@
       }
     }
   },
+  "BriaRelight": {
+    "description": "Cambia la atmósfera y la dirección de la iluminación de una imagen con Bria. Bria vuelve a renderizar todo el fotograma a aproximadamente 1 megapíxel, por lo que el resultado no queda alineado a píxeles con la entrada.",
+    "display_name": "Bria Reiluminar",
+    "inputs": {
+      "image": {
+        "name": "imagen"
+      },
+      "light_direction": {
+        "name": "light_direction",
+        "tooltip": "De dónde procede la luz. Las atmósferas de luz dura, como mediodía, foco sobre el sujeto e iluminación intensa de estudio, son las que más reaccionan a ello."
+      },
+      "light_type": {
+        "name": "light_type",
+        "tooltip": "Atmósfera de iluminación que se aplicará."
+      },
+      "moderation": {
+        "name": "moderación",
+        "tooltip": "Ajustes de moderación"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Descripción estructurada de la imagen editada para una edición posterior con Bria FIBO Image Edit."
+      }
+    }
+  },
   "BriaRemoveImageBackground": {
     "description": "Quita el fondo de una imagen usando Bria RMBG 2.0.",
     "display_name": "Bria Quitar Fondo de Imagen",
@@ -1003,6 +1161,133 @@
       }
     }
   },
+  "BriaReplaceImageBackground": {
+    "description": "Reemplaza el fondo de una imagen con Bria, descrito mediante un prompt o guiado por imágenes de referencia. Los píxeles del sujeto se conservan; el fondo se genera a su alrededor.",
+    "display_name": "Bria Reemplazar fondo de imagen",
+    "inputs": {
+      "background": {
+        "name": "fondo",
+        "tooltip": "Describe el nuevo fondo con un prompt o guíalo con imágenes de referencia."
+      },
+      "background_mode": {
+        "name": "modo"
+      },
+      "background_prompt": {
+        "name": "prompt"
+      },
+      "background_refine_prompt": {
+        "name": "refine_prompt"
+      },
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "image": {
+        "name": "imagen"
+      },
+      "moderation": {
+        "name": "moderación",
+        "tooltip": "Ajustes de moderación"
+      },
+      "original_quality": {
+        "name": "original_quality",
+        "tooltip": "Devuelve el tamaño exacto en píxeles de la entrada en lugar de escalar el resultado a aproximadamente 1 megapíxel. Una entrada grande devuelve entonces una imagen grande."
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "La misma semilla suele devolver el mismo fondo; el refinamiento automático del prompt aún puede variarlo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "refined_prompt",
+        "tooltip": "El prompt que generó Bria, vacío en la ruta de imagen de referencia."
+      }
+    }
+  },
+  "BriaReplaceObject": {
+    "description": "Sustituye un objeto de una imagen por otro descrito en texto sin formato usando Bria. Bria vuelve a renderizar todo el fotograma a aproximadamente 1 megapíxel, por lo que el resultado no está alineado a nivel de píxel con la entrada.",
+    "display_name": "Bria Reemplazar objeto",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "image": {
+        "name": "imagen"
+      },
+      "instruction": {
+        "name": "instrucción",
+        "tooltip": "Qué reemplazar por qué, como «Reemplaza la manzana roja por una pera verde»."
+      },
+      "moderation": {
+        "name": "moderación",
+        "tooltip": "Ajustes de moderación"
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "Bria no admite ninguna semilla aquí y vuelve a imaginar la edición en cada llamada, por lo que las ejecuciones repetidas pueden diferir. El valor nunca se envía: solo cambia la clave de caché de este nodo, para que un grafo idéntico ejecute la edición de nuevo en lugar de devolver el resultado almacenado en caché."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Descripción estructurada de la imagen editada, para una edición posterior con Bria FIBO Image Edit."
+      }
+    }
+  },
+  "BriaReseason": {
+    "description": "Cambia una imagen a otra estación con Bria. Toda la escena se vuelve a renderizar, por lo que el paisaje puede cambiar más allá de la estación en sí. Bria vuelve a renderizar todo el fotograma a aproximadamente 1 megapíxel, por lo que el resultado no está alineado a nivel de píxel con la entrada.",
+    "display_name": "Bria Cambiar estación",
+    "inputs": {
+      "image": {
+        "name": "imagen"
+      },
+      "moderation": {
+        "name": "moderación",
+        "tooltip": "Ajustes de moderación"
+      },
+      "season": {
+        "name": "estación",
+        "tooltip": "Estación que se aplicará."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Descripción estructurada de la imagen editada, para una edición posterior con Bria FIBO Image Edit."
+      }
+    }
+  },
+  "BriaRestorePhoto": {
+    "description": "Repara una fotografía antigua o dañada con Bria: se eliminan el grano, los arañazos y el desenfoque, y se neutralizan las dominantes de color relacionadas con la edad. Los soportes de cartón y los bordes de estudio pueden recortarse, y los rostros se redibujan. Bria vuelve a renderizar todo el fotograma a aproximadamente 1 megapíxel, por lo que el resultado no está alineado a nivel de píxel con la entrada. Usa Bria Increase Resolution para ampliar en su lugar.",
+    "display_name": "Bria Restaurar foto",
+    "inputs": {
+      "image": {
+        "name": "imagen"
+      },
+      "moderation": {
+        "name": "moderación",
+        "tooltip": "Ajustes de moderación"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Descripción estructurada de la imagen editada para una edición posterior con Bria FIBO Image Edit."
+      }
+    }
+  },
   "BriaTransparentVideoBackground": {
     "description": "Elimina el fondo de un video usando Bria y devuelve los fotogramas recortados más una máscara alfa. Conéctalos ambos a un nodo de composición, o envíalos a Guardar WEBM para crear un video transparente.",
     "display_name": "Bria Eliminar Fondo de Video (Transparente)",
@@ -1025,6 +1310,33 @@
       },
       "1": {
         "name": "mask",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVideoEraser": {
+    "description": "Borra de un vídeo todo lo que cubra una máscara por fotograma con Bria y rellena el hueco. La máscara debe ser blanca en lo que debe eliminarse y negra en el resto. Bria acepta clips de un máximo de 5,1 segundos a 20-30 fotogramas por segundo con dimensiones de píxeles pares; el audio se conserva de forma predeterminada. El clip devuelto puede tener unos pocos fotogramas menos que la entrada.",
+    "display_name": "Borrador de vídeo Bria",
+    "inputs": {
+      "mask": {
+        "name": "mask",
+        "tooltip": "Una máscara por cada fotograma del vídeo, blanca donde está el objeto que se debe borrar. Proporciona una máscara o un vídeo de máscara, no ambos."
+      },
+      "mask_video": {
+        "name": "mask_video",
+        "tooltip": "Un vídeo de máscara ya codificado con las mismas dimensiones y número de fotogramas que el vídeo. Proporciona una máscara o un vídeo de máscara, no ambos."
+      },
+      "preserve_audio": {
+        "name": "preserve_audio",
+        "tooltip": "Conserva la pista de audio de entrada."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Clip del que borrar."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -3014,6 +3326,29 @@
       }
     }
   },
+  "ConcatenateVideo": {
+    "description": "Concatena vídeos en orden sin decodificar las entradas codificadas compatibles.",
+    "display_name": "Concatenar vídeo",
+    "inputs": {
+      "codec": {
+        "name": "codec",
+        "tooltip": "Códec utilizado para codificar tensores de vídeo. Auto usa H.264; los vídeos ya codificados no se modifican."
+      },
+      "complete_audio": {
+        "name": "complete_audio",
+        "tooltip": "Pista de audio completa opcional para el vídeo concatenado. Anula el audio incluido en los vídeos de entrada."
+      },
+      "videos": {
+        "name": "videos",
+        "tooltip": "Segmentos de vídeo que se concatenarán en el orden de entrada."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "El vídeo concatenado."
+      }
+    }
+  },
   "ConditioningAverage": {
     "display_name": "Promedio de Acondicionamiento",
     "inputs": {
@@ -3047,6 +3382,20 @@
       },
       "conditioning_to": {
         "name": "acondicionamiento_a"
+      }
+    }
+  },
+  "ConditioningLoader": {
+    "description": "Carga un condicionamiento guardado con Guardar condicionamiento, o cualquier archivo safetensors con un tensor «conditioning», desde la carpeta embeddings.",
+    "display_name": "Cargar condicionamiento",
+    "inputs": {
+      "conditioning_name": {
+        "name": "conditioning_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3857,6 +4206,10 @@
       "bit_depth": {
         "name": "bit_depth",
         "tooltip": "Auto usa 8 bits para sRGB y 10 bits para HDR. Las opciones explícitas de 8 y 10 bits son independientes del espacio de color."
+      },
+      "codec": {
+        "name": "codec",
+        "tooltip": "Opcionalmente codifica el vídeo de inmediato. None mantiene las imágenes en forma de tensor; Auto usa H.264."
       },
       "color_space": {
         "name": "color_space",
@@ -4975,6 +5328,22 @@
       "batch_size": {
         "name": "batch_size",
         "tooltip": "El número de imágenes latentes en el lote."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyYuE2LatentAudio": {
+    "display_name": "Audio latent vacío de YuE2",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "seconds": {
+        "name": "seconds"
       }
     },
     "outputs": {
@@ -6400,14 +6769,8 @@
       "model_max_output_tokens": {
         "name": "max_output_tokens"
       },
-      "model_temperature": {
-        "name": "temperature"
-      },
       "model_thinking_level": {
         "name": "thinking_level"
-      },
-      "model_top_p": {
-        "name": "top_p"
       },
       "prompt": {
         "name": "prompt",
@@ -7925,6 +8288,28 @@
       },
       "sigma": {
         "name": "sigma"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageColorSpace": {
+    "description": "Convierte sRGB, Rec.709 lineal, HDR (Rec.2020 HLG) y HDR PQ (Rec.2020 PQ). El valor lineal 1.0 usa el mismo blanco de referencia de 203 nits que sRGB; HLG usa una pantalla de referencia de 1000 nits. La salida lineal y las conversiones de lineal a HDR conservan los valores extendidos sin mapeo de tonos. La salida SDR y la conversión de PQ a HLG aplican un mapeo de tonos al exceso de luminancia en todo el lote y comprimen los colores fuera de gama. Las conversiones se calculan en float32 y devuelven el dispositivo intermedio y dtype. El alfa recto no se transforma en color.",
+    "display_name": "Convertir espacio de color de imagen",
+    "inputs": {
+      "destination": {
+        "name": "destination",
+        "tooltip": "Espacio de color de los píxeles de salida. Configure el nodo de guardado con este mismo espacio de color."
+      },
+      "image": {
+        "name": "image"
+      },
+      "source": {
+        "name": "source",
+        "tooltip": "Espacio de color de los píxeles de entrada."
       }
     },
     "outputs": {
@@ -9633,6 +10018,54 @@
       }
     }
   },
+  "LTXVAddGeneratedKeyframes": {
+    "description": "Añade fotogramas clave de detallado a un latente de vídeo. Cada fotograma clave es un fotograma latente de tokens cuya posición RoPE abarca un único fotograma de píxeles; se someten a eliminación de ruido con el vídeo y no forman parte de la salida decodificada. Se colocan en una posición cada interval_frames fotogramas de píxeles, omitiendo los fotogramas I2V, las guías existentes y los fotogramas clave de detallado que ya estén en el condicionamiento. Los fotogramas clave conectados solo aportan contenido y se vuelven a colocar en este lienzo, salvo que se establezca frame_indices. Extráigalos de nuevo con LTXV Separate Generated Keyframes. Requiere un checkpoint entrenado para fotogramas clave generados (uno que incluya keyframes_abs_pos_embedding).",
+    "display_name": "LTXV Añadir fotogramas clave generados",
+    "inputs": {
+      "frame_indices": {
+        "name": "frame_indices",
+        "tooltip": "Índices opcionales de fotogramas de píxeles. Déjelo vacío para colocar según interval_frames en el lienzo actual. Cuando se establece, esta lista determina la colocación (los fotogramas clave conectados se emparejan en orden). Se permite el último fotograma; el fotograma 0 no (ya es un token independiente)."
+      },
+      "interval_frames": {
+        "name": "interval_frames",
+        "tooltip": "Intervalo de fotogramas de píxeles para la colocación automática. El valor predeterminado, 24, equivale aproximadamente a un fotograma clave por segundo a 24 fps. Se omiten los píxeles ocupados. Se ignora cuando se establece frame_indices."
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "Contenido opcional con el que inicializar los nuevos fotogramas clave. Conecte fotogramas clave de un Separate anterior (con el mismo tamaño espacial), o un latente de vídeo simple para copiar el fotograma más cercano en cada nueva posición (por ejemplo, tras un escalado temporal). Estos también se someten a eliminación de ruido; no se fijan como guías. Los índices registrados en un latente de fotogramas clave se ignoran salvo que se establezca frame_indices. Solo tiene efecto cuando el muestreo comienza por debajo de sigma 1."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "Latente de vídeo 5D simple para generar fotogramas clave junto a él. Agréguelos antes de Concat AV Latent."
+      },
+      "negative": {
+        "name": "negative",
+        "tooltip": "Condicionamiento negativo al que se adjuntan los fotogramas clave."
+      },
+      "positive": {
+        "name": "positive",
+        "tooltip": "Condicionamiento positivo al que se adjuntan los fotogramas clave."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Solo se usa para leer los factores de escala del latente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "Condicionamiento positivo con atención de fotogramas clave generados adjunta."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "Condicionamiento negativo con atención de fotogramas clave generados adjunta."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Latente de vídeo con fotogramas clave generados añadidos en T."
+      }
+    }
+  },
   "LTXVAddGuide": {
     "display_name": "LTXVAddGuide",
     "inputs": {
@@ -9679,6 +10112,55 @@
       },
       "2": {
         "name": "latente",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVAddLatentGuide": {
+    "description": "Fija un latente ya codificado como guía, para cuando la guía procede de una etapa anterior en lugar de una imagen. Tiene el mismo efecto que LTXV Add Guide sin el ciclo de decodificación/codificación VAE. Una guía espacialmente más pequeña que el objetivo (una referencia IC-LoRA o de detallado) se dilata sobre una cuadrícula dispersa, y sus posiciones finales RoPE se amplían en la misma proporción para que cubra el lienzo objetivo en lugar de dirigirse solo a su esquina superior izquierda.",
+    "display_name": "LTXV Añadir guía latente",
+    "inputs": {
+      "attention_mask": {
+        "name": "attention_mask",
+        "tooltip": "Máscara espacial opcional en el espacio de píxeles. Controla la influencia del condicionamiento por región mediante autoatención y se multiplica por strength."
+      },
+      "guiding_latent": {
+        "name": "guiding_latent",
+        "tooltip": "Latente de guía. Su tamaño espacial debe dividir el del objetivo por el mismo número entero en ambos ejes; con el mismo tamaño se fija tal cual, y con la mitad de tamaño se trata como una referencia IC-LoRA x2."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "Latente de vídeo objetivo al que se fija la guía."
+      },
+      "latent_idx": {
+        "name": "latent_idx",
+        "tooltip": "Índice del fotograma latente en el que comienza la guía, contado en fotogramas latentes en lugar de fotogramas de píxeles. Los valores negativos colocan la guía en fotogramas anteriores al inicio del latente, no se cuentan hacia atrás desde su final."
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "Limitado a 1.0. Una guía dilatada marca sus posiciones de relleno con una máscara de eliminación de ruido negativa para que el modelo las descarte; por encima de 1.0, las posiciones conservadas también pasarían a ser negativas y se descartaría toda la guía. Amplifique por encima de 1.0 con attention_mask en su lugar."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
         "tooltip": null
       }
     }
@@ -9945,6 +10427,67 @@
       }
     }
   },
+  "LTXVFreezeLatent": {
+    "description": "Establece noise_mask en 0 para que este latente se mantenga limpio durante el muestreo. Funciona con vídeo o audio. Usos habituales: congelar el audio antes de Concat AV para que solo proporcione atención cruzada, o congelar cualquier latente que no deba eliminarse el ruido.",
+    "display_name": "LTXV Congelar latente",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "Latente de vídeo o audio que se va a congelar. El audio es 4D; el vídeo es 5D."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVGeneratedKeyframesToGuides": {
+    "description": "Fija los fotogramas clave generados de una etapa anterior como guías de imagen congeladas en un lienzo posterior. Se decodifican como fotogramas independientes, se redimensionan si es necesario y se escriben con noise_mask=0 para que no se les elimine el ruido de nuevo. Tras un escalado temporal, los índices registrados se escalan desde el lienzo en el que se generaron hasta este (los mismos momentos). Usa override_frame_indices para establecer posiciones explícitamente. Para seguir generando (y eliminando el ruido de) fotogramas clave en nuevas posiciones, usa Add Generated Keyframes en su lugar.",
+    "display_name": "LTXV Fotogramas clave generados a guías",
+    "inputs": {
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "La salida de fotogramas clave de LTXV Separate Generated Keyframes, que contiene el índice del fotograma en píxeles en el que se generó cada fotograma clave."
+      },
+      "latent": {
+        "name": "latent",
+        "tooltip": "El latente de vídeo de destino al que se añadirán las guías; por ejemplo, el escalado temporalmente."
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "override_frame_indices": {
+        "name": "override_frame_indices",
+        "tooltip": "Opcional: fija en estos fotogramas de píxeles en lugar de en las posiciones registradas (o escaladas automáticamente). Proporciona un índice por cada fotograma clave. Déjalo vacío para reutilizar las posiciones registradas o escalarlas cuando el lienzo de destino tenga una longitud distinta (p. ej., tras un x2 temporal)."
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "Intensidad de la guía. 1.0 es una fijación rígida; los valores inferiores la suavizan."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "Acondicionamiento positivo con los fotogramas clave fijados como guías de imagen."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "Acondicionamiento negativo con los fotogramas clave fijados como guías de imagen."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Latente de vídeo de destino con los fotogramas clave añadidos como guías congeladas."
+      }
+    }
+  },
   "LTXVImgToVideo": {
     "display_name": "LTXVImgToVideo",
     "inputs": {
@@ -10172,6 +10715,43 @@
       "1": {
         "name": "latente_audio",
         "tooltip": null
+      }
+    }
+  },
+  "LTXVSeparateGeneratedKeyframes": {
+    "description": "Separa de nuevo los fotogramas clave generados añadidos por LTXV Add Generated Keyframes de un latente muestreado y elimínalos del condicionamiento. Sepáralos antes de escalar espacialmente el latente de vídeo. No ejecutes primero LTXV Crop Guides: trata los fotogramas clave generados como guías descartables y los elimina.",
+    "display_name": "LTXV Separar fotogramas clave generados",
+    "inputs": {
+      "keyframes_to_batch": {
+        "name": "keyframes_to_batch",
+        "tooltip": "Devuelve los fotogramas clave como un lote de latentes de un solo fotograma. Déjalo desactivado para obtenerlos como un único latente de varios fotogramas, que es lo que esperan el escalador de latentes y un posterior Add Generated Keyframes."
+      },
+      "latent": {
+        "name": "latent"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": "Acondicionamiento positivo con los metadatos de fotogramas clave generados eliminados."
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": "Acondicionamiento negativo con los metadatos de fotogramas clave generados eliminados."
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Latente de vídeo sin los fotogramas clave generados."
+      },
+      "3": {
+        "name": "keyframes",
+        "tooltip": "Los fotogramas clave extraídos, etiquetados con generated_keyframe_indices y generated_keyframe_num_frames. Introdúcelos en un posterior Add Generated Keyframes para inicializar nuevas ranuras, o en Generated Keyframes To Guides para fijarlos como guías de imagen congeladas (los índices se reasignan si cambió la longitud del lienzo)."
       }
     }
   },
@@ -10743,7 +11323,8 @@
     "display_name": "Cargar 3D (Avanzado)",
     "inputs": {
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "Alto de renderizado de la ventana gráfica, en píxeles."
       },
       "model_file": {
         "name": "model_file"
@@ -10752,29 +11333,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "Ancho de renderizado de la ventana gráfica, en píxeles."
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "Archivo de modelo 3D cargado (glb/obj/stl/etc.)."
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "Ubicación de cada modelo en la escena: posición, rotación y escala (espacio mundial con Y hacia arriba)."
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "Información de la cámara de la ventana gráfica: posición, objetivo de mirada, zoom y tipo."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "Ancho de renderizado de la ventana gráfica, en píxeles."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "Alto de renderizado de la ventana gráfica, en píxeles."
       }
     }
   },
@@ -12102,6 +12684,23 @@
     "inputs": {
       "sigmas": {
         "name": "sigmas"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MarigoldV2PostProcess": {
+    "description": "Convierte una predicción decodificada de Marigold V2 en una imagen: profundidad normalizada con las zonas cercanas brillantes, normales de superficie unitarias o albedo sRGB.",
+    "display_name": "Posprocesado de Marigold V2",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "prediction": {
+        "name": "prediction"
       }
     },
     "outputs": {
@@ -13516,13 +14115,22 @@
     }
   },
   "ModelAttentionBackend": {
-    "display_name": "ModelAttentionBackend",
+    "description": "Selecciona la implementación de atención densa para el modelo. Cuando se usa con Atención dispersa por bloques, este backend se utiliza siempre que la atención dispersa esté inactiva o no sea compatible.",
+    "display_name": "Backend de atención del modelo",
     "inputs": {
       "attention": {
-        "name": "atención"
+        "name": "atención",
+        "tooltip": "El backend de atención densa. La atención Comfy Kitchen utiliza atención INT8 cuantizada y solo está disponible en GPU Nvidia y AMD."
       },
       "model": {
-        "name": "modelo"
+        "name": "modelo",
+        "tooltip": "El modelo que se va a modificar."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model",
+        "tooltip": "El modelo con el backend de atención seleccionado."
       }
     }
   },
@@ -15749,6 +16357,9 @@
       "model": {
         "name": "model"
       },
+      "sampling": {
+        "name": "sampling"
+      },
       "shift": {
         "name": "shift"
       }
@@ -16107,7 +16718,7 @@
   },
   "OpenAIGPTImageNodeV2": {
     "description": "Genera imágenes a través del endpoint GPT Image de OpenAI.",
-    "display_name": "OpenAI GPT Image 2",
+    "display_name": "OpenAI GPT Image 2.5",
     "inputs": {
       "control_after_generate": {
         "name": "control después de generar"
@@ -16194,6 +16805,36 @@
       },
       "size": {
         "name": "tamaño"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenRouterImageNode": {
+    "description": "Genera o edita imágenes mediante OpenRouter con los modelos MAI-Image-2.6 de Microsoft: de texto a imagen o edición guiada por imágenes con hasta cinco imágenes de referencia, en siete relaciones de aspecto a 1K o 1.5K.",
+    "display_name": "Imagen de OpenRouter",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "El modelo de imagen de OpenRouter utilizado para generar la imagen."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
       }
     },
     "outputs": {
@@ -16614,6 +17255,45 @@
       "image": {
         "name": "imagen",
         "tooltip": "Imagen preprocesada de ImageCropToMask (pad_factor=1.1 para Pixal3D)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positivo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negativo",
+        "tooltip": null
+      }
+    }
+  },
+  "Pixal3DMultiViewConditioning": {
+    "display_name": "Pixal3D Acondicionamiento multivista",
+    "inputs": {
+      "back": {
+        "name": "trasera",
+        "tooltip": "Vista cuadrada de la parte trasera del objeto, con alfa o sobre fondo negro, encuadrada como el rig: el objeto ocupa aproximadamente 1/1.1 del encuadre en su punto más ancho, con la misma escala en todas las vistas. La primera vista conectada (orden frontal, izquierda, trasera, derecha) es el frente hacia el que se orienta la malla."
+      },
+      "clip_vision_model": {
+        "name": "clip_vision_model",
+        "tooltip": "ClipVision DINOv3 ViT-L/16 con pesos NAF incluidos."
+      },
+      "fov": {
+        "name": "fov",
+        "tooltip": "FOV horizontal en grados de las vistas según el encuadre: 20 para renders de rig y la mayoría de los generadores multivista, o MoGeGeometryToFOV en una de las vistas para fotos."
+      },
+      "front": {
+        "name": "frontal",
+        "tooltip": "Vista cuadrada de la parte frontal del objeto, con alfa o sobre fondo negro, encuadrada como el rig: el objeto ocupa aproximadamente 1/1.1 del encuadre en su punto más ancho, con la misma escala en todas las vistas. La primera vista conectada (orden frontal, izquierda, trasera, derecha) es el frente hacia el que se orienta la malla."
+      },
+      "left": {
+        "name": "izquierda",
+        "tooltip": "Vista cuadrada del lado izquierdo del objeto, con alfa o sobre fondo negro, encuadrada como el rig: el objeto ocupa aproximadamente 1/1.1 del encuadre en su punto más ancho, con la misma escala en todas las vistas. La primera vista conectada (orden frontal, izquierda, trasera, derecha) es el frente hacia el que se orienta la malla."
+      },
+      "right": {
+        "name": "derecha",
+        "tooltip": "Vista cuadrada del lado derecho del objeto, con alfa o sobre fondo negro, encuadrada como el rig: el objeto ocupa aproximadamente 1/1.1 del encuadre en su punto más ancho, con la misma escala en todas las vistas. La primera vista conectada (orden frontal, izquierda, trasera, derecha) es el frente hacia el que se orienta la malla."
       }
     },
     "outputs": {
@@ -17072,10 +17752,12 @@
     "display_name": "Vista previa 3D (Avanzado)",
     "inputs": {
       "camera_info": {
-        "name": "info_cámara"
+        "name": "info_cámara",
+        "tooltip": "Información de la cámara de la ventana gráfica: posición, objetivo de mirada, zoom y tipo."
       },
       "height": {
-        "name": "alto"
+        "name": "alto",
+        "tooltip": "Alto de renderizado de la ventana gráfica, en píxeles."
       },
       "model_3d": {
         "name": "model_3d",
@@ -17088,29 +17770,30 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "ancho"
+        "name": "ancho",
+        "tooltip": "Ancho de renderizado de la ventana gráfica, en píxeles."
       }
     },
     "outputs": {
       "0": {
         "name": "archivo_modelo",
-        "tooltip": null
+        "tooltip": "Archivo de modelo 3D (glb/obj/stl/etc.) de un nodo 3D anterior."
       },
       "1": {
         "name": "info_cámara",
-        "tooltip": null
+        "tooltip": "Ubicación de cada modelo en la escena: posición, rotación y escala (espacio mundial con Y hacia arriba)."
       },
       "2": {
         "name": "info_modelo_3d",
-        "tooltip": null
+        "tooltip": "Información de la cámara de la ventana gráfica: posición, objetivo de mirada, zoom y tipo."
       },
       "3": {
         "name": "ancho",
-        "tooltip": null
+        "tooltip": "Ancho de renderizado de la ventana gráfica, en píxeles."
       },
       "4": {
         "name": "alto",
-        "tooltip": null
+        "tooltip": "Alto de renderizado de la ventana gráfica, en píxeles."
       }
     }
   },
@@ -20449,48 +21132,52 @@
     "display_name": "Guardar 3D (Avanzado)",
     "inputs": {
       "camera_info": {
-        "name": "camera_info"
+        "name": "camera_info",
+        "tooltip": "Información de la cámara de la ventana gráfica: posición, objetivo de mirada, zoom y tipo."
       },
       "filename_prefix": {
         "name": "filename_prefix"
       },
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "Alto de renderizado de la ventana gráfica, en píxeles."
       },
       "model_3d": {
         "name": "model_3d",
         "tooltip": "Archivo de modelo 3D de un nodo 3D ascendente."
       },
       "model_3d_info": {
-        "name": "model_3d_info"
+        "name": "model_3d_info",
+        "tooltip": "Ubicación de cada modelo en la escena: posición, rotación y escala (espacio mundial con Y hacia arriba)."
       },
       "viewport_state": {
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "Ancho de renderizado de la ventana gráfica, en píxeles."
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "Archivo de modelo 3D (glb/obj/stl/etc.) de un nodo 3D anterior."
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "Ubicación de cada modelo en la escena: posición, rotación y escala (espacio mundial con Y hacia arriba)."
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "Información de la cámara de la ventana gráfica: posición, objetivo de mirada, zoom y tipo."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "Ancho de renderizado de la ventana gráfica, en píxeles."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "Alto de renderizado de la ventana gráfica, en píxeles."
       }
     }
   },
@@ -20635,6 +21322,24 @@
     "outputs": {
       "0": {
         "name": "audio",
+        "tooltip": null
+      }
+    }
+  },
+  "SaveConditioning": {
+    "description": "Guarda un condicionamiento en la carpeta de salida como safetensors; mueve el archivo a models/embeddings para cargarlo con Cargar condicionamiento, por ejemplo, para omitir el codificador de texto.",
+    "display_name": "Guardar condicionamiento",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "conditioning",
         "tooltip": null
       }
     }
@@ -21327,6 +22032,28 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SheetSage2AudioToABC": {
+    "description": "Transcribe melodías vocales e instrumentales de música a notación ABC. Conecta la salida abc al nodo YuE2 Generate Music y usa el modo correspondiente.",
+    "display_name": "SheetSage2 Audio a ABC",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "audio_encoder": {
+        "name": "audio_encoder"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "full: genera melodía y acordes; melody: genera solo la melodía, recomendado para versiones."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
         "tooltip": null
       }
     }
@@ -23674,7 +24401,7 @@
     }
   },
   "TripoImageToModelNode": {
-    "display_name": "Tripo: Imagen a Modelo",
+    "display_name": "Tripo: Imagen a modelo (heredado)",
     "inputs": {
       "auto_size": {
         "name": "auto_size",
@@ -23747,6 +24474,75 @@
       "3": {
         "name": "FBX",
         "tooltip": "Solo se completa cuando quad está activado."
+      }
+    }
+  },
+  "TripoImageToModelNodeV2": {
+    "display_name": "Tripo: Imagen a modelo",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Escala los modelos con textura a su tamaño real en metros. Tripo almacena el tamaño como transformación de escena del modelo y lo incorpora al convertir el modelo, aplicarle rig o reasignarle animaciones; se ignora sin texture."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "Número máximo de caras. -1 permite que Tripo elija de forma adaptativa (unas 1.4M caras en v3.x standard, 2M en detailed). Tripo limita silenciosamente: v2.5 a 500,000 y las mallas quad a 150,000."
+      },
+      "geometry_quality": {
+        "name": "geometry_quality"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "La versión del modelo que se usará para la generación"
+      },
+      "orientation": {
+        "name": "orientation"
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "Mapas de materiales PBR (color base, metálico, rugosidad, normal). Requiere texture."
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "Salida de malla quad. Tripo entrega las mallas quad como FBX, por lo que el resultado llega a la salida FBX y la salida GLB queda vacía."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "Malla low-poly con una topología limpia de estilo artesanal (500-20,000 caras; quad 500-10,000). Ideal para sujetos simples; los complejos pueden fallar."
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "Genera mapas de textura. Desactivado devuelve geometría sin textura e ignora pbr."
+      },
+      "texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = texturas HD, extreme = texturas Ultra 8K."
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "task_id del modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Vacío cuando quad está activado."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Solo se rellena cuando quad está activado."
       }
     }
   },
@@ -24078,7 +24874,7 @@
       },
       "animation": {
         "name": "animación",
-        "tooltip": "Las animaciones preset:* funcionan con ambos modelos de rig; las animaciones preset:biped:* requieren un rig creado con el modelo v1.0-20240301."
+        "tooltip": "Las animaciones preset:* funcionan con ambos modelos con rig. Las animaciones preset:biped:* están creadas para rigs del modelo v1.0-20240301; un rig v2.5 solo acepta chop, climb, dive, fall, hurt, idle, jump, run, shoot, slash, turn y walk."
       },
       "export_with_geometry": {
         "name": "export_with_geometry",
@@ -24242,6 +25038,48 @@
       }
     }
   },
+  "TripoSmartSegmentNode": {
+    "description": "Divide un modelo en partes semánticamente significativas y les asigna nombres. A partir de una imagen, Tripo genera primero el modelo. El task_id de segmentación alimenta Tripo: Complete Mesh Parts, Tripo: Retopology, Tripo: Texture model y Tripo: Convert model como un resultado de Tripo: Segment Model.",
+    "display_name": "Tripo: Segmentación inteligente",
+    "inputs": {
+      "source": {
+        "name": "source",
+        "tooltip": "Segmenta un modelo existente o genera un modelo a partir de una imagen y lo segmenta."
+      },
+      "source_granularity": {
+        "name": "granularity"
+      },
+      "source_hint": {
+        "name": "hint"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "task_id de segmentación",
+        "tooltip": null
+      },
+      "1": {
+        "name": "task_id del modelo",
+        "tooltip": "El modelo que se segmentó (generado a partir de la imagen o importado)."
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "part_names",
+        "tooltip": "Nombres de las partes separados por comas."
+      },
+      "4": {
+        "name": "parts",
+        "tooltip": "Descripción de Tripo de las partes que encontró."
+      },
+      "5": {
+        "name": "máscara",
+        "tooltip": null
+      }
+    }
+  },
   "TripoSplatConditioning": {
     "description": "Codifica la imagen con DINOv3 y el Flux2 VAE en condicionamiento positivo/negativo de TripoSplat, y crea el objetivo de ruido de tamaño fijo (latent + cámara) para el KSampler",
     "display_name": "Condicionamiento TripoSplat",
@@ -24338,7 +25176,7 @@
     }
   },
   "TripoTextToModelNode": {
-    "display_name": "Tripo: Texto a Modelo",
+    "display_name": "Tripo: Texto a modelo (heredado)",
     "inputs": {
       "auto_size": {
         "name": "auto_size",
@@ -24414,8 +25252,77 @@
       }
     }
   },
+  "TripoTextToModelNodeV2": {
+    "display_name": "Tripo: Texto a modelo",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Escala los modelos texturizados a su tamaño real en metros. Tripo almacena el tamaño como la transformación de escena del modelo y lo integra al convertir, aparejar o readaptar el modelo; se ignora sin texture."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "Número máximo de caras. -1 permite que Tripo elija de forma adaptativa (aproximadamente 1,4 M de caras en v3.x estándar, 2 M en detailed). Tripo limita silenciosamente: v2.5 a 500.000, mallas quad a 150.000."
+      },
+      "geometry_quality": {
+        "name": "geometry_quality"
+      },
+      "image_seed": {
+        "name": "image_seed"
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "model_version": {
+        "name": "model_version"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Hasta 255 caracteres."
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "Mapas de material PBR (color base, metalizado, rugosidad, normal). Requiere texture."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "Salida de malla quad. Tripo entrega las mallas quad como FBX, por lo que el resultado llega a la salida FBX y la salida GLB permanece vacía."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "Malla low-poly con topología limpia de estilo artesanal (500-20.000 caras, quad 500-10.000). Ideal para sujetos simples; los complejos pueden fallar."
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "Genera mapas de textura. Desactivado devuelve geometría sin textura e ignora pbr."
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = texturas HD, extreme = texturas Ultra 8K."
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "id de tarea del modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Vacío cuando quad está activado."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Solo se completa cuando quad está activado."
+      }
+    }
+  },
   "TripoTextureNode": {
-    "display_name": "Tripo: Modelo de textura",
+    "display_name": "Tripo: Texturizar modelo (heredado)",
     "inputs": {
       "model_task_id": {
         "name": "id_de_tarea_del_modelo"
@@ -24473,6 +25380,62 @@
         "tooltip": "Vacío cuando la fuente es una malla de cuadriláteros o una importación FBX."
       },
       "3": {
+        "name": "FBX",
+        "tooltip": "Tripo devuelve FBX para mallas de cuadriláteros e importaciones FBX; vacío en caso contrario."
+      }
+    }
+  },
+  "TripoTextureNodeV2": {
+    "display_name": "Tripo: Texturizar modelo",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "Modelo de texturas: v3.0 para mallas generadas con v3.x, v2.5 para mallas generadas con v2.5."
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "Nombres de partes separados por comas de Tripo: Segment Model para texturizar. Si se deja vacío, texturiza todas las partes."
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "Mapas de material PBR (color base, metalizado, rugosidad, normal); desactivado proporciona una textura de color plano."
+      },
+      "reference": {
+        "name": "reference",
+        "tooltip": "Imágenes de referencia que guían las texturas. No se pueden combinar con texture_prompt ni style_image."
+      },
+      "style_image": {
+        "name": "style_image",
+        "tooltip": "Imagen de referencia para el estilo artístico de las texturas. Solo se utiliza junto con texture_prompt."
+      },
+      "texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "Guía de texto opcional para el texturizado. En la práctica, obligatoria para los modelos importados (Tripo: Import Model), que no tienen una imagen de origen de la que inferir los colores. No se puede combinar con imágenes de referencia."
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = texturas HD, extreme = texturas Ultra 8K."
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "task_id del modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Vacío cuando la fuente es una malla de cuadriláteros o una importación FBX."
+      },
+      "2": {
         "name": "FBX",
         "tooltip": "Tripo devuelve FBX para mallas de cuadriláteros e importaciones FBX; vacío en caso contrario."
       }
@@ -27943,6 +28906,110 @@
     "outputs": {
       "0": {
         "name": "mesh",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateABC": {
+    "description": "Genera la notación ABC de una canción a partir del estilo y la letra. Conecta abc al nodo YuE2 Generate Music.",
+    "display_name": "YuE2 Generar ABC",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "lyrics": {
+        "name": "lyrics"
+      },
+      "max_abc_tokens": {
+        "name": "max_abc_tokens"
+      },
+      "mode": {
+        "name": "modo",
+        "tooltip": "completo: genera melodía y acordes; melodía: genera solo la melodía, recomendado para versiones."
+      },
+      "penalty_window": {
+        "name": "penalty_window",
+        "tooltip": "Número de tokens ABC recientes utilizados para penalizar la repetición."
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "seed": {
+        "name": "semilla"
+      },
+      "style": {
+        "name": "style"
+      },
+      "temperature": {
+        "name": "temperature"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateMusic": {
+    "description": "Genera tokens de música y condicionamiento acústico a partir del estilo, la letra y una notación ABC. Proporcione los segundos generados al nodo Empty YuE2 Latent Audio. Una entrada ABC vacía ignora el modo seleccionado.",
+    "display_name": "YuE2 Generar música",
+    "inputs": {
+      "abc": {
+        "name": "abc",
+        "tooltip": "Conecte el generador ABC o proporcione una partitura editada. Déjelo vacío para usar automáticamente el modo desactivado."
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "lyrics": {
+        "name": "letra"
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "Duración máxima en segundos. Se reduce automáticamente para prompts largos; la generación puede detenerse antes."
+      },
+      "mode": {
+        "name": "modo",
+        "tooltip": "completo: genera melodía y acordes; melodía: genera solo la melodía, recomendado para versiones."
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "seed": {
+        "name": "semilla"
+      },
+      "style": {
+        "name": "estilo"
+      },
+      "temperature": {
+        "name": "temperatura"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "segundos",
         "tooltip": null
       }
     }

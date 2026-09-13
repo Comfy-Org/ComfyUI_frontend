@@ -1,6 +1,7 @@
 import { readFileSync } from 'fs'
 
-import { expect, test } from '@playwright/test'
+import { expect } from '@playwright/test'
+import { networkIsolationFixture as test } from '@e2e/fixtures/networkIsolationFixture'
 
 import type { AppMode } from '@/utils/appMode'
 import type {
@@ -104,6 +105,9 @@ export class WorkflowHelper {
   async reloadAndWaitForApp() {
     await this.comfyPage.page.reload({ waitUntil: 'domcontentloaded' })
     await this.comfyPage.waitForAppReady()
+    if (test.info().tags.includes('@vue-nodes')) {
+      await this.comfyPage.vueNodes.waitForNodes()
+    }
   }
 
   async loadGraphData(workflow: ComfyWorkflowJSON): Promise<void> {
@@ -112,6 +116,9 @@ export class WorkflowHelper {
       workflow
     )
     await this.comfyPage.nextFrame()
+    if (test.info().tags.includes('@vue-nodes')) {
+      await this.comfyPage.vueNodes.waitForNodes()
+    }
   }
 
   async loadWorkflow(workflowName: string) {

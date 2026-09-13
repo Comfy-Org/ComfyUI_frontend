@@ -1,9 +1,7 @@
-import { createTestingPinia } from '@pinia/testing'
 import { cloneDeep } from 'es-toolkit'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { canvas: undefined, isGraphReady: false },
   ComfyApp: class {}
 }))
@@ -73,7 +71,6 @@ describe('useLitegraphService().registerNodeDef slot text', () => {
   }
 
   beforeEach(async () => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     mergeBundledSlotText('stale bundled label')
     mergeCustomNodesI18n({
       en: {
@@ -128,7 +125,6 @@ describe('useLitegraphService().registerNodeDef slot text (non-en)', () => {
   }
 
   beforeEach(async () => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     i18n.global.mergeLocaleMessage('en', {
       nodeDefs: {
         [nodeName]: {
@@ -173,7 +169,6 @@ describe('useLitegraphService().registerNodeDef custom widget metadata', () => {
   let retainedWidget: IBaseWidget
 
   beforeEach(async () => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     useWidgetStore().registerCustomWidgets({
       [widgetType]: (node, inputName) => {
         retainedWidget = Object.preventExtensions({
