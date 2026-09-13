@@ -5,6 +5,7 @@ import type { Locator, Page } from '@playwright/test'
 
 import { TestIds } from '@e2e/fixtures/selectors'
 import { comfyExpect as expect } from '@e2e/fixtures/utils/customMatchers'
+import { nextFrame } from '@e2e/fixtures/utils/timing'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { toNodeId } from '@/types/nodeId'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
@@ -284,6 +285,35 @@ export class VueNodeHelpers {
       incrementButton: widget.getByTestId(TestIds.widgets.increment),
       valueControl: widget.getByTestId(TestIds.widgets.valueControl)
     }
+  }
+
+  async editAndCommitNumber(
+    nodeTitle: string,
+    widgetName: string,
+    value: string
+  ): Promise<void> {
+    const nodeId = await this.getNodeIdByTitle(nodeTitle)
+    const node = this.getNodeLocator(nodeId)
+    const widget = node.getByLabel(widgetName, { exact: true })
+    const { input } = this.getInputNumberControls(widget)
+    const fixture = new VueNodeFixture(node)
+    await nextFrame(this.page)
+    await widget.click()
+    await input.fill(value)
+    await input.press('Enter')
+    await expect
+      .poll(() =>
+        this.page.evaluate(
+          ({ nodeId, widgetName }) =>
+            window
+              .app!.graph.getNodeById(nodeId)
+              ?.widgets?.find((widget) => widget.name === widgetName)?.value,
+          { nodeId: toNodeId(nodeId), widgetName }
+        )
+      )
+      .toBe(Number(value))
+    await fixture.title.click()
+    await expect(input).toHaveValue(value)
   }
 
   /**
