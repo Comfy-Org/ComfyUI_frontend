@@ -8,7 +8,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { assertFree, supervise, waitForStartup } from './dev-agent-supervisor'
 
-vi.mock('node:fs/promises', () => ({ rm: vi.fn() }))
+vi.mock(import('node:fs/promises'), () => ({ rm: vi.fn() }))
 
 class FakeChild extends EventEmitter {
   exitCode: number | null = null
@@ -127,6 +127,52 @@ describe('waitForStartup', () => {
 })
 
 describe('supervise teardown', () => {
+  it('escalates a repeated termination signal immediately', async () => {
+    vi.useFakeTimers()
+    let alive = true
+    const signals: NodeJS.Signals[] = []
+    vi.spyOn(process, 'kill').mockImplementation((_pid, signal) => {
+      if (signal === 0 && !alive) {
+        throw Object.assign(new Error('missing'), { code: 'ESRCH' })
+      }
+      if (signal === 'SIGTERM' || signal === 'SIGKILL') signals.push(signal)
+      if (signal === 'SIGKILL') alive = false
+      return true
+    })
+    const child = new FakeChild()
+    const supervisor = supervise('/tmp/agent-data')
+    supervisor.watch(child as unknown as ChildProcess)
+
+    process.emit('SIGINT', 'SIGINT')
+    const stopped = supervisor.stop(130)
+    process.emit('SIGTERM', 'SIGTERM')
+
+    expect(signals).toEqual(['SIGTERM', 'SIGKILL'])
+    await vi.advanceTimersByTimeAsync(1000)
+    await expect(stopped).resolves.toBe(130)
+  })
+
+  it('shares the first result and cleanup across concurrent stop calls', async () => {
+    vi.spyOn(process, 'kill').mockImplementation(() => {
+      throw Object.assign(new Error('missing'), { code: 'ESRCH' })
+    })
+    let finishCleanup: () => void = () => {}
+    const cleanup = new Promise<void>((resolve) => (finishCleanup = resolve))
+    vi.mocked(rm).mockReturnValue(cleanup)
+    const supervisor = supervise('/tmp/agent-data')
+
+    const first = supervisor.stop(130)
+    const second = supervisor.stop(0)
+    let secondResolved = false
+    void second.then(() => (secondResolved = true))
+    await Promise.resolve()
+
+    expect(secondResolved).toBe(false)
+    finishCleanup()
+    await expect(Promise.all([first, second])).resolves.toEqual([130, 130])
+    expect(rm).toHaveBeenCalledOnce()
+  })
+
   it('kills an orphaned process group before deleting its data', async () => {
     vi.useFakeTimers()
     let alive = true

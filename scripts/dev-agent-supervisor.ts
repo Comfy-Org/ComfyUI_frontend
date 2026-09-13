@@ -140,14 +140,19 @@ export function waitForStartup(
 
 export function supervise(dataDir: string) {
   const children: ChildProcess[] = []
-  let stopPromise: Promise<void> | null = null
+  let stopPromise: Promise<number> | null = null
   let requestedExitCode: number | null = null
   let resolveExitRequest: (code: number) => void = () => {}
   const exitRequested = new Promise<number>((resolveExit) => {
     resolveExitRequest = resolveExit
   })
   const requestExit = (code: number) => {
-    if (requestedExitCode !== null) return
+    if (requestedExitCode !== null) {
+      if (stopPromise !== null) {
+        for (const child of [...children].reverse()) stopGroup(child, 'SIGKILL')
+      }
+      return
+    }
     requestedExitCode = code
     resolveExitRequest(code)
   }
@@ -161,10 +166,7 @@ export function supervise(dataDir: string) {
     exitRequested,
     requested: () => requestedExitCode !== null,
     stop: async (exitCode: number): Promise<number> => {
-      if (stopPromise !== null) {
-        await stopPromise
-        return exitCode
-      }
+      if (stopPromise !== null) return await stopPromise
       stopPromise = (async () => {
         const newestFirst = [...children].reverse()
         for (const child of newestFirst) stopGroup(child, 'SIGTERM')
@@ -184,13 +186,13 @@ export function supervise(dataDir: string) {
           )
         }
         await rm(dataDir, { force: true, recursive: true })
+        return exitCode
       })().finally(() => {
         process.removeListener('SIGHUP', onSighup)
         process.removeListener('SIGINT', onSigint)
         process.removeListener('SIGTERM', onSigterm)
       })
-      await stopPromise
-      return exitCode
+      return await stopPromise
     },
     watch: (child: ChildProcess) => {
       children.push(child)
