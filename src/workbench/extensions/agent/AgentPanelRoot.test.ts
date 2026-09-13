@@ -305,6 +305,7 @@ import { useAgentConversationStore } from './stores/agent/agentConversationStore
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
+import { persistDocId } from './crdt/persistedDocId'
 
 import AgentPanelRoot from './AgentPanelRoot.vue'
 
@@ -2220,6 +2221,22 @@ describe('AgentPanelRoot workflow binding', () => {
     })
     return { target, references: referenceTabs }
   }
+
+  it('restores a persisted follower before target selection initializes', async () => {
+    makeTab('wf-42')
+    persistDocId('wf-42')
+    useAgentPanelStore().resetWorkflowTarget()
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await vi.waitFor(() =>
+      expect(
+        socketSend.mock.calls.some(([frame]) =>
+          String(frame).includes('doc_subscribe')
+        )
+      ).toBe(true)
+    )
+  })
 
   function mockMessagesEndpoint(
     ackWorkflowId: string,

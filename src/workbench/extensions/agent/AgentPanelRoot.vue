@@ -158,7 +158,8 @@ const workflowService = useWorkflowService()
 const bindingStore = useAgentWorkflowTabBindingStore()
 const agentPanelStore = useAgentPanelStore()
 const composerStore = useAgentComposerStore()
-const { selectedWorkflow: selectedTarget } = storeToRefs(agentPanelStore)
+const { selectedWorkflow: selectedTarget, canRestoreWorkflow } =
+  storeToRefs(agentPanelStore)
 const { dismissedSelectionSignature, enabled: agentEnabled } =
   storeToRefs(agentPanelStore)
 const agentNodeSelectionStore = useAgentNodeSelectionStore()
@@ -514,7 +515,7 @@ function restorableWorkflowIdFor(tabPath: string): string | null {
   return persisted === restorableDocId.value ? persisted : null
 }
 const activeBoundWorkflowId = computed(() => {
-  if (workflowDetached.value) return null
+  if (workflowDetached.value && !canRestoreWorkflow.value) return null
   const active = workflowStore.activeWorkflow
   if (active === null) return null
   const bound = boundWorkflowId.value ?? restorableWorkflowIdFor(active.path)
