@@ -39,6 +39,30 @@ function findLegacyWidget():
   return resolveWidgetFromHostNode(hostNode, props.widget.name)
 }
 
+function getLegacyWidgetHeight(width: number) {
+  if (!widgetInstance || !node) return 20
+  if (widgetInstance.computedHeight) return widgetInstance.computedHeight
+  if (widgetInstance.computeLayoutSize)
+    return widgetInstance.computeLayoutSize(node).minHeight
+  return widgetInstance.computeSize?.(width)[1] ?? 20
+}
+
+function getLegacyWidgetPaintHeight(height: number) {
+  if (!widgetInstance || !node) return height
+  const widgetY = widgetInstance.y ?? widgetInstance.last_y
+  if (widgetInstance.computedHeight === undefined || widgetY === undefined)
+    return height
+
+  const layoutWidgets = node.getLayoutWidgets()
+  const widgetIndex = layoutWidgets.indexOf(widgetInstance)
+  const nextWidgetY = layoutWidgets
+    .slice(widgetIndex + 1)
+    .map((widget) => widget.y ?? widget.last_y)
+    .find((y) => y !== undefined && y > widgetY)
+  const paintBoundary = nextWidgetY ?? node.size[1]
+  return Math.max(height, paintBoundary - widgetY)
+}
+
 function bindWidget() {
   if (widgetInstance) widgetInstance.triggerDraw = () => {}
 
@@ -81,26 +105,7 @@ function draw() {
   const width =
     canvasEl.value.getBoundingClientRect().width ||
     canvasEl.value.parentElement.clientWidth
-  // Priority: computedHeight (from litegraph) > computeLayoutSize > computeSize
-  let height = 20
-  if (widgetInstance.computedHeight) {
-    height = widgetInstance.computedHeight
-  } else if (widgetInstance.computeLayoutSize) {
-    height = widgetInstance.computeLayoutSize(node).minHeight
-  } else if (widgetInstance.computeSize) {
-    height = widgetInstance.computeSize(width)[1]
-  }
-  const widgetY = widgetInstance.y ?? widgetInstance.last_y
-  if (widgetInstance.computedHeight !== undefined && widgetY !== undefined) {
-    const layoutWidgets = node.getLayoutWidgets()
-    const widgetIndex = layoutWidgets.indexOf(widgetInstance)
-    const nextWidgetY = layoutWidgets
-      .slice(widgetIndex + 1)
-      .map((widget) => widget.y ?? widget.last_y)
-      .find((y) => y !== undefined && y > widgetY)
-    const paintBoundary = nextWidgetY ?? node.size[1]
-    height = Math.max(height, paintBoundary - widgetY)
-  }
+  const height = getLegacyWidgetPaintHeight(getLegacyWidgetHeight(width))
   containerHeight.value = height
   // Set node.canvasHeight for legacy widgets that use it (e.g., Impact Pack)
   // @ts-expect-error canvasHeight is a custom property used by some extensions
@@ -156,7 +161,7 @@ function handleMove(e: PointerEvent) {
 </script>
 <template>
   <div
-    class="relative mx-[-12px] w-full min-w-0"
+    class="relative -mx-3 w-full min-w-0"
     :style="{ minHeight: `${containerHeight}px` }"
   >
     <canvas
