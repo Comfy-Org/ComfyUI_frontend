@@ -358,7 +358,7 @@ test.describe(
           await comfyPage.page.evaluate(() => {
             window.app!.canvas.deselectAllNodes()
           })
-          await comfyPage.page.mouse.move(0, 0)
+          await comfyPage.canvasOps.moveMouseToEmptyArea()
           await comfyPage.nextFrame()
           const clip = await comfyPage.page.evaluate(
             (nodeIds) => {
