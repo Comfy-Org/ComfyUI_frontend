@@ -238,7 +238,11 @@ jobs:
     needs: [changes, website-e2e-shard, website-e2e-report]
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
     steps:
+      - uses: actions/checkout@v7
+
       - name: Check website E2E result
         env:
           SHOULD_RUN: ${{ needs.changes.outputs.app-website-changes == 'true' || needs.changes.outputs.packages-changes == 'true' }}
