@@ -1,7 +1,10 @@
 // eslint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
 import { datadogRum } from '@datadog/browser-rum'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+
 import type {
+  AuthMetadata,
   BillingTelemetryEvent,
   ExecutionOutcomeMetadata,
   FetchTimeoutMetadata,
@@ -17,6 +20,27 @@ import {
 } from '../../types'
 
 export class DatadogRumTelemetryProvider implements TelemetryProvider {
+  private isWatchingLogout = false
+
+  trackAuth({ user_id, email }: AuthMetadata): void {
+    this.setUser(user_id, email)
+  }
+
+  trackUserLoggedIn(): void {
+    const { resolvedUserInfo, userEmail } = useCurrentUser()
+    this.setUser(resolvedUserInfo.value?.id, userEmail.value)
+  }
+
+  private setUser(userId: string | undefined, email?: string | null): void {
+    if (!userId) return
+
+    datadogRum.setUser({ id: userId, ...(email && { email }) })
+    if (this.isWatchingLogout) return
+
+    this.isWatchingLogout = true
+    useCurrentUser().onUserLogout(() => datadogRum.clearUser())
+  }
+
   trackFetchTimeout(metadata: FetchTimeoutMetadata): void {
     datadogRum.addAction(TelemetryEvents.FETCH_TIMEOUT, metadata)
   }
