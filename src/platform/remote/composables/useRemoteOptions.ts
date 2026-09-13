@@ -77,7 +77,8 @@ export function useRemoteOptions<T = unknown>(
   const scope = computed<RemoteAuthScope>(() => ({
     userId: authStore.userId ?? null,
     workspaceId: workspaceStore.currentWorkspace?.id ?? null,
-    apiKeyBucket: apiKeyStore.getApiKey() ? 'apikey' : 'anon'
+    apiKeyBucket: apiKeyStore.getApiKey() ? 'apikey' : 'anon',
+    apiKeySessionId: apiKeyStore.apiKeySessionId
   }))
 
   const queryKey = computed(() => {

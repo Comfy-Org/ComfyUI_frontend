@@ -173,6 +173,7 @@ describe('API key authentication initialization', () => {
 
   it('ignores a stale customer response after the key is replaced', async () => {
     const { apiKeyStore, resolve } = await initializeStoreWithPendingLookup()
+    const initialSessionId = apiKeyStore.apiKeySessionId
 
     await apiKeyStore.storeApiKey('key-b')
     await vi.waitFor(() =>
@@ -184,6 +185,7 @@ describe('API key authentication initialization', () => {
 
     expect(apiKeyStore.currentUser).toEqual({ id: 'test-customer-id' })
     expect(apiKeyStore.getApiKey()).toBe('key-b')
+    expect(apiKeyStore.apiKeySessionId).toBeGreaterThan(initialSessionId)
   })
 
   it('retains the replacement key when the stale lookup fails', async () => {

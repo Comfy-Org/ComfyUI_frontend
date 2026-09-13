@@ -69,7 +69,8 @@ export function useRemoteWidget<
     remoteOptionKeys.byRoute(descriptor, {
       userId: useAuthStore().userId ?? null,
       workspaceId: null,
-      apiKeyBucket: useApiKeyAuthStore().getApiKey() ? 'apikey' : 'anon'
+      apiKeyBucket: useApiKeyAuthStore().getApiKey() ? 'apikey' : 'anon',
+      apiKeySessionId: useApiKeyAuthStore().apiKeySessionId
     })
 
   let isLoaded = false

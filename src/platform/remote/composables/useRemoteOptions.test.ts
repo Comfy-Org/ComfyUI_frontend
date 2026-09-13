@@ -108,6 +108,24 @@ describe('useRemoteOptions', () => {
     expect(JSON.stringify(anon)).not.toBe(JSON.stringify(apikey))
   })
 
+  it('partitions one API-key session from its replacement', () => {
+    const keyA = remoteOptionKeys.byRoute(desc, {
+      userId: null,
+      workspaceId: null,
+      apiKeyBucket: 'apikey',
+      apiKeySessionId: 1
+    })
+    const keyB = remoteOptionKeys.byRoute(desc, {
+      userId: null,
+      workspaceId: null,
+      apiKeyBucket: 'apikey',
+      apiKeySessionId: 2
+    })
+    expect(keyA).not.toEqual(keyB)
+    expect(JSON.stringify(keyA)).not.toContain('key-a')
+    expect(JSON.stringify(keyB)).not.toContain('key-b')
+  })
+
   it('returns disabled state when descriptor is null', async () => {
     const scope = effectScope()
     let result!: ReturnType<typeof useRemoteOptions>

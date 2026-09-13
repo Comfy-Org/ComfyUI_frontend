@@ -21,6 +21,7 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
   const { wrapWithErrorHandlingAsync, toastErrorHandler } = useErrorHandling()
 
   const currentUser = ref<ComfyApiUser | null>(null)
+  const apiKeySessionId = ref(0)
   const isAuthenticated = computed(() => !!currentUser.value)
 
   const initializeUserFromApiKey = async (watchedApiKey: string) => {
@@ -44,6 +45,7 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
   watch(
     apiKey,
     async (watchedApiKey) => {
+      apiKeySessionId.value += 1
       currentUser.value = null
       if (watchedApiKey) {
         await nextTick()
@@ -107,6 +109,7 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
   return {
     // State
     currentUser,
+    apiKeySessionId,
     isAuthenticated,
 
     // Actions

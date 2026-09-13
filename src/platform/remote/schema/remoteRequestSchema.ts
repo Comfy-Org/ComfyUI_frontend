@@ -16,4 +16,5 @@ export interface RemoteAuthScope {
   userId?: string | null
   workspaceId?: string | null
   apiKeyBucket?: RemoteAuthBucket | null
+  apiKeySessionId?: number | null
 }

@@ -21,6 +21,7 @@ export const remoteOptionKeys = {
       sortedParams(descriptor.params),
       scope.workspaceId ?? null,
       scope.userId ?? null,
-      scope.apiKeyBucket ?? null
+      scope.apiKeyBucket ?? null,
+      scope.apiKeySessionId ?? null
     ] as const
 }
