@@ -60,7 +60,7 @@ test.describe(
       test(
         `rgthree comparer receives two real backend images and retains them through a tab switch (${renderer.name} renderer)`,
         { tag: renderer.tags },
-        async ({ comfyPage, packPersistence, savedWorkflows }) => {
+        async ({ comfyPage, packPersistence, savedWorkflows }, testInfo) => {
           test.slow()
           await comfyPage.workflow.setupWorkflowsDirectory({})
           await comfyPage.workflow.reloadAndWaitForApp()
@@ -88,8 +88,13 @@ test.describe(
             graph.add(first)
             graph.add(second)
             graph.add(comparer)
+            first.pos = [0, 0]
+            second.pos = [0, 600]
+            comparer.pos = [500, 100]
+            comparer.size = [512, 512]
             first.connect(0, comparer, 0)
             second.connect(0, comparer, 1)
+            comparer.setDirtyCanvas(true, true)
             return {
               expectedIds: [
                 String(first.id),
@@ -160,43 +165,90 @@ test.describe(
               return state
             })
 
-          const visiblePixels = await comfyPage.page.evaluate((nodeId) => {
-            const node = window.app!.graph.nodes.find(
-              (candidate) => String(candidate.id) === nodeId
+          const expectVisibleComparison = async (stage: string) => {
+            await comfyPage.page.evaluate((nodeId) => {
+              const node = window.app!.graph.nodes.find(
+                (candidate) => String(candidate.id) === nodeId
+              )!
+              window.app!.canvas.centerOnNode(node)
+              node.setDirtyCanvas(true, true)
+            }, ids.comparerId)
+            await comfyPage.nextFrame()
+
+            const vueCanvas = comfyPage.vueNodes
+              .getNodeLocator(ids.comparerId)
+              .locator('canvas')
+            const screenshotPath = testInfo.outputPath(
+              `rgthree-comparer-${renderer.name.toLowerCase()}-${stage}.png`
             )
-            const widget = node?.widgets?.[0]
-            const canvas = document.createElement('canvas')
-            canvas.width = 512
-            canvas.height = 512
-            const context = canvas.getContext('2d')
-            if (!node || !widget?.draw || !context) {
-              throw new Error('Comparer canvas widget is not ready')
+            let screenshot: Buffer
+            if (await vueCanvas.isVisible()) {
+              await vueCanvas.hover()
+              await comfyPage.page.evaluate((nodeId) => {
+                window
+                  .app!.graph.nodes.find((node) => String(node.id) === nodeId)!
+                  .setDirtyCanvas(true, true)
+              }, ids.comparerId)
+              await comfyPage.nextFrame()
+              screenshot = await vueCanvas.screenshot({ path: screenshotPath })
+            } else {
+              const bounds = await comfyPage.page.evaluate((nodeId) => {
+                const node = window.app!.graph.nodes.find(
+                  (candidate) => String(candidate.id) === nodeId
+                )!
+                const [x, y] = window.app!.canvasPosToClientPos(node.pos)
+                const [right, bottom] = window.app!.canvasPosToClientPos([
+                  node.pos[0] + node.size[0],
+                  node.pos[1] + node.size[1]
+                ])
+                return { x, y, width: right - x, height: bottom - y }
+              }, ids.comparerId)
+              await comfyPage.page.mouse.move(
+                bounds.x + bounds.width / 2,
+                bounds.y + bounds.height / 2
+              )
+              await comfyPage.nextFrame()
+              screenshot = await comfyPage.page.screenshot({
+                clip: bounds,
+                path: screenshotPath
+              })
             }
-            node.size = [512, 512]
-            Object.assign(node, {
-              isPointerOver: true,
-              pointerOverPos: [256, 256]
+
+            const visiblePixels = await comfyPage.page.evaluate(
+              async (base64) => {
+                const image = new Image()
+                image.src = `data:image/png;base64,${base64}`
+                await image.decode()
+                const canvas = document.createElement('canvas')
+                canvas.width = image.naturalWidth
+                canvas.height = image.naturalHeight
+                const context = canvas.getContext('2d')!
+                context.drawImage(image, 0, 0)
+                const pixels = context.getImageData(
+                  0,
+                  0,
+                  canvas.width,
+                  canvas.height
+                ).data
+                let red = 0
+                let blue = 0
+                for (let index = 0; index < pixels.length; index += 4) {
+                  if (pixels[index] > 200 && pixels[index + 2] < 50) red++
+                  if (pixels[index] < 50 && pixels[index + 2] > 200) blue++
+                }
+                return { blue, red }
+              },
+              screenshot.toString('base64')
+            )
+            expect(visiblePixels.red).toBeGreaterThan(1_000)
+            expect(visiblePixels.blue).toBeGreaterThan(1_000)
+
+            await testInfo.attach(`comparer ${renderer.name} ${stage}`, {
+              path: screenshotPath,
+              contentType: 'image/png'
             })
-            widget.draw(context, node, 512, 0, 20)
-            const pixels = context.getImageData(0, 0, 512, 512).data
-            const isRed = (red: number, blue: number) => red > 200 && blue < 50
-            const isBlue = (red: number, blue: number) => red < 50 && blue > 200
-            let red = 0
-            let blue = 0
-            for (let index = 0; index < pixels.length; index += 4) {
-              red += Number(isRed(pixels[index], pixels[index + 2]))
-              blue += Number(isBlue(pixels[index], pixels[index + 2]))
-            }
-            return { blue, red }
-          }, ids.comparerId)
-          expect(visiblePixels.red).toBeGreaterThan(10_000)
-          expect(visiblePixels.blue).toBeGreaterThan(10_000)
-          await comfyPage.page.evaluate((nodeId) => {
-            window
-              .app!.graph.nodes.find((node) => String(node.id) === nodeId)!
-              .setDirtyCanvas(true, true)
-          }, ids.comparerId)
-          await comfyPage.nextFrame()
+          }
+          await expectVisibleComparison('queued')
 
           await test.step('save and restore from workflow tab', async () => {
             await comfyPage.menu.topbar.saveWorkflow(workflowName)
@@ -242,6 +294,7 @@ test.describe(
             expect(
               reloadedState?.renderedImages?.map(({ src }) => src)
             ).toEqual(initialState?.renderedImages?.map(({ src }) => src))
+            await expectVisibleComparison('reloaded')
           })
         }
       )
