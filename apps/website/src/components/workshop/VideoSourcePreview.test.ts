@@ -80,3 +80,20 @@ it('opens a full video player with playback and scrubbing controls', async () =>
   expect(player.muted).toBe(false)
   expect(player.src).toBe('https://assets.example/source.mp4')
 })
+
+it('localizes the expand and close controls', async () => {
+  render(VideoSourcePreview, {
+    props: {
+      name: '输入视频',
+      src: 'https://assets.example/source.mp4',
+      locale: 'zh-CN'
+    }
+  })
+
+  await userEvent
+    .setup()
+    .click(screen.getByRole('button', { name: '放大 输入视频' }))
+
+  const dialog = await screen.findByTestId('video-source-dialog')
+  expect(within(dialog).getByRole('button', { name: '关闭' })).toBeTruthy()
+})

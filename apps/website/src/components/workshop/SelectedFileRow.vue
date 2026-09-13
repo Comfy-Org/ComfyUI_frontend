@@ -44,6 +44,7 @@ const fileType = computed(
       :file="file.file"
       :src="file.previewUrl"
       :name="file.name"
+      :locale
     />
     <span
       v-else
