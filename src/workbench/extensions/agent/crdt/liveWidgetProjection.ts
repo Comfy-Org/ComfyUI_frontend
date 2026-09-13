@@ -6,6 +6,7 @@ import type { GraphScope } from '@/types/graphScopeId'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import type { NodeId } from '@/types/nodeId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
+import { widgetId } from '@/types/widgetId'
 
 import { runMintPortsSuppressed } from './mintPortWiring'
 
@@ -37,11 +38,16 @@ export function rebindLiveWidgetState(
   const widget = owningGraph(rootGraph, scope)
     ?.getNodeById(nodeId)
     ?.widgets?.find((candidate) => candidate.name === name)
+  const state = useWidgetValueStore().getWidget(
+    widgetId(scope.rootGraphId, nodeId, name)
+  )
   if (
     widget &&
+    state &&
     'setNodeId' in widget &&
     typeof widget.setNodeId === 'function'
   ) {
+    widget.type = state.type
     widget.setNodeId(nodeId)
   }
 }
