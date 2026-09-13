@@ -134,7 +134,6 @@ function getFailedDownloadLabel(
       : 'templateWorkflows.detail.downloadFailed'
   )
 }
-
 </script>
 
 <template>
