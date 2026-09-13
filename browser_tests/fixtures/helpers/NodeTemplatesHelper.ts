@@ -32,10 +32,8 @@ export class NodeTemplatesHelper {
     await this.userData.write(TEMPLATES_FILE, templates)
   }
 
-  async readPersistedTemplateNames(): Promise<string[]> {
-    const templates =
-      await this.userData.read<NodeTemplateFixture[]>(TEMPLATES_FILE)
-    return templates.map(({ name }) => name)
+  async readPersistedTemplates(): Promise<NodeTemplateFixture[]> {
+    return await this.userData.read<NodeTemplateFixture[]>(TEMPLATES_FILE)
   }
 
   async mockUnreadableTemplateLoad(): Promise<void> {

@@ -96,8 +96,14 @@ test.describe('Node Templates', { tag: ['@canvas'] }, () => {
   })
 
   const seededTemplates = [
-    { name: 'existing-template-a', data: '{}' },
-    { name: 'existing-template-b', data: '{}' }
+    {
+      name: 'existing-template-a',
+      data: JSON.stringify({ nodes: [] })
+    },
+    {
+      name: 'existing-template-b',
+      data: JSON.stringify({ nodes: [], links: [] })
+    }
   ]
 
   test.describe('Load failure', () => {
@@ -119,8 +125,8 @@ test.describe('Node Templates', { tag: ['@canvas'] }, () => {
 
       expect(nodeTemplates.getTemplateWriteCount()).toBe(0)
       await expect
-        .poll(() => nodeTemplates.readPersistedTemplateNames())
-        .toEqual(['existing-template-a', 'existing-template-b'])
+        .poll(() => nodeTemplates.readPersistedTemplates())
+        .toEqual(seededTemplates)
     })
   })
 
