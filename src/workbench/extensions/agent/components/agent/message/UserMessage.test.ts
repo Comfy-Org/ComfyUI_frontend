@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
@@ -24,6 +24,11 @@ const clipboard = vi.hoisted(() => ({
     clipboard.text = value
   })
 }))
+
+beforeEach(() => {
+  clipboard.text = ''
+  clipboard.copy.mockClear()
+})
 
 vi.mock<unknown>(import('@vueuse/core'), () => ({
   createSharedComposable: (composable: () => unknown) => composable,
