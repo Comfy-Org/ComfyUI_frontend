@@ -650,6 +650,8 @@
     "Bypass": "Bypass",
     "Copy (Clipspace)": "Copy (Clipspace)",
     "Add Node": "Add Node",
+    "Hide Link": "Hide Link",
+    "Show Link": "Show Link",
     "Add Group": "Add Group",
     "Add Group For Selected Nodes": "Add Group For Selected Nodes",
     "Save Selected as Template": "Save Selected as Template",
@@ -1581,7 +1583,6 @@
     "Show Settings Dialog": "Show Settings Dialog",
     "Set Subgraph Description": "Set Subgraph Description",
     "Set Subgraph Search Aliases": "Set Subgraph Search Aliases",
-    "Experimental: Enable AssetAPI": "Experimental: Enable AssetAPI",
     "Canvas Performance": "Canvas Performance",
     "Help Center": "Help Center",
     "Toggle App Mode": "Toggle App Mode",
@@ -2254,7 +2255,9 @@
       "switchProjection": "Switch projection",
       "originalMaterialOnly": "Original material only",
       "customUp": "Custom up",
-      "naturalUp": "Natural up"
+      "naturalUp": "Natural up",
+      "playbackSpeed": "Playback speed",
+      "animationClip": "Animation clip"
     },
     "materialModes": {
       "normal": "Normal",
@@ -2637,8 +2640,8 @@
     "errors": {
       "auth/invalid-email": "Please enter a valid email address.",
       "auth/user-disabled": "This account has been disabled. Please contact support.",
-      "auth/user-not-found": "No account found with this email. Would you like to create a new account?",
-      "auth/wrong-password": "The password you entered is incorrect. Please try again.",
+      "auth/user-not-found": "Invalid login credentials. Please check your email and password.",
+      "auth/wrong-password": "Invalid login credentials. Please check your email and password.",
       "auth/email-already-in-use": "An account with this email already exists. Try signing in instead.",
       "auth/weak-password": "Password is too weak. Please use a stronger password with at least 6 characters.",
       "auth/too-many-requests": "Too many login attempts. Please wait a moment and try again.",
@@ -2835,8 +2838,8 @@
     "cancelPlan": "Cancel plan",
     "canceled": "Canceled",
     "resubscribe": "Resubscribe",
-    "reactivatePlan": "Reactivate plan",
-    "resubscribeTo": "Resubscribe to {plan}",
+    "reactivatePlan": "Resume subscription",
+    "resubscribeTo": "Resume {plan}",
     "resubscribeSuccess": "Subscription reactivated successfully",
     "resubscribeFailed": "Failed to reactivate subscription",
     "subscribeFailed": "Failed to subscribe",
@@ -2993,6 +2996,10 @@
       "title": "Subscription paused",
       "ownerDescription": "Update your payment method to restore the workspace's subscription and run workflows.",
       "memberDescription": "Ask your workspace owner to restore the workspace's subscription.",
+      "paymentFailedOwnerTitle": "Your payment didn't go through",
+      "paymentFailedMemberTitle": "This workspace's payment didn't go through",
+      "paymentFailedOwnerDescription": "Update your payment method to keep running workflows.",
+      "paymentFailedMemberDescription": "Ask your workspace owner to update the workspace's payment method.",
       "ownerCta": "Update payment",
       "memberCta": "Ok, got it",
       "ownerRunLabel": "Update payment to run",
@@ -3123,7 +3130,6 @@
       "confirmChangeTitle": "Review your scheduled change",
       "paymentPopupBlocked": "Couldn't open the payment page — please allow popups and try again.",
       "paymentMethod": "Payment method",
-      "billingAddress": "Billing address",
       "stripeMethodChoice": "Your payment details are handled securely by Stripe.",
       "alipayRenewalNote": "Alipay authorization will also be used for automatic renewals and future purchases.",
       "payAndSubscribe": "Pay and subscribe",
@@ -3241,8 +3247,8 @@
       },
       "ending": {
         "title": "Your team plan ends on {date}",
-        "body": "Members keep full access until then. Reactivate to keep your shared credits and seats.",
-        "reactivate": "Reactivate plan"
+        "body": "Members keep full access until then. Resume your subscription to keep your shared credits and seats.",
+        "reactivate": "Resume subscription"
       },
       "planChange": {
         "title": "Your plan changes to {plan} on {date}",
@@ -3288,7 +3294,6 @@
         "creditsUsed": "Monthly credits"
       },
       "actions": {
-        "copyInviteLink": "Copy invite link",
         "resendInvite": "Resend invite",
         "cancelInvite": "Cancel invite",
         "changeRole": "Change role",
@@ -3423,13 +3428,6 @@
       "pendingInviteCount": "{count} of these people already have a pending invite. They'll be skipped.",
       "seatLimitExceeded": "This workspace is capped at {max} members. Remove {overage} to continue."
     },
-    "inviteLinks": {
-      "sentTitle": "{count} invite sent | {count} invites sent",
-      "sentLead": "Each invite has a personal link you can share directly:",
-      "copyLink": "Copy invite link",
-      "copied": "Copied!",
-      "copyAll": "Copy invite link | Copy all links ({count})"
-    },
     "createWorkspaceDialog": {
       "title": "Create a new workspace",
       "message": "Workspaces keep your projects and files organized. Subscribe to a Team plan to invite members.",
@@ -3498,6 +3496,16 @@
     "Set Group Nodes to Always": "Set Group Nodes to Always"
   },
   "widgets": {
+    "vueOnly": {
+      "Chart": "Chart",
+      "Fileupload": "File upload",
+      "Galleria": "Gallery",
+      "Compositor": "Compositor",
+      "SelectButton": "Select button",
+      "ImageCompare": "Image compare",
+      "Markdown": "Markdown",
+      "MultiSelect": "Multi-select"
+    },
     "boolean": {
       "true": "true",
       "false": "false"
@@ -5173,7 +5181,8 @@
     },
     "loadFailed": "The agent panel failed to load.",
     "askComfyAgent": "Ask Comfy Agent",
-    "feedbackCaption": "Share feedback",
+    "caption": "The AI agent can make mistakes",
+    "captionExpanded": "The AI agent can make mistakes. Double check your response.",
     "runNotice": "The agent can modify the graph. Check Run permissions before allowing it to execute the workflow.",
     "runNoticeExpanded": "The agent can modify your workflow. Check Run permissions before allowing it to execute.",
     "workflowEditNotice": "The agent can now edit {workflow}. It works on 1 workflow at a time, and you can switch workflows during chat.",
@@ -5268,14 +5277,16 @@
     "credits": "credits",
     "saveChanges": "Save changes",
     "runModeSaveFailed": "Could not save run permissions. Please try again.",
+    "addPromptToSend": "Add a prompt to send",
     "send": "Send",
     "stop": "Stop",
-    "stopShortcut": "Esc",
     "thinking": "Thinking...",
+    "working": "Working...",
     "helpful": "Helpful",
     "notHelpful": "Not helpful",
-    "ranToolCalls": "Ran {count} tool call | Ran {count} tool calls",
-    "ranToolCallsTimed": "Ran {count} tool call for {seconds} seconds | Ran {count} tool calls for {seconds} seconds",
+    "worked": "Worked",
+    "workedForSeconds": "Worked for {seconds} seconds",
+    "workedForMinutes": "Worked for {minutes}m {seconds}s",
     "copy": "Copy",
     "copied": "Copied!",
     "remove": "Remove",
@@ -5287,17 +5298,16 @@
     "friend": "there",
     "sendFailed": "Message failed to send",
     "sendBusy": "A message is already being sent",
-    "retryAfterSeconds": "You can try again in {seconds}s.",
     "malformedEvent": "The agent sent an event this panel could not read",
-    "coachTitle": "Meet the agent",
-    "coachBody": "Ask it to build or edit graphs.",
-    "thought": "Thought",
-    "thoughtTimed": "Thought for {seconds} seconds",
     "downloadAssets": "Download assets",
     "toolOpenedNewTab": "Opened a new tab",
+    "toolOpeningNewTab": "Opening a new tab",
     "toolSwitchedTabs": "Switched tabs",
+    "toolSwitchingTabs": "Switching tabs",
     "toolSavedPreference": "Saved a preference",
+    "toolSavingPreference": "Saving a preference",
     "toolForgotPreference": "Forgot a preference",
+    "toolForgettingPreference": "Forgetting a preference",
     "openWorkflowTab": "Open {name}",
     "unavailableWorkflowReference": "{name} (unavailable)",
     "workflowReferenceUnavailableReason": "This referenced workflow is no longer available or you do not have access to it.",
@@ -5307,6 +5317,18 @@
     "runModeTriggerAutoLimitTooltip": "Ask when credit limit is reached",
     "showMore": "Show more",
     "showLess": "Show less",
+    "consent": {
+      "title": "Meet Comfy Agent",
+      "body1": "Comfy Agent helps you plan, build, run, and iterate on workflows. Describe what you want to create, and Comfy Agent will work as your powerful teammate.",
+      "body2": "To build your workflows, Comfy Agent processes some of your data. Please rest assured, your data is never used for AI model training. By clicking Start, you agree to its usage.",
+      "readDocs": "Read the docs",
+      "reject": "Skip for now",
+      "accept": "Start using Comfy Agent",
+      "videoPlaceholder": "Video unavailable",
+      "loadError": "Could not load your Agent preference. Try again.",
+      "signInError": "Could not open sign-in. Please try again.",
+      "saveError": "Could not save your preference. Try again."
+    },
     "paywall": {
       "title": "Out of credits",
       "body": {

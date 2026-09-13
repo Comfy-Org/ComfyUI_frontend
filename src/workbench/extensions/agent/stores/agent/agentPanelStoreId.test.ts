@@ -61,6 +61,7 @@ describe('the agentPanel store id', () => {
     const { docked } = useAgentDockMount()
     const store = useAgentPanelStore()
     store.enabled = true
+    store.consentAccepted = true
     store.isOpen = true
     expect(docked.value).toBe(true)
 
