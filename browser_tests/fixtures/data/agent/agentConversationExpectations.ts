@@ -1,7 +1,8 @@
 // What a user sees on the panel for each recorded turn: the complete assistant
 // text, and the tool call groups in order with each row's label, multiplicity
 // and failure state. Explicit per recording, so the replay never predicts
-// production rendering.
+// production rendering. The panel rebases comfy.org API links onto the page's
+// own API base, so a recording that shows one writes {apiBase} for that prefix.
 interface ExpectedToolRow {
   label: string
   count: number
@@ -123,6 +124,20 @@ export const RECORDED_EXPECTATIONS: Partial<Record<string, ExpectedTurn[]>> = {
       ]
     }
   ],
+  'agent-rec-asset-url-reply': [
+    {
+      text: '{apiBase}/view?filename=ComfyUI_00001_32f6b8c7.png&subfolder=agent%2Foutputs&type=output',
+      groups: [
+        [
+          {
+            label: 'Switched tabs',
+            count: 1,
+            failed: false
+          }
+        ]
+      ]
+    }
+  ],
   'agent-rec-batched-ops': [
     {
       text: "Done — I'm now on your \"Text to image\" tab, and both new text prompt nodes are on the canvas with their CLIP inputs wired from the checkpoint loader. They're not connected to anything downstream yet, so tell me if you'd like one hooked up as a negative prompt.",
@@ -212,6 +227,35 @@ export const RECORDED_EXPECTATIONS: Partial<Record<string, ExpectedTurn[]>> = {
           },
           {
             label: 'Set widget',
+            count: 1,
+            failed: false
+          }
+        ]
+      ]
+    }
+  ],
+  'agent-rec-clear-workflow': [
+    {
+      text: 'Done — focus is on the "Text to image" tab, the text node was added, and the canvas is now empty as you asked. Nothing else was added.',
+      groups: [
+        [
+          {
+            label: 'Switched tabs',
+            count: 1,
+            failed: false
+          },
+          {
+            label: 'Ls nodes',
+            count: 1,
+            failed: false
+          },
+          {
+            label: 'Add node',
+            count: 1,
+            failed: false
+          },
+          {
+            label: 'Clear canvas',
             count: 1,
             failed: false
           }

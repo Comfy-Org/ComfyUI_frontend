@@ -1,8 +1,19 @@
+import { zGlobalSettingValue } from '@comfyorg/ingest-types/zod'
+import { expect } from '@playwright/test'
 import type { Page, Route } from '@playwright/test'
+
+import type {
+  AgentThreadListResponse,
+  GlobalSetting,
+  WorkflowListResponse
+} from '@comfyorg/ingest-types'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { UserDataFullInfo } from '@/schemas/apiSchema'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import type {
   AgentCancelAccepted,
   AgentTurnAccepted,
@@ -12,6 +23,7 @@ import type {
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { mockCloudBootRoutes } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { assetPath } from '@e2e/fixtures/utils/paths'
 
 const THREAD_ID = 'd4c016c4-3b8c-44cf-97de-1ae27e43e718'
 const TURN_ID = '3818ba00-d772-4a3f-98c1-9312725b577d'
@@ -133,25 +145,140 @@ function agentFeatures(agentFlag: boolean): RemoteConfig {
 async function mockAgentBoot(
   page: Page,
   {
-    agentFlag,
-    postedMessages
-  }: { agentFlag: boolean; postedMessages: string[] }
+    agentFlagEnabled,
+    postedMessages,
+    agentConsentAccepted,
+    agentPanelInitiallyOpen,
+    agentConsentSave,
+    agentConsentWrites
+  }: AgentFixtures
 ): Promise<void> {
-  await page.addInitScript(() => {
-    localStorage.setItem('Comfy.AgentPanel.onboarded', 'true')
-  })
+  let consentAccepted = agentConsentAccepted
+
+  await page.addInitScript((initiallyOpen) => {
+    if (localStorage.getItem('Comfy.AgentPanel.open') === null) {
+      localStorage.setItem('Comfy.AgentPanel.open', String(initiallyOpen))
+    }
+  }, agentPanelInitiallyOpen)
 
   await mockBilling(page)
+  await page.route(
+    'https://media.comfy.org/website/mcp/launch-film.mp4',
+    (route) =>
+      route.fulfill({
+        contentType: 'video/mp4',
+        path: assetPath('plain_video.mp4')
+      })
+  )
   await page.route('**/api/assets**', (r) =>
     r.fulfill(jsonRoute({ assets: [] }))
   )
 
   await mockCloudBootRoutes(page, {
-    features: agentFeatures(agentFlag),
+    features: agentFeatures(agentFlagEnabled),
     settings: {
       'Comfy.TutorialCompleted': true,
       'Comfy.RightSidePanel.ShowErrorsTab': false
     }
+  })
+  let savedWorkflow: UserDataFullInfo | undefined
+  let savedContent: string | undefined
+  await page.route('**/api/userdata**', (route) => {
+    const url = new URL(route.request().url())
+    const path = decodeURIComponent(url.pathname.split('/userdata/')[1] ?? '')
+    if (route.request().method() === 'POST' && path.startsWith('workflows/')) {
+      savedContent = route.request().postData() ?? '{}'
+      savedWorkflow = {
+        path,
+        modified: 1_788_825_600_000,
+        size: route.request().postDataBuffer()?.length ?? 0
+      }
+      return route.fulfill(jsonRoute(savedWorkflow))
+    }
+    if (savedWorkflow && path === savedWorkflow.path)
+      return route.fulfill({
+        contentType: 'application/json',
+        body: savedContent
+      })
+    return route.fulfill(
+      jsonRoute(
+        savedWorkflow && url.searchParams.get('dir') === 'workflows'
+          ? [
+              {
+                ...savedWorkflow,
+                path: savedWorkflow.path.slice('workflows/'.length)
+              }
+            ]
+          : []
+      )
+    )
+  })
+  await page.route('**/api/workflows?*', (route) => {
+    const workflows: WorkflowListResponse = {
+      data: savedWorkflow
+        ? [
+            {
+              id: WORKFLOW_ID,
+              name: savedWorkflow.path.slice(
+                'workflows/'.length,
+                -'.json'.length
+              ),
+              created_at: '2026-09-01T00:00:00Z',
+              updated_at: '2026-09-01T00:00:00Z',
+              created_by: 'test-user-e2e',
+              latest_version: 1
+            }
+          ]
+        : [],
+      pagination: {
+        offset: 0,
+        limit: 100,
+        total: savedWorkflow ? 1 : 0,
+        has_more: false
+      }
+    }
+    return route.fulfill(jsonRoute(workflows))
+  })
+  const threads: AgentThreadListResponse = {
+    threads: [],
+    pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+  }
+  await page.route('**/api/agent/threads', (route) =>
+    route.fulfill(jsonRoute(threads))
+  )
+  const storedConsent: GlobalSetting = {
+    key: AGENT_CONSENT_SETTING_ID,
+    value: true,
+    updated_at: '2026-09-09T00:00:00Z'
+  }
+  await page.route(
+    `**/api/global-settings/${AGENT_CONSENT_SETTING_ID}`,
+    (route) =>
+      route.fulfill(
+        consentAccepted
+          ? jsonRoute(storedConsent)
+          : {
+              ...jsonRoute({
+                code: 'NOT_FOUND',
+                message: 'Setting is not set for this user and workspace'
+              }),
+              status: 404
+            }
+      )
+  )
+  await page.route('**/api/global-settings', async (route) => {
+    const request = route.request()
+    if (request.method() !== 'POST') return route.fulfill({ status: 405 })
+    const setting = zGlobalSettingValue.parse(request.postDataJSON())
+    const { status, pending } = agentConsentSave
+    agentConsentWrites.push(setting.value)
+    await pending
+    if (status >= 400) return route.fulfill({ status })
+    consentAccepted = setting.value
+    return route.fulfill({
+      ...jsonRoute(storedConsent),
+      status
+    })
   })
   await page.route('**/api/auth/token', (r) =>
     r.fulfill(
@@ -206,17 +333,57 @@ async function mockAgentBoot(
 
 type AgentFixtures = {
   agentFlagEnabled: boolean
+  agentConsentAccepted: boolean
+  agentPanelInitiallyOpen: boolean
+  agentConsentSave: { status: number; pending?: Promise<void> }
+  agentConsentWrites: boolean[]
   postedMessages: string[]
 }
 
 export const agentTest = comfyPageFixture.extend<AgentFixtures>({
   agentFlagEnabled: [true, { option: true }],
-  // oxlint-disable-next-line no-empty-pattern -- Playwright requires an object pattern.
-  postedMessages: async ({}, use) => {
+  agentConsentAccepted: [true, { option: true }],
+  agentPanelInitiallyOpen: [false, { option: true }],
+  agentConsentSave: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
+    await use({ status: 200 })
+  },
+  agentConsentWrites: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
     await use([])
   },
-  page: async ({ page, agentFlagEnabled, postedMessages }, use) => {
-    await mockAgentBoot(page, { agentFlag: agentFlagEnabled, postedMessages })
+  postedMessages: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
+    await use([])
+  },
+  page: async (
+    {
+      page,
+      agentFlagEnabled,
+      postedMessages,
+      agentConsentAccepted,
+      agentPanelInitiallyOpen,
+      agentConsentSave,
+      agentConsentWrites
+    },
+    use
+  ) => {
+    await mockAgentBoot(page, {
+      agentFlagEnabled,
+      postedMessages,
+      agentConsentAccepted,
+      agentPanelInitiallyOpen,
+      agentConsentSave,
+      agentConsentWrites
+    })
     await use(page)
   }
 })
+
+export async function selectAgentWorkflow(page: Page): Promise<void> {
+  const picker = page.locator('#agent-panel-root').getByRole('button', {
+    name: enMessages.agent.switchWorkflow
+  })
+  await picker.click()
+  await page
+    .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
+    .click()
+  await expect(picker).toHaveText('Unsaved Workflow')
+}

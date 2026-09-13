@@ -3,6 +3,7 @@ import { onClickOutside } from '@vueuse/core'
 import { computed, ref, useTemplateRef } from 'vue'
 
 import { useWorkshopCredits } from '../../config/workshop-credits'
+import { WORKSHOP_CREDITS_URL } from '../../config/workshop-env'
 import { runBeforeSignInLeave } from '../../config/workshop-return'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import type { Locale } from '../../i18n/translations'
@@ -38,10 +39,10 @@ function prepareSignInHref(): void {
 }
 
 function goToSignIn(event: MouseEvent): void {
+  runBeforeSignInLeave()
   if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0)
     return
   event.preventDefault()
-  runBeforeSignInLeave()
   window.location.assign(signInDestination())
 }
 
@@ -177,6 +178,16 @@ async function signOutFromMenu() {
         >
           {{ t('auth.header.balanceError', locale) }}
         </p>
+        <a
+          :href="WORKSHOP_CREDITS_URL"
+          target="_blank"
+          rel="noopener noreferrer"
+          role="menuitem"
+          class="block rounded-xl px-3 py-2 text-sm text-primary-comfy-canvas transition-colors hover:bg-primary-comfy-canvas/10"
+          @click="menuOpen = false"
+        >
+          {{ t('nav.buyCredits', locale) }}
+        </a>
         <button
           type="button"
           role="menuitem"

@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { onBeforeSignInLeave } from '../../config/workshop-return'
+import { WORKSHOP_CLOUD_BASE_URL } from '../../config/workshop-env'
 import HeaderAccount from './HeaderAccount.vue'
 
 const h = vi.hoisted(() => ({
@@ -120,6 +121,31 @@ describe('HeaderAccount', () => {
     expect(screen.getByText(/1,234/)).toBeTruthy()
   })
 
+  it.for([0, 1234])(
+    'offers billing from the account menu with %s credits',
+    async (credits) => {
+      h.user!.value = { email: 'a@b.co', displayName: 'Ada' }
+      h.session!.value = {
+        token: 'jwt',
+        uid: 'user-1',
+        workspace,
+        role: 'owner'
+      }
+      h.balance!.value = { status: 'ok', credits }
+      render(HeaderAccount)
+
+      await userEvent
+        .setup()
+        .click(screen.getByRole('button', { name: /account/i }))
+      const buy = screen.getByRole('menuitem', { name: 'Buy credits' })
+      expect(buy.getAttribute('href')).toBe(
+        `${WORKSHOP_CLOUD_BASE_URL}/?settings=plan-credits`
+      )
+      expect(buy.getAttribute('target')).toBe('_blank')
+      expect(screen.getByRole('menuitem', { name: /sign out/i })).toBeTruthy()
+    }
+  )
+
   it('speaks the balance in the account button name, not just on screen', () => {
     h.user!.value = { email: 'a@b.co', displayName: 'Ada' }
     h.session!.value = { token: 'jwt', uid: 'user-1', workspace, role: 'owner' }
@@ -232,6 +258,32 @@ describe('HeaderAccount sign-in link', () => {
       link.getAttribute('href'),
       'open-in-new-tab must land on the model page after sign-in, not the Workshop home'
     ).toBe('/login/?returnTo=%2Fworkshop%2Fmodels%2Fexample%2F%3Ftab%3Dapi')
+  })
+
+  it('stashes unsaved work even when a modified click opens sign-in in a new tab', async () => {
+    const stash = vi.fn()
+    const stop = onBeforeSignInLeave(stash)
+    onTestFinished(stop)
+    render(HeaderAccount)
+
+    const link = screen.getByRole('link', { name: /sign in/i })
+    await fireEvent(link, new Event('pointerdown', { bubbles: true }))
+    const notPrevented = link.dispatchEvent(
+      new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        metaKey: true
+      })
+    )
+
+    expect(
+      stash,
+      'a new tab must carry the latest form, so the stash runs even when the click is not the primary navigation'
+    ).toHaveBeenCalledOnce()
+    expect(
+      notPrevented,
+      'the modified click must reach the browser, so its default new-tab navigation is never prevented'
+    ).toBe(true)
   })
 
   it('prepares the destination on focus, so a keyboard open-in-new-tab keeps it too', async () => {

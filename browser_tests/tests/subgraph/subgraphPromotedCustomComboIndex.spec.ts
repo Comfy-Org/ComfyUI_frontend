@@ -17,15 +17,10 @@ test.describe(
   'Custom Combo widget promotion',
   { tag: ['@subgraph', '@widget', '@vue-nodes'] },
   () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-    })
-
     test('serializes INDEX from the promoted choice widget into the queued prompt', async ({
       comfyPage
     }) => {
       await comfyPage.workflow.loadWorkflow(WORKFLOW)
-      await comfyPage.vueNodes.waitForNodes()
 
       // Change the promoted `choice` widget from outside the subgraph, on
       // the host SubgraphNode -- editing the promoted widget is the only
