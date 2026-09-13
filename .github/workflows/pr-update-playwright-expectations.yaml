@@ -507,6 +507,11 @@ jobs:
         with:
           comment-id: ${{ needs.setup.outputs.comment-id }}
           issue-number: ${{ needs.setup.outputs.pr-number }}
+          # The action requires `body`/`body-path` even when only editing an
+          # existing comment's reactions; re-supply the same body the
+          # "Add Starting Reaction" step wrote.
+          body: |
+            Updating Playwright Expectations
           reactions: +1
           reactions-edit-mode: replace
 
