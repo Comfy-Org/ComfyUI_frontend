@@ -169,6 +169,7 @@ describe('useLoad3d', () => {
         fitTargetSize: 5
       }),
       hasSkeleton: vi.fn().mockReturnValue(false),
+      getModelStats: vi.fn().mockResolvedValue(null),
       setShowSkeleton: vi.fn(),
       loadHDRI: vi.fn().mockResolvedValue(undefined),
       setHDRIEnabled: vi.fn(),
@@ -960,13 +961,29 @@ describe('useLoad3d', () => {
 
       await composable.initializeLoad3d(containerRef)
 
+      const stats = { vertices: 4, edges: 5, triangles: 2 }
+      const signals: AbortSignal[] = []
+      vi.mocked(mockLoad3d.getModelStats!).mockImplementation(
+        async (signal?: AbortSignal) => {
+          if (signal) signals.push(signal)
+          return stats
+        }
+      )
+
       modelLoadingStartHandler?.()
       expect(composable.loading.value).toBe(true)
       expect(composable.loadingMessage.value).toBe('load3d.loadingModel')
+      expect(composable.modelStats.value).toBeNull()
 
       modelLoadingEndHandler?.()
       expect(composable.loading.value).toBe(false)
       expect(composable.loadingMessage.value).toBe('')
+      await vi.waitFor(() => expect(composable.modelStats.value).toEqual(stats))
+
+      modelLoadingStartHandler?.()
+      expect(signals).toHaveLength(1)
+      expect(signals[0].aborted).toBe(true)
+      expect(composable.modelStats.value).toBeNull()
     })
 
     it('should handle recordingStatusChange event', async () => {

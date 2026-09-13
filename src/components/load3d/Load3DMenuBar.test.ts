@@ -107,6 +107,17 @@ async function openCategoryMenu(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe('Load3DMenuBar', () => {
+  it('shows the model stats overlay only when stats are provided', async () => {
+    const { rerender } = renderMenuBar()
+    expect(screen.queryByTestId('load3d-model-stats')).not.toBeInTheDocument()
+
+    await rerender({
+      modelStats: { vertices: 8, edges: 12, triangles: 12 }
+    })
+
+    expect(screen.getByTestId('load3d-model-stats')).toBeInTheDocument()
+  })
+
   it('shows scene controls by default', () => {
     renderMenuBar()
     expect(
