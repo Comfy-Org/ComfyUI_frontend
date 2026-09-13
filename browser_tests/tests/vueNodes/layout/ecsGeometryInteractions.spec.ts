@@ -229,37 +229,43 @@ test.describe(
           return { ...graphState, ...serialisedState }
         }
 
-        await expect.poll(readState).toEqual({
-          nodeExists: true,
-          link: {
-            id: 3,
-            originId: '4',
-            originSlot: 1,
-            targetId: '6',
-            targetSlot: 0,
-            parentId: 1
-          },
-          rerouteLinkIds: [3],
-          floatingLink: null,
-          rerouteFloatingLinkIds: [],
-          serialisedLink: {
-            id: 3,
-            origin_id: 4,
-            origin_slot: 1,
-            target_id: 6,
-            target_slot: 0,
-            type: 'CLIP',
-            parentId: 1
-          },
-          serialisedFloatingLink: null,
-          serialisedRerouteLinkIds: [3],
-          serialisedRerouteIsFloating: false
+        await test.step('verify the connected reroute topology', async () => {
+          await expect.poll(readState).toEqual({
+            nodeExists: true,
+            link: {
+              id: 3,
+              originId: '4',
+              originSlot: 1,
+              targetId: '6',
+              targetSlot: 0,
+              parentId: 1
+            },
+            rerouteLinkIds: [3],
+            floatingLink: null,
+            rerouteFloatingLinkIds: [],
+            serialisedLink: {
+              id: 3,
+              origin_id: 4,
+              origin_slot: 1,
+              target_id: 6,
+              target_slot: 0,
+              type: 'CLIP',
+              parentId: 1
+            },
+            serialisedFloatingLink: null,
+            serialisedRerouteLinkIds: [3],
+            serialisedRerouteIsFloating: false
+          })
         })
 
-        const target = await comfyPage.nodeOps.getNodeRefById('6')
-        await target.click('title')
-        const beforeDelete = Date.now()
-        await comfyPage.page.keyboard.press('Delete')
+        const beforeDelete =
+          await test.step('delete the rerouted target', async () => {
+            const target = await comfyPage.nodeOps.getNodeRefById('6')
+            await target.click('title')
+            const timestamp = Date.now()
+            await comfyPage.page.keyboard.press('Delete')
+            return timestamp
+          })
 
         const expectedState = {
           nodeExists: false,
@@ -287,10 +293,13 @@ test.describe(
           serialisedRerouteLinkIds: [],
           serialisedRerouteIsFloating: true
         }
-        await expect.poll(readState).toEqual(expectedState)
-        await comfyPage.workflow.waitForDraftIndexUpdatedSince(beforeDelete)
-        await comfyPage.workflow.reloadAndWaitForApp()
-        await expect.poll(readState).toEqual(expectedState)
+
+        await test.step('verify and reload the floating chain', async () => {
+          await expect.poll(readState).toEqual(expectedState)
+          await comfyPage.workflow.waitForDraftIndexUpdatedSince(beforeDelete)
+          await comfyPage.workflow.reloadAndWaitForApp()
+          await expect.poll(readState).toEqual(expectedState)
+        })
       })
 
       test(`recovers from empty link search and malformed clipboard in ${vueNodesEnabled ? 'Nodes 2.0' : 'legacy'}`, async ({
