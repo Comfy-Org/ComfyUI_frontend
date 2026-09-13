@@ -16,6 +16,7 @@ catalog:
   '@astrojs/mdx': ^7.0.5
   '@astrojs/sitemap': ^3.7.3
   '@astrojs/vue': ^7.0.2
+  '@axe-core/playwright': ^4.13.0
   '@comfyorg/comfyui-desktop-bridge-types': 0.2.0
   '@comfyorg/comfyui-electron-types': 0.6.2
   '@customerio/cdp-analytics-browser': ^0.5.3
