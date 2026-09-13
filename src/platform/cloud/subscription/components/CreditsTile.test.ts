@@ -317,6 +317,20 @@ describe('CreditsTile', () => {
     expect(container.textContent).not.toContain('Monthly credits are used up')
   })
 
+  it('keeps the depletion notice yearly when the renewal date is unusable', () => {
+    activeProSubscription()
+    state.subscription = { tier: 'PRO', duration: 'ANNUAL', renewalDate: null }
+    state.balance = {
+      amountMicros: 300,
+      cloudCreditBalanceMicros: 0,
+      prepaidBalanceMicros: 300
+    }
+    renderTile()
+    expect(screen.getByText('Yearly credits are used up')).toBeTruthy()
+    expect(screen.queryByText(/used up\. Refills/)).toBeNull()
+    expect(screen.queryByText('Monthly credits are used up')).toBeNull()
+  })
+
   it('hides the monthly usage bar on Local', () => {
     mockIsCloud.value = false
     activeProSubscription()
