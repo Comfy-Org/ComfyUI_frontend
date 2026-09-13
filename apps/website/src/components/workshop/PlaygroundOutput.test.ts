@@ -10,8 +10,7 @@ import { WORKSHOP_CLOUD_BASE_URL } from '../../config/workshop-env'
 import PlaygroundOutput from './PlaygroundOutput.vue'
 import { downloadOutput } from '../../config/workshop-output-download'
 
-vi.mock(import('../../config/workshop-output-download'), async (original) => ({
-  ...(await original()),
+vi.mock(import('../../config/workshop-output-download'), () => ({
   downloadOutput: vi.fn(async () => true)
 }))
 

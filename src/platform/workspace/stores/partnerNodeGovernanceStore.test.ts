@@ -2,17 +2,27 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import { nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type * as PartnerNodePolicyApi from '@/platform/workspace/api/partnerNodePolicyApi'
 import type {
   PartnerNodePolicy,
   PartnerProvider
 } from '@/platform/workspace/api/partnerNodePolicyApi'
-import { PartnerNodePolicyApiError } from '@/platform/workspace/api/partnerNodePolicyApi'
 import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
 
 const mockGetPartnerNodePolicy = vi.hoisted(() => vi.fn())
 const mockGetPartnerProviders = vi.hoisted(() => vi.fn())
 const mockUpdatePartnerNodePolicy = vi.hoisted(() => vi.fn())
+const PartnerNodePolicyApiError = vi.hoisted(
+  () =>
+    class PartnerNodePolicyApiError extends Error {
+      constructor(
+        public readonly status: number,
+        message: string
+      ) {
+        super(message)
+        this.name = 'PartnerNodePolicyApiError'
+      }
+    }
+)
 const mockFlags = vi.hoisted(() => ({
   partnerNodeGovernanceEnabled: true
 }))
@@ -21,16 +31,12 @@ vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({ flags: mockFlags })
 }))
 
-vi.mock(
-  import('@/platform/workspace/api/partnerNodePolicyApi'),
-  async (importOriginal) =>
-    ({
-      ...(await importOriginal<typeof PartnerNodePolicyApi>()),
-      getPartnerNodePolicy: mockGetPartnerNodePolicy,
-      getPartnerProviders: mockGetPartnerProviders,
-      updatePartnerNodePolicy: mockUpdatePartnerNodePolicy
-    }) satisfies typeof PartnerNodePolicyApi
-)
+vi.mock(import('@/platform/workspace/api/partnerNodePolicyApi'), () => ({
+  getPartnerNodePolicy: mockGetPartnerNodePolicy,
+  getPartnerProviders: mockGetPartnerProviders,
+  PartnerNodePolicyApiError,
+  updatePartnerNodePolicy: mockUpdatePartnerNodePolicy
+}))
 
 const providers: PartnerProvider[] = [
   {

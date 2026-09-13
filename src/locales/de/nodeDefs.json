@@ -821,6 +821,83 @@
       }
     }
   },
+  "BriaAddObject": {
+    "description": "Fügen Sie mit Bria ein in Klartext beschriebenes Objekt in ein Bild ein. Bria rendert das gesamte Bild mit etwa 1 Megapixel neu, daher ist das Ergebnis nicht pixelgenau zum Eingabebild ausgerichtet.",
+    "display_name": "Bria Objekt hinzufügen",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "image": {
+        "name": "Bild"
+      },
+      "instruction": {
+        "name": "Anweisung",
+        "tooltip": "Was und wo hinzugefügt werden soll, z. B. „Stellen Sie eine rote Vase mit Blumen auf den Tisch“."
+      },
+      "moderation": {
+        "name": "Moderation",
+        "tooltip": "Moderationseinstellungen"
+      },
+      "seed": {
+        "name": "Seed",
+        "tooltip": "Bria verwendet hier keinen Seed und interpretiert die Bearbeitung bei jedem Aufruf neu, daher können wiederholte Ausführungen abweichen. Der Wert wird nie gesendet: Er ändert nur den Cache-Schlüssel dieses Nodes, sodass ein ansonsten identischer Graph die Bearbeitung erneut ausführt, statt das zwischengespeicherte Ergebnis zurückzugeben."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Strukturierte Beschreibung des bearbeiteten Bildes für eine anschließende Bearbeitung mit Bria FIBO Image Edit."
+      }
+    }
+  },
+  "BriaEraseByText": {
+    "description": "Entfernen Sie mit Bria ein in Klartext benanntes Objekt aus einem Bild. Bria rendert das gesamte Bild mit etwa 1 Megapixel neu, daher ist das Ergebnis nicht pixelgenau zum Eingabebild ausgerichtet.",
+    "display_name": "Bria Per Text löschen",
+    "inputs": {
+      "image": {
+        "name": "Bild"
+      },
+      "moderation": {
+        "name": "Moderation",
+        "tooltip": "Moderationseinstellungen"
+      },
+      "object_name": {
+        "name": "object_name",
+        "tooltip": "Name des zu entfernenden Objekts, z. B. „die Lampe“. Es können mehrere Objekte gleichzeitig benannt werden, z. B. „das Telefon und die Bleistifte“. Wenn etwas benannt wird, das nicht im Bild ist, wird dennoch ein neu gerendertes Bild zurückgegeben und berechnet."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Strukturierte Beschreibung des bearbeiteten Bildes für eine anschließende Bearbeitung mit Bria FIBO Image Edit."
+      }
+    }
+  },
+  "BriaEraseForeground": {
+    "description": "Entfernen Sie mit Bria den Vordergrund eines Bildes und generieren Sie an seiner Stelle einen Hintergrund. Alles, was Bria als Vordergrund erkennt, wird entfernt, nicht nur Personen. Die unveränderten Pixel bleiben erhalten, aber die Ausgabe wird in einer Standardgröße von etwa 1 Megapixel neu gerendert.",
+    "display_name": "Bria Vordergrund entfernen",
+    "inputs": {
+      "image": {
+        "name": "Bild"
+      },
+      "moderation": {
+        "name": "Moderation",
+        "tooltip": "Moderationseinstellungen"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaEraser": {
     "description": "Entfernt mit Bria Objekte oder Bereiche, die durch eine mask markiert sind, aus einem Bild.",
     "display_name": "Bria-Radierer",
@@ -1004,6 +1081,36 @@
       }
     }
   },
+  "BriaRelight": {
+    "description": "Ändern Sie mit Bria die Lichtstimmung und -richtung eines Bildes. Bria rendert das gesamte Bild mit etwa 1 Megapixel neu, daher ist das Ergebnis nicht pixelgenau zum Eingabebild ausgerichtet.",
+    "display_name": "Bria Beleuchtung ändern",
+    "inputs": {
+      "image": {
+        "name": "Bild"
+      },
+      "light_direction": {
+        "name": "light_direction",
+        "tooltip": "Woher das Licht kommt. Hartlichtstimmungen wie Mittag, Spot auf das Motiv und hartes Studiolicht reagieren am stärksten darauf."
+      },
+      "light_type": {
+        "name": "light_type",
+        "tooltip": "Anzuwendende Lichtstimmung."
+      },
+      "moderation": {
+        "name": "Moderation",
+        "tooltip": "Moderationseinstellungen"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Strukturierte Beschreibung des bearbeiteten Bildes für eine anschließende Bearbeitung mit Bria FIBO Image Edit."
+      }
+    }
+  },
   "BriaRemoveImageBackground": {
     "description": "Entfernen Sie den Hintergrund eines Bildes mit Bria RMBG 2.0.",
     "display_name": "Bria Bildhintergrund entfernen",
@@ -1054,6 +1161,133 @@
       }
     }
   },
+  "BriaReplaceImageBackground": {
+    "description": "Ersetzen Sie mit Bria den Hintergrund eines Bildes, beschrieben durch einen Prompt oder gesteuert durch Referenzbilder. Die Pixel des Motivs bleiben erhalten; der Hintergrund wird darum herum generiert.",
+    "display_name": "Bria Bildhintergrund ersetzen",
+    "inputs": {
+      "background": {
+        "name": "Hintergrund",
+        "tooltip": "Beschreiben Sie den neuen Hintergrund mit einem Prompt oder steuern Sie ihn mit Referenzbildern."
+      },
+      "background_mode": {
+        "name": "Modus"
+      },
+      "background_prompt": {
+        "name": "Prompt"
+      },
+      "background_refine_prompt": {
+        "name": "refine_prompt"
+      },
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "image": {
+        "name": "Bild"
+      },
+      "moderation": {
+        "name": "Moderation",
+        "tooltip": "Moderationseinstellungen"
+      },
+      "original_quality": {
+        "name": "original_quality",
+        "tooltip": "Gibt die exakte Pixelgröße der Eingabe zurück, anstatt das Ergebnis auf etwa 1 Megapixel zu skalieren. Eine große Eingabe liefert dann ein großes Bild."
+      },
+      "seed": {
+        "name": "Seed",
+        "tooltip": "Derselbe Seed liefert in der Regel denselben Hintergrund; die automatische Prompt-Verfeinerung kann ihn jedoch weiterhin variieren."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "refined_prompt",
+        "tooltip": "Der Prompt, den Bria generiert hat; beim Pfad mit Referenzbild leer."
+      }
+    }
+  },
+  "BriaReplaceObject": {
+    "description": "Ersetzen Sie mit Bria ein Objekt in einem Bild durch ein anderes, das in Klartext beschrieben wird. Bria rendert das gesamte Bild mit etwa 1 Megapixel neu, daher ist das Ergebnis nicht pixelgenau zur Eingabe ausgerichtet.",
+    "display_name": "Bria Objekt ersetzen",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "image": {
+        "name": "Bild"
+      },
+      "instruction": {
+        "name": "Anweisung",
+        "tooltip": "Was durch was ersetzt werden soll, z. B. „Ersetzen Sie den roten Apfel durch eine grüne Birne“."
+      },
+      "moderation": {
+        "name": "Moderation",
+        "tooltip": "Moderationseinstellungen"
+      },
+      "seed": {
+        "name": "Seed",
+        "tooltip": "Bria verwendet hier keinen Seed und interpretiert die Bearbeitung bei jedem Aufruf neu, daher können wiederholte Ausführungen unterschiedlich ausfallen. Der Wert wird nie gesendet: Er ändert nur den Cache-Schlüssel dieses Nodes, damit ein ansonsten identischer Graph die Bearbeitung erneut ausführt, statt das zwischengespeicherte Ergebnis zurückzugeben."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Strukturierte Beschreibung des bearbeiteten Bildes für eine nachfolgende Bearbeitung mit Bria FIBO Image Edit."
+      }
+    }
+  },
+  "BriaReseason": {
+    "description": "Versetzen Sie mit Bria ein Bild in eine andere Jahreszeit. Die gesamte Szene wird neu gerendert, daher kann sich die Umgebung über die Jahreszeit hinaus verändern. Bria rendert das gesamte Bild mit etwa 1 Megapixel neu, daher ist das Ergebnis nicht pixelgenau zur Eingabe ausgerichtet.",
+    "display_name": "Bria Jahreszeit ändern",
+    "inputs": {
+      "image": {
+        "name": "Bild"
+      },
+      "moderation": {
+        "name": "Moderation",
+        "tooltip": "Moderationseinstellungen"
+      },
+      "season": {
+        "name": "Jahreszeit",
+        "tooltip": "Anzuwendende Jahreszeit."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Strukturierte Beschreibung des bearbeiteten Bildes für eine nachfolgende Bearbeitung mit Bria FIBO Image Edit."
+      }
+    }
+  },
+  "BriaRestorePhoto": {
+    "description": "Reparieren Sie mit Bria ein altes oder beschädigtes Foto: Körnung, Kratzer und Unschärfe werden entfernt, und altersbedingte Farbstiche werden neutralisiert. Passepartouts und Studioumrandungen können abgeschnitten werden, und Gesichter werden neu gezeichnet. Bria rendert das gesamte Bild mit etwa 1 Megapixel neu, daher ist das Ergebnis nicht pixelgenau zur Eingabe ausgerichtet. Verwenden Sie stattdessen Bria Increase Resolution zum Vergrößern.",
+    "display_name": "Bria Foto restaurieren",
+    "inputs": {
+      "image": {
+        "name": "Bild"
+      },
+      "moderation": {
+        "name": "Moderation",
+        "tooltip": "Moderationseinstellungen"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Strukturierte Beschreibung des bearbeiteten Bildes für eine anschließende Bearbeitung mit Bria FIBO Image Edit."
+      }
+    }
+  },
   "BriaTransparentVideoBackground": {
     "description": "Entfernt mit Bria den Hintergrund aus einem Video und gibt die freigestellten Frames plus eine Alphamaske zurück. Verbinden Sie beide mit einem Compositing-Node oder führen Sie sie Save WEBM zu, um ein transparentes Video zu schreiben.",
     "display_name": "Bria Videohintergrund entfernen (transparent)",
@@ -1076,6 +1310,33 @@
       },
       "1": {
         "name": "Maske",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVideoEraser": {
+    "description": "Löschen Sie mit Bria aus einem Video alles, was von einer Maske pro Frame abgedeckt wird, und füllen Sie die Lücke. Die Maske muss dort weiß sein, wo etwas entfernt werden soll, und andernorts schwarz. Bria akzeptiert Clips von maximal 5,1 Sekunden bei 20 bis 30 Frames pro Sekunde mit geraden Pixelabmessungen; Audio wird standardmäßig beibehalten. Der zurückgegebene Clip kann einige Frames kürzer als die Eingabe sein.",
+    "display_name": "Bria Video Eraser",
+    "inputs": {
+      "mask": {
+        "name": "mask",
+        "tooltip": "Eine Maske pro Frame des Videos, weiß an den Stellen, an denen sich das zu löschende Objekt befindet. Geben Sie entweder eine Maske oder ein Maskenvideo an, nicht beides."
+      },
+      "mask_video": {
+        "name": "mask_video",
+        "tooltip": "Ein bereits kodiertes Maskenvideo mit denselben Abmessungen und derselben Frame-Anzahl wie das Video. Geben Sie entweder eine Maske oder ein Maskenvideo an, nicht beides."
+      },
+      "preserve_audio": {
+        "name": "preserve_audio",
+        "tooltip": "Audiospur der Eingabe beibehalten."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Clip, aus dem gelöscht werden soll."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -28669,11 +28930,27 @@
         "name": "Modus",
         "tooltip": "full: generiert Melodie und Akkorde; melody: generiert nur die Melodie, empfohlen für Coverversionen."
       },
+      "penalty_window": {
+        "name": "penalty_window",
+        "tooltip": "Anzahl der zuletzt verwendeten ABC-Tokens, die zur Bestrafung von Wiederholungen verwendet werden."
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
       "seed": {
         "name": "Seed"
       },
       "style": {
         "name": "style"
+      },
+      "temperature": {
+        "name": "temperature"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
       }
     },
     "outputs": {
@@ -28702,7 +28979,7 @@
       },
       "max_duration": {
         "name": "max_duration",
-        "tooltip": "Maximale Dauer; die Generierung kann früher enden. Diese Version verwendet ein Budget von 360 Sekunden."
+        "tooltip": "Maximale Dauer in Sekunden. Wird bei langen Prompts automatisch reduziert; die Generierung kann früher enden."
       },
       "mode": {
         "name": "Modus",

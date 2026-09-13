@@ -3,20 +3,18 @@ import { describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import type { useComfyRegistryService } from '@/services/comfyRegistryService'
 import type { MissingNodeType } from '@/types/comfy'
 
 import { useErrorGroups } from './useErrorGroups'
-vi.mock(import('@/services/comfyRegistryService'), async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    useComfyRegistryService: () => ({
-      ...actual.useComfyRegistryService(),
+vi.mock(import('@/services/comfyRegistryService'), () => ({
+  useComfyRegistryService: () =>
+    fromAny<ReturnType<typeof useComfyRegistryService>, unknown>({
       inferPackFromNodeName: vi.fn(async () => null),
-      listAllPacks: vi.fn(async () => ({ nodes: [] }))
+      listAllPacks: vi.fn(async () => ({ nodes: [] })),
+      getPackById: vi.fn()
     })
-  }
-})
+}))
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {

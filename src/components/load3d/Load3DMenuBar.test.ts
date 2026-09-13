@@ -1,5 +1,12 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { fromPartial } from '@total-typescript/shoehorn'
+import {
+  createSharedComposable,
+  useDocumentVisibility,
+  useElementSize,
+  useStorage
+} from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Ref } from 'vue'
 import { ref } from 'vue'
@@ -17,16 +24,23 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 let mockedTopBarWidth: Ref<number>
 
-vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  createSharedComposable: (composable: () => unknown) => composable,
-  useDocumentVisibility: () => ref('visible'),
-  useElementSize: () => ({ width: mockedTopBarWidth, height: ref(40) }),
-  useStorage: (_key: string, defaultValue: unknown) => ref(defaultValue)
-}))
+vi.mock(import('@vueuse/core'), { spy: true })
 
 beforeEach(() => {
   mockedTopBarWidth = ref(0)
+  vi.mocked(createSharedComposable).mockImplementation(
+    (composable) => composable
+  )
+  vi.mocked(useDocumentVisibility).mockImplementation(() => ref('visible'))
+  vi.mocked(useElementSize).mockImplementation(() =>
+    fromPartial({
+      width: mockedTopBarWidth,
+      height: ref(40)
+    })
+  )
+  vi.mocked(useStorage).mockImplementation((_key, defaultValue) =>
+    ref(defaultValue)
+  )
 })
 
 const i18n = createI18n({

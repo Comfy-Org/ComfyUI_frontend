@@ -1,5 +1,6 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
+import { useElementSize } from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -13,14 +14,7 @@ import type { NodeId } from '@/types/nodeId'
 
 import { usePainter } from './usePainter'
 
-vi.mock(import('@vueuse/core'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  useElementSize: vi.fn(() => ({
-    width: ref(512),
-    height: ref(512),
-    stop: vi.fn()
-  }))
-}))
+vi.mock(import('@vueuse/core'), { spy: true })
 
 vi.mock<unknown>(import('@/composables/maskeditor/StrokeProcessor'), () => ({
   StrokeProcessor: vi.fn(() => ({
@@ -131,6 +125,11 @@ function mountPainter(
 
 describe('usePainter', () => {
   beforeEach(() => {
+    vi.mocked(useElementSize).mockImplementation(() => ({
+      width: ref(512),
+      height: ref(512),
+      stop: vi.fn()
+    }))
     makePaintNode()
     mockIsInputConnected.mockReturnValue(false)
     mockGetInputNode.mockReturnValue(null)

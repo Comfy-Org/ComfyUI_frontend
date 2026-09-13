@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createRendererViewState } from '@/renderer/three/sharedWebGLRenderer'
@@ -17,14 +18,16 @@ vi.mock('./Load3dUtils', () => ({
   }
 }))
 
-vi.mock('three', async (importOriginal) => {
-  const actual = await importOriginal<typeof THREE>()
-  class MockPMREMGenerator {
-    compileEquirectangularShader = vi.fn()
-    fromEquirectangular = mockFromEquirectangular
-    dispose = mockDisposePMREM
-  }
-  return { ...actual, PMREMGenerator: MockPMREMGenerator }
+vi.mock('three', { spy: true })
+
+beforeEach(() => {
+  vi.spyOn(THREE, 'PMREMGenerator').mockImplementation(function () {
+    return fromPartial<THREE.PMREMGenerator>({
+      compileEquirectangularShader: vi.fn(),
+      fromEquirectangular: mockFromEquirectangular,
+      dispose: mockDisposePMREM
+    })
+  })
 })
 
 vi.mock('three/examples/jsm/loaders/EXRLoader', () => {
@@ -79,7 +82,7 @@ describe('HDRIManager', () => {
 
     manager = new HDRIManager(
       scene,
-      {} as THREE.WebGLRenderer,
+      fromAny<THREE.WebGLRenderer, unknown>({}),
       createRendererViewState(),
       eventManager
     )

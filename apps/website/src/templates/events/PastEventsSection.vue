@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import type { ComfyEvent } from '../../data/events'
 import type { Locale } from '../../i18n/translations'
 
 import CardArticleGallery01 from '../../components/blocks/CardArticleGallery01.vue'
@@ -13,7 +14,10 @@ import {
   pastCtaLabel
 } from '../../utils/eventsDirectory'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale = 'en', events = pastEvents } = defineProps<{
+  locale?: Locale
+  events?: readonly ComfyEvent[]
+}>()
 
 const CATEGORY_ORDER = [
   'livestream',
@@ -36,7 +40,7 @@ function cardDate(iso: string): string {
 }
 
 const items = computed<CardArticleGalleryItem[]>(() =>
-  pastEvents.map((event) => {
+  events.map((event) => {
     // Carousel art is sized and hosted for the hero slider only, so no
     // featured.media fallback here. An event without dedicated card art still
     // gets a card; CardArticle01 fills the media slot with a brand gradient.

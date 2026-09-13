@@ -260,6 +260,32 @@ describe('HeaderAccount sign-in link', () => {
     ).toBe('/login/?returnTo=%2Fworkshop%2Fmodels%2Fexample%2F%3Ftab%3Dapi')
   })
 
+  it('stashes unsaved work even when a modified click opens sign-in in a new tab', async () => {
+    const stash = vi.fn()
+    const stop = onBeforeSignInLeave(stash)
+    onTestFinished(stop)
+    render(HeaderAccount)
+
+    const link = screen.getByRole('link', { name: /sign in/i })
+    await fireEvent(link, new Event('pointerdown', { bubbles: true }))
+    const notPrevented = link.dispatchEvent(
+      new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        metaKey: true
+      })
+    )
+
+    expect(
+      stash,
+      'a new tab must carry the latest form, so the stash runs even when the click is not the primary navigation'
+    ).toHaveBeenCalledOnce()
+    expect(
+      notPrevented,
+      'the modified click must reach the browser, so its default new-tab navigation is never prevented'
+    ).toBe(true)
+  })
+
   it('prepares the destination on focus, so a keyboard open-in-new-tab keeps it too', async () => {
     window.history.replaceState({}, '', '/workshop/models/example/')
     render(HeaderAccount)

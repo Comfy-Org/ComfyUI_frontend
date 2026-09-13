@@ -15,9 +15,7 @@ import { useShiftKeySync } from '@/renderer/extensions/vueNodes/composables/useS
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 
-export const useNodeDrag = createSharedComposable(useNodeDragIndividual)
-
-function useNodeDragIndividual() {
+export const useNodeDrag = createSharedComposable(() => {
   const mutations = useLayoutMutations(LayoutSource.Vue)
   const { selectedNodeIds, selectedItems } = storeToRefs(useCanvasStore())
 
@@ -323,4 +321,4 @@ function useNodeDragIndividual() {
     handleDrag,
     endDrag
   }
-}
+})

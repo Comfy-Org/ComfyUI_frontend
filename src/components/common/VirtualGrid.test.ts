@@ -1,4 +1,6 @@
 import { render, screen } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { useElementSize, useScroll } from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Ref } from 'vue'
 import { nextTick, ref } from 'vue'
@@ -11,19 +13,21 @@ let mockedWidth: Ref<number>
 let mockedHeight: Ref<number>
 let mockedScrollY: Ref<number>
 
-vi.mock<unknown>(import('@vueuse/core'), async () => {
-  const actual = await vi.importActual<Record<string, unknown>>('@vueuse/core')
-  return {
-    ...actual,
-    useElementSize: () => ({ width: mockedWidth, height: mockedHeight }),
-    useScroll: () => ({ y: mockedScrollY })
-  }
-})
+vi.mock(import('@vueuse/core'), { spy: true })
 
 beforeEach(() => {
   mockedWidth = ref(400)
   mockedHeight = ref(200)
   mockedScrollY = ref(0)
+  vi.mocked(useElementSize).mockImplementation(() =>
+    fromPartial({
+      width: mockedWidth,
+      height: mockedHeight
+    })
+  )
+  vi.mocked(useScroll).mockImplementation(() =>
+    fromPartial({ y: mockedScrollY })
+  )
 })
 
 function createItems(count: number): TestItem[] {

@@ -49,19 +49,16 @@ vi.mock(import('../../config/workshop-session-state'), () => ({
   })
 }))
 
-vi.mock(import('../../scripts/posthog'), async (importOriginal) => ({
-  ...(await importOriginal()),
+vi.mock(import('../../scripts/posthog'), () => ({
   useWorkshopAuthFlag: () => computed(() => auth.enabled.value),
   useWorkshopAuthFlagSettled: () => computed(() => auth.flagSettled.value)
 }))
 
-vi.mock(import('../../config/workshop-router'), async (importOriginal) => ({
-  ...(await importOriginal()),
+vi.mock(import('../../config/workshop-router'), () => ({
   runWorkshopRouter: vi.fn()
 }))
 
-vi.mock(import('../../config/workshop-credits'), async (importOriginal) => ({
-  ...(await importOriginal()),
+vi.mock(import('../../config/workshop-credits'), () => ({
   refreshWorkshopCredits: vi.fn().mockResolvedValue(undefined),
   useWorkshopCredits: () => ({
     balance: computed(() => credits.balance.value),

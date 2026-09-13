@@ -14,6 +14,7 @@ import type {
   ModelAdapterCapabilities,
   ModelLoadContext
 } from './ModelAdapter'
+import { fetchModelData } from './ModelAdapter'
 
 function makeEventManagerStub() {
   return {
@@ -101,11 +102,7 @@ vi.mock('./SplatModelAdapter', () => ({
   }
 }))
 
-vi.mock('./ModelAdapter', async () => {
-  const actual =
-    await vi.importActual<typeof import('./ModelAdapter')>('./ModelAdapter')
-  return { ...actual, fetchModelData: fetchModelDataMock }
-})
+vi.mock('./ModelAdapter', { spy: true })
 
 vi.mock('@/scripts/metadata/ply', () => ({
   isGaussianSplatPLY: isGaussianSplatPLYMock
@@ -139,6 +136,7 @@ function makeLoaderManager() {
 
 describe('LoaderManager', () => {
   beforeEach(() => {
+    vi.mocked(fetchModelData).mockImplementation(fetchModelDataMock)
     meshLoad.mockResolvedValue(null)
     splatLoad.mockResolvedValue(null)
     pointCloudLoad.mockResolvedValue(null)

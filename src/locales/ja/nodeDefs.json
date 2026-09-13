@@ -821,6 +821,83 @@
       }
     }
   },
+  "BriaAddObject": {
+    "description": "Bria を使用して、プレーンテキストで説明したオブジェクトを画像に挿入します。Bria はフレーム全体を約1メガピクセルで再レンダリングするため、結果は入力画像とピクセル単位では一致しません。",
+    "display_name": "Bria オブジェクトを追加",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "instruction": {
+        "name": "指示",
+        "tooltip": "追加する内容と場所を指定します。例: 「テーブルの上に花の入った赤い花瓶を置く」。"
+      },
+      "moderation": {
+        "name": "モデレーション",
+        "tooltip": "モデレーション設定"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "Bria はここでシードを使用せず、呼び出すたびに編集結果を再生成するため、繰り返し実行すると結果が異なる場合があります。この値は送信されず、このノードのキャッシュキーのみを変更します。これにより、同一のグラフでもキャッシュされた結果を返す代わりに編集が再実行されます。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "編集後の画像の構造化された説明。Bria FIBO Image Edit で後続の編集を行うために使用します。"
+      }
+    }
+  },
+  "BriaEraseByText": {
+    "description": "Bria を使用して、プレーンテキストで指定したオブジェクトを画像から削除します。Bria はフレーム全体を約1メガピクセルで再レンダリングするため、結果は入力画像とピクセル単位では一致しません。",
+    "display_name": "Bria テキストで消去",
+    "inputs": {
+      "image": {
+        "name": "画像"
+      },
+      "moderation": {
+        "name": "モデレーション",
+        "tooltip": "モデレーション設定"
+      },
+      "object_name": {
+        "name": "object_name",
+        "tooltip": "削除するオブジェクトの名前。例: 「ランプ」。複数のオブジェクトを一度に指定できます。例: 「電話と鉛筆」。画像内に存在しないものを指定しても、再レンダリングされた画像が返され、料金が発生します。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "編集後の画像の構造化された説明。Bria FIBO Image Edit で後続の編集を行うために使用します。"
+      }
+    }
+  },
+  "BriaEraseForeground": {
+    "description": "Bria を使用して画像の前景を削除し、その場所に背景を生成します。人物だけでなく、Bria が前景として認識するすべてが削除されます。変更されないピクセルは保持されますが、出力は約1メガピクセルに近い標準サイズで再レンダリングされます。",
+    "display_name": "Bria 前景を消去",
+    "inputs": {
+      "image": {
+        "name": "画像"
+      },
+      "moderation": {
+        "name": "モデレーション",
+        "tooltip": "モデレーション設定"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaEraser": {
     "description": "Briaを使用して、マスクで囲まれたオブジェクトまたは領域を画像から削除します。",
     "display_name": "Bria イレーサー",
@@ -1004,6 +1081,36 @@
       }
     }
   },
+  "BriaRelight": {
+    "description": "Bria を使用して画像の照明の雰囲気と方向を変更します。Bria はフレーム全体を約1メガピクセルで再レンダリングするため、結果は入力画像とピクセル単位では一致しません。",
+    "display_name": "Bria 再ライティング",
+    "inputs": {
+      "image": {
+        "name": "画像"
+      },
+      "light_direction": {
+        "name": "light_direction",
+        "tooltip": "光が来る方向。正午、被写体へのスポットライト、強いスタジオ照明などのハードライトの雰囲気は、この設定の影響を最も受けます。"
+      },
+      "light_type": {
+        "name": "light_type",
+        "tooltip": "適用する照明の雰囲気。"
+      },
+      "moderation": {
+        "name": "モデレーション",
+        "tooltip": "モデレーション設定"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "編集後の画像の構造化された説明。Bria FIBO Image Edit で後続の編集を行うために使用します。"
+      }
+    }
+  },
   "BriaRemoveImageBackground": {
     "description": "Bria RMBG 2.0 を使用して画像の背景を除去します。",
     "display_name": "Bria 画像背景除去",
@@ -1054,6 +1161,133 @@
       }
     }
   },
+  "BriaReplaceImageBackground": {
+    "description": "Bria を使用して、プロンプトで説明した、または参照画像でガイドした背景に画像の背景を置き換えます。被写体のピクセルは保持され、その周囲に背景が生成されます。",
+    "display_name": "Bria 画像背景を置換",
+    "inputs": {
+      "background": {
+        "name": "背景",
+        "tooltip": "プロンプトで新しい背景を指定するか、参照画像で誘導します。"
+      },
+      "background_mode": {
+        "name": "モード"
+      },
+      "background_prompt": {
+        "name": "プロンプト"
+      },
+      "background_refine_prompt": {
+        "name": "プロンプトの改善"
+      },
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "moderation": {
+        "name": "モデレーション",
+        "tooltip": "モデレーション設定"
+      },
+      "original_quality": {
+        "name": "元の品質",
+        "tooltip": "結果を約100万ピクセルに拡大・縮小する代わりに、入力の正確なピクセルサイズを返します。大きな入力では大きな画像が返されます。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "同じシードでは通常同じ背景が返されますが、自動プロンプト改善によって変化する場合があります。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "改善済みプロンプト",
+        "tooltip": "Bria が生成元として使用したプロンプトです。参照画像の経路では空になります。"
+      }
+    }
+  },
+  "BriaReplaceObject": {
+    "description": "Bria を使用して、画像内のオブジェクトをプレーンテキストで指定した別のオブジェクトに置き換えます。Bria はフレーム全体を約100万ピクセルで再レンダリングするため、結果は入力とピクセル単位では一致しません。",
+    "display_name": "Bria オブジェクト置換",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "instruction": {
+        "name": "指示",
+        "tooltip": "何を何に置き換えるかを指定します。例:「赤いリンゴを緑のナシに置き換える」。"
+      },
+      "moderation": {
+        "name": "モデレーション",
+        "tooltip": "モデレーション設定"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "Bria はここではシードを受け取らず、呼び出すたびに編集を再生成するため、繰り返し実行すると結果が異なる場合があります。この値は送信されません。このノードのキャッシュキーのみを変更し、それ以外は同一のグラフで、キャッシュされた結果を返す代わりに編集を再実行します。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "構造化プロンプト",
+        "tooltip": "編集後の画像の構造化された説明です。Bria FIBO Image Edit で後続の編集を行うために使用します。"
+      }
+    }
+  },
+  "BriaReseason": {
+    "description": "Bria を使用して画像を別の季節に変更します。シーン全体が再レンダリングされるため、季節以外の風景も変化する場合があります。Bria はフレーム全体を約100万ピクセルで再レンダリングするため、結果は入力とピクセル単位では一致しません。",
+    "display_name": "Bria 季節変更",
+    "inputs": {
+      "image": {
+        "name": "画像"
+      },
+      "moderation": {
+        "name": "モデレーション",
+        "tooltip": "モデレーション設定"
+      },
+      "season": {
+        "name": "季節",
+        "tooltip": "適用する季節。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "構造化プロンプト",
+        "tooltip": "編集後の画像の構造化された説明です。Bria FIBO Image Edit で後続の編集を行うために使用します。"
+      }
+    }
+  },
+  "BriaRestorePhoto": {
+    "description": "Bria を使用して古い写真や損傷した写真を修復します。粒状感、傷、ぼけを除去し、経年による色かぶりを補正します。台紙やスタジオの縁は切り取られる場合があり、顔は描き直されます。Bria はフレーム全体を約100万ピクセルで再レンダリングするため、結果は入力とピクセル単位では一致しません。拡大には代わりに Bria Increase Resolution を使用してください。",
+    "display_name": "Bria 写真修復",
+    "inputs": {
+      "image": {
+        "name": "画像"
+      },
+      "moderation": {
+        "name": "モデレーション",
+        "tooltip": "モデレーション設定"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Bria FIBO Image Editで後続の編集を行うための、編集済み画像の構造化された説明。"
+      }
+    }
+  },
   "BriaTransparentVideoBackground": {
     "description": "Bria を使用して動画の背景を除去し、切り抜かれたフレームとアルファマスクを返します。両方を合成ノードに接続するか、「Save WEBM」に渡して透明な動画を書き出せます。",
     "display_name": "Bria 動画背景除去（透明）",
@@ -1076,6 +1310,33 @@
       },
       "1": {
         "name": "マスク",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVideoEraser": {
+    "description": "Bria を使用して、フレームごとのマスクで覆われた部分を動画から消去し、その隙間を補完します。マスクは消去する部分を白、それ以外を黒にする必要があります。Bria は、偶数のピクセル寸法で毎秒20～30フレーム、最大5.1秒のクリップに対応します。音声はデフォルトで保持されます。返されるクリップは入力より数フレーム短くなる場合があります。",
+    "display_name": "Bria ビデオ消去",
+    "inputs": {
+      "mask": {
+        "name": "mask",
+        "tooltip": "動画の各フレームに対応するマスク。消去するオブジェクトの位置を白にします。マスクまたはマスク動画のいずれか一方のみを指定してください。"
+      },
+      "mask_video": {
+        "name": "mask_video",
+        "tooltip": "動画と同じ寸法およびフレーム数を持つ、すでにエンコード済みのマスク動画。マスクまたはマスク動画のいずれか一方のみを指定してください。"
+      },
+      "preserve_audio": {
+        "name": "preserve_audio",
+        "tooltip": "入力の音声トラックを保持します。"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "消去対象のクリップ。"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -28669,11 +28930,27 @@
         "name": "モード",
         "tooltip": "full: メロディーとコードを生成します。melody: メロディーのみを生成します。カバーにはこちらを推奨します。"
       },
+      "penalty_window": {
+        "name": "penalty_window",
+        "tooltip": "繰り返しにペナルティを与えるために使用する、直近の ABC トークン数。"
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
       "seed": {
         "name": "シード"
       },
       "style": {
         "name": "style"
+      },
+      "temperature": {
+        "name": "temperature"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
       }
     },
     "outputs": {
@@ -28702,7 +28979,7 @@
       },
       "max_duration": {
         "name": "max_duration",
-        "tooltip": "最大再生時間です。生成はこれより早く終了する場合があります。リリース版では360秒の上限を使用します。"
+        "tooltip": "最大時間（秒）。長いプロンプトでは自動的に短縮されます。生成はそれより早く停止する場合があります。"
       },
       "mode": {
         "name": "モード",

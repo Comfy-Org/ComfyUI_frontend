@@ -4,7 +4,6 @@ import { nextTick, reactive, ref } from 'vue'
 import { assetService } from '@/platform/assets/services/assetService'
 import type * as DistributionTypes from '@/platform/distribution/types'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import type * as RemoteConfigModule from '@/platform/remoteConfig/remoteConfig'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { api } from '@/scripts/api'
 import {
@@ -29,15 +28,11 @@ const remoteConfigHolder = await vi.hoisted(async () => {
   return { current: ref<RemoteConfig>({}) }
 })
 
-vi.mock<unknown>(
-  import('@/platform/remoteConfig/remoteConfig'),
-  async (importOriginal) => ({
-    ...(await importOriginal<typeof RemoteConfigModule>()),
-    get remoteConfig() {
-      return remoteConfigHolder.current
-    }
-  })
-)
+vi.mock<unknown>(import('@/platform/remoteConfig/remoteConfig'), () => ({
+  get remoteConfig() {
+    return remoteConfigHolder.current
+  }
+}))
 
 const featureState = vi.hoisted(() => ({
   serverFeatures: {} as Record<string, unknown>

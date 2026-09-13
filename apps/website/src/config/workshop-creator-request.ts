@@ -7,7 +7,7 @@ import { workshopFileBase64 } from './workshop-file-encoding'
 import { WorkshopRouterError } from './workshop-router-errors'
 import { renderWorkshopRequestTemplate } from './workshop-request-template'
 import { prepareWorkshopRequestCallback } from './workshop-request-callbacks'
-import { loadWorkshopExampleFile } from './workshop-example-file'
+import { loadWorkshopExampleFile } from './workshop-example-file-loader'
 import { MAX_REQUEST_BYTES } from './workshop-limits'
 
 export interface EncodedWorkshopFile {

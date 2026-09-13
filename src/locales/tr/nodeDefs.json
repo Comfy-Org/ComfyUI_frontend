@@ -821,6 +821,83 @@
       }
     }
   },
+  "BriaAddObject": {
+    "description": "Bria kullanarak bir görüntüye düz metinle açıklanan bir nesne ekleyin. Bria, tüm kareyi yaklaşık 1 megapikselde yeniden oluşturur; bu nedenle sonuç girdiyle piksel hizalı değildir.",
+    "display_name": "Bria Nesne Ekle",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "image": {
+        "name": "görüntü"
+      },
+      "instruction": {
+        "name": "yönerge",
+        "tooltip": "Ne ekleneceği ve nereye ekleneceği; örneğin, \"Masaya çiçekli kırmızı bir vazo yerleştir\"."
+      },
+      "moderation": {
+        "name": "moderasyon",
+        "tooltip": "Moderasyon ayarları"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Bria burada tohum almaz ve düzenlemeyi her çağrıda yeniden yorumlar; bu nedenle tekrarlanan çalıştırmalar farklı sonuçlar verebilir. Değer hiçbir zaman gönderilmez: yalnızca bu düğümün önbellek anahtarını değiştirir; böylece diğer açılardan aynı olan bir grafik, önbelleğe alınmış sonucu döndürmek yerine düzenlemeyi yeniden çalıştırır."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Bria FIBO Image Edit ile yapılacak sonraki düzenleme için, düzenlenmiş görüntünün yapılandırılmış açıklaması."
+      }
+    }
+  },
+  "BriaEraseByText": {
+    "description": "Bria kullanarak bir görüntüden düz metinle adı belirtilen bir nesneyi kaldırın. Bria, tüm kareyi yaklaşık 1 megapikselde yeniden oluşturur; bu nedenle sonuç girdiyle piksel hizalı değildir.",
+    "display_name": "Bria Metinle Sil",
+    "inputs": {
+      "image": {
+        "name": "görüntü"
+      },
+      "moderation": {
+        "name": "moderasyon",
+        "tooltip": "Moderasyon ayarları"
+      },
+      "object_name": {
+        "name": "object_name",
+        "tooltip": "Kaldırılacak nesnenin adı; örneğin, \"lamba\". \"telefon ve kalemler\" gibi birden fazla nesne aynı anda adlandırılabilir. Resimde olmayan bir şeyi adlandırmak da yeniden oluşturulmuş bir görüntü döndürür ve ücretlendirilir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Bria FIBO Image Edit ile yapılacak sonraki düzenleme için, düzenlenmiş görüntünün yapılandırılmış açıklaması."
+      }
+    }
+  },
+  "BriaEraseForeground": {
+    "description": "Bria ile bir görüntünün ön planını kaldırın ve yerine bir arka plan oluşturun. Bria'nın ön plan olarak algıladığı her şey gider; yalnızca insanlar değil. Dokunulmamış pikseller korunur, ancak çıktı 1 megapiksele yakın standart bir boyutta yeniden oluşturulur.",
+    "display_name": "Bria Ön Planı Sil",
+    "inputs": {
+      "image": {
+        "name": "görüntü"
+      },
+      "moderation": {
+        "name": "moderasyon",
+        "tooltip": "Moderasyon ayarları"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaEraser": {
     "description": "Bria kullanarak bir görüntüden maskeyle ana hatları belirtilen nesneleri veya alanları kaldırın.",
     "display_name": "Bria Silgi",
@@ -1004,6 +1081,36 @@
       }
     }
   },
+  "BriaRelight": {
+    "description": "Bria kullanarak bir görüntünün aydınlatma atmosferini ve yönünü değiştirin. Bria, tüm kareyi yaklaşık 1 megapikselde yeniden oluşturur; bu nedenle sonuç girdiyle piksel hizalı değildir.",
+    "display_name": "Bria Aydınlatmayı Değiştir",
+    "inputs": {
+      "image": {
+        "name": "görüntü"
+      },
+      "light_direction": {
+        "name": "light_direction",
+        "tooltip": "Işığın geldiği yer. Öğle vakti, özne üzerindeki spot ışığı ve sert stüdyo aydınlatması gibi sert ışıklı atmosferler buna en çok tepki verir."
+      },
+      "light_type": {
+        "name": "light_type",
+        "tooltip": "Uygulanacak aydınlatma atmosferi."
+      },
+      "moderation": {
+        "name": "moderasyon",
+        "tooltip": "Moderasyon ayarları"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Bria FIBO Image Edit ile yapılacak sonraki düzenleme için, düzenlenmiş görüntünün yapılandırılmış açıklaması."
+      }
+    }
+  },
   "BriaRemoveImageBackground": {
     "description": "Bria RMBG 2.0 kullanarak bir görselin arka planını kaldırın.",
     "display_name": "Bria Görsel Arka Planı Kaldır",
@@ -1054,6 +1161,133 @@
       }
     }
   },
+  "BriaReplaceImageBackground": {
+    "description": "Bir görüntünün arka planını, bir istemle açıklayarak veya referans görüntülerle yönlendirerek Bria ile değiştirin. Öznenin pikselleri korunur; arka plan bunların çevresinde oluşturulur.",
+    "display_name": "Bria Görüntü Arka Planını Değiştir",
+    "inputs": {
+      "background": {
+        "name": "arka plan",
+        "tooltip": "Yeni arka planı bir istemle tanımlayın veya referans görüntülerle yönlendirin."
+      },
+      "background_mode": {
+        "name": "mod"
+      },
+      "background_prompt": {
+        "name": "istem"
+      },
+      "background_refine_prompt": {
+        "name": "refine_prompt"
+      },
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "image": {
+        "name": "görüntü"
+      },
+      "moderation": {
+        "name": "moderasyon",
+        "tooltip": "Moderasyon ayarları"
+      },
+      "original_quality": {
+        "name": "original_quality",
+        "tooltip": "Sonucu yaklaşık 1 megapiksele ölçeklemek yerine girdinin tam piksel boyutunu döndürür. Böylece büyük bir girdi büyük bir görüntü döndürür."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Aynı seed genellikle aynı arka planı döndürür; otomatik istem iyileştirme yine de sonucu değiştirebilir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "refined_prompt",
+        "tooltip": "Bria'nın oluşturduğu istem; referans görüntü yolunda boştur."
+      }
+    }
+  },
+  "BriaReplaceObject": {
+    "description": "Bria kullanarak bir görüntüdeki nesneyi düz metinle tanımlanan başka bir nesneyle değiştirin. Bria, tüm kareyi yaklaşık 1 megapikselde yeniden işler; bu nedenle sonuç girdiyle piksel hizalı değildir.",
+    "display_name": "Bria Nesne Değiştir",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "image": {
+        "name": "görüntü"
+      },
+      "instruction": {
+        "name": "talimat",
+        "tooltip": "Neyin neyle değiştirileceği; örneğin, 'Kırmızı elmayı yeşil armutla değiştir'."
+      },
+      "moderation": {
+        "name": "moderasyon",
+        "tooltip": "Moderasyon ayarları"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Bria burada seed kullanmaz ve her çağrıda düzenlemeyi yeniden yorumlar; bu nedenle tekrarlanan çalıştırmalar farklılık gösterebilir. Değer asla gönderilmez: yalnızca bu düğümün önbellek anahtarını değiştirir; böylece diğer açılardan aynı olan bir grafik, önbelleğe alınmış sonucu döndürmek yerine düzenlemeyi yeniden çalıştırır."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Bria FIBO Image Edit ile yapılacak sonraki bir düzenleme için, düzenlenmiş görüntünün yapılandırılmış açıklaması."
+      }
+    }
+  },
+  "BriaReseason": {
+    "description": "Bria ile bir görüntüyü başka bir mevsime taşıyın. Tüm sahne yeniden işlendiğinden, manzara mevsimin kendisinin ötesinde değişebilir. Bria, tüm kareyi yaklaşık 1 megapikselde yeniden işler; bu nedenle sonuç girdiyle piksel hizalı değildir.",
+    "display_name": "Bria Mevsim Değiştir",
+    "inputs": {
+      "image": {
+        "name": "görüntü"
+      },
+      "moderation": {
+        "name": "moderasyon",
+        "tooltip": "Moderasyon ayarları"
+      },
+      "season": {
+        "name": "mevsim",
+        "tooltip": "Uygulanacak mevsim."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Bria FIBO Image Edit ile yapılacak sonraki bir düzenleme için, düzenlenmiş görüntünün yapılandırılmış açıklaması."
+      }
+    }
+  },
+  "BriaRestorePhoto": {
+    "description": "Eski veya hasarlı bir fotoğrafı Bria ile onarın: gren, çizikler ve bulanıklık giderilir; yaşa bağlı renk kaymaları nötrleştirilir. Karton çerçeveler ve stüdyo kenarlıkları kırpılabilir, yüzler yeniden çizilir. Bria, tüm kareyi yaklaşık 1 megapikselde yeniden işler; bu nedenle sonuç girdiyle piksel hizalı değildir. Bunun yerine büyütmek için Bria Increase Resolution kullanın.",
+    "display_name": "Bria Fotoğraf Onar",
+    "inputs": {
+      "image": {
+        "name": "görüntü"
+      },
+      "moderation": {
+        "name": "moderasyon",
+        "tooltip": "Moderasyon ayarları"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Bria FIBO Image Edit ile sonraki bir düzenleme için, düzenlenmiş görüntünün yapılandırılmış açıklaması."
+      }
+    }
+  },
   "BriaTransparentVideoBackground": {
     "description": "Bria kullanarak bir videonun arka planını kaldırın ve kesilmiş karelerle birlikte bir alfa maskesi döndürün. Her ikisini de bir birleştirme (compositing) düğümüne bağlayın veya şeffaf bir video yazmak için Kaydet WEBM'e gönderin.",
     "display_name": "Bria Video Arka Planını Kaldır (Şeffaf)",
@@ -1076,6 +1310,33 @@
       },
       "1": {
         "name": "mask",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVideoEraser": {
+    "description": "Bria ile bir videoda kare başına maskenin kapladığı her şeyi silin ve boşluğu doldurun. Maske, silinmesi gereken yerlerde beyaz, diğer yerlerde siyah olmalıdır. Bria, çift piksel boyutlarına sahip, saniyede 20 ila 30 kare hızında en fazla 5.1 saniyelik clip'leri kabul eder; ses varsayılan olarak korunur. Döndürülen clip, girdiden birkaç kare daha kısa olabilir.",
+    "display_name": "Bria Video Silici",
+    "inputs": {
+      "mask": {
+        "name": "mask",
+        "tooltip": "Videonun her karesi için bir maske; silinecek nesnenin bulunduğu yerlerde beyaz olmalıdır. Maske veya maske videosu sağlayın, ikisini birden değil."
+      },
+      "mask_video": {
+        "name": "mask_video",
+        "tooltip": "Video ile aynı boyutlara ve kare sayısına sahip, önceden kodlanmış bir maske videosu. Maske veya maske videosu sağlayın, ikisini birden değil."
+      },
+      "preserve_audio": {
+        "name": "preserve_audio",
+        "tooltip": "Girdinin ses parçasını koru."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Silme uygulanacak clip."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -28669,11 +28930,27 @@
         "name": "mod",
         "tooltip": "full: melodi ve akor üretir; melody: yalnızca melodi üretir, cover'lar için önerilir."
       },
+      "penalty_window": {
+        "name": "penalty_window",
+        "tooltip": "Tekrarı cezalandırmak için kullanılan son ABC tokenlarının sayısı."
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
       "seed": {
         "name": "tohum"
       },
       "style": {
         "name": "style"
+      },
+      "temperature": {
+        "name": "temperature"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
       }
     },
     "outputs": {
@@ -28702,7 +28979,7 @@
       },
       "max_duration": {
         "name": "max_duration",
-        "tooltip": "Maksimum süre; oluşturma daha erken durabilir. Sürüm 360 saniyelik bir bütçe kullanır."
+        "tooltip": "Saniye cinsinden maksimum süre. Uzun istemler için otomatik olarak azaltılır; üretim daha erken durabilir."
       },
       "mode": {
         "name": "mod",

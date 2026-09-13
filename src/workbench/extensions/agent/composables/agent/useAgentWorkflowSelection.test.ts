@@ -1,5 +1,7 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -23,10 +25,7 @@ vi.mock<unknown>(
   () => ({ useWorkflowService: () => workflowService })
 )
 
-vi.mock<unknown>(import('vue-i18n'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  useI18n: () => ({ t: (key: string) => key })
-}))
+vi.mock(import('vue-i18n'), { spy: true })
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
@@ -73,6 +72,8 @@ function setup(
 
 describe('Agent workflow target selection', () => {
   beforeEach(() => {
+    // Re-applied per test: mocks are restored between tests.
+    vi.mocked(useI18n).mockReturnValue(fromPartial({ t: (key: string) => key }))
     localStorage.clear()
     workflowService.openWorkflow.mockClear()
     workflowService.saveWorkflowAs.mockClear()

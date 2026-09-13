@@ -1,14 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type * as LGraphCanvasModule from '@/lib/litegraph/src/LGraphCanvas'
+import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
 import { ComboWidget } from '@/lib/litegraph/src/widgets/ComboWidget'
 
-const { LGraphCanvas } = await vi.importActual<typeof LGraphCanvasModule>(
-  '@/lib/litegraph/src/LGraphCanvas'
-)
 type LGraphCanvasType = InstanceType<typeof LGraphCanvas>
 
 interface MockWidgetConfig extends Omit<IComboWidget, 'options'> {

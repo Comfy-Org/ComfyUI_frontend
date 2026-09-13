@@ -1,4 +1,3 @@
-import type * as DistributionModule from '@/platform/distribution/types'
 import { useReleaseStore } from '../common/releaseStore'
 beforeEach(() => {
   Object.assign(useReleaseStore(), {
@@ -46,8 +45,7 @@ const { toastErrorHandlerMock } = vi.hoisted(() => ({
   toastErrorHandlerMock: vi.fn()
 }))
 
-vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
-  ...(await importOriginal<typeof DistributionModule>()),
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false,
   isNightly: false,
   get isDesktop() {

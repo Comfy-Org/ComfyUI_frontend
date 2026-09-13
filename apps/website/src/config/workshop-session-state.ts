@@ -20,7 +20,10 @@ import type { EffectScope } from 'vue'
 
 import type { SessionSnapshot } from '@comfyorg/account/session'
 
-import { useWorkshopAuthFlag } from '../scripts/posthog'
+import {
+  useWorkshopAuthFlag,
+  useWorkshopAuthFlagSettled
+} from '../scripts/posthog'
 import {
   subscribeAuthRefreshTelemetry,
   workshopSessionClient
@@ -39,6 +42,7 @@ const PENDING: SessionSnapshot<User> = {
 
 const snapshot = shallowRef<SessionSnapshot<User>>(PENDING)
 let started = false
+let running = false
 let lifecycle: EffectScope | undefined
 let generation = 0
 let detachIdentity: (() => void) | undefined
@@ -47,6 +51,7 @@ let stopTelemetry: (() => void) | undefined
 let stopFocusListener: (() => void) | undefined
 
 function stopListeners(): void {
+  running = false
   detachIdentity?.()
   detachIdentity = undefined
   stopSnapshot?.()
@@ -61,6 +66,7 @@ async function begin(expectedGeneration: number): Promise<void> {
   const firebase = await import('./workshop-firebase')
   if (generation !== expectedGeneration) return
 
+  running = true
   stopSnapshot = workshopSessionClient.subscribe((next) => {
     snapshot.value = next
   })
@@ -83,17 +89,21 @@ function start(): void {
   // of binding its watcher to whichever component calls this first.
   lifecycle = effectScope(true)
   const enabled = useWorkshopAuthFlag()
+  const settled = useWorkshopAuthFlagSettled()
   lifecycle.run(() => {
     watch(
-      enabled,
-      (on, wasOn) => {
+      [enabled, settled],
+      ([on, isSettled]) => {
+        // A settlement-only change while a session is already live must not
+        // tear it down; only enabling from a stopped state begins a lifecycle.
+        if (on && running) return
         const expectedGeneration = ++generation
         stopListeners()
         snapshot.value = PENDING
         if (!on) {
-          // The flag starts false on every cold load until PostHog answers;
-          // only a real on->off transition means the credential must go.
-          if (wasOn) workshopSessionClient.clearStoredCredential()
+          // Retain the cached credential while the flag is unresolved; only a
+          // settled-off answer means Workshop is disabled and it must go.
+          if (isSettled) workshopSessionClient.clearStoredCredential()
           return
         }
         void begin(expectedGeneration).catch((error: unknown) => {

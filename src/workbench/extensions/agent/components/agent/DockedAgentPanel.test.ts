@@ -57,6 +57,7 @@ vi.mock(import('@/workbench/extensions/agent/AgentPanelRoot.vue'), async () => {
 function openPanel() {
   const store = useAgentPanelStore()
   store.enabled = true
+  store.consentAccepted = true
   store.isOpen = true
   return store
 }

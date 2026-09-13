@@ -1,4 +1,3 @@
-import type * as DistributionModule from '@/platform/distribution/types'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
@@ -28,8 +27,7 @@ const mockDownloadList = vi.fn(
   >[] => []
 )
 
-vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
-  ...(await importOriginal<typeof DistributionModule>()),
+vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 

@@ -63,7 +63,7 @@ describe('AgentPanel', () => {
       'The agent can now edit portrait. It works on 1 workflow at a time, and you can switch workflows during chat.'
     )
     expect(
-      screen.getByText('The AI agent can make mistakes')
+      screen.getByRole('button', { name: 'Share feedback' })
     ).toBeInTheDocument()
   })
 
@@ -74,9 +74,7 @@ describe('AgentPanel', () => {
       'The agent can now edit portrait. It works on 1 workflow at a time, and you can switch workflows during chat.'
     )
     expect(
-      screen.getByText(
-        'The AI agent can make mistakes. Double check your response.'
-      )
+      screen.getByRole('button', { name: 'Share feedback' })
     ).toBeInTheDocument()
   })
 

@@ -821,6 +821,83 @@
       }
     }
   },
+  "BriaAddObject": {
+    "description": "使用 Bria 將以純文字描述的物件插入影像中。Bria 會以約 100 萬像素重新渲染整個畫面，因此結果不會與輸入影像的像素對齊。",
+    "display_name": "Bria 新增物件",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "image": {
+        "name": "影像"
+      },
+      "instruction": {
+        "name": "指示",
+        "tooltip": "要新增的內容與位置，例如「在桌上放置一個插著花的紅色花瓶」。"
+      },
+      "moderation": {
+        "name": "內容審核",
+        "tooltip": "內容審核設定"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "Bria 在此不使用種子，且每次呼叫時都會重新構想編輯結果，因此重複執行的結果可能不同。此值永遠不會傳送：它只會變更此節點的快取鍵，讓原本相同的工作流程再次執行編輯，而非傳回快取的結果。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "已編輯影像的結構化描述，供後續使用 Bria FIBO Image Edit 進行編輯。"
+      }
+    }
+  },
+  "BriaEraseByText": {
+    "description": "使用 Bria 從影像中移除以純文字指定的物件。Bria 會以約 100 萬像素重新渲染整個畫面，因此結果不會與輸入影像的像素對齊。",
+    "display_name": "Bria 依文字移除",
+    "inputs": {
+      "image": {
+        "name": "影像"
+      },
+      "moderation": {
+        "name": "內容審核",
+        "tooltip": "內容審核設定"
+      },
+      "object_name": {
+        "name": "物件名稱",
+        "tooltip": "要移除的物件名稱，例如「檯燈」。可同時指定多個物件，例如「手機和鉛筆」。即使指定的物件不在圖片中，仍會傳回重新渲染的影像並計費。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "已編輯影像的結構化描述，供後續使用 Bria FIBO Image Edit 進行編輯。"
+      }
+    }
+  },
+  "BriaEraseForeground": {
+    "description": "使用 Bria 移除影像前景，並在原處生成背景。Bria 判定為前景的所有內容都會被移除，不僅限於人物。未變更的像素會保留，但輸出會以接近 100 萬像素的標準尺寸重新渲染。",
+    "display_name": "Bria 移除前景",
+    "inputs": {
+      "image": {
+        "name": "影像"
+      },
+      "moderation": {
+        "name": "內容審核",
+        "tooltip": "內容審核設定"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaEraser": {
     "description": "使用 Bria 從影像中移除由遮罩標示的物件或區域。",
     "display_name": "Bria 擦除",
@@ -1004,6 +1081,36 @@
       }
     }
   },
+  "BriaRelight": {
+    "description": "使用 Bria 變更影像的光照氛圍與方向。Bria 會以約 100 萬像素重新渲染整個畫面，因此結果不會與輸入影像的像素對齊。",
+    "display_name": "Bria 重新打光",
+    "inputs": {
+      "image": {
+        "name": "影像"
+      },
+      "light_direction": {
+        "name": "光線方向",
+        "tooltip": "光線來源方向。正午、主體聚光燈及強烈棚燈等硬光氛圍對此設定的反應最明顯。"
+      },
+      "light_type": {
+        "name": "光線類型",
+        "tooltip": "要套用的光照氛圍。"
+      },
+      "moderation": {
+        "name": "內容審核",
+        "tooltip": "內容審核設定"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "已編輯影像的結構化描述，供後續使用 Bria FIBO Image Edit 進行編輯。"
+      }
+    }
+  },
   "BriaRemoveImageBackground": {
     "description": "使用 Bria RMBG 2.0 移除影像的背景。",
     "display_name": "Bria 移除影像背景",
@@ -1054,6 +1161,133 @@
       }
     }
   },
+  "BriaReplaceImageBackground": {
+    "description": "使用 Bria 替換影像背景，可透過提示詞描述或由參考影像引導。主體的像素會保留，背景則會在其周圍生成。",
+    "display_name": "Bria 替換影像背景",
+    "inputs": {
+      "background": {
+        "name": "背景",
+        "tooltip": "使用提示詞描述新背景，或以參考圖片引導。"
+      },
+      "background_mode": {
+        "name": "模式"
+      },
+      "background_prompt": {
+        "name": "提示詞"
+      },
+      "background_refine_prompt": {
+        "name": "refine_prompt"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "image": {
+        "name": "影像"
+      },
+      "moderation": {
+        "name": "內容審核",
+        "tooltip": "內容審核設定"
+      },
+      "original_quality": {
+        "name": "original_quality",
+        "tooltip": "傳回輸入內容的確切像素尺寸，而非將結果縮放至約 100 萬像素。輸入較大時，傳回的圖片也會較大。"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "相同種子通常會產生相同背景；自動提示詞精修仍可能造成差異。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "refined_prompt",
+        "tooltip": "由 Bria 產生的提示詞；使用參考圖片流程時為空白。"
+      }
+    }
+  },
+  "BriaReplaceObject": {
+    "description": "使用 Bria 將圖片中的物件替換為以純文字描述的另一個物件。Bria 會以約 100 萬像素重新繪製整個畫面，因此結果不會與輸入內容像素對齊。",
+    "display_name": "Bria 替換物件",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "image": {
+        "name": "圖片"
+      },
+      "instruction": {
+        "name": "指令",
+        "tooltip": "要將什麼替換成什麼，例如「將紅蘋果替換為綠梨」。"
+      },
+      "moderation": {
+        "name": "內容審核",
+        "tooltip": "內容審核設定"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "Bria 在此不接受種子，且每次呼叫都會重新構想編輯內容，因此重複執行可能不同。此值絕不會傳送：它只會變更此節點的快取金鑰，讓其他方面相同的工作流程再次執行編輯，而非傳回快取結果。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "已編輯圖片的結構化描述，可用於後續以 Bria FIBO Image Edit 進行編輯。"
+      }
+    }
+  },
+  "BriaReseason": {
+    "description": "使用 Bria 將圖片轉換為另一個季節。整個場景會重新繪製，因此景物的變化可能不僅限於季節本身。Bria 會以約 100 萬像素重新繪製整個畫面，因此結果不會與輸入內容像素對齊。",
+    "display_name": "Bria 變換季節",
+    "inputs": {
+      "image": {
+        "name": "圖片"
+      },
+      "moderation": {
+        "name": "內容審核",
+        "tooltip": "內容審核設定"
+      },
+      "season": {
+        "name": "季節",
+        "tooltip": "要套用的季節。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "已編輯圖片的結構化描述，可用於後續以 Bria FIBO Image Edit 進行編輯。"
+      }
+    }
+  },
+  "BriaRestorePhoto": {
+    "description": "使用 Bria 修復老舊或受損的照片：可去除顆粒、刮痕與模糊，並中和因年代造成的色偏。相片裱卡與攝影棚邊框可能會被裁切移除，且人臉會重新繪製。Bria 會以約 100 萬像素重新繪製整個畫面，因此結果不會與輸入內容像素對齊。若要放大，請改用 Bria Increase Resolution。",
+    "display_name": "Bria 修復照片",
+    "inputs": {
+      "image": {
+        "name": "圖片"
+      },
+      "moderation": {
+        "name": "內容審核",
+        "tooltip": "內容審核設定"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "已編輯影像的結構化描述，供後續使用 Bria FIBO Image Edit 進行編輯。"
+      }
+    }
+  },
   "BriaTransparentVideoBackground": {
     "description": "使用 Bria 移除影片背景，並返回去背後的影格及 alpha 遮罩。可將兩者連接到合成節點，或傳送到『儲存 WEBM』以輸出透明影片。",
     "display_name": "Bria 移除影片背景（透明）",
@@ -1076,6 +1310,33 @@
       },
       "1": {
         "name": "遮罩",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVideoEraser": {
+    "description": "使用 Bria 從影片中移除每個影格 mask 所覆蓋的內容，並填補空缺。mask 中應移除的部分必須為白色，其餘部分為黑色。Bria 最多接受長度 5.1 秒、每秒 20 至 30 個影格且像素尺寸為偶數的片段；預設會保留音訊。回傳的片段可能比輸入短幾個影格。",
+    "display_name": "Bria 影片移除器",
+    "inputs": {
+      "mask": {
+        "name": "mask",
+        "tooltip": "影片中每個影格各一個 mask，要移除的物件所在處為白色。請提供 mask 或 mask 影片其中之一，不可同時提供。"
+      },
+      "mask_video": {
+        "name": "mask_video",
+        "tooltip": "已編碼的 mask 影片，尺寸和影格數須與影片相同。請提供 mask 或 mask 影片其中之一，不可同時提供。"
+      },
+      "preserve_audio": {
+        "name": "preserve_audio",
+        "tooltip": "保留輸入的音訊軌。"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "要移除內容的片段。"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -28669,11 +28930,27 @@
         "name": "模式",
         "tooltip": "完整：產生旋律和和弦；旋律：僅產生旋律，建議用於翻唱。"
       },
+      "penalty_window": {
+        "name": "penalty_window",
+        "tooltip": "用於懲罰重複的近期 ABC token 數量。"
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
       "seed": {
         "name": "種子"
       },
       "style": {
         "name": "style"
+      },
+      "temperature": {
+        "name": "temperature"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
       }
     },
     "outputs": {
@@ -28702,7 +28979,7 @@
       },
       "max_duration": {
         "name": "max_duration",
-        "tooltip": "最長時長；生成可能會提前停止。此版本使用 360 秒的預算。"
+        "tooltip": "最長時長（秒）。較長的提示詞會自動縮短；生成可能會提早停止。"
       },
       "mode": {
         "name": "模式",

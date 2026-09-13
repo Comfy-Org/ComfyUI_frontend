@@ -3,45 +3,52 @@ import { nextTick } from 'vue'
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
-import type {
-  LGraph,
-  LGraphNode,
-  Subgraph
-} from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 
-async function navigateToGraph(targetGraph: LGraph) {
-  const canvasStore = useCanvasStore()
-  const canvas = canvasStore.canvas
-  if (!canvas) return
+async function waitForAnimationFrame() {
+  await new Promise<void>((resolve) => {
+    const timeoutId = window.setTimeout(resolve, 100)
+    requestAnimationFrame(() => {
+      window.clearTimeout(timeoutId)
+      resolve()
+    })
+  })
+}
 
-  if (canvas.graph !== targetGraph) {
-    canvas.subgraph = targetGraph.isRootGraph
-      ? undefined
-      : (targetGraph as Subgraph)
-    canvas.setGraph(targetGraph)
+async function waitForCanvasNavigation() {
+  await nextTick()
 
-    await nextTick()
-
-    // Double RAF to wait for LiteGraph's internal canvas frame cycle
-    await new Promise((resolve) =>
-      requestAnimationFrame(() => requestAnimationFrame(resolve))
-    )
-  }
+  // Double frame waits for LiteGraph's internal canvas cycle. The timeout
+  // keeps focus calls from hanging while the document is backgrounded.
+  await waitForAnimationFrame()
+  await waitForAnimationFrame()
 }
 
 export function useFocusNode() {
   const canvasStore = useCanvasStore()
+  const navigationStore = useSubgraphNavigationStore()
 
   async function focusNodeInstance(node: LGraphNode) {
-    if (!node.graph) return
-
-    await navigateToGraph(node.graph)
     const canvas = canvasStore.canvas
-    if (!canvas || canvas.graph !== node.graph) return
+    if (!canvas || !node.graph) return
 
-    canvas.animateToBounds(node.boundingRect, {
-      viewport: visibleCanvasViewport(canvas)
+    const graphChanged = canvas.graph !== node.graph
+    const navigated = await navigationStore.navigateToGraph(node.graph)
+    if (!navigated) return
+    if (graphChanged) await waitForCanvasNavigation()
+
+    const activeCanvas = canvasStore.canvas
+    if (
+      !activeCanvas ||
+      activeCanvas.graph !== node.graph ||
+      !node.graph.nodes.includes(node)
+    ) {
+      return
+    }
+    activeCanvas.animateToBounds(node.boundingRect, {
+      viewport: visibleCanvasViewport(activeCanvas)
     })
   }
 

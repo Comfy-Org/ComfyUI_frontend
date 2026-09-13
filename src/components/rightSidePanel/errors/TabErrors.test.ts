@@ -18,22 +18,20 @@ import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNod
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import type { useComfyRegistryService } from '@/services/comfyRegistryService'
 import type { MissingNodeType } from '@/types/comfy'
 import { toNodeId } from '@/types/nodeId'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 
 import TabErrors from './TabErrors.vue'
-vi.mock(import('@/services/comfyRegistryService'), async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    useComfyRegistryService: () => ({
-      ...actual.useComfyRegistryService(),
+vi.mock(import('@/services/comfyRegistryService'), () => ({
+  useComfyRegistryService: () =>
+    fromAny<ReturnType<typeof useComfyRegistryService>, unknown>({
       inferPackFromNodeName: vi.fn(async () => null),
-      listAllPacks: vi.fn(async () => ({ nodes: [] }))
+      listAllPacks: vi.fn(async () => ({ nodes: [] })),
+      getPackById: vi.fn()
     })
-  }
-})
+}))
 
 const { mockFocusNode, mockRefreshMissingModels } = vi.hoisted(() => ({
   mockFocusNode: vi.fn(),
