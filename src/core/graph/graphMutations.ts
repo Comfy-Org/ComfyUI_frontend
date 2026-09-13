@@ -58,6 +58,21 @@ interface SemanticLayoutMutationPort {
   ): void
 }
 
+type LiveWidgetMutationResult =
+  | { status: 'skipped' }
+  | { status: 'applied'; resolvedValue: WidgetValue }
+  | { status: 'rolledBack'; resolvedValue: WidgetValue }
+
+interface SemanticLiveWidgetMutationPort {
+  setValue(
+    scope: GraphScope,
+    nodeId: NodeId,
+    name: string,
+    value: WidgetValue,
+    context: RemoteMutationContext
+  ): LiveWidgetMutationResult
+}
+
 interface GraphMutationBatch {
   addNode(payload: SemanticNodePayload): void
   reconcileNode(payload: SemanticNodePayload): void
@@ -98,6 +113,7 @@ export interface GraphMutations {
 export interface GraphMutationsDeps {
   getScope(): GraphScope | null
   layout: SemanticLayoutMutationPort
+  liveWidgets?: SemanticLiveWidgetMutationPort
 }
 
 type QueuedMutation =
@@ -642,21 +658,47 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
               mutation.node.state,
               context
             )
-            widgetStore.clearNode(
-              scope.rootGraphId,
-              mutation.node.state.id,
-              context
-            )
           } else {
             nodeStore.registerNode(scope, mutation.node.state, context)
           }
+          const incomingWidgetIds = new Set(
+            mutation.node.widgets.map((widget) =>
+              widgetId(scope.rootGraphId, mutation.node.state.id, widget.name)
+            )
+          )
           for (const widget of mutation.node.widgets) {
+            const id = widgetId(
+              scope.rootGraphId,
+              mutation.node.state.id,
+              widget.name
+            )
+            const previousWidgetType = widgetStore.getWidget(id)?.type
+            const projected = deps.liveWidgets?.setValue(
+              scope,
+              mutation.node.state.id,
+              widget.name,
+              widget.value,
+              context
+            )
+            const resolvedValue =
+              projected && projected.status !== 'skipped'
+                ? projected.resolvedValue
+                : widget.value
+            if (
+              mutation.kind === 'reconcileNode' &&
+              previousWidgetType &&
+              previousWidgetType !== widget.type &&
+              projected &&
+              projected.status !== 'skipped'
+            ) {
+              widgetStore.setType(id, widget.type)
+            }
             widgetStore.registerWidget(
-              widgetId(scope.rootGraphId, mutation.node.state.id, widget.name),
+              id,
               {
                 name: widget.name,
                 type: widget.type,
-                value: widget.value,
+                value: resolvedValue,
                 options: {},
                 label: widget.name
               },
@@ -664,6 +706,17 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
               undefined,
               context
             )
+            if (mutation.kind === 'reconcileNode') {
+              widgetStore.setValue(id, resolvedValue, context)
+            }
+          }
+          if (mutation.kind === 'reconcileNode') {
+            for (const id of widgetStore.getNodeWidgetIds(
+              scope.rootGraphId,
+              mutation.node.state.id
+            )) {
+              if (!incomingWidgetIds.has(id)) widgetStore.deleteWidget(id)
+            }
           }
           if (!existing) {
             deps.layout.createNode(
@@ -677,13 +730,28 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
         }
         case 'setWidget': {
           const id = widgetId(scope.rootGraphId, mutation.nodeId, mutation.name)
+          const projected = deps.liveWidgets?.setValue(
+            scope,
+            mutation.nodeId,
+            mutation.name,
+            mutation.value,
+            context
+          )
+          // Converge canonical state on whatever the live widget actually
+          // ended up holding: the post-callback value on success, or the
+          // rolled-back previous value on callback failure. Fall back to the
+          // remote value only when no live widget was found at all.
+          const resolvedValue =
+            projected && projected.status !== 'skipped'
+              ? projected.resolvedValue
+              : mutation.value
           if (!widgetStore.getWidget(id)) {
             widgetStore.registerWidget(
               id,
               {
                 name: mutation.name,
                 type: widgetType(mutation.value),
-                value: mutation.value,
+                value: resolvedValue,
                 options: {},
                 label: mutation.name
               },
@@ -692,7 +760,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
               context
             )
           } else {
-            widgetStore.setValue(id, mutation.value, context)
+            widgetStore.setValue(id, resolvedValue, context)
           }
           break
         }

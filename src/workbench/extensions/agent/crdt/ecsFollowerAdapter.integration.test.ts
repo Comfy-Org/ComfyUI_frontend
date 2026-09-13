@@ -786,7 +786,7 @@ describe('EcsFollowerAdapter integration', () => {
           .getGraphNodesFor('root', 'root')
           .map(({ id }) => id)
       ).toEqual(['1'])
-      expect(useWidgetValueStore().clearNode).toHaveBeenCalledTimes(1)
+      expect(useWidgetValueStore().clearNode).not.toHaveBeenCalled()
       destroy()
     })
 

@@ -322,6 +322,13 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return true
   }
 
+  function setType(widgetId: WidgetId, type: string): boolean {
+    const state = getWidget(widgetId)
+    if (!state) return false
+    state.type = type
+    return true
+  }
+
   function setLabel(widgetId: WidgetId, label: string): boolean {
     const state = getWidget(widgetId)
     if (!state) return false
@@ -518,6 +525,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     getWidgetVisibility,
     onValueChange,
     setValue,
+    setType,
     setLabel,
     updateOptions,
     deleteWidget,
