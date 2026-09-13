@@ -7,8 +7,6 @@ import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
 
-const rendererName = (enabled: boolean) => (enabled ? 'Nodes 2.0' : 'legacy')
-
 test.describe(
   'ECS migration geometry interactions',
   { tag: ['@canvas', '@node', '@vue-nodes'] },
@@ -111,7 +109,7 @@ test.describe(
     }
 
     for (const vueNodesEnabled of [false, true]) {
-      test(`reroute position and parent survive reload in ${rendererName(vueNodesEnabled)}`, async ({
+      test(`reroute position and parent survive reload in ${vueNodesEnabled ? 'Nodes 2.0' : 'legacy'}`, async ({
         comfyPage
       }) => {
         test.slow()
@@ -152,7 +150,7 @@ test.describe(
           .toBe(saved.parentId ?? null)
       })
 
-      test(`deleting a rerouted link target preserves a valid floating chain in ${rendererName(vueNodesEnabled)}`, async ({
+      test(`deleting a rerouted link target preserves a valid floating chain in ${vueNodesEnabled ? 'Nodes 2.0' : 'legacy'}`, async ({
         comfyPage
       }) => {
         test.slow()
@@ -296,7 +294,7 @@ test.describe(
         await expect.poll(readState).toEqual(expectedState)
       })
 
-      test(`recovers from empty link search and malformed clipboard in ${rendererName(vueNodesEnabled)}`, async ({
+      test(`recovers from empty link search and malformed clipboard in ${vueNodesEnabled ? 'Nodes 2.0' : 'legacy'}`, async ({
         comfyPage
       }) => {
         await comfyPage.settings.setSetting(
