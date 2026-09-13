@@ -57,7 +57,7 @@ type TemplateModelSetupOptions = {
   isDownloadable: (model: ModelWithUrl) => boolean
 }
 
-const modelTypeKeys: Readonly<Record<string, TemplateModelTypeKey>> = {
+const modelTypeKeys: Readonly<Partial<Record<string, TemplateModelTypeKey>>> = {
   checkpoints: 'checkpoint',
   diffusion_models: 'diffusionModel',
   text_encoders: 'textEncoder',

@@ -5,6 +5,7 @@ import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import type { ResolvedTemplateModelAvailability } from '@/platform/workflow/templates/utils/templateModelAvailability'
 
 const fixtures = vi.hoisted(() => {
@@ -84,8 +85,7 @@ const mocks = vi.hoisted(() => ({
   trackTemplateLibraryClosed: vi.fn()
 }))
 
-vi.mock('@/platform/distribution/types', async (importOriginal) => ({
-  ...(await importOriginal()),
+vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return runtime.isCloud
   },
@@ -94,8 +94,8 @@ vi.mock('@/platform/distribution/types', async (importOriginal) => ({
   }
 }))
 
-vi.mock(
-  '@/platform/workflow/templates/composables/useTemplateWorkflows',
+vi.mock<unknown>(
+  import('@/platform/workflow/templates/composables/useTemplateWorkflows'),
   () => ({
     useTemplateWorkflows: () => ({
       getTemplateDescription: mocks.getTemplateDescription,
@@ -109,8 +109,8 @@ vi.mock(
   })
 )
 
-vi.mock(
-  '@/platform/workflow/templates/composables/useTemplateModelAvailability',
+vi.mock<unknown>(
+  import('@/platform/workflow/templates/composables/useTemplateModelAvailability'),
   () => ({
     useTemplateModelAvailability: () => ({
       resolveAvailability: mocks.resolveAvailability
@@ -118,31 +118,14 @@ vi.mock(
   })
 )
 
-vi.mock(
-  '@/platform/workflow/templates/utils/templateModelMetadata',
-  async (importOriginal) => ({
-    ...(await importOriginal()),
+vi.mock<unknown>(
+  import('@/platform/workflow/templates/utils/templateModelMetadata'),
+  () => ({
     resolveTemplateModelMetadata: mocks.resolveTemplateModelMetadata
   })
 )
 
-vi.mock(
-  '@/platform/workflow/templates/repositories/workflowTemplatesStore',
-  () => ({
-    useWorkflowTemplatesStore: () => ({
-      enhancedTemplates: [fixtures.template],
-      filterTemplatesByCategory: mocks.filterTemplatesByCategory,
-      getLogoUrl: vi.fn(),
-      loadWorkflowTemplates: vi.fn(async () => true),
-      navGroupedTemplates: [
-        { id: 'all', label: 'All Templates' },
-        { id: 'popular', label: 'Popular' }
-      ]
-    })
-  })
-)
-
-vi.mock('@/composables/useTemplateFiltering', () => ({
+vi.mock<unknown>(import('@/composables/useTemplateFiltering'), () => ({
   useTemplateFiltering: (templates: {
     value: (typeof fixtures.template)[]
   }) => {
@@ -172,7 +155,7 @@ vi.mock('@/composables/useTemplateFiltering', () => ({
   }
 }))
 
-vi.mock('@/composables/useLazyPagination', () => ({
+vi.mock<unknown>(import('@/composables/useLazyPagination'), () => ({
   useLazyPagination: (items: { value: unknown[] }) => ({
     paginatedItems: items,
     isLoading: ref(false),
@@ -182,11 +165,11 @@ vi.mock('@/composables/useLazyPagination', () => ({
   })
 }))
 
-vi.mock('@/composables/useIntersectionObserver', () => ({
+vi.mock<unknown>(import('@/composables/useIntersectionObserver'), () => ({
   useIntersectionObserver: vi.fn()
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackTemplateLibraryClosed: mocks.trackTemplateLibraryClosed
   })
@@ -245,6 +228,18 @@ async function clickTemplateCard() {
 
 describe('WorkflowTemplateSelectorDialog detail routing', () => {
   beforeEach(() => {
+    const workflowTemplatesStore = useWorkflowTemplatesStore()
+    Object.assign(workflowTemplatesStore, {
+      enhancedTemplates: [fixtures.template],
+      navGroupedTemplates: [
+        { id: 'all', label: 'All Templates' },
+        { id: 'popular', label: 'Popular' }
+      ]
+    })
+    vi.mocked(
+      workflowTemplatesStore.filterTemplatesByCategory
+    ).mockImplementation(mocks.filterTemplatesByCategory)
+    vi.mocked(workflowTemplatesStore.loadWorkflowTemplates).mockResolvedValue()
     runtime.isCloud = false
     runtime.isDesktop = true
     mocks.prepareWorkflowTemplateForOpen.mockResolvedValue(fixtures.prepared)

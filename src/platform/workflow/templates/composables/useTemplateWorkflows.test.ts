@@ -5,6 +5,7 @@ import type { App } from 'vue'
 import { createApp, defineComponent } from 'vue'
 
 import { i18n } from '@/i18n'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useTemplateWorkflows as createTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import { app } from '@/scripts/app'
@@ -68,10 +69,6 @@ const { mockReportError } = vi.hoisted(() => ({
   mockReportError: vi.fn()
 }))
 
-const { mockToastAdd } = vi.hoisted(() => ({
-  mockToastAdd: vi.fn()
-}))
-
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () =>
     mockIsCloud.value ? { trackTemplate: mockTrackTemplate } : null
@@ -91,10 +88,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({ add: mockToastAdd })
-}))
-
 // Mock fetch
 global.fetch = vi.fn()
 
@@ -102,6 +95,7 @@ type MockWorkflowTemplatesStore = ReturnType<typeof useWorkflowTemplatesStore>
 
 beforeEach(() => {
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
+  vi.mocked(useToastStore().add).mockImplementation(() => undefined)
 })
 
 describe('useTemplateWorkflows', () => {

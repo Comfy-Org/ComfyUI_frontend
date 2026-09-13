@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -12,7 +10,7 @@ import {
 
 const mocks = vi.hoisted(() => ({ reportError: vi.fn() }))
 
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mocks.reportError
 }))
 
@@ -44,9 +42,7 @@ describe('useTemplateModelAvailability', () => {
   let modelStore: TestingModelStore
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ createSpy: vi.fn }))
-    // createTestingPinia makes readonly store getters writable for fixtures.
-    modelStore = useModelStore() as TestingModelStore
+    modelStore = useModelStore()
     modelStore.modelFolders = []
     modelStore.models = []
     vi.mocked(modelStore.loadModels).mockResolvedValue([])
