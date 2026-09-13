@@ -118,7 +118,11 @@ describe('RichComboWidget', () => {
     vi.mocked(axios.get).mockResolvedValueOnce({ data: [], status: 200 })
     const widget = makeWidget(makeRemoteCombo())
     renderWithProviders(RichComboWidget, { widget })
-    expect(screen.getByTestId('remote-combo-trigger')).toBeInTheDocument()
+    await waitFor(() =>
+      expect(screen.getByTestId('remote-combo-trigger')).toHaveTextContent(
+        'Select...'
+      )
+    )
   })
 
   it('shows loading state while fetching', async () => {
