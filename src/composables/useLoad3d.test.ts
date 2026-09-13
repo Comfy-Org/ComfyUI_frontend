@@ -14,6 +14,7 @@ import {
 import Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { createLoad3d } from '@/extensions/core/load3d/createLoad3d'
+import type { ModelStats } from '@/extensions/core/load3d/modelStats'
 import type { Size } from '@/lib/litegraph/src/interfaces'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -962,13 +963,7 @@ describe('useLoad3d', () => {
       await composable.initializeLoad3d(containerRef)
 
       const stats = { vertices: 4, edges: 5, triangles: 2 }
-      const signals: AbortSignal[] = []
-      vi.mocked(mockLoad3d.getModelStats!).mockImplementation(
-        async (signal?: AbortSignal) => {
-          if (signal) signals.push(signal)
-          return stats
-        }
-      )
+      vi.mocked(mockLoad3d.getModelStats!).mockResolvedValue(stats)
 
       modelLoadingStartHandler?.()
       expect(composable.loading.value).toBe(true)
@@ -979,10 +974,49 @@ describe('useLoad3d', () => {
       expect(composable.loading.value).toBe(false)
       expect(composable.loadingMessage.value).toBe('')
       await vi.waitFor(() => expect(composable.modelStats.value).toEqual(stats))
+    })
+
+    it('discards model stats that settle after the next load has started', async () => {
+      let modelLoadingStartHandler: (() => void) | undefined
+      let modelLoadingEndHandler: (() => void) | undefined
+
+      vi.mocked(mockLoad3d.addEventListener!).mockImplementation(
+        (event: string, handler: unknown) => {
+          if (event === 'modelLoadingStart') {
+            modelLoadingStartHandler = handler as () => void
+          } else if (event === 'modelLoadingEnd') {
+            modelLoadingEndHandler = handler as () => void
+          }
+        }
+      )
+
+      const composable = useLoad3d(mockNode)
+      await composable.initializeLoad3d(document.createElement('div'))
+
+      const signals: AbortSignal[] = []
+      let resolveFirstStats: (stats: ModelStats | null) => void = () => {}
+      const firstStats = new Promise<ModelStats | null>((resolve) => {
+        resolveFirstStats = resolve
+      })
+      vi.mocked(mockLoad3d.getModelStats!).mockImplementation(
+        (signal?: AbortSignal) => {
+          if (signal) signals.push(signal)
+          return firstStats
+        }
+      )
 
       modelLoadingStartHandler?.()
+      modelLoadingEndHandler?.()
       expect(signals).toHaveLength(1)
+      expect(signals[0].aborted).toBe(false)
+
+      modelLoadingStartHandler?.()
       expect(signals[0].aborted).toBe(true)
+
+      resolveFirstStats({ vertices: 4, edges: 5, triangles: 2 })
+      await firstStats
+      await nextTick()
+
       expect(composable.modelStats.value).toBeNull()
     })
 

@@ -1104,6 +1104,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     void load3d
       ?.getModelStats(controller.signal)
       .then((stats) => {
+        if (modelStatsAbort !== controller) return
         modelStats.value = stats
       })
       .catch((error: unknown) => {
