@@ -848,13 +848,17 @@ describe('nodeOutputStore setNodeOutputs (widget path)', () => {
 
   it('removes existing output for an empty string filename', () => {
     const store = useNodeOutputStore()
-    const node = createMockNode({ id: 5 })
+    const node = createMockNode({
+      id: 5,
+      images: [{ filename: 'previous.png', type: 'input' }]
+    })
 
     store.setNodeOutputs(node, 'test.png')
     store.setNodeOutputs(node, '')
 
     expect(store.nodeOutputs['5']).toBeUndefined()
     expect(app.nodeOutputs['5']).toBeUndefined()
+    expect(node.images).toBeUndefined()
   })
 
   it('should return early for null node', () => {

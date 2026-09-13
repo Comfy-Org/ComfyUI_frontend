@@ -239,6 +239,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     if (!locatorId) return
     if (!filenames || (Array.isArray(filenames) && filenames.length === 0)) {
       removeOutputsByLocatorId(locatorId)
+      node.images = undefined
       return
     }
     if (typeof filenames === 'string') {
