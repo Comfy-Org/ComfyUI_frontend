@@ -227,7 +227,7 @@ test.describe(
             const target = await comfyPage.nodeOps.getNodeRefById('6')
             await target.click('title')
             const timestamp = Date.now()
-            await comfyPage.page.keyboard.press('Delete')
+            await comfyPage.keyboard.delete()
             return timestamp
           })
 
@@ -295,7 +295,7 @@ test.describe(
           await navigator.clipboard.writeText('{ malformed workflow')
         })
         const nodeCount = await comfyPage.nodeOps.getGraphNodesCount()
-        await comfyPage.page.keyboard.press('Control+V')
+        await comfyPage.clipboard.paste()
         await comfyPage.page.keyboard.press('Escape')
         await expect
           .poll(() => comfyPage.nodeOps.getGraphNodesCount())
