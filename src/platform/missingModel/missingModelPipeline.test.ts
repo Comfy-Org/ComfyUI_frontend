@@ -415,7 +415,7 @@ describe('missingModelPipeline', () => {
       })
     })
 
-    it('fetches file sizes only for candidates with complete download metadata', async () => {
+    it('does not fetch remote metadata while initializing downloadable candidates', async () => {
       const downloadableCandidate = {
         nodeType: 'CheckpointLoaderSimple',
         widgetName: 'ckpt_name',
@@ -437,90 +437,28 @@ describe('missingModelPipeline', () => {
         downloadableCandidate,
         urlOnlyCandidate
       ]
-      mockHandles.fetchModelMetadata.mockResolvedValue({
-        fileSize: 1024,
-        gatedRepoUrl: null
-      })
 
-      await runMissingModelPipeline({
+      const result = await runMissingModelPipeline({
         graph: createGraph(),
         graphData: createWorkflowGraphData(),
         missingModelStore: useMissingModelStore()
       })
       await vi.dynamicImportSettled()
 
-      expect(mockHandles.fetchModelMetadata).toHaveBeenCalledOnce()
-      expect(mockHandles.fetchModelMetadata).toHaveBeenCalledWith(
-        'https://example.com/downloadable.safetensors'
-      )
-      expect(useMissingModelStore().setFileSize).toHaveBeenCalledWith(
-        'https://example.com/downloadable.safetensors',
-        1024
-      )
-    })
-
-    it('stores gated repo URLs for candidates with complete download metadata', async () => {
-      const downloadableCandidate = {
-        nodeType: 'CheckpointLoaderSimple',
-        widgetName: 'ckpt_name',
-        name: 'gated.safetensors',
-        url: 'https://huggingface.co/bfl/FLUX.1/resolve/main/gated.safetensors',
-        directory: 'checkpoints',
-        isMissing: true,
-        isAssetSupported: true
-      } satisfies MissingModelCandidate
-      mockHandles.state.enrichedCandidates = [downloadableCandidate]
-      mockHandles.fetchModelMetadata.mockResolvedValue({
-        fileSize: null,
-        gatedRepoUrl: 'https://huggingface.co/bfl/FLUX.1'
+      expect(result).toEqual({
+        missingModels: [
+          {
+            name: 'downloadable.safetensors',
+            url: 'https://example.com/downloadable.safetensors',
+            directory: 'checkpoints',
+            hash: undefined,
+            hash_type: undefined
+          }
+        ],
+        confirmedCandidates: [downloadableCandidate, urlOnlyCandidate]
       })
-
-      await runMissingModelPipeline({
-        graph: createGraph(),
-        graphData: createWorkflowGraphData(),
-        missingModelStore: useMissingModelStore()
-      })
-      await vi.dynamicImportSettled()
-
-      expect(useMissingModelStore().setGatedRepoUrl).toHaveBeenCalledWith(
-        'https://huggingface.co/bfl/FLUX.1/resolve/main/gated.safetensors',
-        'https://huggingface.co/bfl/FLUX.1'
-      )
+      expect(mockHandles.fetchModelMetadata).not.toHaveBeenCalled()
       expect(useMissingModelStore().setFileSize).not.toHaveBeenCalled()
-    })
-
-    it('does not store gated repo URLs after verification is aborted', async () => {
-      const controller = new AbortController()
-      const downloadableCandidate = {
-        nodeType: 'CheckpointLoaderSimple',
-        widgetName: 'ckpt_name',
-        name: 'gated.safetensors',
-        url: 'https://huggingface.co/bfl/FLUX.1/resolve/main/gated.safetensors',
-        directory: 'checkpoints',
-        isMissing: true,
-        isAssetSupported: true
-      } satisfies MissingModelCandidate
-      mockHandles.state.enrichedCandidates = [downloadableCandidate]
-      vi.mocked(
-        useMissingModelStore().createVerificationAbortController
-      ).mockReturnValueOnce(controller)
-      mockHandles.fetchModelMetadata.mockResolvedValue({
-        fileSize: null,
-        gatedRepoUrl: 'https://huggingface.co/bfl/FLUX.1'
-      })
-      controller.abort()
-
-      await runMissingModelPipeline({
-        graph: createGraph(),
-        graphData: createWorkflowGraphData(),
-        missingModelStore: useMissingModelStore()
-      })
-      await vi.dynamicImportSettled()
-
-      expect(mockHandles.fetchModelMetadata).toHaveBeenCalledWith(
-        'https://huggingface.co/bfl/FLUX.1/resolve/main/gated.safetensors'
-      )
-      expect(useMissingModelStore().setGatedRepoUrl).not.toHaveBeenCalled()
     })
 
     it('clears surfaced and cached missing models when no candidates are confirmed missing', async () => {

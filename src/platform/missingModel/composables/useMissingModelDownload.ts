@@ -25,6 +25,7 @@ export function useMissingModelDownload() {
   }
 
   function downloadMissingModel(model: ModelWithUrl): void {
+    void prefetchModelMetadata(model.url)
     downloadModel(model, store.folderPaths)
   }
 

@@ -32,8 +32,6 @@ interface MissingModelPipelineStore {
   missingModelCandidates: MissingModelCandidate[] | null
   createVerificationAbortController: () => AbortController
   setFolderPaths: (paths: Record<string, string[]>) => void
-  setFileSize: (url: string, size: number) => void
-  setGatedRepoUrl: (url: string, repoUrl: string) => void
 }
 
 interface RunMissingModelPipelineOptions {
@@ -201,19 +199,6 @@ export async function runMissingModelPipeline({
           })
           cacheModelCandidates(activeWf, confirmedCandidates)
         })
-
-      const missingModelMetadata =
-        import('@/platform/missingModel/missingModelMetadata')
-      void Promise.allSettled(
-        downloadableCandidates.map(async (c) => {
-          const { fetchAndStoreModelMetadata } = await missingModelMetadata
-          await fetchAndStoreModelMetadata(
-            c.url,
-            missingModelStore,
-            controller.signal
-          )
-        })
-      )
     }
   } else {
     clearMissingModels(activeWf, silent)
