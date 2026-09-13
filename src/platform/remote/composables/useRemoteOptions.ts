@@ -50,8 +50,7 @@ async function executeRemoteRequest(
   return response.data
 }
 
-interface UseRemoteOptionsResult<T> {
-  data: ComputedRef<T | undefined>
+interface UseRemoteOptionsResult {
   rawData: ComputedRef<unknown>
   isLoading: ComputedRef<boolean>
   isFetching: ComputedRef<boolean>
@@ -60,15 +59,14 @@ interface UseRemoteOptionsResult<T> {
   invalidate: () => Promise<void>
 }
 
-interface UseRemoteOptionsArgs<T> {
+interface UseRemoteOptionsArgs {
   descriptor: MaybeRefOrGetter<RemoteRequestDescriptor | null | undefined>
   enabled?: MaybeRefOrGetter<boolean>
-  select?: (raw: unknown) => T
 }
 
-export function useRemoteOptions<T = unknown>(
-  args: UseRemoteOptionsArgs<T>
-): UseRemoteOptionsResult<T> {
+export function useRemoteOptions(
+  args: UseRemoteOptionsArgs
+): UseRemoteOptionsResult {
   const queryClient = useQueryClient()
   const authStore = useAuthStore()
   const workspaceStore = useWorkspaceAuthStore()
@@ -115,19 +113,11 @@ export function useRemoteOptions<T = unknown>(
     staleTime: computed(() => toValue(args.descriptor)?.ttl ?? 0)
   })
 
-  const data = computed<T | undefined>(() => {
-    const raw = query.data.value
-    if (raw === undefined) return undefined
-    if (args.select) return args.select(raw)
-    return raw as T
-  })
-
   const invalidate = async () => {
     await queryClient.invalidateQueries({ queryKey: queryKey.value })
   }
 
   return {
-    data,
     rawData: computed(() => query.data.value),
     isLoading: computed(() => query.isLoading.value),
     isFetching: computed(() => query.isFetching.value),
