@@ -5,7 +5,21 @@ import { test } from './fixtures/modelsAccount'
 test('GPT Image generation pages are discoverable as text-to-image while published URLs remain valid', async ({
   page
 }) => {
-  await page.goto('/models/?useCase=generate-images')
+  const hydrated = Promise.withResolvers<void>()
+  const moduleRequested = page.waitForRequest(
+    '**/_website/ModelsCatalogue.*.js'
+  )
+  await page.route('**/_website/ModelsCatalogue.*.js', async (route) => {
+    await hydrated.promise
+    await route.continue()
+  })
+  try {
+    await page.goto('/models/?useCase=generate-images', { waitUntil: 'commit' })
+    await moduleRequested
+    await expect(page.getByTestId('workshop-search')).toBeDisabled()
+  } finally {
+    hydrated.resolve()
+  }
   await page.getByTestId('workshop-search').fill('gpt image')
   const cards = page
     .getByTestId('workshop-models-grid')
