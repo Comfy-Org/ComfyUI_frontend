@@ -1,7 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { MockedFunction } from 'vitest'
 
-import type { SessionClient, SessionSnapshot } from '../session.js'
+import type {
+  SessionClient,
+  SessionRequestOptions,
+  SessionSnapshot
+} from '../session.js'
 import type { AccountCredential, SessionResult } from '../sessionContracts.js'
 import { createSessionBillingTransport } from './transport.js'
 
@@ -44,13 +48,53 @@ function authenticated(session: AccountCredential): SessionSnapshot {
  */
 type SessionFake = Pick<SessionClient, 'ensureFresh' | 'remint' | 'getSnapshot'>
 
+function delayedSessionResult(
+  result: SessionResult | undefined,
+  delayMs: number,
+  requestOptions?: SessionRequestOptions
+): Promise<SessionResult | undefined> {
+  return new Promise((resolve, reject) => {
+    const abort = () => {
+      clearTimeout(timeout)
+      reject(new DOMException('Aborted', 'AbortError'))
+    }
+    const timeout = setTimeout(() => {
+      requestOptions?.signal?.removeEventListener('abort', abort)
+      resolve(result)
+    }, delayMs)
+    if (requestOptions?.signal?.aborted === true) abort()
+    else
+      requestOptions?.signal?.addEventListener('abort', abort, { once: true })
+  })
+}
+
 function fakeSession(options: {
   ensureFresh?: SessionResult | undefined
+  ensureFreshDelayMs?: number
   remint?: SessionResult | undefined
+  remintDelayMs?: number
   snapshot?: SessionSnapshot
 }) {
-  const ensureFresh = vi.fn(async () => options.ensureFresh)
-  const remint = vi.fn(async () => options.remint)
+  const ensureFresh = vi.fn(async (_requestedUser, requestOptions) => {
+    if (options.ensureFreshDelayMs !== undefined) {
+      return delayedSessionResult(
+        options.ensureFresh,
+        options.ensureFreshDelayMs,
+        requestOptions
+      )
+    }
+    return options.ensureFresh
+  })
+  const remint = vi.fn(async (_requestedUser, requestOptions) => {
+    if (options.remintDelayMs !== undefined) {
+      return delayedSessionResult(
+        options.remint,
+        options.remintDelayMs,
+        requestOptions
+      )
+    }
+    return options.remint
+  })
   const getSnapshot = vi.fn(
     () =>
       options.snapshot ??
@@ -101,7 +145,9 @@ function stallingFetch(): MockedFunction<typeof fetch> {
 function makeTransport(
   options: {
     ensureFresh?: SessionResult | undefined
+    ensureFreshDelayMs?: number
     remint?: SessionResult | undefined
+    remintDelayMs?: number
     snapshot?: SessionSnapshot
     responses?: Response[]
     fetchImpl?: MockedFunction<typeof fetch>
@@ -114,7 +160,13 @@ function makeTransport(
       'ensureFresh' in options
         ? options.ensureFresh
         : { status: 'ok', session: credential() },
+    ...(options.ensureFreshDelayMs === undefined
+      ? {}
+      : { ensureFreshDelayMs: options.ensureFreshDelayMs }),
     ...(options.remint === undefined ? {} : { remint: options.remint }),
+    ...(options.remintDelayMs === undefined
+      ? {}
+      : { remintDelayMs: options.remintDelayMs }),
     ...(options.snapshot === undefined ? {} : { snapshot: options.snapshot })
   })
   const queue = [...(options.responses ?? [jsonResponse(200, { ok: true })])]
@@ -151,6 +203,7 @@ describe('createSessionBillingTransport', () => {
     expect(sentHeaders(fetchImpl).get('Authorization')).toBe(
       'Bearer workspace-jwt'
     )
+    expect(fetchImpl.mock.calls[0]?.[1]?.body).toBeUndefined()
   })
 
   it('mints for the host-selected workspace', async () => {
@@ -175,18 +228,95 @@ describe('createSessionBillingTransport', () => {
     expect(fetchImpl).not.toHaveBeenCalled()
   })
 
-  it('maps a session failure to its billing code and keeps the status', async () => {
+  it.for([
+    ['ACCESS_DENIED', 'ACCESS_DENIED'],
+    ['WORKSPACE_NOT_FOUND', 'NOT_FOUND'],
+    ['NOT_AUTHENTICATED', 'NOT_AUTHENTICATED'],
+    ['INVALID_FIREBASE_TOKEN', 'NOT_AUTHENTICATED'],
+    ['TOKEN_EXCHANGE_FAILED', 'REQUEST_FAILED']
+  ] as const)(
+    'maps session failure %s to %s and keeps the status',
+    async ([sessionCode, billingCode]) => {
+      const { transport } = makeTransport({
+        ensureFresh: { status: 'error', code: sessionCode, httpStatus: 403 }
+      })
+
+      const result = await transport({
+        method: 'GET',
+        route: '/billing/status'
+      })
+
+      expect(result).toEqual({
+        status: 'error',
+        code: billingCode,
+        httpStatus: 403
+      })
+    }
+  )
+
+  it('shares one timeout budget across minting, re-minting, and retry', async () => {
+    const fetchImpl = stallingFetch()
+    fetchImpl.mockResolvedValueOnce(jsonResponse(401, {}))
     const { transport } = makeTransport({
-      ensureFresh: { status: 'error', code: 'ACCESS_DENIED', httpStatus: 403 }
+      ensureFreshDelayMs: 300,
+      remint: { status: 'ok', session: credential({ token: 'fresh-jwt' }) },
+      remintDelayMs: 300,
+      fetchImpl,
+      snapshot: authenticated(credential())
     })
 
-    const result = await transport({ method: 'GET', route: '/billing/status' })
+    const pending = transport({
+      method: 'GET',
+      route: '/billing/status',
+      timeoutMs: 1_000
+    })
+    await vi.advanceTimersByTimeAsync(1_000)
 
-    expect(result).toEqual({
+    await expect(pending).resolves.toEqual({
       status: 'error',
-      code: 'ACCESS_DENIED',
-      httpStatus: 403
+      code: 'REQUEST_FAILED'
     })
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+  })
+
+  it('returns a coded failure when the request budget aborts session minting', async () => {
+    const { transport, fetchImpl } = makeTransport({
+      ensureFreshDelayMs: 2_000
+    })
+
+    const pending = transport({
+      method: 'GET',
+      route: '/billing/status',
+      timeoutMs: 1_000
+    })
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    await expect(pending).resolves.toEqual({
+      status: 'error',
+      code: 'REQUEST_FAILED'
+    })
+    expect(fetchImpl).not.toHaveBeenCalled()
+  })
+
+  it('returns a coded failure when the request budget aborts session re-minting', async () => {
+    const { transport, fetchImpl } = makeTransport({
+      remint: { status: 'ok', session: credential({ token: 'fresh-jwt' }) },
+      remintDelayMs: 2_000,
+      responses: [jsonResponse(401, {})]
+    })
+
+    const pending = transport({
+      method: 'GET',
+      route: '/billing/status',
+      timeoutMs: 1_000
+    })
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    await expect(pending).resolves.toEqual({
+      status: 'error',
+      code: 'REQUEST_FAILED'
+    })
+    expect(fetchImpl).toHaveBeenCalledOnce()
   })
 
   it('re-mints once and retries once when a read is answered 401', async () => {
@@ -207,6 +337,30 @@ describe('createSessionBillingTransport', () => {
     })
   })
 
+  it.for([
+    credential({ uid: 'uid-2', token: 'other-user-jwt' }),
+    credential({
+      token: 'other-workspace-jwt',
+      workspace: { id: 'ws-2', name: 'Team', type: 'team' }
+    })
+  ])(
+    'does not retry under a re-minted session outside the original scope',
+    async (remintedSession) => {
+      const { transport, fetchImpl } = makeTransport({
+        remint: { status: 'ok', session: remintedSession },
+        responses: [jsonResponse(401, {})]
+      })
+
+      const result = await transport({
+        method: 'GET',
+        route: '/billing/status'
+      })
+
+      expect(result).toEqual({ status: 'error', code: 'SUPERSEDED' })
+      expect(fetchImpl).toHaveBeenCalledOnce()
+    }
+  )
+
   it('never replays a write the backend cannot deduplicate', async () => {
     const { transport, fetchImpl, remint } = makeTransport({
       remint: { status: 'ok', session: credential({ token: 'fresh-jwt' }) },
@@ -217,7 +371,10 @@ describe('createSessionBillingTransport', () => {
 
     expect(remint).not.toHaveBeenCalled()
     expect(fetchImpl).toHaveBeenCalledTimes(1)
-    expect(result).toMatchObject({ status: 'ok', value: { httpStatus: 401 } })
+    expect(result).toMatchObject({
+      status: 'ok',
+      value: { httpStatus: 401, authenticationRetrySkipped: true }
+    })
   })
 
   it('replays a write that carries an idempotency key', async () => {
@@ -248,6 +405,23 @@ describe('createSessionBillingTransport', () => {
     expect(remint).toHaveBeenCalledTimes(1)
     expect(fetchImpl).toHaveBeenCalledTimes(2)
     expect(result).toMatchObject({ status: 'ok', value: { httpStatus: 401 } })
+  })
+
+  it('reports a network failure while replaying after re-minting', async () => {
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(jsonResponse(401, {}))
+      .mockRejectedValueOnce(new TypeError('network down'))
+    const { transport, remint } = makeTransport({
+      remint: { status: 'ok', session: credential({ token: 'fresh-jwt' }) },
+      fetchImpl
+    })
+
+    const result = await transport({ method: 'GET', route: '/billing/status' })
+
+    expect(result).toEqual({ status: 'error', code: 'REQUEST_FAILED' })
+    expect(remint).toHaveBeenCalledOnce()
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
   })
 
   it('refuses to attribute a response to a workspace the host has left', async () => {
@@ -318,6 +492,29 @@ describe('createSessionBillingTransport', () => {
       status: 'ok',
       value: { httpStatus: 502, body: undefined }
     })
+  })
+
+  it('re-mints from a 401 whose response body cannot be read', async () => {
+    const unreadable = new Response(
+      new ReadableStream({
+        pull() {
+          throw new TypeError('stream failed')
+        }
+      }),
+      { status: 401, headers: { 'Retry-After': '5' } }
+    )
+    const { transport, remint } = makeTransport({ responses: [unreadable] })
+
+    const result = await transport({ method: 'GET', route: '/billing/status' })
+
+    expect(result).toMatchObject({
+      status: 'ok',
+      value: { httpStatus: 401, body: undefined }
+    })
+    expect(remint).toHaveBeenCalledOnce()
+    expect(result.status === 'ok' && result.value.header('Retry-After')).toBe(
+      '5'
+    )
   })
 
   it('cancels a request whose caller signal was already aborted', async () => {

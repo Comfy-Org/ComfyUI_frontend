@@ -41,23 +41,30 @@ export type BillingResult<T> =
   | { readonly status: 'ok'; readonly value: T }
   | BillingFailure
 
-export interface BillingRequest {
-  readonly method: 'GET' | 'POST'
+interface BillingRequestBase {
   /** Route below the host's billing base, e.g. `/billing/topup`. */
   readonly route: string
-  readonly body?: unknown
   /**
    * Present on a write whose replay the backend deduplicates. It is also
    * what makes a 401 retry safe: see `createSessionBillingTransport`.
    */
   readonly idempotencyKey?: string
   readonly signal?: AbortSignal
+  /** Total budget for session minting, retries, and reading the response. */
   readonly timeoutMs?: number
 }
+
+export type BillingRequest = BillingRequestBase &
+  (
+    | { readonly method: 'GET'; readonly body?: never }
+    | { readonly method: 'POST'; readonly body?: unknown }
+  )
 
 export interface BillingHttpResponse {
   readonly httpStatus: number
   readonly body: unknown
+  /** True when a 401 could not be retried because the write was not replayable. */
+  readonly authenticationRetrySkipped?: true
   /**
    * Response header reader. The capability revision a mutation reports
    * (`X-Capability-Revision`) reaches the capabilities cache through this,

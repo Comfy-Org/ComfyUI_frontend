@@ -15,10 +15,15 @@
  * reported as SUPERSEDED instead of being handed to a caller that would
  * attribute it to the wrong account.
  */
-import type { SessionClient } from '../session.js'
-import type { SessionErrorCode } from '../sessionContracts.js'
+import type { SessionClient, SessionRequestOptions } from '../session.js'
+import type {
+  AccountCredential,
+  SessionErrorCode,
+  SessionFailure
+} from '../sessionContracts.js'
 import type {
   BillingErrorCode,
+  BillingFailure,
   BillingHttpResponse,
   BillingRequest,
   BillingResult,
@@ -26,6 +31,27 @@ import type {
 } from './billingContracts.js'
 
 const DEFAULT_TIMEOUT_MS = 30_000
+
+function startRequestBudget(
+  callerSignal: AbortSignal | undefined,
+  timeoutMs: number
+) {
+  const controller = new AbortController()
+  const abort = () => controller.abort()
+  if (callerSignal?.aborted === true) {
+    controller.abort()
+  } else {
+    callerSignal?.addEventListener('abort', abort, { once: true })
+  }
+  const timeout = setTimeout(abort, timeoutMs)
+  return {
+    signal: controller.signal,
+    close: () => {
+      clearTimeout(timeout)
+      callerSignal?.removeEventListener('abort', abort)
+    }
+  }
+}
 
 export interface SessionBillingTransportOptions {
   readonly session: SessionClient
@@ -47,6 +73,16 @@ function codeForSessionFailure(code: SessionErrorCode): BillingErrorCode {
     return 'NOT_AUTHENTICATED'
   }
   return 'REQUEST_FAILED'
+}
+
+function billingFailureForSession(failure: SessionFailure): BillingFailure {
+  return {
+    status: 'error',
+    code: codeForSessionFailure(failure.code),
+    ...(failure.httpStatus === undefined
+      ? {}
+      : { httpStatus: failure.httpStatus })
+  }
 }
 
 /** A body that is absent, empty, or not JSON reaches callers as undefined. */
@@ -86,106 +122,138 @@ export function createSessionBillingTransport(
     )
   }
 
-  return async (
-    request: BillingRequest
-  ): Promise<BillingResult<BillingHttpResponse>> => {
-    const target = workspaceId?.()
-    const mintOptions = {
-      ...(request.signal === undefined ? {} : { signal: request.signal }),
-      ...(target === undefined ? {} : { workspaceId: target })
-    }
-
+  async function ensureBillingSession(
+    mintOptions: SessionRequestOptions
+  ): Promise<BillingResult<AccountCredential>> {
     const minted = await session.ensureFresh(undefined, mintOptions)
     if (minted === undefined) {
       return { status: 'error', code: 'NOT_AUTHENTICATED' }
     }
-    if (minted.status === 'error') {
-      return {
-        status: 'error',
-        code: codeForSessionFailure(minted.code),
-        ...(minted.httpStatus === undefined
-          ? {}
-          : { httpStatus: minted.httpStatus })
-      }
-    }
+    if (minted.status === 'error') return billingFailureForSession(minted)
+    return { status: 'ok', value: minted.session }
+  }
 
-    const { uid } = minted.session
-    const workspace = minted.session.workspace.id
-    // A 401 retry is safe for a read, and for a write only because the
-    // backend deduplicates the replay by its idempotency key.
-    const replayable =
-      request.method === 'GET' || request.idempotencyKey !== undefined
-
-    /**
-     * One attempt, body included. The body is read here rather than by the
-     * caller because the timeout has to stay armed through that read, the way
-     * `exchange.ts` keeps it armed: headers arriving does not bound the body,
-     * and a server that stalls mid-body would otherwise hang a caller that
-     * can neither time out nor abort.
-     */
-    const send = async (token: string): Promise<BillingHttpResponse> => {
-      const controller = new AbortController()
-      const abort = () => controller.abort()
-      // An `abort` listener never fires for a signal that is already
-      // aborted, so a caller who cancelled before this point would
-      // otherwise get a live request.
-      if (request.signal?.aborted === true) {
-        controller.abort()
-      } else {
-        request.signal?.addEventListener('abort', abort, { once: true })
-      }
-      const timeout = setTimeout(
-        () => controller.abort(),
-        request.timeoutMs ?? defaultTimeoutMs
-      )
-      try {
-        const response = await fetchImpl(resolveUrl(request.route), {
-          method: request.method,
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            ...(request.idempotencyKey === undefined
-              ? {}
-              : { 'Idempotency-Key': request.idempotencyKey })
-          },
-          ...(request.body === undefined
-            ? {}
-            : { body: JSON.stringify(request.body) }),
-          signal: controller.signal
-        })
-        return {
-          httpStatus: response.status,
-          body: await readBody(response),
-          header: (name) => response.headers.get(name)
-        }
-      } finally {
-        clearTimeout(timeout)
-        request.signal?.removeEventListener('abort', abort)
-      }
-    }
-
-    let response: BillingHttpResponse
+  async function send(
+    request: BillingRequest,
+    token: string,
+    signal: AbortSignal
+  ): Promise<BillingResult<BillingHttpResponse>> {
+    let response: Response
     try {
-      response = await send(minted.session.token)
+      response = await fetchImpl(resolveUrl(request.route), {
+        method: request.method,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          ...(request.idempotencyKey === undefined
+            ? {}
+            : { 'Idempotency-Key': request.idempotencyKey })
+        },
+        ...(request.method === 'GET' || request.body === undefined
+          ? {}
+          : { body: JSON.stringify(request.body) }),
+        signal
+      })
     } catch {
       return { status: 'error', code: 'REQUEST_FAILED' }
     }
 
-    if (response.httpStatus === 401 && replayable) {
-      const reminted = await session.remint(undefined, mintOptions)
-      if (reminted?.status === 'ok') {
-        try {
-          response = await send(reminted.session.token)
-        } catch {
-          return { status: 'error', code: 'REQUEST_FAILED' }
+    try {
+      return {
+        status: 'ok',
+        value: {
+          httpStatus: response.status,
+          body: await readBody(response),
+          header: (name) => response.headers.get(name)
+        }
+      }
+    } catch {
+      if (signal.aborted) {
+        return { status: 'error', code: 'REQUEST_FAILED' }
+      }
+      return {
+        status: 'ok',
+        value: {
+          httpStatus: response.status,
+          body: undefined,
+          header: (name) => response.headers.get(name)
         }
       }
     }
+  }
 
-    if (superseded(uid, workspace)) {
-      return { status: 'error', code: 'SUPERSEDED' }
+  async function retryUnauthorized(
+    request: BillingRequest,
+    response: BillingHttpResponse,
+    mintOptions: SessionRequestOptions & { readonly signal: AbortSignal },
+    expectedUid: string,
+    expectedWorkspace: string
+  ): Promise<BillingResult<BillingHttpResponse>> {
+    if (response.httpStatus !== 401) return { status: 'ok', value: response }
+
+    const replayable =
+      request.method === 'GET' || request.idempotencyKey !== undefined
+    if (!replayable) {
+      return {
+        status: 'ok',
+        value: { ...response, authenticationRetrySkipped: true }
+      }
     }
 
-    return { status: 'ok', value: response }
+    const reminted = await session.remint(undefined, mintOptions)
+    if (reminted?.status !== 'ok') return { status: 'ok', value: response }
+    if (
+      reminted.session.uid !== expectedUid ||
+      reminted.session.workspace.id !== expectedWorkspace
+    ) {
+      return { status: 'error', code: 'SUPERSEDED' }
+    }
+    return send(request, reminted.session.token, mintOptions.signal)
+  }
+
+  return async function transport(
+    request: BillingRequest
+  ): Promise<BillingResult<BillingHttpResponse>> {
+    const timeoutMs = request.timeoutMs ?? defaultTimeoutMs
+    const budget = startRequestBudget(request.signal, timeoutMs)
+    const target = workspaceId?.()
+    const mintOptions = {
+      signal: budget.signal,
+      timeoutMs,
+      ...(target === undefined ? {} : { workspaceId: target })
+    }
+
+    try {
+      const minted = await ensureBillingSession(mintOptions)
+      if (minted.status === 'error') return minted
+
+      const { uid } = minted.value
+      const workspace = minted.value.workspace.id
+      const firstAttempt = await send(
+        request,
+        minted.value.token,
+        budget.signal
+      )
+      if (firstAttempt.status === 'error') return firstAttempt
+
+      const finalAttempt = await retryUnauthorized(
+        request,
+        firstAttempt.value,
+        mintOptions,
+        uid,
+        workspace
+      )
+      if (finalAttempt.status === 'error') return finalAttempt
+
+      if (superseded(uid, workspace)) {
+        return { status: 'error', code: 'SUPERSEDED' }
+      }
+
+      return finalAttempt
+    } catch {
+      return { status: 'error', code: 'REQUEST_FAILED' }
+    } finally {
+      budget.close()
+    }
   }
 }
