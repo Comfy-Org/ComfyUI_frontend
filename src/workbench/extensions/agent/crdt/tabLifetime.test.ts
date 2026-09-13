@@ -138,7 +138,16 @@ import type {
   AgentCrdtStatus
 } from './useAgentCrdtFollower'
 
-const graphMutations = {} as GraphMutations
+// Every method the interface declares, so a contract change fails to compile
+// here instead of silently leaving an empty object satisfying the cast.
+const graphMutations: GraphMutations = {
+  batch: vi.fn(() => true),
+  addNode: vi.fn(() => true),
+  setWidget: vi.fn(() => true),
+  connect: vi.fn(() => true),
+  deleteNode: vi.fn(() => true),
+  clearSemanticGraph: vi.fn(() => true)
+}
 
 /**
  * Mounts a panel instance the way `AgentPanelRoot.vue` does: a reactive
@@ -265,12 +274,21 @@ describe('FE-2158 tab lifetime: open / switch / close / remount', () => {
     // characterize that a post-teardown frame is inert, then dispatch a
     // same-shaped frame on B's live bridge tagged with A's workflow id to
     // characterize the cross-workflow guard on the live path.
+    // Captured before the dispatch: every assertion below is about panel B, so
+    // without this a LEAKED panel A listener would receive the stale frame,
+    // skip it, and leave B's counters untouched — the test would pass through
+    // exactly the leak it exists to catch. A's status closure survives unmount.
+    const panelAAfterClose = { ...panelA.outcomes() }
+
     dispatchDocUpdate(bridgeFor(0), 'wf-a', 99)
     dispatchDocUpdate(bridgeFor(1), 'wf-a', 1)
     await nextTick()
     expect(adapterState.applyFrame).not.toHaveBeenCalled()
     expect(panelB.outcomes().applied).toBe(0)
     expect(panelB.outcomes().skipped).toBeGreaterThan(0)
+    // A saw nothing at all — neither applied nor skipped. A skip would still
+    // mean its listener was alive.
+    expect(panelA.outcomes()).toEqual(panelAAfterClose)
 
     // A same-workflow frame on B's own bridge DOES apply, proving the guard
     // above discriminated on workflow id and not on some broader silence.
