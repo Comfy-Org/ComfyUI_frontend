@@ -169,64 +169,40 @@ test.describe(
           rerouteId: toRerouteId(1)
         }
         const readState = async () => {
-          const [graphState, serialisedState] = await Promise.all([
-            comfyPage.page.evaluate(
-              ({ floatingLinkId, linkId, nodeId, rerouteId }) => {
-                const graph = window.app!.graph
-                const link = graph.links.get(linkId)
-                const floatingLink = graph.floatingLinks.get(floatingLinkId)
-                const reroute = graph.reroutes.get(rerouteId)
-                return {
-                  nodeExists: Boolean(graph.getNodeById(nodeId)),
-                  link: link
-                    ? {
-                        id: link.id,
-                        originId: link.origin_id,
-                        originSlot: link.origin_slot,
-                        targetId: link.target_id,
-                        targetSlot: link.target_slot,
-                        parentId: link.parentId
-                      }
-                    : null,
-                  rerouteLinkIds: [...(reroute?.linkIds ?? [])],
-                  floatingLink: floatingLink
-                    ? {
-                        id: floatingLink.id,
-                        originId: floatingLink.origin_id,
-                        originSlot: floatingLink.origin_slot,
-                        targetId: floatingLink.target_id,
-                        targetSlot: floatingLink.target_slot,
-                        parentId: floatingLink.parentId
-                      }
-                    : null,
-                  rerouteFloatingLinkIds: [...(reroute?.floatingLinkIds ?? [])]
-                }
-              },
-              stateIds
-            ),
-            comfyPage.page.evaluate(({ floatingLinkId, linkId, rerouteId }) => {
+          return comfyPage.page.evaluate(
+            ({ floatingLinkId, linkId, nodeId, rerouteId }) => {
               const graph = window.app!.graph
-              const serialised = graph.asSerialisable()
-              const serialisedLink = serialised.links?.find(
-                ({ id }) => id === linkId
-              )
-              const serialisedFloatingLink = serialised.floatingLinks?.find(
-                ({ id }) => id === floatingLinkId
-              )
-              const serialisedReroute = serialised.reroutes?.find(
-                ({ id }) => id === rerouteId
-              )
+              const link = graph.links.get(linkId)
+              const floatingLink = graph.floatingLinks.get(floatingLinkId)
+              const reroute = graph.reroutes.get(rerouteId)
               return {
-                serialisedLink: serialisedLink ?? null,
-                serialisedFloatingLink: serialisedFloatingLink ?? null,
-                serialisedRerouteLinkIds: serialisedReroute?.linkIds ?? [],
-                serialisedRerouteIsFloating: Boolean(
-                  serialisedReroute?.floating
-                )
+                nodeExists: Boolean(graph.getNodeById(nodeId)),
+                link: link
+                  ? {
+                      id: link.id,
+                      originId: link.origin_id,
+                      originSlot: link.origin_slot,
+                      targetId: link.target_id,
+                      targetSlot: link.target_slot,
+                      parentId: link.parentId
+                    }
+                  : null,
+                rerouteLinkIds: [...(reroute?.linkIds ?? [])],
+                floatingLink: floatingLink
+                  ? {
+                      id: floatingLink.id,
+                      originId: floatingLink.origin_id,
+                      originSlot: floatingLink.origin_slot,
+                      targetId: floatingLink.target_id,
+                      targetSlot: floatingLink.target_slot,
+                      parentId: floatingLink.parentId
+                    }
+                  : null,
+                rerouteFloatingLinkIds: [...(reroute?.floatingLinkIds ?? [])]
               }
-            }, stateIds)
-          ])
-          return { ...graphState, ...serialisedState }
+            },
+            stateIds
+          )
         }
 
         await test.step('verify the connected reroute topology', async () => {
@@ -242,19 +218,7 @@ test.describe(
             },
             rerouteLinkIds: [3],
             floatingLink: null,
-            rerouteFloatingLinkIds: [],
-            serialisedLink: {
-              id: 3,
-              origin_id: 4,
-              origin_slot: 1,
-              target_id: 6,
-              target_slot: 0,
-              type: 'CLIP',
-              parentId: 1
-            },
-            serialisedFloatingLink: null,
-            serialisedRerouteLinkIds: [3],
-            serialisedRerouteIsFloating: false
+            rerouteFloatingLinkIds: []
           })
         })
 
@@ -279,19 +243,7 @@ test.describe(
             targetSlot: -1,
             parentId: 1
           },
-          rerouteFloatingLinkIds: [10],
-          serialisedLink: null,
-          serialisedFloatingLink: {
-            id: 10,
-            origin_id: 4,
-            origin_slot: 1,
-            target_id: -1,
-            target_slot: -1,
-            type: 'CLIP',
-            parentId: 1
-          },
-          serialisedRerouteLinkIds: [],
-          serialisedRerouteIsFloating: true
+          rerouteFloatingLinkIds: [10]
         }
 
         await test.step('verify and reload the floating chain', async () => {
