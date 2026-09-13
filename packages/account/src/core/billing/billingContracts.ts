@@ -52,12 +52,15 @@ export interface BillingRequest {
    */
   readonly idempotencyKey?: string
   readonly signal?: AbortSignal
+  /** Total budget for session minting, retries, and reading the response. */
   readonly timeoutMs?: number
 }
 
 export interface BillingHttpResponse {
   readonly httpStatus: number
   readonly body: unknown
+  /** True when a 401 could not be retried because the write was not replayable. */
+  readonly authenticationRetrySkipped?: true
   /**
    * Response header reader. The capability revision a mutation reports
    * (`X-Capability-Revision`) reaches the capabilities cache through this,

@@ -89,56 +89,49 @@ export function createSessionBillingTransport(
   return async (
     request: BillingRequest
   ): Promise<BillingResult<BillingHttpResponse>> => {
+    const controller = new AbortController()
+    const abort = () => controller.abort()
+    if (request.signal?.aborted === true) {
+      controller.abort()
+    } else {
+      request.signal?.addEventListener('abort', abort, { once: true })
+    }
+    const timeoutMs = request.timeoutMs ?? defaultTimeoutMs
+    const timeout = setTimeout(() => controller.abort(), timeoutMs)
     const target = workspaceId?.()
     const mintOptions = {
-      ...(request.signal === undefined ? {} : { signal: request.signal }),
+      signal: controller.signal,
+      timeoutMs,
       ...(target === undefined ? {} : { workspaceId: target })
     }
 
-    const minted = await session.ensureFresh(undefined, mintOptions)
-    if (minted === undefined) {
-      return { status: 'error', code: 'NOT_AUTHENTICATED' }
-    }
-    if (minted.status === 'error') {
-      return {
-        status: 'error',
-        code: codeForSessionFailure(minted.code),
-        ...(minted.httpStatus === undefined
-          ? {}
-          : { httpStatus: minted.httpStatus })
+    try {
+      const minted = await session.ensureFresh(undefined, mintOptions)
+      if (minted === undefined) {
+        return { status: 'error', code: 'NOT_AUTHENTICATED' }
       }
-    }
-
-    const { uid } = minted.session
-    const workspace = minted.session.workspace.id
-    // A 401 retry is safe for a read, and for a write only because the
-    // backend deduplicates the replay by its idempotency key.
-    const replayable =
-      request.method === 'GET' || request.idempotencyKey !== undefined
-
-    /**
-     * One attempt, body included. The body is read here rather than by the
-     * caller because the timeout has to stay armed through that read, the way
-     * `exchange.ts` keeps it armed: headers arriving does not bound the body,
-     * and a server that stalls mid-body would otherwise hang a caller that
-     * can neither time out nor abort.
-     */
-    const send = async (token: string): Promise<BillingHttpResponse> => {
-      const controller = new AbortController()
-      const abort = () => controller.abort()
-      // An `abort` listener never fires for a signal that is already
-      // aborted, so a caller who cancelled before this point would
-      // otherwise get a live request.
-      if (request.signal?.aborted === true) {
-        controller.abort()
-      } else {
-        request.signal?.addEventListener('abort', abort, { once: true })
+      if (minted.status === 'error') {
+        return {
+          status: 'error',
+          code: codeForSessionFailure(minted.code),
+          ...(minted.httpStatus === undefined
+            ? {}
+            : { httpStatus: minted.httpStatus })
+        }
       }
-      const timeout = setTimeout(
-        () => controller.abort(),
-        request.timeoutMs ?? defaultTimeoutMs
-      )
-      try {
+
+      const { uid } = minted.session
+      const workspace = minted.session.workspace.id
+      // A 401 retry is safe for a read, and for a write only because the
+      // backend deduplicates the replay by its idempotency key.
+      const replayable =
+        request.method === 'GET' || request.idempotencyKey !== undefined
+
+      /**
+       * One attempt, body included. The body is read here rather than by the
+       * caller because headers arriving does not bound a stalled body.
+       */
+      const send = async (token: string): Promise<BillingHttpResponse> => {
         const response = await fetchImpl(resolveUrl(request.route), {
           method: request.method,
           headers: {
@@ -158,34 +151,38 @@ export function createSessionBillingTransport(
           body: await readBody(response),
           header: (name) => response.headers.get(name)
         }
-      } finally {
-        clearTimeout(timeout)
-        request.signal?.removeEventListener('abort', abort)
       }
-    }
 
-    let response: BillingHttpResponse
-    try {
-      response = await send(minted.session.token)
-    } catch {
-      return { status: 'error', code: 'REQUEST_FAILED' }
-    }
+      let response: BillingHttpResponse
+      try {
+        response = await send(minted.session.token)
+      } catch {
+        return { status: 'error', code: 'REQUEST_FAILED' }
+      }
 
-    if (response.httpStatus === 401 && replayable) {
-      const reminted = await session.remint(undefined, mintOptions)
-      if (reminted?.status === 'ok') {
-        try {
-          response = await send(reminted.session.token)
-        } catch {
-          return { status: 'error', code: 'REQUEST_FAILED' }
+      if (response.httpStatus === 401) {
+        if (!replayable) {
+          response = { ...response, authenticationRetrySkipped: true }
+        } else {
+          const reminted = await session.remint(undefined, mintOptions)
+          if (reminted?.status === 'ok') {
+            try {
+              response = await send(reminted.session.token)
+            } catch {
+              return { status: 'error', code: 'REQUEST_FAILED' }
+            }
+          }
         }
       }
-    }
 
-    if (superseded(uid, workspace)) {
-      return { status: 'error', code: 'SUPERSEDED' }
-    }
+      if (superseded(uid, workspace)) {
+        return { status: 'error', code: 'SUPERSEDED' }
+      }
 
-    return { status: 'ok', value: response }
+      return { status: 'ok', value: response }
+    } finally {
+      clearTimeout(timeout)
+      request.signal?.removeEventListener('abort', abort)
+    }
   }
 }
