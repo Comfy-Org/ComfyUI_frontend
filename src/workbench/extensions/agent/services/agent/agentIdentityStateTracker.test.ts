@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
-import type { ComputedRef, Ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 
+import * as currentUserModule from '@/composables/auth/useCurrentUser'
 import type { TurnId } from '../../schemas/agentApiSchema'
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
@@ -13,47 +13,16 @@ import {
 } from './agentSessionMemory'
 import { registerAgentIdentityStateTracker } from './agentIdentityStateTracker'
 
-const auth = vi.hoisted<{
-  source: Ref<null | { id: string }> | null
-  user: ComputedRef<null | { id: string }> | null
-}>(() => ({ source: null, user: null }))
-
-vi.mock(import('@/composables/auth/useCurrentUser'), async (importOriginal) => {
-  const actual = await importOriginal()
-  const { computed, ref } = await import('vue')
-  const watchHandle = Object.assign(() => {}, {
-    stop: () => {},
-    pause: () => {},
-    resume: () => {}
-  })
-  auth.source = ref<null | { id: string }>(null)
-  auth.user = computed(() => auth.source?.value ?? null)
-  return {
-    ...actual,
-    useCurrentUser: () =>
-      ({
-        loading: false,
-        isLoggedIn: computed(() => auth.user?.value !== null),
-        isApiKeyLogin: computed(() => false),
-        isEmailProvider: computed(() => false),
-        userDisplayName: computed(() => undefined),
-        userEmail: computed(() => undefined),
-        userPhotoUrl: computed(() => null),
-        providerName: computed(() => undefined),
-        providerIcon: computed(() => 'pi pi-user'),
-        resolvedUserInfo: auth.user!,
-        handleSignOut: async () => {},
-        handleSignIn: async () => {},
-        onUserResolved: () => watchHandle,
-        onTokenRefreshed: () => watchHandle,
-        onUserLogout: () => {}
-      }) satisfies ReturnType<typeof actual.useCurrentUser>
-  }
+const authSource = ref<null | { id: string }>(null)
+const authUser = computed(() => authSource.value)
+const watchHandle = Object.assign(() => {}, {
+  stop: () => {},
+  pause: () => {},
+  resume: () => {}
 })
 
 function setUser(id: string | null): void {
-  if (auth.source === null) throw new Error('Auth ref is not initialized')
-  auth.source.value = id === null ? null : { id }
+  authSource.value = id === null ? null : { id }
 }
 
 function seedUserState(userId: string = 'user-a'): void {
@@ -89,6 +58,23 @@ describe('registerAgentIdentityStateTracker', () => {
   beforeEach(() => {
     localStorage.clear()
     setUser(null)
+    vi.spyOn(currentUserModule, 'useCurrentUser').mockReturnValue({
+      loading: false,
+      isLoggedIn: computed(() => authUser.value !== null),
+      isApiKeyLogin: computed(() => false),
+      isEmailProvider: computed(() => false),
+      userDisplayName: computed(() => undefined),
+      userEmail: computed(() => undefined),
+      userPhotoUrl: computed(() => null),
+      providerName: computed(() => undefined),
+      providerIcon: computed(() => 'pi pi-user'),
+      resolvedUserInfo: authUser,
+      handleSignOut: async () => {},
+      handleSignIn: async () => {},
+      onUserResolved: () => watchHandle,
+      onTokenRefreshed: () => watchHandle,
+      onUserLogout: () => {}
+    })
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
     stop = registerAgentIdentityStateTracker()
   })
