@@ -305,6 +305,7 @@ import { useAgentConversationStore } from './stores/agent/agentConversationStore
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
+import { persistDocId } from './crdt/persistedDocId'
 
 import AgentPanelRoot from './AgentPanelRoot.vue'
 
@@ -2221,6 +2222,22 @@ describe('AgentPanelRoot workflow binding', () => {
     return { target, references: referenceTabs }
   }
 
+  it('restores a persisted follower before target selection initializes', async () => {
+    makeTab('wf-42')
+    persistDocId('wf-42')
+    useAgentPanelStore().resetWorkflowTarget()
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await vi.waitFor(() =>
+      expect(
+        socketSend.mock.calls.some(([frame]) =>
+          String(frame).includes('doc_subscribe')
+        )
+      ).toBe(true)
+    )
+  })
+
   function mockMessagesEndpoint(
     ackWorkflowId: string,
     cloudWorkflows:
@@ -3440,6 +3457,44 @@ describe('AgentPanelRoot workflow binding', () => {
         workflow_id: 'wf-42',
         target: 'active_tab_switch'
       })
+    )
+  })
+
+  it('agent_active_tab selects a bound tab while the agent is idle', async () => {
+    const tab = makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    await renderAndSend('work here')
+    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+    await screen.findByRole('button', { name: 'Send' })
+
+    ws.emit('agent_active_tab', { workflow_id: 'wf-42', thread_id: 'th-1' })
+
+    await vi.waitFor(() =>
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(tab.path)
+    )
+  })
+
+  it('agent_active_tab selects a minted tab while the agent is idle', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    await renderAndSend('work here')
+    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+    const setWorkflowTarget = vi.spyOn(
+      useAgentPanelStore(),
+      'setWorkflowTarget'
+    )
+    await screen.findByRole('button', { name: 'Send' })
+
+    ws.emit('agent_active_tab', {
+      workflow_id: 'wf-77',
+      name: 'Video test',
+      thread_id: 'th-1'
+    })
+
+    await vi.waitFor(() =>
+      expect(setWorkflowTarget).toHaveBeenCalledWith(
+        expect.objectContaining({ path: 'workflows/Video test.json' })
+      )
     )
   })
 

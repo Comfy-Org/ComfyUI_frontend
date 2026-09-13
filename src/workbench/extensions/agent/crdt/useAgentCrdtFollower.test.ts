@@ -21,13 +21,17 @@ import type { MaterializableGraph } from './agentNodeMaterializer'
 
 const bridgeState = vi.hoisted(() => {
   class FakeBridge extends EventTarget {
-    subscribe = vi.fn()
-    unsubscribe = vi.fn()
+    subscribe = vi.fn((workflowId: string) => {
+      this.subscribedWorkflowId = workflowId
+    })
+    unsubscribe = vi.fn(() => {
+      this.subscribedWorkflowId = null
+    })
     resubscribe = vi.fn()
     reconcile = vi.fn()
     destroy = vi.fn()
     sendHumanOps = vi.fn()
-    subscribedWorkflowId: string | null = 'wf-1'
+    subscribedWorkflowId: string | null = null
     lastSequence = 41
     follower = {
       updatesApplied: 0,
@@ -172,13 +176,15 @@ function mountFollower(
   workflowId: Ref<string | null>
   isTargetActive: Ref<boolean>
   status: () => AgentCrdtStatus
+  acknowledgedWorkflowId: () => string | null
 } {
   const workflowId = ref<string | null>(initial)
   const isTargetActive = ref(initiallyActive)
   let exposedStatus!: () => AgentCrdtStatus
+  let exposedAcknowledgedWorkflowId!: () => string | null
   const host = defineComponent({
     setup() {
-      const { status } = useAgentCrdtFollower(
+      const { status, acknowledgedWorkflowId } = useAgentCrdtFollower(
         workflowId,
         graphMutations,
         () => null,
@@ -186,11 +192,18 @@ function mountFollower(
         getGraph
       )
       exposedStatus = () => status.value as AgentCrdtStatus
+      exposedAcknowledgedWorkflowId = () => acknowledgedWorkflowId.value
       return () => null
     }
   })
   const { unmount } = render(host)
-  return { unmount, workflowId, isTargetActive, status: exposedStatus }
+  return {
+    unmount,
+    workflowId,
+    isTargetActive,
+    status: exposedStatus,
+    acknowledgedWorkflowId: exposedAcknowledgedWorkflowId
+  }
 }
 
 function bridge(): InstanceType<(typeof bridgeState)['FakeBridge']> {
@@ -218,6 +231,28 @@ describe('useAgentCrdtFollower', () => {
     expect(bridge().subscribe).toHaveBeenCalledWith('wf-1')
     expect(status().workflowId).toBe('wf-1')
     expect(status().enabled).toBe(true)
+    unmount()
+  })
+
+  it('surfaces a binding only after the server acknowledges it', async () => {
+    const { unmount, workflowId, acknowledgedWorkflowId } =
+      mountFollower('wf-1')
+
+    expect(acknowledgedWorkflowId()).toBeNull()
+
+    dispatchFrame('doc_subscribed', { ok: true, workflowId: 'wf-1' })
+    expect(acknowledgedWorkflowId()).toBe('wf-1')
+
+    workflowId.value = 'wf-2'
+    await nextTick()
+    expect(acknowledgedWorkflowId()).toBeNull()
+
+    dispatchFrame('doc_subscribed', { ok: true, workflowId: 'wf-2' })
+    expect(acknowledgedWorkflowId()).toBe('wf-2')
+
+    bridge().subscribedWorkflowId = null
+    dispatchFrame('doc_subscribed', { ok: false, workflowId: 'wf-2' })
+    expect(acknowledgedWorkflowId()).toBeNull()
     unmount()
   })
 
@@ -458,6 +493,25 @@ describe('useAgentCrdtFollower', () => {
     expect(status().connected).toBe(false)
     expect(bridge().resubscribe).toHaveBeenCalled()
     expect(adapterState.clearForReset).not.toHaveBeenCalled()
+    unmount()
+  })
+
+  // `connected` is derived from `acknowledgedWorkflowId`, not tracked as its
+  // own ref, so the doc_reset lineage break has to drop the acknowledgement to
+  // report a disconnect. A rebase that reinstates a separate `connected` write
+  // here, or drops the acknowledgement reset, silently breaks that.
+  it('reports a disconnect when a doc_reset breaks the lineage', () => {
+    const { unmount, status } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+    expect(status().connected).toBe(true)
+
+    dispatchFrame('doc_reset', {
+      workflowId: 'wf-1',
+      actor: 'agent:turn',
+      seq: 43
+    })
+
+    expect(status().connected).toBe(false)
     unmount()
   })
 

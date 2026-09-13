@@ -3,6 +3,8 @@ import { computed, defineAsyncComponent } from 'vue'
 
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
+import { reconcilePersistedDocId } from '../crdt/persistedDocId'
+
 interface AgentDockMount {
   docked: ComputedRef<boolean>
   DockedAgentPanel: Component | null
@@ -23,6 +25,7 @@ export function useAgentDockMount(): AgentDockMount {
   ) {
     return { docked: computed(() => false), DockedAgentPanel: null }
   }
+  reconcilePersistedDocId()
   const agentPanelStore = useAgentPanelStore()
   return {
     docked: computed(() => agentPanelStore.enabled && agentPanelStore.isOpen),
