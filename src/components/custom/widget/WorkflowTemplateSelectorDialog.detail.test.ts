@@ -101,9 +101,12 @@ vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/platform/missingModel/missingModelDownload'), () => ({
-  isModelDownloadable: mocks.isModelDownloadable
-}))
+vi.mock<unknown>(
+  import('@/platform/missingModel/missingModelDownload'),
+  () => ({
+    isModelDownloadable: mocks.isModelDownloadable
+  })
+)
 
 vi.mock<unknown>(
   import('@/platform/workflow/templates/composables/useTemplateWorkflows'),
@@ -130,9 +133,7 @@ vi.mock<unknown>(
 )
 
 vi.mock<unknown>(
-  import(
-    '@/platform/workflow/templates/composables/useTemplateModelRowDownloads'
-  ),
+  import('@/platform/workflow/templates/composables/useTemplateModelRowDownloads'),
   () => ({
     useTemplateModelRowDownloads: () => ({
       dispose: mocks.rowDownloadDispose,
