@@ -1,4 +1,3 @@
-import type * as DistributionModule from '@/platform/distribution/types'
 import { useAuthStore } from '@/stores/authStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -69,8 +68,7 @@ vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: vi.fn(() => mockTelemetry)
 }))
 
-vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
-  ...(await importOriginal<typeof DistributionModule>()),
+vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }
@@ -335,10 +333,4 @@ describe('performSubscriptionCheckout', () => {
     })
   })
 })
-
-vi.mock(import('firebase/auth'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  setPersistence: vi.fn().mockResolvedValue(undefined),
-  onAuthStateChanged: vi.fn(),
-  onIdTokenChanged: vi.fn()
-}))
+vi.mock(import('firebase/auth'))

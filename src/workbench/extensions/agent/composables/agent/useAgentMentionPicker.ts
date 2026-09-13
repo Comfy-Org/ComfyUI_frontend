@@ -251,22 +251,10 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
         dispatchMention({ type: 'closed' })
       return
     }
-    const draft = options.draft()
+    options
+      .editor()
+      ?.replaceText(state.start, state.start + 1 + state.query.length, '')
     options.pickNode(match.node)
-    const current = mention.value
-    if (
-      options.draft() !== draft ||
-      current.status === 'closed' ||
-      current.start !== state.start ||
-      current.query !== state.query
-    )
-      return
-    const before = draft.slice(0, state.start)
-    const end = state.start + 1 + state.query.length
-    let after = draft.slice(end)
-    if (after.startsWith(' ') && (before === '' || before.endsWith(' ')))
-      after = after.slice(1)
-    options.editor()?.replaceText(state.start, draft.length - after.length, '')
     dispatchMention({ type: 'closed' })
     options.editor()?.focus()
   }
