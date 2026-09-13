@@ -32,17 +32,29 @@ test.describe(
         const node = await comfyPage.nodeOps.getNodeRefById('3')
         const initialPosition = await node.getBounding()
 
-        await node.dragBy({ x: 120, y: 80 })
-        await expect.poll(() => node.getBounding()).not.toEqual(initialPosition)
-        const movedPosition = await node.getBounding()
+        const movedPosition = await test.step('Move the node', async () => {
+          await node.dragBy({ x: 120, y: 80 })
+          await expect
+            .poll(() => node.getBounding())
+            .not.toEqual(initialPosition)
+          return node.getBounding()
+        })
 
-        await comfyPage.keyboard.undo()
-        await expect.poll(() => node.getBounding()).toEqual(initialPosition)
+        await test.step('Undo the node move', async () => {
+          await comfyPage.keyboard.undo()
+          await expect.poll(() => node.getBounding()).toEqual(initialPosition)
+        })
 
-        await comfyPage.keyboard.redo()
-        await expect.poll(() => node.getBounding()).toEqual(movedPosition)
-        await comfyPage.keyboard.redo()
-        await expect.poll(() => node.getBounding()).toEqual(movedPosition)
+        await test.step('Redo the node move', async () => {
+          await comfyPage.keyboard.redo()
+          await expect.poll(() => node.getBounding()).toEqual(movedPosition)
+        })
+
+        await test.step('A second redo leaves the node unchanged', async () => {
+          await comfyPage.keyboard.redo()
+          await expect.poll(() => node.getBounding()).toEqual(movedPosition)
+        })
+
         await expect(comfyPage.toast.toastErrors).toHaveCount(0)
       })
     }
@@ -52,25 +64,30 @@ test.describe(
       const initialPosition = await comfyPage.canvasOps.getGroupPosition('Pair')
       const containedNode = await comfyPage.nodeOps.getNodeRefById('2')
       const initialNodePosition = await containedNode.getBounding()
-      await comfyPage.canvasOps.dragGroup({
-        name: 'Pair',
-        deltaX: 100,
-        deltaY: 60
-      })
-      await expect
-        .poll(() => comfyPage.canvasOps.getGroupPosition('Pair'))
-        .not.toEqual(initialPosition)
-      await expect
-        .poll(() => containedNode.getBounding())
-        .not.toEqual(initialNodePosition)
 
-      await comfyPage.keyboard.undo()
-      await expect
-        .poll(() => comfyPage.canvasOps.getGroupPosition('Pair'))
-        .toEqual(initialPosition)
-      await expect
-        .poll(() => containedNode.getBounding())
-        .toEqual(initialNodePosition)
+      await test.step('Move the group', async () => {
+        await comfyPage.canvasOps.dragGroup({
+          name: 'Pair',
+          deltaX: 100,
+          deltaY: 60
+        })
+        await expect
+          .poll(() => comfyPage.canvasOps.getGroupPosition('Pair'))
+          .not.toEqual(initialPosition)
+        await expect
+          .poll(() => containedNode.getBounding())
+          .not.toEqual(initialNodePosition)
+      })
+
+      await test.step('Undo the group move', async () => {
+        await comfyPage.keyboard.undo()
+        await expect
+          .poll(() => comfyPage.canvasOps.getGroupPosition('Pair'))
+          .toEqual(initialPosition)
+        await expect
+          .poll(() => containedNode.getBounding())
+          .toEqual(initialNodePosition)
+      })
     })
 
     for (const vueNodesEnabled of [false, true]) {
@@ -88,23 +105,30 @@ test.describe(
           const steps = await node.getWidget(2)
           const initialValue = await steps.getValue()
 
-          if (vueNodesEnabled) {
-            await comfyPage.vueNodes.editAndCommitNumber(
-              'KSampler',
-              'steps',
-              '31'
-            )
-          } else {
-            await steps.dragHorizontal(80)
-          }
-          await expect.poll(() => steps.getValue()).not.toBe(initialValue)
-          const changedValue = await steps.getValue()
+          const changedValue =
+            await test.step('Change the widget value', async () => {
+              if (vueNodesEnabled) {
+                await comfyPage.vueNodes.editAndCommitNumber(
+                  'KSampler',
+                  'steps',
+                  '31'
+                )
+              } else {
+                await steps.dragHorizontal(80)
+              }
+              await expect.poll(() => steps.getValue()).not.toBe(initialValue)
+              return steps.getValue()
+            })
 
-          await comfyPage.keyboard.undo()
-          await expect.poll(() => steps.getValue()).toBe(initialValue)
+          await test.step('Undo the widget change', async () => {
+            await comfyPage.keyboard.undo()
+            await expect.poll(() => steps.getValue()).toBe(initialValue)
+          })
 
-          await comfyPage.keyboard.redo()
-          await expect.poll(() => steps.getValue()).toBe(changedValue)
+          await test.step('Redo the widget change', async () => {
+            await comfyPage.keyboard.redo()
+            await expect.poll(() => steps.getValue()).toBe(changedValue)
+          })
         }
       )
     }
@@ -252,7 +276,8 @@ test.describe(
                 )
             }))
           const snapshots = [await getSnapshot()]
-          const checkpoint = async () => {
+          const checkpointNames = ['empty graph']
+          const checkpoint = async (name: string) => {
             await expect
               .poll(() => comfyPage.workflow.getUndoQueueSize())
               .toBe(snapshots.length)
@@ -270,6 +295,7 @@ test.describe(
             if (snapshot === undefined)
               throw new Error('Snapshot was not captured')
             snapshots.push(snapshot)
+            checkpointNames.push(name)
           }
 
           await test.step('Create a checkpoint loader', async () => {
@@ -279,7 +305,7 @@ test.describe(
             await expect
               .poll(() => comfyPage.nodeOps.getGraphNodesCount())
               .toBe(1)
-            await checkpoint()
+            await checkpoint('checkpoint loader created')
           })
 
           const loader = await comfyPage.nodeOps.getNodeRefByType(
@@ -293,7 +319,7 @@ test.describe(
             await expect
               .poll(() => comfyPage.nodeOps.getGraphNodesCount())
               .toBe(2)
-            await checkpoint()
+            await checkpoint('KSampler created')
           })
 
           const sampler = await comfyPage.nodeOps.getNodeRefByType('KSampler')
@@ -306,17 +332,17 @@ test.describe(
             await output.expectLinkCount(1)
             await samplerInput.expectLinkCount(1)
             await comfyPage.page.mouse.click(600, 650)
-            await checkpoint()
+            await checkpoint('nodes connected')
           })
 
           await test.step('Move the checkpoint loader', async () => {
             await loader.dragBy({ x: 90, y: 60 })
-            await checkpoint()
+            await checkpoint('checkpoint loader moved')
           })
 
           await test.step('Move the KSampler', async () => {
             await sampler.dragBy({ x: 70, y: 100 })
-            await checkpoint()
+            await checkpoint('KSampler moved')
           })
 
           await test.step('Change the KSampler steps value', async () => {
@@ -330,7 +356,7 @@ test.describe(
                 (await sampler.getWidgetByName('steps')).getValue()
               )
               .toBe(31)
-            await checkpoint()
+            await checkpoint('steps value changed')
           })
 
           await test.step('Change the KSampler CFG value', async () => {
@@ -344,7 +370,7 @@ test.describe(
                 (await sampler.getWidgetByName('cfg')).getValue()
               )
               .toBe(9.5)
-            await checkpoint()
+            await checkpoint('CFG value changed')
           })
 
           await test.step('Disconnect the loader from the sampler', async () => {
@@ -355,7 +381,7 @@ test.describe(
             await samplerInput.expectLinkCount(0)
             await output.expectLinkCount(0)
             await comfyPage.page.mouse.click(600, 650)
-            await checkpoint()
+            await checkpoint('nodes disconnected')
           })
 
           await test.step('Reconnect the loader to the sampler', async () => {
@@ -372,7 +398,7 @@ test.describe(
             await output.expectLinkCount(1)
             await samplerInput.expectLinkCount(1)
             await comfyPage.page.mouse.click(600, 650)
-            await checkpoint()
+            await checkpoint('nodes reconnected')
           })
 
           await test.step('Delete the KSampler', async () => {
@@ -381,20 +407,24 @@ test.describe(
               .poll(() => comfyPage.nodeOps.getGraphNodesCount())
               .toBe(1)
             await output.expectLinkCount(0)
-            await checkpoint()
+            await checkpoint('KSampler deleted')
           })
 
           await test.step('Undo the complete edit chain', async () => {
             for (let index = snapshots.length - 2; index >= 0; index--) {
-              await comfyPage.keyboard.undo()
-              await expect.poll(getSnapshot).toEqual(snapshots[index])
+              await test.step(`Undo to ${checkpointNames[index]}`, async () => {
+                await comfyPage.keyboard.undo()
+                await expect.poll(getSnapshot).toEqual(snapshots[index])
+              })
             }
           })
 
           await test.step('Redo the complete edit chain', async () => {
             for (let index = 1; index < snapshots.length; index++) {
-              await comfyPage.keyboard.redo()
-              await expect.poll(getSnapshot).toEqual(snapshots[index])
+              await test.step(`Redo to ${checkpointNames[index]}`, async () => {
+                await comfyPage.keyboard.redo()
+                await expect.poll(getSnapshot).toEqual(snapshots[index])
+              })
             }
           })
 
