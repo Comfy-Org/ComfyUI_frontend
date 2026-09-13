@@ -58,52 +58,61 @@ test.describe(
           )
         })
 
-        await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
         const loadImageNode =
-          await comfyPage.vueNodes.getFixtureByTitle('Load Image')
+          await test.step('Drag a Generated asset onto Load Image', async () => {
+            await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
+            const node =
+              await comfyPage.vueNodes.getFixtureByTitle('Load Image')
 
-        const { assetsTab } = comfyPage.menu
-        await assetsTab.open()
-        const generatedAsset = assetsTab.assetCards.filter({
-          has: comfyPage.page.getByRole('button', {
-            name: 'generated.png - image asset'
-          })
-        })
-        await expect(generatedAsset).toBeVisible()
-        const dataTransfer = await comfyPage.page.evaluateHandle(
-          () => new DataTransfer()
-        )
-        await generatedAsset.dispatchEvent('dragstart', { dataTransfer })
-        await loadImageNode.root.dispatchEvent('dragover', { dataTransfer })
-        await loadImageNode.root.dispatchEvent('drop', { dataTransfer })
-        await generatedAsset.dispatchEvent('dragend', { dataTransfer })
-        await dataTransfer.dispose()
-        await assetsTab.close()
-
-        await comfyPage.menu.topbar.saveWorkflow('annotated-widget-output')
-
-        const workflowsTab = comfyPage.menu.workflowsTab
-        await workflowsTab.open()
-        await workflowsTab.switchToWorkflow('Unsaved Workflow')
-        await comfyPage.workflow.waitForWorkflowIdle()
-        await workflowsTab.switchToWorkflow('annotated-widget-output')
-        await comfyPage.workflow.waitForWorkflowIdle()
-
-        const previewImage = loadImageNode.imagePreview.locator('img')
-        const imageLoadError = loadImageNode.root.getByTestId(
-          TestIds.errors.imageLoadError
-        )
-        await expect(loadImageNode.imagePreview).toBeVisible()
-        await expect(previewImage).toBeVisible()
-        await expect(imageLoadError).toBeHidden()
-        await expect
-          .poll(() =>
-            previewImage.evaluate(
-              (image: HTMLImageElement) =>
-                image.complete && image.naturalWidth > 0
+            const { assetsTab } = comfyPage.menu
+            await assetsTab.open()
+            const generatedAsset = assetsTab.assetCards.filter({
+              has: comfyPage.page.getByRole('button', {
+                name: 'generated.png - image asset'
+              })
+            })
+            await expect(generatedAsset).toBeVisible()
+            const dataTransfer = await comfyPage.page.evaluateHandle(
+              () => new DataTransfer()
             )
+            await generatedAsset.dispatchEvent('dragstart', { dataTransfer })
+            await node.root.dispatchEvent('dragover', { dataTransfer })
+            await node.root.dispatchEvent('drop', { dataTransfer })
+            await generatedAsset.dispatchEvent('dragend', { dataTransfer })
+            await dataTransfer.dispose()
+            await assetsTab.close()
+
+            return node
+          })
+
+        await test.step('Save and restore the workflow', async () => {
+          await comfyPage.menu.topbar.saveWorkflow('annotated-widget-output')
+
+          const workflowsTab = comfyPage.menu.workflowsTab
+          await workflowsTab.open()
+          await workflowsTab.switchToWorkflow('Unsaved Workflow')
+          await comfyPage.workflow.waitForWorkflowIdle()
+          await workflowsTab.switchToWorkflow('annotated-widget-output')
+          await comfyPage.workflow.waitForWorkflowIdle()
+        })
+
+        await test.step('Render the restored output preview', async () => {
+          const previewImage = loadImageNode.imagePreview.locator('img')
+          const imageLoadError = loadImageNode.root.getByTestId(
+            TestIds.errors.imageLoadError
           )
-          .toBe(true)
+          await expect(loadImageNode.imagePreview).toBeVisible()
+          await expect(previewImage).toBeVisible()
+          await expect(imageLoadError).toBeHidden()
+          await expect
+            .poll(() =>
+              previewImage.evaluate(
+                (image: HTMLImageElement) =>
+                  image.complete && image.naturalWidth > 0
+              )
+            )
+            .toBe(true)
+        })
       }
     )
   }
