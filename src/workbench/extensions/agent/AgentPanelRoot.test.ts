@@ -1938,6 +1938,40 @@ describe('AgentPanelRoot history', () => {
     expect(useAgentChatHistoryStore().sessions).toHaveLength(0)
   })
 
+  it('ignores an older thread-list failure after a newer refresh succeeds', async () => {
+    executionErrors.showErrorOverlay.mockClear()
+    let rejectInitial!: (error: Error) => void
+    const initialThreadResponse = new Promise<Response>((_resolve, reject) => {
+      rejectInitial = reject
+    })
+    let threadRequestCount = 0
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) => {
+        if (url.endsWith('/api/agent/threads')) {
+          threadRequestCount++
+          return threadRequestCount === 1
+            ? initialThreadResponse
+            : Promise.resolve(json(200, agentThreadList()))
+        }
+        return Promise.resolve(json(200, []))
+      })
+    )
+
+    renderWithSelectedTarget()
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await vi.waitFor(() => expect(threadRequestCount).toBe(2))
+
+    rejectInitial(new Error('stale refresh failed'))
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
+  })
+
   it('marks the adopted thread as the current session', async () => {
     vi.stubGlobal(
       'fetch',
