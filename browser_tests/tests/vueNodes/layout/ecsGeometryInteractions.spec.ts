@@ -25,7 +25,7 @@ test.describe(
     }) => {
       const node = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
       const handle = node.getResizeHandle('SE')
-      const outputDot = node.root.locator('[data-slot-key="3-out-0"]')
+      const outputDot = comfyPage.vueNodes.getOutputSlotConnectionDot('3', 0)
       const beforeNode = await node.boundingBox()
       const beforeDot = await outputDot.boundingBox()
       const handleBox = await handle.boundingBox()
