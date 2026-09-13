@@ -190,16 +190,16 @@ watch([activeSection, workshopEnabled], ([section, enabled]) => {
     captureWorkshopEvent({ name: 'api_viewed', properties: modelAnalytics })
   }
 })
+const canRunModel = computed(
+  () =>
+    !model.incompleteReason &&
+    import.meta.env.PUBLIC_WORKSHOP_ROUTER_RUN === '1' &&
+    !!model.execution &&
+    !activeExample.value?.fields &&
+    !clone
+)
 const gate = computed(() => {
-  if (
-    !workshopEnabled.value ||
-    model.incompleteReason ||
-    import.meta.env.PUBLIC_WORKSHOP_ROUTER_RUN !== '1' ||
-    !model.execution ||
-    activeExample.value?.fields ||
-    clone
-  )
-    return 'unavailable'
+  if (!workshopEnabled.value || !canRunModel.value) return 'unavailable'
   if (!mounted.value || draftPending.value || !authFlagSettled.value)
     return 'pending'
   if (!authEnabled.value || sessionFailure.value) return 'unavailable'
