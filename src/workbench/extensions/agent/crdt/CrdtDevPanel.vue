@@ -135,13 +135,14 @@ const STATUS_ROWS = [
   ['connected', () => (status.connected ? S.yes : S.no)],
   ['updates applied', () => String(status.updatesApplied)],
   [
-    'outcomes (recv/applied/skip/err/gap/reset/drop)',
+    'outcomes (recv/applied/skip/pend/err/gap/reset/drop)',
     () => {
       const o = status.outcomes
       return [
         o.received,
         o.applied,
         o.skipped,
+        o.pending,
         o.errored,
         o.gap,
         o.reset,

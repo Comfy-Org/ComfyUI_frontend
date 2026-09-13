@@ -10,7 +10,10 @@ import {
 } from './agentSubgraphDefinitions'
 import { recordDevEvent } from './devPanelLog'
 import type { DocUpdate } from './docFrameClient'
-import type { MutationsForTarget } from './ecsFollowerAdapter'
+import type {
+  FrameProjectionResult,
+  MutationsForTarget
+} from './ecsFollowerAdapter'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import type { FollowerDoc } from './followerDoc'
 
@@ -40,8 +43,16 @@ export class AgentCrdtProjection {
    * would let a third-party hook leave a frame counted in `received` and in
    * neither `applied` nor `skipped`.
    */
-  applyFrame(update: DocUpdate): boolean {
+  applyFrame(update: DocUpdate): FrameProjectionResult {
     return this.adapter.applyFrame(update)
+  }
+
+  retryPending(workflowId: string): FrameProjectionResult {
+    return this.adapter.retryPending(workflowId)
+  }
+
+  pendingFrameCount(workflowId: string): number {
+    return this.adapter.pendingFrameCount(workflowId)
   }
 
   /**

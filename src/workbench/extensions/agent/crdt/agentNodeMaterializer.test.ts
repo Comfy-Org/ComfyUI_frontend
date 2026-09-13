@@ -244,7 +244,7 @@ describe('reconcileAgentAdapters', () => {
           actor: 'agent:test',
           opIds: [opId]
         })
-      ).toBe(true)
+      ).toEqual({ status: 'projected', sequence })
       reconcileAgentAdapters(graph)
     }
 
@@ -866,7 +866,7 @@ describe('reconcileAgentAdapters', () => {
           actor: 'agent:test',
           opIds: []
         })
-      ).toBe(true)
+      ).toEqual({ status: 'projected', sequence: 1 })
       return { host, follower, adapter }
     }
 

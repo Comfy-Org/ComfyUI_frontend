@@ -219,7 +219,9 @@ describe('R-73 cross-workflow pending operation characterization', () => {
 
     bridge().lastSequence = 41
     enqueue([deleteNode('a-inflight')])
-    expect(clientState.sent[0].ops[0]).toMatchObject({ base_version: 41 })
+    // The sender is intentionally gated by the last successfully projected
+    // sequence, not by the bridge's latest received sequence.
+    expect(clientState.sent[0].ops[0]).toMatchObject({ base_version: 0 })
     const operationAId = clientState.sent[0].ops[0].op_id
     await switchWorkflow(workflowId, 'wf-b')
 
