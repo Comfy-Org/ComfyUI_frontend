@@ -178,10 +178,12 @@ test.describe(
           await comfyPage.keyboard.undo()
           await expectState(movedPosition, '31', initialNodeCount)
         })
+
         await test.step('Undo restores only the steps value', async () => {
           await comfyPage.keyboard.undo()
           await expectState(movedPosition, initialSteps, initialNodeCount)
         })
+
         await test.step('Undo restores only the node position', async () => {
           await comfyPage.keyboard.undo()
           await expectState(initialPosition, initialSteps, initialNodeCount)
@@ -191,10 +193,12 @@ test.describe(
           await comfyPage.keyboard.redo()
           await expectState(movedPosition, initialSteps, initialNodeCount)
         })
+
         await test.step('Redo reapplies only the steps value', async () => {
           await comfyPage.keyboard.redo()
           await expectState(movedPosition, '31', initialNodeCount)
         })
+
         await test.step('Redo restores only the Note node', async () => {
           await comfyPage.keyboard.redo()
           await expectState(movedPosition, '31', initialNodeCount + 1)
@@ -418,10 +422,12 @@ test.describe(
       })
 
       const tabsBeforeNew = await comfyPage.menu.topbar.getTabNames()
+
       await test.step('Open a fresh Tab B', async () => {
         await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
         await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
       })
+
       const tabsAfterNew = await comfyPage.menu.topbar.getTabNames()
       const newTabs = tabsAfterNew.filter(
         (name) => !tabsBeforeNew.includes(name)
