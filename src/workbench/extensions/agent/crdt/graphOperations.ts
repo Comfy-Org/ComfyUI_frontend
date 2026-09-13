@@ -15,3 +15,16 @@ type DistributiveOmit<T, K extends PropertyKey> = T extends unknown
   : never
 
 export type GraphOperation = DistributiveOmit<Op, keyof OpBase>
+
+type LocalInputSlot = number & { readonly __brand: 'LocalInputSlot' }
+export type DocumentInputSlot = number & {
+  readonly __brand: 'DocumentInputSlot'
+}
+
+export type LocalGraphOperation = GraphOperation & {
+  readonly __slotSpace: 'local'
+  readonly __localInputSlot?: LocalInputSlot
+}
+export type DocumentGraphOperation = GraphOperation & {
+  readonly __slotSpace: 'document'
+}
