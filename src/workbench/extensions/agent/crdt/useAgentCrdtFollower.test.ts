@@ -1,4 +1,3 @@
-// oxlint-disable comfy/no-import-actual -- EcsFollowerAdapter is stubbed while mapLocalInputSlots must stay real for slot-remap assertions
 /**
  * Composable-owned behavior only (plan 3.5's subscribe-robustness probes):
  * the bridge/client mechanics have their own suites
@@ -23,7 +22,6 @@ import { toNodeId } from '@/types/nodeId'
 
 import type { MaterializableGraph } from './agentNodeMaterializer'
 import type { GraphOperation } from './graphOperations'
-import type * as EcsFollowerModule from './ecsFollowerAdapter'
 
 const bridgeState = vi.hoisted(() => {
   class FakeBridge extends EventTarget {
@@ -113,8 +111,7 @@ vi.mock<unknown>(import('./docFrameClient'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('./ecsFollowerAdapter'), async (importOriginal) => ({
-  ...(await importOriginal<typeof EcsFollowerModule>()),
+vi.mock<unknown>(import('./ecsFollowerAdapter'), () => ({
   EcsFollowerAdapter: class {
     bind = adapterState.bind
     unbind = adapterState.unbind

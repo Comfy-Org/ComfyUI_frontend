@@ -9,9 +9,10 @@ import { app } from '@/scripts/app'
 import { graphScopeOf } from '@/types/graphScopeId'
 
 import { reconcileAgentAdapters } from '../agentNodeMaterializer'
-import { EcsFollowerAdapter, mapLocalInputSlots } from '../ecsFollowerAdapter'
+import { EcsFollowerAdapter } from '../ecsFollowerAdapter'
 import { FollowerDoc } from '../followerDoc'
-import type { GraphOperation, LocalGraphOperation } from '../graphOperations'
+import type { GraphOperation } from '../graphOperations'
+import { mapLocalInputSlots } from '../mapLocalInputSlots'
 import { attachMintPortWiring } from '../mintPortWiring'
 
 interface SessionOptions {
@@ -61,13 +62,7 @@ export const crdtTest = baseTest.extend<CrdtFixtures>({
         isEnabled: () => true,
         isDocBound: () => true,
         enqueue: (operations) =>
-          minted.push(
-            ...mapLocalInputSlots(
-              follower.doc,
-              graph,
-              operations as LocalGraphOperation[]
-            )
-          ),
+          minted.push(...mapLocalInputSlots(follower.doc, graph, operations)),
         layoutChanges: () => () => {},
         localActorPrefix: 'user-',
         getGraph: () => graph
