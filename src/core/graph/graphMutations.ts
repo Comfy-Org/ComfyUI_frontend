@@ -209,33 +209,17 @@ function widgetType(value: unknown): string {
   }
 }
 
-/** A named record binds every slot only when it names at least as many. */
-function namedRecordCovers(
-  values: unknown,
-  named: unknown
-): named is Record<string, unknown> {
-  return (
-    Array.isArray(values) &&
-    isRecord(named) &&
-    Object.keys(named).length >= values.length
-  )
-}
-
 function widgetEntries(payload: SemanticNodePayload): PreparedNode['widgets'] {
   const values = payload.widgets_values
-  const named = payload.widgets_values_named
-  // A complete named record binds array values by name; otherwise the array
-  // binds them by slot, and a partial record must not discard the rest.
-  const source = namedRecordCovers(values, named) ? named : values
-  if (Array.isArray(source)) {
-    return source.map((value, index) => ({
+  if (Array.isArray(values)) {
+    return values.map((value, index) => ({
       name: String(index),
       value: structuredClone(value) as WidgetValue,
       type: widgetType(value)
     }))
   }
-  if (!isRecord(source)) return []
-  return Object.entries(source).map(([name, value]) => ({
+  if (!isRecord(values)) return []
+  return Object.entries(values).map(([name, value]) => ({
     name,
     value: structuredClone(value) as WidgetValue,
     type: widgetType(value)
@@ -426,18 +410,26 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           ) {
             const { title, widgets_values, widgets_values_named } =
               mutation.payload
-            if (
-              Array.isArray(widgets_values) &&
-              !namedRecordCovers(widgets_values, widgets_values_named)
-            ) {
+            if (Array.isArray(widgets_values)) {
               const serializable = widgetStore
                 .getNodeWidgets(scope.rootGraphId, node.state.id)
                 .filter(
                   (widget) =>
                     widget.serialize !== false && widget.type !== 'button'
                 )
+              const named = isRecord(widgets_values_named)
+                ? widgets_values_named
+                : {}
+              // The incumbent's widget order is the authoritative slot
+              // binding: a slot whose name the record carries takes the named
+              // value, every other slot keeps its positional value.
               node.widgets.forEach((widget, index) => {
-                widget.name = serializable[index]?.name ?? widget.name
+                const slot = serializable.at(index)
+                if (!slot) return
+                widget.name = slot.name
+                if (!(slot.name in named)) return
+                widget.value = structuredClone(named[slot.name]) as WidgetValue
+                widget.type = widgetType(named[slot.name])
               })
             }
             if (typeof title !== 'string' || !title)

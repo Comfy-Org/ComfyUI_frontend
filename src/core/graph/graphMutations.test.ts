@@ -419,6 +419,30 @@ describe('graphMutations', () => {
     ])
   })
 
+  it('keeps positional slots the named record does not name even when it carries extra keys', () => {
+    const graph = mutations()
+    graph.addNode(node(1, { steps: 20, seed: 4 }), context)
+
+    expect(
+      graph.batch(context, (batch) =>
+        batch.reconcileNode({
+          ...node(1),
+          widgets_values: [21, 5],
+          widgets_values_named: { steps: 21, obsolete: 99 }
+        })
+      )
+    ).toBe(true)
+
+    expect(
+      useWidgetValueStore()
+        .getNodeWidgets('root', toNodeId(1))
+        .map(({ name, value }) => ({ name, value }))
+    ).toEqual([
+      { name: 'steps', value: 21 },
+      { name: 'seed', value: 5 }
+    ])
+  })
+
   it('restores positional Markdown values to the existing serializable widget', () => {
     const graph = mutations()
     graph.addNode(node(1), context)
