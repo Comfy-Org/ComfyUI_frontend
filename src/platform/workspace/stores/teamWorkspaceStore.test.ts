@@ -1864,6 +1864,7 @@ describe('useTeamWorkspaceStore', () => {
       expect(result).toHaveLength(1)
       expect(store.pendingInvites).toHaveLength(1)
       expect(store.pendingInvites[0].email).toBe('invite@test.com')
+      expect(store.pendingInvites[0].token).toBe('token-abc')
     })
 
     it('createInvite adds to local list', async () => {
