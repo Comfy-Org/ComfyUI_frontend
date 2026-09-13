@@ -55,10 +55,6 @@ export interface DraftSnapshot {
   version?: number
 }
 
-export interface AgentRestClientOptions {
-  signal?: () => AbortSignal | undefined
-}
-
 export interface PostMessageInput {
   content: string
   workflowId?: string
@@ -82,7 +78,7 @@ function isIngestErrorBody(body: unknown): body is IngestErrorBody {
   )
 }
 
-export function createAgentRestClient(options: AgentRestClientOptions = {}) {
+export function createAgentRestClient() {
   async function toApiError(response: Response): Promise<AgentApiError> {
     const text = await response.text()
     let body: unknown
@@ -105,11 +101,7 @@ export function createAgentRestClient(options: AgentRestClientOptions = {}) {
     init: RequestInit,
     schema: z.ZodType<T>
   ): Promise<T> {
-    const signal = options.signal?.()
-    const response = await api.fetchApi(
-      route,
-      signal === undefined ? init : { ...init, signal }
-    )
+    const response = await api.fetchApi(route, init)
     if (!response.ok) throw await toApiError(response)
     return schema.parse(await response.json())
   }
