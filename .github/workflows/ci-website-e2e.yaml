@@ -24,7 +24,7 @@ jobs:
       - id: changes
         uses: ./.github/actions/changes-filter
 
-  website-e2e:
+  website-e2e-shard:
     needs: changes
     if: ${{ needs.changes.outputs.app-website-changes == 'true' || needs.changes.outputs.packages-changes == 'true' }}
     runs-on: ubuntu-latest
@@ -33,13 +33,11 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: read
-    outputs:
-      test-outcome: ${{ steps.tests.outcome }}
-      report-url: ${{ steps.deploy.outputs.url }}
-      screenshot-failures: ${{ steps.failures.outputs.screenshot }}
-      other-failures: ${{ steps.failures.outputs.other }}
-      # Evaluated at job level (not from a step) — static expression.
-      is-pr: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false }}
+    strategy:
+      fail-fast: false
+      matrix:
+        shardIndex: [1, 2, 3, 4]
+        shardTotal: [4]
     steps:
       - uses: actions/checkout@v7
 
@@ -60,13 +58,60 @@ jobs:
           PUBLIC_CUSTOMERIO_WRITE_KEY: test-e2e-write-key
         run: pnpm --filter @comfyorg/website build
 
-      - name: Run Playwright tests
+      - name: Run Playwright tests (Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
         id: tests
-        run: pnpm --filter @comfyorg/website test:e2e
+        run: pnpm --filter @comfyorg/website test:e2e --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+        env:
+          PLAYWRIGHT_BLOB_OUTPUT_DIR: ${{ github.workspace }}/apps/website/blob-report
+
+      - name: Upload blob report
+        uses: actions/upload-artifact@v6
+        if: ${{ !cancelled() }}
+        with:
+          name: website-blob-report-${{ matrix.shardIndex }}
+          path: apps/website/blob-report/
+          if-no-files-found: error
+          retention-days: 1
+
+  website-e2e-report:
+    needs: [changes, website-e2e-shard]
+    if: ${{ always() && (needs.changes.outputs.app-website-changes == 'true' || needs.changes.outputs.packages-changes == 'true') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    outputs:
+      test-outcome: ${{ steps.outcome.outputs.result }}
+      report-url: ${{ steps.deploy.outputs.url }}
+      screenshot-failures: ${{ steps.failures.outputs.screenshot }}
+      other-failures: ${{ steps.failures.outputs.other }}
+      is-pr: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install pnpm
+        run: corepack enable && corepack prepare
+
+      - name: Download blob reports
+        id: blob-reports
+        continue-on-error: true
+        uses: actions/download-artifact@v8
+        with:
+          path: apps/website/all-blob-reports
+          pattern: website-blob-report-*
+          merge-multiple: true
+
+      - name: Validate and merge blob reports
+        id: outcome
+        working-directory: apps/website
+        env:
+          SHARDS_RESULT: ${{ needs.website-e2e-shard.result }}
+          BLOB_REPORTS_OUTCOME: ${{ steps.blob-reports.outcome }}
+        run: ../../scripts/cicd/prepare-website-e2e-report.sh all-blob-reports 4
 
       - name: Upload test report
         uses: actions/upload-artifact@v6
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && needs.website-e2e-shard.result != 'cancelled' && steps.outcome.outputs.result != 'infrastructure' }}
         with:
           name: website-playwright-report
           path: |
@@ -80,7 +125,8 @@ jobs:
         if: >-
           ${{
             always() &&
-            !cancelled() &&
+            needs.website-e2e-shard.result != 'cancelled' &&
+            steps.outcome.outputs.result != 'infrastructure' &&
             (
               github.event_name != 'pull_request' ||
               github.event.pull_request.head.repo.fork == false
@@ -98,7 +144,7 @@ jobs:
             OUTPUT=$(pnpx wrangler@^4.0.0 pages deploy apps/website/playwright-report \
               --project-name=comfyui-website-e2e \
               --branch="$BRANCH" 2>&1) && { DEPLOY_OK=true; break; } || echo "$OUTPUT"
-            [ $i -lt 3 ] && sleep 10
+            [ "$i" -lt 3 ] && sleep 10
           done
           echo "$OUTPUT"
           if [ "$DEPLOY_OK" != "true" ]; then
@@ -106,11 +152,11 @@ jobs:
             exit 1
           fi
           URL=$(echo "$OUTPUT" | grep -oE 'https://[a-zA-Z0-9.-]+\.pages\.dev\S*' | head -1)
-          echo "url=${URL}" >> $GITHUB_OUTPUT
+          echo "url=${URL}" >> "$GITHUB_OUTPUT"
 
       - name: Categorize failures
         id: failures
-        if: always() && !cancelled() && steps.tests.outcome != 'success'
+        if: always() && needs.website-e2e-shard.result != 'cancelled' && steps.outcome.outputs.result == 'failure'
         uses: actions/github-script@v9
         with:
           script: |
@@ -129,8 +175,6 @@ jobs:
               ]
             }
 
-            // True:  Visual
-            // False: Other
             const failed = specsOf(report)
               .flatMap(spec => (spec.tests || [])
               .filter(isFailed)
@@ -141,16 +185,18 @@ jobs:
             core.setOutput('other', failed.length - screenshotFailures)
 
       - name: Write job summary
-        if: always() && !cancelled()
+        if: always() && needs.website-e2e-shard.result != 'cancelled'
         uses: actions/github-script@v9
         env:
-          TEST_OUTCOME: ${{ steps.tests.outcome }}
+          TEST_OUTCOME: ${{ steps.outcome.outputs.result }}
           REPORT_URL: ${{ steps.deploy.outputs.url }}
           SCREENSHOT_FAILURES: ${{ steps.failures.outputs.screenshot }}
           OTHER_FAILURES: ${{ steps.failures.outputs.other }}
         with:
           script: |
-            const passed = process.env.TEST_OUTCOME === 'success'
+            const outcome = process.env.TEST_OUTCOME
+            const passed = outcome === 'success'
+            const infrastructure = outcome === 'infrastructure'
             const reportUrl = process.env.REPORT_URL
             const screenshotFailures = parseInt(process.env.SCREENSHOT_FAILURES) || 0
             const otherFailures = parseInt(process.env.OTHER_FAILURES) || 0
@@ -159,15 +205,20 @@ jobs:
 
             if (passed) {
               lines.push('> [!TIP]', '> All tests passed.')
+            } else if (infrastructure) {
+              lines.push(
+                '> [!CAUTION]',
+                '> A shard failed before producing a report, so the suite did not fully run. No pass/fail counts are available.'
+              )
             } else {
               lines.push('> [!CAUTION]', '> Some tests failed.')
             }
 
             const rows = [
-              ['Status', passed ? '✅ Passed' : '❌ Failed'],
+              ['Status', passed ? '✅ Passed' : infrastructure ? '💥 Infrastructure failure' : '❌ Failed'],
               ['Report', reportUrl ? `[View Report](${reportUrl})` : '_unavailable_']
             ]
-            if (!passed) {
+            if (!passed && !infrastructure) {
               rows.push(
                 ['Screenshot diffs', String(screenshotFailures)],
                 ['Other failures', String(otherFailures)]
@@ -182,9 +233,25 @@ jobs:
 
             await core.summary.addRaw(lines.join('\n')).write()
 
+  website-e2e:
+    if: ${{ always() }}
+    needs: [changes, website-e2e-shard, website-e2e-report]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Check website E2E result
+        env:
+          SHOULD_RUN: ${{ needs.changes.outputs.app-website-changes == 'true' || needs.changes.outputs.packages-changes == 'true' }}
+          SHARD_RESULT: ${{ needs.website-e2e-shard.result }}
+          REPORT_RESULT: ${{ needs.website-e2e-report.result }}
+          TEST_OUTCOME: ${{ needs.website-e2e-report.outputs.test-outcome }}
+        run: scripts/cicd/check-website-e2e-result.sh
+
   post-starting-comment:
-    # Safe to comment from pull_request trigger: fork PRs are excluded by the guard below.
-    # This avoids a ci-*/pr-* workflow_run split for a comment that must appear immediately.
     needs: changes
     if: |
       github.event_name == 'pull_request'
@@ -213,8 +280,8 @@ jobs:
             > Tests are running… [View workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
   post-result-comment:
-    needs: website-e2e
-    if: always() && !cancelled() && needs.website-e2e.outputs.is-pr == 'true'
+    needs: website-e2e-report
+    if: always() && !cancelled() && needs.website-e2e-report.outputs.is-pr == 'true'
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -229,13 +296,15 @@ jobs:
         id: content
         uses: actions/github-script@v9
         env:
-          TEST_OUTCOME: ${{ needs.website-e2e.outputs.test-outcome }}
-          REPORT_URL: ${{ needs.website-e2e.outputs.report-url }}
-          SCREENSHOT_FAILURES: ${{ needs.website-e2e.outputs.screenshot-failures }}
-          OTHER_FAILURES: ${{ needs.website-e2e.outputs.other-failures }}
+          TEST_OUTCOME: ${{ needs.website-e2e-report.outputs.test-outcome }}
+          REPORT_URL: ${{ needs.website-e2e-report.outputs.report-url }}
+          SCREENSHOT_FAILURES: ${{ needs.website-e2e-report.outputs.screenshot-failures }}
+          OTHER_FAILURES: ${{ needs.website-e2e-report.outputs.other-failures }}
         with:
           script: |
-            const passed = process.env.TEST_OUTCOME === 'success'
+            const outcome = process.env.TEST_OUTCOME
+            const passed = outcome === 'success'
+            const infrastructure = outcome === 'infrastructure'
             const reportUrl = process.env.REPORT_URL
             const screenshotFailures = parseInt(process.env.SCREENSHOT_FAILURES) || 0
             const otherFailures = parseInt(process.env.OTHER_FAILURES) || 0
@@ -244,15 +313,20 @@ jobs:
 
             if (passed) {
               lines.push('> [!TIP]', '> All tests passed.')
+            } else if (infrastructure) {
+              lines.push(
+                '> [!CAUTION]',
+                '> A shard failed before producing a report, so the suite did not fully run. No pass/fail counts are available.'
+              )
             } else {
               lines.push('> [!CAUTION]', '> Some tests failed.')
             }
 
             const rows = [
-              ['Status', passed ? '✅ Passed' : '❌ Failed'],
+              ['Status', passed ? '✅ Passed' : infrastructure ? '💥 Infrastructure failure' : '❌ Failed'],
               ['Report', reportUrl ? `[View Report](${reportUrl})` : '_unavailable_']
             ]
-            if (!passed) {
+            if (!passed && !infrastructure) {
               rows.push(
                 ['Screenshot diffs', String(screenshotFailures)],
                 ['Other failures', String(otherFailures)]
