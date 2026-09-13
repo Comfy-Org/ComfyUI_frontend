@@ -161,6 +161,17 @@ async function initiateSubscriptionCheckout(
     if (openInNewTab) {
       const checkoutWindow = window.open(data.checkout_url, '_blank')
       if (!checkoutWindow) {
+        telemetry?.trackBillingEvent({
+          operation: 'subscription_checkout',
+          stage: 'failed',
+          outcome: 'failure',
+          tier: tierKey,
+          cycle: currentBillingCycle,
+          checkout_type: 'new',
+          payment_intent_source: paymentIntentSource,
+          failure_category: 'redirect',
+          error_code: 'payment_popup_blocked'
+        })
         return
       }
       persistPendingSubscriptionCheckoutAttempt(pendingAttempt)

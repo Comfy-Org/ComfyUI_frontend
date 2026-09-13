@@ -11,7 +11,8 @@ const {
 
   mockIsCloud,
   mockGetCheckoutAttribution,
-  mockLocalStorage
+  mockLocalStorage,
+  mockReportError
 } = vi.hoisted(() => ({
   mockTelemetry: {
     trackBeginCheckout: vi.fn(),
@@ -34,6 +35,7 @@ const {
     gbraid: 'gbraid-456',
     wbraid: 'wbraid-789'
   })),
+  mockReportError: vi.fn(),
   mockLocalStorage: (() => {
     const store = new Map<string, string>()
 
@@ -67,6 +69,10 @@ Object.defineProperty(globalThis, 'localStorage', {
 
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: vi.fn(() => mockTelemetry)
+}))
+
+vi.mock<unknown>(import('@/platform/telemetry/reportError'), () => ({
+  reportError: mockReportError
 }))
 
 vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
@@ -306,6 +312,18 @@ describe('performSubscriptionCheckout', () => {
         checkout_attempt_id: expect.any(String)
       })
     )
+    expect(mockTelemetry.trackBillingEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operation: 'subscription_checkout',
+        stage: 'failed',
+        outcome: 'failure',
+        tier: 'pro',
+        cycle: 'monthly',
+        failure_category: 'redirect',
+        error_code: 'payment_popup_blocked'
+      })
+    )
+    expect(mockReportError).not.toHaveBeenCalled()
   })
 
   it('reports checkout-initiation failure via trackBillingEvent, so the marketing deep link inherits it too', async () => {
