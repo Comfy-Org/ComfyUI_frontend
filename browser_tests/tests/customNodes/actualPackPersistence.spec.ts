@@ -80,19 +80,32 @@ test.describe(
             savedWorkflows.track(workflowName)
             const ids = await comfyPage.page.evaluate(() => {
               const graph = window.app!.graph
-              const makeNode = (title: string) => {
+              const makeNode = (
+                title: string,
+                promptValue: string,
+                modeValue: string
+              ) => {
                 const node = window.LiteGraph!.createNode(
                   'PromptChain_PromptChain'
                 )!
                 node.title = title
                 graph.add(node)
+                node.widgets!.find(
+                  (widget) => widget.name === 'prompt'
+                )!.value = promptValue
+                node.widgets!.find((widget) => widget.name === 'mode')!.value =
+                  modeValue
                 return node
               }
-              const root = makeNode('Chain Root')
+              const root = makeNode(
+                'Chain Root',
+                'SETUP root prompt',
+                'combine'
+              )
               const children = [
-                makeNode('Chain Alpha'),
-                makeNode('Chain Beta'),
-                makeNode('Chain Gamma')
+                makeNode('Chain Alpha', 'SETUP alpha prompt', 'switch'),
+                makeNode('Chain Beta', 'SETUP beta prompt', 'iterate'),
+                makeNode('Chain Gamma', 'SETUP gamma prompt', 'combine')
               ]
               for (const child of children) {
                 const targetSlot = root.inputs.findIndex(
@@ -107,12 +120,12 @@ test.describe(
             })
 
             const inputLinks = () => packPersistence.projectInputLinks(ids.root)
-            const expectedSources = [...ids.children].sort()
-            await expect
-              .poll(async () =>
-                (await inputLinks()).map(([source]) => source).sort()
-              )
-              .toEqual(expectedSources)
+            const initialLinks = [
+              [ids.children[0], 0, ids.root, 0],
+              [ids.children[1], 0, ids.root, 1],
+              [ids.children[2], 0, ids.root, 2]
+            ]
+            await expect.poll(inputLinks).toEqual(initialLinks)
 
             const onboardingSkip = comfyPage.page.getByText('Skip', {
               exact: true
@@ -149,20 +162,22 @@ test.describe(
                 'Chain Gamma',
                 'Chain Alpha'
               ])
-            await expect
-              .poll(async () =>
-                (await inputLinks()).map(([source]) => source).sort()
-              )
-              .toEqual(expectedSources)
+            await expect.poll(inputLinks).toEqual([
+              [ids.children[1], 0, ids.root, 0],
+              [ids.children[2], 0, ids.root, 1],
+              [ids.children[0], 0, ids.root, 2]
+            ])
             await comfyPage.page.getByTitle('Close (Escape)').click()
 
             await comfyPage.menu.topbar.saveWorkflow(workflowName)
             await comfyPage.workflow.reloadAndWaitForApp()
             await openWorkflowFromSidebar(comfyPage, workflowName)
 
-            await expect
-              .poll(async () => (await inputLinks()).map(([source]) => source))
-              .toEqual([ids.children[1], ids.children[2], ids.children[0]])
+            await expect.poll(inputLinks).toEqual([
+              [ids.children[1], 0, ids.root, 0],
+              [ids.children[2], 0, ids.root, 1],
+              [ids.children[0], 0, ids.root, 2]
+            ])
             await expect
               .poll(() =>
                 comfyPage.page.evaluate(
@@ -174,7 +189,15 @@ test.describe(
                       return {
                         title: node.title,
                         type: node.type,
-                        widgets: node.widgets!.map((widget) => widget.name)
+                        widgets: node
+                          .widgets!.filter(
+                            (widget) =>
+                              widget.name === 'prompt' || widget.name === 'mode'
+                          )
+                          .map((widget) => ({
+                            name: widget.name,
+                            value: widget.value
+                          }))
                       }
                     })
                   },
@@ -182,16 +205,38 @@ test.describe(
                 )
               )
               .toEqual([
-                expect.objectContaining({
+                {
+                  title: 'Prompt Chain',
                   type: 'PromptChain_PromptChain',
-                  widgets: expect.arrayContaining(['prompt', 'mode'])
-                }),
-                ...ids.children.map(() =>
-                  expect.objectContaining({
-                    type: 'PromptChain_PromptChain',
-                    widgets: expect.arrayContaining(['prompt', 'mode'])
-                  })
-                )
+                  widgets: [
+                    { name: 'prompt', value: 'SETUP root prompt' },
+                    { name: 'mode', value: 'combine' }
+                  ]
+                },
+                {
+                  title: 'Prompt Chain',
+                  type: 'PromptChain_PromptChain',
+                  widgets: [
+                    { name: 'prompt', value: 'SETUP alpha prompt' },
+                    { name: 'mode', value: 'switch' }
+                  ]
+                },
+                {
+                  title: 'Prompt Chain',
+                  type: 'PromptChain_PromptChain',
+                  widgets: [
+                    { name: 'prompt', value: 'SETUP beta prompt' },
+                    { name: 'mode', value: 'iterate' }
+                  ]
+                },
+                {
+                  title: 'Prompt Chain',
+                  type: 'PromptChain_PromptChain',
+                  widgets: [
+                    { name: 'prompt', value: 'SETUP gamma prompt' },
+                    { name: 'mode', value: 'combine' }
+                  ]
+                }
               ])
           }
         )
