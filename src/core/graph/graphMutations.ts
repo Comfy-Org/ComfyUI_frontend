@@ -658,14 +658,14 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
               mutation.node.state,
               context
             )
-            widgetStore.clearNode(
-              scope.rootGraphId,
-              mutation.node.state.id,
-              context
-            )
           } else {
             nodeStore.registerNode(scope, mutation.node.state, context)
           }
+          const incomingWidgetIds = new Set(
+            mutation.node.widgets.map((widget) =>
+              widgetId(scope.rootGraphId, mutation.node.state.id, widget.name)
+            )
+          )
           for (const widget of mutation.node.widgets) {
             const projected = deps.liveWidgets?.setValue(
               scope,
@@ -678,8 +678,13 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
               projected && projected.status !== 'skipped'
                 ? projected.resolvedValue
                 : widget.value
+            const id = widgetId(
+              scope.rootGraphId,
+              mutation.node.state.id,
+              widget.name
+            )
             widgetStore.registerWidget(
-              widgetId(scope.rootGraphId, mutation.node.state.id, widget.name),
+              id,
               {
                 name: widget.name,
                 type: widget.type,
@@ -691,6 +696,17 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
               undefined,
               context
             )
+            if (mutation.kind === 'reconcileNode') {
+              widgetStore.setValue(id, resolvedValue, context)
+            }
+          }
+          if (mutation.kind === 'reconcileNode') {
+            for (const id of widgetStore.getNodeWidgetIds(
+              scope.rootGraphId,
+              mutation.node.state.id
+            )) {
+              if (!incomingWidgetIds.has(id)) widgetStore.deleteWidget(id)
+            }
           }
           if (!existing) {
             deps.layout.createNode(

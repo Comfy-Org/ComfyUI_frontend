@@ -381,6 +381,9 @@ describe('graphMutations', () => {
     const graph = mutations()
     graph.addNode(node(1, { seed: 1, stale: 'old' }), context)
     const [existing] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    const liveWidgetState = useWidgetValueStore().getWidget(
+      widgetId('root', toNodeId(1), 'seed')
+    )
     createLayout.mockClear()
     deleteLayouts.mockClear()
 
@@ -398,11 +401,13 @@ describe('graphMutations', () => {
     expect(reconciled.title).toBe('Seeded authority')
     expect(
       useWidgetValueStore().getWidget(widgetId('root', toNodeId(1), 'seed'))
-        ?.value
-    ).toBe(42)
+    ).toBe(liveWidgetState)
+    expect(liveWidgetState?.value).toBe(42)
     expect(
       useWidgetValueStore().getWidget(widgetId('root', toNodeId(1), 'stale'))
     ).toBeUndefined()
+    expect(graph.setWidget(toNodeId(1), 'seed', 84, context)).toBe(true)
+    expect(liveWidgetState?.value).toBe(84)
     expect(deleteLayouts).not.toHaveBeenCalled()
     expect(createLayout).not.toHaveBeenCalled()
   })
