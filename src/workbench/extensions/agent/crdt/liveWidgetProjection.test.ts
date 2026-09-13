@@ -1,15 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { createGraphMutations } from '@/core/graph/graphMutations'
 import { LGraph } from '@/lib/litegraph/src/LGraph'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { TWidgetType } from '@/lib/litegraph/src/types/widgets'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toNodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
 
 import type { GraphOperation } from './graphOperations'
-import { applyLiveWidgetValue } from './liveWidgetProjection'
+import {
+  applyLiveWidgetValue,
+  rebindLiveWidgetState
+} from './liveWidgetProjection'
 import { attachMintPortWiring } from './mintPortWiring'
 
 const rootScope = {
@@ -37,6 +43,50 @@ describe('applyLiveWidgetValue', () => {
   beforeEach(() =>
     vi.spyOn(console, 'warn').mockImplementation(() => undefined)
   )
+
+  it('rebinds a live widget to type-changing reconciliation state', () => {
+    const graph = new LGraph()
+    graph.id = 'root'
+    const node = new LGraphNode('Test')
+    node.id = toNodeId(7)
+    const widget = node.addWidget('number', 'value', 1, null)
+    graph.add(node)
+    const mutations = createGraphMutations({
+      getScope: () => rootScope,
+      layout: { createNode: vi.fn(), deleteNodes: vi.fn() },
+      liveWidgets: {
+        rebind: (scope, nodeId, name) =>
+          rebindLiveWidgetState(graph, scope, nodeId, name),
+        setValue: (scope, nodeId, name, value, context) =>
+          applyLiveWidgetValue(graph, scope, nodeId, name, value, context)
+      }
+    })
+    const payload = {
+      id: 7,
+      type: 'Test',
+      widgets_values: { value: 1 }
+    }
+
+    expect(
+      mutations.batch(remoteContext, (batch) => {
+        batch.reconcileNode({
+          ...payload,
+          widgets_values: { value: 'text' }
+        })
+      })
+    ).toBe(true)
+
+    expect(
+      useWidgetValueStore().getWidget(
+        widgetId(rootScope.rootGraphId, toNodeId(7), 'value')
+      )
+    ).toMatchObject({ type: 'string', value: 'text' })
+    expect(widget.value).toBe('text')
+    expect(
+      mutations.setWidget(toNodeId(7), 'value', 'updated', remoteContext)
+    ).toBe(true)
+    expect(widget.value).toBe('updated')
+  })
 
   it('guards a missing graph and identifies the widget in its warning', () => {
     expect(
