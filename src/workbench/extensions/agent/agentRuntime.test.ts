@@ -15,6 +15,14 @@ import type { AgentRestClient } from './services/agent/agentRestClient'
 import { createAgentTestHarness } from './__fixtures__/agentTestHarness'
 import { createAgentRuntime } from './agentRuntime'
 
+function createDeferred<T>() {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((done) => {
+    resolve = done
+  })
+  return { promise, resolve }
+}
+
 function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
   const base: AgentRestClient = {
     postMessage: vi.fn(
@@ -204,5 +212,40 @@ describe('agentRuntime', () => {
 
     expect(onError).toHaveBeenCalledWith(error)
     expect(events.unsubscribe).not.toHaveBeenCalled()
+  })
+
+  it('ignores history returned by a stopped runtime', async () => {
+    const oldHistory = createDeferred<AgentThreadSummary[]>()
+    const currentHistory = createDeferred<AgentThreadSummary[]>()
+    const oldRuntime = createAgentRuntime({
+      enabled: true,
+      createRest: () =>
+        fakeRest({ listThreads: vi.fn(() => oldHistory.promise) }),
+      createEvents: () => fakeEvents().source,
+      untitledChatTitle: 'Untitled chat'
+    })
+    const currentRuntime = createAgentRuntime({
+      enabled: true,
+      createRest: () =>
+        fakeRest({ listThreads: vi.fn(() => currentHistory.promise) }),
+      createEvents: () => fakeEvents().source,
+      untitledChatTitle: 'Untitled chat'
+    })
+
+    oldRuntime.start()
+    oldRuntime.stop()
+    currentRuntime.start()
+    currentHistory.resolve([{ id: 'current', title: 'Current' }])
+    await vi.waitFor(() =>
+      expect(currentRuntime.history.sessions[0]?.id).toBe('current')
+    )
+
+    oldHistory.resolve([{ id: 'stale', title: 'Stale' }])
+    await oldHistory.promise
+    await Promise.resolve()
+
+    expect(currentRuntime.history.sessions.map(({ id }) => id)).toEqual([
+      'current'
+    ])
   })
 })
