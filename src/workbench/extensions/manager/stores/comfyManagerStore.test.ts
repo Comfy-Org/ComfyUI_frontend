@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useComfyManagerService } from '@/workbench/extensions/manager/services/comfyManagerService'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
@@ -69,6 +70,7 @@ describe('useComfyManagerStore', () => {
   }
 
   beforeEach(() => {
+    vi.useFakeTimers()
     mockManagerService = {
       isLoading: ref(false),
       error: ref(null),
@@ -489,6 +491,157 @@ describe('useComfyManagerStore', () => {
       // Pack should be accessible by base name with version preserved
       expect(store.getInstalledPackVersion('disabled-pack')).toBe('2.0.0')
       expect(store.isPackInstalled('disabled-pack')).toBe(true)
+    })
+  })
+
+  describe('installation failure toast', () => {
+    const spyOnToastAdd = () => vi.spyOn(useToastStore(), 'add')
+    let toastAddMock: ReturnType<typeof spyOnToastAdd>
+
+    beforeEach(() => {
+      toastAddMock = spyOnToastAdd()
+    })
+
+    const setTaskHistory = (
+      store: ReturnType<typeof useComfyManagerStore>,
+      history: Record<string, ManagerComponents['schemas']['TaskHistoryItem']>
+    ) => {
+      store.taskHistory = history
+    }
+
+    const errorTask = (
+      id: string
+    ): ManagerComponents['schemas']['TaskHistoryItem'] => ({
+      ui_id: id,
+      client_id: 'test',
+      kind: 'install',
+      result: 'failed',
+      status: { status_str: 'error', completed: false, messages: ['boom'] },
+      timestamp: new Date().toISOString()
+    })
+
+    const successTask = (
+      id: string
+    ): ManagerComponents['schemas']['TaskHistoryItem'] => ({
+      ui_id: id,
+      client_id: 'test',
+      kind: 'install',
+      result: 'success',
+      status: { status_str: 'success', completed: true, messages: [] },
+      timestamp: new Date().toISOString()
+    })
+
+    it('shows an error toast when a task fails', async () => {
+      const store = useComfyManagerStore()
+      setTaskHistory(store, { a: errorTask('a') })
+      await nextTick()
+      await vi.runAllTimersAsync()
+
+      expect(toastAddMock).toHaveBeenCalledTimes(1)
+      const message = toastAddMock.mock.calls[0][0]
+      expect(message.severity).toBe('error')
+      expect(message.summary).toBe('Installation failed')
+      expect(message.detail).toBe(
+        '1 extension failed to install. Check the Failed tab for details.'
+      )
+    })
+
+    it('does not show a toast when all tasks succeed', async () => {
+      const store = useComfyManagerStore()
+      setTaskHistory(store, { a: successTask('a'), b: successTask('b') })
+      await nextTick()
+      await vi.runAllTimersAsync()
+
+      expect(toastAddMock).not.toHaveBeenCalled()
+    })
+
+    it('coalesces multiple failures that land in quick succession', async () => {
+      const store = useComfyManagerStore()
+      setTaskHistory(store, { a: errorTask('a') })
+      await nextTick()
+      setTaskHistory(store, { a: errorTask('a'), b: errorTask('b') })
+      await nextTick()
+      await vi.runAllTimersAsync()
+
+      expect(toastAddMock).toHaveBeenCalledTimes(1)
+      expect(toastAddMock.mock.calls[0][0].detail).toBe(
+        '2 extensions failed to install. Check the Failed tab for details.'
+      )
+    })
+
+    it('does not show a stale toast when resetTaskState runs before the debounce fires', async () => {
+      const store = useComfyManagerStore()
+      setTaskHistory(store, { a: errorTask('a') })
+      await nextTick()
+
+      store.resetTaskState()
+      await nextTick()
+      await vi.runAllTimersAsync()
+
+      expect(toastAddMock).not.toHaveBeenCalled()
+    })
+
+    it('does not show toast for non-install failures (update, uninstall, etc.)', async () => {
+      const store = useComfyManagerStore()
+      const updateFailure: ManagerComponents['schemas']['TaskHistoryItem'] = {
+        ui_id: 'update-1',
+        client_id: 'test',
+        kind: 'update',
+        result: 'failed',
+        status: { status_str: 'error', completed: false, messages: ['boom'] },
+        timestamp: new Date().toISOString()
+      }
+      const uninstallFailure: ManagerComponents['schemas']['TaskHistoryItem'] =
+        {
+          ui_id: 'uninstall-1',
+          client_id: 'test',
+          kind: 'uninstall',
+          result: 'failed',
+          status: { status_str: 'error', completed: false, messages: ['boom'] },
+          timestamp: new Date().toISOString()
+        }
+      setTaskHistory(store, {
+        a: updateFailure,
+        b: uninstallFailure
+      })
+      await nextTick()
+      await vi.runAllTimersAsync()
+
+      expect(toastAddMock).not.toHaveBeenCalled()
+    })
+
+    it('does not re-notify already-notified failures when history is replayed', async () => {
+      const store = useComfyManagerStore()
+      setTaskHistory(store, { a: errorTask('a') })
+      await nextTick()
+      await vi.runAllTimersAsync()
+      expect(toastAddMock).toHaveBeenCalledTimes(1)
+
+      toastAddMock.mockClear()
+
+      store.resetTaskState()
+      await nextTick()
+      setTaskHistory(store, { a: errorTask('a') })
+      await nextTick()
+      await vi.runAllTimersAsync()
+
+      expect(toastAddMock).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not re-notify same failure ID within same session', async () => {
+      const store = useComfyManagerStore()
+      setTaskHistory(store, { a: errorTask('a') })
+      await nextTick()
+      await vi.runAllTimersAsync()
+      expect(toastAddMock).toHaveBeenCalledTimes(1)
+
+      toastAddMock.mockClear()
+
+      setTaskHistory(store, { a: errorTask('a') })
+      await nextTick()
+      await vi.runAllTimersAsync()
+
+      expect(toastAddMock).not.toHaveBeenCalled()
     })
   })
 })

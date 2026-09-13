@@ -1,4 +1,4 @@
-import { useEventListener, whenever } from '@vueuse/core'
+import { useDebounceFn, useEventListener, whenever } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { v4 as uuidv4 } from 'uuid'
 import { ref, watch } from 'vue'
@@ -6,6 +6,7 @@ import { ref, watch } from 'vue'
 import { t } from '@/i18n'
 import { useCachedRequest } from '@/composables/useCachedRequest'
 import { useServerLogs } from '@/composables/useServerLogs'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 
@@ -22,10 +23,8 @@ type InstallPackParams = components['schemas']['InstallPackParams']
 type InstalledPacksResponse = components['schemas']['InstalledPacksResponse']
 type ManagerPackInfo = components['schemas']['ManagerPackInfo']
 type ManagerPackInstalled = components['schemas']['ManagerPackInstalled']
-type ManagerTaskHistory = Record<
-  string,
-  components['schemas']['TaskHistoryItem']
->
+type TaskHistoryItem = components['schemas']['TaskHistoryItem']
+type ManagerTaskHistory = Record<string, TaskHistoryItem>
 type ManagerTaskQueue = components['schemas']['TaskStateMessage']
 type UpdateAllPacksParams = components['schemas']['UpdateAllPacksParams']
 
@@ -111,6 +110,45 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     () => {
       partitionTasks()
       partitionTaskLogs()
+    },
+    { deep: true }
+  )
+
+  const notifiedFailedInstallIds = ref<Set<string>>(new Set())
+  const pendingFailureCount = ref(0)
+
+  const flushFailureToast = useDebounceFn(() => {
+    if (pendingFailureCount.value === 0) return
+    const count = pendingFailureCount.value
+    pendingFailureCount.value = 0
+    useToastStore().add({
+      severity: 'error',
+      summary: t('manager.installFailureToast.summary'),
+      detail: t('manager.installFailureToast.detail', { count }, count),
+      life: 8000
+    })
+  }, 300)
+
+  const isUnnotifiedInstallFailure = (task: TaskHistoryItem) =>
+    task.kind === 'install' &&
+    task.status?.status_str !== 'success' &&
+    !notifiedFailedInstallIds.value.has(task.ui_id)
+
+  watch(
+    taskHistory,
+    (history) => {
+      let newFailures = 0
+      for (const task of Object.values(history)) {
+        if (!isUnnotifiedInstallFailure(task)) continue
+
+        notifiedFailedInstallIds.value.add(task.ui_id)
+        newFailures++
+      }
+
+      if (newFailures > 0) {
+        pendingFailureCount.value += newFailures
+        void flushFailureToast()
+      }
     },
     { deep: true }
   )
@@ -340,6 +378,8 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
 
   const resetTaskState = () => {
     // Clear all task-related reactive state for fresh start after restart
+    pendingFailureCount.value = 0
+    notifiedFailedInstallIds.value.clear()
     taskLogs.value = []
     taskHistory.value = {}
     succeededTasksIds.value = []
