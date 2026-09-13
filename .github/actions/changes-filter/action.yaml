@@ -41,7 +41,7 @@ outputs:
       candidate's synthetic head.
     value: ${{ (github.event_name != 'pull_request' && github.event_name != 'merge_group') || (github.event_name == 'merge_group' && inputs.evaluate-candidate != 'true') || steps.relevant.outputs.relevant == 'true' }}
   app-website-changes:
-    description: 'Shared deps, `apps/website/**`, or the website e2e workflow changed.'
+    description: 'Shared deps, `apps/website/**`, or website e2e workflow support changed.'
     value: ${{ github.event_name != 'pull_request' || steps.filter.outputs.deps == 'true' || steps.filter.outputs.app_website == 'true' }}
   app-frontend-changes:
     description: 'Shared deps or `src/**` changed.'
@@ -71,6 +71,8 @@ runs:
           app_website:
             - 'apps/website/**'
             - '.github/workflows/ci-website-e2e.yaml'
+            - 'scripts/cicd/prepare-website-e2e-report.sh'
+            - 'scripts/cicd/check-website-e2e-result.sh'
           app_frontend:
             - 'src/**'
           packages:
