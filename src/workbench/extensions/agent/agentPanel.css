@@ -27,6 +27,22 @@
   }
 }
 
+/* A step animates once, as it arrives. Motion that repeats on a re-render or a
+   scroll would claim an arrival that did not happen. */
+.agent-row-enter {
+  animation: agent-row-enter 160ms ease-out;
+}
+
+.disable-animations :where(#agent-panel-root, .agent-scope) .agent-row-enter {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-row-enter {
+    animation: none;
+  }
+}
+
 /* Tailwind Preflight is disabled host-wide (PrimeVue + litegraph coexistence), so raw form
    elements in the panel inherit UA chrome: a <button> gets the buttonface fill + 2px outset
    border, a <textarea>/<input> gets its own border, font and padding. Re-apply Preflight's

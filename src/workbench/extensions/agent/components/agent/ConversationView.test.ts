@@ -110,6 +110,41 @@ describe('ConversationView', () => {
     })
   })
 
+  it('follows the reply as each kind of content lands', async () => {
+    // The watcher is post-flush and awaits a tick of its own before it
+    // scrolls, so one tick lets the previous event's scroll answer for this
+    // one. Settle both ticks, then clear, so each assertion stands alone.
+    const settle = async () => {
+      await nextTick()
+      await nextTick()
+    }
+
+    const { store } = mountHarness()
+    store.recordUser(T, 'make a cat')
+    store.startTurn(T)
+    await settle()
+
+    const scrollIntoView = vi.fn()
+    Element.prototype.scrollIntoView = scrollIntoView
+
+    // a new part
+    store.ingest(thinking('msg-1', 'pondering'))
+    await settle()
+    expect(scrollIntoView).toHaveBeenCalled()
+
+    // the tail part growing
+    scrollIntoView.mockClear()
+    store.ingest(delta('msg-1', 'Here is a cat'))
+    await settle()
+    expect(scrollIntoView).toHaveBeenCalled()
+
+    // a tool call settling
+    scrollIntoView.mockClear()
+    store.ingest(toolCall('msg-1', 'add_node', 'success'))
+    await settle()
+    expect(scrollIntoView).toHaveBeenCalled()
+  })
+
   it('shows a scroll-to-latest button when scrolled up and returns to bottom on click', async () => {
     const assistant: AssistantMessage = {
       id: 'msg-1' as TurnId,
