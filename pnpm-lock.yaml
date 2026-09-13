@@ -243,6 +243,9 @@ catalogs:
     eslint-plugin-vue:
       specifier: ^10.10.0
       version: 10.10.0
+    fake-indexeddb:
+      specifier: 6.2.5
+      version: 6.2.5
     fallow:
       specifier: 3.24.1
       version: 3.24.1
@@ -1065,6 +1068,9 @@ importers:
       astro:
         specifier: 'catalog:'
         version: 7.2.1(@astrojs/markdown-remark@7.2.2)(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)(@types/node@25.9.5)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0)
+      fake-indexeddb:
+        specifier: 'catalog:'
+        version: 6.2.5
       happy-dom:
         specifier: 'catalog:'
         version: 20.9.0
@@ -6125,6 +6131,10 @@ packages:
 
   extendable-media-recorder@9.2.38:
     resolution: {integrity: sha512-HD5IqjYtSmwr6p0pTd6AG3fEYmILOrURguEqyoSCQvTtS426OwijJqnbCOtg7/UzgN9Rrdin24rziEkz+OX8cQ==}
+
+  fake-indexeddb@6.2.5:
+    resolution: {integrity: sha512-CGnyrvbhPlWYMngksqrSSUT1BAVP49dZocrHuK0SvtR0D5TMs5wP0o3j7jexDJW01KSadjBp1M/71o/KR3nD1w==}
+    engines: {node: '>=18'}
 
   fallow-type-aware@3.24.1:
     resolution: {integrity: sha512-4Pw/58d3WYNcGAMio8+b1WYy566t1VqAxr1hKrha0G3fwpr0bHecsdzgFFC+wojz9z+Ix/p85ecFs9Mf4uwiJA==}
@@ -14647,6 +14657,8 @@ snapshots:
       standardized-audio-context: 25.3.77
       subscribable-things: 2.1.60
       tslib: 2.8.1
+
+  fake-indexeddb@6.2.5: {}
 
   fallow-type-aware@3.24.1:
     dependencies:

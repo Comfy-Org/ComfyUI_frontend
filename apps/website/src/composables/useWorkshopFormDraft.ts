@@ -8,8 +8,9 @@ import {
   restoreWorkshopFiles
 } from '../config/workshop-draft-files'
 import {
-  storeWorkshopDraft,
-  takeWorkshopDraft
+  deleteWorkshopDraft,
+  readWorkshopDraft,
+  storeWorkshopDraft
 } from '../config/workshop-draft-storage'
 import type { FieldSchema, FormValues } from '../config/workshop-playground'
 import { restoreFormValues } from '../config/workshop-playground'
@@ -84,15 +85,24 @@ export function useWorkshopFormDraft(
       }
       const token = sessionStorage.getItem(mediaKey)
       if (!token) return
-      sessionStorage.removeItem(mediaKey)
       activity.value = 'restoring'
-      values.value = { ...values.value, ...clearWorkshopFiles(schema.value) }
-      const files = await takeWorkshopDraft(token, controller.signal)
-      if (!controller.signal.aborted)
-        values.value = {
-          ...values.value,
-          ...restoreWorkshopFiles(schema.value, files)
-        }
+      const fields = schema.value
+      const files = await readWorkshopDraft(token, controller.signal)
+      controller.signal.throwIfAborted()
+      if (schema.value !== fields)
+        throw new Error('Form changed during restoration')
+      const restored = restoreWorkshopFiles(fields, files)
+      values.value = {
+        ...values.value,
+        ...clearWorkshopFiles(fields),
+        ...restored
+      }
+      await deleteWorkshopDraft(token, controller.signal)
+      if (
+        !controller.signal.aborted &&
+        sessionStorage.getItem(mediaKey) === token
+      )
+        sessionStorage.removeItem(mediaKey)
     } catch {
       if (!controller.signal.aborted) restoreFailed.value = true
     } finally {

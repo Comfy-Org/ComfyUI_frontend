@@ -290,16 +290,14 @@ describe('SDK snippets', () => {
 
   it('preserves binary output for endpoints unsupported by models.run', () => {
     const cwd = directory()
-    execute(
-      buildSnippet(
-        'typescript',
-        'elevenlabs/eleven_v3',
-        { text: 'Hello' },
-        { output: 'binary' }
-      ),
-      cwd,
-      { BINARY: '1' }
+    const snippet = buildSnippet(
+      'typescript',
+      'elevenlabs/eleven_v3',
+      { text: 'Hello' },
+      { output: 'binary' }
     )
+    expect(snippet).not.toContain('npm install')
+    execute(snippet, cwd, { BINARY: '1' })
     expect(readFileSync(join(cwd, 'output.bin'))).toEqual(
       Buffer.from([0, 255, 1])
     )

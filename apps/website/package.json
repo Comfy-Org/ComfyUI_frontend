@@ -79,6 +79,7 @@
     "@types/leaflet": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
     "astro": "catalog:",
+    "fake-indexeddb": "catalog:",
     "happy-dom": "catalog:",
     "mime-types": "catalog:",
     "tailwindcss": "catalog:",

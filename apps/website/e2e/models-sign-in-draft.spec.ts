@@ -5,18 +5,33 @@ import { test } from './fixtures/modelsAccount'
 
 const path = '/models/byteplus--seedream-4-5--edit-images/'
 
-for (const { entry, randomUUID } of [
-  { entry: 'playground', randomUUID: true },
-  { entry: 'header', randomUUID: true },
-  { entry: 'header', randomUUID: false }
+for (const { entry, randomUUID, failRead } of [
+  { entry: 'playground', randomUUID: true, failRead: false },
+  { entry: 'header', randomUUID: true, failRead: false },
+  { entry: 'header', randomUUID: false, failRead: false },
+  { entry: 'header', randomUUID: true, failRead: true }
 ]) {
-  test(`selected reference bytes survive ${entry} sign-in and reach Router${randomUUID ? '' : ' without crypto.randomUUID'}`, async ({
+  test(`selected reference bytes survive ${entry} sign-in and reach Router${randomUUID ? '' : ' without crypto.randomUUID'}${failRead ? ' after a transient read failure' : ''}`, async ({
     page,
     modelsAccount
   }) => {
     if (!randomUUID)
       await page.addInitScript(() => {
         Object.defineProperty(crypto, 'randomUUID', { value: undefined })
+      })
+    if (failRead)
+      await page.addInitScript(() => {
+        const get = IDBObjectStore.prototype.get
+        IDBObjectStore.prototype.get = function (query) {
+          if (
+            this.transaction.db.name === 'comfy-workshop-drafts' &&
+            !sessionStorage.getItem('test:draft-read-failed')
+          ) {
+            sessionStorage.setItem('test:draft-read-failed', '1')
+            throw new DOMException('Read interrupted', 'UnknownError')
+          }
+          return get.call(this, query)
+        }
       })
     await page.goto(path)
     const chooser = page.waitForEvent('filechooser')
@@ -44,6 +59,14 @@ for (const { entry, randomUUID } of [
       .fill(modelsAccount.password)
     await page.getByRole('button', { name: 'Sign in', exact: true }).click()
     await expect(page).toHaveURL(new RegExp(`${path}$`))
+    if (failRead) {
+      await expect(
+        page.getByText(
+          'Some saved inputs could not be restored. Check your inputs and select your files again.'
+        )
+      ).toBeVisible()
+      await page.reload()
+    }
     await expect(replacement).toBeVisible()
     await expect(
       page.getByRole('textbox', { name: 'Prompt', exact: true })

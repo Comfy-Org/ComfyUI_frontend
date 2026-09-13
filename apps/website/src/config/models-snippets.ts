@@ -407,8 +407,12 @@ function typescriptImports(
   mime: boolean,
   binary: boolean
 ): string[] {
+  const packages = [
+    ...(sdkImports.length ? ['@comfyorg/sdk@0.2.0'] : []),
+    ...(mime ? ['mime-types'] : [])
+  ]
   return [
-    `// Node 22+: npm install @comfyorg/sdk@0.2.0${mime ? ' mime-types' : ''}`,
+    `// Node 22+${packages.length ? ': npm install ' + packages.join(' ') : ''}`,
     ...(sdkImports.length
       ? [`import { ${sdkImports.join(', ')} } from "@comfyorg/sdk"`]
       : []),

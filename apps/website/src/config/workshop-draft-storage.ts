@@ -11,33 +11,45 @@ interface StoredDraft {
   readonly files: unknown
 }
 
-function pruneDrafts(store: IDBObjectStore) {
+type DraftOperation =
+  | { type: 'read' | 'delete'; key: string }
+  | { type: 'write'; key: string; draft: StoredDraft }
+  | { type: 'prune'; limit: number }
+
+function pruneDrafts(store: IDBObjectStore, limit = MAX_DRAFTS) {
   const request = store.index('expiresAt').openKeyCursor(null, 'prev')
   let count = 0
   request.onsuccess = () => {
     const cursor = request.result
     if (!cursor) return
-    if (Number(cursor.key) <= Date.now() || ++count > MAX_DRAFTS)
+    if (Number(cursor.key) <= Date.now() || ++count > limit)
       store.delete(cursor.primaryKey)
     cursor.continue()
   }
 }
 
-function draftRequest(store: IDBObjectStore, key: string, draft?: StoredDraft) {
-  if (draft) {
-    const request = store.put(draft, key)
-    pruneDrafts(store)
-    return request
+function draftRequest(store: IDBObjectStore, operation: DraftOperation) {
+  switch (operation.type) {
+    case 'prune':
+      pruneDrafts(store, operation.limit)
+      return undefined
+    case 'write': {
+      const request = store.put(operation.draft, operation.key)
+      pruneDrafts(store)
+      return request
+    }
+    case 'read':
+      pruneDrafts(store)
+      return store.get(operation.key)
+    case 'delete':
+      return store.delete(operation.key)
   }
-  const request = store.get(key)
-  store.delete(key)
-  return request
 }
 
 function accessDraft(
-  key: string,
+  operation: DraftOperation,
   signal: AbortSignal,
-  draft?: StoredDraft
+  deadline = performance.now() + TIMEOUT_MS
 ): Promise<unknown> {
   return new Promise((resolve, reject) => {
     signal.throwIfAborted()
@@ -57,7 +69,7 @@ function accessDraft(
       transaction?.abort()
       finish(new DOMException('Draft storage cancelled', 'AbortError'))
     }
-    const timeout = setTimeout(abort, TIMEOUT_MS)
+    const timeout = setTimeout(abort, Math.max(0, deadline - performance.now()))
     signal.addEventListener('abort', abort, { once: true })
     let request: IDBOpenDBRequest
     try {
@@ -81,12 +93,8 @@ function accessDraft(
       database.onversionchange = () => database?.close()
       try {
         transaction = database.transaction(STORE, 'readwrite')
-        const operation = draftRequest(
-          transaction.objectStore(STORE),
-          key,
-          draft
-        )
-        transaction.oncomplete = () => finish(undefined, operation.result)
+        const result = draftRequest(transaction.objectStore(STORE), operation)
+        transaction.oncomplete = () => finish(undefined, result?.result)
         transaction.onabort = () =>
           finish(transaction?.error ?? new Error('Draft storage failed'))
         transaction.onerror = () =>
@@ -103,14 +111,31 @@ export async function storeWorkshopDraft(
   files: DraftFiles,
   signal: AbortSignal
 ): Promise<void> {
-  await accessDraft(key, signal, { files, expiresAt: Date.now() + LIFETIME_MS })
+  const deadline = performance.now() + TIMEOUT_MS
+  await accessDraft({ type: 'prune', limit: MAX_DRAFTS - 1 }, signal, deadline)
+  await accessDraft(
+    {
+      type: 'write',
+      key,
+      draft: { files, expiresAt: Date.now() + LIFETIME_MS }
+    },
+    signal,
+    deadline
+  )
 }
 
-export async function takeWorkshopDraft(
+export async function deleteWorkshopDraft(
+  key: string,
+  signal: AbortSignal
+): Promise<void> {
+  await accessDraft({ type: 'delete', key }, signal)
+}
+
+export async function readWorkshopDraft(
   key: string,
   signal: AbortSignal
 ): Promise<unknown> {
-  const draft = await accessDraft(key, signal)
+  const draft = await accessDraft({ type: 'read', key }, signal)
   if (
     !draft ||
     typeof draft !== 'object' ||

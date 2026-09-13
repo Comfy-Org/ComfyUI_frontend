@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen, within } from '@testing-library/vue'
+import { IDBFactory } from 'fake-indexeddb'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, h, nextTick, ref } from 'vue'
 
@@ -17,6 +18,7 @@ import { getRouterWorkshopModelDetail } from '../../config/workshop-router-conte
 import { refreshWorkshopCredits } from '../../config/workshop-credits'
 import type { useWorkshopCredits } from '../../config/workshop-credits'
 import { WORKSHOP_CLOUD_BASE_URL } from '../../config/workshop-env'
+import * as draftStorage from '../../config/workshop-draft-storage'
 import ModelDetail from './ModelDetail.vue'
 
 const auth = vi.hoisted(() => ({
@@ -198,6 +200,68 @@ describe('ModelDetail', () => {
       .mockReset()
       .mockResolvedValue({ status: 'ok', session: credential })
   })
+
+  it.for(['json', 'example'])(
+    'keeps the schema stable while a media draft is restoring: %s',
+    async (action) => {
+      vi.stubGlobal('indexedDB', new IDBFactory())
+      const read = Promise.withResolvers<unknown>()
+      vi.spyOn(draftStorage, 'readWorkshopDraft').mockReturnValueOnce(
+        read.promise
+      )
+      const mediaModel: WorkshopModelDetail = {
+        ...uncuratedRunnable,
+        fields: [
+          prompt,
+          {
+            kind: 'file',
+            name: 'image',
+            label: 'Image',
+            accept: 'image',
+            required: true
+          }
+        ],
+        defaults: { prompt: 'Current form' },
+        examples: [
+          {
+            ...model.examples[0],
+            fields: undefined,
+            values: { prompt: 'Different example' }
+          }
+        ]
+      }
+      sessionStorage.setItem(
+        `comfy-workshop-form:${mediaModel.slug}`,
+        JSON.stringify({ prompt: 'Current form' })
+      )
+      sessionStorage.setItem(
+        `comfy-workshop-form:${mediaModel.slug}:media`,
+        'pending'
+      )
+      mountDetail({ model: mediaModel })
+      await nextTick()
+      if (action === 'json') {
+        const toggle = screen.getByRole('button', { name: 'Native JSON' })
+        expect(toggle).toHaveProperty('disabled', true)
+        await user().click(toggle)
+      } else {
+        await user().click(
+          screen.getByRole('button', { name: 'Open in Playground' })
+        )
+      }
+      expect(screen.getByRole('textbox', { name: 'Prompt' })).toHaveProperty(
+        'value',
+        'Current form'
+      )
+      read.resolve({ image: 'https://example.com/saved.webp' })
+      await vi.waitFor(() =>
+        expect(
+          screen.getByRole('button', { name: 'Native JSON' })
+        ).toHaveProperty('disabled', false)
+      )
+      expect(screen.getByRole('img', { name: 'saved.webp' })).toBeTruthy()
+    }
+  )
 
   it.for([
     {

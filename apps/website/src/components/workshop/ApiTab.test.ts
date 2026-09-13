@@ -14,6 +14,35 @@ const contract = workshopContract(routerId)
 const values = { prompt: 'a capybara', seed: 5 }
 
 describe('ApiTab', () => {
+  it('reuses one file setup for repeated positions in a multi-file input', async () => {
+    const visitor = userEvent.setup()
+    const model = getRouterWorkshopModelDetail(
+      'byteplus--seedream-4-5--edit-images'
+    )
+    if (!model) throw new Error('Missing model')
+    const file = new File(['private'], 'reference.webp', { type: 'image/webp' })
+    const value = { file, name: file.name, type: file.type, size: file.size }
+    render(ApiTab, {
+      props: {
+        contract: model.execution,
+        values: {
+          ...initialWorkshopPageState(model).values,
+          images: [value, value]
+        }
+      }
+    })
+    const snippet = await screen.findByTestId('snippet')
+    expect(
+      snippet.textContent.match(/from_file\("reference.webp"\)/g)
+    ).toHaveLength(1)
+    expect(snippet.textContent).toMatch(/"image":\s*\[\s*url_1,\s*url_1\s*\]/)
+    await visitor.click(screen.getByTestId('snippet-typescript'))
+    expect(
+      snippet.textContent.match(/fromFile\("reference.webp"\)/g)
+    ).toHaveLength(1)
+    expect(snippet.textContent).toMatch(/"image":\s*\[\s*url_1,\s*url_1\s*\]/)
+  })
+
   it('prepares SDK asset examples without uploading or reading private files while browsing tabs', async () => {
     const visitor = userEvent.setup()
     const file = new File(['private'], 'photo.png', { type: 'image/png' })

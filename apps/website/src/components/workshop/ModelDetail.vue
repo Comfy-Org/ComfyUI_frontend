@@ -341,7 +341,7 @@ function reset() {
 }
 
 function openExample(example: PlaygroundExample) {
-  if (isRunning.value) return
+  if (isRunning.value || draftPending.value) return
   if (!example.sampleOnly) {
     nativeJson.value = false
     activeExample.value = example.fields ? example : undefined
@@ -414,7 +414,7 @@ function useInCode() {
             "
             type="button"
             :aria-pressed="nativeJson"
-            :disabled="isRunning"
+            :disabled="isRunning || draftPending"
             class="cursor-pointer rounded-sm px-2 py-1 hover:bg-transparency-white-t8 disabled:cursor-not-allowed"
             @click="nativeJson = !nativeJson"
           >
