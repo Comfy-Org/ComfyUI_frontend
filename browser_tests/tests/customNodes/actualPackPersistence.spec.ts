@@ -63,7 +63,7 @@ test.describe(
       test(
         `VHS uploads and combines a real video with format controls (${renderer.name} renderer)`,
         { tag: renderer.tags },
-        async ({ comfyPage, packPersistence }) => {
+        async ({ comfyPage, packPersistence }, testInfo) => {
           test.slow()
           const useVueNodes = renderer.name === 'Vue'
           await comfyPage.settings.setSetting(
@@ -141,20 +141,105 @@ test.describe(
               return
             }
 
+            const position = await comfyPage.page.evaluate((combineId) => {
+              const node = window.app!.graph.nodes.find(
+                (candidate) => String(candidate.id) === combineId
+              )!
+              const format = node.widgets!.find(
+                (widget) => widget.name === 'format'
+              )!
+              const bounds = node.getBounding()
+              return window.app!.canvasPosToClientPos([
+                bounds[0] + bounds[2] / 2,
+                bounds[1] +
+                  window.LiteGraph!['NODE_TITLE_HEIGHT'] +
+                  format.last_y! +
+                  1
+              ])
+            }, ids.combine)
+            await comfyPage.page.mouse.click(position[0], position[1])
+            await comfyPage.page
+              .locator('.litecontextmenu .litemenu-entry', { hasText: value })
+              .click()
+            await comfyPage.nextFrame()
+          }
+
+          const legacyPaintedLabels = async (
+            suppressedLabel: string | null = null
+          ) => {
             await comfyPage.page.evaluate(
-              ({ combineId, value }) => {
+              ({ combineId, suppressedLabel }) => {
+                const canvas =
+                  document.querySelector<HTMLCanvasElement>('#graph-canvas')!
+                canvas.dataset.testPaintedLabels = '[]'
+                canvas.dataset.testSuppressedLabel = suppressedLabel ?? ''
+                if (canvas.dataset.testPaintObserver !== 'installed') {
+                  canvas.dataset.testPaintObserver = 'installed'
+                  const original = CanvasRenderingContext2D.prototype.fillText
+                  CanvasRenderingContext2D.prototype.fillText = function (
+                    text,
+                    x,
+                    y,
+                    maxWidth
+                  ) {
+                    const graphCanvas =
+                      document.querySelector<HTMLCanvasElement>(
+                        '#graph-canvas'
+                      )!
+                    const suppressed = graphCanvas.dataset.testSuppressedLabel
+                    if (suppressed && text.includes(suppressed)) {
+                      return
+                    }
+                    const labels = JSON.parse(
+                      graphCanvas.dataset.testPaintedLabels ?? '[]'
+                    ) as string[]
+                    labels.push(text)
+                    graphCanvas.dataset.testPaintedLabels =
+                      JSON.stringify(labels)
+                    if (maxWidth === undefined) original.call(this, text, x, y)
+                    else original.call(this, text, x, y, maxWidth)
+                  }
+                }
                 const node = window.app!.graph.nodes.find(
                   (candidate) => String(candidate.id) === combineId
                 )!
-                const format = node.widgets!.find(
-                  (widget) => widget.name === 'format'
-                )!
-                format.value = value
-                format.callback?.(value)
                 node.setDirtyCanvas(true, true)
               },
-              { combineId: ids.combine, value }
+              { combineId: ids.combine, suppressedLabel }
             )
+            await comfyPage.nextFrame()
+            return comfyPage.page.evaluate(
+              () =>
+                JSON.parse(
+                  document.querySelector<HTMLCanvasElement>('#graph-canvas')!
+                    .dataset.testPaintedLabels ?? '[]'
+                ) as string[]
+            )
+          }
+
+          const attachLegacyControls = async (name: string) => {
+            const clip = await comfyPage.page.evaluate((combineId) => {
+              const node = window.app!.graph.nodes.find(
+                (candidate) => String(candidate.id) === combineId
+              )!
+              const topLeft = window.app!.canvasPosToClientPos([
+                node.pos[0],
+                node.pos[1] + window.LiteGraph!['NODE_TITLE_HEIGHT']
+              ])
+              const bottomRight = window.app!.canvasPosToClientPos([
+                node.pos[0] + node.size[0],
+                node.pos[1] + node.size[1]
+              ])
+              return {
+                x: topLeft[0],
+                y: topLeft[1],
+                width: bottomRight[0] - topLeft[0],
+                height: bottomRight[1] - topLeft[1]
+              }
+            }, ids.combine)
+            const path = testInfo.outputPath(`${name}.png`)
+            await comfyPage.page.screenshot({ clip, path })
+            await testInfo.attach(name, { path, contentType: 'image/png' })
           }
 
           const controls = () =>
@@ -176,6 +261,20 @@ test.describe(
             for (const label of ['pix_fmt', 'crf', 'save_metadata']) {
               await expect(node.getByText(label, { exact: true })).toBeVisible()
             }
+          } else {
+            await expect
+              .poll(() => legacyPaintedLabels())
+              .toEqual(
+                expect.arrayContaining(['pix_fmt', 'crf', 'save_metadata'])
+              )
+            await attachLegacyControls('legacy-video-controls-present')
+
+            const namesWhileCrfPaintIsSuppressed = await controls()
+            expect(namesWhileCrfPaintIsSuppressed).toContain('crf')
+            await expect
+              .poll(() => legacyPaintedLabels('crf'))
+              .not.toContain('crf')
+            await expect.poll(() => legacyPaintedLabels()).toContain('crf')
           }
 
           await setFormat('image/gif')
@@ -214,6 +313,12 @@ test.describe(
             }, ids.combine)
             await comfyPage.nextFrame()
             await expect(comfyPage.page.locator('#graph-canvas')).toBeVisible()
+            await expect
+              .poll(() => legacyPaintedLabels())
+              .not.toEqual(
+                expect.arrayContaining(['pix_fmt', 'crf', 'save_metadata'])
+              )
+            await attachLegacyControls('legacy-video-controls-absent')
           }
 
           await setFormat('video/h264-mp4')
