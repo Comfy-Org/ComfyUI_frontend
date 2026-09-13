@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import {
   buildSearchText,
+  displayName,
   extractItems,
   getByPath,
   mapToDropdownItem
@@ -92,7 +93,8 @@ export function useRemoteCombo(args: UseRemoteComboArgs) {
     const q = searchQuery.value.trim().toLowerCase()
     if (!q) return items.value
     return items.value.filter((item) => {
-      const text = searchIndex.value.get(item.id) ?? item.name.toLowerCase()
+      const text =
+        searchIndex.value.get(item.id) ?? displayName(item).toLowerCase()
       return text.includes(q)
     })
   })

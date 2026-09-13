@@ -1,5 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
+import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import axios from 'axios'
 import type * as AxiosModule from 'axios'
@@ -185,6 +186,29 @@ describe('RichComboWidget', () => {
       const events = emitted<unknown[]>('update:modelValue')
       expect(events?.[0]?.[0]).toBe('c')
     })
+  })
+
+  it('searches the displayed id when an item name is empty', async () => {
+    vi.mocked(axios.get).mockResolvedValueOnce({
+      data: [
+        { id: 'fallback-id', name: '' },
+        { id: 'other', name: 'Other' }
+      ],
+      status: 200
+    })
+    const widget = makeWidget(makeRemoteCombo())
+    renderWithProviders(RichComboWidget, { widget })
+
+    const trigger = screen.getByTestId('remote-combo-trigger')
+    await waitFor(() => expect(trigger).toHaveTextContent('Select...'))
+    await userEvent.click(trigger)
+    await userEvent.type(
+      await screen.findByTestId('remote-combo-search-input'),
+      'fallback-id'
+    )
+
+    expect(await screen.findByText('fallback-id')).toBeInTheDocument()
+    expect(screen.queryByText('Other')).toBeNull()
   })
 
   it('renders refresh button when refresh_button is undefined', () => {
