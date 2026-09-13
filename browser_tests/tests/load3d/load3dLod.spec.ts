@@ -2,7 +2,7 @@ import { expect } from '@playwright/test'
 
 import { load3dTest as test } from '@e2e/fixtures/helpers/Load3DFixtures'
 
-test.describe('Load3D LOD', () => {
+test.describe('Load3D LOD', { tag: '@vue-nodes' }, () => {
   test(
     'canvas pixel dimensions scale with ComfyUI canvas zoom level',
     { tag: '@smoke' },
@@ -18,7 +18,7 @@ test.describe('Load3D LOD', () => {
       )
 
       await comfyPage.page.evaluate(() => {
-        const node = window.app!.graph!.nodes[0]
+        const node = window.app!.graph.nodes[0]
         window.app!.canvas.ds.scale = 2.0
         node.onResize?.(node.size)
       })

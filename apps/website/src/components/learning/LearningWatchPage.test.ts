@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
 import type { LearningTutorial } from '../../data/learningTutorials'
+import type { Locale } from '../../i18n/translations'
 
 import { filterByCategory } from '../../data/learningTutorials'
 import LearningWatchPage from './LearningWatchPage.vue'
@@ -18,14 +19,20 @@ const hostedTutorial = filterByCategory('vfx').find(
 )
 if (!hostedTutorial) throw new Error('Expected a VFX tutorial with videoSrc')
 
+// The embed stub mirrors the real component's <iframe>, named by its `title`,
+// so the page is queried by the same accessible name without happy-dom
+// actually fetching the YouTube player.
 const stubs = {
-  LearningVideoEmbed: { template: '<div data-testid="youtube-embed" />' },
+  LearningVideoEmbed: {
+    props: ['title'],
+    template: '<iframe :title="title" />'
+  },
   VideoPlayer: { template: '<div data-testid="hosted-video" />' }
 }
 
-function renderWatchPage(tutorial: LearningTutorial) {
+function renderWatchPage(tutorial: LearningTutorial, locale: Locale = 'en') {
   render(LearningWatchPage, {
-    props: { tutorial, locale: 'en' },
+    props: { tutorial, locale },
     global: { stubs }
   })
 }
@@ -34,7 +41,7 @@ describe('LearningWatchPage', () => {
   it('embeds the YouTube player for tutorials with a youtubeId', () => {
     renderWatchPage(youtubeTutorial)
 
-    expect(screen.getByTestId('youtube-embed')).toBeTruthy()
+    expect(screen.getByTitle(youtubeTutorial.title.en)).toBeTruthy()
     expect(screen.queryByTestId('hosted-video')).toBeNull()
   })
 
@@ -42,6 +49,24 @@ describe('LearningWatchPage', () => {
     renderWatchPage(hostedTutorial)
 
     expect(screen.getByTestId('hosted-video')).toBeTruthy()
-    expect(screen.queryByTestId('youtube-embed')).toBeNull()
+    expect(screen.queryByTitle(hostedTutorial.title.en)).toBeNull()
+  })
+
+  it('titles the embed in English when the locale has no translation', () => {
+    renderWatchPage(youtubeTutorial, 'ja')
+
+    expect(screen.getByTitle(youtubeTutorial.title.en)).toBeTruthy()
+  })
+
+  it('titles the embed in English when the localized title is empty', () => {
+    renderWatchPage(
+      {
+        ...youtubeTutorial,
+        title: { ...youtubeTutorial.title, 'zh-CN': '' }
+      },
+      'zh-CN'
+    )
+
+    expect(screen.getByTitle(youtubeTutorial.title.en)).toBeTruthy()
   })
 })

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { chatgptImage25Page } from '../../data/chatgptImage25'
 import { flux3Page } from '../../data/flux3'
 import { geminiOmniPage } from '../../data/geminiOmni'
 import { ltxPage } from '../../data/ltx'
@@ -20,6 +21,7 @@ const pages: { name: string; page: ModelLaunchPage }[] = [
   { name: 'minimaxMusic3', page: minimaxMusic3Page },
   { name: 'minimaxLicense', page: minimaxLicensePage },
   { name: 'flux3', page: flux3Page },
+  { name: 'chatgptImage25', page: chatgptImage25Page },
   { name: 'seedance', page: seedancePage },
   { name: 'ltx', page: ltxPage },
   { name: 'geminiOmni', page: geminiOmniPage },
@@ -27,13 +29,13 @@ const pages: { name: string; page: ModelLaunchPage }[] = [
   { name: 'wan3', page: wan3Page }
 ]
 
-const VIDEO_URL = /^https:\/\/media\.comfy\.org\/.+\.(webm|mp4)$/
-const IMAGE_URL = /^https:\/\/media\.comfy\.org\/.+\.(webp|png|jpe?g)$/
+const VIDEO_URL =
+  /^(https:\/\/media\.comfy\.org\/|\/(?!\/))[\w./-]+\.(webm|mp4)$/
+const IMAGE_URL =
+  /^(https:\/\/media\.comfy\.org\/|\/(?!\/))[\w./-]+\.(webp|png|jpe?g)$/
 const AUDIO_URL = /^https:\/\/media\.comfy\.org\/.+\.(mp3|flac|m4a|ogg)$/
-// Hero stills may ship from public/ as a root-relative path; the hero video
-// must be on the CDN.
 const HERO_STILL_URL =
-  /^(https:\/\/media\.comfy\.org\/|\/)[\w./-]+\.(webp|png|jpe?g)$/
+  /^(https:\/\/media\.comfy\.org\/|\/(?!\/))[\w./-]+\.(webp|png|jpe?g)$/
 
 describe.for(pages)('$name launch page config', ({ page }) => {
   it('gives every gallery card a unique id', () => {
@@ -65,6 +67,7 @@ describe.for(pages)('$name launch page config', ({ page }) => {
       page.pricing?.banner?.subtitleKey,
       page.pricing?.banner?.cta.labelKey,
       page.faq?.headingKey,
+      page.comparison?.headingKey,
       page.steps?.headingKey,
       page.steps?.stepLabelKey,
       page.steps?.primaryCta?.labelKey,
@@ -90,21 +93,63 @@ describe.for(pages)('$name launch page config', ({ page }) => {
   it('localizes every gallery card and FAQ entry in both locales', () => {
     for (const card of page.gallery?.cards ?? []) {
       for (const locale of ['en', 'zh-CN'] as const) {
-        expect(card.name[locale], `${card.id} name`).not.toBe('')
-        expect(card.note[locale], `${card.id} note`).not.toBe('')
-        expect(card.description[locale], `${card.id} description`).not.toBe('')
+        expect(card.name[locale] || card.name.en, `${card.id} name`).not.toBe(
+          ''
+        )
+        expect(card.note[locale] || card.note.en, `${card.id} note`).not.toBe(
+          ''
+        )
+        expect(
+          card.description[locale] || card.description.en,
+          `${card.id} description`
+        ).not.toBe('')
       }
     }
     for (const card of page.audioGallery?.cards ?? []) {
       for (const locale of ['en', 'zh-CN'] as const) {
-        expect(card.description[locale], `${card.id} description`).not.toBe('')
-        expect(card.prompt[locale], `${card.id} prompt`).not.toBe('')
+        expect(
+          card.description[locale] || card.description.en,
+          `${card.id} description`
+        ).not.toBe('')
+        expect(
+          card.prompt[locale] || card.prompt.en,
+          `${card.id} prompt`
+        ).not.toBe('')
+      }
+    }
+    if (page.comparison) {
+      // Empty columns/rows would render an empty table while every loop below
+      // runs zero times and passes.
+      expect(page.comparison.columns, 'comparison columns').not.toHaveLength(0)
+      expect(page.comparison.rows, 'comparison rows').not.toHaveLength(0)
+    }
+    for (const column of page.comparison?.columns ?? []) {
+      for (const locale of ['en', 'zh-CN'] as const) {
+        expect(column.label[locale], `${column.id} column label`).not.toBe('')
+      }
+    }
+    for (const row of page.comparison?.rows ?? []) {
+      // A short row would silently render an empty cell under the last column.
+      expect(row.cells.length, `${row.id} cell count`).toBe(
+        page.comparison?.columns.length
+      )
+      for (const locale of ['en', 'zh-CN'] as const) {
+        expect(row.label[locale], `${row.id} label`).not.toBe('')
+        for (const [index, cell] of row.cells.entries()) {
+          expect(cell[locale], `${row.id} cell ${index}`).not.toBe('')
+        }
       }
     }
     for (const faq of page.faq?.items ?? []) {
       for (const locale of ['en', 'zh-CN'] as const) {
-        expect(faq.question[locale], `${faq.id} question`).not.toBe('')
-        expect(faq.answer[locale], `${faq.id} answer`).not.toBe('')
+        expect(
+          faq.question[locale] || faq.question.en,
+          `${faq.id} question`
+        ).not.toBe('')
+        expect(
+          faq.answer[locale] || faq.answer.en,
+          `${faq.id} answer`
+        ).not.toBe('')
       }
     }
   })

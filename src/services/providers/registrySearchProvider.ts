@@ -1,13 +1,9 @@
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import type { SearchNodePacksParams } from '@/types/algoliaTypes'
-import type { components } from '@/types/comfyRegistryTypes'
 import type {
   NodePackSearchProvider,
-  SearchPacksResult,
-  SortableField
+  SearchPacksResult
 } from '@/types/searchServiceTypes'
-
-type RegistryNodePack = components['schemas']['Node']
 
 /**
  * Search provider for the Comfy Registry.
@@ -66,39 +62,8 @@ export const useComfyRegistrySearchProvider = (): NodePackSearchProvider => {
     registryStore.listAllPacks.clear()
   }
 
-  const getSortValue = (
-    pack: RegistryNodePack,
-    sortField: string
-  ): string | number => {
-    switch (sortField) {
-      case 'downloads':
-        return pack.downloads ?? 0
-      case 'name':
-        return pack.name ?? ''
-      case 'publisher':
-        return pack.publisher?.name ?? ''
-      case 'updated':
-        return pack.latest_version?.createdAt
-          ? new Date(pack.latest_version.createdAt).getTime()
-          : 0
-      default:
-        return 0
-    }
-  }
-
-  const getSortableFields = (): SortableField[] => {
-    return [
-      { id: 'downloads', label: 'Downloads', direction: 'desc' },
-      { id: 'name', label: 'Name', direction: 'asc' },
-      { id: 'publisher', label: 'Publisher', direction: 'asc' },
-      { id: 'updated', label: 'Updated', direction: 'desc' }
-    ]
-  }
-
   return {
     searchPacks,
-    clearSearchCache,
-    getSortValue,
-    getSortableFields
+    clearSearchCache
   }
 }

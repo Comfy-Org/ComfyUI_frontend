@@ -11,12 +11,11 @@ import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe('Load Image annotated widget value', { tag: '@widget' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting(
-      'Comfy.Workflow.WorkflowTabsPosition',
-      'Sidebar'
-    )
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+  test.use({
+    initialSettings: {
+      'Comfy.Workflow.WorkflowTabsPosition': 'Sidebar',
+      'Comfy.VueNodes.Enabled': true
+    }
   })
 
   test.afterEach(async ({ comfyPage }) => {

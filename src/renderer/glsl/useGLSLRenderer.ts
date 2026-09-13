@@ -35,6 +35,20 @@ interface CompileResult {
   log: string
 }
 
+function createTexture(gl: WebGL2RenderingContext): WebGLTexture | null {
+  return gl.createTexture()
+}
+
+function createFramebuffer(
+  gl: WebGL2RenderingContext
+): WebGLFramebuffer | null {
+  return gl.createFramebuffer()
+}
+
+function createProgram(gl: WebGL2RenderingContext): WebGLProgram | null {
+  return gl.createProgram()
+}
+
 function compileShader(
   gl: WebGL2RenderingContext,
   type: GLenum,
@@ -105,7 +119,7 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
 
     try {
       for (let i = 0; i < 2; i++) {
-        const tex = ctx.createTexture()
+        const tex = createTexture(ctx)
         if (!tex) throw new Error('Failed to create ping-pong texture')
         ctx.bindTexture(ctx.TEXTURE_2D, tex)
         ctx.texImage2D(
@@ -124,7 +138,7 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
         ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_S, ctx.CLAMP_TO_EDGE)
         ctx.texParameteri(ctx.TEXTURE_2D, ctx.TEXTURE_WRAP_T, ctx.CLAMP_TO_EDGE)
 
-        const fbo = ctx.createFramebuffer()
+        const fbo = createFramebuffer(ctx)
         if (!fbo) throw new Error('Failed to create ping-pong framebuffer')
         ctx.bindFramebuffer(ctx.FRAMEBUFFER, fbo)
         ctx.framebufferTexture2D(
@@ -178,7 +192,7 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
   function getFallbackTexture(): WebGLTexture {
     if (!gl) throw new Error('Renderer not initialized')
     if (!fallbackTexture) {
-      const tex = gl.createTexture()
+      const tex = createTexture(gl)
       if (!tex) throw new Error('Failed to create fallback texture')
       fallbackTexture = tex
       gl.bindTexture(gl.TEXTURE_2D, fallbackTexture)
@@ -249,7 +263,7 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
       return { success: false, log: msg }
     }
 
-    const prog = gl.createProgram()
+    const prog = createProgram(gl)
     if (!prog) return { success: false, log: 'Failed to create program' }
 
     gl.attachShader(prog, vertexShader!)
@@ -318,7 +332,7 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
       curveTextures[index] = null
     }
 
-    const texture = gl.createTexture()
+    const texture = createTexture(gl)
     if (!texture) return
 
     const unit = maxInputs + index
@@ -361,7 +375,7 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
       inputTextures[index] = null
     }
 
-    const texture = gl.createTexture()
+    const texture = createTexture(gl)
     if (!texture) return
 
     gl.activeTexture(gl.TEXTURE0 + index)

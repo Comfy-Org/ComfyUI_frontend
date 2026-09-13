@@ -33,12 +33,31 @@ export interface NoticePart {
 export interface TabLinkPart {
   type: 'tabLink'
   workflowId: string
+  locatorId?: string
   name?: string
+}
+
+export interface RunApprovalPart {
+  type: 'runApproval'
+  askId: string
+  workflowId?: string
+  workflowName?: string
+}
+
+export interface PaywallPart {
+  type: 'paywall'
 }
 
 export type ActivityPart = ThinkingPart | ToolPart
 
-type MessagePart = TextPart | ThinkingPart | ToolPart | NoticePart | TabLinkPart
+export type MessagePart =
+  | TextPart
+  | ThinkingPart
+  | ToolPart
+  | NoticePart
+  | TabLinkPart
+  | RunApprovalPart
+  | PaywallPart
 
 export interface AssistantMessage {
   id: TurnId
@@ -60,5 +79,5 @@ export function createAssistantMessage(id: TurnId): AssistantMessage {
 }
 
 export function snapshotMessage(message: AssistantMessage): AssistantMessage {
-  return { ...message, parts: [...message.parts] }
+  return { ...message, parts: message.parts.map((part) => ({ ...part })) }
 }

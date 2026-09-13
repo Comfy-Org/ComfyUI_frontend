@@ -84,7 +84,7 @@ describe('fetchRolesForBuild', () => {
     if (outcome.status !== 'fresh') return
     expect(outcome.droppedCount).toBe(0)
     expect(outcome.snapshot.departments).toHaveLength(1)
-    expect(outcome.snapshot.departments[0]!.roles[0]!.jobUrl).toBe(
+    expect(outcome.snapshot.departments[0].roles[0].jobUrl).toBe(
       'https://jobs.ashbyhq.com/comfy-org/design-engineer'
     )
   })
@@ -107,8 +107,8 @@ describe('fetchRolesForBuild', () => {
     expect(outcome.status).toBe('fresh')
     if (outcome.status !== 'fresh') return
     expect(outcome.droppedCount).toBe(1)
-    expect(outcome.droppedRoles[0]!.title).toBe('Bad Role')
-    expect(outcome.snapshot.departments[0]!.roles).toHaveLength(1)
+    expect(outcome.droppedRoles[0].title).toBe('Bad Role')
+    expect(outcome.snapshot.departments[0].roles).toHaveLength(1)
     rmSync(new URL('.', snapshotUrl), { recursive: true, force: true })
   })
 
@@ -147,8 +147,8 @@ describe('fetchRolesForBuild', () => {
     expect(outcome.status).toBe('fresh')
     if (outcome.status !== 'fresh') return
     const [department] = outcome.snapshot.departments
-    expect(department?.name).toBe('OTHER')
-    expect(department?.roles[0]?.location).toBe('Remote')
+    expect(department.name).toBe('OTHER')
+    expect(department.roles[0]?.location).toBe('Remote')
     rmSync(new URL('.', snapshotUrl), { recursive: true, force: true })
   })
 

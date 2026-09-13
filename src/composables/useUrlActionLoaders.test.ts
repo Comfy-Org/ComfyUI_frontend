@@ -3,13 +3,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useUrlActionLoaders } from './useUrlActionLoaders'
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }
 }))
 
 const mocks = vi.hoisted(() => ({
+  reportError: vi.fn(),
   loadInvite: vi.fn(async () => undefined),
   loadCreateWorkspace: vi.fn(async () => undefined),
   loadPricingTable: vi.fn(async () => undefined),
@@ -47,30 +48,39 @@ mocks.useSubscriptionDialog.mockImplementation(() => ({
   resumePendingPricingFlow: mocks.resumePendingPricingFlow
 }))
 
-vi.mock('@/platform/workspace/composables/useInviteUrlLoader', () => ({
+vi.mock(import('@/platform/workspace/composables/useInviteUrlLoader'), () => ({
   useInviteUrlLoader: mocks.useInvite
 }))
-vi.mock('@/platform/workspace/composables/useCreateWorkspaceUrlLoader', () => ({
-  useCreateWorkspaceUrlLoader: mocks.useCreateWorkspace
-}))
 vi.mock(
-  '@/platform/cloud/subscription/composables/usePricingTableUrlLoader',
+  import('@/platform/workspace/composables/useCreateWorkspaceUrlLoader'),
+  () => ({
+    useCreateWorkspaceUrlLoader: mocks.useCreateWorkspace
+  })
+)
+vi.mock(
+  import('@/platform/cloud/subscription/composables/usePricingTableUrlLoader'),
   () => ({ usePricingTableUrlLoader: mocks.usePricingTable })
 )
-vi.mock('@/platform/cloud/subscription/composables/useTopUpUrlLoader', () => ({
-  useTopUpUrlLoader: mocks.useTopUp
-}))
-vi.mock('@/platform/settings/composables/useSettingsUrlLoader', () => ({
+vi.mock(
+  import('@/platform/cloud/subscription/composables/useTopUpUrlLoader'),
+  () => ({
+    useTopUpUrlLoader: mocks.useTopUp
+  })
+)
+vi.mock(import('@/platform/settings/composables/useSettingsUrlLoader'), () => ({
   useSettingsUrlLoader: mocks.useSettings
 }))
 vi.mock(
-  '@/platform/cloud/subscription/composables/usePaymentReturnUrlLoader',
+  import('@/platform/cloud/subscription/composables/usePaymentReturnUrlLoader'),
   () => ({ usePaymentReturnUrlLoader: mocks.usePaymentReturn })
 )
 vi.mock(
-  '@/platform/cloud/subscription/composables/useSubscriptionDialog',
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
   () => ({ useSubscriptionDialog: mocks.useSubscriptionDialog })
 )
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: mocks.reportError
+}))
 
 describe('useUrlActionLoaders', () => {
   beforeEach(() => {
@@ -142,13 +152,30 @@ describe('useUrlActionLoaders', () => {
     ).toBeGreaterThan(mocks.loadPaymentReturn.mock.invocationCallOrder[0])
   })
 
-  it('isolates a checkout-recovery failure so it does not abort the boot chain', async () => {
-    mocks.resumePendingPricingFlow.mockRejectedValueOnce(new Error('boom'))
+  it('resolves without waiting for checkout recovery to settle', async () => {
+    mocks.resumePendingPricingFlow.mockImplementationOnce(
+      () => new Promise<undefined>(() => {})
+    )
+
+    const { runUrlActionLoaders } = useUrlActionLoaders()
+    await expect(runUrlActionLoaders()).resolves.toBeUndefined()
+
+    expect(mocks.resumePendingPricingFlow).toHaveBeenCalledOnce()
+  })
+
+  it('reports a checkout-recovery failure instead of rejecting unhandled', async () => {
+    const failure = new Error('boom')
+    mocks.resumePendingPricingFlow.mockRejectedValueOnce(failure)
 
     const { runUrlActionLoaders } = useUrlActionLoaders()
     await expect(runUrlActionLoaders()).resolves.toBeUndefined()
 
     expect(mocks.loadPaymentReturn).toHaveBeenCalledOnce()
+    await vi.waitFor(() => {
+      expect(mocks.reportError).toHaveBeenCalledWith(failure, {
+        errorType: 'billing_pending_checkout_resume_failure'
+      })
+    })
   })
 
   it('isolates a pricing-loader failure so it does not abort the boot chain', async () => {

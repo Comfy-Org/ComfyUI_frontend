@@ -5,7 +5,7 @@ import { t } from '../i18n/translations'
 export type NavColumnItem = {
   label: string
   href: string
-  badge?: 'new'
+  badge?: 'new' | 'beta'
   external?: boolean
 }
 
@@ -41,45 +41,74 @@ export type NavItem =
       featured?: never
     }
 
-export function getMainNavigation(locale: Locale): NavItem[] {
+export function getMainNavigation(
+  locale: Locale,
+  workshopInBuild = false
+): NavItem[] {
   const routes = getRoutes(locale)
+  const modelsEntry: NavItem[] = workshopInBuild
+    ? [
+        {
+          label: t('nav.workshop', locale),
+          href: routes.workshop,
+          badge: 'new'
+        }
+      ]
+    : []
+  const productEntry: NavColumnItem[] = workshopInBuild
+    ? [
+        {
+          label: t('nav.comfyWorkshop', locale),
+          href: routes.workshop,
+          badge: 'new'
+        }
+      ]
+    : []
   return [
+    ...modelsEntry,
     {
       label: t('nav.products', locale),
       badge: 'new',
       featured: {
-        imageSrc: 'https://media.comfy.org/website/nav/ltx-card.webp',
+        imageSrc: 'https://media.comfy.org/website/nav/minimax-card.webp',
         imageAlt: t('nav.featuredProductsAlt', locale),
         title: t('nav.featuredProductsTitle', locale),
         cta: {
           label: t('nav.featuredProductsCta', locale),
           ariaLabel: t('nav.featuredProductsCtaAria', locale),
-          href: routes.ltx
+          href: routes.minimax
         }
       },
       columns: [
         {
           header: t('nav.products', locale),
           items: [
+            ...productEntry,
             { label: t('nav.comfyLocal', locale), href: routes.download },
             { label: t('nav.comfyCloud', locale), href: routes.cloud },
             {
-              label: t('nav.comfyApi', locale),
-              href: routes.api,
-              badge: 'new'
+              label: t('nav.developerPlatform', locale),
+              href: routes.platform,
+              badge: 'beta'
             },
             {
               label: t('nav.comfyEnterprise', locale),
               href: routes.enterprise
+            },
+            {
+              label: t('nav.managedBuilds', locale),
+              href: routes.managedBuilds,
+              badge: 'beta'
             }
           ]
         },
         {
           header: t('nav.colFeatures', locale),
           items: [
+            { label: t('nav.mcpServer', locale), href: routes.mcp },
             {
-              label: t('nav.mcpServer', locale),
-              href: routes.mcp,
+              label: t('nav.comfyAgent', locale),
+              href: routes.agent,
               badge: 'new'
             },
             {
@@ -90,11 +119,7 @@ export function getMainNavigation(locale: Locale): NavItem[] {
             // TODO: no page yet — re-enable when landing pages ship
             // { label: t('nav.appMode', locale), href: '#' },
             // { label: t('nav.agentSkills', locale), href: '#' },
-            {
-              label: t('nav.launches', locale),
-              href: routes.launches,
-              badge: 'new'
-            },
+            { label: t('nav.launches', locale), href: routes.launches },
             { label: t('nav.supportedModels', locale), href: routes.models },
             {
               label: t('nav.docs', locale),
@@ -105,7 +130,7 @@ export function getMainNavigation(locale: Locale): NavItem[] {
         }
       ]
     },
-    { label: t('nav.pricing', locale), href: routes.cloudPricing },
+    { label: t('nav.pricing', locale), href: routes.pricing },
     {
       label: t('nav.community', locale),
       badge: 'new',
@@ -129,7 +154,10 @@ export function getMainNavigation(locale: Locale): NavItem[] {
               href: routes.fdct,
               badge: 'new'
             },
-            { label: t('nav.gallery', locale), href: routes.gallery },
+            {
+              label: t('nav.customerStories', locale),
+              href: routes.customers
+            },
             {
               label: t('nav.events', locale),
               href: routes.events,
@@ -193,7 +221,7 @@ export function getMainNavigation(locale: Locale): NavItem[] {
         cta: {
           label: t('cta.watchNow', locale),
           ariaLabel: t('nav.featuredCompanyCtaAria', locale),
-          href: '/customers#hero-video'
+          href: routes.customerVideoBlackMath
         }
       },
       columns: [

@@ -1,5 +1,3 @@
-@import 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap';
-
 @import 'tailwindcss';
 @import '@comfyorg/design-system/css/base.css';
 @import 'tw-animate-css';
@@ -16,7 +14,7 @@
   src: url('/fonts/PPFormula-Light.woff2') format('woff2');
   font-weight: 300;
   font-style: normal;
-  font-display: swap;
+  font-display: optional;
 }
 
 @font-face {
@@ -24,7 +22,7 @@
   src: url('/fonts/PPFormula-Regular.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
-  font-display: swap;
+  font-display: optional;
 }
 
 @font-face {
@@ -32,7 +30,7 @@
   src: url('/fonts/PPFormula-Medium.woff2') format('woff2');
   font-weight: 500;
   font-style: normal;
-  font-display: swap;
+  font-display: optional;
 }
 
 @font-face {
@@ -40,7 +38,7 @@
   src: url('/fonts/PPFormula-Semibold.woff2') format('woff2');
   font-weight: 600;
   font-style: normal;
-  font-display: swap;
+  font-display: optional;
 }
 
 @font-face {
@@ -48,7 +46,15 @@
   src: url('/fonts/PPFormula-Bold.woff2') format('woff2');
   font-weight: 700;
   font-style: normal;
-  font-display: swap;
+  font-display: optional;
+}
+
+@font-face {
+  font-family: 'PP Formula';
+  src: url('/fonts/PPFormula-Bold.woff2') format('woff2');
+  font-weight: 800;
+  font-style: normal;
+  font-display: optional;
 }
 
 @font-face {
@@ -56,8 +62,10 @@
   src: url('/fonts/PPFormula-NarrowSemibold.woff2') format('woff2');
   font-weight: 600;
   font-style: normal;
-  font-display: swap;
+  font-display: optional;
 }
+
+@custom-variant short (@media (max-height: 1100px));
 
 @theme {
   --color-site-dropdown: #332b38;
@@ -68,6 +76,7 @@
   );
   --color-primary-comfy-yellow: #f2ff59;
   --color-primary-comfy-orange: #fabc25;
+  --color-primary-comfy-red: #ff3b3b;
   --color-primary-comfy-ink: #211927;
   --color-primary-comfy-ink-light: #2a2330;
   --color-primary-comfy-canvas: #c2bfb9;
@@ -75,6 +84,8 @@
   --color-primary-warm-gray: #7e7c78;
   --color-secondary-mauve: #4d3762;
   --color-destructive: #f44336;
+  /* Legible on the dark ink surfaces; --color-destructive is too dark there. */
+  --color-destructive-light: #ffb4a8;
   --color-primary-comfy-plum: #49378b;
   --color-secondary-deep-plum: #2b2040;
   --color-secondary-cool-gray: #3c3c3c;
@@ -95,12 +106,64 @@
   --container-9xl: 96rem;
   --container-10xl: 100rem;
   --aspect-ratio-gallery-card: 47/31;
+  --color-page: var(--color-primary-comfy-ink);
+  --color-brand: var(--color-primary-comfy-yellow);
+  --color-content: var(--color-primary-comfy-canvas);
+  --color-content-bright: var(--color-primary-warm-white);
+  --color-content-secondary: rgb(194 191 185 / 0.95);
+  --color-content-muted: rgb(194 191 185 / 0.75);
+  --color-hub-surface: var(--color-transparency-white-t4);
+  --color-hub-surface-hover: var(--color-transparency-white-t8);
+  --color-hub-muted: #8a8a8a;
+}
+
+@utility ppformula-text-center-sm {
+  position: relative;
+  top: 0.12em;
+}
+
+@utility content-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 340px;
+}
+
+@utility scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@utility scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #262729 transparent;
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #262729;
+    border-radius: 9999px;
+  }
 }
 
 @property --border-angle {
   syntax: '<angle>';
   inherits: false;
   initial-value: 0deg;
+}
+
+@utility mask-platform-terminal-feather {
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    black 18%,
+    black 82%,
+    transparent
+  );
 }
 
 /* Pre-hydration hide for a dismissed announcement banner (set by an inline
@@ -193,6 +256,186 @@
 
 @utility animate-cursor-blink {
   animation: cursor-blink 1s step-end infinite;
+}
+
+@keyframes gpu-pulse {
+  0%,
+  100% {
+    opacity: 0.12;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+@utility animate-gpu-pulse {
+  animation: gpu-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes dash-flow {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+
+@utility animate-dash-flow {
+  @media (prefers-reduced-motion: no-preference) {
+    animation: dash-flow 1.2s linear infinite;
+  }
+}
+
+@keyframes platform-builder-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+@keyframes platform-builder-pulse {
+  0%,
+  100% {
+    opacity: 0.82;
+    transform: scale(0.98);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.03);
+  }
+}
+
+@utility animate-platform-builder-float {
+  @media (prefers-reduced-motion: no-preference) {
+    animation: platform-builder-float 9s ease-in-out infinite;
+  }
+}
+
+@utility animate-platform-builder-float-slow {
+  @media (prefers-reduced-motion: no-preference) {
+    animation: platform-builder-float 10s ease-in-out -3s infinite;
+  }
+}
+
+@utility animate-platform-builder-float-delayed {
+  @media (prefers-reduced-motion: no-preference) {
+    animation: platform-builder-float 11s ease-in-out -6s infinite;
+  }
+}
+
+@utility animate-platform-builder-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+
+  @media (prefers-reduced-motion: no-preference) {
+    animation: platform-builder-pulse 5s ease-in-out infinite;
+  }
+}
+
+@keyframes platform-closing-ring-echo {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  33.33% {
+    opacity: 1;
+    transform: translateY(19%) scale(0.9);
+  }
+
+  66.66% {
+    opacity: 1;
+    transform: translateY(38%) scale(0.81);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(57%) scale(0.729);
+  }
+}
+
+@utility animate-platform-closing-ring-echo {
+  transform-origin: center;
+
+  @media (prefers-reduced-motion: no-preference) {
+    animation: platform-closing-ring-echo 4s linear
+      calc(var(--platform-ring-offset, 0s) + var(--platform-ring-delay, 0s))
+      infinite;
+  }
+}
+
+@keyframes platform-closing-column-body {
+  0%,
+  100% {
+    clip-path: inset(48.15% 0 0);
+  }
+
+  50% {
+    clip-path: inset(20.15% 0 0);
+  }
+}
+
+@utility clip-platform-closing-column {
+  clip-path: polygon(
+    50% 0,
+    100% 18.75%,
+    100% 81.25%,
+    50% 100%,
+    0 81.25%,
+    0 18.75%
+  );
+}
+
+@keyframes platform-closing-column-cap {
+  0%,
+  100% {
+    transform: translateY(69%);
+  }
+
+  50% {
+    transform: translateY(0);
+  }
+}
+
+@utility animate-platform-closing-column-body {
+  @media (prefers-reduced-motion: no-preference) {
+    animation: platform-closing-column-body
+      var(--platform-column-grow-duration, 6s) ease-in-out
+      var(--platform-column-grow-delay, 0s) infinite;
+  }
+}
+
+@utility animate-platform-closing-column-cap {
+  @media (prefers-reduced-motion: no-preference) {
+    animation: platform-closing-column-cap
+      var(--platform-column-grow-duration, 6s) ease-in-out
+      var(--platform-column-grow-delay, 0s) infinite;
+  }
+}
+
+@keyframes label-flash {
+  0%,
+  22% {
+    opacity: 1;
+  }
+
+  27%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@utility animate-label-flash {
+  opacity: 0;
+  animation: label-flash 7.2s linear infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 }
 
 .card-slide-enter-active {
@@ -297,4 +540,98 @@ video::-webkit-media-controls-panel {
   --site-bg: var(--color-primary-comfy-ink);
   --site-bg-soft: var(--color-site-bg-soft);
   --site-border-subtle: rgb(255 255 255 / 0.1);
+}
+
+@keyframes backdrop-sway {
+  from {
+    transform: translate3d(-2%, -1%, 0) scale(1);
+  }
+
+  to {
+    transform: translate3d(3%, 2%, 0) scale(1.08);
+  }
+}
+
+@keyframes backdrop-drift {
+  0% {
+    mask-position:
+      8% 22%,
+      78% 70%,
+      45% 12%;
+  }
+
+  100% {
+    mask-position:
+      34% 58%,
+      52% 30%,
+      68% 74%;
+  }
+}
+
+@utility animate-backdrop-sway {
+  @media (prefers-reduced-motion: no-preference) {
+    animation: backdrop-sway 40s ease-in-out infinite alternate;
+  }
+}
+
+@utility animate-backdrop-drift {
+  @media (prefers-reduced-motion: no-preference) {
+    animation: backdrop-drift 48s ease-in-out infinite alternate;
+  }
+}
+
+/* Leaflet renders its own zoom control, unreachable by Tailwind classes on
+   MapPins01's template. The `.map-pins` wrapper keeps these to the map and
+   outranks leaflet.css, which the map island loads after this sheet. */
+.map-pins .leaflet-bar {
+  border: none;
+}
+
+.map-pins .leaflet-bar a {
+  border-color: var(--color-transparency-white-t8);
+  background-color: var(--color-primary-comfy-ink-light);
+  color: var(--color-primary-warm-white);
+}
+
+.map-pins .leaflet-bar a:hover,
+.map-pins .leaflet-bar a:focus {
+  background-color: color-mix(
+    in srgb,
+    var(--color-primary-warm-white) 9%,
+    var(--color-primary-comfy-ink-light)
+  );
+  color: var(--color-primary-comfy-yellow);
+}
+
+.map-pins .leaflet-bar a.leaflet-disabled {
+  background-color: var(--color-primary-comfy-ink-light);
+  color: color-mix(in srgb, var(--color-primary-warm-white) 30%, transparent);
+}
+
+@keyframes soft-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.375rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@utility animate-soft-in {
+  animation: soft-in 260ms ease-out;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+/* WebKit shows its own play button on .cloud-hero-video when autoplay is
+   refused (iOS Low Power Mode); the UA rule only yields to !important. */
+.cloud-hero-video::-webkit-media-controls-start-playback-button,
+.cloud-hero-video::-webkit-media-controls-panel {
+  display: none !important;
+  appearance: none;
 }

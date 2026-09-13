@@ -2,6 +2,8 @@ import { SCHEMA_VERSION, mint } from '@comfyorg/comfy-multi-player'
 import { describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
+import { setAssertReporter } from '@/base/assert'
+
 import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
 
 function docAtVersion(version: unknown): Y.Doc {
@@ -53,8 +55,24 @@ describe('assertReadableSchema (KA-11, fail-closed on read)', () => {
       FollowerSchemaError
     )
     expect(consoleError).toHaveBeenCalledWith(
-      expect.stringContaining('schema_version=99')
+      expect.stringContaining('meta.schema_version is not the layout')
     )
+    expect(consoleError).not.toHaveBeenCalledWith(expect.stringContaining('99'))
+  })
+
+  it('reports the rejected version as structured context', () => {
+    vi.stubEnv('DEV', false)
+    const reporter = vi.fn()
+    setAssertReporter(reporter)
+
+    expect(() => assertReadableSchema(docAtVersion(99))).toThrow(
+      FollowerSchemaError
+    )
+    expect(reporter).toHaveBeenCalledWith(
+      expect.stringContaining('meta.schema_version is not the layout'),
+      { found: 99 }
+    )
+    setAssertReporter(null)
   })
 
   it('never writes the doc it refuses (KA-6: the follower is read-only)', () => {

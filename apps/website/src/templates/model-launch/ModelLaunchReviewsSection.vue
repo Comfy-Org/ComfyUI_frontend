@@ -17,9 +17,9 @@ const routes = getRoutes(locale)
 
 const quotes = creatorReviews.map((review) => ({
   id: review.id,
-  body: review.body[locale],
+  body: review.body[locale] || review.body.en,
   name: review.name,
-  role: review.role?.[locale]
+  role: review.role?.[locale] || review.role?.en
 }))
 </script>
 
