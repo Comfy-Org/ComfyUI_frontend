@@ -12,7 +12,6 @@ import type {
 } from './schemas/agentApiSchema'
 import type { AgentEventSource } from './composables/agent/useAgentSession'
 import type { AgentRestClient } from './services/agent/agentRestClient'
-import { createAgentTestHarness } from './__fixtures__/agentTestHarness'
 import { createAgentRuntime } from './agentRuntime'
 
 function createDeferred<T>() {
@@ -87,10 +86,10 @@ describe('agentRuntime', () => {
   })
 
   it('owns one event transport and has idempotent start and stop', () => {
-    const harness = createAgentTestHarness()
-    const createEvents = vi.fn(() => harness.events)
+    const events = fakeEvents()
+    const createEvents = vi.fn(() => events.source)
     const runtime = createAgentRuntime({
-      createRest: () => harness.rest,
+      createRest: () => fakeRest(),
       createEvents,
       untitledChatTitle: 'Untitled chat'
     })
@@ -99,12 +98,12 @@ describe('agentRuntime', () => {
     runtime.start()
 
     expect(createEvents).toHaveBeenCalledOnce()
-    expect(harness.events.subscribe).toHaveBeenCalledOnce()
+    expect(events.source.subscribe).toHaveBeenCalledOnce()
 
     runtime.stop()
     runtime.stop()
 
-    expect(harness.unsubscribe).toHaveBeenCalledOnce()
+    expect(events.unsubscribe).toHaveBeenCalledOnce()
   })
 
   it('normalizes ordered events into the single conversation transcript', async () => {
