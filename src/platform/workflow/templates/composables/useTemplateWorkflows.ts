@@ -1,6 +1,5 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { z } from 'zod'
 
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -11,25 +10,21 @@ import type {
   TemplateInfo,
   WorkflowTemplates
 } from '@/platform/workflow/templates/types/template'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON,LegacyLoadableWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import {
+  validateComfyWorkflow,
+  zLegacyLoadableWorkflow
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useDialogStore } from '@/stores/dialogStore'
 
-export type PreparedWorkflowTemplate = {
+type PreparedWorkflowTemplate = {
   id: string
   sourceModule: string
   workflowName: string
-  workflow: ComfyWorkflowJSON
+  workflow: ComfyWorkflowJSON | LegacyLoadableWorkflow
 }
-
-const zLegacyWorkflowEnvelope = z
-  .object({
-    version: z.number(),
-    nodes: z.array(z.record(z.unknown()))
-  })
-  .passthrough()
 
 export function useTemplateWorkflows() {
   const { t } = useI18n()
@@ -147,8 +142,7 @@ export function useTemplateWorkflows() {
   }
 
   const openPreparedWorkflowTemplate = async (
-    prepared: PreparedWorkflowTemplate,
-    { closeDialog = true }: { closeDialog?: boolean } = {}
+    prepared: PreparedWorkflowTemplate
   ) => {
     try {
       const { id, sourceModule, workflow, workflowName } = prepared
@@ -158,9 +152,9 @@ export function useTemplateWorkflows() {
         template_source: sourceModule
       })
 
-      if (closeDialog) dialogStore.closeDialog()
+      dialogStore.closeDialog()
       const loadedWorkflow = await app.loadGraphData(
-        workflow,
+        workflow as ComfyWorkflowJSON,
         true,
         true,
         workflowName,
@@ -211,7 +205,7 @@ export function useTemplateWorkflows() {
   const fetchTemplateJson = async (
     id: string,
     sourceModule: string
-  ): Promise<ComfyWorkflowJSON | null> => {
+  ): Promise<ComfyWorkflowJSON | LegacyLoadableWorkflow | null> => {
     const url =
       sourceModule === 'default'
         ? api.fileURL(`/templates/${id}.json`)
@@ -228,14 +222,14 @@ export function useTemplateWorkflows() {
     const validatedWorkflow = await validateComfyWorkflow(workflow)
     if (validatedWorkflow) return validatedWorkflow
 
-    const legacyWorkflow = zLegacyWorkflowEnvelope.safeParse(workflow)
+    const legacyWorkflow = zLegacyLoadableWorkflow.safeParse(workflow)
     if (!legacyWorkflow.success) {
       reportError('Invalid workflow template', {
         errorType: 'workflow_template_invalid'
       })
       return null
     }
-    return legacyWorkflow.data as ComfyWorkflowJSON
+    return legacyWorkflow.data
   }
 
   return {
