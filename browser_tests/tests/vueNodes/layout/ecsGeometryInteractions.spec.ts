@@ -408,7 +408,6 @@ test.describe(
       async ({ comfyPage }) => {
         await comfyPage.workflow.loadWorkflow('default')
         await fitToViewInstant(comfyPage)
-        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
         const sampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
         await comfyPage.page.evaluate((nodeId) => {
           const node = window.app!.graph.getNodeById(nodeId)
