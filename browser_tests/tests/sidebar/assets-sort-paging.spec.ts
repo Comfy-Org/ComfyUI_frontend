@@ -89,30 +89,36 @@ test.describe('Assets sidebar - sort while paging', { tag: '@cloud' }, () => {
     const firstRenderedId = () =>
       tab.assetCards.first().getAttribute('data-asset-id')
 
-    // VirtualGrid's scroller carries no test id, so find it from a rendered
-    // card: the nearest ancestor that actually overflows.
-    const scrollOffset = () =>
-      tab.assetCards.first().evaluate((card) => {
-        let node = card.parentElement
+    // The grid recycles its cards, so a rendered card cannot be the thing we
+    // act on: Playwright requires an element to be stable before scrolling it
+    // into view, and virtualisation detaches it first. Drive the scroll
+    // container instead, re-finding it on each call so no stale handle is
+    // held. VirtualGrid's scroller carries no test id, so it is located as the
+    // nearest ancestor of a card that actually overflows.
+    const scroller = (mode: 'read' | 'pageDown') =>
+      comfyPage.page.evaluate((action) => {
+        const card = document.querySelector(
+          '.sidebar-content-container [data-asset-id]'
+        )
+        let node = card?.parentElement ?? null
         while (node && node.scrollHeight <= node.clientHeight) {
           node = node.parentElement
         }
-        return node?.scrollTop ?? -1
-      })
-
-    const scrollToLastRendered = () =>
-      tab.assetCards.last().scrollIntoViewIfNeeded()
+        if (!node) throw new Error('assets grid scroller not found')
+        if (action === 'pageDown') node.scrollTop += node.clientHeight
+        return node.scrollTop
+      }, mode)
 
     await test.step('Default order heads with the newest asset', async () => {
       await expect.poll(firstRenderedId).toBe(NEWEST_ID)
-      expect(await scrollOffset()).toBe(0)
+      await expect.poll(() => scroller('read')).toBe(0)
     })
 
     await test.step('Scroll down until the grid no longer renders the top of the list', async () => {
       await expect
         .poll(
           async () => {
-            await scrollToLastRendered()
+            await scroller('pageDown')
             return firstRenderedId()
           },
           { timeout: 20_000 }
@@ -121,7 +127,7 @@ test.describe('Assets sidebar - sort while paging', { tag: '@cloud' }, () => {
 
       // Without this the scroll-reset assertion below would pass for a list
       // that never left the top.
-      expect(await scrollOffset()).toBeGreaterThan(0)
+      await expect.poll(() => scroller('read')).toBeGreaterThan(0)
     })
 
     // Guards the "keeps paging" assertion: if scrolling had already exhausted
@@ -134,7 +140,7 @@ test.describe('Assets sidebar - sort while paging', { tag: '@cloud' }, () => {
       await tab.openSettingsMenu()
       await tab.sortOldestFirst.click()
 
-      await expect.poll(scrollOffset).toBe(0)
+      await expect.poll(() => scroller('read')).toBe(0)
 
       // The scroll reset alone would leave the newest asset at the head, so
       // this is what distinguishes a re-sort from a bare scroll-to-top.
@@ -145,7 +151,7 @@ test.describe('Assets sidebar - sort while paging', { tag: '@cloud' }, () => {
       await expect
         .poll(
           async () => {
-            await scrollToLastRendered()
+            await scroller('pageDown')
             return pagedCloudAssets.length
           },
           { timeout: 20_000 }
