@@ -1,5 +1,6 @@
 import type * as Y from 'yjs'
 
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 
 import type { MaterializableGraph } from './agentNodeMaterializer'
@@ -81,6 +82,15 @@ export class AgentCrdtProjection {
         nodeIds
       })
     }
+  }
+
+  /** Rematerialize placeholders of `type` now that it is registered. */
+  rebindPlaceholders(workflowId: string, type: string): void {
+    const graph = this.getGraph()
+    const placeholder = graph?._nodes.some(
+      (node) => node.type === type && node.constructor === LGraphNode
+    )
+    if (placeholder) this.reconcileLiveGraph(workflowId)
   }
 
   destroy(): void {

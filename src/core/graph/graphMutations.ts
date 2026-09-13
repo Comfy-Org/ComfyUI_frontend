@@ -1,4 +1,4 @@
-import { cloneDeep, isEqual } from 'es-toolkit'
+import { cloneDeep } from 'es-toolkit'
 
 import type {
   ISerialisableNodeInput,
@@ -211,15 +211,19 @@ function widgetType(value: unknown): string {
 
 function widgetEntries(payload: SemanticNodePayload): PreparedNode['widgets'] {
   const values = payload.widgets_values
-  if (Array.isArray(values)) {
-    return values.map((value, index) => ({
+  const named = payload.widgets_values_named
+  // A named record binds array values to widgets by name; a bare array binds
+  // them by slot only.
+  const source = Array.isArray(values) && isRecord(named) ? named : values
+  if (Array.isArray(source)) {
+    return source.map((value, index) => ({
       name: String(index),
       value: structuredClone(value) as WidgetValue,
       type: widgetType(value)
     }))
   }
-  if (!isRecord(values)) return []
-  return Object.entries(values).map(([name, value]) => ({
+  if (!isRecord(source)) return []
+  return Object.entries(source).map(([name, value]) => ({
     name,
     value: structuredClone(value) as WidgetValue,
     type: widgetType(value)
@@ -227,41 +231,21 @@ function widgetEntries(payload: SemanticNodePayload): PreparedNode['widgets'] {
 }
 
 /**
- * With a named record a widget's slot is the one slot still holding its last
- * named value, so a placeholder's store order is never guessed at; without a
- * record the store order is the positional order. -1 leaves the shadow alone.
+ * Snapshots are derived state: record-shaped values and the named record are
+ * updated by name, while a positional array is left as saved because nothing
+ * here can prove which slot a name owns.
  */
-function positionalSlotOf(
-  values: readonly unknown[],
-  index: number,
-  named: unknown,
-  name: string
-): number {
-  if (!isRecord(named) || !(name in named))
-    return index >= 0 && index < values.length ? index : -1
-  const slots = values.flatMap((value, slot) =>
-    isEqual(value, named[name]) ? [slot] : []
-  )
-  return slots.length === 1 ? slots[0] : -1
-}
-
 function syncSerializedWidgetValue(
   state: NodeState,
   name: string,
-  value: unknown,
-  index: number
+  value: unknown
 ): void {
   const serialised = state.lastSerialization
   if (!serialised) return
   const values: unknown = serialised.widgets_values
   const named: unknown = serialised.widgets_values_named
   const clone = structuredClone(value)
-  if (Array.isArray(values)) {
-    const slot = positionalSlotOf(values, index, named, name)
-    if (slot >= 0) values[slot] = clone
-  } else if (isRecord(values)) {
-    values[name] = clone
-  }
+  if (isRecord(values)) values[name] = clone
   if (isRecord(named)) named[name] = clone
 }
 
@@ -428,8 +412,12 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             mutation.kind === 'reconcileNode' &&
             incumbent?.type === node.state.type
           ) {
-            const { title, widgets_values } = mutation.payload
-            if (Array.isArray(widgets_values)) {
+            const { title, widgets_values, widgets_values_named } =
+              mutation.payload
+            if (
+              Array.isArray(widgets_values) &&
+              !isRecord(widgets_values_named)
+            ) {
               const serializable = widgetStore
                 .getNodeWidgets(scope.rootGraphId, node.state.id)
                 .filter(
@@ -747,6 +735,8 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
                 const namedKeys = Object.keys(staleNamed ?? {})
                 // A positional-only snapshot carries no names: its slots follow
                 // the serializable-widget order, like the positional remap above.
+                // With a named record the array is left as saved; the record
+                // carries the live values.
                 const stalePositionalNames =
                   namedKeys.length > 0 || !Array.isArray(stalePositional)
                     ? namedKeys
@@ -763,10 +753,6 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
                     : [])
                 ])
                 const named = { ...staleNamed }
-                const staleSlots = Array.isArray(stalePositional)
-                  ? (stalePositional as unknown[])
-                  : undefined
-                const positional = staleSlots && [...staleSlots]
                 const overlay: Record<string, unknown> = {}
                 // existing.lastSerialization can predate incremental
                 // setWidget calls, which only update the widget store and
@@ -776,22 +762,22 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
                 // overlay widgets already present in the stale snapshot —
                 // a node with no prior snapshot (or one already cleared to
                 // empty) must stay untouched here.
-                serializableWidgets.forEach((widget, index) => {
-                  if (!staleNames.has(widget.name)) return
-                  overlay[widget.name] = widget.value
-                  if (widget.name in named) named[widget.name] = widget.value
-                  if (!staleSlots || !positional) return
-                  const slot = positionalSlotOf(
-                    staleSlots,
-                    index,
-                    staleNamed,
-                    widget.name
-                  )
-                  if (slot >= 0) positional[slot] = widget.value
-                })
-                if (positional) {
-                  state.lastSerialization.widgets_values =
-                    positional as ISerialisedNode['widgets_values']
+                for (const widget of serializableWidgets) {
+                  if (staleNames.has(widget.name)) {
+                    overlay[widget.name] = widget.value
+                    if (widget.name in named) named[widget.name] = widget.value
+                  }
+                }
+                if (Array.isArray(stalePositional)) {
+                  const positional = stalePositional as unknown[]
+                  state.lastSerialization.widgets_values = (
+                    namedKeys.length > 0
+                      ? positional
+                      : positional.map((value, index) => {
+                          const name = stalePositionalNames[index]
+                          return name && name in overlay ? overlay[name] : value
+                        })
+                  ) as ISerialisedNode['widgets_values']
                 } else if (isRecord(stalePositional)) {
                   state.lastSerialization.widgets_values = {
                     ...stalePositional,
@@ -885,21 +871,8 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             widgetStore.setValue(id, mutation.value, context)
           }
           const node = nodeStore.getNode(scope.rootGraphId, mutation.nodeId)
-          if (node) {
-            const index = widgetStore
-              .getNodeWidgets(scope.rootGraphId, mutation.nodeId)
-              .filter(
-                (widget) =>
-                  widget.serialize !== false && widget.type !== 'button'
-              )
-              .findIndex((widget) => widget.name === mutation.name)
-            syncSerializedWidgetValue(
-              node,
-              mutation.name,
-              mutation.value,
-              index
-            )
-          }
+          if (node)
+            syncSerializedWidgetValue(node, mutation.name, mutation.value)
           break
         }
         case 'connect': {

@@ -16,6 +16,7 @@ import type { GraphMutations } from '@/core/graph/graphMutations'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 import type { MaterializableGraph } from './agentNodeMaterializer'
 
@@ -718,6 +719,44 @@ describe('useAgentCrdtFollower', () => {
       expect(received).toBe(1)
       expect(applied + skipped).toBe(received)
       unmount()
+    })
+
+    it('rebinds a placeholder when its node type registers, and stops after unmount', () => {
+      const placeholder = new LGraphNode('Missing', 'late-registered')
+      const graphWithPlaceholder = {
+        ...fakeGraph,
+        _nodes: [placeholder]
+      } as unknown as MaterializableGraph
+      const { unmount } = mountFollower(
+        'wf-1',
+        true,
+        () => graphWithPlaceholder
+      )
+      materializerState.reconcileAgentAdapters.mockClear()
+      class LateNode extends LGraphNode {}
+      class OtherNode extends LGraphNode {}
+      try {
+        LiteGraph.registerNodeType('other-type', OtherNode)
+        expect(materializerState.reconcileAgentAdapters).not.toHaveBeenCalled()
+
+        LiteGraph.registerNodeType('late-registered', LateNode)
+        expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledTimes(
+          1
+        )
+        expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
+          graphWithPlaceholder,
+          fakeDefinitions
+        )
+
+        unmount()
+        LiteGraph.registerNodeType('late-registered', LateNode)
+        expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledTimes(
+          1
+        )
+      } finally {
+        LiteGraph.unregisterNodeType('late-registered')
+        LiteGraph.unregisterNodeType('other-type')
+      }
     })
 
     it('reconciles the live graph after every applied frame', () => {

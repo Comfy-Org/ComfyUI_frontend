@@ -234,16 +234,21 @@ function reconcile(
   const materialized: NodeId[] = []
   for (const state of records) {
     const live = graph._nodes_by_id[state.id]
-    if (live && nodeStore.ownsNode(scope, live._state)) {
+    const owned = !!live && nodeStore.ownsNode(scope, live._state)
+    if (owned && !isRebindablePlaceholder(live, state)) {
       reconcileAutogrowInputs(live)
       continue
     }
     const serialised = state.lastSerialization
     if (!serialised) continue
     if (pendingDefinitions.has(state.type)) continue
-    if (
-      materialize(graph, scope, state, serialised, orphansById.get(state.id))
-    ) {
+    // A placeholder whose type registered since it was built is replaced the
+    // way any stale adapter is: its record moves to a fresh state object so
+    // the live node stops owning it, and the orphan path swaps the class with
+    // the canonical links and widget values kept.
+    const record = owned ? rebindRecord(scope, state) : state
+    const orphan = owned ? live : orphansById.get(state.id)
+    if (record && materialize(graph, scope, record, serialised, orphan)) {
       materialized.push(state.id)
     }
   }
@@ -258,6 +263,23 @@ function reconcile(
     graph.remove(orphan, { preserveCanonicalState: true })
   }
   return materialized
+}
+
+/** `LGraph.configure()` builds a bare `LGraphNode` for a type it cannot find. */
+function isRebindablePlaceholder(node: LGraphNode, state: NodeState): boolean {
+  return (
+    node.constructor === LGraphNode &&
+    Object.hasOwn(LiteGraph.registered_node_types, state.type)
+  )
+}
+
+function rebindRecord(
+  scope: GraphScope,
+  state: NodeState
+): NodeState | undefined {
+  const nodeStore = useNodeDataStore()
+  if (!nodeStore.deleteNode(scope, state)) return undefined
+  return nodeStore.registerNode(scope, { ...state })
 }
 
 function materialize(
@@ -280,6 +302,15 @@ function materialize(
   const nodeStore = useNodeDataStore()
   const widgetStore = useWidgetValueStore()
 
+  const storedValues = new Map(
+    widgetStore
+      .getNodeWidgets(scope.rootGraphId, state.id)
+      .map((widget) => [widget.name, widget.value])
+  )
+  const placeholderWidgetNames =
+    orphan?.constructor === LGraphNode
+      ? (orphan.widgets ?? []).map((widget) => widget.name)
+      : []
   const widgets = widgetStore.getNodeWidgets(scope.rootGraphId, state.id).map(
     (widget): WidgetStateInit => ({
       disabled: widget.disabled,
@@ -361,6 +392,18 @@ function materialize(
     withNamedValuesRestore(() =>
       node.configure(withNamedWidgetValues(serialised))
     )
+    // The store owns widget values: a value written before this adapter
+    // existed outranks whatever the definition restored from the snapshot.
+    for (const widget of node.widgets ?? []) {
+      if (widget.serialize === false || widget.type === 'button') continue
+      const stored = storedValues.get(widget.name)
+      if (stored !== undefined) widget.value = stored
+    }
+    // A placeholder's slot mirrors have no widget on the real class.
+    for (const name of placeholderWidgetNames) {
+      if (node.widgets?.some((widget) => widget.name === name)) continue
+      widgetStore.deleteWidget(widgetId(scope.rootGraphId, state.id, name))
+    }
   } catch (cause) {
     // The node is attached and consistent with the stores; removing it here
     // would also drop the layout entry it adopted. Keep it and report.

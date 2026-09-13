@@ -64,6 +64,7 @@ class DummyNode extends LGraphNode {
 class WidgetNode extends LGraphNode {
   constructor() {
     super('widget-node')
+    this.serialize_widgets = true
     this.addWidget('number', 'value', 0, () => {})
   }
 }
@@ -71,10 +72,24 @@ class WidgetNode extends LGraphNode {
 class TwoWidgetNode extends LGraphNode {
   constructor() {
     super('two-widget-node')
+    this.serialize_widgets = true
     this.addWidget('number', 'steps', 0, () => {})
     this.addWidget('number', 'seed', 0, () => {})
   }
 }
+
+class ThreeWidgetNode extends LGraphNode {
+  constructor() {
+    super('three-widget-node')
+    this.serialize_widgets = true
+    this.addWidget('number', 'a', 0, () => {})
+    this.addWidget('number', 'b', 0, () => {})
+    this.addWidget('number', 'c', 0, () => {})
+  }
+}
+
+class LateWidgetNode extends WidgetNode {}
+class LateTwoWidgetNode extends TwoWidgetNode {}
 
 /** Widget values observed by `onConfigure`, in configure order. */
 const configuredWidgetValues: unknown[] = []
@@ -212,6 +227,7 @@ function seedAgentAddedNode(graph: LGraph, id: number, type = 'dummy') {
 beforeEach(() => {
   LiteGraph.registerNodeType('dummy', DummyNode)
   LiteGraph.registerNodeType('widget-node', WidgetNode)
+  LiteGraph.registerNodeType('two-widget-node', TwoWidgetNode)
   LiteGraph.registerNodeType('configure-capture', ConfigureCapturingWidgetNode)
   LiteGraph.registerNodeType('throws-on-configure', ThrowsOnConfigureNode)
   LiteGraph.registerNodeType('throws-on-added', ThrowsOnAddedNode)
@@ -566,9 +582,10 @@ describe('reconcileAgentAdapters', () => {
       }
     )
 
-    it('keeps an incremental setWidget through an omitted-widget reconcile, save, reload and rematerialization', () => {
+    it('keeps an incremental setWidget in the named record through an omitted-widget reconcile, save and reload, and rebinds it when the type registers', () => {
       const graph = new LGraph()
-      const mutations = remoteMutations(graphScopeOf(graph))
+      const scope = graphScopeOf(graph)
+      const mutations = remoteMutations(scope)
       const payload = nodePayload(1, 'late-widget-node')
       graph.configure({
         ...graph.asSerialisable(),
@@ -596,21 +613,36 @@ describe('reconcileAgentAdapters', () => {
 
       const saved = graph.serialize()
       expect(saved.nodes[0]).toMatchObject({
-        widgets_values: [7],
+        widgets_values: [4],
         widgets_values_named: { value: 7 }
       })
       graph.configure(saved)
       expect(graph.serialize().nodes[0]).toMatchObject({
-        widgets_values: [7],
+        widgets_values: [4],
         widgets_values_named: { value: 7 }
       })
 
-      LiteGraph.registerNodeType('late-widget-node', WidgetNode)
-      graph.configure(graph.serialize())
-      expect(graph.getNodeById(toNodeId(1))?.widgets?.[0].value).toBe(7)
+      LiteGraph.registerNodeType('late-widget-node', LateWidgetNode)
+      try {
+        reconcileAgentAdapters(graph)
+        const node = graph.getNodeById(toNodeId(1))
+        expect(node).toBeInstanceOf(LateWidgetNode)
+        expect(node?.widgets?.map((widget) => widget.value)).toEqual([7])
+        expect(graph.serialize().nodes[0]).toMatchObject({
+          widgets_values: [7],
+          widgets_values_named: { value: 7 }
+        })
+        expect(
+          useWidgetValueStore()
+            .getNodeWidgets(scope.rootGraphId, toNodeId(1))
+            .map((widget) => widget.name)
+        ).toEqual(['value'])
+      } finally {
+        LiteGraph.unregisterNodeType('late-widget-node')
+      }
     })
 
-    it('places an incremental setWidget by its last value in a two-widget missing node through save, reload and rematerialization', () => {
+    it('keeps the positional array as saved for a two-widget missing node and rebinds both values by name', () => {
       const graph = new LGraph()
       const mutations = remoteMutations(graphScopeOf(graph))
       const payload = nodePayload(1, 'late-two-widget-node')
@@ -640,68 +672,86 @@ describe('reconcileAgentAdapters', () => {
 
       const saved = graph.serialize()
       expect(saved.nodes[0]).toMatchObject({
-        widgets_values: [20, 7],
+        widgets_values: [20, 4],
         widgets_values_named: { seed: 7, steps: 20 }
       })
       graph.configure(saved)
 
-      LiteGraph.registerNodeType('late-two-widget-node', TwoWidgetNode)
+      LiteGraph.registerNodeType('late-two-widget-node', LateTwoWidgetNode)
       try {
-        graph.configure(graph.serialize())
-        expect(
-          graph.getNodeById(toNodeId(1))?.widgets?.map((widget) => widget.value)
-        ).toEqual([20, 7])
+        reconcileAgentAdapters(graph)
+        const node = graph.getNodeById(toNodeId(1))
+        expect(node).toBeInstanceOf(LateTwoWidgetNode)
+        expect(node?.widgets?.map((widget) => widget.value)).toEqual([20, 7])
+        expect(graph.serialize().nodes[0]).toMatchObject({
+          widgets_values: [20, 7],
+          widgets_values_named: { seed: 7, steps: 20 }
+        })
       } finally {
         LiteGraph.unregisterNodeType('late-two-widget-node')
       }
     })
 
-    it('keeps the positional shadow of a two-widget missing node when the slot is ambiguous', () => {
+    it('never rewrites a sibling slot after an ambiguous write', () => {
       const graph = new LGraph()
       const mutations = remoteMutations(graphScopeOf(graph))
-      const payload = nodePayload(1, 'late-two-widget-node')
       graph.configure({
         ...graph.asSerialisable(),
         nodes: [
           {
             ...new LGraphNode('Missing').serialize(),
             id: 1,
-            type: payload.type,
-            widgets_values: [4, 4],
-            widgets_values_named: { seed: 4, steps: 4 }
+            type: 'late-three-widget-node',
+            widgets_values: [4, 4, 7],
+            widgets_values_named: { a: 4, b: 4, c: 7 }
           }
         ]
       })
 
       expect(
+        mutations.batch(REMOTE, (batch) => {
+          batch.setWidget(toNodeId(1), 'a', 7)
+          batch.setWidget(toNodeId(1), 'a', 9)
+          batch.reconcileNode(nodePayload(1, 'late-three-widget-node'))
+        })
+      ).toBe(true)
+
+      expect(graph.serialize().nodes[0]).toMatchObject({
+        widgets_values: [4, 4, 7],
+        widgets_values_named: { a: 9, b: 4, c: 7 }
+      })
+
+      LiteGraph.registerNodeType('late-three-widget-node', ThreeWidgetNode)
+      try {
+        reconcileAgentAdapters(graph)
+        expect(
+          graph.getNodeById(toNodeId(1))?.widgets?.map((widget) => widget.value)
+        ).toEqual([9, 4, 7])
+      } finally {
+        LiteGraph.unregisterNodeType('late-three-widget-node')
+      }
+    })
+
+    it('restores a value written before the adapter existed over the positional snapshot', () => {
+      const graph = new LGraph()
+      const scope = graphScopeOf(graph)
+      const mutations = remoteMutations(scope)
+      mutations.addNode(
+        { ...nodePayload(1, 'two-widget-node'), widgets_values: [20, 4] },
+        REMOTE
+      )
+      expect(
         mutations.batch(REMOTE, (batch) =>
           batch.setWidget(toNodeId(1), 'seed', 7)
         )
       ).toBe(true)
-      expect(
-        mutations.batch(REMOTE, (batch) =>
-          batch.reconcileNode({ ...payload, pos: [10, 20] })
-        )
-      ).toBe(true)
 
-      const saved = graph.serialize()
-      expect(saved.nodes[0]).toMatchObject({
-        widgets_values: [4, 4],
-        widgets_values_named: { seed: 7, steps: 4 }
-      })
+      reconcileAgentAdapters(graph)
 
-      LiteGraph.registerNodeType('late-two-widget-node', TwoWidgetNode)
-      const previous = LiteGraph.namedValuesRestore
-      LiteGraph.namedValuesRestore = true
-      try {
-        graph.configure(saved)
-        expect(
-          graph.getNodeById(toNodeId(1))?.widgets?.map((widget) => widget.value)
-        ).toEqual([4, 7])
-      } finally {
-        LiteGraph.namedValuesRestore = previous
-        LiteGraph.unregisterNodeType('late-two-widget-node')
-      }
+      const node = graph.getNodeById(toNodeId(1))
+      expect(node).toBeInstanceOf(TwoWidgetNode)
+      expect(node?.widgets?.map((widget) => widget.value)).toEqual([20, 7])
+      expect(graph.serialize().nodes[0].widgets_values).toEqual([20, 7])
     })
 
     it('is idempotent once the node is live', () => {
