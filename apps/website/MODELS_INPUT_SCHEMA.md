@@ -332,11 +332,21 @@ with `pnpm --filter @comfyorg/website generate:workshop-router-contracts`.
 - Multiple Qwen reference inputs become ordered native image entries; Base64
   arrays and first/last-frame mappings remain unchanged. This does not add every
   optional provider media mode or override provider-specific limits.
-- Python/TypeScript examples use the same storage handshake for URL files and
-  local Base64 encoding for Base64 files. cURL continues to omit local files and
-  marks the request incomplete. For script retries, reuse the prepared URLs and
-  key; rerunning upload setup creates different request URLs. Signed URLs and
-  keys must not be logged, checked in, or put into the content pack.
+- Python/TypeScript examples use `comfy-sdk==0.2.0` / `@comfyorg/sdk@0.2.0`.
+  URL-capable local inputs use SDK assets; native inline-only inputs retain
+  Base64 with MIME inferred from the supplied file or HTTP response. Default
+  source URLs remain runnable without inventing local filenames. Preparing the
+  API tab does not read private file bytes or download example media.
+- JSON endpoints use the SDK's `models.run`, which owns request identity and
+  retries. SDK 0.2.0 cannot decode binary responses, so binary/unknown-output
+  endpoints retain HTTP examples that check errors and save non-JSON bytes.
+  cURL generates a fresh key on execution, preserves usable source URLs, and
+  warns when it omits file inputs. Retrying a request requires its original
+  prepared body and key. Credentials are checked before accessing inputs.
+- SDK examples use the same environment family as the page, with separate
+  `COMFY_ROUTER_BASE_URL` and `COMFY_BASE_URL` overrides. SDK dependencies are
+  development-only: tests execute generated code; they add no browser imports.
+  Signed URLs and keys must not be checked in or put into the content pack.
 
 **Live verification is blocked, not certified.** On September 10, both
 `api-nodes-prod` and `api-nodes-staging` returned HTTP 200 without any
