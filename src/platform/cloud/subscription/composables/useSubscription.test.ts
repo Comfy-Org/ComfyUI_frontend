@@ -21,7 +21,8 @@ const {
   mockGetBillingStatus,
 
   mockSetWorkspaceBillingRail,
-  mockLocalStorage
+  mockLocalStorage,
+  mockReportTelemetryError
 } = vi.hoisted(() => ({
   mockIsLoggedIn: { value: false },
   mockIsCloud: { value: true },
@@ -29,6 +30,7 @@ const {
   mockGetBillingStatus: vi.fn(),
 
   mockSetWorkspaceBillingRail: vi.fn(),
+  mockReportTelemetryError: vi.fn(),
   mockReportError: vi.fn(),
   mockAccessBillingPortal: vi.fn(),
   mockShowSubscriptionRequiredDialog: vi.fn(),
@@ -107,6 +109,10 @@ vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
 
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: vi.fn(() => mockTelemetry)
+}))
+
+vi.mock<unknown>(import('@/platform/telemetry/reportError'), () => ({
+  reportError: mockReportTelemetryError
 }))
 
 vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
@@ -565,6 +571,319 @@ describe('useSubscription', () => {
   })
 
   describe('pending checkout recovery', () => {
+    it('does not report while the checkout could still plausibly complete', async () => {
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-in-progress',
+          started_at_ms: Date.now(),
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: false,
+        has_funds: false,
+        renewal_date: ''
+      })
+      mockIsLoggedIn.value = true
+
+      useSubscriptionWithScope()
+      await vi.advanceTimersByTimeAsync(43_000)
+      window.dispatchEvent(new Event('pageshow'))
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockReportTelemetryError).not.toHaveBeenCalled()
+    })
+
+    it('reports once when a checkout has missed its completion deadline', async () => {
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-timeout',
+          started_at_ms: Date.now() - 11 * 60 * 1000,
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: false,
+        has_funds: false,
+        renewal_date: ''
+      })
+      mockIsLoggedIn.value = true
+
+      useSubscriptionWithScope()
+      await vi.advanceTimersByTimeAsync(43_000)
+      window.dispatchEvent(new Event('pageshow'))
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockReportTelemetryError).toHaveBeenCalledOnce()
+      expect(mockReportTelemetryError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'cloud_checkout_completion_missing',
+          context: expect.objectContaining({
+            checkout_attempt_id: 'attempt-timeout',
+            attempt_age_ms: expect.any(Number)
+          })
+        })
+      )
+      const [, options] = mockReportTelemetryError.mock.calls[0]
+      expect(options.context.attempt_age_ms).toBeGreaterThanOrEqual(
+        10 * 60 * 1000
+      )
+    })
+
+    it('closes the billing funnel when the completion never lands', async () => {
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-funnel',
+          started_at_ms: Date.now() - 11 * 60 * 1000,
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: false,
+        has_funds: false,
+        renewal_date: ''
+      })
+      mockIsLoggedIn.value = true
+
+      useSubscriptionWithScope()
+      await vi.advanceTimersByTimeAsync(43_000)
+      window.dispatchEvent(new Event('pageshow'))
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockTelemetry.trackBillingEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operation: 'subscription_checkout',
+          stage: 'failed',
+          outcome: 'failure',
+          failure_category: 'reconciliation_needed',
+          checkout_type: 'new',
+          checkout_attempt_id: 'attempt-funnel'
+        })
+      )
+    })
+
+    it('reports at the deadline without another lifecycle event', async () => {
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-wakeup',
+          started_at_ms: Date.now(),
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: false,
+        has_funds: false,
+        renewal_date: ''
+      })
+      mockIsLoggedIn.value = true
+
+      useSubscriptionWithScope()
+      await vi.advanceTimersByTimeAsync(43_000)
+      expect(mockReportTelemetryError).not.toHaveBeenCalled()
+
+      // Still short of the deadline measured from the attempt's start, which
+      // an implementation counting 10 minutes from ladder exhaustion would
+      // already have passed.
+      await vi.advanceTimersByTimeAsync(547_000)
+      expect(mockReportTelemetryError).not.toHaveBeenCalled()
+
+      await vi.advanceTimersByTimeAsync(20_000)
+
+      expect(mockReportTelemetryError).toHaveBeenCalledOnce()
+      expect(mockReportTelemetryError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'cloud_checkout_completion_missing',
+          context: expect.objectContaining({
+            checkout_attempt_id: 'attempt-wakeup'
+          })
+        })
+      )
+    })
+
+    it('does not carry a past network failure into a reachable-billing report', async () => {
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-recovered-reachable',
+          started_at_ms: Date.now() - 11 * 60 * 1000,
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+      // Fail every attempt up to the last rung, so the flag is set, then let the
+      // call that exhausts the ladder reach billing successfully.
+      mockGetBillingStatus.mockRejectedValue(new Error('offline'))
+      mockIsLoggedIn.value = true
+
+      useSubscriptionWithScope()
+      await vi.advanceTimersByTimeAsync(13_000)
+
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: false,
+        has_funds: false,
+        renewal_date: ''
+      })
+      await vi.advanceTimersByTimeAsync(30_000)
+
+      expect(mockReportTelemetryError).toHaveBeenCalledOnce()
+      expect(mockReportTelemetryError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'cloud_checkout_completion_missing'
+        })
+      )
+    })
+
+    it('lets any reachable billing read clear a past network failure', async () => {
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-reachable-elsewhere',
+          started_at_ms: Date.now(),
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+      mockGetBillingStatus.mockRejectedValue(new Error('offline'))
+      mockIsLoggedIn.value = true
+
+      const { fetchStatus } = useSubscriptionWithScope()
+      await vi.advanceTimersByTimeAsync(43_000)
+
+      // Billing comes back, but the deadline wake-up is already armed, so no
+      // further recovery attempt runs before it fires. A plain status read from
+      // the billing UI is the only thing that observes billing is reachable.
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: false,
+        has_funds: false,
+        renewal_date: ''
+      })
+      await fetchStatus()
+      await vi.advanceTimersByTimeAsync(10 * 60 * 1000)
+
+      expect(mockReportTelemetryError).toHaveBeenCalledOnce()
+      expect(mockReportTelemetryError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'cloud_checkout_completion_missing'
+        })
+      )
+    })
+
+    it('reports a missing completion once per attempt across reloads', async () => {
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-reload',
+          started_at_ms: Date.now() - 11 * 60 * 1000,
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: false,
+        has_funds: false,
+        renewal_date: ''
+      })
+      mockIsLoggedIn.value = true
+
+      useSubscriptionWithScope()
+      await vi.advanceTimersByTimeAsync(43_000)
+      expect(mockReportTelemetryError).toHaveBeenCalledOnce()
+
+      // A reload drops all composable state but keeps the stored attempt.
+      scope?.stop()
+      scope = effectScope()
+      useSubscriptionWithScope()
+      await vi.advanceTimersByTimeAsync(43_000)
+
+      expect(mockReportTelemetryError).toHaveBeenCalledOnce()
+      expect(mockTelemetry.trackBillingEvent).toHaveBeenCalledOnce()
+    })
+
+    it('separates an unreachable billing API from a missing completion', async () => {
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-offline',
+          started_at_ms: Date.now() - 11 * 60 * 1000,
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+      mockGetBillingStatus.mockRejectedValue(new Error('offline'))
+      mockIsLoggedIn.value = true
+
+      useSubscriptionWithScope()
+      await vi.advanceTimersByTimeAsync(43_000)
+      window.dispatchEvent(new Event('pageshow'))
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockReportTelemetryError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'cloud_checkout_recovery_unreachable',
+          tags: expect.objectContaining({
+            failure_kind: 'degraded',
+            outcome: 'aborted'
+          })
+        })
+      )
+    })
+
+    it('does not report a missing completion after recovery succeeds', async () => {
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-recovered',
+          started_at_ms: Date.now(),
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+      mockGetBillingStatus
+        .mockResolvedValueOnce({
+          is_active: false,
+          has_funds: false,
+          renewal_date: ''
+        })
+        .mockResolvedValue({
+          is_active: true,
+          has_funds: true,
+          subscription_tier: 'STANDARD',
+          subscription_duration: 'MONTHLY',
+          renewal_date: '2025-11-16'
+        })
+      mockIsLoggedIn.value = true
+
+      useSubscriptionWithScope()
+      await vi.runAllTimersAsync()
+
+      expect(mockReportTelemetryError).not.toHaveBeenCalled()
+      expect(
+        localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
+      ).toBeNull()
+    })
+
     it('emits subscription_success when a pending new subscription becomes active', async () => {
       localStorage.setItem(
         PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,

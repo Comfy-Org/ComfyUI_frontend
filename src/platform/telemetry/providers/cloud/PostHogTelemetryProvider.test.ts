@@ -654,6 +654,7 @@ describe('PostHogTelemetryProvider', () => {
           operation: 'subscription_checkout',
           stage: 'failed',
           outcome: 'failure',
+          checkout_attempt_id: 'attempt-abandoned',
           tier: 'pro',
           cycle: 'monthly',
           checkout_type: 'new',

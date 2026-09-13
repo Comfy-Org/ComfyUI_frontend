@@ -13,6 +13,7 @@ import { getComfyApiBaseUrl, getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError as reportTelemetryError } from '@/platform/telemetry/reportError'
 import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type {
   CheckoutAttributionMetadata,
@@ -31,7 +32,10 @@ import {
   PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
   clearPendingSubscriptionCheckoutAttempt,
   consumePendingSubscriptionCheckoutSuccess,
+  getPendingSubscriptionCheckoutAttempt,
   hasPendingSubscriptionCheckoutAttempt,
+  hasReportedMissingCheckoutCompletion,
+  markMissingCheckoutCompletionReported,
   recordPendingSubscriptionCheckoutAttempt
 } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 import { useSubscriptionCancellationWatcher } from './useSubscriptionCancellationWatcher'
@@ -41,6 +45,10 @@ type CloudSubscriptionCheckoutResponse = NonNullable<
 >
 
 const PENDING_SUBSCRIPTION_CHECKOUT_RETRY_DELAYS_MS = [3000, 10000, 30000]
+
+/** The ladder above exhausts 43s after the checkout tab opens, well inside the
+ * time a real user spends on card entry and 3DS. */
+const PENDING_CHECKOUT_COMPLETION_DEADLINE_MS = 10 * 60 * 1000
 
 function useSubscriptionInternal() {
   const subscriptionStatus = ref<BillingStatusResponse | null>(null)
@@ -133,6 +141,7 @@ function useSubscriptionInternal() {
   let pendingCheckoutRecoveryTimeout: number | null = null
   let pendingCheckoutRecoveryAttempt = 0
   let isRecoveringPendingCheckout = false
+  let didLastRecoveryAttemptThrow = false
 
   const stopPendingCheckoutRecovery = () => {
     if (pendingCheckoutRecoveryTimeout !== null && defaultWindow) {
@@ -141,6 +150,92 @@ function useSubscriptionInternal() {
 
     pendingCheckoutRecoveryTimeout = null
     pendingCheckoutRecoveryAttempt = 0
+    didLastRecoveryAttemptThrow = false
+  }
+
+  /**
+   * The retry ladder is exhausted by the time the deadline matters, so without
+   * this the report would wait on the next `pageshow`/`visibilitychange` and
+   * never fire for a user who simply leaves the tab open.
+   */
+  const armMissingCheckoutCompletionWakeUp = (remainingMs: number) => {
+    if (!defaultWindow || pendingCheckoutRecoveryTimeout !== null) {
+      return
+    }
+
+    pendingCheckoutRecoveryTimeout = defaultWindow.setTimeout(() => {
+      pendingCheckoutRecoveryTimeout = null
+      reportMissingCheckoutCompletion()
+    }, remainingMs)
+  }
+
+  const reportMissingCheckoutCompletion = () => {
+    const attempt = getPendingSubscriptionCheckoutAttempt()
+    if (!attempt || hasReportedMissingCheckoutCompletion(attempt.attempt_id)) {
+      return
+    }
+
+    const attemptAgeMs = Date.now() - attempt.started_at_ms
+    if (attemptAgeMs < PENDING_CHECKOUT_COMPLETION_DEADLINE_MS) {
+      armMissingCheckoutCompletionWakeUp(
+        PENDING_CHECKOUT_COMPLETION_DEADLINE_MS - attemptAgeMs
+      )
+      return
+    }
+
+    // Claimed before emitting, not after: a second tab wakes on the same
+    // deadline (both derive it from `started_at_ms`), so a mark that trailed
+    // the two emissions left a window wide enough for it to emit as well.
+    // localStorage offers no compare-and-swap and propagates writes to other
+    // tabs asynchronously, so this narrows that window rather than closing it —
+    // `checkout_attempt_id` on both terminals is what makes the duplicate
+    // collapsible downstream.
+    markMissingCheckoutCompletionReported(attempt.attempt_id)
+
+    reportTelemetryError(
+      new Error(
+        didLastRecoveryAttemptThrow
+          ? 'Pending subscription checkout recovery could not reach billing'
+          : 'Pending subscription checkout recovery timed out'
+      ),
+      {
+        errorType: didLastRecoveryAttemptThrow
+          ? 'cloud_checkout_recovery_unreachable'
+          : 'cloud_checkout_completion_missing',
+        tags: {
+          failure_kind: didLastRecoveryAttemptThrow
+            ? 'degraded'
+            : 'missing_event',
+          feature_area: 'billing',
+          operation: 'sync',
+          outcome: didLastRecoveryAttemptThrow ? 'aborted' : 'timed_out'
+        },
+        context: {
+          checkout_attempt_id: attempt.attempt_id,
+          checkout_type: attempt.checkout_type,
+          attempt_age_ms: attemptAgeMs,
+          tier: attempt.tier,
+          cycle: attempt.cycle,
+          ...(attempt.operation
+            ? { checkout_operation: attempt.operation }
+            : {})
+        },
+        level: 'warning'
+      }
+    )
+    telemetry?.trackBillingEvent({
+      operation: 'subscription_checkout',
+      stage: 'failed',
+      outcome: 'failure',
+      checkout_attempt_id: attempt.attempt_id,
+      failure_category: didLastRecoveryAttemptThrow
+        ? 'network'
+        : 'reconciliation_needed',
+      tier: attempt.tier,
+      cycle: attempt.cycle,
+      checkout_type: attempt.checkout_type,
+      duration_ms: attemptAgeMs
+    })
   }
 
   const schedulePendingCheckoutRecovery = () => {
@@ -158,6 +253,7 @@ function useSubscriptionInternal() {
     )
 
     if (nextDelay === undefined) {
+      reportMissingCheckoutCompletion()
       return
     }
 
@@ -342,6 +438,7 @@ function useSubscriptionInternal() {
         `[Subscription] Failed to recover pending checkout on ${source}:`,
         error
       )
+      didLastRecoveryAttemptThrow = true
       schedulePendingCheckoutRecovery()
     } finally {
       isRecoveringPendingCheckout = false
@@ -396,6 +493,10 @@ function useSubscriptionInternal() {
         })
       )
     }
+    // Any read that lands proves billing is reachable, not just one made by the
+    // recovery ladder. Clearing here rather than in the ladder keeps a stale
+    // `true` from reaching a report armed before billing came back.
+    didLastRecoveryAttemptThrow = false
     if (
       (authStore.userId ?? null) !== ownerId ||
       workspaceStore.activeWorkspaceId !== workspaceId
