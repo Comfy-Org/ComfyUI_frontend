@@ -64,5 +64,4 @@ describe('validateNodeDef', () => {
       ).toBeNull()
     })
   })
-
 })
