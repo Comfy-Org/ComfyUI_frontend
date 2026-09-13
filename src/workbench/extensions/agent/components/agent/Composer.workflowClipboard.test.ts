@@ -100,6 +100,50 @@ describe('workflow reference clipboard', () => {
     expect(editor.textContent).toBe('New: Before 参考 🐈 between Missing after')
   })
 
+  it('restores only workflows from a mixed-reference copy and leaves node and asset labels as text', async () => {
+    const user = userEvent.setup()
+    const { store, editor } = renderComposer()
+    store.setNodeScope('target-A')
+    store.restorePrompt({
+      text: 'Use   ',
+      references: [
+        {
+          kind: 'workflow',
+          id: 'workflow-B',
+          name: 'Reference B',
+          textOffset: 4
+        },
+        {
+          kind: 'node',
+          scope: 'target-A',
+          node: { id: '12', title: 'Sampler' },
+          textOffset: 5
+        },
+        {
+          kind: 'asset',
+          attachment: { id: 'image', name: 'source.png', ref: 'source.png' },
+          textOffset: 6
+        }
+      ]
+    })
+    await screen.findByTestId('workflow-reference-chip')
+    await user.click(editor)
+    await user.keyboard('{Control>}a{/Control}')
+    const clipboard = await user.copy()
+    store.replaceDraft({ text: '', workflowReferences: [], attachments: [] })
+    await waitFor(() => expect(editor.textContent).toBe(''))
+    await user.click(editor)
+    await user.paste(clipboard)
+    expect(editor.textContent).toBe(
+      'Use Reference B @[Node: Sampler #12] @[Image: source.png]'
+    )
+    expect(store.workflowReferences).toEqual([
+      { id: 'workflow-B', name: 'Reference B', textOffset: 4 }
+    ])
+    expect(store.nodes).toEqual([])
+    expect(store.attachments).toEqual([])
+  })
+
   it('does not infer workflow identity from plain text', async () => {
     const user = userEvent.setup()
     const { store, editor } = renderComposer()
