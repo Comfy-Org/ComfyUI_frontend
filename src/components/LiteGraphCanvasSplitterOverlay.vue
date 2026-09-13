@@ -182,7 +182,7 @@ const { isSelectMode, isBuilderMode } = useAppMode()
 const { activeSidebarTabId, activeSidebarTab } = storeToRefs(sidebarTabStore)
 const { bottomPanelVisible } = storeToRefs(useBottomPanelStore())
 const { isOpen: rightSidePanelVisible } = storeToRefs(rightSidePanelStore)
-const { isOpen: agentPanelOpen } = storeToRefs(agentPanelStore)
+const { isVisible: agentPanelOpen } = storeToRefs(agentPanelStore)
 // The agent docks in its own `agent-panel` slot outside the splitter, so it is
 // not an offside trigger; it only discriminates the saved layout key below.
 const showOffsideSplitter = computed(
