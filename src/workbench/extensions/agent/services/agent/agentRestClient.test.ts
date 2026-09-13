@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { CloudWorkflowEntry } from '../../schemas/agentApiSchema'
+import type {
+  CloudWorkflowEntry,
+  AgentThreadSummary
+} from '../../schemas/agentApiSchema'
 
 const fetchApi = vi.hoisted(() =>
   vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()
@@ -41,6 +44,37 @@ const turnAccepted = {
   thread_id: 't1',
   workflow_id: 'w1'
 }
+
+const thread = (
+  id: string,
+  status: 'active' | 'archived'
+): AgentThreadSummary => ({
+  id,
+  title: id,
+  preview: '',
+  status,
+  workflow_id: '',
+  message_count: 0,
+  created_at: '2026-09-04T00:00:00Z',
+  updated_at: '2026-09-04T00:00:00Z',
+  last_message_at: '2026-09-04T00:00:00Z'
+})
+
+const threadPage = (
+  threads: AgentThreadSummary[],
+  hasMore: boolean,
+  nextCursor?: string
+) =>
+  jsonResponse(200, {
+    threads,
+    pagination: {
+      offset: 0,
+      limit: 20,
+      total: threads.length,
+      has_more: hasMore,
+      next_cursor: nextCursor
+    }
+  })
 
 beforeEach(() => {
   fetchApi.mockReset()
@@ -131,12 +165,59 @@ describe('agentRestClient route + method', () => {
 
   it('answerAsk POSTs the selected option to the encoded ask path', async () => {
     respond(jsonResponse(202, { status: 'answered' }))
-    await makeClient().answerAsk('t7', 'turn-1:call/1', ['run'])
+    await createAgentRestClient().answerAsk('t1/x', 'turn-1:call/1', ['run'])
 
     const { route, init } = lastCall()
-    expect(route).toBe('/agent/threads/t7/asks/turn-1%3Acall%2F1/answer')
+    expect(route).toBe('/agent/threads/t1%2Fx/asks/turn-1%3Acall%2F1/answer')
     expect(init.method).toBe('POST')
     expect(JSON.parse(init.body as string)).toEqual({ selected: ['run'] })
+  })
+
+  it('accumulates every thread page and preserves archive status', async () => {
+    respond(threadPage([thread('active', 'active')], true, 'next page'))
+    respond(threadPage([thread('archived', 'archived')], false))
+
+    const threads = await createAgentRestClient().listThreads()
+
+    expect(fetchApi.mock.calls[0][0]).toBe('/agent/threads')
+    expect(fetchApi.mock.calls[1][0]).toBe('/agent/threads?after=next%20page')
+    expect(threads.map(({ id, status }) => ({ id, status }))).toEqual([
+      { id: 'active', status: 'active' },
+      { id: 'archived', status: 'archived' }
+    ])
+  })
+
+  it('rejects an incomplete thread page instead of returning partial history', async () => {
+    respond(threadPage([thread('only-page', 'active')], true))
+
+    await expect(createAgentRestClient().listThreads()).rejects.toThrow(
+      'Agent thread pagination did not advance'
+    )
+  })
+
+  it('rejects a pagination cursor cycle instead of requesting a page twice', async () => {
+    respond(threadPage([thread('page-a', 'active')], true, 'A'))
+    respond(threadPage([thread('page-b', 'active')], true, 'B'))
+    respond(threadPage([thread('page-c', 'active')], true, 'A'))
+
+    await expect(createAgentRestClient().listThreads()).rejects.toThrow(
+      'Agent thread pagination did not advance'
+    )
+    expect(fetchApi).toHaveBeenCalledTimes(3)
+  })
+
+  it('continues thread pagination past 20 pages until the contract terminates it', async () => {
+    for (let page = 0; page < 21; page++)
+      respond(
+        threadPage([thread(`page-${page}`, 'active')], true, `${page + 1}`)
+      )
+    respond(threadPage([thread('last-page', 'active')], false))
+
+    const threads = await createAgentRestClient().listThreads()
+
+    expect(threads).toHaveLength(22)
+    expect(threads.at(-1)?.id).toBe('last-page')
+    expect(fetchApi).toHaveBeenCalledTimes(22)
   })
 
   it('listCloudWorkflows GETs the paginated workflows path until has_more is false', async () => {
@@ -176,7 +257,7 @@ describe('agentRestClient route + method', () => {
       })
     )
 
-    await makeClient().listCloudWorkflows()
+    await createAgentRestClient().listCloudWorkflows()
 
     expect(fetchApi).toHaveBeenCalledTimes(1)
   })
@@ -255,7 +336,7 @@ describe('postMessage wire body', () => {
 
   it('includes draft.content (and omits version when absent) when a draft is provided', async () => {
     respond(jsonResponse(202, turnAccepted))
-    await makeClient().postMessage('t1', {
+    await createAgentRestClient().postMessage('t1', {
       content: "what's on my canvas",
       draft: { content: { nodes: [{ id: 1, type: 'LoadImage' }], links: [] } }
     })
@@ -268,7 +349,7 @@ describe('postMessage wire body', () => {
 
   it('forwards draft.version when the client has previously seen one', async () => {
     respond(jsonResponse(202, turnAccepted))
-    await makeClient().postMessage('t1', {
+    await createAgentRestClient().postMessage('t1', {
       content: 'edit it',
       draft: { content: { nodes: [], links: [] }, version: 4 }
     })

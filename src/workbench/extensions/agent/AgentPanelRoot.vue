@@ -713,14 +713,17 @@ function toChatSession(thread: AgentThreadSummary): ChatSession {
   return {
     id: thread.id,
     title: thread.title || thread.preview || t('agent.untitledChat'),
-    updatedAt: Number.isNaN(updatedAt) ? Date.now() : updatedAt
+    updatedAt: Number.isNaN(updatedAt) ? Date.now() : updatedAt,
+    status: thread.status
   }
 }
 
 async function refreshHistory(): Promise<void> {
+  const generation = history.beginRefresh()
   try {
-    history.replaceAll((await listThreads()).map(toChatSession))
+    history.replaceAll((await listThreads()).map(toChatSession), generation)
   } catch (error) {
+    if (!history.isCurrentRefresh(generation)) return
     surfaceAgentError(
       'agent_api_failed',
       error instanceof Error ? error.message : String(error)

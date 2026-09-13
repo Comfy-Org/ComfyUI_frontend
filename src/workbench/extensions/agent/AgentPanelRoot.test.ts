@@ -1880,7 +1880,12 @@ describe('AgentPanelRoot history', () => {
     // The server has no delete endpoint yet, so the tombstone must hold the
     // thread out of the next refresh instead of letting it resurrect.
     useAgentChatHistoryStore().replaceAll([
-      { id: 'th-active', title: 'build a duck', updatedAt: Date.now() }
+      {
+        id: 'th-active',
+        title: 'build a duck',
+        updatedAt: Date.now(),
+        status: 'active'
+      }
     ])
     expect(useAgentChatHistoryStore().sessions).toHaveLength(0)
   })
@@ -1900,7 +1905,8 @@ describe('AgentPanelRoot history', () => {
                 id: 'th-10',
                 title: '',
                 preview: 'make a duck',
-                last_message_at: '2026-07-07T09:00:00Z'
+                last_message_at: '2026-07-07T09:00:00Z',
+                status: 'archived'
               })
             ])
           ),
@@ -1920,11 +1926,13 @@ describe('AgentPanelRoot history', () => {
     await vi.waitFor(() => expect(history.sessions).toHaveLength(2))
     expect(history.sessions[0]).toMatchObject({
       id: 'th-9',
-      title: 'build a text to image graph'
+      title: 'build a text to image graph',
+      status: 'active'
     })
     expect(history.sessions[1]).toMatchObject({
       id: 'th-10',
-      title: 'make a duck'
+      title: 'make a duck',
+      status: 'archived'
     })
   })
 
@@ -1944,6 +1952,40 @@ describe('AgentPanelRoot history', () => {
       type: 'agent_api_failed'
     })
     expect(useAgentChatHistoryStore().sessions).toHaveLength(0)
+  })
+
+  it('ignores an older thread-list failure after a newer refresh succeeds', async () => {
+    executionErrors.showErrorOverlay.mockClear()
+    let rejectInitial!: (error: Error) => void
+    const initialThreadResponse = new Promise<Response>((_resolve, reject) => {
+      rejectInitial = reject
+    })
+    let threadRequestCount = 0
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) => {
+        if (url.endsWith('/api/agent/threads')) {
+          threadRequestCount++
+          return threadRequestCount === 1
+            ? initialThreadResponse
+            : Promise.resolve(json(200, agentThreadList()))
+        }
+        return Promise.resolve(json(200, []))
+      })
+    )
+
+    renderWithSelectedTarget()
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await vi.waitFor(() => expect(threadRequestCount).toBe(2))
+
+    rejectInitial(new Error('stale refresh failed'))
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
   })
 
   it('marks the adopted thread as the current session', async () => {

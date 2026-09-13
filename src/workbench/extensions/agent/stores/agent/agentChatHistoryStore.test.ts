@@ -12,7 +12,8 @@ const DAY = 86_400_000
 const session = (id: string, updatedAt: number): ChatSession => ({
   id,
   title: id,
-  updatedAt
+  updatedAt,
+  status: 'active'
 })
 
 describe('groupSessionsByRecency', () => {
@@ -75,6 +76,19 @@ describe('useAgentChatHistoryStore', () => {
     })
   })
 
+  it('preserves each session status through replaceAll', () => {
+    const store = useAgentChatHistoryStore()
+    store.replaceAll([
+      session('live', 2),
+      { ...session('old', 1), status: 'archived' }
+    ])
+
+    expect(store.sessions).toMatchObject([
+      { id: 'live', status: 'active' },
+      { id: 'old', status: 'archived' }
+    ])
+  })
+
   it('ignores a whitespace-only rename', () => {
     const store = useAgentChatHistoryStore()
     store.rename('a', '   ')
@@ -119,5 +133,32 @@ describe('useAgentChatHistoryStore', () => {
     store.remove('b')
 
     expect(store.activeId).toBe('a')
+  })
+
+  it('keeps the latest result when overlapping refreshes resolve out of order', async () => {
+    const store = useAgentChatHistoryStore()
+    let resolveFirst: ((sessions: ChatSession[]) => void) | undefined
+    let resolveSecond: ((sessions: ChatSession[]) => void) | undefined
+    const first = new Promise<ChatSession[]>((resolve) => {
+      resolveFirst = resolve
+    })
+    const second = new Promise<ChatSession[]>((resolve) => {
+      resolveSecond = resolve
+    })
+    const firstGeneration = store.beginRefresh()
+    const firstRefresh = first.then((sessions) =>
+      store.replaceAll(sessions, firstGeneration)
+    )
+    const secondGeneration = store.beginRefresh()
+    const secondRefresh = second.then((sessions) =>
+      store.replaceAll(sessions, secondGeneration)
+    )
+
+    resolveSecond?.([session('latest', 2)])
+    await secondRefresh
+    resolveFirst?.([session('stale', 1)])
+    await firstRefresh
+
+    expect(store.sessions.map(({ id }) => id)).toEqual(['latest'])
   })
 })

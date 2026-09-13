@@ -161,12 +161,28 @@ export function createAgentRestClient() {
   }
 
   async function listThreads(): Promise<AgentThreadSummary[]> {
-    const page = await request(
-      '/agent/threads',
-      { method: 'GET' },
-      zAgentThreads
-    )
-    return page.threads
+    const threads: AgentThreadSummary[] = []
+    const seenCursors = new Set<string>()
+    let cursor: string | undefined
+    for (;;) {
+      const after = cursor ? `?after=${encodeURIComponent(cursor)}` : ''
+      const page = await request(
+        `/agent/threads${after}`,
+        { method: 'GET' },
+        zAgentThreads
+      )
+      threads.push(...page.threads)
+      if (!page.pagination.has_more) return threads
+      const nextCursor = page.pagination.next_cursor
+      if (!nextCursor || seenCursors.has(nextCursor))
+        throw new AgentApiError(
+          'Agent thread pagination did not advance',
+          502,
+          page.pagination
+        )
+      seenCursors.add(nextCursor)
+      cursor = nextCursor
+    }
   }
 
   async function getRunMode(): Promise<AgentRunModePreference> {
@@ -228,7 +244,7 @@ export function createAgentRestClient() {
     selected: string[]
   ): Promise<AgentAnswerAccepted> {
     return request(
-      `/agent/threads/${threadId}/asks/${encodeURIComponent(askId)}/answer`,
+      `/agent/threads/${encodeURIComponent(threadId)}/asks/${encodeURIComponent(askId)}/answer`,
       jsonInit('POST', { selected }),
       zAgentAnswerAccepted
     )
