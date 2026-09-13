@@ -1,4 +1,5 @@
 import { i18n } from '@/i18n'
+import { reportError } from '@/platform/telemetry/reportError'
 import { hasImageType } from '@/utils/eventUtils'
 import type { ComposerAttachment } from './useComposer'
 
@@ -49,7 +50,20 @@ export function useAttachment(options: UseAttachmentOptions) {
       const result = await options.upload(file)
       options.update(id, { ref: result.ref, uploading: false })
       return true
-    } catch {
+    } catch (error) {
+      reportError(error, {
+        errorType: 'agent_attachment_upload_failed',
+        tags: {
+          failure_kind: 'caught_unexpected',
+          feature_area: 'agent',
+          operation: 'save',
+          outcome: 'failed',
+          integration_target: 'assets',
+          feature_flag: 'agent_panel',
+          feature_flag_state: 'enabled',
+          project_context: 'agent_composer'
+        }
+      })
       options.onError?.(
         i18n.global.t('agent.attachmentUploadFailed', { name: file.name })
       )

@@ -1,7 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { reportError } from '@/platform/telemetry/reportError'
 import type { ComposerAttachment } from './useComposer'
 import { MAX_ATTACHMENT_BYTES, useAttachment } from './useAttachment'
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 function fileOfSize(name: string, size: number, type = 'image/png'): File {
   const file = new File(['x'], name, { type })
@@ -184,7 +189,8 @@ describe('useAttachment', () => {
   })
 
   it('removes the chip and surfaces the error when the upload fails', async () => {
-    const upload = vi.fn().mockRejectedValue(new Error('network down'))
+    const error = new Error('network down')
+    const upload = vi.fn().mockRejectedValue(error)
     const onError = vi.fn()
     const registry = chipRegistry()
     const { addFiles } = useAttachment({ upload, onError, ...registry })
@@ -193,6 +199,22 @@ describe('useAttachment', () => {
 
     expect(registry.chips).toEqual([])
     expect(onError).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledWith(error, {
+      errorType: 'agent_attachment_upload_failed',
+      tags: {
+        failure_kind: 'caught_unexpected',
+        feature_area: 'agent',
+        operation: 'save',
+        outcome: 'failed',
+        integration_target: 'assets',
+        feature_flag: 'agent_panel',
+        feature_flag_state: 'enabled',
+        project_context: 'agent_composer'
+      }
+    })
+    expect(JSON.stringify(vi.mocked(reportError).mock.calls)).not.toContain(
+      'cat.png'
+    )
   })
 
   it('keeps earlier settled chips and continues the batch when one upload fails', async () => {
