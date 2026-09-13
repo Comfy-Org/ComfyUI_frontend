@@ -7,7 +7,6 @@
  * the frame-handler status surface, and total teardown.
  */
 import { mint } from '@comfyorg/comfy-multi-player'
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, nextTick, ref, shallowRef } from 'vue'
 import type { Ref } from 'vue'
@@ -108,7 +107,7 @@ vi.mock<unknown>(import('./docFrameClient'), () => ({
   }
 }))
 
-vi.mock('./ecsFollowerAdapter', async (importOriginal) => ({
+vi.mock<unknown>(import('./ecsFollowerAdapter'), async (importOriginal) => ({
   ...(await importOriginal<typeof EcsFollowerModule>()),
   EcsFollowerAdapter: class {
     bind = adapterState.bind
@@ -227,7 +226,6 @@ function mountInputFollower() {
   onTestFinished(() => {
     unmount()
     doc.destroy()
-    graph.clear()
   })
   return { graph, source, target, enqueue }
 }
@@ -1040,6 +1038,32 @@ describe('useAgentCrdtFollower', () => {
 
     expect(clientState.sendOps).not.toHaveBeenCalled()
     expect(error).toHaveBeenCalled()
+  })
+
+  it('reports and drops a connection when the runtime target node is missing', () => {
+    const { graph, source, target, enqueue } = mountInputFollower()
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    graph.remove(target)
+
+    enqueue([
+      {
+        op: 'connect',
+        link_id: 1,
+        from_node: source.id,
+        from_slot: 0,
+        to_node: target.id,
+        to_slot: 1,
+        link_type: 'INT'
+      }
+    ])
+
+    expect(clientState.sendOps).not.toHaveBeenCalled()
+    expect(error).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'connect input is absent from the bound document'
+      ),
+      1
+    )
   })
 
   it('preserves a new local node connection before its add_node is echoed', () => {

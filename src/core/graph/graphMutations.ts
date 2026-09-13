@@ -360,6 +360,10 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           if (incumbent && incumbent.graphId !== scope.owningGraphId) {
             return `node id ${key} belongs to graph ${incumbent.graphId}`
           }
+          if (mutation.kind === 'reconcileNode' && incumbent) {
+            node.state.inputs = incumbent.inputs
+            node.state.outputs = incumbent.outputs
+          }
           if (mutation.kind === 'addNode' && nodes.has(key)) {
             return `node id ${key} is already registered`
           }
@@ -428,7 +432,13 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           const targetInputs = [...target.inputs]
           if (mutation.link.originOutputs) {
             for (const [index, output] of origin.outputs.entries()) {
-              if (!isPlainObject(output)) originOutputs[index] = output
+              if (!isPlainObject(output)) {
+                originOutputs[index] = output
+                continue
+              }
+              const serialized = originOutputs[index]
+              if (isPlainObject(serialized)) Object.assign(output, serialized)
+              originOutputs[index] = output
             }
           }
           if (mutation.link.targetInputs) {
@@ -443,7 +453,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
               )
               if (index < 0) targetInputs.push(input)
               else if (isPlainObject(targetInputs[index]))
-                targetInputs[index] = input
+                Object.assign(targetInputs[index], input)
             }
             topology.targetSlot = targetInputs.findIndex(
               (input) => input.name === name
