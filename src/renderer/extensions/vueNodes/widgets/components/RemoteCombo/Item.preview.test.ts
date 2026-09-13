@@ -1,5 +1,6 @@
-import { render, screen } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
+import { describe, expect, it, vi } from 'vitest'
 import { ComboboxRoot } from 'reka-ui'
 import { computed, defineComponent, h, provide, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -76,14 +77,22 @@ describe('RemoteCombo.Item preview rendering', () => {
     expect(img).toHaveAttribute('src', 'https://cdn.example.com/p.png')
   })
 
-  it('renders an audio play button for audio preview_type with preview_url', () => {
+  it('plays an audio preview from its control', async () => {
+    const play = vi
+      .spyOn(HTMLMediaElement.prototype, 'play')
+      .mockResolvedValue(undefined)
     renderItemInOpenCombobox(
       { id: '1', name: 'Voice', preview_url: 'https://cdn.example.com/a.mp3' },
       'audio'
     )
-    expect(
-      screen.getByRole('button', { name: 'Play audio preview for Voice' })
-    ).toBeInTheDocument()
+    const button = screen.getByRole('button', {
+      name: 'Play audio preview for Voice'
+    })
+
+    await userEvent.click(button)
+
+    expect(play).toHaveBeenCalledOnce()
+    await waitFor(() => expect(button).toHaveAttribute('aria-pressed', 'true'))
   })
 
   it('omits preview element when preview_url is missing', () => {
