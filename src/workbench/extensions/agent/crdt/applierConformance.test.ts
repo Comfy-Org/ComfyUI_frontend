@@ -272,6 +272,20 @@ describe('applier conformance (the pinned package the doc host runs)', () => {
     expect(hasAppliedOp(doc, lateWrite.op_id)).toBe(true)
   })
 
+  it('accepts a disconnect for a link absent from the projection', () => {
+    const doc = seedDoc()
+    const [disconnect] = mintWireOps(
+      [{ op: 'disconnect', link_id: 41, to_node: 1, to_slot: 0 }],
+      { actor: 'human:u1:tab', baseVersion: 1 }
+    )
+
+    const result = applyOps(doc, [disconnect], CATALOG)
+
+    expect(result.outcomes).toEqual([
+      { op_id: disconnect.op_id, outcome: 'no-op' }
+    ])
+  })
+
   it('accepts every op family the mint ports emit, end to end through our envelope', () => {
     const doc = seedDoc()
     const context = { actor: 'human:u1:tab', baseVersion: 1 }
@@ -285,7 +299,12 @@ describe('applier conformance (the pinned package the doc host runs)', () => {
         to_slot: 0,
         link_type: 'IMAGE'
       },
-      { op: 'set_widget', node_id: 1, widget: 'seed', value: 42, old: 3 },
+      { op: 'set_widget', node_id: 1, widget: 'seed', value: 42, old: 3 }
+    ]
+    const disconnectOps: GraphOperation[] = [
+      { op: 'disconnect', link_id: 41, to_node: 1, to_slot: 0 }
+    ]
+    const nodeOps: GraphOperation[] = [
       { op: 'delete_node', node_id: 2, removed_links: [41] },
       {
         op: 'add_node',
@@ -302,15 +321,30 @@ describe('applier conformance (the pinned package the doc host runs)', () => {
     const clearOps: GraphOperation[] = [{ op: 'clear', removed_nodes: [1, 7] }]
 
     const result = applyOps(doc, mintWireOps(legOps, context), CATALOG)
+    const disconnectResult = applyOps(
+      doc,
+      mintWireOps(disconnectOps, { ...context, baseVersion: 2 }),
+      CATALOG
+    )
+    const nodeResult = applyOps(
+      doc,
+      mintWireOps(nodeOps, { ...context, baseVersion: 3 }),
+      CATALOG
+    )
     const clearResult = applyOps(
       doc,
-      mintWireOps(clearOps, { ...context, baseVersion: 2 }),
+      mintWireOps(clearOps, { ...context, baseVersion: 4 }),
       CATALOG
     )
 
     expect(result.outcomes.map((outcome) => outcome.outcome)).toEqual([
       'applied',
-      'applied',
+      'applied'
+    ])
+    expect(disconnectResult.outcomes.map((outcome) => outcome.outcome)).toEqual(
+      ['applied']
+    )
+    expect(nodeResult.outcomes.map((outcome) => outcome.outcome)).toEqual([
       'applied',
       'applied'
     ])
