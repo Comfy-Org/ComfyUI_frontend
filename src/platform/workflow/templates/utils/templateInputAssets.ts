@@ -10,7 +10,7 @@ export async function resolveTemplateInputAssets(
   getBridge: BridgeProvider
 ): Promise<readonly ComfyTemplateInputAsset[]> {
   const bridge = getBridge()
-  if (!bridge?.getTemplateInputAssets || bridge.isRemote()) return []
+  if (!bridge?.getTemplateInputAssets || bridge.isRemote?.()) return []
 
   try {
     return (await bridge.getTemplateInputAssets(templateId)) ?? []
@@ -37,7 +37,7 @@ export function startMissingTemplateInputDownloads(
 
   const bridge = getBridge()
   const downloadInput = bridge?.downloadTemplateInputAsset
-  if (!downloadInput || bridge.isRemote()) {
+  if (!downloadInput || bridge.isRemote?.()) {
     reportError(new Error('Template input download bridge unavailable'))
     return
   }

@@ -1,5 +1,4 @@
 import type { ComfyTemplateInputDownloadProgress } from '@comfyorg/comfyui-desktop-bridge-types'
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { useTemplateInputDownloadStore } from './templateInputDownloadStore'
@@ -18,7 +17,7 @@ function progress(
 }
 
 describe('useTemplateInputDownloadStore', () => {
-  beforeEach(() => setActivePinia(createPinia()))
+  beforeEach(() => useTemplateInputDownloadStore().clear())
 
   it('keeps completion blocking until graph hydration and busts preview cache once', () => {
     const store = useTemplateInputDownloadStore()

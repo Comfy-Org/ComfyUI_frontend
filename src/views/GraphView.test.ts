@@ -94,6 +94,7 @@ vi.mock<unknown>(import('firebase/auth'), () => {
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     rootGraph: { getNodeById: vi.fn(), nodes: [] },
+    reloadNodeDefs: vi.fn(async () => undefined),
     ui: {
       menuContainer: { style: { setProperty: vi.fn() } },
       restoreMenuPosition: vi.fn()
@@ -134,16 +135,17 @@ vi.mock(import('@/composables/useProgressFavicon'), () => ({
   useProgressFavicon: vi.fn()
 }))
 vi.mock(import('@/platform/distribution/types'), () => distribution)
-vi.mock<unknown>(import('@/platform/missingMedia/missingMediaPipeline'), () => ({
-  runMissingMediaPipeline: templateInputMock.runMissingMediaPipeline
-}))
+vi.mock<unknown>(
+  import('@/platform/missingMedia/missingMediaPipeline'),
+  () => ({
+    runMissingMediaPipeline: templateInputMock.runMissingMediaPipeline
+  })
+)
 vi.mock<unknown>(import('@/platform/missingMedia/missingMediaScan'), () => ({
   scanAllMediaCandidates: templateInputMock.scanCandidates
 }))
 vi.mock<unknown>(
-  import(
-    '@/platform/workflow/templates/utils/refreshDownloadedTemplateInputBindings'
-  ),
+  import('@/platform/workflow/templates/utils/refreshDownloadedTemplateInputBindings'),
   () => ({
     refreshDownloadedTemplateInputBindings: templateInputMock.refreshBindings
   })
