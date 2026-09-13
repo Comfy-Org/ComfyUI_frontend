@@ -341,4 +341,28 @@ describe('createCreditsReader', () => {
       expect(reader.getSnapshot()?.balance.amount_micros).toBe(12_500_000)
     })
   })
+
+  it('clears account data and rejects an in-flight result after dispose', async () => {
+    const { session } = fakeSession()
+    let release = () => {}
+    const gate = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    let calls = 0
+    const transport: BillingTransport = vi.fn(async () => {
+      calls++
+      if (calls === 2) await gate
+      return httpOk(BALANCE)
+    })
+    const reader = createCreditsReader({ transport, session })
+
+    await reader.read()
+    const pending = reader.read()
+    reader.dispose()
+
+    expect(reader.getSnapshot()).toBeUndefined()
+    release()
+    expect(await pending).toEqual({ status: 'error', code: 'SUPERSEDED' })
+    expect(reader.getSnapshot()).toBeUndefined()
+  })
 })

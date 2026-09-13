@@ -249,4 +249,28 @@ describe('createBillingStatusReader', () => {
     expect(result).toEqual({ status: 'error', code: 'REQUEST_FAILED' })
     expect(reader.getSnapshot()?.status.pending_billing_op_id).toBe('op-1')
   })
+
+  it('clears account data and rejects an in-flight result after dispose', async () => {
+    const { session } = fakeSession()
+    let release = () => {}
+    const gate = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    let calls = 0
+    const transport: BillingTransport = vi.fn(async () => {
+      calls++
+      if (calls === 2) await gate
+      return httpOk(STATUS)
+    })
+    const reader = createBillingStatusReader({ transport, session })
+
+    await reader.read()
+    const pending = reader.read()
+    reader.dispose()
+
+    expect(reader.getSnapshot()).toBeUndefined()
+    release()
+    expect(await pending).toEqual({ status: 'error', code: 'SUPERSEDED' })
+    expect(reader.getSnapshot()).toBeUndefined()
+  })
 })

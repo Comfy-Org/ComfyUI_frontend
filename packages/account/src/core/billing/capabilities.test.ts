@@ -705,21 +705,31 @@ describe('createCapabilitiesReader', () => {
     })
   })
 
-  it('stops tracking the host after dispose', async () => {
-    const host = fakeSession()
-    const { transport } = fakeTransport([httpOk(capabilitiesBody())])
+  it('clears account data and rejects an in-flight result after dispose', async () => {
+    const { session } = fakeSession()
+    let release = () => {}
+    const gate = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    let calls = 0
+    const transport: BillingTransport = vi.fn(async () => {
+      calls++
+      if (calls === 2) await gate
+      return httpOk(capabilitiesBody())
+    })
     const reader = createCapabilitiesReader({
       transport,
-      session: host.session
+      session
     })
 
     await reader.read()
+    const pending = reader.read({ forceRefresh: true })
     reader.dispose()
-    host.moveTo(SIGNED_OUT)
 
-    // Dispose detaches the subscription, so the stale snapshot survives. A
-    // disposed reader is out of use; what matters is that nothing throws.
-    expect(reader.getSnapshot()).toBeDefined()
+    expect(reader.getSnapshot()).toBeUndefined()
+    release()
+    expect(await pending).toEqual({ status: 'error', code: 'SUPERSEDED' })
+    expect(reader.getSnapshot()).toBeUndefined()
   })
 })
 

@@ -67,6 +67,7 @@ export function createCreditsReader(
 
   let snapshot: CreditsSnapshot | undefined
   let inFlight: InFlightRead | undefined
+  const lifetime = { disposed: false }
 
   const currentScope = (): CreditsScope | undefined => {
     const state = session.getSnapshot()
@@ -122,6 +123,8 @@ export function createCreditsReader(
   const read = async (
     readOptions?: CreditsReadOptions
   ): Promise<BillingResult<CreditsSnapshot>> => {
+    if (lifetime.disposed) return { status: 'error', code: 'SUPERSEDED' }
+
     const scope = currentScope()
     if (scope === undefined) {
       return { status: 'error', code: 'NOT_AUTHENTICATED' }
@@ -144,7 +147,11 @@ export function createCreditsReader(
         // another workspace or signed out belongs to neither, and showing it
         // would state one account's credits under another's name.
         const settledScope = currentScope()
-        if (settledScope === undefined || !sameScope(settledScope, scope)) {
+        if (
+          lifetime.disposed ||
+          settledScope === undefined ||
+          !sameScope(settledScope, scope)
+        ) {
           return { status: 'error', code: 'SUPERSEDED' }
         }
 
@@ -167,6 +174,11 @@ export function createCreditsReader(
   return {
     read,
     getSnapshot: () => snapshot,
-    dispose: unsubscribe
+    dispose: () => {
+      lifetime.disposed = true
+      snapshot = undefined
+      inFlight = undefined
+      unsubscribe()
+    }
   }
 }

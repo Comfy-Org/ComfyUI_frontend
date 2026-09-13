@@ -149,6 +149,7 @@ export function createCapabilitiesReader(
 
   let snapshot: CapabilitiesSnapshot | undefined
   let inFlight: InFlightRead | undefined
+  const lifetime = { disposed: false }
 
   /** The scope a read runs for, or undefined when nobody is signed in. */
   const currentScope = (): CapabilityScope | undefined => {
@@ -236,6 +237,8 @@ export function createCapabilitiesReader(
   const read = async (
     readOptions?: CapabilitiesReadOptions
   ): Promise<BillingResult<CapabilitiesSnapshot>> => {
+    if (lifetime.disposed) return { status: 'error', code: 'SUPERSEDED' }
+
     const scope = currentScope()
     if (scope === undefined) {
       return { status: 'error', code: 'NOT_AUTHENTICATED' }
@@ -271,7 +274,11 @@ export function createCapabilitiesReader(
       // host may have changed workspace or signed out, and a snapshot cached
       // now would be attributed to whoever is signed in next.
       const settledScope = currentScope()
-      if (settledScope === undefined || !sameScope(settledScope, scope)) {
+      if (
+        lifetime.disposed ||
+        settledScope === undefined ||
+        !sameScope(settledScope, scope)
+      ) {
         return { status: 'error', code: 'SUPERSEDED' }
       }
 
@@ -307,6 +314,11 @@ export function createCapabilitiesReader(
       if (revision !== undefined && snapshot.revision === revision) return
       snapshot = { ...snapshot, freshUntil: 0 }
     },
-    dispose: unsubscribe
+    dispose: () => {
+      lifetime.disposed = true
+      snapshot = undefined
+      inFlight = undefined
+      unsubscribe()
+    }
   }
 }

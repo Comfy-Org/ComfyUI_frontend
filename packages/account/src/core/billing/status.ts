@@ -51,6 +51,7 @@ export function createBillingStatusReader(
 
   let snapshot: BillingStatusSnapshot | undefined
   let inFlight: InFlightRead | undefined
+  const lifetime = { disposed: false }
 
   function currentScope(): BillingStatusScope | undefined {
     const state = session.getSnapshot()
@@ -105,6 +106,8 @@ export function createBillingStatusReader(
   async function read(
     readOptions?: BillingStatusReadOptions
   ): Promise<BillingResult<BillingStatusSnapshot>> {
+    if (lifetime.disposed) return { status: 'error', code: 'SUPERSEDED' }
+
     const scope = currentScope()
     if (scope === undefined) {
       return { status: 'error', code: 'NOT_AUTHENTICATED' }
@@ -121,7 +124,11 @@ export function createBillingStatusReader(
         if (result.status !== 'ok') return result
 
         const settledScope = currentScope()
-        if (settledScope === undefined || !sameScope(settledScope, scope)) {
+        if (
+          lifetime.disposed ||
+          settledScope === undefined ||
+          !sameScope(settledScope, scope)
+        ) {
           return { status: 'error', code: 'SUPERSEDED' }
         }
 
@@ -142,6 +149,11 @@ export function createBillingStatusReader(
   return {
     read,
     getSnapshot: () => snapshot,
-    dispose: unsubscribe
+    dispose: () => {
+      lifetime.disposed = true
+      snapshot = undefined
+      inFlight = undefined
+      unsubscribe()
+    }
   }
 }
