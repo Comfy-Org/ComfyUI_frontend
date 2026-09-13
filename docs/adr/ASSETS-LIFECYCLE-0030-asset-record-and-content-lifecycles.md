@@ -150,8 +150,10 @@ Decision 5: this ADR asserts no history-to-record cascade for OSS core.
 ## References
 
 - [ComfyUI #15915: asset-record-content-split (code)](https://github.com/Comfy-Org/ComfyUI/pull/15915),
-  verified at head 59cf36cb2c12f6a6ba3f53db0688246cb7a24f98: `Asset`/`AssetContent` split, `delete_record` hard
-  delete of one record row, no soft-delete column
+  verified at commit
+  [`738e32b3c2974ae6707ff0416c27857bdc98f408`](https://github.com/Comfy-Org/ComfyUI/commit/738e32b3c2974ae6707ff0416c27857bdc98f408):
+  `Asset`/`AssetContent` split, `delete_record` hard delete of one record row,
+  no soft-delete column
 - [Asset deletion intended behavior](https://github.com/Comfy-Org/ideation-sharing/blob/ab6246440c3234fe315e4fc36145c818e5309868/asset-deletion/intended/index.md) (private `Comfy-Org/ideation-sharing` repo — requires org access)
 - [Asset deletion logical architecture](https://github.com/Comfy-Org/ideation-sharing/blob/ab6246440c3234fe315e4fc36145c818e5309868/asset-deletion/intended/logical.md) (private `Comfy-Org/ideation-sharing` repo — requires org access)
 - [Asset deletion scenario: a user deletes a generation](https://github.com/Comfy-Org/ideation-sharing/blob/ab6246440c3234fe315e4fc36145c818e5309868/asset-deletion/intended/scenarios.md#a-user-deletes-a-generation) (private `Comfy-Org/ideation-sharing` repo — requires org access)
