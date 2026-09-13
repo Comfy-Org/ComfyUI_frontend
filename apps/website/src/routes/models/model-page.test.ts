@@ -68,6 +68,36 @@ describe('Models route preparation', () => {
     ).toEqual(['Image & text'])
   })
 
+  it.for([
+    ['zero tags', [], [], [], 0],
+    [
+      'exactly three tags',
+      ['One', 'Two', 'Three'],
+      ['One', 'Two', 'Three'],
+      [],
+      0
+    ],
+    [
+      'more than three tags',
+      ['One', 'Two', 'Three', 'Four'],
+      ['One', 'Two', 'Three'],
+      ['Four'],
+      1
+    ]
+  ] as const)(
+    'splits %s for the visible row and overflow control',
+    async ([, capabilities, shown, rest, restTagCount]) => {
+      mocks.lookup.mockReturnValue({ ...model, capabilities })
+
+      const page = await prepareModelPage(model.slug)
+
+      if (page.kind !== 'page') throw new Error('Expected canonical page')
+      expect(page.shownTags.map((tag) => tag.label)).toEqual(shown)
+      expect(page.restTags.map((tag) => tag.label)).toEqual(rest)
+      expect(page.restTagCount).toBe(restTagCount)
+    }
+  )
+
   it('uses a provider heading only when every related card has that provider', async () => {
     mocks.related.mockReturnValue([{ ...model, slug: 'related' }])
     expect(await prepareModelPage(model.slug)).toHaveProperty(

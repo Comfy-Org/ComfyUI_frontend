@@ -118,6 +118,7 @@ export interface WorkshopModel {
   readonly slug: string
   readonly name: string
   readonly workflowCount: number
+  readonly recommendedRank?: number
   readonly href: string
   readonly routerId: string
   readonly incompleteReason?: 'missing-input-schema'
@@ -178,8 +179,8 @@ export function splitTask(
 export const USE_CASES = [
   'generate-images',
   'edit-images',
-  'animate-images',
   'generate-videos',
+  'animate-images',
   'edit-videos',
   'text',
   '3d',
@@ -406,11 +407,20 @@ export function sortWorkshopModels(
 ): WorkshopModel[] {
   const byName = (a: WorkshopModel, b: WorkshopModel) =>
     a.name.localeCompare(b.name)
+  const byExamples = (a: WorkshopModel, b: WorkshopModel) =>
+    b.workflowCount - a.workflowCount || byName(a, b)
+  const byRecommendation = (a: WorkshopModel, b: WorkshopModel) => {
+    if (a.recommendedRank !== undefined && b.recommendedRank !== undefined)
+      return a.recommendedRank - b.recommendedRank || byExamples(a, b)
+    if (a.recommendedRank !== undefined) return -1
+    if (b.recommendedRank !== undefined) return 1
+    return byExamples(a, b)
+  }
   const compare: Record<
     SortOrder,
     (a: WorkshopModel, b: WorkshopModel) => number
   > = {
-    popular: (a, b) => b.workflowCount - a.workflowCount || byName(a, b),
+    popular: byRecommendation,
     name: byName,
     priceAsc: (a, b) =>
       (a.creditsPerRun ?? Number.POSITIVE_INFINITY) -

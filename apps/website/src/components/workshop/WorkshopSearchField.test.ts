@@ -9,6 +9,54 @@ import { renderToString } from 'vue/server-renderer'
 import WorkshopSearchField from './WorkshopSearchField.vue'
 
 describe('WorkshopSearchField', () => {
+  it('reopens the suggestion panel when typing resumes after it closed', async () => {
+    const user = userEvent.setup()
+    render(
+      defineComponent({
+        setup: () => () =>
+          h(WorkshopSearchField, {
+            models: [],
+            modelValue: '',
+            providers: [],
+            capabilities: []
+          })
+      })
+    )
+
+    const field = screen.getByRole('combobox')
+    await user.click(field)
+    expect(field.getAttribute('aria-expanded')).toBe('true')
+
+    await user.keyboard('{Escape}')
+    expect(field.getAttribute('aria-expanded')).toBe('false')
+
+    await user.keyboard('flux')
+    expect(field.getAttribute('aria-expanded')).toBe('true')
+  })
+
+  it('dismisses a nonempty native search without clearing or reopening it', async () => {
+    const user = userEvent.setup()
+    render(
+      defineComponent({
+        setup: () => () =>
+          h(WorkshopSearchField, {
+            models: [],
+            modelValue: '',
+            providers: [],
+            capabilities: []
+          })
+      })
+    )
+
+    const field = screen.getByRole<HTMLInputElement>('combobox')
+    await user.click(field)
+    await user.type(field, 'flux')
+    await user.keyboard('{Escape}')
+
+    expect(field.value).toBe('flux')
+    expect(field.getAttribute('aria-expanded')).toBe('false')
+  })
+
   it('contains keyboard focus in mobile search and restores it when Escape is pressed from a button', async () => {
     const user = userEvent.setup()
     const search = defineComponent({

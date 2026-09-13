@@ -2,7 +2,7 @@
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen, within } from '@testing-library/vue'
 import { IDBFactory } from 'fake-indexeddb'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, defineComponent, h, nextTick, ref } from 'vue'
 
 import type {
@@ -17,7 +17,6 @@ import { workshopContract } from '../../config/workshop-contract-catalog'
 import { getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
 import { refreshWorkshopCredits } from '../../config/workshop-credits'
 import type { useWorkshopCredits } from '../../config/workshop-credits'
-import { WORKSHOP_CLOUD_BASE_URL } from '../../config/workshop-env'
 import * as draftStorage from '../../config/workshop-draft-storage'
 import ModelDetail from './ModelDetail.vue'
 
@@ -61,11 +60,14 @@ vi.mock(import('../../config/workshop-router'), () => ({
 }))
 
 vi.mock(import('../../config/workshop-credits'), () => ({
+  clearTopUpWatch: vi.fn(),
   refreshWorkshopCredits: vi.fn().mockResolvedValue(undefined),
+  useTopUpWatch: () => computed(() => ({ status: 'idle' as const })),
   useWorkshopCredits: () => ({
     balance: computed(() => credits.balance.value),
     session: computed(() => auth.session.value)
-  })
+  }),
+  watchForTopUp: vi.fn()
 }))
 
 const credential: AccountCredential = {
@@ -95,7 +97,6 @@ const model: WorkshopModelDetail = {
   provider: 'Demo',
   modality: 'image',
   task: 'text-to-image',
-  creditsPerRun: 8,
   nodeDisplayName: 'Demo Text to Image',
   fields: [prompt],
   defaults: {},
@@ -164,7 +165,10 @@ function mountDetail(options?: {
         return () =>
           h(
             ModelDetail,
-            { model: options?.model ?? model, clone: options?.clone },
+            {
+              model: options?.model ?? model,
+              clone: options?.clone
+            },
             options?.details ? { details: options.details } : undefined
           )
       }
@@ -199,6 +203,28 @@ describe('ModelDetail', () => {
     auth.ensureFresh
       .mockReset()
       .mockResolvedValue({ status: 'ok', session: credential })
+  })
+
+  it('links a documented provider in a new tab', () => {
+    mountDetail({
+      model: {
+        ...model,
+        provider: 'Black Forest Labs',
+        routerId: 'bfl/flux'
+      }
+    })
+
+    const link = screen.getByTestId('model-docs-link')
+    expect(link.getAttribute('href')).toBe(
+      'https://docs.comfy.org/development/comfy-router/models#black-forest-labs'
+    )
+    expect(link.getAttribute('target')).toBe('_blank')
+    expect(link.getAttribute('rel')).toBe('noopener noreferrer')
+  })
+
+  it('does not offer a generic docs link for an undocumented provider', () => {
+    mountDetail()
+    expect(screen.queryByTestId('model-docs-link')).toBeNull()
   })
 
   it.for(['json', 'example'])(
@@ -246,7 +272,7 @@ describe('ModelDetail', () => {
         await user().click(toggle)
       } else {
         await user().click(
-          screen.getByRole('button', { name: 'Open in Playground' })
+          screen.getByRole('button', { name: /Open in Playground$/ })
         )
       }
       expect(screen.getByRole('textbox', { name: 'Prompt' })).toHaveProperty(
@@ -306,18 +332,17 @@ describe('ModelDetail', () => {
       if (!details) throw new Error('Missing model')
       mountDetail({ model: details })
       const form = within(screen.getByTestId('playground-form'))
-      const player = form.getByLabelText(file, { selector: 'video' })
+      const trigger = form.getByRole('button', { name: `Expand ${file}` })
+      const player = within(trigger).getByTestId('video-source-thumbnail')
       expect(player.getAttribute('src')).toContain(`/input/${file}`)
       expect(
-        form
-          .getAllByRole('group')
-          .some(
-            (group) =>
-              within(group).queryByLabelText(file, { selector: 'video' }) ===
-              player
-          )
+        form.getAllByRole('group').some(
+          (group) =>
+            within(group).queryByRole('button', {
+              name: `Expand ${file}`
+            }) === trigger
+        )
       ).toBe(true)
-      expect(player.hasAttribute('controls')).toBe(true)
       expect(runWorkshopRouter).not.toHaveBeenCalled()
       if (slug === 'bria--replace-video-background--edit-videos')
         expect(
@@ -495,7 +520,7 @@ describe('ModelDetail', () => {
     expect(refreshWorkshopCredits).toHaveBeenCalledWith({ force: true })
   })
 
-  it('offers the real credits page after insufficient balance without losing the prompt', async () => {
+  it('opens the shared credits dialog after insufficient balance without losing the prompt', async () => {
     auth.session.value = credential
     vi.mocked(runWorkshopRouter).mockRejectedValue(
       new WorkshopRouterError('noCredits')
@@ -504,19 +529,16 @@ describe('ModelDetail', () => {
     await user().type(screen.getByTestId('field-prompt'), 'A red teapot')
     await user().click(screen.getByTestId('run-button'))
     await vi.waitFor(() =>
-      expect(screen.getByRole('link', { name: 'Buy credits' })).toBeDefined()
+      expect(screen.getByRole('button', { name: 'Add credits' })).toBeDefined()
     )
-    const link = screen.getByRole('link', { name: 'Buy credits' })
-    expect(link.getAttribute('href')).toBe(
-      new URL('/?settings=plan-credits', WORKSHOP_CLOUD_BASE_URL).href
-    )
-    expect(link.getAttribute('target')).toBe('_blank')
     expect(screen.getByTestId('field-prompt')).toHaveProperty(
       'value',
       'A red teapot'
     )
     expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
     expect(runWorkshopRouter).toHaveBeenCalledTimes(1)
+    await user().click(screen.getByRole('button', { name: 'Add credits' }))
+    expect(screen.getByTestId('buy-credits-dialog')).toBeTruthy()
   })
 
   it('offers billing immediately at zero credits and enables Run when the balance refreshes', async () => {
@@ -529,22 +551,33 @@ describe('ModelDetail', () => {
       'A red teapot'
     )
 
-    const buy = screen.getByRole('link', { name: 'Buy credits' })
-    expect(buy.getAttribute('href')).toBe(
-      `${WORKSHOP_CLOUD_BASE_URL}/?settings=plan-credits`
-    )
-    expect(buy.getAttribute('target')).toBe('_blank')
+    const buy = screen.getByRole('button', { name: /Add credits/ })
+    expect(buy.getAttribute('data-gate')).toBe('noCredits')
+    expect(screen.getByTestId('gate-note').textContent).toContain('Personal')
     expect(screen.queryByRole('button', { name: 'Run' })).toBeNull()
     expect(runWorkshopRouter).not.toHaveBeenCalled()
 
     credits.balance.value = { status: 'ok', credits: 100 }
     await nextTick()
     expect(screen.getByRole('button', { name: 'Run' })).toBeTruthy()
-    expect(screen.queryByRole('link', { name: 'Buy credits' })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Add credits/ })).toBeNull()
     expect(screen.getByRole('textbox', { name: /Prompt/ })).toHaveProperty(
       'value',
       'A red teapot'
     )
+  })
+
+  it('opens the amount picker from the gate', async () => {
+    auth.session.value = credential
+    credits.balance.value = { status: 'ok', credits: 0 }
+    mountDetail({ model: runnable })
+    await nextTick()
+
+    expect(screen.queryByTestId('buy-credits-dialog')).toBeNull()
+    await user().click(screen.getByRole('button', { name: /Add credits/ }))
+
+    expect(screen.getByTestId('buy-credits-dialog')).toBeTruthy()
+    expect(screen.getByTestId('buy-credits-pack-25')).toBeTruthy()
   })
 
   it.for(['unknown', 'error'] as const)(
@@ -555,9 +588,22 @@ describe('ModelDetail', () => {
       mountDetail({ model: runnable })
       await nextTick()
       expect(screen.getByRole('button', { name: 'Run' })).toBeTruthy()
-      expect(screen.queryByRole('link', { name: 'Buy credits' })).toBeNull()
+      expect(screen.queryByRole('button', { name: 'Add credits' })).toBeNull()
     }
   )
+
+  it('does not put the page-load estimate on the live Run button', async () => {
+    auth.session.value = credential
+    credits.balance.value = { status: 'ok', credits: 100 }
+    mountDetail({ model: runnable })
+    await nextTick()
+
+    expect(screen.getByTestId('run-button').getAttribute('data-gate')).toBe(
+      'ready'
+    )
+    expect(screen.getByTestId('run-button').textContent.trim()).toBe('Run')
+    expect(screen.queryByTestId('run-price')).toBeNull()
+  })
 
   it('offers a personal-workspace switch instead of billing to a member with no credits', async () => {
     auth.session.value = {
@@ -579,17 +625,47 @@ describe('ModelDetail', () => {
       screen.getByRole('textbox', { name: /Prompt/ }),
       'Keep me'
     )
-    expect(screen.getByText(/Studio has no credits left/)).toBeTruthy()
+    expect(screen.getByTestId('gate-note').textContent).toContain(
+      'Not enough credits'
+    )
+    expect(screen.getByText(/Studio has used all its credits/)).toBeTruthy()
     expect(screen.queryByRole('link', { name: 'Buy credits' })).toBeNull()
     await visitor.click(
       screen.getByRole('button', { name: 'Switch to personal workspace' })
     )
+    expect(auth.ensureFresh).toHaveBeenCalledWith(undefined, {
+      preserveCredentialOnTransientFailure: true
+    })
     expect(screen.getByRole('button', { name: 'Run' })).toBeTruthy()
     expect(screen.getByRole('textbox', { name: /Prompt/ })).toHaveProperty(
       'value',
       'Keep me'
     )
     expect(runWorkshopRouter).not.toHaveBeenCalled()
+  })
+
+  it('keeps the team session and surfaces a failed personal-workspace switch', async () => {
+    auth.session.value = {
+      ...credential,
+      role: 'member',
+      workspace: { id: 'team-1', name: 'Studio', type: 'team' }
+    }
+    credits.balance.value = { status: 'ok', credits: 0 }
+    auth.ensureFresh.mockResolvedValue({
+      status: 'error',
+      code: 'TOKEN_EXCHANGE_FAILED'
+    })
+    mountDetail({ model: runnable })
+    await nextTick()
+
+    await user().click(
+      screen.getByRole('button', { name: 'Switch to personal workspace' })
+    )
+
+    expect((await screen.findByRole('alert')).textContent).toContain(
+      'Could not switch workspaces'
+    )
+    expect(auth.session.value.workspace.id).toBe('team-1')
   })
 
   it('does not offer an owner-only purchase after a member receives an insufficient-credit response', async () => {
@@ -613,7 +689,7 @@ describe('ModelDetail', () => {
         name: 'Switch to personal workspace'
       })
     ).toBeTruthy()
-    expect(screen.queryByRole('link', { name: 'Buy credits' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Add credits' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
   })
 
@@ -622,7 +698,7 @@ describe('ModelDetail', () => {
     credits.balance.value = { status: 'ok', credits: 0 }
     mountDetail()
     expect(screen.getByTestId('run-button').hasAttribute('disabled')).toBe(true)
-    expect(screen.queryByRole('link', { name: 'Buy credits' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Add credits' })).toBeNull()
   })
 
   it('keeps cancellation available if the balance becomes zero during a run', async () => {
@@ -646,9 +722,113 @@ describe('ModelDetail', () => {
     expect(
       screen.getByTestId('playground-output').getAttribute('data-state')
     ).toBe('cancelled')
-    expect(screen.getByRole('link', { name: 'Buy credits' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Add credits/ })).toBeTruthy()
     pending.resolve(routerResult)
     await vi.waitFor(() => expect(refreshWorkshopCredits).toHaveBeenCalled())
+  })
+
+  it('asks before native or Astro navigation during a run, and only then', async () => {
+    auth.session.value = credential
+    const pending = Promise.withResolvers<typeof routerResult>()
+    vi.mocked(runWorkshopRouter).mockReturnValue(pending.promise)
+    mountDetail({ model: runnable })
+
+    const leaving = () =>
+      window.dispatchEvent(new Event('beforeunload', { cancelable: true }))
+    const softLeaving = () =>
+      document.dispatchEvent(
+        new Event('astro:before-preparation', { cancelable: true })
+      )
+    expect(leaving()).toBe(true)
+    expect(softLeaving()).toBe(true)
+
+    await user().type(screen.getByTestId('field-prompt'), 'A teapot')
+    await user().click(screen.getByTestId('run-button'))
+    await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledTimes(1))
+    expect(leaving()).toBe(false)
+    expect(softLeaving()).toBe(false)
+
+    pending.resolve(routerResult)
+    await vi.waitFor(() =>
+      expect(
+        screen.getByTestId('playground-output').getAttribute('data-state')
+      ).toBe('succeeded')
+    )
+    expect(leaving()).toBe(true)
+    expect(softLeaving()).toBe(true)
+  })
+
+  it('restores a declined history traversal without letting Astro unmount the run', async () => {
+    history.replaceState({ index: 7 }, '', location.href)
+    auth.session.value = credential
+    const pending = Promise.withResolvers<typeof routerResult>()
+    vi.mocked(runWorkshopRouter).mockReturnValue(pending.promise)
+    const confirm = vi.fn().mockReturnValue(false)
+    vi.stubGlobal('confirm', confirm)
+    const go = vi.spyOn(history, 'go').mockImplementation(() => undefined)
+    let astroPreparationCount = 0
+    const prepare = () => {
+      astroPreparationCount += 1
+    }
+    window.addEventListener('popstate', prepare)
+    onTestFinished(() => {
+      vi.unstubAllGlobals()
+      go.mockRestore()
+      window.removeEventListener('popstate', prepare)
+    })
+    mountDetail({ model: runnable })
+    await user().type(screen.getByTestId('field-prompt'), 'A teapot')
+    await user().click(screen.getByTestId('run-button'))
+    await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledOnce())
+
+    window.dispatchEvent(new PopStateEvent('popstate', { state: { index: 6 } }))
+
+    expect(confirm).toHaveBeenCalledOnce()
+    expect(go).toHaveBeenCalledWith(1)
+    expect(astroPreparationCount).toBe(0)
+
+    window.dispatchEvent(new PopStateEvent('popstate', { state: { index: 7 } }))
+    expect(confirm).toHaveBeenCalledOnce()
+    expect(astroPreparationCount).toBe(0)
+    expect(screen.getByTestId('run-button').textContent).toContain('Cancel')
+  })
+
+  it('tracks an approved same-page traversal before guarding the next one', async () => {
+    history.replaceState({ index: 7 }, '', location.href)
+    auth.session.value = credential
+    const pending = Promise.withResolvers<typeof routerResult>()
+    vi.mocked(runWorkshopRouter).mockReturnValue(pending.promise)
+    const confirm = vi.fn().mockReturnValueOnce(true).mockReturnValueOnce(false)
+    vi.stubGlobal('confirm', confirm)
+    const go = vi.spyOn(history, 'go').mockImplementation(() => undefined)
+    let preparationWasAllowed = false
+    const prepare = () => {
+      const event = Object.assign(
+        new Event('astro:before-preparation', { cancelable: true }),
+        { navigationType: 'traverse' }
+      )
+      document.dispatchEvent(event)
+      preparationWasAllowed = !event.defaultPrevented
+    }
+    window.addEventListener('popstate', prepare)
+    onTestFinished(() => {
+      vi.unstubAllGlobals()
+      go.mockRestore()
+      window.removeEventListener('popstate', prepare)
+    })
+    mountDetail({ model: runnable })
+    await user().type(screen.getByTestId('field-prompt'), 'A teapot')
+    await user().click(screen.getByTestId('run-button'))
+    await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledOnce())
+
+    window.dispatchEvent(new PopStateEvent('popstate', { state: { index: 6 } }))
+
+    expect(confirm).toHaveBeenCalledOnce()
+    expect(preparationWasAllowed).toBe(true)
+
+    window.dispatchEvent(new PopStateEvent('popstate', { state: { index: 5 } }))
+    expect(confirm).toHaveBeenCalledTimes(2)
+    expect(go).toHaveBeenCalledWith(1)
   })
 
   it('retries an unchanged failed request with its original key, but a deliberate new run gets a new key', async () => {
@@ -844,7 +1024,7 @@ describe('ModelDetail', () => {
     mountDetail({ model: runnable })
     expect(
       screen.getByRole('button', {
-        name: 'Router execution is not enabled for this model yet.'
+        name: 'Comfy Router execution is not enabled for this model yet.'
       })
     ).toHaveProperty('disabled', true)
     expect(runWorkshopRouter).not.toHaveBeenCalled()
@@ -944,7 +1124,7 @@ describe('ModelDetail', () => {
       expect(screen.queryByRole('link', { name: 'Sign in to run' })).toBeNull()
       expect(
         screen.getByRole('button', {
-          name: 'Router execution is not enabled for this model yet.'
+          name: 'Comfy Router execution is not enabled for this model yet.'
         })
       ).toHaveProperty('disabled', true)
     }
@@ -1078,7 +1258,7 @@ describe('ModelDetail', () => {
     expect(button.getAttribute('data-gate')).toBe('unavailable')
     expect(button.hasAttribute('disabled')).toBe(true)
     expect(button.textContent).toContain(
-      'Router execution is not enabled for this model yet'
+      'Comfy Router execution is not enabled for this model yet'
     )
   })
 
@@ -1249,12 +1429,17 @@ describe('ModelDetail', () => {
         ? '{"prompt":"My edited draft"}'
         : 'My edited draft'
       await fireEvent.update(input, edited)
-      await user().click(screen.getByRole('button', { name: 'View sample' }))
+      await user().click(
+        screen.getByRole('button', { name: 'Start and end frame: View sample' })
+      )
       expect(input.value).toBe(edited)
       expect(input.isConnected).toBe(true)
-      expect(screen.getByTestId('example-card').getAttribute('title')).toBe(
-        'Viewing sample'
-      )
+      expect(
+        screen.getByRole('button', {
+          name: 'Start and end frame: View sample',
+          current: true
+        })
+      ).toBeTruthy()
       expect(
         screen.getByTestId('playground-output').getAttribute('data-state')
       ).toBe('example')
