@@ -11,23 +11,27 @@ import { generateOutputAssets } from '@e2e/fixtures/data/assetFixtures'
 // so there is no paging to keep going. This file serves real pages instead.
 
 const PAGE_SIZE = 8
-const ALL_ASSETS = generateOutputAssets(60)
-const OLDEST_ID = ALL_ASSETS[0].id
-const NEWEST_ID = ALL_ASSETS[ALL_ASSETS.length - 1].id
-const TOTAL_PAGES = Math.ceil(ALL_ASSETS.length / PAGE_SIZE)
+
+// Served newest-first, the order a real backend returns for the default sort.
+// Serving them oldest-first instead makes the default "newest first" order head
+// at the end of whatever prefix has loaded, so the top of the list changes
+// every time another page arrives and nothing about scroll position is stable.
+const ASSETS_NEWEST_FIRST = generateOutputAssets(60).reverse()
+const NEWEST_ID = ASSETS_NEWEST_FIRST[0].id
+const TOTAL_PAGES = Math.ceil(ASSETS_NEWEST_FIRST.length / PAGE_SIZE)
 
 function pageFor(url: URL): ListAssetsResponse {
   const after = url.searchParams.get('after')
   const start = after
-    ? ALL_ASSETS.findIndex((asset) => asset.id === after) + 1
+    ? ASSETS_NEWEST_FIRST.findIndex((asset) => asset.id === after) + 1
     : Number(url.searchParams.get('offset') ?? '0')
   const end = start + PAGE_SIZE
-  const page = ALL_ASSETS.slice(start, end)
-  const hasMore = end < ALL_ASSETS.length
+  const page = ASSETS_NEWEST_FIRST.slice(start, end)
+  const hasMore = end < ASSETS_NEWEST_FIRST.length
 
   return {
     assets: page,
-    total: ALL_ASSETS.length,
+    total: ASSETS_NEWEST_FIRST.length,
     has_more: hasMore,
     next_cursor: hasMore ? page.at(-1)?.id : undefined
   }
@@ -84,16 +88,27 @@ test.describe('Assets sidebar - sort while paging', { tag: '@cloud' }, () => {
 
     const firstRenderedId = () =>
       tab.assetCards.first().getAttribute('data-asset-id')
-    const lastRenderedId = () =>
-      tab.assetCards.last().getAttribute('data-asset-id')
+
+    // VirtualGrid's scroller carries no test id, so find it from a rendered
+    // card: the nearest ancestor that actually overflows.
+    const scrollOffset = () =>
+      tab.assetCards.first().evaluate((card) => {
+        let node = card.parentElement
+        while (node && node.scrollHeight <= node.clientHeight) {
+          node = node.parentElement
+        }
+        return node?.scrollTop ?? -1
+      })
+
     const scrollToLastRendered = () =>
       tab.assetCards.last().scrollIntoViewIfNeeded()
 
-    await test.step('Default order puts the newest asset first', async () => {
+    await test.step('Default order heads with the newest asset', async () => {
       await expect.poll(firstRenderedId).toBe(NEWEST_ID)
+      expect(await scrollOffset()).toBe(0)
     })
 
-    await test.step('Scroll far enough that the grid no longer renders the top of the list', async () => {
+    await test.step('Scroll down until the grid no longer renders the top of the list', async () => {
       await expect
         .poll(
           async () => {
@@ -103,22 +118,27 @@ test.describe('Assets sidebar - sort while paging', { tag: '@cloud' }, () => {
           { timeout: 20_000 }
         )
         .not.toBe(NEWEST_ID)
+
+      // Without this the scroll-reset assertion below would pass for a list
+      // that never left the top.
+      expect(await scrollOffset()).toBeGreaterThan(0)
     })
 
-    // Guards the "keeps paging" assertion below: if scrolling had already
-    // exhausted the list, no further request could fire and that assertion
-    // would pass for a list that stopped paging entirely.
+    // Guards the "keeps paging" assertion: if scrolling had already exhausted
+    // the list, no further request could fire and that assertion would pass
+    // for a list that stopped paging entirely.
     const pagesBeforeSort = pagedCloudAssets.length
     expect(pagesBeforeSort).toBeLessThan(TOTAL_PAGES)
 
-    await test.step('Changing the sort order re-sorts from the top', async () => {
+    await test.step('Changing the sort order restarts the list at the top', async () => {
       await tab.openSettingsMenu()
       await tab.sortOldestFirst.click()
 
-      // Under "oldest first" the oldest asset heads the list, so seeing it
-      // rendered first requires both the new order and a scroll reset — a
-      // re-sort that kept the scroll offset would show a mid-list asset.
-      await expect.poll(firstRenderedId).toBe(OLDEST_ID)
+      await expect.poll(scrollOffset).toBe(0)
+
+      // The scroll reset alone would leave the newest asset at the head, so
+      // this is what distinguishes a re-sort from a bare scroll-to-top.
+      await expect.poll(firstRenderedId).not.toBe(NEWEST_ID)
     })
 
     await test.step('The re-sorted list continues to page in more items', async () => {
@@ -126,13 +146,11 @@ test.describe('Assets sidebar - sort while paging', { tag: '@cloud' }, () => {
         .poll(
           async () => {
             await scrollToLastRendered()
-            return lastRenderedId()
+            return pagedCloudAssets.length
           },
           { timeout: 20_000 }
         )
-        .toBe(NEWEST_ID)
-
-      expect(pagedCloudAssets.length).toBeGreaterThan(pagesBeforeSort)
+        .toBeGreaterThan(pagesBeforeSort)
     })
   })
 })
