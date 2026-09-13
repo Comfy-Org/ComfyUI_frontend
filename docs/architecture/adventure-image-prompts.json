@@ -1,61 +1,71 @@
 {
   "meta": {
-    "style": "Pixel art, 16:9 aspect ratio, dark moody palette with glowing accent lighting",
+    "style": "Vintage architectural blueprint, cyan-white linework on midnight-blue drafting paper, 21:9-ish room scenes",
     "usage": "Each key corresponds to a room ID in adventure.html. Generate images with generate-images.py.",
-    "model": "Z-Image Turbo (no LoRA)",
-    "resolution": "1152x640",
-    "generated": "2026-03-24"
+    "model": "V2 blueprint theme: Krea 2 Turbo (community int8 build) on Comfy Cloud, generated at 1024x1024 (icons) / 1344x576 (rooms), icons downscaled to 128",
+    "resolution": "1344x576",
+    "generated": "2026-08-25"
   },
   "rooms": {
     "entry": {
       "title": "The Entry Point",
-      "prompt": "Pixel art of a glowing terminal in a vast dark server room, Vue.js and TypeScript logos floating as holographic projections, three corridors branching ahead lit by blue, green, and purple lights",
-      "path": "images/entry.png"
+      "prompt": "Vintage architectural blueprint drawing of a glowing terminal in a vast dark server room, Vue.js and TypeScript logos floating as holographic projections, three corridors branching ahead lit by blue, green, and purple lights, rendered as luminous cyan-white linework with hatching and dimension marks on deep midnight-blue drafting paper, faint blueprint grid, glowing accent highlights, wide cinematic composition",
+      "path": "images/entry.webp"
     },
     "components": {
       "title": "The Component Gallery",
-      "prompt": "Pixel art gallery hall with framed Vue component cards hung on stone walls, a massive canvas painting labeled 'GraphView' in the center, smaller panels flanking either side, warm torchlight",
-      "path": "images/components.png"
+      "prompt": "Vintage architectural blueprint drawing of gallery hall with framed Vue component cards hung on stone walls, a massive canvas painting labeled 'GraphView' in the center, smaller panels flanking either side, warm torchlight, rendered as luminous cyan-white linework with hatching and dimension marks on deep midnight-blue drafting paper, faint blueprint grid, glowing accent highlights, wide cinematic composition",
+      "path": "images/components.webp"
     },
     "stores": {
       "title": "The Store Vaults",
-      "prompt": "Pixel art underground vault with 60 glowing vault doors lining the walls, three doors in front glow brightest (labeled widget, layout, promotion), a Pinia pineapple emblem etched in stone above",
-      "path": "images/stores.png"
+      "prompt": "Vintage architectural blueprint drawing of underground vault with 60 glowing vault doors lining the walls, three doors in front glow brightest (labeled widget, layout, promotion), a Pinia pineapple emblem etched in stone above, rendered as luminous cyan-white linework with hatching and dimension marks on deep midnight-blue drafting paper, faint blueprint grid, glowing accent highlights, wide cinematic composition",
+      "path": "images/stores.webp"
     },
     "services": {
       "title": "The Service Corridors",
-      "prompt": "Pixel art clean corridors with labeled pipes connecting rooms overhead, data flowing as glowing particles through transparent tubes, service names etched on brass plaques",
-      "path": "images/services.png"
+      "prompt": "Vintage architectural blueprint drawing of clean corridors with labeled pipes connecting rooms overhead, data flowing as glowing particles through transparent tubes, service names etched on brass plaques, rendered as luminous cyan-white linework with hatching and dimension marks on deep midnight-blue drafting paper, faint blueprint grid, glowing accent highlights, wide cinematic composition",
+      "path": "images/services.webp"
     },
     "litegraph": {
       "title": "The Litegraph Engine Room",
-      "prompt": "Pixel art dark engine room with three massive monolith machines labeled 9100, 4300, and 3100 lines of code, warning lights flashing amber, tangled wires and cables everywhere",
-      "path": "images/litegraph.png"
+      "prompt": "Vintage architectural blueprint drawing of dark engine room with three massive monolith machines labeled 9100, 4300, and 3100 lines of code, warning lights flashing amber, tangled wires and cables everywhere, rendered as luminous cyan-white linework with hatching and dimension marks on deep midnight-blue drafting paper, faint blueprint grid, glowing accent highlights, wide cinematic composition",
+      "path": "images/litegraph.webp"
     },
     "ecs": {
       "title": "The ECS Architect's Chamber",
-      "prompt": "Pixel art architect's drafting room with blueprints pinned to walls showing entity-component diagrams, a glowing World orb floating in the center, branded ID cards scattered across the desk",
-      "path": "images/ecs.png"
+      "prompt": "Vintage architectural blueprint drawing of architect's drafting room with blueprints pinned to walls showing entity-component diagrams, a glowing World orb floating in the center, branded ID cards scattered across the desk, rendered as luminous cyan-white linework with hatching and dimension marks on deep midnight-blue drafting paper, faint blueprint grid, glowing accent highlights, wide cinematic composition",
+      "path": "images/ecs.webp"
     },
     "subgraph": {
       "title": "The Subgraph Depths",
-      "prompt": "Pixel art recursive fractal chamber where identical rooms nest inside each other like Russian dolls, typed contract scrolls float at each boundary doorway, a DAG tree diagram glows on the ceiling",
-      "path": "images/subgraph.png"
+      "prompt": "Vintage architectural blueprint drawing of recursive fractal chamber where identical rooms nest inside each other like Russian dolls, typed contract scrolls float at each boundary doorway, a DAG tree diagram glows on the ceiling, rendered as luminous cyan-white linework with hatching and dimension marks on deep midnight-blue drafting paper, faint blueprint grid, glowing accent highlights, wide cinematic composition",
+      "path": "images/subgraph.webp"
     },
     "renderer": {
       "title": "The Renderer Overlook",
-      "prompt": "Pixel art observation deck overlooking a vast canvas being painted by precise robotic arms, Y.js CRDT symbols floating in the air, a QuadTree grid visible on the floor below",
-      "path": "images/renderer.png"
+      "prompt": "Vintage architectural blueprint drawing of observation deck overlooking a vast canvas being painted by precise robotic arms, Y.js CRDT symbols floating in the air, a QuadTree grid visible on the floor below, rendered as luminous cyan-white linework with hatching and dimension marks on deep midnight-blue drafting paper, faint blueprint grid, glowing accent highlights, wide cinematic composition",
+      "path": "images/renderer.webp"
     },
     "composables": {
       "title": "The Composables Workshop",
-      "prompt": "Pixel art workshop with hooks hanging from a pegboard wall, each labeled (useCoreCommands, useCanvasDrop, etc.), workbenches for auth, canvas, and queue domains, cozy lantern light",
-      "path": "images/composables.png"
+      "prompt": "Vintage architectural blueprint drawing of workshop with hooks hanging from a pegboard wall, each labeled (useCoreCommands, useCanvasDrop, etc.), workbenches for auth, canvas, and queue domains, cozy lantern light, rendered as luminous cyan-white linework with hatching and dimension marks on deep midnight-blue drafting paper, faint blueprint grid, glowing accent highlights, wide cinematic composition",
+      "path": "images/composables.webp"
     },
     "sidepanel": {
       "title": "The Command Forge",
-      "prompt": "Pixel art anvil forge where glowing command scrolls are being hammered into structured objects, a layered diagram on the wall showing five architectural tiers connected by arrows, blue and purple forge light, dark background",
-      "path": "images/sidepanel.png"
+      "prompt": "Vintage architectural blueprint drawing of anvil forge where glowing command scrolls are being hammered into structured objects, a layered diagram on the wall showing five architectural tiers connected by arrows, blue and purple forge light, rendered as luminous cyan-white linework with hatching and dimension marks on deep midnight-blue drafting paper, faint blueprint grid, glowing accent highlights, wide cinematic composition",
+      "path": "images/sidepanel.webp"
+    },
+    "registry": {
+      "title": "The Registry Office",
+      "prompt": "Vintage architectural blueprint drawing of a vast underground records office carved in dark stone, endless rows of card catalog drawers, a tall registration desk with a glowing open ledger, brass pneumatic tubes carrying ID cards overhead, one warm desk lamp, wax seals and stamp pads on the counter, rendered as luminous cyan-white linework with hatching and dimension marks on deep midnight-blue drafting paper, faint blueprint grid, glowing accent highlights, wide cinematic composition",
+      "path": "images/registry.webp"
+    },
+    "mirrors": {
+      "title": "The Hall of Mirrors",
+      "prompt": "Vintage architectural blueprint drawing of a long dark hall lined with tall ornate mirrors, several mirrors shattered with glowing cracks, one mirror replaced by an empty gilded frame with a small warning bell hanging inside it, reflections slightly wrong in the intact mirrors, cold blue torchlight, rendered as luminous cyan-white linework with hatching and dimension marks on deep midnight-blue drafting paper, faint blueprint grid, glowing accent highlights, wide cinematic composition",
+      "path": "images/mirrors.webp"
     }
   }
 }
