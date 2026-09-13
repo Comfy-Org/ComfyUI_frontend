@@ -1,15 +1,19 @@
+import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { NodeSourceType, getNodeSource } from '@/types/nodeSource'
+import { NodeSourceType } from '@/types/nodeSource'
 import { extractCustomNodeName } from '@/workbench/utils/nodeHelpUtil'
 
 class NodeHelpService {
-  async fetchNodeHelp(node: ComfyNodeDefImpl, locale: string): Promise<string> {
-    const nodeSource = getNodeSource(node.python_module)
-
-    if (nodeSource.type === NodeSourceType.Blueprint) {
-      return node.description || ''
+  async fetchNodeHelp(
+    node: ComfyNodeDefImpl,
+    locale: string
+  ): Promise<string | undefined> {
+    if (node.python_module.split('.')[0] === 'blueprint') {
+      return node.description || undefined
     }
+
+    const nodeSource = node.nodeSource
 
     if (nodeSource.type === NodeSourceType.CustomNodes) {
       return this.fetchCustomNodeHelp(node, locale)
@@ -21,62 +25,82 @@ class NodeHelpService {
   private async fetchCustomNodeHelp(
     node: ComfyNodeDefImpl,
     locale: string
-  ): Promise<string> {
+  ): Promise<string | undefined> {
     const customNodeName = extractCustomNodeName(node.python_module)
-    let lastError: string | undefined
     if (!customNodeName) {
-      throw new Error('Invalid custom node module')
+      console.warn('Invalid custom node module:', node.python_module)
+      return undefined
     }
 
     // Try locale-specific path first
     const localePath = `/extensions/${customNodeName}/docs/${node.name}/${locale}.md`
-    const localeDoc = await this.tryFetchMarkdown(localePath)
-    if (localeDoc.text) return localeDoc.text
-    lastError = localeDoc.errorText
+    let localeError: unknown
+    let localeDoc: string | undefined
+    try {
+      localeDoc = await this.tryFetchMarkdown(localePath)
+    } catch (error) {
+      localeError = error
+    }
+    if (localeDoc) return localeDoc
 
     // Fall back to non-locale path
     const fallbackPath = `/extensions/${customNodeName}/docs/${node.name}.md`
     const fallbackDoc = await this.tryFetchMarkdown(fallbackPath)
-    if (fallbackDoc.text) return fallbackDoc.text
-    lastError = fallbackDoc.errorText ?? lastError
-
-    throw new Error(lastError ?? 'Help not found')
+    if (fallbackDoc) return fallbackDoc
+    if (localeError) throw localeError
+    return undefined
   }
 
   private async fetchCoreNodeHelp(
     node: ComfyNodeDefImpl,
     locale: string
-  ): Promise<string> {
+  ): Promise<string | undefined> {
     const mdUrl = `/docs/${node.name}/${locale}.md`
-    const doc = await this.tryFetchMarkdown(mdUrl)
-    if (!doc.text) {
-      throw new Error(doc.errorText ?? 'Help not found')
-    }
-
-    return doc.text
+    return (await this.tryFetchMarkdown(mdUrl)) || undefined
   }
 
   /**
    * Fetch a markdown file and return its text, guarding against HTML/SPA fallbacks.
-   * Returns null when not OK or when the content type indicates HTML.
+   * Returns undefined when the file is absent or the response is HTML.
    */
-  private async tryFetchMarkdown(
-    path: string
-  ): Promise<{ text: string | null; errorText?: string }> {
-    const res = await fetch(api.fileURL(path))
+  private async tryFetchMarkdown(path: string): Promise<string | undefined> {
+    let res: Response
+    try {
+      res = await fetch(api.fileURL(path))
+    } catch (error) {
+      reportError(error, {
+        errorType: 'node_help_fetch_failure',
+        context: { path }
+      })
+      throw error
+    }
 
+    if (res.status === 404) return undefined
     if (!res.ok) {
-      return { text: null, errorText: res.statusText }
+      const error = new Error(
+        `Failed to fetch node help (${res.status} ${res.statusText}) at ${path}`
+      )
+      reportError(error, {
+        errorType: 'node_help_fetch_failure',
+        context: { path }
+      })
+      throw error
     }
 
     const contentType = res.headers.get('content-type') ?? ''
-    const text = await res.text()
+    let text: string
+    try {
+      text = await res.text()
+    } catch (error) {
+      reportError(error, {
+        errorType: 'node_help_fetch_failure',
+        context: { path }
+      })
+      throw error
+    }
 
-    const isHtmlContentType = contentType.includes('text/html')
-
-    if (isHtmlContentType) return { text: null, errorText: res.statusText }
-
-    return { text }
+    if (contentType.includes('text/html')) return undefined
+    return text
   }
 }
 
