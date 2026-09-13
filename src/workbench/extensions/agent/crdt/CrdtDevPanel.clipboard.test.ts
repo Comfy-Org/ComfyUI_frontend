@@ -2,7 +2,8 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { writeText } = vi.hoisted(() => ({
+const { reportError, writeText } = vi.hoisted(() => ({
+  reportError: vi.fn(),
   writeText: vi.fn<(value: string) => Promise<void>>(() => Promise.resolve())
 }))
 
@@ -10,16 +11,16 @@ vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => ({
   ...(await importOriginal()),
   useClipboard: () => ({ copy: writeText })
 }))
+vi.mock(import('@/platform/telemetry/reportError'), () => ({ reportError }))
 
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 import CrdtDevPanel from './CrdtDevPanel.vue'
 import { setCrdtDebugEnabled } from './crdtDebugGate'
 import {
-  clearDevEvents,
-  devEvents,
-  recordDevEvent,
-  stringifyDevEvents
-} from './devPanelLog'
+  MAX_CRDT_EVENT_DETAIL_EXPORT_BYTES,
+  formatCrdtEventLog
+} from './crdtDebugReport'
+import { clearDevEvents, devEvents, recordDevEvent } from './devPanelLog'
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
@@ -62,6 +63,7 @@ describe('CrdtDevPanel clipboard controls', () => {
     setCrdtDebugEnabled(true)
     clearDevEvents()
     localStorage.clear()
+    reportError.mockClear()
     writeText.mockClear()
     Object.defineProperty(window.navigator, 'clipboard', {
       configurable: true,
@@ -99,22 +101,46 @@ describe('CrdtDevPanel clipboard controls', () => {
     expect(writeText).toHaveBeenNthCalledWith(2, 'node-removed')
   })
 
-  it('copies the full log detail while displaying a truncated excerpt', async () => {
+  it('redacts operation payload values out of a copied log detail', async () => {
     const user = userEvent.setup()
-    const detail = { value: 'x'.repeat(220), bytes: new Uint8Array(3) }
-    recordDevEvent('doc_update', detail)
+    recordDevEvent('doc_update', {
+      op: 'set_widget',
+      node_id: 'node-7',
+      value: 'a prompt the tester did not choose to publish',
+      bytes: new Uint8Array(3)
+    })
     renderPanel()
     await user.click(screen.getByTestId('crdt-dev-panel-tab-log'))
 
-    const full = JSON.stringify({
-      value: 'x'.repeat(220),
-      bytes: 'Uint8Array(3)'
-    })
-    expect(screen.getByText(`${full.slice(0, 200)}…`)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Copy log detail' }))
+
+    expect(writeText).toHaveBeenCalledExactlyOnceWith(
+      JSON.stringify({
+        op: 'set_widget',
+        node_id: 'node-7',
+        value: '[redacted by the debug report]',
+        bytes: 'Uint8Array(3)'
+      })
+    )
+  })
+
+  it('bounds a copied log detail while displaying a truncated excerpt', async () => {
+    const user = userEvent.setup()
+    const serialized = JSON.stringify({ message: 'x'.repeat(1_000_000) })
+    recordDevEvent('schema_error', { message: 'x'.repeat(1_000_000) })
+    renderPanel()
+    await user.click(screen.getByTestId('crdt-dev-panel-tab-log'))
+
+    expect(screen.getByText(`${serialized.slice(0, 200)}…`)).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Copy log detail' }))
 
-    expect(writeText).toHaveBeenCalledExactlyOnceWith(full)
+    const copied = writeText.mock.calls[0][0]
+    expect(copied).toContain('[CRDT event detail truncated]')
+    expect(new TextEncoder().encode(copied).byteLength).toBeLessThanOrEqual(
+      MAX_CRDT_EVENT_DETAIL_EXPORT_BYTES +
+        new TextEncoder().encode('…[CRDT event detail truncated]').byteLength
+    )
   })
 
   it('shows transient Copied feedback only on the button that succeeded', async () => {
@@ -152,6 +178,9 @@ describe('CrdtDevPanel clipboard controls', () => {
       await userEvent.click(docButton)
 
       expect(writeText).toHaveBeenCalledOnce()
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        errorType: 'crdt_dev_panel_clipboard_write_failed'
+      })
       expect(docButton).toHaveTextContent('Copy failed')
 
       await vi.advanceTimersByTimeAsync(1600)
@@ -162,7 +191,7 @@ describe('CrdtDevPanel clipboard controls', () => {
     }
   })
 
-  it('preserves full filtered-log copying', async () => {
+  it('copies exactly the bounded, warned log for the active filter', async () => {
     const user = userEvent.setup()
     recordDevEvent('doc_update', { seq: 7 })
     recordDevEvent('doc_reset', { reason: 'remint' })
@@ -176,7 +205,9 @@ describe('CrdtDevPanel clipboard controls', () => {
     await user.click(screen.getByRole('button', { name: 'Copy log' }))
 
     expect(writeText).toHaveBeenCalledExactlyOnceWith(
-      stringifyDevEvents(devEvents.value.filter((e) => e.kind === 'doc_update'))
+      formatCrdtEventLog(
+        devEvents.value.filter((event) => event.kind === 'doc_update')
+      )
     )
   })
 

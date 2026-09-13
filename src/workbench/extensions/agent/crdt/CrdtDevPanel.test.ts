@@ -3,6 +3,14 @@ import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+const { copy } = vi.hoisted(() => ({
+  copy: vi.fn((_text: string) => Promise.resolve())
+}))
+
+vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  useClipboard: () => ({ copy })
+}))
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getSystemStats: () => Promise.reject(new Error('offline')),
@@ -59,6 +67,7 @@ describe('CrdtDevPanel', () => {
     // to undo a previous test's dismissal.
     setCrdtDebugEnabled(true)
     clearDevEvents()
+    copy.mockClear()
     reportError.mockClear()
   })
 
@@ -196,6 +205,25 @@ describe('CrdtDevPanel', () => {
     const log = screen.getByTestId('crdt-dev-panel-log').textContent
     expect(log).toContain('doc_update')
     expect(log).not.toContain('ws_out')
+  })
+
+  it('redacts payload values and warns before copying the event log', async () => {
+    const user = userEvent.setup()
+    recordDevEvent('doc_update', {
+      op: { value: 'private prompt', op_id: 'op-1' }
+    })
+    renderPanel()
+
+    await user.click(chip()!)
+    await user.click(screen.getByTestId('crdt-dev-panel-tab-log'))
+    await user.click(screen.getByRole('button', { name: 'Copy log' }))
+
+    expect(copy).toHaveBeenCalledOnce()
+    const copied = copy.mock.calls[0][0]
+    expect(copied).toContain('Review before sharing')
+    expect(copied).toContain('op-1')
+    expect(copied).toContain('[redacted by the debug report]')
+    expect(copied).not.toContain('private prompt')
   })
 
   it('shows the sensitive-source opt-ins as off, and lets them be turned on', async () => {

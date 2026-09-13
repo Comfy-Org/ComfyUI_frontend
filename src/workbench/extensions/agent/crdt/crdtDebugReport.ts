@@ -33,8 +33,11 @@ const MAX_LOG_CHARS = 40_000
 const MAX_WORKFLOW_CHARS = 200_000
 /** The event log and the stamp ledger both grow without bound with session length. */
 const MAX_SECTION_CHARS = 60_000
+export const MAX_CRDT_EVENT_LOG_EXPORT_BYTES = 60_000
+export const MAX_CRDT_EVENT_DETAIL_EXPORT_BYTES = 20_000
 const MAX_REDACTION_DEPTH = 12
 const DEPTH_LIMIT_REDACTED = '[redacted at depth limit]'
+const CIRCULAR_REDACTED = '[circular]'
 const SOURCE_TIMEOUT_MS = 5_000
 
 /**
@@ -52,6 +55,31 @@ const REDACTED = '[redacted by the debug report]'
 
 const SHARING_WARNING =
   'Review before sharing: this section can contain values you did not choose to publish.'
+
+/**
+ * Every wire-op field that carries user workflow content: `set_widget.value`
+ * and its informational `old` (the value before the write), the verbatim node
+ * snapshot on `add_node`, `widgets_values` inside any snapshot, and the full
+ * `reset_doc.workflow`. Events record whole ops (`ws_out` frames,
+ * `human_ops_settled` outcomes), so masking `value` alone still leaks the
+ * previous prompt through `old`.
+ *
+ * A denylist, not an allow-list, and {@link EVENT_LOG_WARNING} names it as one
+ * rather than promising that payload values in general are redacted: an op
+ * kind added to the pinned union, or relay text echoed back under
+ * `doc_ops_result`, reaches the clipboard whole until listed here.
+ */
+const CONTENT_KEYS: ReadonlySet<string> = new Set([
+  'value',
+  'old',
+  'widgets_values',
+  'node',
+  'workflow'
+])
+
+const EVENT_LOG_WARNING = `${SHARING_WARNING} Values under \`${[...CONTENT_KEYS].join('`, `')}\` are masked; every other field — op ids, workflow ids, error text echoed back by the relay — appears verbatim.`
+const EVENT_LOG_TRUNCATED = '[CRDT event log truncated]'
+const EVENT_DETAIL_TRUNCATED = '…[CRDT event detail truncated]'
 
 /**
  * Redaction must RECURSE. A single top-level pass reads as sufficient and is
@@ -238,22 +266,114 @@ function json(value: unknown): string {
   }
 }
 
-function redactEventPayloads(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(redactEventPayloads)
-  if (!isRecord(value)) return value
-  return Object.fromEntries(
-    Object.entries(value).map(([key, nested]) => [
-      key,
-      key === 'value' || key === 'widgets_values' || key === 'node'
-        ? REDACTED
-        : redactEventPayloads(nested)
-    ])
+export function redactEventPayloads(value: unknown): unknown {
+  return redactPayloadTree(value, 0, [])
+}
+
+/**
+ * Runs before `devEventReplacer`, so anything it rebuilds is what the
+ * replacer sees. Binary views stay intact for the replacer to summarize
+ * (`Object.entries(new Uint8Array(4))` would otherwise flatten them into
+ * index-keyed records).
+ *
+ * Cycles are cut at the first revisit of an ANCESTOR, matching
+ * {@link devEventReplacer}: a depth cap alone bounds recursion depth but not
+ * total work, so a detail whose k object-valued keys each point back at the
+ * root is re-expanded down every path — k=4 costs 89 million calls and hangs
+ * the tab for seconds before the cap finally stops it. Tracking the ancestor
+ * chain rather than everything visited keeps a doc snapshot that legally
+ * references one object from two sibling positions fully expanded.
+ */
+function redactPayloadTree(
+  value: unknown,
+  depth: number,
+  ancestors: unknown[]
+): unknown {
+  if (depth > MAX_REDACTION_DEPTH) return DEPTH_LIMIT_REDACTED
+  if (!isRecord(value) || isBinary(value)) return value
+  if (ancestors.includes(value)) return CIRCULAR_REDACTED
+  ancestors.push(value)
+  try {
+    if (Array.isArray(value)) {
+      return value.map((item) => redactPayloadTree(item, depth + 1, ancestors))
+    }
+    return Object.fromEntries(
+      Object.entries(value).map(([key, nested]) => [
+        key,
+        CONTENT_KEYS.has(key)
+          ? REDACTED
+          : redactPayloadTree(nested, depth + 1, ancestors)
+      ])
+    )
+  } finally {
+    ancestors.pop()
+  }
+}
+
+function isBinary(value: object): boolean {
+  return (
+    ArrayBuffer.isView(value) ||
+    Object.prototype.toString.call(value) === '[object ArrayBuffer]'
   )
 }
 
 function truncate(text: string, max: number): string {
   if (text.length <= max) return text
   return `…(${text.length - max} earlier characters trimmed)…\n${text.slice(-max)}`
+}
+
+export function formatCrdtEventLog(events: readonly DevEvent[]): string {
+  const prefix = `${EVENT_LOG_WARNING}\n\n\`\`\`json\n`
+  const suffix = '\n```'
+  const serialized = json(redactEventPayloads(events)).replaceAll(
+    '`',
+    '\\u0060'
+  )
+  const encoder = new TextEncoder()
+  const available =
+    MAX_CRDT_EVENT_LOG_EXPORT_BYTES -
+    encoder.encode(prefix).byteLength -
+    encoder.encode(suffix).byteLength
+  const serializedBytes = encoder.encode(serialized)
+  if (serializedBytes.byteLength <= available) {
+    return `${prefix}${serialized}${suffix}`
+  }
+  const marker = `${EVENT_LOG_TRUNCATED}\n`
+  const tailBytes = available - encoder.encode(marker).byteLength
+  let tailStart = serializedBytes.byteLength - tailBytes
+  while ((serializedBytes[tailStart] & 0xc0) === 0x80) tailStart++
+  const body = `${marker}${new TextDecoder().decode(serializedBytes.subarray(tailStart))}`
+  return `${prefix}${body}${suffix}`
+}
+
+/**
+ * One event's detail, for the per-row "Copy log detail" button.
+ *
+ * Shares the redaction and the byte budget of {@link formatCrdtEventLog}
+ * rather than handing `event.detail` to the clipboard raw: pasting a single
+ * suspicious event into a bug report is the most natural sharing workflow, and
+ * `DevEvent.detail` is `unknown`, so one schema diagnostic can carry a
+ * megabyte-long message that the browser then rejects outright.
+ *
+ * Truncates from the HEAD, unlike the log: a detail's identifying fields come
+ * first, whereas a log's most recent events come last.
+ */
+export function formatCrdtEventDetail(detail: unknown): string {
+  const redacted = redactEventPayloads(detail)
+  let serialized: string
+  try {
+    // Typed `string`, but `undefined` for the undefined details the ring
+    // buffer permits.
+    const raw: unknown = JSON.stringify(redacted, devEventReplacer())
+    serialized = typeof raw === 'string' ? raw : ''
+  } catch (error) {
+    return `<unserializable: ${String(error)}>`
+  }
+  const bytes = new TextEncoder().encode(serialized)
+  if (bytes.byteLength <= MAX_CRDT_EVENT_DETAIL_EXPORT_BYTES) return serialized
+  let end = MAX_CRDT_EVENT_DETAIL_EXPORT_BYTES
+  while (end > 0 && (bytes[end] & 0xc0) === 0x80) end--
+  return `${new TextDecoder().decode(bytes.subarray(0, end))}${EVENT_DETAIL_TRUNCATED}`
 }
 
 type SystemStats = Awaited<ReturnType<typeof api.getSystemStats>>
@@ -472,14 +592,7 @@ export async function collectCrdtDebugReport(
       : `_${stats.label} unavailable: ${stats.error}_`
   )
 
-  sections.push(
-    '## CRDT event log',
-    `${SHARING_WARNING} Operation payload values are redacted; op ids and workflow ids appear verbatim.`,
-    fence(
-      'json',
-      truncate(json(redactEventPayloads(input.events)), MAX_SECTION_CHARS)
-    )
-  )
+  sections.push('## CRDT event log', formatCrdtEventLog(input.events))
 
   sections.push(
     '## Document stamps (LWW ledger)',

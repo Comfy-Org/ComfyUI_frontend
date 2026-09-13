@@ -68,6 +68,7 @@ export function resolveDebugPanelEnabled(
  */
 let cachedEnabled: boolean | null = null
 let cachedStoredEnabled: string | null = null
+let storedEnabledRead = false
 let cachedLevel: CrdtLogLevel | null = null
 
 function isLogLevel(value: unknown): value is CrdtLogLevel {
@@ -165,16 +166,32 @@ export function isCrdtDebugEnabled(): boolean {
 }
 
 function readStoredEnabled(): string | null {
-  if (cachedStoredEnabled === null)
+  if (!storedEnabledRead) {
     cachedStoredEnabled = readStorage(ENABLED_KEY)
+    storedEnabledRead = true
+  }
   return cachedStoredEnabled
 }
 
 export function setCrdtDebugEnabled(enabled: boolean): void {
   cachedEnabled = enabled
   cachedStoredEnabled = String(enabled)
+  storedEnabledRead = true
   writeStorage(ENABLED_KEY, String(enabled))
 }
+
+/**
+ * Caching the read is what keeps `localStorage` off the CRDT hot path, but a
+ * cache with no invalidation would strand this tab retaining op payloads after
+ * an explicit "off" somewhere else. `storage` fires only for OTHER documents,
+ * so this never races the setters above; a null key is a `clear()`.
+ */
+window.addEventListener('storage', (event) => {
+  if (event.key !== null && event.key !== ENABLED_KEY) return
+  cachedEnabled = null
+  cachedStoredEnabled = null
+  storedEnabledRead = false
+})
 
 /**
  * Whether the user turned the instrument OFF, as opposed to never having said.
