@@ -9,12 +9,6 @@ type NodeModelMetadata = {
   properties?: { models?: readonly ModelFile[] }
 }
 
-export function getModelFileKey(
-  model: Pick<ModelFile, 'name' | 'directory'>
-): string {
-  return JSON.stringify([model.name, model.directory])
-}
-
 export function getSelectedModelsMetadata(
   node: NodeModelMetadata
 ): ModelFile[] | undefined {
