@@ -176,6 +176,7 @@ export function watchForTopUp(context: TopUpWatchContext): void {
   }
   let ticks = 0
   let refreshing = false
+  const deadline = Date.now() + TOP_UP_POLL_MS * TOP_UP_POLL_LIMIT
 
   function scope(): 'current' | 'pending' | 'changed' {
     const owner = user.value
@@ -207,6 +208,12 @@ export function watchForTopUp(context: TopUpWatchContext): void {
     return false
   }
 
+  function giveUp(): void {
+    if (topUpPoll) clearInterval(topUpPoll)
+    topUpPoll = undefined
+    topUpWatch.value = { status: 'unresolved', ...context }
+  }
+
   function continuesInScope(): boolean {
     if (generation !== topUpGeneration) return false
     const current = scope()
@@ -214,6 +221,7 @@ export function watchForTopUp(context: TopUpWatchContext): void {
       clearTopUpWatch()
       return false
     }
+    if (current === 'pending' && Date.now() >= deadline) giveUp()
     return current === 'current'
   }
 
@@ -223,13 +231,8 @@ export function watchForTopUp(context: TopUpWatchContext): void {
     // mid-remint has no session for a beat, and that transient must not
     // kill a checkout in flight.
     if (settleFromBalance()) return
-    if (ticks >= TOP_UP_POLL_LIMIT) {
-      if (topUpPoll) clearInterval(topUpPoll)
-      topUpPoll = undefined
-      topUpWatch.value = {
-        status: 'unresolved',
-        ...context
-      }
+    if (ticks >= TOP_UP_POLL_LIMIT || Date.now() >= deadline) {
+      giveUp()
       return
     }
     ticks += 1

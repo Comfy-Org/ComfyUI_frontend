@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import HeaderAccount from './HeaderAccount.vue'
 
@@ -313,11 +313,8 @@ describe('HeaderAccount workspace switcher', () => {
           new Response(JSON.stringify(listing), { status: 200 })
         )
     )
-    onTestFinished(() => {
-      vi.unstubAllGlobals()
-    })
     const user = userEvent.setup()
-    render(HeaderAccount)
+    render(HeaderAccount, { props: { locale: 'zh-CN' } })
 
     await openSwitcher(user)
 
@@ -325,6 +322,9 @@ describe('HeaderAccount workspace switcher', () => {
     const current = screen.getByTestId('account-workspace-ws')
     expect(current.textContent).toContain('Personal')
     expect(current.textContent).toContain('PRO')
+    expect(
+      screen.getByTestId('account-workspace-team-1').textContent
+    ).toContain('成员')
     expect(h.ensureFresh).toHaveBeenCalledWith(undefined, {
       workspaceId: 'ws',
       signal: expect.any(AbortSignal),
@@ -342,9 +342,6 @@ describe('HeaderAccount workspace switcher', () => {
           new Response(JSON.stringify(listing), { status: 200 })
         )
     )
-    onTestFinished(() => {
-      vi.unstubAllGlobals()
-    })
     const team = {
       token: 'team-jwt',
       uid: 'user-1',
@@ -382,9 +379,6 @@ describe('HeaderAccount workspace switcher', () => {
           new Response(JSON.stringify(listing), { status: 200 })
         )
     )
-    onTestFinished(() => {
-      vi.unstubAllGlobals()
-    })
     h.remint.mockImplementationOnce(() => new Promise(() => {}))
     const user = userEvent.setup()
     render(HeaderAccount)
@@ -408,9 +402,6 @@ describe('HeaderAccount workspace switcher', () => {
           new Response(JSON.stringify(listing), { status: 200 })
         )
     )
-    onTestFinished(() => {
-      vi.unstubAllGlobals()
-    })
     h.remint.mockRejectedValueOnce(new Error('offline'))
     const user = userEvent.setup()
     render(HeaderAccount)
@@ -430,9 +421,6 @@ describe('HeaderAccount workspace switcher', () => {
       'fetch',
       vi.fn().mockResolvedValue(new Response('', { status: 500 }))
     )
-    onTestFinished(() => {
-      vi.unstubAllGlobals()
-    })
     const user = userEvent.setup()
     render(HeaderAccount)
 
@@ -451,9 +439,6 @@ describe('HeaderAccount workspace switcher', () => {
           new Response(JSON.stringify({ workspaces: [] }), { status: 200 })
         )
     )
-    onTestFinished(() => {
-      vi.unstubAllGlobals()
-    })
     const user = userEvent.setup()
     render(HeaderAccount)
 
@@ -471,14 +456,17 @@ describe('HeaderAccount workspace switcher', () => {
         new Response(JSON.stringify(listing), { status: 200 })
       )
     vi.stubGlobal('fetch', fetchWorkspaces)
-    onTestFinished(() => {
-      vi.unstubAllGlobals()
-    })
     const user = userEvent.setup()
     render(HeaderAccount)
 
     await openSwitcher(user)
-    await user.click(await screen.findByTestId('account-workspaces-retry'))
+    const retry = await screen.findByTestId('account-workspaces-retry')
+    await user.keyboard('{ArrowDown}')
+    await waitFor(() => {
+      // eslint-disable-next-line testing-library/no-node-access
+      expect(document.activeElement).toBe(retry)
+    })
+    await user.keyboard('{Enter}')
 
     expect(await screen.findByTestId('account-workspace-team-1')).toBeTruthy()
     expect(fetchWorkspaces).toHaveBeenCalledTimes(2)
@@ -511,9 +499,6 @@ describe('HeaderAccount workspace switcher', () => {
         new Response(JSON.stringify(replacement), { status: 200 })
       )
     vi.stubGlobal('fetch', fetchWorkspaces)
-    onTestFinished(() => {
-      vi.unstubAllGlobals()
-    })
     const user = userEvent.setup()
     render(HeaderAccount)
 
@@ -543,9 +528,6 @@ describe('HeaderAccount workspace switcher', () => {
           new Response(JSON.stringify(listing), { status: 200 })
         )
     )
-    onTestFinished(() => {
-      vi.unstubAllGlobals()
-    })
     const newer = {
       token: 'newer-jwt',
       uid: 'user-1',
@@ -577,9 +559,6 @@ describe('HeaderAccount workspace switcher', () => {
           new Response(JSON.stringify(listing), { status: 200 })
         )
     )
-    onTestFinished(() => {
-      vi.unstubAllGlobals()
-    })
     h.remint.mockResolvedValueOnce(undefined)
     const user = userEvent.setup()
     render(HeaderAccount)
@@ -603,9 +582,6 @@ describe('HeaderAccount workspace switcher', () => {
           new Response(JSON.stringify(listing), { status: 200 })
         )
     )
-    onTestFinished(() => {
-      vi.unstubAllGlobals()
-    })
     const previous = h.session!.value
     h.remint
       .mockImplementationOnce(async () => {

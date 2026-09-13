@@ -321,6 +321,39 @@ describe('watchForTopUp', () => {
     })
   })
 
+  it('stops waiting when workspace recovery remains pending', async () => {
+    vi.useFakeTimers()
+    const mod = await importFresh()
+    onTestFinished(() => {
+      mod.clearTopUpWatch()
+      vi.useRealTimers()
+    })
+    mod.useWorkshopCredits()
+    h.setSession?.(liveSession())
+    await nextTick()
+    h.publish({ status: 'ok', cents: 0 })
+    h.setSession?.(undefined)
+    const state = mod.useTopUpWatch()
+    h.refresh.mockClear()
+
+    mod.watchForTopUp({
+      uid: 'user-1',
+      workspaceId: 'ws-1',
+      workspaceName: 'Personal',
+      previousCredits: 100
+    })
+    await vi.advanceTimersByTimeAsync(120_000)
+
+    expect(state.value).toEqual({
+      status: 'unresolved',
+      uid: 'user-1',
+      workspaceId: 'ws-1',
+      workspaceName: 'Personal',
+      previousCredits: 100
+    })
+    expect(h.refresh).not.toHaveBeenCalled()
+  })
+
   it('retires a watch when the active workspace changes', async () => {
     vi.useFakeTimers()
     const mod = await importFresh()

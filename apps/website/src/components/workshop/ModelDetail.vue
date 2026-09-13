@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Coins, Download, ExternalLink, Play } from '@lucide/vue'
+import { Download, ExternalLink, Play } from '@lucide/vue'
 import { useEventListener, useMounted, useTimestamp } from '@vueuse/core'
 import { computed, onUnmounted, ref, useSlots, watch } from 'vue'
 
@@ -56,12 +56,10 @@ import ModelSupport from './ModelSupport.vue'
 const {
   model,
   locale = 'en',
-  priceEstimate,
   clone
 } = defineProps<{
   model: WorkshopModelDetail
   locale?: Locale
-  priceEstimate?: string
   clone?: { href: string }
   /** Names the form's groups as numbered steps and keeps the result in view
    * while they are filled in. The workflow pages ask for it; a model page has
@@ -665,15 +663,6 @@ function useInCode() {
             {{
               t(isRunning ? 'workshop.run.cancel' : 'workshop.run.run', locale)
             }}
-            <template v-if="!isRunning && priceEstimate" #append>
-              <span
-                class="ml-auto flex items-center gap-1.5 rounded-full bg-primary-comfy-ink/10 px-2.5 py-1 text-xs font-bold normal-case tabular-nums"
-                data-testid="run-price"
-              >
-                <Coins class="size-3.5" aria-hidden="true" />
-                {{ priceEstimate }}
-              </span>
-            </template>
           </Button>
           <Button
             v-else

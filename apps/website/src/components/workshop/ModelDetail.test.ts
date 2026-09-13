@@ -158,7 +158,6 @@ function mountDetail(options?: {
   clone?: { href: string }
   details?: () => ReturnType<typeof h>
   model?: WorkshopModelDetail
-  priceEstimate?: string
 }) {
   return render(
     defineComponent({
@@ -168,8 +167,7 @@ function mountDetail(options?: {
             ModelDetail,
             {
               model: options?.model ?? model,
-              clone: options?.clone,
-              priceEstimate: options?.priceEstimate
+              clone: options?.clone
             },
             options?.details ? { details: options.details } : undefined
           )
@@ -334,16 +332,16 @@ describe('ModelDetail', () => {
       if (!details) throw new Error('Missing model')
       mountDetail({ model: details })
       const form = within(screen.getByTestId('playground-form'))
-      const player = form.getByLabelText(file, { selector: 'video' })
+      const trigger = form.getByRole('button', { name: `Expand ${file}` })
+      const player = within(trigger).getByTestId('video-source-thumbnail')
       expect(player.getAttribute('src')).toContain(`/input/${file}`)
       expect(
-        form
-          .getAllByRole('group')
-          .some(
-            (group) =>
-              within(group).queryByLabelText(file, { selector: 'video' }) ===
-              player
-          )
+        form.getAllByRole('group').some(
+          (group) =>
+            within(group).queryByRole('button', {
+              name: `Expand ${file}`
+            }) === trigger
+        )
       ).toBe(true)
       expect(runWorkshopRouter).not.toHaveBeenCalled()
       if (slug === 'bria--replace-video-background--edit-videos')
@@ -590,22 +588,21 @@ describe('ModelDetail', () => {
       mountDetail({ model: runnable })
       await nextTick()
       expect(screen.getByRole('button', { name: 'Run' })).toBeTruthy()
-      expect(screen.queryByRole('link', { name: 'Add credits' })).toBeNull()
+      expect(screen.queryByRole('button', { name: 'Add credits' })).toBeNull()
     }
   )
 
-  it('shows the estimated cost on the Run button when the page has one', async () => {
+  it('does not put the page-load estimate on the live Run button', async () => {
     auth.session.value = credential
     credits.balance.value = { status: 'ok', credits: 100 }
-    mountDetail({ model: runnable, priceEstimate: '14.8 credits/Run' })
+    mountDetail({ model: runnable })
     await nextTick()
 
     expect(screen.getByTestId('run-button').getAttribute('data-gate')).toBe(
       'ready'
     )
-    expect(screen.getByTestId('run-price').textContent).toContain(
-      '14.8 credits/Run'
-    )
+    expect(screen.getByTestId('run-button').textContent.trim()).toBe('Run')
+    expect(screen.queryByTestId('run-price')).toBeNull()
   })
 
   it('offers a personal-workspace switch instead of billing to a member with no credits', async () => {
@@ -692,7 +689,7 @@ describe('ModelDetail', () => {
         name: 'Switch to personal workspace'
       })
     ).toBeTruthy()
-    expect(screen.queryByRole('link', { name: 'Add credits' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Add credits' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
   })
 
@@ -701,7 +698,7 @@ describe('ModelDetail', () => {
     credits.balance.value = { status: 'ok', credits: 0 }
     mountDetail()
     expect(screen.getByTestId('run-button').hasAttribute('disabled')).toBe(true)
-    expect(screen.queryByRole('link', { name: 'Add credits' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Add credits' })).toBeNull()
   })
 
   it('keeps cancellation available if the balance becomes zero during a run', async () => {

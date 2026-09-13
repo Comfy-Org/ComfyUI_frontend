@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import FacetSheet from './FacetSheet.vue'
 
@@ -61,16 +61,36 @@ describe('FacetSheet', () => {
   })
 
   it('restores its prior rest when a drag is cancelled', async () => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn((query: string) => ({
+        matches: query === '(width < 40rem)',
+        media: query,
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn()
+      }))
+    )
     const user = userEvent.setup()
     render(FacetSheet, { props: { groups, labels, resultCount: 2 } })
     const grabber = screen.getByRole('button', { name: 'Resize filters' })
+    const grip = screen.getByTestId('workshop-filter-grip')
+    // The sheet itself is intentionally presentational, so its visible height
+    // is reached through the labelled grip rather than by inventing a role.
+    // eslint-disable-next-line testing-library/no-node-access
+    const sheet = grip.parentElement as HTMLElement
+    const restingHeight = sheet.style.height
 
     await user.pointer([
       { keys: '[MouseLeft>]', target: grabber, coords: { clientY: 500 } },
       { target: grabber, coords: { clientY: 200 } }
     ])
+    expect(sheet.style.height).not.toBe(restingHeight)
+
     await fireEvent.pointerCancel(grabber, { pointerId: 1 })
 
+    expect(sheet.style.height).toBe(restingHeight)
     expect(grabber.getAttribute('aria-expanded')).toBe('false')
   })
 

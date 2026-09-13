@@ -68,7 +68,12 @@ function initialsOf(name: string): string {
 }
 
 function workspaceTier(workspace: WorkspaceWithRole): string {
-  return (workspace.subscription_tier ?? workspace.role).split('_').join(' ')
+  if (workspace.subscription_tier)
+    return workspace.subscription_tier.split('_').join(' ')
+  return t(
+    workspace.role === 'member' ? 'nav.roleMember' : 'nav.roleOwner',
+    locale
+  )
 }
 
 const workspaceInitials = computed(() => initialsOf(session.workspace.name))
@@ -170,20 +175,19 @@ const surfaceClass =
               >
                 {{ t('nav.workspacesLoading', locale) }}
               </p>
-              <p
+              <DropdownMenuItem
                 v-else-if="workspaces === 'error'"
-                class="flex items-center justify-between gap-3 px-3 py-2 text-xs text-red-400"
+                :class="cn(itemClass, 'justify-between text-xs text-red-400')"
+                data-testid="account-workspaces-retry"
+                @select.prevent="emit('retry')"
               >
                 <span>{{ t('nav.workspacesError', locale) }}</span>
-                <button
-                  type="button"
+                <span
                   class="text-primary-comfy-yellow shrink-0 cursor-pointer font-bold"
-                  data-testid="account-workspaces-retry"
-                  @click.stop="emit('retry')"
                 >
                   {{ t('workshop.error.retry', locale) }}
-                </button>
-              </p>
+                </span>
+              </DropdownMenuItem>
               <p
                 v-else-if="workspaces.length === 0"
                 class="px-3 py-2 text-xs text-primary-comfy-canvas/55"

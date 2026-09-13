@@ -23,14 +23,21 @@ const page = await prepareModelPage(Astro.params.slug)
 // Pre-launch aliases stay noindex; hosting-level permanent redirects are a
 // separate deployment decision, not a reason to switch this site to SSR.
 if (page.kind === 'redirect') return Astro.redirect(page.href, 301)
-const { model, related, relatedHeading, relatedHeadingShort, successor, priceEstimate, modalityLabel, tags } = page
+const {
+  model,
+  related,
+  relatedHeading,
+  relatedHeadingShort,
+  successor,
+  priceEstimate,
+  modalityLabel,
+  shownTags,
+  restTags,
+  restTagCount
+} = page
 const routes = getRoutes()
 const pillClass =
   'inline-flex h-7 items-center rounded-full border border-transparency-white-t20 px-3 text-xs leading-none text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow'
-const TAGS_SHOWN = 3
-const shownTags = tags.slice(0, TAGS_SHOWN)
-const restTags = tags.slice(TAGS_SHOWN)
-const restTagCount = restTags.length
 ---
 
 <BaseLayout
@@ -126,7 +133,7 @@ const restTagCount = restTags.length
     </header>
 
     <div class="sm:px-8 lg:px-10">
-    <ModelDetail model={model} priceEstimate={priceEstimate} client:load />
+      <ModelDetail model={model} client:load />
 
     <section
       class="mt-24 border-t border-transparency-white-t8 pt-12"

@@ -418,8 +418,12 @@ test.describe('Model playground', () => {
     await expect(
       page.getByRole('textbox', { name: 'Prompt', exact: true })
     ).not.toHaveValue('')
+    const example = page.getByTestId('example-card').first()
+    await expect
+      .poll(async () => (await example.boundingBox())?.width ?? Infinity)
+      .toBeLessThan(320)
     await page.getByRole('textbox', { name: 'Prompt', exact: true }).fill('')
-    await page.getByTestId('example-card').first().click()
+    await example.click()
     await expect(page.getByTestId('playground-tab')).toBeVisible()
     await expect(
       page.getByRole('textbox', { name: 'Prompt', exact: true })

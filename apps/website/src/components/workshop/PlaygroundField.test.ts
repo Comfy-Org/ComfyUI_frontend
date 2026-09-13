@@ -266,7 +266,8 @@ describe('PlaygroundField', () => {
       { video: 'https://example.com/source.mp4' }
     )
     const slot = within(screen.getByRole('group', { name: 'Source video' }))
-    const player = slot.getByLabelText('source.mp4', { selector: 'video' })
+    const trigger = slot.getByRole('button', { name: 'Expand source.mp4' })
+    const player = within(trigger).getByTestId('video-source-thumbnail')
     expect(player.getAttribute('src')).toBe('https://example.com/source.mp4')
     expect(player.getAttribute('preload')).toBe('metadata')
     expect(

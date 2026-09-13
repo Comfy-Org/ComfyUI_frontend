@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
-import { render, screen, waitFor } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { expect, it, vi } from 'vitest'
 import { createSSRApp, h } from 'vue'
 import { renderToString } from 'vue/server-renderer'
@@ -18,7 +19,7 @@ it('waits until mounting before creating a local media URL', async () => {
   expect(create).not.toHaveBeenCalled()
   expect(html).not.toContain('blob:')
   render(VideoSourcePreview, { props })
-  const video = await screen.findByLabelText('Source video')
+  const video = await screen.findByTestId('video-source-thumbnail')
   expect(video.getAttribute('src')).toMatch(/^blob:/)
   expect(create).toHaveBeenCalledWith(file)
 })
@@ -35,7 +36,7 @@ it('switches between remote examples and local uploads, revoking only its owned 
   }
   const { rerender, unmount } = render(VideoSourcePreview, { props })
   function video() {
-    const element = screen.getByLabelText('Input video')
+    const element = screen.getByTestId('video-source-thumbnail')
     if (!(element instanceof HTMLVideoElement))
       throw new Error('Expected video')
     return element
@@ -57,4 +58,25 @@ it('switches between remote examples and local uploads, revoking only its owned 
   expect(revoke).toHaveBeenCalledWith('blob:second')
   unmount()
   expect(revoke).not.toHaveBeenCalledWith(props.src)
+})
+
+it('opens a full video player with playback and scrubbing controls', async () => {
+  render(VideoSourcePreview, {
+    props: {
+      name: 'Input video',
+      src: 'https://assets.example/source.mp4'
+    }
+  })
+
+  await userEvent
+    .setup()
+    .click(screen.getByRole('button', { name: 'Expand Input video' }))
+
+  const dialog = await screen.findByTestId('video-source-dialog')
+  const player = within(dialog).getByLabelText('Input video')
+  if (!(player instanceof HTMLVideoElement))
+    throw new Error('Expected video player')
+  expect(player.controls).toBe(true)
+  expect(player.muted).toBe(false)
+  expect(player.src).toBe('https://assets.example/source.mp4')
 })

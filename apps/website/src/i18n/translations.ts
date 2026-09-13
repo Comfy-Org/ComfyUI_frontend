@@ -9913,7 +9913,7 @@ Enterprise`
   },
   'workshop.error.noCredits': {
     en: 'Not enough credits. Add credits to continue.',
-    'zh-CN': '积分不足。请购买积分后继续。'
+    'zh-CN': '积分不足。请添加积分后继续。'
   },
   'workshop.error.unavailable': {
     en: 'This model is temporarily unavailable.',
@@ -9931,7 +9931,7 @@ Enterprise`
   'workshop.error.lowCredits': {
     en: 'You have {credits} credits and this run needs {n}. Add credits to continue; your inputs stay here.',
     'zh-CN':
-      '你有 {credits} 积分，本次运行需要 {n}。购买积分后继续，你的输入会保留。'
+      '你有 {credits} 积分，本次运行需要 {n}。添加积分后继续，你的输入会保留。'
   },
   'workshop.error.memberNoCredits': {
     en: '{workspace} has used all its credits. Ask the workspace owner to add more, or run this on your personal workspace.',

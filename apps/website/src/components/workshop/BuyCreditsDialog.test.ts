@@ -3,30 +3,51 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
+import type { Ref } from 'vue'
 
 import {
   WORKSHOP_CLOUD_BASE_URL,
   WORKSHOP_CREDITS_URL
 } from '../../config/workshop-env'
+import type {
+  clearTopUpWatch,
+  refreshWorkshopCredits,
+  useTopUpWatch,
+  useWorkshopCredits,
+  watchForTopUp
+} from '../../config/workshop-credits'
+import type { useWorkshopSession } from '../../config/workshop-session-state'
 import BuyCreditsDialog from './BuyCreditsDialog.vue'
 
+type WorkshopCreditsState = ReturnType<typeof useWorkshopCredits>
+type WorkshopSessionState = ReturnType<typeof useWorkshopSession>
+type WorkshopBalance = WorkshopCreditsState['balance']['value']
+type TopUpWatch = ReturnType<typeof useTopUpWatch>['value']
+type ActiveSession = WorkshopSessionState['session']['value']
+type WorkshopUser = WorkshopSessionState['user']['value']
+type WorkshopSessionFailure = WorkshopSessionState['sessionFailure']['value']
+
 const auth = vi.hoisted(() => ({
-  session: undefined as { value: unknown } | undefined,
-  ensureFresh: vi.fn()
+  user: undefined as Ref<WorkshopUser> | undefined,
+  session: undefined as Ref<ActiveSession> | undefined,
+  sessionFailure: undefined as Ref<WorkshopSessionFailure> | undefined,
+  ensureFresh: vi.fn<WorkshopSessionState['ensureFresh']>(),
+  remint: vi.fn<WorkshopSessionState['remint']>(),
+  signOut: vi.fn<WorkshopSessionState['signOut']>()
 }))
 
 const credits = vi.hoisted(() => ({
-  balance: undefined as { value: unknown } | undefined,
-  topUp: undefined as { value: unknown } | undefined,
-  watchForTopUp: vi.fn(),
-  clearTopUpWatch: vi.fn(),
-  refresh: vi.fn()
+  balance: undefined as Ref<WorkshopBalance> | undefined,
+  topUp: undefined as Ref<TopUpWatch> | undefined,
+  watchForTopUp: vi.fn<typeof watchForTopUp>(),
+  clearTopUpWatch: vi.fn<typeof clearTopUpWatch>(),
+  refresh: vi.fn<typeof refreshWorkshopCredits>()
 }))
 
-vi.mock<unknown>(import('../../config/workshop-credits'), async () => {
+vi.mock(import('../../config/workshop-credits'), async () => {
   const { computed, ref } = await import('vue')
-  const balance = ref<unknown>({ status: 'unknown' })
-  const topUp = ref<unknown>({ status: 'idle' })
+  const balance = ref<WorkshopBalance>({ status: 'unknown' })
+  const topUp = ref<TopUpWatch>({ status: 'idle' })
   credits.balance = balance
   credits.topUp = topUp
   return {
@@ -34,18 +55,31 @@ vi.mock<unknown>(import('../../config/workshop-credits'), async () => {
     clearTopUpWatch: credits.clearTopUpWatch,
     refreshWorkshopCredits: credits.refresh,
     useTopUpWatch: () => computed(() => topUp.value),
-    useWorkshopCredits: () => ({ balance: computed(() => balance.value) })
+    useWorkshopCredits: () => ({
+      balance: computed(() => balance.value),
+      session: computed(() => auth.session?.value)
+    })
   }
 })
 
-vi.mock<unknown>(import('../../config/workshop-session-state'), async () => {
-  const { ref } = await import('vue')
-  const session = ref<unknown>(undefined)
+vi.mock(import('../../config/workshop-session-state'), async () => {
+  const { computed, ref } = await import('vue')
+  const user = ref<WorkshopUser>(null)
+  const session = ref<ActiveSession>(undefined)
+  const sessionFailure = ref<WorkshopSessionFailure>(undefined)
+  auth.user = user
   auth.session = session
+  auth.sessionFailure = sessionFailure
   return {
     useWorkshopSession: () => ({
-      session,
-      ensureFresh: auth.ensureFresh
+      user: computed(() => user.value),
+      session: computed(() => session.value),
+      sessionFailure: computed(() => sessionFailure.value),
+      settled: computed(() => true),
+      signedIn: computed(() => session.value !== undefined),
+      ensureFresh: auth.ensureFresh,
+      remint: auth.remint,
+      signOut: auth.signOut
     })
   }
 })
@@ -57,7 +91,7 @@ const credential = {
   workspace: { id: 'workspace-1', name: 'Personal', type: 'personal' },
   role: 'owner',
   permissions: []
-}
+} satisfies Exclude<ActiveSession, undefined>
 
 const attemptId = '00000000-0000-4000-8000-000000000001'
 const topUpScope = {
@@ -107,10 +141,11 @@ function renderOpenDialog() {
 describe('BuyCreditsDialog', () => {
   beforeEach(() => {
     auth.session!.value = credential
-    auth.ensureFresh.mockReset().mockResolvedValue({
-      status: 'ok',
-      session: credential
-    })
+    auth.ensureFresh
+      .mockReset()
+      .mockResolvedValue({ status: 'ok', session: credential })
+    auth.remint.mockReset()
+    auth.signOut.mockReset()
     credits.balance!.value = { status: 'ok', credits: 100 }
     credits.topUp!.value = { status: 'idle' }
     credits.watchForTopUp.mockReset()

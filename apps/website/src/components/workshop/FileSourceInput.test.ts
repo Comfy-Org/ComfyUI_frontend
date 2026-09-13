@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
-import { fireEvent, render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 
@@ -69,7 +69,10 @@ describe('file source selection', () => {
         file
       )
       if (type.startsWith('video/')) {
-        const preview = screen.getByLabelText(name)
+        const trigger = screen.getByRole('button', {
+          name: `Expand ${name}`
+        })
+        const preview = within(trigger).getByTestId('video-source-thumbnail')
         expect(preview).toBeInstanceOf(HTMLVideoElement)
         expect(preview.getAttribute('src')).toMatch(/^blob:/)
       } else {

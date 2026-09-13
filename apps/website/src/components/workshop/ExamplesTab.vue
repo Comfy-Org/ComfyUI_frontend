@@ -184,7 +184,7 @@ function actionFor(example: PlaygroundExample, active = false) {
 <style scoped>
 @media (width >= 40rem) {
   .workshop-example-grid {
-    grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
   }
 }
 </style>
