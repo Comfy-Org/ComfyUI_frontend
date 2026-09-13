@@ -62,6 +62,191 @@ test.describe(
       }
     })
 
+    test('drawn slot and reroute centers remain the hit targets at zoom extremes', async ({
+      comfyPage
+    }) => {
+      test.slow()
+      const setZoom = async (
+        scale: number,
+        center: { x: number; y: number }
+      ) => {
+        await comfyPage.page.evaluate(
+          ([nextScale, canvasCenter]) => {
+            const canvas = window.app!.canvas
+            const bounds = canvas.canvas.getBoundingClientRect()
+            canvas.ds.scale = nextScale
+            canvas.ds.offset[0] = bounds.width / 2 / nextScale - canvasCenter.x
+            canvas.ds.offset[1] = bounds.height / 2 / nextScale - canvasCenter.y
+            canvas.setDirty(true, true)
+          },
+          [scale, center] as const
+        )
+        await comfyPage.nextFrame()
+      }
+      const getDrawnSlotCenter = async (
+        nodeId: string,
+        slotName: string,
+        type: 'input' | 'output'
+      ) => {
+        const slotIndex = await comfyPage.page.evaluate(
+          ([id, targetName, targetType]) => {
+            const graphNode = window.app!.graph.getNodeById(id)
+            if (!graphNode) throw new Error(`Node ${id} is unavailable`)
+            const slots =
+              targetType === 'input' ? graphNode.inputs : graphNode.outputs
+            return slots.findIndex(({ name }) => name === targetName)
+          },
+          [toNodeId(nodeId), slotName, type] as const
+        )
+        if (slotIndex < 0)
+          throw new Error(`${slotName} model slot is unavailable`)
+        const dot =
+          type === 'input'
+            ? comfyPage.vueNodes.getInputSlotConnectionDot(nodeId, slotIndex)
+            : comfyPage.vueNodes.getOutputSlotConnectionDot(nodeId, slotIndex)
+        const box = await dot.boundingBox()
+        const node = await comfyPage.nodeOps.getNodeRefById(nodeId)
+        const slot = await (type === 'input'
+          ? node.getInput(slotIndex)
+          : node.getOutput(slotIndex))
+        const drawnCenter = box
+          ? { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+          : await slot.getPosition()
+        return { center: drawnCenter, slot }
+      }
+
+      for (const zoom of [0.25, 1, 4]) {
+        await comfyPage.workflow.loadWorkflow('selection/three-nodes-and-group')
+        const fixtureIds = await comfyPage.page.evaluate(() => {
+          const graph = window.app!.graph
+          const addNode = (type: string, pos: [number, number]) => {
+            const node = window.LiteGraph!.createNode(type)
+            if (!node) throw new Error(`${type} is unavailable`)
+            node.pos = pos
+            graph.add(node)
+            return String(node.id)
+          }
+          return {
+            latent: addNode('EmptyLatentImage', [-275, 240]),
+            preview: addNode('PreviewImage', [600, 240]),
+            groupPreview: addNode('PreviewImage', [1000, 240])
+          }
+        })
+        await comfyPage.nextFrame()
+        const arms = [
+          {
+            source: ['1', 'samples', 'input'] as const,
+            target: [fixtureIds.latent, 'LATENT', 'output'] as const,
+            label: 'input'
+          },
+          {
+            source: ['1', 'IMAGE', 'output'] as const,
+            target: [fixtureIds.preview, 'images', 'input'] as const,
+            label: 'output'
+          },
+          {
+            source: ['2', 'IMAGE', 'output'] as const,
+            target: [fixtureIds.groupPreview, 'images', 'input'] as const,
+            label: 'group member output'
+          }
+        ]
+        for (const arm of arms) {
+          const sourceNode = await comfyPage.nodeOps.getNodeRefById(
+            arm.source[0]
+          )
+          const targetNode = await comfyPage.nodeOps.getNodeRefById(
+            arm.target[0]
+          )
+          const sourceSlot = await (arm.source[2] === 'input'
+            ? sourceNode.getInput(0)
+            : sourceNode.getOutput(0))
+          const targetSlot = await (arm.target[2] === 'input'
+            ? targetNode.getInput(0)
+            : targetNode.getOutput(0))
+          const canvasCenter = await comfyPage.page.evaluate(
+            ([source, target]) => {
+              const getPosition = ([id, name, type]: readonly [
+                string,
+                string,
+                'input' | 'output'
+              ]) => {
+                const node = window.app!.graph.nodes.find(
+                  (candidate) => String(candidate.id) === id
+                )
+                if (!node) throw new Error(`Node ${id} is unavailable`)
+                const slots = type === 'input' ? node.inputs : node.outputs
+                const index = slots.findIndex((slot) => slot.name === name)
+                if (index < 0) throw new Error(`${name} is unavailable`)
+                return node.getConnectionPos(type === 'input', index)
+              }
+              const sourcePos = getPosition(source)
+              const targetPos = getPosition(target)
+              return {
+                x: (sourcePos[0] + targetPos[0]) / 2,
+                y: (sourcePos[1] + targetPos[1]) / 2
+              }
+            },
+            [arm.source, arm.target] as const
+          )
+          await setZoom(zoom, canvasCenter)
+          const source = await getDrawnSlotCenter(
+            arm.source[0],
+            arm.source[1],
+            arm.source[2]
+          )
+          const target = await getDrawnSlotCenter(
+            arm.target[0],
+            arm.target[1],
+            arm.target[2]
+          )
+          await comfyPage.canvasOps.dragAndDrop(source.center, target.center)
+          await sourceSlot.expectLinkCount(
+            1,
+            `${zoom} ${arm.label} source links`
+          )
+          await targetSlot.expectLinkCount(
+            1,
+            `${zoom} ${arm.label} target links`
+          )
+        }
+      }
+
+      for (const zoom of [0.25, 1, 4]) {
+        await comfyPage.workflow.loadWorkflow(
+          'reroute/single-native-reroute-default-workflow'
+        )
+        const reroutePos = await comfyPage.page.evaluate(() => {
+          const reroute = window.app!.graph.reroutes.values().next().value
+          if (!reroute) throw new Error('Reroute is unavailable')
+          return { x: reroute.pos[0], y: reroute.pos[1] }
+        })
+        await setZoom(zoom, reroutePos)
+        const rerouteCenter = await comfyPage.page.evaluate(() => {
+          const reroute = window.app!.graph.reroutes.values().next().value
+          if (!reroute) throw new Error('Reroute is unavailable')
+          const [x, y] = window.app!.canvasPosToClientPos(reroute.pos)
+          return { x, y, pos: [...reroute.pos] }
+        })
+        await comfyPage.canvasOps.dragAndDrop(rerouteCenter, {
+          x: rerouteCenter.x + 40,
+          y: rerouteCenter.y + 40
+        })
+        await expect
+          .poll(
+            () =>
+              comfyPage.page.evaluate(() => {
+                const reroute = window.app!.graph.reroutes.values().next().value
+                return reroute ? [...reroute.pos] : null
+              }),
+            `${zoom} reroute moves from its drawn center`
+          )
+          .toEqual([
+            expect.closeTo(rerouteCenter.pos[0] + 36 / zoom, 0),
+            expect.closeTo(rerouteCenter.pos[1] + 36 / zoom, 0)
+          ])
+      }
+    })
+
     for (const vueNodesEnabled of [false, true]) {
       test(`remains interactive after an incompatible link gesture in ${vueNodesEnabled ? 'Nodes 2.0' : 'legacy'} mode`, async ({
         comfyPage
