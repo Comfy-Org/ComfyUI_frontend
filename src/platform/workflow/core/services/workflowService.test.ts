@@ -669,6 +669,7 @@ describe('useWorkflowService', () => {
         path: 'workflows/active-noop.json'
       })
       workflowStore.activeWorkflow = active as LoadedComfyWorkflow
+      ChangeTracker.canvasTracker = active.changeTracker
       const service = useWorkflowService()
 
       await service.openWorkflow(active)
@@ -676,6 +677,19 @@ describe('useWorkflowService', () => {
 
       await service.openWorkflow(active, { force: true })
       expect(app.loadGraphData).toHaveBeenCalledTimes(1)
+    })
+
+    it('loads an active workflow that does not own the canvas', async () => {
+      const workflowStore = useWorkflowStore()
+      const active = createWorkflow(null, {
+        loadable: true,
+        path: 'workflows/store-selected.json'
+      })
+      workflowStore.activeWorkflow = active as LoadedComfyWorkflow
+
+      await useWorkflowService().openWorkflow(active)
+
+      expect(app.loadGraphData).toHaveBeenCalledOnce()
     })
 
     it('re-opens a workflow normally once its close has settled', async () => {
@@ -2145,6 +2159,7 @@ describe('useWorkflowService', () => {
 
       await useWorkflowService().afterLoadNewGraph('repeat', makeWorkflowData())
 
+      expect(ChangeTracker.canvasTracker).toBe(existingWorkflow.changeTracker)
       expect(
         useNodeOutputStore().restorePreviewsForWorkflow
       ).toHaveBeenCalledWith(existingWorkflow.path)
