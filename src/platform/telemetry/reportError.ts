@@ -47,12 +47,12 @@ const MAX_PENDING_REPORTS = 25
 
 const isDatadogRumLive = () => datadogRum.getInitConfiguration() !== undefined
 
-const definedEntriesOf = (
-  tags: ReportErrorOptions['tags']
-): Record<string, string | number | boolean> =>
+const definedEntriesOf = <V>(
+  values: Record<string, V> | undefined
+): Record<string, Exclude<V, undefined>> =>
   Object.fromEntries(
-    Object.entries(tags ?? {}).filter(([, value]) => value !== undefined)
-  ) as Record<string, string | number | boolean>
+    Object.entries(values ?? {}).filter(([, value]) => value !== undefined)
+  ) as Record<string, Exclude<V, undefined>>
 
 function dispatch(
   error: Error,
@@ -60,7 +60,8 @@ function dispatch(
   sentryAlreadyDelivered = false,
   datadogAlreadyDelivered = false
 ): { sentry: boolean; datadog: boolean } {
-  const { errorType, context, level } = options
+  const { errorType, level } = options
+  const context = definedEntriesOf(options.context)
   const tags = definedEntriesOf(options.tags)
   const sentryLive = !sentryAlreadyDelivered && isSentryEnabled()
   const datadogLive = !datadogAlreadyDelivered && isDatadogRumLive()
