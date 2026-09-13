@@ -8,7 +8,7 @@ describe('mapToDropdownItem property tests', () => {
     fc.assert(
       fc.property(
         fc.record({
-          id: fc.string(),
+          id: fc.string({ minLength: 1 }),
           name: fc.string()
         }),
         (raw) => {

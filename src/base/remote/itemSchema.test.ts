@@ -173,14 +173,18 @@ describe('mapToDropdownItem', () => {
     expect(item.id).toBe('42')
   })
 
-  it('returns an empty string id when value_field is missing', () => {
-    const item = mapToDropdownItem(
-      { label: 'Orphan' },
-      { value_field: 'id', label_field: 'label', preview_type: 'image' }
-    )
-
-    expect(item.id).toBe('')
-  })
+  it.each([{ label: 'Missing' }, { id: '', label: 'Empty' }])(
+    'rejects an item with a missing or empty value_field',
+    (raw) => {
+      expect(() =>
+        mapToDropdownItem(raw, {
+          value_field: 'id',
+          label_field: 'label',
+          preview_type: 'image'
+        })
+      ).toThrow('Missing remote item ID at id')
+    }
+  )
 })
 
 describe('extractItems', () => {

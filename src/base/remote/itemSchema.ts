@@ -61,11 +61,15 @@ export function mapToDropdownItem(
   schema: RemoteItemSchema,
   options: { previewBaseUrl?: string } = {}
 ): DropdownItemShape {
+  const id = String(getByPath(raw, schema.value_field) ?? '')
+  if (!id) {
+    throw new TypeError(`Missing remote item ID at ${schema.value_field}`)
+  }
   const previewRaw = schema.preview_url_field
     ? String(getByPath(raw, schema.preview_url_field) ?? '')
     : undefined
   return {
-    id: String(getByPath(raw, schema.value_field) ?? ''),
+    id,
     name: resolveLabel(schema.label_field, raw),
     description: schema.description_field
       ? resolveLabel(schema.description_field, raw)

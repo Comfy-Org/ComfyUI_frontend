@@ -59,9 +59,14 @@ export function useRemoteCombo(args: UseRemoteComboArgs) {
     const schema = config?.item_schema
     if (schema) {
       const previewBaseUrl = getComfyApiBaseUrl()
-      return rawItems.value.map((raw) =>
-        mapToDropdownItem(raw, schema, { previewBaseUrl })
-      )
+      return rawItems.value.flatMap((raw) => {
+        try {
+          return [mapToDropdownItem(raw, schema, { previewBaseUrl })]
+        } catch (error) {
+          if (error instanceof TypeError) return []
+          throw error
+        }
+      })
     }
     return rawItems.value.map((raw) => {
       const val = String(raw ?? '')

@@ -154,6 +154,19 @@ describe('RichComboWidget', () => {
     })
   })
 
+  it('excludes remote items without an id', async () => {
+    vi.mocked(axios.get).mockResolvedValueOnce({
+      data: [{ name: 'Missing ID' }, { id: 'valid', name: 'Valid' }],
+      status: 200
+    })
+    const widget = makeWidget(makeRemoteCombo({ auto_select: 'first' }))
+    const { emitted } = renderWithProviders(RichComboWidget, { widget })
+    await waitFor(() => {
+      const events = emitted<unknown[]>('update:modelValue')
+      expect(events?.[0]?.[0]).toBe('valid')
+    })
+  })
+
   it('auto_select="last" selects last item when value is empty', async () => {
     vi.mocked(axios.get).mockResolvedValueOnce({
       data: [
