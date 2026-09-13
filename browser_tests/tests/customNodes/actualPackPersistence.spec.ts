@@ -93,7 +93,8 @@ test.describe(
                 image: {
                   name: videoName,
                   mimeType: 'video/mp4',
-                  buffer: await readFile(assetPath('plain_video.mp4'))
+                  // Generated with ffmpeg from testsrc2 (32x32, 2 fps, 1s) and a 440 Hz sine (8 kHz, 1s), encoded as H.264/AAC.
+                  buffer: await readFile(assetPath('vhs_video_with_audio.mp4'))
                 },
                 type: 'input',
                 overwrite: 'true'
@@ -130,8 +131,17 @@ test.describe(
             )
             .toBe(videoName)
 
-          const setFormat = async (value: string) =>
-            comfyPage.page.evaluate(
+          const setFormat = async (value: string) => {
+            if (useVueNodes) {
+              await comfyPage.vueNodes.selectComboOption(
+                'Video Combine 🎥🅥🅗🅢',
+                'format',
+                value
+              )
+              return
+            }
+
+            await comfyPage.page.evaluate(
               ({ combineId, value }) => {
                 const node = window.app!.graph.nodes.find(
                   (candidate) => String(candidate.id) === combineId
@@ -145,6 +155,7 @@ test.describe(
               },
               { combineId: ids.combine, value }
             )
+          }
 
           const controls = () =>
             comfyPage.page.evaluate((combineId) => {
@@ -155,33 +166,44 @@ test.describe(
             }, ids.combine)
 
           await setFormat('video/h264-mp4')
-          let controlsError: unknown
           await expect
             .poll(controls)
             .toEqual(
               expect.arrayContaining(['pix_fmt', 'crf', 'save_metadata'])
             )
-            .catch((error: unknown) => {
-              controlsError = error
-            })
-
-          if (controlsError === undefined) {
-            await setFormat('image/gif')
-            await expect
-              .poll(controls)
-              .not.toEqual(
-                expect.arrayContaining(['pix_fmt', 'crf', 'save_metadata'])
-              )
-            await setFormat('video/h264-mp4')
-          } else {
-            await setFormat('image/gif')
-          }
-
-          if (useVueNodes && controlsError === undefined) {
+          if (useVueNodes) {
             const node = comfyPage.vueNodes.getNodeLocator(ids.combine)
             for (const label of ['pix_fmt', 'crf', 'save_metadata']) {
               await expect(node.getByText(label, { exact: true })).toBeVisible()
             }
+          }
+
+          await setFormat('image/gif')
+          await expect
+            .poll(controls)
+            .not.toEqual(
+              expect.arrayContaining(['pix_fmt', 'crf', 'save_metadata'])
+            )
+
+          if (useVueNodes) {
+            const node = comfyPage.vueNodes.getNodeLocator(ids.combine)
+            for (const label of ['pix_fmt', 'crf', 'save_metadata']) {
+              await expect(node.getByText(label, { exact: true })).toBeHidden()
+            }
+            await expect
+              .poll(() =>
+                comfyPage.page.evaluate(
+                  (combineId) =>
+                    window
+                      .app!.graph.nodes.find(
+                        (candidate) => String(candidate.id) === combineId
+                      )
+                      ?.widgets?.find((widget) => widget.name === 'format')
+                      ?.value,
+                  ids.combine
+                )
+              )
+              .toBe('image/gif')
           } else {
             await comfyPage.page.evaluate((combineId) => {
               const node = window.app!.graph.nodes.find(
@@ -193,6 +215,8 @@ test.describe(
             await comfyPage.nextFrame()
             await expect(comfyPage.page.locator('#graph-canvas')).toBeVisible()
           }
+
+          await setFormat('video/h264-mp4')
 
           const result = await packPersistence.target.runWorkflow(
             comfyPage.page,
@@ -206,16 +230,6 @@ test.describe(
           expect(result.executedNodes).toEqual(
             expect.arrayContaining([ids.load, ids.combine])
           )
-          if (controlsError !== undefined) {
-            expect(controlsError).toMatchObject({
-              matcherResult: { name: 'toEqual', pass: false }
-            })
-            test.fail(
-              true,
-              'VHS format callback does not expose its labelled controls after app reload'
-            )
-            throw controlsError
-          }
         }
       )
 
