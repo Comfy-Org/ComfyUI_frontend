@@ -70,8 +70,16 @@ export function shouldHideLinkedCoreMediaInputPreview(
   node: LGraphNode,
   output: Pick<NodeExecutionOutput, 'images'> | undefined
 ): boolean {
+  const nodeClass = getLinkedCoreMediaLoaderClass(node)
+  const images = output?.images
   return (
-    shouldHideLinkedCoreMediaInputActions(node) && isInputPreviewOutput(output)
+    nodeClass !== undefined &&
+    LINKED_CORE_MEDIA_LOADERS[nodeClass].showsInputPreview &&
+    (isInputPreviewOutput(output) ||
+      (nodeClass === 'LoadImageOutput' &&
+        Array.isArray(images) &&
+        images.length > 0 &&
+        images.every((image) => image.type === 'output')))
   )
 }
 
