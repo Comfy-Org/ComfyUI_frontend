@@ -3256,14 +3256,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.graph_mouse[1] = y
 
     const hoveredBadge = queryLinkBadgeAtPoint(this, x, y)
-    let nodeAtPoint: LGraphNode | null = null
-    if (hoveredBadge !== undefined) {
-      nodeAtPoint = graph.getNodeOnPos(x, y, this.visible_nodes)
-      const revealed = nodeAtPoint ? [] : [hoveredBadge]
-      if (setRevealedLinks(graphScopeOf(graph).rootGraphId, revealed, this)) {
-        this.dirty_bgcanvas = true
-      }
-    } else if (clearRevealedLinks(this)) {
+    const nodeAtPoint =
+      hoveredBadge === undefined
+        ? null
+        : graph.getNodeOnPos(x, y, this.visible_nodes)
+    const revealed =
+      hoveredBadge !== undefined && !nodeAtPoint ? [hoveredBadge] : []
+    if (setRevealedLinks(graphScopeOf(graph).rootGraphId, revealed, this)) {
       this.dirty_bgcanvas = true
     }
 

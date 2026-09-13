@@ -49,6 +49,18 @@ describe('linkRevealState', () => {
     clearRevealedLinks(ownerB)
 
     expect(isLinkRevealed(ROOT_A, toLinkId(1))).toBe(true)
+    expect(isLinkRevealed(ROOT_B, toLinkId(1))).toBe(false)
+
+    setRevealedLinks(ROOT_B, [toLinkId(2)], ownerA)
+    expect(clearRevealedLinks(ownerA)).toBe(true)
+    expect(isLinkRevealed(ROOT_A, toLinkId(1))).toBe(false)
+    expect(isLinkRevealed(ROOT_B, toLinkId(2))).toBe(false)
+
+    setRevealedLinks(ROOT_A, [toLinkId(1)], ownerA)
+    setRevealedLinks(ROOT_B, [toLinkId(2)], ownerB)
+    expect(clearRootLinkReveals(ROOT_A)).toBe(true)
+    expect(isLinkRevealed(ROOT_A, toLinkId(1))).toBe(false)
+    expect(isLinkRevealed(ROOT_B, toLinkId(2))).toBe(true)
   })
 
   it('ignores a stale owner clearing a newer reveal', () => {
@@ -59,19 +71,5 @@ describe('linkRevealState', () => {
 
     expect(clearRevealedLinks(previousOwner)).toBe(false)
     expect(isLinkRevealed(ROOT_A, toLinkId(4))).toBe(true)
-  })
-
-  it('clears an owner holding and an entire root', () => {
-    const owner = {}
-    setRevealedLinks(ROOT_A, [toLinkId(1)], owner)
-    setRevealedLinks(ROOT_B, [toLinkId(2)], owner)
-
-    expect(clearRevealedLinks(owner)).toBe(true)
-    expect(isLinkRevealed(ROOT_A, toLinkId(1))).toBe(false)
-    expect(isLinkRevealed(ROOT_B, toLinkId(2))).toBe(false)
-
-    setRevealedLinks(ROOT_A, [toLinkId(1)], owner)
-    expect(clearRootLinkReveals(ROOT_A)).toBe(true)
-    expect(isLinkRevealed(ROOT_A, toLinkId(1))).toBe(false)
   })
 })

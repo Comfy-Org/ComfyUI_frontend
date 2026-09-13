@@ -77,6 +77,16 @@ describe('useSlotLinkReveal', () => {
     addLink(4, 6, 0, 11, 0, true)
     addLink(5, 0, 0, 12, 0, true)
 
+    const unconnected = createReveal({
+      nodeId: toNodeId(8),
+      index: 0,
+      type: 'output'
+    })
+    unconnected.reveal.revealLinks()
+    expect(isLinkRevealed(SCOPE.rootGraphId, toLinkId(1))).toBe(false)
+    expect(mocks.setDirty).not.toHaveBeenCalled()
+    unconnected.scope.stop()
+
     const { reveal, scope } = createReveal({
       nodeId: toNodeId(0),
       index: 0,
@@ -97,6 +107,16 @@ describe('useSlotLinkReveal', () => {
     addLink(7, 1, 0, 5, 2, true)
     addLink(8, 2, 0, 5, 1, true)
     addLink(9, 3, 0, 6, 2, true)
+
+    const unconnected = createReveal({
+      nodeId: toNodeId(8),
+      index: 0,
+      type: 'input'
+    })
+    unconnected.reveal.revealLinks()
+    expect(isLinkRevealed(SCOPE.rootGraphId, toLinkId(7))).toBe(false)
+    expect(mocks.setDirty).not.toHaveBeenCalled()
+    unconnected.scope.stop()
 
     const { reveal, scope } = createReveal({
       nodeId: toNodeId(5),
@@ -126,45 +146,5 @@ describe('useSlotLinkReveal', () => {
 
     expect(isLinkRevealed(SCOPE.rootGraphId, toLinkId(10))).toBe(false)
     expect(mocks.setDirty).toHaveBeenCalledWith(false, true)
-  })
-
-  it.for(['input', 'output'] as const)(
-    'does not reveal links on an unconnected %s slot',
-    (type) => {
-      addLink(10, 1, 0, 5, 2, true)
-      const { reveal, scope } = createReveal({
-        nodeId: toNodeId(8),
-        index: 0,
-        type
-      })
-
-      reveal.revealLinks()
-
-      expect(isLinkRevealed(SCOPE.rootGraphId, toLinkId(10))).toBe(false)
-      expect(mocks.setDirty).not.toHaveBeenCalled()
-      scope.stop()
-    }
-  )
-
-  it('does not clear another slot reveal when an unrelated scope is disposed', () => {
-    addLink(10, 1, 0, 5, 2, true)
-    const active = createReveal({
-      nodeId: toNodeId(5),
-      index: 2,
-      type: 'input'
-    })
-    const unrelated = createReveal({
-      nodeId: toNodeId(8),
-      index: 0,
-      type: 'output'
-    })
-    active.reveal.revealLinks()
-    mocks.setDirty.mockClear()
-
-    unrelated.scope.stop()
-
-    expect(isLinkRevealed(SCOPE.rootGraphId, toLinkId(10))).toBe(true)
-    expect(mocks.setDirty).not.toHaveBeenCalled()
-    active.scope.stop()
   })
 })

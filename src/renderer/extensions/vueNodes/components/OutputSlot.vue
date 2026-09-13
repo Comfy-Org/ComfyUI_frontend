@@ -85,7 +85,14 @@ const tooltipConfig = computed(() => {
   return createTooltipConfig(fallbackText + iterativeSuffix)
 })
 
+const { revealLinks, unrevealLinks } = useSlotLinkReveal({
+  nodeId: props.nodeId,
+  index: props.index,
+  type: 'output'
+})
+
 onErrorCaptured((error) => {
+  unrevealLinks()
   renderError.value = error.message
   toastErrorHandler(error)
   return false
@@ -114,12 +121,6 @@ const slotWrapperClass = computed(() =>
 )
 
 const { onPointerDown } = useSlotLinkInteraction({
-  nodeId: props.nodeId,
-  index: props.index,
-  type: 'output'
-})
-
-const { revealLinks, unrevealLinks } = useSlotLinkReveal({
   nodeId: props.nodeId,
   index: props.index,
   type: 'output'
