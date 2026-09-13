@@ -46,7 +46,7 @@ describe('remote_combo route validation', () => {
     expect(validateComfyNodeDef(buildNodeDef('/voices'))).not.toBeNull()
   })
 
-  it.each([
+  it.for([
     'http://api.example.com/voices',
     'https://api.example.com/voices',
     'voices'

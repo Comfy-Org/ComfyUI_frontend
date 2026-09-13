@@ -173,7 +173,7 @@ describe('mapToDropdownItem', () => {
     expect(item.id).toBe('42')
   })
 
-  it.each([{ label: 'Missing' }, { id: '', label: 'Empty' }])(
+  it.for([{ label: 'Missing' }, { id: '', label: 'Empty' }])(
     'rejects an item with a missing or empty value_field',
     (raw) => {
       expect(() =>
