@@ -286,6 +286,66 @@ test.describe(
       }
     })
 
+    test('renamed slot stays aligned while moving and rewiring in legacy mode', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow('default')
+      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
+      await fitToViewInstant(comfyPage)
+      await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
+
+      await comfyPage.page.evaluate((nodeId) => {
+        const node = window.app!.graph.getNodeById(nodeId)
+        if (!node) throw new Error('Empty Latent Image is unavailable')
+        node.addOutput('custom_latent', 'LATENT')
+      }, toNodeId('5'))
+      await comfyPage.nextFrame()
+      const sourceNode = await comfyPage.nodeOps.getNodeRefById('5')
+      const targetNode = await comfyPage.nodeOps.getNodeRefById('3')
+      const sourceSlot = await sourceNode.getOutput(1)
+      const targetSlot = await targetNode.getInput(3)
+      const renamedLabel = 'renamed_latent'
+
+      await comfyPage.page.evaluate((nodeId) => {
+        const node = window.app!.graph.getNodeById(nodeId)
+        if (!node) throw new Error('KSampler is unavailable')
+        node.disconnectInput(3)
+      }, toNodeId('3'))
+      const initialSlotPosition = await sourceSlot.getPosition()
+      await comfyPage.page.mouse.click(
+        initialSlotPosition.x,
+        initialSlotPosition.y,
+        { button: 'right' }
+      )
+      await comfyPage.contextMenu.clickLitegraphMenuItem('Rename Slot')
+      const renameInput = comfyPage.page.locator('.graphdialog input')
+      await expect(renameInput).toBeVisible()
+      await renameInput.fill(renamedLabel)
+      await comfyPage.page.keyboard.press('Enter')
+
+      await sourceNode.dragBy({ x: -100, y: 80 })
+      await sourceSlot.expectLinkCount(0)
+      await targetSlot.expectLinkCount(0)
+
+      const sourceCenter = await sourceSlot.getPosition()
+      const targetCenter = await targetSlot.getPosition()
+      await comfyPage.canvasOps.dragAndDrop(sourceCenter, targetCenter)
+
+      await sourceSlot.expectLinkCount(1)
+      await targetSlot.expectLinkCount(1)
+      expect(
+        await comfyPage.page.evaluate(
+          (nodeId) => window.app!.graph.getNodeById(nodeId)?.outputs[1]?.label,
+          toNodeId('5')
+        )
+      ).toBe(renamedLabel)
+      await comfyPage.canvasOps.moveMouseToEmptyArea()
+      await comfyPage.nextFrame()
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'ecs-renamed-moved-wired-legacy.png'
+      )
+    })
+
     for (const vueNodesEnabled of [false, true]) {
       test(`remains interactive after an incompatible link gesture in ${vueNodesEnabled ? 'Nodes 2.0' : 'legacy'} mode`, async ({
         comfyPage
