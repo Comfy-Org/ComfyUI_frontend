@@ -9,6 +9,8 @@ import {
 } from '@comfyorg/account/telemetry'
 
 const hoisted = vi.hoisted(() => ({
+  localDev: false,
+  deployEnv: '',
   mockInit: vi.fn(),
   mockCapture: vi.fn(),
   mockOnFeatureFlags: vi.fn<typeof PostHogModule.default.onFeatureFlags>(),
@@ -19,6 +21,20 @@ const hoisted = vi.hoisted(() => ({
   mockGetProperty: vi.fn(),
   mockReloadFeatureFlags: vi.fn()
 }))
+
+vi.mock(import('astro:env/client'), () => ({
+  get WORKSHOP_LOCAL_DEV() {
+    return hoisted.localDev
+  },
+  get WORKSHOP_DEPLOY_ENV() {
+    return hoisted.deployEnv
+  }
+}))
+
+beforeEach(() => {
+  hoisted.localDev = false
+  hoisted.deployEnv = ''
+})
 
 type PostHogMock = Pick<
   typeof PostHogModule.default,
@@ -92,7 +108,7 @@ describe('Workshop visibility', () => {
   })
 
   it('allows local development to preview the feature without PostHog', async () => {
-    vi.stubEnv('WORKSHOP_LOCAL_DEV', '1')
+    hoisted.localDev = true
     vi.stubEnv('PUBLIC_WORKSHOP_ENABLED', '1')
     const { useWorkshopEnabled } = await import('./posthog')
     expect(useWorkshopEnabled().value).toBe(true)
@@ -409,7 +425,7 @@ describe('useWorkshopAuthFlag', () => {
   })
 
   it('keeps the production auth kill switch despite a configured override', async () => {
-    vi.stubEnv('WORKSHOP_DEPLOY_ENV', 'production')
+    hoisted.deployEnv = 'production'
     vi.stubEnv('PUBLIC_WORKSHOP_AUTH_FLAG', '1')
     const { initPostHog, useWorkshopAuthFlag } = await import('./posthog')
     initPostHog()

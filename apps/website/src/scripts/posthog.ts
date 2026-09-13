@@ -1,3 +1,4 @@
+import { WORKSHOP_LOCAL_DEV, WORKSHOP_DEPLOY_ENV } from 'astro:env/client'
 import posthog from 'posthog-js'
 import { readonly, ref } from 'vue'
 import type { Ref } from 'vue'
@@ -105,8 +106,7 @@ const WORKSHOP_ENABLED_FLAG = 'workshop-enabled'
 const WORKSHOP_TURNSTILE_FLAG = 'workshop-signup-turnstile'
 
 const VISIBILITY_OVERRIDE =
-  import.meta.env.WORKSHOP_LOCAL_DEV === '1' &&
-  import.meta.env.PUBLIC_WORKSHOP_ENABLED === '1'
+  WORKSHOP_LOCAL_DEV && import.meta.env.PUBLIC_WORKSHOP_ENABLED === '1'
 const workshopEnabled = ref(VISIBILITY_OVERRIDE)
 let workshopUserId: string | null | undefined
 
@@ -141,7 +141,7 @@ export function identifyWorkshopUser(uid: string | null): void {
  * flag remotely actually takes the surfaces down.
  */
 const OVERRIDDEN_ON =
-  import.meta.env.WORKSHOP_DEPLOY_ENV !== 'production' &&
+  WORKSHOP_DEPLOY_ENV !== 'production' &&
   import.meta.env.PUBLIC_WORKSHOP_AUTH_FLAG === '1'
 const workshopAuthEnabled = ref(OVERRIDDEN_ON)
 /** True once PostHog has answered (or the override stands in for it). */

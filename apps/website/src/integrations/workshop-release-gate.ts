@@ -1,4 +1,5 @@
 import type { AstroIntegration } from 'astro'
+import { envField } from 'astro/config'
 // Both imported statically. A dynamic `import()` inside the hook throws
 // "Vite module runner has been closed" — by `astro:build:done` the runner that
 // resolves module specifiers is gone, so anything not already loaded fails.
@@ -17,13 +18,24 @@ import {
 
 export function modelsBuildRoutes(enabled: boolean) {
   const entry = (name: string) =>
-    fileURLToPath(new URL(`../routes/models/${name}.astro`, import.meta.url))
+    fileURLToPath(new URL(`../routes/models/${name}`, import.meta.url))
   return [
-    { pattern: '/models', entrypoint: entry(enabled ? 'index' : 'showcase') },
+    {
+      pattern: '/models',
+      entrypoint: entry(enabled ? 'index.astro' : 'showcase.astro')
+    },
     ...(enabled
       ? [
-          { pattern: '/models/[slug]', entrypoint: entry('[slug]') },
-          { pattern: '/models/showcase', entrypoint: entry('showcase') }
+          { pattern: '/models/[slug]', entrypoint: entry('[slug].astro') },
+          { pattern: '/models/showcase', entrypoint: entry('showcase.astro') },
+          {
+            pattern: '/models/[slug]/page.json',
+            entrypoint: entry('page.json.ts')
+          },
+          {
+            pattern: '/models/catalogue.json',
+            entrypoint: entry('catalogue.json.ts')
+          }
         ]
       : [])
   ]
@@ -35,16 +47,22 @@ export function workshopReleaseGate(): AstroIntegration {
     hooks: {
       'astro:config:setup': ({ injectRoute, updateConfig, command }) => {
         updateConfig({
-          vite: {
-            plugins: [workshopClientBoundary()],
-            define: {
-              'import.meta.env.WORKSHOP_LOCAL_DEV': JSON.stringify(
-                command === 'dev' && !process.env.VERCEL_ENV ? '1' : ''
-              ),
-              'import.meta.env.WORKSHOP_DEPLOY_ENV': JSON.stringify(
-                process.env.VERCEL_ENV ?? ''
-              )
+          env: {
+            schema: {
+              WORKSHOP_LOCAL_DEV: envField.boolean({
+                context: 'client',
+                access: 'public',
+                default: command === 'dev' && !process.env.VERCEL_ENV
+              }),
+              WORKSHOP_DEPLOY_ENV: envField.string({
+                context: 'client',
+                access: 'public',
+                default: process.env.VERCEL_ENV ?? ''
+              })
             }
+          },
+          vite: {
+            plugins: [workshopClientBoundary()]
           }
         })
         for (const route of modelsBuildRoutes(isWorkshopInBuild()))

@@ -1,14 +1,22 @@
 // @vitest-environment happy-dom
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import type { WorkshopBrowseModel } from '../../config/workshop'
 import WorkshopSection from './WorkshopSection.vue'
 
-vi.mock(import('../../scripts/posthog'), async () => {
+const { enabled } = await vi.hoisted(async () => {
   const { ref } = await import('vue')
-  return { useWorkshopEnabled: () => ref(true) }
+  return { enabled: ref(true) }
+})
+
+vi.mock(import('../../scripts/posthog'), () => ({
+  useWorkshopEnabled: () => enabled
+}))
+
+beforeEach(() => {
+  enabled.value = true
 })
 
 const models: WorkshopBrowseModel[] = [
@@ -38,6 +46,23 @@ async function renderSection() {
 }
 
 describe('WorkshopSection', async () => {
+  it('keeps featured models unavailable until enabled and hides them on revocation', async () => {
+    enabled.value = false
+    await renderSection()
+    expect(screen.queryByText('Browse all models')).toBeNull()
+    expect(screen.queryByText('FLUX 2 Pro')).toBeNull()
+
+    enabled.value = true
+    await nextTick()
+    expect(screen.getByRole('link', { name: 'Browse all models' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: /FLUX 2 Pro/ })).toBeTruthy()
+
+    enabled.value = false
+    await nextTick()
+    expect(screen.queryByRole('link', { name: 'Browse all models' })).toBeNull()
+    expect(screen.queryByRole('link', { name: /FLUX 2 Pro/ })).toBeNull()
+  })
+
   it('links each featured model to its own page', async () => {
     await renderSection()
 

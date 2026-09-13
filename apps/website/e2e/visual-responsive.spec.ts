@@ -31,7 +31,9 @@ async function navigateAndSettle(page: Page, url: string) {
   await page.goto(url, { waitUntil: 'domcontentloaded' })
   await page.waitForLoadState('load')
   await expect(
-    page.getByTestId('desktop-nav-links').getByRole('link', { name: 'Models' })
+    page
+      .getByTestId('desktop-nav-links')
+      .getByRole('link', { name: 'Models', includeHidden: true })
   ).toBeAttached()
   await waitForPpFormulaLight(page)
 }

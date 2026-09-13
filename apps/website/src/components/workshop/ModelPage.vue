@@ -3,19 +3,15 @@ import { ArrowRight } from '@lucide/vue'
 
 import { catalogSearch } from '../../config/models-catalogue'
 import { getRoutes } from '../../config/routes'
+import type { ModelsPageData } from '../../config/models-page-data'
 import { t } from '../../i18n/translations'
-import { prepareModelPage } from '../../routes/models/model-page'
 import ModelDetail from './ModelDetail.vue'
 import ModelStatus from './ModelStatus.vue'
 import ModelSupport from './ModelSupport.vue'
 import SplitReveal from './SplitReveal.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 
-const { slug } = defineProps<{ slug: string }>()
-const result = await prepareModelPage(slug)
-if (result.kind === 'redirect')
-  throw new Error(`Expected a canonical Models slug: ${slug}`)
-const page = result
+const { page } = defineProps<{ page: ModelsPageData }>()
 const routes = getRoutes()
 const pillClass =
   'inline-flex h-7 items-center rounded-full border border-transparency-white-t20 px-3 text-xs leading-none text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow'

@@ -172,8 +172,9 @@ answer for the same identity. Disabling it restores the public site:
 - The header and homepage retain their existing navigation and model links.
 - `/models` shows the existing Models marketing page.
 - Model render pages show the public marketing content until enabled.
-- Public HTML contains only the fallback; catalogue and playground components
-  load after enablement. `/models` remains indexable with its marketing content.
+- Catalogue and playground markup is absent from public HTML; their components
+  and page data load after enablement. Homepage islands still serialize public
+  model and provider summaries. `/models` remains indexable with its marketing content.
 - Render pages stay out of sitemaps and markdown exports.
 
 Create `workshop-enabled` in the website's PostHog project with a release

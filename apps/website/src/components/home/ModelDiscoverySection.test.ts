@@ -1,16 +1,24 @@
 // @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { discoveryProviders } from '../../data/modelDiscovery'
 import type { DiscoveryProvider } from '../../data/modelDiscovery'
 import ModelDiscoverySection from './ModelDiscoverySection.vue'
 
-vi.mock(import('../../scripts/posthog'), async () => {
+const { enabled } = await vi.hoisted(async () => {
   const { ref } = await import('vue')
-  return { useWorkshopEnabled: () => ref(true) }
+  return { enabled: ref(true) }
+})
+
+vi.mock(import('../../scripts/posthog'), () => ({
+  useWorkshopEnabled: () => enabled
+}))
+
+beforeEach(() => {
+  enabled.value = true
 })
 
 const providers: readonly DiscoveryProvider[] = [
@@ -23,6 +31,28 @@ const providers: readonly DiscoveryProvider[] = [
 ]
 
 describe('ModelDiscoverySection', async () => {
+  it('keeps discovery unavailable until enabled and hides it on revocation', async () => {
+    enabled.value = false
+    render(ModelDiscoverySection, { props: { providers } })
+    await nextTick()
+    expect(screen.queryByText('Browse all models')).toBeNull()
+    expect(screen.queryByText('Fixture Studio & Co')).toBeNull()
+
+    enabled.value = true
+    await nextTick()
+    expect(screen.getByRole('link', { name: 'Browse all models' })).toBeTruthy()
+    expect(
+      screen.getByRole('link', { name: /Fixture Studio & Co/ })
+    ).toBeTruthy()
+
+    enabled.value = false
+    await nextTick()
+    expect(screen.queryByRole('link', { name: 'Browse all models' })).toBeNull()
+    expect(
+      screen.queryByRole('link', { name: /Fixture Studio & Co/ })
+    ).toBeNull()
+  })
+
   it('only lines up providers that run published models and have a preview', async () => {
     expect(discoveryProviders.length).toBeGreaterThan(1)
     for (const provider of discoveryProviders) {

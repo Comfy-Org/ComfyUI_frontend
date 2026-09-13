@@ -7,6 +7,8 @@ import { renderToString } from 'vue/server-renderer'
 import './ModelPage.vue'
 import './ModelsCatalogue.vue'
 import ModelsPage from './ModelsPage.vue'
+import { prepareModelPage } from '../../routes/models/model-page'
+import { workshopModels } from '../../config/workshop-browse-content'
 
 const { enabled } = await vi.hoisted(async () => {
   const { ref } = await import('vue')
@@ -25,6 +27,7 @@ vi.mock(import('../../scripts/posthog'), async () => {
 })
 
 const modelSlug = 'bfl--flux-2-max--generate-images'
+const modelPage = await prepareModelPage(modelSlug)
 
 beforeEach(() => {
   enabled.value = false
@@ -57,11 +60,16 @@ describe('Models page entry', () => {
     { slug: undefined, visible: 'workshop-search' },
     { slug: modelSlug, visible: 'model-hero' }
   ])('mounts $visible only after enablement', async ({ slug, visible }) => {
+    const fetchData = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(Response.json(slug ? modelPage : workshopModels))
+    vi.stubGlobal('fetch', fetchData)
     render(ModelsPage, {
       props: { slug },
       slots: { fallback: '<h1>Public Models</h1>' }
     })
     expect(screen.queryByTestId(visible)).toBeNull()
+    expect(fetchData).not.toHaveBeenCalled()
     enabled.value = true
     expect(await screen.findByTestId(visible)).toBeTruthy()
     expect(screen.queryByRole('heading', { name: 'Public Models' })).toBeNull()

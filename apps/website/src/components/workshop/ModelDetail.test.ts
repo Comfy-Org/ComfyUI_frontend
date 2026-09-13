@@ -1147,8 +1147,12 @@ describe('ModelDetail', () => {
       const late = Promise.withResolvers<typeof routerResult>()
       vi.mocked(runWorkshopRouter).mockReturnValue(late.promise)
       mountDetail({ model: runnable })
-      await user().type(screen.getByTestId('field-prompt'), 'A teapot')
-      await user().click(screen.getByTestId('run-button'))
+      const visitor = user()
+      await visitor.type(
+        screen.getByRole('textbox', { name: 'Prompt' }),
+        'A teapot'
+      )
+      await visitor.click(screen.getByRole('button', { name: 'Run' }))
       await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledTimes(1))
       if (change === 'sign-out') auth.session.value = undefined
       else

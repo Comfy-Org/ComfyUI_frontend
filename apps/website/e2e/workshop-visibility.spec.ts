@@ -21,6 +21,11 @@ test('public HTML excludes catalogue and playground markup', async ({
 })
 
 test('keeps the public site when PostHog is unavailable', async ({ page }) => {
+  const dataRequests: string[] = []
+  page.on('request', (request) => {
+    if (/\/models\/.*(?:page|catalogue)\.json$/.test(request.url()))
+      dataRequests.push(request.url())
+  })
   await page.goto('/')
   await expect(
     page.getByRole('link', { name: 'Models', exact: true })
@@ -44,6 +49,7 @@ test('keeps the public site when PostHog is unavailable', async ({ page }) => {
   await page.goto(MODEL_PATH)
   await expect(page.getByTestId('model-hero')).toHaveCount(0)
   await expect(page.getByTestId('model-detail')).toHaveCount(0)
+  expect(dataRequests).toEqual([])
 })
 
 test('keeps the public Models page when the flag is disabled', async ({
