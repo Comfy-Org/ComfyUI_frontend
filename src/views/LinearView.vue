@@ -129,7 +129,7 @@ function dragDrop(e: DragEvent) {
         />
         <Splitter
           :key="splitterKey"
-          class="h-full flex-1 border-none bg-secondary-background"
+          class="h-full min-w-0 flex-1 border-none bg-secondary-background"
           @resizestart="$event.originalEvent.preventDefault()"
           @resizeend="onResizeEnd"
         >
