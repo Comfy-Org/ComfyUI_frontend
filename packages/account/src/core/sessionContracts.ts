@@ -50,14 +50,6 @@ export function isPermanentSessionError(code: SessionErrorCode): boolean {
   return PERMANENT_ERROR_CODES.has(code)
 }
 
-export type SessionRefreshOutcome =
-  | 'succeeded'
-  | 'retry_scheduled'
-  | 'retries_exhausted'
-  | 'permanent_failure'
-  /** The credential reached its expiry after retries ran out; the client failed closed. */
-  | 'expired'
-
 export type SessionResult =
   | { readonly status: 'ok'; readonly session: AccountCredential }
   | {
@@ -68,6 +60,30 @@ export type SessionResult =
     }
 
 export type SessionFailure = Extract<SessionResult, { status: 'error' }>
+
+export type SessionRefreshResult =
+  | {
+      readonly outcome: 'succeeded'
+      readonly failure?: never
+    }
+  | {
+      readonly outcome: 'retry_scheduled'
+      readonly failure?: never
+    }
+  | {
+      readonly outcome: 'retries_exhausted'
+      readonly failure?: never
+    }
+  | {
+      readonly outcome: 'permanent_failure'
+      readonly failure: SessionFailure
+    }
+  | {
+      readonly outcome: 'expired'
+      readonly failure: SessionFailure
+    }
+
+export type SessionRefreshOutcome = SessionRefreshResult['outcome']
 
 export interface MintHandle {
   readonly mintId: number
@@ -131,8 +147,5 @@ export interface RefreshSchedulerOptions {
    * expiry carry the failure the client committed, so the host never has
    * to read it back out of the snapshot.
    */
-  readonly onScheduledOutcome?: (
-    outcome: SessionRefreshOutcome,
-    failure?: SessionFailure
-  ) => void
+  readonly onScheduledOutcome?: (result: SessionRefreshResult) => void
 }
