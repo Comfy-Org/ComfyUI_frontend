@@ -394,9 +394,9 @@
       "contactSupport": "Hesabınızı silmek için lütfen {email} adresiyle iletişime geçin"
     },
     "errors": {
-      "auth/account-exists-with-different-credential": "Bu e-posta adresiyle zaten bir hesap var, ancak farklı bir oturum açma yöntemi kullanıyor. Lütfen başlangıçta kullandığınız yöntemle oturum açın.",
+      "auth/account-exists-with-different-credential": "Bu yöntemle giriş yapamadık. Başka bir giriş seçeneği deneyin veya devam etmek için şifrenizi sıfırlayın.",
       "auth/cancelled-popup-request": "Başka bir oturum açma penceresi zaten açık olduğundan bu pencere iptal edildi. Lütfen tekrar deneyin.",
-      "auth/email-already-in-use": "Bu e-posta ile zaten bir hesap mevcut. Bunun yerine giriş yapmayı deneyin.",
+      "auth/email-already-in-use": "Bu e-posta ile bir hesap oluşturamadık. Zaten bir hesabınız varsa giriş yapmayı deneyin veya şifrenizi sıfırlayın.",
       "auth/invalid-credential": "Geçersiz giriş bilgileri. Lütfen e-posta adresinizi ve parolanızı kontrol edin.",
       "auth/invalid-email": "Lütfen geçerli bir e-posta adresi girin.",
       "auth/network-request-failed": "Ağ hatası. Lütfen bağlantınızı kontrol edip tekrar deneyin.",

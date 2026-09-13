@@ -394,9 +394,9 @@
       "contactSupport": "Para eliminar tu cuenta, por favor contacta a {email}"
     },
     "errors": {
-      "auth/account-exists-with-different-credential": "Ya existe una cuenta con esta dirección de correo electrónico, pero utiliza un método de inicio de sesión diferente. Inicia sesión como lo hiciste originalmente.",
+      "auth/account-exists-with-different-credential": "No pudimos iniciar tu sesión con este método. Prueba otra opción de inicio de sesión o restablece tu contraseña para continuar.",
       "auth/cancelled-popup-request": "Ya había otra ventana de inicio de sesión abierta, por lo que esta se canceló. Inténtalo de nuevo.",
-      "auth/email-already-in-use": "Ya existe una cuenta con este correo electrónico. Intenta iniciar sesión en su lugar.",
+      "auth/email-already-in-use": "No pudimos crear una cuenta con este correo electrónico. Si ya tienes una, intenta iniciar sesión o restablecer tu contraseña.",
       "auth/invalid-credential": "Credenciales de inicio de sesión inválidas. Por favor, verifica tu correo electrónico y contraseña.",
       "auth/invalid-email": "Por favor, ingresa una dirección de correo electrónico válida.",
       "auth/network-request-failed": "Error de red. Por favor, verifica tu conexión e inténtalo de nuevo.",
