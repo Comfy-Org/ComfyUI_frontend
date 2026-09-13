@@ -1,3 +1,5 @@
+import { isPlainObject } from 'es-toolkit'
+
 import type {
   ISerialisableNodeInput,
   ISerialisableNodeOutput,
@@ -133,6 +135,8 @@ type PreparedMutation =
       topology: LinkTopology
       originOutputs?: NodeState['outputs']
       targetInputs?: NodeState['inputs']
+      liveOriginOutputs?: NodeState['outputs']
+      liveTargetInputs?: NodeState['inputs']
     }
   | {
       kind: 'removeMissing'
@@ -358,6 +362,10 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           if (incumbent && incumbent.graphId !== scope.owningGraphId) {
             return `node id ${key} belongs to graph ${incumbent.graphId}`
           }
+          if (mutation.kind === 'reconcileNode' && incumbent) {
+            node.state.inputs = incumbent.inputs
+            node.state.outputs = incumbent.outputs
+          }
           if (mutation.kind === 'addNode' && nodes.has(key)) {
             return `node id ${key} is already registered`
           }
@@ -423,9 +431,25 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           const originOutputs = mutation.link.originOutputs
             ? prepareOutputSlots(mutation.link.originOutputs)
             : origin.outputs
-          const targetInputs = mutation.link.targetInputs
-            ? prepareInputSlots(mutation.link.targetInputs)
-            : target.inputs
+          const targetInputs = [...target.inputs]
+          if (mutation.link.targetInputs) {
+            const documentInputs = prepareInputSlots(mutation.link.targetInputs)
+            const name = documentInputs.at(topology.targetSlot)?.name
+            if (name === undefined) {
+              return `connect target slot ${topology.targetSlot} does not exist`
+            }
+            for (const input of documentInputs) {
+              const index = targetInputs.findIndex(
+                (local) => local.name === input.name
+              )
+              if (index < 0) targetInputs.push(input)
+              else if (isPlainObject(targetInputs[index]))
+                targetInputs[index] = input
+            }
+            topology.targetSlot = targetInputs.findIndex(
+              (input) => input.name === name
+            )
+          }
           if (topology.originSlot >= originOutputs.length) {
             return `connect origin slot ${topology.originSlot} does not exist`
           }
@@ -446,10 +470,12 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             kind: mutation.kind,
             topology,
             ...(mutation.link.originOutputs && {
-              originOutputs
+              originOutputs,
+              liveOriginOutputs: [...origin.outputs]
             }),
             ...(mutation.link.targetInputs && {
-              targetInputs
+              targetInputs,
+              liveTargetInputs: [...target.inputs]
             })
           })
           break
@@ -566,7 +592,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     if (origin?.outputs[topology.originSlot]) {
       const slots = slotsFor(origin)
       slots.outputs = slots.outputs.map((output, index) =>
-        index === topology.originSlot
+        index === topology.originSlot && isPlainObject(output)
           ? {
               ...output,
               links: output.links?.filter((id) => id !== topology.id) ?? null
@@ -579,7 +605,9 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     if (target?.inputs[topology.targetSlot]?.link === topology.id) {
       const slots = slotsFor(target)
       slots.inputs = slots.inputs.map((input, index) =>
-        index === topology.targetSlot ? { ...input, link: null } : input
+        index === topology.targetSlot && isPlainObject(input)
+          ? { ...input, link: null }
+          : input
       )
     }
 
@@ -737,6 +765,22 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             nodeKey(mutation.topology.targetNodeId)
           )
           if (origin && mutation.originOutputs) {
+            for (const [index, output] of (
+              mutation.liveOriginOutputs ?? origin.outputs
+            ).entries()) {
+              const serialized = mutation.originOutputs[index]
+              if (isPlainObject(output) && isPlainObject(serialized)) {
+                Object.assign(
+                  output,
+                  Object.fromEntries(
+                    Object.entries(serialized).filter(
+                      ([, value]) => value !== undefined
+                    )
+                  )
+                )
+              }
+              mutation.originOutputs[index] = output
+            }
             nodeStore.updateNodeSlots(
               scope,
               origin.id,
@@ -748,6 +792,24 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             )
           }
           if (target && mutation.targetInputs) {
+            for (const input of mutation.liveTargetInputs ?? target.inputs) {
+              const index = mutation.targetInputs.findIndex(
+                (serialized) => serialized.name === input.name
+              )
+              if (index >= 0) {
+                if (isPlainObject(input)) {
+                  Object.assign(
+                    input,
+                    Object.fromEntries(
+                      Object.entries(mutation.targetInputs[index]).filter(
+                        ([, value]) => value !== undefined
+                      )
+                    )
+                  )
+                }
+                mutation.targetInputs[index] = input
+              }
+            }
             nodeStore.updateNodeSlots(
               scope,
               target.id,

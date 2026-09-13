@@ -24,6 +24,7 @@ import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import type {
   AgentConversation,
   AgentConversationTurn,
+  RecordedGraphOperation,
   RecordedWsEvent
 } from '@e2e/fixtures/data/agent/agentConversation'
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
@@ -306,6 +307,12 @@ class AgentConversationHarness {
       await this.expectTurnRendered(turn, before)
       await this.expectCanvasReplayed(turn)
     }
+  }
+
+  async applyGraphOps(ops: RecordedGraphOperation[]): Promise<void> {
+    await this.waitForSubscribe()
+    this.send(this.host.apply(ops))
+    await expect.poll(() => this.renderedLinks().then(() => true)).toBe(true)
   }
 
   private async panelCounts(): Promise<PanelCounts> {

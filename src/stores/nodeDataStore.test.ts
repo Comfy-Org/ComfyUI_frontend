@@ -255,6 +255,36 @@ describe('nodeDataStore registration via LGraph', () => {
     expect(state?.inputs.map((i) => i.name)).toEqual(['third', 'first'])
   })
 
+  it('keeps live slot arrays shared after a store update', () => {
+    const graph = new LGraph()
+    const live = new LGraphNode('test')
+    live.addInput('first', 'INT')
+    live.addOutput('result', 'INT')
+    graph.add(live)
+    const state = registeredState(graph, live)
+    assert(state)
+    const inputs = live.inputs
+    const outputs = live.outputs
+
+    expect(
+      useNodeDataStore().updateNodeSlots(
+        graphScope(graph.id, graph.id),
+        live.id,
+        { inputs: [...inputs], outputs: [...outputs] }
+      )
+    ).toBe(true)
+
+    live.addInput('second', 'INT')
+    live.addOutput('next', 'INT')
+    expect(state.inputs).toBe(inputs)
+    expect(state.outputs).toBe(outputs)
+    expect(state.inputs.map((input) => input.name)).toEqual(['first', 'second'])
+    expect(state.outputs.map((output) => output.name)).toEqual([
+      'result',
+      'next'
+    ])
+  })
+
   it('moves registered state to a same-id replacement without changing store membership', () => {
     const graph = new LGraph()
     const original = new LGraphNode('original')

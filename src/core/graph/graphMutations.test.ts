@@ -1,10 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import {
+  graphScopeOf,
+  toOwningGraphId,
+  toRootGraphId
+} from '@/types/graphScopeId'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
@@ -321,6 +326,209 @@ describe('graphMutations', () => {
       name: 'grown',
       link: toLinkId(9)
     })
+  })
+
+  it('preserves live slots through remote connect, reconnect, and removal', () => {
+    const graph = new LGraph()
+    const source = new LGraphNode('Source')
+    source.id = toNodeId(1)
+    source.addOutput('out', 'IMAGE', { label: 'Current output' })
+    graph.add(source)
+    const target = new LGraphNode('Target')
+    target.id = toNodeId(2)
+    target.addInput('in', 'IMAGE', { label: 'Current input' })
+    graph.add(target)
+    const output = source.outputs[0]
+    const input = target.inputs[0]
+    const remote = createGraphMutations({
+      getScope: () => graphScopeOf(graph),
+      layout: { createNode: createLayout, deleteNodes: deleteLayouts }
+    })
+    const link = {
+      id: 9,
+      originNodeId: 1,
+      originSlot: 0,
+      targetNodeId: 2,
+      targetSlot: 0,
+      type: 'IMAGE',
+      originOutputs: [{ name: 'out', type: 'IMAGE', links: [9] }],
+      targetInputs: [{ name: 'in', type: 'IMAGE', link: 9 }]
+    }
+    const store = useNodeDataStore()
+
+    for (let attempt = 0; attempt < 2; attempt++) {
+      expect(remote.connect(link, context)).toBe(true)
+      expect(store.getNode(graph.id, source.id)?.outputs).toBe(source.outputs)
+      expect(store.getNode(graph.id, target.id)?.inputs).toBe(target.inputs)
+      expect(source.outputs[0]).toBe(output)
+      expect(target.inputs[0]).toBe(input)
+      expect(output.label).toBe('Current output')
+      expect(input.label).toBe('Current input')
+      expect(source.isOutputConnected(0)).toBe(true)
+      expect(target.isInputConnected(0)).toBe(true)
+    }
+
+    expect(remote.batch(context, (batch) => batch.removeLinks([9]))).toBe(true)
+    expect(source.outputs[0]).toBe(output)
+    expect(target.inputs[0]).toBe(input)
+    expect(source.isOutputConnected(0)).toBe(false)
+    expect(target.isInputConnected(0)).toBe(false)
+  })
+
+  it('preserves grown live inputs when reconciliation precedes a named connect', () => {
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    graph.addNode(
+      {
+        ...node(2),
+        inputs: [
+          { name: 'image_1', type: 'IMAGE', link: null },
+          { name: 'image_0', type: 'IMAGE', link: null },
+          { name: 'width', type: 'INT', link: null },
+          { name: 'height', type: 'INT', link: null }
+        ]
+      },
+      context
+    )
+    const target = useNodeDataStore().getNode('root', toNodeId(2))!
+    const liveInputs = target.inputs
+
+    expect(
+      graph.batch(context, (batch) => {
+        batch.reconcileNode({
+          ...node(2),
+          inputs: [
+            { name: 'image_0', type: 'IMAGE', link: null },
+            { name: 'width', type: 'INT', link: 9 },
+            { name: 'height', type: 'INT', link: null }
+          ]
+        })
+        batch.connect({
+          id: 9,
+          originNodeId: 1,
+          originSlot: 0,
+          targetNodeId: 2,
+          targetSlot: 1,
+          type: 'INT',
+          targetInputs: [
+            { name: 'image_0', type: 'IMAGE', link: null },
+            { name: 'width', type: 'INT', link: 9 },
+            { name: 'height', type: 'INT', link: null }
+          ]
+        })
+      })
+    ).toBe(true)
+    expect(target.inputs).toBe(liveInputs)
+    expect(target.inputs.map(({ name }) => name)).toEqual([
+      'image_1',
+      'image_0',
+      'width',
+      'height'
+    ])
+    expect(
+      useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))?.targetSlot
+    ).toBe(2)
+  })
+
+  it('rejects a missing document target without changing endpoint slots', () => {
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    graph.addNode(node(2), context)
+    const source = useNodeDataStore().getNode('root', toNodeId(1))!
+    const target = useNodeDataStore().getNode('root', toNodeId(2))!
+    const sourceOutputs = source.outputs.map(({ links }) => [...(links ?? [])])
+    const targetInputs = target.inputs.map(({ link }) => link)
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    expect(
+      graph.batch(context, (batch) => {
+        batch.connect({
+          id: 9,
+          originNodeId: 1,
+          originSlot: 0,
+          targetNodeId: 2,
+          targetSlot: 2,
+          type: 'IMAGE',
+          targetInputs: [{ name: 'in', type: 'IMAGE', link: null }]
+        })
+      })
+    ).toBe(false)
+    expect(
+      useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
+    ).toBeUndefined()
+    expect(source.outputs.map(({ links }) => [...(links ?? [])])).toEqual(
+      sourceOutputs
+    )
+    expect(target.inputs.map(({ link }) => link)).toEqual(targetInputs)
+    error.mockRestore()
+  })
+
+  it('does not mutate endpoint metadata when a later batch mutation fails', () => {
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    graph.addNode(node(2), context)
+    const source = useNodeDataStore().getNode('root', toNodeId(1))!
+    const target = useNodeDataStore().getNode('root', toNodeId(2))!
+    Object.assign(source.outputs[0], { label: 'live output', links: null })
+    Object.assign(target.inputs[0], { label: 'live input', link: null })
+    const sourceOutput = { ...source.outputs[0] }
+    const targetInput = { ...target.inputs[0] }
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    expect(
+      graph.batch(context, (batch) => {
+        batch.connect({
+          id: 9,
+          originNodeId: 1,
+          originSlot: 0,
+          targetNodeId: 2,
+          targetSlot: 0,
+          type: 'IMAGE',
+          originOutputs: [{ name: 'out', type: 'IMAGE', links: [toLinkId(9)] }],
+          targetInputs: [{ name: 'in', type: 'IMAGE', link: toLinkId(9) }]
+        })
+        batch.setWidget(toNodeId(99), 'missing', 1)
+      })
+    ).toBe(false)
+    expect(source.outputs[0]).toEqual(sourceOutput)
+    expect(target.inputs[0]).toEqual(targetInput)
+    expect(
+      useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
+    ).toBeUndefined()
+    error.mockRestore()
+  })
+
+  it('updates serialized slots whose optional link mirrors were absent', () => {
+    const graph = mutations()
+    expect(
+      graph.batch(context, (batch) => {
+        batch.addNode({
+          ...node(1),
+          outputs: [{ name: 'out', type: 'IMAGE' }]
+        })
+        batch.addNode({
+          ...node(2),
+          inputs: [{ name: 'in', type: 'IMAGE' }]
+        })
+        batch.connect({
+          id: 9,
+          originNodeId: 1,
+          originSlot: 0,
+          targetNodeId: 2,
+          targetSlot: 0,
+          type: 'IMAGE',
+          originOutputs: [{ name: 'out', type: 'IMAGE', links: [9] }],
+          targetInputs: [{ name: 'in', type: 'IMAGE', link: 9 }]
+        })
+      })
+    ).toBe(true)
+
+    const store = useNodeDataStore()
+    expect(store.getNode('root', toNodeId(1))?.outputs[0].links).toEqual([9])
+    expect(store.getNode('root', toNodeId(2))?.inputs[0].link).toBe(9)
+    expect(graph.batch(context, (batch) => batch.removeLinks([9]))).toBe(true)
+    expect(store.getNode('root', toNodeId(1))?.outputs[0].links).toEqual([])
+    expect(store.getNode('root', toNodeId(2))?.inputs[0].link).toBeNull()
   })
 
   it('re-adds a normalized node id as a fresh widget incarnation', () => {

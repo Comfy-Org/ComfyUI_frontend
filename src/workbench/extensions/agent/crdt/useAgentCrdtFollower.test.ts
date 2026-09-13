@@ -6,18 +6,22 @@
  * the FE-1901 bounded subscribe retry, the FE-1902 sessionStorage rebind,
  * the frame-handler status surface, and total teardown.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { mint } from '@comfyorg/comfy-multi-player'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, nextTick, ref, shallowRef } from 'vue'
 import type { Ref } from 'vue'
 
 import { render } from '@testing-library/vue'
 
 import type { GraphMutations } from '@/core/graph/graphMutations'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
 
 import type { MaterializableGraph } from './agentNodeMaterializer'
+import type { GraphOperation } from './graphOperations'
+import type * as EcsFollowerModule from './ecsFollowerAdapter'
 
 const bridgeState = vi.hoisted(() => {
   class FakeBridge extends EventTarget {
@@ -103,7 +107,8 @@ vi.mock<unknown>(import('./docFrameClient'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('./ecsFollowerAdapter'), () => ({
+vi.mock<unknown>(import('./ecsFollowerAdapter'), async (importOriginal) => ({
+  ...(await importOriginal<typeof EcsFollowerModule>()),
   EcsFollowerAdapter: class {
     bind = adapterState.bind
     unbind = adapterState.unbind
@@ -172,13 +177,15 @@ function mountFollower(
   workflowId: Ref<string | null>
   isTargetActive: Ref<boolean>
   status: () => AgentCrdtStatus
+  enqueue: (operations: GraphOperation[]) => void
 } {
   const workflowId = ref<string | null>(initial)
   const isTargetActive = ref(initiallyActive)
   let exposedStatus!: () => AgentCrdtStatus
+  let enqueue!: (operations: GraphOperation[]) => void
   const host = defineComponent({
     setup() {
-      const { status } = useAgentCrdtFollower(
+      const { status, enqueueHumanOperations } = useAgentCrdtFollower(
         workflowId,
         graphMutations,
         () => null,
@@ -186,11 +193,41 @@ function mountFollower(
         getGraph
       )
       exposedStatus = () => status.value as AgentCrdtStatus
+      enqueue = enqueueHumanOperations
       return () => null
     }
   })
   const { unmount } = render(host)
-  return { unmount, workflowId, isTargetActive, status: exposedStatus }
+  return { unmount, workflowId, isTargetActive, status: exposedStatus, enqueue }
+}
+
+function mountInputFollower() {
+  const graph = new LGraph()
+  const source = new LGraphNode('Source', 'Source')
+  source.addOutput('value', 'INT')
+  graph.add(source)
+  const target = new LGraphNode('Target', 'Target')
+  target.addInput('image_0', 'IMAGE')
+  target.addInput('width', 'INT')
+  target.addInput('height', 'INT')
+  graph.add(target)
+  const doc = mint(
+    {
+      nodes: [source, target].map((node) => ({
+        ...node.serialize(),
+        flags: { ...node.flags }
+      })),
+      links: []
+    },
+    { types: {} }
+  )
+  const { unmount, enqueue } = mountFollower('wf-1', true, () => graph)
+  bridge().follower.doc = doc
+  onTestFinished(() => {
+    unmount()
+    doc.destroy()
+  })
+  return { graph, source, target, enqueue }
 }
 
 function bridge(): InstanceType<(typeof bridgeState)['FakeBridge']> {
@@ -955,6 +992,109 @@ describe('useAgentCrdtFollower', () => {
       [expect.objectContaining({ op: 'delete_node', node_id: '1' })]
     )
     unmount()
+  })
+
+  it('sends an existing input by its document index after local inputs move', () => {
+    const { source, target, enqueue } = mountInputFollower()
+    target.addInput('image_1', 'IMAGE')
+    target.inputs = [target.inputs[3], ...target.inputs.slice(0, 3)]
+    expect(target.findInputSlot('width')).toBe(2)
+
+    enqueue([
+      {
+        op: 'connect',
+        link_id: 1,
+        from_node: source.id,
+        from_slot: 0,
+        to_node: target.id,
+        to_slot: target.findInputSlot('width'),
+        link_type: 'INT'
+      }
+    ])
+
+    expect(clientState.sendOps).toHaveBeenCalledWith(
+      'wf-1',
+      expect.any(String),
+      [expect.objectContaining({ op: 'connect', to_slot: 1, from_slot: 0 })]
+    )
+  })
+
+  it('reports and drops a connection to an input missing from an existing document node', () => {
+    const { source, target, enqueue } = mountInputFollower()
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    target.addInput('new_width', 'INT')
+
+    enqueue([
+      {
+        op: 'connect',
+        link_id: 1,
+        from_node: source.id,
+        from_slot: 0,
+        to_node: target.id,
+        to_slot: target.findInputSlot('new_width'),
+        link_type: 'INT'
+      }
+    ])
+
+    expect(clientState.sendOps).not.toHaveBeenCalled()
+    expect(error).toHaveBeenCalled()
+  })
+
+  it('reports and drops a connection when the runtime target node is missing', () => {
+    const { graph, source, target, enqueue } = mountInputFollower()
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    graph.remove(target)
+
+    enqueue([
+      {
+        op: 'connect',
+        link_id: 1,
+        from_node: source.id,
+        from_slot: 0,
+        to_node: target.id,
+        to_slot: 1,
+        link_type: 'INT'
+      }
+    ])
+
+    expect(clientState.sendOps).not.toHaveBeenCalled()
+    expect(error).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'connect input is absent from the bound document'
+      ),
+      1
+    )
+  })
+
+  it('preserves a new local node connection before its add_node is echoed', () => {
+    const { graph, source, enqueue } = mountInputFollower()
+    const target = new LGraphNode('PendingTarget', 'PendingTarget')
+    target.addInput('width', 'INT')
+    graph.add(target)
+    const add: GraphOperation = {
+      op: 'add_node',
+      node_id: target.id,
+      class_type: target.type,
+      pos: [...target.pos],
+      node: { ...target.serialize(), flags: { ...target.flags } }
+    }
+    const connect: GraphOperation = {
+      op: 'connect',
+      link_id: 1,
+      from_node: source.id,
+      from_slot: 0,
+      to_node: target.id,
+      to_slot: 0,
+      link_type: 'INT'
+    }
+
+    enqueue([add, connect])
+
+    expect(clientState.sendOps).toHaveBeenCalledWith(
+      'wf-1',
+      expect.any(String),
+      [expect.objectContaining(add), expect.objectContaining(connect)]
+    )
   })
 
   it('a refused subscription settles the in-flight batch undeliverable at the resend instead of reaching the client', async () => {
