@@ -14,8 +14,9 @@ test.describe(
     }
   },
   () => {
+    test.use({ initialSettings: { 'Comfy.Canvas.SelectionToolbox': true } })
+
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
       await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
     })
 

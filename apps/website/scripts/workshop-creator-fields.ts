@@ -95,12 +95,13 @@ export function createCreatorFields(
     label: string,
     maxItems = 1,
     isRequired = false,
-    mimeTypes?: string[]
+    mimeTypes?: string[],
+    accept: WorkshopCreatorFile['accept'] = 'image'
   ) {
     files.push({
       name,
       label,
-      accept: 'image',
+      accept,
       maxItems,
       required: isRequired,
       ...(mimeTypes ? { mimeTypes } : {})

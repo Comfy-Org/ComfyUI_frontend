@@ -59,7 +59,6 @@ import { useBillingCapabilities } from '@/platform/workspace/composables/useBill
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 import AgentPanel from './components/agent/AgentPanel.vue'
-import OnboardingCoach from './components/agent/OnboardingCoach.vue'
 import {
   MAX_ATTACHMENT_BYTES,
   useAttachment
@@ -70,7 +69,6 @@ import {
   selectedNodeKey,
   useCanvasSelection
 } from './composables/agent/useCanvasSelection'
-import type { CoachStep } from './composables/agent/useOnboarding'
 import type {
   AgentActiveTabData,
   AgentThreadSummary
@@ -761,12 +759,6 @@ function onCopyMarkdown(id: string): void {
   else toast.add({ severity: 'info', summary: t('agent.copyUnavailable') })
 }
 
-const coachStep: CoachStep = {
-  target: '#agent-panel-root',
-  title: t('agent.coachTitle'),
-  body: t('agent.coachBody')
-}
-
 const { submit: onSend } = useAgentDraftSubmission({
   canSubmit: () => !workflowSelecting.value && !isSending.value,
   target: () => selectedTarget.value,
@@ -1139,9 +1131,5 @@ function onPanelDrop(event: DragEvent): void {
         <CrdtDevPanel :status="crdtStatus" :snapshot="crdtDebugSnapshot" />
       </template>
     </AgentPanel>
-    <OnboardingCoach
-      :step="coachStep"
-      storage-key="Comfy.AgentPanel.onboarded"
-    />
   </div>
 </template>

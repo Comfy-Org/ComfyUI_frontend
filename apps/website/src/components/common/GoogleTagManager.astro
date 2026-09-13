@@ -15,11 +15,11 @@ const gtmEnabled = import.meta.env.PROD
 ---
 
 {
-  part === 'head' && (
-    <>
-      <link rel="preconnect" href="https://www.googletagmanager.com" />
-      <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
-      {gtmEnabled && (
+  part === 'head' &&
+    gtmEnabled && (
+      <>
+        <link rel="preconnect" href="https://www.googletagmanager.com" />
+        <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
         <script is:inline define:vars={{ gtmId }}>
           ;(function (w, d, s, l, i) {
             w[l] = w[l] || []
@@ -32,9 +32,8 @@ const gtmEnabled = import.meta.env.PROD
             f.parentNode.insertBefore(j, f)
           })(window, document, 'script', 'dataLayer', gtmId)
         </script>
-      )}
-    </>
-  )
+      </>
+    )
 }
 
 {

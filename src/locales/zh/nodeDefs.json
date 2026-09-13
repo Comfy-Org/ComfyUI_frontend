@@ -821,6 +821,83 @@
       }
     }
   },
+  "BriaAddObject": {
+    "description": "使用 Bria 将纯文本描述的对象插入图像。Bria 会以约 100 万像素重新渲染整个画面，因此结果不会与输入图像像素对齐。",
+    "display_name": "Bria 添加对象",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "instruction": {
+        "name": "指令",
+        "tooltip": "要添加的内容及位置，例如“在桌上放置一个装有鲜花的红色花瓶”。"
+      },
+      "moderation": {
+        "name": "内容审核",
+        "tooltip": "内容审核设置"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "Bria 不使用此处的种子，每次调用都会重新构想编辑结果，因此重复运行可能不同。该值永远不会被发送：它只会更改此节点的缓存键，以便其他方面相同的工作流再次运行编辑，而不是返回缓存结果。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "编辑后图像的结构化描述，用于后续通过 Bria FIBO Image Edit 进行编辑。"
+      }
+    }
+  },
+  "BriaEraseByText": {
+    "description": "使用 Bria 从图像中移除纯文本指定的对象。Bria 会以约 100 万像素重新渲染整个画面，因此结果不会与输入图像像素对齐。",
+    "display_name": "Bria 按文本擦除",
+    "inputs": {
+      "image": {
+        "name": "图像"
+      },
+      "moderation": {
+        "name": "内容审核",
+        "tooltip": "内容审核设置"
+      },
+      "object_name": {
+        "name": "object_name",
+        "tooltip": "要移除的对象名称，例如“台灯”。可同时指定多个对象，例如“手机和铅笔”。即使指定了图中不存在的内容，仍会返回重新渲染的图像并计费。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "编辑后图像的结构化描述，用于后续通过 Bria FIBO Image Edit 进行编辑。"
+      }
+    }
+  },
+  "BriaEraseForeground": {
+    "description": "使用 Bria 移除图像前景，并在其位置生成背景。Bria 识别为前景的所有内容都会被移除，不仅限于人物。未修改的像素会被保留，但输出会以接近 100 万像素的标准尺寸重新渲染。",
+    "display_name": "Bria 擦除前景",
+    "inputs": {
+      "image": {
+        "name": "图像"
+      },
+      "moderation": {
+        "name": "内容审核",
+        "tooltip": "内容审核设置"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaEraser": {
     "description": "使用 Bria 从图像中移除由蒙版勾勒出的对象或区域。",
     "display_name": "Bria 擦除",
@@ -1004,6 +1081,36 @@
       }
     }
   },
+  "BriaRelight": {
+    "description": "使用 Bria 更改图像的光照氛围和方向。Bria 会以约 100 万像素重新渲染整个画面，因此结果不会与输入图像像素对齐。",
+    "display_name": "Bria 重塑光照",
+    "inputs": {
+      "image": {
+        "name": "图像"
+      },
+      "light_direction": {
+        "name": "light_direction",
+        "tooltip": "光线的来源方向。正午、主体聚光灯和强烈影棚灯光等硬光氛围受此项影响最大。"
+      },
+      "light_type": {
+        "name": "light_type",
+        "tooltip": "要应用的光照氛围。"
+      },
+      "moderation": {
+        "name": "内容审核",
+        "tooltip": "内容审核设置"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "编辑后图像的结构化描述，用于后续通过 Bria FIBO Image Edit 进行编辑。"
+      }
+    }
+  },
   "BriaRemoveImageBackground": {
     "description": "使用 Bria RMBG 2.0 移除图像的背景。",
     "display_name": "Bria 移除图像背景",
@@ -1054,6 +1161,133 @@
       }
     }
   },
+  "BriaReplaceImageBackground": {
+    "description": "使用 Bria 替换图像背景，可通过提示词描述或由参考图像引导。主体的像素会被保留，背景会围绕主体生成。",
+    "display_name": "Bria 替换图像背景",
+    "inputs": {
+      "background": {
+        "name": "背景",
+        "tooltip": "使用提示词描述新背景，或使用参考图像进行引导。"
+      },
+      "background_mode": {
+        "name": "模式"
+      },
+      "background_prompt": {
+        "name": "提示词"
+      },
+      "background_refine_prompt": {
+        "name": "优化提示词"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "moderation": {
+        "name": "内容审核",
+        "tooltip": "内容审核设置"
+      },
+      "original_quality": {
+        "name": "原始质量",
+        "tooltip": "返回与输入完全相同的像素尺寸，而不是将结果缩放至约 100 万像素。大尺寸输入将返回大图像。"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "相同的种子通常会返回相同的背景；自动提示词优化仍可能使其产生变化。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "优化后的提示词",
+        "tooltip": "Bria 生成的提示词；使用参考图像路径时为空。"
+      }
+    }
+  },
+  "BriaReplaceObject": {
+    "description": "使用 Bria 将图像中的对象替换为由纯文本描述的另一对象。Bria 会以约 100 万像素重新渲染整个画面，因此结果不会与输入在像素级对齐。",
+    "display_name": "Bria 替换对象",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "instruction": {
+        "name": "指令",
+        "tooltip": "要用什么替换什么，例如“将红苹果替换为绿梨”。"
+      },
+      "moderation": {
+        "name": "内容审核",
+        "tooltip": "内容审核设置"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "Bria 在此不使用种子，并会在每次调用时重新构想编辑内容，因此重复运行的结果可能不同。该值永远不会被发送：它只会更改此节点的缓存键，以便原本相同的工作流再次执行编辑，而不是返回缓存结果。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "结构化提示词",
+        "tooltip": "已编辑图像的结构化描述，用于通过 Bria FIBO Image Edit 进行后续编辑。"
+      }
+    }
+  },
+  "BriaReseason": {
+    "description": "使用 Bria 将图像转换至另一季节。整个场景会被重新渲染，因此景物可能发生超出季节本身的变化。Bria 会以约 100 万像素重新渲染整个画面，因此结果不会与输入在像素级对齐。",
+    "display_name": "Bria 季节转换",
+    "inputs": {
+      "image": {
+        "name": "图像"
+      },
+      "moderation": {
+        "name": "内容审核",
+        "tooltip": "内容审核设置"
+      },
+      "season": {
+        "name": "季节",
+        "tooltip": "要应用的季节。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "结构化提示词",
+        "tooltip": "已编辑图像的结构化描述，用于通过 Bria FIBO Image Edit 进行后续编辑。"
+      }
+    }
+  },
+  "BriaRestorePhoto": {
+    "description": "使用 Bria 修复老旧或损坏的照片：去除颗粒、划痕和模糊，并中和与年代相关的色偏。装裱卡纸和影楼边框可能会被裁掉，人脸会被重新绘制。Bria 会以约 100 万像素重新渲染整个画面，因此结果不会与输入在像素级对齐。若要放大，请改用 Bria Increase Resolution。",
+    "display_name": "Bria 修复照片",
+    "inputs": {
+      "image": {
+        "name": "图像"
+      },
+      "moderation": {
+        "name": "内容审核",
+        "tooltip": "内容审核设置"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "编辑后图像的结构化描述，用于通过 Bria FIBO Image Edit 进行后续编辑。"
+      }
+    }
+  },
   "BriaTransparentVideoBackground": {
     "description": "使用 Bria 移除视频背景，并返回抠图帧和 alpha mask。可将两者连接到合成节点，或传递给保存 WEBM 节点以生成透明视频。",
     "display_name": "Bria 移除视频背景（透明）",
@@ -1076,6 +1310,33 @@
       },
       "1": {
         "name": "mask",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVideoEraser": {
+    "description": "使用 Bria 擦除视频中逐帧 mask 覆盖的任何内容，并填补空缺。应移除的内容在 mask 中必须为白色，其他区域为黑色。Bria 接受时长最长 5.1 秒、帧率为每秒 20 至 30 帧且像素尺寸为偶数的视频片段；默认保留音频。返回的视频片段可能比输入短几帧。",
+    "display_name": "Bria 视频擦除",
+    "inputs": {
+      "mask": {
+        "name": "mask",
+        "tooltip": "视频每一帧对应一个 mask，要擦除的对象所在区域为白色。请提供 mask 或 mask 视频之一，不要同时提供两者。"
+      },
+      "mask_video": {
+        "name": "mask_video",
+        "tooltip": "已编码的 mask 视频，其尺寸和帧数与视频相同。请提供 mask 或 mask 视频之一，不要同时提供两者。"
+      },
+      "preserve_audio": {
+        "name": "preserve_audio",
+        "tooltip": "保留输入的音轨。"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "要从中擦除内容的视频片段。"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -3065,6 +3326,29 @@
       }
     }
   },
+  "ConcatenateVideo": {
+    "description": "按顺序拼接视频，无需解码兼容的已编码输入。",
+    "display_name": "拼接视频",
+    "inputs": {
+      "codec": {
+        "name": "codec",
+        "tooltip": "用于编码视频张量的编解码器。自动使用 H.264；已编码的视频保持不变。"
+      },
+      "complete_audio": {
+        "name": "complete_audio",
+        "tooltip": "拼接视频的可选完整音轨。会覆盖输入视频携带的音频。"
+      },
+      "videos": {
+        "name": "videos",
+        "tooltip": "按输入顺序拼接的视频片段。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "拼接后的视频。"
+      }
+    }
+  },
   "ConditioningAverage": {
     "display_name": "条件平均",
     "inputs": {
@@ -3098,6 +3382,20 @@
       },
       "conditioning_to": {
         "name": "条件到"
+      }
+    }
+  },
+  "ConditioningLoader": {
+    "description": "从 embeddings 文件夹加载由保存条件保存的条件，或任何包含“conditioning”张量的 safetensors 文件。",
+    "display_name": "加载条件",
+    "inputs": {
+      "conditioning_name": {
+        "name": "conditioning_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3908,6 +4206,10 @@
       "bit_depth": {
         "name": "bit_depth",
         "tooltip": "自动模式对 sRGB 使用 8 位，对 HDR 使用 10 位。明确选择 8 位或 10 位时不受色彩空间影响。"
+      },
+      "codec": {
+        "name": "codec",
+        "tooltip": "可选立即编码视频。无会将图像保留为张量形式；自动使用 H.264。"
       },
       "color_space": {
         "name": "color_space",
@@ -5026,6 +5328,22 @@
       "batch_size": {
         "name": "batch_size",
         "tooltip": "批次中的潜空间图像数量。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyYuE2LatentAudio": {
+    "display_name": "空 YuE2 潜空间音频",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "seconds": {
+        "name": "seconds"
       }
     },
     "outputs": {
@@ -7979,7 +8297,7 @@
     }
   },
   "ImageColorSpace": {
-    "description": "转换 sRGB (Rec.709)、HDR (Rec.2020 HLG) 和 HDR PQ (Rec.2020 PQ)。使用 203 尼特 SDR 白点和 1000 尼特 HLG 参考显示器。缩窄时会对批次中的过量亮度进行色调映射，并压缩超出色域的颜色。转换以 float32 计算，并返回中间设备和数据类型。直通 alpha 不进行颜色转换。",
+    "description": "转换 sRGB、线性 Rec.709、HDR（Rec.2020 HLG）和 HDR PQ（Rec.2020 PQ）。线性 1.0 使用与 sRGB 相同的 203 尼特参考白；HLG 使用 1000 尼特参考显示器。线性输出和线性到 HDR 的转换会保留扩展值，不进行色调映射。SDR 输出和 PQ 到 HLG 的转换会在批次内对超额亮度进行色调映射，并压缩超出色域的颜色。转换以 float32 进行计算，并返回中间设备和数据类型。直通 Alpha 不进行颜色转换。",
     "display_name": "转换图像色彩空间",
     "inputs": {
       "destination": {
@@ -12374,6 +12692,23 @@
       }
     }
   },
+  "MarigoldV2PostProcess": {
+    "description": "将解码后的 Marigold V2 预测转换为图像：近处更亮的归一化深度、单位表面法线或 sRGB 反照率。",
+    "display_name": "Marigold V2 后处理",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "prediction": {
+        "name": "prediction"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MaskComposite": {
     "display_name": "合成遮罩",
     "inputs": {
@@ -16021,6 +16356,9 @@
     "inputs": {
       "model": {
         "name": "模型"
+      },
+      "sampling": {
+        "name": "sampling"
       },
       "shift": {
         "name": "移位"
@@ -20988,6 +21326,24 @@
       }
     }
   },
+  "SaveConditioning": {
+    "description": "将条件保存为输出文件夹中的 safetensors；将文件移动到 models/embeddings 后，可通过加载条件加载，例如用于跳过文本编码器。",
+    "display_name": "保存条件",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "conditioning",
+        "tooltip": null
+      }
+    }
+  },
   "SaveGLB": {
     "display_name": "保存GLB",
     "inputs": {
@@ -21676,6 +22032,28 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SheetSage2AudioToABC": {
+    "description": "将音乐中的人声和器乐旋律转录为 ABC 记谱法。将 abc 输出连接到 YuE2 Generate Music 节点，并使用匹配的模式。",
+    "display_name": "SheetSage2 音频转 ABC",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "audio_encoder": {
+        "name": "audio_encoder"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "完整：生成旋律和和弦；旋律：仅生成旋律，推荐用于翻唱。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
         "tooltip": null
       }
     }
@@ -28528,6 +28906,110 @@
     "outputs": {
       "0": {
         "name": "网格",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateABC": {
+    "description": "根据风格和歌词生成歌曲的 ABC 记谱法。将 abc 连接到 YuE2 Generate Music 节点。",
+    "display_name": "YuE2 生成 ABC",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "lyrics": {
+        "name": "lyrics"
+      },
+      "max_abc_tokens": {
+        "name": "max_abc_tokens"
+      },
+      "mode": {
+        "name": "模式",
+        "tooltip": "完整：生成旋律和和弦；旋律：仅生成旋律，推荐用于翻唱。"
+      },
+      "penalty_window": {
+        "name": "penalty_window",
+        "tooltip": "用于惩罚重复的最近 ABC token 数量。"
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "seed": {
+        "name": "种子"
+      },
+      "style": {
+        "name": "style"
+      },
+      "temperature": {
+        "name": "temperature"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateMusic": {
+    "description": "根据风格、歌词和 ABC 记谱法生成音乐 token 和声学条件。将生成的秒数提供给 Empty YuE2 Latent Audio 节点。留空 ABC 输入会忽略所选模式。",
+    "display_name": "YuE2 生成音乐",
+    "inputs": {
+      "abc": {
+        "name": "abc",
+        "tooltip": "连接 ABC 生成器或提供编辑后的乐谱。留空将自动使用关闭模式。"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "lyrics": {
+        "name": "歌词"
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "最大时长（秒）。对于较长的提示词会自动缩短；生成可能会提前停止。"
+      },
+      "mode": {
+        "name": "模式",
+        "tooltip": "完整：生成旋律和和弦；旋律：仅生成旋律，推荐用于翻唱。"
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "seed": {
+        "name": "种子"
+      },
+      "style": {
+        "name": "风格"
+      },
+      "temperature": {
+        "name": "温度"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "秒数",
         "tooltip": null
       }
     }

@@ -821,6 +821,83 @@
       }
     }
   },
+  "BriaAddObject": {
+    "description": "با استفاده از Bria، شیئی را که با متن ساده توصیف شده است به تصویر اضافه کنید. Bria کل فریم را با وضوح حدود ۱ مگاپیکسل بازپردازی می‌کند، بنابراین نتیجه با ورودی پیکسل‌به‌پیکسل هم‌تراز نیست.",
+    "display_name": "افزودن شیء با Bria",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "instruction": {
+        "name": "دستور",
+        "tooltip": "چه چیزی و در کجا اضافه شود؛ برای مثال «یک گلدان قرمز با گل روی میز قرار بده»."
+      },
+      "moderation": {
+        "name": "تعدیل محتوا",
+        "tooltip": "تنظیمات تعدیل محتوا"
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "Bria در اینجا بذری دریافت نمی‌کند و در هر فراخوانی ویرایش را دوباره تصور می‌کند؛ بنابراین اجرای تکراری ممکن است متفاوت باشد. این مقدار هرگز ارسال نمی‌شود؛ فقط کلید کش این node را تغییر می‌دهد تا گرافی که در سایر موارد یکسان است، ویرایش را دوباره اجرا کند، نه اینکه نتیجهٔ کش‌شده را بازگرداند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "توضیح ساختاریافتهٔ تصویر ویرایش‌شده، برای ویرایش بعدی با Bria FIBO Image Edit."
+      }
+    }
+  },
+  "BriaEraseByText": {
+    "description": "با استفاده از Bria، شیئی را که با متن ساده نام برده شده است از تصویر حذف کنید. Bria کل فریم را با وضوح حدود ۱ مگاپیکسل بازپردازی می‌کند، بنابراین نتیجه با ورودی پیکسل‌به‌پیکسل هم‌تراز نیست.",
+    "display_name": "حذف با متن Bria",
+    "inputs": {
+      "image": {
+        "name": "تصویر"
+      },
+      "moderation": {
+        "name": "تعدیل محتوا",
+        "tooltip": "تنظیمات تعدیل محتوا"
+      },
+      "object_name": {
+        "name": "نام شیء",
+        "tooltip": "نام شیئی که باید حذف شود، مانند «چراغ». می‌توان چند شیء را هم‌زمان نام برد، مانند «تلفن و مدادها». نام‌بردن از چیزی که در تصویر نیست نیز همچنان یک تصویر بازپردازی‌شده بازمی‌گرداند و هزینه دارد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "توضیح ساختاریافتهٔ تصویر ویرایش‌شده، برای ویرایش بعدی با Bria FIBO Image Edit."
+      }
+    }
+  },
+  "BriaEraseForeground": {
+    "description": "پیش‌زمینهٔ یک تصویر را با Bria حذف کرده و به‌جای آن پس‌زمینه تولید کنید. هر چیزی که Bria آن را پیش‌زمینه تشخیص دهد حذف می‌شود، نه فقط افراد. پیکسل‌های دست‌نخورده حفظ می‌شوند، اما خروجی با اندازهٔ استانداردی نزدیک به ۱ مگاپیکسل بازپردازی می‌شود.",
+    "display_name": "حذف پیش‌زمینه با Bria",
+    "inputs": {
+      "image": {
+        "name": "تصویر"
+      },
+      "moderation": {
+        "name": "تعدیل محتوا",
+        "tooltip": "تنظیمات تعدیل محتوا"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaEraser": {
     "description": "اشیا یا نواحی مشخص‌شده با mask را با استفاده از Bria از تصویر حذف می‌کند.",
     "display_name": "پاک‌کن Bria",
@@ -1004,6 +1081,36 @@
       }
     }
   },
+  "BriaRelight": {
+    "description": "فضا و جهت نورپردازی یک تصویر را با استفاده از Bria تغییر دهید. Bria کل فریم را با وضوح حدود ۱ مگاپیکسل بازپردازی می‌کند، بنابراین نتیجه با ورودی پیکسل‌به‌پیکسل هم‌تراز نیست.",
+    "display_name": "نورپردازی مجدد با Bria",
+    "inputs": {
+      "image": {
+        "name": "تصویر"
+      },
+      "light_direction": {
+        "name": "جهت نور",
+        "tooltip": "جهتی که نور از آن می‌آید. فضاهای نور سخت مانند نیمروز، نورافکن روی سوژه و نورپردازی خشن استودیویی بیشترین واکنش را به آن دارند."
+      },
+      "light_type": {
+        "name": "نوع نور",
+        "tooltip": "فضای نورپردازی برای اعمال."
+      },
+      "moderation": {
+        "name": "تعدیل محتوا",
+        "tooltip": "تنظیمات تعدیل محتوا"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "توضیح ساختاریافتهٔ تصویر ویرایش‌شده، برای ویرایش بعدی با Bria FIBO Image Edit."
+      }
+    }
+  },
   "BriaRemoveImageBackground": {
     "description": "حذف پس‌زمینه از یک تصویر با استفاده از Bria RMBG ۲.۰.",
     "display_name": "حذف پس‌زمینه تصویر Bria",
@@ -1054,6 +1161,133 @@
       }
     }
   },
+  "BriaReplaceImageBackground": {
+    "description": "پس‌زمینهٔ یک تصویر را با Bria جایگزین کنید؛ با یک پرامپت توصیف‌شده یا با تصاویر مرجع هدایت‌شده. پیکسل‌های سوژه حفظ می‌شوند؛ پس‌زمینه پیرامون آن‌ها تولید می‌شود.",
+    "display_name": "جایگزینی پس‌زمینهٔ تصویر با Bria",
+    "inputs": {
+      "background": {
+        "name": "پس‌زمینه",
+        "tooltip": "پس‌زمینهٔ جدید را با یک پرامپت توصیف کنید یا با تصاویر مرجع آن را هدایت کنید."
+      },
+      "background_mode": {
+        "name": "حالت"
+      },
+      "background_prompt": {
+        "name": "پرامپت"
+      },
+      "background_refine_prompt": {
+        "name": "refine_prompt"
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "تنظیمات تعدیل محتوا"
+      },
+      "original_quality": {
+        "name": "original_quality",
+        "tooltip": "اندازهٔ دقیق پیکسلِ ورودی را بازمی‌گرداند، به‌جای اینکه نتیجه را به حدود ۱ مگاپیکسل مقیاس کند. در این صورت، ورودی بزرگ تصویری بزرگ بازمی‌گرداند."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed یکسان معمولاً همان پس‌زمینه را بازمی‌گرداند؛ بااین‌حال، پالایش خودکار پرامپت همچنان می‌تواند آن را تغییر دهد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "refined_prompt",
+        "tooltip": "پرامپتی که Bria تولید کرده است؛ در مسیر تصویر مرجع خالی است."
+      }
+    }
+  },
+  "BriaReplaceObject": {
+    "description": "یک شیء را در تصویر با شیء دیگری که به‌صورت متن ساده با Bria توصیف شده است جایگزین کنید. Bria کل کادر را با وضوح حدود ۱ مگاپیکسل بازپردازی می‌کند؛ بنابراین نتیجه با پیکسل‌های ورودی هم‌تراز نیست.",
+    "display_name": "Bria جایگزینی شیء",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "instruction": {
+        "name": "دستورالعمل",
+        "tooltip": "چه چیزی با چه چیزی جایگزین شود؛ مانند «سیب قرمز را با یک گلابی سبز جایگزین کن»."
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "تنظیمات تعدیل محتوا"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Bria در اینجا seed نمی‌پذیرد و در هر فراخوانی ویرایش را دوباره تصور می‌کند؛ بنابراین اجرای تکراری ممکن است متفاوت باشد. این مقدار هرگز ارسال نمی‌شود: فقط کلید کش این node را تغییر می‌دهد تا نمودارِ یکسان، ویرایش را دوباره اجرا کند، نه اینکه نتیجهٔ کش‌شده را بازگرداند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "توضیح ساخت‌یافتهٔ تصویر ویرایش‌شده، برای ویرایش بعدی با Bria FIBO Image Edit."
+      }
+    }
+  },
+  "BriaReseason": {
+    "description": "با Bria یک تصویر را به فصل دیگری منتقل کنید. کل صحنه بازپردازی می‌شود، بنابراین ممکن است منظره فراتر از خود فصل تغییر کند. Bria کل کادر را با وضوح حدود ۱ مگاپیکسل بازپردازی می‌کند؛ بنابراین نتیجه با پیکسل‌های ورودی هم‌تراز نیست.",
+    "display_name": "Bria تغییر فصل",
+    "inputs": {
+      "image": {
+        "name": "تصویر"
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "تنظیمات تعدیل محتوا"
+      },
+      "season": {
+        "name": "فصل",
+        "tooltip": "فصلی که اعمال می‌شود."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "توضیح ساخت‌یافتهٔ تصویر ویرایش‌شده، برای ویرایش بعدی با Bria FIBO Image Edit."
+      }
+    }
+  },
+  "BriaRestorePhoto": {
+    "description": "یک عکس قدیمی یا آسیب‌دیده را با Bria ترمیم کنید: دانه‌دانه‌شدن، خراش‌ها و تاری حذف می‌شوند و ته‌رنگ‌های ناشی از قدمت خنثی می‌شوند. ممکن است مقوای دور عکس و حاشیه‌های استودیویی برش بخورند و چهره‌ها دوباره ترسیم شوند. Bria کل کادر را با وضوح حدود ۱ مگاپیکسل بازپردازی می‌کند؛ بنابراین نتیجه با پیکسل‌های ورودی هم‌تراز نیست. برای بزرگ‌نمایی، به‌جای آن از Bria Increase Resolution استفاده کنید.",
+    "display_name": "Bria بازسازی عکس",
+    "inputs": {
+      "image": {
+        "name": "تصویر"
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "تنظیمات تعدیل محتوا"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "توصیف ساختاریافتهٔ تصویر ویرایش‌شده، برای ویرایش بعدی با Bria FIBO Image Edit."
+      }
+    }
+  },
   "BriaTransparentVideoBackground": {
     "description": "پس‌زمینه یک ویدیو را با استفاده از Bria حذف کنید و فریم‌های برش‌خورده به همراه ماسک آلفا را دریافت نمایید. هر دو را به یک node ترکیب‌کننده متصل کنید یا برای ذخیره ویدیو شفاف به Save WEBM ارسال نمایید.",
     "display_name": "حذف پس‌زمینه ویدیو با Bria (شفاف)",
@@ -1076,6 +1310,33 @@
       },
       "1": {
         "name": "ماسک",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVideoEraser": {
+    "description": "هر چیزی را که یک ماسک برای هر فریم در ویدیو پوشش می‌دهد با Bria پاک کرده و فضای خالی را پر می‌کند. ماسک باید روی بخش‌هایی که باید حذف شوند سفید و در سایر نقاط سیاه باشد. Bria کلیپ‌هایی با حداکثر ۵٫۱ ثانیه، ۲۰ تا ۳۰ فریم بر ثانیه و ابعاد پیکسلی زوج را می‌پذیرد؛ صدا به‌طور پیش‌فرض حفظ می‌شود. کلیپ بازگردانده‌شده ممکن است چند فریم کوتاه‌تر از ورودی باشد.",
+    "display_name": "پاک‌کنندهٔ ویدیوی Bria",
+    "inputs": {
+      "mask": {
+        "name": "mask",
+        "tooltip": "یک ماسک برای هر فریم ویدیو؛ در محل شیئی که باید پاک شود سفید است. فقط ماسک یا ویدیوی ماسک را ارائه کنید، نه هر دو را."
+      },
+      "mask_video": {
+        "name": "mask_video",
+        "tooltip": "ویدیوی ماسکِ ازپیش کدگذاری‌شده با ابعاد و تعداد فریم یکسان با ویدیو. فقط ماسک یا ویدیوی ماسک را ارائه کنید، نه هر دو را."
+      },
+      "preserve_audio": {
+        "name": "preserve_audio",
+        "tooltip": "ترک صوتی ورودی را حفظ می‌کند."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "کلیپی که باید از آن پاک شود."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -3065,6 +3326,29 @@
       }
     }
   },
+  "ConcatenateVideo": {
+    "description": "ویدیوها را به‌ترتیب و بدون رمزگشایی ورودی‌های رمزگذاری‌شدهٔ سازگار به هم متصل می‌کند.",
+    "display_name": "الحاق ویدیو",
+    "inputs": {
+      "codec": {
+        "name": "codec",
+        "tooltip": "کُدک مورد استفاده برای رمزگذاری تنسورهای ویدیو. Auto از H.264 استفاده می‌کند؛ ویدیوهای ازپیش رمزگذاری‌شده بدون تغییر می‌مانند."
+      },
+      "complete_audio": {
+        "name": "complete_audio",
+        "tooltip": "موسیقی متن کاملِ اختیاری برای ویدیوی الحاق‌شده. صدای همراه ویدیوهای ورودی را جایگزین می‌کند."
+      },
+      "videos": {
+        "name": "videos",
+        "tooltip": "بخش‌های ویدیو برای الحاق به‌ترتیب ورودی."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "ویدیوی الحاق‌شده."
+      }
+    }
+  },
   "ConditioningAverage": {
     "display_name": "میانگین شرطی‌سازی",
     "inputs": {
@@ -3098,6 +3382,20 @@
       },
       "conditioning_to": {
         "name": "شرطی‌سازی مقصد"
+      }
+    }
+  },
+  "ConditioningLoader": {
+    "description": "یک شرطی‌سازی ذخیره‌شده با «ذخیره شرطی‌سازی»، یا هر فایل safetensors دارای تنسور «conditioning» را از پوشهٔ embeddings بارگذاری می‌کند.",
+    "display_name": "بارگذاری شرطی‌سازی",
+    "inputs": {
+      "conditioning_name": {
+        "name": "conditioning_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3908,6 +4206,10 @@
       "bit_depth": {
         "name": "bit_depth",
         "tooltip": "خودکار برای sRGB از ۸-bit و برای HDR از ۱۰-bit استفاده می‌کند. انتخاب‌های صریح ۸-bit و ۱۰-bit مستقل از فضای رنگ هستند."
+      },
+      "codec": {
+        "name": "codec",
+        "tooltip": "در صورت تمایل، ویدیو را بلافاصله رمزگذاری می‌کند. None تصاویر را به‌شکل تنسور نگه می‌دارد؛ Auto از H.264 استفاده می‌کند."
       },
       "color_space": {
         "name": "color_space",
@@ -5026,6 +5328,22 @@
       "batch_size": {
         "name": "batch_size",
         "tooltip": "تعداد تصاویر latent در batch."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyYuE2LatentAudio": {
+    "display_name": "صوت latent خالی YuE2",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "seconds": {
+        "name": "seconds"
       }
     },
     "outputs": {
@@ -7979,7 +8297,7 @@
     }
   },
   "ImageColorSpace": {
-    "description": "sRGB (Rec.709)، HDR (Rec.2020 HLG) و HDR PQ (Rec.2020 PQ) را تبدیل می‌کند. از سفید SDR با ۲۰۳-nit و نمایشگر مرجع HLG با ۱۰۰۰-nit استفاده می‌کند. باریک‌سازی، روشنایی اضافی را در سراسر batch نگاشت تُن می‌کند و رنگ‌های خارج از گستره را فشرده می‌سازد. تبدیل‌ها با float32 محاسبه می‌شوند و device و dtype میانی را بازمی‌گردانند. آلفای مستقیم تبدیل رنگ نمی‌شود.",
+    "description": "sRGB، Rec.709 خطی، HDR ‏(Rec.2020 HLG) و HDR PQ ‏(Rec.2020 PQ) را تبدیل می‌کند. Linear 1.0 از همان سفید مرجع 203-nit مانند sRGB استفاده می‌کند؛ HLG از نمایشگر مرجع 1000-nit استفاده می‌کند. خروجی خطی و تبدیل‌های خطی‌به-HDR مقادیر گسترده را بدون نگاشت تُن حفظ می‌کنند. خروجی SDR و تبدیل PQ-به-HLG روشنایی اضافی را در سراسر batch نگاشت تُن می‌کنند و رنگ‌های خارج از gamut را فشرده می‌سازند. تبدیل‌ها با float32 محاسبه می‌شوند و device و dtype میانی را بازمی‌گردانند. آلفای مستقیم تبدیل رنگی نمی‌شود.",
     "display_name": "تبدیل فضای رنگ تصویر",
     "inputs": {
       "destination": {
@@ -12374,6 +12692,23 @@
       }
     }
   },
+  "MarigoldV2PostProcess": {
+    "description": "یک پیش‌بینی رمزگشایی‌شدهٔ Marigold V2 را به تصویر تبدیل می‌کند: عمق نرمال‌شده با مقادیر نزدیکِ روشن، نرمال‌های سطحِ واحد، یا آلبدوی sRGB.",
+    "display_name": "پس‌پردازش Marigold V2",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "prediction": {
+        "name": "prediction"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MaskComposite": {
     "display_name": "ترکیب ماسک",
     "inputs": {
@@ -16021,6 +16356,9 @@
     "inputs": {
       "model": {
         "name": "مدل"
+      },
+      "sampling": {
+        "name": "sampling"
       },
       "shift": {
         "name": "شیفت"
@@ -20988,6 +21326,24 @@
       }
     }
   },
+  "SaveConditioning": {
+    "description": "یک شرطی‌سازی را به‌صورت safetensors در پوشهٔ خروجی ذخیره می‌کند؛ برای بارگذاری آن با «بارگذاری شرطی‌سازی»، مثلاً برای رد کردن رمزگذار متن، فایل را به models/embeddings منتقل کنید.",
+    "display_name": "ذخیره شرطی‌سازی",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "conditioning",
+        "tooltip": null
+      }
+    }
+  },
   "SaveGLB": {
     "display_name": "ذخیره GLB",
     "inputs": {
@@ -21676,6 +22032,28 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SheetSage2AudioToABC": {
+    "description": "ملودی‌های آوازی و سازی را از موسیقی به نت‌نویسی ABC تبدیل می‌کند. خروجی abc را به node ‏YuE2 Generate Music متصل کنید و از حالت مطابق استفاده کنید.",
+    "display_name": "صوت SheetSage2 به ABC",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "audio_encoder": {
+        "name": "audio_encoder"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "full: ملودی و آکورد تولید می‌کند؛ melody: فقط ملودی تولید می‌کند و برای کاورها توصیه می‌شود."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
         "tooltip": null
       }
     }
@@ -28528,6 +28906,110 @@
     "outputs": {
       "0": {
         "name": "mesh",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateABC": {
+    "description": "نت‌نویسی ABC یک ترانه را از سبک و متن ترانه تولید می‌کند. abc را به node ‏YuE2 Generate Music متصل کنید.",
+    "display_name": "تولید ABC YuE2",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "lyrics": {
+        "name": "lyrics"
+      },
+      "max_abc_tokens": {
+        "name": "max_abc_tokens"
+      },
+      "mode": {
+        "name": "حالت",
+        "tooltip": "full: ملودی و آکورد تولید می‌کند؛ melody: فقط ملودی تولید می‌کند و برای بازخوانی‌ها توصیه می‌شود."
+      },
+      "penalty_window": {
+        "name": "penalty_window",
+        "tooltip": "تعداد توکن‌های اخیر ABC که برای جریمه‌کردن تکرار استفاده می‌شوند."
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "seed": {
+        "name": "بذر"
+      },
+      "style": {
+        "name": "style"
+      },
+      "temperature": {
+        "name": "temperature"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateMusic": {
+    "description": "توکن‌های موسیقی و شرطی‌سازی آکوستیک را از سبک، متن ترانه و نت‌نویسی ABC تولید می‌کند. ثانیه‌های تولیدشده را به node ‏Empty YuE2 Latent Audio بدهید. ورودی خالی ABC حالت انتخاب‌شده را نادیده می‌گیرد.",
+    "display_name": "تولید موسیقی YuE2",
+    "inputs": {
+      "abc": {
+        "name": "abc",
+        "tooltip": "مولد ABC را متصل کنید یا یک پارتیتور ویرایش‌شده ارائه دهید. برای استفاده خودکار از حالت خاموش، آن را خالی بگذارید."
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "lyrics": {
+        "name": "متن ترانه"
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "حداکثر مدت‌زمان بر حسب ثانیه. برای پرامپت‌های طولانی به‌طور خودکار کاهش می‌یابد؛ تولید ممکن است زودتر متوقف شود."
+      },
+      "mode": {
+        "name": "حالت",
+        "tooltip": "full: ملودی و آکورد تولید می‌کند؛ melody: فقط ملودی تولید می‌کند و برای بازخوانی‌ها توصیه می‌شود."
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "seed": {
+        "name": "بذر"
+      },
+      "style": {
+        "name": "سبک"
+      },
+      "temperature": {
+        "name": "temperature"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "ثانیه",
         "tooltip": null
       }
     }

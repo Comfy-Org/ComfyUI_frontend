@@ -150,7 +150,8 @@ const routerResult = {
       fileName: 'result.jpg'
     }
   ],
-  requestId: 'request-123'
+  requestId: 'request-123',
+  deadlineCollections: 0
 }
 
 function mountDetail(options?: {
@@ -931,7 +932,9 @@ describe('ModelDetail', () => {
     )
     await visitor.click(screen.getByRole('button', { name: 'Run' }))
     expect(screen.queryByTestId('earlier-runs')).toBeNull()
-    await visitor.click(screen.getByRole('button', { name: 'response.json' }))
+    await visitor.click(
+      await screen.findByRole('button', { name: 'response.json' })
+    )
     expect(screen.getByText('{"id":"one"}')).toBeTruthy()
 
     vi.mocked(runWorkshopRouter).mockResolvedValue({
@@ -945,6 +948,7 @@ describe('ModelDetail', () => {
       ]
     })
     await visitor.click(screen.getByRole('button', { name: 'Run' }))
+    await screen.findByTestId('earlier-runs')
     expect(
       within(screen.getByTestId('earlier-runs')).getAllByRole('button')
     ).toHaveLength(2)
@@ -959,6 +963,7 @@ describe('ModelDetail', () => {
     vi.mocked(runWorkshopRouter)
       .mockResolvedValueOnce({
         requestId: 'first',
+        deadlineCollections: 0,
         outputs: [
           {
             kind: 'image',
@@ -977,6 +982,7 @@ describe('ModelDetail', () => {
       })
       .mockResolvedValueOnce({
         requestId: 'second',
+        deadlineCollections: 0,
         outputs: [
           {
             kind: 'image',
@@ -993,8 +999,10 @@ describe('ModelDetail', () => {
       'A mountain'
     )
     await visitor.click(screen.getByRole('button', { name: 'Run' }))
+    await screen.findByRole('button', { name: 'Run' })
     expect(revoke).not.toHaveBeenCalled()
     await visitor.click(screen.getByRole('button', { name: 'Run' }))
+    await screen.findByRole('button', { name: 'Run' })
     expect(screen.queryByTestId('earlier-runs')).toBeNull()
     for (const url of ['blob:first', 'blob:first-extra', 'blob:first-metadata'])
       expect(revoke).toHaveBeenCalledWith(url)
@@ -1097,6 +1105,32 @@ describe('ModelDetail', () => {
     expect(screen.getByTestId<HTMLTextAreaElement>('field-prompt').value).toBe(
       'a capybara'
     )
+  })
+
+  it('can run again after reselecting an example whose source image comes from page defaults', async () => {
+    const model = getRouterWorkshopModelDetail(
+      'freepik--magnific-upscaler-precise-v2--edit-images'
+    )
+    if (!model) throw new Error('Missing Freepik model')
+    auth.session.value = credential
+    vi.mocked(runWorkshopRouter).mockResolvedValue(routerResult)
+    mountDetail({ model })
+    await nextTick()
+    expect(screen.getByTestId('run-button').getAttribute('data-gate')).toBe(
+      'ready'
+    )
+    await user().click(screen.getByTestId('run-button'))
+    await vi.waitFor(() =>
+      expect(
+        screen.getByTestId('playground-output').getAttribute('data-state')
+      ).toBe('succeeded')
+    )
+    const body = vi.mocked(runWorkshopRouter).mock.calls[0][0].body
+    expect(JSON.stringify(body)).toContain('/input/denim_girl.png')
+    await user().click(screen.getAllByTestId('example-card')[0])
+    await user().click(screen.getByTestId('run-button'))
+    await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledTimes(2))
+    expect(vi.mocked(runWorkshopRouter).mock.calls[1][0].body).toEqual(body)
   })
 
   it('renders a declared audio example with audio transport', async () => {

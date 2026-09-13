@@ -39,10 +39,10 @@ function prepareSignInHref(): void {
 }
 
 function goToSignIn(event: MouseEvent): void {
+  runBeforeSignInLeave()
   if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0)
     return
   event.preventDefault()
-  runBeforeSignInLeave()
   window.location.assign(signInDestination())
 }
 

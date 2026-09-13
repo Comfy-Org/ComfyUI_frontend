@@ -90,7 +90,11 @@
       class="ml-auto flex shrink-0 items-center gap-2 px-2"
     >
       <Button
-        v-if="agentPanelStore.enabled && !agentPanelStore.isOpen"
+        v-if="
+          agentPanelStore.enabled &&
+          !agentPanelStore.isVisible &&
+          !(agentPanelStore.isOpen && isChecking)
+        "
         variant="link"
         size="sm"
         class="no-drag shrink-0 border border-solid border-plum-600 bg-ink-700 text-base-foreground hover:border-plum-500"
@@ -140,6 +144,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useCommandStore } from '@/stores/commandStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import { whileMouseDown } from '@/utils/mouseDownUtil'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
@@ -161,14 +166,35 @@ const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const commandStore = useCommandStore()
 const agentPanelStore = useAgentPanelStore()
+const { withConsent, isChecking } = useAgentConsent()
 const tabActivity = useWorkflowTabActivityStore()
+const isOpeningAgent = ref(false)
 const { isLoggedIn } = useCurrentUser()
 
-function onAgentEntryClick(): void {
-  useTelemetry()?.trackAgentEntryButtonClicked({
-    resulting_state: agentPanelStore.isOpen ? 'closed' : 'opened'
-  })
-  agentPanelStore.toggle()
+async function onAgentEntryClick(): Promise<void> {
+  if (isOpeningAgent.value) return
+  isOpeningAgent.value = true
+
+  try {
+    if (agentPanelStore.isVisible) {
+      useTelemetry()?.trackAgentEntryButtonClicked({
+        resulting_state: 'closed'
+      })
+      agentPanelStore.toggle()
+      return
+    }
+
+    agentPanelStore.suppressRestoredOpen()
+    await withConsent(() => {
+      if (!agentPanelStore.enabled) return
+      useTelemetry()?.trackAgentEntryButtonClicked({
+        resulting_state: 'opened'
+      })
+      agentPanelStore.open()
+    })
+  } finally {
+    isOpeningAgent.value = false
+  }
 }
 
 // Dismiss a tab's terminal status badge once it has been viewed
