@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createPinia } from 'pinia'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import AssetsSidebarTab from './AssetsSidebarTab.vue'
@@ -18,19 +18,39 @@ const folderAsset = vi.hoisted(() => ({
   }
 }))
 
-vi.mock('@/platform/assets/composables/media/useAssetsApi', async () => {
+const outputAssetState = vi.hoisted(() => ({
+  items: [] as (typeof folderAsset)[],
+  hasMore: false
+}))
+
+vi.mock('@/stores/assetsStore', async () => {
   const { ref } = await import('vue')
 
-  return {
-    useAssetsApi: () => ({
-      media: ref([folderAsset]),
-      loading: ref(false),
-      error: ref(null),
-      fetchMediaList: vi.fn(async () => [folderAsset]),
+  const store = {
+    outputAssets: {
+      get items() {
+        return outputAssetState.items
+      },
+      isLoading: ref(false),
+      get hasMore() {
+        return outputAssetState.hasMore
+      },
       loadMore: vi.fn(),
+      loadNew: vi.fn(),
+      invalidate: vi.fn()
+    },
+    inputAssets: {
+      items: ref([]),
+      isLoading: ref(false),
       hasMore: ref(false),
-      isLoadingMore: ref(false)
-    })
+      loadMore: vi.fn(),
+      loadNew: vi.fn(),
+      invalidate: vi.fn()
+    }
+  }
+
+  return {
+    useAssetsStore: () => store
   }
 })
 
@@ -114,10 +134,12 @@ const assetsGridStub = {
   props: ['assets'],
   emits: ['output-count-click'],
   template: `
-    <button
-      aria-label="Enter output folder"
-      @click="$emit('output-count-click', assets[0])"
-    />
+    <div data-testid="assets-grid">
+      <button
+        aria-label="Enter output folder"
+        @click="$emit('output-count-click', assets[0])"
+      />
+    </div>
   `
 }
 
@@ -147,6 +169,20 @@ function renderTab() {
     }
   })
 }
+
+beforeEach(() => {
+  outputAssetState.items = [folderAsset]
+  outputAssetState.hasMore = false
+})
+
+it('keeps pagination mounted when more assets can be loaded', () => {
+  outputAssetState.items = []
+  outputAssetState.hasMore = true
+
+  renderTab()
+
+  expect(screen.getByTestId('assets-grid')).toBeVisible()
+})
 
 describe('AssetsSidebarTab folder navigation', () => {
   it('places accessible folder actions beside the job ID', async () => {
