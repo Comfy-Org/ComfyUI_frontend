@@ -24,7 +24,7 @@ const slots = useSlots()
   <header
     :class="
       cn(
-        'lg:short:-mt-12 lg:short:pt-12 relative isolate -mx-6 -mt-16 overflow-hidden px-6 pt-16 max-sm:-mt-10 max-sm:pt-10 lg:-mx-8 lg:-mt-24 lg:px-8 lg:pt-24',
+        'relative isolate -mx-6 -mt-8 overflow-hidden px-6 pt-8 max-sm:-mt-5 max-sm:pt-5 lg:-mx-8 lg:-mt-12 lg:px-8 lg:pt-12',
         slots.default
           ? 'mb-8 max-sm:mb-5'
           : 'sm:short:pb-0 mb-6 pb-2 max-sm:mb-4 max-sm:pb-0'
@@ -37,7 +37,7 @@ const slots = useSlots()
     >
       <SplitReveal :text="t('workshop.hero.eyebrow', locale)" />
     </p>
-    <h1 class="text-4xl font-bold text-primary-comfy-canvas lg:text-6xl">
+    <h1 class="text-3xl font-light text-primary-comfy-canvas lg:text-5xl">
       <SplitReveal :text="t(headingKey, locale)" :delay="90" />
     </h1>
     <div

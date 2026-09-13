@@ -241,7 +241,7 @@ const menuItemClass =
       </button>
 
       <div
-        class="bg-page sticky top-20 z-30 mb-8 flex flex-wrap items-center justify-end gap-3 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26"
+        class="bg-page sticky top-20 z-30 -mx-6 mb-8 flex flex-wrap items-center justify-end gap-3 px-6 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26 lg:-mx-8 lg:px-8"
       >
         <h1
           v-if="inSection"
@@ -357,7 +357,7 @@ const menuItemClass =
             {{ t('workshop.models.heading', locale) }}
           </h2>
           <ul
-            class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5"
+            class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
             aria-labelledby="workshop-models-heading"
             data-testid="workshop-models-grid"
           >

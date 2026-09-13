@@ -1,7 +1,9 @@
 // @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+
+import { nextTick } from 'vue'
 
 import type { WorkshopModel } from '../../config/models-catalogue'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
@@ -107,6 +109,24 @@ describe('WorkshopModelsGrid', () => {
     await user.click(screen.getByRole('button', { name: /Back to/ }))
     await user.click(screen.getByRole('button', { name: 'Text to video 1' }))
     expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
+  })
+
+  it('returns the viewport to the top when a section or browse-all opens', async () => {
+    const scrollTo = vi
+      .spyOn(window, 'scrollTo')
+      .mockImplementation(() => undefined)
+    const user = userEvent.setup()
+    render(WorkshopModelsGrid, { props: { models } })
+
+    await user.click(screen.getByRole('button', { name: 'Edit images 1' }))
+    await nextTick()
+    await vi.waitFor(() => expect(scrollTo).toHaveBeenCalledWith({ top: 0 }))
+
+    scrollTo.mockClear()
+    await user.click(screen.getByRole('button', { name: /Back to/ }))
+    await user.click(screen.getByTestId('browse-all-end'))
+    await vi.waitFor(() => expect(scrollTo).toHaveBeenCalledWith({ top: 0 }))
+    scrollTo.mockRestore()
   })
 
   it('filters by capability from the filter menu', async () => {
