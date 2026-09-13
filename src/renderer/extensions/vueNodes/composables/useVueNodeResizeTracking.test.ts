@@ -1,14 +1,13 @@
-import type * as VueUse from '@vueuse/core'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
-import type { ComfyApp } from '@/scripts/app'
 
 import { render, screen } from '@testing-library/vue'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { NodeLayout } from '@/renderer/core/layout/types'
+import type { ComfyApp } from '@/scripts/app'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
@@ -52,7 +51,6 @@ const testState = vi.hoisted(() => {
   const contentSizes = new Map<string, { width: number; height: number }>()
 
   return {
-    visibility: null as { value: 'visible' | 'hidden' } | null,
     nodeLayouts: new Map<NodeId, NodeLayout>(),
     contentSizes,
     reportContentSize: vi.fn(
@@ -72,19 +70,6 @@ const testState = vi.hoisted(() => {
 vi.mock(import('@/scripts/app'), async () => {
   const { fromPartial } = await import('@total-typescript/shoehorn')
   return { app: fromPartial<ComfyApp>({ canvas: {}, nodePreviewImages: {} }) }
-})
-
-vi.mock(import('@vueuse/core'), async (importOriginal) => {
-  const { ref } = await import('vue')
-  return {
-    ...(await importOriginal<typeof VueUse>()),
-    useDocumentVisibility: () => {
-      const visibility = ref<'visible' | 'hidden'>('visible')
-      testState.visibility = visibility
-      return visibility
-    },
-    createSharedComposable: <T>(fn: T) => fn
-  }
 })
 
 vi.mock<unknown>(
@@ -199,7 +184,6 @@ describe('useVueNodeResizeTracking', () => {
   beforeEach(() => {
     useCanvasStore().linearMode = false
     Object.assign(useCanvasStore(), { rootGraphId: ROOT_GRAPH_ID })
-    if (testState.visibility) testState.visibility.value = 'visible'
     testState.nodeLayouts.clear()
     testState.contentSizes.clear()
   })
@@ -334,13 +318,12 @@ describe('useVueNodeResizeTracking', () => {
     const { entry } = createResizeEntry({ nodeId })
     document.body.append(entry.target)
     seedNodeLayout({ nodeId, left: 100, top: 200, width: 240, height: 180 })
-    if (!testState.visibility) throw new Error('visibility ref not initialized')
-
     resizeObserverState.callback?.([entry], createObserverMock())
     expect(testState.reportContentSize).toHaveBeenCalledTimes(1)
     vi.clearAllMocks()
 
-    testState.visibility.value = 'hidden'
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+    document.dispatchEvent(new Event('visibilitychange'))
     await nextTick()
     resizeObserverState.callback?.([entry], createObserverMock())
 
@@ -349,7 +332,8 @@ describe('useVueNodeResizeTracking', () => {
     expect(testState.syncSlotOffsets).not.toHaveBeenCalled()
 
     vi.clearAllMocks()
-    testState.visibility.value = 'visible'
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible')
+    document.dispatchEvent(new Event('visibilitychange'))
     await nextTick()
 
     expect(resizeObserverState.observe).toHaveBeenCalledWith(entry.target)

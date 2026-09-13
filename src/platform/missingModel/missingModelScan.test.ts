@@ -1,4 +1,3 @@
-import type * as I18nModule from '@/i18n'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
@@ -1741,8 +1740,8 @@ const { mockUpdateModelsForNodeType, mockGetAssets } = vi.hoisted(() => ({
   mockGetAssets: vi.fn().mockReturnValue([])
 }))
 
-vi.mock(import('@/i18n'), async (importOriginal) => ({
-  ...(await importOriginal<typeof I18nModule>()),
+vi.mock<unknown>(import('@/i18n'), () => ({
+  t: (key: string) => key,
   st: (_key: string, fallback: string) => fallback
 }))
 

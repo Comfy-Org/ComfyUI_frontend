@@ -1,10 +1,8 @@
 // @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
-
-import type * as vueuseModule from '@vueuse/core'
 
 import type { ComfyEvent } from '../../data/events'
 
@@ -16,18 +14,17 @@ const localized = (en: string) => ({ en, 'zh-CN': en })
 // Captures the resize callback so a test can feed it a fake overflow entry;
 // happy-dom performs no layout, so the clamp can never trip on its own.
 const { resizeCallbacks } = vi.hoisted(() => ({
-  resizeCallbacks: [] as Array<(entries: Array<{ target: Element }>) => void>
+  resizeCallbacks: [] as ResizeObserverCallback[]
 }))
-vi.mock(import('@vueuse/core'), async (importOriginal) => {
-  const actual = await importOriginal<typeof vueuseModule>()
-  return {
-    ...actual,
-    useResizeObserver: vi.fn((_el: unknown, cb: unknown) => {
-      resizeCallbacks.push(cb as (typeof resizeCallbacks)[number])
-      return { stop: () => {} }
-    }) as unknown as typeof actual.useResizeObserver
+class MockResizeObserver implements ResizeObserver {
+  constructor(callback: ResizeObserverCallback, record = true) {
+    if (record) resizeCallbacks.push(callback)
   }
-})
+
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
 
 const makeEvent = (overrides: Partial<ComfyEvent> = {}): ComfyEvent => ({
   id: 'meetup-1',
@@ -46,6 +43,11 @@ const AFTER = new Date('2027-01-01T00:00:00Z')
 const BEFORE = new Date('2026-01-01T00:00:00Z')
 
 describe('EventsDirectoryRow', () => {
+  beforeEach(() => {
+    resizeCallbacks.length = 0
+    vi.stubGlobal('ResizeObserver', MockResizeObserver)
+  })
+
   it('marks past rows with a Past pill and leaves upcoming rows without one', () => {
     const { unmount } = render(EventsDirectoryRow, {
       props: { row: rowOf(makeEvent(), AFTER) }
@@ -97,7 +99,16 @@ describe('EventsDirectoryRow', () => {
     const desc = screen.getByText('A description that could run long.')
     Object.defineProperty(desc, 'scrollHeight', { value: 64 })
     Object.defineProperty(desc, 'clientHeight', { value: 32 })
-    for (const cb of resizeCallbacks) cb([{ target: desc }])
+    const entry: ResizeObserverEntry = {
+      target: desc,
+      borderBoxSize: [],
+      contentBoxSize: [],
+      contentRect: desc.getBoundingClientRect(),
+      devicePixelContentBoxSize: []
+    }
+    for (const cb of resizeCallbacks) {
+      cb([entry], new MockResizeObserver(cb, false))
+    }
     await nextTick()
 
     await userEvent.click(screen.getByRole('button', { name: 'Read more' }))
