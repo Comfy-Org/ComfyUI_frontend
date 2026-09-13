@@ -1,6 +1,8 @@
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { useDialogService } from '@/services/dialogService'
+
 import { useTopUpUrlLoader } from './useTopUpUrlLoader'
 
 const preservedQueryMocks = vi.hoisted(() => ({
@@ -29,7 +31,11 @@ vi.mock<unknown>(import('vue-router'), () => ({
 }))
 
 const mockShowTopUpCreditsDialog = vi.hoisted(() =>
-  vi.fn<() => Promise<string | undefined>>(async () => 'subscribed')
+  vi.fn<
+    () => ReturnType<
+      ReturnType<typeof useDialogService>['showTopUpCreditsDialog']
+    >
+  >(async () => 'subscribed')
 )
 
 vi.mock<unknown>(import('@/services/dialogService'), () => ({
@@ -108,6 +114,22 @@ describe('useTopUpUrlLoader', () => {
 
     expect(mockShowTopUpCreditsDialog).toHaveBeenCalledOnce()
     expect(mockTrackAddApiCreditButtonClicked).not.toHaveBeenCalled()
+  })
+
+  it('cleans the URL without purchase telemetry when a subscription is required', async () => {
+    mockRouteQuery.value = { topup: '1', other: 'param' }
+    mockShowTopUpCreditsDialog.mockResolvedValue('subscriptionRequired')
+
+    const { loadTopUpFromUrl } = useTopUpUrlLoader()
+    await loadTopUpFromUrl()
+
+    expect(mockTrackAddApiCreditButtonClicked).not.toHaveBeenCalled()
+    expect(mockRouterReplace).toHaveBeenCalledWith({
+      query: { other: 'param' }
+    })
+    expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
+      'topup'
+    )
   })
 
   it('retains the deep link until capability loading settles', async () => {
