@@ -322,7 +322,24 @@ test.describe(
     ]) {
       test(`renders Vue widget labels and titles at ${label} zoom`, async ({
         comfyPage
-      }) => {
+      }, testInfo) => {
+        const longTitle = 'KSampler Advanced Controls'
+        const longWidgetLabel = 'guidance scale'
+
+        await comfyPage.page.evaluate(
+          ({ longTitle, longWidgetLabel }) => {
+            const node = window.app!.graph.nodes.find(
+              (node) => node.id === '3'
+            )!
+            node.title = longTitle
+            node.widgets!.find((widget) => widget.name === 'cfg')!.label =
+              longWidgetLabel
+            window.app!.graph.setDirtyCanvas(true, true)
+          },
+          { longTitle, longWidgetLabel }
+        )
+        await comfyPage.nextFrame()
+
         await comfyPage.canvasOps.resetView()
         await comfyPage.canvasOps.setScale(scale)
         const kSampler = await comfyPage.nodeOps.getNodeRefById('3')
@@ -337,23 +354,50 @@ test.describe(
           .poll(() => comfyPage.canvasOps.getScale())
           .toBeCloseTo(scale, 2)
 
-        const vueNode = comfyPage.vueNodes.getNodeByTitle('KSampler')
+        const vueNode = comfyPage.vueNodes.getNodeByTitle(longTitle)
         const title = vueNode.getByTestId('node-title')
         await expect(title).toBeVisible()
-        await expect(title).toHaveText('KSampler')
+        await expect(title).toHaveText(longTitle)
+        const titleBox = await title.boundingBox()
+        expect(
+          titleBox,
+          'long title must have a rendered bounding box'
+        ).not.toBeNull()
+        expect(titleBox!.width).toBeGreaterThan(0)
+        expect(titleBox!.height).toBeGreaterThan(0)
         await expectRenderedTextUnclipped(
           title,
           vueNode.getByTestId('node-header-3')
         )
 
         const cfgWidget = comfyPage.vueNodes
-          .getWidgetByName('KSampler', 'cfg')
+          .getWidgetByName(longTitle, 'cfg')
           .first()
         await expect(cfgWidget).toBeVisible()
-        const cfgRow = comfyPage.vueNodes.getWidgetRowByLabel('KSampler', 'cfg')
+        const cfgRow = comfyPage.vueNodes.getWidgetRowByLabel(
+          longTitle,
+          longWidgetLabel
+        )
         await expect(cfgRow).toBeVisible()
         const cfgLabel = cfgRow.getByTestId('widget-layout-field-label')
+        await expect(cfgLabel).toHaveText(longWidgetLabel)
+        const labelBox = await cfgLabel.boundingBox()
+        expect(
+          labelBox,
+          'long widget label must have a rendered bounding box'
+        ).not.toBeNull()
+        expect(labelBox!.width).toBeGreaterThan(0)
+        expect(labelBox!.height).toBeGreaterThan(0)
         await expectRenderedTextUnclipped(cfgLabel, cfgRow)
+        const screenshotPath = testInfo.outputPath(`vue-text-${label}.png`)
+        await vueNode.screenshot({
+          animations: 'disabled',
+          path: screenshotPath
+        })
+        await testInfo.attach(`vue-text-${label}.png`, {
+          contentType: 'image/png',
+          path: screenshotPath
+        })
         if (scale === 2) {
           for (const { container, text } of [
             { container: vueNode.getByTestId('node-header-3'), text: title },
