@@ -29,24 +29,9 @@ longer present in transient history. `getJobAssets(jobId)` calls the paginated
 `GET /api/jobs/{job_id}/assets`, but in-memory history remains the current
 mechanism for showing a run's outputs during that session.
 
-## Current implementation
-
-With Assets enabled, the frontend lists input, output, and temp records from the
-Asset API. With Assets disabled, it lists outputs reconstructed from `/history`.
-
-Deletion branches on `assetsEnabled` only. Without Assets, deleting an output
-or temp item posts its `jobId` to `/history`. With Assets, the frontend calls
-`DELETE /api/assets/{id}` with asset-record IDs regardless of the
-`assetDeletionEnabled` flag. For grouped outputs, it uses the `assetId` values
-in `user_metadata.allOutputs`. `assetDeletionEnabled` (see
-`useFeatureFlags.ts`) only selects the confirmation copy: permanent deletion
-when set, tombstone deletion when not, and history-only when no asset record is
-planned. The frontend does not refuse to send the request when the flag is
-unset; see "Implementation gaps".
-
-Clear history still posts to `/history`. Product copy says generated assets
-survive. They remain visible in the API-backed panel, but disappear from the
-legacy history-backed panel.
+The current frontend deletion and listing paths are documented in code, not
+restated here; see "Current frontend output deletion path" and "Current
+history-derived asset store" under References.
 
 ## Decision
 
@@ -116,6 +101,9 @@ legacy history-backed panel.
 - **Backend behavior:** This repository does not establish whether history
   deletion cascades to asset records in each backend distribution. Any stronger
   lifecycle claim requires direct backend verification.
+- **Clear history panel divergence:** Clear history still posts to `/history`.
+  Product copy says generated assets survive; they remain visible in the
+  API-backed panel but disappear from the legacy history-backed panel.
 
 ## Relationship to the pinned intended design
 
