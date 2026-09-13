@@ -98,7 +98,7 @@ test.describe('Sign In dialog — auth error codes', () => {
 
     await expect(
       comfyPage.page.getByText(
-        'An account with this email already exists. Try signing in instead.'
+        "We couldn't create an account with this email. If you already have one, try signing in or resetting your password."
       )
     ).toBeVisible()
     await expect(dialog.root).toBeVisible()

@@ -143,7 +143,7 @@ test.describe('Cloud onboarding — auth error codes', { tag: '@cloud' }, () => 
 
     await expect(
       page.getByText(
-        'An account with this email already exists. Try signing in instead.'
+        "We couldn't create an account with this email. If you already have one, try signing in or resetting your password."
       )
     ).toBeVisible()
     await expect(page).toHaveURL(/\/cloud\/signup/)
