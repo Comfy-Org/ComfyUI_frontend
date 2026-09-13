@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -31,26 +32,18 @@ vi.mock(import('@/scripts/widgets'), () => ({
   addValueControlWidgets: vi.fn()
 }))
 
-vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
-  ...(await importOriginal()),
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockDistributionState.isCloud
   }
 }))
 
-vi.mock(import('@/composables/useFeatureFlags'), async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    useFeatureFlags: () => {
-      const featureFlags = actual.useFeatureFlags()
-      return {
-        ...featureFlags,
-        flags: { ...featureFlags.flags, assetsEnabled: false }
-      }
-    }
-  }
-})
+vi.mock(import('@/composables/useFeatureFlags'), () => ({
+  useFeatureFlags: () =>
+    fromPartial({
+      flags: { assetsEnabled: false }
+    })
+}))
 
 vi.mock(import('@/i18n'), () => ({
   t: vi.fn((key: string) =>
