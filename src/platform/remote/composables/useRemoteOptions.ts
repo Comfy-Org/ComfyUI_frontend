@@ -6,6 +6,10 @@ import type { ComputedRef, MaybeRefOrGetter } from 'vue'
 import { isRetriableError } from '@/base/remote/retry'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { remoteOptionKeys } from '@/platform/remote/queryKeys'
+import {
+  DEFAULT_REMOTE_MAX_RETRIES,
+  DEFAULT_REMOTE_TIMEOUT_MS
+} from '@/platform/remote/schema/remoteRequestSchema'
 import type {
   RemoteAuthScope,
   RemoteRequestDescriptor
@@ -13,9 +17,6 @@ import type {
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
-
-const DEFAULT_TIMEOUT_MS = 30_000
-const DEFAULT_MAX_RETRIES = 3
 
 function resolveUrl(
   descriptor: RemoteRequestDescriptor,
@@ -43,7 +44,7 @@ async function executeRemoteRequest(
   const url = resolveUrl(descriptor, getComfyApiBaseUrl())
   const response = await axios.get(url, {
     params: descriptor.params,
-    timeout: descriptor.timeout ?? DEFAULT_TIMEOUT_MS,
+    timeout: descriptor.timeout ?? DEFAULT_REMOTE_TIMEOUT_MS,
     signal,
     ...(headers ? { headers } : {})
   })
@@ -107,7 +108,7 @@ export function useRemoteOptions(
     },
     retry: (failureCount, error) => {
       const descriptor = toValue(args.descriptor)
-      const max = descriptor?.maxRetries ?? DEFAULT_MAX_RETRIES
+      const max = descriptor?.maxRetries ?? DEFAULT_REMOTE_MAX_RETRIES
       return failureCount < max && isRetriableError(error)
     },
     staleTime: computed(() => toValue(args.descriptor)?.ttl ?? 0)

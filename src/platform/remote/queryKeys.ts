@@ -2,6 +2,10 @@ import type {
   RemoteAuthScope,
   RemoteRequestDescriptor
 } from '@/platform/remote/schema/remoteRequestSchema'
+import {
+  DEFAULT_REMOTE_MAX_RETRIES,
+  DEFAULT_REMOTE_TIMEOUT_MS
+} from '@/platform/remote/schema/remoteRequestSchema'
 
 function sortedParams(
   params?: Record<string, string>
@@ -19,6 +23,8 @@ export const remoteOptionKeys = {
       descriptor.route,
       descriptor.responseKey ?? '',
       sortedParams(descriptor.params),
+      descriptor.timeout ?? DEFAULT_REMOTE_TIMEOUT_MS,
+      descriptor.maxRetries ?? DEFAULT_REMOTE_MAX_RETRIES,
       scope.workspaceId ?? null,
       scope.userId ?? null,
       scope.apiKeyBucket ?? null,

@@ -1,5 +1,8 @@
 type RemoteRequestClient = 'comfyApi'
 
+export const DEFAULT_REMOTE_TIMEOUT_MS = 30_000
+export const DEFAULT_REMOTE_MAX_RETRIES = 3
+
 export interface RemoteRequestDescriptor {
   client: RemoteRequestClient
   route: string

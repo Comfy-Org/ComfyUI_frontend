@@ -126,6 +126,44 @@ describe('useRemoteOptions', () => {
     expect(JSON.stringify(keyB)).not.toContain('key-b')
   })
 
+  it('does not deduplicate concurrent requests with different execution policies', async () => {
+    const queryClient = createTestQueryClient()
+    const timeoutRequest = vi.fn().mockResolvedValue('timeout-policy')
+    const retryRequest = vi.fn().mockResolvedValue('retry-policy')
+    const scope = { userId: 'u1', workspaceId: 'w1' }
+
+    const results = await Promise.all([
+      queryClient.fetchQuery({
+        queryKey: remoteOptionKeys.byRoute(
+          { ...desc, timeout: 1_000, maxRetries: 3 },
+          scope
+        ),
+        queryFn: timeoutRequest
+      }),
+      queryClient.fetchQuery({
+        queryKey: remoteOptionKeys.byRoute(
+          { ...desc, timeout: 30_000, maxRetries: 5 },
+          scope
+        ),
+        queryFn: retryRequest
+      })
+    ])
+
+    expect(results).toEqual(['timeout-policy', 'retry-policy'])
+    expect(timeoutRequest).toHaveBeenCalledOnce()
+    expect(retryRequest).toHaveBeenCalledOnce()
+  })
+
+  it('normalizes omitted execution policies to their defaults', () => {
+    const scope = { userId: 'u1', workspaceId: 'w1' }
+    expect(remoteOptionKeys.byRoute(desc, scope)).toEqual(
+      remoteOptionKeys.byRoute(
+        { ...desc, timeout: 30_000, maxRetries: 3 },
+        scope
+      )
+    )
+  })
+
   it('returns disabled state when descriptor is null', async () => {
     const scope = effectScope()
     let result!: ReturnType<typeof useRemoteOptions>
