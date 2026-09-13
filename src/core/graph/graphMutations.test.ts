@@ -498,6 +498,37 @@ describe('graphMutations', () => {
     error.mockRestore()
   })
 
+  it.for([null, 7])(
+    'rejects malformed live input %p during connect preparation',
+    (malformed) => {
+      const graph = mutations()
+      graph.addNode(node(1), context)
+      graph.addNode(node(2), context)
+      const target = useNodeDataStore().getNode('root', toNodeId(2))!
+      Reflect.set(target, 'inputs', [malformed])
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      expect(
+        graph.connect(
+          {
+            id: 9,
+            originNodeId: 1,
+            originSlot: 0,
+            targetNodeId: 2,
+            targetSlot: 0,
+            type: 'IMAGE',
+            targetInputs: [{ name: 'in', type: 'IMAGE', link: 9 }]
+          },
+          context
+        )
+      ).toBe(false)
+      expect(
+        useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
+      ).toBeUndefined()
+      error.mockRestore()
+    }
+  )
+
   it('updates serialized slots whose optional link mirrors were absent', () => {
     const graph = mutations()
     expect(

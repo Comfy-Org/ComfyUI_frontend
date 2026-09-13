@@ -37,6 +37,10 @@ export interface SemanticLinkPayload {
   targetInputs?: readonly ISerialisableNodeInput[]
 }
 
+function isSlotRecord(value: unknown): value is { name?: unknown } {
+  return value !== null && typeof value === 'object'
+}
+
 interface SemanticNodeLayout {
   position: { x: number; y: number }
   size: { width: number; height: number }
@@ -433,6 +437,9 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             : origin.outputs
           const targetInputs = [...target.inputs]
           if (mutation.link.targetInputs) {
+            if (targetInputs.some((input) => !isSlotRecord(input))) {
+              return 'connect target inputs contain a malformed live slot'
+            }
             const documentInputs = prepareInputSlots(mutation.link.targetInputs)
             const name = documentInputs.at(topology.targetSlot)?.name
             if (name === undefined) {
@@ -440,14 +447,14 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             }
             for (const input of documentInputs) {
               const index = targetInputs.findIndex(
-                (local) => local.name === input.name
+                (local) => isSlotRecord(local) && local.name === input.name
               )
               if (index < 0) targetInputs.push(input)
               else if (isPlainObject(targetInputs[index]))
                 targetInputs[index] = input
             }
             topology.targetSlot = targetInputs.findIndex(
-              (input) => input.name === name
+              (input) => isSlotRecord(input) && input.name === name
             )
           }
           if (topology.originSlot >= originOutputs.length) {
@@ -793,6 +800,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           }
           if (target && mutation.targetInputs) {
             for (const input of mutation.liveTargetInputs ?? target.inputs) {
+              if (!isPlainObject(input)) continue
               const index = mutation.targetInputs.findIndex(
                 (serialized) => serialized.name === input.name
               )
