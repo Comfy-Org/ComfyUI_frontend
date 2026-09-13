@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import type { TooltipOptions } from 'primevue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
@@ -268,6 +269,70 @@ describe('widget visibility', () => {
 
   it('shows normal widgets', () => {
     expect(visibilityOf({})).toBe(true)
+  })
+
+  describe('runtime type swaps on a widget that owns an input slot', () => {
+    function registerSlotOwningWidget(name = 'points_store') {
+      const nodeId = toNodeId(1)
+      const { graph, node } = createGraphWithNode([], nodeId)
+      const widget = node.addWidget('number', name, 0, () => {})
+      node.inputs = [
+        {
+          name,
+          type: 'INT',
+          widget: { name },
+          boundingRect: [0, 0, 0, 0]
+        }
+      ]
+      const id = widget.widgetId
+      if (!id) throw new Error('Expected widget registration to succeed')
+      return {
+        widget,
+        process: () =>
+          processWidgets({ widgetIds: [id], nodeId, rootGraph: graph })[0]
+      }
+    }
+
+    it('suppresses a widget an extension hides by type', () => {
+      const { widget, process } = registerSlotOwningWidget()
+      expect(process().visible).toBe(true)
+
+      widget.type = fromAny('hidden')
+
+      const processed = process()
+      expect(processed.slotMetadata).toEqual({
+        index: 0,
+        type: 'INT',
+        linked: false,
+        promoted: false
+      })
+      expect(processed.visible).toBe(false)
+      expect(processed.suppressedByConnection).toBe(false)
+    })
+
+    it('restores the widget when the extension puts the original type back', () => {
+      const { widget, process } = registerSlotOwningWidget()
+
+      widget.type = fromAny('hidden')
+      widget.type = fromAny('number')
+
+      expect(process().visible).toBe(true)
+    })
+
+    it('keeps a socket-only row for a converted widget', () => {
+      const { widget, process } = registerSlotOwningWidget()
+
+      widget.type = fromAny('converted-widget')
+
+      const processed = process()
+      expect(processed.simplified.type).toBe('converted-widget')
+      expect(processed.slotMetadata).toEqual({
+        index: 0,
+        type: 'INT',
+        linked: false,
+        promoted: false
+      })
+    })
   })
 
   it('hides hidden widgets', () => {
