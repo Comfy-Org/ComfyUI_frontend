@@ -5,11 +5,19 @@ import { test } from './fixtures/modelsAccount'
 
 const path = '/models/byteplus--seedream-4-5--edit-images/'
 
-for (const entry of ['playground', 'header']) {
-  test(`selected reference bytes survive ${entry} sign-in and reach Router`, async ({
+for (const { entry, randomUUID } of [
+  { entry: 'playground', randomUUID: true },
+  { entry: 'header', randomUUID: true },
+  { entry: 'header', randomUUID: false }
+]) {
+  test(`selected reference bytes survive ${entry} sign-in and reach Router${randomUUID ? '' : ' without crypto.randomUUID'}`, async ({
     page,
     modelsAccount
   }) => {
+    if (!randomUUID)
+      await page.addInitScript(() => {
+        Object.defineProperty(crypto, 'randomUUID', { value: undefined })
+      })
     await page.goto(path)
     const chooser = page.waitForEvent('filechooser')
     await page

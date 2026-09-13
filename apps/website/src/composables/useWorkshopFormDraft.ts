@@ -14,6 +14,7 @@ import {
 import type { FieldSchema, FormValues } from '../config/workshop-playground'
 import { restoreFormValues } from '../config/workshop-playground'
 import { onBeforeSignInLeave } from '../config/workshop-return'
+import { workshopIdempotencyKey } from '../config/workshop-snippets'
 
 export function useWorkshopFormDraft(
   slug: string,
@@ -50,7 +51,7 @@ export function useWorkshopFormDraft(
     activity.value = 'saving'
     persistScalars()
     try {
-      const token = crypto.randomUUID()
+      const token = workshopIdempotencyKey()
       sessionStorage.setItem(mediaKey, token)
       const files = packWorkshopFiles(schema.value, values.value)
       if (!Object.keys(files).length) {
