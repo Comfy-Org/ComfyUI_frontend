@@ -109,6 +109,17 @@ describe('computeModelStats', () => {
     await expect(pending).rejects.toThrow(/abort/i)
   })
 
+  it('rejects when aborted while a small mesh is still being counted', async () => {
+    const controller = new AbortController()
+    const pending = computeModelStats(
+      new THREE.Mesh(makeQuadGeometry()),
+      controller.signal
+    )
+    controller.abort()
+
+    await expect(pending).rejects.toThrow(/abort/i)
+  })
+
   it('rejects immediately for an already aborted signal', async () => {
     await expect(
       computeModelStats(new THREE.Mesh(makeQuadGeometry()), AbortSignal.abort())

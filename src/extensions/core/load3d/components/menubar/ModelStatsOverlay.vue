@@ -1,7 +1,6 @@
 <template>
   <dl
     class="pointer-events-none absolute top-2 right-2 z-10 m-0 grid grid-cols-[auto_auto] gap-x-3 gap-y-0.5 rounded-md bg-backdrop/50 px-2 py-1 text-xs text-base-foreground tabular-nums"
-    data-testid="load3d-model-stats"
   >
     <template v-for="row in rows" :key="row.key">
       <dt class="opacity-70">{{ row.label }}</dt>
