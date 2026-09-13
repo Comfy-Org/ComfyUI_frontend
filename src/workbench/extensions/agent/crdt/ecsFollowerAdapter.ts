@@ -1,7 +1,8 @@
 import {
   linksMap,
   nodesMap,
-  OPAQUE_WIDGETS_KEY
+  OPAQUE_WIDGETS_KEY,
+  readMeta
 } from '@comfyorg/comfy-multi-player'
 import * as Y from 'yjs'
 
@@ -10,6 +11,8 @@ import type {
   SemanticLinkPayload,
   SemanticNodePayload
 } from '@/core/graph/graphMutations'
+import type { GroupId } from '@/types/groupId'
+import { toGroupId } from '@/types/groupId'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toNodeId } from '@/types/nodeId'
 
@@ -93,6 +96,34 @@ function readNodeSlots<TKey extends 'inputs' | 'outputs'>(
     : 'originOutputs']
 }
 
+/**
+ * Group ids currently present in `meta.groups` (bbc #319). The pinned
+ * applier (0.2.1) blanks `meta.groups` wholesale on `clear` with no per-id
+ * target set and no stamp gate (unlike nodes/links) — see
+ * reports/audit/2026-09-11-bbc-319-group-aware-clear.md. The follower does
+ * not trust an op name for this: it reads whatever `meta.groups` says AFTER
+ * a frame and diffs it against what it saw before, the same principle
+ * already used for nodesMap/linksMap deep-observe rather than op replay.
+ */
+function readGroupIds(doc: Y.Doc): ReadonlySet<GroupId> {
+  const meta = readMeta(doc)
+  const groups = meta.groups
+  if (!Array.isArray(groups)) return new Set()
+  const ids = new Set<GroupId>()
+  for (const entry of groups) {
+    if (!isRecord(entry)) continue
+    const id = entry.id
+    if (typeof id === 'number' && Number.isInteger(id)) {
+      ids.add(toGroupId(id))
+    }
+  }
+  return ids
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
 function frameContext(update: DocUpdate): RemoteMutationContext {
   const opIds = update.opIds?.filter((id) => id.length > 0)
   return {
@@ -118,6 +149,8 @@ interface TargetSession {
   onLinksChanged: (event: Y.YMapEvent<unknown>) => void
   reconcileNextFrame: boolean
   applying: boolean
+  /** `meta.groups` ids as of the last committed frame; see readGroupIds. */
+  lastGroupIds: ReadonlySet<GroupId>
 }
 
 /**
@@ -206,6 +239,7 @@ export class EcsFollowerAdapter {
       frameQueue: [],
       reconcileNextFrame: true,
       applying: false,
+      lastGroupIds: new Set(),
       onNodesChanged: (_events): void => undefined,
       onLinksChanged: (_event): void => undefined
     }
@@ -246,7 +280,16 @@ export class EcsFollowerAdapter {
     const removedLinkIds = [...changedLinkIds].flatMap((id) =>
       session.links.has(id) ? [] : [Number(id)]
     )
+    // meta.groups carries no per-frame delta (bbc #319: the applier blanks
+    // it wholesale) — diff snapshots the same way removeMissing already
+    // diffs authoritative reconcile snapshots, so a duplicate frame (same
+    // groups before/after) yields an empty diff and no redundant delete.
+    const currentGroupIds = readGroupIds(session.follower.doc)
+    const removedGroupIds = [...session.lastGroupIds].filter(
+      (id) => !currentGroupIds.has(id)
+    )
     const committed = session.mutations.batch(frameContext(update), (batch) => {
+      if (removedGroupIds.length > 0) batch.deleteGroups(removedGroupIds)
       if (reconcile) {
         const nodes = [...session.nodes.keys()].flatMap((id) => {
           const payload = readSemanticNode(session.follower.doc, id)
@@ -306,7 +349,13 @@ export class EcsFollowerAdapter {
     // reconcileNextFrame set so the next frame retries authoritative
     // cleanup instead of falling through to incremental handling with
     // stale local-only graph state still present.
-    if (committed) session.reconcileNextFrame = false
+    if (committed) {
+      session.reconcileNextFrame = false
+      // Same reasoning as reconcileNextFrame: a rejected batch must not
+      // advance the baseline, or a retried frame would diff against a
+      // snapshot it never actually committed against and miss the delete.
+      session.lastGroupIds = currentGroupIds
+    }
     return committed
   }
 

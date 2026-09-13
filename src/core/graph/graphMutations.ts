@@ -15,6 +15,7 @@ import type { LinkTopology } from '@/types/linkTopology'
 import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
+import type { GroupId } from '@/types/groupId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import { isWidgetId, widgetId } from '@/types/widgetId'
 
@@ -56,6 +57,17 @@ interface SemanticLayoutMutationPort {
     nodeIds: readonly NodeId[],
     context: RemoteMutationContext
   ): void
+  /**
+   * Delete groups the follower observed disappear from the bound doc's
+   * `meta.groups` snapshot (bbc #319). Groups carry no semantic-node
+   * identity — this is a pure passthrough to the renderer's layout owner,
+   * independent of any node delta (a group-only clear has none).
+   */
+  deleteGroups(
+    scope: GraphScope,
+    groupIds: readonly GroupId[],
+    context: RemoteMutationContext
+  ): void
 }
 
 interface GraphMutationBatch {
@@ -72,6 +84,8 @@ interface GraphMutationBatch {
   removeLinks(linkIds: readonly number[]): void
   deleteNode(nodeId: NodeId, removedLinkIds?: readonly number[]): void
   clearSemanticGraph(): void
+  /** Not a wire op: derived from a diff of the bound doc's `meta.groups`. */
+  deleteGroups(groupIds: readonly GroupId[]): void
 }
 
 export interface GraphMutations {
@@ -93,6 +107,10 @@ export interface GraphMutations {
     context: RemoteMutationContext
   ): boolean
   clearSemanticGraph(context: RemoteMutationContext): boolean
+  deleteGroups(
+    groupIds: readonly GroupId[],
+    context: RemoteMutationContext
+  ): boolean
 }
 
 export interface GraphMutationsDeps {
@@ -117,6 +135,7 @@ type QueuedMutation =
       removedLinkIds: readonly number[]
     }
   | { kind: 'clearSemanticGraph' }
+  | { kind: 'deleteGroups'; groupIds: readonly GroupId[] }
 
 interface PreparedNode {
   state: NodeState
@@ -146,6 +165,7 @@ type PreparedMutation =
       removedLinkIds: readonly LinkId[]
     }
   | { kind: 'clearSemanticGraph'; nodeIds: readonly NodeId[] }
+  | { kind: 'deleteGroups'; groupIds: readonly GroupId[] }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -538,6 +558,11 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           prepared.push({ kind: mutation.kind, nodeIds })
           break
         }
+        case 'deleteGroups':
+          // Groups are not part of this module's semantic node/link/widget
+          // state — pure passthrough to the layout owner.
+          prepared.push({ kind: mutation.kind, groupIds: mutation.groupIds })
+          break
       }
     }
     return prepared
@@ -785,6 +810,9 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           linkPresentationStore.clearOwner(scope)
           nodeStore.clearOwner(scope, context)
           break
+        case 'deleteGroups':
+          deps.layout.deleteGroups(scope, mutation.groupIds, context)
+          break
       }
     }
   }
@@ -822,6 +850,9 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
         },
         clearSemanticGraph() {
           queued.push({ kind: 'clearSemanticGraph' })
+        },
+        deleteGroups(groupIds) {
+          queued.push({ kind: 'deleteGroups', groupIds })
         }
       })
       const prepared = prepare(scope, queued)
@@ -848,6 +879,11 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
     clearSemanticGraph(context) {
       return graphMutations.batch(context, (batch) =>
         batch.clearSemanticGraph()
+      )
+    },
+    deleteGroups(groupIds, context) {
+      return graphMutations.batch(context, (batch) =>
+        batch.deleteGroups(groupIds)
       )
     }
   }

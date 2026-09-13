@@ -885,7 +885,11 @@ describe('Store-driven serialization parity', () => {
     const createLayout = vi.fn()
     const mutations = createGraphMutations({
       getScope: () => scope,
-      layout: { createNode: createLayout, deleteNodes: vi.fn() }
+      layout: {
+        createNode: createLayout,
+        deleteNodes: vi.fn(),
+        deleteGroups: vi.fn()
+      }
     })
 
     mutations.addNode(
