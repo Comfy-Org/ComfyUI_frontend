@@ -16,7 +16,11 @@
  * attribute it to the wrong account.
  */
 import type { SessionClient, SessionRequestOptions } from '../session.js'
-import type { SessionErrorCode, SessionFailure } from '../sessionContracts.js'
+import type {
+  AccountCredential,
+  SessionErrorCode,
+  SessionFailure
+} from '../sessionContracts.js'
 import type {
   BillingErrorCode,
   BillingFailure,
@@ -118,13 +122,25 @@ export function createSessionBillingTransport(
     )
   }
 
+  async function ensureBillingSession(
+    mintOptions: SessionRequestOptions
+  ): Promise<BillingResult<AccountCredential>> {
+    const minted = await session.ensureFresh(undefined, mintOptions)
+    if (minted === undefined) {
+      return { status: 'error', code: 'NOT_AUTHENTICATED' }
+    }
+    if (minted.status === 'error') return billingFailureForSession(minted)
+    return { status: 'ok', value: minted.session }
+  }
+
   async function send(
     request: BillingRequest,
     token: string,
     signal: AbortSignal
   ): Promise<BillingResult<BillingHttpResponse>> {
+    let response: Response
     try {
-      const response = await fetchImpl(resolveUrl(request.route), {
+      response = await fetchImpl(resolveUrl(request.route), {
         method: request.method,
         headers: {
           Authorization: `Bearer ${token}`,
@@ -133,11 +149,16 @@ export function createSessionBillingTransport(
             ? {}
             : { 'Idempotency-Key': request.idempotencyKey })
         },
-        ...(request.body === undefined
+        ...(request.method === 'GET' || request.body === undefined
           ? {}
           : { body: JSON.stringify(request.body) }),
         signal
       })
+    } catch {
+      return { status: 'error', code: 'REQUEST_FAILED' }
+    }
+
+    try {
       return {
         status: 'ok',
         value: {
@@ -147,14 +168,26 @@ export function createSessionBillingTransport(
         }
       }
     } catch {
-      return { status: 'error', code: 'REQUEST_FAILED' }
+      if (signal.aborted) {
+        return { status: 'error', code: 'REQUEST_FAILED' }
+      }
+      return {
+        status: 'ok',
+        value: {
+          httpStatus: response.status,
+          body: undefined,
+          header: (name) => response.headers.get(name)
+        }
+      }
     }
   }
 
   async function retryUnauthorized(
     request: BillingRequest,
     response: BillingHttpResponse,
-    mintOptions: SessionRequestOptions & { readonly signal: AbortSignal }
+    mintOptions: SessionRequestOptions & { readonly signal: AbortSignal },
+    expectedUid: string,
+    expectedWorkspace: string
   ): Promise<BillingResult<BillingHttpResponse>> {
     if (response.httpStatus !== 401) return { status: 'ok', value: response }
 
@@ -169,6 +202,12 @@ export function createSessionBillingTransport(
 
     const reminted = await session.remint(undefined, mintOptions)
     if (reminted?.status !== 'ok') return { status: 'ok', value: response }
+    if (
+      reminted.session.uid !== expectedUid ||
+      reminted.session.workspace.id !== expectedWorkspace
+    ) {
+      return { status: 'error', code: 'SUPERSEDED' }
+    }
     return send(request, reminted.session.token, mintOptions.signal)
   }
 
@@ -185,17 +224,14 @@ export function createSessionBillingTransport(
     }
 
     try {
-      const minted = await session.ensureFresh(undefined, mintOptions)
-      if (minted === undefined) {
-        return { status: 'error', code: 'NOT_AUTHENTICATED' }
-      }
-      if (minted.status === 'error') return billingFailureForSession(minted)
+      const minted = await ensureBillingSession(mintOptions)
+      if (minted.status === 'error') return minted
 
-      const { uid } = minted.session
-      const workspace = minted.session.workspace.id
+      const { uid } = minted.value
+      const workspace = minted.value.workspace.id
       const firstAttempt = await send(
         request,
-        minted.session.token,
+        minted.value.token,
         budget.signal
       )
       if (firstAttempt.status === 'error') return firstAttempt
@@ -203,7 +239,9 @@ export function createSessionBillingTransport(
       const finalAttempt = await retryUnauthorized(
         request,
         firstAttempt.value,
-        mintOptions
+        mintOptions,
+        uid,
+        workspace
       )
       if (finalAttempt.status === 'error') return finalAttempt
 
@@ -212,6 +250,8 @@ export function createSessionBillingTransport(
       }
 
       return finalAttempt
+    } catch {
+      return { status: 'error', code: 'REQUEST_FAILED' }
     } finally {
       budget.close()
     }
