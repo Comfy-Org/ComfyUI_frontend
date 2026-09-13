@@ -3,6 +3,7 @@ import { t } from '@/i18n'
 import { prepareChurnkey } from '@/platform/cloud/churnkey/churnkeyClient'
 import { getSubscriptionCancellationMetadata } from '@/platform/cloud/subscription/utils/subscriptionCancellationTelemetry'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { getErrorMessage } from '@/utils/errorUtil'
 
@@ -37,14 +38,39 @@ export async function launchCancellationFlow({
     return workspaceStore.activeWorkspaceId === launchWorkspaceId
   }
 
-  const session = await prepareChurnkey().catch((error) => {
-    console.warn('Failed to prepare Churnkey cancellation flow:', error)
-    return null
-  })
-  if (!session) {
-    if (isLaunchWorkspaceCurrent()) await showFallback()
+  const preparation = await prepareChurnkey().then(
+    (session) => ({ session, threw: false as const }),
+    (error: unknown) => ({ session: null, threw: true as const, error })
+  )
+  if (!preparation.session) {
+    const workspaceStillCurrent = isLaunchWorkspaceCurrent()
+    reportError(
+      preparation.threw
+        ? preparation.error
+        : new Error('Churnkey cancellation flow is not configured'),
+      {
+        errorType: 'cloud_cancellation_vendor_fallback',
+        tags: {
+          failure_kind: 'degraded',
+          feature_area: 'billing',
+          operation: 'load',
+          outcome: !workspaceStillCurrent
+            ? 'aborted'
+            : preparation.threw
+              ? 'recovered'
+              : 'missing'
+        },
+        context: {
+          workspace_still_current: workspaceStillCurrent,
+          vendor_threw: preparation.threw
+        },
+        level: 'warning'
+      }
+    )
+    if (workspaceStillCurrent) await showFallback()
     return
   }
+  const session = preparation.session
   if (!isLaunchWorkspaceCurrent()) return
 
   const telemetry = useTelemetry()

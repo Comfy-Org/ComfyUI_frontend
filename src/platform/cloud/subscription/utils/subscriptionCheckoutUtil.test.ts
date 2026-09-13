@@ -11,8 +11,11 @@ const {
 
   mockIsCloud,
   mockGetCheckoutAttribution,
-  mockLocalStorage
+  mockLocalStorage,
+  mockReportError,
+  mockAttributionChunkFails
 } = vi.hoisted(() => ({
+  mockAttributionChunkFails: { value: false },
   mockTelemetry: {
     trackBeginCheckout: vi.fn(),
     trackBillingEvent: vi.fn()
@@ -34,6 +37,7 @@ const {
     gbraid: 'gbraid-456',
     wbraid: 'wbraid-789'
   })),
+  mockReportError: vi.fn(),
   mockLocalStorage: (() => {
     const store = new Map<string, string>()
 
@@ -69,6 +73,10 @@ vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: vi.fn(() => mockTelemetry)
 }))
 
+vi.mock<unknown>(import('@/platform/telemetry/reportError'), () => ({
+  reportError: mockReportError
+}))
+
 vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
   ...(await importOriginal<typeof DistributionModule>()),
   get isCloud() {
@@ -79,7 +87,12 @@ vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
 vi.mock<unknown>(
   import('@/platform/telemetry/utils/checkoutAttribution'),
   () => ({
-    getCheckoutAttribution: mockGetCheckoutAttribution
+    get getCheckoutAttribution() {
+      if (mockAttributionChunkFails.value) {
+        throw new Error('Failed to fetch dynamically imported module')
+      }
+      return mockGetCheckoutAttribution
+    }
   })
 )
 
@@ -185,7 +198,6 @@ describe('performSubscriptionCheckout', () => {
   it('continues checkout when attribution collection fails', async () => {
     const checkoutUrl = 'https://checkout.stripe.com/test'
     const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
     mockGetCheckoutAttribution.mockRejectedValueOnce(
       new Error('Attribution failed')
@@ -197,10 +209,17 @@ describe('performSubscriptionCheckout', () => {
 
     await performSubscriptionCheckout('pro', 'monthly')
 
-    expect(warnSpy).toHaveBeenCalledWith(
-      '[SubscriptionCheckout] Failed to collect checkout attribution',
-      expect.any(Error)
-    )
+    expect(mockReportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'cloud_checkout_attribution_fallback',
+      tags: {
+        failure_kind: 'degraded',
+        feature_area: 'billing',
+        operation: 'load',
+        outcome: 'recovered'
+      },
+      context: { attribution_stage: 'collect' },
+      level: 'warning'
+    })
     expect(global.fetch).toHaveBeenCalledWith(
       expect.stringContaining('/customers/cloud-subscription-checkout/pro'),
       expect.objectContaining({
@@ -216,6 +235,34 @@ describe('performSubscriptionCheckout', () => {
       checkout_attempt_id: expect.any(String)
     })
     expect(openSpy).toHaveBeenCalledWith(checkoutUrl, '_blank')
+  })
+
+  it('reports a failed attribution chunk load as the module_load stage', async () => {
+    const checkoutUrl = 'https://checkout.stripe.com/test'
+    vi.spyOn(window, 'open').mockImplementation(() => null)
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({ checkout_url: checkoutUrl })
+    } as Response)
+
+    mockAttributionChunkFails.value = true
+    try {
+      await performSubscriptionCheckout('pro', 'monthly')
+    } finally {
+      mockAttributionChunkFails.value = false
+    }
+
+    expect(mockReportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'cloud_checkout_attribution_fallback',
+        context: { attribution_stage: 'module_load' }
+      })
+    )
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/customers/cloud-subscription-checkout/pro'),
+      expect.objectContaining({ body: JSON.stringify({}) })
+    )
   })
 
   it('carries the payment intent source into begin_checkout and the pending attempt', async () => {

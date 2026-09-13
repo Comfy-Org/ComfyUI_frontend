@@ -4,6 +4,7 @@ import type {
   Plan,
   TeamCreditStops
 } from '@/platform/workspace/api/workspaceApi'
+import { reportError } from '@/platform/telemetry/reportError'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 
 const plans = ref<Plan[]>([])
@@ -30,7 +31,22 @@ export function useBillingPlans() {
       .catch((err: unknown) => {
         error.value =
           err instanceof Error ? err.message : 'Failed to fetch plans'
-        console.error('[useBillingPlans] Failed to fetch plans:', err)
+        const hasCachedPlans = plans.value.length > 0
+        reportError(err, {
+          errorType: 'cloud_billing_plan_catalog_fallback',
+          tags: {
+            failure_kind: 'degraded',
+            feature_area: 'billing',
+            operation: 'load',
+            outcome: hasCachedPlans ? 'recovered' : 'failed'
+          },
+          context: {
+            has_cached_plans: hasCachedPlans,
+            has_team_credit_stops:
+              (teamCreditStops.value?.stops.length ?? 0) > 0
+          },
+          level: 'warning'
+        })
       })
       .finally(() => {
         isLoading.value = false

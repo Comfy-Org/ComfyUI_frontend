@@ -20,7 +20,8 @@ const mocks = vi.hoisted(() => ({
   billingRail: 'stripe' as BillingRail | null,
   cancelSubscription: vi.fn(),
   prepare: vi.fn(),
-  trackCancellation: vi.fn()
+  trackCancellation: vi.fn(),
+  reportError: vi.fn()
 }))
 
 vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
@@ -45,6 +46,10 @@ vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => ({
     trackSubscriptionCancellation: mocks.trackCancellation
   })
+}))
+
+vi.mock<unknown>(import('@/platform/telemetry/reportError'), () => ({
+  reportError: mocks.reportError
 }))
 
 import { launchCancellationFlow } from './launchCancellationFlow'
@@ -163,7 +168,6 @@ describe('launchCancellationFlow', () => {
 
   it('falls back when preparation or the provider fails', async () => {
     const preparationError = new Error('blocked by browser')
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     mocks.prepare.mockRejectedValueOnce(preparationError)
     const preparationFallback = vi.fn()
 
@@ -171,10 +175,17 @@ describe('launchCancellationFlow', () => {
 
     expect(preparationFallback).toHaveBeenCalledWith()
     expect(mocks.trackCancellation).not.toHaveBeenCalled()
-    expect(warn).toHaveBeenCalledWith(
-      'Failed to prepare Churnkey cancellation flow:',
-      preparationError
-    )
+    expect(mocks.reportError).toHaveBeenCalledWith(preparationError, {
+      errorType: 'cloud_cancellation_vendor_fallback',
+      tags: {
+        failure_kind: 'degraded',
+        feature_area: 'billing',
+        operation: 'load',
+        outcome: 'recovered'
+      },
+      context: { workspace_still_current: true, vendor_threw: true },
+      level: 'warning'
+    })
 
     mocks.prepare.mockResolvedValueOnce(
       session(async () => {
@@ -192,6 +203,45 @@ describe('launchCancellationFlow', () => {
         cycle: 'yearly',
         end_date: '2026-08-01T00:00:00Z',
         error_message: 'provider unavailable'
+      })
+    )
+  })
+
+  it('reports the vendor fallback when Churnkey resolves without a session', async () => {
+    mocks.reportError.mockClear()
+    mocks.prepare.mockResolvedValueOnce(null)
+    const showFallback = vi.fn()
+
+    await launchCancellationFlow({ showFallback })
+
+    expect(showFallback).toHaveBeenCalledOnce()
+    expect(mocks.reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'cloud_cancellation_vendor_fallback',
+        tags: expect.objectContaining({ outcome: 'missing' }),
+        context: { workspace_still_current: true, vendor_threw: false }
+      })
+    )
+  })
+
+  it('records an aborted fallback when the workspace changed mid-preparation', async () => {
+    const preparationError = new Error('blocked by browser')
+    mocks.reportError.mockClear()
+    mocks.prepare.mockImplementationOnce(async () => {
+      mocks.activeWorkspaceId = 'workspace-2'
+      throw preparationError
+    })
+    const showFallback = vi.fn()
+
+    await launchCancellationFlow({ showFallback })
+
+    expect(showFallback).not.toHaveBeenCalled()
+    expect(mocks.reportError).toHaveBeenCalledWith(
+      preparationError,
+      expect.objectContaining({
+        tags: expect.objectContaining({ outcome: 'aborted' }),
+        context: { workspace_still_current: false, vendor_threw: true }
       })
     )
   })
