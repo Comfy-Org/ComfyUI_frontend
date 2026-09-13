@@ -16,11 +16,13 @@ const PAGE_SIZE = 8
 // Serving them oldest-first instead makes the default "newest first" order head
 // at the end of whatever prefix has loaded, so the top of the list changes
 // every time another page arrives and nothing about scroll position is stable.
-const ASSETS_NEWEST_FIRST = generateOutputAssets(60).reverse()
+// Long enough that filling the initial view cannot reach the end. A 60-asset
+// list was exhausted before the sort was even changed, which left nothing for
+// the "keeps paging" assertion to observe.
+const ASSETS_NEWEST_FIRST = generateOutputAssets(400).reverse()
 const NEWEST_ID = ASSETS_NEWEST_FIRST[0].id
-const TOTAL_PAGES = Math.ceil(ASSETS_NEWEST_FIRST.length / PAGE_SIZE)
 
-function pageFor(url: URL): ListAssetsResponse {
+function pageFor(url: URL): { response: ListAssetsResponse; start: number } {
   const after = url.searchParams.get('after')
   const start = after
     ? ASSETS_NEWEST_FIRST.findIndex((asset) => asset.id === after) + 1
@@ -30,33 +32,41 @@ function pageFor(url: URL): ListAssetsResponse {
   const hasMore = end < ASSETS_NEWEST_FIRST.length
 
   return {
-    assets: page,
-    total: ASSETS_NEWEST_FIRST.length,
-    has_more: hasMore,
-    next_cursor: hasMore ? page.at(-1)?.id : undefined
+    start,
+    response: {
+      assets: page,
+      total: ASSETS_NEWEST_FIRST.length,
+      has_more: hasMore,
+      next_cursor: hasMore ? page.at(-1)?.id : undefined
+    }
   }
 }
 
 const test = comfyPageFixture.extend<{
-  pagedCloudAssets: URL[]
+  servedPageStarts: number[]
   stubInputFiles: void
 }>({
   // Auto fixtures run before the comfyPage fixture's internal setup(), so the
   // page first-loads with these routes already registered.
-  pagedCloudAssets: [
+  //
+  // Records how far into the list each response reached, not how many requests
+  // arrived: filling the initial view takes several requests and the sidebar
+  // queries this endpoint for more than just the generated list, so a request
+  // count says nothing about how much of the list has been paged in.
+  servedPageStarts: [
     async ({ page }, use) => {
-      const requested: URL[] = []
+      const starts: number[] = []
       const pattern = /\/api\/assets(?:\?.*)?$/
       await page.route(pattern, (route) => {
-        const url = new URL(route.request().url())
-        requested.push(url)
+        const { response, start } = pageFor(new URL(route.request().url()))
+        starts.push(start)
         return route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify(pageFor(url))
+          body: JSON.stringify(response)
         })
       })
-      await use(requested)
+      await use(starts)
       await page.unroute(pattern)
     },
     { auto: true }
@@ -81,10 +91,13 @@ const test = comfyPageFixture.extend<{
 test.describe('Assets sidebar - sort while paging', { tag: '@cloud' }, () => {
   test('Changing sort while scrolled partway down restarts at the top and keeps paging', async ({
     comfyPage,
-    pagedCloudAssets
+    servedPageStarts
   }) => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
+
+    // How deep into the list the backend has been asked to go.
+    const furthestServed = () => Math.max(-1, ...servedPageStarts)
 
     const firstRenderedId = () =>
       tab.assetCards.first().getAttribute('data-asset-id')
@@ -130,11 +143,13 @@ test.describe('Assets sidebar - sort while paging', { tag: '@cloud' }, () => {
       await expect.poll(() => scroller('read')).toBeGreaterThan(0)
     })
 
-    // Guards the "keeps paging" assertion: if scrolling had already exhausted
-    // the list, no further request could fire and that assertion would pass
-    // for a list that stopped paging entirely.
-    const pagesBeforeSort = pagedCloudAssets.length
-    expect(pagesBeforeSort).toBeLessThan(TOTAL_PAGES)
+    // Guards the "keeps paging" assertion: if scrolling had already reached the
+    // end of the list, nothing further could be fetched and that assertion
+    // would pass for a list that stopped paging entirely.
+    const servedBeforeSort = furthestServed()
+    expect(servedBeforeSort + PAGE_SIZE).toBeLessThan(
+      ASSETS_NEWEST_FIRST.length
+    )
 
     await test.step('Changing the sort order restarts the list at the top', async () => {
       await tab.openSettingsMenu()
@@ -152,11 +167,11 @@ test.describe('Assets sidebar - sort while paging', { tag: '@cloud' }, () => {
         .poll(
           async () => {
             await scroller('pageDown')
-            return pagedCloudAssets.length
+            return furthestServed()
           },
           { timeout: 20_000 }
         )
-        .toBeGreaterThan(pagesBeforeSort)
+        .toBeGreaterThan(servedBeforeSort)
     })
   })
 })
