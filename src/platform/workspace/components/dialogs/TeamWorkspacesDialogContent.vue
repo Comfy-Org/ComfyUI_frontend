@@ -44,7 +44,10 @@
       <ul
         class="m-0 flex max-h-52 list-none flex-col gap-2 overflow-y-auto p-0"
       >
-        <li v-for="workspace in ownedTeamWorkspaces" :key="workspace.id">
+        <li
+          v-for="{ workspace, tierLabel } in ownedTeamWorkspaceRows"
+          :key="workspace.id"
+        >
           <button
             class="focus-visible:ring-secondary-foreground flex w-full cursor-pointer items-center gap-3 rounded-lg border border-border-default bg-transparent px-4 py-3 transition-colors hover:bg-secondary-background-hover focus-visible:ring-1 focus-visible:outline-none"
             @click="handleSwitch(workspace.id)"
@@ -61,12 +64,11 @@
                 >
                   {{ workspace.name }}
                 </span>
-                <span
-                  v-if="tierLabels.get(workspace.id)"
-                  class="shrink-0 rounded-full bg-base-foreground px-1 py-0.5 text-2xs font-bold text-base-background uppercase"
-                >
-                  {{ tierLabels.get(workspace.id) }}
-                </span>
+                <RoleBadge
+                  v-if="tierLabel"
+                  class="shrink-0"
+                  :label="tierLabel"
+                />
               </div>
             </div>
             <span class="text-primary-foreground shrink-0 text-sm font-medium">
@@ -142,6 +144,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import RoleBadge from '@/platform/workspace/components/RoleBadge.vue'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import { useWorkspaceSwitch } from '@/platform/workspace/composables/useWorkspaceSwitch'
 import { useWorkspaceTierLabel } from '@/platform/workspace/composables/useWorkspaceTierLabel'
@@ -170,11 +173,11 @@ const ownedTeamWorkspaces = computed(() =>
   sharedWorkspaces.value.filter((w) => w.role === 'owner')
 )
 
-const tierLabels = computed(
-  () =>
-    new Map(
-      ownedTeamWorkspaces.value.map((w) => [w.id, getTierLabel(w)] as const)
-    )
+const ownedTeamWorkspaceRows = computed(() =>
+  ownedTeamWorkspaces.value.map((workspace) => ({
+    workspace,
+    tierLabel: getTierLabel(workspace)
+  }))
 )
 
 const isValidName = computed(() => {
