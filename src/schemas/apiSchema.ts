@@ -51,7 +51,8 @@ const zStatusWsMessageStatus = z.object({
 
 const zStatusWsMessage = z.object({
   status: zStatusWsMessageStatus.nullish(),
-  sid: z.string().nullish()
+  sid: z.string().nullish(),
+  credential_key: z.string().nullish()
 })
 
 const zProgressWsMessage = z.object({

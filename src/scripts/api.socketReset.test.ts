@@ -57,6 +57,8 @@ describe('ComfyApi realtime socket reset', () => {
     currentToken = 'token-a'
     deferTokenFetch = false
     pendingTokenReleases = []
+    sessionStorage.clear()
+    window.name = ''
     vi.stubGlobal('WebSocket', FakeWebSocket)
     api.socket = null
     vi.mocked(useAuthStore().getAuthToken).mockImplementation(() => {
@@ -144,6 +146,10 @@ describe('ComfyApi realtime socket reset', () => {
   it('clears the stale client id and handshake identity when resetting', async () => {
     window.name = 'client-from-account-a'
     sessionStorage.setItem('clientId', 'client-from-account-a')
+    sessionStorage.setItem(
+      'Comfy.ApiNode.CredentialKey:client-from-account-a',
+      'credential-key-a'
+    )
     await api.resetSocket()
     api.clientId = 'client-from-account-a'
 
@@ -152,5 +158,32 @@ describe('ComfyApi realtime socket reset', () => {
     expect(api.clientId).toBeUndefined()
     expect(window.name).toBe('')
     expect(sessionStorage.getItem('clientId')).toBeNull()
+    expect(
+      sessionStorage.getItem(
+        'Comfy.ApiNode.CredentialKey:client-from-account-a'
+      )
+    ).toBeNull()
+  })
+
+  it('authenticates a protected client id before feature negotiation', async () => {
+    window.name = 'protected-client'
+    sessionStorage.setItem(
+      'Comfy.ApiNode.CredentialKey:protected-client',
+      'credential-key'
+    )
+
+    api.init()
+    await flush()
+    const socket = FakeWebSocket.instances[0]
+    socket.simulateOpen()
+
+    expect(socket.send).toHaveBeenCalledTimes(2)
+    expect(JSON.parse(socket.send.mock.calls[0][0])).toEqual({
+      type: 'credential_auth',
+      data: { credential_key: 'credential-key' }
+    })
+    expect(JSON.parse(socket.send.mock.calls[1][0])).toMatchObject({
+      type: 'feature_flags'
+    })
   })
 })

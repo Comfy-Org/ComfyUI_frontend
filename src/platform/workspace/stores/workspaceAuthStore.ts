@@ -545,9 +545,12 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     return promise
   }
 
-  function hasValidTokenForWorkspace(workspaceId: string | undefined): boolean {
+  function hasValidTokenForWorkspace(
+    workspaceId: string | undefined,
+    minValidityMs = 0
+  ): boolean {
     return (
-      hasValidWorkspaceToken() &&
+      hasValidWorkspaceToken(minValidityMs) &&
       (workspaceId === undefined || currentWorkspace.value?.id === workspaceId)
     )
   }
@@ -605,7 +608,8 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
    * null so callers fail closed rather than downgrade to the personal identity.
    */
   async function ensureWorkspaceToken(
-    preferredWorkspaceId?: string
+    preferredWorkspaceId?: string,
+    minValidityMs = 0
   ): Promise<string | null> {
     const ownerUid = currentUserUid()
     if (!ownerUid) return null
@@ -613,7 +617,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
 
     for (;;) {
       if (!isCurrentUser(ownerUid)) return null
-      if (hasValidTokenForWorkspace(targetWorkspaceId)) {
+      if (hasValidTokenForWorkspace(targetWorkspaceId, minValidityMs)) {
         return workspaceToken.value
       }
 
@@ -646,7 +650,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       }
 
       if (!isCurrentUser(ownerUid)) return null
-      if (hasValidTokenForWorkspace(targetWorkspaceId)) {
+      if (hasValidTokenForWorkspace(targetWorkspaceId, minValidityMs)) {
         return workspaceToken.value
       }
 
@@ -1100,11 +1104,11 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       : undefined
   }
 
-  function hasValidWorkspaceToken(): boolean {
+  function hasValidWorkspaceToken(minValidityMs = 0): boolean {
     return (
       workspaceToken.value !== null &&
       workspaceTokenExpiresAt.value !== null &&
-      workspaceTokenExpiresAt.value > Date.now() &&
+      workspaceTokenExpiresAt.value > Date.now() + minValidityMs &&
       workspaceTokenOwnerUid.value !== null &&
       isCurrentUser(workspaceTokenOwnerUid.value)
     )

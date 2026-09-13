@@ -17,6 +17,8 @@ describe('API Feature Flags', () => {
   const wsEventHandlers: { [key: string]: (event: unknown) => void } = {}
 
   beforeEach(() => {
+    sessionStorage.clear()
+    window.name = ''
     // Mock WebSocket
     mockWebSocket = {
       readyState: 1, // WebSocket.OPEN
@@ -72,10 +74,14 @@ describe('API Feature Flags', () => {
           type: 'status',
           data: {
             status: { exec_info: { queue_remaining: 0 } },
-            sid: 'test-sid'
+            sid: 'test-sid',
+            credential_key: 'test-credential-key'
           }
         })
       })
+      expect(
+        sessionStorage.getItem('Comfy.ApiNode.CredentialKey:test-sid')
+      ).toBe('test-credential-key')
 
       // Simulate server feature flags response
       wsEventHandlers['message']({
