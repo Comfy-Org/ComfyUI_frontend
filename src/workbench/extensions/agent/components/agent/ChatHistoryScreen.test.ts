@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/vue'
+import { fireEvent, render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -210,6 +210,18 @@ describe('ChatHistoryScreen', () => {
     expect(emitted().select).toBeUndefined()
   })
 
+  it('does not refocus the editor on each draft update', async () => {
+    const user = userEvent.setup()
+    const focus = vi.spyOn(HTMLInputElement.prototype, 'focus')
+    renderScreen(groupsWithTitle('Original title'))
+    const input = await openRename(user)
+    const focusCallsAfterMount = focus.mock.calls.length
+
+    await user.type(input, ' updated')
+
+    expect(focus).toHaveBeenCalledTimes(focusCallsAfterMount)
+  })
+
   it('emits trimmed rename and renders the parent-updated title', async () => {
     const user = userEvent.setup()
     const { emitted, rerender } = renderScreen(
@@ -225,6 +237,20 @@ describe('ChatHistoryScreen', () => {
     await rerender({ groups: groupsWithTitle('Findable title') })
 
     expect(screen.getByRole('button', { name: 'Findable title' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Chat options' })).toHaveFocus()
+  })
+
+  it('does not overwrite a refreshed title with an untouched draft', async () => {
+    const user = userEvent.setup()
+    const { emitted, rerender } = renderScreen(
+      groupsWithTitle('Original title')
+    )
+    await openRename(user)
+
+    await rerender({ groups: groupsWithTitle('Refreshed title') })
+    await user.keyboard('{Enter}')
+
+    expect(emitted().rename).toBeUndefined()
   })
 
   it('cancels a history-row rename on Escape', async () => {
@@ -239,22 +265,20 @@ describe('ChatHistoryScreen', () => {
     expect(screen.getByRole('button', { name: 'Original title' })).toBeVisible()
     expect(screen.queryByText('Discarded')).toBeNull()
     expect(emitted().rename).toBeUndefined()
+    expect(screen.getByRole('button', { name: 'Chat options' })).toHaveFocus()
   })
 
-  // Behaviour deliberately changed: blur used to discard the draft, which threw
-  // typed input away on an ordinary tab or window switch with no recovery. The
-  // sibling inline rename in LayerPanel.vue commits on blur; this now matches.
-  it('commits a history-row rename when focus leaves the input', async () => {
+  it('discards a partial rename when focus leaves the input', async () => {
     const user = userEvent.setup()
     const { emitted } = renderScreen(groupsWithTitle('Original title'))
     const input = await openRename(user)
 
     await user.clear(input)
-    await user.type(input, 'Kept on blur')
+    await user.type(input, 'Partial title')
     await user.tab()
 
     expect(screen.queryByRole('textbox', { name: 'Rename' })).toBeNull()
-    expect(emitted().rename).toEqual([['thread-1', 'Kept on blur']])
+    expect(emitted().rename).toBeUndefined()
   })
 
   // The close-auto-focus fence is conditional: it must not eat the focus
@@ -287,37 +311,39 @@ describe('ChatHistoryScreen', () => {
     expect(emitted().rename).toBeUndefined()
   })
 
-  it('keeps the editor focused and the draft intact when the row changes bucket mid-rename', async () => {
+  it('clears a rename when its session disappears', async () => {
     const user = userEvent.setup()
-    const { rerender } = renderScreen(groupsWithTitle('Original title'))
+    const { emitted, rerender } = renderScreen(
+      groupsWithTwoRows('Second title')
+    )
     const input = await openRename(user)
 
     await user.clear(input)
-    await user.type(input, 'Half typed')
-
+    await user.type(input, 'Stale draft')
     await rerender({
-      groups: { ...emptyGroups, yesterday: [originalSession] }
+      groups: { ...emptyGroups, today: [secondSession] }
     })
 
-    const moved = await screen.findByRole<HTMLInputElement>('textbox', {
-      name: 'Rename'
-    })
-    expect(moved).toHaveFocus()
-    expect(moved.value).toBe('Half typed')
+    expect(screen.queryByRole('textbox', { name: 'Rename' })).toBeNull()
+    expect(emitted().rename).toBeUndefined()
 
-    await user.type(moved, ' and more')
-    expect(moved.value).toBe('Half typed and more')
+    const trigger = screen.getByRole('button', { name: 'Chat options' })
+    await user.click(trigger)
+    await screen.findByRole('menuitem', { name: 'Rename' })
+    await user.keyboard('{Escape}')
+    expect(trigger).toHaveFocus()
   })
 
   it('caps how long a renamed title can grow', async () => {
     const user = userEvent.setup()
-    renderScreen(groupsWithTitle('Original title'))
+    const { emitted } = renderScreen(groupsWithTitle('Original title'))
     const input = await openRename(user)
+    const longTitle = 'x'.repeat(250)
 
-    await user.clear(input)
-    await user.paste('x'.repeat(250))
+    await fireEvent.update(input, longTitle)
+    await user.keyboard('{Enter}')
 
-    expect(input.value).toHaveLength(200)
+    expect(emitted().rename).toEqual([['thread-1', longTitle.slice(0, 200)]])
   })
 
   it('falls back to the untitled label for a whitespace-only title', () => {
@@ -331,32 +357,10 @@ describe('ChatHistoryScreen', () => {
     const { emitted } = renderScreen(groupsWithTitle('  Padded  '))
     const input = await openRename(user)
 
-    await user.tab()
+    await user.keyboard('{Enter}')
 
     expect(input.value).toBe('  Padded  ')
     expect(emitted().rename).toBeUndefined()
-  })
-
-  // Deliberately asserts only that nothing is silently committed. Whether the
-  // editor should survive a regroup is unsettled, so this test does not pin it.
-  it('commits nothing when the row changes bucket mid-rename', async () => {
-    const user = userEvent.setup()
-    const { emitted, rerender } = renderScreen(
-      groupsWithTitle('Original title')
-    )
-    const input = await openRename(user)
-
-    await user.clear(input)
-    await user.type(input, 'Renamed mid-move')
-
-    await rerender({
-      groups: { ...emptyGroups, yesterday: [originalSession] }
-    })
-
-    expect(emitted().rename).toBeUndefined()
-    expect(
-      screen.queryByRole('button', { name: 'Renamed mid-move' })
-    ).toBeNull()
   })
 
   it('ignores empty or unchanged titles', async () => {
