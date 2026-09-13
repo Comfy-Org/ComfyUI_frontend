@@ -8,6 +8,8 @@
     "index.html",
     "scripts/**/*.{js,ts}",
     "apps/website/src/scripts/**/*.ts",
+    // Astro injects these routes when WORKSHOP_IN_BUILD is enabled.
+    "apps/website/src/routes/models/*.astro",
     "**/.storybook/{main,preview}.ts",
     "packages/ingest-types/openapi-ts.config.ts"
   ],

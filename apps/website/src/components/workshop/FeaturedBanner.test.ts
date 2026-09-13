@@ -6,6 +6,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { WorkshopModel } from '../../config/models-catalogue'
 import FeaturedBanner from './FeaturedBanner.vue'
+import {
+  setAllIntersecting,
+  stubIntersectionObserver
+} from '../../test/fakeIntersectionObserver'
 
 const motion = vi.hoisted(() => ({ reduced: false }))
 
@@ -40,6 +44,7 @@ const kling: WorkshopModel = {
 }
 
 async function advanceAutoplay(ms = AUTOPLAY_MS + RAF_MARGIN_MS) {
+  await setAllIntersecting(true)
   await vi.advanceTimersByTimeAsync(ms)
   await nextTick()
 }
@@ -53,6 +58,7 @@ function setupAutoplayUser() {
 describe('FeaturedBanner', () => {
   beforeEach(() => {
     motion.reduced = false
+    stubIntersectionObserver()
   })
 
   it('leads with the first model and links the whole slide to its page', () => {
@@ -100,6 +106,7 @@ describe('FeaturedBanner', () => {
         ]
       }
     })
+    await setAllIntersecting(true)
     expect(screen.getByTestId('featured-video').getAttribute('src')).toBe(
       '/video.mp4'
     )
@@ -152,5 +159,23 @@ describe('FeaturedBanner', () => {
     await advanceAutoplay(AUTOPLAY_MS * 2)
 
     expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Flux')
+  })
+
+  it('freezes rotation offscreen and in a hidden tab, then resumes where it stopped', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
+    render(FeaturedBanner, { props: { models: [base, kling] } })
+    await setAllIntersecting(false)
+    await vi.advanceTimersByTimeAsync(AUTOPLAY_MS)
+    expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Flux')
+    await setAllIntersecting(true)
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+    document.dispatchEvent(new Event('visibilitychange'))
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(AUTOPLAY_MS)
+    expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Flux')
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible')
+    document.dispatchEvent(new Event('visibilitychange'))
+    await advanceAutoplay()
+    expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Kling')
   })
 })

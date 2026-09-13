@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { WorkshopModel } from '../src/config/models-catalogue'
-import { workshopModels } from '../src/config/models-catalogue'
+import { workshopModels } from '../src/config/workshop-browse-content'
 import hubTemplates from '../src/data/hubTemplates.json'
 import templateModelJoin from '../src/data/templateModelJoin.json'
 import {

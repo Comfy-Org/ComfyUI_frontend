@@ -1,20 +1,11 @@
 // @vitest-environment happy-dom
+import '@testing-library/jest-dom/vitest'
 import { render, screen } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 
 import type { WorkshopModel } from '../../config/models-catalogue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
-
-let reduceMotion = false
-let motionQuery = new EventTarget()
-
-function setMotionPreference(reduced: boolean) {
-  reduceMotion = reduced
-  const event = new Event('change')
-  Object.defineProperty(event, 'matches', { value: reduced })
-  motionQuery.dispatchEvent(event)
-}
 
 const base: WorkshopModel = {
   slug: 'flux',
@@ -29,22 +20,6 @@ const base: WorkshopModel = {
 }
 
 describe('WorkshopModelCard', () => {
-  beforeEach(() => {
-    reduceMotion = false
-    motionQuery = new EventTarget()
-    Object.defineProperties(motionQuery, {
-      matches: { configurable: true, get: () => reduceMotion },
-      media: {
-        configurable: true,
-        value: '(prefers-reduced-motion: reduce)'
-      }
-    })
-    vi.stubGlobal(
-      'matchMedia',
-      vi.fn(() => motionQuery)
-    )
-  })
-
   it('links the name, provider badge and task to the model page', () => {
     render(WorkshopModelCard, { props: { model: base } })
     const link = screen.getByTestId('workshop-model-card')
@@ -95,48 +70,7 @@ describe('WorkshopModelCard', () => {
     expect(screen.getByTestId('model-card-task').textContent).toBe('Image')
   })
 
-  it('autoplays moving thumbnails after the card mounts', async () => {
-    render(WorkshopModelCard, {
-      props: {
-        model: {
-          ...base,
-          thumbnailUrl: 'https://assets.example/preview.mp4',
-          thumbnail: {
-            url: 'https://assets.example/preview.mp4',
-            kind: 'video'
-          }
-        }
-      }
-    })
-
-    await nextTick()
-
-    const video = screen.getByLabelText<HTMLVideoElement>('Flux')
-    expect(video.getAttribute('src')).toBe('https://assets.example/preview.mp4')
-    expect(video.autoplay).toBe(true)
-    expect(screen.queryByRole('img', { name: 'Flux' })).toBeNull()
-  })
-
-  it('does not autoplay video thumbnails when reduced motion is preferred', async () => {
-    setMotionPreference(true)
-    render(WorkshopModelCard, {
-      props: {
-        model: {
-          ...base,
-          thumbnail: {
-            url: 'https://assets.example/preview.mp4',
-            kind: 'video'
-          }
-        }
-      }
-    })
-
-    await nextTick()
-
-    expect(screen.getByLabelText<HTMLVideoElement>('Flux').autoplay).toBe(false)
-  })
-
-  it('pauses an autoplaying thumbnail when reduced motion is enabled', async () => {
+  it('keeps an offscreen video unloaded while retaining the accessible model link', async () => {
     render(WorkshopModelCard, {
       props: {
         model: {
@@ -150,13 +84,12 @@ describe('WorkshopModelCard', () => {
     })
     await nextTick()
     const video = screen.getByLabelText<HTMLVideoElement>('Flux')
-    const pause = vi.spyOn(video, 'pause')
-
-    setMotionPreference(true)
-    await nextTick()
-
-    expect(video.autoplay).toBe(false)
-    expect(pause).toHaveBeenCalledOnce()
+    expect(video.currentSrc).toBe('')
+    expect(video.paused).toBe(true)
+    expect(screen.getByRole('link', { name: /Flux/ })).toHaveAttribute(
+      'href',
+      base.href
+    )
   })
 
   it.for(['image', 'video'] as const)(

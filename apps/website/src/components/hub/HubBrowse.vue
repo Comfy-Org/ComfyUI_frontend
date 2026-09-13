@@ -9,9 +9,9 @@ import type { UseCase, WorkshopModel } from '../../config/models-catalogue'
 import {
   USE_CASES,
   sortWorkshopModels,
-  useCaseFor,
-  workshopModels
+  useCaseFor
 } from '../../config/models-catalogue'
+import { workshopModels } from '../../config/workshop-browse-content'
 import { groupModels } from '../../config/model-family'
 import hubTemplates from '../../data/hubTemplates.json'
 import { hubWorkflowPath } from '../../lib/hub/workflow-detail'

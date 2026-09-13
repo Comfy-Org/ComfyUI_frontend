@@ -157,7 +157,7 @@ const browseModels: readonly WorkshopModel[] = contentSources.map(
   }
 )
 
-export const routerWorkshopModels = labelSharedThumbnails(browseModels)
+export const workshopModels = labelSharedThumbnails(browseModels)
 
 function primarySlug(sources: typeof contentSources): string {
   const primary = sources.filter(({ alias }) => alias.displayPrimary)
@@ -184,7 +184,12 @@ for (const slug of routerModelSlugAliases.keys())
     throw new Error(`Content slug collides with a legacy redirect: ${slug}`)
 export const routerWorkshopModelPaths = [
   ...new Set([
-    ...routerWorkshopModels.map((model) => model.slug),
+    ...workshopModels.map((model) => model.slug),
     ...routerModelSlugAliases.keys()
   ])
 ]
+
+export function getWorkshopModel(slug: string): WorkshopModel | undefined {
+  const canonical = routerModelSlugAliases.get(slug) ?? slug
+  return workshopModels.find((model) => model.slug === canonical)
+}

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ChevronRight } from '@lucide/vue'
-import { useMounted, usePreferredReducedMotion } from '@vueuse/core'
-import { computed, ref, watch } from 'vue'
+import { computed, useTemplateRef } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -13,6 +12,7 @@ import { getLogoPath } from '../../lib/hub/model-logos'
 import { taskLabelFor } from '../../lib/workshop/task-label'
 import TagRow from '../hub/TagRow.vue'
 import ModelSupport from './ModelSupport.vue'
+import { usePreviewVideo } from '../../composables/usePreviewVideo'
 
 const {
   model,
@@ -36,16 +36,8 @@ const taskLabel = computed(() => taskLabelFor(model, locale))
 const thumbnailLabel = computed(() =>
   model.thumbnail ? model.thumbnailLabel : undefined
 )
-const video = ref<HTMLVideoElement | null>(null)
-const mounted = useMounted()
-const motionPreference = usePreferredReducedMotion()
-const autoplayVideo = computed(
-  () => mounted.value && motionPreference.value !== 'reduce'
-)
-
-watch(motionPreference, (preference) => {
-  if (preference === 'reduce') video.value?.pause()
-})
+const video = useTemplateRef<HTMLVideoElement>('video')
+const loadVideo = usePreviewVideo(video)
 
 const pillClass =
   'inline-flex h-6 w-fit shrink-0 items-center justify-center rounded-full bg-hub-surface px-4 py-1 text-xs font-normal whitespace-nowrap text-content'
@@ -82,13 +74,12 @@ const pillClass =
       <video
         v-if="model.thumbnail?.kind === 'video'"
         ref="video"
-        :src="model.thumbnail.url"
+        :src="loadVideo ? model.thumbnail.url : undefined"
         :aria-label="model.name"
         class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
         muted
         loop
         playsinline
-        :autoplay="autoplayVideo"
         preload="metadata"
       />
       <img

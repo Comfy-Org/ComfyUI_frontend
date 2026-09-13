@@ -6,10 +6,6 @@ import type { WorkshopContract } from './workshop-contract'
 import type { WorkshopInputDefinition } from './workshop-input-definition'
 import { workshopInputDefinitionSchema } from './workshop-input-definition'
 import { OTHER_FORMAT_USE_CASES } from './workshop-sections'
-import {
-  routerWorkshopModels,
-  routerModelSlugAliases
-} from './workshop-browse-content'
 
 export const MODALITIES = ['image', 'video', 'audio', '3d', 'text'] as const
 export type Modality = (typeof MODALITIES)[number]
@@ -383,13 +379,6 @@ export function isRouterModel(model: Model): boolean {
   return (
     model.directory === 'partner_nodes' && model.canonicalSlug === undefined
   )
-}
-
-export const workshopModels: readonly WorkshopModel[] = routerWorkshopModels
-
-export function getWorkshopModel(slug: string): WorkshopModel | undefined {
-  const canonical = routerModelSlugAliases.get(slug) ?? slug
-  return workshopModels.find((model) => model.slug === canonical)
 }
 
 export function modalityOf(

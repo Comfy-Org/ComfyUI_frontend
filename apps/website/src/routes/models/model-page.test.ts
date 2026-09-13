@@ -1,9 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type {
-  WorkshopFilter,
-  WorkshopModelDetail
-} from '../../config/models-catalogue'
+import type { WorkshopModelDetail } from '../../config/models-catalogue'
 import { prepareModelPage } from './model-page'
 
 const mocks = vi.hoisted(() => ({
@@ -21,11 +18,7 @@ vi.mock(import('../../config/workshop-related'), () => ({
 vi.mock(import('../../config/workshop-node-pricing'), () => ({
   estimateWorkshopNodePrice: mocks.price
 }))
-vi.mock(import('../../config/models-catalogue'), () => ({
-  catalogSearch: ({ capabilities = [] }: Partial<WorkshopFilter>) =>
-    new URLSearchParams(
-      capabilities.map((capability) => ['capability', capability])
-    ).toString(),
+vi.mock(import('../../config/workshop-browse-content'), () => ({
   getWorkshopModel: mocks.successor,
   workshopModels: []
 }))

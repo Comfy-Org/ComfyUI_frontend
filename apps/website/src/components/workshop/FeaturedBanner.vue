@@ -1,9 +1,16 @@
 <script setup lang="ts">
-import { useElementHover, useEventListener, useRafFn } from '@vueuse/core'
+import {
+  useDocumentVisibility,
+  useElementHover,
+  useElementVisibility,
+  useEventListener,
+  useRafFn
+} from '@vueuse/core'
 import { computed, ref, useTemplateRef, watch } from 'vue'
 
 import type { WorkshopModel } from '../../config/models-catalogue'
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
+import { usePreviewVideo } from '../../composables/usePreviewVideo'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { taskLabelFor } from '../../lib/workshop/task-label'
@@ -37,6 +44,10 @@ function goTo(index: number) {
 
 const banner = useTemplateRef<HTMLElement>('banner')
 const hovered = useElementHover(banner)
+const onScreen = useElementVisibility(banner, { initialValue: false })
+const visibility = useDocumentVisibility()
+const video = useTemplateRef<HTMLVideoElement>('video')
+const loadVideo = usePreviewVideo(video)
 
 // Clicking a bar leaves it focused, so pausing on any focus would stop the
 // rotation for good. Only a keyboard visitor, who needs the time, stops it.
@@ -51,6 +62,8 @@ useEventListener(banner, 'focusout', () => (readingByKeyboard.value = false))
 const rotating = computed(
   () =>
     slides.value.length > 1 &&
+    onScreen.value &&
+    visibility.value === 'visible' &&
     !hovered.value &&
     !readingByKeyboard.value &&
     !prefersReducedMotion()
@@ -91,14 +104,14 @@ const fill = computed(() =>
       <video
         v-if="active.model.thumbnail?.kind === 'video'"
         :key="active.model.slug"
-        :src="active.model.thumbnail.url"
+        ref="video"
+        :src="loadVideo ? active.model.thumbnail.url : undefined"
         class="absolute inset-0 size-full object-cover"
         aria-hidden="true"
         muted
         loop
         playsinline
-        :autoplay="!prefersReducedMotion()"
-        preload="auto"
+        preload="metadata"
         data-testid="featured-video"
       />
       <img
