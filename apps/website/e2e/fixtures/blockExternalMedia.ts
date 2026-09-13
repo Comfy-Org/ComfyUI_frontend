@@ -26,7 +26,7 @@ const EMBED_HOSTS = new Set([
   'www.youtube-nocookie.com',
   'demo.arcade.software'
 ])
-const SCRIPT_HOSTS = new Set(['js-na2.hsforms.net', 'apis.google.com'])
+const SCRIPT_HOSTS = new Set(['js-na2.hsforms.net'])
 const MEDIA_PATTERNS = [
   /^https:\/\/(?:media|comfy-hub-assets)\.comfy\.org\/.*\.(?:webp|webm|mp4|png|jpg|jpeg|gif|avif|vtt)(?:\?.*)?$/i,
   /^https:\/\/raw\.githubusercontent\.com\/Comfy-Org\/workflow_templates\/main\/templates\/.*\.(?:webp|webm|mp4|png|jpg|jpeg|gif|avif|vtt)(?:\?.*)?$/i,
@@ -96,6 +96,12 @@ export const test = base.extend({
         return route.abort('blockedbyclient')
       if (EMBED_HOSTS.has(url.hostname))
         return route.fulfill({ contentType: 'text/html', body: '' })
+      if (
+        url.hostname === 'apis.google.com' &&
+        url.pathname === '/js/api.js' &&
+        route.request().resourceType() === 'script'
+      )
+        return route.fulfill({ contentType: 'text/javascript', body: '' })
       if (SCRIPT_HOSTS.has(url.hostname))
         return route.fulfill({ contentType: 'text/javascript', body: '' })
       if (url.hostname === 'fonts.googleapis.com')
