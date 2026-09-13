@@ -124,7 +124,9 @@ export async function computeModelStats(
     }
   })
   for (const mesh of meshes) {
-    total = addStats(total, await meshStats(mesh, signal))
+    const stats = await meshStats(mesh, signal)
+    signal?.throwIfAborted()
+    total = addStats(total, stats)
   }
   return total
 }
