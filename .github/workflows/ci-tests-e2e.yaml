@@ -400,10 +400,10 @@ jobs:
 
           CHROMIUM_HAS_TESTS=false
           CLOUD_HAS_TESTS=false
-          CHROMIUM_OUTPUT=$(discover chromium); STATUS=$?
+          if CHROMIUM_OUTPUT=$(discover chromium); then STATUS=0; else STATUS=$?; fi
           if [ "$STATUS" -eq 2 ]; then echo "$CHROMIUM_OUTPUT"; exit 1; fi
           [ "$STATUS" -eq 0 ] && CHROMIUM_HAS_TESTS=true
-          CLOUD_OUTPUT=$(discover cloud); STATUS=$?
+          if CLOUD_OUTPUT=$(discover cloud); then STATUS=0; else STATUS=$?; fi
           if [ "$STATUS" -eq 2 ]; then echo "$CLOUD_OUTPUT"; exit 1; fi
           [ "$STATUS" -eq 0 ] && CLOUD_HAS_TESTS=true
 
@@ -453,13 +453,13 @@ jobs:
         run: |
           mapfile -t FILES < <(printf '%s\n' "$FALLBACK_SPEC_FILES" | sed '/^$/d' | sort -u)
           if [ "$CHROMIUM_HAS_TESTS" = true ]; then
-            pnpm exec playwright test --project=chromium --timeout=180000 --retries=0 "${FILES[@]}"
+            PLAYWRIGHT_HTML_OUTPUT_DIR=playwright-report-chromium pnpm exec playwright test --project=chromium --output=test-results-chromium --timeout=180000 --retries=0 "${FILES[@]}"
           fi
           if [ "$CLOUD_HAS_TESTS" = true ]; then
             # The ComfyUI server serves web_root per request, so swapping the
             # built frontend in place switches it to the cloud build.
             rsync -a --delete dist-cloud/ dist/
-            pnpm exec playwright test --project=cloud --timeout=180000 --retries=0 "${FILES[@]}"
+            PLAYWRIGHT_HTML_OUTPUT_DIR=playwright-report-cloud pnpm exec playwright test --project=cloud --output=test-results-cloud --timeout=180000 --retries=0 "${FILES[@]}"
           fi
 
       - name: Upload new-test report (with embedded video)
@@ -468,8 +468,10 @@ jobs:
         with:
           name: playwright-report-new-tests
           path: |
-            ./playwright-report/
-            ./test-results/**/*.webm
+            ./playwright-report-chromium/
+            ./playwright-report-cloud/
+            ./test-results-chromium/**/*.webm
+            ./test-results-cloud/**/*.webm
           retention-days: 30
           if-no-files-found: warn
 
