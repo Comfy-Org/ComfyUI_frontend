@@ -10,12 +10,14 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
+import { formatCreditsCompact } from '@/base/credits/comfyCredits'
 import Slider from '@/components/ui/slider/Slider.vue'
 import {
   DEFAULT_TEAM_PLAN_STOP_INDEX,
   TEAM_PLAN_CREDIT_STOPS,
   getStopDiscountedMonthlyUsd
 } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
+import { amountForBillingCycle } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { CreditStop } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 
 const {
@@ -129,11 +131,15 @@ const sliderModel = computed<number[]>({
 const lastIndex = computed(() => Math.max(stops.length - 1, 0))
 
 const formatUsd = (value: number) => `$${value.toLocaleString('en-US')}`
-const formatCreditsCompact = (value: number) =>
-  new Intl.NumberFormat('en-US', {
-    notation: 'compact',
-    maximumFractionDigits: 1
-  }).format(value)
+
+const creditLabelFor = (stop: CreditStop) =>
+  formatCreditsCompact(amountForBillingCycle(stop.credits, cycle === 'yearly'))
+
+const creditsLabelKey = computed(() =>
+  cycle === 'yearly'
+    ? 'subscription.yearlyCredits'
+    : 'subscription.monthlyCredits'
+)
 
 const { t } = useI18n()
 </script>
@@ -205,6 +211,7 @@ const { t } = useI18n()
     <!-- Credit stop labels; the selected stop is emphasized -->
     <ol
       data-testid="credit-slider-stops"
+      :aria-label="t(creditsLabelKey)"
       class="m-0 flex list-none justify-between p-0"
     >
       <li
@@ -229,7 +236,7 @@ const { t } = useI18n()
           "
           aria-hidden="true"
         />
-        {{ formatCreditsCompact(stop.credits) }}
+        {{ creditLabelFor(stop) }}
       </li>
     </ol>
   </div>

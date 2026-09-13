@@ -55,8 +55,3 @@ export const teamCreditTiers: readonly TeamCreditTier[] = [
     videos: 47875
   }
 ]
-
-export function formatTeamCreditsShort(n: number): string {
-  const k = n / 1000
-  return k % 1 === 0 ? `${k}K` : `${k.toFixed(1)}K`
-}
