@@ -5,7 +5,8 @@ import { nextTick } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
 import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
-import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { toNodeId } from '@/types/nodeId'
@@ -20,14 +21,13 @@ describe('WidgetLegacy', () => {
       name: 'compare',
       type: 'custom',
       y: 40,
+      computedHeight: 24,
       computeSize: () => [200, 20],
       draw
     })
-    const host = fromAny<LGraphNode, unknown>({
-      pos: [0, 0],
-      size: [200, 240],
-      widgets: [widget]
-    })
+    const host = new LGraphNode('host')
+    host.size = [200, 240]
+    host.widgets = [widget]
     const canvasStore = useCanvasStore()
     canvasStore.canvas = fromPartial<LGraphCanvas>({
       graph: { getNodeById: () => host }
@@ -55,6 +55,15 @@ describe('WidgetLegacy', () => {
       200
     )
     expect(widget.y).toBe(40)
+
+    widget.triggerDraw?.()
+    widget.triggerDraw?.()
+
+    expect(canvasElement.height).toBe(404)
+    expect(host.size[1]).toBe(240)
+    expect(fromAny<{ canvasHeight?: number }, unknown>(host).canvasHeight).toBe(
+      200
+    )
   })
 
   it('stops an expanded paint extent at the adjacent widget boundary', async () => {
@@ -63,19 +72,19 @@ describe('WidgetLegacy', () => {
       name: 'compare',
       type: 'custom',
       y: 40,
+      computedHeight: 24,
       computeSize: () => [200, 20],
       draw
     })
     const adjacent = fromPartial<IBaseWidget>({
       name: 'after',
       type: 'custom',
-      y: 90
+      y: 90,
+      computedHeight: 24
     })
-    const host = fromAny<LGraphNode, unknown>({
-      pos: [0, 0],
-      size: [200, 240],
-      widgets: [widget, adjacent]
-    })
+    const host = new LGraphNode('host')
+    host.size = [200, 240]
+    host.widgets = [widget, adjacent]
     const canvasStore = useCanvasStore()
     canvasStore.canvas = fromPartial<LGraphCanvas>({
       graph: { getNodeById: () => host }
@@ -104,32 +113,31 @@ describe('WidgetLegacy', () => {
     expect(widget.y).toBe(40)
   })
 
-  it('uses the promoted host paint boundary instead of an interior source', async () => {
-    const hostDraw = vi.fn()
-    const sourceDraw = vi.fn()
-    const hostWidget = fromPartial<IBaseWidget>({
-      name: 'promoted',
+  it('ignores hidden widgets when finding the adjacent paint boundary', async () => {
+    const widget = fromPartial<IBaseWidget>({
+      name: 'compare',
       type: 'custom',
-      y: 30,
+      y: 40,
+      computedHeight: 24,
       computeSize: () => [200, 20],
-      draw: hostDraw
+      draw: vi.fn()
     })
-    const sourceWidget = fromPartial<IBaseWidget>({
-      name: 'promoted',
+    const hidden = fromPartial<IBaseWidget>({
+      name: 'hidden',
       type: 'custom',
-      y: 5,
-      draw: sourceDraw
+      hidden: true,
+      y: 200,
+      computedHeight: 24
     })
-    const source = fromAny<LGraphNode, unknown>({
-      size: [100, 100],
-      widgets: [sourceWidget]
+    const adjacent = fromPartial<IBaseWidget>({
+      name: 'after',
+      type: 'custom',
+      y: 64,
+      computedHeight: 24
     })
-    const host = fromAny<LGraphNode, unknown>({
-      pos: [0, 0],
-      size: [200, 180],
-      widgets: [hostWidget],
-      promotedSource: source
-    })
+    const host = new LGraphNode('host')
+    host.size = [200, 240]
+    host.widgets = [widget, hidden, adjacent]
     const canvasStore = useCanvasStore()
     canvasStore.canvas = fromPartial<LGraphCanvas>({
       graph: { getNodeById: () => host }
@@ -139,7 +147,7 @@ describe('WidgetLegacy', () => {
     render(WidgetLegacy, {
       props: {
         widget: fromPartial<SimplifiedWidget<undefined>>({
-          name: 'promoted',
+          name: 'compare',
           type: 'custom',
           value: undefined,
           options: {}
@@ -149,13 +157,55 @@ describe('WidgetLegacy', () => {
     })
     await nextTick()
 
-    expect(fromAny<{ canvasHeight?: number }, unknown>(host).canvasHeight).toBe(
-      150
-    )
     expect(
-      fromAny<{ canvasHeight?: number }, unknown>(source).canvasHeight
-    ).toBeUndefined()
-    expect(sourceDraw).not.toHaveBeenCalled()
+      screen.getByTestId<HTMLCanvasElement>('legacy-widget-canvas').height
+    ).toBe(52)
+    expect(fromAny<{ canvasHeight?: number }, unknown>(host).canvasHeight).toBe(
+      24
+    )
+  })
+
+  it('does not treat a pre-arrange widget y as a paint extent', async () => {
+    const widget = fromPartial<IBaseWidget>({
+      name: 'compare',
+      type: 'custom',
+      y: 0,
+      computeSize: () => [200, 20],
+      draw: vi.fn()
+    })
+    const adjacent = fromPartial<IBaseWidget>({
+      name: 'after',
+      type: 'custom',
+      y: 0
+    })
+    const host = new LGraphNode('host')
+    host.size = [200, 240]
+    host.widgets = [widget, adjacent]
+    const canvasStore = useCanvasStore()
+    canvasStore.canvas = fromPartial<LGraphCanvas>({
+      graph: { getNodeById: () => host }
+    })
+    canvasStore.linearMode = true
+
+    render(WidgetLegacy, {
+      props: {
+        widget: fromPartial<SimplifiedWidget<undefined>>({
+          name: 'compare',
+          type: 'custom',
+          value: undefined,
+          options: {}
+        }),
+        nodeId: toNodeId(7)
+      }
+    })
+    await nextTick()
+
+    expect(
+      screen.getByTestId<HTMLCanvasElement>('legacy-widget-canvas').height
+    ).toBe(44)
+    expect(fromAny<{ canvasHeight?: number }, unknown>(host).canvasHeight).toBe(
+      20
+    )
   })
 
   it('forwards node-local movement to the rebound host and retains pointer movement', async () => {

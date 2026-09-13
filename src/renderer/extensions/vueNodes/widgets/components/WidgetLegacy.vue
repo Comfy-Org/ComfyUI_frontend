@@ -91,10 +91,11 @@ function draw() {
     height = widgetInstance.computeSize(width)[1]
   }
   const widgetY = widgetInstance.y ?? widgetInstance.last_y
-  if (widgetY !== undefined) {
-    const widgetIndex = node.widgets?.indexOf(widgetInstance) ?? -1
-    const nextWidgetY = node.widgets
-      ?.slice(widgetIndex + 1)
+  if (widgetInstance.computedHeight !== undefined && widgetY !== undefined) {
+    const layoutWidgets = node.getLayoutWidgets()
+    const widgetIndex = layoutWidgets.indexOf(widgetInstance)
+    const nextWidgetY = layoutWidgets
+      .slice(widgetIndex + 1)
       .map((widget) => widget.y ?? widget.last_y)
       .find((y) => y !== undefined && y > widgetY)
     const paintBoundary = nextWidgetY ?? node.size[1]
