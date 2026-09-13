@@ -215,35 +215,74 @@ test.describe(
         await comfyPage.workflow.loadWorkflow(
           'reroute/single-native-reroute-default-workflow'
         )
-        const reroutePos = await comfyPage.page.evaluate(() => {
+        const reroute = await comfyPage.page.evaluate(() => {
           const reroute = window.app!.graph.reroutes.values().next().value
           if (!reroute) throw new Error('Reroute is unavailable')
-          return { x: reroute.pos[0], y: reroute.pos[1] }
+          return {
+            id: reroute.id,
+            position: { x: reroute.pos[0], y: reroute.pos[1] }
+          }
         })
-        await setZoom(zoom, reroutePos)
+        await setZoom(zoom, reroute.position)
         const rerouteCenter = await comfyPage.page.evaluate(() => {
           const reroute = window.app!.graph.reroutes.values().next().value
           if (!reroute) throw new Error('Reroute is unavailable')
           const [x, y] = window.app!.canvasPosToClientPos(reroute.pos)
-          return { x, y, pos: [...reroute.pos] }
+          return { x, y }
         })
-        await comfyPage.canvasOps.dragAndDrop(rerouteCenter, {
-          x: rerouteCenter.x + 40,
-          y: rerouteCenter.y + 40
-        })
-        await expect
-          .poll(
-            () =>
-              comfyPage.page.evaluate(() => {
-                const reroute = window.app!.graph.reroutes.values().next().value
-                return reroute ? [...reroute.pos] : null
-              }),
-            `${zoom} reroute moves from its drawn center`
+        const thresholdCrossing = 8
+        const responseDelta = 24
+        await comfyPage.page.mouse.move(rerouteCenter.x, rerouteCenter.y)
+        await comfyPage.page.mouse.down()
+        try {
+          await comfyPage.page.mouse.move(
+            rerouteCenter.x + thresholdCrossing,
+            rerouteCenter.y + thresholdCrossing
           )
-          .toEqual([
-            expect.closeTo(rerouteCenter.pos[0] + 36 / zoom, 0),
-            expect.closeTo(rerouteCenter.pos[1] + 36 / zoom, 0)
+          await comfyPage.nextFrame()
+          const establishedOrigin = await comfyPage.page.evaluate(
+            (targetId) => {
+              const canvas = window.app!.canvas
+              const reroute = window.app!.graph.getReroute(targetId)
+              if (!reroute)
+                throw new Error(`Reroute ${targetId} is unavailable`)
+              return {
+                position: [...reroute.pos],
+                selectedIds: [...canvas.selectedItems].map((item) => item.id)
+              }
+            },
+            toRerouteId(reroute.id)
+          )
+          expect(
+            establishedOrigin.selectedIds,
+            `${zoom} drawn center selects the intended reroute`
+          ).toEqual([reroute.id])
+
+          await comfyPage.page.mouse.move(
+            rerouteCenter.x + thresholdCrossing + responseDelta,
+            rerouteCenter.y + thresholdCrossing + responseDelta
+          )
+          await comfyPage.nextFrame()
+          const finalPosition = await comfyPage.page.evaluate((targetId) => {
+            const reroute = window.app!.graph.getReroute(targetId)
+            return reroute ? [...reroute.pos] : null
+          }, toRerouteId(reroute.id))
+          expect(
+            finalPosition,
+            `${zoom} intended reroute follows the post-threshold pointer delta`
+          ).toEqual([
+            expect.closeTo(
+              establishedOrigin.position[0] + responseDelta / zoom,
+              4
+            ),
+            expect.closeTo(
+              establishedOrigin.position[1] + responseDelta / zoom,
+              4
+            )
           ])
+        } finally {
+          await comfyPage.page.mouse.up()
+        }
       }
     })
 
