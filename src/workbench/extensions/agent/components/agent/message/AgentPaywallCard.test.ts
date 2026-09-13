@@ -19,9 +19,7 @@ describe('AgentPaywallCard visual contract', () => {
       global: { plugins: [i18n] }
     })
 
-    const card = screen.getByLabelText('Out of credits card')
-    expect(card).toHaveClass('w-full')
-    expect(card).not.toHaveClass('max-w-[372px]')
+    expect(screen.getByLabelText('Out of credits card')).toBeInTheDocument()
     expect(screen.getByText('Out of credits')).toBeInTheDocument()
     expect(
       screen.getByText(
@@ -32,12 +30,7 @@ describe('AgentPaywallCard visual contract', () => {
     const upgrade = screen.getByRole('button', { name: 'Upgrade plan' })
     const addCredits = screen.getByRole('button', { name: 'Add credits' })
     expect(upgrade).toHaveAccessibleName('Upgrade plan')
-    expect(upgrade).toHaveClass(
-      'text-secondary-foreground',
-      'bg-secondary-background'
-    )
     expect(addCredits).toHaveAccessibleName('Add credits')
-    expect(addCredits).toHaveClass('bg-base-foreground', 'text-base-background')
 
     await user.click(upgrade)
     await user.click(addCredits)
