@@ -331,7 +331,7 @@ test.describe(
             await loader.connectOutput(0, sampler, 0)
             await output.expectLinkCount(1)
             await samplerInput.expectLinkCount(1)
-            await comfyPage.page.mouse.click(600, 650)
+            await comfyPage.canvasOps.clickEmptySpace()
             await checkpoint('nodes connected')
           })
 
@@ -380,7 +380,7 @@ test.describe(
             )
             await samplerInput.expectLinkCount(0)
             await output.expectLinkCount(0)
-            await comfyPage.page.mouse.click(600, 650)
+            await comfyPage.canvasOps.clickEmptySpace()
             await checkpoint('nodes disconnected')
           })
 
@@ -397,7 +397,7 @@ test.describe(
             await loader.connectOutput(0, sampler, 0)
             await output.expectLinkCount(1)
             await samplerInput.expectLinkCount(1)
-            await comfyPage.page.mouse.click(600, 650)
+            await comfyPage.canvasOps.clickEmptySpace()
             await checkpoint('nodes reconnected')
           })
 
