@@ -5,6 +5,9 @@ import { createApp, defineComponent, ref } from 'vue'
 import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
+
 import type {
   WorkspacePendingInvite,
   WorkspaceMember
@@ -17,6 +20,12 @@ import {
   sortPendingInvites,
   useMembersPanel
 } from './useMembersPanel'
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: enMessages }
+})
 
 function createMember(
   overrides: Partial<WorkspaceMember> = {}
@@ -537,7 +546,7 @@ describe('useMembersPanel', () => {
       })
     )
     app.use(pinia)
-    app.use(createI18n({ legacy: false, locale: 'en', messages: { en: {} } }))
+    app.use(i18n)
     app.mount(document.createElement('div'))
     apps.push(app)
     if (!result) throw new Error('members panel not initialized')
@@ -709,7 +718,7 @@ describe('useMembersPanel', () => {
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.objectContaining({
           severity: 'success',
-          summary: 'workspacePanel.toast.inviteResent'
+          summary: 'Invite resent'
         })
       )
     })
@@ -721,9 +730,48 @@ describe('useMembersPanel', () => {
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.objectContaining({
           severity: 'error',
-          summary: 'workspacePanel.toast.inviteResendFailed'
+          summary: 'Failed to resend invite'
         })
       )
+    })
+
+    it('shows a cooldown toast with interpolated seconds on 429 with Retry-After', async () => {
+      mockResendInvite.mockRejectedValue(
+        new WorkspaceApiError('rate limited', 429, undefined, 3)
+      )
+      const panel = await setup()
+      await panel.handleResendInvite(createInvite({ id: 'inv-1' }))
+      expect(mockToastAdd).toHaveBeenCalledWith({
+        severity: 'warn',
+        summary: "You're resending invites too quickly",
+        detail: 'You can resend in 3 seconds',
+        life: 3000
+      })
+    })
+
+    it('caps the cooldown toast duration at 10 seconds', async () => {
+      mockResendInvite.mockRejectedValue(
+        new WorkspaceApiError('rate limited', 429, undefined, 30)
+      )
+      const panel = await setup()
+      await panel.handleResendInvite(createInvite({ id: 'inv-1' }))
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'warn', life: 10_000 })
+      )
+    })
+
+    it('shows the cooldown toast without detail when Retry-After is absent', async () => {
+      mockResendInvite.mockRejectedValue(
+        new WorkspaceApiError('rate limited', 429)
+      )
+      const panel = await setup()
+      await panel.handleResendInvite(createInvite({ id: 'inv-1' }))
+      expect(mockToastAdd).toHaveBeenCalledWith({
+        severity: 'warn',
+        summary: "You're resending invites too quickly",
+        detail: undefined,
+        life: 5000
+      })
     })
   })
 
@@ -783,16 +831,13 @@ describe('useMembersPanel', () => {
       const items = panel.memberMenuItems(createMember({ role: 'member' }))
 
       expect(items.map((i) => i.label)).toEqual([
-        'workspacePanel.members.actions.changeRole',
-        'workspacePanel.members.actions.setCreditLimit',
-        'workspacePanel.members.actions.removeMember'
+        'Change role',
+        'Set credit limit',
+        'Remove member'
       ])
 
       const roleItems = items[0].items ?? []
-      expect(roleItems.map((i) => i.label)).toEqual([
-        'workspaceSwitcher.roleOwner',
-        'workspaceSwitcher.roleMember'
-      ])
+      expect(roleItems.map((i) => i.label)).toEqual(['Owner', 'Member'])
       expect(roleItems.map((i) => i.checked)).toEqual([false, true])
     })
 
@@ -802,8 +847,8 @@ describe('useMembersPanel', () => {
       const roleItems = items[0].items ?? []
 
       expect(items.map((item) => item.label)).toEqual([
-        'workspacePanel.members.actions.changeRole',
-        'workspacePanel.members.actions.removeMember'
+        'Change role',
+        'Remove member'
       ])
       expect(roleItems.map((i) => i.checked)).toEqual([true, false])
     })
@@ -900,10 +945,7 @@ describe('useMembersPanel', () => {
       const panel = await setup()
 
       expect(panel.memberMenuItems(createMember()).map((i) => i.label)).toEqual(
-        [
-          'workspacePanel.members.actions.changeRole',
-          'workspacePanel.members.actions.removeMember'
-        ]
+        ['Change role', 'Remove member']
       )
     })
 
@@ -1006,7 +1048,7 @@ describe('useMembersPanel', () => {
       const panel = await setup()
       expect(panel.isInviteDisabled.value).toBe(true)
       expect(panel.inviteTooltip.value).toBe(
-        'workspacePanel.inviteLimitReached'
+        "You've reached the maximum of 73 members"
       )
       panel.handleInviteMember()
       expect(mockShowInviteMemberDialog).not.toHaveBeenCalled()

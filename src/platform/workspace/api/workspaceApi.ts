@@ -141,11 +141,20 @@ export class WorkspaceApiError extends Error {
   constructor(
     message: string,
     public readonly status?: number,
-    public readonly code?: string
+    public readonly code?: string,
+    public readonly retryAfter?: number
   ) {
     super(message)
     this.name = 'WorkspaceApiError'
   }
+}
+
+function parseRetryAfterSeconds(value: unknown): number | undefined {
+  if (typeof value !== 'string') return undefined
+  const trimmed = value.trim()
+  if (!/^\d+$/.test(trimmed)) return undefined
+  const seconds = Number(trimmed)
+  return Number.isFinite(seconds) && seconds > 0 ? seconds : undefined
 }
 
 const workspaceApiClient = axios.create({
@@ -164,17 +173,20 @@ async function getAuthHeaderOrThrow() {
 
 function handleAxiosError(err: unknown): never {
   if (axios.isAxiosError(err)) {
-    const status = err.response?.status
-    const { code, message } = errorResponseFromBody(
-      err.response?.data,
-      err.message
-    )
+    const response = err.response
+    const status = response?.status
+    const { code, message } = errorResponseFromBody(response?.data, err.message)
     // Callers compare `code` against server-defined values, so the parser's
     // "no code reported" sentinel must stay out of that contract.
+    const retryAfter =
+      response?.status === 429
+        ? parseRetryAfterSeconds(response.headers['retry-after'])
+        : undefined
     throw new WorkspaceApiError(
       message,
       status,
-      code === UNKNOWN_ERROR_CODE ? undefined : code
+      code === UNKNOWN_ERROR_CODE ? undefined : code,
+      retryAfter
     )
   }
   throw err
