@@ -13,6 +13,10 @@ export function provesRefIsMissing(error: unknown): boolean {
   )
 }
 
+export function provesRepositoryIsUnavailable(status: string): boolean {
+  return status.trim() === '404'
+}
+
 export function provesRequirementIsUnsatisfiable(
   error: unknown,
   expectedRequirement: string
