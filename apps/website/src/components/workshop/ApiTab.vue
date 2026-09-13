@@ -69,12 +69,14 @@ const unavailable = ref(false)
 
 function previewValues(
   values: FormValues,
-  sources: WeakMap<File, string>
+  sources: WeakMap<File, Pick<FileValue, 'sourceUrl' | 'sourceDataUrl'>>
 ): FormValues {
   function preview(value: FileValue): FileValue {
+    if (value.file && value.sourceDataUrl)
+      sources.set(value.file, { sourceDataUrl: value.sourceDataUrl })
     if (value.file || !value.sourceUrl) return value
     const file = new File([], value.name, { type: value.type })
-    sources.set(file, value.sourceUrl)
+    sources.set(file, { sourceUrl: value.sourceUrl })
     return { ...value, file }
   }
   const fields = contract?.rehostUrlInputs
@@ -107,13 +109,16 @@ watch(
     unavailable.value = false
     try {
       const files: SnippetFile[] = []
-      const sources = new WeakMap<File, string>()
+      const sources = new WeakMap<
+        File,
+        Pick<FileValue, 'sourceUrl' | 'sourceDataUrl'>
+      >()
       function addReference(file: File, encoding: 'base64' | 'url') {
         const reference = referenceFor(file, encoding)
         if (!files.some((entry) => entry.token === reference.token))
           files.push({
             ...reference,
-            sourceUrl: sources.get(file),
+            ...sources.get(file),
             rehost: contract?.rehostUrlInputs,
             urlAlternative:
               contract?.creator?.request.kind === 'callback' &&
@@ -168,7 +173,7 @@ const showFileNotice = computed(() => {
   const { body, files } = request.value
   return language.value === 'curl'
     ? hasOmittedCurlFiles(body, files)
-    : files.some((file) => !file.sourceUrl)
+    : files.some((file) => !file.sourceUrl && !file.sourceDataUrl)
 })
 
 const languageLabel: Record<SnippetLanguage, string> = {

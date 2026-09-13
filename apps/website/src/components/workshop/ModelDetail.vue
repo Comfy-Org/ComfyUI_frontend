@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { Download } from '@lucide/vue'
 import { useMounted, useTimestamp } from '@vueuse/core'
-import { computed, onMounted, onUnmounted, ref, useSlots, watch } from 'vue'
+import { computed, onUnmounted, ref, useSlots, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
+import { useWorkshopFormDraft } from '../../composables/useWorkshopFormDraft'
+import { leaveForSignIn } from '../../config/workshop-return'
 import { useSignInHref } from '../../composables/useSignInHref'
 import { useTablist } from '../../composables/useTablist'
 import type { WorkshopModelDetail } from '../../config/models-catalogue'
@@ -16,9 +18,7 @@ import type {
 } from '../../config/workshop-playground'
 import {
   isVideoUrl,
-  restoreFormValues,
   schemaForModel,
-  urlUploadField,
   validateForm
 } from '../../config/workshop-playground'
 import {
@@ -139,6 +139,13 @@ const values = computed<FormValues>({
     else fieldValues.value = value
   }
 })
+const { pending: draftPending, restoreFailed } = useWorkshopFormDraft(
+  model.slug,
+  schema,
+  values,
+  nativeJson,
+  !!model.execution && model.execution.inputs === undefined
+)
 const runState = ref<RunState>(
   firstExample
     ? { status: 'example', output: exampleOutput(firstExample) }
@@ -169,7 +176,8 @@ const gate = computed(() => {
     clone
   )
     return 'unavailable'
-  if (!mounted.value || !authFlagSettled.value) return 'pending'
+  if (!mounted.value || draftPending.value || !authFlagSettled.value)
+    return 'pending'
   if (!authEnabled.value || sessionFailure.value) return 'unavailable'
   if (!settled.value || (user.value && !session.value)) return 'pending'
   if (!session.value) return 'signedOut'
@@ -185,9 +193,6 @@ const errors = computed<FieldErrors>(() =>
   runState.value.status === 'failed' ? runState.value.fieldErrors : {}
 )
 const isRunning = computed(() => runState.value.status === 'running')
-const hasFileInputs = computed(() =>
-  schema.value.some((field) => field.kind === 'file' || urlUploadField(field))
-)
 const requestId = ref<string | null>(null)
 let controller: AbortController | undefined
 let pendingRequest: { fingerprint: string; key: string } | undefined
@@ -330,47 +335,6 @@ async function run() {
   }
 }
 
-// Keeps the form intact across a sign-in or a top-up round trip.
-const storageKey = `comfy-workshop-form:${model.slug}`
-onMounted(() => {
-  try {
-    nativeJson.value =
-      !!model.execution &&
-      model.execution.inputs === undefined &&
-      sessionStorage.getItem(`${storageKey}:mode`) === 'json'
-    const stored = sessionStorage.getItem(storageKey)
-    if (stored) {
-      const parsed: unknown = JSON.parse(stored)
-      values.value = {
-        ...values.value,
-        ...restoreFormValues(schema.value, parsed)
-      }
-    }
-  } catch {
-    /* storage unavailable */
-  }
-})
-watch(
-  values,
-  (next) => {
-    try {
-      const persistable = Object.fromEntries(
-        Object.entries(next)
-          .filter(([, value]) => typeof value !== 'object')
-          .map(([name, value]) => [name, value === undefined ? null : value])
-      )
-      sessionStorage.setItem(storageKey, JSON.stringify(persistable))
-      sessionStorage.setItem(
-        `${storageKey}:mode`,
-        nativeJson.value ? 'json' : 'form'
-      )
-    } catch {
-      /* storage unavailable */
-    }
-  },
-  { deep: true }
-)
-
 function reset() {
   cancelRun()
   runState.value = IDLE
@@ -475,14 +439,15 @@ function useInCode() {
             :schema
             :errors
             :locale
-            :disabled="isRunning"
-            :file-uploads-disabled="!mounted || !session"
+            :disabled="isRunning || draftPending"
+            :file-uploads-disabled="!mounted"
           />
           <p
-            v-if="hasFileInputs && gate === 'signedOut'"
+            v-if="restoreFailed"
+            role="status"
             class="text-sm text-primary-warm-gray"
           >
-            {{ t('workshop.form.signInBeforeUpload', locale) }}
+            {{ t('workshop.form.draftRestoreFailed', locale) }}
           </p>
         </div>
 
@@ -499,6 +464,7 @@ function useInCode() {
             class="w-full px-5"
             data-testid="run-button"
             data-gate="signedOut"
+            @click="leaveForSignIn($event, signInHref)"
           >
             {{ t('workshop.run.signIn', locale) }}
           </Button>

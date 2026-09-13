@@ -3,10 +3,12 @@ import displayJson from '../content/workshop-display.json'
 import indexJson from '../content/workshop-router-index.json'
 import aliasesJson from '../content/workshop-router-aliases.json'
 import displayNames from '../data/workshop-router-display-names.json'
+import useCaseOverrides from '../data/workshop-use-case-overrides.json'
 import { workshopDisplayEntriesSchema } from '../content/workshop-display.schema'
 import { workshopModelSchema } from '../content/workshop-models.schema'
 import type { WorkshopModelEntry } from '../content/workshop-models.schema'
 import type { Modality, UseCase, WorkshopModel } from './models-catalogue'
+import { USE_CASES } from './models-catalogue'
 import { workshopRouterIndexSchema } from './workshop-router-index'
 import { workshopRouterAliasesSchema } from './workshop-router-identity'
 import { labelSharedThumbnails } from './workshop-thumbnail-labels'
@@ -17,6 +19,14 @@ import {
 } from './workshop-model-availability'
 
 const routerIndex = workshopRouterIndexSchema.parse(indexJson)
+const correctedUseCases = new Map(
+  Object.entries(useCaseOverrides).map(([id, value]): [string, UseCase] => {
+    const useCase = USE_CASES.find((item) => item === value)
+    if (!useCase || !routerIndex.some((model) => model.id === id))
+      throw new Error(`Invalid Router use-case override: ${id}`)
+    return [id, useCase]
+  })
+)
 const canonicalNames = new Map(Object.entries(displayNames))
 for (const id of canonicalNames.keys())
   if (!routerIndex.some((entry) => entry.id === id))
@@ -117,7 +127,7 @@ export const routerContentById = new Map(
 
 const browseModels: readonly WorkshopModel[] = contentSources.map(
   ({ entry, overlay, alias, record }) => {
-    const useCases = [overlay.useCase]
+    const useCases = [correctedUseCases.get(record.id) ?? overlay.useCase]
     const exampleCount = Math.min(
       6,
       alias.contentIssue ? 0 : (overlay.media.samples?.length ?? 0)

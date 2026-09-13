@@ -8,7 +8,38 @@ import { workshopExampleFile } from '../../config/workshop-example-file'
 import { initialWorkshopPageState } from '../../config/workshop-page-state'
 import { getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
 import { workshopContract } from '../../config/workshop-contract-catalog'
+import defaultMedia from '../../data/router-default-media.json'
 import ApiTab from './ApiTab.vue'
+
+it('copies the embedded default image and mask into a runnable BFL request', async () => {
+  const model = getRouterWorkshopModelDetail('bfl--flux-pro-fill--edit-images')
+  if (!model) throw new Error('Missing FLUX Fill page')
+  render(ApiTab, {
+    props: {
+      contract: model.execution,
+      values: initialWorkshopPageState(model).values
+    }
+  })
+  await screen.findByTestId('snippet')
+  await userEvent.setup().click(screen.getByRole('tab', { name: 'cURL' }))
+  const args = execFileSync(
+    'bash',
+    [
+      '-c',
+      'curl() { printf \'%s\\0\' "$@"; }\n' +
+        screen.getByTestId('snippet').textContent
+    ],
+    {
+      encoding: 'utf8',
+      env: { PATH: process.env.PATH, COMFY_API_KEY: 'test-key' }
+    }
+  ).split('\0')
+  expect(JSON.parse(args[args.indexOf('--data') + 1])).toMatchObject({
+    image: defaultMedia.image,
+    mask: defaultMedia.mask
+  })
+  expect(screen.queryByRole('note')).toBeNull()
+})
 
 it('a copied cURL example starts distinct executions with fresh idempotency keys', async () => {
   const visitor = userEvent.setup()

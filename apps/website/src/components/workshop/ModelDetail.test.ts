@@ -821,7 +821,7 @@ describe('ModelDetail', () => {
       }
     }
   ])(
-    'requires sign-in before selecting a local $kind upload while retaining the example and text draft',
+    'allows a signed-out visitor to select a local $kind upload while keeping Run gated',
     async (field) => {
       const mediaModel: WorkshopModelDetail = {
         ...runnable,
@@ -835,17 +835,18 @@ describe('ModelDetail', () => {
       const input = screen.getByLabelText('Image', {
         selector: 'input[type="file"]'
       })
-      expect(input).toHaveProperty('disabled', true)
+      expect(input).toHaveProperty('disabled', false)
       expect(screen.getByRole('img', { name: 'example.png' })).toBeTruthy()
-      expect(screen.getByText(/Sign in before uploading files/)).toBeTruthy()
       await visitor.type(
         screen.getByRole('textbox', { name: /Prompt/ }),
         'My image idea'
       )
       await visitor.upload(input, file)
       expect(
-        screen.queryByRole('button', { name: 'Replace local.png' })
-      ).toBeNull()
+        screen.getByRole('button', { name: 'Replace local.png' })
+      ).toBeTruthy()
+      expect(screen.getByRole('link', { name: 'Sign in to run' })).toBeTruthy()
+      expect(runWorkshopRouter).not.toHaveBeenCalled()
       unmount()
 
       auth.session.value = credential
@@ -864,7 +865,6 @@ describe('ModelDetail', () => {
       expect(
         screen.getByRole('button', { name: 'Replace local.png' })
       ).toBeTruthy()
-      expect(screen.queryByText(/Sign in before uploading files/)).toBeNull()
       expect(runWorkshopRouter).not.toHaveBeenCalled()
     }
   )

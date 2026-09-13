@@ -53,7 +53,8 @@ HeyGen's curated language choices correspond to languages in the
 Language and locale remain unset for automatic detection; a selected locale
 overrides language, as described in the
 [HeyGen speech contract](https://developers.heygen.com/docs/voices/speech).
-Voice ID stays editable in Advanced with the existing tested voice.
+Voice ID is hidden and fixed to the existing tested account voice in the
+input-presentation data; creators cannot choose an unavailable account voice.
 
 Model price estimates prefer the generated node pricing rules. Models whose
 nodes have no price badge can use verified flat rates from
@@ -337,6 +338,9 @@ with `pnpm --filter @comfyorg/website generate:workshop-router-contracts`.
   Base64 with MIME inferred from the supplied file or HTTP response. Default
   source URLs remain runnable without inventing local filenames. Preparing the
   API tab does not read private file bytes or download example media.
+  Embedded default media retains its original data URI: inline requests use
+  those known bytes, and URL inputs use the SDK's `assets.from_bytes` /
+  `assets.fromBytes`. User-selected files still refer to local paths.
 - JSON endpoints use the SDK's `models.run`, which owns request identity and
   retries. SDK 0.2.0 cannot decode binary responses, so binary/unknown-output
   endpoints retain HTTP examples that check errors and save non-JSON bytes.
@@ -451,6 +455,23 @@ Choices are narrowed from the pinned Router snapshot and provider documentation:
 Content identity and unfinished per-use-case widget customization are documented
 in [Models content format](MODELS_CONTENT_FORMAT.md). Live render tests remain
 paused while these input definitions are tuned.
+
+## Sign-in drafts
+
+Signed-out visitors can select local media before signing in. The same
+pre-navigation hook serves the header and Playground: scalar edits flush to
+session storage, while media is saved to IndexedDB before same-tab navigation.
+No file is uploaded until the authenticated Run path prepares the request.
+
+Each tab stores an opaque draft key in session storage. Media drafts are consumed
+on return, validated against the current input schema, and usable for one hour.
+Writes prune expired entries and retain at most four drafts, each capped at
+100 MiB. Entries left behind by an abandoned login are pruned on a later write;
+there is no background deletion timer. Document-owned Blob URLs are never stored.
+The storage operation has a five-second deadline and aborts with its component.
+Repeated sign-in clicks share one save; completion cannot redirect a departed
+page. If storage fails, sign-in proceeds and the return page asks the visitor to
+reselect missing files instead of silently submitting default media.
 
 ## Verification boundaries
 

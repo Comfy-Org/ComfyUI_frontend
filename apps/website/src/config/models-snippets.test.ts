@@ -98,6 +98,45 @@ function execute(
 }
 
 describe('SDK snippets', () => {
+  it('uses embedded media bytes directly and through SDK assets without requiring a local file', () => {
+    const sourceDataUrl = 'data:image/webp;base64,' + image.toString('base64')
+    const files: SnippetFile[] = [
+      {
+        token: 'inline',
+        name: 'image.webp',
+        mimeType: 'image/webp',
+        sourceDataUrl
+      },
+      {
+        token: 'upload',
+        name: 'mask.webp',
+        mimeType: 'image/webp',
+        sourceDataUrl,
+        encoding: 'url'
+      }
+    ]
+    const result = JSON.parse(
+      execute(
+        buildSnippet(
+          'typescript',
+          id,
+          {
+            inline: 'data:image/webp;base64,inline',
+            image: 'upload'
+          },
+          { files }
+        )
+      )
+    )
+    expect(result.runs[0].body).toEqual({
+      inline: sourceDataUrl,
+      image: 'https://storage.example/asset-1'
+    })
+    expect(result.uploads).toEqual([
+      { path: 'mask.webp', bytes: [...image], type: 'image/webp' }
+    ])
+  })
+
   it('executes through the released SDK, preserving native JSON and minting a fresh key per execution', () => {
     const snippet = buildSnippet('typescript', id, body)
     const first = JSON.parse(execute(snippet))
