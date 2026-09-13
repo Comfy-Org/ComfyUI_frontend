@@ -155,6 +155,27 @@ describe('upsert-comment-section overflow comments', () => {
     )
   })
 
+  it('does not split a surrogate pair between comments', async () => {
+    const harness = createHarness({})
+    const pagePrefix = `${COMMENT_MARKER}\n<!-- upsert-comment-section:page:1 -->\n`
+    const sectionPrefix = '<!-- section:ci-metrics:start -->\n'
+    const firstPageBudget = MAX_COMMENT_LENGTH - pagePrefix.length
+    const content =
+      'x'.repeat(firstPageBudget - sectionPrefix.length - 1) + '📊' + 'tail'
+
+    await harness.run({
+      ...baseEnv,
+      INPUT_SECTION_NAME: 'ci-metrics',
+      INPUT_SECTION_CONTENT: content
+    })
+
+    expect(harness.comments).toHaveLength(2)
+    expect(harness.comments[0].body.at(-1)).not.toMatch(/[\uD800-\uDBFF]/)
+    expect(combinedContent(harness.comments)).toBe(
+      section('ci-metrics', content)
+    )
+  })
+
   it('migrates an oversized legacy comment without dropping another section', async () => {
     const oldContent = 'y'.repeat(244_310)
     const newContent = 'z'.repeat(200_000)
