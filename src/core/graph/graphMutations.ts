@@ -71,6 +71,7 @@ interface SemanticLiveWidgetMutationPort {
     value: WidgetValue,
     context: RemoteMutationContext
   ): LiveWidgetMutationResult
+  rebind?(scope: GraphScope, nodeId: NodeId, name: string): void
 }
 
 interface GraphMutationBatch {
@@ -667,6 +668,12 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             )
           )
           for (const widget of mutation.node.widgets) {
+            const id = widgetId(
+              scope.rootGraphId,
+              mutation.node.state.id,
+              widget.name
+            )
+            const previousWidgetType = widgetStore.getWidget(id)?.type
             const projected = deps.liveWidgets?.setValue(
               scope,
               mutation.node.state.id,
@@ -678,11 +685,6 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
               projected && projected.status !== 'skipped'
                 ? projected.resolvedValue
                 : widget.value
-            const id = widgetId(
-              scope.rootGraphId,
-              mutation.node.state.id,
-              widget.name
-            )
             widgetStore.registerWidget(
               id,
               {
@@ -698,6 +700,13 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             )
             if (mutation.kind === 'reconcileNode') {
               widgetStore.setValue(id, resolvedValue, context)
+              if (previousWidgetType && previousWidgetType !== widget.type) {
+                deps.liveWidgets?.rebind?.(
+                  scope,
+                  mutation.node.state.id,
+                  widget.name
+                )
+              }
             }
           }
           if (mutation.kind === 'reconcileNode') {

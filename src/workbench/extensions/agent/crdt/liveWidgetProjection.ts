@@ -27,6 +27,25 @@ export type LiveWidgetProjectionResult =
   | { status: 'applied'; resolvedValue: WidgetValue }
   | { status: 'rolledBack'; resolvedValue: WidgetValue }
 
+export function rebindLiveWidgetState(
+  rootGraph: LGraph | undefined,
+  scope: GraphScope,
+  nodeId: NodeId,
+  name: string
+): void {
+  if (!rootGraph) return
+  const widget = owningGraph(rootGraph, scope)
+    ?.getNodeById(nodeId)
+    ?.widgets?.find((candidate) => candidate.name === name)
+  if (
+    widget &&
+    'setNodeId' in widget &&
+    typeof widget.setNodeId === 'function'
+  ) {
+    widget.setNodeId(nodeId)
+  }
+}
+
 function skipped(
   nodeId: NodeId,
   name: string,
