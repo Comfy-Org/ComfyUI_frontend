@@ -270,26 +270,29 @@ describe('applyLiveWidgetValue', () => {
       widget.value = 'callback edit'
     }
 
-    expect(
-      applyLiveWidgetValue(
-        graph,
-        rootScope,
-        toNodeId(7),
-        'value',
-        'after',
-        remoteContext
-      )
-    ).toEqual({ status: 'applied', resolvedValue: 'callback edit' })
-    expect(minted).toEqual([
-      {
-        op: 'set_widget',
-        node_id: toNodeId(7),
-        widget: 'value',
-        value: 'callback edit',
-        old: 'after'
-      }
-    ])
-    wiring.detach()
+    try {
+      expect(
+        applyLiveWidgetValue(
+          graph,
+          rootScope,
+          toNodeId(7),
+          'value',
+          'after',
+          remoteContext
+        )
+      ).toEqual({ status: 'applied', resolvedValue: 'callback edit' })
+      expect(minted).toEqual([
+        {
+          op: 'set_widget',
+          node_id: toNodeId(7),
+          widget: 'value',
+          value: 'callback edit',
+          old: 'after'
+        }
+      ])
+    } finally {
+      wiring.detach()
+    }
   })
 
   it('does not mint remote apply or rollback writes', () => {
@@ -307,19 +310,22 @@ describe('applyLiveWidgetValue', () => {
       throw new Error('callback failed')
     })
 
-    expect(
-      applyLiveWidgetValue(
-        graph,
-        rootScope,
-        toNodeId(7),
-        'value',
-        'after',
-        remoteContext
-      )
-    ).toEqual({ status: 'rolledBack', resolvedValue: 'before' })
-    expect(widget.value).toBe('before')
-    expect(minted).toEqual([])
-    wiring.detach()
+    try {
+      expect(
+        applyLiveWidgetValue(
+          graph,
+          rootScope,
+          toNodeId(7),
+          'value',
+          'after',
+          remoteContext
+        )
+      ).toEqual({ status: 'rolledBack', resolvedValue: 'before' })
+      expect(widget.value).toBe('before')
+      expect(minted).toEqual([])
+    } finally {
+      wiring.detach()
+    }
   })
 
   it('does not mint a callback edit when the callback later throws', () => {
@@ -338,19 +344,22 @@ describe('applyLiveWidgetValue', () => {
       throw new Error('callback failed')
     }
 
-    expect(
-      applyLiveWidgetValue(
-        graph,
-        rootScope,
-        toNodeId(7),
-        'value',
-        'after',
-        remoteContext
-      )
-    ).toEqual({ status: 'rolledBack', resolvedValue: 'before' })
-    expect(widget.value).toBe('before')
-    expect(minted).toEqual([])
-    wiring.detach()
+    try {
+      expect(
+        applyLiveWidgetValue(
+          graph,
+          rootScope,
+          toNodeId(7),
+          'value',
+          'after',
+          remoteContext
+        )
+      ).toEqual({ status: 'rolledBack', resolvedValue: 'before' })
+      expect(widget.value).toBe('before')
+      expect(minted).toEqual([])
+    } finally {
+      wiring.detach()
+    }
   })
 
   it('resolves nodes from the owning subgraph instead of the root graph', () => {
