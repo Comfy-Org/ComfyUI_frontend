@@ -324,9 +324,15 @@ catalogs:
     pinia:
       specifier: ^4.0.2
       version: 4.0.2
+    postcss:
+      specifier: 8.5.26
+      version: 8.5.26
     postcss-html:
       specifier: ^1.8.0
       version: 1.8.1
+    postcss-value-parser:
+      specifier: 4.2.0
+      version: 4.2.0
     posthog-js:
       specifier: ^1.358.1
       version: 1.402.3
@@ -851,9 +857,15 @@ importers:
       picocolors:
         specifier: 'catalog:'
         version: 1.1.1
+      postcss:
+        specifier: 'catalog:'
+        version: 8.5.26
       postcss-html:
         specifier: 'catalog:'
         version: 1.8.1
+      postcss-value-parser:
+        specifier: 'catalog:'
+        version: 4.2.0
       pretty-bytes:
         specifier: 'catalog:'
         version: 7.1.1
