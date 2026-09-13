@@ -223,6 +223,12 @@ function widgetEntries(payload: SemanticNodePayload): PreparedNode['widgets'] {
   }))
 }
 
+function hasTitle(
+  payload: SemanticNodePayload
+): payload is SemanticNodePayload & { title: string } {
+  return typeof payload.title === 'string'
+}
+
 function prepareNode(
   payload: SemanticNodePayload,
   scope: GraphScope
@@ -235,10 +241,7 @@ function prepareNode(
     id,
     graphId: scope.owningGraphId,
     type: payload.type,
-    title:
-      typeof payload.title === 'string' && payload.title.length > 0
-        ? payload.title
-        : payload.type,
+    title: hasTitle(payload) ? payload.title : payload.type,
     flags: cloneRecord(payload.flags),
     inputs: prepareInputSlots(payload.inputs),
     outputs: prepareOutputSlots(payload.outputs),
@@ -354,9 +357,24 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           }
           const node = prepareNode(mutation.payload, scope)
           const key = nodeKey(node.state.id)
-          const incumbent = nodeStore.getNode(scope.rootGraphId, node.state.id)
-          if (incumbent && incumbent.graphId !== scope.owningGraphId) {
-            return `node id ${key} belongs to graph ${incumbent.graphId}`
+          const registered = nodeStore.getNode(scope.rootGraphId, node.state.id)
+          if (registered && registered.graphId !== scope.owningGraphId) {
+            return `node id ${key} belongs to graph ${registered.graphId}`
+          }
+          const incumbent = nodes.get(key)
+          // A reconcile payload without a title leaves the title unspecified;
+          // it does not rename the node to its type. The incumbent's title
+          // may have come from the node class (`configure()` falls back to
+          // the constructor's static title) rather than from any payload.
+          if (
+            mutation.kind === 'reconcileNode' &&
+            incumbent &&
+            !hasTitle(mutation.payload)
+          ) {
+            node.state.title = incumbent.title
+            if (node.state.lastSerialization) {
+              node.state.lastSerialization.title = incumbent.title
+            }
           }
           if (mutation.kind === 'addNode' && nodes.has(key)) {
             return `node id ${key} is already registered`
@@ -636,6 +654,14 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             mutation.node.state.id
           )
           if (mutation.kind === 'reconcileNode' && existing) {
+            for (const input of existing.inputs) {
+              if (
+                '_listenerController' in input &&
+                input._listenerController instanceof AbortController
+              ) {
+                input._listenerController.abort()
+              }
+            }
             nodeStore.updateNode(
               scope,
               mutation.node.state.id,

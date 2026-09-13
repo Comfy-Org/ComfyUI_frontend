@@ -17,6 +17,7 @@ import {
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import {
+  createTestSubgraph,
   createTestSubgraphData,
   createTestSubgraphNode,
   enableSubgraphNodeCreation
@@ -918,6 +919,309 @@ describe('reconcileAgentAdapters', () => {
       expect(graph._nodes).toHaveLength(1)
       expect(reportError).not.toHaveBeenCalled()
     })
+
+    /**
+     * Regression (Linear PM-827): an agent-built subgraph instance rendered
+     * correctly on load, then degraded to a widget-less node titled with its
+     * definition UUID the moment the agent wrote a promoted host widget. The
+     * op layer stores that write as the instance's positional
+     * `__widgets_opaque` array and retires the empty `widgets` map; the
+     * follower reconciles the node from a payload that has no `title` and
+     * positional `widgets_values`, which renamed the node to its `type` and
+     * wiped every store-backed promoted widget the SubgraphNode projects.
+     */
+    it('regression: keeps a subgraph instance title and promoted widgets across a promoted host set_widget', () => {
+      const source = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'number' }]
+      })
+      const interior = new WidgetNode()
+      interior.addInput('value', 'number').widget = { name: 'value' }
+      source.add(interior)
+      source.inputNode.slots[0].connect(interior.inputs[0], interior)
+      const definition = source.asSerialisable()
+      // `registerSubgraphNodeDef` gives the registered class a static title of
+      // the subgraph's display name; `LGraphNode.configure` falls back to it
+      // when the serialised node carries no `title`, which is why the
+      // instance reads correctly on first materialization.
+      graph.events.addEventListener('subgraph-created', (event) => {
+        const registered =
+          LiteGraph.registered_node_types[event.detail.subgraph.id]
+        registered.title = event.detail.subgraph.name
+      })
+
+      const { host, follower, adapter } = seedDocument(graph, {
+        nodes: [{ ...nodePayload(1, definition.id), widgets_values: [] }],
+        links: [],
+        definitions: { subgraphs: [definition] }
+      })
+      const definitions = readSubgraphDefinitions(follower.doc)
+      reconcileAgentAdapters(graph, definitions)
+
+      const instance = graph.getNodeById(toNodeId(1))
+      if (!instance?.isSubgraphNode()) throw new Error('Expected subgraph')
+      expect(instance.title).toBe(source.name)
+      const promotedWidgetId = instance.inputs[0]?.widgetId
+      if (!promotedWidgetId) throw new Error('Missing promoted widgetId')
+      expect(useWidgetValueStore().getWidget(promotedWidgetId)?.value).toBe(0)
+      const replacedInputController = instance.inputs[0]?._listenerController
+      expect(replacedInputController?.signal.aborted).toBe(false)
+      // A local rename lives in the store only; the reconcile payload still
+      // has no `title`, and `configure()` would otherwise reset it.
+      instance.title = 'Renamed Instance'
+      instance.pos = [400, 500]
+      instance.size = [400, 300]
+
+      const stateVector = Y.encodeStateVector(host)
+      const result = applyOps(
+        host,
+        [
+          agentOperation('op-promoted', 2, {
+            op: 'set_widget',
+            node_id: 1,
+            widget: 'value',
+            value: 42,
+            promoted: { value_index: 0, host_widgets_values: [42] }
+          })
+        ] as Parameters<typeof applyOps>[1],
+        CATALOG
+      )
+      expect(result.outcomes).toEqual([
+        { op_id: 'op-promoted', outcome: 'applied' }
+      ])
+      const update = Y.encodeStateAsUpdate(host, stateVector)
+      follower.applyRemoteUpdate(update)
+      expect(
+        adapter.applyFrame({
+          workflowId: 'workflow',
+          seq: 2,
+          update,
+          actor: 'agent:test',
+          opIds: ['op-promoted']
+        })
+      ).toBe(true)
+      expect(replacedInputController?.signal.aborted).toBe(true)
+      expect(reconcileAgentAdapters(graph, definitions)).toEqual([])
+
+      expect(graph.getNodeById(toNodeId(1))).toBe(instance)
+      expect(instance.title).toBe('Renamed Instance')
+      expect(instance.inputs).toHaveLength(1)
+      expect(instance.inputs[0]?.widgetId).toBe(promotedWidgetId)
+      expect(useWidgetValueStore().getWidget(promotedWidgetId)?.value).toBe(42)
+      expect(instance.widgets).toHaveLength(1)
+      expect(instance.widgets[0]?.value).toBe(42)
+      expect([...instance.pos]).toEqual([400, 500])
+      expect([...instance.size]).toEqual([400, 300])
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('restores an output-only subgraph instance after a bare reconcile', () => {
+      const source = createTestSubgraph({
+        outputs: [{ name: 'result', type: 'number' }]
+      })
+      const definition = source.asSerialisable()
+      const { follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, definition.id)],
+        links: [],
+        definitions: { subgraphs: [definition] }
+      })
+      const definitions = readSubgraphDefinitions(follower.doc)
+      reconcileAgentAdapters(graph, definitions)
+
+      const instance = graph.getNodeById(toNodeId(1))
+      if (!instance) throw new Error('Expected subgraph instance')
+      expect(instance.inputs).toHaveLength(0)
+      expect(instance.outputs).toHaveLength(1)
+      const receiver = new DummyNode()
+      receiver.addInput('result', 'number')
+      graph.add(receiver)
+      const link = instance.connect(0, receiver, 0)
+      expect(link).toBeDefined()
+      expect(instance.getOutputNodes(0)).toEqual([receiver])
+
+      remoteMutations(graphScopeOf(graph)).batch(
+        { ...REMOTE, opId: 'op-bare-reconcile' },
+        (batch) => batch.reconcileNode(nodePayload(1, definition.id))
+      )
+      expect(instance.outputs).toHaveLength(0)
+
+      expect(reconcileAgentAdapters(graph, definitions)).toEqual([])
+      expect(instance.outputs).toHaveLength(1)
+      expect(instance.outputs[0]?.name).toBe('result')
+      expect(instance.isOutputConnected(0)).toBe(true)
+      expect(instance.getOutputNodes(0)).toEqual([receiver])
+      expect(receiver.getInputLink(0)).toBe(link)
+    })
+
+    it.for(['configure', '_internalConfigureAfterSlots'] as const)(
+      'retries a subgraph failure in %s without duplicate reports or blocking other records',
+      (failurePoint) => {
+        const source = createTestSubgraph({
+          inputs: [{ name: 'value', type: 'number' }]
+        })
+        const interior = new WidgetNode()
+        interior.addInput('value', 'number').widget = { name: 'value' }
+        source.add(interior)
+        source.inputNode.slots[0].connect(interior.inputs[0], interior)
+        const definition = source.asSerialisable()
+
+        const { host, follower, adapter } = seedDocument(graph, {
+          nodes: [{ ...nodePayload(1, definition.id), widgets_values: [] }],
+          links: [],
+          definitions: { subgraphs: [definition] }
+        })
+        const definitions = readSubgraphDefinitions(follower.doc)
+        reconcileAgentAdapters(graph, definitions)
+        const instance = graph.getNodeById(toNodeId(1))
+        if (!instance?.isSubgraphNode()) throw new Error('Expected subgraph')
+        const failing = vi
+          .spyOn(instance, failurePoint)
+          .mockImplementation(() => {
+            throw new Error('configure failed')
+          })
+
+        const deliver = (
+          seq: number,
+          opId: string,
+          operation: Parameters<typeof agentOperation>[2]
+        ) => {
+          const stateVector = Y.encodeStateVector(host)
+          const result = applyOps(
+            host,
+            [agentOperation(opId, seq, operation)] as Parameters<
+              typeof applyOps
+            >[1],
+            CATALOG
+          )
+          expect(result.outcomes).toEqual([{ op_id: opId, outcome: 'applied' }])
+          const update = Y.encodeStateAsUpdate(host, stateVector)
+          follower.applyRemoteUpdate(update)
+          expect(
+            adapter.applyFrame({
+              workflowId: 'workflow',
+              seq,
+              update,
+              actor: 'agent:test',
+              opIds: [opId]
+            })
+          ).toBe(true)
+        }
+        deliver(2, 'op-promoted', {
+          op: 'set_widget',
+          node_id: 1,
+          widget: 'value',
+          value: 42,
+          promoted: { value_index: 0, host_widgets_values: [42] }
+        })
+        deliver(3, 'op-add', {
+          op: 'add_node',
+          node_id: 9,
+          class_type: 'dummy',
+          pos: [300, 20],
+          node: nodePayload(9)
+        })
+
+        expect(reconcileAgentAdapters(graph, definitions)).toEqual([
+          toNodeId(9)
+        ])
+        expect(graph.getNodeById(toNodeId(1))).toBe(instance)
+        expect(graph.getNodeById(toNodeId(9))).toBeInstanceOf(DummyNode)
+        expect(reconcileAgentAdapters(graph, definitions)).toEqual([])
+        expect(failing).toHaveBeenCalledTimes(2)
+        expect(reportError).toHaveBeenCalledExactlyOnceWith(
+          expect.objectContaining({ message: 'configure failed' }),
+          expect.objectContaining({
+            errorType: 'agent_node_reconfigure_failed',
+            context: { graphId: graph.id, nodeId: '1' }
+          })
+        )
+        failing.mockRestore()
+        expect(reconcileAgentAdapters(graph, definitions)).toEqual([])
+        expect(instance.widgets[0]?.value).toBe(42)
+        expect(instance.inputs[0]?._listenerController?.signal.aborted).toBe(
+          false
+        )
+        const configure = vi.spyOn(instance, 'configure')
+        expect(reconcileAgentAdapters(graph, definitions)).toEqual([])
+        expect(configure).not.toHaveBeenCalled()
+
+        remoteMutations(graphScopeOf(graph)).batch(
+          { ...REMOTE, opId: 'op-second-reconcile' },
+          (batch) => batch.reconcileNode(nodePayload(1, definition.id))
+        )
+        configure.mockImplementationOnce(() => {
+          throw new Error('new failure after recovery')
+        })
+        expect(reconcileAgentAdapters(graph, definitions)).toEqual([])
+        expect(reportError).toHaveBeenCalledTimes(2)
+        expect(reconcileAgentAdapters(graph, definitions)).toEqual([])
+        expect(instance.inputs[0]?._listenerController?.signal.aborted).toBe(
+          false
+        )
+      }
+    )
+
+    it.for(['slot probe', 'widget values'] as const)(
+      'isolates a failing %s while materializing siblings and detaching orphans',
+      (failurePoint) => {
+        const source = createTestSubgraph({
+          inputs: [{ name: 'value', type: 'number' }]
+        })
+        const definition = source.asSerialisable()
+        const { follower } = seedDocument(graph, {
+          nodes: [nodePayload(1, definition.id), nodePayload(2)],
+          links: [],
+          definitions: { subgraphs: [definition] }
+        })
+        const definitions = readSubgraphDefinitions(follower.doc)
+        reconcileAgentAdapters(graph, definitions)
+        const instance = graph.getNodeById(toNodeId(1))
+        if (!instance?.isSubgraphNode()) throw new Error('Expected subgraph')
+        const orphan = graph.getNodeById(toNodeId(2))
+        const mutations = remoteMutations(graphScopeOf(graph))
+        mutations.deleteNode(toNodeId(2), [], REMOTE)
+        mutations.addNode(nodePayload(9), REMOTE)
+        mutations.batch(REMOTE, (batch) =>
+          batch.reconcileNode({
+            ...nodePayload(1, definition.id),
+            inputs: [{ name: 'value', type: 'number', link: null }]
+          })
+        )
+        const [target, key] =
+          failurePoint === 'slot probe'
+            ? ([instance.inputs[0], '_subgraphSlot'] as const)
+            : ([instance._state.lastSerialization, 'widgets_values'] as const)
+        if (!target) throw new Error('Missing reconcile state')
+        Object.defineProperty(target, key, {
+          configurable: true,
+          get() {
+            throw new Error('prepare failed')
+          }
+        })
+
+        expect(reconcileAgentAdapters(graph, definitions)).toEqual([
+          toNodeId(9)
+        ])
+        expect(graph.getNodeById(toNodeId(9))).toBeInstanceOf(DummyNode)
+        expect(graph._nodes).not.toContain(orphan)
+        expect(orphan?.graph).toBeNull()
+        expect(reconcileAgentAdapters(graph, definitions)).toEqual([])
+        expect(reportError).toHaveBeenCalledExactlyOnceWith(
+          expect.objectContaining({ message: 'prepare failed' }),
+          expect.objectContaining({
+            errorType: 'agent_node_reconfigure_failed'
+          })
+        )
+
+        Object.defineProperty(target, key, { value: undefined, writable: true })
+        expect(reconcileAgentAdapters(graph, definitions)).toEqual([])
+        expect(instance.inputs[0]?._subgraphSlot).toBe(
+          instance.subgraph.inputNode.slots[0]
+        )
+        expect(instance.inputs[0]?._listenerController?.signal.aborted).toBe(
+          false
+        )
+      }
+    )
 
     it('registers a definition once across repeated reconciles', () => {
       const definition = createTestSubgraphData({
