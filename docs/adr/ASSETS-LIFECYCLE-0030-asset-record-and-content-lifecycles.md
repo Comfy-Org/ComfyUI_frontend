@@ -99,10 +99,11 @@ legacy history-backed panel.
 
 ## Implementation gaps
 
-- **History cleanup:** With Assets enabled, deletion deregisters records but
-  does not yet run the confirmed-absent gate from decision 7: it does not
-  delete the owning job's history once every target has returned `204` or an
-  already-gone `404`, and it does not preserve history on other failures.
+- **History cleanup:** With Assets enabled, the frontend never attempts
+  history deletion, so it currently preserves history after both successful
+  and failed asset deletions. It does not yet run the confirmed-absent gate
+  from decision 7: it does not delete the owning job's history once every
+  target has returned `204` or an already-gone `404`.
 - **Asset deletion flag enforcement:** `assetDeletionEnabled` currently only
   selects the confirmation-dialog copy. The deletion path itself branches on
   `assetsEnabled` alone, so the flag does not yet gate deletion behavior as
