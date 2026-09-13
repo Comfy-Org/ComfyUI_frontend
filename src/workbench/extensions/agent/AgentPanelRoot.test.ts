@@ -22,7 +22,11 @@ vi.hoisted(() => {
   }
 })
 
+vi.mock(import('firebase/auth'))
+vi.mock<unknown>(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
+
 import { i18n } from '@/i18n'
+import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { setupInlinePromptEditorDom } from './components/agent/composer/inlinePromptEditorTestSetup'
 
 setupInlinePromptEditorDom()
@@ -198,7 +202,11 @@ vi.mock<unknown>(import('@/utils/litegraphUtil'), async (importOriginal) => ({
 }))
 
 vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => ({ userDisplayName: { value: 'Jo Rivera' } })
+  useCurrentUser: () => ({
+    isLoggedIn: { value: true },
+    userDisplayName: { value: 'Jo Rivera' },
+    resolvedUserInfo: { value: { id: 'account-a' } }
+  })
 }))
 
 const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
@@ -309,6 +317,7 @@ import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTab
 import AgentPanelRoot from './AgentPanelRoot.vue'
 
 beforeEach(() => {
+  Object.assign(useAgentConsentStore(), { accepted: true })
   workflowStore = useWorkflowStore()
   canvasStore = useCanvasStore()
   executionErrors = vi.mocked(useExecutionErrorStore())
@@ -443,6 +452,27 @@ function addTab(
   workflowStore.openWorkflowsInBackground({ right: [tab.path] })
   return tab
 }
+
+describe('AgentPanelRoot first-use experience', () => {
+  beforeEach(() => {
+    ws.clear()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => json(200, agentThreadList()))
+    )
+  })
+
+  it('opens directly to the composer without another dialog', async () => {
+    const history = useAgentChatHistoryStore()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(await screen.findByRole('textbox')).toBeInTheDocument()
+    await vi.waitFor(() => expect(history.replaceAll).toHaveBeenCalledWith([]))
+
+    expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+})
 
 describe('AgentPanelRoot paywall actions', () => {
   beforeEach(() => {
