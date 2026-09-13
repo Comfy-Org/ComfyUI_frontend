@@ -5,10 +5,11 @@ import { ref } from 'vue'
 import SectionHeader from '../../components/common/SectionHeader.vue'
 import SurfaceToggle from '../../components/common/SurfaceToggle.vue'
 import CopyableField from '../../components/ui/copyable-field/CopyableField.vue'
+import type { CliClientId } from '../../config/cliClients'
+import { isCliClientId } from '../../config/cliClients'
 import { externalLinks, getRoutes } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import type { CliClientId } from '../../scripts/posthog'
 import {
   captureCliClientTabClick,
   captureCliConnectionTabClick
@@ -141,10 +142,6 @@ function agentDescriptionFor(connId: ConnectionId): string {
 
 function isConnectionId(value: unknown): value is ConnectionId {
   return typeof value === 'string' && Object.hasOwn(connections, value)
-}
-
-function isCliClientId(value: unknown): value is CliClientId {
-  return typeof value === 'string' && Object.hasOwn(clients, value)
 }
 
 // reka-ui re-emits update:modelValue even when the value is unchanged

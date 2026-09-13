@@ -129,14 +129,30 @@ export function createMcpConnections(locale: Locale) {
   }
 }
 
+// Omit over a union type is not distributive (keyof (A | B) is the
+// intersection of their keys), so a plain `Omit<McpConnectionData[ConnectionId], 'clients'>`
+// would silently drop any property that isn't present on every connection.
+// Distribute over the union first so each member keeps its own shape.
+type DistributiveOmit<T, K extends PropertyKey> = T extends unknown
+  ? Omit<T, K>
+  : never
+
 type McpConnectionData = ReturnType<typeof createMcpConnections>
 export type ConnectionId = keyof McpConnectionData
 export type McpClientId =
   | keyof McpConnectionData['cloud']['clients']
   | keyof McpConnectionData['local']['clients']
 
-type McpConnection = Omit<McpConnectionData[ConnectionId], 'clients'> & {
-  clients: Record<string, McpClient>
+type McpConnection = DistributiveOmit<
+  McpConnectionData[ConnectionId],
+  'clients'
+> & {
+  // Partial: cloud and local connections don't share the same client id
+  // space (e.g. cloud lacks the `local-*` keys), so a connection's `clients`
+  // legitimately doesn't cover every McpClientId. Partial restores key
+  // checking on the ids that ARE present while keeping that gap honest at
+  // the type level instead of widening to `Record<string, McpClient>`.
+  clients: Partial<Record<McpClientId, McpClient>>
 }
 
 export type McpConnections = Record<ConnectionId, McpConnection>

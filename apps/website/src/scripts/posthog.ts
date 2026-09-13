@@ -16,6 +16,7 @@ import { normalizeTurnstileMode } from '@comfyorg/account/turnstile'
 import type { TurnstileMode } from '@comfyorg/account/turnstile'
 
 import type { Platform } from '@/composables/useDownloadUrl'
+import type { CliClientId } from '@/config/cliClients'
 import type { ConnectionId, McpClientId } from '@/config/mcpClients'
 
 const POSTHOG_KEY =
@@ -42,16 +43,6 @@ const ANALYTICS_EVENT = {
   authFailed: AUTH_TELEMETRY_EVENT.authFailed,
   workshopSignupRollbackFailed: 'website:workshop_signup_rollback_failed'
 } as const
-
-export type CliClientId =
-  | 'claude-code'
-  | 'codex'
-  | 'cursor'
-  | 'gemini-cli'
-  | 'openclaw'
-  | 'hermes'
-  | 'terminal'
-  | 'ci'
 
 type AnalyticsEvent =
   | { name: typeof ANALYTICS_EVENT.pageview; properties?: undefined }
