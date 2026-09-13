@@ -6,14 +6,15 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { runMintPortsIntentionalClear } from '@/workbench/extensions/agent/crdt/mintPortWiring'
 import { useTelemetry } from '@/platform/telemetry'
 import { WORKFLOW_ACCEPT_STRING } from '@/platform/workflow/core/types/formats'
-import { type StatusWsMessageStatus } from '@/schemas/apiSchema'
+import type { StatusWsMessageStatus } from '@/schemas/apiSchema'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 import { api } from './api'
-import { ComfyApp, app } from './app'
+import type { ComfyApp } from './app'
+import { app } from './app'
 import { ComfyDialog as _ComfyDialog } from './ui/dialog'
 import { ComfySettingsDialog } from './ui/settings'
 import { toggleSwitch } from './ui/toggleSwitch'
@@ -61,13 +62,7 @@ export function $el<TTag extends string>(
     if (Array.isArray(propsOrChildren)) {
       element.append(...propsOrChildren)
     } else {
-      const {
-        parent,
-        $: cb,
-        dataset,
-        style,
-        ...rest
-      } = propsOrChildren as Props
+      const { parent, $: cb, dataset, style, ...rest } = propsOrChildren
 
       if (rest.for) {
         element.setAttribute('for', rest.for)
@@ -100,7 +95,7 @@ export function $el<TTag extends string>(
 
 // @ts-expect-error fixme ts strict error
 function dragElement(dragEl): () => void {
-  var posDiffX = 0,
+  let posDiffX = 0,
     posDiffY = 0,
     posStartX = 0,
     posStartY = 0,
@@ -459,7 +454,7 @@ export class ComfyUI {
     autoQueueModeEl.style.display = 'none'
 
     api.addEventListener('autoQueueGraphChanged', () => {
-      if (this.autoQueueMode === 'change' && this.autoQueueEnabled === true) {
+      if (this.autoQueueMode === 'change' && this.autoQueueEnabled) {
         if (this.lastQueueSize === 0) {
           this.graphHasChanged = false
           app.queuePrompt(0, this.batchCount, {
@@ -725,7 +720,7 @@ export class ComfyUI {
 
     this.restoreMenuPosition = dragElement(this.menuContainer)
 
-    // @ts-expect-error
+    // @ts-expect-error: placeholder status carries a string queue_remaining to size the element before the first real update
     this.setStatus({ exec_info: { queue_remaining: 'X' } })
   }
 
