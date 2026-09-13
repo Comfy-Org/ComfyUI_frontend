@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type * as VueModule from 'vue'
 import type { Ref } from 'vue'
 import { nextTick, ref } from 'vue'
 
@@ -75,7 +74,6 @@ vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
 }))
 
 vi.mock<unknown>(import('@/platform/remoteConfig/remoteConfig'), async () => {
-  const { ref } = await vi.importActual<typeof VueModule>('vue')
   hoisted.refs.remoteConfig = ref<RemoteConfig>({})
   return { remoteConfig: hoisted.refs.remoteConfig }
 })
@@ -89,7 +87,6 @@ vi.mock(import('@/platform/telemetry/utils/getExecutionContext'), () => ({
 vi.mock<unknown>(
   import('@/composables/billing/useBillingContext'),
   async () => {
-    const { ref } = await vi.importActual<typeof VueModule>('vue')
     hoisted.refs.tier = ref<string | null>(null)
     return { useBillingContext: () => ({ tier: hoisted.refs.tier }) }
   }

@@ -143,6 +143,7 @@
         "**/{__test__,__tests__,__fixtures__}/**/*.{ts,tsx}"
       ],
       "rules": {
+        "comfy/no-import-actual": "error",
         "comfy/use-global-pinia": "error"
       }
     },
@@ -181,6 +182,12 @@
       "files": ["browser_tests/tests/**/*.spec.ts", "apps/*/e2e/**/*.spec.ts"],
       "rules": {
         "comfy/no-comfy-page-setup-call": "error"
+      }
+    },
+    {
+      "files": ["browser_tests/tests/**/*.spec.ts"],
+      "rules": {
+        "comfy/prefer-initial-settings": "error"
       }
     },
     {

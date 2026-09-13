@@ -620,9 +620,4 @@ describe('useWorkspaceUI', () => {
   })
 })
 
-vi.mock(import('firebase/auth'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  setPersistence: vi.fn().mockResolvedValue(undefined),
-  onAuthStateChanged: vi.fn(() => vi.fn()),
-  onIdTokenChanged: vi.fn(() => vi.fn())
-}))
+vi.mock(import('firebase/auth'), { spy: true })

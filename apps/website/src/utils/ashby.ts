@@ -215,7 +215,7 @@ function extractTitle(raw: unknown): string {
     raw !== null &&
     typeof raw === 'object' &&
     'title' in raw &&
-    typeof (raw as { title: unknown }).title === 'string'
+    typeof raw.title === 'string'
   ) {
     return (raw as { title: string }).title
   }

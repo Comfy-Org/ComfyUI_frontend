@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
+import { fromPartial } from '@total-typescript/shoehorn'
 import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { defineComponent, nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useIntersectionObserver } from '@vueuse/core'
 
 // jsdom lacks ResizeObserver, which the asset-preview import chain references.
 vi.hoisted(() => {
@@ -14,21 +16,19 @@ vi.hoisted(() => {
   }
 })
 
-import type * as VueUse from '@vueuse/core'
-
 const intersectionCallbacks = vi.hoisted(
   () => [] as ((entries: { isIntersecting: boolean }[]) => void)[]
 )
-vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => ({
-  ...(await importOriginal<typeof VueUse>()),
-  useIntersectionObserver: (
-    _target: unknown,
-    callback: (entries: { isIntersecting: boolean }[]) => void
-  ) => {
-    intersectionCallbacks.push(callback)
-    return { stop: () => {} }
-  }
-}))
+vi.mock(import('@vueuse/core'), { spy: true })
+vi.mocked(useIntersectionObserver).mockImplementation((_target, callback) => {
+  intersectionCallbacks.push((entries) =>
+    callback(
+      entries.map((entry) => fromPartial(entry)),
+      fromPartial({})
+    )
+  )
+  return fromPartial({ stop: vi.fn() })
+})
 
 import { i18n } from '@/i18n'
 import type { TurnId } from '../../schemas/agentApiSchema'
@@ -85,11 +85,22 @@ function mountHarness() {
 
 describe('ConversationView', () => {
   beforeEach(() => {
+    vi.mocked(useIntersectionObserver).mockImplementation(
+      (_target, callback) => {
+        intersectionCallbacks.push((entries) =>
+          callback(
+            entries.map((entry) => fromPartial(entry)),
+            fromPartial({})
+          )
+        )
+        return fromPartial({ stop: vi.fn() })
+      }
+    )
     Element.prototype.scrollIntoView = vi.fn()
     intersectionCallbacks.length = 0
   })
 
-  it('wire-driven v1 turn renders user pill, spinner, reasoning-free text, tool group', async () => {
+  it('wire-driven v1 turn renders user pill, spinner, reasoning-free text, work summary', async () => {
     const { store } = mountHarness()
     store.recordUser(T, 'make a cat')
     store.startTurn(T)
@@ -102,7 +113,7 @@ describe('ConversationView', () => {
     store.ingest(done('msg-1'))
 
     expect(await screen.findByText('make a cat')).toBeInTheDocument()
-    expect(screen.getByText('Ran 1 tool call')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^worked/i })).toBeInTheDocument()
     expect(screen.getByText('cat', { selector: 'strong' })).toBeInTheDocument()
     expect(store.entries.at(-1)).toMatchObject({
       role: 'assistant',

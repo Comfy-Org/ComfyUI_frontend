@@ -5,7 +5,10 @@ import { nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n, mergeCustomNodesI18n } from '@/i18n'
-import type * as LiteGraphModule from '@/lib/litegraph/src/litegraph'
+import {
+  isOverNodeInput,
+  isOverNodeOutput
+} from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Settings } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
@@ -14,12 +17,7 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import NodeTooltip from './NodeTooltip.vue'
 
 const enMessages = cloneDeep(i18n.global.getLocaleMessage('en'))
-type HitTest = (
-  node: MockNode,
-  x: number,
-  y: number,
-  offset: [number, number]
-) => number
+type HitTest = typeof isOverNodeInput
 
 interface MockWidget {
   name: string
@@ -60,17 +58,7 @@ const mockCanvas = vi.hoisted(
   })
 )
 
-vi.mock<unknown>(
-  import('@/lib/litegraph/src/litegraph'),
-  async (importOriginal) => {
-    const actual = await importOriginal<typeof LiteGraphModule>()
-    return {
-      ...actual,
-      isOverNodeInput: mockIsOverNodeInput,
-      isOverNodeOutput: mockIsOverNodeOutput
-    }
-  }
-)
+vi.mock(import('@/lib/litegraph/src/litegraph'), { spy: true })
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
@@ -157,6 +145,8 @@ async function renderAndHoverCanvas() {
 
 describe('NodeTooltip', () => {
   beforeEach(() => {
+    vi.mocked(isOverNodeInput).mockImplementation(mockIsOverNodeInput)
+    vi.mocked(isOverNodeOutput).mockImplementation(mockIsOverNodeOutput)
     vi.spyOn(useSettingStore(), 'get').mockImplementation(
       <K extends keyof Settings>(key: K): Settings[K] => {
         switch (key) {

@@ -821,6 +821,83 @@
       }
     }
   },
+  "BriaAddObject": {
+    "display_name": "Bria Add Object",
+    "description": "Insert an object described in plain text into an image using Bria. Bria re-renders the whole frame at about 1 megapixel, so the result is not pixel-aligned with the input.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "instruction": {
+        "name": "instruction",
+        "tooltip": "What to add and where, such as 'Place a red vase with flowers on the table'."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Bria takes no seed here and re-imagines the edit on each call, so repeated runs can differ. The value is never sent: it only changes this node's cache key, so that an otherwise identical graph runs the edit again instead of returning the cached result."
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "Moderation settings"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Structured description of the edited image, for a follow-up edit with Bria FIBO Image Edit."
+      }
+    }
+  },
+  "BriaEraseByText": {
+    "display_name": "Bria Erase by Text",
+    "description": "Remove an object named in plain text from an image using Bria. Bria re-renders the whole frame at about 1 megapixel, so the result is not pixel-aligned with the input.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "object_name": {
+        "name": "object_name",
+        "tooltip": "Name of the object to remove, such as 'the lamp'. Several objects can be named at once, such as 'the phone and the pencils'. Naming something that is not in the picture still returns, and bills, a re-rendered image."
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "Moderation settings"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Structured description of the edited image, for a follow-up edit with Bria FIBO Image Edit."
+      }
+    }
+  },
+  "BriaEraseForeground": {
+    "display_name": "Bria Erase Foreground",
+    "description": "Remove the foreground of an image with Bria and generate a background in its place. Everything Bria reads as foreground goes, not only people. The untouched pixels are preserved, but the output is re-rendered at a standard size close to 1 megapixel.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "Moderation settings"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaEraser": {
     "display_name": "Bria Eraser",
     "description": "Remove objects or areas outlined by a mask from an image using Bria.",
@@ -1004,6 +1081,36 @@
       }
     }
   },
+  "BriaRelight": {
+    "display_name": "Bria Relight",
+    "description": "Change the lighting atmosphere and direction of an image using Bria. Bria re-renders the whole frame at about 1 megapixel, so the result is not pixel-aligned with the input.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "light_type": {
+        "name": "light_type",
+        "tooltip": "Lighting atmosphere to apply."
+      },
+      "light_direction": {
+        "name": "light_direction",
+        "tooltip": "Where the light comes from. Hard-light atmospheres such as midday, spotlight on subject and harsh studio lighting react to it the most."
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "Moderation settings"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Structured description of the edited image, for a follow-up edit with Bria FIBO Image Edit."
+      }
+    }
+  },
   "BriaRemoveImageBackground": {
     "display_name": "Bria Remove Image Background",
     "description": "Remove the background from an image using Bria RMBG 2.0.",
@@ -1054,6 +1161,133 @@
       }
     }
   },
+  "BriaReplaceImageBackground": {
+    "display_name": "Bria Replace Image Background",
+    "description": "Replace the background of an image with Bria, described by a prompt or guided by reference images. The subject's pixels are preserved; the background is generated around them.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "background": {
+        "name": "background",
+        "tooltip": "Describe the new background with a prompt, or guide it with reference images."
+      },
+      "original_quality": {
+        "name": "original_quality",
+        "tooltip": "Return the input's exact pixel size instead of scaling the result to about 1 megapixel. A large input then returns a large image."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "The same seed usually returns the same background; the automatic prompt refinement can still vary it."
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "Moderation settings"
+      },
+      "background_mode": {
+        "name": "mode"
+      },
+      "background_prompt": {
+        "name": "prompt"
+      },
+      "background_refine_prompt": {
+        "name": "refine_prompt"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "refined_prompt",
+        "tooltip": "The prompt Bria generated from, empty on the reference-image path."
+      }
+    }
+  },
+  "BriaReplaceObject": {
+    "display_name": "Bria Replace Object",
+    "description": "Swap an object in an image for another one described in plain text using Bria. Bria re-renders the whole frame at about 1 megapixel, so the result is not pixel-aligned with the input.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "instruction": {
+        "name": "instruction",
+        "tooltip": "What to replace with what, such as 'Replace the red apple with a green pear'."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Bria takes no seed here and re-imagines the edit on each call, so repeated runs can differ. The value is never sent: it only changes this node's cache key, so that an otherwise identical graph runs the edit again instead of returning the cached result."
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "Moderation settings"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Structured description of the edited image, for a follow-up edit with Bria FIBO Image Edit."
+      }
+    }
+  },
+  "BriaReseason": {
+    "display_name": "Bria Reseason",
+    "description": "Move an image to another season with Bria. The whole scene is re-rendered, so scenery can change beyond the season itself. Bria re-renders the whole frame at about 1 megapixel, so the result is not pixel-aligned with the input.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "season": {
+        "name": "season",
+        "tooltip": "Season to apply."
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "Moderation settings"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Structured description of the edited image, for a follow-up edit with Bria FIBO Image Edit."
+      }
+    }
+  },
+  "BriaRestorePhoto": {
+    "display_name": "Bria Restore Photo",
+    "description": "Repair an old or damaged photograph with Bria: grain, scratches and blur go, and age-related color casts are neutralized. Card mounts and studio borders may be cropped away and faces are re-drawn. Bria re-renders the whole frame at about 1 megapixel, so the result is not pixel-aligned with the input. Use Bria Increase Resolution to enlarge instead.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "Moderation settings"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Structured description of the edited image, for a follow-up edit with Bria FIBO Image Edit."
+      }
+    }
+  },
   "BriaTransparentVideoBackground": {
     "display_name": "Bria Remove Video Background (Transparent)",
     "description": "Remove the background from a video using Bria and return the cut-out frames plus an alpha mask. Connect both to a compositing node, or feed them to Save WEBM to write a transparent video.",
@@ -1076,6 +1310,33 @@
       },
       "1": {
         "name": "mask",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVideoEraser": {
+    "display_name": "Bria Video Eraser",
+    "description": "Erase whatever a per-frame mask covers from a video with Bria and fill the gap in. The mask must be white on what should go and black elsewhere. Bria accepts clips of at most 5.1 seconds at 20 to 30 frames per second with even pixel dimensions; audio is kept by default. The returned clip can be a few frames shorter than the input.",
+    "inputs": {
+      "video": {
+        "name": "video",
+        "tooltip": "Clip to erase from."
+      },
+      "preserve_audio": {
+        "name": "preserve_audio",
+        "tooltip": "Keep the input's audio track."
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "One mask per frame of the video, white where the object to erase is. Provide either a mask or a mask video, not both."
+      },
+      "mask_video": {
+        "name": "mask_video",
+        "tooltip": "An already encoded mask video with the same dimensions and frame count as the video. Provide either a mask or a mask video, not both."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -3065,6 +3326,29 @@
       }
     }
   },
+  "ConcatenateVideo": {
+    "display_name": "Concatenate Video",
+    "description": "Concatenates videos in order without decoding compatible encoded inputs.",
+    "inputs": {
+      "videos": {
+        "name": "videos",
+        "tooltip": "Video segments to concatenate in input order."
+      },
+      "codec": {
+        "name": "codec",
+        "tooltip": "Codec used to encode videos tensors. Auto uses H.264; already encoded videos remain unchanged."
+      },
+      "complete_audio": {
+        "name": "complete_audio",
+        "tooltip": "Optional complete soundtrack for the concatenated video. Overrides audio carried by the input videos."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "The concatenated video."
+      }
+    }
+  },
   "ConditioningAverage": {
     "display_name": "Conditioning (Average)",
     "inputs": {
@@ -3098,6 +3382,20 @@
       },
       "conditioning_from": {
         "name": "conditioning_from"
+      }
+    }
+  },
+  "ConditioningLoader": {
+    "display_name": "Load Conditioning",
+    "description": "Loads a conditioning saved with Save Conditioning, or any safetensors file with a 'conditioning' tensor, from the embeddings folder.",
+    "inputs": {
+      "conditioning_name": {
+        "name": "conditioning_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3919,6 +4217,10 @@
       "color_space": {
         "name": "color_space",
         "tooltip": "Colorspace of the input images. HDR selects BT.2020/HLG and HDR PQ selects BT.2020/PQ."
+      },
+      "codec": {
+        "name": "codec",
+        "tooltip": "Optionally encode the video immediately. None keeps the images in tensor form; Auto uses H.264."
       }
     },
     "outputs": {
@@ -5026,6 +5328,22 @@
       "batch_size": {
         "name": "batch_size",
         "tooltip": "The number of latent images in the batch."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyYuE2LatentAudio": {
+    "display_name": "Empty YuE2 Latent Audio",
+    "inputs": {
+      "seconds": {
+        "name": "seconds"
+      },
+      "batch_size": {
+        "name": "batch_size"
       }
     },
     "outputs": {
@@ -6355,14 +6673,8 @@
       "model_max_output_tokens": {
         "name": "max_output_tokens"
       },
-      "model_temperature": {
-        "name": "temperature"
-      },
       "model_thinking_level": {
         "name": "thinking_level"
-      },
-      "model_top_p": {
-        "name": "top_p"
       }
     },
     "outputs": {
@@ -7986,7 +8298,7 @@
   },
   "ImageColorSpace": {
     "display_name": "Convert Image Color Space",
-    "description": "Convert sRGB (Rec.709), HDR (Rec.2020 HLG), and HDR PQ (Rec.2020 PQ). Uses 203-nit SDR white and a 1000-nit HLG reference display. Narrowing tone-maps excess luminance across the batch and compresses out-of-gamut colors. Conversions compute in float32 and return the intermediate device and dtype. Straight alpha is not color-transformed.",
+    "description": "Convert sRGB, linear Rec.709, HDR (Rec.2020 HLG), and HDR PQ (Rec.2020 PQ). Linear 1.0 uses the same 203-nit reference white as sRGB; HLG uses a 1000-nit reference display. Linear output and linear-to-HDR conversions preserve extended values without tone mapping. SDR output and PQ-to-HLG conversion tone-map excess luminance across the batch and compress out-of-gamut colors. Conversions compute in float32 and return the intermediate device and dtype. Straight alpha is not color-transformed.",
     "inputs": {
       "image": {
         "name": "image"
@@ -10233,32 +10545,34 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "Render width of the viewport in pixels."
       },
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "Render height of the viewport in pixels."
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "Loaded 3D model file (glb/obj/stl/etc.)."
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "Placement of each model in the scene: position, rotation, and scale (Y-up world space)."
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "Viewport camera information: position, look-at target, zoom, and type."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "Render width of the viewport in pixels."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "Render height of the viewport in pixels."
       }
     }
   },
@@ -12370,6 +12684,23 @@
     "inputs": {
       "sigmas": {
         "name": "sigmas"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MarigoldV2PostProcess": {
+    "display_name": "Marigold V2 Post-Process",
+    "description": "Turns a decoded Marigold V2 prediction into an image: normalized depth with near as bright, unit surface normals, or sRGB albedo.",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "prediction": {
+        "name": "prediction"
       }
     },
     "outputs": {
@@ -15881,6 +16212,9 @@
       },
       "shift": {
         "name": "shift"
+      },
+      "sampling": {
+        "name": "sampling"
       }
     }
   },
@@ -16383,7 +16717,7 @@
     }
   },
   "OpenAIGPTImageNodeV2": {
-    "display_name": "OpenAI GPT Image 2",
+    "display_name": "OpenAI GPT Image 2.5",
     "description": "Generates images via OpenAI's GPT Image endpoint.",
     "inputs": {
       "prompt": {
@@ -16471,6 +16805,36 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenRouterImageNode": {
+    "display_name": "OpenRouter Image",
+    "description": "Generate or edit images through OpenRouter with Microsoft's MAI-Image-2.6 models: text to image, or image-guided editing with up to five reference images, in seven aspect ratios at 1K or 1.5K.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "The OpenRouter image model used to generate the image."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
       }
     },
     "outputs": {
@@ -17395,38 +17759,41 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "Render width of the viewport in pixels."
       },
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "Render height of the viewport in pixels."
       },
       "model_3d_info": {
         "name": "model_3d_info"
       },
       "camera_info": {
-        "name": "camera_info"
+        "name": "camera_info",
+        "tooltip": "Viewport camera information: position, look-at target, zoom, and type."
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "3D model file (glb/obj/stl/etc.) from an upstream 3D node."
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "Placement of each model in the scene: position, rotation, and scale (Y-up world space)."
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "Viewport camera information: position, look-at target, zoom, and type."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "Render width of the viewport in pixels."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "Render height of the viewport in pixels."
       }
     }
   },
@@ -20479,38 +20846,42 @@
         "name": "viewport_state"
       },
       "width": {
-        "name": "width"
+        "name": "width",
+        "tooltip": "Render width of the viewport in pixels."
       },
       "height": {
-        "name": "height"
+        "name": "height",
+        "tooltip": "Render height of the viewport in pixels."
       },
       "model_3d_info": {
-        "name": "model_3d_info"
+        "name": "model_3d_info",
+        "tooltip": "Placement of each model in the scene: position, rotation, and scale (Y-up world space)."
       },
       "camera_info": {
-        "name": "camera_info"
+        "name": "camera_info",
+        "tooltip": "Viewport camera information: position, look-at target, zoom, and type."
       }
     },
     "outputs": {
       "0": {
         "name": "model_3d",
-        "tooltip": null
+        "tooltip": "3D model file (glb/obj/stl/etc.) from an upstream 3D node."
       },
       "1": {
         "name": "model_3d_info",
-        "tooltip": null
+        "tooltip": "Placement of each model in the scene: position, rotation, and scale (Y-up world space)."
       },
       "2": {
         "name": "camera_info",
-        "tooltip": null
+        "tooltip": "Viewport camera information: position, look-at target, zoom, and type."
       },
       "3": {
         "name": "width",
-        "tooltip": null
+        "tooltip": "Render width of the viewport in pixels."
       },
       "4": {
         "name": "height",
-        "tooltip": null
+        "tooltip": "Render height of the viewport in pixels."
       }
     }
   },
@@ -20655,6 +21026,24 @@
     "outputs": {
       "0": {
         "name": "audio",
+        "tooltip": null
+      }
+    }
+  },
+  "SaveConditioning": {
+    "display_name": "Save Conditioning",
+    "description": "Saves a conditioning to the output folder as safetensors; move the file to models/embeddings to load it with Load Conditioning, e.g. to skip the text encoder.",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "conditioning",
         "tooltip": null
       }
     }
@@ -21522,6 +21911,28 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SheetSage2AudioToABC": {
+    "display_name": "SheetSage2 Audio to ABC",
+    "description": "Transcribes vocal and instrumental melodies from music into ABC notation. Connect abc output to YuE2 Generate Music node and use the matching mode.",
+    "inputs": {
+      "audio_encoder": {
+        "name": "audio_encoder"
+      },
+      "audio": {
+        "name": "audio"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "full: generates melody and chords; melody: generates melody only, recommended for covers."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
         "tooltip": null
       }
     }
@@ -23990,7 +24401,7 @@
     }
   },
   "TripoImageToModelNode": {
-    "display_name": "Tripo: Image to Model",
+    "display_name": "Tripo: Image to Model (Legacy)",
     "inputs": {
       "image": {
         "name": "image"
@@ -24061,6 +24472,75 @@
         "tooltip": "Empty when quad is enabled."
       },
       "3": {
+        "name": "FBX",
+        "tooltip": "Only populated when quad is enabled."
+      }
+    }
+  },
+  "TripoImageToModelNodeV2": {
+    "display_name": "Tripo: Image to Model",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "The model version to use for generation"
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "Generate texture maps. Off returns bare geometry and ignores pbr."
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "PBR material maps (base color, metallic, roughness, normal). Requires texture."
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "orientation": {
+        "name": "orientation"
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = HD textures, extreme = 8K Ultra textures."
+      },
+      "texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "Maximum face count. -1 lets Tripo pick adaptively (about 1.4M faces on v3.x standard, 2M on detailed). Tripo clamps silently: v2.5 at 500,000, quad meshes at 150,000."
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "Quad mesh output. Tripo delivers quad meshes as FBX, so the result arrives on the FBX output and the GLB output stays empty."
+      },
+      "geometry_quality": {
+        "name": "geometry_quality"
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "Low-poly mesh with clean, hand-crafted style topology (500-20,000 faces, quad 500-10,000). Best for simple subjects; complex ones may fail."
+      },
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Scale textured models to their real-world size in meters. Tripo stores the size as the model's scene transform and bakes it in when the model is converted, rigged or retargeted; ignored without texture."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Empty when quad is enabled."
+      },
+      "2": {
         "name": "FBX",
         "tooltip": "Only populated when quad is enabled."
       }
@@ -24393,7 +24873,7 @@
       },
       "animation": {
         "name": "animation",
-        "tooltip": "preset:* animations work with both rig models; preset:biped:* animations require a rig made with model v1.0-20240301."
+        "tooltip": "preset:* animations work with both rig models. preset:biped:* animations are made for rigs from model v1.0-20240301; a v2.5 rig accepts only chop, climb, dive, fall, hurt, idle, jump, run, shoot, slash, turn and walk."
       },
       "out_format": {
         "name": "out_format",
@@ -24558,6 +25038,48 @@
       }
     }
   },
+  "TripoSmartSegmentNode": {
+    "display_name": "Tripo: Smart Segment",
+    "description": "Splits a model into semantically meaningful parts and names them. From an image, Tripo first generates the model. The segment task_id feeds Tripo: Complete Mesh Parts, Tripo: Retopology, Tripo: Texture model and Tripo: Convert model like a Tripo: Segment Model result.",
+    "inputs": {
+      "source": {
+        "name": "source",
+        "tooltip": "Segment an existing model, or generate a model from an image and segment it."
+      },
+      "source_granularity": {
+        "name": "granularity"
+      },
+      "source_hint": {
+        "name": "hint"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "segment task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model task_id",
+        "tooltip": "The model that was segmented (generated from the image, or imported)."
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "part_names",
+        "tooltip": "Comma-separated names of the parts."
+      },
+      "4": {
+        "name": "parts",
+        "tooltip": "Tripo's description of the parts it found."
+      },
+      "5": {
+        "name": "mask",
+        "tooltip": null
+      }
+    }
+  },
   "TripoSplatConditioning": {
     "display_name": "TripoSplat Conditioning",
     "description": "Encode the image with DINOv3 and the Flux2 VAE into TripoSplat positive/negative conditioning, and create the fixed size noise target (latent + camera) for the KSampler",
@@ -24654,7 +25176,7 @@
     }
   },
   "TripoTextToModelNode": {
-    "display_name": "Tripo: Text to Model",
+    "display_name": "Tripo: Text to Model (Legacy)",
     "inputs": {
       "prompt": {
         "name": "prompt"
@@ -24730,8 +25252,77 @@
       }
     }
   },
+  "TripoTextToModelNodeV2": {
+    "display_name": "Tripo: Text to Model",
+    "inputs": {
+      "prompt": {
+        "name": "prompt"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Up to 255 characters."
+      },
+      "model_version": {
+        "name": "model_version"
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "Generate texture maps. Off returns bare geometry and ignores pbr."
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "PBR material maps (base color, metallic, roughness, normal). Requires texture."
+      },
+      "image_seed": {
+        "name": "image_seed"
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = HD textures, extreme = 8K Ultra textures."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "Maximum face count. -1 lets Tripo pick adaptively (about 1.4M faces on v3.x standard, 2M on detailed). Tripo clamps silently: v2.5 at 500,000, quad meshes at 150,000."
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "Quad mesh output. Tripo delivers quad meshes as FBX, so the result arrives on the FBX output and the GLB output stays empty."
+      },
+      "geometry_quality": {
+        "name": "geometry_quality"
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "Low-poly mesh with clean, hand-crafted style topology (500-20,000 faces, quad 500-10,000). Best for simple subjects; complex ones may fail."
+      },
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Scale textured models to their real-world size in meters. Tripo stores the size as the model's scene transform and bakes it in when the model is converted, rigged or retargeted; ignored without texture."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Empty when quad is enabled."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Only populated when quad is enabled."
+      }
+    }
+  },
   "TripoTextureNode": {
-    "display_name": "Tripo: Texture model",
+    "display_name": "Tripo: Texture model (Legacy)",
     "inputs": {
       "model_task_id": {
         "name": "model_task_id"
@@ -24789,6 +25380,62 @@
         "tooltip": "Empty when the source is a quad mesh or an FBX import."
       },
       "3": {
+        "name": "FBX",
+        "tooltip": "Tripo returns FBX for quad meshes and FBX imports; empty otherwise."
+      }
+    }
+  },
+  "TripoTextureNodeV2": {
+    "display_name": "Tripo: Texture model",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "PBR material maps (base color, metallic, roughness, normal); off gives a plain color texture."
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = HD textures, extreme = 8K Ultra textures."
+      },
+      "texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "Optional text guidance for texturing. Required in practice for imported models (Tripo: Import Model), which carry no source image to infer colors from. Cannot be combined with reference images."
+      },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "Texture model: v3.0 for meshes generated with v3.x, v2.5 for meshes generated with v2.5."
+      },
+      "style_image": {
+        "name": "style_image",
+        "tooltip": "Reference image for the artistic style of the textures. Only used together with texture_prompt."
+      },
+      "reference": {
+        "name": "reference",
+        "tooltip": "Reference images guiding the textures. Cannot be combined with texture_prompt or style_image."
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "Comma-separated part names from Tripo: Segment Model to texture. Empty textures every part."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Empty when the source is a quad mesh or an FBX import."
+      },
+      "2": {
         "name": "FBX",
         "tooltip": "Tripo returns FBX for quad meshes and FBX imports; empty otherwise."
       }
@@ -28298,6 +28945,110 @@
     "outputs": {
       "0": {
         "name": "mesh",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateABC": {
+    "display_name": "YuE2 Generate ABC",
+    "description": "Generates the ABC notation of a song from style and lyrics. Connect abc to YuE2 Generate Music node.",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "style": {
+        "name": "style"
+      },
+      "lyrics": {
+        "name": "lyrics"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "full: generates melody and chords; melody: generates melody only, recommended for covers."
+      },
+      "max_abc_tokens": {
+        "name": "max_abc_tokens"
+      },
+      "temperature": {
+        "name": "temperature"
+      },
+      "top_p": {
+        "name": "top_p"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "penalty_window": {
+        "name": "penalty_window",
+        "tooltip": "Number of recent ABC tokens used to penalize repetition."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "abc",
+        "tooltip": null
+      }
+    }
+  },
+  "YuE2GenerateMusic": {
+    "display_name": "YuE2 Generate Music",
+    "description": "Generates music tokens and acoustic conditioning from style, lyrics, and an ABC notation. Provide the generated seconds to the Empty YuE2 Latent Audio node. An empty ABC input ignores the selected mode.",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "style": {
+        "name": "style"
+      },
+      "lyrics": {
+        "name": "lyrics"
+      },
+      "abc": {
+        "name": "abc",
+        "tooltip": "Connect the ABC generator or supply an edited score. Leave empty to use off mode automatically."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "full: generates melody and chords; melody: generates melody only, recommended for covers."
+      },
+      "max_duration": {
+        "name": "max_duration",
+        "tooltip": "Maximum duration in seconds. Automatically reduced for long prompts; generation can stop earlier."
+      },
+      "temperature": {
+        "name": "temperature"
+      },
+      "top_p": {
+        "name": "top_p"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "seconds",
         "tooltip": null
       }
     }

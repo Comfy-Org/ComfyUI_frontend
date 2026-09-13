@@ -5,15 +5,12 @@ import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import type * as AssetServiceModule from '@/platform/assets/services/assetService'
 import {
   createMediaNodeDef,
   seedMediaNodeDefs
 } from '@/platform/missingMedia/__fixtures__/promotedMedia'
-import type * as FetchJobsModule from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import type * as GraphTraversalUtil from '@/utils/graphTraversalUtil'
 import type { MissingMediaAssetResolver } from './missingMediaAssetResolver'
 import {
   isMissingMediaCandidateScopeActive,
@@ -38,8 +35,7 @@ const { mockFetchHistoryPage } = vi.hoisted(() => ({
   mockFetchHistoryPage: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/utils/graphTraversalUtil'), async (importActual) => {
-  const actual = await importActual<typeof GraphTraversalUtil>()
+vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => {
   type TestNode = LGraphNode & { _testExecutionId?: string }
   type TestGraph = { _testNodes: TestNode[] }
   const isTestGraph = (graph: LGraph | TestGraph): graph is TestGraph =>
@@ -53,21 +49,23 @@ vi.mock<unknown>(import('@/utils/graphTraversalUtil'), async (importActual) => {
     node?.mode === LGraphEventMode.BYPASS
 
   return {
-    ...actual,
     collectAllNodes: (graph: LGraph | TestGraph) =>
-      isTestGraph(graph) ? graph._testNodes : actual.collectAllNodes(graph),
+      isTestGraph(graph) ? graph._testNodes : graph.nodes,
     getExecutionIdByNode: (graph: LGraph | TestGraph, node: TestNode) =>
+      isTestGraph(graph) ? executionIdForNode(node) : String(node.id),
+    getNodeByExecutionId: (graph: LGraph | TestGraph, executionId: string) =>
       isTestGraph(graph)
-        ? executionIdForNode(node)
-        : actual.getExecutionIdByNode(graph, node),
+        ? findNodeByExecutionId(graph, executionId)
+        : graph.nodes.find(
+            (node) => String(node.id) === executionId.split(':').at(-1)
+          ),
     isExecutionPathActive: (graph: LGraph | TestGraph, executionId: string) => {
-      if (!isTestGraph(graph)) {
-        return actual.isExecutionPathActive(graph, executionId)
-      }
       const path = executionId.split(':')
       return path.every((_, index) => {
         const prefix = path.slice(0, index + 1).join(':')
-        const node = findNodeByExecutionId(graph, prefix)
+        const node = isTestGraph(graph)
+          ? findNodeByExecutionId(graph, prefix)
+          : graph.nodes.find((node) => String(node.id) === prefix)
         return !!node && !isInactive(node)
       })
     }
@@ -78,31 +76,16 @@ vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({ flags: { assetsEnabled: true } })
 }))
 
-vi.mock(import('@/platform/assets/services/assetService'), async () => {
-  const actual = await vi.importActual<typeof AssetServiceModule>(
-    '@/platform/assets/services/assetService'
-  )
-
-  return {
-    ...actual,
-    assetService: {
-      ...actual.assetService,
-      getAllAssetsByTag: mockGetAllAssetsByTag,
-      getAssetsPageByTag: mockGetAssetsPageByTag
-    }
+vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
+  assetService: {
+    getAllAssetsByTag: mockGetAllAssetsByTag,
+    getAssetsPageByTag: mockGetAssetsPageByTag
   }
-})
+}))
 
-vi.mock(import('@/platform/remote/comfyui/jobs/fetchJobs'), async () => {
-  const actual = await vi.importActual<typeof FetchJobsModule>(
-    '@/platform/remote/comfyui/jobs/fetchJobs'
-  )
-
-  return {
-    ...actual,
-    fetchHistoryPage: mockFetchHistoryPage
-  }
-})
+vi.mock<unknown>(import('@/platform/remote/comfyui/jobs/fetchJobs'), () => ({
+  fetchHistoryPage: mockFetchHistoryPage
+}))
 
 function makeCandidate(
   nodeId: string,

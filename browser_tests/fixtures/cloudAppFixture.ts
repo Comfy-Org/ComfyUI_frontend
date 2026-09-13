@@ -7,7 +7,7 @@ const CLOUD_APP_BOOT_TIMEOUT = 45_000
 
 export const cloudAppFixture = base.extend({
   page: async ({ page }, use, testInfo) => {
-    testInfo.setTimeout(CLOUD_APP_BOOT_TIMEOUT)
+    testInfo.setTimeout(Math.max(testInfo.timeout, CLOUD_APP_BOOT_TIMEOUT))
     await use(page)
   }
 })

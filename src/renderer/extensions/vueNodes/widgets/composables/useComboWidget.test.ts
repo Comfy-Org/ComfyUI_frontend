@@ -1,5 +1,5 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { useAssetsStore } from '@/stores/assetsStore'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -32,26 +32,18 @@ vi.mock(import('@/scripts/widgets'), () => ({
   addValueControlWidgets: vi.fn()
 }))
 
-vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
-  ...(await importOriginal()),
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockDistributionState.isCloud
   }
 }))
 
-vi.mock(import('@/composables/useFeatureFlags'), async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    useFeatureFlags: () => {
-      const featureFlags = actual.useFeatureFlags()
-      return {
-        ...featureFlags,
-        flags: { ...featureFlags.flags, assetsEnabled: false }
-      }
-    }
-  }
-})
+vi.mock(import('@/composables/useFeatureFlags'), () => ({
+  useFeatureFlags: () =>
+    fromPartial({
+      flags: { assetsEnabled: false }
+    })
+}))
 
 vi.mock(import('@/i18n'), () => ({
   t: vi.fn((key: string) =>
@@ -62,7 +54,7 @@ vi.mock(import('@/i18n'), () => ({
 vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
     isAssetBrowserEligible: vi.fn(() => false),
-    shouldUseAssetBrowser: vi.fn(() => false)
+    shouldUseWidgetAssetPicker: vi.fn(() => false)
   }
 }))
 
@@ -136,13 +128,12 @@ beforeEach(() => {
 
 describe('useComboWidget', () => {
   beforeEach(() => {
-    vi.mocked(useSettingStore().get).mockReturnValue(false)
     vi.mocked(useAssetsStore().getInputName).mockImplementation(
       (hash: string) => hash
     )
     vi.mocked(useAssetsStore().getAssets).mockImplementation(() => [])
     vi.mocked(assetService.isAssetBrowserEligible).mockReturnValue(false)
-    vi.mocked(assetService.shouldUseAssetBrowser).mockReturnValue(false)
+    vi.mocked(assetService.shouldUseWidgetAssetPicker).mockReturnValue(false)
     mockDistributionState.isCloud = false
     useAssetsStore().inputAssets.items = []
     useAssetsStore().inputAssets.isLoading = false
@@ -170,10 +161,9 @@ describe('useComboWidget', () => {
     expect(widget).toBe(mockWidget)
   })
 
-  it('should create normal combo widget when asset API is disabled', () => {
+  it('should create normal combo widget when the widget asset picker is disabled', () => {
     mockDistributionState.isCloud = true
-    vi.mocked(useSettingStore().get).mockReturnValue(false)
-    vi.mocked(assetService.shouldUseAssetBrowser).mockReturnValue(false)
+    vi.mocked(assetService.shouldUseWidgetAssetPicker).mockReturnValue(false)
 
     const constructor = useComboWidget()
     const mockWidget = createMockWidget()
@@ -206,7 +196,7 @@ describe('useComboWidget', () => {
       inputSpecOverrides: Partial<InputSpec> = {}
     ) {
       mockDistributionState.isCloud = true
-      vi.mocked(assetService.shouldUseAssetBrowser).mockReturnValue(true)
+      vi.mocked(assetService.shouldUseWidgetAssetPicker).mockReturnValue(true)
 
       const constructor = useComboWidget()
       const mockWidget = createMockWidget({
@@ -239,7 +229,7 @@ describe('useComboWidget', () => {
       })
 
       expect(
-        vi.mocked(assetService.shouldUseAssetBrowser)
+        vi.mocked(assetService.shouldUseWidgetAssetPicker)
       ).toHaveBeenCalledWith('CheckpointLoaderSimple', 'ckpt_name')
       expect(mockNode.addWidget).toHaveBeenCalledWith(
         'asset',
@@ -312,7 +302,7 @@ describe('useComboWidget', () => {
 
   it('should show Select model when asset widget has undefined current value', () => {
     mockDistributionState.isCloud = true
-    vi.mocked(assetService.shouldUseAssetBrowser).mockReturnValue(true)
+    vi.mocked(assetService.shouldUseWidgetAssetPicker).mockReturnValue(true)
 
     const constructor = useComboWidget()
     const mockWidget = createMockWidget({
