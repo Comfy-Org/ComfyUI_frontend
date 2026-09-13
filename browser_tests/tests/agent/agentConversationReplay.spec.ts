@@ -93,6 +93,21 @@ minimaxTest.describe(
           },
           {
             op: 'add_node',
+            node_id: 102,
+            class_type: 'PrimitiveInt',
+            pos: [0, 850],
+            node: {
+              id: 102,
+              type: 'PrimitiveInt',
+              pos: [0, 850],
+              size: [200, 40],
+              inputs: [],
+              outputs: [{ name: 'value', type: 'INT', links: [] }],
+              widgets_values: [42]
+            }
+          },
+          {
+            op: 'add_node',
             node_id: 101,
             class_type: BYTEDANCE_REFERENCE_NODE_TYPE,
             pos: [400, 500],
@@ -140,15 +155,19 @@ minimaxTest.describe(
         const result = await page.evaluate(() => {
           const graph = window.app!.graph
           const source = graph._nodes.find(({ id }) => String(id) === '100')!
+          const seedSource = graph._nodes.find(
+            ({ id }) => String(id) === '102'
+          )!
           const target = graph._nodes.find(({ id }) => String(id) === '101')!
+          const seedName = 'seed'
+          seedSource.connect(0, target, target.findInputSlot(seedName))
+          const seedLinkBefore =
+            target.inputs[target.findInputSlot(seedName)].link
           source.connect(
             0,
             target,
             target.findInputSlot('model.reference_images.image_1')
           )
-          const seedName = 'seed'
-          const seedLinkBefore =
-            target.inputs[target.findInputSlot(seedName)].link
           const saved = structuredClone(graph.serialize())
           graph.configure(saved)
           const reopened = graph._nodes.find(({ id }) => String(id) === '101')!
@@ -168,8 +187,8 @@ minimaxTest.describe(
         expect(result).toEqual({
           hasNextReference: true,
           referenceLinked: true,
-          seedLinkBefore: null,
-          seedLinkAfter: null
+          seedLinkBefore: expect.any(Number),
+          seedLinkAfter: result.seedLinkBefore
         })
       }
     )
