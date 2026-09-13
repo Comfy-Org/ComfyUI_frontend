@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { cleanup, render } from '@testing-library/vue'
 import { afterEach, describe, expect, it } from 'vitest'
 

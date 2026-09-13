@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import type { ComfyApp } from '@/scripts/app'
 import { useReleaseStore } from '../common/releaseStore'
 beforeEach(() => {
@@ -10,8 +9,6 @@ beforeEach(() => {
   Object.assign(useReleaseStore(), { releases: [] as ReleaseNote[] })
   vi.mocked(useReleaseStore().fetchReleases).mockResolvedValue(undefined)
 })
-// dompurify is inert under happy-dom — see the tripwire note in
-// vitest.setup.ts (capricorn86/happy-dom#2182, FE-1189).
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import Button from '@/components/ui/button/Button.vue'

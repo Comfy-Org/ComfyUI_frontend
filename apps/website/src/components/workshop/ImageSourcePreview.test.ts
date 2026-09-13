@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { resolveObjectURL } from 'node:buffer'
 import { describe, expect, it, vi } from 'vitest'

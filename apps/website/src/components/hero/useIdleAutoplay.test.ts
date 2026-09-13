@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, reactive, ref } from 'vue'
 import type { Ref } from 'vue'

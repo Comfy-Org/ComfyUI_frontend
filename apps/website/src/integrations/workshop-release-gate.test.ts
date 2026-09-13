@@ -1,3 +1,5 @@
+// @vitest-environment node
+
 import type { AstroIntegrationLogger, HookParameters } from 'astro'
 import { mergeConfig, validateConfig } from 'astro/config'
 import { existsSync } from 'node:fs'

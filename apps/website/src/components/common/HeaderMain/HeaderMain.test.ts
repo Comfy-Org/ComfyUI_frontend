@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
