@@ -434,7 +434,8 @@ test.describe(
     })
 
     test('undo remains scoped to the edited workflow after switching tabs', async ({
-      comfyPage
+      comfyPage,
+      comfyMouse
     }) => {
       await comfyPage.workflow.loadWorkflow('default')
       await comfyPage.workflow.setupWorkflowsDirectory({})
@@ -444,7 +445,14 @@ test.describe(
       const initialPosition = await node.getProperty<[number, number]>('pos')
 
       await test.step('Move a node in Tab A', async () => {
-        await node.dragBy({ x: 100, y: 50 })
+        const vueNode = comfyPage.vueNodes.getNodeByTitle('KSampler')
+        if (await vueNode.isVisible()) {
+          const ksampler =
+            await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+          await comfyMouse.dragElementBy(ksampler.title, { x: 100, y: 50 })
+        } else {
+          await node.dragBy({ x: 100, y: 50 })
+        }
         await expect
           .poll(() => node.getProperty<[number, number]>('pos'))
           .not.toEqual(initialPosition)
