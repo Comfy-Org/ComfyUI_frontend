@@ -597,7 +597,7 @@ describe('isModelDownloadable', () => {
 describe('dispatchModelDownload', () => {
   beforeEach(() => {
     mockIsDesktop.value = false
-    mockSidebarTabStore.activeSidebarTabId = null
+    useSidebarTabStore().activeSidebarTabId = null
   })
 
   it('classifies a missing legacy Electron directory path without dispatching', () => {
@@ -609,7 +609,7 @@ describe('dispatchModelDownload', () => {
       status: 'not-dispatched',
       reason: 'missing-directory-path'
     })
-    expect(mockSidebarTabStore.activeSidebarTabId).toBeNull()
+    expect(useSidebarTabStore().activeSidebarTabId).toBeNull()
     expect(mockStartDownload).not.toHaveBeenCalled()
   })
 
@@ -626,7 +626,7 @@ describe('dispatchModelDownload', () => {
       status: 'host-requested',
       host: 'electron'
     })
-    expect(mockSidebarTabStore.activeSidebarTabId).toBeNull()
+    expect(useSidebarTabStore().activeSidebarTabId).toBeNull()
     expect(mockStartDownload).toHaveBeenCalledOnce()
   })
 
