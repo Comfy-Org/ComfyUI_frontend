@@ -41,7 +41,7 @@ describe('AgentPanel', () => {
       screen.getByText(i18n.global.t('agent.runNotice'))
     ).toBeInTheDocument()
     expect(
-      screen.getByText('The AI agent can make mistakes')
+      screen.getByRole('button', { name: 'Share feedback' })
     ).toBeInTheDocument()
   })
 
@@ -52,9 +52,7 @@ describe('AgentPanel', () => {
       screen.getByText(i18n.global.t('agent.runNoticeExpanded'))
     ).toBeInTheDocument()
     expect(
-      screen.getByText(
-        'The AI agent can make mistakes. Double check your response.'
-      )
+      screen.getByRole('button', { name: 'Share feedback' })
     ).toBeInTheDocument()
   })
 
