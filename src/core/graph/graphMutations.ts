@@ -1,3 +1,5 @@
+import { cloneDeep, isEqual } from 'es-toolkit'
+
 import type {
   ISerialisableNodeInput,
   ISerialisableNodeOutput,
@@ -122,6 +124,7 @@ interface PreparedNode {
   state: NodeState
   layout: SemanticNodeLayout
   widgets: Array<{ name: string; value: WidgetValue; type: string }>
+  widgetsAuthoritative: boolean
 }
 
 type PreparedMutation =
@@ -223,6 +226,67 @@ function widgetEntries(payload: SemanticNodePayload): PreparedNode['widgets'] {
   }))
 }
 
+/**
+ * With a named record a widget's slot is the one slot still holding its last
+ * named value, so a placeholder's store order is never guessed at; without a
+ * record the store order is the positional order. -1 leaves the shadow alone.
+ */
+function positionalSlotOf(
+  values: readonly unknown[],
+  index: number,
+  named: unknown,
+  name: string
+): number {
+  if (!isRecord(named) || !(name in named))
+    return index >= 0 && index < values.length ? index : -1
+  const slots = values.flatMap((value, slot) =>
+    isEqual(value, named[name]) ? [slot] : []
+  )
+  return slots.length === 1 ? slots[0] : -1
+}
+
+function syncSerializedWidgetValue(
+  state: NodeState,
+  name: string,
+  value: unknown,
+  index: number
+): void {
+  const serialised = state.lastSerialization
+  if (!serialised) return
+  const values: unknown = serialised.widgets_values
+  const named: unknown = serialised.widgets_values_named
+  const clone = structuredClone(value)
+  if (Array.isArray(values)) {
+    const slot = positionalSlotOf(values, index, named, name)
+    if (slot >= 0) values[slot] = clone
+  } else if (isRecord(values)) {
+    values[name] = clone
+  }
+  if (isRecord(named)) named[name] = clone
+}
+
+function reconcileInputSlots(
+  current: NodeState,
+  next: Pick<NodeState, 'inputs' | 'properties'>
+): NodeState['inputs'] {
+  const promoted = new Map(
+    current.inputs
+      .filter((input) => '_subgraphSlot' in input && input._subgraphSlot)
+      .map((input) => [input.name, input])
+  )
+  const inputs = next.inputs.map((input) => {
+    const existing = promoted.get(input.name)
+    promoted.delete(input.name)
+    const { link: _link, boundingRect: _bounds, ...metadata } = input
+    return existing?.type === input.type
+      ? Object.assign(existing, metadata)
+      : input
+  })
+  return Array.isArray(next.properties.proxyWidgets)
+    ? [...inputs, ...promoted.values()]
+    : inputs
+}
+
 function prepareNode(
   payload: SemanticNodePayload,
   scope: GraphScope
@@ -261,6 +325,8 @@ function prepareNode(
   return {
     state,
     widgets: widgetEntries(payload),
+    widgetsAuthoritative:
+      Array.isArray(payload.widgets_values) || isRecord(payload.widgets_values),
     layout: {
       position: { x, y },
       size: { width, height }
@@ -357,6 +423,32 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           const incumbent = nodeStore.getNode(scope.rootGraphId, node.state.id)
           if (incumbent && incumbent.graphId !== scope.owningGraphId) {
             return `node id ${key} belongs to graph ${incumbent.graphId}`
+          }
+          if (
+            mutation.kind === 'reconcileNode' &&
+            incumbent?.type === node.state.type
+          ) {
+            const { title, widgets_values } = mutation.payload
+            if (Array.isArray(widgets_values)) {
+              const serializable = widgetStore
+                .getNodeWidgets(scope.rootGraphId, node.state.id)
+                .filter(
+                  (widget) =>
+                    widget.serialize !== false && widget.type !== 'button'
+                )
+              node.widgets.forEach((widget, index) => {
+                widget.name = serializable[index]?.name ?? widget.name
+              })
+            }
+            if (typeof title !== 'string' || !title)
+              node.state.title = incumbent.title
+            node.state.inputs = reconcileInputSlots(
+              {
+                ...incumbent,
+                inputs: incumbent.inputs.map((input) => ({ ...input }))
+              },
+              node.state
+            )
           }
           if (mutation.kind === 'addNode' && nodes.has(key)) {
             return `node id ${key} is already registered`
@@ -631,28 +723,126 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
       switch (mutation.kind) {
         case 'addNode':
         case 'reconcileNode': {
-          const existing = nodeStore.getNode(
-            scope.rootGraphId,
-            mutation.node.state.id
-          )
+          const { state, widgets, widgetsAuthoritative } = mutation.node
+          const existing = nodeStore.getNode(scope.rootGraphId, state.id)
           if (mutation.kind === 'reconcileNode' && existing) {
-            nodeStore.updateNode(
-              scope,
-              mutation.node.state.id,
-              mutation.node.state,
-              context
-            )
-            widgetStore.clearNode(
+            if (existing.type === state.type) {
+              state.inputs = reconcileInputSlots(existing, state)
+              if (!widgetsAuthoritative && state.lastSerialization) {
+                const staleNamed = cloneDeep(
+                  existing.lastSerialization?.widgets_values_named
+                )
+                // widgets_values is typed as an array, but this reconciler
+                // also handles legacy/record-shaped payloads (see
+                // widgetEntries above), so treat it as unknown here.
+                const stalePositional = cloneDeep(
+                  existing.lastSerialization?.widgets_values
+                ) as unknown
+                const serializableWidgets = widgetStore
+                  .getNodeWidgets(scope.rootGraphId, state.id)
+                  .filter(
+                    (widget) =>
+                      widget.serialize !== false && widget.type !== 'button'
+                  )
+                const namedKeys = Object.keys(staleNamed ?? {})
+                // A positional-only snapshot carries no names: its slots follow
+                // the serializable-widget order, like the positional remap above.
+                const stalePositionalNames =
+                  namedKeys.length > 0 || !Array.isArray(stalePositional)
+                    ? namedKeys
+                    : serializableWidgets.map((widget) => widget.name)
+                // Names known from either the stale named snapshot or a
+                // record-shaped stale positional value — used only to scope
+                // which widgets are eligible for the live-value overlay
+                // below, so a node with no prior snapshot for a widget
+                // isn't given one here.
+                const staleNames = new Set([
+                  ...stalePositionalNames,
+                  ...(isRecord(stalePositional)
+                    ? Object.keys(stalePositional)
+                    : [])
+                ])
+                const named = { ...staleNamed }
+                const staleSlots = Array.isArray(stalePositional)
+                  ? (stalePositional as unknown[])
+                  : undefined
+                const positional = staleSlots && [...staleSlots]
+                const overlay: Record<string, unknown> = {}
+                // existing.lastSerialization can predate incremental
+                // setWidget calls, which only update the widget store and
+                // never touch lastSerialization. Overlay the live
+                // widget-store values so a layout-only reconcile can't
+                // resurrect a value that was already superseded. Only
+                // overlay widgets already present in the stale snapshot —
+                // a node with no prior snapshot (or one already cleared to
+                // empty) must stay untouched here.
+                serializableWidgets.forEach((widget, index) => {
+                  if (!staleNames.has(widget.name)) return
+                  overlay[widget.name] = widget.value
+                  if (widget.name in named) named[widget.name] = widget.value
+                  if (!staleSlots || !positional) return
+                  const slot = positionalSlotOf(
+                    staleSlots,
+                    index,
+                    staleNamed,
+                    widget.name
+                  )
+                  if (slot >= 0) positional[slot] = widget.value
+                })
+                if (positional) {
+                  state.lastSerialization.widgets_values =
+                    positional as ISerialisedNode['widgets_values']
+                } else if (isRecord(stalePositional)) {
+                  state.lastSerialization.widgets_values = {
+                    ...stalePositional,
+                    ...overlay
+                  } as unknown as ISerialisedNode['widgets_values']
+                } else {
+                  state.lastSerialization.widgets_values =
+                    stalePositional as ISerialisedNode['widgets_values']
+                }
+                state.lastSerialization.widgets_values_named =
+                  staleNamed === undefined ? staleNamed : named
+              }
+              nodeStore.updateNode(scope, state.id, state, context)
+            } else {
+              nodeStore.deleteNode(scope, existing, context)
+              nodeStore.registerNode(scope, state, context)
+              widgetStore.clearNode(scope.rootGraphId, state.id, context)
+            }
+            const names = new Set([
+              ...widgets.map(({ name }) => name),
+              ...state.inputs
+                .filter((input) => input.widgetId)
+                .map((input) => input.name)
+            ])
+            for (const widget of widgetStore.getNodeWidgets(
               scope.rootGraphId,
-              mutation.node.state.id,
-              context
-            )
+              state.id
+            )) {
+              if (
+                widgetsAuthoritative &&
+                widget.serialize !== false &&
+                widget.type !== 'button' &&
+                !names.has(widget.name)
+              ) {
+                widgetStore.deleteWidget(
+                  widgetId(scope.rootGraphId, state.id, widget.name)
+                )
+              }
+            }
           } else {
-            nodeStore.registerNode(scope, mutation.node.state, context)
+            nodeStore.registerNode(scope, state, context)
           }
-          for (const widget of mutation.node.widgets) {
+          for (const widget of widgets) {
+            const id = widgetId(scope.rootGraphId, state.id, widget.name)
+            if (
+              mutation.kind === 'reconcileNode' &&
+              widgetStore.setValue(id, widget.value, context)
+            )
+              continue
             widgetStore.registerWidget(
-              widgetId(scope.rootGraphId, mutation.node.state.id, widget.name),
+              id,
               {
                 name: widget.name,
                 type: widget.type,
@@ -668,7 +858,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           if (!existing) {
             deps.layout.createNode(
               scope,
-              mutation.node.state.id,
+              state.id,
               mutation.node.layout,
               context
             )
@@ -693,6 +883,22 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             )
           } else {
             widgetStore.setValue(id, mutation.value, context)
+          }
+          const node = nodeStore.getNode(scope.rootGraphId, mutation.nodeId)
+          if (node) {
+            const index = widgetStore
+              .getNodeWidgets(scope.rootGraphId, mutation.nodeId)
+              .filter(
+                (widget) =>
+                  widget.serialize !== false && widget.type !== 'button'
+              )
+              .findIndex((widget) => widget.name === mutation.name)
+            syncSerializedWidgetValue(
+              node,
+              mutation.name,
+              mutation.value,
+              index
+            )
           }
           break
         }
@@ -752,7 +958,10 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
               scope,
               target.id,
               {
-                inputs: mutation.targetInputs,
+                inputs: reconcileInputSlots(target, {
+                  inputs: mutation.targetInputs,
+                  properties: target.properties
+                }),
                 outputs: target.outputs
               },
               context

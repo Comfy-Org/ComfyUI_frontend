@@ -290,6 +290,362 @@ describe('graphMutations', () => {
     expect(createLayout).not.toHaveBeenCalled()
   })
 
+  it('preserves the display title and widget presentation while reconciling values', () => {
+    const graph = mutations()
+    graph.addNode({ ...node(1), title: 'Nano Banana 2' }, context)
+    const store = useWidgetValueStore()
+    const id = widgetId('root', toNodeId(1), 'model.resolution')
+    const widget = store.registerWidget(
+      id,
+      {
+        name: 'model.resolution',
+        type: 'combo',
+        value: '1K',
+        label: 'resolution',
+        options: { values: ['1K', '2K'], advanced: true }
+      },
+      { isDOMWidget: true, tooltip: 'Output resolution' }
+    )
+    const render = store.getWidgetRenderState(id)
+    const visibility = store.getWidgetVisibility(id)
+    const controlId = widgetId('root', toNodeId(1), 'upload')
+    const control = store.registerWidget(controlId, {
+      type: 'button',
+      value: null,
+      options: {}
+    })
+    const onChange = vi.fn()
+    const dispose = store.onValueChange(onChange)
+
+    const { title: _title, ...payload } = node(1, { 'model.resolution': '2K' })
+    expect(graph.batch(context, (batch) => batch.reconcileNode(payload))).toBe(
+      true
+    )
+
+    expect(useNodeDataStore().getNode('root', toNodeId(1))?.title).toBe(
+      'Nano Banana 2'
+    )
+    expect(store.getWidget(id)).toBe(widget)
+    expect(store.getWidget(id)).toMatchObject({
+      value: '2K',
+      type: 'combo',
+      label: 'resolution',
+      options: { values: ['1K', '2K'], advanced: true }
+    })
+    expect(store.getWidgetRenderState(id)).toBe(render)
+    expect(render).toEqual({ isDOMWidget: true, tooltip: 'Output resolution' })
+    expect(store.getWidgetVisibility(id)).toBe(visibility)
+    expect(visibility?.surfaces.vueNode).toBe('advanced')
+    expect(store.getWidget(controlId)).toBe(control)
+    expect(onChange).toHaveBeenCalledExactlyOnceWith({
+      widgetId: id,
+      value: '2K',
+      oldValue: '1K',
+      context
+    })
+    dispose()
+  })
+
+  it('updates saved values by widget order when named keys are reversed', () => {
+    const graph = mutations()
+    graph.addNode(node(1, { steps: 20, seed: 4 }), context)
+
+    expect(
+      graph.batch(context, (batch) => {
+        batch.reconcileNode({
+          ...node(1),
+          widgets_values: [20, 4],
+          widgets_values_named: { seed: 4, steps: 20 }
+        })
+        batch.setWidget(toNodeId(1), 'seed', 7)
+      })
+    ).toBe(true)
+
+    expect(
+      useNodeDataStore().getNode('root', toNodeId(1))?.lastSerialization
+    ).toMatchObject({
+      widgets_values: [20, 7],
+      widgets_values_named: { seed: 7, steps: 20 }
+    })
+    expect(
+      useWidgetValueStore().getNodeWidgets('root', toNodeId(1))
+    ).toMatchObject([
+      { name: 'steps', value: 20 },
+      { name: 'seed', value: 7 }
+    ])
+  })
+
+  it('restores positional Markdown values to the existing serializable widget', () => {
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    const store = useWidgetValueStore()
+    const controlId = widgetId('root', toNodeId(1), 'edit')
+    const control = store.registerWidget(controlId, {
+      type: 'button',
+      value: null,
+      options: {},
+      serialize: false
+    })
+    const textId = widgetId('root', toNodeId(1), 'text')
+    const text = store.registerWidget(
+      textId,
+      {
+        type: 'markdown',
+        value: '# Before',
+        options: {},
+        label: 'text'
+      },
+      { isDOMWidget: true }
+    )
+
+    graph.batch(context, (batch) =>
+      batch.reconcileNode({
+        ...node(1),
+        widgets_values: ['# Preserved note']
+      })
+    )
+
+    expect(store.getWidget(textId)).toBe(text)
+    expect(text?.value).toBe('# Preserved note')
+    expect(text?.type).toBe('markdown')
+    expect(store.getWidgetRenderState(textId)?.isDOMWidget).toBe(true)
+    expect(store.getWidget(controlId)).toBe(control)
+    expect(store.getWidget(widgetId('root', toNodeId(1), '0'))).toBeUndefined()
+    expect(store.getNodeWidgets('root', toNodeId(1))).toEqual([control, text])
+  })
+
+  it('keeps existing widgets when a reconcile payload carries no widgets_values', () => {
+    const graph = mutations()
+    graph.addNode(node(1, { seed: 4 }), context)
+    const store = useWidgetValueStore()
+    const seedId = widgetId('root', toNodeId(1), 'seed')
+    const seed = store.getWidget(seedId)
+    const { widgets_values: _values, ...payload } = node(1)
+
+    expect(graph.batch(context, (batch) => batch.reconcileNode(payload))).toBe(
+      true
+    )
+
+    expect(store.getWidget(seedId)).toBe(seed)
+    expect(seed?.value).toBe(4)
+
+    graph.batch(context, (batch) =>
+      batch.reconcileNode({ ...node(1), widgets_values: [] })
+    )
+
+    expect(store.getWidget(seedId)).toBeUndefined()
+  })
+
+  it('retains an incremental setValue over a stale lastSerialization on an omitted-widget reconcile', () => {
+    const graph = mutations()
+    graph.addNode(node(1, { seed: 4 }), context)
+    const store = useWidgetValueStore()
+    const seedId = widgetId('root', toNodeId(1), 'seed')
+
+    // Incremental update: only the widget store changes, not lastSerialization.
+    expect(store.setValue(seedId, 7, context)).toBe(true)
+
+    const { widgets_values: _values, ...payload } = node(1)
+    expect(graph.batch(context, (batch) => batch.reconcileNode(payload))).toBe(
+      true
+    )
+
+    const [state] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    expect(store.getWidget(seedId)?.value).toBe(7)
+    expect(state.lastSerialization?.widgets_values).toMatchObject({ seed: 7 })
+  })
+
+  it('retains an incremental setValue over a stale positional-only lastSerialization on an omitted-widget reconcile', () => {
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    const store = useWidgetValueStore()
+    const seedId = widgetId('root', toNodeId(1), 'seed')
+    store.registerWidget(seedId, {
+      type: 'number',
+      value: 1,
+      options: {},
+      label: 'seed'
+    })
+    expect(
+      graph.batch(context, (batch) =>
+        batch.reconcileNode({ ...node(1), widgets_values: [4] })
+      )
+    ).toBe(true)
+    expect(store.getWidget(seedId)?.value).toBe(4)
+
+    expect(store.setValue(seedId, 7, context)).toBe(true)
+
+    const { widgets_values: _values, ...payload } = node(1)
+    expect(graph.batch(context, (batch) => batch.reconcileNode(payload))).toBe(
+      true
+    )
+
+    const [state] = useNodeDataStore().getGraphNodesFor('root', 'root')
+    expect(store.getWidget(seedId)?.value).toBe(7)
+    expect(state.lastSerialization?.widgets_values).toEqual([7])
+    expect(state.lastSerialization?.widgets_values_named).toBeUndefined()
+  })
+
+  it('skips button widgets when remapping positional values', () => {
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    const store = useWidgetValueStore()
+    const controlId = widgetId('root', toNodeId(1), 'edit')
+    const control = store.registerWidget(controlId, {
+      type: 'button',
+      value: null,
+      options: {}
+    })
+    const textId = widgetId('root', toNodeId(1), 'text')
+    const text = store.registerWidget(textId, {
+      type: 'markdown',
+      value: '# Before',
+      options: {},
+      label: 'text'
+    })
+
+    graph.batch(context, (batch) =>
+      batch.reconcileNode({ ...node(1), widgets_values: ['# After'] })
+    )
+
+    expect(store.getWidget(controlId)).toBe(control)
+    expect(control?.value).toBeNull()
+    expect(store.getWidget(textId)).toBe(text)
+    expect(text?.value).toBe('# After')
+    expect(store.getWidget(widgetId('root', toNodeId(1), '0'))).toBeUndefined()
+  })
+
+  it('registers surplus positional values as index-named widgets', () => {
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    const store = useWidgetValueStore()
+    const textId = widgetId('root', toNodeId(1), 'text')
+    store.registerWidget(textId, {
+      type: 'markdown',
+      value: '# Before',
+      options: {},
+      label: 'text'
+    })
+
+    graph.batch(context, (batch) =>
+      batch.reconcileNode({
+        ...node(1),
+        widgets_values: ['# Preserved note', 'extra']
+      })
+    )
+
+    expect(store.getWidget(textId)?.value).toBe('# Preserved note')
+    expect(store.getWidget(widgetId('root', toNodeId(1), '1'))?.value).toBe(
+      'extra'
+    )
+  })
+
+  it('connects to a retained promoted input in the same batch as a reconcile', () => {
+    const graph = mutations()
+    const promoted = {
+      name: 'steps',
+      type: 'IMAGE',
+      link: null,
+      _subgraphSlot: true
+    }
+    graph.addNode(
+      {
+        ...node(1),
+        inputs: [...node(1).inputs, promoted],
+        properties: { proxyWidgets: [] }
+      },
+      context
+    )
+    graph.addNode(node(2), context)
+
+    expect(
+      graph.batch(context, (batch) => {
+        batch.reconcileNode({ ...node(1), properties: { proxyWidgets: [] } })
+        batch.connect({
+          id: 9,
+          originNodeId: 2,
+          originSlot: 0,
+          targetNodeId: 1,
+          targetSlot: 1,
+          type: 'IMAGE'
+        })
+      })
+    ).toBe(true)
+
+    expect(
+      useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))?.targetSlot
+    ).toBe(1)
+    expect(
+      useNodeDataStore()
+        .getNode(scope.rootGraphId, toNodeId(1))
+        ?.inputs.map(({ name }) => name)
+    ).toEqual(['in', 'steps'])
+  })
+
+  it.for(['named', 'positional'])(
+    'rebuilds widgets on type change: %s',
+    (format) => {
+      const graph = mutations()
+      graph.addNode(node(1), context)
+      const incumbent = useNodeDataStore().getNode('root', toNodeId(1))
+      const store = useWidgetValueStore()
+      const seedId = widgetId('root', toNodeId(1), 'seed')
+      const seed = store.registerWidget(
+        seedId,
+        {
+          name: 'seed',
+          type: 'combo',
+          value: '1K',
+          options: { values: ['1K', '2K'] }
+        },
+        { isDOMWidget: true }
+      )
+      const controlId = widgetId('root', toNodeId(1), 'upload')
+      store.registerWidget(controlId, {
+        type: 'button',
+        value: null,
+        options: {}
+      })
+      const hiddenId = widgetId('root', toNodeId(1), 'edit')
+      store.registerWidget(hiddenId, {
+        type: 'text',
+        value: 'stale',
+        options: {},
+        serialize: false
+      })
+
+      const { title: _title, ...payload } = node(1, { seed: 7 })
+      expect(
+        graph.batch(context, (batch) =>
+          batch.reconcileNode({
+            ...payload,
+            type: 'Type2',
+            widgets_values: format === 'named' ? { seed: 7 } : [7]
+          })
+        )
+      ).toBe(true)
+
+      const state = useNodeDataStore().getNode('root', toNodeId(1))
+      expect(state).not.toBe(incumbent)
+      expect(state).toMatchObject({ type: 'Type2', title: 'Type2' })
+      const name = format === 'named' ? 'seed' : '0'
+      const replacement = store.getWidget(widgetId('root', toNodeId(1), name))
+      expect(replacement).not.toBe(seed)
+      expect(replacement).toMatchObject({
+        name,
+        type: 'number',
+        value: 7,
+        options: {}
+      })
+      expect(store.getWidgetRenderState(seedId)?.isDOMWidget).toBeFalsy()
+      expect(store.getWidget(controlId)).toBeUndefined()
+      expect(store.getWidget(hiddenId)).toBeUndefined()
+      expect(store.getNodeWidgets('root', toNodeId(1))).toEqual([replacement])
+      if (format === 'positional')
+        expect(store.getWidget(seedId)).toBeUndefined()
+    }
+  )
+
   it('updates endpoint slot records while retaining the supplied link id', () => {
     const graph = mutations()
     graph.batch(context, (batch) => {

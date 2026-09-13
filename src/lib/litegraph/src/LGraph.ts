@@ -1474,13 +1474,24 @@ export class LGraph
       this._nodes_by_id[node.id] != null
         ? this._nodes_by_id[node.id]
         : undefined
+    const nodeStore = useNodeDataStore()
+    const canonical = nodeStore.getNode(this.rootGraph.id, node.id)
+    const preserveReplacement =
+      successor ||
+      (options.preserveCanonicalState &&
+        canonical?.graphId === this.id &&
+        !nodeStore.ownsNode(graphScopeOf(this), node._state))
 
     // sure? - almost sure is wrong
     this.beforeChange()
 
-    this.events.dispatch('node:before-removed', { node, successor })
+    this.events.dispatch('node:before-removed', {
+      node,
+      successor,
+      preserveCanonicalState: !!preserveReplacement
+    })
 
-    if (!successor) {
+    if (!preserveReplacement) {
       const { inputs, outputs } = node
 
       // disconnect inputs
@@ -1502,15 +1513,21 @@ export class LGraph
     }
 
     if (node.isSubgraphNode()) {
-      this.releaseSubgraphs(findReleasableSubgraphs(this.rootGraph, node))
+      this.releaseSubgraphs(
+        findReleasableSubgraphs(
+          this.rootGraph,
+          node,
+          options.preserveCanonicalState
+        )
+      )
     }
 
     // callback
     node.onRemoved?.()
-    if (!successor) clearNodeOwnedStoreState(node)
+    if (!preserveReplacement) clearNodeOwnedStoreState(node)
 
     const order = node.order
-    if (!successor) {
+    if (!preserveReplacement) {
       useExecutionOrderStore().remove(graphScopeOf(this), node.id)
     }
     if (options.preserveCanonicalState) {

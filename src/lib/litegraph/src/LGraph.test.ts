@@ -1120,7 +1120,11 @@ describe('node:before-removed event', () => {
     graph.remove(node, { preserveCanonicalState: true })
 
     expect(beforeRemoved).toHaveBeenCalledOnce()
-    expect(beforeRemoved.mock.calls[0][0].detail).toEqual({ node, successor })
+    expect(beforeRemoved.mock.calls[0][0].detail).toEqual({
+      node,
+      successor,
+      preserveCanonicalState: true
+    })
   })
 
   it('does not fire node:before-removed for a node not in the graph', () => {
@@ -1449,6 +1453,34 @@ describe('node:before-removed event', () => {
 })
 
 describe('Subgraph Definition Garbage Collection', () => {
+  it.for([false, true])(
+    'retains definitions needed by a pending replacement (nested: %s)',
+    (nested) => {
+      const { rootGraph, subgraphs, subgraphNodes } = createNestedSubgraphs({
+        depth: 2,
+        nodesPerLevel: 1
+      })
+      for (const subgraph of subgraphs) {
+        rootGraph.subgraphs.set(subgraph.id, subgraph)
+      }
+      const stale = subgraphNodes[0]
+      const retained = subgraphs[nested ? 1 : 0]
+      const innerNodes = [...retained.nodes]
+      const scope = graphScopeOf(rootGraph)
+      const nodeStore = useNodeDataStore()
+      nodeStore.deleteNode(scope, stale._state)
+      nodeStore.registerNode(scope, { ...stale._state, type: retained.id })
+
+      rootGraph.remove(stale, { preserveCanonicalState: true })
+
+      expect(rootGraph.nodes).not.toContain(stale)
+      expect(rootGraph.subgraphs.get(retained.id)).toBe(retained)
+      expect(retained.nodes).toEqual(innerNodes)
+      expect(rootGraph.subgraphs.has(subgraphs[0].id)).toBe(!nested)
+      expect(rootGraph.subgraphs.get(subgraphs[1].id)).toBe(subgraphs[1])
+    }
+  )
+
   function createSubgraphWithNodes(rootGraph: LGraph, nodeCount: number) {
     const subgraph = rootGraph.createSubgraph(createTestSubgraphData())
 

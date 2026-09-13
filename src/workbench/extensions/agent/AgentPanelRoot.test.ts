@@ -5100,16 +5100,27 @@ describe('AgentPanelRoot workflow binding', () => {
     })
   })
 
-  it('binds a minted workflow to its unsaved tab and subscribes once', async () => {
+  it.for([false, true])('waits for graph load: %s', async (loading) => {
     const tab = makeTab()
     Object.assign(tab, { isTemporary: true })
     mockMessagesEndpoint('wf-fresh')
+    const nodeSelectionStore = useAgentNodeSelectionStore()
+    if (loading) nodeSelectionStore.beginWorkflowLoad()
 
     await renderAndSend('build a graph')
 
     expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-fresh')).toBe(
       tab.path
     )
+    expect(
+      socketSend.mock.calls.filter(([frame]) =>
+        String(frame).includes('doc_subscribe')
+      )
+    ).toHaveLength(loading ? 0 : 1)
+
+    nodeSelectionStore.finishWorkflowLoad()
+    await nextTick()
+
     const subscribes = socketSend.mock.calls
       .map(
         ([frame]) =>
@@ -6117,6 +6128,20 @@ describe('AgentPanelRoot workflow binding', () => {
 
     expect(nodeSelectionStore.isLoadingWorkflow).toBe(false)
     expect(screen.getByText('VAE Decode')).toBeInTheDocument()
+  })
+
+  it('does not finish a new graph load from stale restore state on mount', async () => {
+    makeTab('wf-42')
+    const nodeSelectionStore = useAgentNodeSelectionStore()
+    nodeSelectionStore.beginWorkflowLoad()
+    nodeSelectionStore.restoreNodeIds(['9'])
+
+    nodeSelectionStore.beginWorkflowLoad()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await nextTick()
+
+    expect(nodeSelectionStore.restoredNodeIds).toBeNull()
+    expect(nodeSelectionStore.isLoadingWorkflow).toBe(true)
   })
 
   it('resolves picker nodes from the viewed subgraph, not the root graph', async () => {

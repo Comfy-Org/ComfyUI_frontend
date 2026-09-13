@@ -1,3 +1,4 @@
+import { reconcileAutogrowInputs } from '@/core/graph/widgets/dynamicWidgets'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { materializeLinkAdapter } from '@/lib/litegraph/src/LLink'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -233,7 +234,10 @@ function reconcile(
   const materialized: NodeId[] = []
   for (const state of records) {
     const live = graph._nodes_by_id[state.id]
-    if (live && nodeStore.ownsNode(scope, live._state)) continue
+    if (live && nodeStore.ownsNode(scope, live._state)) {
+      reconcileAutogrowInputs(live)
+      continue
+    }
     const serialised = state.lastSerialization
     if (!serialised) continue
     if (pendingDefinitions.has(state.type)) continue
@@ -247,7 +251,8 @@ function reconcile(
   const recordIds = new Set(records.map((state) => state.id))
   const detached = orphans.filter(
     (orphan) =>
-      graph._nodes_by_id[orphan.id] !== orphan || !recordIds.has(orphan.id)
+      orphan.graph === graph &&
+      (graph._nodes_by_id[orphan.id] !== orphan || !recordIds.has(orphan.id))
   )
   for (const orphan of detached) {
     graph.remove(orphan, { preserveCanonicalState: true })
@@ -262,11 +267,18 @@ function materialize(
   serialised: ISerialisedNode,
   orphan: LGraphNode | undefined
 ): boolean {
+  let node: LGraphNode
+  try {
+    node = LiteGraph.createNode(state.type, state.title) ?? missingNode(state)
+  } catch (cause) {
+    reportError(cause, {
+      errorType: 'agent_node_materialize_create_failed',
+      context: { graphId: graph.id, nodeId: String(state.id) }
+    })
+    return false
+  }
   const nodeStore = useNodeDataStore()
   const widgetStore = useWidgetValueStore()
-  const node =
-    LiteGraph.createNode(state.type, state.title) ?? missingNode(state)
-  node.id = state.id
 
   const widgets = widgetStore.getNodeWidgets(scope.rootGraphId, state.id).map(
     (widget): WidgetStateInit => ({
@@ -288,30 +300,26 @@ function materialize(
         widget
       )
     }
-    if (orphan) graph._nodes_by_id[orphan.id] = orphan
+    if (orphan?.graph === graph) graph._nodes_by_id[orphan.id] = orphan
   }
 
-  const rollback = (cause: unknown) => {
-    // `add()` may throw after attaching (from `onAdded`); only then is there
-    // a live node to take back out.
-    //
-    // Taking it out is best-effort and `restore()` is not: `LGraph.remove()`
-    // runs `onRemoved()` uncaught, so an extension that throws on both halves
-    // of the lifecycle would otherwise escape here and strand the records this
-    // function deleted -- the store record gone and a partial adapter live,
-    // which is worse than either failure alone. Put the authoritative state
-    // back first and report the cleanup failure separately.
+  const rollback = (
+    cause: unknown,
+    errorType = 'agent_node_materialize_add_failed'
+  ) => {
     let cleanupCause: unknown
     let cleanupFailed = false
     try {
       if (graph._nodes_by_id[node.id] === node) graph.remove(node)
+      else node.onRemoved?.()
     } catch (error) {
       cleanupCause = error
       cleanupFailed = true
     }
+    nodeStore.deleteNode(scope, node._state)
     restore()
     reportError(cause, {
-      errorType: 'agent_node_materialize_add_failed',
+      errorType,
       context: { graphId: graph.id, nodeId: String(state.id) }
     })
     if (cleanupFailed) {
@@ -322,6 +330,15 @@ function materialize(
     }
     return false
   }
+
+  if (orphan) {
+    try {
+      graph.remove(orphan, { preserveCanonicalState: true })
+    } catch (cause) {
+      return rollback(cause, 'agent_node_materialize_remove_failed')
+    }
+  }
+  node.id = state.id
 
   // `add()` only adopts the record's id into an empty slot; with the record
   // still registered its collision loop would mint a fresh id instead.
@@ -341,7 +358,9 @@ function materialize(
   if (!added) return rollback('LGraph.add returned no node')
 
   try {
-    node.configure(withNamedWidgetValues(serialised))
+    withNamedValuesRestore(() =>
+      node.configure(withNamedWidgetValues(serialised))
+    )
   } catch (cause) {
     // The node is attached and consistent with the stores; removing it here
     // would also drop the layout entry it adopted. Keep it and report.

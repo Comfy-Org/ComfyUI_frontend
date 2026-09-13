@@ -475,6 +475,7 @@ const isBoundWorkflowActive = computed(() => {
   return (
     bound !== null &&
     active !== null &&
+    !agentNodeSelectionStore.isLoadingWorkflow &&
     boundOrOpenWorkflowFor(bound)?.path === active.path
   )
 })
