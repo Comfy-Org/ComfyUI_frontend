@@ -151,18 +151,7 @@ const onWheel = (event: WheelEvent) => {
       :candidate-label
       @search-enter="emit('search-enter')"
     />
-    <div
-      v-if="items.length === 0 && !canLoadMore"
-      class="flex h-50 items-center justify-center"
-    >
-      <i
-        :title="$t('g.noItems')"
-        :aria-label="$t('g.noItems')"
-        class="icon-[lucide--circle-off] size-30 text-muted-foreground/20"
-      />
-    </div>
     <VirtualGrid
-      v-else
       :key="layoutMode"
       :items="virtualItems"
       :grid-style
@@ -185,6 +174,15 @@ const onWheel = (event: WheelEvent) => {
           :layout="layoutMode"
           @click="emit('item-click', item, index)"
         />
+      </template>
+      <template #placeholder>
+        <div class="flex h-50 items-center justify-center">
+          <i
+            :title="$t('g.noItems')"
+            :aria-label="$t('g.noItems')"
+            class="icon-[lucide--circle-off] size-30 text-muted-foreground/20"
+          />
+        </div>
       </template>
     </VirtualGrid>
     <div

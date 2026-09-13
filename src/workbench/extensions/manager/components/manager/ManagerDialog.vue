@@ -110,31 +110,30 @@
         v-else-if="isUnresolvedTab"
         :node-names="unresolvedNodeNames"
       />
-      <NoResultsPlaceholder
-        v-else-if="displayPacks.length === 0 && !canLoadMorePacks"
-        :title="emptyStateTitle"
-        :message="emptyStateMessage"
-      />
-      <div v-else class="size-full" @click="handleGridContainerClick">
-        <VirtualGrid
-          id="results-grid"
-          :items="resultsWithKeys"
-          :buffer-rows="4"
-          :grid-style="GRID_STYLE"
-          :on-load-more="loadMorePacks"
-          :can-load-more="canLoadMorePacks"
-        >
-          <template #item="{ item }">
-            <PackCard
-              :node-pack="item"
-              :is-selected="
-                selectedNodePacks.some((pack) => pack.id === item.id)
-              "
-              @click.stop="(event: MouseEvent) => selectNodePack(item, event)"
-            />
-          </template>
-        </VirtualGrid>
-      </div>
+      <VirtualGrid
+        v-else
+        id="results-grid"
+        :items="resultsWithKeys"
+        :buffer-rows="4"
+        :grid-style="GRID_STYLE"
+        :on-load-more="loadMorePacks"
+        :can-load-more="canLoadMorePacks"
+        @click="handleGridContainerClick"
+      >
+        <template #item="{ item }">
+          <PackCard
+            :node-pack="item"
+            :is-selected="selectedNodePacks.some((pack) => pack.id === item.id)"
+            @click.stop="(event: MouseEvent) => selectNodePack(item, event)"
+          />
+        </template>
+        <template #placeholder>
+          <NoResultsPlaceholder
+            :title="emptyStateTitle"
+            :message="emptyStateMessage"
+          />
+        </template>
+      </VirtualGrid>
     </template>
 
     <template #rightPanel>
