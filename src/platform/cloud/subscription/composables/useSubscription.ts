@@ -165,7 +165,7 @@ function useSubscriptionInternal() {
 
     pendingCheckoutRecoveryTimeout = defaultWindow.setTimeout(() => {
       pendingCheckoutRecoveryTimeout = null
-      reportMissingCheckoutCompletion()
+      void recoverPendingSubscriptionCheckout('retry')
     }, remainingMs)
   }
 

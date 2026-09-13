@@ -712,6 +712,44 @@ describe('useSubscription', () => {
       )
     })
 
+    it('rechecks billing at the deadline before reporting', async () => {
+      localStorage.setItem(
+        PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
+        JSON.stringify({
+          attempt_id: 'attempt-completed-before-deadline',
+          started_at_ms: Date.now(),
+          tier: 'standard',
+          cycle: 'monthly',
+          checkout_type: 'new'
+        })
+      )
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: false,
+        has_funds: false,
+        renewal_date: ''
+      })
+      mockIsLoggedIn.value = true
+
+      useSubscriptionWithScope()
+      await vi.advanceTimersByTimeAsync(43_000)
+      mockGetBillingStatus.mockResolvedValue({
+        is_active: true,
+        has_funds: false,
+        renewal_date: '',
+        subscription_tier: 'STANDARD',
+        subscription_duration: 'MONTHLY'
+      })
+      await vi.advanceTimersByTimeAsync(10 * 60 * 1000)
+
+      expect(mockReportTelemetryError).not.toHaveBeenCalled()
+      expect(mockTelemetry.trackBillingEvent).not.toHaveBeenCalledWith(
+        expect.objectContaining({ stage: 'failed' })
+      )
+      expect(
+        localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
+      ).toBeNull()
+    })
+
     it('does not carry a past network failure into a reachable-billing report', async () => {
       localStorage.setItem(
         PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
