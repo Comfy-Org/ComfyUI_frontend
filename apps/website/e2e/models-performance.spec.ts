@@ -43,11 +43,17 @@ test('catalogue browsing stays within its JavaScript budget', async ({
       .getByTestId('workshop-model-card')
       .first()
   ).toContainText('Kling')
-  const catalogueBytes = (await requestedScripts(page))
+  const scripts = await requestedScripts(page)
+  const catalogueBytes = scripts
     .filter(([name]) => !shared.has(name))
     .reduce((total, [, bytes]) => total + bytes, 0)
   expect(catalogueBytes).toBeGreaterThan(0)
   expect(catalogueBytes).toBeLessThan(900_000)
+  // The whole-route ceiling stays as well: catalogue code that migrated into
+  // a chunk the homepage also loads would pass the delta and still be paid
+  // for by every visitor to /models/.
+  const totalBytes = scripts.reduce((total, [, bytes]) => total + bytes, 0)
+  expect(totalBytes).toBeLessThan(1_800_000)
 })
 
 test('video cards load on screen and stop playing when scrolled away', async ({
