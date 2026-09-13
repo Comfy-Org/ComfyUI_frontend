@@ -19,19 +19,25 @@ test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.nextFrame()
 })
 
-test.describe('Item Interaction', { tag: ['@screenshot', '@node'] }, () => {
-  test('Can select/delete all items', async ({ comfyPage }) => {
-    await comfyPage.workflow.loadWorkflow('groups/mixed_graph_items')
-    await comfyPage.canvas.press('Control+a')
-    await expect(comfyPage.canvas).toHaveScreenshot('selected-all.png')
-    await comfyPage.canvas.press('Delete')
-    await expect(comfyPage.canvas).toHaveScreenshot('deleted-all.png')
-  })
+test.describe('Item Interaction', { tag: ['@node'] }, () => {
+  test(
+    'Can select/delete all items',
+    { tag: ['@screenshot'] },
+    async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('groups/mixed_graph_items')
+      await comfyPage.canvas.press('Control+a')
+      await expect(comfyPage.canvas).toHaveScreenshot('selected-all.png')
+      await comfyPage.canvas.press('Delete')
+      await expect(comfyPage.canvas).toHaveScreenshot('deleted-all.png')
+    }
+  )
 
   test('A pinned node resists dragging and stays pinned across a reload', async ({
     comfyPage
   }) => {
-    const title = 'CLIP Text Encode (Prompt)'
+    await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
+
+    const title = 'KSampler'
     async function readPos() {
       const node = await comfyPage.nodeOps.getNodeRefByTitle(title)
       return node.getProperty<[number, number]>('pos')
@@ -40,49 +46,63 @@ test.describe('Item Interaction', { tag: ['@screenshot', '@node'] }, () => {
     const node = await comfyPage.nodeOps.getNodeRefByTitle(title)
     const pinnedOrigin = await readPos()
 
-    await comfyPage.nodeOps.selectNodes([title])
-    await comfyPage.command.executeCommand(
-      'Comfy.Canvas.ToggleSelectedNodes.Pin'
-    )
-    await expect.poll(() => node.isPinned()).toBe(true)
-
     const dragDelta = { x: 90, y: 70 }
-    await node.dragBy(dragDelta)
-    await expect.poll(readPos).toEqual(pinnedOrigin)
 
-    // Control: the same gesture must move the node once it is unpinned.
-    // Without this, "did not move" could simply mean the drag never landed.
-    await comfyPage.command.executeCommand(
-      'Comfy.Canvas.ToggleSelectedNodes.Pin'
-    )
-    await expect.poll(() => node.isPinned()).toBe(false)
-    await node.dragBy(dragDelta)
-    await expect.poll(readPos).not.toEqual(pinnedOrigin)
-    const movedPos = await readPos()
+    await test.step('Pinned node resists dragging', async () => {
+      await comfyPage.nodeOps.selectNodes([title])
+      await comfyPage.command.executeCommand(
+        'Comfy.Canvas.ToggleSelectedNodes.Pin'
+      )
+      await expect.poll(() => node.isPinned()).toBe(true)
 
-    const beforeRepin = Date.now()
-    await comfyPage.command.executeCommand(
-      'Comfy.Canvas.ToggleSelectedNodes.Pin'
-    )
-    await expect.poll(() => node.isPinned()).toBe(true)
+      await node.dragBy(dragDelta)
+      await expect.poll(readPos).toEqual(pinnedOrigin)
+    })
 
-    await comfyPage.workflow.waitForDraftIndexUpdatedSince(beforeRepin)
-    await comfyPage.workflow.reloadAndWaitForApp()
+    const movedPos =
+      await test.step('Unpinned node moves with the same drag', async () => {
+        // Control: the same gesture must move the node once it is unpinned.
+        // Without this, "did not move" could simply mean the drag never landed.
+        await comfyPage.command.executeCommand(
+          'Comfy.Canvas.ToggleSelectedNodes.Pin'
+        )
+        await expect.poll(() => node.isPinned()).toBe(false)
+        await node.dragBy(dragDelta)
+        await expect.poll(readPos).not.toEqual(pinnedOrigin)
+        return await readPos()
+      })
 
-    const reloaded = await comfyPage.nodeOps.getNodeRefByTitle(title)
-    expect(reloaded.id).toBe(node.id)
-    await expect.poll(() => reloaded.isPinned()).toBe(true)
-    await expect.poll(readPos).toEqual(movedPos)
+    await test.step('Repin and save the moved node', async () => {
+      const beforeRepin = Date.now()
+      await comfyPage.command.executeCommand(
+        'Comfy.Canvas.ToggleSelectedNodes.Pin'
+      )
+      await expect.poll(() => node.isPinned()).toBe(true)
+      await comfyPage.workflow.waitForDraftIndexUpdatedSince(beforeRepin)
+    })
+
+    await test.step('Reload restores the pinned node at its moved position', async () => {
+      await comfyPage.workflow.reloadAndWaitForApp()
+
+      const reloaded = await comfyPage.nodeOps.getNodeRefByTitle(title)
+      expect(reloaded.id).toBe(node.id)
+      await expect.poll(() => reloaded.isPinned()).toBe(true)
+      await expect.poll(readPos).toEqual(movedPos)
+    })
   })
 
-  test('Can pin/unpin items with keyboard shortcut', async ({ comfyPage }) => {
-    await comfyPage.workflow.loadWorkflow('groups/mixed_graph_items')
-    await comfyPage.canvas.press('Control+a')
-    await comfyPage.keyboard.press('KeyP')
-    await expect(comfyPage.canvas).toHaveScreenshot('pinned-all.png')
-    await comfyPage.keyboard.press('KeyP')
-    await expect(comfyPage.canvas).toHaveScreenshot('unpinned-all.png')
-  })
+  test(
+    'Can pin/unpin items with keyboard shortcut',
+    { tag: ['@screenshot'] },
+    async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('groups/mixed_graph_items')
+      await comfyPage.canvas.press('Control+a')
+      await comfyPage.keyboard.press('KeyP')
+      await expect(comfyPage.canvas).toHaveScreenshot('pinned-all.png')
+      await comfyPage.keyboard.press('KeyP')
+      await expect(comfyPage.canvas).toHaveScreenshot('unpinned-all.png')
+    }
+  )
 })
 
 test.describe('Node Interaction', () => {
