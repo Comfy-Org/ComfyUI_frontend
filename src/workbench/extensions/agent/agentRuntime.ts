@@ -15,7 +15,6 @@ import type { ChatSession } from './stores/agent/agentChatHistoryStore'
 type RestFactory = () => AgentRestClient
 
 export interface AgentRuntimeOptions {
-  enabled: boolean
   untitledChatTitle: string | (() => string)
   workflow?: AgentSessionDeps['workflow']
   createRest?: RestFactory
@@ -40,7 +39,7 @@ function toChatSession(
   }
 }
 
-function createEnabledAgentRuntime(options: AgentRuntimeOptions) {
+export function createAgentRuntime(options: AgentRuntimeOptions) {
   const rest = (options.createRest ?? createAgentRestClient)()
   const events = (options.createEvents ?? (() => createAgentEventSource(api)))()
   const session = useAgentSession({
@@ -112,18 +111,4 @@ function createEnabledAgentRuntime(options: AgentRuntimeOptions) {
     start,
     stop
   }
-}
-
-type AgentRuntime = ReturnType<typeof createEnabledAgentRuntime>
-
-export function createAgentRuntime(
-  options: AgentRuntimeOptions & { enabled: true }
-): AgentRuntime
-export function createAgentRuntime(
-  options: AgentRuntimeOptions
-): AgentRuntime | null
-export function createAgentRuntime(
-  options: AgentRuntimeOptions
-): AgentRuntime | null {
-  return options.enabled ? createEnabledAgentRuntime(options) : null
 }

@@ -398,7 +398,6 @@ function onWorkflowAdopted(
 }
 
 const runtime = createAgentRuntime({
-  enabled: true,
   createRest: () => agentRest,
   untitledChatTitle: () => t('agent.untitledChat'),
   workflow: {

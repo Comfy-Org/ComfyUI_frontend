@@ -86,27 +86,10 @@ describe('agentRuntime', () => {
     localStorage.clear()
   })
 
-  it('does not construct stores or transports while the gate is off', () => {
-    const createRest = vi.fn()
-    const createEvents = vi.fn()
-
-    const runtime = createAgentRuntime({
-      enabled: false,
-      createRest,
-      createEvents,
-      untitledChatTitle: 'Untitled chat'
-    })
-
-    expect(runtime).toBeNull()
-    expect(createRest).not.toHaveBeenCalled()
-    expect(createEvents).not.toHaveBeenCalled()
-  })
-
   it('owns one event transport and has idempotent start and stop', () => {
     const harness = createAgentTestHarness()
     const createEvents = vi.fn(() => harness.events)
     const runtime = createAgentRuntime({
-      enabled: true,
       createRest: () => harness.rest,
       createEvents,
       untitledChatTitle: 'Untitled chat'
@@ -127,7 +110,6 @@ describe('agentRuntime', () => {
   it('normalizes ordered events into the single conversation transcript', async () => {
     const events = fakeEvents()
     const runtime = createAgentRuntime({
-      enabled: true,
       createRest: () => fakeRest(),
       createEvents: () => events.source,
       untitledChatTitle: 'Untitled chat'
@@ -179,7 +161,6 @@ describe('agentRuntime', () => {
       async (): Promise<AgentCancelAccepted> => ({ status: 'cancelling' })
     )
     const runtime = createAgentRuntime({
-      enabled: true,
       createRest: () => fakeRest({ cancelMessage }),
       createEvents: () => fakeEvents().source,
       untitledChatTitle: 'Untitled chat'
@@ -199,7 +180,6 @@ describe('agentRuntime', () => {
     const error = new Error('history unavailable')
     const onError = vi.fn()
     const runtime = createAgentRuntime({
-      enabled: true,
       createRest: () =>
         fakeRest({ listThreads: vi.fn(async () => Promise.reject(error)) }),
       createEvents: () => events.source,
@@ -218,14 +198,12 @@ describe('agentRuntime', () => {
     const oldHistory = createDeferred<AgentThreadSummary[]>()
     const currentHistory = createDeferred<AgentThreadSummary[]>()
     const oldRuntime = createAgentRuntime({
-      enabled: true,
       createRest: () =>
         fakeRest({ listThreads: vi.fn(() => oldHistory.promise) }),
       createEvents: () => fakeEvents().source,
       untitledChatTitle: 'Untitled chat'
     })
     const currentRuntime = createAgentRuntime({
-      enabled: true,
       createRest: () =>
         fakeRest({ listThreads: vi.fn(() => currentHistory.promise) }),
       createEvents: () => fakeEvents().source,
