@@ -143,9 +143,9 @@ describe('UnifiedStripePaymentSelector', () => {
       })
     )
 
-    expect(
-      await screen.findByText('Payment details are incomplete')
-    ).toBeTruthy()
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Payment details are incomplete'
+    )
     expect(stripeMocks.createConfirmationToken).not.toHaveBeenCalled()
     expect(emitted().confirm).toBeUndefined()
   })

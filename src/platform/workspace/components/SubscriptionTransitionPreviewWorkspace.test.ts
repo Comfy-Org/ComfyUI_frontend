@@ -130,6 +130,11 @@ describe('SubscriptionTransitionPreviewWorkspace', () => {
     ).toBeTruthy()
     expect(screen.getByText('88,800')).toBeTruthy()
     expect(screen.getByText('$318.50')).toBeTruthy()
+    // The user-visible renewal sentence derives from renewal_amount_cents
+    // (the annual plan's 33_600) and renewal_at, quote-currency formatted.
+    expect(
+      screen.getByText('Renews at $336.00 on Jun 28, 2027. Cancel anytime.')
+    ).toBeTruthy()
     expect(
       screen.getByText('subscription.preview.confirmUpgradeCta')
     ).toBeTruthy()

@@ -88,6 +88,7 @@
         @confirm="handleTeamSubscribe"
         @apply-promotion-code="applyPromotionCode"
         @invalidate-quote="invalidateQuote"
+        @restore-quote="restoreQuote"
         @back="handleBackToPricing"
       />
 
@@ -114,6 +115,7 @@
         @confirm-payment="handleTeamSubscriptionPayment"
         @apply-promotion-code="applyPromotionCode"
         @invalidate-quote="invalidateQuote"
+        @restore-quote="restoreQuote"
         @back="handleBackToPricing"
       />
 
@@ -140,6 +142,7 @@
         @confirm-payment="handleSubscriptionPayment"
         @apply-promotion-code="applyPromotionCode"
         @invalidate-quote="invalidateQuote"
+        @restore-quote="restoreQuote"
         @back="handleBackToPricing"
       />
 
@@ -158,6 +161,7 @@
         @confirm="handleConfirmTransition"
         @apply-promotion-code="applyPromotionCode"
         @invalidate-quote="invalidateQuote"
+        @restore-quote="restoreQuote"
         @back="handleBackToPricing"
       />
     </template>
@@ -251,6 +255,7 @@ const {
   handleTeamSubscriptionPayment,
   applyPromotionCode,
   invalidateQuote,
+  restoreQuote,
   handleResubscribe
 } = useSubscriptionCheckout(emit, reason, { embeddedCheckoutEnabled })
 

@@ -60,6 +60,12 @@
           >
             ${{ displayPrice }}
           </span>
+          <span
+            v-if="originalPrice"
+            class="text-base text-muted-foreground tabular-nums line-through"
+          >
+            ${{ originalPrice }}
+          </span>
           <span class="text-base text-base-foreground">
             {{ $t('subscription.usdPerMonth') }}
           </span>
@@ -108,6 +114,31 @@
           )
         "
       >
+        <div
+          v-if="promotionDiscounts.length"
+          class="flex flex-col gap-2 pb-2 text-sm"
+        >
+          <div class="flex items-center justify-between text-muted-foreground">
+            <span>{{ $t('subscription.preview.subtotal') }}</span>
+            <span class="tabular-nums">{{ subtotalFormatted }}</span>
+          </div>
+          <div
+            v-for="discount in promotionDiscounts"
+            :key="discount.code"
+            class="flex items-center justify-between text-muted-foreground"
+          >
+            <span>{{ promoLedgerLabel(discount) }}</span>
+            <span v-if="discount.amount_off_cents" class="tabular-nums">
+              −{{
+                formatQuoteMoney(
+                  discount.amount_off_cents,
+                  previewData?.currency,
+                  locale
+                )
+              }}
+            </span>
+          </div>
+        </div>
         <div class="flex items-center justify-between text-base">
           <span class="text-base-foreground">
             {{ $t('subscription.preview.totalDueToday') }}
@@ -120,49 +151,52 @@
           {{ renewalTerms }}
         </span>
       </div>
-      <div
-        v-if="previewData?.discounts?.length"
-        class="flex flex-col gap-2 pt-4 text-sm"
-      >
-        <div
-          v-for="discount in previewData.discounts"
-          :key="`${discount.kind}:${discount.code}`"
-          class="flex items-center justify-between text-muted-foreground"
-        >
-          <span>{{
-            $t(`subscription.preview.discount.${discount.kind}`)
-          }}</span>
-          <span class="text-base-foreground">
-            {{ discount.name || discount.code
-            }}<template v-if="discount.amount_off_cents">
-              · −{{
-                formatQuoteMoney(
-                  discount.amount_off_cents,
-                  previewData?.currency,
-                  locale
-                )
-              }}</template
-            >
-          </span>
-        </div>
-      </div>
-      <div v-if="embeddedCheckoutEnabled" class="flex gap-2 pt-6">
-        <input
-          v-model="promotionCode"
-          :aria-label="$t('subscription.preview.promoCodePlaceholder')"
-          :disabled="interactionLocked"
-          class="h-10 min-w-0 flex-1 rounded-lg border border-interface-stroke bg-secondary-background px-3 text-base-foreground"
-          :placeholder="$t('subscription.preview.promoCodePlaceholder')"
-          @input="invalidateEditedPromotion"
-        />
+      <div class="pt-6">
         <Button
+          v-if="!appliedPromotionCode && !isPromoFieldOpen"
           variant="secondary"
           size="lg"
           :disabled="interactionLocked"
-          @click="$emit('applyPromotionCode', promotionCode)"
+          @click="openPromoField"
         >
-          {{ $t('subscription.preview.applyPromoCode') }}
+          {{ $t('subscription.preview.addPromoCode') }}
         </Button>
+        <div v-else-if="!appliedPromotionCode" class="flex gap-2">
+          <input
+            ref="promoInputRef"
+            v-model="promotionCode"
+            :aria-label="$t('subscription.preview.promoCodePlaceholder')"
+            :disabled="interactionLocked"
+            class="h-10 min-w-0 flex-1 rounded-lg border border-interface-stroke bg-secondary-background px-3 text-base-foreground"
+            :placeholder="$t('subscription.preview.promoCodePlaceholder')"
+            @input="invalidateEditedPromotion"
+          />
+          <Button
+            variant="secondary"
+            size="lg"
+            :disabled="interactionLocked"
+            @click="$emit('applyPromotionCode', promotionCode)"
+          >
+            {{ $t('subscription.preview.applyPromoCode') }}
+          </Button>
+        </div>
+        <div
+          v-else
+          class="flex h-10 w-fit items-center gap-2 rounded-lg bg-tertiary-background px-3"
+        >
+          <span class="text-sm text-base-foreground">
+            {{ appliedPromotionCode }}
+          </span>
+          <Button
+            size="icon"
+            variant="muted-textonly"
+            :aria-label="$t('subscription.preview.removePromoCode')"
+            :disabled="interactionLocked"
+            @click="clearPromotionCode"
+          >
+            <i class="icon-[lucide--x] size-4" />
+          </Button>
+        </div>
       </div>
       <!-- Saved method: no capture column; a card row with a change
            affordance stands in for the form. -->
@@ -282,7 +316,7 @@
 
       <UnifiedStripePaymentSelector
         v-if="captureMode && quoteReady && !parkedCheckoutRecovery"
-        :key="`${previewData?.quote_id}:${previewData?.quote_version}`"
+        :key="previewData?.payment_method_configuration_id ?? ''"
         :amount-cents="amountDueCents"
         :currency="previewData?.currency ?? ''"
         :payment-method-configuration-id="
@@ -346,7 +380,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -427,6 +461,7 @@ const emit = defineEmits<{
   changePaymentMethod: []
   applyPromotionCode: [code: string]
   invalidateQuote: []
+  restoreQuote: []
 }>()
 
 const { locale, n, t } = useI18n()
@@ -496,12 +531,60 @@ watch(
   () => previewData?.promotion_code,
   (code) => {
     promotionCode.value = code ?? ''
+    invalidatedByPromoEdit.value = false
   }
 )
 
+const isPromoFieldOpen = ref(false)
+const promoInputRef = ref<HTMLInputElement>()
+
+const appliedPromotionCode = computed(() => previewData?.promotion_code ?? null)
+
+type QuoteDiscount = NonNullable<PreviewSubscribeResponse['discounts']>[number]
+
+const promotionDiscounts = computed(() =>
+  (previewData?.discounts ?? []).filter((d) => d.kind === 'promotion')
+)
+
+const subtotalFormatted = computed(() =>
+  previewData?.new_plan
+    ? formatQuoteMoney(
+        previewData.new_plan.price_cents,
+        previewData.currency,
+        locale.value
+      )
+    : ''
+)
+
+function promoLedgerLabel(discount: QuoteDiscount) {
+  return discount.name
+    ? t('subscription.preview.promoLedgerLabel', {
+        code: discount.code,
+        name: discount.name
+      })
+    : t('subscription.preview.promoLedgerLabelBare', { code: discount.code })
+}
+
+function openPromoField() {
+  isPromoFieldOpen.value = true
+  void nextTick(() => promoInputRef.value?.focus())
+}
+
+function clearPromotionCode() {
+  isPromoFieldOpen.value = false
+  emit('applyPromotionCode', '')
+}
+
+const invalidatedByPromoEdit = ref(false)
+
 function invalidateEditedPromotion() {
-  if (promotionCode.value !== (previewData?.promotion_code ?? '')) {
+  const edited = promotionCode.value !== (previewData?.promotion_code ?? '')
+  if (edited && quoteIsCurrent) {
+    invalidatedByPromoEdit.value = true
     emit('invalidateQuote')
+  } else if (!edited && invalidatedByPromoEdit.value) {
+    invalidatedByPromoEdit.value = false
+    emit('restoreQuote')
   }
 }
 
@@ -531,6 +614,17 @@ const displayPrice = computed(() => {
     return ((isYearly.value ? cents / 12 : cents) / 100).toFixed(0)
   }
   return tierKey ? getTierPrice(tierKey, isYearly.value) : 0
+})
+
+const originalPrice = computed(() => {
+  if (teamPlan) {
+    return teamPlan.usd !== teamPlan.discountedUsd ? n(teamPlan.usd) : null
+  }
+  if (!isYearly.value || !tierKey) return null
+  const monthlyListPrice = getTierPrice(tierKey, false)
+  return Number(displayPrice.value) < monthlyListPrice
+    ? n(monthlyListPrice)
+    : null
 })
 
 const annualTotalUsd = computed(() => {
