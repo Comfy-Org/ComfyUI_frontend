@@ -1,5 +1,6 @@
 import { computed, ref } from 'vue'
 
+import { isAnnualDuration } from '@/platform/cloud/subscription/utils/planDuration'
 import type {
   Plan,
   TeamCreditStops
@@ -45,7 +46,7 @@ export function useBillingPlans() {
   )
 
   const annualPlans = computed(() =>
-    plans.value.filter((p) => p.duration === 'ANNUAL')
+    plans.value.filter((p) => isAnnualDuration(p.duration))
   )
 
   function getPlanBySlug(slug: string) {
