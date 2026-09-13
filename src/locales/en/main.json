@@ -5287,6 +5287,7 @@
     "noNodesToMention": "No nodes in this workflow",
     "friend": "there",
     "sendFailed": "Message failed to send",
+    "retryAfter": "Try again in {count} second. | Try again in {count} seconds.",
     "sendBusy": "A message is already being sent",
     "malformedEvent": "The agent sent an event this panel could not read",
     "coachTitle": "Meet the agent",

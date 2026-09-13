@@ -46,6 +46,7 @@ export interface RunApprovalPart {
 
 export interface PaywallPart {
   type: 'paywall'
+  message?: string
 }
 
 export type ActivityPart = ThinkingPart | ToolPart

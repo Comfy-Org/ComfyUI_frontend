@@ -188,7 +188,8 @@ type AgentAdmissionReason = AgentAdmissionError['error']['reason']
 
 function admissionError(
   reason: AgentAdmissionReason,
-  message: string
+  message: string,
+  retryAfterSeconds?: number
 ): AgentApiError {
   const serviceUnavailable = reason === 'funds_unavailable'
   const body = zAgentAdmissionError.parse({
@@ -198,7 +199,12 @@ function admissionError(
       reason
     }
   })
-  return new AgentApiError(message, serviceUnavailable ? 503 : 402, body)
+  return new AgentApiError(
+    message,
+    serviceUnavailable ? 503 : 402,
+    body,
+    retryAfterSeconds
+  )
 }
 
 describe('useAgentSession (v1 composition root)', () => {
@@ -549,7 +555,13 @@ describe('useAgentSession (v1 composition root)', () => {
       {
         role: 'assistant',
         streaming: false,
-        parts: [{ type: 'paywall' }]
+        parts: [
+          {
+            type: 'paywall',
+            message:
+              "You're out of credits. Add credits to keep running the agent."
+          }
+        ]
       }
     ])
     expect(session.threadId.value).toBeNull()
@@ -638,6 +650,74 @@ describe('useAgentSession (v1 composition root)', () => {
       parts: [{ type: 'notice', level: 'error', text: message }]
     })
   })
+
+  it.for([
+    { seconds: 30, suffix: ' Try again in 30 seconds.' },
+    { seconds: 0, suffix: '' }
+  ])(
+    'formats the Retry-After hint for $seconds seconds',
+    async ({ seconds, suffix }) => {
+      const message = 'Billing status is temporarily unavailable; please retry.'
+      const postMessage = vi
+        .fn<
+          (
+            threadId: string,
+            req: PostMessageInput
+          ) => Promise<AgentTurnAccepted>
+        >()
+        .mockRejectedValue(
+          admissionError('funds_unavailable', message, seconds)
+        )
+      const session = useAgentSession({
+        rest: fakeRest({ postMessage }),
+        events: fakeEvents().source
+      })
+      session.start()
+
+      expect(await session.sendMessage('make a cat')).toBe(false)
+      expect(session.entries.value.at(-1)).toMatchObject({
+        role: 'assistant',
+        parts: [
+          {
+            type: 'notice',
+            level: 'error',
+            text: `${message}${suffix}`
+          }
+        ]
+      })
+    }
+  )
+
+  it.for([
+    { reason: 'no_funds' as const, status: 500 },
+    { reason: 'funds_unavailable' as const, status: 402 }
+  ])(
+    'rejects a mismatched admission status for $reason',
+    async ({ reason, status }) => {
+      const valid = admissionError(reason, 'Server denial')
+      const session = useAgentSession({
+        rest: fakeRest({
+          postMessage: vi
+            .fn()
+            .mockRejectedValue(
+              new AgentApiError(valid.message, status, valid.body)
+            )
+        }),
+        events: fakeEvents().source
+      })
+      session.start()
+      expect(await session.sendMessage('try again')).toBe(false)
+      expect(session.entries.value.at(-1)).toMatchObject({
+        parts: [
+          {
+            type: 'notice',
+            level: 'error',
+            text: 'Message failed to send: Server denial'
+          }
+        ]
+      })
+    }
+  )
 
   it('does not infer no_funds from a 402 without an admission reason', async () => {
     const postMessage = vi

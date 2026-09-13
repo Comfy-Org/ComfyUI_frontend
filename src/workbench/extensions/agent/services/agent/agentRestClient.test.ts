@@ -363,7 +363,15 @@ describe('error mapping', () => {
     { label: 'absent', headers: undefined },
     {
       label: 'nonnumeric',
-      headers: { 'Retry-After': 'Wed, 21 Oct 2026 07:28:00 GMT' }
+      headers: { 'Retry-After': 'not-a-date' }
+    },
+    {
+      label: 'negative delay',
+      headers: { 'Retry-After': '-1' }
+    },
+    {
+      label: 'fractional delay',
+      headers: { 'Retry-After': '1.5' }
     },
     {
       label: 'unsafe integer',
@@ -397,6 +405,20 @@ describe('error mapping', () => {
       })
     }
   )
+
+  it.for([
+    { header: 'Wed, 21 Oct 2026 07:28:00 GMT', delay: 30 },
+    { header: 'Wed, 21 Oct 2026 07:27:00 GMT', delay: 0 }
+  ])('parses Retry-After date $header', async ({ header, delay }) => {
+    vi.setSystemTime(new Date('2026-10-21T07:27:30Z'))
+    respond(
+      jsonResponse(503, { error: 'unavailable' }, { 'Retry-After': header })
+    )
+    const error = await makeClient()
+      .postMessage('t1', { content: 'try it' })
+      .catch((caught: unknown) => caught)
+    expect(error).toMatchObject({ status: 503, retryAfterSeconds: delay })
+  })
 
   it('falls back to statusText and undefined body for a non-JSON error response', async () => {
     respond(

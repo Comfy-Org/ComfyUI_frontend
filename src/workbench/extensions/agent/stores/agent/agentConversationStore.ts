@@ -107,8 +107,12 @@ export const useAgentConversationStore = defineStore(
       ])
     }
 
-    function recordPaywall(turnId: TurnId, text: string): void {
-      recordSettledReply(turnId, text, [{ type: 'paywall' }])
+    function recordPaywall(
+      turnId: TurnId,
+      text: string,
+      message?: string
+    ): void {
+      recordSettledReply(turnId, text, [{ type: 'paywall', message }])
     }
 
     function startTurn(turnId: TurnId): void {
