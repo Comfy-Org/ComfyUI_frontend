@@ -1,6 +1,8 @@
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { useDialogService } from '@/services/dialogService'
+
 import { useTopUpUrlLoader } from './useTopUpUrlLoader'
 
 const preservedQueryMocks = vi.hoisted(() => ({
@@ -29,7 +31,11 @@ vi.mock<unknown>(import('vue-router'), () => ({
 }))
 
 const mockShowTopUpCreditsDialog = vi.hoisted(() =>
-  vi.fn(async () => undefined)
+  vi.fn<
+    () => ReturnType<
+      ReturnType<typeof useDialogService>['showTopUpCreditsDialog']
+    >
+  >(async () => 'subscribed')
 )
 
 vi.mock<unknown>(import('@/services/dialogService'), () => ({
@@ -39,7 +45,6 @@ vi.mock<unknown>(import('@/services/dialogService'), () => ({
 }))
 
 const mockCanTopUp = vi.hoisted(() => ({ value: true }))
-const mockCanSubscribeSelfServe = vi.hoisted(() => ({ value: false }))
 const mockInitialize = vi.hoisted(() => vi.fn(async (): Promise<void> => {}))
 
 vi.mock<unknown>(
@@ -47,7 +52,6 @@ vi.mock<unknown>(
   () => ({
     useBillingCapabilities: () => ({
       canTopUp: mockCanTopUp,
-      canSubscribeSelfServe: mockCanSubscribeSelfServe,
       initialize: mockInitialize
     })
   })
@@ -65,9 +69,8 @@ describe('useTopUpUrlLoader', () => {
   beforeEach(() => {
     mockRouteQuery.value = {}
     mockCanTopUp.value = true
-    mockCanSubscribeSelfServe.value = false
     mockInitialize.mockResolvedValue(undefined)
-    mockShowTopUpCreditsDialog.mockResolvedValue(undefined)
+    mockShowTopUpCreditsDialog.mockResolvedValue('subscribed')
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(null)
   })
 
@@ -102,6 +105,34 @@ describe('useTopUpUrlLoader', () => {
     })
   })
 
+  it('does not emit purchase telemetry when dialog policy routes a member', async () => {
+    mockRouteQuery.value = { topup: '1' }
+    mockShowTopUpCreditsDialog.mockResolvedValue('member')
+
+    const { loadTopUpFromUrl } = useTopUpUrlLoader()
+    await loadTopUpFromUrl()
+
+    expect(mockShowTopUpCreditsDialog).toHaveBeenCalledOnce()
+    expect(mockTrackAddApiCreditButtonClicked).not.toHaveBeenCalled()
+  })
+
+  it('cleans the URL without purchase telemetry when a subscription is required', async () => {
+    mockRouteQuery.value = { topup: '1', other: 'param' }
+    mockShowTopUpCreditsDialog.mockResolvedValue('subscriptionRequired')
+
+    const { loadTopUpFromUrl } = useTopUpUrlLoader()
+    await loadTopUpFromUrl()
+
+    expect(mockShowTopUpCreditsDialog).toHaveBeenCalledOnce()
+    expect(mockTrackAddApiCreditButtonClicked).not.toHaveBeenCalled()
+    expect(mockRouterReplace).toHaveBeenCalledWith({
+      query: { other: 'param' }
+    })
+    expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
+      'topup'
+    )
+  })
+
   it('retains the deep link until capability loading settles', async () => {
     let resolveCapabilities!: () => void
     mockRouteQuery.value = { topup: '1' }
@@ -128,21 +159,10 @@ describe('useTopUpUrlLoader', () => {
     expect(mockShowTopUpCreditsDialog).toHaveBeenCalledOnce()
   })
 
-  it('is a silent no-op when the server denies top-up', async () => {
+  it('delegates denied capabilities to the shared dialog policy', async () => {
     mockRouteQuery.value = { topup: '1' }
     mockCanTopUp.value = false
-
-    const { loadTopUpFromUrl } = useTopUpUrlLoader()
-    await loadTopUpFromUrl()
-
-    expect(mockShowTopUpCreditsDialog).not.toHaveBeenCalled()
-    expect(mockTrackAddApiCreditButtonClicked).not.toHaveBeenCalled()
-  })
-
-  it('opens the subscription path without top-up telemetry', async () => {
-    mockRouteQuery.value = { topup: '1' }
-    mockCanTopUp.value = false
-    mockCanSubscribeSelfServe.value = true
+    mockShowTopUpCreditsDialog.mockResolvedValue('salesManaged')
 
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()
@@ -151,14 +171,15 @@ describe('useTopUpUrlLoader', () => {
     expect(mockTrackAddApiCreditButtonClicked).not.toHaveBeenCalled()
   })
 
-  it('denies, strips, and clears together when the user is not eligible', async () => {
+  it('routes, strips, and clears together when top-up is denied', async () => {
     mockRouteQuery.value = { topup: '1', other: 'param' }
     mockCanTopUp.value = false
+    mockShowTopUpCreditsDialog.mockResolvedValue('salesManaged')
 
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()
 
-    expect(mockShowTopUpCreditsDialog).not.toHaveBeenCalled()
+    expect(mockShowTopUpCreditsDialog).toHaveBeenCalledOnce()
     expect(mockRouterReplace).toHaveBeenCalledWith({
       query: { other: 'param' }
     })

@@ -1,3 +1,7 @@
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
 /**
  * showTopUpCreditsDialog routes the paired server capabilities to purchase,
@@ -28,9 +32,17 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
+vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
+  useCurrentUser: () => ({
+    isApiKeyLogin: { value: true },
+    userEmail: { value: null }
+  })
+}))
+
 vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
-    type: { value: state.type }
+    type: { value: state.type },
+    tier: { value: 'STANDARD' }
   })
 }))
 
@@ -70,34 +82,51 @@ vi.mock<unknown>(
 
 import { useDialogService } from '@/services/dialogService'
 
+async function setActiveWorkspaceRole(role: WorkspaceRole) {
+  vi.spyOn(workspaceApi, 'getCurrentWorkspace').mockResolvedValue({
+    auth_method: 'comfy_api_key',
+    id: 'test-workspace',
+    name: 'Test workspace',
+    type: 'team',
+    role
+  })
+  const workspaceStore = useTeamWorkspaceStore()
+  workspaceStore.resetForIdentityChange()
+  await workspaceStore.initialize()
+}
+
 describe('showTopUpCreditsDialog', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     state.type = 'workspace'
     state.canTopUp = true
     state.canSubscribeSelfServe = false
     state.isReady = true
     state.initialize = vi.fn()
     mockIsCloud.value = true
+    await setActiveWorkspaceRole('owner')
   })
 
   it('shows the purchase dialog to users who can top up', async () => {
-    await useDialogService().showTopUpCreditsDialog({
+    const presentation = await useDialogService().showTopUpCreditsDialog({
       isInsufficientCredits: true
     })
 
+    expect(presentation).toBe('subscribed')
     const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
     expect(args.key).toBe('top-up-credits')
     expect(state.initialize).not.toHaveBeenCalled()
   })
 
   it('shows the contact-admin notice to team members instead of the purchase dialog', async () => {
+    await setActiveWorkspaceRole('member')
     state.canTopUp = false
     state.canSubscribeSelfServe = false
 
-    await useDialogService().showTopUpCreditsDialog({
+    const presentation = await useDialogService().showTopUpCreditsDialog({
       isInsufficientCredits: true
     })
 
+    expect(presentation).toBe('member')
     const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
     expect(args.key).toBe('insufficient-credits-member')
     // The member notice draws its own header + close button, so it must open
@@ -123,7 +152,7 @@ describe('showTopUpCreditsDialog', () => {
     expect(args.key).toBe('top-up-credits')
   })
 
-  it('does not show workspace-admin copy for denied legacy billing', async () => {
+  it('shows account-manager guidance for denied sales-managed billing', async () => {
     state.type = 'legacy'
     state.canTopUp = false
 
@@ -131,6 +160,14 @@ describe('showTopUpCreditsDialog', () => {
 
     expect(vi.mocked(useDialogStore().showDialog)).not.toHaveBeenCalled()
     expect(showSubscriptionDialog).not.toHaveBeenCalled()
+    expect(useToastStore().messagesToAdd).toEqual([
+      {
+        severity: 'warn',
+        summary: 'subscription.salesManagedRunBlockedTitle',
+        detail: 'subscription.salesManagedRunBlockedDetail',
+        life: 5000
+      }
+    ])
   })
 
   it('awaits an in-flight capability read instead of dropping the request', async () => {
