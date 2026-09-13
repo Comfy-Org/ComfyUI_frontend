@@ -1327,6 +1327,59 @@ describe('AuthSignIn controller lifecycle', () => {
     ).not.toHaveBeenCalled()
     expect(handles.session!.value).toBeUndefined()
   })
+
+  it('finishes the abandoned attempt rollback before a retry starts, so a stale sign-out cannot clear the new attempt', async () => {
+    const events: string[] = []
+    let resolveSignOut: (() => void) | undefined
+    handles.google.mockImplementation(() => {
+      events.push('authenticate')
+      return Promise.resolve(socialUser)
+    })
+    // First attempt: authenticate succeeds, provisioning hangs past its
+    // deadline, so the attempt is abandoned after an identity was persisted.
+    handles.provision.mockReturnValueOnce(new Promise<void>(() => {}))
+    handles.signOut.mockReturnValue(
+      new Promise<void>((resolve) => {
+        resolveSignOut = () => {
+          events.push('signOut:settled')
+          resolve()
+        }
+      })
+    )
+    render(AuthSignIn)
+
+    await clickGoogle()
+    await waitFor(() => expect(handles.provision).toHaveBeenCalledOnce())
+
+    await vi.advanceTimersByTimeAsync(16_000)
+    await waitFor(() => expect(handles.signOut).toHaveBeenCalledOnce())
+
+    expect(
+      googleButton(),
+      'the controls must stay held until the abandoned attempt has finished signing its identity out'
+    ).toHaveProperty('disabled', true)
+
+    // The stale rollback completes only after the retry would otherwise begin.
+    resolveSignOut!()
+    await flush()
+
+    expect(
+      googleButton(),
+      'once the rollback sign-out settles the controls are free again'
+    ).toHaveProperty('disabled', false)
+
+    await clickGoogle()
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/'))
+
+    expect(
+      events,
+      "the retry's authentication must not begin until the stale sign-out has settled, or that sign-out would clear the new attempt's identity"
+    ).toEqual(['authenticate', 'signOut:settled', 'authenticate'])
+    expect(
+      handles.signOut,
+      'the new attempt must not be signed out by the abandoned attempt'
+    ).toHaveBeenCalledOnce()
+  })
 })
 
 describe('AuthSignIn region gate', () => {

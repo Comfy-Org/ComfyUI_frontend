@@ -226,7 +226,7 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
   async function runMint(
     currentUser: WorkshopSessionUser | undefined,
     live: () => boolean,
-    onAbandon: () => void
+    onAbandon: () => void | Promise<void>
   ): Promise<void> {
     const result = await withinOperationDeadline(
       currentUser ? ensureFresh(currentUser) : ensureFresh()
@@ -235,7 +235,7 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
     // A flag flip or teardown during the mint must not redirect or persist a
     // session for an attempt that is no longer live.
     if (!live()) {
-      onAbandon()
+      await onAbandon()
       return
     }
     if (result === OPERATION_TIMED_OUT || result?.status !== 'ok') {
@@ -255,13 +255,17 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
     const live = liveSince(attempt)
     let firebase: WorkshopFirebase | undefined
     let authenticated = false
-    // Drop the attempt so the reducer leaves `pending`. Once Firebase auth has
-    // persisted an identity, rolling the attempt back must sign it out too, or
-    // an abandoned attempt leaves the visitor silently signed in.
-    const abandon = () => {
+    // Roll a persisted identity back before the reducer leaves `pending`, so no
+    // retry can start while the sign-out is still in flight: `signOutWorkshop`
+    // is global, and an unawaited one from an abandoned attempt would clear the
+    // identity a newer attempt just accepted. Bounded so a hung sign-out still
+    // frees the controls, and best-effort so a rejection stays handled.
+    const abandon = async () => {
+      if (authenticated)
+        await withinOperationDeadline(
+          firebase!.signOutWorkshop().catch(() => {})
+        )
       abandonAttempt()
-      // Best-effort rollback; a failed sign-out must not go unhandled.
-      if (authenticated) void firebase?.signOutWorkshop().catch(() => {})
     }
     try {
       const loaded = await withinOperationDeadline(loadWorkshopFirebase())
@@ -269,14 +273,14 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
       // in-flight auth, not merely hide the UI: no sign-in, provisioning,
       // telemetry, or session.
       if (!live() || loaded === OPERATION_TIMED_OUT) {
-        abandon()
+        await abandon()
         return
       }
       firebase = loaded
       const credential = await authenticate(firebase)
       authenticated = true
       if (!live()) {
-        abandon()
+        await abandon()
         return
       }
       // Email sign-up provisions atomically inside (its rollback needs it);
@@ -286,7 +290,7 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
           firebase.provisionWorkshopCustomer(credential)
         )
         if (!live() || provisioned === OPERATION_TIMED_OUT) {
-          abandon()
+          await abandon()
           return
         }
       }
@@ -309,7 +313,7 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
       }
       // An invalidated attempt's rejection is not this attempt's failure.
       if (!live()) {
-        abandon()
+        await abandon()
         return
       }
       captureAuthFailed({
