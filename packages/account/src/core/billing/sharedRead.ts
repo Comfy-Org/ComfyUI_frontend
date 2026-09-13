@@ -29,7 +29,7 @@ export function releaseOnAbort<T>(
   shared: Promise<BillingResult<T>>,
   signal: AbortSignal | undefined
 ): Promise<BillingResult<T>> {
-  if (signal === undefined) return shared
+  if (signal === undefined) return shared.catch(() => ABANDONED)
   // An 'abort' listener never fires for a signal that is already aborted, so
   // a caller who cancelled before joining would otherwise wait for the full
   // shared read.

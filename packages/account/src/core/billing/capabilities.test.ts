@@ -146,7 +146,11 @@ describe('createCapabilitiesReader', () => {
     if (result.status !== 'ok') return
     expect(result.value.capabilities.can_top_up).toBe(true)
     expect(result.value.revision).toBe(42)
-    expect(result.value.scope).toEqual({ userId: 'uid-1', workspaceId: 'ws-1' })
+    expect(result.value.scope).toEqual({
+      userId: 'uid-1',
+      workspaceId: 'ws-1',
+      role: 'owner'
+    })
     expect(result.value.rolloutDefaultsApplied.can_top_up).toBe(true)
   })
 
@@ -440,6 +444,25 @@ describe('createCapabilitiesReader', () => {
       expect(reader.getSnapshot()).toBeUndefined()
     })
 
+    it('drops owner capabilities when the role changes in place', async () => {
+      const host = fakeSession()
+      const { transport } = fakeTransport([httpOk(capabilitiesBody())])
+      const reader = createCapabilitiesReader({
+        transport,
+        session: host.session
+      })
+
+      await reader.read()
+      host.moveTo(authenticated(credential({ role: 'member' })))
+
+      expect(reader.getSnapshot()).toBeUndefined()
+      const result = await reader.read()
+      expect(result.status).toBe('ok')
+      if (result.status !== 'ok') return
+      expect(result.value.scope.role).toBe('member')
+      expect(transport).toHaveBeenCalledTimes(2)
+    })
+
     it('refuses an answer the server resolved for another workspace', async () => {
       const { session } = fakeSession()
       const { transport } = fakeTransport([
@@ -550,6 +573,25 @@ describe('createCapabilitiesReader', () => {
       }).read()
 
       expect(result).toEqual({ status: 'error', code: 'REQUEST_FAILED' })
+    })
+
+    it('drops a prior snapshot when the server denies the current actor', async () => {
+      const { session } = fakeSession()
+      const { transport } = fakeTransport([
+        httpOk(capabilitiesBody()),
+        httpStatus(403)
+      ])
+      const reader = createCapabilitiesReader({ transport, session })
+
+      await reader.read()
+      const result = await reader.read({ forceRefresh: true })
+
+      expect(result).toEqual({
+        status: 'error',
+        code: 'ACCESS_DENIED',
+        httpStatus: 403
+      })
+      expect(reader.getSnapshot()).toBeUndefined()
     })
   })
 

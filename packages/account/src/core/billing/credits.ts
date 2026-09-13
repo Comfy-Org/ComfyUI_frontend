@@ -11,6 +11,8 @@ import type { z } from 'zod'
 
 import type { SessionClient } from '../session.js'
 import type { BillingResult, BillingTransport } from './billingContracts.js'
+import type { BillingScope, BillingScopeContext } from './billingScope.js'
+import { createBillingScopeTracker, sameBillingScope } from './billingScope.js'
 import { codeForHttpStatus } from './httpStatus.js'
 import { releaseOnAbort } from './sharedRead.js'
 
@@ -18,10 +20,7 @@ export const CREDITS_ROUTE = '/billing/balance'
 
 export type BillingBalance = z.infer<typeof zBillingBalanceResponse>
 
-export interface CreditsScope {
-  readonly userId: string
-  readonly workspaceId: string
-}
+export type CreditsScope = BillingScope
 
 export interface CreditsSnapshot {
   readonly balance: BillingBalance
@@ -56,7 +55,7 @@ export interface CreditsReaderOptions {
 }
 
 interface InFlightRead {
-  readonly scope: CreditsScope
+  readonly context: BillingScopeContext
   readonly promise: Promise<BillingResult<CreditsSnapshot>>
 }
 
@@ -68,35 +67,17 @@ export function createCreditsReader(
   let snapshot: CreditsSnapshot | undefined
   let inFlight: InFlightRead | undefined
   const lifetime = { disposed: false }
-
-  const currentScope = (): CreditsScope | undefined => {
-    const state = session.getSnapshot()
-    if (state.user === null || state.session === undefined) return undefined
-    return {
-      userId: state.user.uid,
-      workspaceId: state.session.workspace.id
-    }
-  }
-
-  const sameScope = (a: CreditsScope, b: CreditsScope): boolean =>
-    a.userId === b.userId && a.workspaceId === b.workspaceId
-
-  const unsubscribe = session.subscribe(() => {
-    if (snapshot === undefined) return
-    const scope = currentScope()
-    if (scope === undefined || !sameScope(scope, snapshot.scope)) {
-      snapshot = undefined
-    }
+  const scopeTracker = createBillingScopeTracker(session, () => {
+    snapshot = undefined
+    inFlight = undefined
   })
 
   const requestBalance = async (
-    scope: CreditsScope,
-    signal: AbortSignal | undefined
+    scope: CreditsScope
   ): Promise<BillingResult<CreditsSnapshot>> => {
     const response = await transport({
       method: 'GET',
-      route: CREDITS_ROUTE,
-      ...(signal === undefined ? {} : { signal })
+      route: CREDITS_ROUTE
     })
     if (response.status === 'error') return response
 
@@ -125,12 +106,17 @@ export function createCreditsReader(
   ): Promise<BillingResult<CreditsSnapshot>> => {
     if (lifetime.disposed) return { status: 'error', code: 'SUPERSEDED' }
 
-    const scope = currentScope()
-    if (scope === undefined) {
+    const context = scopeTracker.capture()
+    if (context === undefined) {
       return { status: 'error', code: 'NOT_AUTHENTICATED' }
     }
+    const { scope } = context
 
-    if (inFlight !== undefined && sameScope(inFlight.scope, scope)) {
+    if (
+      inFlight !== undefined &&
+      inFlight.context.generation === context.generation &&
+      sameBillingScope(inFlight.context.scope, scope)
+    ) {
       return releaseOnAbort(inFlight.promise, readOptions?.signal)
     }
 
@@ -138,20 +124,23 @@ export function createCreditsReader(
     // timeout, and one caller walking away must not fail the readers still
     // waiting on it. Each caller's signal releases only that caller, below.
     const attempt: InFlightRead = {
-      scope,
+      context,
       promise: (async () => {
-        const result = await requestBalance(scope, undefined)
-        if (result.status !== 'ok') return result
+        const result = await requestBalance(scope)
+        if (result.status !== 'ok') {
+          if (
+            result.code === 'ACCESS_DENIED' &&
+            scopeTracker.isCurrent(context)
+          ) {
+            snapshot = undefined
+          }
+          return result
+        }
 
         // The publish guard: a balance that arrives after the host moved to
         // another workspace or signed out belongs to neither, and showing it
         // would state one account's credits under another's name.
-        const settledScope = currentScope()
-        if (
-          lifetime.disposed ||
-          settledScope === undefined ||
-          !sameScope(settledScope, scope)
-        ) {
+        if (lifetime.disposed || !scopeTracker.isCurrent(context)) {
           return { status: 'error', code: 'SUPERSEDED' }
         }
 
@@ -178,7 +167,7 @@ export function createCreditsReader(
       lifetime.disposed = true
       snapshot = undefined
       inFlight = undefined
-      unsubscribe()
+      scopeTracker.dispose()
     }
   }
 }

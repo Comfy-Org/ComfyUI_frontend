@@ -109,7 +109,11 @@ describe('createCreditsReader', () => {
     expect(result.status).toBe('ok')
     if (result.status !== 'ok') return
     expect(result.value.balance.amount_micros).toBe(12_500_000)
-    expect(result.value.scope).toEqual({ userId: 'uid-1', workspaceId: 'ws-1' })
+    expect(result.value.scope).toEqual({
+      userId: 'uid-1',
+      workspaceId: 'ws-1',
+      role: 'owner'
+    })
   })
 
   it('keeps the balance in micros rather than converting it', async () => {
@@ -214,6 +218,37 @@ describe('createCreditsReader', () => {
       // A balance moves on every run and carries no server-declared lifetime,
       // so there is no window over which serving a cached one is correct.
       expect(transport).toHaveBeenCalledTimes(2)
+    })
+
+    it('prevents an older read from publishing after a scope round trip', async () => {
+      const host = fakeSession()
+      const releases: Array<(balance: typeof BALANCE) => void> = []
+      const transport: BillingTransport = vi.fn(
+        () =>
+          new Promise<BillingResult<BillingHttpResponse>>((resolve) => {
+            releases.push((balance) => resolve(httpOk(balance)))
+          })
+      )
+      const reader = createCreditsReader({ transport, session: host.session })
+
+      const firstA = reader.read()
+      host.moveTo(
+        authenticated(
+          credential({ workspace: { id: 'ws-2', name: 'Team', type: 'team' } })
+        )
+      )
+      const readB = reader.read()
+      host.moveTo(authenticated(credential()))
+      const latestA = reader.read()
+
+      releases[2]({ ...BALANCE, amount_micros: 99 })
+      await latestA
+      releases[0]({ ...BALANCE, amount_micros: 10 })
+      releases[1]({ ...BALANCE, amount_micros: 20 })
+
+      expect(await firstA).toEqual({ status: 'error', code: 'SUPERSEDED' })
+      expect(await readB).toEqual({ status: 'error', code: 'SUPERSEDED' })
+      expect(reader.getSnapshot()?.balance.amount_micros).toBe(99)
     })
   })
 
@@ -339,6 +374,22 @@ describe('createCreditsReader', () => {
       // outage leaves the figure stale rather than blanking it.
       expect(second).toEqual({ status: 'error', code: 'REQUEST_FAILED' })
       expect(reader.getSnapshot()?.balance.amount_micros).toBe(12_500_000)
+    })
+
+    it('drops the last good balance when a later read is denied', async () => {
+      const { session } = fakeSession()
+      const { transport } = fakeTransport([httpOk(BALANCE), httpStatus(401)])
+      const reader = createCreditsReader({ transport, session })
+
+      await reader.read()
+      const result = await reader.read()
+
+      expect(result).toEqual({
+        status: 'error',
+        code: 'ACCESS_DENIED',
+        httpStatus: 401
+      })
+      expect(reader.getSnapshot()).toBeUndefined()
     })
   })
 

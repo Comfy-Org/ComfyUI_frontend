@@ -114,7 +114,11 @@ describe('createBillingStatusReader', () => {
     if (result.status !== 'ok') return
     expect(result.value.status.pending_billing_op_id).toBe('op-1')
     expect(result.value.status.pending_billing_op_type).toBe('subscription')
-    expect(result.value.scope).toEqual({ userId: 'uid-1', workspaceId: 'ws-1' })
+    expect(result.value.scope).toEqual({
+      userId: 'uid-1',
+      workspaceId: 'ws-1',
+      role: 'owner'
+    })
   })
 
   it('deduplicates concurrent reads but refetches on a later read', async () => {
@@ -248,6 +252,36 @@ describe('createBillingStatusReader', () => {
 
     expect(result).toEqual({ status: 'error', code: 'REQUEST_FAILED' })
     expect(reader.getSnapshot()?.status.pending_billing_op_id).toBe('op-1')
+  })
+
+  it('drops the last status snapshot when a later read is denied', async () => {
+    const { session } = fakeSession()
+    const { transport } = fakeTransport([httpOk(STATUS), httpStatus(403)])
+    const reader = createBillingStatusReader({ transport, session })
+
+    await reader.read()
+    const result = await reader.read()
+
+    expect(result).toEqual({
+      status: 'error',
+      code: 'ACCESS_DENIED',
+      httpStatus: 403
+    })
+    expect(reader.getSnapshot()).toBeUndefined()
+  })
+
+  it('normalizes a throwing host transport to a coded failure', async () => {
+    const { session } = fakeSession()
+    const transport: BillingTransport = vi.fn(() => {
+      throw new TypeError('host transport failed')
+    })
+
+    const result = await createBillingStatusReader({
+      transport,
+      session
+    }).read()
+
+    expect(result).toEqual({ status: 'error', code: 'REQUEST_FAILED' })
   })
 
   it('clears account data and rejects an in-flight result after dispose', async () => {

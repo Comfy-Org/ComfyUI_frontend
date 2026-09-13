@@ -3,6 +3,8 @@ import type { z } from 'zod'
 
 import type { SessionClient } from '../session.js'
 import type { BillingResult, BillingTransport } from './billingContracts.js'
+import type { BillingScope, BillingScopeContext } from './billingScope.js'
+import { createBillingScopeTracker, sameBillingScope } from './billingScope.js'
 import { codeForHttpStatus } from './httpStatus.js'
 import { releaseOnAbort } from './sharedRead.js'
 
@@ -10,10 +12,7 @@ export const BILLING_STATUS_ROUTE = '/billing/status'
 
 export type BillingStatusData = z.infer<typeof zBillingStatusResponse>
 
-export interface BillingStatusScope {
-  readonly userId: string
-  readonly workspaceId: string
-}
+export type BillingStatusScope = BillingScope
 
 export interface BillingStatusSnapshot {
   readonly status: BillingStatusData
@@ -40,7 +39,7 @@ export interface BillingStatusReaderOptions {
 }
 
 interface InFlightRead {
-  readonly scope: BillingStatusScope
+  readonly context: BillingScopeContext
   readonly promise: Promise<BillingResult<BillingStatusSnapshot>>
 }
 
@@ -52,26 +51,9 @@ export function createBillingStatusReader(
   let snapshot: BillingStatusSnapshot | undefined
   let inFlight: InFlightRead | undefined
   const lifetime = { disposed: false }
-
-  function currentScope(): BillingStatusScope | undefined {
-    const state = session.getSnapshot()
-    if (state.user === null || state.session === undefined) return undefined
-    return {
-      userId: state.user.uid,
-      workspaceId: state.session.workspace.id
-    }
-  }
-
-  function sameScope(a: BillingStatusScope, b: BillingStatusScope): boolean {
-    return a.userId === b.userId && a.workspaceId === b.workspaceId
-  }
-
-  const unsubscribe = session.subscribe(() => {
-    if (snapshot === undefined) return
-    const scope = currentScope()
-    if (scope === undefined || !sameScope(scope, snapshot.scope)) {
-      snapshot = undefined
-    }
+  const scopeTracker = createBillingScopeTracker(session, () => {
+    snapshot = undefined
+    inFlight = undefined
   })
 
   async function requestStatus(
@@ -108,27 +90,35 @@ export function createBillingStatusReader(
   ): Promise<BillingResult<BillingStatusSnapshot>> {
     if (lifetime.disposed) return { status: 'error', code: 'SUPERSEDED' }
 
-    const scope = currentScope()
-    if (scope === undefined) {
+    const context = scopeTracker.capture()
+    if (context === undefined) {
       return { status: 'error', code: 'NOT_AUTHENTICATED' }
     }
+    const { scope } = context
 
-    if (inFlight !== undefined && sameScope(inFlight.scope, scope)) {
+    if (
+      inFlight !== undefined &&
+      inFlight.context.generation === context.generation &&
+      sameBillingScope(inFlight.context.scope, scope)
+    ) {
       return releaseOnAbort(inFlight.promise, readOptions?.signal)
     }
 
     const attempt: InFlightRead = {
-      scope,
+      context,
       promise: (async () => {
         const result = await requestStatus(scope)
-        if (result.status !== 'ok') return result
+        if (result.status !== 'ok') {
+          if (
+            result.code === 'ACCESS_DENIED' &&
+            scopeTracker.isCurrent(context)
+          ) {
+            snapshot = undefined
+          }
+          return result
+        }
 
-        const settledScope = currentScope()
-        if (
-          lifetime.disposed ||
-          settledScope === undefined ||
-          !sameScope(settledScope, scope)
-        ) {
+        if (lifetime.disposed || !scopeTracker.isCurrent(context)) {
           return { status: 'error', code: 'SUPERSEDED' }
         }
 
@@ -153,7 +143,7 @@ export function createBillingStatusReader(
       lifetime.disposed = true
       snapshot = undefined
       inFlight = undefined
-      unsubscribe()
+      scopeTracker.dispose()
     }
   }
 }
