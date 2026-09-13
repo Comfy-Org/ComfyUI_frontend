@@ -1,6 +1,7 @@
 import type { Locator, Page } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { BaseDialog } from '@e2e/fixtures/components/BaseDialog'
 
@@ -22,6 +23,29 @@ export class SettingDialog extends BaseDialog {
   async open() {
     await this.comfyPage.command.executeCommand('Comfy.ShowSettingsDialog')
     await this.waitForVisible()
+  }
+
+  async selectLocale(locale: 'zh' | 'en') {
+    await this.open()
+    await this.category('Comfy').click()
+    const select = this.root
+      .locator('[data-setting-id="Comfy.Locale"]')
+      .getByRole('combobox')
+    await expect(select).toBeVisible()
+    await select.click()
+    await this.page
+      .getByRole('option', {
+        name: locale === 'zh' ? '中文' : 'English',
+        exact: true
+      })
+      .click()
+    await expect
+      .poll(() => this.comfyPage.settings.getPersistedSetting('Comfy.Locale'))
+      .toBe(locale)
+    await this.root
+      .getByRole('button', { name: /Close dialog|关闭对话框/i })
+      .click()
+    await this.waitForHidden()
   }
 
   /**
