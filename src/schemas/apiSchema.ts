@@ -313,6 +313,8 @@ const zSettings = z.object({
   'Comfy.Appearance.DisableAnimations': z.boolean(),
   'Comfy.UI.TabBarLayout': z.enum(['Default', 'Legacy']),
   'Comfy.Workflow.ShowMissingModelsWarning': z.boolean(),
+  'Comfy.Workflow.ShowMissingNodesWarning': z.boolean(),
+  'Comfy.Workflow.ShowMissingMediaWarning': z.boolean(),
   'Comfy.Workflow.WarnBlueprintOverwrite': z.boolean(),
   'Comfy.Desktop.CloudNotificationShown': z.boolean(),
   'Comfy.DisableFloatRounding': z.boolean(),

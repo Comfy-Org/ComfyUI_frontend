@@ -15,17 +15,15 @@ vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
   isCloud: false
 }))
 
-const mockShowErrorsTab = vi.hoisted(() => ({ value: false }))
-
 import { useMissingNodesErrorStore } from './missingNodesErrorStore'
 
-beforeEach(() => {
-  vi.mocked(useSettingStore().get).mockImplementation(
-    () => mockShowErrorsTab.value
-  )
-})
-
 describe('missingNodesErrorStore', () => {
+  beforeEach(() => {
+    useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = true
+    useSettingStore().settingValues['Comfy.Workflow.ShowMissingNodesWarning'] =
+      true
+  })
+
   describe('setMissingNodeTypes', () => {
     it('sets missingNodesError with provided types', () => {
       const store = useMissingNodesErrorStore()
@@ -36,6 +34,30 @@ describe('missingNodesErrorStore', () => {
 
       expect(store.missingNodesError).not.toBeNull()
       expect(store.missingNodesError?.nodeTypes).toHaveLength(1)
+      expect(store.hasMissingNodes).toBe(true)
+    })
+
+    it('keeps the error but hides it while the missing nodes warning is off', () => {
+      const store = useMissingNodesErrorStore()
+      const types: MissingNodeType[] = [
+        { type: 'NodeA', nodeId: '1', isReplaceable: false }
+      ]
+      expect(store.surfaceMissingNodes(types)).toBe(true)
+
+      useSettingStore().settingValues[
+        'Comfy.Workflow.ShowMissingNodesWarning'
+      ] = false
+
+      expect(store.surfaceMissingNodes(types)).toBe(false)
+      expect(store.missingNodesError?.nodeTypes).toHaveLength(1)
+      expect(store.visibleMissingNodesError).toBeNull()
+      expect(store.hasMissingNodes).toBe(false)
+      expect(store.missingNodeCount).toBe(0)
+
+      useSettingStore().settingValues[
+        'Comfy.Workflow.ShowMissingNodesWarning'
+      ] = true
+
       expect(store.hasMissingNodes).toBe(true)
     })
 
@@ -97,7 +119,8 @@ describe('missingNodesErrorStore', () => {
 
   describe('surfaceMissingNodes', () => {
     beforeEach(() => {
-      mockShowErrorsTab.value = false
+      useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] =
+        false
     })
 
     it('stores missing node types and returns false when setting disabled', () => {
@@ -114,7 +137,8 @@ describe('missingNodesErrorStore', () => {
     })
 
     it('returns true when ShowErrorsTab setting is enabled', () => {
-      mockShowErrorsTab.value = true
+      useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] =
+        true
       const store = useMissingNodesErrorStore()
       const shouldShowOverlay = store.surfaceMissingNodes([
         { type: 'NodeA', nodeId: '1', isReplaceable: false }
@@ -124,7 +148,8 @@ describe('missingNodesErrorStore', () => {
     })
 
     it('returns false when ShowErrorsTab setting is disabled', () => {
-      mockShowErrorsTab.value = false
+      useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] =
+        false
       const store = useMissingNodesErrorStore()
       const shouldShowOverlay = store.surfaceMissingNodes([
         { type: 'NodeA', nodeId: '1', isReplaceable: false }
@@ -134,7 +159,8 @@ describe('missingNodesErrorStore', () => {
     })
 
     it('returns false for empty types even when setting is enabled', () => {
-      mockShowErrorsTab.value = true
+      useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] =
+        true
       const store = useMissingNodesErrorStore()
       const shouldShowOverlay = store.surfaceMissingNodes([])
 
