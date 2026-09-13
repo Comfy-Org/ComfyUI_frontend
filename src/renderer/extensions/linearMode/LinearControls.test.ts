@@ -14,6 +14,7 @@ import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
 import { LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID } from '@/renderer/extensions/linearMode/linearRunErrorWarningIds'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useTemplateInputDownloadStore } from '@/stores/templateInputDownloadStore'
 import { toNodeId } from '@/types/nodeId'
 
 const billingMock = vi.hoisted(() => ({
@@ -23,15 +24,6 @@ const billingMock = vi.hoisted(() => ({
 const overlayMock = vi.hoisted(() => ({
   overlayMessage: 'KSampler is missing a required input: model',
   overlayTitle: 'Required input missing'
-}))
-
-const inputDownloadMock = vi.hoisted(() => ({
-  downloads: [] as Array<{
-    downloadId: string
-    filename: string
-    progress: number | null
-    status: 'pending' | 'downloading' | 'paused' | 'completed'
-  }>
 }))
 
 vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
@@ -44,15 +36,6 @@ vi.mock<unknown>(import('@/components/error/useErrorOverlayState'), () => ({
   useErrorOverlayState: () => ({
     overlayMessage: overlayMock.overlayMessage,
     overlayTitle: overlayMock.overlayTitle
-  })
-}))
-
-vi.mock('@/stores/templateInputDownloadStore', () => ({
-  useTemplateInputDownloadStore: () => ({
-    downloads: inputDownloadMock.downloads,
-    blockingFilenames: new Set(
-      inputDownloadMock.downloads.map(({ filename }) => filename)
-    )
   })
 }))
 
@@ -186,21 +169,20 @@ function clearMissingResource(resource: MissingResource) {
 
 describe('LinearControls', () => {
   beforeEach(() => {
+    useTemplateInputDownloadStore().clear()
     billingMock.canRunWorkflows = true
     overlayMock.overlayMessage = 'KSampler is missing a required input: model'
     overlayMock.overlayTitle = 'Required input missing'
-    inputDownloadMock.downloads = []
   })
 
   it('shows required template input progress and blocks Run until graph hydration', () => {
-    inputDownloadMock.downloads = [
-      {
-        downloadId: 'download-1',
-        filename: missingMediaCandidate.name,
-        progress: 0.42,
-        status: 'downloading'
-      }
-    ]
+    useTemplateInputDownloadStore().updateProgress({
+      downloadId: 'download-1',
+      filename: missingMediaCandidate.name,
+      progress: 0.42,
+      status: 'downloading',
+      templateInputs: [{ templateId: 'template-a', assetId: 'asset-a' }]
+    })
 
     renderControls({ missingResource: 'media' })
 
