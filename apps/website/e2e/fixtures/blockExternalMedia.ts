@@ -66,6 +66,68 @@ function isNodeImage(route: Route, url: URL): boolean {
   )
 }
 
+type ExternalRouteRule = {
+  matches: (route: Route, url: URL) => boolean
+  handle: (route: Route) => Promise<unknown>
+}
+
+const EXTERNAL_ROUTE_RULES: readonly ExternalRouteRule[] = [
+  {
+    matches: (_route, url) => ANALYTICS_HOSTS.has(url.hostname),
+    handle: (route) => route.abort('blockedbyclient')
+  },
+  {
+    matches: (_route, url) => EMBED_HOSTS.has(url.hostname),
+    handle: (route) => route.fulfill({ contentType: 'text/html', body: '' })
+  },
+  {
+    matches: (route, url) =>
+      url.hostname === 'apis.google.com' &&
+      url.pathname === '/js/api.js' &&
+      route.request().resourceType() === 'script',
+    handle: (route) =>
+      route.fulfill({ contentType: 'text/javascript', body: '' })
+  },
+  {
+    matches: (_route, url) => SCRIPT_HOSTS.has(url.hostname),
+    handle: (route) =>
+      route.fulfill({ contentType: 'text/javascript', body: '' })
+  },
+  {
+    matches: (_route, url) => url.hostname === 'fonts.googleapis.com',
+    handle: (route) =>
+      route.fulfill({
+        contentType: 'text/css',
+        body: `@font-face {
+            font-family: 'Inter';
+            font-style: normal;
+            font-weight: 100 900;
+            font-display: swap;
+            src: url(data:font/woff2;base64,${INTER_FONT}) format('woff2');
+          }`
+      })
+  },
+  {
+    matches: (_route, url) =>
+      MEDIA_PATTERNS.some((pattern) => pattern.test(url.href)),
+    handle: fulfillMedia
+  },
+  {
+    matches: isNodeImage,
+    handle: (route) => route.fulfill({ path: IMAGE_PLACEHOLDER })
+  }
+]
+
+async function handleAllowedExternalRequest(route: Route, url: URL) {
+  const rule = EXTERNAL_ROUTE_RULES.find((candidate) =>
+    candidate.matches(route, url)
+  )
+  if (!rule) return false
+
+  await rule.handle(route)
+  return true
+}
+
 export const test = base.extend({
   serviceWorkers: 'block',
   proxy: async ({ baseURL }, use) => {
@@ -92,33 +154,7 @@ export const test = base.extend({
     await context.route('**/*', async (route) => {
       const url = new URL(route.request().url())
       if (url.origin === localOrigin) return route.continue()
-      if (ANALYTICS_HOSTS.has(url.hostname))
-        return route.abort('blockedbyclient')
-      if (EMBED_HOSTS.has(url.hostname))
-        return route.fulfill({ contentType: 'text/html', body: '' })
-      if (
-        url.hostname === 'apis.google.com' &&
-        url.pathname === '/js/api.js' &&
-        route.request().resourceType() === 'script'
-      )
-        return route.fulfill({ contentType: 'text/javascript', body: '' })
-      if (SCRIPT_HOSTS.has(url.hostname))
-        return route.fulfill({ contentType: 'text/javascript', body: '' })
-      if (url.hostname === 'fonts.googleapis.com')
-        return route.fulfill({
-          contentType: 'text/css',
-          body: `@font-face {
-            font-family: 'Inter';
-            font-style: normal;
-            font-weight: 100 900;
-            font-display: swap;
-            src: url(data:font/woff2;base64,${INTER_FONT}) format('woff2');
-          }`
-        })
-      if (MEDIA_PATTERNS.some((pattern) => pattern.test(url.href)))
-        return fulfillMedia(route)
-      if (isNodeImage(route, url))
-        return route.fulfill({ path: IMAGE_PLACEHOLDER })
+      if (await handleAllowedExternalRequest(route, url)) return
 
       unexpectedRequests.add(url.href)
       return route.abort('blockedbyclient')
