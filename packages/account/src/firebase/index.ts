@@ -104,38 +104,30 @@ function githubProvider(): GithubAuthProvider {
 }
 
 /**
- * A bound the caller can walk away from. The SDK call cannot be cancelled, so
- * the timeout — and any newer attempt that supersedes this one — only abandons
- * our side: the caller is rejected and every late resolve or reject from the
- * abandoned SDK promise is suppressed, so it never reaches the caller or the
- * downstream handler while a retry is already in flight. One runner per action
- * so a reset never supersedes a sign-in.
+ * A UI busy-state bound the caller can walk away from. These state-changing
+ * Firebase calls are non-cancellable: the timeout does NOT cancel the SDK
+ * operation and does NOT stop `Auth.currentUser` from transitioning. Firebase
+ * may still complete the call and emit `onAuthStateChanged` after the deadline,
+ * so these semantics are last-completing — a late completion wins regardless of
+ * the wrapper. The timeout only releases the form's busy state: on deadline it
+ * rejects the wrapper (freeing the form) and suppresses that same attempt's own
+ * late resolution so it does not reach the caller. Each invocation races its
+ * own deadline; no attempt reaches across to reject another.
  */
 function boundedRunner(
   timeoutMs: number | undefined
 ): <T>(run: Promise<T>) => Promise<T> {
   if (timeoutMs === undefined) return (run) => run
-  let abandonInFlight: ((reason: Error) => void) | undefined
   return <T>(run: Promise<T>): Promise<T> =>
     new Promise<T>((resolve, reject) => {
-      abandonInFlight?.(
-        new Error('Firebase auth action superseded by a newer attempt')
-      )
-      let abandoned = false
-      function abandon(reason: Error): void {
-        abandoned = true
-        clearTimeout(timer)
-        reject(reason)
-      }
-      const timer = setTimeout(
-        () => abandon(new Error('Firebase auth action timed out')),
-        timeoutMs
-      )
-      abandonInFlight = abandon
+      let timedOut = false
+      const timer = setTimeout(() => {
+        timedOut = true
+        reject(new Error('Firebase auth action timed out'))
+      }, timeoutMs)
       const deliver = (settle: () => void): void => {
-        if (abandoned) return
+        if (timedOut) return
         clearTimeout(timer)
-        abandonInFlight = undefined
         settle()
       }
       run.then(
@@ -190,8 +182,7 @@ export function createFirebaseIdentity(
 ): FirebaseIdentity {
   const { actionTimeoutMs } = config
   const auth = authResolver(config)
-  const boundedSignIn = boundedRunner(actionTimeoutMs)
-  const boundedReset = boundedRunner(actionTimeoutMs)
+  const bounded = boundedRunner(actionTimeoutMs)
 
   return {
     [identityBrand]: true,
@@ -199,11 +190,11 @@ export function createFirebaseIdentity(
     signInWithGoogle: () => signInWithPopup(auth(), googleProvider()),
     signInWithGitHub: () => signInWithPopup(auth(), githubProvider()),
     signInWithEmail: (email, password) =>
-      boundedSignIn(signInWithEmailAndPassword(auth(), email, password)),
+      bounded(signInWithEmailAndPassword(auth(), email, password)),
     createUserWithEmail: (email, password) =>
       createUserWithEmailAndPassword(auth(), email, password),
     sendPasswordReset: (email) =>
-      boundedReset(sendPasswordResetEmail(auth(), email)).catch(
+      bounded(sendPasswordResetEmail(auth(), email)).catch(
         resolveUnknownEmailAsSent
       ),
     updatePassword: (newPassword) => {
