@@ -1,5 +1,15 @@
 import { afterEach, beforeEach, vi } from 'vitest'
 
+function nodeNameFor(node: Node, fallback: (this: Node) => unknown) {
+  let prototype = Object.getPrototypeOf(node)
+  while (prototype !== Node.prototype) {
+    const getter = Object.getOwnPropertyDescriptor(prototype, 'nodeName')?.get
+    if (getter) return getter.call(node)
+    prototype = Object.getPrototypeOf(prototype)
+  }
+  return fallback.call(node)
+}
+
 function fixHappyDomNodeName() {
   if (typeof Node === 'undefined') return
 
@@ -12,16 +22,7 @@ function fixHappyDomNodeName() {
     Object.defineProperty(Node.prototype, 'nodeName', {
       ...descriptor,
       get(this: Node) {
-        let prototype: object | null = Object.getPrototypeOf(this)
-        while (prototype && prototype !== Node.prototype) {
-          const getter = Object.getOwnPropertyDescriptor(
-            prototype,
-            'nodeName'
-          )?.get
-          if (getter) return getter.call(this)
-          prototype = Object.getPrototypeOf(prototype)
-        }
-        return originalNodeName.call(this)
+        return nodeNameFor(this, originalNodeName)
       }
     })
   }
@@ -29,11 +30,27 @@ function fixHappyDomNodeName() {
 
 fixHappyDomNodeName()
 
-beforeEach(() => {
+function resetDocument() {
   if (typeof document !== 'undefined') document.body.replaceChildren()
+}
+
+function resetHistory() {
   if (typeof window !== 'undefined') window.history.replaceState({}, '', '/')
+}
+
+function clearLocalStorage() {
   if (typeof localStorage !== 'undefined') localStorage.clear()
+}
+
+function clearSessionStorage() {
   if (typeof sessionStorage !== 'undefined') sessionStorage.clear()
+}
+
+beforeEach(() => {
+  resetDocument()
+  resetHistory()
+  clearLocalStorage()
+  clearSessionStorage()
   vi.useFakeTimers()
 })
 
