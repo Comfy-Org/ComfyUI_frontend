@@ -58,16 +58,10 @@ interface SemanticLayoutMutationPort {
   ): void
 }
 
-interface LiveWidgetMutationResult {
-  /** Whether the value landed on a live widget (false = no live target, or rolled back). */
-  applied: boolean
-  /**
-   * The value canonical state should converge on: the post-callback widget
-   * value on success, or the restored previous value after a rollback.
-   * Undefined when no live widget was found at all.
-   */
-  resolvedValue: WidgetValue | undefined
-}
+type LiveWidgetMutationResult =
+  | { status: 'skipped' }
+  | { status: 'applied'; resolvedValue: WidgetValue }
+  | { status: 'rolledBack'; resolvedValue: WidgetValue }
 
 interface SemanticLiveWidgetMutationPort {
   setValue(
@@ -680,7 +674,10 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
               widget.value,
               context
             )
-            const resolvedValue = projected?.resolvedValue ?? widget.value
+            const resolvedValue =
+              projected && projected.status !== 'skipped'
+                ? projected.resolvedValue
+                : widget.value
             widgetStore.registerWidget(
               widgetId(scope.rootGraphId, mutation.node.state.id, widget.name),
               {
@@ -718,7 +715,10 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
           // ended up holding: the post-callback value on success, or the
           // rolled-back previous value on callback failure. Fall back to the
           // remote value only when no live widget was found at all.
-          const resolvedValue = projected?.resolvedValue ?? mutation.value
+          const resolvedValue =
+            projected && projected.status !== 'skipped'
+              ? projected.resolvedValue
+              : mutation.value
           if (!widgetStore.getWidget(id)) {
             widgetStore.registerWidget(
               id,

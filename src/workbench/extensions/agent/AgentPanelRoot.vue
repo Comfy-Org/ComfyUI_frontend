@@ -262,14 +262,14 @@ const graphMutations = (workflowId: string) => {
             value,
             context
           )
-          if (result.applied) app.canvas?.setDirty(true)
+          if (result.status === 'applied') app.canvas?.setDirty(true)
           return result
         } catch (error) {
           console.warn(
             `[agent-crdt] live widget projection failed for node ${nodeId}, widget ${name}`,
             error
           )
-          return { applied: false, resolvedValue: undefined }
+          return { status: 'skipped' }
         }
       }
     }
