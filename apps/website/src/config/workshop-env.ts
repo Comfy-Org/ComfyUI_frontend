@@ -26,7 +26,7 @@ function runtimeCloudEnv(env: unknown): string | undefined {
   return undefined
 }
 
-export const WORKSHOP_CLOUD_ENV: WorkshopCloudEnv = resolveWorkshopCloudEnv(
+const WORKSHOP_CLOUD_ENV: WorkshopCloudEnv = resolveWorkshopCloudEnv(
   runtimeCloudEnv(import.meta.env) ??
     (typeof process === 'undefined'
       ? undefined

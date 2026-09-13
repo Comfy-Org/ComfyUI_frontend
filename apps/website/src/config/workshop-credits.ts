@@ -137,7 +137,7 @@ function start(): void {
 const TOP_UP_POLL_MS = 5_000
 const TOP_UP_POLL_LIMIT = 24
 
-export type TopUpWatchState =
+type TopUpWatchState =
   | { readonly status: 'idle' }
   | ({ readonly status: 'waiting' } & TopUpWatchContext)
   | ({
@@ -207,17 +207,21 @@ export function watchForTopUp(context: TopUpWatchContext): void {
     return false
   }
 
+  function continuesInScope(): boolean {
+    if (generation !== topUpGeneration) return false
+    const current = scope()
+    if (current === 'changed') {
+      clearTopUpWatch()
+      return false
+    }
+    return current === 'current'
+  }
+
   async function poll(): Promise<void> {
-    if (generation !== topUpGeneration || refreshing) return
+    if (refreshing || !continuesInScope()) return
     // Only a definitely different workspace retires the watch: a snapshot
     // mid-remint has no session for a beat, and that transient must not
     // kill a checkout in flight.
-    const before = scope()
-    if (before === 'changed') {
-      clearTopUpWatch()
-      return
-    }
-    if (before === 'pending') return
     if (settleFromBalance()) return
     if (ticks >= TOP_UP_POLL_LIMIT) {
       if (topUpPoll) clearInterval(topUpPoll)
@@ -235,13 +239,7 @@ export function watchForTopUp(context: TopUpWatchContext): void {
     } finally {
       refreshing = false
     }
-    if (generation !== topUpGeneration) return
-    const after = scope()
-    if (after === 'changed') {
-      clearTopUpWatch()
-      return
-    }
-    if (after === 'pending') return
+    if (!continuesInScope()) return
     settleFromBalance()
   }
 

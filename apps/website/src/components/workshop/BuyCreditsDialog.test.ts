@@ -361,6 +361,69 @@ describe('BuyCreditsDialog', () => {
     expect(tab.close).toHaveBeenCalled()
   })
 
+  it('refuses checkout when the fresh credential belongs to another workspace', async () => {
+    const user = userEvent.setup()
+    const tab = claimTab()
+    const fetchCheckout = stubCheckout()
+    auth.ensureFresh.mockResolvedValue({
+      status: 'ok',
+      session: {
+        ...credential,
+        workspace: {
+          ...credential.workspace,
+          id: 'workspace-2',
+          name: 'Team B'
+        }
+      }
+    })
+    renderOpenDialog()
+
+    await user.click(await screen.findByTestId('buy-credits-continue'))
+
+    expect(await screen.findByTestId('checkout-error')).toBeTruthy()
+    expect(fetchCheckout).not.toHaveBeenCalled()
+    expect(tab.location.assign).not.toHaveBeenCalled()
+    expect(tab.close).toHaveBeenCalled()
+  })
+
+  it('does not open checkout if the session changes while checkout is pending', async () => {
+    const user = userEvent.setup()
+    const tab = claimTab()
+    let resolveCheckout!: (response: Response) => void
+    const fetchCheckout = vi.fn(
+      () =>
+        new Promise<Response>((resolve) => {
+          resolveCheckout = resolve
+        })
+    )
+    vi.stubGlobal('fetch', fetchCheckout)
+    renderOpenDialog()
+
+    await user.click(await screen.findByTestId('buy-credits-continue'))
+    await vi.waitFor(() => expect(fetchCheckout).toHaveBeenCalledOnce())
+    auth.session!.value = {
+      ...credential,
+      workspace: {
+        ...credential.workspace,
+        id: 'workspace-2',
+        name: 'Team B'
+      }
+    }
+    resolveCheckout(
+      new Response(
+        JSON.stringify({
+          checkout_url: 'https://checkout.stripe.com/c/session_1',
+          session_id: 'cs_1'
+        }),
+        { status: 200 }
+      )
+    )
+
+    expect(await screen.findByTestId('checkout-error')).toBeTruthy()
+    expect(tab.location.assign).not.toHaveBeenCalled()
+    expect(tab.close).toHaveBeenCalled()
+  })
+
   it('aborts an in-flight checkout when the dialog unmounts', async () => {
     const user = userEvent.setup()
     const tab = claimTab()

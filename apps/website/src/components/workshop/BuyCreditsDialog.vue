@@ -67,6 +67,12 @@ interface CheckoutAttempt {
   readonly returned: boolean
 }
 
+interface CheckoutScope {
+  readonly uid: string
+  readonly workspaceId: string
+  readonly workspaceName: string
+}
+
 const checkoutAttempt = ref<CheckoutAttempt | undefined>(undefined)
 let checkoutController: AbortController | undefined
 let checkoutTab: Window | null = null
@@ -238,90 +244,145 @@ function onTopUpReturn(attemptId: string): void {
   })
 }
 
+function captureCheckoutScope(): CheckoutScope | undefined {
+  const current = session.value
+  if (!current) return undefined
+  return {
+    uid: current.uid,
+    workspaceId: current.workspace.id,
+    workspaceName: current.workspace.name
+  }
+}
+
+function checkoutScopeIsCurrent(scope: CheckoutScope): boolean {
+  const current = session.value
+  return (
+    current?.uid === scope.uid && current.workspace.id === scope.workspaceId
+  )
+}
+
+function requireCurrentCheckoutScope(
+  scope: CheckoutScope,
+  message: string
+): void {
+  if (!checkoutScopeIsCurrent(scope)) throw new Error(message)
+}
+
+async function creditsBeforeCheckout(
+  scope: CheckoutScope,
+  controller: AbortController
+): Promise<number> {
+  await refreshWorkshopCredits({ force: true })
+  controller.signal.throwIfAborted()
+  requireCurrentCheckoutScope(scope, 'Credit balance is unavailable')
+  const currentBalance = balance.value
+  if (currentBalance.status !== 'ok')
+    throw new Error('Credit balance is unavailable')
+  return currentBalance.credits
+}
+
+async function tokenForCheckout(
+  scope: CheckoutScope,
+  controller: AbortController
+): Promise<string> {
+  const fresh = await ensureFresh(undefined, {
+    workspaceId: scope.workspaceId,
+    signal: controller.signal,
+    timeoutMs: 15_000
+  })
+  controller.signal.throwIfAborted()
+  if (fresh?.status !== 'ok') throw new Error('Session changed before checkout')
+  if (
+    fresh.session.uid !== scope.uid ||
+    fresh.session.workspace.id !== scope.workspaceId
+  )
+    throw new Error('Session changed before checkout')
+  requireCurrentCheckoutScope(scope, 'Session changed before checkout')
+  return fresh.session.token
+}
+
+function recordCheckout(
+  scope: CheckoutScope,
+  attemptId: string,
+  previousCredits: number,
+  checkout: TopUpCheckoutSession,
+  tab: Window | null
+): void {
+  lastCheckout.value = checkout
+  checkoutAttempt.value = {
+    id: attemptId,
+    uid: scope.uid,
+    workspaceId: scope.workspaceId,
+    workspaceName: scope.workspaceName,
+    previousCredits,
+    returned: false
+  }
+  state.value = 'checkout'
+  navigateCheckoutTab(tab, checkout.url)
+}
+
+function checkoutEndpointIsUnavailable(error: unknown): boolean {
+  return (
+    error instanceof TopUpCheckoutError &&
+    error.status === 404 &&
+    error.code === 'NOT_FOUND'
+  )
+}
+
+function handleCheckoutFailure(
+  error: unknown,
+  controller: AbortController,
+  tab: Window | null
+): void {
+  if (checkoutController !== controller) return
+  if (checkoutEndpointIsUnavailable(error)) {
+    lastCheckout.value = { url: WORKSHOP_CREDITS_URL }
+    checkoutAttempt.value = undefined
+    state.value = 'checkout'
+    navigateCheckoutTab(tab, WORKSHOP_CREDITS_URL)
+    return
+  }
+  closeCheckoutTab(tab)
+  state.value = 'failed'
+}
+
+function releaseCheckoutAttempt(
+  controller: AbortController,
+  tab: Window | null
+): void {
+  if (checkoutController === controller) checkoutController = undefined
+  if (checkoutTab === tab) checkoutTab = null
+}
+
 async function continueToCheckout() {
-  if (state.value === 'pending' || !session.value) return
-  const requested = session.value
+  if (state.value === 'pending') return
+  const scope = captureCheckoutScope()
+  if (!scope) return
   const controller = new AbortController()
   const tab = claimCheckoutTab()
   checkoutController = controller
   checkoutTab = tab
   state.value = 'pending'
   try {
-    await refreshWorkshopCredits({ force: true })
-    controller.signal.throwIfAborted()
-    const afterBalance = session.value
-    if (
-      afterBalance?.uid !== requested.uid ||
-      afterBalance.workspace.id !== requested.workspace.id ||
-      balance.value.status !== 'ok'
-    )
-      throw new Error('Credit balance is unavailable')
-    const previousCredits = balance.value.credits
-
-    const fresh = await ensureFresh(undefined, {
-      workspaceId: requested.workspace.id,
-      signal: controller.signal,
-      timeoutMs: 15_000
-    })
-    controller.signal.throwIfAborted()
-    if (
-      fresh?.status !== 'ok' ||
-      fresh.session.uid !== requested.uid ||
-      fresh.session.workspace.id !== requested.workspace.id
-    )
-      throw new Error('Session changed before checkout')
-    const current = session.value
-    if (
-      current?.uid !== requested.uid ||
-      current.workspace.id !== requested.workspace.id
-    )
-      throw new Error('Session changed before checkout')
-
+    const previousCredits = await creditsBeforeCheckout(scope, controller)
+    const token = await tokenForCheckout(scope, controller)
     const attemptId = crypto.randomUUID()
     const checkout = await createTopUpCheckout({
-      token: fresh.session.token,
+      token,
       amountCents: usd.value * 100,
       returnUrl: topUpReturnUrl(window.location.href, attemptId),
       idempotencyKey: attemptId,
       signal: controller.signal
     })
     controller.signal.throwIfAborted()
-    if (
-      checkoutController !== controller ||
-      session.value?.uid !== requested.uid ||
-      session.value.workspace.id !== requested.workspace.id
-    )
+    if (checkoutController !== controller)
       throw new Error('Session changed before checkout opened')
-
-    lastCheckout.value = checkout
-    checkoutAttempt.value = {
-      id: attemptId,
-      uid: requested.uid,
-      workspaceId: requested.workspace.id,
-      workspaceName: requested.workspace.name,
-      previousCredits,
-      returned: false
-    }
-    state.value = 'checkout'
-    navigateCheckoutTab(tab, checkout.url)
+    requireCurrentCheckoutScope(scope, 'Session changed before checkout opened')
+    recordCheckout(scope, attemptId, previousCredits, checkout, tab)
   } catch (error) {
-    if (checkoutController !== controller) return
-    if (
-      error instanceof TopUpCheckoutError &&
-      error.status === 404 &&
-      error.code === 'NOT_FOUND'
-    ) {
-      lastCheckout.value = { url: WORKSHOP_CREDITS_URL }
-      checkoutAttempt.value = undefined
-      state.value = 'checkout'
-      navigateCheckoutTab(tab, WORKSHOP_CREDITS_URL)
-      return
-    }
-    closeCheckoutTab(tab)
-    state.value = 'failed'
+    handleCheckoutFailure(error, controller, tab)
   } finally {
-    if (checkoutController === controller) checkoutController = undefined
-    if (checkoutTab === tab) checkoutTab = null
+    releaseCheckoutAttempt(controller, tab)
   }
 }
 

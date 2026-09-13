@@ -170,7 +170,7 @@ function visibleOptions(group: FacetSheetGroup) {
     :class="
       cn(
         'flex min-h-0 flex-col',
-        !grab && !prefersReducedMotion() && 'max-sm:transition-[height]'
+        !grab && !prefersReducedMotion() && 'max-sm:transition-all'
       )
     "
     :style="{

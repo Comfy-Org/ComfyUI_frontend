@@ -73,7 +73,7 @@ function actionFor(example: PlaygroundExample, active = false) {
       they fit in a row of their own. -->
     <ul
       v-else
-      class="flex scrollbar-hide snap-x gap-3 overflow-x-auto max-sm:-mx-6 max-sm:-my-1 max-sm:scroll-px-6 max-sm:px-6 max-sm:py-1 sm:grid sm:max-w-5xl sm:grid-cols-[repeat(auto-fit,minmax(14rem,1fr))] sm:justify-start sm:overflow-visible"
+      class="workshop-example-grid flex scrollbar-hide snap-x gap-3 overflow-x-auto max-sm:-mx-6 max-sm:-my-1 max-sm:scroll-px-6 max-sm:px-6 max-sm:py-1 sm:grid sm:max-w-5xl sm:justify-start sm:overflow-visible"
     >
       <li
         v-for="example in examples"
@@ -99,7 +99,7 @@ function actionFor(example: PlaygroundExample, active = false) {
           <span
             :class="
               cn(
-                'bg-primary-comfy-ink-light relative block aspect-video overflow-hidden rounded-lg ring-1 transition-[box-shadow,transform,filter]',
+                'bg-primary-comfy-ink-light relative block aspect-video overflow-hidden rounded-lg ring-1 transition-all',
                 example.id === activeId
                   ? 'ring-primary-comfy-yellow ring-2'
                   : 'group-focus-visible:ring-primary-comfy-yellow ring-transparency-white-t8 group-hover:-translate-y-0.5 group-hover:ring-transparency-white-t20 group-hover:brightness-110'
@@ -180,3 +180,11 @@ function actionFor(example: PlaygroundExample, active = false) {
     </ul>
   </section>
 </template>
+
+<style scoped>
+@media (width >= 40rem) {
+  .workshop-example-grid {
+    grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  }
+}
+</style>

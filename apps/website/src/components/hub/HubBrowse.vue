@@ -287,14 +287,10 @@ const filteredTemplates = computed(() => {
       data-testid="hub-heading"
     />
 
-    <div
-      :class="
-        cn('gap-10', railBeside && 'lg:grid lg:grid-cols-[15rem_minmax(0,1fr)]')
-      "
-    >
+    <div :class="cn('gap-10', railBeside && 'hub-browse-layout lg:grid')">
       <aside
         v-if="railBeside"
-        class="mb-8 max-sm:mb-4 lg:sticky lg:top-28 lg:mb-0 lg:max-h-[calc(100vh-9rem)] lg:scrollbar-thin lg:self-start lg:overflow-y-auto lg:pt-4"
+        class="hub-browse-rail mb-8 max-sm:mb-4 lg:sticky lg:top-28 lg:mb-0 lg:scrollbar-thin lg:self-start lg:overflow-y-auto lg:pt-4"
       >
         <HubUseCaseNav
           rail-beside
@@ -360,3 +356,15 @@ const filteredTemplates = computed(() => {
     </div>
   </section>
 </template>
+
+<style scoped>
+@media (width >= 64rem) {
+  .hub-browse-layout {
+    grid-template-columns: 15rem minmax(0, 1fr);
+  }
+
+  .hub-browse-rail {
+    max-height: calc(100vh - 9rem);
+  }
+}
+</style>

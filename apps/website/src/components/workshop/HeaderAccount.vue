@@ -1,19 +1,5 @@
 <script setup lang="ts">
-import { ArrowLeftRight, Check, Coins, LogOut } from '@lucide/vue'
-import {
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuPortal,
-  DropdownMenuRoot,
-  DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuTrigger
-} from 'reka-ui'
 import { computed, ref, watch } from 'vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
 
 import {
   refreshWorkshopCredits,
@@ -27,6 +13,7 @@ import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { useWorkshopAuthFlag } from '../../scripts/posthog'
 import BuyCreditsDialog from './BuyCreditsDialog.vue'
+import HeaderAccountMenu from './HeaderAccountMenu.vue'
 
 const { locale = 'en' } = defineProps<{
   locale?: Locale
@@ -75,6 +62,60 @@ const workspaceSwitchError = ref(false)
 const workspaceRefresh = ref(0)
 let workspaceLoadGeneration = 0
 
+type ActiveWorkshopSession = NonNullable<typeof session.value>
+
+function sameSessionScope(
+  candidate: typeof session.value,
+  requested: ActiveWorkshopSession
+): boolean {
+  return (
+    candidate?.uid === requested.uid &&
+    candidate.workspace.id === requested.workspace.id
+  )
+}
+
+function workspaceLoadIsOwned(
+  generation: number,
+  controller: AbortController,
+  requested: ActiveWorkshopSession
+): boolean {
+  if (generation !== workspaceLoadGeneration) return false
+  if (controller.signal.aborted) return false
+  if (!workspacesOpen.value) return false
+  return sameSessionScope(session.value, requested)
+}
+
+function workspaceLoadWasCancelled(
+  generation: number,
+  controller: AbortController
+): boolean {
+  return generation !== workspaceLoadGeneration || controller.signal.aborted
+}
+
+async function loadWorkspaceList(
+  requested: ActiveWorkshopSession,
+  generation: number,
+  controller: AbortController
+): Promise<void> {
+  try {
+    const fresh = await ensureFresh(undefined, {
+      workspaceId: requested.workspace.id,
+      signal: controller.signal,
+      timeoutMs: 15_000
+    })
+    if (fresh?.status !== 'ok') throw new Error('Session refresh failed')
+    if (!sameSessionScope(fresh.session, requested)) return
+    const listed = await listWorkspaces(fresh.session.token, {
+      signal: controller.signal
+    })
+    if (!workspaceLoadIsOwned(generation, controller, requested)) return
+    workspaces.value = listed
+  } catch {
+    if (workspaceLoadWasCancelled(generation, controller)) return
+    workspaces.value = 'error'
+  }
+}
+
 watch(menuOpen, (open) => {
   if (!open) workspaceSwitchError.value = false
 })
@@ -89,41 +130,12 @@ watch(
   async ([open], _, onCleanup) => {
     const generation = ++workspaceLoadGeneration
     if (!open) return
-    if (!session.value) return
     const requested = session.value
+    if (!requested) return
     const controller = new AbortController()
     onCleanup(() => controller.abort())
     workspaces.value = 'loading'
-    try {
-      const fresh = await ensureFresh(undefined, {
-        workspaceId: requested.workspace.id,
-        signal: controller.signal,
-        timeoutMs: 15_000
-      })
-      if (fresh?.status !== 'ok') throw new Error('Session refresh failed')
-      if (
-        fresh.session.uid !== requested.uid ||
-        fresh.session.workspace.id !== requested.workspace.id
-      )
-        return
-      const listed = await listWorkspaces(fresh.session.token, {
-        signal: controller.signal
-      })
-      const current = session.value
-      if (
-        generation !== workspaceLoadGeneration ||
-        controller.signal.aborted ||
-        !workspacesOpen.value ||
-        current?.uid !== requested.uid ||
-        current.workspace.id !== requested.workspace.id
-      )
-        return
-      workspaces.value = listed
-    } catch {
-      if (generation !== workspaceLoadGeneration || controller.signal.aborted)
-        return
-      workspaces.value = 'error'
-    }
+    await loadWorkspaceList(requested, generation, controller)
   }
 )
 
@@ -131,11 +143,25 @@ function retryWorkspaceList(): void {
   workspaceRefresh.value += 1
 }
 
+async function restorePreviousWorkspace(
+  previous: ActiveWorkshopSession
+): Promise<void> {
+  workspaceSwitchError.value = true
+  if (user.value?.uid !== previous.uid || session.value !== undefined) return
+  try {
+    await remint(undefined, {
+      workspaceId: previous.workspace.id,
+      preserveCredentialOnTransientFailure: true
+    })
+  } catch {
+    // The visible error remains; a rejected recovery must not escape the menu.
+  }
+}
+
 async function switchWorkspace(workspaceId: string) {
   if (switching.value) return
   const previous = session.value
   if (!previous) return
-  const previousUid = previous.uid
   const previousWorkspaceId = previous.workspace.id
   if (workspaceId === previousWorkspaceId) {
     menuOpen.value = false
@@ -143,57 +169,28 @@ async function switchWorkspace(workspaceId: string) {
   }
   workspaceSwitchError.value = false
   switching.value = workspaceId
-  async function restorePreviousWorkspace(): Promise<void> {
-    workspaceSwitchError.value = true
-    if (user.value?.uid !== previousUid || session.value !== undefined) return
-    try {
-      await remint(undefined, {
-        workspaceId: previousWorkspaceId,
-        preserveCredentialOnTransientFailure: true
-      })
-    } catch {
-      // The visible error remains; a rejected recovery must not escape the menu.
-    }
-  }
   try {
     const result = await remint(undefined, {
       workspaceId,
       preserveCredentialOnTransientFailure: true
     })
     if (result === undefined) {
-      const current = session.value
-      if (
-        current?.uid === previousUid &&
-        current.workspace.id === previousWorkspaceId
-      )
-        workspaceSwitchError.value = true
+      workspaceSwitchError.value = sameSessionScope(session.value, previous)
       return
     }
     if (result.status === 'ok') {
       await refreshWorkshopCredits({ force: true })
       menuOpen.value = false
     } else {
-      await restorePreviousWorkspace()
+      await restorePreviousWorkspace(previous)
     }
   } catch {
-    await restorePreviousWorkspace()
+    await restorePreviousWorkspace(previous)
   } finally {
     switching.value = undefined
   }
 }
 
-function initialsOf(name: string): string {
-  return name
-    .split(' ')
-    .map((part) => part[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase()
-}
-
-const workspaceInitials = computed(() =>
-  initialsOf(session.value?.workspace.name ?? '')
-)
 const hasCredits = computed(
   () => balance.value.status === 'ok' && balance.value.credits > 0
 )
@@ -217,12 +214,6 @@ const accountLabel = computed(() => {
     : account
 })
 
-const roleLabel = computed(() =>
-  t(
-    session.value?.role === 'member' ? 'nav.roleMember' : 'nav.roleOwner',
-    locale
-  )
-)
 // Buying is owner-only server-side, so a member gets no purchase route here.
 // See DES-1015.
 const canTopUp = computed(() => session.value?.role !== 'member')
@@ -242,13 +233,6 @@ async function signOutFromMenu() {
   menuOpen.value = false
   await signOut()
 }
-
-const itemClass =
-  'flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-sm text-primary-comfy-canvas outline-none hover:bg-transparency-white-t4 focus-visible:bg-transparency-white-t4'
-const avatarClass =
-  'grid size-12 shrink-0 place-items-center text-base font-bold text-primary-warm-white'
-const surfaceClass =
-  'border-primary-comfy-ink-light bg-site-dropdown z-50 rounded-2xl border p-2 shadow-lg data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0'
 </script>
 
 <template>
@@ -291,207 +275,26 @@ const surfaceClass =
       {{ t('auth.header.signingIn', locale) }}
     </span>
 
-    <DropdownMenuRoot v-else v-model:open="menuOpen">
-      <DropdownMenuTrigger
-        data-testid="header-account"
-        :aria-label="accountLabel"
-        class="bg-transparency-white-t4 focus-visible:ring-primary-comfy-yellow/50 flex h-10 cursor-pointer items-center gap-1.5 rounded-full border border-transparency-white-t20 p-1 outline-none focus-visible:ring-3"
-      >
-        <span
-          v-if="formattedCredits !== undefined"
-          data-testid="header-credits"
-          :class="
-            cn(
-              'flex h-8 items-center gap-1.5 rounded-full px-3 text-sm font-bold whitespace-nowrap tabular-nums',
-              hasCredits
-                ? 'bg-primary-comfy-yellow/10 text-primary-comfy-yellow'
-                : 'bg-primary-comfy-red/10 text-primary-comfy-red'
-            )
-          "
-        >
-          <Coins class="size-4" aria-hidden="true" />
-          {{ formattedCredits }}
-        </span>
-
-        <span
-          class="grid size-8 shrink-0 place-items-center rounded-full bg-transparency-white-t8 text-xs font-bold text-primary-warm-white"
-          aria-hidden="true"
-        >
-          {{ workspaceInitials }}
-        </span>
-      </DropdownMenuTrigger>
-
-      <DropdownMenuPortal>
-        <DropdownMenuContent
-          align="end"
-          :side-offset="10"
-          :class="cn(surfaceClass, 'w-96')"
-        >
-          <DropdownMenuSub v-model:open="workspacesOpen">
-            <DropdownMenuSubTrigger
-              data-testid="account-workspace"
-              class="hover:bg-transparency-white-t4 data-[state=open]:bg-transparency-white-t4 focus-visible:bg-transparency-white-t4 flex w-full cursor-pointer items-center gap-3 rounded-xl p-2 text-left outline-none"
-            >
-              <span
-                :class="cn(avatarClass, 'rounded-xl bg-transparency-white-t8')"
-                aria-hidden="true"
-              >
-                {{ workspaceInitials }}
-              </span>
-              <span class="min-w-0 flex-1">
-                <span
-                  class="block truncate text-base font-bold text-primary-warm-white"
-                >
-                  {{ session.workspace.name }}
-                </span>
-                <span
-                  class="block truncate text-[11px] font-bold tracking-wider text-primary-warm-gray uppercase"
-                >
-                  {{ roleLabel }}
-                </span>
-              </span>
-              <span
-                class="grid size-8 shrink-0 place-items-center rounded-lg text-primary-warm-gray"
-                aria-hidden="true"
-              >
-                <ArrowLeftRight class="size-4" />
-              </span>
-            </DropdownMenuSubTrigger>
-            <DropdownMenuPortal>
-              <DropdownMenuSubContent
-                side="left"
-                align="start"
-                :side-offset="12"
-                :class="cn(surfaceClass, 'w-72')"
-                data-testid="account-workspaces"
-              >
-                <p
-                  class="px-3 pt-1 pb-2 text-[11px] font-bold tracking-wider text-primary-warm-gray uppercase"
-                >
-                  {{ t('nav.workspaces', locale) }}
-                </p>
-                <p
-                  v-if="workspaces === 'loading'"
-                  class="px-3 py-2 text-xs text-primary-comfy-canvas/55"
-                >
-                  {{ t('nav.workspacesLoading', locale) }}
-                </p>
-                <p
-                  v-else-if="workspaces === 'error'"
-                  class="flex items-center justify-between gap-3 px-3 py-2 text-xs text-red-400"
-                >
-                  <span>{{ t('nav.workspacesError', locale) }}</span>
-                  <button
-                    type="button"
-                    class="text-primary-comfy-yellow shrink-0 cursor-pointer font-bold"
-                    data-testid="account-workspaces-retry"
-                    @click.stop="retryWorkspaceList"
-                  >
-                    {{ t('workshop.error.retry', locale) }}
-                  </button>
-                </p>
-                <p
-                  v-else-if="workspaces.length === 0"
-                  class="px-3 py-2 text-xs text-primary-comfy-canvas/55"
-                  data-testid="account-workspaces-empty"
-                >
-                  {{ t('nav.workspacesEmpty', locale) }}
-                </p>
-                <template v-else>
-                  <DropdownMenuItem
-                    v-for="workspace in workspaces"
-                    :key="workspace.id"
-                    :class="itemClass"
-                    :disabled="switching !== undefined"
-                    :data-testid="`account-workspace-${workspace.id}`"
-                    @select.prevent="switchWorkspace(workspace.id)"
-                  >
-                    <span
-                      class="grid size-9 shrink-0 place-items-center rounded-lg bg-transparency-white-t8 text-sm font-bold text-primary-warm-white"
-                      aria-hidden="true"
-                    >
-                      {{ initialsOf(workspace.name) }}
-                    </span>
-                    <span class="min-w-0 flex-1">
-                      <span class="block truncate">{{ workspace.name }}</span>
-                      <span
-                        class="block text-[11px] font-bold tracking-wider text-primary-warm-gray uppercase"
-                      >
-                        {{
-                          (workspace.subscription_tier ?? workspace.role)
-                            .split('_')
-                            .join(' ')
-                        }}
-                      </span>
-                    </span>
-                    <Check
-                      v-if="workspace.id === session.workspace.id"
-                      class="text-primary-comfy-yellow size-4 shrink-0"
-                      aria-hidden="true"
-                    />
-                  </DropdownMenuItem>
-                </template>
-              </DropdownMenuSubContent>
-            </DropdownMenuPortal>
-          </DropdownMenuSub>
-
-          <p
-            v-if="workspaceSwitchError"
-            class="px-3 py-2 text-xs text-red-400"
-            role="alert"
-            data-testid="account-workspace-switch-error"
-          >
-            {{ t('nav.workspaceSwitchError', locale) }}
-          </p>
-
-          <p
-            v-if="balance.status === 'error'"
-            class="px-3 pb-2 text-xs text-red-400"
-          >
-            {{ t('auth.header.balanceError', locale) }}
-          </p>
-
-          <DropdownMenuItem
-            v-if="canTopUp"
-            :class="itemClass"
-            data-testid="account-add-credits"
-            @select="buyingCredits = true"
-          >
-            <Coins class="size-5 text-primary-warm-gray" aria-hidden="true" />
-            <span class="flex-1">{{
-              t('workshop.run.buyCredits', locale)
-            }}</span>
-          </DropdownMenuItem>
-
-          <DropdownMenuSeparator
-            class="-mx-2 mt-2 h-px bg-transparency-white-t8"
-          />
-
-          <div class="group/footer flex items-center gap-3 px-3 pt-3">
-            <span
-              class="min-w-0 flex-1 truncate text-sm text-primary-warm-gray"
-              data-testid="account-email"
-            >
-              {{ user?.email ?? user?.displayName }}
-            </span>
-            <DropdownMenuItem as-child>
-              <button
-                type="button"
-                :aria-label="t('nav.signOut', locale)"
-                class="flex h-8 shrink-0 cursor-pointer items-center gap-2 rounded-lg px-2 text-sm text-primary-warm-gray transition-colors outline-none group-hover/footer:bg-transparency-white-t8 group-hover/footer:text-primary-warm-white focus-visible:bg-transparency-white-t8 focus-visible:text-primary-warm-white"
-                data-testid="account-sign-out"
-                @click="signOutFromMenu"
-              >
-                <span class="hidden group-hover/footer:inline">
-                  {{ t('nav.signOut', locale) }}
-                </span>
-                <LogOut class="size-5" aria-hidden="true" />
-              </button>
-            </DropdownMenuItem>
-          </div>
-        </DropdownMenuContent>
-      </DropdownMenuPortal>
-    </DropdownMenuRoot>
+    <HeaderAccountMenu
+      v-else
+      v-model:open="menuOpen"
+      v-model:workspaces-open="workspacesOpen"
+      :session
+      :workspaces
+      :switching
+      :workspace-switch-error="workspaceSwitchError"
+      :formatted-credits="formattedCredits"
+      :has-credits="hasCredits"
+      :balance-error="balance.status === 'error'"
+      :can-top-up="canTopUp"
+      :account-label="accountLabel"
+      :account-identity="user.email ?? user.displayName"
+      :locale
+      @retry="retryWorkspaceList"
+      @switch-workspace="switchWorkspace"
+      @buy-credits="buyingCredits = true"
+      @sign-out="signOutFromMenu"
+    />
 
     <BuyCreditsDialog v-model:open="buyingCredits" :locale />
   </div>

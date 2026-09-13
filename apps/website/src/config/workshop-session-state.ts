@@ -127,8 +127,51 @@ function rememberWorkspace(uid: string, workspaceId: string | undefined): void {
 
 let restoredForUid: string | undefined
 
+type AuthenticatedSnapshot = Extract<
+  SessionSnapshot<User>,
+  { phase: 'authenticated' }
+>
+
+function publishTransientWorkspaceRestore(
+  next: AuthenticatedSnapshot,
+  live: SessionSnapshot<User>
+): void {
+  if (live.phase !== 'authenticated') return
+  if (live.session.workspace.id === next.session.workspace.id)
+    snapshot.value = live
+}
+
+async function recoverPersonalWorkspace(
+  next: AuthenticatedSnapshot,
+  live: SessionSnapshot<User>
+): Promise<void> {
+  rememberWorkspace(next.session.uid, undefined)
+  if (live.phase !== 'error') return
+  try {
+    await workshopSessionClient.remint(undefined, {
+      workspaceId: next.session.workspace.id,
+      preserveCredentialOnTransientFailure: true
+    })
+  } catch {
+    // The client remains authoritative in its published error state.
+  }
+}
+
+async function settleFailedWorkspaceRestore(
+  next: AuthenticatedSnapshot,
+  permanent: boolean
+): Promise<void> {
+  const live = workshopSessionClient.getSnapshot()
+  if (live.user?.uid !== next.session.uid) return
+  if (!permanent) {
+    publishTransientWorkspaceRestore(next, live)
+    return
+  }
+  await recoverPersonalWorkspace(next, live)
+}
+
 async function restoreRememberedWorkspace(
-  next: Extract<SessionSnapshot<User>, { phase: 'authenticated' }>,
+  next: AuthenticatedSnapshot,
   remembered: string,
   restoreGeneration: number
 ): Promise<void> {
@@ -142,30 +185,7 @@ async function restoreRememberedWorkspace(
     return
   }
   if (result?.status !== 'error' || generation !== restoreGeneration) return
-
-  const { uid, workspace } = next.session
-  const live = workshopSessionClient.getSnapshot()
-  if (live.user?.uid !== uid) return
-  if (!isPermanentSessionError(result.code)) {
-    if (
-      live.phase === 'authenticated' &&
-      live.session.workspace.id === workspace.id
-    ) {
-      snapshot.value = live
-    }
-    return
-  }
-
-  rememberWorkspace(uid, undefined)
-  if (live.phase !== 'error') return
-  try {
-    await workshopSessionClient.remint(undefined, {
-      workspaceId: workspace.id,
-      preserveCredentialOnTransientFailure: true
-    })
-  } catch {
-    // The client remains authoritative in its published error state.
-  }
+  await settleFailedWorkspaceRestore(next, isPermanentSessionError(result.code))
 }
 
 function keepWorkspaceRemembered(): void {

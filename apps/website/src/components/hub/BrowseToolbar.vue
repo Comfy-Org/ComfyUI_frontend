@@ -311,7 +311,7 @@ function phoneToggle(key: string, value: string) {
         >
           <span
             aria-hidden="true"
-            class="pointer-events-none absolute inset-y-1 left-0 rounded-lg bg-primary-warm-white transition-[translate,width] duration-300 ease-out"
+            class="pointer-events-none absolute inset-y-1 left-0 rounded-lg bg-primary-warm-white transition-all duration-300 ease-out"
             :style="{
               width: `${pill.width}px`,
               translate: `${pill.left}px 0`
@@ -442,7 +442,7 @@ function phoneToggle(key: string, value: string) {
         :style="{
           bottom: phoneBottom !== undefined ? `${phoneBottom}px` : undefined
         }"
-        class="bg-site-dropdown z-40 flex scrollbar-thin flex-col gap-7 overflow-y-auto border border-white/10 shadow-2xl max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:max-h-dvh max-sm:gap-4 max-sm:rounded-t-3xl sm:absolute sm:top-full sm:right-0 sm:mt-3 sm:max-h-[75vh] sm:w-full sm:max-w-4xl sm:rounded-3xl sm:p-8"
+        class="hub-filter-panel bg-site-dropdown z-40 flex scrollbar-thin flex-col gap-7 overflow-y-auto border border-white/10 shadow-2xl max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:max-h-dvh max-sm:gap-4 max-sm:rounded-t-3xl sm:absolute sm:top-full sm:right-0 sm:mt-3 sm:w-full sm:max-w-4xl sm:rounded-3xl sm:p-8"
         data-testid="hub-filter-menu"
       >
         <FacetSheet
@@ -655,3 +655,11 @@ function phoneToggle(key: string, value: string) {
     </Teleport>
   </div>
 </template>
+
+<style scoped>
+@media (width >= 40rem) {
+  .hub-filter-panel {
+    max-height: 75vh;
+  }
+}
+</style>

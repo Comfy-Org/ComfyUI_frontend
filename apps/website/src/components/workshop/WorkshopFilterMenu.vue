@@ -203,7 +203,7 @@ const sheetLabels = computed(() => ({
           :style="{
             bottom: phoneBottom !== undefined ? `${phoneBottom}px` : undefined
           }"
-          class="bg-site-dropdown z-50 flex flex-col overflow-y-auto border border-white/10 shadow-2xl shadow-black/50 outline-none max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:rounded-t-3xl sm:absolute sm:top-full sm:right-0 sm:mt-2 sm:max-h-[75vh] sm:w-96 sm:max-w-[calc(100vw-2rem)] sm:rounded-2xl"
+          class="workshop-filter-panel bg-site-dropdown z-50 flex flex-col overflow-y-auto border border-white/10 shadow-2xl shadow-black/50 outline-none max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:rounded-t-3xl sm:absolute sm:top-full sm:right-0 sm:mt-2 sm:w-96 sm:rounded-2xl"
           @keydown.escape.stop.prevent="open = false"
         >
           <FacetSheet
@@ -219,3 +219,12 @@ const sheetLabels = computed(() => ({
     </Teleport>
   </div>
 </template>
+
+<style scoped>
+@media (width >= 40rem) {
+  .workshop-filter-panel {
+    max-width: calc(100vw - 2rem);
+    max-height: 75vh;
+  }
+}
+</style>

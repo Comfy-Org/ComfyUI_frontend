@@ -325,12 +325,12 @@ const earlierClass = (active: boolean) =>
     <!-- Succeeded, or the example that ships with the model -->
     <template v-else-if="shown">
       <div
-        class="relative aspect-video max-h-[70dvh] w-full flex-1 overflow-hidden bg-black/20"
+        class="workshop-output-frame relative aspect-video w-full flex-1 overflow-hidden bg-black/20"
       >
         <div
           :key="currentUrl"
           :class="blurred ? 'blur-2xl select-none' : ''"
-          class="animate-soft-in size-full transition-[filter]"
+          class="animate-soft-in size-full transition-all"
         >
           <VideoPlayer
             v-if="currentUrl && shown.kind === 'video' && !blurred"
@@ -618,3 +618,9 @@ const earlierClass = (active: boolean) =>
     </DialogRoot>
   </section>
 </template>
+
+<style scoped>
+.workshop-output-frame {
+  max-height: 70dvh;
+}
+</style>

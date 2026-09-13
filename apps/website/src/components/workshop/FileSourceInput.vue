@@ -45,6 +45,7 @@ const { isOverDropZone } = useDropZone(zone, {
   onDrop: (files) => choose(files ?? []),
   preventDefaultForUnhandled: true
 })
+const dropZoneActive = computed(() => isOverDropZone.value && !disabled)
 const description = computed(
   () =>
     [describedBy, rejection.value && `selection-error-${field.name}`]
@@ -158,7 +159,7 @@ function remove(index: number) {
     :class="
       cn(
         'focus-within:ring-primary-comfy-yellow flex min-w-0 flex-col gap-3 rounded-2xl border border-dashed focus-within:ring-2',
-        isOverDropZone && !disabled
+        dropZoneActive
           ? 'border-primary-comfy-yellow'
           : 'border-transparency-white-t20',
         disabled && 'opacity-50'

@@ -26,6 +26,7 @@ const EMBED_HOSTS = new Set([
   'www.youtube-nocookie.com',
   'demo.arcade.software'
 ])
+const SCRIPT_HOSTS = new Set(['js-na2.hsforms.net', 'apis.google.com'])
 const MEDIA_PATTERNS = [
   /^https:\/\/(?:media|comfy-hub-assets)\.comfy\.org\/.*\.(?:webp|webm|mp4|png|jpg|jpeg|gif|avif|vtt)(?:\?.*)?$/i,
   /^https:\/\/raw\.githubusercontent\.com\/Comfy-Org\/workflow_templates\/main\/templates\/.*\.(?:webp|webm|mp4|png|jpg|jpeg|gif|avif|vtt)(?:\?.*)?$/i,
@@ -58,6 +59,13 @@ async function fulfillMedia(route: Route) {
   await route.fulfill({ path: IMAGE_PLACEHOLDER, status: 200 })
 }
 
+function isNodeImage(route: Route, url: URL): boolean {
+  return (
+    NODE_IMAGE_HOSTS.has(url.hostname) &&
+    route.request().resourceType() === 'image'
+  )
+}
+
 export const test = base.extend({
   serviceWorkers: 'block',
   proxy: async ({ baseURL }, use) => {
@@ -88,10 +96,7 @@ export const test = base.extend({
         return route.abort('blockedbyclient')
       if (EMBED_HOSTS.has(url.hostname))
         return route.fulfill({ contentType: 'text/html', body: '' })
-      if (
-        url.hostname === 'js-na2.hsforms.net' ||
-        url.hostname === 'apis.google.com'
-      )
+      if (SCRIPT_HOSTS.has(url.hostname))
         return route.fulfill({ contentType: 'text/javascript', body: '' })
       if (url.hostname === 'fonts.googleapis.com')
         return route.fulfill({
@@ -106,10 +111,7 @@ export const test = base.extend({
         })
       if (MEDIA_PATTERNS.some((pattern) => pattern.test(url.href)))
         return fulfillMedia(route)
-      if (
-        NODE_IMAGE_HOSTS.has(url.hostname) &&
-        route.request().resourceType() === 'image'
-      )
+      if (isNodeImage(route, url))
         return route.fulfill({ path: IMAGE_PLACEHOLDER })
 
       unexpectedRequests.add(url.href)
