@@ -38,8 +38,9 @@ export const DEFAULT_CAMERA_ANGLE_STATE: CameraAngleState = {
 export const SUBJECT_CENTER: Vector3Like = { x: 0, y: 0.5, z: 0 }
 export const SUBJECT_HEIGHT = 1
 export const CAMERA_ANGLE_FOV = 35
-export const MIN_SUBJECT_DISTANCE = 3.2
-export const MAX_SUBJECT_DISTANCE = 6
+export const SUBJECT_DISTANCE = 6
+export const MIN_LENS_ZOOM = 1
+export const MAX_LENS_ZOOM = 1.875
 
 export const ORBIT_SPHERE_RADIUS = 1.5
 export const MIN_DISPLAY_DISTANCE = 0.8

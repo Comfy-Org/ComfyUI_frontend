@@ -5,7 +5,6 @@ import {
   describeCameraAngle,
   displayDistanceToZoom,
   distanceTerm,
-  distanceToZoom,
   dollyByWheel,
   horizontalTerm,
   normalizeHorizontal,
@@ -17,16 +16,17 @@ import {
   toOrbitCameraInfoState,
   verticalTerm,
   zoomToDisplayDistance,
-  zoomToDistance
+  zoomToLensZoom
 } from './cameraAngleMath'
 import {
   CAMERA_ANGLE_FOV,
   MAX_DISPLAY_DISTANCE,
-  MAX_SUBJECT_DISTANCE,
+  MAX_LENS_ZOOM,
   MIN_DISPLAY_DISTANCE,
-  MIN_SUBJECT_DISTANCE,
+  MIN_LENS_ZOOM,
   ORBIT_SPHERE_RADIUS,
-  SUBJECT_CENTER
+  SUBJECT_CENTER,
+  SUBJECT_DISTANCE
 } from './types'
 import type { CameraAngleState } from './types'
 
@@ -98,10 +98,10 @@ describe('state normalisation', () => {
     })
   })
 
-  it('maps zoom to distance and back', () => {
-    expect(zoomToDistance(0)).toBe(MAX_SUBJECT_DISTANCE)
-    expect(zoomToDistance(10)).toBe(MIN_SUBJECT_DISTANCE)
-    expect(distanceToZoom(zoomToDistance(3.5))).toBeCloseTo(3.5)
+  it('maps zoom onto the lens zoom factor', () => {
+    expect(zoomToLensZoom(0)).toBe(MIN_LENS_ZOOM)
+    expect(zoomToLensZoom(10)).toBe(MAX_LENS_ZOOM)
+    expect(zoomToLensZoom(5)).toBeCloseTo((MIN_LENS_ZOOM + MAX_LENS_ZOOM) / 2)
   })
 
   it('keeps the whole orbit sphere in view for the overview camera', () => {
@@ -131,11 +131,22 @@ describe('state normalisation', () => {
     expect(state.mode).toBe('orbit')
     expect(state.target).toEqual(SUBJECT_CENTER)
     expect(state.fov).toBe(CAMERA_ANGLE_FOV)
+    expect(state.zoom).toBe(MIN_LENS_ZOOM)
     expect(state.orbit).toEqual({
       yaw: 30,
       pitch: 10,
-      distance: MAX_SUBJECT_DISTANCE
+      distance: SUBJECT_DISTANCE
     })
+  })
+
+  it('keeps the orbit distance fixed and carries zoom as the lens factor', () => {
+    const state = toOrbitCameraInfoState({
+      horizontal: 0,
+      vertical: 0,
+      zoom: 10
+    })
+    expect(state.orbit.distance).toBe(SUBJECT_DISTANCE)
+    expect(state.zoom).toBe(MAX_LENS_ZOOM)
   })
 })
 

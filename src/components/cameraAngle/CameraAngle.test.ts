@@ -103,10 +103,15 @@ import CameraAngle from './CameraAngle.vue'
 
 const SelectStub = defineComponent({
   name: 'Select',
-  props: { modelValue: { type: String, default: '' } },
-  emits: ['update:modelValue'],
+  props: {
+    modelValue: { type: String, default: '' },
+    open: { type: Boolean, default: false }
+  },
+  emits: ['update:modelValue', 'update:open'],
   template: `
-    <div data-testid="preset-select" :data-value="modelValue">
+    <div data-testid="preset-select" :data-value="modelValue" :data-open="open">
+      <button data-testid="open" @click="$emit('update:open', true)">open</button>
+      <button data-testid="close" @click="$emit('update:open', false)">close</button>
       <button data-testid="pick-back" @click="$emit('update:modelValue', 'back')">back</button>
       <button data-testid="pick-close-up" @click="$emit('update:modelValue', 'closeUp')">close-up</button>
       <slot />
@@ -243,5 +248,38 @@ describe('CameraAngle', () => {
 
     expect(api().setField).toHaveBeenCalledWith('horizontal', 180)
     expect(api().setField).toHaveBeenCalledWith('zoom', 8)
+  })
+
+  it('keeps only one preset select open at a time', async () => {
+    renderComponent()
+    const user = userEvent.setup()
+    const [horizontal, vertical, zoom] = screen.getAllByTestId('preset-select')
+    const openStates = () =>
+      [horizontal, vertical, zoom].map((el) => el.dataset.open)
+
+    await user.click(within(horizontal).getByTestId('open'))
+    expect(openStates()).toEqual(['true', 'false', 'false'])
+
+    await user.click(within(zoom).getByTestId('open'))
+    expect(openStates()).toEqual(['false', 'false', 'true'])
+
+    await user.click(within(horizontal).getByTestId('close'))
+    expect(openStates()).toEqual(['false', 'false', 'true'])
+
+    await user.click(within(zoom).getByTestId('close'))
+    expect(openStates()).toEqual(['false', 'false', 'false'])
+  })
+
+  it('closes the open preset select when the viewport is pressed', async () => {
+    renderComponent()
+    const user = userEvent.setup()
+    const [, vertical] = screen.getAllByTestId('preset-select')
+    const [container] = api().initialize.mock.calls[0]
+
+    await user.click(within(vertical).getByTestId('open'))
+    expect(vertical.dataset.open).toBe('true')
+
+    await user.pointer({ keys: '[MouseLeft>]', target: container })
+    expect(vertical.dataset.open).toBe('false')
   })
 })

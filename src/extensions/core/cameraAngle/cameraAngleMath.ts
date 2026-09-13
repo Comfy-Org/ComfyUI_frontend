@@ -15,11 +15,12 @@ import {
   CAMERA_ANGLE_FOV,
   CAMERA_ANGLE_LIMITS,
   MAX_DISPLAY_DISTANCE,
-  MAX_SUBJECT_DISTANCE,
+  MAX_LENS_ZOOM,
   MIN_DISPLAY_DISTANCE,
-  MIN_SUBJECT_DISTANCE,
+  MIN_LENS_ZOOM,
   ORBIT_SPHERE_RADIUS,
-  SUBJECT_CENTER
+  SUBJECT_CENTER,
+  SUBJECT_DISTANCE
 } from './types'
 import type { CameraAngleState } from './types'
 
@@ -132,12 +133,11 @@ function rangeToZoom(distance: number, near: number, far: number): number {
   return ((far - distance) * CAMERA_ANGLE_LIMITS.zoom.max) / (far - near)
 }
 
-export function zoomToDistance(zoom: number): number {
-  return zoomToRange(zoom, MIN_SUBJECT_DISTANCE, MAX_SUBJECT_DISTANCE)
-}
-
-export function distanceToZoom(distance: number): number {
-  return rangeToZoom(distance, MIN_SUBJECT_DISTANCE, MAX_SUBJECT_DISTANCE)
+export function zoomToLensZoom(zoom: number): number {
+  return (
+    MIN_LENS_ZOOM +
+    ((MAX_LENS_ZOOM - MIN_LENS_ZOOM) * zoom) / CAMERA_ANGLE_LIMITS.zoom.max
+  )
 }
 
 export function zoomToDisplayDistance(zoom: number): number {
@@ -150,13 +150,15 @@ export function displayDistanceToZoom(distance: number): number {
 
 function orbitState(
   state: CameraAngleState,
-  distance: number
+  distance: number,
+  zoom = DEFAULT_CAMERA_INFO_STATE.zoom
 ): CameraInfoState {
   return {
     ...DEFAULT_CAMERA_INFO_STATE,
     mode: 'orbit',
     target: { ...SUBJECT_CENTER },
     fov: CAMERA_ANGLE_FOV,
+    zoom,
     orbit: { yaw: state.horizontal, pitch: state.vertical, distance }
   }
 }
@@ -164,7 +166,7 @@ function orbitState(
 export function toOrbitCameraInfoState(
   state: CameraAngleState
 ): CameraInfoState {
-  return orbitState(state, zoomToDistance(state.zoom))
+  return orbitState(state, SUBJECT_DISTANCE, zoomToLensZoom(state.zoom))
 }
 
 export function toHandleOrbitState(state: CameraAngleState): CameraInfoState {
