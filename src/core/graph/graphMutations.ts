@@ -209,12 +209,24 @@ function widgetType(value: unknown): string {
   }
 }
 
+/** A named record binds every slot only when it names at least as many. */
+function namedRecordCovers(
+  values: unknown,
+  named: unknown
+): named is Record<string, unknown> {
+  return (
+    Array.isArray(values) &&
+    isRecord(named) &&
+    Object.keys(named).length >= values.length
+  )
+}
+
 function widgetEntries(payload: SemanticNodePayload): PreparedNode['widgets'] {
   const values = payload.widgets_values
   const named = payload.widgets_values_named
-  // A named record binds array values to widgets by name; a bare array binds
-  // them by slot only.
-  const source = Array.isArray(values) && isRecord(named) ? named : values
+  // A complete named record binds array values by name; otherwise the array
+  // binds them by slot, and a partial record must not discard the rest.
+  const source = namedRecordCovers(values, named) ? named : values
   if (Array.isArray(source)) {
     return source.map((value, index) => ({
       name: String(index),
@@ -416,7 +428,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
               mutation.payload
             if (
               Array.isArray(widgets_values) &&
-              !isRecord(widgets_values_named)
+              !namedRecordCovers(widgets_values, widgets_values_named)
             ) {
               const serializable = widgetStore
                 .getNodeWidgets(scope.rootGraphId, node.state.id)

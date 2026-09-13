@@ -759,6 +759,43 @@ describe('useAgentCrdtFollower', () => {
       }
     })
 
+    it('keeps rebinding a newer follower after an older overlapping one unmounts', () => {
+      const graphA = {
+        ...fakeGraph,
+        _nodes: [new LGraphNode('Missing', 'late-a')]
+      } as unknown as MaterializableGraph
+      const graphB = {
+        ...fakeGraph,
+        _nodes: [new LGraphNode('Missing', 'late-b')]
+      } as unknown as MaterializableGraph
+      const followerA = mountFollower('wf-a', true, () => graphA)
+      const followerB = mountFollower('wf-b', true, () => graphB)
+      materializerState.reconcileAgentAdapters.mockClear()
+      class LateA extends LGraphNode {}
+      class LateB extends LGraphNode {}
+      try {
+        followerA.unmount()
+
+        LiteGraph.registerNodeType('late-b', LateB)
+        expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledTimes(
+          1
+        )
+        expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
+          graphB,
+          fakeDefinitions
+        )
+
+        LiteGraph.registerNodeType('late-a', LateA)
+        expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledTimes(
+          1
+        )
+      } finally {
+        followerB.unmount()
+        LiteGraph.unregisterNodeType('late-b')
+        LiteGraph.unregisterNodeType('late-a')
+      }
+    })
+
     it('reconciles the live graph after every applied frame', () => {
       const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
 

@@ -390,7 +390,7 @@ function materialize(
 
   try {
     withNamedValuesRestore(() =>
-      node.configure(withNamedWidgetValues(serialised))
+      node.configure(withNamedWidgetValues(serialised, node))
     )
     // The store owns widget values: a value written before this adapter
     // existed outranks whatever the definition restored from the snapshot.
@@ -427,16 +427,29 @@ function missingNode(state: NodeState): LGraphNode {
 
 /**
  * Op-layer serialisations carry widget values keyed by name; `configure()`
- * only reads name-keyed values from `widgets_values_named`.
+ * only reads name-keyed values from `widgets_values_named`. A partial named
+ * record keeps its other slots bound by the definition's own widget order.
  */
-function withNamedWidgetValues(serialised: ISerialisedNode): ISerialisedNode {
+function withNamedWidgetValues(
+  serialised: ISerialisedNode,
+  node: LGraphNode
+): ISerialisedNode {
   const values = serialised.widgets_values
-  if (
-    values === undefined ||
-    Array.isArray(values) ||
-    serialised.widgets_values_named !== undefined
-  ) {
-    return serialised
+  const named = serialised.widgets_values_named
+  if (values === undefined) return serialised
+  if (!Array.isArray(values)) {
+    return named !== undefined
+      ? serialised
+      : { ...serialised, widgets_values_named: values }
   }
-  return { ...serialised, widgets_values_named: values }
+  if (named === undefined) return serialised
+  const completed = { ...named }
+  const serialisable = (node.widgets ?? []).filter(
+    (widget) => widget.serialize !== false
+  )
+  serialisable.forEach((widget, index) => {
+    if (!(widget.name in completed) && index < values.length)
+      completed[widget.name] = values[index]
+  })
+  return { ...serialised, widgets_values_named: completed }
 }

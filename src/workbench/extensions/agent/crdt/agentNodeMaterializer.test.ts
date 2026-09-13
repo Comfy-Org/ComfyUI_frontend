@@ -754,6 +754,24 @@ describe('reconcileAgentAdapters', () => {
       expect(graph.serialize().nodes[0].widgets_values).toEqual([20, 7])
     })
 
+    it('materializes positional slots that a partial named record does not name', () => {
+      const graph = new LGraph()
+      remoteMutations(graphScopeOf(graph)).addNode(
+        {
+          ...nodePayload(1, 'two-widget-node'),
+          widgets_values: [20, 4],
+          widgets_values_named: { steps: 20 }
+        },
+        REMOTE
+      )
+
+      reconcileAgentAdapters(graph)
+
+      expect(
+        graph.getNodeById(toNodeId(1))?.widgets?.map((widget) => widget.value)
+      ).toEqual([20, 4])
+    })
+
     it('is idempotent once the node is live', () => {
       const graph = new LGraph()
       const scope = seedAgentAddedNode(graph, 1)
