@@ -395,6 +395,27 @@ describe('promoteRecommendedWidgets', () => {
     })
     expect(updatePreviewsMock).not.toHaveBeenCalled()
   })
+
+  it('eagerly exposes virtual preview widget for LoadImage nodes', () => {
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const loadImageNode = new LGraphNode('LoadImage', 'LoadImage')
+    subgraph.add(loadImageNode)
+
+    promoteRecommendedWidgets(subgraphNode)
+
+    expect(
+      usePreviewExposureStore().getExposures(
+        subgraphNode.rootGraph.id,
+        String(subgraphNode.id)
+      )
+    ).toContainEqual({
+      name: CANVAS_IMAGE_PREVIEW_WIDGET,
+      sourceNodeId: String(loadImageNode.id),
+      sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
+    })
+    expect(updatePreviewsMock).not.toHaveBeenCalled()
+  })
 })
 
 describe('autoExposeKnownPreviewNodes', () => {

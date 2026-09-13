@@ -7,7 +7,9 @@ const CANVAS_IMAGE_PREVIEW_NODE_TYPES = new Set([
   'KSamplerAdvanced',
   'PreviewImage',
   'SaveImage',
-  'GLSLShader'
+  'GLSLShader',
+  'LoadImage',
+  'LoadVideo'
 ])
 
 export function supportsVirtualCanvasImagePreview(node: LGraphNode): boolean {
