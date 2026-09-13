@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Search, X } from '@lucide/vue'
+import { useMounted } from '@vueuse/core'
 import { computed, ref, useTemplateRef } from 'vue'
 import { DialogContent, DialogPortal, DialogRoot, DialogTitle } from 'reka-ui'
 
@@ -29,6 +30,7 @@ const {
 }>()
 
 const query = defineModel<string>({ required: true })
+const mounted = useMounted()
 const providers = defineModel<string[]>('providers', { required: true })
 const capabilities = defineModel<string[]>('capabilities', { required: true })
 
@@ -89,6 +91,7 @@ const clearButtonClass =
       v-if="compact"
       ref="sheetTrigger"
       type="button"
+      :disabled="!mounted"
       :aria-label="t('workshop.search.label', locale)"
       data-testid="workshop-search-button"
       :class="
@@ -114,6 +117,7 @@ const clearButtonClass =
         :id="inputId"
         v-model="query"
         type="search"
+        :disabled="!mounted"
         :placeholder="
           t(compact ? 'workshop.search.short' : 'workshop.search.label', locale)
         "

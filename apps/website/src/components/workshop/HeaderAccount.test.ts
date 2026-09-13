@@ -217,6 +217,38 @@ describe('HeaderAccount sign-in link', () => {
     )
   })
 
+  it('waits for an asynchronous file stash before navigating', async () => {
+    const assign = vi.fn()
+    vi.spyOn(window.location, 'assign').mockImplementation(assign)
+    const saved = Promise.withResolvers<void>()
+    const stop = onBeforeSignInLeave(() => saved.promise)
+    onTestFinished(stop)
+    render(HeaderAccount)
+    await userEvent
+      .setup()
+      .click(screen.getByRole('link', { name: /sign in/i }))
+    expect(assign).not.toHaveBeenCalled()
+    saved.resolve()
+    await vi.waitFor(() => expect(assign).toHaveBeenCalledOnce())
+  })
+
+  it('does not redirect a departed page after its file stash settles', async () => {
+    const assign = vi.fn()
+    vi.spyOn(window.location, 'assign').mockImplementation(assign)
+    const saved = Promise.withResolvers<void>()
+    const stop = onBeforeSignInLeave(() => saved.promise)
+    onTestFinished(stop)
+    render(HeaderAccount)
+    await userEvent
+      .setup()
+      .click(screen.getByRole('link', { name: /sign in/i }))
+    window.dispatchEvent(new Event('pagehide'))
+    saved.resolve()
+    await saved.promise
+    await Promise.resolve()
+    expect(assign).not.toHaveBeenCalled()
+  })
+
   it('sends the visitor to sign in with the current page as the return destination', async () => {
     const assign = vi.fn()
     vi.spyOn(window.location, 'assign').mockImplementation(assign)

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { routerWorkshopModels } from './workshop-browse-content'
+import { workshopModels } from './workshop-browse-content'
 import { getRouterWorkshopModelDetail } from './workshop-router-content'
 import {
   defaultValues,
@@ -107,7 +107,7 @@ function prepare(id: string, values: FormValues = {}) {
   )
 }
 
-const models = routerWorkshopModels.filter(
+const models = workshopModels.filter(
   (model) => getRouterWorkshopModelDetail(model.slug)?.execution?.creator
 )
 
@@ -156,9 +156,7 @@ describe('creator widgets to native Router requests', () => {
   })
 
   it.for([
-    ...new Map(
-      routerWorkshopModels.map((model) => [model.routerId, model])
-    ).values()
+    ...new Map(workshopModels.map((model) => [model.routerId, model])).values()
   ])(
     'initializes valid defaults and leaves optional seeds unset: $slug',
     async (model) => {
@@ -232,9 +230,7 @@ describe('creator widgets to native Router requests', () => {
       expect(workshopContract(id)?.creator).toBeDefined()
     expect([...new Set(models.map((model) => model.routerId))].sort()).toEqual(
       Object.keys(creatorModels.models)
-        .filter((id) =>
-          routerWorkshopModels.some((model) => model.routerId === id)
-        )
+        .filter((id) => workshopModels.some((model) => model.routerId === id))
         .sort()
     )
   })

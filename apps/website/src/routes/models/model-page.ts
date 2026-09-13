@@ -1,8 +1,8 @@
+import { catalogSearch } from '../../config/models-catalogue'
 import {
-  catalogSearch,
   getWorkshopModel,
   workshopModels
-} from '../../config/models-catalogue'
+} from '../../config/workshop-browse-content'
 import { getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
 import { relatedModels } from '../../config/workshop-related'
 import { estimateWorkshopNodePrice } from '../../config/workshop-node-pricing'

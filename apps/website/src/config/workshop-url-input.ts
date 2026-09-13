@@ -10,6 +10,18 @@ const formSources = new WeakMap<FormValues, ReadonlyMap<string, FileValue>>()
 const REHOST_SOURCE =
   /^https:\/\/cdn\.jsdelivr\.net\/gh\/Comfy-Org\/workflow_templates@[^/]+\//
 
+export function shouldRehostWorkshopUrl(
+  field: FieldSchema,
+  source: unknown
+): source is string {
+  return (
+    !!urlUploadField(field) &&
+    typeof source === 'string' &&
+    isHttpImageSource(source) &&
+    REHOST_SOURCE.test(source)
+  )
+}
+
 async function rehostUrlInputs(
   fields: readonly FieldSchema[],
   values: FormValues,
@@ -17,12 +29,7 @@ async function rehostUrlInputs(
 ): Promise<FormValues> {
   const pending = fields.flatMap((field) => {
     const source = values[field.name]
-    return urlUploadField(field) &&
-      typeof source === 'string' &&
-      isHttpImageSource(source) &&
-      REHOST_SOURCE.test(source)
-      ? [{ field, source }]
-      : []
+    return shouldRehostWorkshopUrl(field, source) ? [{ field, source }] : []
   })
   if (!pending.length) return values
   const errors = validateForm(fields, values)

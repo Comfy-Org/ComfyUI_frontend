@@ -9672,9 +9672,9 @@ Enterprise`
     en: 'Upload failed. Try again or paste a reachable URL.',
     'zh-CN': '上传失败。请重试或粘贴可访问的网址。'
   },
-  'workshop.form.signInBeforeUpload': {
-    en: 'Sign in before uploading files. Your prompt and settings will be kept.',
-    'zh-CN': '请先登录再上传文件。你的提示词和设置会保留。'
+  'workshop.form.draftRestoreFailed': {
+    en: 'Some saved inputs could not be restored. Check your inputs and select your files again.',
+    'zh-CN': '部分已保存的输入无法恢复。请检查输入并重新选择文件。'
   },
   'workshop.form.requestTooLarge': {
     en: 'The combined images and prompt exceed Router’s 10 MiB request limit. Use smaller images or a shorter prompt.',

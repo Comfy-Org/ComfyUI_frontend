@@ -1,9 +1,16 @@
 <script setup lang="ts">
-import { useElementHover, useEventListener, useRafFn } from '@vueuse/core'
+import {
+  useDocumentVisibility,
+  useElementHover,
+  useElementVisibility,
+  useEventListener,
+  useRafFn
+} from '@vueuse/core'
 import { computed, ref, useTemplateRef, watch } from 'vue'
 
 import type { WorkshopModel } from '../../config/models-catalogue'
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
+import { usePreviewVideo } from '../../composables/usePreviewVideo'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { taskLabelFor } from '../../lib/workshop/task-label'
@@ -37,6 +44,19 @@ function goTo(index: number) {
 
 const banner = useTemplateRef<HTMLElement>('banner')
 const hovered = useElementHover(banner)
+// Starts true so the server-rendered first slide carries its video source and
+// the browser requests the frame during parse; the observer corrects it once
+// hydrated. Rotation does not care: it runs on requestAnimationFrame, which
+// only exists in the browser.
+const onScreen = useElementVisibility(banner, { initialValue: true })
+const visibility = useDocumentVisibility()
+const video = useTemplateRef<HTMLVideoElement>('video')
+// The video fills the banner, so the banner's observer is its observer.
+const previewSrc = usePreviewVideo(
+  video,
+  () => active.value.model.thumbnail?.url,
+  { visible: () => onScreen.value }
+)
 
 // Clicking a bar leaves it focused, so pausing on any focus would stop the
 // rotation for good. Only a keyboard visitor, who needs the time, stops it.
@@ -51,6 +71,8 @@ useEventListener(banner, 'focusout', () => (readingByKeyboard.value = false))
 const rotating = computed(
   () =>
     slides.value.length > 1 &&
+    onScreen.value &&
+    visibility.value === 'visible' &&
     !hovered.value &&
     !readingByKeyboard.value &&
     !prefersReducedMotion()
@@ -91,14 +113,14 @@ const fill = computed(() =>
       <video
         v-if="active.model.thumbnail?.kind === 'video'"
         :key="active.model.slug"
-        :src="active.model.thumbnail.url"
+        ref="video"
+        :src="previewSrc"
         class="absolute inset-0 size-full object-cover"
         aria-hidden="true"
         muted
         loop
         playsinline
-        :autoplay="!prefersReducedMotion()"
-        preload="auto"
+        preload="metadata"
         data-testid="featured-video"
       />
       <img

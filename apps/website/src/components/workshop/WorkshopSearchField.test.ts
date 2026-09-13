@@ -4,27 +4,37 @@ import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { defineComponent, h } from 'vue'
+import { renderToString } from 'vue/server-renderer'
 
 import WorkshopSearchField from './WorkshopSearchField.vue'
 
 describe('WorkshopSearchField', () => {
   it('contains keyboard focus in mobile search and restores it when Escape is pressed from a button', async () => {
     const user = userEvent.setup()
-    render(
-      defineComponent({
-        setup: () => () =>
-          h(WorkshopSearchField, {
-            models: [],
-            modelValue: '',
-            providers: [],
-            capabilities: [],
-            compact: true
-          })
-      })
+    const search = defineComponent({
+      setup: () => () =>
+        h(WorkshopSearchField, {
+          models: [],
+          modelValue: '',
+          providers: [],
+          capabilities: [],
+          compact: true
+        })
+    })
+    const server = new DOMParser().parseFromString(
+      await renderToString(h(search)),
+      'text/html'
     )
+    expect(
+      within(server.body).getByRole('button', {
+        name: 'Search models, providers, categories...'
+      })
+    ).toBeDisabled()
+    render(search)
     const trigger = screen.getByRole('button', {
       name: 'Search models, providers, categories...'
     })
+    await waitFor(() => expect(trigger).toBeEnabled())
     await user.click(trigger)
     const dialog = await screen.findByRole('dialog')
     const input = within(dialog).getByRole('searchbox')

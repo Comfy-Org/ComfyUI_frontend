@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
+import '@testing-library/jest-dom/vitest'
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import type { WorkshopModel } from '../../config/models-catalogue'
@@ -45,10 +46,12 @@ function cardNames() {
   return screen.queryAllByRole('link').map((card) => card.textContent)
 }
 
-function search() {
-  return screen.getByRole('combobox', {
+async function search() {
+  const field = screen.getByRole('combobox', {
     name: 'Search models, providers, categories...'
   })
+  await waitFor(() => expect(field).toBeEnabled())
+  return field
 }
 
 describe('WorkshopModelsGrid', () => {
@@ -61,7 +64,7 @@ describe('WorkshopModelsGrid', () => {
     render(WorkshopModelsGrid, { props: { models } })
     expect(cardNames()).toHaveLength(3)
 
-    await user.type(search(), 'forest')
+    await user.type(await search(), 'forest')
     expect(cardNames()).toEqual([expect.stringContaining('Flux')])
   })
 
@@ -72,7 +75,7 @@ describe('WorkshopModelsGrid', () => {
       screen.queryByRole('button', { name: 'Flux Black Forest Labs' })
     ).toBeNull()
 
-    await user.click(search())
+    await user.click(await search())
     expect(
       screen.getAllByRole('button', {
         name: /^(?:Kling AI Kling|Flux Black Forest Labs|Mystery Partner node)$/i
@@ -87,7 +90,7 @@ describe('WorkshopModelsGrid', () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
 
-    await user.click(search())
+    await user.click(await search())
     await user.click(
       screen.getByRole('button', { name: 'Flux Black Forest Labs' })
     )
@@ -144,7 +147,7 @@ describe('WorkshopModelsGrid', () => {
   it('sorts by example count by default and by name on request', async () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
-    await user.type(search(), ' ')
+    await user.type(await search(), ' ')
     expect(cardNames()[0]).toContain('Kling AI')
 
     await user.click(screen.getByRole('button', { name: 'Sort' }))
@@ -157,7 +160,7 @@ describe('WorkshopModelsGrid', () => {
   it('clears search and filters together from the empty state', async () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
-    await user.type(search(), 'nothing')
+    await user.type(await search(), 'nothing')
     expect(screen.getByText('No models match')).toBeTruthy()
 
     await user.click(screen.getByRole('button', { name: 'Clear filters' }))

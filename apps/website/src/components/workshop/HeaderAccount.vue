@@ -4,7 +4,7 @@ import { computed, ref, useTemplateRef } from 'vue'
 
 import { useWorkshopCredits } from '../../config/workshop-credits'
 import { WORKSHOP_CREDITS_URL } from '../../config/workshop-env'
-import { runBeforeSignInLeave } from '../../config/workshop-return'
+import { leaveForSignIn } from '../../config/workshop-return'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -38,12 +38,8 @@ function prepareSignInHref(): void {
   signInHref.value = signInDestination()
 }
 
-function goToSignIn(event: MouseEvent): void {
-  runBeforeSignInLeave()
-  if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0)
-    return
-  event.preventDefault()
-  window.location.assign(signInDestination())
+async function goToSignIn(event: MouseEvent): Promise<void> {
+  await leaveForSignIn(event, signInDestination())
 }
 
 const menuOpen = ref(false)
