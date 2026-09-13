@@ -100,9 +100,16 @@ export function createAgentRestClient() {
         : response.statusText
     const retryAfterHeader = response.headers.get('Retry-After')
     const retryAfterSeconds =
-      retryAfterHeader !== null && /^\d+$/.test(retryAfterHeader)
-        ? Number(retryAfterHeader)
-        : undefined
+      retryAfterHeader === null
+        ? undefined
+        : /^\d+$/.test(retryAfterHeader)
+          ? Number(retryAfterHeader)
+          : Number.isFinite(Number(retryAfterHeader))
+            ? undefined
+            : Math.max(
+                0,
+                Math.ceil((Date.parse(retryAfterHeader) - Date.now()) / 1000)
+              )
     return new AgentApiError(
       message,
       response.status,

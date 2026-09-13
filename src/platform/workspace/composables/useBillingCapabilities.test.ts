@@ -190,11 +190,13 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.snapshotAuthoritative.value).toBe(false)
 
     const initialization = billingCapabilities.initialize()
+    expect(billingCapabilities.hasResolvedCapabilities.value).toBe(false)
     expect(billingCapabilities.canTopUp.value).toBe(false)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
 
     resolveRequest(capabilitiesResponse(true))
     await initialization
+    expect(billingCapabilities.hasResolvedCapabilities.value).toBe(true)
     expect(billingCapabilities.canTopUp.value).toBe(true)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(true)
     expect(billingCapabilities.canCancel.value).toBe(true)
@@ -261,6 +263,7 @@ describe('useBillingCapabilities', () => {
 
     await billingCapabilities.initialize()
 
+    expect(billingCapabilities.hasResolvedCapabilities.value).toBe(false)
     expect(billingCapabilities.canTopUp.value).toBe(true)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
     expect(billingCapabilities.canCancel.value).toBe(false)
@@ -296,6 +299,7 @@ describe('useBillingCapabilities', () => {
 
     await billingCapabilities.initialize()
 
+    expect(billingCapabilities.hasResolvedCapabilities.value).toBe(false)
     expect(billingCapabilities.canTopUp.value).toBe(false)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
     expect(billingCapabilities.isReady.value).toBe(true)

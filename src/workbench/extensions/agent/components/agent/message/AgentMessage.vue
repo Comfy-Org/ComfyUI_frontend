@@ -6,8 +6,8 @@ import type {
   ActivityPart,
   AssistantMessage,
   NoticePart,
-  RunApprovalPart,
   PaywallPart,
+  RunApprovalPart,
   TabLinkPart,
   TextPart
 } from '../../../services/agent/agentMessageParts'
@@ -171,6 +171,7 @@ const status = computed(() => {
       <AgentPaywallCard
         v-else-if="group.kind === 'paywall'"
         :presentation="paywallPresentation"
+        :message="group.part.message"
         @paywall-action="emit('paywallAction', $event)"
       />
       <div
