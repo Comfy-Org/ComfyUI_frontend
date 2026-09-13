@@ -3,6 +3,8 @@ import * as Y from 'yjs'
 
 import { reportError } from '@/platform/telemetry/reportError'
 
+import { setCrdtDebugEnabled } from './crdtDebugGate'
+import { clearDevEvents, devEvents } from './devPanelLog'
 import type { DocFrameTransport } from './docFrameClient'
 import {
   DocFrameClient,
@@ -36,6 +38,49 @@ function updateAfter(doc: Y.Doc, mutate: () => void): Uint8Array {
 }
 
 describe('doc frame client', () => {
+  it('reports false sends for every frame type without changing delivery results', () => {
+    setCrdtDebugEnabled(true)
+    clearDevEvents()
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const transport = new TestTransport()
+    const send = vi.spyOn(transport, 'send').mockReturnValue(false)
+    const client = new DocFrameClient(transport)
+
+    expect(client.subscribe('wf-private', new Uint8Array())).toBe(false)
+    expect(client.sendOps('wf-private', 'tab-private', [])).toBe(false)
+    expect(client.unsubscribe('wf-private')).toBe(false)
+    expect(
+      devEvents.value.map(({ kind, scope, detail }) => ({
+        kind,
+        scope,
+        detail
+      }))
+    ).toEqual(
+      ['doc_subscribe', 'doc_ops', 'doc_unsubscribe'].map((frameType) => ({
+        kind: 'frame_send_failed',
+        scope: 'wire',
+        detail: {
+          frameType,
+          workflowId: 'wf-private',
+          reason: 'transport_unavailable'
+        }
+      }))
+    )
+
+    send.mockReturnValue(true)
+    expect(client.subscribe('wf-private', new Uint8Array())).toBe(true)
+    expect(devEvents.value).toHaveLength(3)
+    clearDevEvents()
+    setCrdtDebugEnabled(false)
+    warn.mockClear()
+    send.mockReturnValue(false)
+    expect(client.unsubscribe('wf-private')).toBe(false)
+    expect(warn).toHaveBeenCalledOnce()
+    expect(JSON.stringify(warn.mock.calls)).not.toContain('wf-private')
+    expect(devEvents.value).toHaveLength(0)
+    client.destroy()
+  })
+
   it('decodes a base64 doc_update that converges through Y.applyUpdate', () => {
     const source = new Y.Doc()
     source.getMap('nodes').set('one', { x: 10 })

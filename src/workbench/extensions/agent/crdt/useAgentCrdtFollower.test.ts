@@ -900,7 +900,8 @@ describe('useAgentCrdtFollower', () => {
       expect(materializedEvents).toEqual([
         [
           'agent_node_adapters_materialized',
-          { workflowId: 'wf-1', nodeIds: [toNodeId(1)] }
+          { workflowId: 'wf-1', nodeIds: [toNodeId(1)] },
+          { scope: 'doc', level: 'debug' }
         ]
       ])
       unmount()

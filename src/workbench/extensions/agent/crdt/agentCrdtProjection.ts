@@ -8,7 +8,7 @@ import {
   readSubgraphDefinitionIds,
   readSubgraphDefinitions
 } from './agentSubgraphDefinitions'
-import { recordDevEvent } from './devPanelLog'
+import { docLog } from './crdtLog'
 import type { DocUpdate } from './docFrameClient'
 import type { MutationsForTarget } from './ecsFollowerAdapter'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
@@ -76,10 +76,14 @@ export class AgentCrdtProjection {
     // else asks the canvas to paint the new links.
     graph.setDirtyCanvas(true, true)
     if (nodeIds.length > 0) {
-      recordDevEvent('agent_node_adapters_materialized', {
-        workflowId,
-        nodeIds
-      })
+      docLog.debug(
+        'agent_node_adapters_materialized',
+        'live node adapters materialized',
+        {
+          workflowId,
+          nodeIds
+        }
+      )
     }
   }
 

@@ -32,6 +32,8 @@ export type DevEventKind =
   | 'reconnected'
   | 'subscribe_retry'
   | 'doc_nodes_changed'
+  | 'doc_effects'
+  | 'op_minted'
   | 'rebind'
   | 'stale_probe'
   | 'doc_gap'
