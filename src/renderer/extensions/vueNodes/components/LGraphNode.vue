@@ -408,7 +408,10 @@ const nodeSizeStyle = computed(() =>
       }
 )
 
-const { pointerHandlers } = useNodePointerInteractions(() => nodeData)
+const { pointerHandlers } = useNodePointerInteractions(
+  () => nodeData,
+  resolveLGraphNode
+)
 const { onPointerdown, ...remainingPointerHandlers } = pointerHandlers
 const { startDrag } = useNodeDrag()
 const badges = usePartitionedBadges(nodeData)

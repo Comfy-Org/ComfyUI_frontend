@@ -77,7 +77,7 @@ whenever(() => !canvasStore.linearMode, bindWidget)
 watch(() => canvasStore.currentGraph, bindWidget)
 
 function draw() {
-  if (!widgetInstance || !node) return
+  if (!widgetInstance || !node || !canvasEl.value) return
   const width =
     canvasEl.value.getBoundingClientRect().width ||
     canvasEl.value.parentElement.clientWidth
@@ -121,8 +121,16 @@ function handleUp(e: PointerEvent) {
   pointer.up(e)
 }
 function handleMove(e: PointerEvent) {
-  if (!pointer || !node) return
-  augmentToCanvasPointerEvent(e, node, canvas)
+  if (!pointer) return
+  const currentNode = findLegacyWidget()?.node
+  if (!currentNode) return
+  node = currentNode
+  augmentToCanvasPointerEvent(e, currentNode, canvas)
+  currentNode.onMouseMove?.(
+    e,
+    [e.canvasX - currentNode.pos[0], e.canvasY - currentNode.pos[1]],
+    canvas
+  )
   pointer.move(e)
 }
 </script>
@@ -133,6 +141,7 @@ function handleMove(e: PointerEvent) {
   >
     <canvas
       ref="canvasEl"
+      data-testid="legacy-widget-canvas"
       class="absolute w-full cursor-crosshair"
       @pointerdown.stop="handleDown"
       @pointerup.stop="handleUp"
