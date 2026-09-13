@@ -6,11 +6,13 @@ import { rememberShelf } from '../../lib/workshop/shelf-memory'
 import CatalogueBackLink from './CatalogueBackLink.vue'
 
 afterEach(() => {
+  history.replaceState(null, '', '/')
   sessionStorage.clear()
 })
 
 describe('CatalogueBackLink', () => {
   it('offers the whole catalogue when no shelf was left behind', () => {
+    history.replaceState(null, '', '/models/demo/')
     render(CatalogueBackLink)
 
     const link = screen.getByTestId('model-back')
@@ -19,7 +21,8 @@ describe('CatalogueBackLink', () => {
   })
 
   it('offers the shelf the visitor came from', async () => {
-    rememberShelf('generate-videos')
+    history.replaceState(null, '', '/models/demo/')
+    rememberShelf('generate-videos', '/models/demo/')
     render(CatalogueBackLink)
 
     await waitFor(() => {

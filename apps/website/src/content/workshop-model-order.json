@@ -1,7 +1,7 @@
 {
   "measuredOn": "2026-09-12",
   "windowDays": 30,
-  "note": "Order only, no figures. The two image rows follow the audit's template ranking, which tells text-to-image apart from editing; the rest follow how often each model ran. A card the window never saw is absent and keeps the fallback order.",
+  "note": "Curated recommendation order, no figures. The image rows follow the template audit; other rows incorporate recent usage. Unlisted active models retain the catalogue fallback order.",
   "slugs": [
     "byteplus--seedream-5-pro--generate-images",
     "byteplus--seedream-4--generate-images",

@@ -23,11 +23,7 @@ export function modelsBuildRoutes(enabled: boolean) {
     ...(enabled
       ? [
           { pattern: '/models/[slug]', entrypoint: entry('[slug]') },
-          { pattern: '/models/showcase', entrypoint: entry('showcase') },
-          {
-            pattern: '/checkout-opening',
-            entrypoint: entry('checkout-opening')
-          }
+          { pattern: '/models/showcase', entrypoint: entry('showcase') }
         ]
       : [])
   ]

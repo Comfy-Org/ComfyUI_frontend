@@ -62,11 +62,7 @@ const pillClass =
         :class="
           cn(
             'absolute z-10',
-            thumbnailLabel
-              ? providerBadge
-                ? 'top-12 left-3'
-                : 'top-3 left-3'
-              : 'top-3 right-3'
+            thumbnailLabel && providerBadge ? 'top-12 left-3' : 'top-3 right-3'
           )
         "
       />
@@ -108,7 +104,7 @@ const pillClass =
         v-if="thumbnailLabel"
         :class="
           cn(
-            'bg-site-dropdown pointer-events-none absolute z-10 rounded-xl border border-white/10 px-3 py-2 text-sm leading-none font-bold whitespace-nowrap text-primary-warm-white shadow-sm transition-all duration-500 select-none group-hover:opacity-0 group-focus-visible:opacity-0',
+            'bg-site-dropdown pointer-events-none absolute z-10 rounded-xl border border-white/10 px-3 py-2 text-sm leading-none font-bold whitespace-nowrap text-primary-warm-white shadow-sm transition-all duration-500 select-none group-hover:opacity-0',
             providerBadge
               ? 'top-3 right-3 group-hover:translate-x-1 group-hover:-translate-y-1'
               : 'bottom-3 left-3 group-hover:-translate-x-1 group-hover:translate-y-1'

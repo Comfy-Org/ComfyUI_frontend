@@ -10,7 +10,8 @@ export function bannerName(name: string, task: string): string {
   const words = task.trim().split(/\s+/).filter(Boolean)
   if (words.length < 2) return name
   const escaped = words.map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-  const suffix = new RegExp(`\\s+${escaped.join('[\\s\\-–—]*')}$`, 'i')
+  const boundary = '(?:\\s+|\\s*[:|·–—]\\s*)'
+  const suffix = new RegExp(`${boundary}${escaped.join('[\\s\\-–—]*')}$`, 'i')
   const stripped = name.replace(suffix, '').trim()
   return stripped.length >= 3 ? stripped : name
 }

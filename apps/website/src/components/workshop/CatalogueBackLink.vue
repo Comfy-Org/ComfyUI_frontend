@@ -19,7 +19,7 @@ const category = ref<string>()
 // shelf, not the whole catalogue. Opened in a new tab, or reached from a link
 // somebody shared, there is no shelf to return to and the catalogue answers.
 onMounted(() => {
-  const shelf = lastShelf()
+  const shelf = lastShelf(location.pathname)
   if (!shelf || shelf === 'all') return
   href.value = `${routes.workshop}${catalogSearch({ useCase: shelf })}`
   category.value = t(useCaseLabelKey[shelf], locale)

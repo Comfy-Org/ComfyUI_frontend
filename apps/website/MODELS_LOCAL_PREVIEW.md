@@ -299,8 +299,8 @@ The current data covers 56 models sharing 21 assets, including video thumbnails.
 Labels are at most 12 characters and distinct within each shared-art group.
 The pill is warm-white text on the dropdown surface with a hairline border,
 in the site's own type. It sits top-right on hub cards and bottom-left on
-grid cards, near the model name, and slides away while the card is hovered
-or focused so it never blocks the artwork being compared.
+grid cards, near the model name, and slides away while the card is hovered so
+it never blocks the artwork being compared.
 Full names, links, image/video sources and Router requests remain unchanged.
 
 Catalogue search follow-up, observed during this check: `krea turbo` returns no

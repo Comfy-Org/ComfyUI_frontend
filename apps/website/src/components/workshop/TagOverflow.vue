@@ -19,6 +19,7 @@ const pill =
   <PopoverRoot>
     <PopoverTrigger
       :aria-label="tags.map((tag) => tag.label).join(', ')"
+      :title="tags.map((tag) => tag.label).join(', ')"
       :class="
         cn(pill, 'cursor-pointer text-primary-comfy-canvas/70 tabular-nums')
       "

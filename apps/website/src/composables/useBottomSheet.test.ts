@@ -6,11 +6,13 @@ describe('restAt', () => {
   it('puts the sheet away only once it is dragged well below its resting height', () => {
     expect(restAt(0.1)).toBe('closed')
     expect(restAt(0.33)).toBe('closed')
+    expect(restAt(0.34)).toBe('collapsed')
     expect(restAt(0.35)).toBe('collapsed')
   })
 
   it('settles at whichever height the drag ended nearer to', () => {
     expect(restAt(0.6)).toBe('collapsed')
+    expect(restAt(0.77)).toBe('expanded')
     expect(restAt(0.9)).toBe('expanded')
     expect(restAt(1)).toBe('expanded')
   })

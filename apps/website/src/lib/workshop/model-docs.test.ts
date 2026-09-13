@@ -41,11 +41,10 @@ describe('modelDocsHref', () => {
     const prefixes = new Set(
       routerIndex.map((entry) => entry.id.split('/')[0] ?? '')
     )
-    const undocumented: string[] = []
-    for (const prefix of prefixes) {
-      if (!modelDocsHref({ routerId: `${prefix}/x` }))
-        expect(undocumented).toContain(prefix)
-    }
+    const unmapped = [...prefixes].filter(
+      (prefix) => !modelDocsHref({ routerId: `${prefix}/x` })
+    )
+    expect(unmapped).toEqual([])
   })
 
   it('offers no link for a provider the docs do not cover', () => {

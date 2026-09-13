@@ -55,7 +55,10 @@ const fileType = computed(
       type="button"
       :disabled
       :aria-label="
-        t('workshop.field.replaceFile', locale).replace('{name}', file.name)
+        t('workshop.field.replaceFile', locale).replace(
+          '{name}',
+          () => file.name
+        )
       "
       class="focus-visible:outline-primary-comfy-yellow min-w-0 flex-1 cursor-pointer truncate text-left text-sm text-primary-warm-white underline-offset-4 hover:underline"
       @click="$emit('replace')"
@@ -69,7 +72,10 @@ const fileType = computed(
       type="button"
       :disabled
       :aria-label="
-        t('workshop.field.removeNamedFile', locale).replace('{name}', file.name)
+        t('workshop.field.removeNamedFile', locale).replace(
+          '{name}',
+          () => file.name
+        )
       "
       class="focus-visible:outline-primary-comfy-yellow flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-primary-warm-gray hover:bg-transparency-white-t8 hover:text-primary-warm-white"
       @click="$emit('remove')"

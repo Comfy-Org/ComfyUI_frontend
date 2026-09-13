@@ -4,36 +4,50 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
 
-import { WORKSHOP_CLOUD_BASE_URL } from '../../config/workshop-env'
-import { platformTopUpHref } from '../../lib/workshop/buy-credits'
+import {
+  WORKSHOP_CLOUD_BASE_URL,
+  WORKSHOP_CREDITS_URL
+} from '../../config/workshop-env'
 import BuyCreditsDialog from './BuyCreditsDialog.vue'
 
-const hoistedSession = vi.hoisted(() => ({
-  session: undefined as { value: unknown } | undefined
+const auth = vi.hoisted(() => ({
+  session: undefined as { value: unknown } | undefined,
+  ensureFresh: vi.fn()
 }))
 
 const credits = vi.hoisted(() => ({
+  balance: undefined as { value: unknown } | undefined,
+  topUp: undefined as { value: unknown } | undefined,
   watchForTopUp: vi.fn(),
   clearTopUpWatch: vi.fn(),
-  topUp: undefined as { value: unknown } | undefined
+  refresh: vi.fn()
 }))
 
 vi.mock<unknown>(import('../../config/workshop-credits'), async () => {
-  const { ref, computed } = await import('vue')
+  const { computed, ref } = await import('vue')
+  const balance = ref<unknown>({ status: 'unknown' })
   const topUp = ref<unknown>({ status: 'idle' })
+  credits.balance = balance
   credits.topUp = topUp
   return {
     watchForTopUp: credits.watchForTopUp,
     clearTopUpWatch: credits.clearTopUpWatch,
-    useTopUpWatch: () => computed(() => topUp.value)
+    refreshWorkshopCredits: credits.refresh,
+    useTopUpWatch: () => computed(() => topUp.value),
+    useWorkshopCredits: () => ({ balance: computed(() => balance.value) })
   }
 })
 
 vi.mock<unknown>(import('../../config/workshop-session-state'), async () => {
   const { ref } = await import('vue')
   const session = ref<unknown>(undefined)
-  hoistedSession.session = session
-  return { useWorkshopSession: () => ({ session }) }
+  auth.session = session
+  return {
+    useWorkshopSession: () => ({
+      session,
+      ensureFresh: auth.ensureFresh
+    })
+  }
 })
 
 const credential = {
@@ -45,16 +59,41 @@ const credential = {
   permissions: []
 }
 
+const attemptId = '00000000-0000-4000-8000-000000000001'
+const topUpScope = {
+  uid: 'user-1',
+  workspaceId: 'workspace-1',
+  workspaceName: 'Personal',
+  previousCredits: 100
+}
+
 function claimTab() {
-  const tab = { location: { assign: vi.fn() }, close: vi.fn() }
+  const tab = {
+    opener: window,
+    location: { assign: vi.fn() },
+    close: vi.fn()
+  }
   const open = vi
     .spyOn(window, 'open')
     .mockReturnValue(tab as unknown as Window)
   onTestFinished(() => {
     open.mockRestore()
-    vi.unstubAllGlobals()
   })
   return tab
+}
+
+function stubCheckout(
+  body: unknown = {
+    checkout_url: 'https://checkout.stripe.com/c/session_1',
+    session_id: 'cs_1'
+  },
+  status = 200
+) {
+  const fetchCheckout = vi
+    .fn()
+    .mockResolvedValue(new Response(JSON.stringify(body), { status }))
+  vi.stubGlobal('fetch', fetchCheckout)
+  return fetchCheckout
 }
 
 function renderOpenDialog() {
@@ -67,43 +106,61 @@ function renderOpenDialog() {
 
 describe('BuyCreditsDialog', () => {
   beforeEach(() => {
-    hoistedSession.session!.value = credential
+    auth.session!.value = credential
+    auth.ensureFresh.mockReset().mockResolvedValue({
+      status: 'ok',
+      session: credential
+    })
+    credits.balance!.value = { status: 'ok', credits: 100 }
     credits.topUp!.value = { status: 'idle' }
     credits.watchForTopUp.mockReset()
     credits.clearTopUpWatch.mockReset()
+    credits.refresh.mockReset().mockResolvedValue(undefined)
+    vi.spyOn(crypto, 'randomUUID').mockReturnValue(attemptId)
   })
 
   it('walks waiting to the landed receipt and closes on Done', async () => {
     const user = userEvent.setup()
     renderOpenDialog()
 
-    credits.topUp!.value = { status: 'waiting', previousCredits: 100 }
+    credits.topUp!.value = { status: 'waiting', ...topUpScope }
     expect(await screen.findByTestId('buy-credits-polling')).toBeTruthy()
 
+    auth.session!.value = {
+      ...credential,
+      workspace: { ...credential.workspace, id: 'workspace-2', name: 'Team B' }
+    }
     credits.topUp!.value = {
       status: 'landed',
-      previousCredits: 100,
-      newCredits: 5375
+      ...topUpScope,
+      newCredits: 5_375,
+      landedAt: Date.now()
     }
     const done = await screen.findByTestId('buy-credits-done')
     expect(done.textContent).toContain('5,275 credits added')
     expect(screen.getByTestId('buy-credits-ledger').textContent).toContain(
       '5,375'
     )
+    expect(screen.getByRole('dialog').textContent).toContain('Personal')
+    expect(screen.getByRole('dialog').textContent).not.toContain('Team B')
 
     await user.click(screen.getByTestId('buy-credits-resume'))
     expect(credits.clearTopUpWatch).toHaveBeenCalled()
   })
 
-  it('holds with a support handle when the credits never arrive', async () => {
+  it('describes an unresolved return without claiming payment succeeded', async () => {
     renderOpenDialog()
 
-    credits.topUp!.value = { status: 'unresolved', previousCredits: 100 }
+    credits.topUp!.value = { status: 'unresolved', ...topUpScope }
 
-    expect(await screen.findByTestId('buy-credits-held')).toBeTruthy()
-    expect(
-      screen.getByTestId('buy-credits-support').getAttribute('href')
-    ).toBeTruthy()
+    const held = await screen.findByTestId('buy-credits-held')
+    expect(held.textContent).toContain('No new credits detected')
+    expect(screen.getByRole('dialog').textContent).toContain(
+      'The checkout may have been cancelled'
+    )
+    expect(screen.getByRole('dialog').textContent).not.toContain(
+      'Payment received'
+    )
   })
 
   it('offers the packs and clamps the custom stepper', async () => {
@@ -125,18 +182,21 @@ describe('BuyCreditsDialog', () => {
     ).toBe(true)
   })
 
-  it('creates a checkout session for the picked amount and sends the buyer to it', async () => {
+  it('creates checkout with a fresh scoped token and a known balance baseline', async () => {
     const user = userEvent.setup()
     const tab = claimTab()
-    const fetchCheckout = vi
-      .fn()
-      .mockResolvedValue(
-        new Response(
-          JSON.stringify({ checkout_url: 'https://checkout.stripe.com/c/s_1' }),
-          { status: 200 }
-        )
-      )
-    vi.stubGlobal('fetch', fetchCheckout)
+    const fetchCheckout = stubCheckout()
+    const rotated = {
+      ...credential,
+      token: 'fresh-workspace-jwt'
+    }
+    credits.refresh.mockImplementation(async () => {
+      auth.session!.value = rotated
+    })
+    auth.ensureFresh.mockResolvedValue({
+      status: 'ok',
+      session: rotated
+    })
     renderOpenDialog()
 
     await user.click(await screen.findByTestId('buy-credits-pack-50'))
@@ -144,76 +204,115 @@ describe('BuyCreditsDialog', () => {
 
     await vi.waitFor(() =>
       expect(tab.location.assign).toHaveBeenCalledWith(
-        'https://checkout.stripe.com/c/s_1'
+        'https://checkout.stripe.com/c/session_1'
       )
+    )
+    expect(auth.ensureFresh).toHaveBeenCalledWith(undefined, {
+      workspaceId: 'workspace-1',
+      signal: expect.any(AbortSignal),
+      timeoutMs: 15_000
+    })
+    expect(credits.refresh).toHaveBeenCalledWith({ force: true })
+    expect(credits.refresh.mock.invocationCallOrder[0]).toBeLessThan(
+      auth.ensureFresh.mock.invocationCallOrder[0]
     )
     const [target, init] = fetchCheckout.mock.calls[0] as [URL, RequestInit]
     expect(String(target)).toBe(
       `${WORKSHOP_CLOUD_BASE_URL}/api/billing/topup/checkout`
     )
     expect(init.headers).toMatchObject({
-      Authorization: 'Bearer workspace-jwt'
+      Authorization: 'Bearer fresh-workspace-jwt'
     })
-    expect(JSON.parse(String(init.body))).toEqual({
-      amount_cents: 5000,
-      return_url: `${window.location.origin}/payment/success`
+    const request = JSON.parse(String(init.body)) as Record<string, unknown>
+    const returnUrl = new URL(String(request.return_url))
+    expect(request).toMatchObject({
+      amount_cents: 5_000,
+      idempotency_key: attemptId
     })
-    expect(credits.watchForTopUp).toHaveBeenCalled()
+    expect(returnUrl.origin + returnUrl.pathname).toBe(
+      window.location.origin + window.location.pathname
+    )
+    expect(returnUrl.searchParams.get('workshopTopUpReturn')).toBe(attemptId)
+    expect(credits.watchForTopUp).not.toHaveBeenCalled()
+    expect(await screen.findByTestId('buy-credits-open-checkout')).toBeTruthy()
   })
 
-  it('returns through Cloud while this origin is outside the allowlist', async () => {
+  it('starts balance confirmation only after the matching checkout returns', async () => {
+    const user = userEvent.setup()
+    claimTab()
+    stubCheckout()
+    renderOpenDialog()
+
+    await user.click(await screen.findByTestId('buy-credits-continue'))
+    await screen.findByTestId('buy-credits-open-checkout')
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        origin: window.location.origin,
+        data: { type: 'workshop-topup-return', attemptId: 'another-attempt' }
+      })
+    )
+    expect(credits.watchForTopUp).not.toHaveBeenCalled()
+
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        origin: window.location.origin,
+        data: { type: 'workshop-topup-return', attemptId }
+      })
+    )
+
+    expect(credits.watchForTopUp).toHaveBeenCalledWith({
+      ...topUpScope
+    })
+  })
+
+  it('keeps an explicit checkout link when the popup is blocked', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(window, 'open').mockReturnValue(null)
+    stubCheckout()
+    renderOpenDialog()
+
+    await user.click(await screen.findByTestId('buy-credits-continue'))
+
+    const link = await screen.findByTestId('buy-credits-open-checkout')
+    expect(link.getAttribute('href')).toBe(
+      'https://checkout.stripe.com/c/session_1'
+    )
+    expect(credits.watchForTopUp).not.toHaveBeenCalled()
+  })
+
+  it('uses the Cloud credits page only for an explicit rollout miss', async () => {
     const user = userEvent.setup()
     const tab = claimTab()
-    const fetchCheckout = vi
-      .fn()
-      .mockResolvedValueOnce(new Response('', { status: 400 }))
-      .mockResolvedValueOnce(
-        new Response(
-          JSON.stringify({ checkout_url: 'https://checkout.stripe.com/c/s_2' }),
-          { status: 200 }
-        )
-      )
-    vi.stubGlobal('fetch', fetchCheckout)
+    stubCheckout({ code: 'NOT_FOUND', message: 'Not found' }, 404)
     renderOpenDialog()
 
     await user.click(await screen.findByTestId('buy-credits-continue'))
 
     await vi.waitFor(() =>
-      expect(tab.location.assign).toHaveBeenCalledWith(
-        'https://checkout.stripe.com/c/s_2'
-      )
+      expect(tab.location.assign).toHaveBeenCalledWith(WORKSHOP_CREDITS_URL)
     )
-    const retry = fetchCheckout.mock.calls[1] as [URL, RequestInit]
-    expect(JSON.parse(String(retry[1].body))).toMatchObject({
-      return_url: `${WORKSHOP_CLOUD_BASE_URL}/?settings=plan-credits`
-    })
+    expect(screen.queryByTestId('checkout-error')).toBeNull()
+    expect(credits.watchForTopUp).not.toHaveBeenCalled()
   })
 
-  it('still reaches Stripe when the return host is rejected with a 404', async () => {
+  it('keeps the rollout fallback link when the claimed tab cannot navigate', async () => {
     const user = userEvent.setup()
     const tab = claimTab()
-    const fetchCheckout = vi
-      .fn()
-      .mockResolvedValueOnce(new Response('', { status: 404 }))
-      .mockResolvedValueOnce(
-        new Response(
-          JSON.stringify({ checkout_url: 'https://checkout.stripe.com/c/s_3' }),
-          { status: 200 }
-        )
-      )
-    vi.stubGlobal('fetch', fetchCheckout)
+    tab.location.assign.mockImplementation(() => {
+      throw new Error('tab closed')
+    })
+    stubCheckout({ code: 'NOT_FOUND', message: 'Not found' }, 404)
     renderOpenDialog()
 
     await user.click(await screen.findByTestId('buy-credits-continue'))
 
-    await vi.waitFor(() =>
-      expect(tab.location.assign).toHaveBeenCalledWith(
-        'https://checkout.stripe.com/c/s_3'
-      )
-    )
+    const link = await screen.findByTestId('buy-credits-open-checkout')
+    expect(link.getAttribute('href')).toBe(WORKSHOP_CREDITS_URL)
+    expect(screen.queryByTestId('checkout-error')).toBeNull()
+    expect(tab.close).toHaveBeenCalled()
   })
 
-  it('falls back to the platform rail while the checkout flag is dark', async () => {
+  it('does not treat an untyped 404 as a rollout miss', async () => {
     const user = userEvent.setup()
     const tab = claimTab()
     vi.stubGlobal(
@@ -224,28 +323,60 @@ describe('BuyCreditsDialog', () => {
 
     await user.click(await screen.findByTestId('buy-credits-continue'))
 
-    await vi.waitFor(() =>
-      expect(tab.location.assign).toHaveBeenCalledWith(
-        platformTopUpHref('workspace-1')
-      )
-    )
-    expect(screen.queryByTestId('checkout-error')).toBeNull()
+    expect(await screen.findByTestId('checkout-error')).toBeTruthy()
+    expect(tab.close).toHaveBeenCalled()
   })
 
-  it('keeps the dialog open with a retry line when checkout errors', async () => {
+  it('refuses checkout when the scoped balance is unavailable', async () => {
     const user = userEvent.setup()
     const tab = claimTab()
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue(new Response('', { status: 500 }))
-    )
+    const fetchCheckout = stubCheckout()
+    credits.balance!.value = { status: 'error' }
     renderOpenDialog()
 
     await user.click(await screen.findByTestId('buy-credits-continue'))
 
-    await vi.waitFor(() =>
-      expect(screen.getByTestId('checkout-error')).toBeTruthy()
-    )
+    expect(await screen.findByTestId('checkout-error')).toBeTruthy()
+    expect(fetchCheckout).not.toHaveBeenCalled()
+    expect(tab.close).toHaveBeenCalled()
+  })
+
+  it('refuses checkout if refreshing changes the signed-in identity', async () => {
+    const user = userEvent.setup()
+    const tab = claimTab()
+    const fetchCheckout = stubCheckout()
+    credits.refresh.mockImplementation(async () => {
+      auth.session!.value = {
+        ...credential,
+        uid: 'user-2',
+        token: 'other-token'
+      }
+    })
+    renderOpenDialog()
+
+    await user.click(await screen.findByTestId('buy-credits-continue'))
+
+    expect(await screen.findByTestId('checkout-error')).toBeTruthy()
+    expect(fetchCheckout).not.toHaveBeenCalled()
+    expect(tab.close).toHaveBeenCalled()
+  })
+
+  it('aborts an in-flight checkout when the dialog unmounts', async () => {
+    const user = userEvent.setup()
+    const tab = claimTab()
+    auth.ensureFresh.mockImplementation(() => new Promise(() => {}))
+    const view = renderOpenDialog()
+
+    await user.click(await screen.findByTestId('buy-credits-continue'))
+    await vi.waitFor(() => expect(auth.ensureFresh).toHaveBeenCalled())
+
+    view.unmount()
+
+    expect(auth.ensureFresh).toHaveBeenCalledWith(undefined, {
+      workspaceId: 'workspace-1',
+      signal: expect.objectContaining({ aborted: true }),
+      timeoutMs: 15_000
+    })
     expect(tab.close).toHaveBeenCalled()
   })
 })

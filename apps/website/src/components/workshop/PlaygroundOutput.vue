@@ -25,7 +25,6 @@ import type {
 } from '../../config/workshop-run'
 import { formatElapsed, isExpired } from '../../config/workshop-run'
 import { downloadOutput } from '../../config/workshop-output-download'
-import { platformTopUpHref } from '../../lib/workshop/buy-credits'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
@@ -36,7 +35,6 @@ const {
   earlier = [],
   attachments = [],
   memberWorkspace,
-  workspaceId,
   locale = 'en'
 } = defineProps<{
   state: RunState
@@ -45,7 +43,6 @@ const {
   earlier?: readonly RunRecord[]
   attachments?: readonly RunOutput[]
   memberWorkspace?: string
-  workspaceId?: string
   locale?: Locale
 }>()
 
@@ -55,6 +52,7 @@ const emit = defineEmits<{
   retry: []
   useInCode: []
   switchPersonal: []
+  buyCredits: []
 }>()
 
 const elapsed = computed(() =>
@@ -119,9 +117,7 @@ const shown = computed(() => selectedAttachment.value ?? primary.value)
 // Only a result the visitor produced opens full screen; the example is a
 // sample of what the model makes, not their picture to inspect.
 const expandable = computed(
-  () =>
-    state.status === 'succeeded' &&
-    (shown.value?.kind === 'image' || shown.value?.kind === 'video')
+  () => state.status === 'succeeded' && shown.value?.kind === 'image'
 )
 const outputs = computed(() =>
   shown.value
@@ -166,21 +162,26 @@ watch(shown, () => {
 
 // Oldest first, so the strip reads in the order the runs happened and the
 // newest result is the last stop, selected by default.
-const runStops = computed(() =>
+interface RunStop {
+  readonly record?: RunRecord
+  readonly output: RunOutput
+  readonly name: string
+  readonly testId: string
+}
+
+const runStops = computed<RunStop[]>(() =>
   latest.value === undefined
     ? []
     : [
-        ...earlier
-          .map((record, index) => ({
-            record: record as RunRecord | undefined,
-            output: record.output,
-            name: t('workshop.output.earlierRun', locale).replace(
-              '{number}',
-              String(index + 1)
-            ),
-            testId: `earlier-run-${index}`
-          }))
-          .reverse(),
+        ...[...earlier].reverse().map((record, index) => ({
+          record,
+          output: record.output,
+          name: t('workshop.output.earlierRun', locale).replace(
+            '{number}',
+            String(index + 1)
+          ),
+          testId: `earlier-run-${index}`
+        })),
         {
           record: undefined,
           output: latest.value,
@@ -305,12 +306,9 @@ const earlierClass = (active: boolean) =>
       </Button>
       <Button
         v-else-if="state.reason === 'noCredits'"
-        as="a"
-        :href="platformTopUpHref(workspaceId)"
-        target="_blank"
-        rel="noopener noreferrer"
         variant="outline"
         size="sm"
+        @click="emit('buyCredits')"
       >
         {{ t('nav.buyCredits', locale) }}
       </Button>
@@ -610,18 +608,7 @@ const earlierClass = (active: boolean) =>
           >
             <X class="size-4" aria-hidden="true" />
           </button>
-          <video
-            v-if="shown?.kind === 'video'"
-            :src="currentUrl"
-            data-testid="output-expanded-video"
-            class="max-h-full max-w-full rounded-2xl object-contain"
-            controls
-            autoplay
-            loop
-            playsinline
-          />
           <img
-            v-else
             :src="currentUrl"
             :alt="t('workshop.output.title', locale)"
             class="max-h-full max-w-full rounded-2xl object-contain"

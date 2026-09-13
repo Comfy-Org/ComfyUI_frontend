@@ -9273,6 +9273,14 @@ Enterprise`
     en: 'Loading workspaces…',
     'zh-CN': '正在加载工作区…'
   },
+  'nav.workspacesEmpty': {
+    en: 'No workspaces found.',
+    'zh-CN': '未找到工作区。'
+  },
+  'nav.workspaceSwitchError': {
+    en: 'Could not switch workspaces. Check your connection and try again.',
+    'zh-CN': '无法切换工作区。请检查网络连接后重试。'
+  },
   'nav.switchWorkspace': {
     en: 'Switch workspace',
     'zh-CN': '切换工作区'
@@ -9361,8 +9369,8 @@ Enterprise`
   },
   'workshop.useCase.editImages': { en: 'Edit images', 'zh-CN': '编辑图像' },
   'workshop.useCase.generateVideos': {
-    en: 'Text to video',
-    'zh-CN': '文本生成视频'
+    en: 'Generate videos',
+    'zh-CN': '生成视频'
   },
   'workshop.useCase.animateImages': {
     en: 'Image to video',
@@ -9410,7 +9418,7 @@ Enterprise`
   },
   'workshop.filter.search': { en: 'Search…', 'zh-CN': '搜索…' },
   'workshop.sort.label': { en: 'Sort', 'zh-CN': '排序' },
-  'workshop.sort.popular': { en: 'Most popular', 'zh-CN': '最受欢迎' },
+  'workshop.sort.popular': { en: 'Recommended', 'zh-CN': '推荐' },
   'workshop.sort.name': { en: 'Name A to Z', 'zh-CN': '名称 A 到 Z' },
   'workshop.sort.priceAsc': {
     en: 'Price: low to high',
@@ -9545,29 +9553,15 @@ Enterprise`
   },
   'workshop.credits.continue': { en: 'Continue', 'zh-CN': '继续' },
   'workshop.credits.custom': {
-    en: 'Custom · $5 – $10,000',
-    'zh-CN': '自定义 · $5 – $10,000'
+    en: 'Custom · $5 – $4,739',
+    'zh-CN': '自定义 · $5 – $4,739'
   },
   'workshop.credits.less': { en: 'Less', 'zh-CN': '减少' },
   'workshop.credits.more': { en: 'More', 'zh-CN': '增加' },
   'workshop.credits.cancel': { en: 'Cancel', 'zh-CN': '取消' },
-  'workshop.credits.checkout': {
-    en: 'Checkout',
-    'zh-CN': '结账'
-  },
-  'workshop.credits.checkoutNote': {
-    en: 'Stripe hosts this page. It stands in here so the round trip can be reviewed end to end.',
-    'zh-CN': '此页面由 Stripe 托管。这里以模拟代替，以便完整体验整个流程。'
-  },
-  'workshop.credits.pay': { en: 'Pay {usd}', 'zh-CN': '支付 {usd}' },
-  'workshop.credits.back': { en: 'Back', 'zh-CN': '返回' },
   'workshop.credits.done': {
     en: '{n} credits added',
     'zh-CN': '已添加 {n} 积分'
-  },
-  'workshop.credits.doneBody': {
-    en: 'You are back on the model page, with your inputs exactly as you left them.',
-    'zh-CN': '你已回到模型页面，输入内容与离开时完全一致。'
   },
   'workshop.credits.resume': {
     en: 'Back to the model',
@@ -9575,12 +9569,12 @@ Enterprise`
   },
   'workshop.credits.close': { en: 'Close', 'zh-CN': '关闭' },
   'workshop.credits.waitingTitle': {
-    en: 'Waiting for your payment',
-    'zh-CN': '正在等待付款'
+    en: 'Checking your credit balance',
+    'zh-CN': '正在检查积分余额'
   },
   'workshop.credits.waitingBody': {
-    en: 'Complete the purchase in the tab that just opened. This page updates on its own.',
-    'zh-CN': '请在新标签页中完成购买，此处会自动更新。'
+    en: 'You returned from checkout. This page will update if new credits arrive.',
+    'zh-CN': '你已从结账页返回。新积分到账后，此页面会自动更新。'
   },
   'workshop.credits.waitingPolling': {
     en: 'Checking for credits…',
@@ -9609,40 +9603,32 @@ Enterprise`
   'workshop.credits.added': { en: 'Added', 'zh-CN': '新增' },
   'workshop.credits.newBalance': { en: 'New balance', 'zh-CN': '当前余额' },
   'workshop.credits.heldTitle': {
-    en: 'Payment received',
-    'zh-CN': '已收到付款'
+    en: 'No new credits detected',
+    'zh-CN': '未检测到新积分'
   },
   'workshop.credits.heldBody': {
-    en: 'Your payment went through, but the credits have not arrived yet. You will not be charged again.',
-    'zh-CN': '付款已成功，但积分尚未到账。不会重复扣款。'
+    en: 'The checkout may have been cancelled, or its credits may still be processing. Check your balance before trying again.',
+    'zh-CN': '结账可能已取消，或积分仍在处理中。再次尝试前请先检查余额。'
   },
   'workshop.credits.heldSupport': {
-    en: 'If they do not appear, give support this ID',
-    'zh-CN': '若积分仍未到账，请将此 ID 提供给客服'
+    en: 'Checkout reference',
+    'zh-CN': '结账参考编号'
+  },
+  'workshop.credits.checkoutOpenedTitle': {
+    en: 'Continue to checkout',
+    'zh-CN': '继续结账'
+  },
+  'workshop.credits.checkoutOpenedBody': {
+    en: 'Open secure checkout in a new tab. Your model inputs will stay here.',
+    'zh-CN': '请在新标签页中打开安全结账。你的模型输入会保留在这里。'
+  },
+  'workshop.credits.openCheckout': {
+    en: 'Open checkout',
+    'zh-CN': '打开结账页'
   },
   'workshop.credits.contactSupport': {
     en: 'Contact support',
     'zh-CN': '联系客服'
-  },
-  'workshop.credits.openingLabel': {
-    en: 'Secure checkout',
-    'zh-CN': '安全结账'
-  },
-  'workshop.credits.openingTitle': {
-    en: 'Taking you to Stripe',
-    'zh-CN': '正在前往 Stripe'
-  },
-  'workshop.credits.openingBody': {
-    en: 'Finish your purchase here. The page you came from is still open, and your credits will appear there.',
-    'zh-CN': '请在此完成购买。你来时的页面仍然打开，积分会显示在那里。'
-  },
-  'workshop.credits.returnTitle': {
-    en: 'All done here',
-    'zh-CN': '这里已完成'
-  },
-  'workshop.credits.returnBody': {
-    en: 'You can close this tab — your balance updates on the page you came from.',
-    'zh-CN': '可以关闭此标签页——你来时的页面会自动更新余额。'
   },
   'workshop.media.label': {
     en: 'Browse by output',
@@ -9828,6 +9814,10 @@ Enterprise`
   'workshop.run.requestId': { en: 'Request ID:', 'zh-CN': '请求 ID：' },
   'workshop.run.cancel': { en: 'Cancel', 'zh-CN': '取消' },
   'workshop.run.running': { en: 'Generating…', 'zh-CN': '生成中…' },
+  'workshop.run.leavePage': {
+    en: 'A model is still running. Leaving now will cancel it. Leave this page?',
+    'zh-CN': '模型仍在运行。现在离开将取消生成。要离开此页面吗？'
+  },
   'workshop.run.policy': {
     en: 'Disabled by your workspace policy',
     'zh-CN': '已被工作区策略禁用'

@@ -146,7 +146,7 @@ const clearButtonClass =
         :aria-expanded="open"
         @focus="open = true"
         @input="open = true"
-        @keydown.escape="open = false"
+        @keydown.escape.prevent="open = false"
       />
       <button
         v-if="query"

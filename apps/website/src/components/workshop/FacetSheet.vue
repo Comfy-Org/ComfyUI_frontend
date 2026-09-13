@@ -9,6 +9,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { SheetRest } from '../../composables/useBottomSheet'
 import { heightAt, restAt } from '../../composables/useBottomSheet'
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
+import { useVisualViewport } from '../../composables/useVisualViewport'
 
 interface FacetSheetOption {
   readonly value: string
@@ -71,16 +72,19 @@ const selectedCount = computed(() =>
 // The handle is the only way to make the sheet taller, so it drags rather than
 // decorates: a pull settles at the nearest rest, and a pull past the bottom
 // puts the sheet away.
-const onPhone = useMediaQuery('(max-width: 639px)')
-const { height: viewport } = useWindowSize()
+const onPhone = useMediaQuery('(width < 40rem)')
+const { height: windowHeight } = useWindowSize()
+const { height: visualHeight } = useVisualViewport()
+const viewport = computed(() => visualHeight.value ?? windowHeight.value)
 const rest = ref<Exclude<SheetRest, 'closed'>>('collapsed')
 const dragged = ref<number | null>(null)
 const grab = ref<{
+  pointerId: number
   y: number
   height: number
   moved: boolean
-  fromHandle: boolean
 } | null>(null)
+const suppressClick = ref(false)
 
 const sheetHeight = computed(() =>
   onPhone.value
@@ -89,22 +93,20 @@ const sheetHeight = computed(() =>
 )
 
 function startDrag(event: PointerEvent) {
-  const target = event.target instanceof Element ? event.target : undefined
-  if (target?.closest('[data-testid="workshop-filter-close"]')) return
+  if (grab.value || !event.isPrimary) return
   if (event.currentTarget instanceof HTMLElement)
     event.currentTarget.setPointerCapture(event.pointerId)
   grab.value = {
+    pointerId: event.pointerId,
     y: event.clientY,
     height: sheetHeight.value ?? 0,
-    moved: false,
-    fromHandle:
-      target?.closest('[data-testid="workshop-filter-grabber"]') != null
+    moved: false
   }
 }
 
 function drag(event: PointerEvent) {
   const from = grab.value
-  if (!from) return
+  if (!from || event.pointerId !== from.pointerId) return
   const travelled = from.y - event.clientY
   if (Math.abs(travelled) > 4) from.moved = true
   dragged.value = Math.min(Math.max(from.height + travelled, 0), viewport.value)
@@ -114,21 +116,43 @@ function toggleRest() {
   rest.value = rest.value === 'expanded' ? 'collapsed' : 'expanded'
 }
 
-function endDrag() {
-  const from = grab.value
-  grab.value = null
-  if (!from) return
-  const reached = dragged.value ?? 0
-  dragged.value = null
-  // A tap counts only on the handle itself; on the title it would fire while
-  // the thumb is reaching for the close button beside it.
-  if (!from.moved) {
-    if (from.fromHandle) toggleRest()
+function toggleFromClick() {
+  if (suppressClick.value) {
+    suppressClick.value = false
     return
   }
+  toggleRest()
+}
+
+function releasePointer(event: PointerEvent) {
+  if (
+    event.currentTarget instanceof HTMLElement &&
+    event.currentTarget.hasPointerCapture(event.pointerId)
+  )
+    event.currentTarget.releasePointerCapture(event.pointerId)
+}
+
+function endDrag(event: PointerEvent) {
+  const from = grab.value
+  if (!from || event.pointerId !== from.pointerId) return
+  releasePointer(event)
+  grab.value = null
+  const reached = dragged.value ?? 0
+  dragged.value = null
+  if (!from.moved) return
+  suppressClick.value = true
   const settled = restAt(reached / viewport.value)
   if (settled === 'closed') emit('close')
   else rest.value = settled
+}
+
+function cancelDrag(event: PointerEvent) {
+  const from = grab.value
+  if (!from || event.pointerId !== from.pointerId) return
+  releasePointer(event)
+  grab.value = null
+  dragged.value = null
+  suppressClick.value = false
 }
 
 function visibleOptions(group: FacetSheetGroup) {
@@ -149,24 +173,22 @@ function visibleOptions(group: FacetSheetGroup) {
         !grab && !prefersReducedMotion() && 'max-sm:transition-[height]'
       )
     "
-    :style="{ height: sheetHeight ? `${sheetHeight}px` : undefined }"
+    :style="{
+      height: sheetHeight !== undefined ? `${sheetHeight}px` : undefined
+    }"
   >
-    <div
-      class="shrink-0 touch-none sm:hidden"
-      data-testid="workshop-filter-grip"
-      @pointerdown="startDrag"
-      @pointermove="drag"
-      @pointerup="endDrag"
-      @pointercancel="endDrag"
-    >
+    <div class="shrink-0 sm:hidden" data-testid="workshop-filter-grip">
       <button
         type="button"
         :aria-label="labels.resize"
         :aria-expanded="rest === 'expanded'"
-        class="mx-auto flex h-6 w-16 cursor-grab items-center justify-center"
+        class="mx-auto flex h-6 w-16 cursor-grab touch-none items-center justify-center"
         data-testid="workshop-filter-grabber"
-        @keydown.enter.prevent="toggleRest"
-        @keydown.space.prevent="toggleRest"
+        @click="toggleFromClick"
+        @pointerdown="startDrag"
+        @pointermove="drag"
+        @pointerup="endDrag"
+        @pointercancel="cancelDrag"
       >
         <span class="h-1 w-10 rounded-full bg-white/20" aria-hidden="true" />
       </button>

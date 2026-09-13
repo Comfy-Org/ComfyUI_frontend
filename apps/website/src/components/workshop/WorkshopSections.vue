@@ -17,6 +17,7 @@ import { OTHER_FORMAT_USE_CASES } from '../../config/workshop-sections'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { groupModels } from '../../config/model-family'
+import { rememberShelf } from '../../lib/workshop/shelf-memory'
 import CardRow from './CardRow.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 
@@ -77,6 +78,22 @@ const unplaced = computed(() =>
     )
   )
 )
+
+function rememberModel(
+  shelf: UseCase | 'all' | 'other',
+  model: WorkshopModel,
+  event: MouseEvent
+) {
+  if (
+    event.button !== 0 ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey
+  )
+    return
+  rememberShelf(shelf, model.href)
+}
 </script>
 
 <template>
@@ -113,7 +130,11 @@ const unplaced = computed(() =>
           :key="family.key"
           :class="cardClass"
         >
-          <WorkshopModelCard :model="family.latest" :locale />
+          <WorkshopModelCard
+            :model="family.latest"
+            :locale
+            @click="rememberModel(section.useCase, family.latest, $event)"
+          />
         </li>
       </CardRow>
     </section>
@@ -149,7 +170,11 @@ const unplaced = computed(() =>
           :key="family.key"
           :class="cardClass"
         >
-          <WorkshopModelCard :model="family.latest" :locale />
+          <WorkshopModelCard
+            :model="family.latest"
+            :locale
+            @click="rememberModel('other', family.latest, $event)"
+          />
         </li>
       </CardRow>
     </section>
@@ -172,7 +197,11 @@ const unplaced = computed(() =>
         class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
       >
         <li v-for="family in unplaced" :key="family.key">
-          <WorkshopModelCard :model="family.latest" :locale />
+          <WorkshopModelCard
+            :model="family.latest"
+            :locale
+            @click="rememberModel('all', family.latest, $event)"
+          />
         </li>
       </ul>
     </section>

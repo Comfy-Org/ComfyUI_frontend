@@ -46,7 +46,7 @@ export function refreshWorkshopCredits(
 let stopActive: (() => void) | undefined
 
 function begin(): void {
-  const { session } = useWorkshopSession()
+  const { session, sessionFailure, user } = useWorkshopSession()
   const stopClient = workshopBalanceReader.subscribe((state) => {
     balance.value = toBalanceState(state)
   })
@@ -55,13 +55,36 @@ function begin(): void {
     watch(
       () => session.value?.token,
       (token) => {
+        // Never show one workspace's balance while a newly selected
+        // workspace is still loading its own wallet.
+        workshopBalanceReader.reset()
         if (!token) {
-          workshopBalanceReader.reset()
           return
         }
         // A rotated token means any read in flight is about to be discarded
         // by the publish guard; joining it would skip this refresh cycle.
         void refreshWorkshopCredits({ force: true })
+      },
+      { immediate: true }
+    )
+    watch(
+      [
+        () => user.value?.uid,
+        () => session.value?.uid,
+        () => session.value?.workspace.id,
+        () => sessionFailure.value?.code
+      ],
+      ([userUid, sessionUid, workspaceId, failure]) => {
+        const active = topUpWatch.value
+        if (active.status === 'idle') return
+        if (
+          userUid !== active.uid ||
+          failure !== undefined ||
+          (sessionUid !== undefined &&
+            (sessionUid !== active.uid || workspaceId !== active.workspaceId))
+        ) {
+          clearTopUpWatch()
+        }
       },
       { immediate: true }
     )
@@ -93,7 +116,10 @@ function start(): void {
         stopActive?.()
         stopActive = undefined
         if (isSettled) begin()
-        else workshopBalanceReader.reset()
+        else {
+          clearTopUpWatch()
+          workshopBalanceReader.reset()
+        }
       },
       { immediate: true }
     )
@@ -113,68 +139,114 @@ const TOP_UP_POLL_LIMIT = 24
 
 export type TopUpWatchState =
   | { readonly status: 'idle' }
-  | { readonly status: 'waiting'; readonly previousCredits: number }
-  | {
+  | ({ readonly status: 'waiting' } & TopUpWatchContext)
+  | ({
       readonly status: 'landed'
-      readonly previousCredits: number
       readonly newCredits: number
       readonly landedAt: number
-    }
-  | { readonly status: 'unresolved'; readonly previousCredits: number }
+    } & TopUpWatchContext)
+  | ({ readonly status: 'unresolved' } & TopUpWatchContext)
 
 const topUpWatch = ref<TopUpWatchState>({ status: 'idle' })
 let topUpPoll: ReturnType<typeof setInterval> | undefined
+let topUpGeneration = 0
 
 export function clearTopUpWatch(): void {
+  topUpGeneration += 1
   if (topUpPoll) clearInterval(topUpPoll)
   topUpPoll = undefined
   topUpWatch.value = { status: 'idle' }
 }
 
-export function watchForTopUp(): void {
+export interface TopUpWatchContext {
+  readonly uid: string
+  readonly workspaceId: string
+  readonly workspaceName: string
+  readonly previousCredits: number
+}
+
+export function watchForTopUp(context: TopUpWatchContext): void {
   if (typeof window === 'undefined') return
   clearTopUpWatch()
-  const { session } = useWorkshopSession()
-  // The checkout was made for this workspace; a balance from any other must
-  // never satisfy the watch, and switching away retires it.
-  const forWorkspace = session.value?.workspace.id
-  const previousCredits =
-    balance.value.status === 'ok' ? balance.value.credits : 0
-  topUpWatch.value = { status: 'waiting', previousCredits }
+  const generation = topUpGeneration
+  const { session, sessionFailure, user } = useWorkshopSession()
+  topUpWatch.value = {
+    status: 'waiting',
+    ...context
+  }
   let ticks = 0
-  topUpPoll = setInterval(() => {
-    ticks += 1
-    // Only a definitely different workspace retires the watch: a snapshot
-    // mid-remint has no session for a beat, and that transient must not
-    // kill a checkout in flight.
-    const liveWorkspace = session.value?.workspace.id
-    if (liveWorkspace !== undefined && liveWorkspace !== forWorkspace) {
-      clearTopUpWatch()
-      return
-    }
+  let refreshing = false
+
+  function scope(): 'current' | 'pending' | 'changed' {
+    const owner = user.value
+    if (!owner || owner.uid !== context.uid) return 'changed'
+    const live = session.value
+    if (live === undefined)
+      return sessionFailure.value === undefined ? 'pending' : 'changed'
+    return live.uid === context.uid && live.workspace.id === context.workspaceId
+      ? 'current'
+      : 'changed'
+  }
+
+  function settleFromBalance(): boolean {
     if (
       balance.value.status === 'ok' &&
-      balance.value.credits > previousCredits
+      balance.value.credits > context.previousCredits
     ) {
       const newCredits = balance.value.credits
       if (topUpPoll) clearInterval(topUpPoll)
       topUpPoll = undefined
       topUpWatch.value = {
         status: 'landed',
-        previousCredits,
+        ...context,
         newCredits,
         landedAt: Date.now()
       }
+      return true
+    }
+    return false
+  }
+
+  async function poll(): Promise<void> {
+    if (generation !== topUpGeneration || refreshing) return
+    // Only a definitely different workspace retires the watch: a snapshot
+    // mid-remint has no session for a beat, and that transient must not
+    // kill a checkout in flight.
+    const before = scope()
+    if (before === 'changed') {
+      clearTopUpWatch()
       return
     }
-    if (ticks > TOP_UP_POLL_LIMIT) {
+    if (before === 'pending') return
+    if (settleFromBalance()) return
+    if (ticks >= TOP_UP_POLL_LIMIT) {
       if (topUpPoll) clearInterval(topUpPoll)
       topUpPoll = undefined
-      topUpWatch.value = { status: 'unresolved', previousCredits }
+      topUpWatch.value = {
+        status: 'unresolved',
+        ...context
+      }
       return
     }
-    void refreshWorkshopCredits({ force: true })
-  }, TOP_UP_POLL_MS)
+    ticks += 1
+    refreshing = true
+    try {
+      await refreshWorkshopCredits({ force: true })
+    } finally {
+      refreshing = false
+    }
+    if (generation !== topUpGeneration) return
+    const after = scope()
+    if (after === 'changed') {
+      clearTopUpWatch()
+      return
+    }
+    if (after === 'pending') return
+    settleFromBalance()
+  }
+
+  topUpPoll = setInterval(() => void poll(), TOP_UP_POLL_MS)
+  void poll()
 }
 
 export function useTopUpWatch() {

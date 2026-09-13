@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 
@@ -47,6 +47,30 @@ describe('FacetSheet', () => {
     expect(grabber.getAttribute('aria-expanded')).toBe('true')
 
     await user.keyboard(' ')
+    expect(grabber.getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('toggles from an assistive-technology click without pointer events', async () => {
+    const user = userEvent.setup()
+    render(FacetSheet, { props: { groups, labels, resultCount: 2 } })
+    const grabber = screen.getByRole('button', { name: 'Resize filters' })
+
+    await user.click(grabber)
+
+    expect(grabber.getAttribute('aria-expanded')).toBe('true')
+  })
+
+  it('restores its prior rest when a drag is cancelled', async () => {
+    const user = userEvent.setup()
+    render(FacetSheet, { props: { groups, labels, resultCount: 2 } })
+    const grabber = screen.getByRole('button', { name: 'Resize filters' })
+
+    await user.pointer([
+      { keys: '[MouseLeft>]', target: grabber, coords: { clientY: 500 } },
+      { target: grabber, coords: { clientY: 200 } }
+    ])
+    await fireEvent.pointerCancel(grabber, { pointerId: 1 })
+
     expect(grabber.getAttribute('aria-expanded')).toBe('false')
   })
 

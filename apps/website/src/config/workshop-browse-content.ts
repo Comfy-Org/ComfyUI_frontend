@@ -13,6 +13,7 @@ import { workshopRouterIndexSchema } from './workshop-router-index'
 import { workshopRouterAliasesSchema } from './workshop-router-identity'
 import { labelSharedThumbnails } from './workshop-thumbnail-labels'
 import { workshopContentInputs } from './workshop-content-inputs'
+import { modelOrderRank } from './workshop-model-order'
 import {
   isWorkshopModelDisabled,
   workshopModelAvailability
@@ -86,6 +87,10 @@ const legacyCatalog = (catalogJson as unknown[]).map((entry) =>
   workshopModelSchema.parse(entry)
 )
 const display = workshopDisplayEntriesSchema.parse(displayJson)
+const displaySlugs = new Set(display.map((entry) => entry.slug))
+for (const slug of modelOrderRank.keys())
+  if (!displaySlugs.has(slug))
+    throw new Error(`Recommended model order names an unknown page: ${slug}`)
 
 const catalogById = new Map(legacyCatalog.map((entry) => [entry.id, entry]))
 for (const slug of workshopModelAvailability.keys())
@@ -134,6 +139,7 @@ const browseModels: readonly WorkshopModel[] = contentSources.map(
     )
     const thumbnail = alias.contentIssue ? undefined : overlay.media.thumbnail
     const slug = overlay.slug
+    const recommendedRank = modelOrderRank.get(slug)
     return {
       slug,
       name:
@@ -144,6 +150,7 @@ const browseModels: readonly WorkshopModel[] = contentSources.map(
         canonicalNames.get(record.id) ??
         entry.displayName,
       workflowCount: exampleCount,
+      ...(recommendedRank !== undefined ? { recommendedRank } : {}),
       href: `/models/${slug}/`,
       routerId: record.id,
       incompleteReason: record.incompleteReason,

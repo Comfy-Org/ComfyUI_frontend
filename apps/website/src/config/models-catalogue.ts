@@ -2,7 +2,6 @@ import type { Model } from './models'
 import type { WorkshopFormDefinition } from './workshop-form-definition'
 import type { WorkshopContract } from './workshop-contract'
 import type { WorkshopInputDefinition } from './workshop-input-definition'
-import { modelOrderRank } from './workshop-model-order'
 import { OTHER_FORMAT_USE_CASES } from './workshop-sections'
 
 export const MODALITIES = ['image', 'video', 'audio', '3d', 'text'] as const
@@ -119,6 +118,7 @@ export interface WorkshopModel {
   readonly slug: string
   readonly name: string
   readonly workflowCount: number
+  readonly recommendedRank?: number
   readonly href: string
   readonly routerId: string
   readonly incompleteReason?: 'missing-input-schema'
@@ -409,15 +409,18 @@ export function sortWorkshopModels(
     a.name.localeCompare(b.name)
   const byExamples = (a: WorkshopModel, b: WorkshopModel) =>
     b.workflowCount - a.workflowCount || byName(a, b)
-  // A model the window never saw has no place in the order, and falls in behind
-  // every model that has one rather than ahead of all of them.
-  const placed = (model: WorkshopModel) =>
-    modelOrderRank.get(model.slug) ?? Number.POSITIVE_INFINITY
+  const byRecommendation = (a: WorkshopModel, b: WorkshopModel) => {
+    if (a.recommendedRank !== undefined && b.recommendedRank !== undefined)
+      return a.recommendedRank - b.recommendedRank || byExamples(a, b)
+    if (a.recommendedRank !== undefined) return -1
+    if (b.recommendedRank !== undefined) return 1
+    return byExamples(a, b)
+  }
   const compare: Record<
     SortOrder,
     (a: WorkshopModel, b: WorkshopModel) => number
   > = {
-    popular: (a, b) => placed(a) - placed(b) || byExamples(a, b),
+    popular: byRecommendation,
     name: byName,
     priceAsc: (a, b) =>
       (a.creditsPerRun ?? Number.POSITIVE_INFINITY) -

@@ -9,7 +9,8 @@ export function usdToCredits(usd: number): number {
 // so someone who has bought credits there meets the same numbers here.
 export const TOP_UP_PACKS = [10, 25, 50, 100] as const
 export const MIN_TOP_UP_USD = 5
-export const MAX_TOP_UP_USD = 10_000
+// The hosted-checkout backend's fixed per-session business ceiling.
+export const MAX_TOP_UP_USD = 4_739
 
 export function clampTopUp(usd: number): number {
   if (!Number.isFinite(usd)) return MIN_TOP_UP_USD

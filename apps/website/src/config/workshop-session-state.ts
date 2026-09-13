@@ -21,6 +21,7 @@ import { computed, effectScope, shallowRef, watch } from 'vue'
 import type { EffectScope } from 'vue'
 
 import type { SessionSnapshot } from '@comfyorg/account/session'
+import { isPermanentSessionError } from '@comfyorg/account/session'
 
 import {
   useWorkshopAuthFlag,
@@ -71,7 +72,9 @@ function currentWorkspaceId(): string | undefined {
   const current = snapshot.value
   return current.phase === 'authenticated'
     ? current.session.workspace.id
-    : undefined
+    : current.user
+      ? rememberedWorkspace(current.user.uid)
+      : undefined
 }
 
 const ensureFreshHere: typeof workshopSessionClient.ensureFresh = (
@@ -124,6 +127,47 @@ function rememberWorkspace(uid: string, workspaceId: string | undefined): void {
 
 let restoredForUid: string | undefined
 
+async function restoreRememberedWorkspace(
+  next: Extract<SessionSnapshot<User>, { phase: 'authenticated' }>,
+  remembered: string,
+  restoreGeneration: number
+): Promise<void> {
+  let result: Awaited<ReturnType<typeof workshopSessionClient.remint>>
+  try {
+    result = await workshopSessionClient.remint(undefined, {
+      workspaceId: remembered,
+      preserveCredentialOnTransientFailure: true
+    })
+  } catch {
+    return
+  }
+  if (result?.status !== 'error' || generation !== restoreGeneration) return
+
+  const { uid, workspace } = next.session
+  const live = workshopSessionClient.getSnapshot()
+  if (live.user?.uid !== uid) return
+  if (!isPermanentSessionError(result.code)) {
+    if (
+      live.phase === 'authenticated' &&
+      live.session.workspace.id === workspace.id
+    ) {
+      snapshot.value = live
+    }
+    return
+  }
+
+  rememberWorkspace(uid, undefined)
+  if (live.phase !== 'error') return
+  try {
+    await workshopSessionClient.remint(undefined, {
+      workspaceId: workspace.id,
+      preserveCredentialOnTransientFailure: true
+    })
+  } catch {
+    // The client remains authoritative in its published error state.
+  }
+}
+
 function keepWorkspaceRemembered(): void {
   const current = snapshot.value
   if (current.phase !== 'authenticated') return
@@ -147,15 +191,8 @@ function holdsForRestore(next: SessionSnapshot<User>): boolean {
   restoredForUid = uid
   const remembered = rememberedWorkspace(uid)
   if (!remembered || remembered === workspace.id) return false
-  void workshopSessionClient
-    .remint(undefined, { workspaceId: remembered })
-    .then((result) => {
-      if (result?.status !== 'ok') {
-        rememberWorkspace(uid, undefined)
-        snapshot.value = next
-        keepWorkspaceRemembered()
-      }
-    })
+  const restoreGeneration = generation
+  void restoreRememberedWorkspace(next, remembered, restoreGeneration)
   return true
 }
 
@@ -202,7 +239,10 @@ function start(): void {
         if (!on) {
           // Retain the cached credential while the flag is unresolved; only a
           // settled-off answer means Workshop is disabled and it must go.
-          if (isSettled) workshopSessionClient.clearStoredCredential()
+          if (isSettled) {
+            restoredForUid = undefined
+            workshopSessionClient.clearStoredCredential()
+          }
           return
         }
         void begin(expectedGeneration).catch((error: unknown) => {

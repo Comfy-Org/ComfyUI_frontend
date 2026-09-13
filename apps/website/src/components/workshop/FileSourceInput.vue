@@ -65,7 +65,11 @@ const prompt = computed(() => {
 
 const acceptedTypes = computed(() =>
   field.accept
-    .map((type) => type.split('/')[1].replace('x-', '').toUpperCase())
+    .map((type) => {
+      if (type.endsWith('/*')) return type.slice(0, -2).toUpperCase()
+      const label = type.includes('/') ? type.split('/').at(-1) : type
+      return (label ?? type).replace(/^x-/, '').replace(/^\./, '').toUpperCase()
+    })
     .join(', ')
 )
 
@@ -76,6 +80,19 @@ const rejectionMessage = computed(() => {
     : 'workshop.field.filesUnchanged'
   return `${t(rejection.value, locale).replace('{count}', String(limit.value))} ${t(unchanged, locale)}`
 })
+
+function accepts(file: File): boolean {
+  if (field.accept.length === 0) return true
+  const name = file.name.toLowerCase()
+  const mime = file.type.toLowerCase()
+  return field.accept.some((raw) => {
+    const accepted = raw.toLowerCase()
+    if (accepted.startsWith('.')) return name.endsWith(accepted)
+    if (accepted.endsWith('/*')) return mime.startsWith(accepted.slice(0, -1))
+    if (accepted.includes('/')) return mime === accepted
+    return name.endsWith(`.${accepted}`)
+  })
+}
 
 function choose(files: File[], index?: number) {
   if (disabled || !files.length) return
@@ -98,8 +115,7 @@ function choose(files: File[], index?: number) {
       ? imageOnly.value
         ? 'workshop.field.tooManyImages'
         : 'workshop.field.tooManyFiles'
-      : field.accept.length > 0 &&
-          files.some((file) => !field.accept.includes(file.type))
+      : files.some((file) => !accepts(file))
         ? 'workshop.form.badType'
         : files.some((file) => file.size > field.maxBytes)
           ? 'workshop.form.tooLarge'
@@ -200,7 +216,7 @@ function remove(index: number) {
       v-if="rejection"
       :id="`selection-error-${field.name}`"
       role="alert"
-      class="text-primary-comfy-red text-xs"
+      class="text-primary-comfy-red px-3 pb-3 text-xs"
     >
       {{ rejectionMessage }}
     </p>

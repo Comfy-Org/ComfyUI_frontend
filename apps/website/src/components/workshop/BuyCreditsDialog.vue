@@ -1,5 +1,13 @@
 <script setup lang="ts">
-import { Check, Clock, ExternalLink, Loader2, Minus, Plus } from '@lucide/vue'
+import {
+  Check,
+  Clock,
+  Coins,
+  ExternalLink,
+  Loader2,
+  Minus,
+  Plus
+} from '@lucide/vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -15,18 +23,25 @@ import {
 } from '../../config/credits'
 import {
   clearTopUpWatch,
+  refreshWorkshopCredits,
   useTopUpWatch,
+  useWorkshopCredits,
   watchForTopUp
 } from '../../config/workshop-credits'
+import { WORKSHOP_CREDITS_URL } from '../../config/workshop-env'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import type { TopUpCheckoutSession } from '../../lib/workshop/buy-credits'
 import {
   TopUpCheckoutError,
-  createTopUpCheckout,
-  platformTopUpHref
+  createTopUpCheckout
 } from '../../lib/workshop/buy-credits'
+import {
+  announceTopUpReturnFromLocation,
+  subscribeToTopUpReturns,
+  topUpReturnUrl
+} from '../../lib/workshop/topup-return'
 import Dialog from '../ui/dialog/Dialog.vue'
 import DialogContent from '../ui/dialog/DialogContent.vue'
 import DialogDescription from '../ui/dialog/DialogDescription.vue'
@@ -35,12 +50,27 @@ import DialogTitle from '../ui/dialog/DialogTitle.vue'
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const open = defineModel<boolean>('open', { default: false })
 
-const { session } = useWorkshopSession()
+const { session, ensureFresh } = useWorkshopSession()
+const { balance } = useWorkshopCredits()
 const usd = ref(25)
 const credits = computed(() => usdToCredits(usd.value))
-const state = ref<'amount' | 'pending' | 'failed'>('amount')
+const state = ref<'amount' | 'pending' | 'checkout' | 'failed'>('amount')
 const topUp = useTopUpWatch()
 const lastCheckout = ref<TopUpCheckoutSession | undefined>(undefined)
+
+interface CheckoutAttempt {
+  readonly id: string
+  readonly uid: string
+  readonly workspaceId: string
+  readonly workspaceName: string
+  readonly previousCredits: number
+  readonly returned: boolean
+}
+
+const checkoutAttempt = ref<CheckoutAttempt | undefined>(undefined)
+let checkoutController: AbortController | undefined
+let checkoutTab: Window | null = null
+let unsubscribeFromTopUpReturns: (() => void) | undefined
 
 // The hand-off owns the step from the moment it happens: waiting is 4a,
 // landed 4b, unresolved 4c; before that, the amount card and its errors.
@@ -52,7 +82,16 @@ const latchedReturn = ref<'waiting' | 'landed' | 'unresolved' | undefined>(
 watch(
   topUp,
   (value) => {
-    if (value.status !== 'idle') latchedReturn.value = value.status
+    if (value.status !== 'idle') {
+      latchedReturn.value = value.status
+      return
+    }
+    if (latchedReturn.value !== undefined) {
+      latchedReturn.value = undefined
+      lastCheckout.value = undefined
+      checkoutAttempt.value = undefined
+      open.value = false
+    }
   },
   { immediate: true }
 )
@@ -65,6 +104,9 @@ const landedDelta = computed(() =>
 const previousCredits = computed(() =>
   topUp.value.status === 'idle' ? 0 : topUp.value.previousCredits
 )
+const topUpWorkspaceName = computed(() =>
+  topUp.value.status === 'idle' ? '' : topUp.value.workspaceName
+)
 
 // A receipt nobody acknowledged within a minute was read off the chip
 // instead; greeting the next visit with it would look like a fresh grant.
@@ -72,6 +114,7 @@ const STALE_RECEIPT_MS = 60_000
 
 watch(open, (value) => {
   if (!value) {
+    cancelPendingCheckout()
     usd.value = 25
     state.value = 'amount'
     return
@@ -89,9 +132,11 @@ watch(open, (value) => {
 
 function finish() {
   stopAutoClose()
+  cancelPendingCheckout()
   clearTopUpWatch()
   latchedReturn.value = undefined
   lastCheckout.value = undefined
+  checkoutAttempt.value = undefined
   open.value = false
 }
 
@@ -132,10 +177,14 @@ watch(step, (value) => {
 
 onMounted(() => {
   document.addEventListener('visibilitychange', onVisibilityChange)
+  unsubscribeFromTopUpReturns = subscribeToTopUpReturns(onTopUpReturn)
+  announceTopUpReturnFromLocation()
 })
 
 onBeforeUnmount(() => {
   stopAutoClose()
+  cancelPendingCheckout()
+  unsubscribeFromTopUpReturns?.()
   document.removeEventListener('visibilitychange', onVisibilityChange)
 })
 
@@ -143,39 +192,136 @@ function setAmount(next: number) {
   usd.value = clampTopUp(next)
 }
 
-// The tab opens empty inside the click, before the awaited create - a window
-// opened after the await would meet the popup blocker. A 404 is the dark
-// rollout saying the flag has not reached this caller; the tab then carries
-// the platform rail instead of an error.
+function cancelPendingCheckout(): void {
+  const controller = checkoutController
+  checkoutController = undefined
+  controller?.abort()
+  closeCheckoutTab(checkoutTab)
+  checkoutTab = null
+}
+
+function claimCheckoutTab(): Window | null {
+  try {
+    const tab = window.open('about:blank', '_blank')
+    if (tab) tab.opener = null
+    return tab
+  } catch {
+    return null
+  }
+}
+
+function closeCheckoutTab(tab: Window | null): void {
+  try {
+    tab?.close()
+  } catch {
+    // A closed or browser-owned tab is already outside this page's control.
+  }
+}
+
+function navigateCheckoutTab(tab: Window | null, url: string): void {
+  try {
+    tab?.location.assign(url)
+  } catch {
+    closeCheckoutTab(tab)
+  }
+}
+
+function onTopUpReturn(attemptId: string): void {
+  const attempt = checkoutAttempt.value
+  if (!attempt || attempt.id !== attemptId || attempt.returned) return
+  checkoutAttempt.value = { ...attempt, returned: true }
+  watchForTopUp({
+    uid: attempt.uid,
+    workspaceId: attempt.workspaceId,
+    workspaceName: attempt.workspaceName,
+    previousCredits: attempt.previousCredits
+  })
+}
+
 async function continueToCheckout() {
   if (state.value === 'pending' || !session.value) return
-  const forWorkspace = session.value
+  const requested = session.value
+  const controller = new AbortController()
+  const tab = claimCheckoutTab()
+  checkoutController = controller
+  checkoutTab = tab
   state.value = 'pending'
-  const tab = window.open('/checkout-opening', '_blank')
   try {
-    const checkout = await createTopUpCheckout(
-      forWorkspace.token,
-      usd.value * 100
+    await refreshWorkshopCredits({ force: true })
+    controller.signal.throwIfAborted()
+    const afterBalance = session.value
+    if (
+      afterBalance?.uid !== requested.uid ||
+      afterBalance.workspace.id !== requested.workspace.id ||
+      balance.value.status !== 'ok'
     )
-    state.value = 'amount'
+      throw new Error('Credit balance is unavailable')
+    const previousCredits = balance.value.credits
+
+    const fresh = await ensureFresh(undefined, {
+      workspaceId: requested.workspace.id,
+      signal: controller.signal,
+      timeoutMs: 15_000
+    })
+    controller.signal.throwIfAborted()
+    if (
+      fresh?.status !== 'ok' ||
+      fresh.session.uid !== requested.uid ||
+      fresh.session.workspace.id !== requested.workspace.id
+    )
+      throw new Error('Session changed before checkout')
+    const current = session.value
+    if (
+      current?.uid !== requested.uid ||
+      current.workspace.id !== requested.workspace.id
+    )
+      throw new Error('Session changed before checkout')
+
+    const attemptId = crypto.randomUUID()
+    const checkout = await createTopUpCheckout({
+      token: fresh.session.token,
+      amountCents: usd.value * 100,
+      returnUrl: topUpReturnUrl(window.location.href, attemptId),
+      idempotencyKey: attemptId,
+      signal: controller.signal
+    })
+    controller.signal.throwIfAborted()
+    if (
+      checkoutController !== controller ||
+      session.value?.uid !== requested.uid ||
+      session.value.workspace.id !== requested.workspace.id
+    )
+      throw new Error('Session changed before checkout opened')
+
     lastCheckout.value = checkout
-    watchForTopUp()
-    if (tab) tab.location.assign(checkout.url)
-    else window.location.assign(checkout.url)
+    checkoutAttempt.value = {
+      id: attemptId,
+      uid: requested.uid,
+      workspaceId: requested.workspace.id,
+      workspaceName: requested.workspace.name,
+      previousCredits,
+      returned: false
+    }
+    state.value = 'checkout'
+    navigateCheckoutTab(tab, checkout.url)
   } catch (error) {
-    if (error instanceof TopUpCheckoutError && error.status === 404) {
-      state.value = 'amount'
-      open.value = false
-      const fallback = platformTopUpHref(forWorkspace.workspace.id)
-      state.value = 'amount'
-      lastCheckout.value = { url: fallback }
-      watchForTopUp()
-      if (tab) tab.location.assign(fallback)
-      else window.location.assign(fallback)
+    if (checkoutController !== controller) return
+    if (
+      error instanceof TopUpCheckoutError &&
+      error.status === 404 &&
+      error.code === 'NOT_FOUND'
+    ) {
+      lastCheckout.value = { url: WORKSHOP_CREDITS_URL }
+      checkoutAttempt.value = undefined
+      state.value = 'checkout'
+      navigateCheckoutTab(tab, WORKSHOP_CREDITS_URL)
       return
     }
-    tab?.close()
+    closeCheckoutTab(tab)
     state.value = 'failed'
+  } finally {
+    if (checkoutController === controller) checkoutController = undefined
+    if (checkoutTab === tab) checkoutTab = null
   }
 }
 
@@ -200,7 +346,42 @@ const stepperClass =
       @pointerdown="cancelAutoClose"
       @keydown="cancelAutoClose"
     >
-      <template v-if="step === 'waiting'">
+      <template v-if="step === 'checkout'">
+        <DialogTitle class="pr-16">
+          {{ t('workshop.credits.checkoutOpenedTitle', locale) }}
+        </DialogTitle>
+        <DialogDescription class="text-base text-primary-comfy-canvas/70">
+          {{ t('workshop.credits.checkoutOpenedBody', locale) }}
+        </DialogDescription>
+        <div class="mt-2 flex flex-wrap items-center justify-end gap-3">
+          <Button
+            variant="outline"
+            size="lg"
+            class="px-5"
+            data-testid="buy-credits-checkout-close"
+            @click="open = false"
+          >
+            {{ t('workshop.credits.close', locale) }}
+          </Button>
+          <Button
+            v-if="lastCheckout"
+            as="a"
+            :href="lastCheckout.url"
+            target="_blank"
+            rel="noopener noreferrer"
+            size="lg"
+            class="px-5"
+            data-testid="buy-credits-open-checkout"
+          >
+            {{ t('workshop.credits.openCheckout', locale) }}
+            <template #append>
+              <ExternalLink class="size-4" aria-hidden="true" />
+            </template>
+          </Button>
+        </div>
+      </template>
+
+      <template v-else-if="step === 'waiting'">
         <DialogTitle class="pr-16">
           {{ t('workshop.credits.waitingTitle', locale) }}
         </DialogTitle>
@@ -258,7 +439,7 @@ const stepperClass =
           {{
             t('workshop.credits.addedTo', locale).replace(
               '{workspace}',
-              () => session?.workspace.name ?? ''
+              topUpWorkspaceName
             )
           }}
         </DialogDescription>

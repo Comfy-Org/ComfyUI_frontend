@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Coins, Download, ExternalLink, Play } from '@lucide/vue'
 import { useEventListener, useMounted, useTimestamp } from '@vueuse/core'
-import { computed, onMounted, onUnmounted, ref, useSlots, watch } from 'vue'
+import { computed, onUnmounted, ref, useSlots, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -32,7 +32,6 @@ import {
   refreshWorkshopCredits,
   useWorkshopCredits
 } from '../../config/workshop-credits'
-import { WORKSHOP_CREDITS_URL } from '../../config/workshop-env'
 import { router_render } from '../../config/router-render'
 import { createWorkshopUrlUploader } from '../../config/workshop-url-upload'
 import { WorkshopRouterError } from '../../config/workshop-router-errors'
@@ -200,6 +199,31 @@ const errors = computed<FieldErrors>(() =>
   runState.value.status === 'failed' ? runState.value.fieldErrors : {}
 )
 const isRunning = computed(() => runState.value.status === 'running')
+const protectedHistoryIndex = ref<number>()
+let approvedTraversal = false
+let restoringTraversal = false
+
+function historyIndex(state: unknown): number | undefined {
+  if (typeof state !== 'object' || state === null || !('index' in state))
+    return undefined
+  const index = Reflect.get(state, 'index')
+  return typeof index === 'number' && Number.isInteger(index)
+    ? index
+    : undefined
+}
+
+watch(
+  isRunning,
+  (running) => {
+    protectedHistoryIndex.value = running
+      ? historyIndex(globalThis.window?.history.state)
+      : undefined
+    approvedTraversal = false
+    restoringTraversal = false
+  },
+  { flush: 'sync' }
+)
+
 // A run in flight is money and minutes: leaving the page throws both away, so
 // the browser asks first. The listener only exists while the run does, since a
 // standing one costs the idle page its place in the back/forward cache.
@@ -209,8 +233,51 @@ useEventListener(
   'beforeunload',
   (event: BeforeUnloadEvent) => event.preventDefault()
 )
-const hasFileInputs = computed(() =>
-  schema.value.some((field) => field.kind === 'file' || urlUploadField(field))
+
+// Browser history moves before popstate. Intercept it ahead of Astro's bubble
+// listener: declining restores the prior entry without unmounting this island;
+// accepting lets Astro finish the traversal and cancel the run on unmount.
+useEventListener(
+  () => (isRunning.value ? globalThis.window : undefined),
+  'popstate',
+  (event: PopStateEvent) => {
+    if (restoringTraversal) {
+      restoringTraversal = false
+      event.stopImmediatePropagation()
+      return
+    }
+    const from = protectedHistoryIndex.value
+    const to = historyIndex(event.state)
+    if (from === undefined || to === undefined || from === to) return
+    if (globalThis.window.confirm(t('workshop.run.leavePage', locale))) {
+      protectedHistoryIndex.value = to
+      approvedTraversal = true
+      queueMicrotask(() => {
+        approvedTraversal = false
+      })
+      return
+    }
+    event.stopImmediatePropagation()
+    restoringTraversal = true
+    globalThis.window.history.go(from - to)
+  },
+  { capture: true }
+)
+
+// A push/replace has not moved history yet, so native fallback is safe and the
+// beforeunload guard owns its confirmation. An approved traversal is the one
+// exception: it was already confirmed in the capture-phase popstate handler.
+useEventListener(
+  () => (isRunning.value ? globalThis.document : undefined),
+  'astro:before-preparation',
+  (event: Event) => {
+    const navigationType = Reflect.get(event, 'navigationType')
+    if (navigationType === 'traverse' && approvedTraversal) {
+      approvedTraversal = false
+      return
+    }
+    event.preventDefault()
+  }
 )
 const requestId = ref<string | null>(null)
 let controller: AbortController | undefined
@@ -225,9 +292,23 @@ function cancelRun() {
   runState.value = transition(runState.value, { type: 'cancel' })
 }
 
+const personalSwitchPending = ref(false)
+const personalSwitchError = ref(false)
 async function switchToPersonal() {
-  const result = await remint()
-  if (result?.status === 'ok') await refreshWorkshopCredits({ force: true })
+  if (personalSwitchPending.value) return
+  personalSwitchPending.value = true
+  personalSwitchError.value = false
+  try {
+    const result = await remint(undefined, {
+      preserveCredentialOnTransientFailure: true
+    })
+    if (result?.status === 'ok') await refreshWorkshopCredits({ force: true })
+    else if (result?.status === 'error') personalSwitchError.value = true
+  } catch {
+    personalSwitchError.value = true
+  } finally {
+    personalSwitchPending.value = false
+  }
 }
 
 onUnmounted(() => {
@@ -548,12 +629,27 @@ function useInCode() {
               variant="outline"
               size="lg"
               class="w-full px-5"
+              :disabled="personalSwitchPending"
               data-testid="run-button"
               data-gate="memberNoCredits"
               @click="switchToPersonal"
             >
-              {{ t('workshop.run.switchPersonal', locale) }}
+              {{
+                t(
+                  personalSwitchPending
+                    ? 'workshop.run.preparingSession'
+                    : 'workshop.run.switchPersonal',
+                  locale
+                )
+              }}
             </Button>
+            <p
+              v-if="personalSwitchError"
+              class="text-xs text-red-400"
+              role="alert"
+            >
+              {{ t('nav.workspaceSwitchError', locale) }}
+            </p>
           </template>
           <Button
             v-else-if="gate === 'ready'"
@@ -615,8 +711,8 @@ function useInCode() {
           :member-workspace="
             session?.role === 'member' ? session.workspace.name : undefined
           "
-          :workspace-id="session?.workspace.id"
           @switch-personal="switchToPersonal"
+          @buy-credits="buyCreditsOpen = true"
           @retry="gate === 'ready' ? run() : reset()"
           @use-in-code="useInCode"
         />

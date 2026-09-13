@@ -70,6 +70,18 @@ describe('FeaturedBanner', () => {
     )
   })
 
+  it('localizes the task without leaving its English suffix in the model name', () => {
+    render(FeaturedBanner, {
+      props: {
+        locale: 'zh-CN',
+        models: [{ ...kling, name: 'Kling Image to Video' }]
+      }
+    })
+
+    expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Kling')
+    expect(screen.getByText('图像转视频')).toBeTruthy()
+  })
+
   it('shows the model a pagination bar names', async () => {
     const user = userEvent.setup()
     render(FeaturedBanner, { props: { models: [base, kling] } })

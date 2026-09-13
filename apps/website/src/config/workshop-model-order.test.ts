@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import { workshopModelOrderSchema } from './workshop-model-order.schema'
+import display from '../content/workshop-display.json'
+import { modelOrderRank } from './workshop-model-order'
 
 const order: unknown = {
   measuredOn: '2026-09-12',
@@ -24,6 +26,24 @@ describe('the stored model order', () => {
     const parsed = workshopModelOrderSchema.safeParse(repeated)
     expect(parsed.success).toBe(false)
     expect(parsed.error?.issues[0]?.message).toContain('more than once')
+  })
+
+  it('names only pages in the content catalogue', () => {
+    const known = new Set(display.map((entry) => entry.slug))
+    expect(
+      [...modelOrderRank.keys()].filter((slug) => !known.has(slug))
+    ).toEqual([])
+  })
+
+  it.for([[], [''], ['   ']])('refuses an empty order: %j', (slugs) => {
+    expect(
+      workshopModelOrderSchema.safeParse({
+        measuredOn: '2026-09-12',
+        windowDays: 30,
+        note: 'Order only, no figures.',
+        slugs
+      }).success
+    ).toBe(false)
   })
 
   it.for<unknown>([

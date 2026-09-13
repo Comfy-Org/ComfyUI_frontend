@@ -33,7 +33,7 @@ const slides = computed(() =>
     return {
       model,
       task,
-      name: bannerName(model.name, task),
+      name: bannerName(model.name, taskLabelFor(model, 'en')),
       docsHref: modelDocsHref(model),
       capabilities: model.capabilities.slice(0, CAPABILITY_LIMIT)
     }
@@ -113,7 +113,7 @@ const fill = computed(() =>
     data-testid="section-featured"
   >
     <div
-      class="group short:h-57 sm:short:h-60 relative block h-100"
+      class="group short:h-57 sm:short:h-60 relative block h-84"
       data-testid="featured-slide"
     >
       <a

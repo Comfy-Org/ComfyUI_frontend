@@ -1,12 +1,5 @@
 <script setup lang="ts">
-import {
-  ArrowLeftRight,
-  Check,
-  Coins,
-  ExternalLink,
-  LogOut,
-  Settings
-} from '@lucide/vue'
+import { ArrowLeftRight, Check, Coins, LogOut } from '@lucide/vue'
 import {
   DropdownMenuContent,
   DropdownMenuItem,
@@ -26,7 +19,6 @@ import {
   refreshWorkshopCredits,
   useWorkshopCredits
 } from '../../config/workshop-credits'
-import { externalLinks } from '../../config/routes'
 import { leaveForSignIn } from '../../config/workshop-return'
 import type { WorkspaceWithRole } from '../../lib/workshop/workspaces'
 import { listWorkspaces } from '../../lib/workshop/workspaces'
@@ -79,32 +71,112 @@ const workspaces = ref<'loading' | 'error' | readonly WorkspaceWithRole[]>(
   'loading'
 )
 const switching = ref<string | undefined>(undefined)
+const workspaceSwitchError = ref(false)
+const workspaceRefresh = ref(0)
+let workspaceLoadGeneration = 0
 
-watch(workspacesOpen, async (open) => {
-  if (!open || !session.value) return
-  workspaces.value = 'loading'
-  try {
-    workspaces.value = await listWorkspaces(session.value.token)
-  } catch {
-    workspaces.value = 'error'
-  }
+watch(menuOpen, (open) => {
+  if (!open) workspaceSwitchError.value = false
 })
+
+watch(
+  [
+    workspacesOpen,
+    workspaceRefresh,
+    () => session.value?.uid,
+    () => session.value?.workspace.id
+  ],
+  async ([open], _, onCleanup) => {
+    const generation = ++workspaceLoadGeneration
+    if (!open) return
+    if (!session.value) return
+    const requested = session.value
+    const controller = new AbortController()
+    onCleanup(() => controller.abort())
+    workspaces.value = 'loading'
+    try {
+      const fresh = await ensureFresh(undefined, {
+        workspaceId: requested.workspace.id,
+        signal: controller.signal,
+        timeoutMs: 15_000
+      })
+      if (fresh?.status !== 'ok') throw new Error('Session refresh failed')
+      if (
+        fresh.session.uid !== requested.uid ||
+        fresh.session.workspace.id !== requested.workspace.id
+      )
+        return
+      const listed = await listWorkspaces(fresh.session.token, {
+        signal: controller.signal
+      })
+      const current = session.value
+      if (
+        generation !== workspaceLoadGeneration ||
+        controller.signal.aborted ||
+        !workspacesOpen.value ||
+        current?.uid !== requested.uid ||
+        current.workspace.id !== requested.workspace.id
+      )
+        return
+      workspaces.value = listed
+    } catch {
+      if (generation !== workspaceLoadGeneration || controller.signal.aborted)
+        return
+      workspaces.value = 'error'
+    }
+  }
+)
+
+function retryWorkspaceList(): void {
+  workspaceRefresh.value += 1
+}
 
 async function switchWorkspace(workspaceId: string) {
   if (switching.value) return
-  if (workspaceId === session.value?.workspace.id) {
+  const previous = session.value
+  if (!previous) return
+  const previousUid = previous.uid
+  const previousWorkspaceId = previous.workspace.id
+  if (workspaceId === previousWorkspaceId) {
     menuOpen.value = false
     return
   }
+  workspaceSwitchError.value = false
   switching.value = workspaceId
+  async function restorePreviousWorkspace(): Promise<void> {
+    workspaceSwitchError.value = true
+    if (user.value?.uid !== previousUid || session.value !== undefined) return
+    try {
+      await remint(undefined, {
+        workspaceId: previousWorkspaceId,
+        preserveCredentialOnTransientFailure: true
+      })
+    } catch {
+      // The visible error remains; a rejected recovery must not escape the menu.
+    }
+  }
   try {
-    const result = await remint(undefined, { workspaceId })
-    if (result?.status === 'ok') {
+    const result = await remint(undefined, {
+      workspaceId,
+      preserveCredentialOnTransientFailure: true
+    })
+    if (result === undefined) {
+      const current = session.value
+      if (
+        current?.uid === previousUid &&
+        current.workspace.id === previousWorkspaceId
+      )
+        workspaceSwitchError.value = true
+      return
+    }
+    if (result.status === 'ok') {
       await refreshWorkshopCredits({ force: true })
       menuOpen.value = false
     } else {
-      workspaces.value = 'error'
+      await restorePreviousWorkspace()
     }
+  } catch {
+    await restorePreviousWorkspace()
   } finally {
     switching.value = undefined
   }
@@ -306,9 +378,24 @@ const surfaceClass =
                 </p>
                 <p
                   v-else-if="workspaces === 'error'"
-                  class="px-3 py-2 text-xs text-red-400"
+                  class="flex items-center justify-between gap-3 px-3 py-2 text-xs text-red-400"
                 >
-                  {{ t('nav.workspacesError', locale) }}
+                  <span>{{ t('nav.workspacesError', locale) }}</span>
+                  <button
+                    type="button"
+                    class="text-primary-comfy-yellow shrink-0 cursor-pointer font-bold"
+                    data-testid="account-workspaces-retry"
+                    @click.stop="retryWorkspaceList"
+                  >
+                    {{ t('workshop.error.retry', locale) }}
+                  </button>
+                </p>
+                <p
+                  v-else-if="workspaces.length === 0"
+                  class="px-3 py-2 text-xs text-primary-comfy-canvas/55"
+                  data-testid="account-workspaces-empty"
+                >
+                  {{ t('nav.workspacesEmpty', locale) }}
                 </p>
                 <template v-else>
                   <DropdownMenuItem
@@ -349,6 +436,15 @@ const surfaceClass =
           </DropdownMenuSub>
 
           <p
+            v-if="workspaceSwitchError"
+            class="px-3 py-2 text-xs text-red-400"
+            role="alert"
+            data-testid="account-workspace-switch-error"
+          >
+            {{ t('nav.workspaceSwitchError', locale) }}
+          </p>
+
+          <p
             v-if="balance.status === 'error'"
             class="px-3 pb-2 text-xs text-red-400"
           >
@@ -365,28 +461,6 @@ const surfaceClass =
             <span class="flex-1">{{
               t('workshop.run.buyCredits', locale)
             }}</span>
-          </DropdownMenuItem>
-
-          <DropdownMenuItem as-child>
-            <a
-              :href="externalLinks.cloud"
-              target="_blank"
-              rel="noopener noreferrer"
-              :class="itemClass"
-              data-testid="account-workspace-settings"
-            >
-              <Settings
-                class="size-5 text-primary-warm-gray"
-                aria-hidden="true"
-              />
-              <span class="flex flex-1 items-center gap-3">
-                {{ t('nav.workspaceSettings', locale) }}
-                <ExternalLink
-                  class="size-5 text-primary-warm-gray"
-                  aria-hidden="true"
-                />
-              </span>
-            </a>
           </DropdownMenuItem>
 
           <DropdownMenuSeparator

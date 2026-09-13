@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import '@testing-library/jest-dom/vitest'
 import userEvent from '@testing-library/user-event'
-import { render, screen, waitFor } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { nextTick } from 'vue'
@@ -112,7 +112,7 @@ describe('WorkshopModelsGrid', () => {
     expect(cardNames()).toEqual([expect.stringContaining('Flux')])
 
     await user.click(screen.getByRole('button', { name: /Back to/ }))
-    await user.click(screen.getByRole('button', { name: 'Text to video 1' }))
+    await user.click(screen.getByRole('button', { name: 'Generate videos 1' }))
     expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
   })
 
@@ -129,7 +129,9 @@ describe('WorkshopModelsGrid', () => {
 
     scrollTo.mockClear()
     await user.click(screen.getByRole('button', { name: /Back to/ }))
-    await user.click(screen.getByTestId('browse-all-end'))
+    await vi.waitFor(() => expect(scrollTo).toHaveBeenCalledWith({ top: 0 }))
+    scrollTo.mockClear()
+    await user.click(screen.getByRole('button', { name: 'Browse all models' }))
     await vi.waitFor(() => expect(scrollTo).toHaveBeenCalledWith({ top: 0 }))
     scrollTo.mockRestore()
   })
@@ -166,7 +168,7 @@ describe('WorkshopModelsGrid', () => {
     expect(cardNames()).toEqual([expect.stringContaining('Flux')])
   })
 
-  it('sorts by example count by default and by name on request', async () => {
+  it('sorts by recommendation by default and by name on request', async () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
     await user.type(await search(), ' ')
@@ -179,11 +181,47 @@ describe('WorkshopModelsGrid', () => {
     expect(cardNames()[0]).toContain('Flux')
   })
 
-  it('forgets the shelf a previous visit was left on', () => {
+  it('orders the required featured models by the catalogue recommendation', () => {
+    const featured = [
+      {
+        slug: 'byteplus--seedance-2-fast-text-to-video--generate-videos',
+        name: 'Seedance 2 Fast',
+        rank: 32
+      },
+      {
+        slug: 'bfl--flux-3-text-to-video--generate-videos',
+        name: 'FLUX.3 Video',
+        rank: 63
+      },
+      {
+        slug: 'byteplus--seedream-5-pro--generate-images',
+        name: 'Seedream 5 Pro',
+        rank: 0
+      }
+    ].map(({ slug, name, rank }) => ({
+      ...models[0],
+      slug,
+      name,
+      href: `/models/${slug}/`,
+      recommendedRank: rank,
+      thumbnailUrl: `https://example.com/${rank}.webp`
+    }))
+
+    render(WorkshopModelsGrid, { props: { models: featured } })
+
+    const pagination = screen.getByTestId('featured-pagination')
+    expect(
+      within(pagination)
+        .getAllByRole('button')
+        .map((button) => button.getAttribute('aria-label'))
+    ).toEqual(['Seedream 5 Pro', 'Seedance 2 Fast', 'FLUX.3 Video'])
+  })
+
+  it('does not manufacture a return shelf before a model is opened', () => {
     sessionStorage.setItem('comfy-models-shelf', 'generate-videos')
     render(WorkshopModelsGrid, { props: { models } })
 
-    expect(lastShelf()).toBe('all')
+    expect(lastShelf('/models/kling-ai/')).toBeUndefined()
   })
 
   it('clears search and filters together from the empty state', async () => {
@@ -211,6 +249,22 @@ describe('WorkshopModelsGrid', () => {
       )
 
       await user.click(screen.getByTestId('section-back'))
+      expect(screen.getByTestId('workshop-sections')).toBeTruthy()
+    })
+
+    it('clears active filters when returning to the category rows', async () => {
+      const user = userEvent.setup()
+      render(WorkshopModelsGrid, { props: { models } })
+      await user.click(
+        screen.getByRole('button', { name: 'Browse all models' })
+      )
+      const field = await search()
+      await user.type(field, 'forest')
+      expect(cardNames()).toEqual([expect.stringContaining('Flux')])
+
+      await user.click(screen.getByRole('button', { name: /Back to/ }))
+
+      expect(field).toHaveValue('')
       expect(screen.getByTestId('workshop-sections')).toBeTruthy()
     })
   })

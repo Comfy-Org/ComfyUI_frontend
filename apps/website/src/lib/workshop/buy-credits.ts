@@ -1,50 +1,36 @@
 import { z } from 'zod'
 
-import {
-  WORKSHOP_CLOUD_BASE_URL,
-  WORKSHOP_CLOUD_ENV,
-  WORKSHOP_CREDITS_URL
-} from '../../config/workshop-env'
+import { zErrorResponse } from '@comfyorg/ingest-types/zod'
 
-/**
- * The MVP rail (DES-1015): buying happens on platform.comfy.org, in a new
- * tab so the model page and its inputs stay alive. The workspace travels as
- * the server-resolved id — comfy.org and platform keep separate switchers,
- * and without it a buyer can top up the wallet that is not the empty one.
- * The parameter name is the shape agreed for platform's deep-link work, not
- * yet its confirmed contract.
- *
- * Platform billing exists only against production Cloud. The lower families
- * keep the visitor on their own cloud's credits page, so a preview can never
- * hand a staging workspace id to production billing.
- */
-const PLATFORM_ORIGIN = 'https://platform.comfy.org'
+import { WORKSHOP_CLOUD_BASE_URL } from '../../config/workshop-env'
 
-export function platformTopUpHref(workspaceId?: string): string {
-  if (WORKSHOP_CLOUD_ENV !== 'prod') return WORKSHOP_CREDITS_URL
-  const url = new URL('/billing', PLATFORM_ORIGIN)
-  if (workspaceId) url.searchParams.set('workspace', workspaceId)
-  return url.toString()
-}
-
-/**
- * Hunter's universal top-up: `POST /api/billing/topup/checkout` on the
- * session's own Cloud creates a hosted Stripe Checkout session and answers
- * with its URL. Behind `topup_checkout_enabled` (dark rollout): a caller the
- * flag has not reached gets a 404, not a refusal — branch on it and fall
- * back rather than surfacing an error. The return address must be a host in
- * ingest's own allowlist, which today means Cloud itself, so the buyer
- * resurfaces on the cloud credits page and the model page re-reads its
- * balance on refocus.
- */
 export class TopUpCheckoutError extends Error {
-  constructor(readonly status: number) {
+  constructor(
+    readonly status: number,
+    readonly code?: string
+  ) {
     super('Top-up checkout failed with status ' + String(status))
   }
 }
 
 const zTopUpCheckout = z.object({
-  checkout_url: z.string().url(),
+  checkout_url: z
+    .string()
+    .url()
+    .refine((raw) => {
+      try {
+        const url = new URL(raw)
+        return (
+          url.protocol === 'https:' &&
+          url.hostname === 'checkout.stripe.com' &&
+          url.port === '' &&
+          url.username === '' &&
+          url.password === ''
+        )
+      } catch {
+        return false
+      }
+    }, 'checkout_url must be a Stripe-hosted HTTPS URL'),
   session_id: z.string().optional()
 })
 
@@ -53,67 +39,53 @@ export interface TopUpCheckoutSession {
   readonly sessionId?: string
 }
 
-async function requestCheckout(
-  token: string,
-  amountCents: number,
-  returnUrl: string
+export interface CreateTopUpCheckoutOptions {
+  readonly token: string
+  readonly amountCents: number
+  readonly returnUrl: string
+  readonly idempotencyKey: string
+  readonly signal?: AbortSignal
+  readonly timeoutMs?: number
+}
+
+export async function createTopUpCheckout(
+  options: CreateTopUpCheckoutOptions
 ): Promise<TopUpCheckoutSession> {
+  const timeout = AbortSignal.timeout(options.timeoutMs ?? 15_000)
+  const signal = options.signal
+    ? AbortSignal.any([options.signal, timeout])
+    : timeout
   const response = await fetch(
     new URL('/api/billing/topup/checkout', WORKSHOP_CLOUD_BASE_URL),
     {
       method: 'POST',
       headers: {
-        Authorization: 'Bearer ' + token,
+        Authorization: 'Bearer ' + options.token,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        amount_cents: amountCents,
-        return_url: returnUrl
-      })
+        amount_cents: options.amountCents,
+        return_url: options.returnUrl,
+        idempotency_key: options.idempotencyKey
+      }),
+      signal
     }
   )
-  if (!response.ok) throw new TopUpCheckoutError(response.status)
   const body: unknown = await response.json().catch(() => undefined)
+  if (!response.ok) {
+    const parsedError = zErrorResponse.safeParse(body)
+    throw new TopUpCheckoutError(
+      response.status,
+      parsedError.success ? parsedError.data.code : undefined
+    )
+  }
   const parsed = zTopUpCheckout.safeParse(body)
-  if (!parsed.success) throw new TopUpCheckoutError(response.status)
+  if (!parsed.success)
+    throw new TopUpCheckoutError(response.status, 'INVALID_RESPONSE')
   return {
     url: parsed.data.checkout_url,
     ...(parsed.data.session_id !== undefined
       ? { sessionId: parsed.data.session_id }
       : {})
-  }
-}
-
-/**
- * The buyer should land on this site's own /payment/success, which hands
- * focus back to the tab that opened checkout and closes itself, and renders
- * as the ordinary thank-you page everywhere else. Ingest allowlists return
- * hosts and admits only Cloud's today; a 400 means this origin is not on
- * the list yet, and the buyer returns through Cloud's credits page instead.
- */
-export async function createTopUpCheckout(
-  token: string,
-  amountCents: number
-): Promise<TopUpCheckoutSession> {
-  if (typeof window === 'undefined')
-    return requestCheckout(token, amountCents, WORKSHOP_CREDITS_URL)
-  const ownReturn = new URL(
-    '/payment/success',
-    window.location.origin
-  ).toString()
-  try {
-    return await requestCheckout(token, amountCents, ownReturn)
-  } catch (error) {
-    // A rejected return host may come back as 400 or 404 depending on the
-    // ingest build, and a plain 404 also means the feature flag is dark -
-    // indistinguishable from here. Retry once with the Cloud return either
-    // way: it answers the allowlist rejection, and a genuinely dark flag
-    // 404s again and surfaces as itself.
-    if (
-      error instanceof TopUpCheckoutError &&
-      (error.status === 400 || error.status === 404)
-    )
-      return requestCheckout(token, amountCents, WORKSHOP_CREDITS_URL)
-    throw error
   }
 }

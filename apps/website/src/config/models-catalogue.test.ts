@@ -63,6 +63,12 @@ const fixture: WorkshopModel[] = [
   }
 ]
 
+it('keeps generated video ahead of animated-image use cases', () => {
+  expect(USE_CASES.indexOf('generate-videos')).toBeLessThan(
+    USE_CASES.indexOf('animate-images')
+  )
+})
+
 describe('filterWorkshopModels', () => {
   it('matches name or provider, case-insensitively', () => {
     expect(filterWorkshopModels(fixture, { query: 'forest' })).toEqual([
@@ -192,8 +198,8 @@ describe('sortWorkshopModels', () => {
   it('leads with the models people run, whatever their example count', () => {
     const [first, second] = [...modelOrderRank.keys()]
     const list = [
-      { ...fixture[0], slug: second, workflowCount: 6 },
-      { ...fixture[1], slug: first, workflowCount: 0 },
+      { ...fixture[0], slug: second, recommendedRank: 1, workflowCount: 6 },
+      { ...fixture[1], slug: first, recommendedRank: 0, workflowCount: 0 },
       { ...fixture[2], slug: 'never-run', workflowCount: 6 }
     ]
     expect(

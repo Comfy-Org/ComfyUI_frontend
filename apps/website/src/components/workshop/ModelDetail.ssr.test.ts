@@ -33,11 +33,14 @@ vi.mock<unknown>(import('../../config/workshop-session-state'), async () => {
 vi.mock<unknown>(import('../../config/workshop-credits'), async () => {
   const { ref } = await import('vue')
   return {
+    clearTopUpWatch: vi.fn(),
+    useTopUpWatch: () => ref({ status: 'idle' }),
     useWorkshopCredits: () => ({
       balance: ref({ status: 'unknown' }),
       session: ref(undefined)
     }),
-    refreshWorkshopCredits: vi.fn()
+    refreshWorkshopCredits: vi.fn(),
+    watchForTopUp: vi.fn()
   }
 })
 

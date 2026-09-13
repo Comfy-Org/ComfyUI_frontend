@@ -9,22 +9,23 @@ afterEach(() => {
 
 describe('shelf memory', () => {
   it('reads back the shelf the visitor was standing on', () => {
-    rememberShelf('generate-videos')
-    expect(lastShelf()).toBe('generate-videos')
+    rememberShelf('generate-videos', '/models/kling/')
+    expect(lastShelf('/models/kling/')).toBe('generate-videos')
   })
 
   it('remembers nothing before the catalogue has been browsed', () => {
-    expect(lastShelf()).toBeUndefined()
+    expect(lastShelf('/models/kling/')).toBeUndefined()
   })
 
   it('ignores a value that is no longer a shelf', () => {
     sessionStorage.setItem('comfy-models-shelf', 'retired-category')
-    expect(lastShelf()).toBeUndefined()
+    expect(lastShelf('/models/kling/')).toBeUndefined()
   })
 
-  it('says nothing when the stored value is empty', () => {
-    sessionStorage.setItem('comfy-models-shelf', '')
-    expect(lastShelf()).toBeUndefined()
+  it('does not apply a shelf to another model or a later visit', () => {
+    rememberShelf('generate-videos', '/models/kling/')
+    expect(lastShelf('/models/flux/')).toBeUndefined()
+    expect(lastShelf('/models/kling/')).toBeUndefined()
   })
 
   it('browses on when the browser refuses its own storage', () => {
@@ -35,8 +36,10 @@ describe('shelf memory', () => {
       })
 
     try {
-      expect(() => rememberShelf('generate-videos')).not.toThrow()
-      expect(lastShelf()).toBeUndefined()
+      expect(() =>
+        rememberShelf('generate-videos', '/models/kling/')
+      ).not.toThrow()
+      expect(lastShelf('/models/kling/')).toBeUndefined()
     } finally {
       denied.mockRestore()
     }

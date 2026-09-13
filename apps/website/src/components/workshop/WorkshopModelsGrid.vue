@@ -57,6 +57,7 @@ const modalities = ref<string[]>([])
 const capabilities = ref<string[]>([])
 const providers = ref<string[]>([])
 const sort = ref<SortOrder>('popular')
+let scrollReady = false
 
 onMounted(() => {
   const initial = parseCatalogSearch(location.search)
@@ -65,39 +66,12 @@ onMounted(() => {
   capabilities.value = [...(initial.capabilities ?? [])]
   providers.value = [...(initial.providers ?? [])]
   modalities.value = [...(initial.modalities ?? [])]
-  // The whole catalogue is a shelf too, and it has to replace the one the tab
-  // was left on, or the way back leads to a category never visited.
-  rememberShelf(useCase.value)
+  void nextTick(() => {
+    scrollReady = true
+  })
 })
 
-const useCaseLabelKey: Record<UseCase | 'all' | 'other', TranslationKey> = {
-  all: 'workshop.useCase.all',
-  other: 'workshop.sections.otherFormats',
-  'generate-images': 'workshop.useCase.generateImages',
-  'edit-images': 'workshop.useCase.editImages',
-  'generate-videos': 'workshop.useCase.generateVideos',
-  'animate-images': 'workshop.useCase.animateImages',
-  'edit-videos': 'workshop.useCase.editVideos',
-  '3d': 'workshop.useCase.3d',
-  audio: 'workshop.useCase.audio',
-  text: 'workshop.useCase.text'
-}
-
-// A row title clicked far down the page opens a much shorter screen, which
-// would otherwise leave the viewport parked on the footer.
-watch(useCase, (shelf) => {
-  rememberShelf(shelf)
-  void nextTick(() => window.scrollTo({ top: 0 }))
-})
-
-// Typing swaps the rows for a grid and clearing swaps them back, which moves
-// everything under the search field. Following the field keeps it in the same
-// place both ways, instead of the page landing wherever the new height falls.
 const toolbar = useTemplateRef<HTMLElement>('toolbar')
-watch(
-  () => query.value.trim() !== '',
-  () => void nextTick(() => toolbar.value?.scrollIntoView({ block: 'start' }))
-)
 const sortLabelKey: Record<SortOrder, TranslationKey> = {
   popular: 'workshop.sort.popular',
   name: 'workshop.sort.name',
@@ -171,11 +145,17 @@ const isFiltered = computed(
 // Willie's browseable listing: rows per use case until the visitor narrows
 // down, then the flat grid takes over.
 const browseAll = defineModel<boolean>('browseAll', { default: false })
-// A row title clicked far down the page opens a much shorter screen, which
-// would otherwise leave the viewport parked on the footer.
 watch(
-  [useCase, browseAll],
-  () => void nextTick(() => window.scrollTo({ top: 0 }))
+  [useCase, browseAll, () => query.value.trim() !== ''],
+  ([nextShelf, nextBrowse], [previousShelf, previousBrowse]) => {
+    if (!scrollReady) return
+    const sectionChanged =
+      nextShelf !== previousShelf || nextBrowse !== previousBrowse
+    void nextTick(() => {
+      if (sectionChanged) window.scrollTo({ top: 0 })
+      else toolbar.value?.scrollIntoView({ block: 'start' })
+    })
+  }
 )
 const browsing = computed(() => !isFiltered.value && !browseAll.value)
 const inSection = computed(() => useCase.value !== 'all' || browseAll.value)
@@ -192,9 +172,8 @@ const sectionTitleKey = computed<TranslationKey>(() =>
 const emit = defineEmits<{ section: [boolean] }>()
 watch(inSection, (value) => emit('section', value), { immediate: true })
 
-// Router reports no curated set yet, so the banner that opens the listing
-// carries the catalogue's own most-run models and costs nothing to keep true
-// as the catalogue grows.
+// Keep the launch-requested video models in the set, then let the same curated
+// order used by the rows decide where every selected model appears.
 const FEATURED_LIMIT = 6
 const FEATURED_SLUGS = [
   'byteplus--seedance-2-fast-text-to-video--generate-videos',
@@ -207,10 +186,13 @@ const featured = computed(() => {
   const selected = FEATURED_SLUGS.flatMap((slug) =>
     available.filter((model) => model.slug === slug)
   )
-  return [
-    ...selected,
-    ...available.filter((model) => !FEATURED_SLUGS.includes(model.slug))
-  ].slice(0, FEATURED_LIMIT)
+  return sortWorkshopModels(
+    [
+      ...selected,
+      ...available.filter((model) => !FEATURED_SLUGS.includes(model.slug))
+    ].slice(0, FEATURED_LIMIT),
+    'popular'
+  )
 })
 
 function openSection(value: UseCase | 'other') {
@@ -218,8 +200,7 @@ function openSection(value: UseCase | 'other') {
 }
 
 function leaveSection() {
-  browseAll.value = false
-  useCase.value = 'all'
+  clearFilters()
 }
 
 function resetFilters() {
@@ -233,6 +214,22 @@ function resetFilters() {
 function clearFilters() {
   browseAll.value = false
   resetFilters()
+}
+
+function rememberModel(
+  model: WorkshopModel,
+  event: MouseEvent,
+  shelf = useCase.value
+) {
+  if (
+    event.button !== 0 ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey
+  )
+    return
+  rememberShelf(shelf, model.href)
 }
 
 watch(browseAll, (on) => on && resetFilters())
@@ -379,12 +376,16 @@ const menuItemClass =
             {{ t('workshop.models.heading', locale) }}
           </h2>
           <ul
-            class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
+            class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5"
             aria-labelledby="workshop-models-heading"
             data-testid="workshop-models-grid"
           >
             <li v-for="family in visible" :key="family.key">
-              <WorkshopModelCard :model="family.latest" :locale />
+              <WorkshopModelCard
+                :model="family.latest"
+                :locale
+                @click="rememberModel(family.latest, $event)"
+              />
             </li>
           </ul>
         </div>
