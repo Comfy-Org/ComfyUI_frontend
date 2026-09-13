@@ -177,6 +177,8 @@ If you're a QA tester or non-developer, use the interactive recorder:
 pnpm comfy-test record
 ```
 
+`pnpm comfy-test recorder` is an equivalent alias and accepts the same flags.
+
 This guides you through a 6-step flow:
 
 1. **Environment check** — verifies the tools, the backend, and the dev server (with install instructions if anything is missing)

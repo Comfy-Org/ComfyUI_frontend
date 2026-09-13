@@ -27,14 +27,10 @@ vi.mock(import('@/components/dialog/confirm/confirmDialog'), () => ({
   showConfirmDialog: mockShowConfirmDialog
 }))
 
-vi.mock(
-  import('@/platform/workspace/api/partnerNodePolicyApi'),
-  async (importOriginal) => ({
-    ...(await importOriginal()),
-    getPartnerNodePolicy: vi.fn(() => new Promise<never>(() => {})),
-    getPartnerProviders: vi.fn(() => new Promise<never>(() => {}))
-  })
-)
+vi.mock(import('@/platform/workspace/api/partnerNodePolicyApi'), () => ({
+  getPartnerNodePolicy: vi.fn(() => new Promise<never>(() => {})),
+  getPartnerProviders: vi.fn(() => new Promise<never>(() => {}))
+}))
 
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useWorkspaceUI'),

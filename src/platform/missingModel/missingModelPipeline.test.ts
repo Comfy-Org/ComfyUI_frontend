@@ -1,5 +1,4 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import type * as DistributionModule from '@/platform/distribution/types'
 import type { ComfyApp } from '@/scripts/app'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useMissingModelStore } from './missingModelStore'
@@ -72,8 +71,7 @@ const { mockHandles } = vi.hoisted(() => {
   }
 })
 
-vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
-  ...(await importOriginal<typeof DistributionModule>()),
+vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
@@ -691,10 +689,4 @@ vi.mock(import('@/scripts/app'), async () => {
   const { fromPartial } = await import('@total-typescript/shoehorn')
   return { app: fromPartial<ComfyApp>({}) }
 })
-
-vi.mock(import('firebase/auth'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  setPersistence: vi.fn().mockResolvedValue(undefined),
-  onAuthStateChanged: vi.fn(),
-  onIdTokenChanged: vi.fn()
-}))
+vi.mock(import('firebase/auth'))
