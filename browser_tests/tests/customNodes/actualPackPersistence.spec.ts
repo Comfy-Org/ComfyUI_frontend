@@ -62,11 +62,42 @@ test.describe(
         { tag: renderer.tags },
         async ({ comfyPage, packPersistence, savedWorkflows }, testInfo) => {
           test.slow()
+          const useVueNodes = renderer.name === 'Vue'
+          await comfyPage.settings.setSetting(
+            'Comfy.VueNodes.Enabled',
+            useVueNodes
+          )
           await comfyPage.workflow.setupWorkflowsDirectory({})
           await comfyPage.workflow.reloadAndWaitForApp()
           await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
           await comfyPage.workflow.waitForWorkflowIdle()
           await comfyPage.nodeOps.clearGraph()
+
+          const extensionSetup = await comfyPage.page.evaluate(async () => {
+            const response = await fetch('/api/extensions')
+            const extensions: unknown = await response.json()
+            const comparer = window.LiteGraph!.createNode(
+              'Image Comparer (rgthree)'
+            )
+            return {
+              comparerWidgetRegistered: Boolean(
+                comparer?.widgets?.some(
+                  (widget) => widget.name === 'rgthree_comparer'
+                )
+              ),
+              rgthreeExtensionServed:
+                Array.isArray(extensions) &&
+                extensions.some(
+                  (extension) =>
+                    typeof extension === 'string' &&
+                    extension.includes('/rgthree-comfy/image_comparer.js')
+                )
+            }
+          })
+          expect(extensionSetup).toEqual({
+            comparerWidgetRegistered: true,
+            rgthreeExtensionServed: true
+          })
 
           const workflowName = await comfyPage.page.evaluate(
             (renderer) =>
@@ -182,7 +213,8 @@ test.describe(
               `rgthree-comparer-${renderer.name.toLowerCase()}-${stage}.png`
             )
             let screenshot: Buffer
-            if (await vueCanvas.isVisible()) {
+            if (useVueNodes) {
+              await expect(vueCanvas).toBeVisible()
               await vueCanvas.hover()
               await comfyPage.page.evaluate((nodeId) => {
                 window
@@ -192,6 +224,7 @@ test.describe(
               await comfyPage.nextFrame()
               screenshot = await vueCanvas.screenshot({ path: screenshotPath })
             } else {
+              await expect(vueCanvas).toBeHidden()
               const bounds = await comfyPage.page.evaluate((nodeId) => {
                 const node = window.app!.graph.nodes.find(
                   (candidate) => String(candidate.id) === nodeId
