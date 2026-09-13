@@ -5,6 +5,16 @@ import {
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
+import { assetPath } from '@e2e/fixtures/utils/paths'
+
+test.beforeEach(async ({ page }) => {
+  await page.route('https://example.com/image.png', (route) =>
+    route.fulfill({ path: assetPath('image32x32.webp') })
+  )
+  await page.route('https://example.com/video.webm', (route) =>
+    route.fulfill({ path: assetPath('video/video-preview-wide.webm') })
+  )
+})
 
 // TODO: there might be a better solution for this
 // Helper function to pan canvas and select node
@@ -35,9 +45,7 @@ async function openSelectionToolboxHelp(comfyPage: ComfyPage) {
 }
 
 test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.NodeLibrary.NewDesign', false)
-  })
+  test.use({ initialSettings: { 'Comfy.NodeLibrary.NewDesign': false } })
 
   test.describe('Selection Toolbox', () => {
     test('Should open help menu for selected node', async ({ comfyPage }) => {
@@ -143,8 +151,11 @@ test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
   })
 
   test.describe('Help Content', () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
+    test.use({
+      initialSettings: {
+        'Comfy.NodeLibrary.NewDesign': false,
+        'Comfy.Canvas.SelectionToolbox': true
+      }
     })
 
     test('Should display loading state while fetching help', async ({
@@ -348,7 +359,13 @@ test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
     })
 
     test.describe('Locale-specific documentation', () => {
-      test.use({ initialSettings: { 'Comfy.Locale': 'ja' } })
+      test.use({
+        initialSettings: {
+          'Comfy.NodeLibrary.NewDesign': false,
+          'Comfy.Canvas.SelectionToolbox': true,
+          'Comfy.Locale': 'ja'
+        }
+      })
 
       test('Should handle locale-specific documentation', async ({
         comfyPage

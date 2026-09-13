@@ -34,10 +34,23 @@ function getWarningMessage(
   return `[ComfyUI Notice] "${shimFileName}" is an internal module, not part of the public API. Future updates may break this import.`
 }
 
-function isLegacyFile(id: string): boolean {
+function defaultSrcRoot(): string {
+  return path.join(process.cwd(), 'src')
+}
+
+export function isLegacyFile(
+  id: string,
+  srcRoot: string = defaultSrcRoot()
+): boolean {
+  if (!id.endsWith('.ts')) return false
+
+  const relativePath = path.relative(srcRoot, id).replace(/\\/g, '/')
+
+  if (relativePath.startsWith('..')) return false
+
   return (
-    id.endsWith('.ts') &&
-    (id.includes('src/extensions/core') || id.includes('src/scripts'))
+    relativePath.startsWith('extensions/core/') ||
+    relativePath.startsWith('scripts/')
   )
 }
 
@@ -72,12 +85,12 @@ function transformExports(code: string, id: string): ShimResult {
 
 function getModuleName(id: string): string {
   // Simple example to derive a module name from the file path
-  const parts = id.split('/')
+  const parts = id.replace(/\\/g, '/').split('/')
   const fileName = parts[parts.length - 1]
   return fileName.replace(/\.\w+$/, '') // Remove file extension
 }
 
-export function comfyAPIPlugin(isDev: boolean): Plugin {
+export function comfyAPIPlugin(isDev: boolean) {
   return {
     name: 'comfy-api-plugin',
     apply: 'build',
@@ -88,9 +101,8 @@ export function comfyAPIPlugin(isDev: boolean): Plugin {
         const result = transformExports(code, id)
 
         if (result.exports.length > 0) {
-          const projectRoot = process.cwd()
           const relativePath = path
-            .relative(path.join(projectRoot, 'src'), id)
+            .relative(defaultSrcRoot(), id)
             .replace(/\\/g, '/')
           const shimFileName = relativePath.replace(/\.ts$/, '.js')
 
@@ -119,5 +131,5 @@ export function comfyAPIPlugin(isDev: boolean): Plugin {
         }
       }
     }
-  }
+  } satisfies Plugin
 }

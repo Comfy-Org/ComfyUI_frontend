@@ -5,9 +5,7 @@ import { toNodeId } from '@/types/nodeId'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-})
+test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
 // If an input is optional by node definition, it should be shown as
 // a hollow circle no matter what shape it was defined in the workflow JSON.
@@ -54,7 +52,7 @@ test.describe('Optional input', { tag: ['@screenshot', '@node'] }, () => {
     await comfyPage.workflow.loadWorkflow('inputs/old_workflow_converted_input')
 
     const linkState = await comfyPage.page.evaluate((nodeId) => {
-      const node = window.app!.graph!.getNodeById(nodeId)
+      const node = window.app!.graph.getNodeById(nodeId)
       if (!node) return null
       const linkIdOf = (name: string) => {
         const slot = node.inputs.findIndex((input) => input.name === name)
@@ -72,7 +70,7 @@ test.describe('Optional input', { tag: ['@screenshot', '@node'] }, () => {
     await comfyPage.workflow.loadWorkflow('inputs/renamed_converted_widget')
     const inputNames = await comfyPage.page.evaluate(
       (nodeId) =>
-        window.app!.graph!.getNodeById(nodeId)!.inputs.map(({ name }) => name),
+        window.app!.graph.getNodeById(nodeId)!.inputs.map(({ name }) => name),
       toNodeId(3)
     )
 

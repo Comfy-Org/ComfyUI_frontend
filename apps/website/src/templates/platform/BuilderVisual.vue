@@ -1,5 +1,24 @@
+<script setup lang="ts">
+import { useDocumentVisibility, useElementVisibility } from '@vueuse/core'
+import { computed, useTemplateRef } from 'vue'
+
+const root = useTemplateRef<HTMLElement>('root')
+const onScreen = useElementVisibility(root)
+const documentVisibility = useDocumentVisibility()
+
+// None of the nine animations below can be promoted to a compositor layer:
+// five animate stroke-dashoffset and four animate transform on SVG <g>. That
+// is main-thread work every frame, and it ran whether or not the diagram was
+// on screen. Dropping the classes parks them. Reduced motion is handled by the
+// utilities themselves in global.css.
+const animated = computed(
+  () => onScreen.value && documentVisibility.value === 'visible'
+)
+</script>
+
 <template>
   <div
+    ref="root"
     aria-hidden="true"
     class="aspect-2/1 w-full overflow-hidden rounded-3xl bg-primary-comfy-ink"
   >
@@ -34,23 +53,23 @@
         stroke-linecap="round"
       >
         <path
-          class="animate-dash-flow"
+          :class="animated && 'animate-dash-flow'"
           d="M 168 158 C 300 190, 420 230, 520 276"
         />
         <path
-          class="animate-dash-flow"
+          :class="animated && 'animate-dash-flow'"
           d="M 145 320 C 290 325, 420 320, 520 318"
         />
         <path
-          class="animate-dash-flow"
+          :class="animated && 'animate-dash-flow'"
           d="M 190 500 C 340 505, 455 430, 530 352"
         />
         <path
-          class="animate-dash-flow"
+          :class="animated && 'animate-dash-flow'"
           d="M 680 276 C 820 255, 905 225, 1012 212"
         />
         <path
-          class="animate-dash-flow"
+          :class="animated && 'animate-dash-flow'"
           d="M 680 338 C 820 375, 910 415, 1012 445"
         />
       </g>
@@ -62,7 +81,7 @@
         width="362"
         height="192"
       />
-      <g class="animate-platform-builder-float">
+      <g :class="animated && 'animate-platform-builder-float'">
         <image
           href="/assets/platform/builder/cube-large.png"
           x="520"
@@ -90,7 +109,7 @@
         width="142"
         height="77"
       />
-      <g class="animate-platform-builder-float-slow">
+      <g :class="animated && 'animate-platform-builder-float-slow'">
         <image
           href="/assets/platform/builder/cube-small.png"
           x="1018"
@@ -103,7 +122,7 @@
           class="fill-primary-comfy-yellow"
         />
       </g>
-      <g class="animate-platform-builder-float-delayed">
+      <g :class="animated && 'animate-platform-builder-float-delayed'">
         <image
           href="/assets/platform/builder/cube-small.png"
           x="1018"
@@ -117,7 +136,7 @@
         />
       </g>
 
-      <g class="animate-platform-builder-pulse">
+      <g :class="animated && 'animate-platform-builder-pulse'">
         <polygon
           points="110,106 80.6,123 80.6,157 110,174 139.4,157 139.4,123"
           fill="#F2FF59"

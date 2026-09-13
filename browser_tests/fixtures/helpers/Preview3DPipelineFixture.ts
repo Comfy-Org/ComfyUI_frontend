@@ -155,7 +155,6 @@ export class Preview3DPipelineContext {
   }
 
   async alignPreview3dWorkflowUiSettings(): Promise<void> {
-    await this.comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
     await this.comfyPage.settings.setSetting(
       'Comfy.Workflow.WorkflowTabsPosition',
       'Sidebar'
@@ -219,15 +218,7 @@ export class Preview3DPipelineContext {
 
   async reloadPageAndWaitForAppShell(): Promise<void> {
     await this.comfyPage.page.reload({ waitUntil: 'domcontentloaded' })
-    await this.comfyPage.page.waitForFunction(
-      () => window.app && window.app.extensionManager,
-      { timeout: 30_000 }
-    )
-    await this.comfyPage.page.locator('.p-blockui-mask').waitFor({
-      state: 'hidden',
-      timeout: 30_000
-    })
-    await this.comfyPage.nextFrame()
+    await this.comfyPage.waitForAppReady()
   }
 
   async openPersistedWorkflowFromSidebar(workflowName: string): Promise<void> {
@@ -269,14 +260,12 @@ export const preview3dPipelineTest = comfyPageFixture.extend<{
   preview3dPipeline: Preview3DPipelineContext
 }>({
   preview3dPipeline: async ({ comfyPage }, use) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
     await comfyPage.settings.setSetting(
       'Comfy.Workflow.WorkflowTabsPosition',
       'Sidebar'
     )
 
     await comfyPage.workflow.loadWorkflow('3d/preview3d_pipeline')
-    await comfyPage.vueNodes.waitForNodes()
 
     const pipeline = new Preview3DPipelineContext(comfyPage)
     await use(pipeline)

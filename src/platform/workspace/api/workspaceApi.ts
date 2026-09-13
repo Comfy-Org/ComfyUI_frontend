@@ -28,6 +28,7 @@ import type {
   ResubscribeRequest,
   ResubscribeResponse,
   SavedPaymentMethod,
+  ScheduledPlanChange,
   SubscribeRequest,
   SubscribeResponse,
   SubscriptionDuration,
@@ -114,6 +115,7 @@ export type BillingSubscriptionStatus = NonNullable<
 
 export type { BillingStatus }
 export type { BillingStatusResponse }
+export type { ScheduledPlanChange }
 
 export type { BillingBalanceResponse }
 export type { BillingCapabilitiesResponse }
@@ -125,6 +127,9 @@ export type BillingAuthenticationState = NonNullable<
 >
 export type BillingDeclineReason = NonNullable<
   BillingOpStatusResponse['decline_reason']
+>
+export type BillingOperationPhase = NonNullable<
+  BillingOpStatusResponse['phase']
 >
 
 interface GetBillingEventsParams {
@@ -168,16 +173,14 @@ async function getAuthHeaderOrThrow() {
 
 function handleAxiosError(err: unknown): never {
   if (axios.isAxiosError(err)) {
-    const status = err.response?.status
-    const { code, message } = errorResponseFromBody(
-      err.response?.data,
-      err.message
-    )
+    const response = err.response
+    const status = response?.status
+    const { code, message } = errorResponseFromBody(response?.data, err.message)
     // Callers compare `code` against server-defined values, so the parser's
     // "no code reported" sentinel must stay out of that contract.
     const retryAfter =
-      status === 429
-        ? parseRetryAfterSeconds(err.response?.headers?.['retry-after'])
+      response?.status === 429
+        ? parseRetryAfterSeconds(response.headers['retry-after'])
         : undefined
     throw new WorkspaceApiError(
       message,

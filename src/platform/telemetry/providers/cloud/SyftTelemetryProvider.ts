@@ -1,7 +1,8 @@
+import { createScriptLoader } from '@comfyorg/shared-frontend-utils/loadExternalScript'
+
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { normalizeEmail } from '@/platform/telemetry/utils/normalizeEmail'
-import { createScriptLoader } from '@/utils/loadExternalScript'
 
 import type { AuthMetadata, AuthMethod, TelemetryProvider } from '../../types'
 

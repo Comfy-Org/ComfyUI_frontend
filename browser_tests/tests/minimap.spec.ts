@@ -50,9 +50,14 @@ async function clickMinimapAt(
 }
 
 test.describe('Minimap', { tag: '@canvas' }, () => {
+  test.use({
+    initialSettings: {
+      'Comfy.Minimap.Visible': true,
+      'Comfy.Graph.CanvasMenu': true
+    }
+  })
+
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.Minimap.Visible', true)
-    await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', true)
     await comfyPage.workflow.loadWorkflow('default')
     await comfyPage.page.waitForFunction(() => window.app && window.app.canvas)
   })
@@ -510,9 +515,13 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
 })
 
 test.describe('Minimap mobile', { tag: ['@mobile', '@canvas'] }, () => {
+  test.use({
+    initialSettings: {
+      'Comfy.Graph.CanvasMenu': true
+    }
+  })
+
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', true)
     await comfyPage.workflow.loadWorkflow('default')
     await comfyPage.page.waitForFunction(() => window.app && window.app.canvas)
   })
