@@ -5,6 +5,10 @@ import { describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 
 import type { WorkshopModel } from '../../config/models-catalogue'
+import {
+  setAllIntersecting,
+  stubIntersectionObserver
+} from '../../test/fakeIntersectionObserver'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 
 const base: WorkshopModel = {
@@ -84,11 +88,31 @@ describe('WorkshopModelCard', () => {
     })
     await nextTick()
     const video = screen.getByLabelText<HTMLVideoElement>('Flux')
-    expect(video.currentSrc).toBe('')
+    expect(video).not.toHaveAttribute('src')
     expect(video.paused).toBe(true)
     expect(screen.getByRole('link', { name: /Flux/ })).toHaveAttribute(
       'href',
       base.href
+    )
+  })
+
+  it('attaches the video source once the card is on screen', async () => {
+    stubIntersectionObserver()
+    render(WorkshopModelCard, {
+      props: {
+        model: {
+          ...base,
+          thumbnail: {
+            url: 'https://assets.example/preview.mp4',
+            kind: 'video'
+          }
+        }
+      }
+    })
+    await setAllIntersecting(true)
+    expect(screen.getByLabelText('Flux')).toHaveAttribute(
+      'src',
+      'https://assets.example/preview.mp4'
     )
   })
 

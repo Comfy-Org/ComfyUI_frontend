@@ -11,11 +11,11 @@ import { isWorkshopModelDisabled } from './workshop-model-availability'
 import { getRouterWorkshopModelDetail as getWorkshopModelDetail } from './workshop-router-content'
 import { schemaForModel } from './workshop-playground'
 import type { GeneratedField, WorkshopModel } from './models-catalogue'
+import { decodeGeneratedModels } from './workshop-generated-models'
 import {
   USE_CASES,
   countByFacet,
   countByUseCase,
-  decodeGeneratedModels,
   catalogSearch,
   filterWorkshopModels,
   parseCatalogSearch,

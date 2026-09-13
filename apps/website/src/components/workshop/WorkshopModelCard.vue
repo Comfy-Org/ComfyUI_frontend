@@ -37,7 +37,7 @@ const thumbnailLabel = computed(() =>
   model.thumbnail ? model.thumbnailLabel : undefined
 )
 const video = useTemplateRef<HTMLVideoElement>('video')
-const loadVideo = usePreviewVideo(video)
+const previewSrc = usePreviewVideo(video, () => model.thumbnail?.url)
 
 const pillClass =
   'inline-flex h-6 w-fit shrink-0 items-center justify-center rounded-full bg-hub-surface px-4 py-1 text-xs font-normal whitespace-nowrap text-content'
@@ -74,7 +74,7 @@ const pillClass =
       <video
         v-if="model.thumbnail?.kind === 'video'"
         ref="video"
-        :src="loadVideo ? model.thumbnail.url : undefined"
+        :src="previewSrc"
         :aria-label="model.name"
         class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
         muted

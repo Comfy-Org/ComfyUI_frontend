@@ -44,10 +44,19 @@ function goTo(index: number) {
 
 const banner = useTemplateRef<HTMLElement>('banner')
 const hovered = useElementHover(banner)
-const onScreen = useElementVisibility(banner, { initialValue: false })
+// Starts true so the server-rendered first slide carries its video source and
+// the browser requests the frame during parse; the observer corrects it once
+// hydrated. Rotation does not care: it runs on requestAnimationFrame, which
+// only exists in the browser.
+const onScreen = useElementVisibility(banner, { initialValue: true })
 const visibility = useDocumentVisibility()
 const video = useTemplateRef<HTMLVideoElement>('video')
-const loadVideo = usePreviewVideo(video)
+// The video fills the banner, so the banner's observer is its observer.
+const previewSrc = usePreviewVideo(
+  video,
+  () => active.value.model.thumbnail?.url,
+  { visible: () => onScreen.value }
+)
 
 // Clicking a bar leaves it focused, so pausing on any focus would stop the
 // rotation for good. Only a keyboard visitor, who needs the time, stops it.
@@ -105,7 +114,7 @@ const fill = computed(() =>
         v-if="active.model.thumbnail?.kind === 'video'"
         :key="active.model.slug"
         ref="video"
-        :src="loadVideo ? active.model.thumbnail.url : undefined"
+        :src="previewSrc"
         class="absolute inset-0 size-full object-cover"
         aria-hidden="true"
         muted
