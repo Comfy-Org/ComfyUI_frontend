@@ -44,14 +44,11 @@ const fetchApi = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('@/scripts/api'), () => ({ api: { fetchApi } }))
 
 const fetchWithUnifiedRemint = vi.hoisted(() => vi.fn())
-vi.mock(
-  import('@/platform/auth/unified/remintRetry'),
-  async (importOriginal) => ({
-    ...(await importOriginal()),
-    fetchWithUnifiedRemint,
-    shouldRemintCloudRequest: () => Promise.resolve(false)
-  })
-)
+vi.mock(import('@/platform/auth/unified/remintRetry'), () => ({
+  attachUnifiedRemintInterceptor: vi.fn(),
+  fetchWithUnifiedRemint,
+  shouldRemintCloudRequest: () => Promise.resolve(false)
+}))
 
 const showSignInDialog = vi.hoisted(() => vi.fn<() => Promise<boolean>>())
 vi.mock<unknown>(import('@/services/dialogService'), () => ({
