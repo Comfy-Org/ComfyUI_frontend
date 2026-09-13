@@ -12,17 +12,17 @@ import SplitReveal from './SplitReveal.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 
 const { slug } = defineProps<{ slug: string }>()
-const page = await prepareModelPage(slug)
+const result = await prepareModelPage(slug)
+if (result.kind === 'redirect')
+  throw new Error(`Expected a canonical Models slug: ${slug}`)
+const page = result
 const routes = getRoutes()
 const pillClass =
   'inline-flex h-7 items-center rounded-full border border-transparency-white-t20 px-3 text-xs leading-none text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow'
 </script>
 
 <template>
-  <div
-    v-if="page.kind === 'page'"
-    class="max-w-10xl mx-auto px-6 py-10 lg:px-8 lg:py-14"
-  >
+  <div class="max-w-10xl mx-auto px-6 py-10 lg:px-8 lg:py-14">
     <nav
       aria-label="Breadcrumb"
       class="mb-8 text-xs text-primary-warm-gray sm:px-8 lg:px-10"
