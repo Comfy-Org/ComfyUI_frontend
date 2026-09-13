@@ -2,10 +2,8 @@ import type { FieldSchema, FileValue, FormValues } from './workshop-playground'
 import { urlUploadField, validateForm } from './workshop-playground'
 import { WorkshopRouterError } from './workshop-router-errors'
 import { isHttpImageSource } from './workshop-image-source'
-import {
-  loadWorkshopExampleFile,
-  workshopExampleFile
-} from './workshop-example-file'
+import { workshopExampleFile } from './workshop-example-file'
+import { loadWorkshopExampleFile } from './workshop-example-file-loader'
 
 const downloadedSources = new Map<string, FileValue>()
 const formSources = new WeakMap<FormValues, ReadonlyMap<string, FileValue>>()

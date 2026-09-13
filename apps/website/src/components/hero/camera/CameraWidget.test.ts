@@ -1,39 +1,29 @@
 // @vitest-environment happy-dom
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { PerspectiveCamera, Vector3 } from 'three'
-import type * as ThreeModule from 'three'
-import type { Camera, Scene } from 'three'
+import type { Camera, Scene, WebGLRenderer as WebGLRendererType } from 'three'
+import { WebGLRenderer } from 'three/src/renderers/WebGLRenderer.js'
 
 import { CameraWidget } from './CameraWidget'
 import type { CameraState } from './types'
 
-// Everything except the GPU-bound renderer runs for real: scene graph,
-// raycasting and drag math are the code under test. The fake renderer updates
-// world matrices the way WebGLRenderer.render does, so raycasts see current
-// object positions.
-vi.mock(import('three'), async (importOriginal) => {
-  const three = await importOriginal<typeof ThreeModule>()
-  type WebGLRendererContract = Pick<
-    ThreeModule.WebGLRenderer,
-    'domElement' | 'outputColorSpace' | 'setSize' | 'setPixelRatio' | 'dispose'
-  >
-  class FakeWebGLRenderer implements WebGLRendererContract {
-    domElement = document.createElement('canvas')
-    outputColorSpace: ThreeModule.ColorSpace = ''
-    setSize() {}
-    setPixelRatio() {}
-    dispose() {}
+vi.mock(import('three/src/renderers/WebGLRenderer.js'), () => ({
+  WebGLRenderer: vi.fn()
+}))
+
+function fakeRenderer() {
+  return fromPartial<WebGLRendererType>({
+    domElement: document.createElement('canvas'),
+    setSize: vi.fn(),
+    setPixelRatio: vi.fn(),
+    dispose: vi.fn(),
     render(scene: Scene, camera: Camera) {
       scene.updateMatrixWorld(true)
       camera.updateMatrixWorld(true)
     }
-  }
-  return {
-    ...three,
-    WebGLRenderer:
-      FakeWebGLRenderer as unknown as typeof ThreeModule.WebGLRenderer
-  }
-})
+  })
+}
 
 const SIZE = 300
 
@@ -131,10 +121,11 @@ describe('CameraWidget', () => {
   beforeEach(() => {
     FakeImage.instances = []
     FakeResizeObserver.instances = []
+    vi.mocked(WebGLRenderer).mockImplementation(fakeRenderer)
     vi.stubGlobal('Image', FakeImage)
     vi.stubGlobal('ResizeObserver', FakeResizeObserver)
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
-      fake2dContext as unknown as CanvasRenderingContext2D
+      fromPartial<CanvasRenderingContext2D>(fake2dContext)
     )
   })
 

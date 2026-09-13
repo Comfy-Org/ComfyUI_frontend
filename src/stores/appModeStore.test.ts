@@ -32,6 +32,7 @@ import {
   createMockChangeTracker,
   createNodeState
 } from '@/utils/__tests__/litegraphTestUtils'
+import { resolveNode } from '@/utils/litegraphUtil'
 import type { WidgetId } from '@/types/widgetId'
 
 const mockEmptyWorkflowDialog = vi.hoisted(() => {
@@ -55,19 +56,15 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   }
 }))
 
-const mockResolveNode = vi.hoisted(() =>
-  vi.fn<(id: SerializedNodeId) => LGraphNode | undefined>(() => undefined)
-)
-vi.mock(import('@/utils/litegraphUtil'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  resolveNode: mockResolveNode
-}))
+vi.mock(import('@/utils/litegraphUtil'), { spy: true })
 
 vi.mock(import('@/components/builder/useEmptyWorkflowDialog'), () => ({
   useEmptyWorkflowDialog: () => mockEmptyWorkflowDialog
 }))
 
 import { useAppModeStore } from './appModeStore'
+
+const mockResolveNode = vi.mocked(resolveNode)
 
 function createBuilderWorkflow(
   activeMode: string = 'builder:inputs'

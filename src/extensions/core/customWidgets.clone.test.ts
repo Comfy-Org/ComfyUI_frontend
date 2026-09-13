@@ -9,11 +9,7 @@ const extensions = await vi.hoisted(async () => {
     await import('@/utils/__tests__/extensionTestUtils')
   return createExtensionCapture()
 })
-vi.mock(import('@/scripts/app'), async (importOriginal) => {
-  const original = await importOriginal()
-  original.app.registerExtension = extensions.registerExtension
-  return original
-})
+app.registerExtension = extensions.registerExtension
 await import('./customWidgets')
 const extension = extensions.getExtension('Comfy.CustomWidgets')
 const TEST_CUSTOM_COMBO_TYPE = 'test/CustomComboCopyPaste'

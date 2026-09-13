@@ -10,7 +10,8 @@ import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Mocked } from 'vitest'
-import { defineComponent, h, nextTick } from 'vue'
+import { computed, defineComponent, h, nextTick, ref } from 'vue'
+import { useClipboard } from '@vueuse/core'
 
 // jsdom does not implement ResizeObserver (happy-dom does); stub it before the
 // Vue node preview chain constructs its module-level observer at import time.
@@ -38,6 +39,9 @@ import { toNodeId } from '@/types/nodeId'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { app } from '@/scripts/app'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
@@ -136,13 +140,9 @@ const appMock = vi.hoisted(() => {
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({ app: appMock }))
 
-vi.mock<unknown>(
-  import('@/platform/workflow/validation/schemas/workflowSchema'),
-  async (importOriginal) => ({
-    ...(await importOriginal<object>()),
-    validateComfyWorkflow: vi.fn(async (content: unknown) => content)
-  })
-)
+vi.mock(import('@/platform/workflow/validation/schemas/workflowSchema'), {
+  spy: true
+})
 
 let workflowStore: ReturnType<typeof useWorkflowStore>
 let canvasStore: ReturnType<typeof useCanvasStore>
@@ -195,8 +195,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/utils/litegraphUtil'), async (importOriginal) => ({
-  ...(await importOriginal<object>()),
+vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   isLGraphNode: (item: unknown) =>
     (item as { isNodeFake?: boolean } | null)?.isNodeFake === true
 }))
@@ -211,18 +210,7 @@ vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
 
 const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
 
-vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => {
-  const { ref } = await import('vue')
-  return {
-    ...(await importOriginal<object>()),
-    useClipboard: () => ({
-      copy: clipboard.copy,
-      copied: ref(false),
-      isSupported: ref(true),
-      text: ref('')
-    })
-  }
-})
+vi.mock(import('@vueuse/core'), { spy: true })
 
 const telemetry = vi.hoisted(() => ({
   trackAgentMessageFeedback: vi.fn(),
@@ -238,13 +226,9 @@ vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => telemetry
 }))
 
-vi.mock<unknown>(
-  import('@/platform/distribution/types'),
-  async (importOriginal) => ({
-    ...(await importOriginal<object>()),
-    isCloud: true
-  })
-)
+vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
+  isCloud: true
+}))
 
 const openAccountPrecondition = vi.hoisted(() => vi.fn())
 vi.mock(
@@ -266,43 +250,13 @@ const paywallBilling = vi.hoisted(() => ({
   tier: 'STANDARD' as SubscriptionTier | null
 }))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useWorkspaceUI'),
-  async () => {
-    const { computed } = await import('vue')
-    return {
-      useWorkspaceUI: () => ({
-        workspaceRole: computed(() => paywallWorkspace.role)
-      })
-    }
-  }
-)
-
-vi.mock<unknown>(
-  import('@/composables/billing/useBillingContext'),
-  async () => {
-    const { computed } = await import('vue')
-    return {
-      useBillingContext: () => ({ tier: computed(() => paywallBilling.tier) })
-    }
-  }
-)
-
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  async () => {
-    const { computed } = await import('vue')
-    return {
-      useBillingCapabilities: () => ({
-        canTopUp: computed(() => paywallCapabilities.canTopUp),
-        canSubscribeSelfServe: computed(
-          () => paywallCapabilities.canSubscribeSelfServe
-        ),
-        isReady: computed(() => paywallCapabilities.isReady)
-      })
-    }
-  }
-)
+vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'), {
+  spy: true
+})
+vi.mock(import('@/composables/billing/useBillingContext'), { spy: true })
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'), {
+  spy: true
+})
 
 import type { AgentMessages, TurnId } from './schemas/agentApiSchema'
 import { zAgentWsEvent } from './schemas/agentApiSchema'
@@ -318,6 +272,38 @@ import AgentPanelRoot from './AgentPanelRoot.vue'
 
 beforeEach(() => {
   Object.assign(useAgentConsentStore(), { accepted: true })
+  vi.mocked(validateComfyWorkflow).mockImplementation(async (content) =>
+    fromPartial<ComfyWorkflowJSON>(
+      typeof content === 'object' && content !== null ? content : {}
+    )
+  )
+  vi.mocked(useClipboard).mockReturnValue(
+    fromPartial({
+      copy: clipboard.copy,
+      copied: computed(() => false),
+      isSupported: ref(true),
+      text: ref('')
+    })
+  )
+  vi.mocked(useWorkspaceUI).mockReturnValue(
+    fromPartial({
+      workspaceRole: computed(() => paywallWorkspace.role)
+    })
+  )
+  vi.mocked(useBillingContext).mockReturnValue(
+    fromPartial({
+      tier: computed(() => paywallBilling.tier)
+    })
+  )
+  vi.mocked(useBillingCapabilities).mockReturnValue(
+    fromPartial({
+      canTopUp: computed(() => paywallCapabilities.canTopUp),
+      canSubscribeSelfServe: computed(
+        () => paywallCapabilities.canSubscribeSelfServe
+      ),
+      isReady: computed(() => paywallCapabilities.isReady)
+    })
+  )
   workflowStore = useWorkflowStore()
   canvasStore = useCanvasStore()
   executionErrors = vi.mocked(useExecutionErrorStore())

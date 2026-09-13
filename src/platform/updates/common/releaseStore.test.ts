@@ -1,7 +1,5 @@
-import type * as DistributionModule from '@/platform/distribution/types'
-import type * as VueUseModule from '@vueuse/core'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { until } from '@vueuse/core'
+import { createSharedComposable, until, useStorage } from '@vueuse/core'
 import { compare } from 'semver'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
@@ -22,8 +20,7 @@ vi.mock(import('semver'), () => ({
 
 const mockData = vi.hoisted(() => ({ isDesktop: true, isCloud: false }))
 
-vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
-  ...(await importOriginal<typeof DistributionModule>()),
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isDesktop() {
     return mockData.isDesktop
   },
@@ -45,12 +42,9 @@ vi.mock(import('@/platform/updates/common/releaseService'), () => {
   }
 })
 
-vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => ({
-  ...(await importOriginal<typeof VueUseModule>()),
-  until: vi.fn(() => Promise.resolve()),
-  useStorage: vi.fn(() => ({ value: {} })),
-  createSharedComposable: vi.fn((fn) => fn)
-}))
+vi.mock(import('@vueuse/core'), { spy: true })
+vi.mocked(useStorage).mockReturnValue(ref({}))
+vi.mocked(createSharedComposable).mockImplementation((fn) => fn)
 
 beforeEach(() => {
   const get = vi.fn((key: string) => {

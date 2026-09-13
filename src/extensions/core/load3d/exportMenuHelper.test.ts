@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 import type Load3d from './Load3d'
 import { createExportMenuItems } from './exportMenuHelper'
@@ -14,19 +15,16 @@ vi.mock('@/i18n', () => ({
     vars ? `${key}:${JSON.stringify(vars)}` : key
 }))
 
-vi.mock(import('@/lib/litegraph/src/litegraph'), async (importOriginal) => {
-  const actual = await importOriginal()
-  class MockContextMenu {
-    constructor(...args: unknown[]) {
-      contextMenuMock(...args)
-    }
+vi.mock(import('@/lib/litegraph/src/litegraph'), { spy: true })
+
+class MockContextMenu {
+  constructor(...args: unknown[]) {
+    contextMenuMock(...args)
   }
-  // Replace ContextMenu in-place on the real LiteGraph singleton so consumers
-  // that import other members keep getting the real implementations.
-  ;(actual.LiteGraph as unknown as { ContextMenu: unknown }).ContextMenu =
-    MockContextMenu
-  return actual
-})
+}
+
+;(LiteGraph as unknown as { ContextMenu: unknown }).ContextMenu =
+  MockContextMenu
 
 function makeLoad3d(
   exportImpl: (format: string) => Promise<void> = vi

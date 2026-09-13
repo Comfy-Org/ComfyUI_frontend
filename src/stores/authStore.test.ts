@@ -21,7 +21,6 @@ import {
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { useDialogService } from '@/services/dialogService'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
-import type * as ApiModule from '@/scripts/api'
 import { api } from '@/scripts/api'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 
@@ -37,10 +36,6 @@ const { mockFeatureFlags } = vi.hoisted(() => ({
   mockFeatureFlags: {
     unifiedCloudAuthEnabled: false
   }
-}))
-
-const { mockResetSocket } = vi.hoisted(() => ({
-  mockResetSocket: vi.fn()
 }))
 
 const mockReportError = vi.hoisted(() => vi.fn())
@@ -106,14 +101,7 @@ vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   })
 }))
 
-// Keep the real API singleton (other modules rely on its full surface) but
-// override resetSocket so we can assert socket lifecycle calls without opening
-// a real WebSocket.
-vi.mock(import('@/scripts/api'), async (importOriginal) => {
-  const actual = await importOriginal<typeof ApiModule>()
-  Object.assign(actual.api, { resetSocket: mockResetSocket })
-  return actual
-})
+let mockResetSocket: Mock
 
 // Mock useDialogService
 vi.mock(import('@/services/dialogService'))
@@ -144,6 +132,7 @@ describe('useAuthStore', () => {
   } as Partial<User> as MockUser
 
   beforeEach(() => {
+    mockResetSocket = vi.spyOn(api, 'resetSocket').mockResolvedValue(undefined)
     vi.stubGlobal('fetch', mockFetch)
     clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.SHARE_AUTH)
 

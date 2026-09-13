@@ -1044,6 +1044,9 @@ importers:
       '@testing-library/vue':
         specifier: 'catalog:'
         version: 8.1.0(@vue/compiler-dom@3.5.42)(@vue/compiler-sfc@3.5.41)(@vue/server-renderer@3.5.42)(vue@3.5.42(typescript@6.0.3))
+      '@total-typescript/shoehorn':
+        specifier: 'catalog:'
+        version: 0.1.2
       '@types/leaflet':
         specifier: 'catalog:'
         version: 1.9.22
