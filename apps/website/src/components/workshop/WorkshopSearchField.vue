@@ -7,6 +7,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { WorkshopModel } from '../../config/models-catalogue'
 import { filterWorkshopModels } from '../../config/models-catalogue'
+import { useVisualViewport } from '../../composables/useVisualViewport'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import WorkshopSearchPanel from './WorkshopSearchPanel.vue'
@@ -36,6 +37,15 @@ const open = ref(false)
 const sheetOpen = ref(false)
 const sheetInput = useTemplateRef<HTMLInputElement>('sheetInput')
 const sheetTrigger = useTemplateRef<HTMLButtonElement>('sheetTrigger')
+const { height: screen, offsetTop: screenTop } = useVisualViewport()
+const sheetStyle = computed(() =>
+  screen.value === null
+    ? { bottom: '0' }
+    : {
+        height: `${screen.value}px`,
+        transform: `translateY(${screenTop.value}px)`
+      }
+)
 
 // Focus moving to the clear button or into the panel itself is still inside
 // the search, so only a move out of the wrapper closes it.
@@ -47,6 +57,13 @@ function closeOnLeave(event: FocusEvent) {
     (!(moved instanceof Node) || !wrapper.contains(moved))
   )
     open.value = false
+}
+
+// Naming a model is the end of the search, so the panel closes on it. The
+// provider and capability chips do not: they are picked several at a time.
+function pickModel(model: WorkshopModel) {
+  query.value = model.name
+  open.value = false
 }
 
 // The sheet applies as you tap, so its button is a way out that says what is
@@ -124,6 +141,7 @@ const clearButtonClass =
         :aria-controls="`${inputId}-panel`"
         :aria-expanded="open"
         @focus="open = true"
+        @input="open = true"
         @keydown.escape="open = false"
       />
       <button
@@ -145,7 +163,7 @@ const clearButtonClass =
         :providers
         :capabilities
         :locale
-        @pick="(model) => (query = model.name)"
+        @pick="pickModel"
         @toggle-provider="(value) => (providers = toggled(providers, value))"
         @toggle-capability="
           (value) => (capabilities = toggled(capabilities, value))
@@ -156,7 +174,8 @@ const clearButtonClass =
     <DialogRoot v-model:open="sheetOpen">
       <DialogPortal>
         <DialogContent
-          class="bg-page fixed inset-0 z-50 flex flex-col sm:hidden"
+          class="bg-page fixed inset-x-0 top-0 z-50 flex flex-col sm:hidden"
+          :style="sheetStyle"
           :aria-describedby="undefined"
           data-testid="workshop-search-sheet"
           @open-auto-focus.prevent="sheetInput?.focus()"

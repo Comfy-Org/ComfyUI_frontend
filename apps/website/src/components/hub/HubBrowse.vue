@@ -163,7 +163,8 @@ const toolbarLabels: ToolbarLabels = {
   less: t('workshop.hub.facets.less', locale),
   selected: t('workshop.hub.facets.selected', locale),
   showResults: t('workshop.hub.facets.show', locale),
-  showModels: t('workshop.search.show', locale)
+  showModels: t('workshop.search.show', locale),
+  resize: t('workshop.filter.resize', locale)
 }
 // Workflows are dated and models are priced, so a tab offers what the things
 // it lists can actually be ordered by.

@@ -85,7 +85,7 @@ const fill = computed(() =>
   >
     <a
       :href="active.model.href"
-      class="short:h-76 group block h-84"
+      class="group short:h-76 sm:short:h-80 block h-112"
       data-testid="featured-slide"
     >
       <video
@@ -115,7 +115,7 @@ const fill = computed(() =>
       />
 
       <div
-        class="sm:short:gap-3 relative flex h-full flex-col justify-end gap-4 p-6 pb-16 sm:max-w-2xl sm:justify-center lg:p-8 lg:pb-16"
+        class="sm:short:pb-16 lg:short:p-8 lg:short:pb-16 relative flex h-full flex-col justify-end gap-4 p-8 pb-20 max-sm:gap-3 max-sm:p-6 max-sm:pb-14 sm:max-w-2xl sm:justify-center lg:p-12 lg:pb-20"
       >
         <div class="flex flex-wrap items-center gap-2">
           <Badge variant="subtle" size="md" class="text-primary-comfy-canvas">
