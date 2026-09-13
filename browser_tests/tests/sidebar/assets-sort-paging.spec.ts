@@ -1,183 +1,65 @@
 import { expect } from '@playwright/test'
 
-import type { ListAssetsResponse } from '@comfyorg/ingest-types'
-import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
-import { generateOutputAssets } from '@e2e/fixtures/data/assetFixtures'
+import {
+  NEWEST_PAGED_ASSET_ID,
+  pagedAssetPosition,
+  pagedAssetsFixture as test
+} from '@e2e/fixtures/pagedAssetsFixture'
 
-// The sort options live inside the settings popover and only render in cloud
-// mode (`MediaAssetFilterBar.vue`: `:show-sort-options="isCloud"`), so these
-// are tagged `@cloud`. The sibling `assets-sort.spec.ts` cannot host this
-// case: its stub returns every asset in one response with `has_more: false`,
-// so there is no paging to keep going. This file serves real pages instead.
-
-const PAGE_SIZE = 8
-
-// Served newest-first, the order a real backend returns for the default sort.
-// Serving them oldest-first instead makes the default "newest first" order head
-// at the end of whatever prefix has loaded, so the top of the list changes
-// every time another page arrives and nothing about scroll position is stable.
-// Long enough that filling the initial view cannot reach the end. A 60-asset
-// list was exhausted before the sort was even changed, which left nothing for
-// the "keeps paging" assertion to observe.
-const ASSETS_NEWEST_FIRST = generateOutputAssets(400).reverse()
-const NEWEST_ID = ASSETS_NEWEST_FIRST[0].id
-
-function pageFor(url: URL): { response: ListAssetsResponse; start: number } {
-  const after = url.searchParams.get('after')
-  const start = after
-    ? ASSETS_NEWEST_FIRST.findIndex((asset) => asset.id === after) + 1
-    : Number(url.searchParams.get('offset') ?? '0')
-  const end = start + PAGE_SIZE
-  const page = ASSETS_NEWEST_FIRST.slice(start, end)
-  const hasMore = end < ASSETS_NEWEST_FIRST.length
-
-  return {
-    start,
-    response: {
-      assets: page,
-      total: ASSETS_NEWEST_FIRST.length,
-      has_more: hasMore,
-      next_cursor: hasMore ? page.at(-1)?.id : undefined
-    }
-  }
-}
-
-const test = comfyPageFixture.extend<{
-  servedPageStarts: number[]
-  stubInputFiles: void
-}>({
-  // Auto fixtures run before the comfyPage fixture's internal setup(), so the
-  // page first-loads with these routes already registered.
-  //
-  // Records how far into the list each response reached, not how many requests
-  // arrived: filling the initial view takes several requests and the sidebar
-  // queries this endpoint for more than just the generated list, so a request
-  // count says nothing about how much of the list has been paged in.
-  servedPageStarts: [
-    async ({ page }, use) => {
-      const starts: number[] = []
-      const pattern = /\/api\/assets(?:\?.*)?$/
-      await page.route(pattern, (route) => {
-        const { response, start } = pageFor(new URL(route.request().url()))
-        starts.push(start)
-        return route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(response)
-        })
-      })
-      await use(starts)
-      await page.unroute(pattern)
-    },
-    { auto: true }
-  ],
-  stubInputFiles: [
-    async ({ page }, use) => {
-      const pattern = /\/internal\/files\/input(?:\?.*)?$/
-      await page.route(pattern, (route) =>
-        route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify([])
-        })
-      )
-      await use()
-      await page.unroute(pattern)
-    },
-    { auto: true }
-  ]
-})
-
-// NOTE: this spec deliberately does not assert that the grid scrolls back to
-// the top when the sort changes. It does not: measured offset stayed at 1503px
-// after the sort, and there is no scroll reset in the assets sidebar to do it
-// (`ManagerDialog.vue:613` sets `gridContainer.scrollTop = 0` for the same
-// situation, so the pattern exists in this repo but is not applied here).
-// Raised on the pull request rather than encoded here either way, because
-// pinning an expectation would assert a product decision this spec cannot make.
+// Sorting does not scroll the grid back to the top, so this spec does not
+// assert that it does: measured offset stayed at 1503px after a sort change,
+// and there is no scroll reset in the assets sidebar to do it. Raised on the
+// pull request rather than pinned here, because either expectation would
+// encode a product decision this spec cannot make.
 test.describe('Assets sidebar - sort while paging', { tag: '@cloud' }, () => {
   test('Changing sort while scrolled partway down re-sorts the list and keeps paging', async ({
     comfyPage,
-    servedPageStarts
+    pagedAssets
   }) => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
 
-    // How deep into the list the backend has been asked to go.
-    const furthestServed = () => Math.max(-1, ...servedPageStarts)
+    const firstRenderedId = () =>
+      tab.assetCards.first().getAttribute('data-asset-id')
 
-    // Positions of the rendered cards within the newest-first source list.
-    // Ascending means the grid is showing newest-first, descending means
-    // oldest-first — a statement about order that holds at any scroll offset,
-    // which the id of the first card does not.
-    const renderedPositions = async () => {
-      const ids = await tab.assetCards.evaluateAll((cards) =>
-        cards.map((card) => card.getAttribute('data-asset-id'))
-      )
-      return ids.map((id) =>
-        ASSETS_NEWEST_FIRST.findIndex((asset) => asset.id === id)
-      )
-    }
+    // Positions of the rendered cards within the source list. Ascending means
+    // the grid is showing newest-first, descending means oldest-first — a
+    // statement about order alone, true at any scroll offset, which the id of
+    // the first card cannot express without also claiming a scroll position.
+    const renderedPositions = async () =>
+      (await tab.renderedAssetIds()).map(pagedAssetPosition)
 
     const isStrictlyAscending = (values: number[]) =>
       values.every((value, i) => i === 0 || value > values[i - 1])
 
-    const firstRenderedId = () =>
-      tab.assetCards.first().getAttribute('data-asset-id')
-
-    // The grid recycles its cards, so a rendered card cannot be the thing we
-    // act on: Playwright requires an element to be stable before scrolling it
-    // into view, and virtualisation detaches it first. Drive the scroll
-    // container instead, re-finding it on each call so no stale handle is
-    // held. VirtualGrid's scroller carries no test id, so it is located as the
-    // nearest ancestor of a card that actually overflows.
-    const scroller = (mode: 'read' | 'pageDown') =>
-      comfyPage.page.evaluate((action) => {
-        const card = document.querySelector(
-          '.sidebar-content-container [data-asset-id]'
-        )
-        let node = card?.parentElement ?? null
-        while (node && node.scrollHeight <= node.clientHeight) {
-          node = node.parentElement
-        }
-        if (!node) throw new Error('assets grid scroller not found')
-        if (action === 'pageDown') node.scrollTop += node.clientHeight
-        return node.scrollTop
-      }, mode)
-
     await test.step('Default order heads with the newest asset', async () => {
-      await expect.poll(firstRenderedId).toBe(NEWEST_ID)
-      await expect.poll(() => scroller('read')).toBe(0)
+      await expect.poll(firstRenderedId).toBe(NEWEST_PAGED_ASSET_ID)
+      await expect.poll(() => tab.assetGridScrollTop()).toBe(0)
     })
 
     await test.step('Scroll down until the grid no longer renders the top of the list', async () => {
       await expect
         .poll(
           async () => {
-            await scroller('pageDown')
+            await tab.scrollAssetGridDown()
             return firstRenderedId()
           },
           { timeout: 20_000 }
         )
-        .not.toBe(NEWEST_ID)
+        .not.toBe(NEWEST_PAGED_ASSET_ID)
 
-      // Without this the scroll-reset assertion below would pass for a list
-      // that never left the top.
-      await expect.poll(() => scroller('read')).toBeGreaterThan(0)
+      await expect.poll(() => tab.assetGridScrollTop()).toBeGreaterThan(0)
     })
 
     // Guards the "keeps paging" assertion: if scrolling had already reached the
     // end of the list, nothing further could be fetched and that assertion
     // would pass for a list that stopped paging entirely.
-    const servedBeforeSort = furthestServed()
-    expect(servedBeforeSort + PAGE_SIZE).toBeLessThan(
-      ASSETS_NEWEST_FIRST.length
-    )
+    const servedBeforeSort = pagedAssets.furthestServed()
+    expect(pagedAssets.canPageFurther()).toBe(true)
 
     await test.step('The grid is showing newest-first before the sort changes', async () => {
       const positions = await renderedPositions()
-      // Guards the ordering assertion below: a single rendered card is
-      // trivially both ascending and descending.
+      // A single rendered card is trivially both ascending and descending.
       expect(positions.length).toBeGreaterThan(1)
       expect(isStrictlyAscending(positions)).toBe(true)
     })
@@ -201,8 +83,8 @@ test.describe('Assets sidebar - sort while paging', { tag: '@cloud' }, () => {
       await expect
         .poll(
           async () => {
-            await scroller('pageDown')
-            return furthestServed()
+            await tab.scrollAssetGridDown()
+            return pagedAssets.furthestServed()
           },
           { timeout: 20_000 }
         )
