@@ -189,17 +189,19 @@ describe('useAttachment', () => {
   })
 
   it('removes the chip and surfaces the error when the upload fails', async () => {
-    const error = new Error('network down')
+    const privateFilename = 'private-cat.png'
+    const privatePath = `/Users/alice/Secret/${privateFilename}`
+    const error = new Error(`upload failed for ${privatePath}`)
     const upload = vi.fn().mockRejectedValue(error)
     const onError = vi.fn()
     const registry = chipRegistry()
     const { addFiles } = useAttachment({ upload, onError, ...registry })
 
-    await addFiles([fileOfSize('cat.png', 1024)])
+    await addFiles([fileOfSize(privateFilename, 1024)])
 
     expect(registry.chips).toEqual([])
     expect(onError).toHaveBeenCalledOnce()
-    expect(reportError).toHaveBeenCalledWith(error, {
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
       errorType: 'agent_attachment_upload_failed',
       tags: {
         failure_kind: 'caught_unexpected',
@@ -212,8 +214,14 @@ describe('useAttachment', () => {
         project_context: 'agent_composer'
       }
     })
-    expect(JSON.stringify(vi.mocked(reportError).mock.calls)).not.toContain(
-      'cat.png'
+    const reportedError = vi.mocked(reportError).mock.calls[0][0] as Error
+    expect(reportedError).not.toBe(error)
+    expect(reportedError.message).toBe('Agent attachment upload failed')
+    expect(`${reportedError.message}\n${reportedError.stack}`).not.toContain(
+      privateFilename
+    )
+    expect(`${reportedError.message}\n${reportedError.stack}`).not.toContain(
+      privatePath
     )
   })
 

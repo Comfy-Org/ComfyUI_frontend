@@ -50,8 +50,8 @@ export function useAttachment(options: UseAttachmentOptions) {
       const result = await options.upload(file)
       options.update(id, { ref: result.ref, uploading: false })
       return true
-    } catch (error) {
-      reportError(error, {
+    } catch {
+      reportError(new Error('Agent attachment upload failed'), {
         errorType: 'agent_attachment_upload_failed',
         tags: {
           failure_kind: 'caught_unexpected',
