@@ -5289,8 +5289,6 @@
     "sendFailed": "Message failed to send",
     "sendBusy": "A message is already being sent",
     "malformedEvent": "The agent sent an event this panel could not read",
-    "coachTitle": "Meet the agent",
-    "coachBody": "Ask it to build or edit graphs.",
     "downloadAssets": "Download assets",
     "toolOpenedNewTab": "Opened a new tab",
     "toolOpeningNewTab": "Opening a new tab",
@@ -5309,6 +5307,18 @@
     "runModeTriggerAutoLimitTooltip": "Ask when credit limit is reached",
     "showMore": "Show more",
     "showLess": "Show less",
+    "consent": {
+      "title": "Meet Comfy Agent",
+      "body1": "Comfy Agent helps you plan, build, run, and iterate on workflows. Describe what you want to create, and Comfy Agent will work as your powerful teammate.",
+      "body2": "To build your workflows, Comfy Agent processes some of your data. Please rest assured, your data is never used for AI model training. By clicking Start, you agree to its usage.",
+      "readDocs": "Read the docs",
+      "reject": "Skip for now",
+      "accept": "Start using Comfy Agent",
+      "videoPlaceholder": "Video unavailable",
+      "loadError": "Could not load your Agent preference. Try again.",
+      "signInError": "Could not open sign-in. Please try again.",
+      "saveError": "Could not save your preference. Try again."
+    },
     "paywall": {
       "title": "Out of credits",
       "body": {

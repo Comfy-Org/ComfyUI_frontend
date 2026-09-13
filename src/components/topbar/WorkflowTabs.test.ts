@@ -1,12 +1,14 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PropType } from 'vue'
-import { defineComponent, h, nextTick } from 'vue'
+import { computed, defineComponent, h, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTelemetry } from '@/platform/telemetry'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -14,6 +16,7 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 import WorkflowTabs from './WorkflowTabs.vue'
 
 vi.mock(import('firebase/auth'))
+vi.mock(import('@/platform/telemetry'))
 vi.mock<unknown>(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 const distribution = vi.hoisted(() => ({
@@ -85,6 +88,29 @@ vi.mock<unknown>(
   })
 )
 
+const consentChecking = await vi.hoisted(async () =>
+  (await import('vue')).ref(false)
+)
+
+const withConsent = vi.hoisted(() =>
+  vi.fn<(onAccept: () => void) => Promise<void>>()
+)
+const telemetry = {
+  trackAgentEntryButtonClicked: vi.fn(),
+  trackAgentPanelOpened: vi.fn(),
+  trackAgentPanelClosed: vi.fn()
+}
+vi.mock(
+  import('@/workbench/extensions/agent/composables/agent/useAgentConsent'),
+  () => ({
+    useAgentConsent: () => ({
+      accepted: computed(() => useAgentPanelStore().consentAccepted),
+      isChecking: computed(() => consentChecking.value),
+      withConsent
+    })
+  })
+)
+
 vi.mock(import('@/utils/mouseDownUtil'), () => ({
   whileMouseDown: vi.fn()
 }))
@@ -147,6 +173,8 @@ function renderComponent(errorHandler?: (error: unknown) => void) {
 }
 
 beforeEach(() => {
+  vi.mocked(useTelemetry).mockReturnValue(fromPartial(telemetry))
+  consentChecking.value = false
   distribution.isCloud = false
   distribution.isDesktop = false
   distribution.isNightly = false
@@ -154,6 +182,11 @@ beforeEach(() => {
     settingValues: { 'Comfy.UI.TabBarLayout': 'Default' }
   })
   useAgentPanelStore().isOpen = false
+  useAgentPanelStore().consentAccepted = false
+  withConsent.mockImplementation(async (onAccept) => {
+    useAgentPanelStore().consentAccepted = true
+    onAccept()
+  })
   overflowObservers.length = 0
 })
 
@@ -224,7 +257,7 @@ describe('WorkflowTabs agent entry button', () => {
     ).toHaveLength(1)
   })
 
-  it('toggles the panel and hides the entry button once open', async () => {
+  it('waits for consent and hides the entry button once the panel is visible', async () => {
     const { user } = renderComponent()
 
     const button = screen.getByRole('button', {
@@ -233,26 +266,139 @@ describe('WorkflowTabs agent entry button', () => {
 
     await user.click(button)
 
-    expect(useAgentPanelStore().toggle).toHaveBeenCalledTimes(1)
+    expect(withConsent).toHaveBeenCalledOnce()
+    expect(useAgentPanelStore().isVisible).toBe(true)
     expect(
       screen.queryByRole('button', { name: enMessages.agent.askComfyAgent })
     ).toBeNull()
   })
 
   it('re-renders the entry button once the panel closes', async () => {
-    useAgentPanelStore().isOpen = true
+    useAgentPanelStore().consentAccepted = true
+    useAgentPanelStore().open()
     renderComponent()
 
     expect(
       screen.queryByRole('button', { name: enMessages.agent.askComfyAgent })
     ).toBeNull()
 
-    useAgentPanelStore().isOpen = false
+    useAgentPanelStore().close('close_button')
     await nextTick()
 
     expect(
       screen.getByRole('button', { name: enMessages.agent.askComfyAgent })
     ).toBeInTheDocument()
+  })
+
+  it('does not activate or report an opening when the flag turns off during consent', async () => {
+    const store = useAgentPanelStore()
+    let finishConsent!: () => void
+    withConsent.mockImplementationOnce(
+      (onAccept) =>
+        new Promise<void>((resolve) => {
+          finishConsent = () => {
+            store.consentAccepted = true
+            onAccept()
+            resolve()
+          }
+        })
+    )
+    const { user } = renderComponent()
+    await user.click(
+      screen.getByRole('button', { name: enMessages.agent.askComfyAgent })
+    )
+    expect(withConsent).toHaveBeenCalledOnce()
+
+    store.enabled = false
+    await nextTick()
+    finishConsent()
+    await nextTick()
+
+    expect(store.isOpen).toBe(false)
+    expect(store.isVisible).toBe(false)
+    expect(telemetry.trackAgentEntryButtonClicked).not.toHaveBeenCalled()
+    expect(telemetry.trackAgentPanelOpened).not.toHaveBeenCalled()
+
+    store.enabled = true
+    await nextTick()
+    expect(
+      screen.getByRole('button', { name: enMessages.agent.askComfyAgent })
+    ).toBeEnabled()
+  })
+
+  it('ignores repeated opens while consent is pending and retries after it settles', async () => {
+    let resolveConsent!: () => void
+    withConsent.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveConsent = resolve
+        })
+    )
+    const { user } = renderComponent()
+    const button = screen.getByRole('button', {
+      name: enMessages.agent.askComfyAgent
+    })
+
+    await user.click(button)
+    await user.click(button)
+
+    expect(withConsent).toHaveBeenCalledOnce()
+    expect(useAgentPanelStore().isVisible).toBe(false)
+
+    resolveConsent()
+    await nextTick()
+    await user.click(button)
+
+    expect(withConsent).toHaveBeenCalledTimes(2)
+    expect(useAgentPanelStore().isVisible).toBe(true)
+  })
+
+  it('hides the restored panel entry while consent is checked and accepted', async () => {
+    useAgentPanelStore().isOpen = true
+    consentChecking.value = true
+    renderComponent()
+    expect(
+      screen.queryByRole('button', { name: enMessages.agent.askComfyAgent })
+    ).not.toBeInTheDocument()
+
+    useAgentPanelStore().consentAccepted = true
+    consentChecking.value = false
+    await nextTick()
+    expect(
+      screen.queryByRole('button', { name: enMessages.agent.askComfyAgent })
+    ).not.toBeInTheDocument()
+  })
+
+  it('offers the entry after the restored consent check finishes without acceptance', async () => {
+    useAgentPanelStore().isOpen = true
+    consentChecking.value = true
+    renderComponent()
+    expect(
+      screen.queryByRole('button', { name: enMessages.agent.askComfyAgent })
+    ).not.toBeInTheDocument()
+
+    consentChecking.value = false
+    await nextTick()
+    expect(
+      screen.getByRole('button', { name: enMessages.agent.askComfyAgent })
+    ).toBeInTheDocument()
+  })
+
+  it('keeps a hidden restored intent reachable and clears it before requesting consent', async () => {
+    useAgentPanelStore().open()
+    withConsent.mockImplementationOnce(async (onAccept) => {
+      expect(useAgentPanelStore().isOpen).toBe(false)
+      useAgentPanelStore().consentAccepted = true
+      onAccept()
+    })
+    const { user } = renderComponent()
+
+    await user.click(
+      screen.getByRole('button', { name: enMessages.agent.askComfyAgent })
+    )
+
+    expect(withConsent).toHaveBeenCalledOnce()
+    expect(useAgentPanelStore().isVisible).toBe(true)
   })
 
   it('exposes the gate-settled signal on the actions container once the gate settles', async () => {
