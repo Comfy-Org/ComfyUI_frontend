@@ -569,5 +569,5 @@ const zNodeData = z.object({
   })
 })
 
-const zComfyApiWorkflow = z.record(zNodeId, zNodeData)
+export const zComfyApiWorkflow = z.record(zNodeId, zNodeData)
 export type ComfyApiWorkflow = z.infer<typeof zComfyApiWorkflow>
