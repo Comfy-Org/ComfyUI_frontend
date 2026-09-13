@@ -463,6 +463,41 @@ describe('graphMutations', () => {
     error.mockRestore()
   })
 
+  it('does not mutate endpoint metadata when a later batch mutation fails', () => {
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    graph.addNode(node(2), context)
+    const source = useNodeDataStore().getNode('root', toNodeId(1))!
+    const target = useNodeDataStore().getNode('root', toNodeId(2))!
+    Object.assign(source.outputs[0], { label: 'live output', links: null })
+    Object.assign(target.inputs[0], { label: 'live input', link: null })
+    const sourceOutput = { ...source.outputs[0] }
+    const targetInput = { ...target.inputs[0] }
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    expect(
+      graph.batch(context, (batch) => {
+        batch.connect({
+          id: 9,
+          originNodeId: 1,
+          originSlot: 0,
+          targetNodeId: 2,
+          targetSlot: 0,
+          type: 'IMAGE',
+          originOutputs: [{ name: 'out', type: 'IMAGE', links: [toLinkId(9)] }],
+          targetInputs: [{ name: 'in', type: 'IMAGE', link: toLinkId(9) }]
+        })
+        batch.setWidget(toNodeId(99), 'missing', 1)
+      })
+    ).toBe(false)
+    expect(source.outputs[0]).toEqual(sourceOutput)
+    expect(target.inputs[0]).toEqual(targetInput)
+    expect(
+      useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
+    ).toBeUndefined()
+    error.mockRestore()
+  })
+
   it('updates serialized slots whose optional link mirrors were absent', () => {
     const graph = mutations()
     expect(
