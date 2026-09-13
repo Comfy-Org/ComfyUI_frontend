@@ -96,11 +96,15 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
     return ++refreshGeneration
   }
 
+  function isCurrentRefresh(generation: number): boolean {
+    return generation === refreshGeneration
+  }
+
   function replaceAll(
     next: ChatSession[],
     generation: number = refreshGeneration
   ): void {
-    if (generation !== refreshGeneration) return
+    if (!isCurrentRefresh(generation)) return
     sessions.value = next.filter(
       (session) => !deletedIds.value.includes(session.id)
     )
@@ -124,6 +128,7 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
     rename,
     remove,
     beginRefresh,
+    isCurrentRefresh,
     replaceAll,
     clear,
     setActive

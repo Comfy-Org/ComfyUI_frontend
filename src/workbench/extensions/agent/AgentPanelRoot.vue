@@ -730,6 +730,7 @@ async function refreshHistory(): Promise<void> {
   try {
     history.replaceAll((await listThreads()).map(toChatSession), generation)
   } catch (error) {
+    if (!history.isCurrentRefresh(generation)) return
     surfaceAgentError(
       'agent_api_failed',
       error instanceof Error ? error.message : String(error)
