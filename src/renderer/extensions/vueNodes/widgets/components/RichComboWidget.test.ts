@@ -45,7 +45,6 @@ const i18n = createI18n({
           loadFailed: 'Failed to load options',
           noResults: 'No results found',
           refresh: 'Refresh options',
-          selectAriaLabel: 'Select {field}',
           searchAriaLabel: 'Search {field}',
           layoutSwitcherAriaLabel: 'Layout switcher',
           layoutList: 'List view',

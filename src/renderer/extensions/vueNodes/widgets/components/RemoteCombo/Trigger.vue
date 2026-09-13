@@ -57,11 +57,6 @@ const computedBorder = computed<TriggerVariants['border']>(() => {
           props.class
         )
       "
-      :aria-label="
-        t('widgets.remoteCombo.selectAriaLabel', {
-          field: ctx.fieldLabel.value
-        })
-      "
       :disabled="
         props.disabled || ctx.isLoading.value || !!ctx.errorMessage.value
       "
