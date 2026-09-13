@@ -156,8 +156,9 @@ describe('agentRuntime', () => {
   })
 
   it('lets mutating requests settle when stopped', async () => {
+    const cancellation = createDeferred<AgentCancelAccepted>()
     const cancelMessage = vi.fn(
-      async (): Promise<AgentCancelAccepted> => ({ status: 'cancelling' })
+      async (): Promise<AgentCancelAccepted> => cancellation.promise
     )
     const runtime = createAgentRuntime({
       createRest: () => fakeRest({ cancelMessage }),
@@ -167,10 +168,12 @@ describe('agentRuntime', () => {
     runtime.start()
     await runtime.sendMessage('Make a fox')
 
-    await runtime.stopTurn()
+    const stopTurn = runtime.stopTurn()
     expect(cancelMessage).toHaveBeenCalledWith('thread-1', 'turn-1')
-
     runtime.stop()
+
+    cancellation.resolve({ status: 'cancelling' })
+    await stopTurn
     expect(cancelMessage).toHaveBeenCalledOnce()
   })
 
