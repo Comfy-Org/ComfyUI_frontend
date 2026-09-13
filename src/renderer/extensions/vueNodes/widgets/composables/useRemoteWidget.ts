@@ -75,25 +75,23 @@ export function useRemoteWidget<
 
   let isLoaded = false
   let refreshQueued = false
-  let cachedValue: T | undefined
 
   const fetchValue = async (): Promise<T> => {
+    const queryKey = getQueryKey()
     try {
       const data = await queryClient.fetchQuery({
-        queryKey: getQueryKey(),
+        queryKey,
         queryFn: ({ signal }) => fetchRemoteWidgetData(descriptor, signal),
         staleTime: remoteConfig.refresh,
         retry: (failureCount, error) =>
           failureCount < (remoteConfig.max_retries ?? MAX_RETRIES) &&
           isRetriableError(error)
       })
-      cachedValue = (data ?? defaultValue) as T
-      return cachedValue
+      return (data ?? defaultValue) as T
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error'
       console.warn('Remote widget fetch failed:', message)
-      cachedValue = cachedValue ?? defaultValue
-      return cachedValue
+      return queryClient.getQueryData<T>(queryKey) ?? defaultValue
     }
   }
 
@@ -106,9 +104,8 @@ export function useRemoteWidget<
     node.graph?.setDirtyCanvas(true)
   }
 
-  const onRefresh = () => {
+  const onRefresh = (data: T) => {
     if (!remoteConfig.control_after_refresh) return
-    const data = cachedValue
     if (!Array.isArray(data)) return
 
     switch (remoteConfig.control_after_refresh) {
@@ -124,13 +121,7 @@ export function useRemoteWidget<
   }
 
   function getCachedValue(): T {
-    if (cachedValue !== undefined) return cachedValue
-    const fromQuery = queryClient.getQueryData<T>(getQueryKey())
-    if (fromQuery !== undefined) {
-      cachedValue = fromQuery
-      return fromQuery
-    }
-    return defaultValue
+    return queryClient.getQueryData<T>(getQueryKey()) ?? defaultValue
   }
 
   function getValue(onFulfilled?: () => void) {
@@ -138,7 +129,7 @@ export function useRemoteWidget<
       .then((data) => {
         if (!isLoaded) onFirstLoad(data)
         if (refreshQueued && data !== defaultValue) {
-          onRefresh()
+          onRefresh(data)
           refreshQueued = false
         }
         onFulfilled?.()
