@@ -1,3 +1,4 @@
+// oxlint-disable comfy/no-import-actual -- EcsFollowerAdapter is stubbed while mapLocalInputSlots must stay real for slot-remap assertions
 /**
  * Composable-owned behavior only (plan 3.5's subscribe-robustness probes):
  * the bridge/client mechanics have their own suites
