@@ -10,7 +10,10 @@ import type {
   TemplateInfo,
   WorkflowTemplates
 } from '@/platform/workflow/templates/types/template'
-import type { ComfyWorkflowJSON,LegacyLoadableWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type {
+  ComfyWorkflowJSON,
+  LegacyLoadableWorkflow
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
   validateComfyWorkflow,
   zLegacyLoadableWorkflow
