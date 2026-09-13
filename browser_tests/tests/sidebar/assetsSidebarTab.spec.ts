@@ -13,6 +13,10 @@ import { TestIds } from '@e2e/fixtures/selectors'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 import type {
+  AssetItem,
+  AssetResponse
+} from '@/platform/assets/schemas/assetSchema'
+import type {
   JobDetail,
   RawJobListItem
 } from '@/platform/remote/comfyui/jobs/jobTypes'
@@ -83,7 +87,7 @@ const multiOutputJobDetail: JobDetail = {
 }
 
 const previewableCountJob = createRouteMockJob({
-  id: 'previewable-count-job',
+  id: '00000000-0000-4000-a000-000000000003',
   create_time: routeMockJobTimestamp - 4_000,
   execution_start_time: routeMockJobTimestamp - 4_000,
   execution_end_time: routeMockJobTimestamp,
@@ -149,6 +153,53 @@ async function mockInputFiles(page: Page, files: readonly string[]) {
     await route.fulfill({ json: [...files] })
   })
 }
+
+const mobileAssetNames = ['previewable-count-a.png', 'previewable-count-b.png']
+
+const mobileAssets = mobileAssetNames.map(
+  (name, index): AssetItem => ({
+    id: `00000000-0000-4000-b000-00000000000${index}`,
+    name,
+    job_id: previewableCountJob.id,
+    mime_type: 'image/png',
+    tags: ['output'],
+    preview_url: `/api/view?filename=${name}&type=output`,
+    created_at: new Date(
+      previewableCountJob.create_time - index * 1_000
+    ).toISOString(),
+    updated_at: new Date(
+      previewableCountJob.create_time - index * 1_000
+    ).toISOString()
+  })
+)
+
+const mobileAssetsResponse: AssetResponse = {
+  assets: mobileAssets,
+  total: mobileAssets.length,
+  has_more: false
+}
+
+const mobileTouchControlNames = {
+  assetName: 'previewable-count-a',
+  groupedAssetName: 'previewable-count-b'
+}
+
+const mobileListSmokeTest = comfyPageFixture.extend({
+  page: async ({ page }, use) => {
+    const jobsRoutes = new JobsRouteMocker(page)
+    await jobsRoutes.mockJobsQueue([])
+    await jobsRoutes.mockJobsHistory([previewableCountJob])
+    await jobsRoutes.mockJobDetail(
+      previewableCountJob.id,
+      previewableCountJobDetail
+    )
+    await page.route(/\/api\/assets(?:\?.*)?$/, (route) =>
+      route.fulfill({ json: mobileAssetsResponse })
+    )
+    await mockViewFiles(page, viewFiles)
+    await use(page)
+  }
+})
 
 function isGeneratedAssetVerificationResponse(response: Response): boolean {
   const url = new URL(response.url())
@@ -296,7 +347,7 @@ test.describe('FE-130 assets sidebar route mocks', () => {
 
     await jobsRoutes.mockJobsHistory([previewableCountJob])
     await jobsRoutes.mockJobDetail(
-      'previewable-count-job',
+      previewableCountJob.id,
       previewableCountJobDetail
     )
 
@@ -337,6 +388,26 @@ test.describe('FE-130 assets sidebar route mocks', () => {
       'Deletion successful'
     )
   })
+})
+
+mobileListSmokeTest.describe('FE-130 assets sidebar route mocks', () => {
+  mobileListSmokeTest(
+    '@mobile list, filter, group, and delete controls remain usable',
+    async ({ comfyPage }) => {
+      await comfyPage.menu.assetsTab.expectTouchControlsUsable(
+        mobileTouchControlNames
+      )
+    }
+  )
+
+  mobileListSmokeTest(
+    '@mobile-ios list, filter, group, and delete controls remain usable',
+    async ({ comfyPage }) => {
+      await comfyPage.menu.assetsTab.expectTouchControlsUsable(
+        mobileTouchControlNames
+      )
+    }
+  )
 })
 
 bulkInsertionTest.describe(
