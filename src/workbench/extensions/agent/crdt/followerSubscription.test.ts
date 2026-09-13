@@ -788,6 +788,69 @@ describe('FE-GAP-1 — a seq jump means a dropped frame and forces a resync', ()
     expect(seenDuringDispatch).toEqual([null])
   })
 
+  it('a malformed seq on an ok ack is treated as a failed subscribe, not a null baseline', () => {
+    const { transport, bridge, projected } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    expect(bridge.subscribedWorkflowId).toBe(WORKFLOW_ID)
+
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true
+    })
+
+    expect(bridge.subscribedWorkflowId).toBeNull()
+    expect(bridge.hasPendingSubscribe).toBe(true)
+    expect(bridge.lastSequence).toBe(0)
+
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 99)
+    )
+    expect(projected).toHaveLength(0)
+    expect(bridge.follower.updatesApplied).toBe(0)
+
+    bridge.reconcile()
+    expect(bridge.subscribedWorkflowId).toBe(WORKFLOW_ID)
+    expect(transport.framesOfType('doc_subscribe')).toHaveLength(2)
+
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+    expect(bridge.lastSequence).toBe(1)
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 3)
+    )
+    expect(projected).toHaveLength(0)
+    expect(transport.framesOfType('doc_subscribe')).toHaveLength(3)
+  })
+
+  it('an explicit seq: 0 on an ok ack is stripped by the parser and also retried, never a real baseline', () => {
+    const { transport, bridge } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 0
+    })
+
+    expect(bridge.subscribedWorkflowId).toBeNull()
+    expect(bridge.hasPendingSubscribe).toBe(true)
+    expect(bridge.lastSequence).toBe(0)
+
+    bridge.reconcile()
+    expect(bridge.subscribedWorkflowId).toBe(WORKFLOW_ID)
+    expect(transport.framesOfType('doc_subscribe')).toHaveLength(2)
+  })
+
   it('a refused subscribe re-opens intent so the next reconcile retries', () => {
     const { transport, bridge } = wire()
     transport.open = true
