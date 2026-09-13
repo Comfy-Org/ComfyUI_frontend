@@ -8,6 +8,7 @@ const updateFrame = (seq: unknown) => ({
     v: 1,
     workflow_id: 'wf-1',
     seq,
+    lineage_seq: 0,
     update_b64: encodeBase64(new Uint8Array([1]))
   }
 })
@@ -31,7 +32,9 @@ const sequencedFrame = (
     v: 1,
     workflow_id: 'wf-1',
     ...(seq !== undefined && { seq }),
-    ...(type === 'doc_subscribed' && { ok: true })
+    // doc_reset mints a lineage equal to its seq; doc_subscribed acks omit
+    // lineage_seq on the migration default lineage 0.
+    ...(type === 'doc_reset' ? { lineage_seq: seq } : { ok: true })
   }
 })
 
@@ -84,7 +87,7 @@ describe('doc frame numeric domains', () => {
         parseServerDocFrame(sequencedFrame('doc_subscribed', seq))
       ).toEqual({
         type: 'doc_subscribed',
-        data: { workflowId: 'wf-1', ok: true }
+        data: { workflowId: 'wf-1', ok: true, lineageSeq: 0 }
       })
     }
   )
@@ -92,8 +95,23 @@ describe('doc frame numeric domains', () => {
   it('accepts doc_subscribed without seq', () => {
     expect(parseServerDocFrame(sequencedFrame('doc_subscribed'))).toEqual({
       type: 'doc_subscribed',
-      data: { workflowId: 'wf-1', ok: true }
+      data: { workflowId: 'wf-1', ok: true, lineageSeq: 0 }
     })
+  })
+
+  it('rejects an unbounded lineage when doc_subscribed seq is malformed', () => {
+    expect(
+      parseServerDocFrame({
+        type: 'doc_subscribed',
+        data: {
+          v: 1,
+          workflow_id: 'wf-1',
+          ok: true,
+          seq: 'abc',
+          lineage_seq: 999
+        }
+      })
+    ).toBeNull()
   })
 
   it.for([-1, 1.5, Number.POSITIVE_INFINITY, Number.NaN, '1'])(
