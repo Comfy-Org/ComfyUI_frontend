@@ -164,58 +164,120 @@ test.describe(
             await comfyPage.nextFrame()
           }
 
-          const legacyPaintedLabels = async (
-            suppressedLabel: string | null = null
-          ) => {
-            await comfyPage.page.evaluate(
-              ({ combineId, suppressedLabel }) => {
+          const legacyLabelPixelDifference = (label: string) =>
+            comfyPage.page.evaluate(
+              async ({ combineId, label }) => {
                 const canvas =
                   document.querySelector<HTMLCanvasElement>('#graph-canvas')!
-                canvas.dataset.testPaintedLabels = '[]'
-                canvas.dataset.testSuppressedLabel = suppressedLabel ?? ''
-                if (canvas.dataset.testPaintObserver !== 'installed') {
-                  canvas.dataset.testPaintObserver = 'installed'
-                  const original = CanvasRenderingContext2D.prototype.fillText
+                const context = canvas.getContext('2d')!
+                const node = window.app!.graph.nodes.find(
+                  (candidate) => String(candidate.id) === combineId
+                )!
+                const original = CanvasRenderingContext2D.prototype.fillText
+                const crops: {
+                  x: number
+                  y: number
+                  width: number
+                  height: number
+                }[] = []
+                const paint = () =>
+                  new Promise<void>((resolve) => {
+                    node.setDirtyCanvas(true, true)
+                    requestAnimationFrame(() =>
+                      requestAnimationFrame(() => resolve())
+                    )
+                  })
+
+                try {
                   CanvasRenderingContext2D.prototype.fillText = function (
                     text,
                     x,
                     y,
                     maxWidth
                   ) {
-                    const graphCanvas =
-                      document.querySelector<HTMLCanvasElement>(
-                        '#graph-canvas'
-                      )!
-                    const suppressed = graphCanvas.dataset.testSuppressedLabel
-                    if (suppressed && text.includes(suppressed)) {
-                      return
+                    if (this.canvas === canvas && text === label) {
+                      const metrics = this.measureText(text)
+                      const transform = this.getTransform()
+                      const left = transform.a * x + transform.e - 4
+                      const baseline = transform.d * y + transform.f
+                      const ascent =
+                        metrics.actualBoundingBoxAscent * transform.d + 4
+                      const descent =
+                        metrics.actualBoundingBoxDescent * transform.d + 4
+                      crops.push({
+                        x: Math.max(0, Math.floor(left)),
+                        y: Math.max(0, Math.floor(baseline - ascent)),
+                        width: Math.min(
+                          canvas.width - Math.max(0, Math.floor(left)),
+                          Math.ceil(metrics.width * transform.a + 8)
+                        ),
+                        height: Math.min(
+                          canvas.height -
+                            Math.max(0, Math.floor(baseline - ascent)),
+                          Math.ceil(ascent + descent)
+                        )
+                      })
                     }
-                    const labels = JSON.parse(
-                      graphCanvas.dataset.testPaintedLabels ?? '[]'
-                    ) as string[]
-                    labels.push(text)
-                    graphCanvas.dataset.testPaintedLabels =
-                      JSON.stringify(labels)
                     if (maxWidth === undefined) original.call(this, text, x, y)
                     else original.call(this, text, x, y, maxWidth)
                   }
+                  await paint()
+                } finally {
+                  CanvasRenderingContext2D.prototype.fillText = original
                 }
-                const node = window.app!.graph.nodes.find(
-                  (candidate) => String(candidate.id) === combineId
-                )!
-                node.setDirtyCanvas(true, true)
+
+                const targetCrop = crops.at(-1)
+                if (targetCrop === undefined) {
+                  return { drawCalls: 0, changedPixels: 0 }
+                }
+                const visible = context.getImageData(
+                  targetCrop.x,
+                  targetCrop.y,
+                  targetCrop.width,
+                  targetCrop.height
+                )
+                let drawCalls = 0
+                try {
+                  CanvasRenderingContext2D.prototype.fillText = function (
+                    text,
+                    x,
+                    y,
+                    maxWidth
+                  ) {
+                    if (this.canvas === canvas && text === label) {
+                      drawCalls++
+                      return
+                    }
+                    if (maxWidth === undefined) original.call(this, text, x, y)
+                    else original.call(this, text, x, y, maxWidth)
+                  }
+                  await paint()
+                  const suppressed = context.getImageData(
+                    targetCrop.x,
+                    targetCrop.y,
+                    targetCrop.width,
+                    targetCrop.height
+                  )
+                  let changedPixels = 0
+                  for (let index = 0; index < visible.data.length; index += 4) {
+                    const difference =
+                      Math.abs(visible.data[index] - suppressed.data[index]) +
+                      Math.abs(
+                        visible.data[index + 1] - suppressed.data[index + 1]
+                      ) +
+                      Math.abs(
+                        visible.data[index + 2] - suppressed.data[index + 2]
+                      )
+                    if (difference >= 24) changedPixels++
+                  }
+                  return { drawCalls, changedPixels }
+                } finally {
+                  CanvasRenderingContext2D.prototype.fillText = original
+                  await paint()
+                }
               },
-              { combineId: ids.combine, suppressedLabel }
+              { combineId: ids.combine, label }
             )
-            await comfyPage.nextFrame()
-            return comfyPage.page.evaluate(
-              () =>
-                JSON.parse(
-                  document.querySelector<HTMLCanvasElement>('#graph-canvas')!
-                    .dataset.testPaintedLabels ?? '[]'
-                ) as string[]
-            )
-          }
 
           const attachLegacyControls = async (name: string) => {
             const clip = await comfyPage.page.evaluate((combineId) => {
@@ -262,27 +324,18 @@ test.describe(
               await expect(node.getByText(label, { exact: true })).toBeVisible()
             }
           } else {
-            await expect
-              .poll(() => legacyPaintedLabels())
-              .toEqual(
-                expect.arrayContaining(['pix_fmt', 'crf', 'save_metadata'])
-              )
+            for (const label of ['pix_fmt', 'crf', 'save_metadata']) {
+              const pixels = await legacyLabelPixelDifference(label)
+              expect(pixels.drawCalls).toBeGreaterThan(0)
+              expect(pixels.changedPixels).toBeGreaterThan(10)
+            }
             await attachLegacyControls('legacy-video-controls-present')
-
-            const namesWhileCrfPaintIsSuppressed = await controls()
-            expect(namesWhileCrfPaintIsSuppressed).toContain('crf')
-            await expect
-              .poll(() => legacyPaintedLabels('crf'))
-              .not.toContain('crf')
-            await expect.poll(() => legacyPaintedLabels()).toContain('crf')
           }
 
           await setFormat('image/gif')
-          await expect
-            .poll(controls)
-            .not.toEqual(
-              expect.arrayContaining(['pix_fmt', 'crf', 'save_metadata'])
-            )
+          await expect.poll(controls).not.toContain('pix_fmt')
+          await expect.poll(controls).not.toContain('crf')
+          await expect.poll(controls).not.toContain('save_metadata')
 
           if (useVueNodes) {
             const node = comfyPage.vueNodes.getNodeLocator(ids.combine)
@@ -313,11 +366,14 @@ test.describe(
             }, ids.combine)
             await comfyPage.nextFrame()
             await expect(comfyPage.page.locator('#graph-canvas')).toBeVisible()
-            await expect
-              .poll(() => legacyPaintedLabels())
-              .not.toEqual(
-                expect.arrayContaining(['pix_fmt', 'crf', 'save_metadata'])
-              )
+            for (const label of ['pix_fmt', 'crf', 'save_metadata']) {
+              await expect
+                .poll(() => legacyLabelPixelDifference(label))
+                .toEqual({ drawCalls: 0, changedPixels: 0 })
+            }
+            const formatPixels = await legacyLabelPixelDifference('format')
+            expect(formatPixels.drawCalls).toBeGreaterThan(0)
+            expect(formatPixels.changedPixels).toBeGreaterThan(10)
             await attachLegacyControls('legacy-video-controls-absent')
           }
 
