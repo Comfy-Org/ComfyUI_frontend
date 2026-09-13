@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => ({
   fetchModelMetadataWithStatus: vi.fn()
 }))
 
-vi.mock('@/platform/missingModel/missingModelDownload', () => ({
+vi.mock(import('@/platform/missingModel/missingModelDownload'), () => ({
   fetchModelMetadataWithStatus: mocks.fetchModelMetadataWithStatus
 }))
 

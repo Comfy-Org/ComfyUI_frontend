@@ -77,9 +77,8 @@ export async function resolveTemplateModelMetadata(
   let nextUrlIndex = 0
 
   async function resolveNextUrl(): Promise<void> {
-    while (!signal?.aborted) {
+    while (!signal?.aborted && nextUrlIndex < urls.length) {
       const url = urls[nextUrlIndex++]
-      if (url === undefined) return
       metadataByUrl.set(url, await fetchMetadataWithTimeout(url, signal))
     }
   }
