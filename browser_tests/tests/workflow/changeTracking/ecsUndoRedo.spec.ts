@@ -470,8 +470,6 @@ test.describe(
       const tabB = comfyPage.menu.topbar.getWorkflowTab(tabBName)
       await expect(tabB).toBeVisible()
 
-      // Undo in the fresh tab must be a no-op: its queue is empty and it must
-      // not reach back into Tab A's history.
       await test.step('Undo is isolated in the fresh tab', async () => {
         await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(0)
         await comfyPage.keyboard.undo()
