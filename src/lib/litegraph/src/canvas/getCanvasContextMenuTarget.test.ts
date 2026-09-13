@@ -2,7 +2,10 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getCanvasContextMenuTarget } from '@/lib/litegraph/src/canvas/getCanvasContextMenuTarget'
-import { drawHiddenLinkBadges } from '@/lib/litegraph/src/canvas/linkBadges'
+import {
+  drawHiddenLinkBadges,
+  layoutHiddenLinkBadges
+} from '@/lib/litegraph/src/canvas/linkBadges'
 import { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
@@ -181,16 +184,16 @@ describe('getCanvasContextMenuTarget', () => {
   it('returns a hidden link hit on its badge', () => {
     const link = createLink(5)
     hide(link)
-    drawHiddenLinkBadges(
+    const layout = layoutHiddenLinkBadges(
       canvas,
       canvas.ctx,
       link,
       { hidden: true },
       [-10, 20],
       [200, 20],
-      '#cab8ff',
-      [0, 0, 800, 600]
+      '#cab8ff'
     )
+    drawHiddenLinkBadges(canvas.ctx, layout, [0, 0, 800, 600])
     const target = resolve()
 
     expect(target.group).toBe(group)
@@ -245,16 +248,16 @@ describe('getCanvasContextMenuTarget', () => {
     const link = createLink(5)
     hide(link)
     mockQueryRerouteAtPoint.mockReturnValue({ id: 9 })
-    drawHiddenLinkBadges(
+    const layout = layoutHiddenLinkBadges(
       canvas,
       canvas.ctx,
       link,
       { hidden: true },
       [-10, 20],
       [200, 20],
-      '#cab8ff',
-      [0, 0, 800, 600]
+      '#cab8ff'
     )
+    drawHiddenLinkBadges(canvas.ctx, layout, [0, 0, 800, 600])
 
     const target = resolve()
 
