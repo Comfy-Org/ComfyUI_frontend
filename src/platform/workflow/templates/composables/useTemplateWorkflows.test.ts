@@ -7,6 +7,7 @@ import { createApp, defineComponent } from 'vue'
 import { i18n } from '@/i18n'
 import { useTemplateWorkflows as createTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
+import { app } from '@/scripts/app'
 
 async function flushPromises() {
   await new Promise((r) => setTimeout(r, 0))
@@ -157,16 +158,19 @@ describe('useTemplateWorkflows', () => {
     })
 
     // Mock fetch response
-    vi.mocked(fetch).mockResolvedValue({
-      ok: true,
-      json: vi.fn().mockResolvedValue({
-        version: 0.4,
-        last_node_id: 0,
-        last_link_id: 0,
-        nodes: [],
-        links: []
-      })
-    } as Partial<Response> as Response)
+    vi.mocked(fetch).mockImplementation(() =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            version: 0.4,
+            last_node_id: 0,
+            last_link_id: 0,
+            nodes: [],
+            links: []
+          })
+        )
+      )
+    )
   })
 
   it('should load templates from store', async () => {
@@ -350,6 +354,44 @@ describe('useTemplateWorkflows', () => {
     })
     expect(mockTrackTemplate).not.toHaveBeenCalled()
     expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+    expect(usePartnerNodesEducationStore().requestCard).not.toHaveBeenCalled()
+    expect(usePartnerNodesEducationStore().dismissCard).not.toHaveBeenCalled()
+  })
+
+  it('prepares a compatible legacy workflow', async () => {
+    const { prepareWorkflowTemplate } = useTemplateWorkflows()
+    mockWorkflowTemplatesStore.isLoaded = true
+    const legacyWorkflow = {
+      version: 0.4,
+      last_node_id: 1,
+      last_link_id: 0,
+      nodes: [{ id: 1, type: 'LegacyNode' }],
+      links: []
+    }
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify(legacyWorkflow))
+    )
+
+    const prepared = await prepareWorkflowTemplate('template1', 'default')
+
+    expect(prepared?.workflow).toEqual(legacyWorkflow)
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+  })
+
+  it('rejects non-workflow JSON without opening side effects', async () => {
+    const { prepareWorkflowTemplate } = useTemplateWorkflows()
+    mockWorkflowTemplatesStore.isLoaded = true
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ unrelated: true }))
+    )
+
+    const prepared = await prepareWorkflowTemplate('template1', 'default')
+
+    expect(prepared).toBeNull()
+    expect(mockTrackTemplate).not.toHaveBeenCalled()
+    expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
+    expect(app.loadGraphData).not.toHaveBeenCalled()
   })
 
   it('tracks template telemetry on load in cloud builds', async () => {
