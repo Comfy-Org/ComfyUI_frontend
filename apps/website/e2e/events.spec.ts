@@ -549,10 +549,11 @@ test.describe('Events page — desktop @smoke', () => {
       })
     ).toBeVisible()
 
-    // A past card links out instead of offering the menu.
-    const past = directoryEvents.find(
-      (event) => Date.parse(event.startDateTime) < Date.now() && event.link
-    )
+    // A past card links out instead of offering the menu. Use the same derived
+    // status model the page renders (end-time based): an event that has started
+    // but not yet ended still shows its upcoming CTA on the page, so a naive
+    // start-time filter here disagrees with it for the duration of the event.
+    const past = pastEvents.find((event) => event.link)
     if (past) {
       await page.keyboard.press('Escape')
       const pastCard = cards.filter({ hasText: past.title.en }).first()
