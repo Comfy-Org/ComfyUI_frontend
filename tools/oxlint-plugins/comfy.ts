@@ -17,6 +17,7 @@ import type {
   noUnsafeErrorAssertion as NoUnsafeErrorAssertion
 } from './restrictedSyntax'
 import type {
+  noImportActual as NoImportActual,
   noModuleScopeVitestMocks as NoModuleScopeVitestMocks,
   noPersistentLiteGraphRegistration as NoPersistentLiteGraphRegistration,
   noRedundantLiteGraphCleanup as NoRedundantLiteGraphCleanup,
@@ -57,11 +58,13 @@ const {
   noUnsafeErrorAssertion: typeof NoUnsafeErrorAssertion
 }
 const {
+  noImportActual,
   noModuleScopeVitestMocks,
   noPersistentLiteGraphRegistration,
   noRedundantLiteGraphCleanup,
   noRedundantVitestCleanup
 } = requireFrom('./vitestCleanup.ts') as {
+  noImportActual: typeof NoImportActual
   noModuleScopeVitestMocks: typeof NoModuleScopeVitestMocks
   noPersistentLiteGraphRegistration: typeof NoPersistentLiteGraphRegistration
   noRedundantLiteGraphCleanup: typeof NoRedundantLiteGraphCleanup
@@ -78,6 +81,7 @@ export default {
     'no-deprecated-api-schema': noDeprecatedApiSchema,
     'no-dom-in-computed': noDomInComputed,
     'no-duplicate-ingest-type': noDuplicateIngestType,
+    'no-import-actual': noImportActual,
     'no-misplaced-spec-files': noMisplacedSpecFiles,
     'no-module-scope-vitest-mocks': noModuleScopeVitestMocks,
     'no-new-zod-for-remote-api-types': noNewZodForRemoteApiTypes,
