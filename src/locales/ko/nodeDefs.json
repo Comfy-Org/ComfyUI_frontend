@@ -7979,7 +7979,7 @@
     }
   },
   "ImageColorSpace": {
-    "description": "sRGB (Rec.709), HDR (Rec.2020 HLG), HDR PQ (Rec.2020 PQ)를 변환합니다. 203니트 SDR 화이트와 1000니트 HLG 기준 디스플레이를 사용합니다. 축소 시 배치 전체에서 초과 휘도를 톤 매핑하고 색역 밖의 색상을 압축합니다. 변환은 float32로 계산되며 중간 장치 및 dtype을 반환합니다. 스트레이트 알파에는 색상 변환이 적용되지 않습니다.",
+    "description": "sRGB, 선형 Rec.709, HDR(Rec.2020 HLG), HDR PQ(Rec.2020 PQ) 간에 변환합니다. 선형 1.0은 sRGB와 동일한 203니트 기준 백색을 사용하며, HLG는 1000니트 기준 디스플레이를 사용합니다. 선형 출력 및 선형-HDR 변환은 톤 매핑 없이 확장 값을 유지합니다. SDR 출력 및 PQ-HLG 변환은 배치 전체에서 초과 휘도를 톤 매핑하고 색역 밖의 색상을 압축합니다. 변환은 float32로 계산되며 중간 device 및 dtype를 반환합니다. 스트레이트 알파에는 색상 변환이 적용되지 않습니다.",
     "display_name": "이미지 색 공간 변환",
     "inputs": {
       "destination": {
@@ -24023,7 +24023,7 @@
     }
   },
   "TripoImageToModelNode": {
-    "display_name": "Tripo: 이미지를 모델로",
+    "display_name": "Tripo: 이미지를 모델로 (레거시)",
     "inputs": {
       "auto_size": {
         "name": "auto_size",
@@ -24094,6 +24094,75 @@
         "tooltip": "quad가 활성화되면 비어 있습니다."
       },
       "3": {
+        "name": "FBX",
+        "tooltip": "quad가 활성화된 경우에만 채워집니다."
+      }
+    }
+  },
+  "TripoImageToModelNodeV2": {
+    "display_name": "Tripo: 이미지를 모델로",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "텍스처가 있는 모델을 실제 미터 단위 크기로 조정합니다. Tripo는 크기를 모델의 scene transform으로 저장하며, 모델을 변환, 리깅 또는 리타기팅할 때 이를 베이크합니다. texture가 없으면 무시됩니다."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "최대 면 수입니다. -1이면 Tripo가 적응적으로 선택합니다(v3.x standard에서 약 140만 면, detailed에서 200만 면). Tripo는 자동으로 제한합니다. v2.5는 500,000, 쿼드 메시에는 150,000이 적용됩니다."
+      },
+      "geometry_quality": {
+        "name": "geometry_quality"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "생성에 사용할 모델 버전"
+      },
+      "orientation": {
+        "name": "orientation"
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "PBR 재질 맵(기본 색상, 메탈릭, 거칠기, 노멀)입니다. texture가 필요합니다."
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "쿼드 메시를 출력합니다. Tripo는 쿼드 메시를 FBX로 제공하므로 결과는 FBX 출력에 표시되고 GLB 출력은 비어 있습니다."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "깔끔한 수작업 스타일 토폴로지를 갖춘 로우 폴리 메시입니다(500~20,000면, 쿼드는 500~10,000). 단순한 피사체에 가장 적합하며, 복잡한 피사체는 실패할 수 있습니다."
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "텍스처 맵을 생성합니다. 끄면 기본 지오메트리만 반환하고 pbr을 무시합니다."
+      },
+      "texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = HD 텍스처, extreme = 8K Ultra 텍스처입니다."
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "모델 task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "quad가 활성화되면 비어 있습니다."
+      },
+      "2": {
         "name": "FBX",
         "tooltip": "quad가 활성화된 경우에만 채워집니다."
       }
@@ -24427,7 +24496,7 @@
       },
       "animation": {
         "name": "애니메이션",
-        "tooltip": "preset:* 애니메이션은 두 리그 모델 모두에서 작동합니다. preset:biped:* 애니메이션에는 model v1.0-20240301으로 만든 리그가 필요합니다."
+        "tooltip": "preset:* 애니메이션은 두 리그 모델 모두에서 작동합니다. preset:biped:* 애니메이션은 모델 v1.0-20240301의 리그용으로 제작되었습니다. v2.5 리그는 chop, climb, dive, fall, hurt, idle, jump, run, shoot, slash, turn 및 walk만 지원합니다."
       },
       "export_with_geometry": {
         "name": "export_with_geometry",
@@ -24591,6 +24660,48 @@
       }
     }
   },
+  "TripoSmartSegmentNode": {
+    "description": "모델을 의미 있는 부분으로 분할하고 이름을 지정합니다. 이미지에서 시작하는 경우 Tripo가 먼저 모델을 생성합니다. 세그먼트 task_id는 Tripo: Segment Model 결과와 마찬가지로 Tripo: Complete Mesh Parts, Tripo: Retopology, Tripo: Texture model 및 Tripo: Convert model에 입력할 수 있습니다.",
+    "display_name": "Tripo: 스마트 분할",
+    "inputs": {
+      "source": {
+        "name": "source",
+        "tooltip": "기존 모델을 분할하거나 이미지에서 모델을 생성한 후 분할합니다."
+      },
+      "source_granularity": {
+        "name": "granularity"
+      },
+      "source_hint": {
+        "name": "hint"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "세그먼트 task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "모델 task_id",
+        "tooltip": "분할된 모델(이미지에서 생성되었거나 가져온 모델)입니다."
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "part_names",
+        "tooltip": "부품 이름을 쉼표로 구분한 목록입니다."
+      },
+      "4": {
+        "name": "parts",
+        "tooltip": "Tripo가 찾은 부품에 대한 설명입니다."
+      },
+      "5": {
+        "name": "마스크",
+        "tooltip": null
+      }
+    }
+  },
   "TripoSplatConditioning": {
     "description": "이미지를 DINOv3와 Flux2 VAE로 인코딩하여 TripoSplat의 positive/negative 컨디셔닝을 생성하고, KSampler를 위한 고정 크기 노이즈 타겟(latent + 카메라)을 만듭니다.",
     "display_name": "TripoSplat 컨디셔닝",
@@ -24687,7 +24798,7 @@
     }
   },
   "TripoTextToModelNode": {
-    "display_name": "Tripo: 텍스트에서 모델 생성",
+    "display_name": "Tripo: 텍스트를 모델로 (레거시)",
     "inputs": {
       "auto_size": {
         "name": "auto_size",
@@ -24763,8 +24874,77 @@
       }
     }
   },
+  "TripoTextToModelNodeV2": {
+    "display_name": "Tripo: 텍스트를 모델로",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "텍스처가 적용된 모델을 실제 크기(미터)로 조정합니다. Tripo는 크기를 모델의 씬 변환으로 저장하며, 모델이 변환, 리깅 또는 리타기팅될 때 적용합니다. 텍스처가 없으면 무시됩니다."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "최대 페이스 수입니다. -1이면 Tripo가 적응적으로 선택합니다(v3.x standard에서는 약 140만 페이스, detailed에서는 200만 페이스). Tripo는 자동으로 제한합니다: v2.5는 500,000, 쿼드 메시는 150,000입니다."
+      },
+      "geometry_quality": {
+        "name": "geometry_quality"
+      },
+      "image_seed": {
+        "name": "image_seed"
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "model_version": {
+        "name": "model_version"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "최대 255자입니다."
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "PBR 머티리얼 맵(기본 색상, 메탈릭, 거칠기, 노멀)입니다. 텍스처가 필요합니다."
+      },
+      "prompt": {
+        "name": "프롬프트"
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "쿼드 메시를 출력합니다. Tripo는 쿼드 메시를 FBX로 제공하므로 결과는 FBX 출력에 전달되고 GLB 출력은 비어 있습니다."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "깔끔한 수작업 스타일 토폴로지를 갖춘 로우폴리 메시입니다(500~20,000 페이스, 쿼드는 500~10,000). 단순한 대상에 가장 적합하며 복잡한 대상은 실패할 수 있습니다."
+      },
+      "texture": {
+        "name": "텍스처",
+        "tooltip": "텍스처 맵을 생성합니다. 끄면 형상만 반환되고 pbr은 무시됩니다."
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = HD 텍스처, extreme = 8K Ultra 텍스처입니다."
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "모델 task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "quad가 활성화되면 비어 있습니다."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "quad가 활성화된 경우에만 채워집니다."
+      }
+    }
+  },
   "TripoTextureNode": {
-    "display_name": "Tripo: 텍스처 모델",
+    "display_name": "Tripo: 모델 텍스처링 (레거시)",
     "inputs": {
       "model_task_id": {
         "name": "모델 작업 ID"
@@ -24822,6 +25002,62 @@
         "tooltip": "소스가 쿼드 메시 또는 FBX 가져오기인 경우 비어 있습니다."
       },
       "3": {
+        "name": "FBX",
+        "tooltip": "Tripo는 쿼드 메시 및 FBX 가져오기에 대해 FBX를 반환하며, 그 외에는 비어 있습니다."
+      }
+    }
+  },
+  "TripoTextureNodeV2": {
+    "display_name": "Tripo: 모델 텍스처링",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "텍스처 모델: v3.x로 생성된 메시에는 v3.0, v2.5로 생성된 메시에는 v2.5를 사용합니다."
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "텍스처링할 Tripo: Segment Model의 쉼표로 구분된 파트 이름입니다. 비워 두면 모든 파트에 텍스처를 적용합니다."
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "PBR 머티리얼 맵(기본 색상, 메탈릭, 거칠기, 노멀)입니다. 끄면 단색 텍스처가 생성됩니다."
+      },
+      "reference": {
+        "name": "reference",
+        "tooltip": "텍스처를 안내하는 참조 이미지입니다. texture_prompt 또는 style_image와 함께 사용할 수 없습니다."
+      },
+      "style_image": {
+        "name": "style_image",
+        "tooltip": "텍스처의 예술적 스타일을 위한 참조 이미지입니다. texture_prompt와 함께만 사용됩니다."
+      },
+      "texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "텍스처링을 위한 선택적 텍스트 안내입니다. 색상을 추론할 원본 이미지가 없는 가져온 모델(Tripo: Import Model)에는 실제로 필요합니다. 참조 이미지와 함께 사용할 수 없습니다."
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = HD 텍스처, extreme = 8K Ultra 텍스처입니다."
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "소스가 쿼드 메시 또는 FBX 가져오기인 경우 비어 있습니다."
+      },
+      "2": {
         "name": "FBX",
         "tooltip": "Tripo는 쿼드 메시 및 FBX 가져오기에 대해 FBX를 반환하며, 그 외에는 비어 있습니다."
       }

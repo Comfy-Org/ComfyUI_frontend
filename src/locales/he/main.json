@@ -2833,6 +2833,7 @@
     "deleteHistoryOnly": "רק ההיסטוריה תושפע, הקבצים יישארו בדיסק",
     "deleteItems": "מחיקת פריטים אלה",
     "deletePermanent": "הם יוסרו לצמיתות.",
+    "deleteTombstone": "הם לא יוצגו עוד ב-ComfyUI, אך יישארו בדיסק",
     "deletingImportedFilesCloudOnly": "מחיקת קבצים מיובאים נתמכת רק בגרסת הענן",
     "deletionUnsupported": "הנכסים מופעלים, אך השרת אינו תומך במחיקה",
     "failedToCreateNode": "יצירת הצומת נכשלה",

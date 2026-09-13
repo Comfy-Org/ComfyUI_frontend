@@ -2833,6 +2833,7 @@
     "deleteHistoryOnly": "僅會影響歷程記錄，檔案將保留在磁碟上",
     "deleteItems": "刪除這些項目",
     "deletePermanent": "它們將被永久移除。",
+    "deleteTombstone": "它們將不再顯示於 ComfyUI 中，但仍會保留在磁碟上",
     "deletingImportedFilesCloudOnly": "僅雲端版本支援刪除匯入的檔案",
     "deletionUnsupported": "資產功能已啟用，但伺服器不支援刪除",
     "failedToCreateNode": "建立節點失敗",

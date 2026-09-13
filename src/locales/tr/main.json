@@ -2833,6 +2833,7 @@
     "deleteHistoryOnly": "Yalnızca geçmiş etkilenir, dosyalar diskte kalır",
     "deleteItems": "Bu öğeleri sil",
     "deletePermanent": "Kalıcı olarak kaldırılacaklar.",
+    "deleteTombstone": "Artık ComfyUI'de görüntülenmeyecekler, ancak diskte kalacaklar",
     "deletingImportedFilesCloudOnly": "İçe aktarılan dosyaların silinmesi yalnızca bulut sürümünde desteklenir",
     "deletionUnsupported": "Varlıklar etkin, ancak sunucu silmeyi desteklemiyor",
     "failedToCreateNode": "Düğüm oluşturulamadı",

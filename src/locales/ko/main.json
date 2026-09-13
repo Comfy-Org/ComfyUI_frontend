@@ -2833,6 +2833,7 @@
     "deleteHistoryOnly": "기록에만 영향을 미치며, 파일은 디스크에 남아 있습니다",
     "deleteItems": "이 항목 삭제",
     "deletePermanent": "영구적으로 제거됩니다.",
+    "deleteTombstone": "ComfyUI에 더 이상 표시되지 않지만 디스크에는 유지됩니다",
     "deletingImportedFilesCloudOnly": "가져온 파일 삭제는 클라우드 버전에서만 지원됩니다",
     "deletionUnsupported": "에셋이 활성화되어 있지만 서버가 삭제를 지원하지 않습니다",
     "failedToCreateNode": "노드 생성에 실패했습니다",

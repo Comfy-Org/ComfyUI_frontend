@@ -2833,6 +2833,7 @@
     "deleteHistoryOnly": "仅影响历史记录，文件将保留在磁盘上",
     "deleteItems": "删除这些项目",
     "deletePermanent": "它们将被永久移除。",
+    "deleteTombstone": "它们将不再显示在 ComfyUI 中，但仍会保留在磁盘上",
     "deletingImportedFilesCloudOnly": "删除导入文件仅支持云版本",
     "deletionUnsupported": "资源已启用，但服务器不支持删除",
     "failedToCreateNode": "创建节点失败",

@@ -7979,7 +7979,7 @@
     }
   },
   "ImageColorSpace": {
-    "description": "Converte sRGB (Rec.709), HDR (Rec.2020 HLG) e HDR PQ (Rec.2020 PQ). Usa branco SDR de 203 nits e uma tela de referência HLG de 1000 nits. O estreitamento aplica mapeamento de tons à luminância excedente em todo o lote e comprime cores fora da gama. As conversões são calculadas em float32 e retornam o device e dtype intermediários. Alfa reto não passa por transformação de cor.",
+    "description": "Converte sRGB, Rec.709 linear, HDR (Rec.2020 HLG) e HDR PQ (Rec.2020 PQ). O linear 1.0 usa o mesmo branco de referência de 203 nits do sRGB; o HLG usa uma tela de referência de 1000 nits. A saída linear e as conversões de linear para HDR preservam valores estendidos sem mapeamento de tons. A saída SDR e a conversão de PQ para HLG aplicam mapeamento de tons ao excesso de luminância em todo o lote e comprimem cores fora da gama. As conversões são calculadas em float32 e retornam o dispositivo intermediário e o dtype. O alpha direto não passa por transformação de cor.",
     "display_name": "Converter Espaço de Cor da Imagem",
     "inputs": {
       "destination": {
@@ -24023,7 +24023,7 @@
     }
   },
   "TripoImageToModelNode": {
-    "display_name": "Tripo: Imagem para Modelo",
+    "display_name": "Tripo: Imagem para Modelo (Legado)",
     "inputs": {
       "auto_size": {
         "name": "auto_size",
@@ -24094,6 +24094,75 @@
         "tooltip": "Vazio quando quad está ativado."
       },
       "3": {
+        "name": "FBX",
+        "tooltip": "Preenchido apenas quando quad está ativado."
+      }
+    }
+  },
+  "TripoImageToModelNodeV2": {
+    "display_name": "Tripo: Imagem para Modelo",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Dimensiona modelos texturizados para seu tamanho real em metros. O Tripo armazena o tamanho como a transformação de cena do modelo e o incorpora quando o modelo é convertido, recebe rig ou é redirecionado; ignorado sem texture."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "Contagem máxima de faces. -1 permite que o Tripo escolha adaptativamente (cerca de 1,4 M de faces no padrão v3.x, 2 M no detalhado). O Tripo limita silenciosamente: v2.5 a 500.000, malhas quad a 150.000."
+      },
+      "geometry_quality": {
+        "name": "geometry_quality"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "A versão do modelo a usar para a geração"
+      },
+      "orientation": {
+        "name": "orientation"
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "Mapas de material PBR (cor base, metálico, rugosidade, normal). Requer texture."
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "Saída de malha quad. O Tripo entrega malhas quad como FBX, portanto o resultado chega na saída FBX e a saída GLB permanece vazia."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "Malha low-poly com topologia limpa em estilo artesanal (500 a 20.000 faces, quad 500 a 10.000). Ideal para objetos simples; objetos complexos podem falhar."
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "Gera mapas de textura. Desativado retorna a geometria sem material e ignora pbr."
+      },
+      "texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = texturas HD, extreme = texturas Ultra 8K."
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "task_id do modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Vazio quando quad está ativado."
+      },
+      "2": {
         "name": "FBX",
         "tooltip": "Preenchido apenas quando quad está ativado."
       }
@@ -24427,7 +24496,7 @@
       },
       "animation": {
         "name": "animação",
-        "tooltip": "As animações preset:* funcionam com ambos os modelos de rig; as animações preset:biped:* exigem um rig criado com o modelo v1.0-20240301."
+        "tooltip": "As animações preset:* funcionam com ambos os modelos com rig. As animações preset:biped:* são feitas para rigs do modelo v1.0-20240301; um rig v2.5 aceita apenas chop, climb, dive, fall, hurt, idle, jump, run, shoot, slash, turn e walk."
       },
       "export_with_geometry": {
         "name": "export_with_geometry",
@@ -24591,6 +24660,48 @@
       }
     }
   },
+  "TripoSmartSegmentNode": {
+    "description": "Divide um modelo em partes semanticamente significativas e as nomeia. A partir de uma imagem, o Tripo primeiro gera o modelo. O task_id de segmento alimenta Tripo: Complete Mesh Parts, Tripo: Retopology, Tripo: Texture model e Tripo: Convert model como um resultado de Tripo: Segment Model.",
+    "display_name": "Tripo: Segmentação Inteligente",
+    "inputs": {
+      "source": {
+        "name": "source",
+        "tooltip": "Segmenta um modelo existente ou gera um modelo a partir de uma imagem e o segmenta."
+      },
+      "source_granularity": {
+        "name": "granularity"
+      },
+      "source_hint": {
+        "name": "hint"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "task_id de segmento",
+        "tooltip": null
+      },
+      "1": {
+        "name": "task_id do modelo",
+        "tooltip": "O modelo que foi segmentado (gerado a partir da imagem ou importado)."
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "part_names",
+        "tooltip": "Nomes das partes separados por vírgulas."
+      },
+      "4": {
+        "name": "parts",
+        "tooltip": "Descrição do Tripo das partes encontradas."
+      },
+      "5": {
+        "name": "mask",
+        "tooltip": null
+      }
+    }
+  },
   "TripoSplatConditioning": {
     "description": "Codifica a imagem com DINOv3 e o Flux2 VAE em condicionamento positivo/negativo TripoSplat, e cria o alvo de ruído de tamanho fixo (latent + câmera) para o KSampler",
     "display_name": "Condicionamento TripoSplat",
@@ -24687,7 +24798,7 @@
     }
   },
   "TripoTextToModelNode": {
-    "display_name": "Tripo: Texto para Modelo",
+    "display_name": "Tripo: Texto para modelo (Legado)",
     "inputs": {
       "auto_size": {
         "name": "auto_size",
@@ -24763,8 +24874,77 @@
       }
     }
   },
+  "TripoTextToModelNodeV2": {
+    "display_name": "Tripo: Texto para modelo",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_size",
+        "tooltip": "Dimensiona modelos com textura para seu tamanho real em metros. O Tripo armazena o tamanho como a transformação de cena do modelo e o incorpora quando o modelo é convertido, recebe rig ou é redirecionado; ignorado sem texture."
+      },
+      "face_limit": {
+        "name": "face_limit",
+        "tooltip": "Contagem máxima de faces. -1 permite que o Tripo escolha adaptativamente (cerca de 1,4 mi de faces no padrão v3.x, 2 mi em detailed). O Tripo limita silenciosamente: v2.5 a 500.000, malhas de quads a 150.000."
+      },
+      "geometry_quality": {
+        "name": "geometry_quality"
+      },
+      "image_seed": {
+        "name": "image_seed"
+      },
+      "model_seed": {
+        "name": "model_seed"
+      },
+      "model_version": {
+        "name": "model_version"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Até 255 caracteres."
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "Mapas de material PBR (cor base, metálico, rugosidade, normal). Requer texture."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "quad": {
+        "name": "quad",
+        "tooltip": "Saída de malha de quads. O Tripo entrega malhas de quads como FBX, portanto o resultado chega na saída FBX e a saída GLB permanece vazia."
+      },
+      "smart_low_poly": {
+        "name": "smart_low_poly",
+        "tooltip": "Malha low-poly com topologia limpa em estilo artesanal (500–20.000 faces, quad 500–10.000). Ideal para assuntos simples; os complexos podem falhar."
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "Gera mapas de textura. Desativado retorna a geometria sem textura e ignora pbr."
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = texturas HD, extreme = texturas Ultra 8K."
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "task_id do modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Vazio quando quad está ativado."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Preenchido somente quando quad está ativado."
+      }
+    }
+  },
   "TripoTextureNode": {
-    "display_name": "Tripo: Modelo de Textura",
+    "display_name": "Tripo: Texturizar modelo (Legado)",
     "inputs": {
       "model_task_id": {
         "name": "model_task_id"
@@ -24824,6 +25004,62 @@
       "3": {
         "name": "FBX",
         "tooltip": "O Tripo retorna FBX para malhas de quadriláteros e importações FBX; vazio caso contrário."
+      }
+    }
+  },
+  "TripoTextureNodeV2": {
+    "display_name": "Tripo: Texturizar modelo",
+    "inputs": {
+      "model_task_id": {
+        "name": "model_task_id"
+      },
+      "model_version": {
+        "name": "model_version",
+        "tooltip": "Modelo de textura: v3.0 para malhas geradas com v3.x, v2.5 para malhas geradas com v2.5."
+      },
+      "part_names": {
+        "name": "part_names",
+        "tooltip": "Nomes das partes separados por vírgulas de Tripo: Segment Model para texturizar. Vazio texturiza todas as partes."
+      },
+      "pbr": {
+        "name": "pbr",
+        "tooltip": "Mapas de material PBR (cor base, metálico, rugosidade, normal); desativado fornece uma textura de cor simples."
+      },
+      "reference": {
+        "name": "reference",
+        "tooltip": "Imagens de referência que orientam as texturas. Não podem ser combinadas com texture_prompt ou style_image."
+      },
+      "style_image": {
+        "name": "style_image",
+        "tooltip": "Imagem de referência para o estilo artístico das texturas. Usada apenas junto com texture_prompt."
+      },
+      "texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "Orientação textual opcional para texturização. Necessária na prática para modelos importados (Tripo: Import Model), que não possuem imagem de origem para inferir as cores. Não pode ser combinada com imagens de referência."
+      },
+      "texture_quality": {
+        "name": "texture_quality",
+        "tooltip": "detailed = texturas HD, extreme = texturas Ultra 8K."
+      },
+      "texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "task_id do modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Vazio quando a origem for uma malha de quadriláteros ou uma importação FBX."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "O Tripo retorna FBX para malhas de quadriláteros e importações FBX; caso contrário, vazio."
       }
     }
   },

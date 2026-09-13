@@ -2833,6 +2833,7 @@
     "deleteHistoryOnly": "Solo se verá afectado el historial; los archivos permanecerán en el disco",
     "deleteItems": "Eliminar estos elementos",
     "deletePermanent": "Se eliminarán permanentemente.",
+    "deleteTombstone": "Ya no se mostrarán en ComfyUI, pero permanecerán en el disco",
     "deletingImportedFilesCloudOnly": "La eliminación de archivos importados solo es compatible en la versión cloud",
     "deletionUnsupported": "Los recursos están habilitados, pero el servidor no admite la eliminación",
     "failedToCreateNode": "No se pudo crear el nodo",

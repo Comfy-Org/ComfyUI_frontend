@@ -2833,6 +2833,7 @@
     "deleteHistoryOnly": "Nur der Verlauf wird gelöscht, die Dateien bleiben auf dem Datenträger",
     "deleteItems": "Diese Elemente löschen",
     "deletePermanent": "Sie werden dauerhaft entfernt.",
+    "deleteTombstone": "Sie werden nicht mehr in ComfyUI angezeigt, bleiben jedoch auf dem Datenträger erhalten",
     "deletingImportedFilesCloudOnly": "Das Löschen importierter Dateien wird nur in der Cloud-Version unterstützt",
     "deletionUnsupported": "Assets sind aktiviert, aber der Server unterstützt das Löschen nicht",
     "failedToCreateNode": "Node konnte nicht erstellt werden",
