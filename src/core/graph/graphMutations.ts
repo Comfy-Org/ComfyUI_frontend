@@ -135,6 +135,8 @@ type PreparedMutation =
       topology: LinkTopology
       originOutputs?: NodeState['outputs']
       targetInputs?: NodeState['inputs']
+      liveOriginOutputs?: NodeState['outputs']
+      liveTargetInputs?: NodeState['inputs']
     }
   | {
       kind: 'removeMissing'
@@ -430,17 +432,6 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             ? prepareOutputSlots(mutation.link.originOutputs)
             : origin.outputs
           const targetInputs = [...target.inputs]
-          if (mutation.link.originOutputs) {
-            for (const [index, output] of origin.outputs.entries()) {
-              if (!isPlainObject(output)) {
-                originOutputs[index] = output
-                continue
-              }
-              const serialized = originOutputs[index]
-              if (isPlainObject(serialized)) Object.assign(output, serialized)
-              originOutputs[index] = output
-            }
-          }
           if (mutation.link.targetInputs) {
             const documentInputs = prepareInputSlots(mutation.link.targetInputs)
             const name = documentInputs.at(topology.targetSlot)?.name
@@ -453,7 +444,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
               )
               if (index < 0) targetInputs.push(input)
               else if (isPlainObject(targetInputs[index]))
-                Object.assign(targetInputs[index], input)
+                targetInputs[index] = input
             }
             topology.targetSlot = targetInputs.findIndex(
               (input) => input.name === name
@@ -479,10 +470,12 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             kind: mutation.kind,
             topology,
             ...(mutation.link.originOutputs && {
-              originOutputs
+              originOutputs,
+              liveOriginOutputs: [...origin.outputs]
             }),
             ...(mutation.link.targetInputs && {
-              targetInputs
+              targetInputs,
+              liveTargetInputs: [...target.inputs]
             })
           })
           break
@@ -772,6 +765,22 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             nodeKey(mutation.topology.targetNodeId)
           )
           if (origin && mutation.originOutputs) {
+            for (const [index, output] of (
+              mutation.liveOriginOutputs ?? origin.outputs
+            ).entries()) {
+              const serialized = mutation.originOutputs[index]
+              if (isPlainObject(output) && isPlainObject(serialized)) {
+                Object.assign(
+                  output,
+                  Object.fromEntries(
+                    Object.entries(serialized).filter(
+                      ([, value]) => value !== undefined
+                    )
+                  )
+                )
+              }
+              mutation.originOutputs[index] = output
+            }
             nodeStore.updateNodeSlots(
               scope,
               origin.id,
@@ -783,6 +792,24 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
             )
           }
           if (target && mutation.targetInputs) {
+            for (const input of mutation.liveTargetInputs ?? target.inputs) {
+              const index = mutation.targetInputs.findIndex(
+                (serialized) => serialized.name === input.name
+              )
+              if (index >= 0) {
+                if (isPlainObject(input)) {
+                  Object.assign(
+                    input,
+                    Object.fromEntries(
+                      Object.entries(mutation.targetInputs[index]).filter(
+                        ([, value]) => value !== undefined
+                      )
+                    )
+                  )
+                }
+                mutation.targetInputs[index] = input
+              }
+            }
             nodeStore.updateNodeSlots(
               scope,
               target.id,
