@@ -1,6 +1,5 @@
 import { DownloadStatus } from '@comfyorg/comfyui-electron-types'
 import type { DownloadState } from '@comfyorg/comfyui-electron-types'
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
@@ -15,8 +14,8 @@ const downloadManager = vi.hoisted(() => ({
   startDownload: vi.fn()
 }))
 
-vi.mock('@/platform/distribution/types', () => ({ isDesktop: true }))
-vi.mock('@/utils/envUtil', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({ isDesktop: true }))
+vi.mock<unknown>(import('@/utils/envUtil'), () => ({
   electronAPI: () => ({ DownloadManager: downloadManager })
 }))
 
@@ -53,11 +52,10 @@ function progressUpdate(overrides: Partial<ElectronDownload> = {}) {
 }
 
 describe('useElectronDownloadStore progress observation', () => {
-  let emitProgress: ((download: ElectronDownload) => void) | undefined
+  let emitProgress: (download: ElectronDownload) => void
 
   beforeEach(() => {
-    setActivePinia(createPinia())
-    emitProgress = undefined
+    emitProgress = vi.fn()
     downloadManager.getAllDownloads.mockReset().mockResolvedValue([])
     downloadManager.onDownloadProgress
       .mockReset()
@@ -145,7 +143,7 @@ describe('useElectronDownloadStore progress observation', () => {
     expect(outcome).toBe('resolved')
     expect(emitProgress).toBeTypeOf('function')
 
-    emitProgress?.(progressUpdate())
+    emitProgress(progressUpdate())
 
     expect(store.findByUrl('https://example.com/model.safetensors')).toEqual(
       progressUpdate()
@@ -161,13 +159,10 @@ describe('useElectronDownloadStore progress observation', () => {
       ).toBeDefined()
     })
 
-    expect(store.subscribeToDownloadProgress).toBeTypeOf('function')
-    if (!store.subscribeToDownloadProgress) return
-
     const listener = vi.fn()
     const stop = store.subscribeToDownloadProgress(listener)
 
-    emitProgress?.(progressUpdate())
+    emitProgress(progressUpdate())
 
     expect(listener).toHaveBeenCalledOnce()
     expect(listener).toHaveBeenLastCalledWith(
@@ -176,7 +171,7 @@ describe('useElectronDownloadStore progress observation', () => {
     expect(listener.mock.lastCall?.[0].receivedBytes).toBeUndefined()
     expect(listener.mock.lastCall?.[0].totalBytes).toBeUndefined()
 
-    emitProgress?.(
+    emitProgress(
       progressUpdate({
         url: 'https://example.com/other.safetensors',
         filename: 'other.safetensors'
@@ -189,7 +184,7 @@ describe('useElectronDownloadStore progress observation', () => {
     )
 
     stop()
-    emitProgress?.(progressUpdate({ progress: 0.75 }))
+    emitProgress(progressUpdate({ progress: 0.75 }))
     expect(listener).toHaveBeenCalledTimes(2)
   })
 })

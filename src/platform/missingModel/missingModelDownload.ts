@@ -264,7 +264,7 @@ async function fetchCivitaiMetadata(
     }
 
     const data: CivitaiModelVersionResponse = await res.json()
-    const matchingFile = data.files?.find((file) => {
+    const matchingFile = data.files.find((file) => {
       const downloadUrl = file.downloadUrl
       return (
         typeof downloadUrl === 'string' &&
