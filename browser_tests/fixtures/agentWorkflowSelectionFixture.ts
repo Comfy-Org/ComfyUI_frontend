@@ -1,6 +1,7 @@
 import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 
 import type { UserDataFullInfo } from '@/schemas/apiSchema'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { CloudWorkflowEntry } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
@@ -16,10 +17,18 @@ type WorkflowSelection = {
 }
 
 export const workflowSelectionTest = base.extend<{
+  nodeDefinitions: Record<string, ComfyNodeDef> | undefined
   workflowSelection: WorkflowSelection
 }>({
-  workflowSelection: async ({ page }, use) => {
-    await bootAgentApp(page, true)
+  nodeDefinitions: [undefined, { option: true }],
+  workflowSelection: async ({ page, nodeDefinitions }, use) => {
+    if (nodeDefinitions)
+      await page.route('**/api/object_info', (route) =>
+        route.fulfill(jsonRoute(nodeDefinitions))
+      )
+    await bootAgentApp(page, true, {
+      objectInfo: nodeDefinitions ? 'server' : undefined
+    })
     const workflows: CloudWorkflowEntry[] = []
     const savedFiles: UserDataFullInfo[] = []
     const savedContent = new Map<string, string>()
