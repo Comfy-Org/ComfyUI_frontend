@@ -325,7 +325,7 @@ const earlierClass = (active: boolean) =>
     <!-- Succeeded, or the example that ships with the model -->
     <template v-else-if="shown">
       <div
-        class="workshop-output-frame relative aspect-video w-full flex-1 overflow-hidden bg-black/20"
+        class="relative aspect-video max-h-[70dvh] w-full flex-1 overflow-hidden bg-black/20"
       >
         <div
           :key="currentUrl"
@@ -618,9 +618,3 @@ const earlierClass = (active: boolean) =>
     </DialogRoot>
   </section>
 </template>
-
-<style scoped>
-.workshop-output-frame {
-  max-height: 70dvh;
-}
-</style>
