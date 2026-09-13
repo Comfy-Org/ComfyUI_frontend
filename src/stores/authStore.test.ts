@@ -83,7 +83,8 @@ const mockFetchBalanceResponse = {
 
 const mockAddCreditsResponse = {
   ok: true,
-  statusText: 'OK'
+  statusText: 'OK',
+  json: () => Promise.resolve({ checkout_url: 'https://stripe.test/checkout' })
 }
 
 const mockAccessBillingPortalResponse = {
@@ -92,6 +93,15 @@ const mockAccessBillingPortalResponse = {
   json: () =>
     Promise.resolve({ billing_portal_url: 'https://billing.stripe.com/test' })
 }
+
+// A failed API response shaped so parseErrorResponse can extract `message`
+// from the JSON body via `.text()` (the real Response contract).
+const mockErrorResponse = (status: number, message: string) => ({
+  ok: false,
+  status,
+  statusText: 'Error',
+  text: () => Promise.resolve(JSON.stringify({ message }))
+})
 
 vi.mock(import('vuefire'), () => ({
   useFirebaseAuth: vi.fn()
@@ -315,6 +325,35 @@ describe('useAuthStore', () => {
 
       expect(await pending).toBeNull()
       expect(store.balance).toBeNull()
+    })
+  })
+
+  describe('fetchBalance', () => {
+    it('returns null when the customer record is not found (404)', async () => {
+      mockFetch.mockImplementation((url: string) =>
+        url.endsWith('/customers/balance')
+          ? Promise.resolve({ ok: false, status: 404, statusText: 'Not Found' })
+          : Promise.reject(new Error('Unexpected API call'))
+      )
+
+      const result = await store.fetchBalance()
+
+      expect(result).toBeNull()
+    })
+
+    it('throws with the parsed error message on a non-404 failure', async () => {
+      mockFetch.mockImplementation((url: string) =>
+        url.endsWith('/customers/balance')
+          ? Promise.resolve(mockErrorResponse(500, 'Balance service down'))
+          : Promise.reject(new Error('Unexpected API call'))
+      )
+
+      await expect(store.fetchBalance()).rejects.toMatchObject({
+        name: 'AuthStoreError',
+        message: i18n.global.t('toastMessages.failedToFetchBalance', {
+          error: 'Balance service down'
+        })
+      })
     })
   })
 
@@ -965,6 +1004,20 @@ describe('useAuthStore', () => {
       // Verify the loading state is reset
       expect(store.loading).toBe(false)
     })
+
+    it('throws instead of creating a customer when the ID token is unavailable right after sign-in', async () => {
+      const mockUserCredential = { user: mockUser }
+      vi.mocked(firebaseAuth.signInWithEmailAndPassword).mockResolvedValue(
+        mockUserCredential as Partial<UserCredential> as UserCredential
+      )
+      mockUser.getIdToken.mockResolvedValueOnce(undefined)
+
+      await expect(store.login('test@example.com', 'password')).rejects.toThrow(
+        i18n.global.t('toastMessages.userNotAuthenticated')
+      )
+
+      expect(customerRequestBody()).toBeUndefined()
+    })
   })
 
   describe('register', () => {
@@ -1164,6 +1217,54 @@ describe('useAuthStore', () => {
     })
   })
 
+  describe('sendPasswordReset', () => {
+    it('delegates to Firebase with the given email', async () => {
+      vi.mocked(firebaseAuth.sendPasswordResetEmail).mockResolvedValue(
+        undefined
+      )
+
+      await store.sendPasswordReset('test@example.com')
+
+      expect(firebaseAuth.sendPasswordResetEmail).toHaveBeenCalledWith(
+        mockAuth,
+        'test@example.com'
+      )
+    })
+
+    it('propagates errors from Firebase', async () => {
+      vi.mocked(firebaseAuth.sendPasswordResetEmail).mockRejectedValue(
+        new Error('user not found')
+      )
+
+      await expect(
+        store.sendPasswordReset('missing@example.com')
+      ).rejects.toThrow('user not found')
+    })
+  })
+
+  describe('updatePassword', () => {
+    it('throws when no user is logged in', async () => {
+      authStateCallback(null)
+
+      await expect(store.updatePassword('new-password')).rejects.toMatchObject({
+        name: 'AuthStoreError',
+        message: i18n.global.t('toastMessages.userNotAuthenticated')
+      })
+      expect(firebaseAuth.updatePassword).not.toHaveBeenCalled()
+    })
+
+    it('updates the password for the current user', async () => {
+      vi.mocked(firebaseAuth.updatePassword).mockResolvedValue(undefined)
+
+      await store.updatePassword('new-password')
+
+      expect(firebaseAuth.updatePassword).toHaveBeenCalledWith(
+        mockUser,
+        'new-password'
+      )
+    })
+  })
+
   describe('getIdToken', () => {
     it('should return the user ID token', async () => {
       // FIX 2: Reset the mock and set a specific return value
@@ -1204,6 +1305,30 @@ describe('useAuthStore', () => {
       resolveToken('old-user-token')
 
       await expect(tokenPromise).resolves.toBeUndefined()
+    })
+
+    it('discards an error from a token request that rejects after the account changes', async () => {
+      let rejectToken: (error: unknown) => void = () => {}
+      mockUser.getIdToken.mockReturnValueOnce(
+        new Promise((_, reject) => {
+          rejectToken = reject
+        })
+      )
+      const tokenPromise = store.getIdToken()
+      const nextUser = {
+        ...mockUser,
+        uid: 'different-user-id',
+        getIdToken: vi.fn().mockResolvedValue('different-user-token')
+      } as MockUser
+
+      authStateCallback(nextUser)
+      rejectToken(
+        new FirebaseError(firebaseAuth.AuthErrorCodes.USER_DISABLED, 'stale')
+      )
+
+      await expect(tokenPromise).resolves.toBeUndefined()
+      const dialogService = useDialogService()
+      expect(dialogService.showErrorDialog).not.toHaveBeenCalled()
     })
 
     it('should return null for token after login and logout sequence', async () => {
@@ -1769,6 +1894,84 @@ describe('useAuthStore', () => {
 
       await expect(store.accessBillingPortal()).rejects.toThrow()
     })
+
+    it('surfaces the parsed error message on a failed response', async () => {
+      mockFetch.mockImplementationOnce(() =>
+        Promise.resolve(mockErrorResponse(503, 'Billing portal unavailable'))
+      )
+
+      await expect(store.accessBillingPortal()).rejects.toMatchObject({
+        name: 'AuthStoreError',
+        message: i18n.global.t('toastMessages.failedToAccessBillingPortal', {
+          error: 'Billing portal unavailable'
+        })
+      })
+    })
+
+    it('throws when no authentication method is available', async () => {
+      authStateCallback(null)
+      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue(null)
+
+      await expect(store.accessBillingPortal()).rejects.toMatchObject({
+        name: 'AuthStoreError',
+        message: i18n.global.t('toastMessages.userNotAuthenticated')
+      })
+    })
+  })
+
+  describe('addCredits / initiateCreditPurchase', () => {
+    it('throws when no authentication method is available', async () => {
+      authStateCallback(null)
+      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue(null)
+
+      await expect(
+        store.initiateCreditPurchase({
+          amount_micros: 5_000_000,
+          currency: 'usd'
+        })
+      ).rejects.toMatchObject({
+        name: 'AuthStoreError',
+        message: i18n.global.t('toastMessages.userNotAuthenticated')
+      })
+    })
+
+    it('surfaces the parsed error message on a failed response', async () => {
+      mockFetch.mockImplementation((url: string) =>
+        url.endsWith('/customers/credit')
+          ? Promise.resolve(mockErrorResponse(402, 'Card declined'))
+          : Promise.resolve(mockCreateCustomerResponse)
+      )
+
+      await expect(
+        store.initiateCreditPurchase({
+          amount_micros: 5_000_000,
+          currency: 'usd'
+        })
+      ).rejects.toMatchObject({
+        name: 'AuthStoreError',
+        message: i18n.global.t('toastMessages.failedToInitiateCreditPurchase', {
+          error: 'Card declined'
+        }),
+        status: 402
+      })
+    })
+
+    it('skips the customer pre-flight once a customer is known to exist', async () => {
+      await store.createCustomer()
+      mockFetch.mockClear()
+      mockFetch.mockImplementation((url: string) =>
+        url.endsWith('/customers/credit')
+          ? Promise.resolve(mockAddCreditsResponse)
+          : Promise.reject(new Error('Unexpected API call'))
+      )
+
+      await store.initiateCreditPurchase({
+        amount_micros: 5_000_000,
+        currency: 'usd'
+      })
+
+      expect(customerRequestBody()).toBeUndefined()
+    })
   })
 
   describe('getAuthHeaderOrThrow', () => {
@@ -1886,6 +2089,70 @@ describe('useAuthStore', () => {
       const error = await store.createCustomer().catch((e: unknown) => e)
       expect(error).toBeInstanceOf(AuthStoreError)
       expect((error as AuthStoreError).status).toBe(422)
+    })
+
+    it('throws when the response is ok but carries no customer id', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({})
+      })
+
+      await expect(store.createCustomer()).rejects.toMatchObject({
+        name: 'AuthStoreError',
+        message: i18n.global.t('toastMessages.failedToCreateCustomer', {
+          error: 'No customer ID returned'
+        })
+      })
+    })
+
+    it('rejects a customer record created before an A->B Firebase identity switch', async () => {
+      let signalCustomerRequested: () => void = () => {}
+      const customerRequested = new Promise<void>((resolve) => {
+        signalCustomerRequested = resolve
+      })
+      let resolveJson: (value: unknown) => void = () => {}
+      const customerJson = new Promise((resolve) => {
+        resolveJson = resolve
+      })
+      mockFetch.mockImplementation((url: string) => {
+        if (url.endsWith('/customers')) {
+          signalCustomerRequested()
+          return Promise.resolve({
+            ok: true,
+            statusText: 'OK',
+            json: () => customerJson
+          })
+        }
+        return Promise.reject(new Error('Unexpected API call'))
+      })
+
+      // The auth header is resolved for account A; only the response body
+      // (fetched below) races the A->B switch.
+      const createPromise = store.createCustomer()
+      await customerRequested
+      authStateCallback({ ...mockUser, uid: 'different-user-id' })
+      resolveJson({ id: 'test-customer-id' })
+
+      await expect(createPromise).rejects.toMatchObject({
+        name: 'AuthStoreError',
+        message: i18n.global.t('toastMessages.userNotAuthenticated')
+      })
+
+      // A subsequent credit pre-flight must still provision a customer for
+      // this (different) identity rather than trusting the stale flag.
+      mockFetch.mockClear()
+      mockFetch.mockImplementation((url: string) =>
+        url.endsWith('/customers/credit')
+          ? Promise.resolve(mockAddCreditsResponse)
+          : Promise.resolve(mockCreateCustomerResponse)
+      )
+
+      await store.initiateCreditPurchase({
+        amount_micros: 5_000_000,
+        currency: 'usd'
+      })
+
+      expect(customerRequestBody()).toEqual({ signup_source: 'cloud' })
     })
   })
 
@@ -2050,6 +2317,38 @@ describe('useAuthStore', () => {
 
       const response = await store.fetchWithCustomerRecovery(
         'https://api.test/foo/customers/bar'
+      )
+
+      expect(response.status).toBe(409)
+      expect(countCustomerPosts()).toBe(0)
+    })
+
+    it('does not treat an unparsable URL as a customer endpoint', async () => {
+      mockFetch.mockImplementation(() =>
+        Promise.resolve(makeConflictResponse())
+      )
+
+      const response = await store.fetchWithCustomerRecovery('http://')
+
+      expect(response.status).toBe(409)
+      expect(countCustomerPosts()).toBe(0)
+    })
+
+    it('passes through a 409 whose body cannot be parsed without provisioning', async () => {
+      mockFetch.mockImplementation(() =>
+        Promise.resolve({
+          ok: false,
+          status: 409,
+          statusText: 'Conflict',
+          json: () => Promise.reject(new Error('invalid json')),
+          clone: () => ({
+            json: () => Promise.reject(new Error('invalid json'))
+          })
+        })
+      )
+
+      const response = await store.fetchWithCustomerRecovery(
+        'https://api.test/customers/balance'
       )
 
       expect(response.status).toBe(409)
