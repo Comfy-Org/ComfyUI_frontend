@@ -1,16 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useNewMenuItemIndicator } from '@/composables/useNewMenuItemIndicator'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { WorkflowMenuItem } from '@/types/workflowMenuItem'
-
-const mockSettingStore = vi.hoisted(() => ({
-  get: vi.fn((): string[] => []),
-  set: vi.fn()
-}))
-
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: vi.fn(() => mockSettingStore)
-}))
 
 function createItems(...ids: string[]): WorkflowMenuItem[] {
   return ids.map((id) => ({
@@ -24,8 +16,12 @@ function createItems(...ids: string[]): WorkflowMenuItem[] {
 }
 
 describe('useNewMenuItemIndicator', () => {
+  let settingStore: ReturnType<typeof useSettingStore>
+
   beforeEach(() => {
-    mockSettingStore.get.mockReturnValue([])
+    settingStore = useSettingStore()
+    settingStore.settingValues['Comfy.WorkflowActions.SeenItems'] = []
+    vi.mocked(settingStore.set).mockResolvedValue()
   })
 
   it('reports unseen items when no items have been seen', () => {
@@ -36,7 +32,9 @@ describe('useNewMenuItemIndicator', () => {
   })
 
   it('reports no unseen items when all new items are already seen', () => {
-    mockSettingStore.get.mockReturnValue(['feature-a'])
+    settingStore.settingValues['Comfy.WorkflowActions.SeenItems'] = [
+      'feature-a'
+    ]
     const items = createItems('feature-a')
     const { hasUnseenItems } = useNewMenuItemIndicator(() => items)
 
@@ -44,7 +42,9 @@ describe('useNewMenuItemIndicator', () => {
   })
 
   it('reports unseen when some new items are not yet seen', () => {
-    mockSettingStore.get.mockReturnValue(['feature-a'])
+    settingStore.settingValues['Comfy.WorkflowActions.SeenItems'] = [
+      'feature-a'
+    ]
     const items = createItems('feature-a', 'feature-b')
     const { hasUnseenItems } = useNewMenuItemIndicator(() => items)
 
@@ -76,20 +76,23 @@ describe('useNewMenuItemIndicator', () => {
 
     markAsSeen()
 
-    expect(mockSettingStore.set).toHaveBeenCalledWith(
+    expect(settingStore.set).toHaveBeenCalledWith(
       'Comfy.WorkflowActions.SeenItems',
       ['feature-a', 'feature-b']
     )
   })
 
   it('markAsSeen replaces stale entries with current new items', () => {
-    mockSettingStore.get.mockReturnValue(['old-feature', 'feature-a'])
+    settingStore.settingValues['Comfy.WorkflowActions.SeenItems'] = [
+      'old-feature',
+      'feature-a'
+    ]
     const items = createItems('feature-a')
     const { markAsSeen } = useNewMenuItemIndicator(() => items)
 
     markAsSeen()
 
-    expect(mockSettingStore.set).toHaveBeenCalledWith(
+    expect(settingStore.set).toHaveBeenCalledWith(
       'Comfy.WorkflowActions.SeenItems',
       ['feature-a']
     )
@@ -129,14 +132,16 @@ describe('useNewMenuItemIndicator', () => {
 
     markAsSeen()
 
-    expect(mockSettingStore.set).toHaveBeenCalledWith(
+    expect(settingStore.set).toHaveBeenCalledWith(
       'Comfy.WorkflowActions.SeenItems',
       ['feature-a']
     )
   })
 
   it('markAsSeen retains previously-seen hidden items', () => {
-    mockSettingStore.get.mockReturnValue(['hidden-feature'])
+    settingStore.settingValues['Comfy.WorkflowActions.SeenItems'] = [
+      'hidden-feature'
+    ]
     const items: WorkflowMenuItem[] = [
       ...createItems('feature-a'),
       {
@@ -153,20 +158,23 @@ describe('useNewMenuItemIndicator', () => {
 
     markAsSeen()
 
-    expect(mockSettingStore.set).toHaveBeenCalledWith(
+    expect(settingStore.set).toHaveBeenCalledWith(
       'Comfy.WorkflowActions.SeenItems',
       ['feature-a', 'hidden-feature']
     )
   })
 
   it('markAsSeen skips write when stored list already matches', () => {
-    mockSettingStore.get.mockReturnValue(['feature-a', 'feature-b'])
+    settingStore.settingValues['Comfy.WorkflowActions.SeenItems'] = [
+      'feature-a',
+      'feature-b'
+    ]
     const items = createItems('feature-a', 'feature-b')
     const { markAsSeen } = useNewMenuItemIndicator(() => items)
 
     markAsSeen()
 
-    expect(mockSettingStore.set).not.toHaveBeenCalled()
+    expect(settingStore.set).not.toHaveBeenCalled()
   })
 
   it('markAsSeen does nothing when there are no new items', () => {
@@ -177,6 +185,6 @@ describe('useNewMenuItemIndicator', () => {
 
     markAsSeen()
 
-    expect(mockSettingStore.set).not.toHaveBeenCalled()
+    expect(settingStore.set).not.toHaveBeenCalled()
   })
 })

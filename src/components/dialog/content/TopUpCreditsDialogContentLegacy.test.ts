@@ -11,7 +11,6 @@ import TopUpCreditsDialogContentLegacy from './TopUpCreditsDialogContentLegacy.v
 const mockPurchaseCreditsDirect = vi.fn()
 const mockShowSettings = vi.fn()
 const mockToastAdd = vi.fn()
-
 const mockTrackTopUpPurchase = vi.fn()
 const mockTrackBillingEvent = vi.fn()
 const mockIsSubscriptionEnabled = vi.fn(() => true)

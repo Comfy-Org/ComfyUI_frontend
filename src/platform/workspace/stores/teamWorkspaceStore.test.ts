@@ -144,11 +144,13 @@ function expectCleanupBeforeContextAndReload(): void {
 }
 
 beforeEach(() => {
-  Object.assign(useWorkspaceAuthStore(), { currentWorkspace: null })
-  Object.assign(useWorkspaceAuthStore(), { workspaceToken: null })
-  Object.assign(useWorkspaceAuthStore(), { isLoading: false })
-  Object.assign(useWorkspaceAuthStore(), { error: null })
-  Object.assign(useWorkspaceAuthStore(), { isAuthenticated: false })
+  Object.assign(useWorkspaceAuthStore(), {
+    currentWorkspace: null,
+    workspaceToken: null,
+    isLoading: false,
+    error: null,
+    isAuthenticated: false
+  })
   vi.mocked(useWorkspaceAuthStore().init).mockImplementation(() => {})
   vi.mocked(useWorkspaceAuthStore().destroy).mockImplementation(() => {})
   vi.mocked(useWorkspaceAuthStore().initializeFromSession).mockReturnValue(
@@ -174,12 +176,6 @@ describe('useTeamWorkspaceStore', () => {
     mockCurrentUser.userEmail.value = null
     mockCurrentUser.isApiKeyLogin.value = false
 
-    // Reset workspaceAuthStore mock state
-    Object.assign(useWorkspaceAuthStore(), { currentWorkspace: null })
-    Object.assign(useWorkspaceAuthStore(), { workspaceToken: null })
-    Object.assign(useWorkspaceAuthStore(), { isLoading: false })
-    Object.assign(useWorkspaceAuthStore(), { error: null })
-    Object.assign(useWorkspaceAuthStore(), { isAuthenticated: false })
     vi.mocked(useWorkspaceAuthStore().initializeFromSession).mockReturnValue(
       false
     )

@@ -48,6 +48,12 @@ vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   })
 }))
 
+const mockReportError = vi.hoisted(() => vi.fn())
+
+vi.mock<unknown>(import('@/platform/telemetry/reportError'), () => ({
+  reportError: mockReportError
+}))
+
 vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
   workspaceApi: {
     getBillingOpStatus: vi.fn()
@@ -123,6 +129,55 @@ describe('billingOperationStore', () => {
       expect(operation?.status).toBe('pending')
       expect(operation?.type).toBe('subscription')
       expect(store.hasPendingOperations).toBe(true)
+    })
+
+    // This API-to-store hop is what activates the recovery prompt. The checkout
+    // tests take an operation that already has a phase, so only these fail if
+    // the propagation is dropped.
+    async function pollPhase(
+      served?: 'awaiting_payment_method' | 'awaiting_invoice_payment'
+    ) {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-phase',
+        status: 'pending',
+        started_at: new Date().toISOString(),
+        ...(served ? { phase: served } : {})
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-phase', 'subscription')
+      await vi.waitFor(() =>
+        expect(workspaceApi.getBillingOpStatus).toHaveBeenCalledWith('op-phase')
+      )
+      return store
+    }
+
+    it('carries a parked-on-checkout phase onto the operation', async () => {
+      const store = await pollPhase('awaiting_payment_method')
+
+      await vi.waitFor(() =>
+        expect(store.getOperation('op-phase')?.phase).toBe(
+          'awaiting_payment_method'
+        )
+      )
+    })
+
+    it('carries a parked-on-invoice phase onto the operation', async () => {
+      const store = await pollPhase('awaiting_invoice_payment')
+
+      await vi.waitFor(() =>
+        expect(store.getOperation('op-phase')?.phase).toBe(
+          'awaiting_invoice_payment'
+        )
+      )
+    })
+
+    it('leaves the phase null when the server reports none', async () => {
+      const store = await pollPhase()
+
+      await vi.waitFor(() =>
+        expect(store.getOperation('op-phase')?.phase).toBeNull()
+      )
     })
 
     it('exposes a validated recovered action before the first poll completes', () => {
@@ -705,6 +760,70 @@ describe('billingOperationStore', () => {
       await vi.advanceTimersByTimeAsync(0)
 
       expect(useToastStore().remove).toHaveBeenCalledWith(receivedToast)
+    })
+
+    it('resolves the terminal promise even if a success side effect throws', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+      const error = new Error('toast rendering failed')
+      vi.mocked(useToastStore().add).mockImplementation((toast) => {
+        if (toast.severity === 'success') throw error
+      })
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-1', 'topup')
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      await expect(terminal).resolves.toMatchObject({ status: 'succeeded' })
+      expect(mockReportError).toHaveBeenCalledWith(error, {
+        errorType: 'failure_handling_billing_operation_success',
+        context: { billing_op_id: 'op-1' }
+      })
+    })
+
+    it('resolves the terminal promise even if cleanup throws', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+      const error = new Error('toast cleanup failed')
+      vi.mocked(useToastStore().remove).mockImplementationOnce(() => {
+        throw error
+      })
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-1', 'subscription')
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      await expect(terminal).resolves.toMatchObject({ status: 'succeeded' })
+      expect(mockReportError).toHaveBeenCalledWith(error, {
+        errorType: 'failure_handling_billing_operation_success',
+        context: { billing_op_id: 'op-1' }
+      })
+    })
+
+    it('resolves the terminal promise even if reconciliation throws synchronously', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+      mockReconcileSubscriptionSuccess.mockImplementationOnce(() => {
+        throw new Error('reconcile failed')
+      })
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-1', 'subscription')
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      await expect(terminal).resolves.toMatchObject({ status: 'succeeded' })
     })
   })
 

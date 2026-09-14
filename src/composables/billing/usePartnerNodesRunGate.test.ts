@@ -4,7 +4,9 @@ import type { EffectScope, Ref } from 'vue'
 
 import * as currentUserModule from '@/composables/auth/useCurrentUser'
 import * as featureFlagsModule from '@/composables/useFeatureFlags'
-import * as authStoreModule from '@/stores/authStore'
+import { useAuthStore } from '@/stores/authStore'
+
+vi.mock(import('firebase/auth'))
 
 import {
   partnerRunGateBlocksAutoQueue,
@@ -43,21 +45,6 @@ vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), async () => {
   }
 })
 
-vi.mock<unknown>(import('@/stores/authStore'), async () => {
-  const { ref } = await import('vue')
-  const initialized = ref(true)
-  return {
-    useAuthStore: () => ({
-      get isInitialized() {
-        return initialized.value
-      }
-    }),
-    __setAuthResolved: (value: boolean) => {
-      initialized.value = value
-    }
-  }
-})
-
 vi.mock<unknown>(import('@/composables/useFeatureFlags'), async () => {
   const { reactive } = await import('vue')
   const flags = reactive({ partnerRunGateEnabled: true })
@@ -77,9 +64,6 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 const { __setLoggedIn } = currentUserModule as typeof currentUserModule & {
   __setLoggedIn: (value: boolean) => void
 }
-const { __setAuthResolved } = authStoreModule as typeof authStoreModule & {
-  __setAuthResolved: (value: boolean) => void
-}
 const { __setPartnerRunGateEnabled } =
   featureFlagsModule as typeof featureFlagsModule & {
     __setPartnerRunGateEnabled: (value: boolean) => void
@@ -97,7 +81,7 @@ describe('usePartnerNodesRunGate', () => {
     state.hasPartnerNodes = ref(false)
     state.partnerNodes = ref([])
     __setLoggedIn(false)
-    __setAuthResolved(true)
+    useAuthStore().isInitialized = true
     __setPartnerRunGateEnabled(true)
   })
 
@@ -180,14 +164,14 @@ describe('usePartnerNodesRunGate', () => {
 
   it('does not gate while auth is still resolving, then follows the outcome', async () => {
     state.hasPartnerNodes.value = true
-    __setAuthResolved(false)
+    useAuthStore().isInitialized = false
     const { gate } = setup()
     expect(gate.value, 'unresolved auth must never read as signed-out').toBe(
       'none'
     )
 
     __setLoggedIn(true)
-    __setAuthResolved(true)
+    useAuthStore().isInitialized = true
     await nextTick()
     expect(gate.value, 'a signed-in resolution keeps the gate open').toBe(
       'none'
@@ -214,7 +198,7 @@ describe('partnerRunGateBlocksAutoQueue', () => {
   beforeEach(() => {
     state.partnerNodes = ref([])
     __setLoggedIn(false)
-    __setAuthResolved(true)
+    useAuthStore().isInitialized = true
     __setPartnerRunGateEnabled(true)
   })
 
@@ -232,7 +216,7 @@ describe('partnerRunGateBlocksAutoQueue', () => {
 
   it('never blocks while auth is still resolving', () => {
     state.partnerNodes.value = [{ nodeName: 'Kling', displayName: 'Kling' }]
-    __setAuthResolved(false)
+    useAuthStore().isInitialized = false
     expect(partnerRunGateBlocksAutoQueue()).toBe(false)
   })
 

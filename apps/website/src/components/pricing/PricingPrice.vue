@@ -42,11 +42,11 @@ const billingNote = computed(() => {
         <div class="flex items-baseline gap-2">
           <span
             v-if="originalPrice"
-            class="font-formula text-primary-warm-gray text-sm font-light line-through"
+            class="font-formula text-sm font-light text-primary-warm-gray line-through"
           >
             {{ originalPrice }}
           </span>
-          <span class="text-primary-warm-white text-sm">
+          <span class="text-sm text-primary-warm-white">
             {{ period }}
           </span>
         </div>
@@ -59,7 +59,7 @@ const billingNote = computed(() => {
         </span>
       </div>
     </div>
-    <p v-if="billingNote" class="text-primary-warm-gray mt-2 text-sm">
+    <p v-if="billingNote" class="mt-2 text-sm text-primary-warm-gray">
       {{ billingNote }}
     </p>
   </div>

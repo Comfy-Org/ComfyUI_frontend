@@ -21,6 +21,7 @@ export function billingOperation(
     authenticationRequiredSeen: false,
     workspaceId: 'workspace-1',
     autoHandleRequiresAction: false,
+    phase: null,
     dismissed: false,
     ...overrides
   }

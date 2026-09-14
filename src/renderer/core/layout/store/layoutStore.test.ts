@@ -1,6 +1,4 @@
 import { toGroupId } from '@/types/groupId'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
@@ -26,10 +24,6 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 }))
 
 const GRAPH = createUuidv4()
-
-beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
-})
 
 describe('layoutStore CRDT operations', () => {
   beforeEach(() => {

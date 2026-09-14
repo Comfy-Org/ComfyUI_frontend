@@ -3,12 +3,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ResultItem } from '@/schemas/apiSchema'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useAssetsStore } from '@/stores/assetsStore'
+import { useNodeImageUpload } from './useNodeImageUpload'
+import type { Mock } from 'vitest'
 
-const { mockFetchApi, mockAddAlert, mockInvalidateInputs } = vi.hoisted(() => ({
-  mockFetchApi: vi.fn(),
-  mockAddAlert: vi.fn(),
-  mockInvalidateInputs: vi.fn()
-}))
+const mockFetchApi = vi.hoisted(() => vi.fn())
+let mockInvalidateInputs: Mock<
+  ReturnType<typeof useAssetsStore>['inputAssets']['invalidate']
+>
 
 let capturedDragOnDrop: (files: File[]) => Promise<string[]>
 
@@ -33,18 +36,13 @@ vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
-vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
-  useToastStore: () => ({ addAlert: mockAddAlert })
-}))
-
 vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: { fetchApi: mockFetchApi }
-}))
-
-vi.mock<unknown>(import('@/stores/assetsStore'), () => ({
-  useAssetsStore: () => ({
-    inputAssets: { invalidate: mockInvalidateInputs }
-  })
+  api: {
+    fetchApi: mockFetchApi,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    getServerFeature: vi.fn()
+  }
 }))
 
 function createMockNode(): LGraphNode {
@@ -80,14 +78,15 @@ describe('useNodeImageUpload', () => {
   let onUploadStart: (files: File[]) => void
   let onUploadError: () => void
 
-  beforeEach(async () => {
-    vi.resetModules()
+  beforeEach(() => {
+    mockInvalidateInputs = vi
+      .spyOn(useAssetsStore().inputAssets, 'invalidate')
+      .mockResolvedValue(undefined)
     node = createMockNode()
     onUploadComplete = vi.fn()
     onUploadStart = vi.fn()
     onUploadError = vi.fn()
 
-    const { useNodeImageUpload } = await import('./useNodeImageUpload')
     useNodeImageUpload(node, {
       onUploadComplete,
       onUploadStart,
@@ -188,7 +187,9 @@ describe('useNodeImageUpload', () => {
     const second = await capturedDragOnDrop([createFile('b.png')])
 
     expect(second).toEqual([])
-    expect(mockAddAlert).toHaveBeenCalledWith('g.uploadAlreadyInProgress')
+    expect(useToastStore().addAlert).toHaveBeenCalledWith(
+      'g.uploadAlreadyInProgress'
+    )
 
     await first
   })

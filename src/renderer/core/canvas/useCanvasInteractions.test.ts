@@ -6,22 +6,6 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { app } from '@/scripts/app'
 
-// Mock stores
-vi.mock<unknown>(import('@/renderer/core/canvas/canvasStore'), () => {
-  const getCanvas = vi.fn()
-  const setCursorStyle = vi.fn()
-  return {
-    useCanvasStore: vi.fn(() => ({
-      getCanvas,
-      setCursorStyle,
-      isReadOnly: false
-    }))
-  }
-})
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => {
-  const getFn = vi.fn()
-  return { useSettingStore: vi.fn(() => ({ get: getFn })) }
-})
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     canvas: {

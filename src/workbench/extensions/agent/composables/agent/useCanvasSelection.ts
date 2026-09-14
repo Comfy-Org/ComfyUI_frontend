@@ -14,6 +14,8 @@ export function selectedNodeKey(node: SelectedNode): string {
 }
 
 export interface UseCanvasSelectionOptions {
+  staged?: Ref<SelectedNode[]>
+  retainWhenNotLive?: boolean
   selection: MaybeRefOrGetter<SelectedNode[]>
   isLive: MaybeRefOrGetter<boolean>
   enabled?: MaybeRefOrGetter<boolean>
@@ -28,7 +30,7 @@ function signature(scope: string | null, nodes: SelectedNode[]): string {
 }
 
 export function useCanvasSelection(options: UseCanvasSelectionOptions) {
-  const staged = ref<SelectedNode[]>([])
+  const staged = options.staged ?? ref<SelectedNode[]>([])
   const consumedSig = ref<string | null>(null)
   const stagedSig = ref<string | null>(null)
   const dismissedSig = options.dismissedSignature ?? ref<string | null>(null)
@@ -61,6 +63,7 @@ export function useCanvasSelection(options: UseCanvasSelectionOptions) {
         ([isLive, isTracking, isPaused, scope, nodes]) => {
           if (isPaused) return
           if (!isLive) {
+            if (options.retainWhenNotLive) return
             staged.value = []
             consumedSig.value = null
             stagedSig.value = null

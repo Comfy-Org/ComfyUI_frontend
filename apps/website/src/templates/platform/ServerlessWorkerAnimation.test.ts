@@ -17,13 +17,11 @@ describe('ServerlessWorkerAnimation', () => {
   })
 
   it('renders the 12x5 activity grid', () => {
-    const { container } = render(ServerlessWorkerAnimation, {
+    render(ServerlessWorkerAnimation, {
       props: { locale: 'en' }
     })
 
-    const grid = container.querySelector('.grid-cols-12')
-    expect(grid).toBeTruthy()
-    expect(grid?.children).toHaveLength(12 * 5)
+    expect(screen.getAllByTestId('activity-cell')).toHaveLength(12 * 5)
   })
 
   it('labels the three workers', () => {

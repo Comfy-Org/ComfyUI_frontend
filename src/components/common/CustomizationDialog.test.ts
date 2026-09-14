@@ -1,18 +1,9 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
-
 import CustomizationDialog from './CustomizationDialog.vue'
-
-beforeEach(() => {
-  Object.assign(useNodeBookmarkStore(), {
-    defaultBookmarkIcon: DEFAULT_ICON,
-    defaultBookmarkColor: DEFAULT_COLOR
-  })
-})
 
 const DEFAULT_ICON = 'pi-bookmark-fill'
 const DEFAULT_COLOR = '#a1a1aa'

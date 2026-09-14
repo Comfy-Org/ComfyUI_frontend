@@ -74,6 +74,7 @@ const i18n = createI18n({
   locale: 'en',
   messages: {
     en: {
+      g: { play: 'Play' },
       load3d: { fitToViewer: 'Fit to viewer' }
     }
   }
@@ -116,10 +117,6 @@ function renderLoad3D(options: RenderOptions = {}) {
           Load3DScene: {
             name: 'Load3DScene',
             template: '<div data-testid="load3d-scene" />'
-          },
-          AnimationControls: {
-            name: 'AnimationControls',
-            template: '<div data-testid="animation-controls" />'
           },
           RecordMenuControl: {
             name: 'RecordMenuControl',
@@ -238,18 +235,20 @@ describe('Load3D', () => {
   })
 
   describe('animation controls', () => {
-    it('renders AnimationControls when animations are present', () => {
+    it('renders the animation strip when animations are present', () => {
       renderLoad3D({
         stateOverrides: {
           animations: ref([{ name: 'idle', index: 0 }])
         }
       })
-      expect(screen.getByTestId('animation-controls')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Play' })).toBeInTheDocument()
     })
 
-    it('hides AnimationControls when the animation list is empty', () => {
+    it('hides the animation strip when the animation list is empty', () => {
       renderLoad3D()
-      expect(screen.queryByTestId('animation-controls')).not.toBeInTheDocument()
+      expect(
+        screen.queryByTestId('animation-menu-strip')
+      ).not.toBeInTheDocument()
     })
   })
 })
