@@ -36,7 +36,7 @@ describe('Agent target tab lifetime', () => {
     const { workflows, panel, target, other } = setup()
     vi.spyOn(target, 'rename').mockImplementation(async (path) => {
       target.path = path
-      return target
+      return true
     })
     await workflows.renameWorkflow(target, 'workflows/renamed.json')
     await workflows.closeWorkflow(other)

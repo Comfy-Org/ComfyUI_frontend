@@ -744,11 +744,26 @@ export const useAssetsStore = defineStore('assets', () => {
       const originalMetadata = asset.user_metadata
       updateAssetInCache(asset.id, { user_metadata: userMetadata }, cacheKey)
 
+      // TODO: Reconcile unknown outcomes with the server instead of treating this rollback as authoritative.
       try {
-        const updatedAsset = await assetService.updateAsset(asset.id, {
+        const result = await assetService.updateAsset(asset.id, {
           user_metadata: userMetadata
         })
-        updateAssetInCache(asset.id, updatedAsset, cacheKey)
+        if (result.kind === 'updated') {
+          updateAssetInCache(asset.id, result.asset, cacheKey)
+        } else if (result.serverState === 'unchanged') {
+          updateAssetInCache(
+            asset.id,
+            { user_metadata: originalMetadata },
+            cacheKey
+          )
+        } else {
+          updateAssetInCache(
+            asset.id,
+            { user_metadata: originalMetadata },
+            cacheKey
+          )
+        }
       } catch (error) {
         console.error('Failed to update asset metadata:', error)
         updateAssetInCache(
