@@ -256,10 +256,10 @@ export class ChangeTracker {
   redoQueue: ComfyWorkflowJSON[] = []
   /**
    * Nesting counter for compound operations. While greater than zero,
-   * {@link checkState} is suppressed. Incremented by {@link beforeChange},
-   * decremented by {@link afterChange}. When it returns to zero,
-   * `checkState()` runs and captures a single undo entry for all mutations
-   * since the first `beforeChange`.
+   * {@link captureCanvasState} is suppressed. Incremented by
+   * {@link beforeChange}, decremented by {@link afterChange}. When it
+   * returns to zero, `captureCanvasState()` runs and captures a single
+   * undo entry for all mutations since the first `beforeChange`.
    */
   changeCount: number = 0
   /**
