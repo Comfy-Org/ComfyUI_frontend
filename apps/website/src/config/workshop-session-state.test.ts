@@ -430,14 +430,22 @@ describe('useWorkshopSession', () => {
       'workshop:workspace',
       JSON.stringify({ uid: 'user-1', workspaceId: 'team-9' })
     )
+    let signalRemintStarted!: () => void
+    const remintStarted = new Promise<void>((resolve) => {
+      signalRemintStarted = resolve
+    })
     let releaseRemint!: (value: unknown) => void
     h.remint.mockImplementation(
-      () => new Promise((resolve) => (releaseRemint = resolve))
+      () =>
+        new Promise((resolve) => {
+          signalRemintStarted()
+          releaseRemint = resolve
+        })
     )
     const s = await importFresh()
 
     h.publish(authenticatedSnapshot())
-    await vi.waitFor(() => expect(h.remint).toHaveBeenCalledOnce())
+    await remintStarted
 
     h.flag!.value = false
     await vi.waitFor(() => expect(s.settled.value).toBe(false))
