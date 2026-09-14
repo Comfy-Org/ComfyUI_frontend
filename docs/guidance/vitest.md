@@ -30,20 +30,6 @@ ESLint rule enforces the Testing Library query rule. Do not disable it.
 - Module-scope `vi.fn()` declarations may provide reset-persistent defaults by
   passing the implementation directly to `vi.fn(implementation)`.
 
-### Audit legacy mock factories
-
-Run `pnpm exec tsx scripts/auditMockFactories.ts` from the repository root to
-list `vi.mock<unknown>` and `vi.doMock<unknown>` calls in tracked TypeScript
-files under `src`. The JSON output includes the module and source lines,
-including multiline calls, and excludes comments and string contents.
-
-First remove `<unknown>` and run `pnpm typecheck`. If a literal export widens
-to `string`, annotate the factory's return type as `Partial<typeof Module>`
-using `import type * as Module from '…'`. This context checks literal exports
-without an inline `import()` type or a cast. Leave missing instance members
-and incompatible signatures for a typed fixture repair rather than replacing
-the escape with a cast or an untyped module path.
-
 ## No Real Network
 
 `vitest.setup.ts` blocks every `http(s)` `fetch`, and happy-dom is configured not
