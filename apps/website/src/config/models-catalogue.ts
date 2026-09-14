@@ -451,6 +451,14 @@ export interface FacetOption {
   readonly count: number
 }
 
+// Router tags name the maker, the version and the sales pitch beside the task:
+// `kling`, `v4.1` and `premium` sit in the same list as `text-to-image`. A tag
+// shaped input-to-output is the only one that names what a visitor came to
+// narrow by, so the catalogue offers those and leaves the rest to search.
+export function isCategoryTag(tag: string): boolean {
+  return tag.includes('-to-')
+}
+
 export function countByFacet(
   list: readonly WorkshopModel[],
   facet: 'provider' | 'capabilities'

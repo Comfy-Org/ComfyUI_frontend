@@ -317,7 +317,6 @@ const filteredTemplates = computed(() => {
           <template #search>
             <WorkshopSearchField
               v-model="store.searchQuery.value"
-              v-model:providers="providers"
               v-model:capabilities="capabilities"
               :models="workshopModels"
               :locale

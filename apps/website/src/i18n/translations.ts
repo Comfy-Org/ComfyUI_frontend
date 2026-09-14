@@ -9358,6 +9358,10 @@ Enterprise`
     en: '{n} models',
     'zh-CN': '{n} 个模型'
   },
+  'workshop.sections.seeAll': {
+    en: 'See all {n}',
+    'zh-CN': '查看全部 {n}'
+  },
   'workshop.useCase.label': {
     en: 'Browse by use case',
     'zh-CN': '按用途浏览'
@@ -9406,7 +9410,7 @@ Enterprise`
   'workshop.filter.noMatches': { en: 'No matches', 'zh-CN': '没有匹配项' },
   'workshop.filter.clearAll': { en: 'Clear filters', 'zh-CN': '清除筛选' },
   'workshop.filter.applied': { en: '{n} selected', 'zh-CN': '已选 {n} 项' },
-  'workshop.filter.providerGroup': { en: 'Models', 'zh-CN': '模型' },
+  'workshop.filter.categoryGroup': { en: 'Category', 'zh-CN': '分类' },
   'workshop.launch.label': {
     en: 'Use cases',
     'zh-CN': '用例'
@@ -9670,21 +9674,25 @@ Enterprise`
   'workshop.field.format': { en: 'Format', 'zh-CN': '格式' },
   'workshop.field.maxTokens': { en: 'Max tokens', 'zh-CN': '最大 token 数' },
   'workshop.field.upload': { en: 'Upload', 'zh-CN': '上传' },
-  'workshop.field.chooseOrDropImages': {
-    en: 'Choose images or drop them here',
-    'zh-CN': '选择图片或拖放到此处'
+  'workshop.field.selectOrDropImage': {
+    en: 'Select or drop an image',
+    'zh-CN': '选择或拖入一张图片'
   },
-  'workshop.field.replaceOrDropImage': {
-    en: 'Choose a replacement or drop it here',
-    'zh-CN': '选择替换图片或拖放到此处'
+  'workshop.field.selectOrDropImages': {
+    en: 'Select or drop up to {count} images',
+    'zh-CN': '选择或拖入最多 {count} 张图片'
   },
-  'workshop.field.chooseOrDropFiles': {
-    en: 'Choose files or drop them here',
-    'zh-CN': '选择文件或拖放到此处'
+  'workshop.field.selectOrDropFile': {
+    en: 'Select or drop a file',
+    'zh-CN': '选择或拖入一个文件'
   },
-  'workshop.field.replaceOrDropFile': {
-    en: 'Choose a replacement or drop it here',
-    'zh-CN': '选择替换文件或拖放到此处'
+  'workshop.field.selectOrDropFiles': {
+    en: 'Select or drop up to {count} files',
+    'zh-CN': '选择或拖入最多 {count} 个文件'
+  },
+  'workshop.field.selectOrDropReplacement': {
+    en: 'Select or drop to replace',
+    'zh-CN': '选择或拖入以替换'
   },
   'workshop.field.file': { en: 'File', 'zh-CN': '文件' },
   'workshop.field.replaceFile': {

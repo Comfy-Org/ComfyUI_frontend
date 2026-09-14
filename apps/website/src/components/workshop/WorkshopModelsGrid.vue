@@ -31,6 +31,7 @@ import {
   countByFacet,
   countByModality,
   filterWorkshopModels,
+  isCategoryTag,
   sortOrdersFor,
   sortWorkshopModels
 } from '../../config/models-catalogue'
@@ -87,16 +88,9 @@ const withinSection = computed(() =>
 )
 
 const capabilityOptions = computed<FacetMenuOption[]>(() =>
-  countByFacet(withinSection.value, 'capabilities').map((option) => ({
-    ...option,
-    label: option.value
-  }))
-)
-const providerOptions = computed<FacetMenuOption[]>(() =>
-  countByFacet(withinSection.value, 'provider').map((option) => ({
-    ...option,
-    label: option.value
-  }))
+  countByFacet(withinSection.value, 'capabilities')
+    .filter((option) => isCategoryTag(option.value))
+    .map((option) => ({ ...option, label: option.value }))
 )
 // What a model puts out stays reachable, one level below the tabs.
 const modalityOptions = computed<FacetMenuOption[]>(() => {
@@ -277,7 +271,6 @@ const menuItemClass =
 
         <WorkshopSearchField
           v-model="query"
-          v-model:providers="providers"
           v-model:capabilities="capabilities"
           :models
           :locale
@@ -293,10 +286,8 @@ const menuItemClass =
         <div class="flex items-center gap-2" data-testid="workshop-filters">
           <WorkshopFilterMenu
             v-model:capabilities="capabilities"
-            v-model:providers="providers"
             v-model:modalities="modalities"
             :capability-options="capabilityOptions"
-            :provider-options="providerOptions"
             :modality-options="modalityOptions"
             :result-count="visible.length"
             :locale

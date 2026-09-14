@@ -19,18 +19,16 @@ export interface FacetMenuOption {
   readonly count: number
 }
 
-type Facet = 'provider' | 'capability' | 'modality' | 'useCase'
+type Facet = 'capability' | 'modality' | 'useCase'
 
 const {
   capabilityOptions,
-  providerOptions,
   modalityOptions,
   useCaseOptions,
   resultCount,
   locale = 'en'
 } = defineProps<{
   capabilityOptions: readonly FacetMenuOption[]
-  providerOptions: readonly FacetMenuOption[]
   modalityOptions: readonly FacetMenuOption[]
   /** Only where the use-case row has no room of its own, on a phone. */
   useCaseOptions?: readonly FacetMenuOption[]
@@ -40,7 +38,6 @@ const {
 }>()
 
 const capabilities = defineModel<string[]>('capabilities', { required: true })
-const providers = defineModel<string[]>('providers', { required: true })
 const modalities = defineModel<string[]>('modalities', { required: true })
 const useCases = defineModel<string[]>('useCases', { default: () => [] })
 
@@ -75,9 +72,7 @@ const selectedFor = (facet: Facet) =>
     ? capabilities
     : facet === 'modality'
       ? modalities
-      : facet === 'useCase'
-        ? useCases
-        : providers
+      : useCases
 
 const groups = computed<FacetSheetGroup[]>(() => [
   ...(useCaseOptions
@@ -91,14 +86,8 @@ const groups = computed<FacetSheetGroup[]>(() => [
       ]
     : []),
   {
-    key: 'provider',
-    label: t('workshop.filter.providerGroup', locale),
-    options: providerOptions,
-    selected: providers.value
-  },
-  {
     key: 'capability',
-    label: t('workshop.filter.capabilityGroup', locale),
+    label: t('workshop.filter.categoryGroup', locale),
     options: capabilityOptions,
     selected: capabilities.value
   },
@@ -123,7 +112,6 @@ function toggle(facet: string, value: string) {
 
 function clearAll() {
   capabilities.value = []
-  providers.value = []
   modalities.value = []
   useCases.value = []
 }

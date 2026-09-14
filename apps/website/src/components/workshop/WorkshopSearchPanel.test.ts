@@ -14,7 +14,7 @@ const models: WorkshopModel[] = [
     routerId: 'b/zeta',
     href: '/models/zeta/',
     workflowCount: 6,
-    capabilities: ['Upscale']
+    capabilities: ['text-to-image', 'kling']
   },
   {
     slug: 'alpha',
@@ -23,19 +23,14 @@ const models: WorkshopModel[] = [
     routerId: 'a/alpha',
     href: '/models/alpha/',
     workflowCount: 1,
-    capabilities: ['Upscale']
+    capabilities: ['text-to-image', 'premium']
   }
 ]
 
 describe('WorkshopSearchPanel', () => {
-  it('searches capabilities consistently and suggests by name without fabricated usage', () => {
+  it('names matching models once a search has been typed', () => {
     render(WorkshopSearchPanel, {
-      props: {
-        models,
-        query: 'upscale',
-        providers: ['Provider A'],
-        capabilities: []
-      }
+      props: { models, query: 'text-to-image', capabilities: [] }
     })
     expect(
       screen.getAllByRole('button', { name: /^(Alpha|Zeta) Provider/ })
@@ -43,26 +38,43 @@ describe('WorkshopSearchPanel', () => {
       screen.getByRole('button', { name: 'Alpha Provider A' }),
       screen.getByRole('button', { name: 'Zeta Provider B' })
     ])
-    expect(screen.getByRole('button', { name: 'Provider B 1' })).toBeTruthy()
     expect(screen.queryByText(/popular|\d+.*runs/i)).toBeNull()
   })
 
+  it('offers categories but no model list before anything is typed', () => {
+    render(WorkshopSearchPanel, {
+      props: { models, query: '  ', capabilities: [] }
+    })
+    expect(screen.queryByTestId('workshop-search-model')).toBeNull()
+    expect(screen.queryByRole('img')).toBeNull()
+    expect(screen.queryByText(/no results/i)).toBeNull()
+    expect(screen.getByRole('button', { name: 'text-to-image 2' })).toBeTruthy()
+  })
+
+  it('withholds the maker and the version from the categories', () => {
+    render(WorkshopSearchPanel, {
+      props: { models, query: '', capabilities: [] }
+    })
+    expect(
+      screen
+        .getAllByTestId('workshop-search-capability')
+        .map((chip) => chip.textContent.trim())
+    ).toEqual(['text-to-image 2'])
+  })
+
   it.for(['{Enter}', ' '])(
-    'activates model and facet buttons with %s',
+    'activates model and category buttons with %s',
     async (key) => {
       const user = userEvent.setup()
       const { emitted } = render(WorkshopSearchPanel, {
-        props: { models, query: '', providers: [], capabilities: [] }
+        props: { models, query: 'a', capabilities: [] }
       })
       screen.getByRole('button', { name: 'Alpha Provider A' }).focus()
       await user.keyboard(key)
       expect(emitted().pick).toEqual([[models[1]]])
-      screen.getByRole('button', { name: 'Provider A 1' }).focus()
+      screen.getByRole('button', { name: 'text-to-image 2' }).focus()
       await user.keyboard(key)
-      expect(emitted().toggleProvider).toEqual([['Provider A']])
-      screen.getByRole('button', { name: 'Upscale 2' }).focus()
-      await user.keyboard(key)
-      expect(emitted().toggleCapability).toEqual([['Upscale']])
+      expect(emitted().toggleCapability).toEqual([['text-to-image']])
     }
   )
 })

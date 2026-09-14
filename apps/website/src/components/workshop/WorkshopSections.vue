@@ -115,7 +115,12 @@ function rememberModel(
             >
               {{ t(labelKey[section.useCase], locale) }}
               <span class="text-sm text-primary-warm-gray tabular-nums">
-                {{ section.total }}
+                {{
+                  t('workshop.sections.seeAll', locale).replace(
+                    '{n}',
+                    `${section.total}`
+                  )
+                }}
               </span>
               <ChevronRight
                 class="size-5 self-center transition-transform group-hover:translate-x-0.5"

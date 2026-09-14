@@ -50,15 +50,14 @@ describe('HubBrowse', () => {
     expect(screen.queryByTestId('workshop-search-panel')).toBeNull()
 
     await user.click(screen.getByTestId('workshop-search'))
-    await user.click(screen.getByTestId('workshop-search-provider-more'))
-    const chip = screen.getByRole('button', { name: /^Kling\s+\d+$/ })
+    const showingAll = screen.getByTestId('hub-showing').textContent
+    const chip = screen.getByRole('button', { name: /^text-to-image\s+\d+$/ })
     await user.click(chip)
 
     expect(chip.getAttribute('aria-pressed')).toBe('true')
     expect(screen.getByTestId('hub-filter-count').textContent.trim()).toBe('1')
-    const cards = screen.getAllByTestId('hub-card')
-    expect(cards.length).toBeGreaterThan(0)
-    expect(cards.length).toBeLessThan(30)
+    expect(screen.getAllByTestId('hub-card').length).toBeGreaterThan(0)
+    expect(screen.getByTestId('hub-showing').textContent).not.toBe(showingAll)
   })
 
   it('filters by a model facet from the Filter popover', async () => {

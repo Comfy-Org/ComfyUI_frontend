@@ -13,9 +13,8 @@ import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import WorkshopSearchPanel from './WorkshopSearchPanel.vue'
 
-// One search for the whole prototype: the same field, the same panel of
-// popular models and the same provider and capability chips, wherever a
-// catalogue is listed.
+// One search for the whole prototype: the same field and the same panel of
+// matches and category chips, wherever a catalogue is listed.
 const {
   models,
   inputId = 'workshop-search',
@@ -32,7 +31,6 @@ const {
 
 const query = defineModel<string>({ required: true })
 const mounted = useMounted()
-const providers = defineModel<string[]>('providers', { required: true })
 const capabilities = defineModel<string[]>('capabilities', { required: true })
 
 const open = ref(false)
@@ -62,7 +60,7 @@ function closeOnLeave(event: FocusEvent) {
 }
 
 // Naming a model is the end of the search, so the panel closes on it. The
-// provider and capability chips do not: they are picked several at a time.
+// category chips do not: they are picked several at a time.
 function pickModel(model: WorkshopModel) {
   query.value = model.name
   open.value = false
@@ -74,14 +72,12 @@ const matches = computed(
   () =>
     filterWorkshopModels(models, {
       query: query.value,
-      providers: providers.value,
       capabilities: capabilities.value
     }).length
 )
 
 function clearSheet() {
   query.value = ''
-  providers.value = []
   capabilities.value = []
 }
 
@@ -164,11 +160,9 @@ const clearButtonClass =
         :id="`${inputId}-panel`"
         :models
         :query
-        :providers
         :capabilities
         :locale
         @pick="pickModel"
-        @toggle-provider="(value) => (providers = toggled(providers, value))"
         @toggle-capability="
           (value) => (capabilities = toggled(capabilities, value))
         "
@@ -226,7 +220,6 @@ const clearButtonClass =
           <WorkshopSearchPanel
             :models
             :query
-            :providers
             :capabilities
             :locale
             variant="sheet"
@@ -235,9 +228,6 @@ const clearButtonClass =
                 query = model.name
                 sheetOpen = false
               }
-            "
-            @toggle-provider="
-              (value) => (providers = toggled(providers, value))
             "
             @toggle-capability="
               (value) => (capabilities = toggled(capabilities, value))
@@ -248,7 +238,7 @@ const clearButtonClass =
             class="flex items-center gap-3 border-t border-transparency-white-t8 p-3"
           >
             <button
-              v-if="query || providers.length || capabilities.length"
+              v-if="query || capabilities.length"
               type="button"
               class="shrink-0 cursor-pointer px-2 text-sm text-primary-warm-gray hover:text-primary-warm-white"
               data-testid="workshop-search-sheet-clear"

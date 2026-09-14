@@ -6,6 +6,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { WorkshopModel } from '../../config/models-catalogue'
 import {
   filterWorkshopModels,
+  isCategoryTag,
   sortWorkshopModels
 } from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
@@ -14,14 +15,12 @@ import { t } from '../../i18n/translations'
 const {
   models,
   query,
-  providers,
   capabilities,
   variant = 'dropdown',
   locale = 'en'
 } = defineProps<{
   models: readonly WorkshopModel[]
   query: string
-  providers: readonly string[]
   capabilities: readonly string[]
   /** On a phone the same panel fills the screen instead of hanging off a
    * field. */
@@ -31,17 +30,22 @@ const {
 
 const emit = defineEmits<{
   pick: [model: WorkshopModel]
-  toggleProvider: [provider: string]
   toggleCapability: [capability: string]
 }>()
 
 const SUGGESTIONS = 4
 const CHIPS = 6
 
+const searching = computed(() => query.trim() !== '')
 const matching = computed(() => filterWorkshopModels(models, { query }))
 
+// Named models answer a search. With nothing typed the same list is the first
+// four of the catalogue in alphabetical order, which recommends nothing and
+// loads four thumbnails to say it.
 const suggestions = computed(() =>
-  sortWorkshopModels(matching.value, 'name').slice(0, SUGGESTIONS)
+  searching.value
+    ? sortWorkshopModels(matching.value, 'name').slice(0, SUGGESTIONS)
+    : []
 )
 
 // A provider or capability is worth offering only while it still leads
@@ -70,18 +74,14 @@ const chipsFrom = (
   }
 }
 
-const allProviders = ref(false)
 const allCapabilities = ref(false)
 
-const providerChips = computed(() =>
-  chipsFrom(
-    (model) => (model.provider ? [model.provider] : []),
-    providers,
-    allProviders.value
-  )
-)
 const capabilityChips = computed(() =>
-  chipsFrom((model) => model.capabilities, capabilities, allCapabilities.value)
+  chipsFrom(
+    (model) => model.capabilities.filter(isCategoryTag),
+    capabilities,
+    allCapabilities.value
+  )
 )
 
 // Opening the rest of the chips is undoable: the same button folds them back.
@@ -156,43 +156,9 @@ const chipClass = (selected: boolean) =>
       </button>
     </section>
 
-    <p v-else class="p-2 text-sm text-primary-warm-gray">
+    <p v-else-if="searching" class="p-2 text-sm text-primary-warm-gray">
       {{ t('workshop.hub.facets.noResults', locale) }}
     </p>
-
-    <section
-      v-if="providerChips.chips.length"
-      class="flex flex-wrap items-baseline gap-2"
-    >
-      <p
-        class="text-[11px] font-bold tracking-wider text-primary-warm-gray uppercase"
-      >
-        {{ t('workshop.search.providers', locale) }}
-      </p>
-      <button
-        v-for="chip in providerChips.chips"
-        :key="chip.value"
-        type="button"
-        :aria-pressed="chip.selected"
-        :class="chipClass(chip.selected)"
-        data-testid="workshop-search-provider"
-        @mousedown.prevent
-        @click="emit('toggleProvider', chip.value)"
-      >
-        {{ chip.value }}
-        <span class="tabular-nums opacity-60">{{ chip.count }}</span>
-      </button>
-      <button
-        v-if="providerChips.hidden > 0"
-        type="button"
-        :class="moreClass"
-        data-testid="workshop-search-provider-more"
-        @mousedown.prevent
-        @click="allProviders = !allProviders"
-      >
-        {{ moreLabel(allProviders, providerChips.hidden) }}
-      </button>
-    </section>
 
     <section
       v-if="capabilityChips.chips.length"
