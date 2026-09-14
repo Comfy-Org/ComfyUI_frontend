@@ -94,9 +94,6 @@ const defaults: Readonly<Partial<Record<string, RouterRenderParameters>>> = {
   'gemini--omni-1.1-flash--edit-videos': sourceVideo,
   'gemini--omni-flash-preview--animate-images': sourceImage,
   'gemini--omni-flash-preview--edit-videos': sourceVideo,
-  'heygen--starfish-tts--audio': {
-    model_specific: { voice_id: 'd2f4f24783d04e22ab49ee8fdc3715e0' }
-  },
   'kling--avatar--animate-images': {
     source_images: [portrait],
     source_audio: [audio]

@@ -95,9 +95,13 @@ export function createBalanceReader(
     let token = snapshot.session.token
     let result = await fetchBalance(token)
     // One re-mint on a stale token, spent for the identity whose read
-    // failed, never whoever is signed in by the time the 401 lands.
+    // failed, never whoever is signed in by the time the 401 lands. The
+    // mint names the read's own workspace: a target-less mint resolves the
+    // personal workspace and would silently switch a team session.
     if (result.status === 'error' && result.unauthorized) {
-      const reminted = await session.remint(owner)
+      const reminted = await session.remint(owner, {
+        workspaceId: snapshot.session.workspace.id
+      })
       if (reminted?.status === 'ok') {
         token = reminted.session.token
         result = await fetchBalance(token)

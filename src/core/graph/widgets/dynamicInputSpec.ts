@@ -15,7 +15,8 @@ export function resolveDynamicInputSpec(
     [inputs.required, false],
     [inputs.optional, true]
   ] as const) {
-    if (fields?.[name]) return { spec: fields[name], isOptional }
+    if (fields && Object.hasOwn(fields, name))
+      return { spec: fields[name], isOptional }
     for (const [key, spec] of Object.entries(fields ?? {})) {
       if (!name.startsWith(`${key}.`)) continue
       const resolved = resolveNestedInputSpec(spec, key, name, getValue, prefix)
@@ -40,9 +41,9 @@ function resolveNestedInputSpec(
     if (!/^(0|[1-9][0-9]*)$/.test(index)) return
     const field = suffix.slice(separator + 1)
     const template = group[1].template
-    if (template.required?.[field])
+    if (template.required && Object.hasOwn(template.required, field))
       return { spec: template.required[field], isOptional: false }
-    if (template.optional?.[field])
+    if (template.optional && Object.hasOwn(template.optional, field))
       return { spec: template.optional[field], isOptional: true }
   }
   const combo = zDynamicComboInputSpec.safeParse(spec).data

@@ -11,7 +11,8 @@ test.describe(
 
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('inputs/dynamic_group')
-      await comfyPage.vueNodes.waitForNodes(2)
+      await comfyPage.vueNodes.waitForNodes()
+      await expect(comfyPage.vueNodes.nodes).toHaveCount(2)
     })
 
     test.afterEach(async ({ comfyPage }) => {
@@ -94,7 +95,8 @@ test.describe(
       await expect
         .poll(() => comfyPage.workflow.getActiveWorkflowPath())
         .toContain('dynamic-group-rows')
-      await comfyPage.vueNodes.waitForNodes(2)
+      await comfyPage.vueNodes.waitForNodes()
+      await expect(comfyPage.vueNodes.nodes).toHaveCount(2)
       await comfyPage.menu.workflowsTab.close()
       await expect(node.getByLabel('before', { exact: true })).toHaveValue(
         'head'

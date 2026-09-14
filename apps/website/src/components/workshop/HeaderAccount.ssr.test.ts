@@ -24,8 +24,14 @@ vi.mock<unknown>(import('../../config/workshop-session-state'), async () => {
 })
 
 vi.mock<unknown>(import('../../config/workshop-credits'), async () => {
-  const { ref } = await import('vue')
-  return { useWorkshopCredits: () => ({ balance: ref({ status: 'unknown' }) }) }
+  const { computed, ref } = await import('vue')
+  return {
+    useWorkshopCredits: () => ({ balance: ref({ status: 'unknown' }) }),
+    refreshWorkshopCredits: vi.fn(),
+    watchForTopUp: vi.fn(),
+    clearTopUpWatch: vi.fn(),
+    useTopUpWatch: () => computed(() => ({ status: 'idle' }))
+  }
 })
 
 describe('HeaderAccount on the server', () => {
