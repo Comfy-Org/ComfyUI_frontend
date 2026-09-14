@@ -283,10 +283,10 @@ const structuredData = shouldNoindex
       }
 
       if (!document.querySelector('[name="astro-view-transitions-enabled"]')) {
-        window.addEventListener('load', () => {
+        window.addEventListener('pageshow', () => {
           if (import.meta.env.PROD) capturePageview()
           ScrollTrigger.refresh()
-        }, { once: true })
+        })
       }
 
       document.addEventListener('astro:page-load', () => {
