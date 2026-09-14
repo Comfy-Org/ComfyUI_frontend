@@ -91,7 +91,12 @@ const mergedGridStyle = computed<CSSProperties>(() => {
 })
 
 const viewRows = computed(() => Math.ceil(height.value / itemHeight.value))
-const offsetRows = computed(() => Math.floor(scrollY.value / itemHeight.value))
+const maxOffsetRows = computed(() =>
+  Math.max(0, Math.ceil(pagedItems(items).length / cols.value) - viewRows.value)
+)
+const offsetRows = computed(() =>
+  clamp(Math.floor(scrollY.value / itemHeight.value), 0, maxOffsetRows.value)
+)
 const isValidGrid = computed(
   () => height.value && width.value && pagedItems(items).length
 )
