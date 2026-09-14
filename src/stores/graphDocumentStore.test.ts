@@ -269,6 +269,25 @@ describe('useGraphDocumentStore', () => {
     expect(winningDispose).not.toHaveBeenCalled()
   })
 
+  it('does not dispose a shared lease published by a newer hydration', () => {
+    const store = useGraphDocumentStore()
+    const documentId = store.createDocument()
+    if (documentId === null) throw new Error('createDocument failed')
+    const older = store.beginGraphHydration(documentId)
+    const newer = store.beginGraphHydration(documentId)
+    if (older === null || newer === null) {
+      throw new Error('beginGraphHydration failed')
+    }
+    const dispose = vi.fn()
+    const sharedLease = { graph: { id: 'shared' }, dispose }
+
+    expect(store.completeGraphHydration(newer, sharedLease)).toBe(true)
+    expect(store.completeGraphHydration(older, sharedLease)).toBe(false)
+
+    expect(store.graphLeaseOf(documentId)).toBe(sharedLease)
+    expect(dispose).not.toHaveBeenCalled()
+  })
+
   it('disposes replaced and closed graph leases exactly once', () => {
     const store = useGraphDocumentStore()
     const documentId = store.createDocument()

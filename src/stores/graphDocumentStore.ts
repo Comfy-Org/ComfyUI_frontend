@@ -114,7 +114,8 @@ export const useGraphDocumentStore = defineStore('graphDocument', () => {
       entry.state.phase === 'closed' ||
       hydrationGenerations.get(ticket.documentId) !== ticket.generation
     ) {
-      disposeLease(lease)
+      const current = graphLeases.get(ticket.documentId)
+      if (current?.lease !== lease) disposeLease(lease)
       return false
     }
     const previous = graphLeases.get(ticket.documentId)
