@@ -35,7 +35,7 @@ export const DEFAULT_CAMERA_ANGLE_STATE: CameraAngleState = {
   zoom: 5
 }
 
-export const SUBJECT_CENTER: Vector3Like = { x: 0, y: 0.5, z: 0 }
+export const SUBJECT_CENTER: Vector3Like = { x: 0, y: 0, z: 0 }
 export const SUBJECT_HEIGHT = 1
 export const CAMERA_ANGLE_FOV = 35
 export const SUBJECT_DISTANCE = 6

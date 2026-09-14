@@ -129,7 +129,7 @@ describe('state normalisation', () => {
       zoom: 0
     })
     expect(state.mode).toBe('orbit')
-    expect(state.target).toEqual(SUBJECT_CENTER)
+    expect(state.target).toEqual({ x: 0, y: 0, z: 0 })
     expect(state.fov).toBe(CAMERA_ANGLE_FOV)
     expect(state.zoom).toBe(MIN_LENS_ZOOM)
     expect(state.orbit).toEqual({
