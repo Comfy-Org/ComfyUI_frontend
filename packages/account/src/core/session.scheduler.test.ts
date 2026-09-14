@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest'
 
 import type {
   AccountCredential,
@@ -6,6 +6,7 @@ import type {
   CredentialStorage,
   CrossTabRefreshPort,
   SessionClientOptions,
+  SessionRefreshResult,
   SessionSnapshot
 } from './session.js'
 import { createTestIdentity } from '../testing.js'
@@ -73,6 +74,20 @@ beforeEach(() => {
 })
 
 describe('opt-in refresh scheduler', () => {
+  it('represents only valid scheduled refresh results', () => {
+    expectTypeOf<{
+      outcome: 'permanent_failure'
+    }>().not.toMatchTypeOf<SessionRefreshResult>()
+    expectTypeOf<{
+      outcome: 'succeeded'
+      failure: { status: 'error'; code: 'TOKEN_EXCHANGE_FAILED' }
+    }>().not.toMatchTypeOf<SessionRefreshResult>()
+    expectTypeOf<{
+      outcome: 'expired'
+      failure: { status: 'error'; code: 'TOKEN_EXCHANGE_FAILED' }
+    }>().toMatchTypeOf<SessionRefreshResult>()
+  })
+
   it('arms a refresh at expiry minus the buffer and re-mints through the same snapshot', async () => {
     let minted = 0
     const fetchImpl = vi.fn<typeof fetch>(async () =>
@@ -134,7 +149,7 @@ describe('opt-in refresh scheduler', () => {
     const client = makeClient({
       fetchImpl,
       refreshScheduler: {
-        onScheduledOutcome: (outcome) => outcomes.push(outcome)
+        onScheduledOutcome: ({ outcome }) => outcomes.push(outcome)
       }
     })
     const identity = manualIdentity()
@@ -311,7 +326,7 @@ describe('opt-in refresh scheduler', () => {
   })
 
   it('reports each scheduled outcome to the host hook, and only scheduled ones', async () => {
-    const outcomes: string[] = []
+    const results: SessionRefreshResult[] = []
     const fetchImpl = vi
       .fn<typeof fetch>()
       .mockImplementationOnce(async () => mintResponse('jwt-1'))
@@ -321,7 +336,7 @@ describe('opt-in refresh scheduler', () => {
     const client = makeClient({
       fetchImpl,
       refreshScheduler: {
-        onScheduledOutcome: (outcome) => outcomes.push(outcome)
+        onScheduledOutcome: (result) => results.push(result)
       }
     })
     const identity = manualIdentity()
@@ -332,26 +347,32 @@ describe('opt-in refresh scheduler', () => {
       expect(client.getToken()).toBe('jwt-1')
     })
     expect(
-      outcomes,
+      results,
       'the login mint is not a scheduled refresh; cloud does not track it'
     ).toEqual([])
 
     await vi.advanceTimersByTimeAsync(
       NINETY_MINUTES_MS - DEFAULT_BUFFER_MS + 10
     )
-    expect(outcomes).toEqual(['retry_scheduled'])
+    expect(results).toEqual([{ outcome: 'retry_scheduled' }])
     await vi.advanceTimersByTimeAsync(5000 + 10)
-    expect(outcomes).toEqual(['retry_scheduled', 'succeeded'])
+    expect(results).toEqual([
+      { outcome: 'retry_scheduled' },
+      { outcome: 'succeeded' }
+    ])
 
     await vi.advanceTimersByTimeAsync(NINETY_MINUTES_MS * 10)
-    expect(outcomes).toEqual([
-      'retry_scheduled',
-      'succeeded',
-      'retry_scheduled',
-      'retry_scheduled',
-      'retry_scheduled',
-      'retries_exhausted',
-      'expired'
+    expect(results).toEqual([
+      { outcome: 'retry_scheduled' },
+      { outcome: 'succeeded' },
+      { outcome: 'retry_scheduled' },
+      { outcome: 'retry_scheduled' },
+      { outcome: 'retry_scheduled' },
+      { outcome: 'retries_exhausted' },
+      {
+        outcome: 'expired',
+        failure: { status: 'error', code: 'TOKEN_EXCHANGE_FAILED' }
+      }
     ])
   })
 
@@ -364,8 +385,7 @@ describe('opt-in refresh scheduler', () => {
     const client = makeClient({
       fetchImpl,
       refreshScheduler: {
-        onScheduledOutcome: (outcome, failure) =>
-          reported.push([outcome, failure])
+        onScheduledOutcome: (result) => reported.push(result)
       }
     })
     const identity = manualIdentity()
@@ -377,10 +397,10 @@ describe('opt-in refresh scheduler', () => {
 
     await vi.advanceTimersByTimeAsync(NINETY_MINUTES_MS)
 
-    expect(reported.at(-1)).toEqual([
-      'permanent_failure',
-      { status: 'error', code: 'ACCESS_DENIED', httpStatus: 403 }
-    ])
+    expect(reported.at(-1)).toEqual({
+      outcome: 'permanent_failure',
+      failure: { status: 'error', code: 'ACCESS_DENIED', httpStatus: 403 }
+    })
   })
 
   it('reports a permanent scheduled failure to the host hook', async () => {
@@ -392,7 +412,7 @@ describe('opt-in refresh scheduler', () => {
     const client = makeClient({
       fetchImpl,
       refreshScheduler: {
-        onScheduledOutcome: (outcome) => outcomes.push(outcome)
+        onScheduledOutcome: ({ outcome }) => outcomes.push(outcome)
       }
     })
     const identity = manualIdentity()
@@ -769,7 +789,7 @@ describe('cross-tab refresh coordination', () => {
       fetchImpl,
       refreshScheduler: {
         crossTab: { port },
-        onScheduledOutcome: (outcome) => outcomes.push(outcome)
+        onScheduledOutcome: ({ outcome }) => outcomes.push(outcome)
       }
     })
     const identity = manualIdentity()
@@ -936,7 +956,7 @@ describe('cross-tab refresh coordination', () => {
       fetchImpl,
       refreshScheduler: {
         crossTab: { port },
-        onScheduledOutcome: (outcome) => outcomes.push(outcome)
+        onScheduledOutcome: ({ outcome }) => outcomes.push(outcome)
       }
     })
     const identity = manualIdentity()

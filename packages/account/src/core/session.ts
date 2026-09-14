@@ -49,6 +49,7 @@ export type {
   SessionErrorCode,
   SessionFailure,
   SessionRefreshOutcome,
+  SessionRefreshResult,
   SessionResult
 } from './sessionContracts.js'
 export { isPermanentSessionError } from './sessionContracts.js'
