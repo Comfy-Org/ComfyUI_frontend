@@ -44,6 +44,31 @@ describe('OrbitHandles', () => {
     expect(yawHandle.position.z).toBeCloseTo(1.5)
   })
 
+  it('lowers the yaw ring to the requested latitude and drags on that plane', () => {
+    handles.dispose()
+    handles = new OrbitHandles({ yawRingLatitude: -40 })
+    handles.attach(scene)
+    const state = {
+      ...DEFAULT_CAMERA_INFO_STATE,
+      mode: 'orbit' as const,
+      target: { x: 0, y: 0.5, z: 0 },
+      orbit: { yaw: 0, pitch: 0, distance: 1 }
+    }
+    handles.update(state)
+
+    const yawHandle = handles
+      .pickableMeshes()
+      .find((m) => m.userData.handleType === 'yaw')!
+    const world = new THREE.Vector3()
+    yawHandle.getWorldPosition(world)
+    const latitude = (-40 * Math.PI) / 180
+    expect(world.y).toBeCloseTo(0.5 + 1.5 * Math.sin(latitude))
+    expect(world.z).toBeCloseTo(1.5 * Math.cos(latitude))
+    expect(handles.dragPlaneFor('yaw', state).constant).toBeCloseTo(
+      -(0.5 + 1.5 * Math.sin(latitude))
+    )
+  })
+
   it('places the distance handle at the camera (distance along yaw direction)', () => {
     handles.update({
       ...DEFAULT_CAMERA_INFO_STATE,
