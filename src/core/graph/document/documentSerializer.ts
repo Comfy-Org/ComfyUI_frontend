@@ -30,11 +30,11 @@ function canonicalize(value: unknown, depth = 0): unknown {
   if (value instanceof Map || value instanceof Set)
     return canonicalize([...value], depth + 1)
   if (typeof value === 'object' && value !== null) {
-    const source = value as Record<string, unknown>
     const result: Record<string, unknown> = {}
-    for (const key of Object.keys(source).sort()) {
+    for (const key of Object.keys(value).sort()) {
       if (RENDER_ONLY_KEYS.has(key)) continue
-      const entry = canonicalize(source[key], depth + 1)
+      const sourceValue: unknown = Reflect.get(value, key)
+      const entry = canonicalize(sourceValue, depth + 1)
       if (entry !== undefined) result[key] = entry
     }
     return result
@@ -49,9 +49,7 @@ function canonicalize(value: unknown, depth = 0): unknown {
  * `hasErrors`, `boundingRect`, and the deprecated link-store-derived
  * `link`/`links` getters.
  */
-function pickSlot(slot: INodeInputSlot | INodeOutputSlot) {
-  const input = slot as Partial<INodeInputSlot>
-  const output = slot as Partial<INodeOutputSlot>
+function pickCommonSlot(slot: INodeInputSlot | INodeOutputSlot) {
   return {
     name: slot.name,
     localized_name: slot.localized_name,
@@ -64,13 +62,25 @@ function pickSlot(slot: INodeInputSlot | INodeOutputSlot) {
     color_on: slot.color_on,
     locked: slot.locked,
     nameLocked: slot.nameLocked,
-    pos: slot.pos,
-    widget: input.widget
-      ? { name: input.widget.name, type: input.widget.type }
+    pos: slot.pos
+  }
+}
+
+function pickInputSlot(slot: INodeInputSlot) {
+  return {
+    ...pickCommonSlot(slot),
+    widget: slot.widget
+      ? { name: slot.widget.name, type: slot.widget.type }
       : undefined,
-    widgetId: input.widgetId,
-    alwaysVisible: input.alwaysVisible,
-    slot_index: output.slot_index
+    widgetId: slot.widgetId,
+    alwaysVisible: slot.alwaysVisible
+  }
+}
+
+function pickOutputSlot(slot: INodeOutputSlot) {
+  return {
+    ...pickCommonSlot(slot),
+    slot_index: slot.slot_index
   }
 }
 
@@ -94,8 +104,8 @@ export function serializeDocumentScope(scope: GraphScope): Uint8Array {
     .sort((left, right) => compareNodeIds(left.id, right.id))
     .map(({ graphId: _graphId, lastSerialization: _cache, ...semantic }) => ({
       ...semantic,
-      inputs: semantic.inputs.map(pickSlot),
-      outputs: semantic.outputs.map(pickSlot),
+      inputs: semantic.inputs.map(pickInputSlot),
+      outputs: semantic.outputs.map(pickOutputSlot),
       widgets: widgetStore
         .getNodeWidgets(scope.rootGraphId, semantic.id)
         .map(({ name, type, value }) => ({ name, type, value }))
