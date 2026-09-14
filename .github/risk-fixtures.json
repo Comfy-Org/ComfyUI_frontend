@@ -1,0 +1,180 @@
+{
+  "map_version": "v0-frontend-2",
+  "cases": [
+    {
+      "path": "src/components/ui/credit-slider/CreditSlider.vue",
+      "tier": "R3",
+      "classes": ["billing"]
+    },
+    {
+      "path": "src/components/dialog/content/credit/CreditTopUpOption.vue",
+      "tier": "R3",
+      "classes": ["billing"]
+    },
+    {
+      "path": "src/platform/workspace/composables/useSubscriptionCheckout.ts",
+      "tier": "R3",
+      "classes": ["billing"]
+    },
+    {
+      "path": "src/platform/workspace/api/workspaceApi.ts",
+      "tier": "R3",
+      "classes": ["billing"]
+    },
+    {
+      "path": "src/config/subscriptionPricesConfig.ts",
+      "tier": "R3",
+      "classes": ["billing"]
+    },
+    {
+      "path": "src/components/dialog/content/TopUpCreditsDialogContentLegacy.vue",
+      "tier": "R3",
+      "classes": ["billing"]
+    },
+    {
+      "path": "src/components/node/NodePricingBadge.vue",
+      "tier": "R3",
+      "classes": ["billing"]
+    },
+    {
+      "path": "src/composables/node/useNodePricing.ts",
+      "tier": "R3",
+      "classes": ["billing"]
+    },
+    {
+      "path": "apps/website/src/data/pricingPlans.ts",
+      "tier": "R3",
+      "classes": ["billing", "website"]
+    },
+    {
+      "path": "apps/website/src/config/pricing.ts",
+      "tier": "R3",
+      "classes": ["billing", "website"]
+    },
+    {
+      "path": "apps/website/src/components/pricing/PricingCard.vue",
+      "tier": "R3",
+      "classes": ["billing", "website"]
+    },
+    {
+      "path": "apps/website/vercel.json",
+      "tier": "R2",
+      "classes": ["website"]
+    },
+    {
+      "path": "apps/website/src/composables/useDownloadUrl.ts",
+      "tier": "R2",
+      "classes": ["website"]
+    },
+    {
+      "path": "apps/website/src/config/pricing.test.ts",
+      "tier": "R2",
+      "classes": ["tests", "website"]
+    },
+    {
+      "path": "apps/website/src/templates/drops/AnnouncementBanner.stories.ts",
+      "tier": "R2",
+      "classes": ["storybook", "website"]
+    },
+    {
+      "path": "browser_tests/tests/priceBadge.spec.ts",
+      "tier": "R0",
+      "classes": ["tests"]
+    },
+    {
+      "path": "src/components/ui/credit-slider/CreditSlider.test.ts",
+      "tier": "R0",
+      "classes": ["tests"]
+    },
+    {
+      "path": "src/components/ui/credit-slider/CreditSlider.stories.ts",
+      "tier": "R0",
+      "classes": ["storybook"]
+    },
+    {
+      "path": "src/components/dialog/content/TopUpCreditsDialogContentLegacy.test.ts",
+      "tier": "R0",
+      "classes": ["tests"]
+    },
+    {
+      "path": "apps/website/src/components/pricing/PricingSection.test.ts",
+      "tier": "R2",
+      "classes": ["tests", "website"]
+    },
+    {
+      "path": "apps/website/src/components/pricing/FaqLink.astro",
+      "tier": "R3",
+      "classes": ["billing", "website"]
+    },
+    {
+      "path": "packages/shared-frontend-utils/src/creditsUtil.ts",
+      "tier": "R3",
+      "classes": ["billing", "core-infra"]
+    },
+    {
+      "path": "packages/shared-frontend-utils/src/creditsUtil.test.ts",
+      "tier": "R2",
+      "classes": ["core-infra", "tests"]
+    },
+    {
+      "path": "src/platform/workspace/components/UnifiedStripePaymentSelector.vue",
+      "tier": "R3",
+      "classes": ["billing"]
+    },
+    {
+      "path": "src/platform/workspace/composables/useHasSavedPaymentMethod.ts",
+      "tier": "R3",
+      "classes": ["billing"]
+    },
+    {
+      "path": "src/platform/telemetry/utils/checkoutAttribution.ts",
+      "tier": "R3",
+      "classes": ["billing"]
+    },
+    {
+      "path": ".github/risk.json",
+      "tier": "R3",
+      "classes": ["risk-map"]
+    },
+    {
+      "path": ".github/risk-fixtures.json",
+      "tier": "R3",
+      "classes": ["risk-map"]
+    },
+    {
+      "path": "scripts/check-risk-map-fixtures.sh",
+      "tier": "R3",
+      "classes": ["build-config", "risk-map"]
+    },
+    {
+      "path": "apps/website/src/components/about/HeroSection.vue",
+      "tier": "R2",
+      "classes": ["website"]
+    },
+    {
+      "path": "apps/website/src/content/customers/en/golan-levin.mdx",
+      "tier": "R2",
+      "classes": ["docs", "website"]
+    },
+    {
+      "path": "docs/FEATURE_FLAGS.md",
+      "tier": "R0",
+      "classes": ["docs"]
+    },
+    {
+      "path": "src/locales/en/main.json",
+      "tier": "R0",
+      "classes": ["i18n-copy"]
+    },
+    {
+      "path": "src/services/dialogService.topUpCredits.test.ts",
+      "tier": "R3",
+      "classes": ["billing", "core-infra", "tests"]
+    },
+    {
+      "path": "src/platform/workspace/api/workspaceApiUrl.ts",
+      "tier": "R0",
+      "classes": []
+    }
+  ]
+}
