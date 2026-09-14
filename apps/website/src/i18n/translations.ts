@@ -10039,8 +10039,8 @@ Enterprise`
 
   // Workshop – examples
   'workshop.examples.start': {
-    en: 'Start from an example',
-    'zh-CN': '从示例开始'
+    en: 'Try an example',
+    'zh-CN': '试试一个示例'
   },
   'workshop.examples.samples': {
     en: 'Sample outputs',
@@ -10058,14 +10058,6 @@ Enterprise`
   'workshop.examples.viewing': {
     en: 'Viewing sample',
     'zh-CN': '正在查看样例'
-  },
-  'workshop.examples.subtitle': {
-    en: 'Pick one to load its settings into the form above.',
-    'zh-CN': '选择一个示例，用它的设置填充上方表单。'
-  },
-  'workshop.examples.subtitleOne': {
-    en: 'This model has one example. It is already filled in above.',
-    'zh-CN': '该模型自带的唯一示例，已加载到上方。'
   },
   'workshop.examples.open': {
     en: 'Open in Playground',
