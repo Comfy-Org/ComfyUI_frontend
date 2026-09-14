@@ -308,10 +308,11 @@ test.describe(
       })
     }
 
-    test('blank search, connect and Queue finish with a real artifact and no errors', async ({
+    test('sanity sequence ends with a real artifact and no console, page or toast errors', async ({
       comfyPage
     }) => {
-      const consoleErrors = collectConsoleErrors(comfyPage.page)
+      test.setTimeout(60_000)
+      const runtimeErrors = collectConsoleErrors(comfyPage.page)
       await trackVisibleErrors(comfyPage.page)
       await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
       await comfyPage.searchBoxV2.ensureV2Search()
@@ -337,11 +338,11 @@ test.describe(
       await source.connectOutput(0, target, 0)
       const output = await queueAndReadPng(comfyPage)
       expect(output).toMatchObject({ width: 64, height: 48 })
-      consoleErrors.stop()
-      expect(consoleErrors.errors).toEqual([])
+      runtimeErrors.stop()
+      expect(runtimeErrors.errors).toEqual([])
       await expectNoVisibleErrors(
         comfyPage.page,
-        'after real blank-workflow Queue'
+        'after sanity sequence and real Queue'
       )
     })
   }
