@@ -698,6 +698,59 @@ describe('useWorkflowStore', () => {
       // Verify bookmark was removed
       expect(bookmarkStore.isBookmarked(workflow.path)).toBe(false)
     })
+
+    it('should remove the deleted workflow from the open tabs', async () => {
+      const workflow = store.createTemporary('test.json')
+      vi.spyOn(workflow, 'delete').mockResolvedValue()
+      await store.openWorkflow(workflow)
+      expect(store.isOpen(workflow)).toBe(true)
+      expect(store.openWorkflows).toEqual([workflow])
+
+      await store.deleteWorkflow(workflow)
+
+      expect(store.isOpen(workflow)).toBe(false)
+      expect(store.openWorkflows).toEqual([])
+    })
+  })
+
+  describe('openWorkflows integrity', () => {
+    it('should not expose a hole after deleting an open workflow', async () => {
+      const survivor = store.createTemporary('survivor.json')
+      const doomed = store.createTemporary('doomed.json')
+      vi.spyOn(doomed, 'delete').mockResolvedValue()
+      await store.openWorkflow(survivor)
+      await store.openWorkflow(doomed)
+      expect(store.openWorkflows.map((w) => w.path)).toEqual([
+        survivor.path,
+        doomed.path
+      ])
+
+      await store.deleteWorkflow(doomed)
+
+      expect(store.openWorkflows.map((w) => w.path)).toEqual([survivor.path])
+    })
+
+    it('should not expose a hole after a sync prunes an open workflow', async () => {
+      await syncRemoteWorkflows(['a.json', 'b.json'])
+      vi.mocked(api.getUserData).mockResolvedValue({
+        status: 200,
+        text: () => Promise.resolve(defaultGraphJSON)
+      } as Response)
+      const removed = store.getWorkflowByPath('workflows/b.json')!
+      await store.openWorkflow(store.getWorkflowByPath('workflows/a.json')!)
+      await store.openWorkflow(removed)
+      expect(store.openWorkflows.map((w) => w.path)).toEqual([
+        'workflows/a.json',
+        'workflows/b.json'
+      ])
+
+      // The file disappears from the backend, e.g. deleted by another client.
+      await syncRemoteWorkflows(['a.json'])
+
+      expect(store.openWorkflows.map((w) => w.path)).toEqual([
+        'workflows/a.json'
+      ])
+    })
   })
 
   describe('save', () => {

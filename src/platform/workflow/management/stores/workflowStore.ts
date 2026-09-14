@@ -162,7 +162,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const openWorkflowPaths = ref<string[]>([])
   const openWorkflowPathSet = computed(() => new Set(openWorkflowPaths.value))
   const openWorkflows = computed(() =>
-    openWorkflowPaths.value.map((path) => workflowLookup.value[path])
+    openWorkflowPaths.value.flatMap((path) => getWorkflowByPath(path) ?? [])
   )
   const reorderWorkflows = (from: number, to: number) => {
     const movedTab = openWorkflowPaths.value[from]
@@ -389,7 +389,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
       // Check if workflow is still open
       if (openWorkflowPathSet.value.has(path)) {
         validPaths.unshift(path)
-        const workflow = workflowLookup.value[path]
+        const workflow = getWorkflowByPath(path)
         {
           // Lazy cleanup: keep only valid paths
           tabActivationHistory.value = validPaths
@@ -540,7 +540,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
       }
       // Clear thumbnail when workflow is deleted
       clearThumbnail(workflow.key)
-      delete workflowLookup.value[workflow.path]
+      detachWorkflow(workflow)
     } finally {
       isBusy.value = false
     }
