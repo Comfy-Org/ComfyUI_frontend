@@ -108,26 +108,49 @@ const WORKSHOP_TURNSTILE_FLAG = 'workshop-signup-turnstile'
 const VISIBILITY_OVERRIDE =
   WORKSHOP_LOCAL_DEV && import.meta.env.PUBLIC_WORKSHOP_ENABLED === '1'
 const workshopEnabled = ref(VISIBILITY_OVERRIDE)
-let workshopUserId: string | null | undefined
+let workshopUser: WorkshopIdentity | null | undefined
 
 export function useWorkshopEnabled(): Readonly<Ref<boolean>> {
   return readonly(workshopEnabled)
 }
 
-export function identifyWorkshopUser(uid: string | null): void {
-  if (workshopUserId === uid) return
-  const previousUid = workshopUserId
-  workshopUserId = uid
+export interface WorkshopIdentity {
+  uid: string
+  email?: string | null
+  emailVerified?: boolean
+}
+
+const STAFF_EMAIL_DOMAINS = new Set(['comfy.org', 'drip.art'])
+
+function isStaff({ email, emailVerified }: WorkshopIdentity): boolean {
+  const domain = email?.split('@')[1]?.toLowerCase()
+  return (
+    emailVerified === true &&
+    domain !== undefined &&
+    STAFF_EMAIL_DOMAINS.has(domain)
+  )
+}
+
+function identifyInPostHog(user: WorkshopIdentity): void {
+  if (isStaff(user)) posthog.identify(user.uid, { comfy_staff: true })
+  else posthog.identify(user.uid)
+}
+
+export function identifyWorkshopUser(user: WorkshopIdentity | null): void {
+  if (workshopUser !== undefined && workshopUser?.uid === user?.uid) return
+  const previous = workshopUser
+  workshopUser = user
   if (!initialized) return
   try {
-    const persistedUid = posthog.get_property('$user_id') ?? previousUid
+    const uid = user?.uid ?? null
+    const persistedUid = posthog.get_property('$user_id') ?? previous?.uid
     if (uid === persistedUid || (!uid && !persistedUid)) return
     workshopEnabled.value = VISIBILITY_OVERRIDE
     if (persistedUid) posthog.reset()
-    if (uid) posthog.identify(uid)
+    if (user) identifyInPostHog(user)
     posthog.reloadFeatureFlags()
   } catch (error) {
-    workshopUserId = previousUid
+    workshopUser = previous
     workshopEnabled.value = VISIBILITY_OVERRIDE
     console.error('PostHog identity failed', error)
   }
@@ -185,10 +208,10 @@ export function initPostHog() {
         )
       }
     })
-    if (workshopUserId !== undefined) {
-      const uid = workshopUserId
-      workshopUserId = undefined
-      identifyWorkshopUser(uid)
+    if (workshopUser !== undefined) {
+      const user = workshopUser
+      workshopUser = undefined
+      identifyWorkshopUser(user)
     }
   } catch (error) {
     console.error('PostHog init failed', error)

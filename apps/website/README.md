@@ -178,13 +178,18 @@ answer for the same identity. Disabling it restores the public site:
 - Render pages stay out of sitemaps and markdown exports.
 
 Create `workshop-enabled` in the website's PostHog project with a release
-condition targeting only the Comfy staff cohort. Enable that condition for
-100% of the cohort and leave everyone else excluded; do not add a general
-rollout condition. Expand that audience when ready for the public release.
+condition on the person property `comfy_staff` equal to `true` at 100%, and
+leave everyone else excluded; do not add a general rollout condition. Expand
+that audience when ready for the public release. Do not target the email-based
+staff cohort: the frontend PII scrubber strips `email` from everything it
+sends, so people who sign in through the website never join that cohort.
 
 The website identifies signed-in people with their Firebase UID, matching
-Cloud's PostHog identity. Give staff `/login/?returnTo=%2Fmodels%2F` so they can
-sign in before their Models flag is evaluated. Authentication is available
+Cloud's PostHog identity. For a verified `comfy.org` or `drip.art` email it
+also sets `comfy_staff: true`; every other account sends nothing beyond the
+UID. Give staff `/login/?returnTo=%2Fmodels%2F` so they can sign in before
+their Models flag is evaluated. Anyone who signed in before `comfy_staff`
+existed must sign out and back in once. Authentication is available
 before PostHog answers, including when flags are missing or unavailable; no
 separate auth flag needs to be created or enabled. The legacy `workshop-auth`
 flag can still disable authentication explicitly with a `false` answer.
