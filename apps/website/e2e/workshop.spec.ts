@@ -434,7 +434,7 @@ test.describe('Model playground', () => {
 
     await page.getByTestId('snippet-curl').click()
     await expect(page.getByRole('note')).toContainText(
-      'Uploaded files are omitted from cURL'
+      'cURL cannot carry your uploaded files'
     )
     await expect(snippet).not.toContainText('data:image')
     await expect(snippet).not.toContainText('"image"')

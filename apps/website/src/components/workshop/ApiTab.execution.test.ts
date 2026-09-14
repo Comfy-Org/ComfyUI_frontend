@@ -36,7 +36,7 @@ it('omits embedded default media from the cURL example', async () => {
   expect(snippet.textContent).not.toContain(defaultMedia.image)
   expect(snippet.textContent).not.toContain(defaultMedia.mask)
   expect(screen.getByRole('note').textContent).toContain(
-    'Uploaded files are omitted from cURL'
+    'cURL cannot carry your uploaded files'
   )
 })
 

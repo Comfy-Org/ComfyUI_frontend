@@ -10000,7 +10000,7 @@ Enterprise`
       '使用试用区的输入调用 Comfy Router。运行前请设置 COMFY_API_KEY，并检查本地文件路径。'
   },
   'workshop.api.filesOmitted': {
-    en: 'Uploaded files are omitted from cURL; this request may be incomplete. Use Python or TypeScript to include them.',
+    en: 'cURL cannot carry your uploaded files, so this snippet is incomplete. Use Python or TypeScript instead.',
     'zh-CN':
       'cURL 已省略上传的文件，请求可能不完整。请使用 Python 或 TypeScript 包含这些文件。'
   },
