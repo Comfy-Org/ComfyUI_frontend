@@ -14,7 +14,19 @@
       @pointerdown="onResizeStart"
       @lostpointercapture="isResizing = false"
     />
-    <div data-testid="docked-agent-panel-shell" class="size-full p-2">
+    <!-- Against the canvas the panel floats as a card, so the graph shows
+         through its gutter. Butted against the workflow overview panel it
+         needs its own surface and a seam to read as a separate column. -->
+    <div
+      data-testid="docked-agent-panel-shell"
+      :class="
+        cn(
+          'size-full p-2',
+          rightSidePanelOpen &&
+            'bg-agent-surface border-l border-interface-stroke'
+        )
+      "
+    >
       <div
         class="size-full overflow-hidden rounded-lg border border-interface-stroke"
       >
@@ -25,12 +37,14 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { defineAsyncComponent, defineComponent, h, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { reportError } from '@/platform/telemetry/reportError'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/agentRunModeStore'
 
@@ -63,6 +77,7 @@ const AgentPanelRoot = defineAsyncComponent({
 
 const agentPanelStore = useAgentPanelStore()
 const { isVisible: docked, width } = storeToRefs(agentPanelStore)
+const { isOpen: rightSidePanelOpen } = storeToRefs(useRightSidePanelStore())
 const agentRunModeStore = useAgentRunModeStore()
 
 void agentRunModeStore.load().catch((error: unknown) => {
