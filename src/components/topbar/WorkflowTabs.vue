@@ -92,6 +92,7 @@
       <slot name="actions-leading" />
       <div
         v-if="topbarBadgeStore.badges.length"
+        data-testid="environment-badge-separator"
         class="h-5 w-px shrink-0 bg-border-default"
       />
       <Button
