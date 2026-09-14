@@ -221,24 +221,13 @@ export function getBoundaryLinks(
   }
 }
 
-export function multiClone(
-  nodes: Iterable<LGraphNode>,
-  inputSlotMarker?: string
-): ISerialisedNode[] {
+export function multiClone(nodes: Iterable<LGraphNode>): ISerialisedNode[] {
   const clonedNodes: ISerialisedNode[] = []
 
   // Selectively clone - keep IDs & links
   for (const node of nodes) {
     const newNode = LiteGraph.createNode(node.type)
     const data = structuredClone(node.serialize())
-    if (inputSlotMarker) {
-      for (const [index, input] of (data.inputs ?? []).entries()) {
-        Object.defineProperty(input, inputSlotMarker, {
-          value: index,
-          enumerable: true
-        })
-      }
-    }
     if (!newNode) {
       console.warn('Failed to create node', node.type)
       clonedNodes.push(data)
@@ -247,23 +236,7 @@ export function multiClone(
 
     // Must be cloned; litegraph "serialize" is mostly shallow clone
     newNode.configure(data)
-    const serializedNode = newNode.serialize()
-    if (inputSlotMarker) {
-      for (const [index, input] of newNode.inputs.entries()) {
-        const marker: unknown = Object.getOwnPropertyDescriptor(
-          input,
-          inputSlotMarker
-        )?.value
-        const serializedInput = serializedNode.inputs?.[index]
-        if (typeof marker === 'number' && serializedInput) {
-          Object.defineProperty(serializedInput, inputSlotMarker, {
-            value: marker,
-            enumerable: true
-          })
-        }
-      }
-    }
-    clonedNodes.push(serializedNode)
+    clonedNodes.push(newNode.serialize())
   }
 
   return clonedNodes

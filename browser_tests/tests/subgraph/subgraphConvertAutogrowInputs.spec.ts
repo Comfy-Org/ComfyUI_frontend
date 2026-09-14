@@ -157,51 +157,53 @@ test.describe(
         'keeps every autogrow link when the subgraph is unpacked',
         { tag: ['@custom-nodes'] },
         async ({ comfyPage }) => {
-          await comfyPage.keyboard.selectAll()
-          const subgraphNodeId =
-            await comfyPage.subgraph.convertSelectionToSubgraph()
+          const unpackedReferenceNodeId =
+            await test.step('Convert and unpack the selected nodes', async () => {
+              await comfyPage.keyboard.selectAll()
+              const subgraphNodeId =
+                await comfyPage.subgraph.convertSelectionToSubgraph()
+              return await comfyPage.page.evaluate((nodeId) => {
+                const graph = window.app!.graph
+                const subgraphNode = graph.getNodeById(nodeId)
+                if (!subgraphNode?.isSubgraphNode()) {
+                  throw new Error(`Expected subgraph node ${nodeId}`)
+                }
+                graph.unpackSubgraph(subgraphNode)
+                const referenceNode = graph.nodes.find(
+                  (node) => node.type === 'ByteDance2ReferenceNode'
+                )
+                if (!referenceNode)
+                  throw new Error('Reference node was not unpacked')
+                return String(referenceNode.id)
+              }, toNodeId(subgraphNodeId))
+            })
 
-          const unpackedReferenceNodeId = await comfyPage.page.evaluate(
-            (nodeId) => {
-              const graph = window.app!.graph
-              const subgraphNode = graph.getNodeById(nodeId)
-              if (!subgraphNode?.isSubgraphNode()) {
-                throw new Error(`Expected subgraph node ${nodeId}`)
-              }
-              graph.unpackSubgraph(subgraphNode)
-              const referenceNode = graph.nodes.find(
-                (node) => node.type === 'ByteDance2ReferenceNode'
+          await test.step('Verify every source remains connected', async () => {
+            const image1Source =
+              await comfyPage.nodeOps.getNodeRefByTitle(IMAGE_1_SOURCE)
+            const image2Source =
+              await comfyPage.nodeOps.getNodeRefByTitle(IMAGE_2_SOURCE)
+            const image3Source =
+              await comfyPage.nodeOps.getNodeRefByTitle(IMAGE_3_SOURCE)
+
+            const connectedInputs = () =>
+              getConnectedInputs(
+                comfyPage,
+                unpackedReferenceNodeId,
+                REFERENCE_IMAGES_PREFIX
               )
-              if (!referenceNode)
-                throw new Error('Reference node was not unpacked')
-              return String(referenceNode.id)
-            },
-            toNodeId(subgraphNodeId)
-          )
-          const image1Source =
-            await comfyPage.nodeOps.getNodeRefByTitle(IMAGE_1_SOURCE)
-          const image2Source =
-            await comfyPage.nodeOps.getNodeRefByTitle(IMAGE_2_SOURCE)
-          const image3Source =
-            await comfyPage.nodeOps.getNodeRefByTitle(IMAGE_3_SOURCE)
 
-          const connectedInputs = () =>
-            getConnectedInputs(
-              comfyPage,
-              unpackedReferenceNodeId,
-              REFERENCE_IMAGES_PREFIX
+            await expect
+              .poll(async () => (await connectedInputs()).length)
+              .toBe(3)
+            await expect.poll(connectedInputs).toEqual(
+              expect.arrayContaining([
+                { name: IMAGE_1, originNodeId: String(image1Source.id) },
+                { name: IMAGE_2, originNodeId: String(image2Source.id) },
+                { name: IMAGE_3, originNodeId: String(image3Source.id) }
+              ])
             )
-
-          await expect
-            .poll(async () => (await connectedInputs()).length)
-            .toBe(3)
-          await expect.poll(connectedInputs).toEqual(
-            expect.arrayContaining([
-              { name: IMAGE_1, originNodeId: String(image1Source.id) },
-              { name: IMAGE_2, originNodeId: String(image2Source.id) },
-              { name: IMAGE_3, originNodeId: String(image3Source.id) }
-            ])
-          )
+          })
         }
       )
     })

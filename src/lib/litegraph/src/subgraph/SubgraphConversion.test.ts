@@ -264,6 +264,35 @@ describe('SubgraphConversion', () => {
         )
       ).toBeNull()
     })
+    it('preserves links when configure rebuilds equivalent input objects', () => {
+      const graph = createTestRootGraph()
+      onTestFinished(enableSubgraphNodeCreation(graph))
+
+      const source = createTestNode(graph, [], ['number'], 'source')
+      const target = createTestNode(graph, ['number'], [], 'rebuilding target')
+      source.connect(0, target, 0)
+      const { subgraph, node: wrapper } = graph.convertToSubgraph(
+        new Set<Positionable>([source, target])
+      )
+      const innerTarget = subgraph.nodes.find(
+        (node) => node.title === 'rebuilding target'
+      )
+      assert(innerTarget)
+      const targetPrototype = Object.getPrototypeOf(innerTarget) as LGraphNode
+      targetPrototype.onConfigure = function () {
+        this.inputs = this.inputs.map((input) => ({ ...input }))
+      }
+
+      graph.unpackSubgraph(wrapper)
+
+      const unpackedTarget = graph.nodes.find(
+        (node) => node.title === 'rebuilding target'
+      )
+      assert(unpackedTarget)
+      const link = unpackedTarget.getInputLink(0)
+      assert(link)
+      expect(graph.getNodeById(link.origin_id)?.title).toBe('source')
+    })
     it('preserves links to duplicate-named subgraph inputs by ID', () => {
       const graph = createTestRootGraph()
       onTestFinished(enableSubgraphNodeCreation(graph))
@@ -282,6 +311,58 @@ describe('SubgraphConversion', () => {
       const { node: wrapper } = graph.convertToSubgraph(
         new Set<Positionable>([source0, source1, target])
       )
+
+      graph.unpackSubgraph(wrapper)
+
+      const unpackedTarget = graph.nodes.find(
+        (node) =>
+          node.isSubgraphNode() && node.subgraph.id === targetDefinition.id
+      )
+      assert(unpackedTarget)
+      const scope = graphScopeOf(graph)
+      const firstLink = useLinkStore().getInputSlotLink(
+        scope,
+        unpackedTarget.id,
+        0
+      )
+      const secondLink = useLinkStore().getInputSlotLink(
+        scope,
+        unpackedTarget.id,
+        1
+      )
+      assert(firstLink && secondLink)
+      expect(graph.getNodeById(firstLink.originNodeId)?.title).toBe('source 0')
+      expect(graph.getNodeById(secondLink.originNodeId)?.title).toBe('source 1')
+    })
+    it('uses subgraph input IDs when reconnecting replaces a target input', () => {
+      const graph = createTestRootGraph()
+      onTestFinished(enableSubgraphNodeCreation(graph))
+      const targetDefinition = graph.createSubgraph(
+        createTestSubgraphData({ name: 'rebuilding subgraph target' })
+      )
+      targetDefinition.addInput('duplicate', 'number')
+      targetDefinition.addInput('duplicate', 'number')
+      const target = LiteGraph.createNode(targetDefinition.id)
+      assert(target?.isSubgraphNode())
+      graph.add(target)
+      const source0 = createTestNode(graph, [], ['number'], 'source 0')
+      const source1 = createTestNode(graph, [], ['number'], 'source 1')
+      source0.connect(0, target, 0)
+      source1.connect(0, target, 1)
+      const { node: wrapper } = graph.convertToSubgraph(
+        new Set<Positionable>([source0, source1, target])
+      )
+      const targetPrototype = Object.getPrototypeOf(target) as LGraphNode
+      targetPrototype.onConnectionsChange = function (
+        _type,
+        slot,
+        connected,
+        link
+      ) {
+        if (connected && link && slot === 0) {
+          this.inputs[1] = { ...this.inputs[1] }
+        }
+      }
 
       graph.unpackSubgraph(wrapper)
 
@@ -363,10 +444,16 @@ describe('SubgraphConversion', () => {
         (node) => node.title === 'missing target'
       )
       assert(placeholder)
-      const inputKeys = Object.keys(placeholder.serialize().inputs?.[0] ?? {})
+      const markerKey = expect.stringMatching(/^__unpackInputSlot_/)
+      expect(Object.keys(placeholder.inputs[0])).not.toEqual(
+        expect.arrayContaining([markerKey])
+      )
       expect(
-        inputKeys.some((key) => key.startsWith('__unpackInputSlot_'))
-      ).toBe(false)
+        Object.keys(placeholder.last_serialization?.inputs?.[0] ?? {})
+      ).not.toEqual(expect.arrayContaining([markerKey]))
+      expect(
+        Object.keys(placeholder.serialize().inputs?.[0] ?? {})
+      ).not.toEqual(expect.arrayContaining([markerKey]))
     })
     it('reconnects nested subgraph inputs by name after dynamic slots shift', () => {
       const graph = createTestRootGraph()
@@ -427,6 +514,39 @@ describe('SubgraphConversion', () => {
           unpackedTarget.findInputSlot('inserted_dynamic_input')
         )
       ).toBeNull()
+    })
+    it('preserves output-boundary targets when earlier links shift inputs', () => {
+      const graph = createTestRootGraph()
+      onTestFinished(enableSubgraphNodeCreation(graph))
+      const source0 = createTestNode(graph, [], ['number'], 'source 0')
+      const source1 = createTestNode(graph, [], ['number'], 'source 1')
+      const target = createTestNode(
+        graph,
+        ['number', 'number'],
+        [],
+        'external target'
+      )
+      source0.connect(0, target, 0)
+      source1.connect(0, target, 1)
+      const { node: wrapper } = graph.convertToSubgraph(
+        new Set<Positionable>([source0, source1])
+      )
+      target.onConnectionsChange = function (_type, slot, connected, link) {
+        if (!connected || !link || slot !== 0) return
+        this.addInput('inserted', 'number')
+        const inserted = this.inputs.pop()
+        assert(inserted)
+        this.inputs.splice(1, 0, inserted)
+      }
+
+      graph.unpackSubgraph(wrapper)
+
+      const firstLink = target.getInputLink(target.findInputSlot('input_0'))
+      const secondLink = target.getInputLink(target.findInputSlot('input_1'))
+      assert(firstLink && secondLink)
+      expect(graph.getNodeById(firstLink.origin_id)?.title).toBe('source 0')
+      expect(graph.getNodeById(secondLink.origin_id)?.title).toBe('source 1')
+      expect(target.getInputLink(target.findInputSlot('inserted'))).toBeNull()
     })
     it('Should merge boundary links', () => {
       const subgraph = createTestSubgraph({

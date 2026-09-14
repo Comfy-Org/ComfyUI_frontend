@@ -74,6 +74,11 @@
       "count": 9
     }
   },
+  "src/lib/litegraph/src/subgraph/unpackSubgraph.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
   "src/lib/litegraph/src/LGraphNode.ts": {
     "comfy/no-new-error-throw": {
       "count": 1

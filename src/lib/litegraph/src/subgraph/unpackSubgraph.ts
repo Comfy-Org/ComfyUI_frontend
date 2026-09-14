@@ -8,18 +8,109 @@ import type { INodeInputSlot, Point } from '../interfaces'
 import type { LGraph } from '../LGraph'
 import { LGraphNode } from '../LGraphNode'
 import { LiteGraph } from '../litegraph'
-import { multiClone } from './subgraphUtils'
+import type { ISerialisedNode } from '../types/serialisation'
 
 export type UnpackedTargetInput =
   | {
-      kind: 'subgraph'
-      id: UUID
-      input: INodeInputSlot | null
+      kind: 'input'
+      input: INodeInputSlot
+      subgraphInputId?: UUID
     }
   | {
-      kind: 'node'
-      input: INodeInputSlot | null
+      kind: 'subgraph'
+      id: UUID
     }
+  | { kind: 'unresolved' }
+
+function inputSlotMarkers(
+  inputs: Pick<INodeInputSlot, 'name' | 'type'>[],
+  sourceInputs: Pick<INodeInputSlot, 'name' | 'type'>[],
+  markerProperty: string
+) {
+  const markers = new Map<number, number>()
+  const claimed = new Set<number>()
+
+  for (const [index, input] of inputs.entries()) {
+    const marker: unknown = Object.getOwnPropertyDescriptor(
+      input,
+      markerProperty
+    )?.value
+    if (typeof marker !== 'number') continue
+    markers.set(index, marker)
+    claimed.add(marker)
+  }
+
+  for (const [index, input] of inputs.entries()) {
+    if (markers.has(index)) continue
+    const candidates = sourceInputs
+      .map((source, sourceIndex) => ({ source, sourceIndex }))
+      .filter(
+        ({ source }) => source.name === input.name && source.type === input.type
+      )
+      .filter(({ source }) => {
+        const marker: unknown = Object.getOwnPropertyDescriptor(
+          source,
+          markerProperty
+        )?.value
+        return typeof marker === 'number' && !claimed.has(marker)
+      })
+    const match =
+      candidates.length === 1
+        ? candidates[0]
+        : candidates.find(({ sourceIndex }) => sourceIndex === index)
+    const marker: unknown = match
+      ? Object.getOwnPropertyDescriptor(match.source, markerProperty)?.value
+      : undefined
+    if (typeof marker !== 'number') continue
+    markers.set(index, marker)
+    claimed.add(marker)
+  }
+
+  return markers
+}
+
+function cloneNodesForUnpack(
+  nodes: Iterable<LGraphNode>,
+  markerProperty: string
+): ISerialisedNode[] {
+  const clonedNodes: ISerialisedNode[] = []
+
+  for (const node of nodes) {
+    const nodeInfo = structuredClone(node.serialize())
+    for (const [index, input] of (nodeInfo.inputs ?? []).entries()) {
+      Object.defineProperty(input, markerProperty, {
+        value: index,
+        enumerable: true
+      })
+    }
+
+    const clonedNode = LiteGraph.createNode(node.type)
+    if (!clonedNode) {
+      console.warn('Failed to create node', node.type)
+      clonedNodes.push(nodeInfo)
+      continue
+    }
+
+    clonedNode.configure(nodeInfo)
+    const serializedNode = clonedNode.serialize()
+    const markers = inputSlotMarkers(
+      clonedNode.inputs,
+      nodeInfo.inputs ?? [],
+      markerProperty
+    )
+    for (const [index, marker] of markers) {
+      const input = serializedNode.inputs?.[index]
+      if (!input) continue
+      Object.defineProperty(input, markerProperty, {
+        value: marker,
+        enumerable: true
+      })
+    }
+    clonedNodes.push(serializedNode)
+  }
+
+  return clonedNodes
+}
 
 export function materializeSubgraphNodes({
   graph,
@@ -33,7 +124,7 @@ export function materializeSubgraphNodes({
   skipMissingNodes: boolean
 }) {
   const inputSlotMarker = `__unpackInputSlot_${createUuidv4()}`
-  const nodeInfos = multiClone(nodes, inputSlotMarker)
+  const nodeInfos = cloneNodesForUnpack(nodes, inputSlotMarker)
   const nodeIdMap = new Map<NodeId, NodeId>()
   const inputSlots = new Map<NodeId, Map<number, INodeInputSlot>>()
   const materializedNodes: LGraphNode[] = []
@@ -42,7 +133,7 @@ export function materializeSubgraphNodes({
     let node = LiteGraph.createNode(nodeInfo.type, nodeInfo.title)
     if (!node) {
       if (!skipMissingNodes) {
-        throw Error(
+        throw new Error(
           `Cannot unpack: node type "${nodeInfo.type}" is not registered`
         )
       }
@@ -71,13 +162,15 @@ export function materializeSubgraphNodes({
     node.configure(nodeInfo)
 
     const configuredSlots = new Map<number, INodeInputSlot>()
-    for (const input of node.inputs) {
-      const marker: unknown = Object.getOwnPropertyDescriptor(
-        input,
-        inputSlotMarker
-      )?.value
+    const markers = inputSlotMarkers(
+      node.inputs,
+      nodeInfo.inputs ?? [],
+      inputSlotMarker
+    )
+    for (const [index, input] of node.inputs.entries()) {
       Reflect.deleteProperty(input, inputSlotMarker)
-      if (typeof marker === 'number') configuredSlots.set(marker, input)
+      const marker = markers.get(index)
+      if (marker !== undefined) configuredSlots.set(marker, input)
     }
     for (const input of nodeInfo.inputs ?? []) {
       Reflect.deleteProperty(input, inputSlotMarker)
@@ -102,7 +195,8 @@ export function captureUnpackedTargetInput(
   const id = targetNode.isSubgraphNode()
     ? targetNode.inputs[targetSlotIndex]?._subgraphSlot?.id
     : undefined
-  return id ? { kind: 'subgraph', id, input } : { kind: 'node', input }
+  if (input) return { kind: 'input', input, subgraphInputId: id }
+  return id ? { kind: 'subgraph', id } : { kind: 'unresolved' }
 }
 
 export function resolveUnpackedTargetInput(
@@ -111,16 +205,17 @@ export function resolveUnpackedTargetInput(
   fallbackSlot: number
 ) {
   if (!targetInput) return fallbackSlot
-  if (targetInput.input) {
+  if (targetInput.kind === 'unresolved') return -1
+  if (targetInput.kind === 'input') {
     const index = targetNode.inputs.indexOf(targetInput.input)
     if (index !== -1) return index
+    if (!targetInput.subgraphInputId) return -1
   }
-  if (targetInput.kind === 'subgraph') {
-    return targetNode.isSubgraphNode()
-      ? targetNode.inputs.findIndex(
-          (input) => input._subgraphSlot?.id === targetInput.id
-        )
-      : -1
-  }
-  return -1
+  const id =
+    targetInput.kind === 'subgraph'
+      ? targetInput.id
+      : targetInput.subgraphInputId
+  return targetNode.isSubgraphNode()
+    ? targetNode.inputs.findIndex((input) => input._subgraphSlot?.id === id)
+    : -1
 }
