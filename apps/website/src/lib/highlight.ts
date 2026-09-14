@@ -16,7 +16,12 @@ import type { HighlighterCore } from 'shiki/core'
 
 const CODE_THEME = 'kanagawa-wave'
 
-export type CodeLang = 'javascript' | 'json' | 'python' | 'shell'
+export type CodeLang = 'javascript' | 'json' | 'python' | 'shell' | 'typescript'
+
+export interface HighlightToken {
+  readonly content: string
+  readonly color?: string
+}
 
 // Markup grows ~7x the source and the cost is linear. The payloads these blocks
 // render are a few hundred bytes; anything past this keeps its plain rendering.
@@ -26,7 +31,8 @@ const GRAMMARS = {
   javascript: () => import('shiki/langs/javascript.mjs'),
   json: () => import('shiki/langs/json.mjs'),
   python: () => import('shiki/langs/python.mjs'),
-  shell: () => import('shiki/langs/shellscript.mjs')
+  shell: () => import('shiki/langs/shellscript.mjs'),
+  typescript: () => import('shiki/langs/typescript.mjs')
 } satisfies Record<CodeLang, () => Promise<unknown>>
 
 let pending: Promise<HighlighterCore> | null = null
@@ -45,6 +51,14 @@ function highlighter(): Promise<HighlighterCore> {
   return pending
 }
 
+async function highlighterFor(lang: CodeLang): Promise<HighlighterCore> {
+  const hl = await highlighter()
+  if (!hl.getLoadedLanguages().includes(lang)) {
+    await hl.loadLanguage(await GRAMMARS[lang]())
+  }
+  return hl
+}
+
 /**
  * Tokenized spans for a `<pre>` the caller already owns — `structure: 'inline'`
  * drops Shiki's own wrapper, so the element and its classes survive. Null when
@@ -56,11 +70,24 @@ export async function highlightInline(
 ): Promise<string | null> {
   if (code.length > MAX_HIGHLIGHT_BYTES) return null
   try {
-    const hl = await highlighter()
-    if (!hl.getLoadedLanguages().includes(lang)) {
-      await hl.loadLanguage(await GRAMMARS[lang]())
-    }
+    const hl = await highlighterFor(lang)
     return hl.codeToHtml(code, { lang, theme: CODE_THEME, structure: 'inline' })
+  } catch {
+    return null
+  }
+}
+
+export async function highlightTokens(
+  code: string,
+  lang: CodeLang
+): Promise<readonly HighlightToken[] | null> {
+  if (code.length > MAX_HIGHLIGHT_BYTES) return null
+  try {
+    const hl = await highlighterFor(lang)
+    const { tokens } = hl.codeToTokens(code, { lang, theme: CODE_THEME })
+    return tokens.flatMap((line, index) =>
+      index === tokens.length - 1 ? line : [...line, { content: '\n' }]
+    )
   } catch {
     return null
   }

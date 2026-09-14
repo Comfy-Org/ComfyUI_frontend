@@ -24,6 +24,8 @@ import { workshopIdempotencyKey } from '../../config/workshop-snippets'
 import type { Locale } from '../../i18n/translations'
 import { useTablist } from '../../composables/useTablist'
 import { t } from '../../i18n/translations'
+import type { CodeLang } from '../../lib/highlight'
+import HighlightedCode from './HighlightedCode.vue'
 
 const {
   contract,
@@ -181,6 +183,11 @@ const languageLabel: Record<SnippetLanguage, string> = {
   typescript: 'TypeScript',
   curl: 'cURL'
 }
+const highlightLanguage = {
+  python: 'python',
+  typescript: 'typescript',
+  curl: 'shell'
+} satisfies Record<SnippetLanguage, CodeLang>
 </script>
 
 <template>
@@ -257,7 +264,10 @@ const languageLabel: Record<SnippetLanguage, string> = {
         tabindex="0"
         class="overflow-x-auto bg-primary-comfy-ink p-6 font-mono text-sm/relaxed text-primary-warm-white"
         data-testid="snippet"
-      ><code>{{ snippet }}</code></pre>
+      ><HighlightedCode
+          :code="snippet"
+          :language="highlightLanguage[language]"
+        /></pre>
     </div>
 
     <p v-if="!snippet" role="status" class="text-sm text-primary-warm-gray">
