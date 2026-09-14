@@ -579,6 +579,13 @@ export const workspaceApi = {
         } satisfies SubscribeRequest,
         { headers }
       )
+      useTelemetry()?.trackBillingEvent({
+        operation: 'subscription_checkout',
+        stage: 'checkout_received',
+        outcome: 'pending',
+        billing_op_id: response.data.billing_op_id,
+        checkout_status: response.data.status
+      })
       return response.data
     } catch (err) {
       handleAxiosError(err)
@@ -682,6 +689,13 @@ export const workspaceApi = {
         } satisfies CreateTopupRequest,
         { headers }
       )
+      useTelemetry()?.trackBillingEvent({
+        operation: 'topup',
+        stage: 'checkout_received',
+        outcome: 'pending',
+        billing_op_id: response.data.billing_op_id,
+        checkout_status: response.data.status
+      })
       return response.data
     } catch (err) {
       handleAxiosError(err)

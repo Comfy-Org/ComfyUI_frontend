@@ -22,6 +22,10 @@ import type {
   AuthMethod
 } from '@comfyorg/account/telemetry'
 import type { SessionRefreshOutcome } from '@comfyorg/account/session'
+import type {
+  SubscribeResponse,
+  CreateTopupResponse
+} from '@comfyorg/ingest-types'
 
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
@@ -856,6 +860,13 @@ type BillingRequestSent = {
   outcome: 'pending'
 }
 
+type BillingCheckoutReceived<Status extends string> = {
+  stage: 'checkout_received'
+  outcome: 'pending'
+  billing_op_id: string
+  checkout_status: Status
+}
+
 type BillingStarted = {
   stage: 'started'
   outcome: 'pending'
@@ -891,6 +902,7 @@ type SubscriptionCheckoutBillingEvent = {
   duration_ms?: number
 } & (
   | BillingIntent
+  | BillingCheckoutReceived<SubscribeResponse['status']>
   | BillingRequestSent
   | BillingStarted
   | BillingSucceeded
@@ -932,6 +944,7 @@ type TopupBillingEvent = {
   duration_ms?: number
 } & (
   | BillingIntent
+  | BillingCheckoutReceived<CreateTopupResponse['status']>
   | BillingRequestSent
   | BillingStarted
   | BillingSucceeded
@@ -985,6 +998,9 @@ export function getBillingTelemetryEventPayload(event: BillingTelemetryEvent) {
       event.billing_op_id !== undefined && {
         billing_op_id: event.billing_op_id
       }),
+    ...('checkout_status' in event && {
+      checkout_status: event.checkout_status
+    }),
     ...('operation_type' in event && {
       operation_type: event.operation_type
     }),
@@ -1215,6 +1231,9 @@ export const TelemetryEvents = {
   BEGIN_CHECKOUT: 'begin_checkout',
 
   // Canonical Billing Lifecycle
+  BILLING_SUBSCRIPTION_CHECKOUT_RECEIVED:
+    'billing.subscription_checkout.checkout_received',
+  BILLING_TOPUP_CHECKOUT_RECEIVED: 'billing.topup.checkout_received',
   BILLING_SUBSCRIPTION_CHECKOUT_REQUEST_SENT:
     'billing.subscription_checkout.request_sent',
   BILLING_TOPUP_REQUEST_SENT: 'billing.topup.request_sent',
