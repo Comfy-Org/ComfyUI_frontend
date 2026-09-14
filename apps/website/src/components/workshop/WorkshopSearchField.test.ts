@@ -69,12 +69,12 @@ describe('WorkshopSearchField', () => {
     )
     expect(
       within(server.body).getByRole('button', {
-        name: 'Search models, providers, categories...'
+        name: 'Search models, providers, and categories'
       })
     ).toBeDisabled()
     render(search)
     const trigger = screen.getByRole('button', {
-      name: 'Search models, providers, categories...'
+      name: 'Search models, providers, and categories'
     })
     await waitFor(() => expect(trigger).toBeEnabled())
     await user.click(trigger)

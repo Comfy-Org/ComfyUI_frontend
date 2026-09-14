@@ -49,7 +49,7 @@ function cardNames() {
 
 async function search() {
   const field = screen.getByRole('combobox', {
-    name: 'Search models, providers, and capabilities'
+    name: 'Search models, providers, and categories'
   })
   await waitFor(() => expect(field).not.toHaveProperty('disabled', true))
   return field
