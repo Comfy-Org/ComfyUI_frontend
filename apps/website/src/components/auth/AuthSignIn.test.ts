@@ -3,13 +3,13 @@ import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { AUTH_ERROR_MESSAGES } from '@comfyorg/account/firebaseAuthError'
 import type {
   TurnstileApi,
   TurnstileRenderOptions
 } from '@comfyorg/account/turnstileScript'
 
 import { removeAllToasts, useAuthToasts } from '../../config/auth-toast-state'
+import { t } from '../../i18n/translations'
 import AuthSignIn from './AuthSignIn.vue'
 import AuthToast from './AuthToast.vue'
 
@@ -340,7 +340,7 @@ describe('AuthSignIn', () => {
     expect(alert.getAttribute('data-severity')).toBe('warn')
     expect(alert.textContent).toContain('Warning')
     expect(alert.textContent).toContain(
-      AUTH_ERROR_MESSAGES['auth/popup-closed-by-user']
+      t('auth.errors.auth/popup-closed-by-user', 'en')
     )
     expect(toasts.value).toHaveLength(1)
     expect(
@@ -910,7 +910,7 @@ describe('AuthSignIn', () => {
     expect(
       alert.textContent,
       'the cloud app names the code; the website reads the same line'
-    ).toContain(AUTH_ERROR_MESSAGES['auth/user-not-found'])
+    ).toContain(t('auth.errors.auth/user-not-found', 'en'))
     expect(toasts.value[0].life).toBeUndefined()
     expect(replace).not.toHaveBeenCalled()
   })
@@ -1131,7 +1131,7 @@ describe('AuthSignIn', () => {
       await userEvent.setup().click(button)
 
       await waitFor(() => expect(fresh.value).toHaveLength(1))
-      expect(fresh.value[0].detail).toBe(AUTH_ERROR_MESSAGES.generic)
+      expect(fresh.value[0].detail).toBe(t('auth.errors.generic', 'en'))
       expect(
         button.disabled,
         'a failed chunk load must not strand the page in pending'

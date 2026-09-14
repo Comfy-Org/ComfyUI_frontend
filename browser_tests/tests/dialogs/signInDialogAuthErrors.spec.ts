@@ -1,5 +1,7 @@
 import { expect } from '@playwright/test'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+
 import { SignInDialog } from '@e2e/fixtures/components/SignInDialog'
 import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { localSignedOutFixture as test } from '@e2e/fixtures/localSignedOutFixture'
@@ -98,7 +100,7 @@ test.describe('Sign In dialog — auth error codes', () => {
 
     await expect(
       comfyPage.page.getByText(
-        'An account with this email already exists. Try signing in instead.'
+        enMessages.auth.errors['auth/email-already-in-use']
       )
     ).toBeVisible()
     await expect(dialog.root).toBeVisible()

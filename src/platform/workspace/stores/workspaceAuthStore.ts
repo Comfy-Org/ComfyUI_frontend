@@ -11,7 +11,7 @@ import type {
 } from '@comfyorg/account/session'
 import { createWebCrossTabRefreshPort } from '@comfyorg/account/web'
 import {
-  SESSION_ERROR_MESSAGES,
+  SESSION_ERROR_CODES,
   createSessionClient,
   isPermanentSessionError
 } from '@comfyorg/account/session'
@@ -102,7 +102,7 @@ function isPermanentAuthError(err: unknown): err is WorkspaceAuthError {
 function isSessionErrorCode(
   code: string | undefined
 ): code is SessionErrorCode {
-  return code !== undefined && code in SESSION_ERROR_MESSAGES
+  return code !== undefined && code in SESSION_ERROR_CODES
 }
 
 // The one code-to-copy mapping; exhaustive so a new code is a compile

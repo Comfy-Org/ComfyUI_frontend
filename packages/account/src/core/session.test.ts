@@ -9,7 +9,7 @@ import type {
   SessionErrorCode
 } from './session.js'
 import {
-  SESSION_ERROR_MESSAGES,
+  SESSION_ERROR_CODES,
   createSessionClient,
   isCredentialFresh,
   isPermanentSessionError
@@ -1667,17 +1667,10 @@ describe('settled sign-out blocks an explicit remint', () => {
   })
 })
 
-describe('shared session copy', () => {
-  it('covers every session error code and both success states', () => {
-    const codes: SessionErrorCode[] = [
-      'NOT_AUTHENTICATED',
-      'INVALID_FIREBASE_TOKEN',
-      'ACCESS_DENIED',
-      'WORKSPACE_NOT_FOUND',
-      'TOKEN_EXCHANGE_FAILED'
-    ]
-    for (const code of codes) {
-      expect(SESSION_ERROR_MESSAGES[code]).toBeTruthy()
-    }
+describe('session error code vocabulary', () => {
+  it('narrows an arbitrary code to a known one and rejects the rest', () => {
+    const known: SessionErrorCode = 'ACCESS_DENIED'
+    expect(known in SESSION_ERROR_CODES).toBe(true)
+    expect('SOMETHING_ELSE' in SESSION_ERROR_CODES).toBe(false)
   })
 })

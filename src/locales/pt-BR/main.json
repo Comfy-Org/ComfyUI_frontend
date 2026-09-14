@@ -403,9 +403,9 @@
       "contactSupport": "Para excluir sua conta, entre em contato com {email}"
     },
     "errors": {
-      "auth/account-exists-with-different-credential": "Já existe uma conta com este endereço de e-mail, mas ela usa um método de login diferente. Faça login da mesma forma que fez originalmente.",
+      "auth/account-exists-with-different-credential": "Não foi possível fazer seu login com este método. Tente outra opção de login ou redefina sua senha para continuar.",
       "auth/cancelled-popup-request": "Outra janela de login já estava aberta, então esta foi cancelada. Tente novamente.",
-      "auth/email-already-in-use": "Já existe uma conta com este e-mail. Tente fazer login.",
+      "auth/email-already-in-use": "Não foi possível criar uma conta com este e-mail. Se você já tiver uma, tente fazer login ou redefinir sua senha.",
       "auth/invalid-credential": "Credenciais de login inválidas. Verifique seu e-mail e senha.",
       "auth/invalid-email": "Por favor, insira um endereço de e-mail válido.",
       "auth/network-request-failed": "Erro de rede. Verifique sua conexão e tente novamente.",
