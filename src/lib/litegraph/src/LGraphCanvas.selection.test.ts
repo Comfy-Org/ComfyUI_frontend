@@ -301,7 +301,10 @@ describe('LGraphCanvas selection', () => {
       const store = useSelectionStore()
       const subgraph = createTestSubgraph({ rootGraph: graph })
       const scope = graphScopeOf(subgraph)
+      const rootScope = graphScopeOf(graph)
+      const rootGroup = addGroup(graph, 'Root', [0, 0, 100, 100])
       const selectedGroup = addGroup(subgraph, 'Selected', [0, 0, 100, 100])
+      canvas.select(rootGroup)
       store.apply(scope, {
         type: 'selection.add',
         keys: [selectableKeyOf(selectedGroup)]
@@ -312,6 +315,9 @@ describe('LGraphCanvas selection', () => {
       subgraph.add(replacement)
 
       expect(store.selectedKeys(scope)).toEqual([])
+      expect(store.selectedKeys(rootScope)).toEqual([
+        selectableKeyOf(rootGroup)
+      ])
       expect(
         store.isSelected(graphScopeOf(subgraph), selectableKeyOf(replacement))
       ).toBe(false)
