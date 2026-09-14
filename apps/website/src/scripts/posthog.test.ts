@@ -10,6 +10,7 @@ import {
 
 const hoisted = vi.hoisted(() => ({
   localDev: false,
+  deployEnv: '',
   mockInit: vi.fn(),
   mockCapture: vi.fn(),
   mockOnFeatureFlags: vi.fn<typeof PostHogModule.default.onFeatureFlags>(),
@@ -24,11 +25,15 @@ const hoisted = vi.hoisted(() => ({
 vi.mock(import('astro:env/client'), () => ({
   get WORKSHOP_LOCAL_DEV() {
     return hoisted.localDev
+  },
+  get WORKSHOP_DEPLOY_ENV() {
+    return hoisted.deployEnv
   }
 }))
 
 beforeEach(() => {
   hoisted.localDev = false
+  hoisted.deployEnv = ''
 })
 
 type PostHogMock = Pick<
@@ -92,8 +97,9 @@ describe('Workshop visibility', () => {
     expect(enabled.value).toBe(true)
   })
 
-  it('does not let a local visibility override bypass PostHog in a build', async () => {
+  it('does not let preview auth or production visibility overrides bypass PostHog', async () => {
     vi.stubEnv('DEV', true)
+    vi.stubEnv('PUBLIC_WORKSHOP_AUTH_FLAG', '1')
     vi.stubEnv('PUBLIC_WORKSHOP_ENABLED', '1')
     const { initPostHog, useWorkshopEnabled } = await import('./posthog')
     initPostHog()
@@ -498,7 +504,8 @@ describe('useWorkshopAuthFlag', () => {
     hoisted.mockIsFeatureEnabled.mockReset()
   })
 
-  it('keeps sign-in available while Models stays disabled', async () => {
+  it('allows sign-in without an auth flag while Models stays disabled, and honors explicit auth changes', async () => {
+    hoisted.deployEnv = 'production'
     hoisted.mockIsFeatureEnabled.mockImplementation((key) =>
       key === 'workshop-enabled' ? false : undefined
     )
@@ -511,6 +518,9 @@ describe('useWorkshopAuthFlag', () => {
     expect(useWorkshopEnabled().value).toBe(false)
 
     hoisted.mockIsFeatureEnabled.mockReturnValue(false)
+    emitFeatureFlags()
+    expect(enabled.value).toBe(false)
+    hoisted.mockIsFeatureEnabled.mockReturnValue(true)
     emitFeatureFlags()
     expect(enabled.value).toBe(true)
   })
@@ -536,16 +546,34 @@ describe('useWorkshopAuthFlag', () => {
     expect(useWorkshopAuthFlag().value).toBe(true)
   })
 
-  it('ignores a remote auth disable so the public login remains available', async () => {
+  it('keeps the production auth kill switch despite a configured override', async () => {
+    hoisted.deployEnv = 'production'
+    vi.stubEnv('PUBLIC_WORKSHOP_AUTH_FLAG', '1')
+    const { initPostHog, useWorkshopAuthFlag } = await import('./posthog')
+    initPostHog()
+    const enabled = useWorkshopAuthFlag()
+    hoisted.mockIsFeatureEnabled.mockReturnValue(true)
+    emitFeatureFlags()
+    expect(enabled.value).toBe(true)
+    hoisted.mockIsFeatureEnabled.mockReturnValue(false)
+    emitFeatureFlags()
+    expect(enabled.value).toBe(false)
+  })
+
+  it('honors the build override and keeps it sticky against a remote disable', async () => {
+    vi.stubEnv('PUBLIC_WORKSHOP_AUTH_FLAG', '1')
     hoisted.mockIsFeatureEnabled.mockReturnValue(false)
     const { initPostHog, useWorkshopAuthFlag } = await import('./posthog')
     const enabled = useWorkshopAuthFlag()
 
-    expect(enabled.value).toBe(true)
+    expect(enabled.value, 'override forces on with no PostHog').toBe(true)
 
     initPostHog()
     emitFeatureFlags()
-    expect(enabled.value).toBe(true)
+    expect(
+      enabled.value,
+      'an override-on build ignores PostHog turning the flag off'
+    ).toBe(true)
   })
 })
 

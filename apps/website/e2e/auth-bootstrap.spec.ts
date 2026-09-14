@@ -2,11 +2,7 @@ import { expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
 
-for (const flagState of [
-  'unavailable',
-  'models-disabled',
-  'legacy-auth-disabled'
-]) {
+for (const flagState of ['unavailable', 'models-disabled']) {
   test.describe(`First sign-in with PostHog ${flagState}`, () => {
     test.beforeEach(async ({ context }) => {
       await context.route('https://apis.google.com/js/api.js*', (route) =>
@@ -21,12 +17,7 @@ for (const flagState of [
 
         return route.fulfill({
           json: {
-            featureFlags: {
-              'workshop-enabled': false,
-              ...(flagState === 'legacy-auth-disabled'
-                ? { 'workshop-auth': false }
-                : {})
-            },
+            featureFlags: { 'workshop-enabled': false },
             featureFlagPayloads: {}
           }
         })
