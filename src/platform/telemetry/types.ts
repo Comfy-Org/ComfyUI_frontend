@@ -21,6 +21,7 @@ import type {
   AuthFlowAction,
   AuthMethod
 } from '@comfyorg/account/telemetry'
+import type { SessionRefreshOutcome } from '@comfyorg/account/session'
 
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
@@ -79,13 +80,7 @@ export interface UnifiedAuthRetryMetadata {
   failure_reason?: UnifiedAuthRetryFailureReason
 }
 
-export type UnifiedAuthRefreshOutcome =
-  | 'succeeded'
-  | 'retry_scheduled'
-  | 'retries_exhausted'
-  | 'permanent_failure'
-  /** Retries ran out and the token reached its expiry; the session ended. */
-  | 'expired'
+export type UnifiedAuthRefreshOutcome = SessionRefreshOutcome
 
 /**
  * Outcome of one proactive unified Cloud-JWT refresh attempt. This lifecycle
