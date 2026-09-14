@@ -25,8 +25,11 @@ import type { BillingScope, BillingScopeContext } from './billingScope.js'
 import { createBillingScopeTracker, sameBillingScope } from './billingScope.js'
 import type { CapabilityDenials } from './capabilityDenials.js'
 import { decodeCapabilityDenials } from './capabilityDenials.js'
-import { codeForHttpStatus } from './httpStatus.js'
-import { releaseOnAbort } from './sharedRead.js'
+import {
+  matchesScopedRead,
+  readValidatedBillingResponse,
+  releaseOnAbort
+} from './sharedRead.js'
 
 export const CAPABILITIES_ROUTE = '/billing/capabilities'
 
@@ -135,6 +138,24 @@ function freshUntilFrom(expiresAt: string, now: number): number {
   return now + FALLBACK_FRESH_MS
 }
 
+function freshSnapshot(
+  snapshot: CapabilitiesSnapshot | undefined,
+  scope: CapabilityScope,
+  forceRefresh: boolean,
+  now: number
+): CapabilitiesSnapshot | undefined {
+  if (forceRefresh || snapshot === undefined) return undefined
+  if (!sameBillingScope(snapshot.scope, scope)) return undefined
+  return snapshot.freshUntil > now ? snapshot : undefined
+}
+
+function snapshotAfterInvalidation(
+  snapshot: CapabilitiesSnapshot,
+  invalidated: boolean
+): CapabilitiesSnapshot {
+  return invalidated ? { ...snapshot, freshUntil: 0 } : snapshot
+}
+
 interface InFlightRead {
   readonly context: BillingScopeContext
   readonly promise: Promise<BillingResult<CapabilitiesSnapshot>>
@@ -157,26 +178,18 @@ export function createCapabilitiesReader(
   const requestCapabilities = async (
     scope: CapabilityScope
   ): Promise<BillingResult<CapabilitiesSnapshot>> => {
-    const response = await transport({
-      method: 'GET',
-      route: CAPABILITIES_ROUTE,
-      timeoutMs: CAPABILITIES_TIMEOUT_MS
-    })
+    const response = await readValidatedBillingResponse(
+      transport,
+      {
+        method: 'GET',
+        route: CAPABILITIES_ROUTE,
+        timeoutMs: CAPABILITIES_TIMEOUT_MS
+      },
+      (body) => CapabilitiesBodySchema.safeParse(body)
+    )
     if (response.status === 'error') return response
 
-    const { httpStatus, body } = response.value
-    if (httpStatus < 200 || httpStatus >= 300) {
-      return {
-        status: 'error',
-        code: codeForHttpStatus(httpStatus),
-        httpStatus
-      }
-    }
-
-    const parsed = CapabilitiesBodySchema.safeParse(body)
-    if (!parsed.success) {
-      return { status: 'error', code: 'MALFORMED_RESPONSE', httpStatus }
-    }
+    const { data, body, httpStatus } = response.value
 
     // Capabilities resolve per (user, workspace), so both halves have to
     // match. Checking only the workspace would accept another member's answer
@@ -186,7 +199,7 @@ export function createCapabilitiesReader(
     // scope, so it joins the transient bucket instead of being cached. The
     // ingest service makes the same two-part check against its own upstream
     // before it forwards a response.
-    const resolved = parsed.data.resolved_for
+    const resolved = data.resolved_for
     if (
       resolved.user_id !== scope.userId ||
       resolved.workspace_id !== scope.workspaceId
@@ -201,12 +214,12 @@ export function createCapabilitiesReader(
     return {
       status: 'ok',
       value: {
-        capabilities: parsed.data.capabilities,
+        capabilities: data.capabilities,
         denials,
-        rolloutDefaultsApplied: parsed.data.rollout_defaults_applied,
-        revision: parsed.data.revision,
+        rolloutDefaultsApplied: data.rollout_defaults_applied,
+        revision: data.revision,
         scope,
-        freshUntil: freshUntilFrom(parsed.data.expires_at, now())
+        freshUntil: freshUntilFrom(data.expires_at, now())
       }
     }
   }
@@ -222,23 +235,20 @@ export function createCapabilitiesReader(
     }
     const { scope } = context
 
-    if (
-      readOptions?.forceRefresh !== true &&
-      snapshot !== undefined &&
-      sameBillingScope(snapshot.scope, scope) &&
-      snapshot.freshUntil > now()
-    ) {
-      return { status: 'ok', value: snapshot }
+    const currentSnapshot = freshSnapshot(
+      snapshot,
+      scope,
+      readOptions?.forceRefresh === true,
+      now()
+    )
+    if (currentSnapshot !== undefined) {
+      return { status: 'ok', value: currentSnapshot }
     }
 
     // One read per scope. A caller arriving mid-flight for the same scope
     // joins rather than issuing a second identical request; a caller for a
     // different scope starts its own, and the older one can no longer publish.
-    if (
-      inFlight !== undefined &&
-      inFlight.context.generation === context.generation &&
-      sameBillingScope(inFlight.context.scope, scope)
-    ) {
+    if (matchesScopedRead(inFlight, context)) {
       return releaseOnAbort(inFlight.promise, readOptions?.signal)
     }
 
@@ -272,9 +282,7 @@ export function createCapabilitiesReader(
       // that number when it serializes, not when it read. The value is still
       // the best available, so it is published — as already stale, so the
       // next read refetches instead of serving it.
-      snapshot = pending.invalidated
-        ? { ...result.value, freshUntil: 0 }
-        : result.value
+      snapshot = snapshotAfterInvalidation(result.value, pending.invalidated)
       return { status: 'ok', value: snapshot }
     })()
 

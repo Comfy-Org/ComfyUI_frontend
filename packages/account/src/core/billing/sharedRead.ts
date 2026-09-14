@@ -13,7 +13,14 @@
  * signal releases that caller with a transient failure without cancelling the
  * work the others are still waiting on.
  */
-import type { BillingResult } from './billingContracts.js'
+import type {
+  BillingRequest,
+  BillingResult,
+  BillingTransport
+} from './billingContracts.js'
+import type { BillingScopeContext } from './billingScope.js'
+import { sameBillingScope } from './billingScope.js'
+import { codeForHttpStatus } from './httpStatus.js'
 
 /**
  * An abandoned wait is transient, the same bucket the transport reports an
@@ -24,6 +31,51 @@ const ABANDONED = {
   status: 'error',
   code: 'REQUEST_FAILED'
 } as const satisfies BillingResult<never>
+
+type ParsedBody<T> =
+  | { readonly success: true; readonly data: T }
+  | { readonly success: false }
+
+interface ValidatedBillingResponse<T> {
+  readonly data: T
+  readonly body: unknown
+  readonly httpStatus: number
+}
+
+export function matchesScopedRead<
+  T extends { readonly context: BillingScopeContext }
+>(read: T | undefined, context: BillingScopeContext): read is T {
+  return (
+    read !== undefined &&
+    read.context.generation === context.generation &&
+    sameBillingScope(read.context.scope, context.scope)
+  )
+}
+
+export async function readValidatedBillingResponse<T>(
+  transport: BillingTransport,
+  request: BillingRequest,
+  parse: (body: unknown) => ParsedBody<T>
+): Promise<BillingResult<ValidatedBillingResponse<T>>> {
+  const response = await transport(request)
+  if (response.status === 'error') return response
+
+  const { httpStatus, body } = response.value
+  if (httpStatus < 200 || httpStatus >= 300) {
+    return {
+      status: 'error',
+      code: codeForHttpStatus(httpStatus),
+      httpStatus
+    }
+  }
+
+  const parsed = parse(body)
+  if (!parsed.success) {
+    return { status: 'error', code: 'MALFORMED_RESPONSE', httpStatus }
+  }
+
+  return { status: 'ok', value: { data: parsed.data, body, httpStatus } }
+}
 
 export function releaseOnAbort<T>(
   shared: Promise<BillingResult<T>>,

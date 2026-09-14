@@ -12,9 +12,12 @@ import type { z } from 'zod'
 import type { SessionClient } from '../session.js'
 import type { BillingResult, BillingTransport } from './billingContracts.js'
 import type { BillingScope, BillingScopeContext } from './billingScope.js'
-import { createBillingScopeTracker, sameBillingScope } from './billingScope.js'
-import { codeForHttpStatus } from './httpStatus.js'
-import { releaseOnAbort } from './sharedRead.js'
+import { createBillingScopeTracker } from './billingScope.js'
+import {
+  matchesScopedRead,
+  readValidatedBillingResponse,
+  releaseOnAbort
+} from './sharedRead.js'
 
 export const CREDITS_ROUTE = '/billing/balance'
 
@@ -75,29 +78,16 @@ export function createCreditsReader(
   const requestBalance = async (
     scope: CreditsScope
   ): Promise<BillingResult<CreditsSnapshot>> => {
-    const response = await transport({
-      method: 'GET',
-      route: CREDITS_ROUTE
-    })
+    const response = await readValidatedBillingResponse(
+      transport,
+      { method: 'GET', route: CREDITS_ROUTE },
+      (body) => zBillingBalanceResponse.safeParse(body)
+    )
     if (response.status === 'error') return response
-
-    const { httpStatus, body } = response.value
-    if (httpStatus < 200 || httpStatus >= 300) {
-      return {
-        status: 'error',
-        code: codeForHttpStatus(httpStatus),
-        httpStatus
-      }
-    }
-
-    const parsed = zBillingBalanceResponse.safeParse(body)
-    if (!parsed.success) {
-      return { status: 'error', code: 'MALFORMED_RESPONSE', httpStatus }
-    }
 
     return {
       status: 'ok',
-      value: { balance: parsed.data, scope, readAt: now() }
+      value: { balance: response.value.data, scope, readAt: now() }
     }
   }
 
@@ -112,11 +102,7 @@ export function createCreditsReader(
     }
     const { scope } = context
 
-    if (
-      inFlight !== undefined &&
-      inFlight.context.generation === context.generation &&
-      sameBillingScope(inFlight.context.scope, scope)
-    ) {
+    if (matchesScopedRead(inFlight, context)) {
       return releaseOnAbort(inFlight.promise, readOptions?.signal)
     }
 
