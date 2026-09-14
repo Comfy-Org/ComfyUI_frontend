@@ -38,7 +38,6 @@ test.describe('Group node migration', { tag: '@node' }, () => {
   test('Preserves group node widget values through subgraph conversion', async ({
     comfyPage
   }) => {
-    test.fail()
     await comfyPage.workflow.loadWorkflow('groupnodes/group_node_v1.3.3')
 
     const interiorNodes = await comfyPage.page.evaluate(() =>
@@ -57,6 +56,7 @@ test.describe('Group node migration', { tag: '@node' }, () => {
       ksampler,
       'converted subgraph should contain a KSampler'
     ).toBeDefined()
+    test.fail()
     expect(ksampler!.widgets).toMatchObject({
       seed: 156680208700286,
       steps: 20,
