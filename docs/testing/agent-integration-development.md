@@ -112,7 +112,9 @@ traffic continues to reach ComfyUI.
 HTTP and the socket are stubs because a replay must be deterministic and
 model-free, so the agent's side is data; the in-process doc host runs the same
 library the real host runs. The smoke is the only path that proves the real
-HTTP, socket, agent and doc host together. Every frame carries its offset from
+HTTP, socket and agent together; it runs on the standalone harness, which
+unsets `DOC_HOST_ENDPOINT` and turns CRDT mode off, so the external doc host
+is not on that path. Every frame carries its offset from
 the turn's first frame; replay sends back to back by default and
 `AGENT_REPLAY_TIMING=recorded` waits out the recorded gaps.
 

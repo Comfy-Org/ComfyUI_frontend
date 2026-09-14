@@ -11,7 +11,9 @@ vi.mock<unknown>(import('../scripts/posthog'), async () => {
   const { ref } = await import('vue')
   const flag = ref(true)
   h.flag = flag
-  return { useWorkshopAuthFlag: () => flag }
+  return {
+    useWorkshopAuthFlag: () => flag
+  }
 })
 
 vi.mock<unknown>(import('./workshop-firebase'), async () => {
