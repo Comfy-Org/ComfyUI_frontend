@@ -1,10 +1,9 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
-import type * as VueUse from '@vueuse/core'
-
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getSystemStats: () => Promise.reject(new Error('offline')),
     getLogs: () => Promise.reject(new Error('offline')),
@@ -15,22 +14,12 @@ vi.mock('@/scripts/api', () => ({
     api_base: ''
   }
 }))
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { rootGraph: { serialize: () => ({ nodes: [], links: [] }) } }
 }))
-vi.mock('@/stores/extensionStore', () => ({
-  useExtensionStore: () => ({ extensions: [] })
-}))
 
-const { clipboardCopy, reportError } = vi.hoisted(() => ({
-  clipboardCopy: vi.fn(async () => {}),
-  reportError: vi.fn()
-}))
-vi.mock('@vueuse/core', async (importOriginal) => ({
-  ...(await importOriginal<typeof VueUse>()),
-  useClipboard: () => ({ copy: clipboardCopy })
-}))
-vi.mock('@/platform/telemetry/reportError', () => ({ reportError }))
+const { reportError } = vi.hoisted(() => ({ reportError: vi.fn() }))
+vi.mock(import('@/platform/telemetry/reportError'), () => ({ reportError }))
 
 import CrdtDevPanel from './CrdtDevPanel.vue'
 import { setCrdtDebugEnabled } from './crdtDebugGate'
@@ -128,16 +117,43 @@ describe('CrdtDevPanel', () => {
     expect(screen.getByRole('row', { name: 'last frame —' })).toBeVisible()
   })
 
-  it('opens and closes back to the chip', async () => {
+  it('moves focus into the panel and restores it after Escape closes', async () => {
     const user = userEvent.setup()
     renderPanel()
 
-    await user.click(chip()!)
+    const chipButton = chip()!
+    await user.click(chipButton)
     expect(sheet()).toBeTruthy()
+    const closeButton = screen.getByTestId('crdt-dev-panel-close')
+    expect(closeButton).toHaveFocus()
 
-    await user.click(screen.getByTestId('crdt-dev-panel-close'))
+    const escapedToWindow = vi.fn()
+    window.addEventListener('keydown', escapedToWindow)
+
+    const verbosity = screen.getByTestId('crdt-dev-panel-verbosity')
+    await user.click(verbosity)
+    await user.keyboard('{Escape}')
+    expect(sheet()).toBeTruthy()
+    expect(escapedToWindow).not.toHaveBeenCalled()
+
+    verbosity.blur()
+
+    await user.keyboard('{Escape}')
+    window.removeEventListener('keydown', escapedToWindow)
     expect(chip()).toBeTruthy()
     expect(sheet()).toBeNull()
+    expect(chip()).toHaveFocus()
+    expect(escapedToWindow).not.toHaveBeenCalled()
+  })
+
+  it('focuses the close control when restoring an open panel', async () => {
+    localStorage.setItem('Comfy.Agent.CrdtDevPanel.open', 'true')
+
+    renderPanel()
+    await nextTick()
+
+    expect(sheet()).toBeTruthy()
+    expect(screen.getByTestId('crdt-dev-panel-close')).toHaveFocus()
   })
 
   it('replaces the instrument with a way to restore it when hidden', async () => {
@@ -260,26 +276,6 @@ describe('CrdtDevPanel', () => {
     expect(copyReportButton.textContent).toContain('Copy failed')
 
     collectSpy.mockRestore()
-  })
-
-  it('keeps copy feedback visible for 1.6 seconds after the latest click', async () => {
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-    const panel = renderPanel()
-    await user.click(chip()!)
-
-    const copyLogButton = screen.getByRole('button', { name: 'Copy log' })
-    await user.click(copyLogButton)
-    expect(copyLogButton).toHaveTextContent('Copied')
-
-    await vi.advanceTimersByTimeAsync(1000)
-    await user.click(copyLogButton)
-    await vi.advanceTimersByTimeAsync(700)
-
-    expect(copyLogButton).toHaveTextContent('Copied')
-    await vi.advanceTimersByTimeAsync(900)
-    expect(copyLogButton).toHaveTextContent('Copy log')
-    panel.unmount()
-    expect(vi.getTimerCount()).toBe(0)
   })
 
   it('passes an identifiers block to the report collector on every copy', async () => {

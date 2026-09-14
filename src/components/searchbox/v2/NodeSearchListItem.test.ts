@@ -1,11 +1,10 @@
 import { render, screen } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import NodeSearchListItem from '@/components/searchbox/v2/NodeSearchListItem.vue'
 import {
   createMockNodeDef,
-  setupTestPinia,
   testI18n
 } from '@/components/searchbox/v2/__test__/testUtils'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -29,10 +28,6 @@ function renderItem(
 }
 
 describe('NodeSearchListItem', () => {
-  beforeEach(() => {
-    setupTestPinia()
-  })
-
   it('renders node names as text rather than HTML', () => {
     const displayName = '<img src=x onerror=alert(1)>Node'
     renderItem({

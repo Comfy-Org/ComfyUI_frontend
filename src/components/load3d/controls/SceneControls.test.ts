@@ -7,13 +7,16 @@ import { createI18n } from 'vue-i18n'
 
 import SceneControls from '@/components/load3d/controls/SceneControls.vue'
 
-vi.mock('@/components/load3d/controls/PopupSlider.vue', () => ({
-  default: {
-    name: 'PopupSliderStub',
-    props: ['tooltipText', 'modelValue'],
-    template: '<div data-testid="fov-popup-slider">{{ tooltipText }}</div>'
-  }
-}))
+vi.mock<unknown>(
+  import('@/components/load3d/controls/PopupSlider.vue'),
+  () => ({
+    default: {
+      name: 'PopupSliderStub',
+      props: ['tooltipText', 'modelValue'],
+      template: '<div data-testid="fov-popup-slider">{{ tooltipText }}</div>'
+    }
+  })
+)
 
 const i18n = createI18n({
   legacy: false,

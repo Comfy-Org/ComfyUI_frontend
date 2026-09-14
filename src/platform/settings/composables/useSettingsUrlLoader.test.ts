@@ -10,7 +10,7 @@ const preservedQueryMocks = vi.hoisted(() => ({
 }))
 
 vi.mock(
-  '@/platform/navigation/preservedQueryManager',
+  import('@/platform/navigation/preservedQueryManager'),
   () => preservedQueryMocks
 )
 
@@ -19,7 +19,7 @@ const mockRouteQuery = vi.hoisted(() => ({
 }))
 const mockRouterReplace = vi.hoisted(() => vi.fn(async () => undefined))
 
-vi.mock('vue-router', () => ({
+vi.mock<unknown>(import('vue-router'), () => ({
   useRoute: () => ({
     query: mockRouteQuery.value
   }),
@@ -30,11 +30,14 @@ vi.mock('vue-router', () => ({
 
 const mockShowSettings = vi.hoisted(() => vi.fn())
 
-vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
-  useSettingsDialog: () => ({
-    show: mockShowSettings
+vi.mock<unknown>(
+  import('@/platform/settings/composables/useSettingsDialog'),
+  () => ({
+    useSettingsDialog: () => ({
+      show: mockShowSettings
+    })
   })
-}))
+)
 
 describe('useSettingsUrlLoader', () => {
   beforeEach(() => {

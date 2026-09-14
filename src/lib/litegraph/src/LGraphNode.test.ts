@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, vi } from 'vitest'
 
 import type {
@@ -122,12 +120,12 @@ describe('LGraphNode', () => {
       flags: {},
       order: node.order,
       mode: node.mode,
-      inputs: node.inputs?.map((i) => ({
+      inputs: node.inputs.map((i) => ({
         name: i.name,
         type: i.type,
         link: i.link
       })),
-      outputs: node.outputs?.map((o) => ({
+      outputs: node.outputs.map((o) => ({
         name: o.name,
         type: o.type,
         links: o.links ? [...o.links] : o.links,
@@ -880,10 +878,6 @@ describe('LGraphNode', () => {
 })
 
 describe('snapToGrid', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   function addedNode(graph: LGraph) {
     const node = new LGraphNode('test')
     node.pos = [103, 97]

@@ -9,6 +9,8 @@ import {
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
+const SOURCE_TIER_SWITCH = '__COMFY_CUSTOM_NODE_DETECTION_PROOF_TIER__'
+
 const PROOFS = {
   '1': {
     witness: 'comfyui-impact-pack',
@@ -68,6 +70,18 @@ function digest(path: string): string {
   return createHash('sha256').update(readFileSync(path)).digest('hex')
 }
 
+export function assertNoCommittedSourceTierSwitch(cwd?: string): void {
+  const result = spawnSync(
+    'git',
+    ['grep', '-n', SOURCE_TIER_SWITCH, '--', 'src/'],
+    { encoding: 'utf8', cwd }
+  )
+  if (result.status === 1) return
+  if (result.status === 0)
+    throw new Error(`detection proof switch leaked into src/: ${result.stdout}`)
+  throw new Error(`could not inspect src/ for detection proof switches`)
+}
+
 function actionOutputs(values: Record<string, string>): void {
   const path = process.env.GITHUB_OUTPUT
   if (!path) throw new Error('GITHUB_OUTPUT is not set')
@@ -118,6 +132,7 @@ export function proofIdentity(input: {
 }
 
 function mutateSource(row: ProofRow): void {
+  assertNoCommittedSourceTierSwitch()
   const directory = join(
     'browser_tests',
     'tests',

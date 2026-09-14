@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
@@ -9,7 +7,6 @@ describe('LGraphCanvas.renderInfo', () => {
   let ctx: CanvasRenderingContext2D
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     const canvasElement = document.createElement('canvas')
     ctx = {
       save: vi.fn(),

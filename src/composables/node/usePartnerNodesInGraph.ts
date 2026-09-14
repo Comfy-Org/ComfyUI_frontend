@@ -27,7 +27,7 @@ export function scanPartnerNodesInGraph(): PartnerNodeInfo[] {
   const partnerNodesByName = reduceAllNodes<Map<string, PartnerNodeInfo>>(
     app.rootGraph,
     (found, node) => {
-      const nodeDef = nodeDefStore.nodeDefsByName[node.type]
+      const nodeDef = nodeDefStore.fromLGraphNode(node)
       if (nodeDef?.api_node) {
         found.set(nodeDef.name, {
           nodeName: nodeDef.name,

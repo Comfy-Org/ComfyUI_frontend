@@ -3,31 +3,44 @@ import { datadogRum } from '@datadog/browser-rum'
 // eslint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
 import { captureException, isEnabled as isSentryEnabled } from '@sentry/vue'
 
+import { isCloud } from '@/platform/distribution/types'
 import { toError } from '@/utils/errorUtil'
+
+/**
+ * Marks the console line `reportError()` writes for every report. RUM collects
+ * `console.error` on its own, so `datadogRumBeforeSend` matches on this to drop
+ * the untagged console copy of a failure it already received tagged.
+ */
+export const REPORTED_ERROR_PREFIX = '[Reported error]: '
 
 export interface ReportErrorOptions {
   /**
    * Stable machine-readable slug for this failure mode. Lands as the
-   * `error_type` Sentry tag and the `error_type` RUM context field, so the
-   * same query works against either console.
+   * native RUM `error.type`, the `error_type` Sentry tag, and the legacy
+   * `error_type` RUM context field.
    */
   errorType: string
   tags?: Record<string, string | number | boolean | undefined>
   context?: Record<string, unknown>
   level?: 'warning' | 'error'
+  /**
+   * Opt out of the console line for callers that already wrote one — only
+   * `assert()`, which logs before any reporter is registered.
+   */
+  logToConsole?: boolean
 }
 
 interface PendingReport {
   error: Error
   options: ReportErrorOptions
+  sentryDelivered: boolean
+  datadogDelivered: boolean
 }
 
 /**
  * Reports raised before any sink is live are held here rather than dropped.
- * Sentry initializes synchronously in main.ts but Datadog RUM arrives behind
- * `initTelemetry()`'s dynamic imports, so early-boot failures — the ones that
- * leave a user on the splash screen — would otherwise vanish exactly when
- * they matter most.
+ * On cloud, Datadog RUM arrives behind `initTelemetry()`'s dynamic imports, so
+ * its delivery remains pending even when Sentry received the report first.
  */
 const pendingReports: PendingReport[] = []
 const MAX_PENDING_REPORTS = 25
@@ -41,29 +54,65 @@ const definedEntriesOf = (
     Object.entries(tags ?? {}).filter(([, value]) => value !== undefined)
   ) as Record<string, string | number | boolean>
 
-function dispatch(error: Error, options: ReportErrorOptions): boolean {
+function dispatch(
+  error: Error,
+  options: ReportErrorOptions,
+  sentryAlreadyDelivered = false,
+  datadogAlreadyDelivered = false
+): { sentry: boolean; datadog: boolean } {
   const { errorType, context, level } = options
   const tags = definedEntriesOf(options.tags)
-  const sentryLive = isSentryEnabled()
-  const datadogLive = isDatadogRumLive()
+  const sentryLive = !sentryAlreadyDelivered && isSentryEnabled()
+  const datadogLive = !datadogAlreadyDelivered && isDatadogRumLive()
+  let sentryDelivered = false
+  let datadogDelivered = false
 
   if (sentryLive) {
-    captureException(error, {
-      tags: { ...tags, error_type: errorType },
-      extra: context,
-      level
-    })
+    try {
+      captureException(error, {
+        tags: { ...tags, error_type: errorType },
+        extra: context,
+        level
+      })
+      sentryDelivered = true
+    } catch (reporterFailure) {
+      console.error(
+        '[reportError] Sentry delivery failed',
+        reporterFailure,
+        error
+      )
+    }
   }
   if (datadogLive) {
-    datadogRum.addError(error, {
-      ...context,
-      ...tags,
-      error_type: errorType,
-      ...(level ? { level } : {})
-    })
+    try {
+      const datadogError = Object.assign(
+        new Error(error.message, { cause: error.cause }),
+        error,
+        { name: errorType, stack: error.stack }
+      )
+      datadogRum.addError(datadogError, {
+        ...context,
+        ...tags,
+        error_type: errorType,
+        ...(level ? { level } : {})
+      })
+      datadogDelivered = true
+    } catch (reporterFailure) {
+      console.error(
+        '[reportError] Datadog delivery failed',
+        reporterFailure,
+        error
+      )
+    }
   }
 
-  return sentryLive || datadogLive
+  return { sentry: sentryDelivered, datadog: datadogDelivered }
+}
+
+function enqueuePendingReport(report: PendingReport): void {
+  if (pendingReports.length < MAX_PENDING_REPORTS) {
+    pendingReports.push(report)
+  }
 }
 
 /**
@@ -79,10 +128,27 @@ export function flushErrorReports(): void {
   if (!isSentryEnabled() && !isDatadogRumLive()) return
 
   const drained = pendingReports.splice(0, pendingReports.length)
-  for (const { error, options } of drained) {
+  for (const report of drained) {
+    const { error, options } = report
     try {
-      dispatch(error, options)
+      const delivered = dispatch(
+        error,
+        options,
+        report.sentryDelivered,
+        report.datadogDelivered
+      )
+      const sentryDelivered = report.sentryDelivered || delivered.sentry
+      const datadogDelivered = report.datadogDelivered || delivered.datadog
+      if (isCloud && (!sentryDelivered || !datadogDelivered)) {
+        enqueuePendingReport({
+          error,
+          options,
+          sentryDelivered,
+          datadogDelivered
+        })
+      }
     } catch (reporterFailure) {
+      enqueuePendingReport(report)
       console.error('[reportError] failed to flush', reporterFailure, error)
     }
   }
@@ -96,18 +162,40 @@ export function flushErrorReports(): void {
  * `workspace_auth_gate_initialization_failure` stayed invisible on every
  * Datadog dashboard while it was firing in production.
  *
+ * Also writes the failure to the console, so callers never pair this with a
+ * `console.error` of their own: Sentry is off in DEV, RUM only comes up behind
+ * `initTelemetry()`, and a caller that forgot the pair went silent on dev and
+ * self-hosted installs.
+ *
  * Never throws — a failing error reporter must not become a second failure.
  */
 export function reportError(cause: unknown, options: ReportErrorOptions): void {
   try {
+    if (options.logToConsole !== false) {
+      const log = options.level === 'warning' ? console.warn : console.error
+      log(`${REPORTED_ERROR_PREFIX}${options.errorType}`, cause)
+    }
     flushErrorReports()
 
     const error = toError(cause)
-    if (dispatch(error, options)) return
-
-    if (pendingReports.length < MAX_PENDING_REPORTS) {
-      pendingReports.push({ error, options })
+    const delivered = dispatch(error, options)
+    if (isCloud && (!delivered.sentry || !delivered.datadog)) {
+      enqueuePendingReport({
+        error,
+        options,
+        sentryDelivered: delivered.sentry,
+        datadogDelivered: delivered.datadog
+      })
+      return
     }
+    if (delivered.sentry || delivered.datadog) return
+
+    enqueuePendingReport({
+      error,
+      options,
+      sentryDelivered: false,
+      datadogDelivered: false
+    })
   } catch (reporterFailure) {
     console.error('[reportError] failed to report', reporterFailure, cause)
   }

@@ -129,7 +129,7 @@ export const graphToPrompt = async (
     // widget.serialize controls workflow persistence (checked by LGraphNode).
     if (widgets) {
       for (const [i, widget] of widgets.entries()) {
-        if (!widget.name || widget.options?.serialize === false) continue
+        if (!widget.name || widget.options.serialize === false) continue
 
         const widgetValue = widget.serializeValue
           ? await widget.serializeValue(node, i)
@@ -161,13 +161,13 @@ export const graphToPrompt = async (
       }
 
       inputs[input.name] = [
-        String(resolvedInput.origin_id),
+        resolvedInput.origin_id,
         // @ts-expect-error link.origin_slot is already number.
         parseInt(resolvedInput.origin_slot)
       ]
     }
 
-    output[String(node.id)] = {
+    output[node.id] = {
       inputs,
       // TODO(huchenlei): Filter out all nodes that cannot be mapped to a
       // comfyClass.
@@ -182,7 +182,11 @@ export const graphToPrompt = async (
   // Remove inputs connected to removed nodes
   for (const { inputs } of Object.values(output)) {
     for (const [i, input] of Object.entries(inputs)) {
-      if (Array.isArray(input) && input.length === 2 && !output[input[0]]) {
+      if (
+        Array.isArray(input) &&
+        input.length === 2 &&
+        !Object.hasOwn(output, input[0])
+      ) {
         delete inputs[i]
       }
     }

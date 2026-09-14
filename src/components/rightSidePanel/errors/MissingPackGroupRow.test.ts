@@ -1,23 +1,25 @@
-import { createTestingPinia } from '@pinia/testing'
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
-import { ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { MissingPackGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
+import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
+
+import MissingPackGroupRow from './MissingPackGroupRow.vue'
 
 const mockInstallAllPacks = vi.fn()
 const mockIsInstalling = ref(false)
-const mockIsPackInstalled = vi.fn(() => false)
 const mockShouldShowManagerButtons = { value: false }
 const mockOpenManager = vi.fn()
 const mockMissingNodePacks = ref<Array<{ id: string; name: string }>>([])
 const mockIsLoading = ref(false)
 
-vi.mock(
-  '@/workbench/extensions/manager/composables/nodePack/useMissingNodes',
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/composables/nodePack/useMissingNodes'),
+
   () => ({
     useMissingNodes: () => ({
       missingNodePacks: mockMissingNodePacks,
@@ -26,8 +28,9 @@ vi.mock(
   })
 )
 
-vi.mock(
-  '@/workbench/extensions/manager/composables/nodePack/usePackInstall',
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/composables/nodePack/usePackInstall'),
+
   () => ({
     usePackInstall: () => ({
       isInstalling: mockIsInstalling,
@@ -36,24 +39,25 @@ vi.mock(
   })
 )
 
-vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
-  useComfyManagerStore: () => ({
-    isPackInstalled: mockIsPackInstalled
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/composables/useManagerState'),
+
+  () => ({
+    useManagerState: () => ({
+      isNewManagerUI: { value: false },
+      shouldShowManagerButtons: mockShouldShowManagerButtons,
+      openManager: mockOpenManager
+    })
   })
-}))
+)
 
-vi.mock('@/workbench/extensions/manager/composables/useManagerState', () => ({
-  useManagerState: () => ({
-    shouldShowManagerButtons: mockShouldShowManagerButtons,
-    openManager: mockOpenManager
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/types/comfyManagerTypes'),
+
+  () => ({
+    ManagerTab: { Missing: 'missing', All: 'all' }
   })
-}))
-
-vi.mock('@/workbench/extensions/manager/types/comfyManagerTypes', () => ({
-  ManagerTab: { Missing: 'missing', All: 'all' }
-}))
-
-import MissingPackGroupRow from './MissingPackGroupRow.vue'
+)
 
 const i18n = createI18n({
   legacy: false,
@@ -114,7 +118,7 @@ function renderRow(
       ...props
     },
     global: {
-      plugins: [createTestingPinia({ createSpy: vi.fn }), PrimeVue, i18n],
+      plugins: [PrimeVue, i18n],
       stubs: {
         DotSpinner: {
           template: '<span role="status" aria-label="loading" />'
@@ -127,7 +131,7 @@ function renderRow(
 
 describe('MissingPackGroupRow', () => {
   beforeEach(() => {
-    mockIsPackInstalled.mockReturnValue(false)
+    vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(false)
     mockShouldShowManagerButtons.value = false
     mockIsInstalling.value = false
     mockMissingNodePacks.value = []
@@ -341,7 +345,7 @@ describe('MissingPackGroupRow', () => {
 
     it('shows Search when packId exists but pack not in registry', () => {
       mockShouldShowManagerButtons.value = true
-      mockIsPackInstalled.mockReturnValue(false)
+      vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(false)
       mockMissingNodePacks.value = []
       renderRow()
       expect(screen.getByRole('button', { name: 'Search' })).toBeInTheDocument()
@@ -349,7 +353,7 @@ describe('MissingPackGroupRow', () => {
 
     it('shows "Installed" state when pack is installed', () => {
       mockShouldShowManagerButtons.value = true
-      mockIsPackInstalled.mockReturnValue(true)
+      vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(true)
       mockMissingNodePacks.value = [{ id: 'my-pack', name: 'My Pack' }]
       renderRow()
       expect(screen.getByText('Installed')).toBeInTheDocument()
@@ -365,7 +369,7 @@ describe('MissingPackGroupRow', () => {
 
     it('shows install button when not installed and pack found', () => {
       mockShouldShowManagerButtons.value = true
-      mockIsPackInstalled.mockReturnValue(false)
+      vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(false)
       mockMissingNodePacks.value = [{ id: 'my-pack', name: 'My Pack' }]
       renderRow()
       expect(
@@ -375,7 +379,7 @@ describe('MissingPackGroupRow', () => {
 
     it('calls installAllPacks when Install button is clicked', async () => {
       mockShouldShowManagerButtons.value = true
-      mockIsPackInstalled.mockReturnValue(false)
+      vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(false)
       mockMissingNodePacks.value = [{ id: 'my-pack', name: 'My Pack' }]
       const { user } = renderRow()
       await user.click(screen.getByRole('button', { name: 'Install' }))

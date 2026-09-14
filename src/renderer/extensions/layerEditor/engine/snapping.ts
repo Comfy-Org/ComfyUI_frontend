@@ -87,8 +87,8 @@ function eqCandidatesAxis(
     .sort((a, b) => p(a) - p(b))
   const out: EqCandidate[] = []
 
-  const L = lefts[0]
-  const R = rights[0]
+  const L = lefts.at(0)
+  const R = rights.at(0)
   if (L && R) {
     const free = p(R) - (p(L) + s(L)) - s(rect)
     if (free >= 0) {

@@ -6,6 +6,7 @@ import tailwindcss from '@tailwindcss/vite'
 import { isExcludedFromSitemap } from './src/config/indexing'
 import { redirects } from './src/config/redirects'
 import { markdownTwins } from './src/integrations/markdown-twins'
+import { workshopReleaseGate } from './src/integrations/workshop-release-gate'
 import { sitemapAlternates } from './src/lib/hreflang'
 
 const LOCALES = ['en', 'zh-CN', 'ja'] as const
@@ -33,10 +34,18 @@ export default defineConfig({
       filter: (page) => !isExcludedFromSitemap(page),
       serialize: (item) => ({ ...item, links: sitemapAlternates(item.url) })
     }),
-    markdownTwins()
+    markdownTwins(),
+    workshopReleaseGate()
   ],
   vite: {
     plugins: [tailwindcss()],
+    optimizeDeps: {
+      // Leaflet only reaches the graph through a dynamic import inside an
+      // island (MapPins01), which Vite's dep scanner does not walk. Without
+      // this the dev server serves a stale pre-bundle URL and the map silently
+      // fails to load.
+      include: ['leaflet']
+    },
     server: {
       watch: {
         ignored: ['**/playwright-report/**']

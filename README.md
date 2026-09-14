@@ -459,7 +459,7 @@ app.registerExtension({
 </details>
 
 <details id='extension-api-toast'>
-  <summary>v1.2.27: Extension API to add toast message</summary>i
+  <summary>v1.2.27: Extension API to add toast message</summary>
 
 Extensions can call the following API to add toast messages.
 

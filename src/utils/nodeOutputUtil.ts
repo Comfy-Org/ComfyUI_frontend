@@ -1,12 +1,16 @@
-import type { NodeExecutionOutput } from '@/schemas/apiSchema'
+import type { NodeExecutionOutput, ResultItem } from '@/schemas/apiSchema'
+
+type InputPreviewOutput = Pick<NodeExecutionOutput, 'images'> & {
+  images: ResultItem[]
+}
 
 export function isInputPreviewOutput(
   output: Pick<NodeExecutionOutput, 'images'> | undefined
-): boolean {
+): output is InputPreviewOutput {
   const images = output?.images
   return (
     Array.isArray(images) &&
     images.length > 0 &&
-    images.every((image) => image?.type === 'input')
+    images.every((image) => image.type === 'input')
   )
 }

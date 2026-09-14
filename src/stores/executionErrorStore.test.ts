@@ -1,6 +1,5 @@
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { fromAny } from '@total-typescript/shoehorn'
-import { createTestingPinia } from '@pinia/testing'
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
@@ -18,24 +17,16 @@ import {
 } from '@/types/nodeIdentification'
 
 // Mock dependencies
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   st: vi.fn((_key: string, fallback: string) => fallback)
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
-const mockShowErrorsTab = vi.hoisted(() => ({ value: false }))
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: vi.fn(() => ({
-    get: vi.fn(() => mockShowErrorsTab.value)
-  }))
-}))
-
-vi.mock(
-  '@/platform/missingModel/composables/useMissingModelInteractions',
+vi.mock<unknown>(
+  import('@/platform/missingModel/composables/useMissingModelInteractions'),
   () => ({
     clearMissingModelState: vi.fn()
   })
@@ -624,7 +615,7 @@ describe('executionErrorStore — node error operations', () => {
 
 describe('surfaceMissingModels — silent option', () => {
   beforeEach(() => {
-    mockShowErrorsTab.value = true
+    useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = true
   })
 
   it('opens error overlay when silent is not specified and setting is enabled', () => {
@@ -691,7 +682,7 @@ describe('surfaceMissingModels — silent option', () => {
 
 describe('surfaceMissingMedia — silent option', () => {
   beforeEach(() => {
-    mockShowErrorsTab.value = true
+    useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = true
   })
 
   it('opens error overlay when silent is not specified and setting is enabled', () => {
@@ -821,8 +812,6 @@ describe('clearRunErrors', () => {
   let missingNodesStore: ReturnType<typeof useMissingNodesErrorStore>
 
   beforeEach(() => {
-    const pinia = createPinia()
-    setActivePinia(pinia)
     executionErrorStore = useExecutionErrorStore()
     missingNodesStore = useMissingNodesErrorStore()
   })
@@ -874,10 +863,6 @@ describe('clearRunErrors', () => {
 })
 
 describe('added-node error scan coordination', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-  })
-
   it('keeps overlapping scans isolated by graph until every scan finishes', () => {
     const store = useExecutionErrorStore()
     const graphA = createTestRootGraph()
@@ -914,10 +899,6 @@ describe('setActiveGraph', () => {
       'KSampler'
     )
   }
-
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
 
   it('keeps each graph run errors separate and restores them on return', () => {
     const store = useExecutionErrorStore()

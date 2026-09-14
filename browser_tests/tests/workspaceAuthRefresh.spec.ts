@@ -164,18 +164,17 @@ test.describe('Workspace auth refresh', { tag: '@cloud' }, () => {
       .toBeGreaterThanOrEqual(2)
 
     // A 403 ACCESS_DENIED response must clear the workspace session entirely.
-    await expect
-      .poll(
-        () =>
-          page.evaluate(() => sessionStorage.getItem('Comfy.Workspace.Token')),
-        { timeout: 5000 }
-      )
-      .toBeNull()
-
-    expect(
-      await page.evaluate(() =>
-        sessionStorage.getItem('Comfy.Workspace.Current')
-      )
-    ).toBeNull()
+    await expect(async () => {
+      expect(
+        await page.evaluate(() =>
+          sessionStorage.getItem('Comfy.Workspace.Token')
+        )
+      ).toBeNull()
+      expect(
+        await page.evaluate(() =>
+          sessionStorage.getItem('Comfy.Workspace.Current')
+        )
+      ).toBeNull()
+    }).toPass({ timeout: 5000 })
   })
 })

@@ -7,7 +7,7 @@ import { createI18n } from 'vue-i18n'
 import type { SecretMetadata } from '../types'
 import SecretListItem from './SecretListItem.vue'
 
-vi.mock('../providers', () => ({
+vi.mock(import('../providers'), () => ({
   getProviderLabel: (provider: string | undefined) => {
     if (provider === 'huggingface') return 'HuggingFace'
     if (provider === 'civitai') return 'Civitai'

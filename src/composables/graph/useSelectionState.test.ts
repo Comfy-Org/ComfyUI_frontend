@@ -1,6 +1,4 @@
 import { toGroupId } from '@/types/groupId'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import { useSelectionState } from '@/composables/graph/useSelectionState'
@@ -16,12 +14,12 @@ import {
   createMockPositionable
 } from '@/utils/__tests__/litegraphTestUtils'
 
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   isLGraphNode: vi.fn(),
   isImageNode: vi.fn()
 }))
 
-vi.mock('@/utils/nodeFilterUtil', () => ({
+vi.mock(import('@/utils/nodeFilterUtil'), () => ({
   filterOutputNodes: vi.fn()
 }))
 
@@ -78,22 +76,16 @@ function mockSettingValues(overrides: Record<string, unknown> = {}) {
 
 describe('useSelectionState', () => {
   beforeEach(() => {
-    // Create testing Pinia instance
-    setActivePinia(
-      createTestingPinia({
-        createSpy: vi.fn
-      })
-    )
     mockSettingValues()
 
     // Setup mock utility functions
     vi.mocked(isLGraphNode).mockImplementation((item: unknown) => {
       const typedItem = item as { isNode?: boolean }
-      return typedItem?.isNode !== false
+      return typedItem.isNode !== false
     })
     vi.mocked(isImageNode).mockImplementation((node: unknown) => {
       const typedNode = node as { type?: string }
-      return typedNode?.type === 'ImageNode'
+      return typedNode.type === 'ImageNode'
     })
     vi.mocked(filterOutputNodes).mockImplementation((nodes) =>
       nodes.filter((n) => n.type === 'OutputNode')
@@ -180,7 +172,7 @@ describe('useSelectionState', () => {
       const { selectedNodes } = useSelectionState()
       const isPinned = selectedNodes.value.some((n) => n.pinned)
       const isCollapsed = selectedNodes.value.some(
-        (n) => n.flags?.collapsed === true
+        (n) => n.flags.collapsed === true
       )
       const isBypassed = selectedNodes.value.some(
         (n) => n.mode === LGraphEventMode.BYPASS
@@ -198,7 +190,7 @@ describe('useSelectionState', () => {
       const { selectedNodes } = useSelectionState()
       const isPinned = selectedNodes.value.some((n) => n.pinned)
       const isCollapsed = selectedNodes.value.some(
-        (n) => n.flags?.collapsed === true
+        (n) => n.flags.collapsed === true
       )
       const isBypassed = selectedNodes.value.some(
         (n) => n.mode === LGraphEventMode.BYPASS

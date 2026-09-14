@@ -12,6 +12,20 @@ import type { RerouteId } from '@/types/rerouteId'
 import type { UUID } from '@/utils/uuid'
 import type { Point as LayoutPoint } from '@/renderer/core/layout/types'
 
+function isPointLike(value: unknown): value is ArrayLike<number> {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'length' in value &&
+    typeof value.length === 'number' &&
+    value.length >= 2
+  )
+}
+
+function hasPointLength(value: unknown): boolean {
+  return Array.isArray(value) && value.length === 2
+}
+
 import { LGraphBadge } from './LGraphBadge'
 import type { LGraph } from './LGraph'
 import type { LGraphNode } from './LGraphNode'
@@ -121,7 +135,7 @@ export class Reroute
   }
 
   set pos(value: Point) {
-    if (!(value?.length >= 2))
+    if (!isPointLike(value))
       throw new TypeError(
         'Reroute.pos is an x,y point, and expects an indexable with at least two values.'
       )
@@ -142,7 +156,7 @@ export class Reroute
   }
 
   private commitPosition(): void {
-    if (this.position.length !== 2) {
+    if (!hasPointLength(this.position)) {
       this.syncPosition()
       return
     }
@@ -644,7 +658,7 @@ export class Reroute
       this.hideSlots()
     }
 
-    return input.dirty || output.dirty
+    return output.dirty
   }
 
   /** Prevents rendering of the input and output slots. */

@@ -62,8 +62,8 @@
       "inputs": [],
       "outputs": [
         {
-          "name": "connect to widget input",
-          "type": "*",
+          "name": "INT",
+          "type": "INT",
           "links": [],
           "slot_index": 0
         }
@@ -71,7 +71,7 @@
       "properties": {
         "Run widget replace on values": false
       },
-      "widgets_values": []
+      "widgets_values": [222]
     }
   ],
   "links": [],

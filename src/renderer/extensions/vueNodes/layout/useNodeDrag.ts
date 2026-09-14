@@ -15,9 +15,7 @@ import { useShiftKeySync } from '@/renderer/extensions/vueNodes/composables/useS
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 
-export const useNodeDrag = createSharedComposable(useNodeDragIndividual)
-
-function useNodeDragIndividual() {
+export const useNodeDrag = createSharedComposable(() => {
   const mutations = useLayoutMutations(LayoutSource.Vue)
   const { selectedNodeIds, selectedItems } = storeToRefs(useCanvasStore())
 
@@ -53,7 +51,7 @@ function useNodeDragIndividual() {
 
     const layout = layoutStore.getNodeLayout(rootGraphId, nodeId)
     if (!layout) return
-    const position = layout.position ?? { x: 0, y: 0 }
+    const position = layout.position
 
     // Track shift key state and sync to canvas for snap preview
     stopShiftSync = trackShiftKey(event)
@@ -67,7 +65,7 @@ function useNodeDragIndividual() {
 
     // capture the starting positions of all other selected nodes
     // Only move other selected items if the dragged node is part of the selection
-    const isDraggedNodeInSelection = selectedNodes?.has(nodeId)
+    const isDraggedNodeInSelection = selectedNodes.has(nodeId)
 
     if (isDraggedNodeInSelection && selectedNodes.size > 1) {
       otherSelectedNodesStartPositions = new Map()
@@ -323,4 +321,4 @@ function useNodeDragIndividual() {
     handleDrag,
     endDrag
   }
-}
+})

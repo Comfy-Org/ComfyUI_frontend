@@ -5,15 +5,19 @@ import type { CloudWorkflowEntry } from '../../schemas/agentApiSchema'
 const fetchApi = vi.hoisted(() =>
   vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()
 )
-vi.mock('@/scripts/api', () => ({ api: { fetchApi } }))
+vi.mock<unknown>(import('@/scripts/api'), () => ({ api: { fetchApi } }))
 
 import { AgentApiError, createAgentRestClient } from './agentRestClient'
 import type { AgentRestClient } from './agentRestClient'
 
-function jsonResponse(status: number, body: unknown): Response {
+function jsonResponse(
+  status: number,
+  body: unknown,
+  headers?: Record<string, string>
+): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { 'Content-Type': 'application/json' }
+    headers: { 'Content-Type': 'application/json', ...headers }
   })
 }
 
@@ -51,6 +55,26 @@ describe('agentRestClient route + method', () => {
     expect(route).toBe('/agent/threads/new/messages')
     expect(init.method).toBe('POST')
   })
+
+  it.for([undefined, [], [{ workflow_id: 'ref', name: 'Reference' }]])(
+    'serializes explicit workflow references independently of open tabs: %j',
+    async (workflowReferences) => {
+      respond(jsonResponse(202, turnAccepted))
+      const input = {
+        content: 'compare',
+        workflowId: 'target',
+        tabs: { open_tabs: [{ workflow_id: 'ordinary', name: 'Ordinary' }] },
+        workflowReferences
+      }
+      await makeClient().postMessage('new', input)
+      const body = JSON.parse(lastCall().init.body as string)
+      expect(body.open_tabs).toEqual(input.tabs.open_tabs)
+      expect(body.workflow_id).toBe('target')
+      if (workflowReferences === undefined)
+        expect(body).not.toHaveProperty('workflow_references')
+      else expect(body.workflow_references).toEqual(workflowReferences)
+    }
+  )
 
   it('getMessages GETs the thread messages path', async () => {
     respond(jsonResponse(200, []))
@@ -105,6 +129,16 @@ describe('agentRestClient route + method', () => {
     expect(init.body).toBe('{}')
   })
 
+  it('answerAsk POSTs the selected option to the encoded ask path', async () => {
+    respond(jsonResponse(202, { status: 'answered' }))
+    await makeClient().answerAsk('t7', 'turn-1:call/1', ['run'])
+
+    const { route, init } = lastCall()
+    expect(route).toBe('/agent/threads/t7/asks/turn-1%3Acall%2F1/answer')
+    expect(init.method).toBe('POST')
+    expect(JSON.parse(init.body as string)).toEqual({ selected: ['run'] })
+  })
+
   it('listCloudWorkflows GETs the paginated workflows path until has_more is false', async () => {
     const page = (
       offset: number,
@@ -145,6 +179,45 @@ describe('agentRestClient route + method', () => {
     await makeClient().listCloudWorkflows()
 
     expect(fetchApi).toHaveBeenCalledTimes(1)
+  })
+
+  it('stops when pagination cycles through previously seen cursors', async () => {
+    for (const cursor of ['a', 'b', 'a']) {
+      respond(
+        jsonResponse(200, {
+          data: [],
+          pagination: {
+            offset: 0,
+            limit: 100,
+            total: 0,
+            has_more: true,
+            next_cursor: cursor
+          }
+        })
+      )
+    }
+    await makeClient().listCloudWorkflows()
+    expect(fetchApi).toHaveBeenCalledTimes(3)
+  })
+
+  it('includes saved workflows beyond the fifth page', async () => {
+    for (let page = 0; page < 6; page++) {
+      respond(
+        jsonResponse(200, {
+          data: [{ id: `wf-${page}`, name: `Workflow ${page}` }],
+          pagination: {
+            offset: page,
+            limit: 100,
+            total: 6,
+            has_more: page < 5,
+            next_cursor: `page-${page + 1}`
+          }
+        })
+      )
+    }
+    expect(
+      (await makeClient().listCloudWorkflows()).map(({ id }) => id)
+    ).toEqual(['wf-0', 'wf-1', 'wf-2', 'wf-3', 'wf-4', 'wf-5'])
   })
 })
 
@@ -264,6 +337,66 @@ describe('error mapping', () => {
     expect((error as AgentApiError).message).toBe('access denied')
     expect((error as AgentApiError).status).toBe(403)
   })
+
+  it('retains the Agent admission body and Retry-After delay', async () => {
+    const body = {
+      error: {
+        message: 'Billing status is temporarily unavailable; please retry.',
+        type: 'SERVICE_UNAVAILABLE',
+        reason: 'funds_unavailable'
+      }
+    }
+    respond(jsonResponse(503, body, { 'Retry-After': '5' }))
+
+    const error = await makeClient()
+      .postMessage('t1', { content: 'try it' })
+      .catch((caught: unknown) => caught)
+
+    expect(error).toBeInstanceOf(AgentApiError)
+    const apiError = error as AgentApiError
+    expect(apiError.message).toBe(body.error.message)
+    expect(apiError.body).toEqual(body)
+    expect(Reflect.get(apiError, 'retryAfterSeconds')).toBe(5)
+  })
+
+  it.for([
+    { label: 'absent', headers: undefined },
+    {
+      label: 'nonnumeric',
+      headers: { 'Retry-After': 'Wed, 21 Oct 2026 07:28:00 GMT' }
+    },
+    {
+      label: 'unsafe integer',
+      headers: { 'Retry-After': '9007199254740993' }
+    },
+    {
+      label: 'overflowing number',
+      headers: { 'Retry-After': '9'.repeat(400) }
+    }
+  ])(
+    'leaves retryAfterSeconds undefined for an $label Retry-After header',
+    async ({ headers }) => {
+      const body = {
+        error: {
+          message: 'Billing status is temporarily unavailable; please retry.',
+          type: 'SERVICE_UNAVAILABLE',
+          reason: 'funds_unavailable'
+        }
+      }
+      respond(jsonResponse(503, body, headers))
+
+      const error = await makeClient()
+        .postMessage('t1', { content: 'try it' })
+        .catch((caught: unknown) => caught)
+
+      expect(error).toBeInstanceOf(AgentApiError)
+      expect(error).toMatchObject({
+        message: body.error.message,
+        body,
+        retryAfterSeconds: undefined
+      })
+    }
+  )
 
   it('falls back to statusText and undefined body for a non-JSON error response', async () => {
     respond(

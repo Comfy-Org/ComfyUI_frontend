@@ -21,7 +21,13 @@ export function attachNodeToStores(
   node: LGraphNode,
   mintId: () => NodeId
 ): void {
-  while (!registerNodeState(graph, node)) node.id = mintId()
+  while (!registerNodeState(graph, node)) {
+    const collidedId = node.id
+    node.id = mintId()
+    console.warn(
+      `[nodeShell] Node id ${collidedId} is already registered in root graph ${graph.rootGraph.id}; reminted as ${node.id}.`
+    )
+  }
 
   if (!node.widgets) return
   for (const widget of node.widgets) {

@@ -26,7 +26,7 @@ function defaultAlphaSampler(
     const px = Math.max(0, Math.min(canvas.width - 1, Math.floor(x)))
     const py = Math.max(0, Math.min(canvas.height - 1, Math.floor(y)))
     const data = ctx.getImageData(px, py, 1, 1).data
-    return (data[3] ?? 255) / 255
+    return (data.at(3) ?? 255) / 255
   } catch {
     return 1
   }

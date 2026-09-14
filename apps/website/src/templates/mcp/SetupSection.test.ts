@@ -10,7 +10,7 @@ const { connectionSpy, clientSpy } = vi.hoisted(() => ({
   clientSpy: vi.fn()
 }))
 
-vi.mock('../../scripts/posthog', () => ({
+vi.mock(import('../../scripts/posthog'), () => ({
   captureMcpConnectionTabClick: connectionSpy,
   captureMcpClientTabClick: clientSpy
 }))

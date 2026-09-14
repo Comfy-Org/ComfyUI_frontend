@@ -1,9 +1,7 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-vi.mock('@/platform/assets/composables/media/assetMappers')
+vi.mock(import('@/platform/assets/composables/media/assetMappers'))
 
 const mocks = vi.hoisted(() => ({
   addEventListener:
@@ -13,17 +11,17 @@ const mocks = vi.hoisted(() => ({
   gateBlocks: false
 }))
 
-vi.mock('@/composables/billing/usePartnerNodesRunGate', () => ({
+vi.mock(import('@/composables/billing/usePartnerNodesRunGate'), () => ({
   partnerRunGateBlocksAutoQueue: () => mocks.gateBlocks
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     addEventListener: mocks.addEventListener
   }
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     queuePrompt: mocks.queuePrompt,
     get lastExecutionError() {
@@ -47,12 +45,6 @@ function setupAndGetAutoQueueGraphChangedListener() {
 
 describe('setupAutoQueueHandler', () => {
   beforeEach(() => {
-    setActivePinia(
-      createTestingPinia({
-        createSpy: vi.fn,
-        stubActions: false
-      })
-    )
     const queueSettingsStore = useQueueSettingsStore()
     queueSettingsStore.mode = 'change'
     queueSettingsStore.batchCount = 2

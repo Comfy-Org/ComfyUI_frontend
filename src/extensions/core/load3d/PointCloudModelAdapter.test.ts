@@ -1,15 +1,11 @@
 import * as THREE from 'three'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
+
 import type { ModelLoadContext } from './ModelAdapter'
 import * as ModelAdapterModule from './ModelAdapter'
 import { PointCloudModelAdapter } from './PointCloudModelAdapter'
-
-const mockSettingGet = vi.fn<(key: string) => unknown>()
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({ get: mockSettingGet })
-}))
 
 vi.mock('@/scripts/metadata/ply', () => ({
   isPLYAsciiFormat: vi.fn().mockReturnValue(false)
@@ -89,7 +85,7 @@ describe('PointCloudModelAdapter', () => {
 
   describe('load', () => {
     beforeEach(() => {
-      mockSettingGet.mockReturnValue('three')
+      vi.mocked(useSettingStore().get).mockReturnValue('three')
       vi.spyOn(ModelAdapterModule, 'fetchModelData').mockResolvedValue(
         new ArrayBuffer(0)
       )

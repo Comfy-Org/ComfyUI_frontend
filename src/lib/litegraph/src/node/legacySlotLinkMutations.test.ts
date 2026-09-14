@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -38,10 +36,6 @@ function fanOut(count: number) {
 }
 
 describe('legacy slot link compatibility', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('disconnects when legacy code assigns input.link = null', () => {
     const { source, target, link } = connectedPair()
 
@@ -106,10 +100,6 @@ describe('legacy slot link compatibility', () => {
 })
 
 describe('legacy slot link additions', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('ignores assigning a disconnected id to an input', () => {
     const { source, target } = connectedPair()
     const saved = target.inputs[0].link
@@ -186,10 +176,6 @@ function trimEmptyAutogrowSlots(node: LGraphNode) {
 }
 
 describe('comfyui-promptchain indexed slot replacement', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('keeps the link store correct when the pack replaces every slot', () => {
     const { graph, target } = autogrowChain(4, [0, 1, 2])
 

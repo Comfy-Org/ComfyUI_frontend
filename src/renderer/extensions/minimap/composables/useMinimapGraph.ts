@@ -77,12 +77,12 @@ function computeGraphDigests(graph: LGraph): GraphDigests {
     geometry = mixIn(geometry, quantise(y))
     geometry = mixIn(geometry, quantise(width))
     geometry = mixIn(geometry, quantise(height))
-    visual = mixIn(visual, node.mode ?? 0)
+    visual = mixIn(visual, node.mode)
     visual = mixIn(visual, node.has_errors ? 1 : 0)
     visual = mixIn(visual, node.bgcolor ? hashString(node.bgcolor) : 0)
   }
 
-  for (const group of graph._groups ?? []) {
+  for (const group of graph._groups) {
     visual = mixIn(visual, quantise(group.pos[0]))
     visual = mixIn(visual, quantise(group.pos[1]))
     visual = mixIn(visual, quantise(group.size[0]))
@@ -96,7 +96,9 @@ function computeGraphDigests(graph: LGraph): GraphDigests {
   // poll picks up each transition within one tick at no per-message cost.
   const progressStates = useExecutionStore().nodeProgressStates
   for (const nodeId in progressStates) {
-    const state = progressStates[nodeId]?.state
+    const state = Object.hasOwn(progressStates, nodeId)
+      ? progressStates[nodeId].state
+      : undefined
     if (!state) continue
     visual = mixIn(visual, hashString(nodeId))
     visual = mixIn(visual, hashString(state))
@@ -111,12 +113,8 @@ function computeGraphDigests(graph: LGraph): GraphDigests {
  * link moved to a different slot on the same pair of nodes.
  */
 function computeLinkDigest(graph: LGraph): number {
-  const links = graph.links
-  if (!links) return 0
-
   let digest = 0
-  for (const link of links.values()) {
-    if (!link) continue
+  for (const link of graph.links.values()) {
     // Node ids are branded strings and need not be numeric; non-numeric ones
     // contribute 0 here and are caught instead by the onConnectionChange hook.
     digest = mixIn(digest, Number(link.origin_id))

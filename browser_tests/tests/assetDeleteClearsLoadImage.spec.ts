@@ -150,10 +150,9 @@ baseTest.describe(
         // recomputes `isModified` from it.
         await comfyPage.page.evaluate(() => {
           const tracker =
-            window.app?.extensionManager?.workflow?.activeWorkflow
-              ?.changeTracker
-          tracker?.reset?.()
-          tracker?.updateModified?.()
+            window.app?.extensionManager.workflow?.activeWorkflow?.changeTracker
+          tracker?.reset()
+          tracker?.updateModified()
         })
         await expect
           .poll(() => comfyPage.workflow.isCurrentWorkflowModified())

@@ -512,6 +512,7 @@ export const zSubscribeResponse = z.object({
 export const zSubscribeRequest = z.object({
   billing_cycle: z.enum(['monthly', 'yearly']).optional(),
   cancel_url: z.string().optional(),
+  checkout_attempt_id: z.string().optional(),
   confirm_reactivation: z.boolean().optional(),
   confirmation_token: z.string().optional(),
   idempotency_key: z.string().optional(),
@@ -524,6 +525,120 @@ export const zSubscribeRequest = z.object({
   saved_payment_method_id: z.string().regex(/^pm_/).optional(),
   team_credit_stop_id: z.string().optional()
 })
+
+/**
+ * The last-changed timestamp every stored setting carries.
+ */
+export const zGlobalSettingUpdatedAt = z.object({
+  updated_at: z.string().datetime()
+})
+
+/**
+ * Consent to the in-app Agent panel. `true` is the only value that can be written — consent is revoked by DELETE, not by writing `false`, so the audit trail records a revocation rather than a value flip.
+ */
+export const zAgentConsentSettingValue = z.object({
+  key: z.enum(['Comfy.AgentPanel.ConsentAccepted']),
+  value: z.literal(true)
+})
+
+/**
+ * A stored AgentConsentSettingValue with its timestamp. Named apart from the write schema because codegen derives nested property type names from the schema name, and `AgentConsentSetting` would generate an `AgentConsentSettingValue` that collides with the write schema itself.
+ */
+export const zStoredAgentConsentSetting = zAgentConsentSettingValue.and(
+  zGlobalSettingUpdatedAt
+)
+
+/**
+ * First rejected op in an abort-remainder batch.
+ */
+export const zDocOpFailure = z.object({
+  code: z.string(),
+  index: z.number().int(),
+  message: z.string(),
+  op_id: z.string().max(128).optional()
+})
+
+export const zDocOpsResultData = z.object({
+  applied: z.array(z.string()).optional(),
+  code: z.string().optional(),
+  failed: zDocOpFailure.optional(),
+  message: z.string().optional(),
+  ok: z.boolean(),
+  seq: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  skipped: z.array(z.string()).optional(),
+  v: z.number().int().gte(1).lte(1),
+  workflow_id: z.string().min(1).max(128)
+})
+
+/**
+ * Host acknowledgement for a doc_ops batch.
+ */
+export const zDocOpsResultFrame = z.object({
+  data: zDocOpsResultData,
+  type: z.enum(['doc_ops_result'])
+})
+
+export const zDocResetData = z.object({
+  actor: z.string().max(256).optional(),
+  seq: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  v: z.number().int().gte(1).lte(1),
+  workflow_id: z.string().min(1).max(128)
+})
+
+/**
+ * Host-to-follower lineage break. The follower must resubscribe for fresh state.
+ */
+export const zDocResetFrame = z.object({
+  data: zDocResetData,
+  type: z.enum(['doc_reset'])
+})
+
+export const zDocUpdateData = z.object({
+  actor: z.string().max(256).optional(),
+  seq: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  update_b64: z.string(),
+  v: z.number().int().gte(1).lte(1),
+  workflow_id: z.string().min(1).max(128)
+})
+
+/**
+ * Host-to-follower incremental Yjs document update.
+ */
+export const zDocUpdateFrame = z.object({
+  data: zDocUpdateData,
+  type: z.enum(['doc_update'])
+})
+
+/**
+ * Server-to-client CRDT document frame carried by the /ws envelope.
+ */
+export const zServerDocFrame = z.union([
+  zDocUpdateFrame,
+  zDocResetFrame,
+  zDocOpsResultFrame
+])
 
 /**
  * User secret metadata (the secret value itself is never returned after creation).
@@ -568,6 +683,15 @@ export const zSecretProvidersResponse = z.object({
  */
 export const zSecretListResponse = z.object({
   data: z.array(zSecretResponse)
+})
+
+/**
+ * A plan change persisted to take effect at a future billing boundary.
+ */
+export const zScheduledPlanChange = z.object({
+  effective_at: z.string().datetime(),
+  plan_slug: z.string(),
+  team_credit_stop: zTeamCreditStopSummary.nullable()
 })
 
 export const zSavedPaymentMethod = z.object({
@@ -871,6 +995,7 @@ export const zPreviewSubscribeResponse = z.object({
  * Request body for previewing the cost of a plan subscription change.
  */
 export const zPreviewSubscribeRequest = z.object({
+  checkout_attempt_id: z.string().optional(),
   plan_slug: z.string(),
   promotion_code: z.string().optional(),
   team_credit_stop_id: z.string().optional()
@@ -1812,6 +1937,29 @@ export const zGlobalSubgraphData = z.object({
 })
 
 /**
+ * A setting key with its value, discriminated on `key`. Narrowing on the key yields exactly one value schema, which is what gives writes their type safety.
+ */
+export const zGlobalSettingValue = z
+  .object({
+    key: z.literal('Comfy.AgentPanel.ConsentAccepted')
+  })
+  .and(zAgentConsentSettingValue)
+
+/**
+ * The union of setting keys this server accepts. Published as an enum so clients cannot address a key the registry does not know.
+ */
+export const zGlobalSettingKey = z.enum(['Comfy.AgentPanel.ConsentAccepted'])
+
+/**
+ * A stored setting: one GlobalSettingValue member plus when it last changed. Discriminated on `key` like GlobalSettingValue, so narrowing a read yields the same single value schema a write is typed by.
+ */
+export const zGlobalSetting = z
+  .object({
+    key: z.literal('Comfy.AgentPanel.ConsentAccepted')
+  })
+  .and(zStoredAgentConsentSetting)
+
+/**
  * Individual file entry within a full user data response.
  */
 export const zGetUserDataResponseFullFile = z.object({
@@ -2033,6 +2181,7 @@ export const zCreateTopupRequest = z.object({
     .max(BigInt('9223372036854775807'), {
       message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
     }),
+  checkout_attempt_id: z.string().optional(),
   idempotency_key: z.string().optional()
 })
 
@@ -2105,6 +2254,14 @@ export const zCancelSubscriptionRequest = z.object({
 })
 
 /**
+ * Response when a cancellation is accepted but has not committed yet. Carries no cancel_at: no cancellation time exists to report until the operation settles. The billing operation reports only status, so once it reaches `succeeded` the committed date is read from `cancel_at` on `GET /api/billing/status`.
+ */
+export const zCancelSubscriptionAcceptedResponse = z.object({
+  billing_op_id: z.string(),
+  status: z.enum(['pending'])
+})
+
+/**
  * Response after bulk-revoking API keys for a workspace member.
  */
 export const zBulkRevokeApiKeysResponse = z.object({
@@ -2151,6 +2308,7 @@ export const zBillingStatusResponse = z.object({
   pending_billing_op_type: z.enum(['subscription', 'topup']).optional(),
   plan_slug: z.string().optional(),
   renewal_date: z.string().datetime().optional(),
+  scheduled_change: zScheduledPlanChange.nullable(),
   subscription_duration: zSubscriptionDuration.optional(),
   subscription_status: z.enum(['active', 'ended', 'canceled']).optional(),
   subscription_tier: zSubscriptionTier.optional(),
@@ -2196,6 +2354,13 @@ export const zBillingOpStatusResponse = z.object({
   error_message: z.string().optional(),
   id: z.string(),
   payment_intent_client_secret: z.string().optional(),
+  phase: z
+    .enum([
+      'awaiting_payment_method',
+      'awaiting_invoice_payment',
+      'in_progress'
+    ])
+    .optional(),
   recovery_action: z
     .enum([
       'retry',
@@ -2492,9 +2657,10 @@ export const zAgentRunMode = z.object({
  * A user turn posted to the agent.
  */
 export const zAgentPostMessageRequest = z.object({
-  attachments: z.array(z.string()).optional(),
   content: z.string(),
-  current_tab: z.string().optional(),
+  workflow_id: z.string().optional(),
+  selection: z.record(z.unknown()).optional(),
+  attachments: z.array(z.string()).optional(),
   draft: z
     .object({
       content: z.record(z.unknown()).optional(),
@@ -2504,13 +2670,35 @@ export const zAgentPostMessageRequest = z.object({
   open_tabs: z
     .array(
       z.object({
-        name: z.string().optional(),
-        workflow_id: z.string()
+        workflow_id: z.string(),
+        name: z.string().optional()
       })
     )
     .optional(),
-  selection: z.record(z.unknown()).optional(),
-  workflow_id: z.string().optional()
+  current_tab: z.string().optional(),
+  workflow_references: z
+    .array(
+      z.object({
+        workflow_id: z.string(),
+        name: z.string().optional()
+      })
+    )
+    .optional()
+})
+
+/**
+ * An unanswered ask attached to its assistant message, so a reload rehydrates the prompt from the ROW rather than from the agent_ask WebSocket event the client missed. Present only while the ask is pending; answer it via POST /agent/threads/{id}/asks/{ask_id}/answer.
+ */
+export const zAgentPendingAsk = z.object({
+  allow_other: z.boolean(),
+  ask_id: z.string(),
+  context: z.record(z.unknown()).optional(),
+  kind: z.enum(['ask_user', 'run_approval']),
+  max_selections: z.number().int(),
+  message_id: z.string(),
+  min_selections: z.number().int(),
+  options: z.array(z.record(z.unknown())),
+  prompt: z.string()
 })
 
 /**
@@ -2519,6 +2707,7 @@ export const zAgentPostMessageRequest = z.object({
 export const zAgentMessage = z.object({
   content: z.record(z.unknown()).optional(),
   id: z.string(),
+  pending_ask: zAgentPendingAsk.optional(),
   role: z.enum(['user', 'assistant', 'tool', 'system']),
   seq: z.number().int(),
   status: z.enum(['streaming', 'complete', 'error', 'interrupted']),
@@ -2680,6 +2869,33 @@ export const zAgentGetDraftQuery = z.object({
  * Current draft snapshot
  */
 export const zAgentGetDraftResponse = zAgentDraftSnapshot
+
+export const zAgentLlmAdmitBody = z.object({
+  message_id: z.string().optional(),
+  step: z.number().int().gte(0),
+  turn_id: z.string()
+})
+
+/**
+ * The admission verdict for the round.
+ */
+export const zAgentLlmAdmitResponse = z.object({
+  after_seconds: z.number().int().optional(),
+  kind: z.enum(['proceed', 'wait', 'pause', 'fail']),
+  message: z.string().optional(),
+  position: z.number().int().optional(),
+  reason: z.string().optional()
+})
+
+/**
+ * Opaque Anthropic Messages request body, passed through to the upstream. Not modeled here — the agent's LLM proxy owns the contract.
+ */
+export const zAgentLlmMessagesBody = z.record(z.unknown())
+
+/**
+ * The upstream LLM response, streamed back as Server-Sent Events (text/event-stream) chunk-by-chunk.
+ */
+export const zAgentLlmMessagesResponse = z.string()
 
 /**
  * The caller's run mode (the saved choice, or the default).
@@ -3152,10 +3368,10 @@ export const zSubscribeResponse2 = zSubscribeResponse
 
 export const zCancelSubscriptionBody = zCancelSubscriptionRequest
 
-/**
- * Subscription cancellation scheduled
- */
-export const zCancelSubscriptionResponse2 = zCancelSubscriptionResponse
+export const zCancelSubscriptionResponse2 = z.union([
+  zCancelSubscriptionResponse,
+  zCancelSubscriptionAcceptedResponse
+])
 
 export const zResubscribeBody = zResubscribeRequest
 
@@ -3261,6 +3477,31 @@ export const zFreeMemoryBody = z.object({
   free_memory: z.boolean().optional(),
   unload_models: z.boolean().optional()
 })
+
+export const zSetGlobalSettingBody = zGlobalSettingValue
+
+/**
+ * Setting stored
+ */
+export const zSetGlobalSettingResponse = zGlobalSetting
+
+export const zDeleteGlobalSettingPath = z.object({
+  key: zGlobalSettingKey
+})
+
+/**
+ * Setting unset
+ */
+export const zDeleteGlobalSettingResponse = z.void()
+
+export const zGetGlobalSettingPath = z.object({
+  key: zGlobalSettingKey
+})
+
+/**
+ * Success
+ */
+export const zGetGlobalSettingResponse = zGlobalSetting
 
 /**
  * Success - Map of subgraph IDs to their metadata

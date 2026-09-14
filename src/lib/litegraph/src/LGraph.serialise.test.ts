@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe } from 'vitest'
 
 import {
@@ -16,12 +14,11 @@ import { toNodeId } from '@/types/nodeId'
 import { test } from './__fixtures__/testExtensions'
 
 const mockReportError = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
 beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   mockReportError.mockClear()
 })
 
@@ -282,7 +279,7 @@ describe('LGraph Serialisation', () => {
     expect(Reflect.get(node, 'legacyData')).toEqual({ retained: true })
   })
 
-  test('passes the original serialized object to configure hooks', ({
+  test('passes a shallow copy, not the caller live serialized object, to configure hooks', ({
     expect
   }) => {
     const node = new LGraphNode('Extended')
@@ -292,12 +289,14 @@ describe('LGraph Serialisation', () => {
     let configuredData: object | undefined
     node.onConfigure = (data) => {
       configuredData = data
+      Object.assign(data, { mutated: true })
     }
 
     node.configure(saved)
 
-    expect(configuredData).toBe(saved)
+    expect(configuredData).not.toBe(saved)
     expect(Reflect.get(node, 'legacyData')).toEqual({ retained: true })
+    expect(saved).not.toHaveProperty('mutated')
   })
 
   test('does not apply unsafe extension keys to the configure view', ({

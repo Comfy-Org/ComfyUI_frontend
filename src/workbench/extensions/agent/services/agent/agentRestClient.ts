@@ -1,8 +1,10 @@
+import type { AgentPostMessageRequest } from '@comfyorg/ingest-types'
 import type { z } from 'zod'
 
 import { api } from '@/scripts/api'
 
 import {
+  zAgentAnswerAccepted,
   zAgentCancelAccepted,
   zAgentError,
   zAgentMessages,
@@ -13,6 +15,7 @@ import {
   zUploadImageResult
 } from '../../schemas/agentApiSchema'
 import type {
+  AgentAnswerAccepted,
   AgentCancelAccepted,
   AgentMessages,
   AgentRunModePreference,
@@ -23,29 +26,30 @@ import type {
 } from '../../schemas/agentApiSchema'
 
 const CLOUD_WORKFLOW_PAGE_SIZE = 100
-const CLOUD_WORKFLOW_MAX_PAGES = 5
 
 export class AgentApiError extends Error {
   readonly status: number
   readonly body: unknown
+  readonly retryAfterSeconds?: number
 
-  constructor(message: string, status: number, body: unknown) {
+  constructor(
+    message: string,
+    status: number,
+    body: unknown,
+    retryAfterSeconds?: number
+  ) {
     super(message)
     this.name = 'AgentApiError'
     this.status = status
     this.body = body
+    this.retryAfterSeconds = retryAfterSeconds
   }
 }
 
-interface OpenTabEntry {
-  workflow_id: string
-  name: string
-}
-
-export interface OpenTabsSnapshot {
-  open_tabs: OpenTabEntry[]
-  current_tab?: string
-}
+export type OpenTabsSnapshot = Pick<
+  AgentPostMessageRequest,
+  'open_tabs' | 'current_tab'
+>
 
 /** An omitted `version` makes this content authoritative for the backend CAS. */
 export interface DraftSnapshot {
@@ -58,6 +62,7 @@ export interface PostMessageInput {
   workflowId?: string
   selection?: Record<string, unknown>
   attachments?: string[]
+  workflowReferences?: AgentPostMessageRequest['workflow_references']
   tabs?: OpenTabsSnapshot
   draft?: DraftSnapshot
 }
@@ -87,11 +92,23 @@ export function createAgentRestClient() {
     }
     const plain = zAgentError.safeParse(body)
     const message = plain.success
-      ? plain.data.error
+      ? typeof plain.data.error === 'string'
+        ? plain.data.error
+        : plain.data.error.message
       : isIngestErrorBody(body)
         ? body.error.message
         : response.statusText
-    return new AgentApiError(message, response.status, body)
+    const retryAfterHeader = response.headers.get('Retry-After')
+    const retryAfterSeconds =
+      retryAfterHeader !== null && /^\d+$/.test(retryAfterHeader)
+        ? Number(retryAfterHeader)
+        : undefined
+    return new AgentApiError(
+      message,
+      response.status,
+      body,
+      Number.isSafeInteger(retryAfterSeconds) ? retryAfterSeconds : undefined
+    )
   }
 
   async function request<T>(
@@ -123,6 +140,8 @@ export function createAgentRestClient() {
       if (req.tabs.current_tab !== undefined)
         body.current_tab = req.tabs.current_tab
     }
+    if (req.workflowReferences !== undefined)
+      body.workflow_references = req.workflowReferences
     if (req.selection !== undefined) body.selection = req.selection
     if (req.attachments !== undefined) body.attachments = req.attachments
     if (req.draft !== undefined) body.draft = req.draft
@@ -166,9 +185,10 @@ export function createAgentRestClient() {
 
   async function listCloudWorkflows(): Promise<CloudWorkflowEntry[]> {
     const entries: CloudWorkflowEntry[] = []
-    let hasMore = false
+    let hasMore: boolean
     let cursor: string | undefined
-    for (let page = 0; page < CLOUD_WORKFLOW_MAX_PAGES; page++) {
+    const seenCursors = new Set<string>()
+    do {
       const after = cursor ? `&after=${encodeURIComponent(cursor)}` : ''
       const result = await request(
         `/workflows?limit=${CLOUD_WORKFLOW_PAGE_SIZE}${after}`,
@@ -177,11 +197,13 @@ export function createAgentRestClient() {
       )
       entries.push(...result.data)
       hasMore = result.pagination.has_more
-      if (!hasMore) break
-      const nextCursor = result.pagination.next_cursor
-      if (!nextCursor || nextCursor === cursor) break
-      cursor = nextCursor
-    }
+      if (hasMore) {
+        const nextCursor = result.pagination.next_cursor
+        if (!nextCursor || seenCursors.has(nextCursor)) break
+        seenCursors.add(nextCursor)
+        cursor = nextCursor
+      }
+    } while (hasMore)
     if (hasMore)
       console.warn(
         `[agent] cloud workflow index truncated at ${entries.length} entries`
@@ -197,6 +219,18 @@ export function createAgentRestClient() {
       `/agent/threads/${threadId}/messages/${messageId}/cancel`,
       jsonInit('POST', {}),
       zAgentCancelAccepted
+    )
+  }
+
+  async function answerAsk(
+    threadId: string,
+    askId: string,
+    selected: string[]
+  ): Promise<AgentAnswerAccepted> {
+    return request(
+      `/agent/threads/${threadId}/asks/${encodeURIComponent(askId)}/answer`,
+      jsonInit('POST', { selected }),
+      zAgentAnswerAccepted
     )
   }
 
@@ -221,6 +255,7 @@ export function createAgentRestClient() {
     putRunMode,
     listCloudWorkflows,
     cancelMessage,
+    answerAsk,
     uploadImage
   }
 }

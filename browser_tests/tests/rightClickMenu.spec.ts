@@ -4,9 +4,7 @@ import { NodeBadgeMode } from '@/types/nodeSource'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-})
+test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
 test.describe(
   'Canvas Right Click Menu',

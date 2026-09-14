@@ -1,39 +1,44 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import * as THREE from 'three'
+import { WebGLRenderer } from 'three'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { RendererView } from './RendererView'
 
-vi.mock('three', async (importOriginal) => {
-  const actual = await importOriginal<typeof THREE>()
-  class WebGLRenderer {
-    domElement = document.createElement('canvas')
-    autoClear = true
-    outputColorSpace = ''
-    toneMapping = 0
-    toneMappingExposure = 1
+vi.mock(import('three'), { spy: true })
+
+function fakeRenderer() {
+  const domElement = document.createElement('canvas')
+  return fromPartial<WebGLRenderer>({
+    domElement,
+    autoClear: true,
+    outputColorSpace: THREE.SRGBColorSpace,
+    toneMapping: THREE.NoToneMapping,
+    toneMappingExposure: 1,
     setSize(width: number, height: number) {
-      this.domElement.width = width
-      this.domElement.height = height
-    }
-    getSize(target: { set(x: number, y: number): unknown }) {
-      target.set(this.domElement.width, this.domElement.height)
-      return target
-    }
-    setPixelRatio() {}
-    setClearColor = vi.fn()
-    forceContextLoss = vi.fn()
-    dispose = vi.fn()
-  }
-  return { ...actual, WebGLRenderer }
-})
+      domElement.width = width
+      domElement.height = height
+    },
+    getSize(target: THREE.Vector2) {
+      return target.set(domElement.width, domElement.height)
+    },
+    setPixelRatio: vi.fn(),
+    setClearColor: vi.fn(),
+    forceContextLoss: vi.fn(),
+    dispose: vi.fn()
+  })
+}
 
 const drawImage = vi.fn()
 
 beforeEach(() => {
-  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
-    drawImage,
-    globalCompositeOperation: 'source-over'
-  } as unknown as ReturnType<HTMLCanvasElement['getContext']>)
+  vi.mocked(WebGLRenderer).mockImplementation(fakeRenderer)
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
+    fromPartial<CanvasRenderingContext2D & GPUCanvasContext>({
+      drawImage,
+      globalCompositeOperation: 'source-over'
+    })
+  )
 })
 
 describe('RendererView', () => {

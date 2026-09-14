@@ -6,32 +6,38 @@ import { t } from '../../i18n/translations'
 import FeaturedCarousel02 from '../blocks/FeaturedCarousel02.vue'
 import type { FeaturedSplitSlide } from '../blocks/FeaturedCarousel02.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale = 'en', modelLinks = {} } = defineProps<{
+  locale?: Locale
+  modelLinks?: Readonly<Partial<Record<string, string>>>
+}>()
 const routes = getRoutes(locale)
 
-const slides: FeaturedSplitSlide[] = modelReleaseSlides.map((slide) => ({
-  id: slide.id,
-  media: {
-    type: slide.media.type,
-    src: slide.media.src,
-    poster: slide.media.poster,
-    alt: t(slide.media.ariaLabelKey, locale)
-  },
-  eyebrow: t('modelRelease.eyebrow', locale),
-  title: t(slide.titleKey, locale),
-  body: t(slide.bodyKey, locale),
-  primaryCta: {
-    label: t(slide.exploreLabelKey, locale),
-    href: routes[slide.exploreRoute]
-  },
-  secondaryCta: {
-    label: t(slide.tryCta.labelKey, locale),
-    href: slide.tryCta.href,
-    newTab: true
-  },
-  tags: slide.tagKeys.map((key) => t(key, locale)),
-  autoplayMs: slide.autoplayMs
-}))
+const slides: FeaturedSplitSlide[] = modelReleaseSlides.map((slide) => {
+  const workshopUrl = modelLinks[slide.id]
+  return {
+    id: slide.id,
+    media: {
+      type: slide.media.type,
+      src: slide.media.src,
+      poster: slide.media.poster,
+      alt: t(slide.media.ariaLabelKey, locale)
+    },
+    eyebrow: t('modelRelease.eyebrow', locale),
+    title: t(slide.titleKey, locale),
+    body: t(slide.bodyKey, locale),
+    primaryCta: {
+      label: t(slide.exploreLabelKey, locale),
+      href: workshopUrl ?? routes[slide.exploreRoute]
+    },
+    secondaryCta: {
+      label: t(slide.tryCta.labelKey, locale),
+      href: workshopUrl ?? slide.tryCta.href,
+      newTab: !workshopUrl
+    },
+    tags: slide.tagKeys.map((key) => t(key, locale)),
+    autoplayMs: slide.autoplayMs
+  }
+})
 </script>
 
 <template>

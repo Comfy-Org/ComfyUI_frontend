@@ -44,7 +44,7 @@ test.describe('Renderer toggle geometry', { tag: ['@vue-nodes'] }, () => {
     const moved = await comfyPage.canvasOps.getNodeGeometry(nodeId)
     comfyPage.canvasOps.expectSlotsTrackedNode(moved, before)
 
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
+    await comfyPage.menu.topbar.setVueNodesEnabled(false)
     await comfyPage.nextFrame()
     await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
 
@@ -59,8 +59,7 @@ test.describe('Renderer toggle geometry', { tag: ['@vue-nodes'] }, () => {
       )
     }).toPass({ timeout: 5000 })
 
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-    await comfyPage.vueNodes.waitForNodes()
+    await comfyPage.menu.topbar.setVueNodesEnabled(true)
 
     await expect(async () => {
       comfyPage.canvasOps.expectNodeGeometryPreserved(
@@ -76,7 +75,7 @@ test.describe('Renderer toggle geometry', { tag: ['@vue-nodes'] }, () => {
     { tag: ['@node'] },
     async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('vueNodes/simple-triple')
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
+      await comfyPage.menu.topbar.setVueNodesEnabled(false)
       await comfyPage.nextFrame()
       await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
       await fitToViewInstant(comfyPage)
@@ -103,8 +102,7 @@ test.describe('Renderer toggle geometry', { tag: ['@vue-nodes'] }, () => {
         })
         .toBeLessThanOrEqual(5)
 
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-      await comfyPage.vueNodes.waitForNodes()
+      await comfyPage.menu.topbar.setVueNodesEnabled(true)
       await expect(comfyPage.vueNodes.nodes).toHaveCount(3)
 
       const ksamplerNode = comfyPage.vueNodes.getNodeByTitle('KSampler')
@@ -165,7 +163,7 @@ test.describe('Renderer toggle geometry', { tag: ['@vue-nodes'] }, () => {
         })
         .toBeGreaterThan(0)
 
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
+      await comfyPage.menu.topbar.setVueNodesEnabled(false)
       await comfyPage.nextFrame()
       await comfyPage.page.evaluate(() => window.app!.canvas.deselectAll())
       expect(await comfyPage.nodeOps.getSelectedNodeIds()).toEqual([])
