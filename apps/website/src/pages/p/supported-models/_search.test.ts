@@ -24,6 +24,11 @@ describe('modelSearchText', () => {
       },
       expected:
         'depthanything depth_anything depth-anything geometry_estimation'
+    },
+    {
+      case: 'keeps the directory label when name fields are empty',
+      model: { displayName: '', name: '', slug: '', directory: 'vae' },
+      expected: '   vae'
     }
   ] as const)('$case', ({ model, expected }) => {
     expect(modelSearchText(model)).toBe(expected)
