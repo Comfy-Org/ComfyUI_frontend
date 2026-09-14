@@ -308,7 +308,7 @@ test.describe(
       })
     }
 
-    test('sanity sequence ends with a real artifact and no console, page or toast errors', async ({
+    test('sanity operations end with a real artifact and no console, page or toast errors', async ({
       comfyPage
     }) => {
       test.setTimeout(60_000)
@@ -316,7 +316,7 @@ test.describe(
       await trackVisibleErrors(comfyPage.page)
       await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
       await comfyPage.searchBoxV2.ensureV2Search()
-      await comfyPage.searchBoxV2.addNode('Empty Image', {
+      await comfyPage.searchBoxV2.addNode('Empty Im', {
         position: { x: 220, y: 220 }
       })
       await comfyPage.searchBoxV2.addNode('Save Image', {
@@ -336,13 +336,69 @@ test.describe(
       )[0]
       const target = (await comfyPage.nodeOps.getNodeRefsByType('SaveImage'))[0]
       await source.connectOutput(0, target, 0)
+
+      const originalPosition = await source.getPosition()
+      const titlePosition = await source.getTitlePosition()
+      await comfyPage.page.mouse.move(titlePosition.x, titlePosition.y)
+      await comfyPage.page.mouse.down()
+      await comfyPage.page.mouse.move(
+        titlePosition.x + 80,
+        titlePosition.y + 40
+      )
+      await comfyPage.page.mouse.up()
+      const movedPosition = await source.getPosition()
+      expect(movedPosition).not.toEqual(originalPosition)
+      await comfyPage.page.keyboard.press('Control+z')
+      await expect.poll(() => source.getPosition()).toEqual(originalPosition)
+      await comfyPage.page.keyboard.press('Control+Shift+z')
+      await expect.poll(() => source.getPosition()).toEqual(movedPosition)
+
+      const originalNodeIds = new Set([source.id, target.id])
+      await source.copy()
+      await comfyPage.page.mouse.move(500, 500)
+      await comfyPage.clipboard.paste()
+      await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(3)
+      const copiedSource = (
+        await comfyPage.nodeOps.getNodeRefsByType('EmptyImage')
+      ).find(({ id }) => !originalNodeIds.has(id))
+      if (!copiedSource) throw new Error('Pasted EmptyImage node not found')
+      await copiedSource.delete()
+      await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(2)
+      expect(
+        new Set(
+          (await comfyPage.nodeOps.getNodeRefsByType('EmptyImage')).map(
+            ({ id }) => id
+          )
+        )
+      ).toEqual(new Set([source.id]))
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => {
+            const graph = window.app!.graph
+            const target = graph.nodes.find(
+              (node) => node.type === 'SaveImage'
+            )!
+            const link = graph.links.get(target.inputs[0].link!)
+            return {
+              linkCount: graph.links.size,
+              originId: String(link?.origin_id),
+              targetId: String(link?.target_id)
+            }
+          })
+        )
+        .toEqual({
+          linkCount: 1,
+          originId: String(source.id),
+          targetId: String(target.id)
+        })
+
       const output = await queueAndReadPng(comfyPage)
       expect(output).toMatchObject({ width: 64, height: 48 })
       runtimeErrors.stop()
       expect(runtimeErrors.errors).toEqual([])
       await expectNoVisibleErrors(
         comfyPage.page,
-        'after sanity sequence and real Queue'
+        'after sanity operations and real Queue'
       )
     })
   }
