@@ -337,7 +337,7 @@ const earlierClass = (active: boolean) =>
             :src="currentUrl"
             :locale
             :aria-label="t('workshop.output.title', locale)"
-            class="size-full"
+            class="size-full rounded-none border-0"
             fit="contain"
             controls-on-hover
             autoplay

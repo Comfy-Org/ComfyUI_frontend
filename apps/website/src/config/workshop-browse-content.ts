@@ -13,6 +13,7 @@ import { workshopRouterIndexSchema } from './workshop-router-index'
 import { workshopRouterAliasesSchema } from './workshop-router-identity'
 import { labelSharedThumbnails } from './workshop-thumbnail-labels'
 import { workshopContentInputs } from './workshop-content-inputs'
+import { modelSummary } from '../lib/workshop/model-summary'
 import { modelOrderRank } from './workshop-model-order'
 import {
   isWorkshopModelDisabled,
@@ -140,21 +141,23 @@ const browseModels: readonly WorkshopModel[] = contentSources.map(
     const thumbnail = alias.contentIssue ? undefined : overlay.media.thumbnail
     const slug = overlay.slug
     const recommendedRank = modelOrderRank.get(slug)
+    const name =
+      overlay.displayName ??
+      ((sharedNames.get(`${record.id}:${overlay.useCase}`)?.size ?? 0) > 1
+        ? entry.displayName
+        : undefined) ??
+      canonicalNames.get(record.id) ??
+      entry.displayName
+    const provider = providerName(entry.provider)
     return {
       slug,
-      name:
-        overlay.displayName ??
-        ((sharedNames.get(`${record.id}:${overlay.useCase}`)?.size ?? 0) > 1
-          ? entry.displayName
-          : undefined) ??
-        canonicalNames.get(record.id) ??
-        entry.displayName,
+      name,
       workflowCount: exampleCount,
       ...(recommendedRank !== undefined ? { recommendedRank } : {}),
       href: `/models/${slug}/`,
       routerId: record.id,
       incompleteReason: record.incompleteReason,
-      provider: providerName(entry.provider),
+      provider,
       modality: modalityFor(entry),
       modalities: [modalityFor(entry)],
       task: taskForUseCases(useCases),
@@ -166,7 +169,9 @@ const browseModels: readonly WorkshopModel[] = contentSources.map(
             thumbnail: { url: thumbnail.url, kind: thumbnail.kind }
           }
         : {}),
-      ...(entry.description ? { summary: entry.description } : {}),
+      ...(entry.description
+        ? { summary: modelSummary(entry.description, name, provider) }
+        : {}),
       ...(overlay.status === 'deprecated'
         ? { status: 'deprecated' as const }
         : {})

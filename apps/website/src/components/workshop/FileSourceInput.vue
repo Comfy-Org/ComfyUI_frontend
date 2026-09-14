@@ -158,18 +158,12 @@ function remove(index: number) {
     :aria-label="field.label"
     :class="
       cn(
-        'focus-within:ring-primary-comfy-yellow flex min-w-0 flex-col gap-3 rounded-2xl border border-dashed focus-within:ring-2',
-        dropZoneActive
-          ? 'border-primary-comfy-yellow'
-          : 'border-transparency-white-t20',
+        'focus-within:ring-primary-comfy-yellow flex min-w-0 flex-col gap-3 rounded-2xl focus-within:ring-2',
         disabled && 'opacity-50'
       )
     "
   >
-    <ul
-      v-if="selectedFiles.length"
-      class="flex min-w-0 flex-col gap-2 px-3 pt-3"
-    >
+    <ul v-if="selectedFiles.length" class="flex min-w-0 flex-col gap-2">
       <SelectedFileRow
         v-for="(file, index) in selectedFiles"
         :key="index"
@@ -184,7 +178,10 @@ function remove(index: number) {
       :for="`field-${field.name}`"
       :class="
         cn(
-          'hover:bg-transparency-white-t4 flex min-h-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-2xl text-xs text-primary-warm-gray',
+          'hover:bg-transparency-white-t4 flex min-h-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-2xl border border-dashed text-xs text-primary-warm-gray',
+          dropZoneActive
+            ? 'border-primary-comfy-yellow'
+            : 'border-transparency-white-t20',
           disabled && 'pointer-events-none'
         )
       "
