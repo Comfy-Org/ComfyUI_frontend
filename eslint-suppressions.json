@@ -71,7 +71,7 @@
   },
   "src/lib/litegraph/src/LGraph.ts": {
     "comfy/no-new-error-throw": {
-      "count": 10
+      "count": 9
     }
   },
   "src/lib/litegraph/src/LGraphNode.ts": {

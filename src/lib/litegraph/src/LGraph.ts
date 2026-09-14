@@ -132,6 +132,13 @@ import { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import { SubgraphOutput } from './subgraph/SubgraphOutput'
 import { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
 import {
+  captureUnpackedTargetInput,
+  findUnavailableSubgraphNodeType,
+  materializeSubgraphNodes,
+  resolveUnpackedTargetInput
+} from './subgraph/unpackSubgraph'
+import type { UnpackedTargetInput } from './subgraph/unpackSubgraph'
+import {
   findUnresolvableSubgraphLink,
   findReleasableSubgraphs,
   findUsedSubgraphIds,
@@ -2370,6 +2377,26 @@ export class LGraph
     if (!(subgraphNode instanceof SubgraphNode))
       throw new Error('Can only unpack Subgraph Nodes')
 
+    const skipMissingNodes = options?.skipMissingNodes ?? false
+    const unavailableNodeType = skipMissingNodes
+      ? undefined
+      : findUnavailableSubgraphNodeType(subgraphNode.subgraph.nodes)
+    if (unavailableNodeType) {
+      reportError(
+        new Error(
+          `Cannot unpack: node type "${unavailableNodeType}" is not registered`
+        ),
+        {
+          errorType: 'error_unpacking_subgraph_node_type',
+          context: {
+            subgraphNodeId: subgraphNode.id,
+            nodeType: unavailableNodeType
+          }
+        }
+      )
+      return false
+    }
+
     const malformedLink = findUnresolvableSubgraphLink(subgraphNode)
     if (malformedLink) {
       reportError(
@@ -2393,7 +2420,7 @@ export class LGraph
     this.beforeChange()
 
     try {
-      this._unpackSubgraphImpl(subgraphNode, options)
+      this._unpackSubgraphImpl(subgraphNode)
     } finally {
       // Mark state change complete for proper undo support
       this.afterChange()
@@ -2401,12 +2428,7 @@ export class LGraph
     return true
   }
 
-  private _unpackSubgraphImpl(
-    subgraphNode: SubgraphNode,
-    options?: { skipMissingNodes?: boolean }
-  ) {
-    const skipMissingNodes = options?.skipMissingNodes ?? false
-
+  private _unpackSubgraphImpl(subgraphNode: SubgraphNode) {
     //NOTE: Create bounds can not be called on positionables directly as the subgraph is not being displayed and boundingRect is not initialized.
     //NOTE: NODE_TITLE_HEIGHT is explicitly excluded here
     const positionables = [
@@ -2424,49 +2446,16 @@ export class LGraph
     const toSelect: Positionable[] = []
     const offsetX = subgraphNode.pos[0] - center[0] + subgraphNode.size[0] / 2
     const offsetY = subgraphNode.pos[1] - center[1] + subgraphNode.size[1] / 2
-    const movedNodes = multiClone(subgraphNode.subgraph.nodes)
-    const nodeIdMap = new Map<NodeId, NodeId>()
-    for (const n_info of movedNodes) {
-      let node = LiteGraph.createNode(n_info.type, n_info.title)
-      if (!node) {
-        if (skipMissingNodes) {
-          console.warn(
-            `Cannot unpack node of type "${n_info.type}" - node type not found. Creating placeholder node.`
-          )
-          node = new LGraphNode(
-            n_info.title || n_info.type || 'Missing Node',
-            n_info.type
-          )
-          node.last_serialization = n_info
-          node.has_errors = true
-        } else {
-          throw new Error(
-            `Cannot unpack: node type "${n_info.type}" is not registered`
-          )
-        }
-      }
-
-      const newNodeId = mintNodeId(this.state)
-      nodeIdMap.set(toNodeId(n_info.id), newNodeId)
-      node.id = newNodeId
-      n_info.id = newNodeId
-
-      // Strip links from serialized data before configure to prevent
-      // onConnectionsChange from resolving subgraph-internal link IDs
-      // against the parent graph's link map (which may contain unrelated
-      // links with the same numeric IDs).
-      for (const input of n_info.inputs ?? []) {
-        input.link = null
-      }
-      for (const output of n_info.outputs ?? []) {
-        output.links = []
-      }
-
-      this.add(node, true)
-      node.configure(n_info)
-      node.setPos(node.pos[0] + offsetX, node.pos[1] + offsetY)
-      toSelect.push(node)
-    }
+    const {
+      nodeIdMap,
+      inputSlots: configuredInputSlots,
+      materializedNodes
+    } = materializeSubgraphNodes({
+      graph: this,
+      nodes: subgraphNode.subgraph.nodes,
+      offset: [offsetX, offsetY]
+    })
+    toSelect.push(...materializedNodes)
     const groups = structuredClone(
       [...subgraphNode.subgraph.groups].map((g) => g.serialize())
     )
@@ -2479,6 +2468,7 @@ export class LGraph
       iparent?: RerouteId
       eparent?: RerouteId
       externalFirst: boolean
+      targetSlot?: UnpackedTargetInput
     }[] = []
     for (const [, link] of subgraphNode.subgraph.links) {
       const subgraphInput =
@@ -2531,7 +2521,11 @@ export class LGraph
             id: link.id,
             iparent: link.parentId,
             eparent: sublink.parentId,
-            externalFirst: true
+            externalFirst: true,
+            targetSlot: captureUnpackedTargetInput(
+              this.getNodeById(sublink.target_id),
+              sublink.target_slot
+            )
           })
           sublink.parentId = undefined
         }
@@ -2553,7 +2547,12 @@ export class LGraph
         id: link.id,
         iparent: link.parentId,
         eparent: externalParentId,
-        externalFirst: false
+        externalFirst: false,
+        targetSlot: captureUnpackedTargetInput(
+          subgraphNode.subgraph.getNodeById(link.target_id),
+          link.target_slot,
+          configuredInputSlots.get(targetId)?.get(link.target_slot) ?? null
+        )
       })
     }
     this.remove(subgraphNode)
@@ -2591,10 +2590,18 @@ export class LGraph
         if (newLink.tid === UNASSIGNED_NODE_ID) continue
         const tnode = this.getNodeById(newLink.tid)
         if (!tnode) continue
-        created = this.inputNode.slots[newLink.oslot].connect(
-          tnode.inputs[newLink.tslot],
-          tnode
+        const targetSlot = resolveUnpackedTargetInput(
+          tnode,
+          newLink.targetSlot,
+          newLink.tslot
         )
+        created =
+          targetSlot === -1
+            ? null
+            : this.inputNode.slots[newLink.oslot].connect(
+                tnode.inputs[targetSlot],
+                tnode
+              )
       } else if (newLink.tid == SUBGRAPH_OUTPUT_ID) {
         if (!(this instanceof Subgraph)) {
           console.error('Ignoring link to subgraph outside subgraph')
@@ -2616,7 +2623,15 @@ export class LGraph
         const originNode = this.getNodeById(newLink.oid)
         const targetNode = this.getNodeById(newLink.tid)
         if (!originNode || !targetNode) continue
-        created = originNode.connect(newLink.oslot, targetNode, newLink.tslot)
+        const targetSlot = resolveUnpackedTargetInput(
+          targetNode,
+          newLink.targetSlot,
+          newLink.tslot
+        )
+        created =
+          targetSlot === -1
+            ? null
+            : originNode.connect(newLink.oslot, targetNode, targetSlot)
       }
       if (!created) {
         console.error('Failed to create link')
