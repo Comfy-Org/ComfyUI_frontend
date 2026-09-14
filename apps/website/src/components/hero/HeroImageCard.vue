@@ -62,7 +62,7 @@ watch(
     >
       <span class="bg-primary-comfy-yellow size-[0.5em] rounded-full" />
       <span
-        class="text-primary-comfy-yellow font-formula ppformula-text-center text-[0.75em] leading-[1.1] font-bold tracking-[-0.01em]"
+        class="text-primary-comfy-yellow ppformula-text-center font-formula text-[0.75em] leading-[1.1] font-bold tracking-[-0.01em]"
       >
         {{ label }}
       </span>

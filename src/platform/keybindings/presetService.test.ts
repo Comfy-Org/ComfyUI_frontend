@@ -1,4 +1,3 @@
-import type * as I18nModule from '@/i18n'
 import type { ComfyApp } from '@/scripts/app'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -74,8 +73,7 @@ vi.mock<unknown>(import('@/platform/keybindings/keybindingService'), () => ({
   })
 }))
 
-vi.mock(import('@/i18n'), async (importOriginal) => ({
-  ...(await importOriginal<typeof I18nModule>()),
+vi.mock<unknown>(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
