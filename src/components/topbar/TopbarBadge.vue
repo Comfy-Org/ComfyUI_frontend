@@ -104,14 +104,14 @@
   <div
     v-else
     v-tooltip="badge.tooltip"
-    class="flex h-full shrink-0 items-center gap-2 whitespace-nowrap"
-    :class="[{ 'flex-row-reverse': reverseOrder }, noPadding ? '' : 'px-3']"
+    class="flex h-full shrink-0 items-center gap-1 whitespace-nowrap"
+    :class="[{ 'flex-row-reverse': reverseOrder }, noPadding ? '' : 'px-2']"
     :style="menuBackgroundStyle"
   >
     <i
       v-if="iconClass"
       data-testid="badge-icon"
-      :class="['shrink-0 text-base', iconClass, iconColorClass]"
+      :class="['size-3 shrink-0 text-xs', iconClass, iconColorClass]"
     />
     <div
       v-if="badge.label"
@@ -120,7 +120,7 @@
     >
       {{ badge.label }}
     </div>
-    <div class="font-inter text-sm" :class="textClasses">
+    <div class="font-inter text-xs font-medium" :class="textClasses">
       {{ badge.text }}
     </div>
   </div>
