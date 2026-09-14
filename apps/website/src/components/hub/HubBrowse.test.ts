@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/vue'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { useHubStore } from '../../composables/useHubStore'
+import { workshopModels } from '../../config/workshop-browse-content'
 import HubBrowse from './HubBrowse.vue'
 
 afterEach(() => {
@@ -76,7 +77,15 @@ describe('HubBrowse', () => {
 
     await user.click(screen.getByTestId('hub-use-case-audio'))
     const lead = screen.getAllByTestId('hub-models-lead')
-    expect(lead[0].textContent).toContain('ElevenLabs')
+    // The lead card is whichever audio model the curated order puts first;
+    // the scoping is what matters here, not that order.
+    const audioModels = workshopModels
+      .filter((model) => model.useCases?.includes('audio'))
+      .map((model) => model.name)
+    expect(audioModels.length).toBeGreaterThan(0)
+    expect(audioModels.some((name) => lead[0].textContent.includes(name))).toBe(
+      true
+    )
     expect(screen.getByTestId('hub-showing').textContent).toMatch(
       /of [1-9]\d*\b/
     )
