@@ -27,7 +27,7 @@ watch(
 </script>
 
 <template>
-  <code>
+  <code data-testid="highlighted-code">
     <template v-if="tokens">
       <span
         v-for="(token, index) in tokens"

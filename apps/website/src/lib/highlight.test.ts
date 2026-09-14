@@ -35,5 +35,6 @@ describe('highlightInline', () => {
 
   it('skips highlighting for oversized payloads', async () => {
     expect(await highlightInline('x'.repeat(129 * 1024), 'json')).toBeNull()
+    expect(await highlightTokens('界'.repeat(44 * 1024), 'json')).toBeNull()
   })
 })

@@ -26,6 +26,7 @@ export interface HighlightToken {
 // Markup grows ~7x the source and the cost is linear. The payloads these blocks
 // render are a few hundred bytes; anything past this keeps its plain rendering.
 const MAX_HIGHLIGHT_BYTES = 128 * 1024
+const textEncoder = new TextEncoder()
 
 const GRAMMARS = {
   javascript: () => import('shiki/langs/javascript.mjs'),
@@ -59,6 +60,10 @@ async function highlighterFor(lang: CodeLang): Promise<HighlighterCore> {
   return hl
 }
 
+function exceedsHighlightLimit(code: string): boolean {
+  return textEncoder.encode(code).byteLength > MAX_HIGHLIGHT_BYTES
+}
+
 /**
  * Tokenized spans for a `<pre>` the caller already owns — `structure: 'inline'`
  * drops Shiki's own wrapper, so the element and its classes survive. Null when
@@ -68,7 +73,7 @@ export async function highlightInline(
   code: string,
   lang: CodeLang
 ): Promise<string | null> {
-  if (code.length > MAX_HIGHLIGHT_BYTES) return null
+  if (exceedsHighlightLimit(code)) return null
   try {
     const hl = await highlighterFor(lang)
     return hl.codeToHtml(code, { lang, theme: CODE_THEME, structure: 'inline' })
@@ -81,7 +86,7 @@ export async function highlightTokens(
   code: string,
   lang: CodeLang
 ): Promise<readonly HighlightToken[] | null> {
-  if (code.length > MAX_HIGHLIGHT_BYTES) return null
+  if (exceedsHighlightLimit(code)) return null
   try {
     const hl = await highlighterFor(lang)
     const { tokens } = hl.codeToTokens(code, { lang, theme: CODE_THEME })
