@@ -170,7 +170,7 @@
                 data-testid="queue-status-row-cancel"
                 @click="handleCancel(job)"
               >
-                <i class="icon-[comfy--stop] size-3" aria-hidden />
+                <span class="size-3 rounded-[2px] bg-current" aria-hidden />
               </button>
             </div>
           </div>
@@ -228,7 +228,7 @@
             data-testid="queue-status-cancel-all"
             @click="handleCancelAll"
           >
-            <i class="icon-[comfy--stop] size-3" aria-hidden />
+            <span class="size-3 rounded-[2px] bg-current" aria-hidden />
             {{ t('queueStatus.cancelAll') }}
           </button>
         </div>
