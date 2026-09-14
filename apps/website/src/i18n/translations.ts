@@ -9719,10 +9719,6 @@ Enterprise`
     en: 'Cost depends on the model and settings.',
     'zh-CN': '费用取决于模型和设置。'
   },
-  'workshop.model.estimatedPrice': {
-    en: 'Estimated {price}',
-    'zh-CN': '预计 {price}'
-  },
   'workshop.model.nodePriceDefaults': {
     en: 'Estimated from published rates or node defaults. Actual cost varies with settings and usage.',
     'zh-CN': '根据公布的费率或节点默认设置估算。实际费用随设置和用量变化。'

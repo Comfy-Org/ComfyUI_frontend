@@ -18,6 +18,7 @@ import { routerWorkshopModelPaths } from '../../config/workshop-browse-content'
 import TagOverflow from '../../components/workshop/TagOverflow.vue'
 import { t } from '../../i18n/translations'
 import { prepareModelPage } from './model-page'
+import { splitPriceLabel } from '../../lib/workshop/price-label'
 
 export const getStaticPaths: GetStaticPaths = () =>
   routerWorkshopModelPaths.map((slug) => ({ params: { slug } }))
@@ -42,6 +43,7 @@ const {
 const routes = getRoutes()
 const pillClass =
   'inline-flex h-7 items-center rounded-full border border-transparency-white-t20 px-3 text-xs leading-none text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow'
+const price = splitPriceLabel(priceEstimate ?? '')
 const usedBy = templatesUsingModel(model, hubTemplates as HubTemplate[])
 const templatesHref = `/templates/?model=${encodeURIComponent(model.name)}`
 
@@ -89,12 +91,19 @@ const templatesHref = `/templates/?model=${encodeURIComponent(model.name)}`
 
         <div class="flex flex-col gap-4 lg:items-end">
           <p
-            class="flex items-center gap-2 text-lg font-medium text-primary-warm-white"
+            class="flex items-baseline gap-2 text-lg text-primary-warm-white"
             data-testid="model-price"
           >
-            {priceEstimate
-              ? t('workshop.model.estimatedPrice').replace('{price}', priceEstimate)
-              : t('workshop.model.variablePrice')}
+            {priceEstimate ? (
+              <span class="flex items-baseline">
+                <span class="font-semibold">{price.amount}</span>
+                {price.per && (
+                  <span class="text-sm text-primary-warm-gray">{price.per}</span>
+                )}
+              </span>
+            ) : (
+              t('workshop.model.variablePrice')
+            )}
             {priceEstimate && (
               <InfoTooltip
                 text={t('workshop.model.nodePriceDefaults')}

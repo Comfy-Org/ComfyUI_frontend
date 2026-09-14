@@ -14,10 +14,7 @@ import {
 import { groupModels } from '../../config/model-family'
 import hubTemplates from '../../data/hubTemplates.json'
 import { templatePath } from '../../lib/hub/workflow-detail'
-import {
-  modelNamesMatching,
-  useCaseForTemplate
-} from '../../lib/hub/template-use-case'
+import { modelNamesMatching } from '../../lib/hub/template-use-case'
 import { tagDisplayName } from '../../lib/hub/tag-aliases'
 import { withFacetFields } from '../../lib/hub/facet-fields'
 import type { HubTemplate } from '../../lib/hub/types'
@@ -131,8 +128,7 @@ const inUseCase = (value: UseCase | 'all') => ({
     : [],
   templates: templates.filter(
     (tmpl) =>
-      (value === 'all' || useCaseForTemplate(tmpl, models) === value) &&
-      runsMatchingModel(tmpl)
+      (value === 'all' || tmpl.useCase === value) && runsMatchingModel(tmpl)
   )
 })
 
