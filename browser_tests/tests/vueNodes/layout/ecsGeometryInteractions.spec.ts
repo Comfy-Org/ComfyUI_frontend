@@ -62,7 +62,7 @@ test.describe(
       }
     })
 
-    test('DOM slot-dot paint is proven at 100%/400%; reroute paint remains unproven', async ({
+    test('slot-dot and reroute paint are proven at 100%/400%', async ({
       comfyPage
     }) => {
       test.slow()
@@ -307,6 +307,104 @@ test.describe(
           const [x, y] = window.app!.canvasPosToClientPos(reroute.pos)
           return { x, y }
         })
+        if (zoom >= 1) {
+          const clip = {
+            x: rerouteCenter.x - 20,
+            y: rerouteCenter.y - 20,
+            width: 40,
+            height: 40
+          }
+          const graphState = await comfyPage.page.evaluate((targetId) => {
+            const canvas = window.app!.canvas
+            const reroute = window.app!.graph.getReroute(targetId)
+            if (!reroute) throw new Error(`Reroute ${targetId} is unavailable`)
+            return {
+              position: [...reroute.pos],
+              selectedIds: [...canvas.selectedItems].map((item) => item.id),
+              linkIds: [...reroute.linkIds]
+            }
+          }, toRerouteId(reroute.id))
+          const paintedRaster = await comfyPage.page.screenshot({ clip })
+          await comfyPage.page.evaluate((targetId) => {
+            const canvas = window.app!.canvas
+            const reroute = window.app!.graph.getReroute(targetId)
+            if (!reroute) throw new Error(`Reroute ${targetId} is unavailable`)
+            if (Object.hasOwn(reroute, 'draw')) {
+              throw new Error(
+                'Reroute draw suppression cannot preserve identity'
+              )
+            }
+            reroute.draw = () => {}
+            canvas.setDirty(true, true)
+          }, toRerouteId(reroute.id))
+          await comfyPage.nextFrame()
+          let suppressedRaster: Buffer
+          try {
+            suppressedRaster = await comfyPage.page.screenshot({ clip })
+            expect(
+              await comfyPage.page.evaluate((targetId) => {
+                const canvas = window.app!.canvas
+                const reroute = window.app!.graph.getReroute(targetId)
+                if (!reroute)
+                  throw new Error(`Reroute ${targetId} is unavailable`)
+                return {
+                  position: [...reroute.pos],
+                  selectedIds: [...canvas.selectedItems].map((item) => item.id),
+                  linkIds: [...reroute.linkIds]
+                }
+              }, toRerouteId(reroute.id)),
+              `${zoom} draw suppression preserves graph and hit state`
+            ).toEqual(graphState)
+          } finally {
+            await comfyPage.page.evaluate((targetId) => {
+              const canvas = window.app!.canvas
+              const reroute = window.app!.graph.getReroute(targetId)
+              if (!reroute)
+                throw new Error(`Reroute ${targetId} is unavailable`)
+              Reflect.deleteProperty(reroute, 'draw')
+              canvas.setDirty(true, true)
+            }, toRerouteId(reroute.id))
+            await comfyPage.nextFrame()
+          }
+          const differingPixels = await comfyPage.page.evaluate(
+            async ({ paintedBase64, suppressedBase64 }) => {
+              const decode = async (imageBase64: string) => {
+                const image = new Image()
+                image.src = `data:image/png;base64,${imageBase64}`
+                await image.decode()
+                const raster = document.createElement('canvas')
+                raster.width = image.naturalWidth
+                raster.height = image.naturalHeight
+                const context = raster.getContext('2d')
+                if (!context) throw new Error('Reroute raster is unavailable')
+                context.drawImage(image, 0, 0)
+                return context.getImageData(0, 0, raster.width, raster.height)
+              }
+              const painted = await decode(paintedBase64)
+              const suppressed = await decode(suppressedBase64)
+              let count = 0
+              for (let offset = 0; offset < painted.data.length; offset += 4) {
+                if (
+                  painted.data[offset] !== suppressed.data[offset] ||
+                  painted.data[offset + 1] !== suppressed.data[offset + 1] ||
+                  painted.data[offset + 2] !== suppressed.data[offset + 2] ||
+                  painted.data[offset + 3] !== suppressed.data[offset + 3]
+                ) {
+                  count++
+                }
+              }
+              return count
+            },
+            {
+              paintedBase64: paintedRaster.toString('base64'),
+              suppressedBase64: suppressedRaster.toString('base64')
+            }
+          )
+          expect(
+            differingPixels,
+            `${zoom} reroute paint differs when only reroute.draw is suppressed`
+          ).toBeGreaterThan(0)
+        }
         const thresholdCrossing = 8
         const responseDelta = 24
         await comfyPage.page.mouse.move(rerouteCenter.x, rerouteCenter.y)
