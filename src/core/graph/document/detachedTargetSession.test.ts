@@ -450,4 +450,26 @@ describe('createDetachedTargetSession', () => {
     expect(session.isCommitted(`other-lineage:1`)).toBe(false)
     expect(session.isCommitted('malformed')).toBe(false)
   })
+
+  it('drainAll reports commits completed before a failed head frame', () => {
+    const source = createFrameSource()
+    const session = createDetachedTargetSession(WORKFLOW_ID)
+    session.enqueue(
+      source.frame((doc) => setNode(doc, '1', { type: 'Source' }))
+    )
+    session.enqueue(source.frame((doc) => setNode(doc, '1', { title: 'a' })))
+    let calls = 0
+    const failSecond: TargetFrameApplyPort = {
+      apply: () => ++calls === 1
+    }
+
+    expect(session.drainAll(failSecond)).toEqual({
+      committed: 1,
+      stoppedBy: { status: 'failed', seq: 2 }
+    })
+    expect(session.snapshot()).toMatchObject({
+      committedSeq: 1,
+      queuedFrames: 1
+    })
+  })
 })
