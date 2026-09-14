@@ -96,7 +96,7 @@ const panelHeight = computed(() => `${lines.length * 1.5 + 3}rem`)
   <div ref="root" role="img" :aria-label="label">
     <pre
       aria-hidden="true"
-      class="text-2xs/relaxed text-primary-comfy-canvas h-[calc(var(--panel-h)*0.9)] scrollbar-none overflow-auto rounded-3xl bg-[#2a2230] p-4 font-mono whitespace-pre-wrap select-none sm:p-5 sm:text-xs/relaxed sm:whitespace-pre lg:h-(--panel-h) lg:p-6 lg:text-sm/relaxed"
+      class="h-[calc(var(--panel-h)*0.9)] scrollbar-none overflow-auto rounded-3xl bg-[#2a2230] p-4 font-mono text-2xs/relaxed whitespace-pre-wrap text-primary-comfy-canvas select-none sm:p-5 sm:text-xs/relaxed sm:whitespace-pre lg:h-(--panel-h) lg:p-6 lg:text-sm/relaxed"
       :style="{ '--panel-h': panelHeight }"
     ><code><template v-for="(line, index) in visibleLines" :key="index"><span
           :class="cn(index > 0 && 'block')"

@@ -133,6 +133,7 @@ const options: {
         align="end"
         :side-offset="8"
         class="agent-scope border-agent-border bg-agent-surface-raised z-1100 flex w-80 flex-col gap-2.5 rounded-[10px] border p-2.5 shadow-lg"
+        @escape-key-down="open = false"
       >
         <div class="flex flex-col gap-0.5">
           <div class="text-agent-fg text-sm/5 font-medium">

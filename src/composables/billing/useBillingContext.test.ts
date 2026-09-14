@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { effectScope, nextTick, computed } from 'vue'
 import type { Ref } from 'vue'
-import type { Mock } from 'vitest'
 import { storeToRefs } from 'pinia'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { useAuthStore } from '@/stores/authStore'
@@ -75,15 +74,6 @@ const {
 
 let mockIsPersonal: Ref<boolean>
 let mockBillingRail: Ref<BillingRail | null | undefined>
-let mockLegacyFetchBalance: Mock<
-  ReturnType<typeof useAuthStore>['fetchBalance']
->
-let mockUpdateActiveWorkspace: Mock<
-  ReturnType<typeof useTeamWorkspaceStore>['updateActiveWorkspace']
->
-let mockSetWorkspaceBillingRail: Mock<
-  ReturnType<typeof useTeamWorkspaceStore>['setWorkspaceBillingRail']
->
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
@@ -175,24 +165,17 @@ describe('useBillingContext', () => {
     })
     const authStore = useAuthStore()
     authStore.balance = { currency: 'usd', amount_micros: 5000000 }
-    mockLegacyFetchBalance = vi
-      .mocked(authStore.fetchBalance)
-      .mockResolvedValue(authStore.balance)
-    mockUpdateActiveWorkspace = vi
-      .mocked(workspaceStore.updateActiveWorkspace)
-      .mockImplementation(() => {})
-    mockSetWorkspaceBillingRail = vi.mocked(
-      workspaceStore.setWorkspaceBillingRail
-    )
+    vi.mocked(authStore.fetchBalance).mockResolvedValue(authStore.balance)
+    vi.mocked(workspaceStore.updateActiveWorkspace).mockImplementation(() => {})
     remoteConfig.value = {}
     remoteConfigState.value = 'unloaded'
     mockIsPersonal.value = true
     mockBillingRail.value = undefined
-    mockSetWorkspaceBillingRail.mockImplementation(
-      (_workspaceId: string, billingRail: BillingRail) => {
-        mockBillingRail.value = billingRail
-      }
-    )
+    vi.mocked(
+      useTeamWorkspaceStore().setWorkspaceBillingRail
+    ).mockImplementation((_workspaceId: string, billingRail: BillingRail) => {
+      mockBillingRail.value = billingRail
+    })
     mockPlans.value = []
     mockLegacyStatus.value = {
       is_active: true,
@@ -385,21 +368,20 @@ describe('useBillingContext', () => {
     const context = useBillingContext()
     await vi.waitFor(() => {
       expect(mockLegacyFetchStatus).toHaveBeenCalled()
-      expect(mockLegacyFetchBalance).toHaveBeenCalled()
+      expect(vi.mocked(useAuthStore().fetchBalance)).toHaveBeenCalled()
     })
     vi.clearAllMocks()
 
     await context.reconcileSubscriptionSuccess()
 
-    expect(mockSetWorkspaceBillingRail).toHaveBeenCalledWith(
-      'personal-123',
-      'stripe'
-    )
+    expect(
+      vi.mocked(useTeamWorkspaceStore().setWorkspaceBillingRail)
+    ).toHaveBeenCalledWith('personal-123', 'stripe')
     expect(context.type.value).toBe('workspace')
     expect(workspaceApi.getBillingStatus).toHaveBeenCalled()
     expect(workspaceApi.getBillingBalance).toHaveBeenCalled()
     expect(mockLegacyFetchStatus).not.toHaveBeenCalled()
-    expect(mockLegacyFetchBalance).not.toHaveBeenCalled()
+    expect(vi.mocked(useAuthStore().fetchBalance)).not.toHaveBeenCalled()
   })
 
   it('does not refresh a balance through a stale rail after discovery fails', async () => {
@@ -408,7 +390,7 @@ describe('useBillingContext', () => {
     const context = useBillingContext()
     await vi.waitFor(() => {
       expect(mockLegacyFetchStatus).toHaveBeenCalled()
-      expect(mockLegacyFetchBalance).toHaveBeenCalled()
+      expect(vi.mocked(useAuthStore().fetchBalance)).toHaveBeenCalled()
     })
     vi.clearAllMocks()
     vi.mocked(workspaceApi.getBillingStatus).mockRejectedValueOnce(
@@ -420,7 +402,7 @@ describe('useBillingContext', () => {
     )
 
     expect(workspaceApi.getBillingBalance).not.toHaveBeenCalled()
-    expect(mockLegacyFetchBalance).not.toHaveBeenCalled()
+    expect(vi.mocked(useAuthStore().fetchBalance)).not.toHaveBeenCalled()
   })
 
   it('rejects topup amounts that are not positive whole-dollar cents', async () => {
@@ -455,7 +437,9 @@ describe('useBillingContext', () => {
       await initialize()
       await nextTick()
 
-      expect(mockUpdateActiveWorkspace).toHaveBeenCalledWith({
+      expect(
+        vi.mocked(useTeamWorkspaceStore().updateActiveWorkspace)
+      ).toHaveBeenCalledWith({
         isSubscribed: true,
         subscriptionPlan: null
       })
@@ -468,7 +452,9 @@ describe('useBillingContext', () => {
       await initialize()
       await nextTick()
 
-      expect(mockUpdateActiveWorkspace).not.toHaveBeenCalledWith({
+      expect(
+        vi.mocked(useTeamWorkspaceStore().updateActiveWorkspace)
+      ).not.toHaveBeenCalledWith({
         isSubscribed: false,
         subscriptionPlan: null
       })

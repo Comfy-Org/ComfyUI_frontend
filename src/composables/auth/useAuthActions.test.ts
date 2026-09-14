@@ -2,7 +2,12 @@ import { useAuthStore } from '@/stores/authStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { FirebaseError } from 'firebase/app'
-import { AuthErrorCodes } from 'firebase/auth'
+import {
+  AuthErrorCodes,
+  onAuthStateChanged,
+  onIdTokenChanged,
+  setPersistence
+} from 'firebase/auth'
 import type { UserCredential } from 'firebase/auth'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -11,12 +16,7 @@ import { useAuthActions } from '@/composables/auth/useAuthActions'
 import enLocale from '@/locales/en/main.json'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 
-vi.mock(import('firebase/auth'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  setPersistence: vi.fn().mockResolvedValue(undefined),
-  onAuthStateChanged: vi.fn(),
-  onIdTokenChanged: vi.fn()
-}))
+vi.mock(import('firebase/auth'), { spy: true })
 
 type ModifiedWorkflow = Pick<ComfyWorkflow, 'path' | 'isModified'>
 
@@ -137,6 +137,9 @@ function makeWorkflow(path: string): ModifiedWorkflow {
 }
 
 beforeEach(() => {
+  vi.mocked(setPersistence).mockResolvedValue(undefined)
+  vi.mocked(onAuthStateChanged).mockImplementation(vi.fn())
+  vi.mocked(onIdTokenChanged).mockImplementation(vi.fn())
   mockAuthStore = useAuthStore()
   mockToastStore = useToastStore()
   mockWorkflowStore = useWorkflowStore()
@@ -390,7 +393,7 @@ describe('useAuthActions auth flow error telemetry', () => {
     expect(mockToastStore.add).toHaveBeenCalledWith({
       severity: 'error',
       summary: 'g.error',
-      detail: 'auth.errors.auth/user-not-found'
+      detail: 'auth.errors.auth/invalid-credential'
     })
   })
 
@@ -447,17 +450,33 @@ describe('useAuthActions auth flow error telemetry', () => {
 })
 
 describe('useAuthActions.reportError', () => {
-  it.for(firebaseCodesWithOwnMessage)(
-    'maps %s to its own message rather than the generic fallback',
+  it.for(
+    firebaseCodesWithOwnMessage.filter(
+      (code) => code !== 'auth/user-not-found' && code !== 'auth/wrong-password'
+    )
+  )('maps %s to its own message rather than the generic fallback', (code) => {
+    const { reportError } = useAuthActions()
+
+    reportError(new FirebaseError(code, 'raw firebase'))
+
+    expect(mockToastStore.add).toHaveBeenCalledWith(
+      expect.objectContaining({ detail: `auth.errors.${code}` })
+    )
+    expect(mockToastErrorHandler).not.toHaveBeenCalled()
+  })
+
+  it.for(['auth/user-not-found', 'auth/wrong-password'] as const)(
+    'maps %s to the invalid-credential line, so the toast cannot say whether the email has an account',
     (code) => {
       const { reportError } = useAuthActions()
 
       reportError(new FirebaseError(code, 'raw firebase'))
 
       expect(mockToastStore.add).toHaveBeenCalledWith(
-        expect.objectContaining({ detail: `auth.errors.${code}` })
+        expect.objectContaining({
+          detail: 'auth.errors.auth/invalid-credential'
+        })
       )
-      expect(mockToastErrorHandler).not.toHaveBeenCalled()
     }
   )
 
@@ -523,6 +542,24 @@ describe('useAuthActions.reportError', () => {
     expect(mockToastErrorHandler).not.toHaveBeenCalled()
   })
 
+  it('shows the generic auth copy for a non-auth FirebaseError, never raw SDK text', () => {
+    const { reportError } = useAuthActions()
+
+    reportError(
+      new FirebaseError('app/no-app', 'Firebase: Error (app/no-app).')
+    )
+
+    expect(mockToastStore.add).toHaveBeenCalledWith({
+      severity: 'error',
+      summary: 'g.error',
+      detail: 'auth.errors.generic'
+    })
+    expect(
+      mockToastErrorHandler,
+      'a FirebaseError outside the auth/ namespace still deserves the localized copy, not the raw SDK message'
+    ).not.toHaveBeenCalled()
+  })
+
   it('delegates non-Firebase errors to toastErrorHandler', () => {
     const { reportError } = useAuthActions()
     const networkError = new TypeError('Failed to fetch')
@@ -586,5 +623,26 @@ describe('useAuthActions.reportError', () => {
     reportError(new FirebaseError('auth/popup-blocked', 'raw firebase'))
 
     expect(accessError.value).toBe(false)
+  })
+})
+
+describe('useAuthActions.sendPasswordReset', () => {
+  it('resolves true when the identity layer answers an unknown email as sent', async () => {
+    vi.mocked(mockAuthStore.sendPasswordReset).mockResolvedValueOnce(undefined)
+    const { sendPasswordReset } = useAuthActions()
+
+    await expect(
+      sendPasswordReset('never-registered@example.com'),
+      'an unknown email must resolve like a known one, or CloudForgotPasswordView shows the error copy and leaks that the address is unregistered'
+    ).resolves.toBe(true)
+  })
+
+  it('resolves undefined when the reset genuinely fails, so the caller can show its error', async () => {
+    vi.mocked(mockAuthStore.sendPasswordReset).mockRejectedValueOnce(
+      new FirebaseError('auth/network-request-failed', 'msg')
+    )
+    const { sendPasswordReset } = useAuthActions()
+
+    await expect(sendPasswordReset('user@example.com')).resolves.toBeUndefined()
   })
 })

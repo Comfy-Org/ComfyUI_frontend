@@ -138,13 +138,13 @@
       "permanent": true
     },
     {
-      "source": "/platform/router",
-      "destination": "/platform/models",
+      "source": "/platform/models",
+      "destination": "/platform/router",
       "permanent": true
     },
     {
-      "source": "/zh-CN/platform/router",
-      "destination": "/zh-CN/platform/models",
+      "source": "/zh-CN/platform/models",
+      "destination": "/zh-CN/platform/router",
       "permanent": true
     },
     {
@@ -178,13 +178,13 @@
       "permanent": true
     },
     {
-      "source": "/platform/router/",
-      "destination": "/platform/models",
+      "source": "/platform/models/",
+      "destination": "/platform/router",
       "permanent": true
     },
     {
-      "source": "/zh-CN/platform/router/",
-      "destination": "/zh-CN/platform/models",
+      "source": "/zh-CN/platform/models/",
+      "destination": "/zh-CN/platform/router",
       "permanent": true
     }
   ]

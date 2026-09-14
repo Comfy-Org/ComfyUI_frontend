@@ -12,7 +12,7 @@ import GraphLinks from './GraphLinks.vue'
 
 const motion = vi.hoisted(() => ({ reduced: false }))
 
-vi.mock('../../composables/useReducedMotion', () => ({
+vi.mock(import('../../composables/useReducedMotion'), () => ({
   prefersReducedMotion: () => motion.reduced
 }))
 
@@ -66,7 +66,7 @@ describe('GraphLinks', () => {
     const { container } = renderLinks()
     const uses = [...container.querySelectorAll('use')].slice(0, BANDS)
 
-    expect((uses[0] as SVGUseElement).style.strokeOpacity).toBe('1')
+    expect(uses[0].style.strokeOpacity).toBe('1')
     expect((uses.at(-1) as SVGUseElement).style.strokeOpacity).toBe('0.04')
   })
 
