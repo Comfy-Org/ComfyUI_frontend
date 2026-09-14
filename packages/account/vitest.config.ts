@@ -25,8 +25,6 @@ const sharedTest = {
   unstubGlobals: true,
   fakeTimers: { now: TEST_SYSTEM_TIME, shouldAdvanceTime: true },
   globals: true,
-  environment: 'happy-dom',
-  environmentOptions: happyDomOptions,
   env: { TZ: 'UTC' },
   setupFiles: [timerSetup]
 } as const
@@ -38,6 +36,7 @@ export default defineConfig({
         test: {
           ...sharedTest,
           name: 'account-core',
+          environment: 'node',
           include: [
             'src/core/**/*.{test,spec}.ts',
             'src/web/**/*.{test,spec}.ts',
@@ -57,6 +56,8 @@ export default defineConfig({
         test: {
           ...sharedTest,
           name: 'account-vue',
+          environment: 'happy-dom',
+          environmentOptions: happyDomOptions,
           include: [
             'src/vue/**/*.{test,spec}.ts',
             'src/firebase/**/*.{test,spec}.ts'

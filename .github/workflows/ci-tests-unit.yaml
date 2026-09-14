@@ -42,6 +42,15 @@ jobs:
       - name: Run account package unit tests
         run: pnpm --filter @comfyorg/account test
 
+      - name: Run object-info-parser package unit tests
+        run: pnpm --filter @comfyorg/object-info-parser test
+
+      - name: Run shared-frontend-utils package unit tests
+        run: pnpm --filter @comfyorg/shared-frontend-utils test
+
+      - name: Run design-system package unit tests
+        run: pnpm --filter @comfyorg/design-system test
+
       - name: Upload unit coverage artifact
         if: always() && github.event_name == 'push'
         uses: actions/upload-artifact@v6
