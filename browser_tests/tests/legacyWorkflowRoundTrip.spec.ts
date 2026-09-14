@@ -9,6 +9,68 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 
 type WorkflowProjection = ReturnType<typeof projectWorkflow>
+type CanonicalWidgetInput = {
+  name: string
+  type: string
+  link: null
+  widget: { name: string }
+}
+
+const canonicalWidgetInputsByNodeId: Readonly<
+  Record<string, readonly CanonicalWidgetInput[]>
+> = {
+  3: [
+    { name: 'seed', type: 'INT', link: null, widget: { name: 'seed' } },
+    { name: 'steps', type: 'INT', link: null, widget: { name: 'steps' } },
+    { name: 'cfg', type: 'FLOAT', link: null, widget: { name: 'cfg' } },
+    {
+      name: 'sampler_name',
+      type: 'COMBO',
+      link: null,
+      widget: { name: 'sampler_name' }
+    },
+    {
+      name: 'scheduler',
+      type: 'COMBO',
+      link: null,
+      widget: { name: 'scheduler' }
+    },
+    {
+      name: 'denoise',
+      type: 'FLOAT',
+      link: null,
+      widget: { name: 'denoise' }
+    }
+  ],
+  4: [
+    {
+      name: 'ckpt_name',
+      type: 'COMBO',
+      link: null,
+      widget: { name: 'ckpt_name' }
+    }
+  ],
+  5: [
+    { name: 'width', type: 'INT', link: null, widget: { name: 'width' } },
+    { name: 'height', type: 'INT', link: null, widget: { name: 'height' } },
+    {
+      name: 'batch_size',
+      type: 'INT',
+      link: null,
+      widget: { name: 'batch_size' }
+    }
+  ],
+  6: [{ name: 'text', type: 'STRING', link: null, widget: { name: 'text' } }],
+  7: [{ name: 'text', type: 'STRING', link: null, widget: { name: 'text' } }],
+  9: [
+    {
+      name: 'filename_prefix',
+      type: 'STRING',
+      link: null,
+      widget: { name: 'filename_prefix' }
+    }
+  ]
+}
 
 const fixture = JSON.parse(
   readFileSync(
@@ -30,10 +92,11 @@ function projectWorkflow(workflow: ComfyWorkflowJSON) {
       properties: node.properties,
       widgetsValues: node.widgets_values,
       widgetsValuesNamed: node.widgets_values_named,
-      inputs: node.inputs?.map(({ name, type, link }) => ({
+      inputs: node.inputs?.map(({ name, type, link, widget }) => ({
         name,
         type,
-        link
+        link,
+        widget
       })),
       outputs: node.outputs?.map(
         ({ name, type, links, slot_index: slotIndex }) => ({
@@ -48,6 +111,21 @@ function projectWorkflow(workflow: ComfyWorkflowJSON) {
     groups: workflow.groups,
     reroutes: workflow.extra?.reroutes,
     linkExtensions: workflow.extra?.linkExtensions
+  }
+}
+
+function expectedCanonicalPersistence(
+  workflow: WorkflowProjection
+): WorkflowProjection {
+  return {
+    ...workflow,
+    nodes: workflow.nodes.map((node) => ({
+      ...node,
+      inputs: [
+        ...(node.inputs ?? []),
+        ...(canonicalWidgetInputsByNodeId[String(node.id)] ?? [])
+      ]
+    }))
   }
 }
 
@@ -84,8 +162,18 @@ for (const vueNodesEnabled of [false, true]) {
         : ['@canvas', '@widget']
     },
     () => {
+      const savedName = `legacy-v1.52.5-resaved-${
+        vueNodesEnabled ? 'vue' : 'litegraph'
+      }`
+      const savedFilename = `${savedName}.json`
+      const savedPath = `workflows/${savedFilename}`
+
       test.afterEach(async ({ comfyPage }) => {
-        await comfyPage.workflow.setupWorkflowsDirectory({})
+        const status = await comfyPage.page.evaluate(async (workflowPath) => {
+          const response = await window.app!.api.deleteUserData(workflowPath)
+          return response.status
+        }, savedPath)
+        expect([204, 404]).toContain(status)
       })
 
       test('preserves exact nodes, links, groups, reroutes, and widget values', async ({
@@ -99,6 +187,7 @@ for (const vueNodesEnabled of [false, true]) {
         })
 
         const expected = projectWorkflow(fixture)
+        const expectedPersisted = expectedCanonicalPersistence(expected)
         expect(expected.nodes.length).toBeGreaterThan(0)
         expect(expected.links?.length).toBeGreaterThan(0)
         expect(expected.groups?.length).toBeGreaterThan(0)
@@ -111,9 +200,6 @@ for (const vueNodesEnabled of [false, true]) {
         await comfyPage.workflow.loadWorkflow('legacy-v1.52.5-entity-roundtrip')
         expect(await exportedProjection(comfyPage)).toEqual(expected)
 
-        const savedName = 'legacy-v1.52.5-resaved'
-        const savedFilename = `${savedName}.json`
-        const savedPath = `workflows/${savedFilename}`
         await comfyPage.menu.topbar.saveWorkflowAs(savedName)
 
         await expect
@@ -123,7 +209,7 @@ for (const vueNodesEnabled of [false, true]) {
           .poll(() => persistedWorkflowPaths(comfyPage))
           .toContain(savedFilename)
         expect(await persistedProjection(comfyPage, savedPath)).toEqual(
-          expected
+          expectedPersisted
         )
 
         await comfyPage.workflow.reloadAndWaitForApp()
@@ -135,7 +221,7 @@ for (const vueNodesEnabled of [false, true]) {
           .poll(() => persistedWorkflowPaths(comfyPage))
           .toContain(savedFilename)
         expect(await persistedProjection(comfyPage, savedPath)).toEqual(
-          expected
+          expectedPersisted
         )
         await expect.poll(() => exportedProjection(comfyPage)).toEqual(expected)
       })
