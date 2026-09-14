@@ -75,9 +75,11 @@ jobs:
           icon: '🌾'
           status: ${{ steps.audit.outcome == 'success' && 'pass' || 'fail' }}
           headline: >-
-            Fallow audits the diff for duplication, complexity and dead code. It
-            gates on **new** findings only, so a red here is always something
-            this PR introduced or moved — never inherited backlog.
+            Fallow audits the diff for duplication, complexity and dead code.
+            It gates on **new** findings only, so when the audit completes, a
+            red is something this PR introduced or moved — never inherited
+            backlog. A red can also mean the audit itself did not finish; the
+            details below say which happened.
           details-file: fallow-findings.md
           reproduce: |
             # the base the gate compared against
