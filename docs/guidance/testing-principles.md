@@ -25,9 +25,9 @@ Composability is how a suite gets both.
 
 ## Test behavior, not structure
 
-- Assert through the front door: return values, rendered output, emitted
-  events, persisted state, user-visible effects. Private state, call order,
-  and internal forwarding are implementation.
+- Assert on return values, rendered output, emitted events, persisted state,
+  and user-visible effects. Private state, call order, and internal forwarding
+  are implementation.
 - A test that restates the code's call sequence, its defaults, or its schema
   is a change detector: it fails on refactors and passes on bugs. Delete or
   rewrite it against outcomes.
@@ -101,9 +101,9 @@ Composability is how a suite gets both.
 
 ## Doubles: real collaborators first
 
-- Default to real collaborators and shared factories. Double only awkward
-  boundaries: network, filesystem, clock, native dialogs, process exit, and
-  slow or nondeterministic third parties.
+- Default to real collaborators and shared factories. Use a double only where
+  the real collaborator is awkward, such as network, filesystem, clock, native
+  dialogs, process exit, and slow or nondeterministic third parties.
 - Mock what you own. Wrap a behavior-rich third-party API in a facade and
   double the facade. A single-method third-party hook may be mocked directly.
   Never mock the module under test or a project-owned module you are trying to
