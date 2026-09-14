@@ -109,8 +109,10 @@
         size="sm"
         :class="
           cn(
-            'no-drag shrink-0 gap-1 rounded-lg',
-            !agentPanelStore.isVisible && 'bg-secondary-background'
+            'no-drag shrink-0 gap-1 rounded-lg hover:text-base-foreground',
+            agentPanelStore.isVisible
+              ? 'text-base-foreground'
+              : 'bg-secondary-background'
           )
         "
         :aria-pressed="agentPanelStore.isVisible"
