@@ -39,6 +39,18 @@ async function confirmOverwrite(name: string): Promise<boolean | null> {
   })
 }
 
+function findBlueprintRoot(state: ComfyWorkflowJSON) {
+  const rootNode = state.nodes.length === 1 ? state.nodes[0] : undefined
+  if (!rootNode) return
+
+  const subgraph = (state.definitions?.subgraphs ?? []).find(
+    (candidate) => candidate.id == rootNode.type
+  )
+  if (!subgraph) return
+
+  return { rootNode, subgraph }
+}
+
 export const useSubgraphStore = defineStore('subgraph', () => {
   class SubgraphBlueprint extends ComfyWorkflow {
     static override readonly basePath = 'subgraphs/'
@@ -156,10 +168,8 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       const loaded = await super.load({ force })
       if (!loaded) return
       const st = loaded.activeState
-      const sg = (st.definitions?.subgraphs ?? []).find(
-        (sg) => sg.id == st.nodes[0].type
-      )
-      if (!sg) {
+      const blueprintRoot = findBlueprintRoot(st)
+      if (!blueprintRoot) {
         console.error(
           new Error('Loaded subgraph blueprint does not contain valid subgraph')
         )
@@ -168,12 +178,13 @@ export const useSubgraphStore = defineStore('subgraph', () => {
         this.originalContent = previousOriginalContent
         return
       }
-      sg.name = st.nodes[0].title = this.filename
+      const { rootNode, subgraph } = blueprintRoot
+      subgraph.name = rootNode.title = this.filename
 
       // Copy blueprint metadata from workflow extra to subgraph extra
       // so it's available when editing via canvas.subgraph.extra
       if (st.extra) {
-        const sgExtra = (sg.extra ??= {}) as Record<string, unknown>
+        const sgExtra = (subgraph.extra ??= {}) as Record<string, unknown>
         for (const [key, value] of Object.entries(st.extra)) {
           if (key === 'workflowRendererVersion') continue
           sgExtra[key] = value
