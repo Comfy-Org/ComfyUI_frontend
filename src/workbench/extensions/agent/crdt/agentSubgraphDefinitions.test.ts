@@ -7,6 +7,7 @@ import { createTestSubgraphData } from '@/lib/litegraph/src/subgraph/__fixtures_
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 
 import {
+  projectSubgraphDefinition,
   readSubgraphDefinitionIds,
   readSubgraphDefinitions
 } from './agentSubgraphDefinitions'
@@ -51,6 +52,51 @@ function seed(...definitions: ExportedSubgraph[]): Y.Doc {
     CATALOG
   )
 }
+
+describe('projectSubgraphDefinition', () => {
+  it('projects ordered records and nested definitions', () => {
+    const nested = createTestSubgraphData({
+      nodes: [interiorNode(3)] as never
+    })
+    const definition = createTestSubgraphData({
+      nodes: [interiorNode(2), interiorNode(1)] as never,
+      links: [interiorLink(4, 2, 1)] as never,
+      definitions: { subgraphs: [nested] }
+    })
+    const stored = seed(definition)
+      .getMap<Y.Map<unknown>>('definitions')
+      .get(definition.id)
+
+    expect(stored).toBeDefined()
+    expect(projectSubgraphDefinition(stored!)).toEqual(definition)
+  })
+
+  it('ignores bookkeeping keys while preserving ordinary fields', () => {
+    const source = new Y.Map<unknown>()
+    const doc = new Y.Doc()
+    doc.getMap<Y.Map<unknown>>('definitions').set('definition', source)
+    source.set('id', 'definition')
+    source.set('node_order', ['1'])
+    source.set('link_order', ['2'])
+    source.set('__definition_digest', 'private')
+    source.set('__proto__', { polluted: true })
+
+    expect(projectSubgraphDefinition(source)).toEqual({ id: 'definition' })
+  })
+
+  it('preserves non-map node and link fields as raw document data', () => {
+    const source = new Y.Map<unknown>()
+    const doc = new Y.Doc()
+    doc.getMap<Y.Map<unknown>>('definitions').set('definition', source)
+    source.set('nodes', 'unprojected-nodes')
+    source.set('links', ['unprojected-link'])
+
+    expect(projectSubgraphDefinition(source)).toEqual({
+      nodes: 'unprojected-nodes',
+      links: ['unprojected-link']
+    })
+  })
+})
 
 describe('readSubgraphDefinitions', () => {
   it('returns nothing for a document without definitions', () => {
