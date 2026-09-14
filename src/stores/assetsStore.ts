@@ -62,22 +62,38 @@ async function fetchInputFilesFromAPI(): Promise<AssetItem[]> {
  * Convert history job items to asset items
  */
 function mapHistoryToAssets(historyItems: JobListItem[]): AssetItem[] {
-  const flatAssets: AssetItem[] = []
+  const assetItems: AssetItem[] = []
 
   for (const job of historyItems) {
-    if (job.status !== 'completed' || !job.preview_output) continue
+    // Only process completed jobs with preview output
+    if (job.status !== 'completed' || !job.preview_output) {
+      continue
+    }
 
     const task = new TaskItemImpl(job)
-    for (const output of task.previewableOutputs) {
-      flatAssets.push({
-        ...mapTaskOutputToAssetItem(task, output),
-        id: `${task.jobId}:${output.subfolder}/${output.filename}`,
-        job_id: task.jobId
-      })
+
+    if (!task.previewOutput) {
+      continue
     }
+
+    const assetItem = mapTaskOutputToAssetItem(task, task.previewOutput)
+
+    assetItem.user_metadata = {
+      ...assetItem.user_metadata,
+      outputCount:
+        task.previewableOutputsCount ??
+        task.outputsCount ??
+        task.previewableOutputs.length,
+      allOutputs: task.previewableOutputs
+    }
+
+    assetItems.push(assetItem)
   }
 
-  return flatAssets
+  return assetItems.sort(
+    (a, b) =>
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  )
 }
 
 const BATCH_SIZE = 200
@@ -128,7 +144,7 @@ export const useAssetsStore = defineStore('assets', () => {
     loadNew: async () => undefined
   }
 
-  function useHistoryAssets(): PagedList<AssetItem> {
+  function useHistoryAssets(): [PagedList<AssetItem>, PagedList<AssetItem>] {
     // Pagination state
     const historyOffset = ref(0)
     const hasMoreHistory = ref(true)
@@ -255,7 +271,7 @@ export const useAssetsStore = defineStore('assets', () => {
       }
     }
 
-    return {
+    const outputAssets = {
       hasMore: hasMoreHistory,
       invalidate: updateHistory,
       isLoading: computed(() => historyLoading.value || isLoadingMore.value),
@@ -263,9 +279,11 @@ export const useAssetsStore = defineStore('assets', () => {
       loadMore: loadMoreHistory,
       loadNew: updateHistory
     }
+    return [outputAssets, outputAssets]
   }
 
   const inputAssets = ref<PagedList<AssetItem>>(undefined!)
+  const outputAssets = ref<PagedList<AssetItem>>(undefined!)
   const flatOutputAssets = ref<PagedList<AssetItem>>(undefined!)
   const allAssets = ref<PagedList<AssetItem>>()
   let assetsScope: EffectScope | undefined
@@ -282,20 +300,21 @@ export const useAssetsStore = defineStore('assets', () => {
           flatOutputAssets.value = useAssetsQuery({
             tags_any: ['output', 'temp']
           })
+          outputAssets.value = new WrappedList(
+            flatOutputAssets.value,
+            unflattenOutputAssets
+          )
           allAssets.value = useAssetsQuery({
             tags_any: ['input', 'output', 'temp']
           })
         })
       } else {
         inputAssets.value = historyInputs
-        flatOutputAssets.value = useHistoryAssets()
+        ;[outputAssets.value, flatOutputAssets.value] = useHistoryAssets()
         allAssets.value = undefined
       }
     },
     { immediate: true }
-  )
-  const outputAssets = computed(
-    () => new WrappedList(flatOutputAssets.value, unflattenOutputAssets)
   )
 
   /**
