@@ -49,7 +49,7 @@ const zVector2 = z.union([
 ])
 
 // Definition of an AI model file used in the workflow.
-export const zModelFile = z.object({
+const zModelFile = z.object({
   name: z.string(),
   url: z.string().url(),
   hash: z.string().optional(),
