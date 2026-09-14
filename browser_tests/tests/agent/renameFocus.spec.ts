@@ -61,7 +61,10 @@ test.describe('Agent chat history rename', { tag: '@cloud' }, () => {
     await seedOneThread(page)
     await bootAgentApp(page, agentFlagEnabled)
 
-    const openButton = page.getByRole('button', { name: OPEN_AGENT_LABEL })
+    const openButton = page.getByRole('button', {
+      name: OPEN_AGENT_LABEL,
+      exact: true
+    })
     await expect(openButton).toBeVisible()
     await openButton.click()
 

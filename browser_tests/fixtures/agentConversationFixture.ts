@@ -203,7 +203,9 @@ class AgentConversationHarness {
     for (const [type, definition] of Object.entries(definitions))
       this.displayNames.set(type, definition.display_name || definition.name)
 
-    await this.page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+    await this.page
+      .getByRole('button', { name: OPEN_AGENT_LABEL, exact: true })
+      .click()
     await expect(this.panel).toBeVisible({ timeout: PANEL_MOUNT_TIMEOUT })
     await this.selectWorkflowTarget()
   }
