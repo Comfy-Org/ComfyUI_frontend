@@ -1,5 +1,4 @@
 // @vitest-environment jsdom
-import type * as I18nModule from '@/i18n'
 import type { ComfyApp } from '@/scripts/app'
 import { useReleaseStore } from '../common/releaseStore'
 beforeEach(() => {
@@ -45,8 +44,7 @@ const i18n = createI18n({
   messages: { en: enMessages }
 })
 
-vi.mock<unknown>(import('@/i18n'), async (importOriginal) => ({
-  ...(await importOriginal<typeof I18nModule>()),
+vi.mock<unknown>(import('@/i18n'), () => ({
   i18n: {
     global: {
       locale: {

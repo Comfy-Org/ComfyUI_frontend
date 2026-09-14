@@ -1,0 +1,380 @@
+[
+  {
+    "name": "ChatGPT",
+    "slug": "chatgpt",
+    "baseSlug": "openrouter",
+    "provider": "OpenRouter",
+    "modality": "text",
+    "workflowCount": 4,
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_openrouter_gpt5_6_sol-1.webp"
+  },
+  {
+    "name": "Claude",
+    "slug": "claude",
+    "baseSlug": "anthropic-claude",
+    "provider": "Anthropic",
+    "modality": "text",
+    "workflowCount": 4,
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_anthropic_claude_sonnet5-1.webp"
+  },
+  {
+    "name": "FlashVSR",
+    "slug": "flashvsr",
+    "baseSlug": "wavespeed",
+    "provider": "WaveSpeed",
+    "modality": "video",
+    "workflowCount": 1,
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_wavespeed_flshvsr_video_upscale-1.webp"
+  },
+  {
+    "name": "Flux.1",
+    "slug": "flux-1",
+    "baseSlug": "flux-api",
+    "provider": "Black Forest Labs",
+    "modality": "image",
+    "workflowCount": 2,
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_bfl_flux_pro_t2i-1.webp"
+  },
+  {
+    "name": "Flux.1 Kontext",
+    "slug": "flux-1-kontext",
+    "baseSlug": "flux-api",
+    "provider": "Black Forest Labs",
+    "modality": "image",
+    "workflowCount": 3,
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_bfl_flux_1_kontext_max_image-1.webp"
+  },
+  {
+    "name": "Flux.3 Video",
+    "slug": "flux-3-video",
+    "baseSlug": "flux-api",
+    "provider": "Black Forest Labs",
+    "modality": "video",
+    "workflowCount": 2,
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_bfl_flux3_i2v-1.webp"
+  },
+  {
+    "name": "Gemini-2.5-Flash",
+    "slug": "gemini-2-5-flash",
+    "baseSlug": "gemini-image",
+    "provider": "Google",
+    "modality": "image",
+    "workflowCount": 1,
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_google_gemini_image-1.webp"
+  },
+  {
+    "name": "Gemini Omni",
+    "slug": "gemini-omni",
+    "baseSlug": "gemini-image",
+    "provider": "Google",
+    "modality": "video",
+    "workflowCount": 3,
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_google_gemini_omni_flash_i2v-1.webp"
+  },
+  {
+    "name": "Gemini Omni 1.1 Flash",
+    "slug": "gemini-omni-1-1-flash",
+    "baseSlug": "gemini-image",
+    "provider": "Google",
+    "modality": "video",
+    "workflowCount": 4,
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_google_gemini_omni_flash_1_1_i2v-1.webp"
+  },
+  {
+    "name": "Gemini3 Pro Image Preview",
+    "slug": "gemini3-pro-image-preview",
+    "baseSlug": "nano-banana",
+    "provider": "Google",
+    "modality": "image",
+    "workflowCount": 1,
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_nano_banana_pro-1.webp"
+  },
+  {
+    "name": "Google Gemini",
+    "slug": "google-gemini",
+    "baseSlug": "gemini-image",
+    "provider": "Google",
+    "modality": "image",
+    "workflowCount": 1,
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_google_gemini-1.webp"
+  },
+  {
+    "name": "GPT-Image-1",
+    "slug": "gpt-image-1",
+    "baseSlug": "openai-dall-e",
+    "provider": "OpenAI",
+    "modality": "image",
+    "workflowCount": 4,
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_openai_image_1_i2i-1.webp"
+  },
+  {
+    "name": "GPT-Image-1.5",
+    "slug": "gpt-image-1-5",
+    "baseSlug": "openai-dall-e",
+    "provider": "OpenAI",
+    "modality": "image",
+    "workflowCount": 1,
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_openai_fashion_billboard_generator-1.webp"
+  },
+  {
+    "name": "GPT Image 2",
+    "slug": "gpt-image-2",
+    "baseSlug": "openai-dall-e",
+    "provider": "OpenAI",
+    "modality": "image",
+    "workflowCount": 2,
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_openai_gpt_image_2_image_edit-1.webp"
+  },
+  {
+    "name": "Grok",
+    "slug": "grok",
+    "baseSlug": "openrouter",
+    "provider": "OpenRouter",
+    "modality": "text",
+    "workflowCount": 1,
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_openrouter_grok4_5-1.webp"
+  },
+  {
+    "name": "Grok Imagine Image 2.0",
+    "slug": "grok-imagine-image-2-0",
+    "baseSlug": "grok-imagine",
+    "provider": "xAI",
+    "modality": "image",
+    "workflowCount": 2,
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_grok_imagine_image_2_image_edit-1.webp"
+  },
+  {
+    "name": "HappyHorse 1.0",
+    "slug": "happyhorse-1-0",
+    "baseSlug": "happyhorse1",
+    "provider": "Wan",
+    "modality": "video",
+    "workflowCount": 4,
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_happyhorse1_0_t2v-1.webp"
+  },
+  {
+    "name": "HappyHorse 1.1",
+    "slug": "happyhorse-1-1",
+    "baseSlug": "happyhorse1",
+    "provider": "Wan",
+    "modality": "video",
+    "workflowCount": 3,
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_happyhorse1_1_i2v-1.webp"
+  },
+  {
+    "name": "Kimi K3",
+    "slug": "kimi-k3",
+    "baseSlug": "openrouter",
+    "provider": "OpenRouter",
+    "modality": "text",
+    "workflowCount": 1,
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_openrouter_kimi_k3-1.webp"
+  },
+  {
+    "name": "Kling 3.0",
+    "slug": "kling-3-0",
+    "baseSlug": "kling-ai",
+    "provider": "Kling",
+    "modality": "video",
+    "workflowCount": 4,
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_kling_v3_video-1.webp"
+  },
+  {
+    "name": "Kling O1",
+    "slug": "kling-o1",
+    "baseSlug": "kling-ai",
+    "provider": "Kling",
+    "modality": "video",
+    "workflowCount": 4,
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_kling_omni_image-1.webp"
+  },
+  {
+    "name": "LTX-2.5",
+    "slug": "ltx-2-5",
+    "baseSlug": "ltx-2",
+    "provider": "Lightricks",
+    "modality": "video",
+    "workflowCount": 3,
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_ltx2_5_i2v-1.webp"
+  },
+  {
+    "name": "Luma UNI-1",
+    "slug": "luma-uni-1",
+    "baseSlug": "luma-dream-machine",
+    "provider": "Luma",
+    "modality": "image",
+    "workflowCount": 2,
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_luma_uni_1_image_create-1.webp"
+  },
+  {
+    "name": "MiniMax H3",
+    "slug": "minimax-h3",
+    "baseSlug": "minimax",
+    "provider": "MiniMax",
+    "modality": "video",
+    "workflowCount": 6,
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_minimax_h3_r2v-1.webp"
+  },
+  {
+    "name": "Nano Banana Pro",
+    "slug": "nano-banana-pro",
+    "baseSlug": "nano-banana",
+    "provider": "Google",
+    "modality": "image",
+    "workflowCount": 1,
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_nano_banana_pro-1.webp"
+  },
+  {
+    "name": "Qwen Image 3.0 Pro",
+    "slug": "qwen-image-3-0-pro",
+    "baseSlug": "qwen-3",
+    "provider": "Alibaba",
+    "modality": "text",
+    "workflowCount": 2,
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_qwen3_image_edit-1.webp"
+  },
+  {
+    "name": "Reimagine",
+    "slug": "reimagine",
+    "baseSlug": "topaz-labs",
+    "provider": "Topaz Labs",
+    "modality": "image",
+    "workflowCount": 1,
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_topaz_image_enhance-1.webp"
+  },
+  {
+    "name": "Seed 2.0",
+    "slug": "seed-2-0",
+    "baseSlug": "seedance-bytedance",
+    "provider": "ByteDance",
+    "modality": "image",
+    "workflowCount": 1,
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_bytedance_seed-1.webp"
+  },
+  {
+    "name": "Seed Audio 1.0",
+    "slug": "seed-audio-1-0",
+    "baseSlug": "seedance-bytedance",
+    "provider": "ByteDance",
+    "modality": "audio",
+    "workflowCount": 3,
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_bytedance_seed_audio1_0_t2a-1.webp"
+  },
+  {
+    "name": "Seedance 2.5",
+    "slug": "seedance-2-5",
+    "baseSlug": "seedance-2",
+    "provider": "ByteDance",
+    "modality": "video",
+    "workflowCount": 6,
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_seedance2_5_r2v-1.webp"
+  },
+  {
+    "name": "Seedance1.0 Pro",
+    "slug": "seedance1-0-pro",
+    "baseSlug": "seedance-bytedance",
+    "provider": "ByteDance",
+    "modality": "video",
+    "workflowCount": 3,
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_bytedance_image_to_video-1.webp"
+  },
+  {
+    "name": "Seedream 4.0",
+    "slug": "seedream-4-0",
+    "baseSlug": "seedance-bytedance",
+    "provider": "ByteDance",
+    "modality": "image",
+    "workflowCount": 1,
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_bytedance_seedream4-1.webp"
+  },
+  {
+    "name": "Seedream 5.0 Lite",
+    "slug": "seedream-5-0-lite",
+    "baseSlug": "seedance-bytedance",
+    "provider": "ByteDance",
+    "modality": "image",
+    "workflowCount": 2,
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_bytedance_seedream_5_0_lite_image_edit-1.webp"
+  },
+  {
+    "name": "Seedream 5.0 Pro",
+    "slug": "seedream-5-0-pro",
+    "baseSlug": "seedance-bytedance",
+    "provider": "ByteDance",
+    "modality": "image",
+    "workflowCount": 3,
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_bytedance_seedream_5_0_pro_image_edit-1.webp"
+  },
+  {
+    "name": "SeedVR2",
+    "slug": "seedvr2",
+    "baseSlug": "wavespeed",
+    "provider": "WaveSpeed",
+    "modality": "image",
+    "workflowCount": 1,
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_wavespeed_seedvr2_ai_image_fix-1.webp"
+  },
+  {
+    "name": "SwitchX",
+    "slug": "switchx",
+    "baseSlug": "beeble",
+    "provider": "Beeble",
+    "modality": "image",
+    "workflowCount": 2,
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_beeble_switchx_video_edit-1.webp"
+  },
+  {
+    "name": "Sync 3",
+    "slug": "sync-3",
+    "baseSlug": "sync",
+    "provider": "Sync Labs",
+    "modality": "video",
+    "workflowCount": 2,
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_sync_so_lip_sync_video-1.webp"
+  },
+  {
+    "name": "Tripo P1",
+    "slug": "tripo-p1",
+    "baseSlug": "tripo-3d",
+    "provider": "Tripo",
+    "modality": "3d",
+    "workflowCount": 3,
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_tripo_p1_image_to_model-1.webp"
+  },
+  {
+    "name": "Vidu Q1",
+    "slug": "vidu-q1",
+    "baseSlug": "vidu",
+    "provider": "Vidu",
+    "modality": "video",
+    "workflowCount": 4,
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_vidu_text_to_video-1.webp"
+  },
+  {
+    "name": "Vidu Q2",
+    "slug": "vidu-q2",
+    "baseSlug": "vidu",
+    "provider": "Vidu",
+    "modality": "video",
+    "workflowCount": 5,
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_vidu_q2_i2v-1.webp"
+  },
+  {
+    "name": "Vidu Q3",
+    "slug": "vidu-q3",
+    "baseSlug": "vidu",
+    "provider": "Vidu",
+    "modality": "video",
+    "workflowCount": 2,
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_vidu_q3_text_to_video-1.webp"
+  },
+  {
+    "name": "Wan2.5",
+    "slug": "wan2-5",
+    "baseSlug": "wan-api",
+    "provider": "Alibaba",
+    "modality": "video",
+    "workflowCount": 3,
+    "thumbnailUrl": "https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/api_wan_text_to_image-1.webp"
+  }
+]

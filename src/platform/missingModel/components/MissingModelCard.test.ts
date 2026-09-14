@@ -11,20 +11,12 @@ import type {
   MissingModelGroup,
   MissingModelViewModel
 } from '@/platform/missingModel/types'
-import type * as MissingModelDownload from '@/platform/missingModel/missingModelDownload'
+import { downloadModel } from '@/platform/missingModel/missingModelDownload'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 
-const mockDownloadModel = vi.hoisted(() => vi.fn())
+const mockDownloadModel = vi.mocked(downloadModel)
 
-vi.mock(import('@/platform/missingModel/missingModelDownload'), async () => {
-  const actual = await vi.importActual<typeof MissingModelDownload>(
-    '@/platform/missingModel/missingModelDownload'
-  )
-  return {
-    ...actual,
-    downloadModel: mockDownloadModel
-  }
-})
+vi.mock(import('@/platform/missingModel/missingModelDownload'), { spy: true })
 
 vi.mock<unknown>(import('./MissingModelRow.vue'), () => ({
   default: {
@@ -52,10 +44,13 @@ vi.mock<unknown>(import('./MissingModelRow.vue'), () => ({
 }))
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
-vi.mock(import('@/platform/distribution/types'), () => ({
+vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
+  DISTRIBUTION: 'cloud',
   get isCloud() {
     return mockIsCloud.value
-  }
+  },
+  isDesktop: false,
+  isNightly: false
 }))
 
 import MissingModelCard from './MissingModelCard.vue'
@@ -163,6 +158,7 @@ describe('MissingModelCard', () => {
   beforeEach(() => {
     i18n.global.setLocaleMessage('en', enMessages)
     mockIsCloud.value = true
+    mockDownloadModel.mockResolvedValue(undefined)
   })
 
   describe('Rendering & Props', () => {

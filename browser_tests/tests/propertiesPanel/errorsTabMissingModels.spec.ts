@@ -29,11 +29,9 @@ async function expectReferenceBadge(group: Locator, count: number) {
 }
 
 test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
+  test.use({ initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true } })
+
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting(
-      'Comfy.RightSidePanel.ShowErrorsTab',
-      true
-    )
     await cleanupFakeModel(comfyPage)
   })
 
@@ -85,11 +83,14 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
   })
 
   test.describe('Validation absorption', () => {
+    test.use({
+      initialSettings: {
+        'Comfy.RightSidePanel.ShowErrorsTab': true,
+        'Comfy.Workflow.WorkflowTabsPosition': 'Sidebar'
+      }
+    })
+
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting(
-        'Comfy.Workflow.WorkflowTabsPosition',
-        'Sidebar'
-      )
       await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
       const nodeErrors = {
         '1': {

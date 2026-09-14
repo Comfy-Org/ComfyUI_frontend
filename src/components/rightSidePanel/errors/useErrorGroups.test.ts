@@ -1,4 +1,3 @@
-import type * as LitegraphUtil from '@/utils/litegraphUtil'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
@@ -10,13 +9,17 @@ import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import type { useComfyRegistryService } from '@/services/comfyRegistryService'
 import type { MissingNodeType } from '@/types/comfy'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
+import { toNodeId } from '@/types/nodeId'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
-import type * as GraphTraversalUtil from '@/utils/graphTraversalUtil'
 import {
+  forEachNode,
   getExecutionIdByNode,
-  getNodeByExecutionId
+  getNodeByExecutionId,
+  getRootParentNode,
+  mapAllNodes
 } from '@/utils/graphTraversalUtil'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 
@@ -24,17 +27,14 @@ import { useErrorGroups } from './useErrorGroups'
 import { createUnnormalisableModelErrorFixture } from './__tests__/absorptionFixtures'
 import { useHasBlockingError } from './useHasBlockingError'
 
-vi.mock(import('@/services/comfyRegistryService'), async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    useComfyRegistryService: () => ({
-      ...actual.useComfyRegistryService(),
+vi.mock(import('@/services/comfyRegistryService'), () => ({
+  useComfyRegistryService: () =>
+    fromAny<ReturnType<typeof useComfyRegistryService>, unknown>({
       inferPackFromNodeName: vi.fn(async () => null),
-      listAllPacks: vi.fn(async () => ({ nodes: [] }))
+      listAllPacks: vi.fn(async () => ({ nodes: [] })),
+      getPackById: vi.fn()
     })
-  }
-})
+}))
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
@@ -49,14 +49,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   }
 }))
 
-vi.mock(import('@/utils/graphTraversalUtil'), async (importOriginal) => ({
-  ...(await importOriginal<typeof GraphTraversalUtil>()),
-  getNodeByExecutionId: vi.fn(),
-  getExecutionIdByNode: vi.fn(),
-  getRootParentNode: vi.fn(() => null),
-  forEachNode: vi.fn(),
-  mapAllNodes: vi.fn(() => [])
-}))
+vi.mock(import('@/utils/graphTraversalUtil'), { spy: true })
 
 const mockIsCloud = vi.hoisted(() => ({ value: false }))
 const unknownValidationMessage = vi.hoisted(
@@ -147,10 +140,7 @@ vi.mock(import('@/utils/nodeTitleUtil'), () => ({
   resolveNodeDisplayName: vi.fn(() => '')
 }))
 
-vi.mock<unknown>(import('@/utils/litegraphUtil'), async (importOriginal) => ({
-  ...(await importOriginal<typeof LitegraphUtil>()),
-  isLGraphNode: vi.fn(() => false)
-}))
+vi.mock(import('@/utils/litegraphUtil'), { spy: true })
 
 vi.mock<unknown>(
   import('@/platform/missingModel/composables/useMissingModelInteractions'),
@@ -234,6 +224,10 @@ describe('useErrorGroups', () => {
   beforeEach(() => {
     mockIsCloud.value = false
     vi.mocked(isLGraphNode).mockReturnValue(false)
+    vi.mocked(forEachNode).mockImplementation(() => {})
+    vi.mocked(mapAllNodes).mockReturnValue([])
+    vi.mocked(getRootParentNode).mockReturnValue(null)
+    vi.mocked(getNodeByExecutionId).mockReturnValue(null)
   })
 
   describe('missingPackGroups', () => {
@@ -556,12 +550,12 @@ describe('useErrorGroups', () => {
       const { rootGraph, host } = createBoundaryLinkedSubgraph({
         interiorType: 'InteriorClass'
       })
-      const { getNodeByExecutionId: actualGetNodeByExecutionId } =
-        await vi.importActual<typeof GraphTraversalUtil>(
-          '@/utils/graphTraversalUtil'
-        )
       vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) => {
-        return actualGetNodeByExecutionId(rootGraph, nodeId)
+        const [hostId, interiorId] = nodeId.split(':').map(Number)
+        const subgraphNode = rootGraph.getNodeById(toNodeId(hostId))
+        return interiorId && subgraphNode instanceof SubgraphNode
+          ? (subgraphNode.subgraph.getNodeById(toNodeId(interiorId)) ?? null)
+          : subgraphNode
       })
       store.recordNodeErrors({
         '12:5': nodeError(

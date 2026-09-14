@@ -6,7 +6,6 @@ import {
 test.describe('Widget copy button', { tag: ['@ui', '@vue-nodes'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.searchBoxV2.addNode('Preview as Text')
-    await comfyPage.vueNodes.waitForNodes()
   })
 
   test('Copy button has correct aria-label', async ({ comfyPage }) => {

@@ -35,10 +35,6 @@ const mockInstalledPacks = {
   'installed-pack': { ver: '2.0.0', cnr_id: 'installed-pack', enabled: true }
 }
 
-let mockIsPackEnabled: ReturnType<
-  typeof vi.mocked<ReturnType<typeof useComfyManagerStore>['isPackEnabled']>
->
-
 vi.mock<unknown>(
   import('@/workbench/extensions/manager/composables/nodePack/usePackUpdateStatus'),
 
@@ -72,8 +68,7 @@ describe('PackVersionBadge', () => {
     const store = useComfyManagerStore()
     store.installedPacks = mockInstalledPacks
     await nextTick()
-    mockIsPackEnabled = vi.mocked(store.isPackEnabled)
-    mockIsPackEnabled.mockReturnValue(true)
+    vi.mocked(useComfyManagerStore().isPackEnabled).mockReturnValue(true)
   })
 
   function renderComponent({
@@ -228,7 +223,7 @@ describe('PackVersionBadge', () => {
 
   describe('disabled state', () => {
     beforeEach(() => {
-      mockIsPackEnabled.mockReturnValue(false)
+      vi.mocked(useComfyManagerStore().isPackEnabled).mockReturnValue(false)
     })
 
     it('adds disabled styles when pack is disabled', () => {

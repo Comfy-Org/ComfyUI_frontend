@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type * as DownloadUrlModule from '../../../composables/useDownloadUrl'
 import MobileDownloadEmailForm from './MobileDownloadEmailForm.vue'
 
 const hoisted = vi.hoisted(() => ({
@@ -12,7 +13,7 @@ const hoisted = vi.hoisted(() => ({
   mockSubmit: vi.fn().mockResolvedValue(undefined)
 }))
 
-vi.mock('../../../scripts/customerio', () => ({
+vi.mock(import('../../../scripts/customerio'), () => ({
   get isDownloadLinkRequestEnabled() {
     return hoisted.isEnabled
   },
@@ -20,12 +21,20 @@ vi.mock('../../../scripts/customerio', () => ({
   requestDownloadLink: hoisted.mockSubmit
 }))
 
-vi.mock('../../../composables/useDownloadUrl', async () => {
+type DownloadUrlMock = Pick<
+  ReturnType<typeof DownloadUrlModule.useDownloadUrl>,
+  'isMobileUa'
+>
+
+vi.mock(import('../../../composables/useDownloadUrl'), async () => {
   const { computed } = await import('vue')
+  const useDownloadUrl = (): DownloadUrlMock => ({
+    isMobileUa: computed(() => hoisted.isMobileUa)
+  })
+  // The component reads only isMobileUa; the rest of the real return is unused.
   return {
-    useDownloadUrl: () => ({
-      isMobileUa: computed(() => hoisted.isMobileUa)
-    })
+    useDownloadUrl:
+      useDownloadUrl as unknown as typeof DownloadUrlModule.useDownloadUrl
   }
 })
 
