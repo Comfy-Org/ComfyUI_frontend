@@ -66,8 +66,8 @@ state are handled by separate code paths that compose, the composition test
 proves the wiring and the tables prove each path:
 
 ```ts
-describe.each(widgetCases)('widget %s', ({ widget, expected }) => { … })
-describe.each(nodeStateCases)('node state %s', ({ state, expected }) => { … })
+describe.for(widgetCases)('$widget widget', ({ widget, expected }) => { … })
+describe.for(nodeStateCases)('$state node', ({ state, expected }) => { … })
 it('renders a widget inside a bypassed node with both effects', () => { … })
 ```
 
@@ -76,11 +76,16 @@ one node state), that pair is a fault the tables cannot see. Add it as a named
 row in a sparse interaction table and say why it exists:
 
 ```ts
-it.each([
+it.for([
   { name: 'combo in bypassed node keeps options, regression #12345', … },
   { name: 'image widget in collapsed node hides preview, documented', … }
 ])('$name', …)
 ```
+
+This repository uses `it.for` and `describe.for`, not `it.each`. `for` passes
+each row as one argument whatever its shape, so object rows and `$field`
+names behave the same everywhere, and it exposes the test context as the
+second argument.
 
 Do not respond by crossing the full product. Pairwise coverage catches most
 interaction faults (NIST); an explicit list catches the rest.
@@ -104,7 +109,7 @@ it('hides on all surfaces', () => {
 ```
 
 ```ts
-it.each(['canvas', 'panel', 'inspector'])('hides on %s', (surface) => {
+it.for(['canvas', 'panel', 'inspector'])('hides on %s', (surface) => {
   expect(isVisible(hiddenWidget, surface)).toBe(false)
 })
 ```
@@ -167,7 +172,7 @@ else expect(result).toBe(localValue)
 ```
 
 ```ts
-it.each([
+it.for([
   { mode: 'cloud', expected: cloudValue },
   { mode: 'local', expected: localValue }
 ])('returns $expected in $mode mode', ({ mode, expected }) => { … })

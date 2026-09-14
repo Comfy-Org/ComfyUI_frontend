@@ -80,7 +80,7 @@ repository's own choices. Sources are linked at the end.
   not a coverage guarantee. Feature × view mode, widget × renderer × node
   state, and input class × failure mode are candidate dimensions; the sparse
   filter below handles the pairs that interact.
-- Parameterized tests (`it.each`, table-driven) are the default whenever cases
+- Parameterized tests (`it.for`, table-driven) are the default whenever cases
   share one Arrange-Act-Assert shape and differ only in inputs and expected
   outputs. Give each case its own named row, put the expected value in the
   row, and keep branches out of the body (Go wiki, TableDrivenTests).
