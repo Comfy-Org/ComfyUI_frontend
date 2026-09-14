@@ -9,11 +9,11 @@ class NodeHelpService {
     node: ComfyNodeDefImpl,
     locale: string
   ): Promise<string | undefined> {
-    const nodeSource = node.nodeSource
-
-    if (nodeSource.type === NodeSourceType.Blueprint) {
+    if (node.python_module.split('.')[0] === 'blueprint') {
       return node.description || undefined
     }
+
+    const nodeSource = node.nodeSource
 
     if (nodeSource.type === NodeSourceType.CustomNodes) {
       return this.fetchCustomNodeHelp(node, locale)
@@ -64,30 +64,9 @@ class NodeHelpService {
    * Returns undefined when the file is absent or the response is HTML.
    */
   private async tryFetchMarkdown(path: string): Promise<string | undefined> {
+    let res: Response
     try {
-      const res = await fetch(api.fileURL(path))
-
-      if (res.status === 404) {
-        return undefined
-      }
-      if (!res.ok) {
-        reportError(
-          new Error(
-            `Failed to fetch node help (${res.status} ${res.statusText}) at ${path}`
-          ),
-          { errorType: 'node_help_fetch_failure' }
-        )
-        return undefined
-      }
-
-      const contentType = res.headers.get('content-type') ?? ''
-      const text = await res.text()
-
-      const isHtmlContentType = contentType.includes('text/html')
-
-      if (isHtmlContentType) return undefined
-
-      return text
+      res = await fetch(api.fileURL(path))
     } catch (error) {
       reportError(error, {
         errorType: 'node_help_fetch_failure',
@@ -95,6 +74,33 @@ class NodeHelpService {
       })
       throw error
     }
+
+    if (res.status === 404) return undefined
+    if (!res.ok) {
+      const error = new Error(
+        `Failed to fetch node help (${res.status} ${res.statusText}) at ${path}`
+      )
+      reportError(error, {
+        errorType: 'node_help_fetch_failure',
+        context: { path }
+      })
+      throw error
+    }
+
+    const contentType = res.headers.get('content-type') ?? ''
+    let text: string
+    try {
+      text = await res.text()
+    } catch (error) {
+      reportError(error, {
+        errorType: 'node_help_fetch_failure',
+        context: { path }
+      })
+      throw error
+    }
+
+    if (contentType.includes('text/html')) return undefined
+    return text
   }
 }
 
