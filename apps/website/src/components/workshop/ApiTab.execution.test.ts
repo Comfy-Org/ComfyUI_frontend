@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { execFileSync } from 'node:child_process'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'

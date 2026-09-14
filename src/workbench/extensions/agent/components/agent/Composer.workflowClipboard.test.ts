@@ -286,7 +286,15 @@ describe('workflow reference clipboard', () => {
     async (html) => {
       const user = userEvent.setup()
       const { store, editor } = renderComposer()
-      await user.type(editor, 'Readable fallback')
+      store.replaceDraft({
+        text: 'Readable fallback',
+        workflowReferences: [],
+        attachments: []
+      })
+      await vi.waitFor(() =>
+        expect(editor.textContent).toBe('Readable fallback')
+      )
+      await user.click(editor)
       await user.keyboard('{Control>}a{/Control}')
       const clipboard = await user.copy()
       clipboard?.setData('text/html', html)

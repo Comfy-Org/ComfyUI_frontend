@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { render, screen, waitFor } from '@testing-library/vue'
 import { IDBFactory } from 'fake-indexeddb'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
