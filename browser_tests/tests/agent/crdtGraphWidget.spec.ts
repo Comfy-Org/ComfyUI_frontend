@@ -95,7 +95,7 @@ test.describe('Agent CRDT graph projection', { tag: '@cloud' }, () => {
     )
     const workflowId = await crdt.seedSubscribedDocument()
 
-    await comfyPage.vueNodes.waitForNodes(1)
+    await comfyPage.vueNodes.waitForNodes()
     const instance = await comfyPage.vueNodes.getFixtureByTitle(NODE_TITLE)
     await instance.setTitle(RENAMED_NODE)
     await expect(instance.title).toHaveText(RENAMED_NODE)

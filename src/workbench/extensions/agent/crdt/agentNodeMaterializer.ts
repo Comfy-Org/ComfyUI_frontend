@@ -413,7 +413,13 @@ function materialize(
   if (!added) return rollback('LGraph.add returned no node')
 
   try {
-    node.configure(withNamedWidgetValues(serialised))
+    const configuration = withNamedWidgetValues(serialised)
+    if (node.isSubgraphNode() && configuration.title === configuration.type) {
+      const { title: _syntheticTitle, ...untitledConfiguration } = configuration
+      node.configure(untitledConfiguration)
+    } else {
+      node.configure(configuration)
+    }
   } catch (cause) {
     // The node is attached and consistent with the stores; removing it here
     // would also drop the layout entry it adopted. Keep it and report.

@@ -135,9 +135,13 @@ function agentOperation(id: string, version: number, payload: object) {
  * later `LGraph.add()` adopts it instead of minting a canvas-sourced create.
  * A stubbed port would hide the add_node echo this test suite guards against.
  */
-function remoteMutations(scope: GraphScope) {
+function remoteMutations(
+  scope: GraphScope,
+  isSubgraphType?: (type: string) => boolean
+) {
   return createGraphMutations({
     getScope: () => scope,
+    isSubgraphType,
     layout: {
       createNode(scope, nodeId, { position, size }, context) {
         layoutStore.applyOperation({
@@ -845,6 +849,9 @@ describe('reconcileAgentAdapters', () => {
   })
 
   describe('subgraph definitions', () => {
+    const subgraphMutations = (graph: LGraph) =>
+      remoteMutations(graphScopeOf(graph), (type) => graph.subgraphs.has(type))
+
     /**
      * Deliver a full-document frame minted from `workflow` to a fresh follower
      * bound to `graph`, the way the first frame of a session (or a reseed
@@ -853,9 +860,7 @@ describe('reconcileAgentAdapters', () => {
     function seedDocument(graph: LGraph, workflow: Parameters<typeof mint>[0]) {
       const host = mint(workflow, CATALOG)
       const follower = new FollowerDoc()
-      const adapter = new EcsFollowerAdapter(
-        remoteMutations(graphScopeOf(graph))
-      )
+      const adapter = new EcsFollowerAdapter(subgraphMutations(graph))
       adapter.bind('workflow', follower)
       const update = Y.encodeStateAsUpdate(host)
       follower.applyRemoteUpdate(update)
@@ -1038,7 +1043,7 @@ describe('reconcileAgentAdapters', () => {
       expect(link).toBeDefined()
       expect(instance.getOutputNodes(0)).toEqual([receiver])
 
-      remoteMutations(graphScopeOf(graph)).batch(
+      subgraphMutations(graph).batch(
         { ...REMOTE, opId: 'op-bare-reconcile' },
         (batch) => batch.reconcileNode(nodePayload(1, definition.id))
       )
@@ -1144,7 +1149,7 @@ describe('reconcileAgentAdapters', () => {
         expect(reconcileAgentAdapters(graph, definitions)).toEqual([])
         expect(configure).not.toHaveBeenCalled()
 
-        remoteMutations(graphScopeOf(graph)).batch(
+        subgraphMutations(graph).batch(
           { ...REMOTE, opId: 'op-second-reconcile' },
           (batch) => batch.reconcileNode(nodePayload(1, definition.id))
         )
@@ -1177,7 +1182,7 @@ describe('reconcileAgentAdapters', () => {
         const instance = graph.getNodeById(toNodeId(1))
         if (!instance?.isSubgraphNode()) throw new Error('Expected subgraph')
         const orphan = graph.getNodeById(toNodeId(2))
-        const mutations = remoteMutations(graphScopeOf(graph))
+        const mutations = subgraphMutations(graph)
         mutations.deleteNode(toNodeId(2), [], REMOTE)
         mutations.addNode(nodePayload(9), REMOTE)
         mutations.batch(REMOTE, (batch) =>
