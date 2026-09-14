@@ -135,8 +135,8 @@ test.describe('Models catalog', () => {
     const rowHeading = await videos
       .getByRole('heading', { level: 2 })
       .innerText()
-    const promisedCount = Number(rowHeading.match(/(\d+)\s*$/)?.[1])
-    const rowLabel = rowHeading.replace(/\s*\d+\s*$/, '').trim()
+    const promisedCount = Number(rowHeading.match(/See all\s+(\d+)\s*$/)?.[1])
+    const rowLabel = rowHeading.replace(/\s*See all\s+\d+\s*$/, '').trim()
     expect(promisedCount).toBeGreaterThan(0)
     await videos.getByTestId('section-generate-videos-open').click()
     const cards = page
@@ -272,14 +272,14 @@ test.describe('Models catalog', () => {
     expect(all).toBeGreaterThan(0)
     await page.getByTestId('workshop-filter').click()
     await page.getByTestId('workshop-facet-capability').click()
-    await page.getByTestId('filter-capability-upscale').click()
+    await page.getByTestId('filter-capability-image-to-image').click()
     const cards = page
       .getByTestId('workshop-models-grid')
       .getByTestId('workshop-model-card')
     await expect(cards.first()).toBeVisible()
     expect(await cards.count()).toBeLessThan(all)
     for (const card of await cards.all())
-      await expect(card).toContainText(/upscal/i)
+      await expect(card).toContainText(/image-to-image/i)
     await expect(
       page.getByTestId('workshop-facet-capability-count')
     ).toHaveText('1')
@@ -386,7 +386,7 @@ test.describe('Model playground', () => {
     await expect(page.getByTestId('run-button')).toBeEnabled()
     const [chooser] = await Promise.all([
       page.waitForEvent('filechooser'),
-      page.getByText('Choose images or drop them here', { exact: true }).click()
+      page.getByText(/^Select or drop /).click()
     ])
     await chooser.setFiles('e2e/assets/placeholder-1x1.webp')
     await expect(
