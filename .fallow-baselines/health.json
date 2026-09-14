@@ -608,6 +608,37 @@
         "count": 1
       }
     },
+    "packages/comfy-multi-player/scripts/bench-read.mjs": {
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 2
+      }
+    },
+    "packages/comfy-multi-player/scripts/check-pins.mjs": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "packages/comfy-multi-player/scripts/check-purity.mjs": {
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "packages/comfy-multi-player/scripts/gen-coderabbit-config.mjs": {
+      "crap_high": {
+        "count": 2
+      }
+    },
+    "packages/comfy-multi-player/src/applier.ts": {
+      "complexity_high": {
+        "count": 1
+      }
+    },
     "scripts/bundle-categories.js": {
       "crap_moderate": {
         "count": 1
