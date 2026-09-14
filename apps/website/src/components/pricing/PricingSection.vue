@@ -5,7 +5,11 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref, useSlots } from 'vue'
 
 import { pricingPlans } from '../../data/pricingPlans'
-import type { BillingCycle, PricingPlan } from '../../data/pricingPlans'
+import type {
+  BillingCycle,
+  PlanYearlyAllotment,
+  PricingPlan
+} from '../../data/pricingPlans'
 import { t } from '../../i18n/translations'
 import Badge from '../ui/badge/Badge.vue'
 import Button from '../ui/button/Button.vue'
@@ -55,23 +59,23 @@ function originalPriceFor(plan: PricingPlan): string | undefined {
     : undefined
 }
 
-function showsYearlyCredits(plan: PricingPlan): boolean {
-  return billingPeriod.value === 'yearly' && plan.yearlyCreditsKey !== undefined
+function yearlyAllotmentFor(
+  plan: PricingPlan
+): PlanYearlyAllotment | undefined {
+  return billingPeriod.value === 'yearly' ? plan.yearlyAllotment : undefined
 }
 
 function displayCreditsKey(plan: PricingPlan): TranslationKey | undefined {
-  return showsYearlyCredits(plan) ? plan.yearlyCreditsKey : plan.creditsKey
+  return yearlyAllotmentFor(plan)?.creditsKey ?? plan.creditsKey
 }
 
 function displayEstimateKey(plan: PricingPlan): TranslationKey | undefined {
-  return showsYearlyCredits(plan) && plan.yearlyEstimateKey
-    ? plan.yearlyEstimateKey
-    : plan.estimateKey
+  return yearlyAllotmentFor(plan)?.estimateKey ?? plan.estimateKey
 }
 
 function creditsLabelFor(plan: PricingPlan): string {
   return t(
-    showsYearlyCredits(plan)
+    yearlyAllotmentFor(plan)
       ? 'pricing.creditsLabelYearly'
       : 'pricing.creditsLabel',
     locale
