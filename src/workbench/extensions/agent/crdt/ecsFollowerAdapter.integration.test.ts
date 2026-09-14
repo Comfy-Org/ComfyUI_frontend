@@ -939,6 +939,7 @@ describe('EcsFollowerAdapter integration', () => {
       const noopBatch = {
         addNode: () => undefined,
         reconcileNode: () => undefined,
+        reconcileNodeFields: () => undefined,
         setWidget: () => undefined,
         connect: () => undefined,
         removeMissing: () => undefined,
