@@ -472,12 +472,12 @@ describe('ModelDetail', () => {
     {
       signedIn: false,
       reason: 'missing-input-schema',
-      explanation: /input schema is not available/
+      explanation: /cannot be run or called from code/
     },
     {
       signedIn: true,
       reason: 'missing-input-schema',
-      explanation: /input schema is not available/
+      explanation: /cannot be run or called from code/
     }
   ] as const)(
     'explains $reason with signedIn=$signedIn without offering a paid run',
@@ -1077,7 +1077,7 @@ describe('ModelDetail', () => {
     mountDetail({ model: runnable })
     expect(
       screen.getByRole('button', {
-        name: 'Comfy Router execution is not enabled for this model yet.'
+        name: 'This model cannot be run from the browser yet.'
       })
     ).toHaveProperty('disabled', true)
     expect(runWorkshopRouter).not.toHaveBeenCalled()
@@ -1177,7 +1177,7 @@ describe('ModelDetail', () => {
       expect(screen.queryByRole('link', { name: 'Sign in to run' })).toBeNull()
       expect(
         screen.getByRole('button', {
-          name: 'Comfy Router execution is not enabled for this model yet.'
+          name: 'This model cannot be run from the browser yet.'
         })
       ).toHaveProperty('disabled', true)
     }
@@ -1311,7 +1311,7 @@ describe('ModelDetail', () => {
     expect(button.getAttribute('data-gate')).toBe('unavailable')
     expect(button.hasAttribute('disabled')).toBe(true)
     expect(button.textContent).toContain(
-      'Comfy Router execution is not enabled for this model yet'
+      'This model cannot be run from the browser yet'
     )
   })
 
@@ -1472,7 +1472,7 @@ describe('ModelDetail', () => {
       expect(
         screen.getByRole('heading', { name: 'Sample outputs' })
       ).toBeTruthy()
-      expect(screen.getByText(/without changing your inputs/)).toBeTruthy()
+      expect(screen.getByText(/without touching your inputs/)).toBeTruthy()
       if (nativeJson)
         await user().click(screen.getByRole('button', { name: 'Native JSON' }))
       const input = screen.getByTestId<HTMLTextAreaElement>(

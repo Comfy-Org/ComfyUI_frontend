@@ -253,7 +253,7 @@ describe('BuyCreditsDialog', () => {
     const held = await screen.findByTestId('buy-credits-held')
     expect(held.textContent).toContain('No new credits detected')
     expect(screen.getByRole('dialog').textContent).toContain(
-      'The checkout may have been cancelled'
+      'The checkout was either cancelled'
     )
     expect(screen.getByRole('dialog').textContent).not.toContain(
       'Payment received'

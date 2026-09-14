@@ -324,7 +324,7 @@ describe('PlaygroundOutput', () => {
       screen.queryByRole('img', { name: 'Output' })
     ).not.toBeInTheDocument()
     expect(screen.queryByTestId('output-download')).not.toBeInTheDocument()
-    const reveal = screen.getByRole('button', { name: /Click to reveal/ })
+    const reveal = screen.getByRole('button', { name: /Show anyway/ })
     expect(reveal).toBeTruthy()
     await user.click(reveal)
     expect(screen.getByRole('img', { name: 'Output' })).toBeVisible()

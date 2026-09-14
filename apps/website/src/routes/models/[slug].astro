@@ -90,8 +90,7 @@ const pillClass =
           >
             {priceEstimate ? (
               <span class="flex items-baseline">
-                <span class="font-semibold">{price.amount}</span>
-                {price.per && (
+                <span class="font-semibold">{price.amount}</span>{price.per && (
                   <span class="text-sm text-primary-warm-gray">{price.per}</span>
                 )}
               </span>

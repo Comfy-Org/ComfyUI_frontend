@@ -54,7 +54,7 @@ describe('WorkshopCatalog', () => {
       'kling'
     )
     await nextTick()
-    expect(screen.getByText('No models match these filters.')).toBeTruthy()
+    expect(screen.getByText('No models match your filters.')).toBeTruthy()
   })
 
   it('renders the next page on request', async () => {

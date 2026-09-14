@@ -101,12 +101,12 @@ describe('ApiTab', () => {
     })
     expect(screen.queryByTestId('snippet')).toBeNull()
     expect(screen.getByRole('status').textContent).toContain(
-      'Complete valid model inputs'
+      'Fill in the Playground inputs'
     )
     await rerender({ contract: undefined, values })
     await waitFor(() =>
       expect(screen.getByRole('status').textContent).toContain(
-        'has not been verified'
+        'We have not verified'
       )
     )
     expect(screen.queryByRole('button', { name: 'Copy snippet' })).toBeNull()
