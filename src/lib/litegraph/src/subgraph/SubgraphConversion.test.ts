@@ -280,7 +280,11 @@ describe('SubgraphConversion', () => {
       assert(innerTarget)
       const targetPrototype = Object.getPrototypeOf(innerTarget) as LGraphNode
       targetPrototype.onConfigure = function () {
-        this.inputs = this.inputs.map((input) => ({ ...input }))
+        this.inputs = this.inputs.map(({ name, type, boundingRect }) => ({
+          name,
+          type,
+          boundingRect
+        }))
       }
 
       graph.unpackSubgraph(wrapper)
