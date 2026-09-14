@@ -9868,8 +9868,8 @@ Enterprise`
   },
   'workshop.output.example': { en: 'Example', 'zh-CN': '示例' },
   'workshop.output.exampleHint': {
-    en: 'Run the model to make your own.',
-    'zh-CN': '运行以生成你自己的结果。'
+    en: 'Run {model} to make your own.',
+    'zh-CN': '运行 {model} 以生成你自己的结果。'
   },
   'workshop.run.preparingSession': {
     en: 'Checking your session…',

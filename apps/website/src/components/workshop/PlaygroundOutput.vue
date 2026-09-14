@@ -32,6 +32,7 @@ import { t } from '../../i18n/translations'
 const {
   state,
   now,
+  modelName,
   modality,
   earlier = [],
   attachments = [],
@@ -40,6 +41,7 @@ const {
 } = defineProps<{
   state: RunState
   now: number
+  modelName: string
   modality?: Modality
   earlier?: readonly RunRecord[]
   attachments?: readonly RunOutput[]
@@ -553,7 +555,10 @@ const earlierClass = (active: boolean) =>
       >
         {{
           state.status === 'example'
-            ? t('workshop.output.exampleHint', locale)
+            ? t('workshop.output.exampleHint', locale).replace(
+                '{model}',
+                modelName
+              )
             : t('workshop.output.expires', locale)
         }}
       </p>
