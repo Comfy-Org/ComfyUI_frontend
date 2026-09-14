@@ -197,6 +197,7 @@ export default defineConfig([
         projectService: {
           allowDefaultProject: [
             'packages/object-info-parser/vitest.config.ts',
+            'packages/workflow-validation/vitest.config.ts',
             'vite.electron.config.mts',
             'vite.types.config.mts',
             'vitest.matrix.config.mts',
