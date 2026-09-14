@@ -73,6 +73,10 @@ export default defineConfig({
           {
             name: 'cloud-live-paid',
             testMatch: '**/tests/liveCloud/paid/*.spec.ts'
+          },
+          {
+            name: 'cloud-live-disposable',
+            testMatch: '**/tests/liveCloud/disposable/*.spec.ts'
           }
         ].map(
           (project) =>

@@ -1,8 +1,10 @@
 import {
+  zBillingBalanceResponse,
   zBillingOpStatusResponse,
   zBillingStatusResponse,
   zCurrentWorkspaceResponse,
   zListSavedPaymentMethodsResponse,
+  zPaymentPortalResponse,
   zPreviewSubscribeResponse,
   zSubscribeResponse
 } from '@comfyorg/ingest-types/zod'
@@ -103,6 +105,14 @@ export class LiveCloudBillingSession {
         phase: 'awaiting_payment_method'
       })
   }
+
+  async ensureProvisioned(returnUrl: string) {
+    await this.post(
+      '/api/billing/payment-portal',
+      { return_url: returnUrl },
+      zPaymentPortalResponse
+    )
+  }
 }
 
 export function matchesBillingResponse(
@@ -140,31 +150,140 @@ export class LiveCloudCheckout {
     })
   }
 
-  async open() {
-    const [response] = await Promise.all([
-      this.page.waitForResponse((response) =>
-        matchesBillingResponse(
-          response,
-          this.frontend,
-          '/api/billing/preview-subscribe'
-        )
-      ),
-      this.page.goto(`${this.frontend}/?pricing=creator&cycle=monthly`)
-    ])
-    expect(response.status()).toBe(200)
-    const preview = zPreviewSubscribeResponse.parse(await response.json())
+  async open(retryTransientFailures = false) {
+    let preview: ReturnType<typeof zPreviewSubscribeResponse.parse> | undefined
+    const loadPreview = async () => {
+      const [response] = await Promise.all([
+        this.page.waitForResponse((response) =>
+          matchesBillingResponse(
+            response,
+            this.frontend,
+            '/api/billing/preview-subscribe'
+          )
+        ),
+        this.page.goto(`${this.frontend}/?pricing=creator&cycle=monthly`)
+      ])
+      expect(response.status()).toBe(200)
+      preview = zPreviewSubscribeResponse.parse(await response.json())
+    }
+    if (retryTransientFailures) {
+      await expect(loadPreview).toPass({ timeout: 90_000 })
+    } else {
+      await loadPreview()
+    }
+    if (!preview) throw new Error('Cloud billing preview was not loaded')
     expect(preview.allowed).toBe(true)
     expect(preview.new_plan.slug).toBe('creator-monthly')
     await expect(
       this.confirmation.getByText('Total due today', { exact: true })
     ).toBeVisible()
     await expect(this.subscribe.or(this.resumePayment)).toBeEnabled()
+    return preview
   }
 
   async abandonCheckout(testInfo: TestInfo, resume = false) {
     const action = resume
       ? this.resumePayment
       : this.subscribe.or(this.resumePayment)
+    const { checkout, subscription } = await this.startCheckout(action)
+    await testInfo.attach('billing-operation.json', {
+      body: JSON.stringify({
+        operationId: subscription.billing_op_id,
+        status: subscription.status
+      }),
+      contentType: 'application/json'
+    })
+    await testInfo.attach('stripe-checkout.png', {
+      body: await checkout.screenshot(),
+      contentType: 'image/png'
+    })
+    await checkout.close()
+    return subscription.billing_op_id
+  }
+
+  async completeCheckout(session: LiveCloudBillingSession, testInfo: TestInfo) {
+    const balanceBefore = await session.read(
+      '/api/billing/balance',
+      zBillingBalanceResponse
+    )
+    const preview = await this.open(true)
+    const { checkout, subscription } = await this.startCheckout(
+      this.subscribe.or(this.resumePayment)
+    )
+    await checkout
+      .getByLabel('Card number', { exact: true })
+      .fill('4242424242424242')
+    await checkout.getByLabel('Expiration', { exact: true }).fill('1230')
+    await checkout
+      .getByRole('textbox', {
+        name: 'Credit or debit card CVC/CVV',
+        exact: true
+      })
+      .fill('123')
+    await checkout
+      .getByPlaceholder('Full name on card', { exact: true })
+      .fill('Comfy Billing Test')
+    await checkout
+      .getByRole('button', { name: 'Enter address manually', exact: true })
+      .click()
+    await checkout.locator('#billingAddressLine1').fill('123 Test Street')
+    await checkout.getByLabel('City', { exact: true }).fill('San Francisco')
+    await checkout.getByLabel('State', { exact: true }).selectOption('CA')
+    await checkout.getByLabel('ZIP', { exact: true }).fill('94107')
+    await checkout.locator('#enableStripePass').uncheck()
+    await checkout.getByRole('button', { name: /^Save/ }).click()
+    await expect
+      .poll(async () => {
+        const operation = await session.read(
+          `/api/billing/ops/${encodeURIComponent(subscription.billing_op_id)}`,
+          zBillingOpStatusResponse
+        )
+        return operation.status
+      })
+      .toBe('succeeded')
+    await expect
+      .poll(() => session.read('/api/billing/status', zBillingStatusResponse))
+      .toMatchObject({
+        is_active: true,
+        plan_slug: 'creator-monthly',
+        subscription_tier: 'CREATOR'
+      })
+    const expectedBalance =
+      balanceBefore.amount_micros + Number(preview.credits_today_cents)
+    await expect
+      .poll(
+        async () =>
+          (await session.read('/api/billing/balance', zBillingBalanceResponse))
+            .amount_micros
+      )
+      .toBe(expectedBalance)
+    const methods = await session.read(
+      '/api/billing/payment-methods',
+      zListSavedPaymentMethodsResponse
+    )
+    expect(methods).toHaveLength(1)
+    await testInfo.attach('checkout-completion.json', {
+      body: JSON.stringify({
+        operationId: subscription.billing_op_id,
+        planSlug: preview.new_plan.slug,
+        grantCents: Number(preview.credits_today_cents),
+        balanceBeforeCents: balanceBefore.amount_micros,
+        balanceAfterCents: expectedBalance,
+        paymentMethodCount: methods.length
+      }),
+      contentType: 'application/json'
+    })
+    await this.page.goto(this.frontend)
+    await this.attachScreenshot('checkout-completed.png')
+    return {
+      operationId: subscription.billing_op_id,
+      planSlug: preview.new_plan.slug,
+      grantCents: Number(preview.credits_today_cents),
+      paymentMethodCount: methods.length
+    }
+  }
+
+  private async startCheckout(action = this.subscribe.or(this.resumePayment)) {
     await expect(action).toBeEnabled()
     const [response, checkout] = await Promise.all([
       this.page.waitForResponse(
@@ -186,19 +305,7 @@ export class LiveCloudCheckout {
       /^https:\/\/checkout\.(?:stripe\.com|comfy\.org)\/c\/pay\/cs_test_/
     expect(subscription.payment_method_url).toMatch(testCheckoutUrl)
     await expect(checkout).toHaveURL(testCheckoutUrl)
-    await testInfo.attach('billing-operation.json', {
-      body: JSON.stringify({
-        operationId: subscription.billing_op_id,
-        status: subscription.status
-      }),
-      contentType: 'application/json'
-    })
-    await testInfo.attach('stripe-checkout.png', {
-      body: await checkout.screenshot(),
-      contentType: 'image/png'
-    })
-    await checkout.close()
-    return subscription.billing_op_id
+    return { checkout, subscription }
   }
 
   async attachScreenshot(name: string) {

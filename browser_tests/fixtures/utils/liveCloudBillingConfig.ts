@@ -16,7 +16,7 @@ const sandboxURL = z
   }, 'Use a Cloud test, staging, or PR preview origin')
   .transform((value) => new URL(value).origin)
 
-export const liveCloudBillingConfigSchema = z
+const liveCloudBillingEndpointsSchema = z
   .object({
     PLAYWRIGHT_TEST_URL: z
       .string()
@@ -27,9 +27,7 @@ export const liveCloudBillingConfigSchema = z
         return url.href === `${url.origin}/`
       }, 'Use an origin without a path, query, credentials, or fragment')
       .transform((value) => new URL(value).origin),
-    PLAYWRIGHT_SETUP_API_URL: sandboxURL,
-    CLOUD_ACCOUNT_EMAIL: z.string().email(),
-    CLOUD_ACCOUNT_PASSWORD: z.string().min(1)
+    PLAYWRIGHT_SETUP_API_URL: sandboxURL
   })
   .superRefine((config, ctx) => {
     if (!URL.canParse(config.PLAYWRIGHT_TEST_URL)) return
@@ -48,6 +46,25 @@ export const liveCloudBillingConfigSchema = z
       })
     }
   })
+
+export const liveCloudBillingConfigSchema = liveCloudBillingEndpointsSchema.and(
+  z.object({
+    CLOUD_ACCOUNT_EMAIL: z.string().email(),
+    CLOUD_ACCOUNT_PASSWORD: z.string().min(1)
+  })
+)
+
+export function loadLiveCloudBillingEndpoints() {
+  const result = liveCloudBillingEndpointsSchema.safeParse(process.env)
+  if (!result.success) {
+    throw new Error(
+      `Cloud billing prerequisites: ${result.error.issues
+        .map((issue) => issue.path.join('.'))
+        .join(', ')}. See docs/testing/cloud-billing-e2e.md.`
+    )
+  }
+  return result.data
+}
 
 export function loadLiveCloudBillingConfig() {
   const result = liveCloudBillingConfigSchema.safeParse(process.env)
