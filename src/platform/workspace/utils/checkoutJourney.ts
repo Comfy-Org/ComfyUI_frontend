@@ -369,54 +369,86 @@ function readPersistedJourney(): CheckoutJourneyRecord | null {
   }
 }
 
+const UI_MODES: ReadonlySet<CheckoutUiMode> = new Set([
+  'embedded',
+  'hosted',
+  'unknown'
+])
+
+type PersistedJourneyIdentity = Pick<
+  CheckoutJourneyRecord,
+  'journey_id' | 'entered_at' | 'started_at_ms' | 'actor_uid' | 'workspace_id'
+>
+
+function readIdentity(
+  candidate: Record<string, unknown>
+): PersistedJourneyIdentity | null {
+  const { journey_id, entered_at, started_at_ms, actor_uid, workspace_id } =
+    candidate
+  return typeof journey_id === 'string' &&
+    typeof entered_at === 'string' &&
+    typeof started_at_ms === 'number' &&
+    typeof actor_uid === 'string' &&
+    typeof workspace_id === 'string'
+    ? { journey_id, entered_at, started_at_ms, actor_uid, workspace_id }
+    : null
+}
+
+type PersistedAssignment = Pick<
+  CheckoutJourneyRecord,
+  'assignment_status' | 'assigned_arm'
+>
+
+/**
+ * Enforce the assignment invariant on persisted records: resolved must carry an
+ * arm, unavailable must not. A contradictory record is rejected rather than
+ * replayed as a fabricated assignment.
+ */
+function readAssignment(
+  candidate: Record<string, unknown>
+): PersistedAssignment | null {
+  const status = candidate.assignment_status
+  const arm = candidate.assigned_arm
+
+  if (status === 'unavailable') {
+    return arm === undefined ? { assignment_status: 'unavailable' } : null
+  }
+  if (status !== 'resolved') {
+    return null
+  }
+  return arm === 'control' || arm === 'treatment'
+    ? { assignment_status: 'resolved', assigned_arm: arm }
+    : null
+}
+
+function readOptionalFields(candidate: Record<string, unknown>) {
+  const { intent, ui_mode, billing_op_id } = candidate
+  return {
+    ...(typeof intent === 'string' && { intent }),
+    ...(UI_MODES.has(ui_mode as CheckoutUiMode) && {
+      ui_mode: ui_mode as CheckoutUiMode
+    }),
+    ...(typeof billing_op_id === 'string' && { billing_op_id })
+  }
+}
+
 function normalizeRecord(value: unknown): CheckoutJourneyRecord | null {
   if (!value || typeof value !== 'object') {
     return null
   }
 
   const candidate = value as Record<string, unknown>
-  if (
-    typeof candidate.journey_id !== 'string' ||
-    typeof candidate.entered_at !== 'string' ||
-    typeof candidate.started_at_ms !== 'number' ||
-    typeof candidate.actor_uid !== 'string' ||
-    typeof candidate.workspace_id !== 'string' ||
-    (candidate.assignment_status !== 'resolved' &&
-      candidate.assignment_status !== 'unavailable')
-  ) {
-    return null
-  }
-
-  const arm = candidate.assigned_arm
-  const hasValidArm = arm === 'control' || arm === 'treatment'
-  // Enforce the assignment invariant on persisted records: resolved must carry
-  // an arm, unavailable must not. A contradictory record is discarded rather
-  // than replayed as a fabricated assignment.
-  if (candidate.assignment_status === 'resolved' && !hasValidArm) {
-    return null
-  }
-  if (candidate.assignment_status === 'unavailable' && arm !== undefined) {
+  const identity = readIdentity(candidate)
+  const assignment = readAssignment(candidate)
+  if (!identity || !assignment) {
     return null
   }
 
   return {
-    journey_id: candidate.journey_id,
-    entered_at: candidate.entered_at,
-    started_at_ms: candidate.started_at_ms,
-    actor_uid: candidate.actor_uid,
-    workspace_id: candidate.workspace_id,
+    ...identity,
     entry_flow: toEntryFlow(candidate.entry_flow),
     entry_source: toEntrySource(candidate.entry_source),
-    ...(typeof candidate.intent === 'string' && { intent: candidate.intent }),
-    assignment_status: candidate.assignment_status,
-    ...(hasValidArm ? { assigned_arm: arm } : {}),
-    ...(candidate.ui_mode === 'embedded' ||
-    candidate.ui_mode === 'hosted' ||
-    candidate.ui_mode === 'unknown'
-      ? { ui_mode: candidate.ui_mode }
-      : {}),
-    ...(typeof candidate.billing_op_id === 'string' && {
-      billing_op_id: candidate.billing_op_id
-    })
+    ...assignment,
+    ...readOptionalFields(candidate)
   }
 }
