@@ -479,6 +479,23 @@ describe('ChangeTracker', () => {
         ])
       })
 
+      it('does not squash after canvas ownership changes', async () => {
+        const initial = createState(1)
+        const changed = structuredClone(initial)
+        changed.nodes[0].widgets_values = [2]
+        const lateState = structuredClone(changed)
+        lateState.nodes[0].widgets_values = [3]
+        const tracker = createTracker(initial)
+        mockCanvasState(changed)
+
+        tracker.captureCanvasState()
+        mockCanvasState(lateState)
+        ChangeTracker.canvasTracker = createTracker()
+        await vi.advanceTimersByTimeAsync(50)
+
+        expect(tracker.activeState).toEqual(changed)
+      })
+
       it('does not emit an execution change for a late layout-only update', async () => {
         const initial = createState(1)
         const changed = structuredClone(initial)
