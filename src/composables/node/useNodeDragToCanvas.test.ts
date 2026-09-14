@@ -168,6 +168,7 @@ describe('useNodeDragToCanvas', () => {
         bottom: 500
       })
       mockConvertEventToCanvasOffset.mockReturnValue([150, 150])
+      mockAddNodeOnGraph.mockReturnValue({ id: 1, type: 'TestNode' })
 
       const { startDrag } = useNodeDragToCanvas()
       startDrag(mockNodeDef)
@@ -182,6 +183,7 @@ describe('useNodeDragToCanvas', () => {
       expect(mockAddNodeOnGraph).toHaveBeenCalledWith(mockNodeDef, {
         pos: [150, 150]
       })
+      expect(mockReportError).not.toHaveBeenCalled()
     })
 
     it('should not add node when pointer is outside canvas', () => {
@@ -317,7 +319,7 @@ describe('useNodeDragToCanvas', () => {
             'Widget "ckpt_name" is missing from added node CheckpointLoaderSimple'
         }),
         {
-          errorType: 'nodes_drag_widget_missing',
+          errorType: 'failure_setting_dragged_node_widget',
           tags: {
             failure_kind: 'bad_state',
             feature_area: 'nodes',
@@ -363,6 +365,7 @@ describe('useNodeDragToCanvas', () => {
           })
         })
       )
+      expect(mockReportError).toHaveBeenCalledTimes(1)
     })
 
     it('should report and show an error when the graph fails to add the node', () => {
@@ -376,7 +379,12 @@ describe('useNodeDragToCanvas', () => {
       mockAddNodeOnGraph.mockReturnValue(null)
 
       const { startDrag } = useNodeDragToCanvas()
-      startDrag(mockNodeDef)
+      const longNodeName = 'n'.repeat(200)
+      const longNodeDef = fromPartial<ComfyNodeDefImpl>({
+        name: longNodeName,
+        display_name: 'Long node'
+      })
+      startDrag(longNodeDef)
 
       document.dispatchEvent(
         new PointerEvent('pointerup', {
@@ -394,10 +402,10 @@ describe('useNodeDragToCanvas', () => {
       )
       expect(mockReportError).toHaveBeenCalledWith(
         expect.objectContaining({
-          message: 'Failed to add dragged node TestNode to the graph'
+          message: `Failed to add dragged node ${'n'.repeat(128)} to the graph`
         }),
         {
-          errorType: 'nodes_drag_add_failed',
+          errorType: 'failure_adding_dragged_node',
           tags: {
             failure_kind: 'bad_state',
             feature_area: 'nodes',
@@ -406,12 +414,13 @@ describe('useNodeDragToCanvas', () => {
           },
           context: {
             drag_mode: 'click',
-            node_type: 'TestNode',
+            node_type: 'n'.repeat(128),
             has_widget_values: false
           },
           level: 'error'
         }
       )
+      expect(mockReportError).toHaveBeenCalledTimes(1)
 
       mockReportError.mockClear()
       startDrag(mockNodeDef, { widgetValues: { ckpt_name: 'model' } })

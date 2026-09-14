@@ -29,8 +29,9 @@ const pendingSource = ref<NodeAddSource>('sidebar_drag')
 let listenersSetup = false
 const MAX_DIAGNOSTIC_FIELD_LENGTH = 128
 
-const boundDiagnosticField = (value: string) =>
-  value.slice(0, MAX_DIAGNOSTIC_FIELD_LENGTH)
+function boundDiagnosticField(value: string) {
+  return value.slice(0, MAX_DIAGNOSTIC_FIELD_LENGTH)
+}
 
 // Firefox dragend can report stale clientX/Y and `drag` can fire with
 // (0, 0). dragover on the target reliably reports real client coords.
@@ -52,7 +53,7 @@ function applyWidgetValues(node: LGraphNode, values: WidgetValues) {
           `Widget "${widgetName}" is missing from added node ${nodeType}`
         ),
         {
-          errorType: 'nodes_drag_widget_missing',
+          errorType: 'failure_setting_dragged_node_widget',
           tags: {
             failure_kind: 'bad_state',
             feature_area: 'nodes',
@@ -109,7 +110,7 @@ function addNodeAtPosition(clientX: number, clientY: number): boolean {
     reportError(
       new Error(`Failed to add dragged node ${nodeType} to the graph`),
       {
-        errorType: 'nodes_drag_add_failed',
+        errorType: 'failure_adding_dragged_node',
         tags: {
           failure_kind: 'bad_state',
           feature_area: 'nodes',
