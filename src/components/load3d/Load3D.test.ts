@@ -1,20 +1,20 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import Load3D from '@/components/load3d/Load3D.vue'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComponentWidget } from '@/scripts/domWidget'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 
-const { load3dState, resolveNodeMock, settingGetMock } = vi.hoisted(() => ({
+const { load3dState, resolveNodeMock } = vi.hoisted(() => ({
   load3dState: {
     current: null as ReturnType<typeof buildLoad3dStub> | null
   },
-  resolveNodeMock: vi.fn(),
-  settingGetMock: vi.fn()
+  resolveNodeMock: vi.fn()
 }))
 
 function buildLoad3dStub() {
@@ -65,10 +65,6 @@ vi.mock<unknown>(import('@/composables/useLoad3d'), () => ({
   useLoad3d: () => load3dState.current
 }))
 
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: () => ({ get: settingGetMock })
-}))
-
 vi.mock(import('@/utils/litegraphUtil'), () => ({
   resolveNode: resolveNodeMock
 }))
@@ -78,6 +74,7 @@ const i18n = createI18n({
   locale: 'en',
   messages: {
     en: {
+      g: { play: 'Play' },
       load3d: { fitToViewer: 'Fit to viewer' }
     }
   }
@@ -99,11 +96,8 @@ function renderLoad3D(options: RenderOptions = {}) {
   }
   load3dState.current = stub
 
-  settingGetMock.mockImplementation((key: string) =>
-    key === 'Comfy.Load3D.3DViewerEnable'
-      ? (options.enable3DViewer ?? false)
-      : undefined
-  )
+  useSettingStore().settingValues['Comfy.Load3D.3DViewerEnable'] =
+    options.enable3DViewer ?? false
 
   return {
     ...render(Load3D, {
@@ -123,10 +117,6 @@ function renderLoad3D(options: RenderOptions = {}) {
           Load3DScene: {
             name: 'Load3DScene',
             template: '<div data-testid="load3d-scene" />'
-          },
-          AnimationControls: {
-            name: 'AnimationControls',
-            template: '<div data-testid="animation-controls" />'
           },
           RecordMenuControl: {
             name: 'RecordMenuControl',
@@ -245,18 +235,20 @@ describe('Load3D', () => {
   })
 
   describe('animation controls', () => {
-    it('renders AnimationControls when animations are present', () => {
+    it('renders the animation strip when animations are present', () => {
       renderLoad3D({
         stateOverrides: {
           animations: ref([{ name: 'idle', index: 0 }])
         }
       })
-      expect(screen.getByTestId('animation-controls')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Play' })).toBeInTheDocument()
     })
 
-    it('hides AnimationControls when the animation list is empty', () => {
+    it('hides the animation strip when the animation list is empty', () => {
       renderLoad3D()
-      expect(screen.queryByTestId('animation-controls')).not.toBeInTheDocument()
+      expect(
+        screen.queryByTestId('animation-menu-strip')
+      ).not.toBeInTheDocument()
     })
   })
 })

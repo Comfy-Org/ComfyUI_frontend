@@ -1,21 +1,14 @@
-import { createTestingPinia } from '@pinia/testing'
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { render, screen } from '@testing-library/vue'
+import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 
 import BatchCountEdit from './BatchCountEdit.vue'
 
 const maxBatchCount = 16
-
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: () => ({
-    get: (settingId: string) =>
-      settingId === 'Comfy.QueueButton.BatchCountLimit' ? maxBatchCount : 1
-  })
-}))
 
 const i18n = createI18n({
   legacy: false,
@@ -34,21 +27,15 @@ const i18n = createI18n({
 })
 
 function renderComponent(initialBatchCount = 1) {
-  const pinia = createTestingPinia({
-    createSpy: vi.fn,
-    stubActions: false,
-    initialState: {
-      queueSettingsStore: {
-        batchCount: initialBatchCount
-      }
-    }
-  })
+  useQueueSettingsStore().batchCount = initialBatchCount
+  useSettingStore().settingValues['Comfy.QueueButton.BatchCountLimit'] =
+    maxBatchCount
 
   const user = userEvent.setup()
 
   render(BatchCountEdit, {
     global: {
-      plugins: [pinia, i18n],
+      plugins: [i18n],
       directives: {
         tooltip: () => {}
       }

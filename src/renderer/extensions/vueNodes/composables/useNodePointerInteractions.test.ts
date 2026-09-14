@@ -1,12 +1,10 @@
-import { setActivePinia } from 'pinia'
 import { fromAny } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { nextTick, ref } from 'vue'
 
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
-import { createTestingPinia } from '@pinia/testing'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { NodeLayout } from '@/renderer/core/layout/types'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
@@ -120,10 +118,6 @@ const createMouseEvent = (
 }
 
 describe('useNodePointerInteractions', () => {
-  beforeEach(async () => {
-    setActivePinia(createTestingPinia())
-  })
-
   it('should only start drag on left-click', async () => {
     const { handleNodeSelect } = useNodeEventHandlers()
     const { startDrag } = useNodeDrag()

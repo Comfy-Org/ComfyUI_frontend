@@ -1,4 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -70,7 +70,7 @@ describe('ModelInfoPanel', () => {
     return render(ModelInfoPanel, {
       props: { asset },
       global: {
-        plugins: [createTestingPinia({ stubActions: false }), i18n]
+        plugins: [getActivePinia()!, i18n]
       }
     })
   }

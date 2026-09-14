@@ -29,18 +29,19 @@ true.
 
 ## Interface parity
 
-| Capability             | Interactive `record` path                    | Non-interactive path                                                                         |
-| ---------------------- | -------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Target distribution    | Distribution selector with live versions     | `record --distribution <id>`; `check --distribution <id>` or `COMFY_TEST_DISTRIBUTION`       |
-| Custom backend         | “Custom backend…” selection and URL prompt   | `record --backend <url>`; `check --backend <url>` or `COMFY_TEST_BACKEND`                    |
-| Workflow search        | Searchable workflow autocomplete             | `list --filter <keyword>`                                                                    |
-| Add workflow from file | “(add from file…)” workflow option           | `add-workflow <file> [--name <n>]`                                                           |
-| Test tags              | Tag multiselect with hints                   | `tags` lists the registry with descriptions; `plan --tags` and `transform --tags` apply tags |
-| Record setup answers   | Guided prompts                               | `record --workflow --tags --feature-flags --use-case --description --name`                   |
-| Feature flags          | Feature-flag selector and custom flag prompt | `record`, `plan`, or `transform --feature-flags <specs>`                                     |
-| PR checkout            | Safe switch confirmation                     | `record --pr <number>`                                                                       |
-| Secret scrubbing       | Automatic during `record`, with a loud alert | Automatic in `transform <file>`; findings print as 🔒 lines in the summary                   |
-| Supervisor guidance    | Woven into `record` prompts and warnings     | `guide` prints the full operating manual for an agent helping a human                        |
+| Capability             | Interactive `record` path                                                           | Non-interactive path                                                                          |
+| ---------------------- | ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Target distribution    | Distribution selector with live versions                                            | `record --distribution <id>`; `check --distribution <id>` or `COMFY_TEST_DISTRIBUTION`        |
+| Custom backend         | “Custom backend…” selection and URL prompt                                          | `record --backend <url>`; `check --backend <url>` or `COMFY_TEST_BACKEND`                     |
+| Workflow search        | Searchable workflow autocomplete                                                    | `list --filter <keyword>`                                                                     |
+| Add workflow from file | “(add from file…)” workflow option                                                  | `add-workflow <file> [--name <n>]`                                                            |
+| Test tags              | Tag multiselect with hints                                                          | `tags` lists the registry with descriptions; `plan --tags` and `transform --tags` apply tags  |
+| Record setup answers   | Guided prompts                                                                      | `record --workflow --tags --feature-flags --use-case --description --name`                    |
+| Feature flags          | Feature-flag selector and custom flag prompt                                        | `record`, `plan`, or `transform --feature-flags <specs>`                                      |
+| PR checkout            | Safe switch confirmation                                                            | `record --pr <number>`                                                                        |
+| Secret scrubbing       | Automatic during `record`, with a loud alert                                        | Automatic in `transform <file>`; findings print as 🔒 lines in the summary                    |
+| Supervisor guidance    | Woven into `record` prompts and warnings                                            | `guide` prints the full operating manual for an agent helping a human                         |
+| Agent replay           | `agent-replay` with no flags asks which recording to replay and whether to watch it | `agent-replay [--case <id>] [--url <dev server>] [--headed] [--video]`; `--help` runs nothing |
 
 ## Distribution-aware recording template
 

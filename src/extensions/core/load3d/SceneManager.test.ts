@@ -21,12 +21,13 @@ vi.mock('./Load3dUtils', () => ({
   }
 }))
 
-vi.mock('three', async (importOriginal) => {
-  const actual = await importOriginal<typeof THREE>()
-  class StubTextureLoader {
-    load = mockTextureLoad
+vi.mock('three', { spy: true })
+
+beforeEach(() => {
+  function MockTextureLoader() {
+    return { load: mockTextureLoad }
   }
-  return { ...actual, TextureLoader: StubTextureLoader }
+  vi.spyOn(THREE, 'TextureLoader').mockImplementation(MockTextureLoader)
 })
 
 vi.mock('three/examples/jsm/controls/OrbitControls', () => {

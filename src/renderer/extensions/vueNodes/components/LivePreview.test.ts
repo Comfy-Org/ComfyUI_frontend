@@ -1,6 +1,6 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { fireEvent, render, screen } from '@testing-library/vue'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -30,12 +30,7 @@ describe('LivePreview', () => {
     return render(LivePreview, {
       props: { ...defaultProps, ...props },
       global: {
-        plugins: [
-          createTestingPinia({
-            createSpy: vi.fn
-          }),
-          i18n
-        ],
+        plugins: [getActivePinia()!, i18n],
         stubs: {
           'i-lucide:image-off': true
         }

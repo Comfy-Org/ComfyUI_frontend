@@ -1,12 +1,26 @@
-import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { createPinia } from 'pinia'
+import { render, screen, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
+import { useAssetsStore } from '@/stores/assetsStore'
 
 import AssetsSidebarTab from './AssetsSidebarTab.vue'
+
+beforeEach(() => {
+  const store = useAssetsStore()
+  store.outputAssets = {
+    items: [],
+    hasMore: false,
+    isLoading: false,
+    loadMore: vi.fn(async () => {}),
+    loadNew: vi.fn(async () => {}),
+    invalidate: vi.fn(async () => {})
+  }
+  vi.spyOn(store.inputAssets, 'loadNew').mockResolvedValue(undefined)
+  vi.spyOn(store.inputAssets, 'loadMore').mockResolvedValue(undefined)
+})
 
 const folderAsset = vi.hoisted(() => ({
   id: 'multi-output',
@@ -21,42 +35,6 @@ const folderAsset = vi.hoisted(() => ({
     outputCount: 2
   }
 }))
-
-const outputAssetState = vi.hoisted(() => ({
-  items: [] as (typeof folderAsset)[],
-  hasMore: false
-}))
-
-vi.mock<unknown>(import('@/stores/assetsStore'), async () => {
-  const { ref } = await import('vue')
-
-  const store = {
-    outputAssets: {
-      get items() {
-        return outputAssetState.items
-      },
-      isLoading: ref(false),
-      get hasMore() {
-        return outputAssetState.hasMore
-      },
-      loadMore: vi.fn(),
-      loadNew: vi.fn(),
-      invalidate: vi.fn()
-    },
-    inputAssets: {
-      items: ref([]),
-      isLoading: ref(false),
-      hasMore: ref(false),
-      loadMore: vi.fn(),
-      loadNew: vi.fn(),
-      invalidate: vi.fn()
-    }
-  }
-
-  return {
-    useAssetsStore: () => store
-  }
-})
 
 vi.mock<unknown>(
   import('@/platform/assets/composables/useAssetGridSelection'),
@@ -163,7 +141,7 @@ const buttonStub = {
 function renderTab() {
   return render(AssetsSidebarTab, {
     global: {
-      plugins: [createPinia(), i18n],
+      plugins: [i18n],
       directives: {
         tooltip: {}
       },
@@ -184,13 +162,13 @@ function renderTab() {
 }
 
 beforeEach(() => {
-  outputAssetState.items = [folderAsset]
-  outputAssetState.hasMore = false
+  useAssetsStore().outputAssets.items = [folderAsset]
+  useAssetsStore().outputAssets.hasMore = false
 })
 
 it('keeps pagination mounted when more assets can be loaded', () => {
-  outputAssetState.items = []
-  outputAssetState.hasMore = true
+  useAssetsStore().outputAssets.items = []
+  useAssetsStore().outputAssets.hasMore = true
 
   renderTab()
 

@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { LGraphNode, NodeInputSlot } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
@@ -17,10 +15,6 @@ function nodeWithNamespacedExtension(): ISerialisedNode {
     extensions: { myExt: { note: 'hello' } }
   }
 }
-
-beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
-})
 
 describe('LGraphNode.configure onConfigure hook isolation', () => {
   it('hands onConfigure a shallow copy, not the caller live serialized object', () => {

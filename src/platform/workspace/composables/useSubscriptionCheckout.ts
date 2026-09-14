@@ -159,7 +159,8 @@ export function useSubscriptionCheckout(
   const selectedTeamCheckout = ref<SelectedTeamCheckout | null>(null)
   let teamPreviewRequestId = 0
   let promotionPreviewRequestId = 0
-  let checkoutMutationLocked = false
+  let checkoutMutationOwner = 0
+  let checkoutMutationSeq = 0
   let refreshStatusOnFocus = false
   let activeCheckoutAttemptStartedAt: number | undefined
   useEventListener(window, 'focus', () => {
@@ -188,6 +189,13 @@ export function useSubscriptionCheckout(
   const activeCheckoutActionUrl = computed(
     () => activeCheckoutOperation.value?.actionUrl ?? null
   )
+  // The server says whether the operation is parked; the client no longer
+  // guesses. Only awaiting_payment_method offers this recovery — an operation
+  // parked on an invoice needs authentication, which actionUrl already drives.
+  // A null phase is no claim, so the poll simply continues.
+  const parkedCheckoutRecovery = computed(
+    () => activeCheckoutOperation.value?.phase === 'awaiting_payment_method'
+  )
   const authenticationState = computed(
     () => activeCheckoutOperation.value?.authenticationState ?? null
   )
@@ -201,29 +209,38 @@ export function useSubscriptionCheckout(
   )
   // Busy from submit until the checkout presents a terminal step. A pending
   // operation only releases the confirm action while it is parked on the
-  // customer (a challenge to complete, a failed attempt to retry); the
-  // in-page challenge this tab drives keeps it busy, and a succeeded
-  // operation stays busy for the beat between settlement and the success
-  // step taking over — that beat reopened the pay button mid-checkout.
+  // customer (a challenge to complete, a failed attempt to retry, a checkout
+  // still awaiting a card); the in-page challenge this tab drives keeps it
+  // busy, and a succeeded operation stays busy for the beat between settlement
+  // and the success step taking over — that beat reopened the pay button
+  // mid-checkout. A parked checkout keeps polling either way: releasing the
+  // action is about who is being waited on, not whether we are still watching.
   const isPolling = computed(() => {
     const operation = activeCheckoutOperation.value
     if (!operation) return false
     if (operation.status === 'succeeded') return true
     if (operation.status !== 'pending') return false
     if (operation.isAuthenticating) return true
+    if (operation.phase === 'awaiting_payment_method') return false
     return (
       operation.authenticationState !== 'failed_retryable' &&
       operation.authenticationState !== 'requires_action'
     )
   })
-  function beginCheckoutMutation(): boolean {
-    if (checkoutMutationLocked) return false
-    checkoutMutationLocked = true
-    return true
+  // The lock is owned by one attempt at a time. An attempt that releases early
+  // (see advanceToSuccessOnOperation) still runs its own finally afterwards, by
+  // which point a newer attempt may hold the lock — releasing on a bare boolean
+  // there would hand a third attempt a lock it does not own and let two submits
+  // run concurrently. So a release only counts from the holder.
+  function beginCheckoutMutation(): number {
+    if (checkoutMutationOwner !== 0) return 0
+    checkoutMutationOwner = ++checkoutMutationSeq
+    return checkoutMutationOwner
   }
 
-  function finishCheckoutMutation() {
-    checkoutMutationLocked = false
+  function finishCheckoutMutation(token: number) {
+    if (token !== 0 && checkoutMutationOwner === token)
+      checkoutMutationOwner = 0
   }
   const selectedTeamStop = computed(
     () => selectedTeamCheckout.value?.stop ?? null
@@ -917,18 +934,19 @@ export function useSubscriptionCheckout(
     promotionCode?: string
   ) {
     if (!canSelectTierPlan()) return
-    if (!beginCheckoutMutation()) return
+    const mutationToken = beginCheckoutMutation()
+    if (!mutationToken) return
 
     const tierKey = selectedTierKey.value
     if (!tierKey) {
-      finishCheckoutMutation()
+      finishCheckoutMutation(mutationToken)
       return
     }
 
     const billingCycle = selectedBillingCycle.value
     const planSlug = getApiPlanSlug(tierKey, billingCycle)
     if (!planSlug) {
-      finishCheckoutMutation()
+      finishCheckoutMutation(mutationToken)
       return
     }
     const checkoutType =
@@ -937,7 +955,7 @@ export function useSubscriptionCheckout(
         ? 'change'
         : 'new'
     if (!canPerformCheckout(checkoutType)) {
-      finishCheckoutMutation()
+      finishCheckoutMutation(mutationToken)
       return
     }
 
@@ -983,12 +1001,17 @@ export function useSubscriptionCheckout(
           paymentIntentSource
         })
       }
-      await handleSubscribeResponse(response, {
-        tier: tierKey,
-        cycle: billingCycle,
-        checkoutType,
-        attemptStartedAt
-      })
+      await handleSubscribeResponse(
+        response,
+        {
+          tier: tierKey,
+          cycle: billingCycle,
+          checkoutType,
+          attemptStartedAt
+        },
+        true,
+        mutationToken
+      )
       activeCheckoutAttemptStartedAt = undefined
     } catch (error) {
       if (hasErrorCode(error, 'REACTIVATION_CONFIRMATION_REQUIRED')) {
@@ -1011,7 +1034,7 @@ export function useSubscriptionCheckout(
       showSubscribeError(error)
     } finally {
       isSubscribing.value = false
-      finishCheckoutMutation()
+      finishCheckoutMutation(mutationToken)
     }
   }
 
@@ -1057,7 +1080,8 @@ export function useSubscriptionCheckout(
     lockMutation = true
   ): Promise<boolean> {
     if (!embeddedCheckoutEnabled) return false
-    if (lockMutation && !beginCheckoutMutation()) return false
+    const mutationToken = lockMutation ? beginCheckoutMutation() : 0
+    if (lockMutation && !mutationToken) return false
     isApplyingPromotionCode.value = true
     const requestId = ++promotionPreviewRequestId
     const normalizedInput = promotionCode.trim()
@@ -1076,12 +1100,12 @@ export function useSubscriptionCheckout(
       )
       options = normalizedInput ? { promotionCode: normalizedInput } : {}
     } else {
-      if (lockMutation) finishCheckoutMutation()
+      if (lockMutation) finishCheckoutMutation(mutationToken)
       isApplyingPromotionCode.value = false
       return false
     }
     if (!planSlug) {
-      if (lockMutation) finishCheckoutMutation()
+      if (lockMutation) finishCheckoutMutation(mutationToken)
       isApplyingPromotionCode.value = false
       return false
     }
@@ -1102,7 +1126,7 @@ export function useSubscriptionCheckout(
       if (requestId === promotionPreviewRequestId) {
         isApplyingPromotionCode.value = false
       }
-      if (lockMutation) finishCheckoutMutation()
+      if (lockMutation) finishCheckoutMutation(mutationToken)
     }
   }
 
@@ -1193,7 +1217,9 @@ export function useSubscriptionCheckout(
   async function handleSubscribeResponse(
     response: SubscribeResponse | void,
     context: SubscriptionOutcomeContext,
-    shouldTrackSubscriptionSuccess = true
+    shouldTrackSubscriptionSuccess = true,
+    // 0 when the caller holds no lock; a release from a non-holder is a no-op.
+    mutationToken = 0
   ): Promise<void> {
     if (!response) {
       trackSubscriptionFailure(context, undefined, 'missing_checkout_response')
@@ -1263,7 +1289,8 @@ export function useSubscriptionCheckout(
     await advanceToSuccessOnOperation(
       response.billing_op_id,
       context,
-      initialActionUrl
+      initialActionUrl,
+      mutationToken
     )
   }
 
@@ -1312,7 +1339,8 @@ export function useSubscriptionCheckout(
   async function advanceToSuccessOnOperation(
     opId: string,
     context: SubscriptionOutcomeContext,
-    initialActionUrl?: string
+    initialActionUrl: string | undefined,
+    mutationToken: number
   ) {
     activeCheckoutOperationId.value = opId
     const metadata = {
@@ -1334,7 +1362,18 @@ export function useSubscriptionCheckout(
           initialActionUrl
         )
       : billingOperationStore.startOperation(opId, 'subscription', metadata)
-    if (embeddedCheckoutEnabled) isSubscribing.value = false
+    // The submit is over once the operation is adopted: isPolling is the busy
+    // state from here, and it is already true because startOperation registers
+    // synchronously above. Holding either of these past this point kept the
+    // recovery prompt's own CTA and Back disabled for a checkout parked on the
+    // customer — and the lock made the CTA a no-op even once it looked live,
+    // because the click re-enters handleSubscription and fails the gate. For
+    // awaiting_payment_method the operation may not go terminal until the
+    // customer performs exactly that action, so waiting for the outer finally
+    // deadlocks the recovery. Releasing neither stops the poll; the outer
+    // finally still runs, and finishCheckoutMutation is idempotent.
+    isSubscribing.value = false
+    finishCheckoutMutation(mutationToken)
     const operation = await terminalOperation
     clearPendingSubscriptionCheckoutIfTerminal(opId, operation.status)
     if (
@@ -1359,7 +1398,8 @@ export function useSubscriptionCheckout(
     ) {
       return
     }
-    if (!beginCheckoutMutation()) return
+    const mutationToken = beginCheckoutMutation()
+    if (!mutationToken) return
 
     const teamCheckout = selectedTeamCheckout.value
     if (!teamCheckout.stop.id) {
@@ -1368,7 +1408,7 @@ export function useSubscriptionCheckout(
         summary: t('subscription.teamPlan.name'),
         detail: t('subscription.teamPlan.unavailable')
       })
-      finishCheckoutMutation()
+      finishCheckoutMutation(mutationToken)
       return
     }
 
@@ -1423,12 +1463,17 @@ export function useSubscriptionCheckout(
           paymentIntentSource
         })
       }
-      await handleSubscribeResponse(response, {
-        tier: 'team',
-        cycle: billingCycle,
-        checkoutType,
-        attemptStartedAt
-      })
+      await handleSubscribeResponse(
+        response,
+        {
+          tier: 'team',
+          cycle: billingCycle,
+          checkoutType,
+          attemptStartedAt
+        },
+        true,
+        mutationToken
+      )
       activeCheckoutAttemptStartedAt = undefined
     } catch (error) {
       if (hasErrorCode(error, 'REACTIVATION_CONFIRMATION_REQUIRED')) {
@@ -1458,7 +1503,7 @@ export function useSubscriptionCheckout(
       showSubscribeError(error)
     } finally {
       isSubscribing.value = false
-      finishCheckoutMutation()
+      finishCheckoutMutation(mutationToken)
     }
   }
 
@@ -1558,6 +1603,7 @@ export function useSubscriptionCheckout(
     authenticationState,
     authenticationError,
     reconciliationOperationId,
+    parkedCheckoutRecovery,
     isPolling,
     isTeamCheckout,
     previewVariant,

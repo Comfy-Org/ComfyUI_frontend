@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { t } from '../../i18n/translations'
 import ServerlessDeploySection from './ServerlessDeploySection.vue'
 
-vi.mock('../../composables/useReducedMotion', () => ({
+vi.mock(import('../../composables/useReducedMotion'), () => ({
   prefersReducedMotion: () => true
 }))
 
@@ -26,7 +26,7 @@ describe('ServerlessDeploySection', () => {
     const terminal = screen.getByRole('img', {
       name: t('platform.serverlessDeploy.heading', 'en')
     })
-    const transcript = terminal.textContent ?? ''
+    const transcript = terminal.textContent
     for (const line of [
       '$ comfy build init',
       '✔ Scanned this ComfyUI install — custom nodes, models, pinned deps',

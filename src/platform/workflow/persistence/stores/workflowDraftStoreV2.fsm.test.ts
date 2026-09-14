@@ -1,8 +1,6 @@
 import * as fc from 'fast-check'
 import type { Command } from 'fast-check'
 
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 
 import { MAX_DRAFTS } from '../base/draftTypes'
@@ -254,8 +252,7 @@ class ResetCommand implements Command<PersistenceModel, PersistenceReal> {
   }
 
   run(model: PersistenceModel, real: PersistenceReal) {
-    // Simulate page reload: new Pinia + new store, but storage persists
-    setActivePinia(createTestingPinia({ stubActions: false }))
+    real.draftStore.$dispose()
     real.draftStore = useWorkflowDraftStoreV2()
 
     for (const [path, expected] of model.drafts) {
@@ -344,7 +341,7 @@ describe('workflowDraftStoreV2 FSM', () => {
           // Clear storage between each fast-check run
           localStorage.clear()
           sessionStorage.clear()
-          setActivePinia(createTestingPinia({ stubActions: false }))
+          useWorkflowDraftStoreV2().$dispose()
 
           const model: PersistenceModel = {
             drafts: new Map(),

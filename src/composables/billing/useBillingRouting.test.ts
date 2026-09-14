@@ -1,24 +1,22 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { storeToRefs } from 'pinia'
+import type { Ref } from 'vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 
 import type { BillingRail } from '@/platform/workspace/api/workspaceApi'
 
 import { useBillingRouting } from './useBillingRouting'
 
-const {
-  mockIsCloud,
-  mockLegacyBillingMigrationEnabled,
-  mockActiveWorkspace,
-  mockActiveWorkspaceBillingRail
-} = vi.hoisted(() => ({
+const { mockIsCloud, mockLegacyBillingMigrationEnabled } = vi.hoisted(() => ({
   mockIsCloud: { value: true },
-  mockLegacyBillingMigrationEnabled: { value: false },
-  mockActiveWorkspace: {
-    value: null as { id: string; type: 'personal' | 'team' } | null
-  },
-  mockActiveWorkspaceBillingRail: {
-    value: null as BillingRail | null
-  }
+  mockLegacyBillingMigrationEnabled: { value: false }
 }))
+
+let mockActiveWorkspace: Ref<
+  ReturnType<typeof useTeamWorkspaceStore>['activeWorkspace']
+>
+let mockActiveWorkspaceBillingRail: Ref<BillingRail | null>
 
 vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
@@ -36,25 +34,18 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/stores/teamWorkspaceStore'),
-  () => ({
-    useTeamWorkspaceStore: () => ({
-      get activeWorkspace() {
-        return mockActiveWorkspace.value
-      },
-      get activeWorkspaceBillingRail() {
-        return mockActiveWorkspaceBillingRail.value
-      }
-    })
-  })
-)
-
-const personal = { id: 'w-personal', type: 'personal' as const }
-const team = { id: 'w-team', type: 'team' as const }
+const personal = fromPartial<
+  NonNullable<ReturnType<typeof useTeamWorkspaceStore>['activeWorkspace']>
+>({ id: 'w-personal', type: 'personal' })
+const team = fromPartial<
+  NonNullable<ReturnType<typeof useTeamWorkspaceStore>['activeWorkspace']>
+>({ id: 'w-team', type: 'team' })
 
 describe('useBillingRouting', () => {
   beforeEach(() => {
+    const refs = storeToRefs(useTeamWorkspaceStore())
+    mockActiveWorkspace = refs.activeWorkspace
+    mockActiveWorkspaceBillingRail = refs.activeWorkspaceBillingRail
     mockIsCloud.value = true
     mockLegacyBillingMigrationEnabled.value = false
     mockActiveWorkspace.value = personal

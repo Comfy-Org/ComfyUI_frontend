@@ -1,4 +1,5 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
+import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
@@ -7,6 +8,7 @@ import type { ListMembersParams } from '@/platform/workspace/api/workspaceApi'
 import type { WorkspaceMember } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
+import { billingOperation } from './billingOperationTestUtils'
 import {
   ReactivationConfirmationRequiredError,
   useDowngradeToPersonal
@@ -21,7 +23,7 @@ const mockFetchMembers =
 const mockSubscribe = vi.hoisted(() => vi.fn())
 const mockPreviewSubscribe = vi.hoisted(() => vi.fn())
 const mockFetchStatus = vi.hoisted(() => vi.fn())
-const mockStartOperation = vi.hoisted(() => vi.fn())
+
 const mockTrackBillingEvent = vi.hoisted(() => vi.fn())
 const mockPermissions = vi.hoisted(() => ({
   value: {
@@ -58,13 +60,6 @@ const mockMembers = {
     workspaceStore.activeWorkspaceId = 'workspace-one'
   }
 }
-
-vi.mock<unknown>(
-  import('@/platform/workspace/stores/billingOperationStore'),
-  () => ({
-    useBillingOperationStore: () => ({ startOperation: mockStartOperation })
-  })
-)
 
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useWorkspaceUI'),
@@ -141,11 +136,17 @@ function teamWithOwnerAnd(...memberIds: string[]) {
   ]
 }
 
+beforeEach(() => {
+  vi.mocked(useBillingOperationStore().startOperation).mockResolvedValue(
+    billingOperation()
+  )
+})
+
 describe('useDowngradeToPersonal', () => {
   let windowOpen: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {
-    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
+    const pinia = getActivePinia()!
     workspaceStore = useTeamWorkspaceStore(pinia)
     vi.mocked(workspaceStore.removeMember).mockImplementation(mockRemoveMember)
     vi.mocked(workspaceStore.fetchMembers).mockImplementation(mockFetchMembers)
@@ -603,18 +604,22 @@ describe('useDowngradeToPersonal', () => {
         'https://pay.test/method',
         '_blank'
       )
-      expect(mockStartOperation).toHaveBeenCalledWith('op-2', 'subscription', {
-        tier: undefined,
-        cycle: undefined,
-        checkoutType: 'change',
-        downgradeToPersonal: {
-          memberRemovalCount: 1,
-          memberRemovalFailures: 0,
-          targetTier: undefined,
-          startedAt: expect.any(Number)
-        },
-        attemptStartedAt: expect.any(Number)
-      })
+      expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
+        'op-2',
+        'subscription',
+        {
+          tier: undefined,
+          cycle: undefined,
+          checkoutType: 'change',
+          downgradeToPersonal: {
+            memberRemovalCount: 1,
+            memberRemovalFailures: 0,
+            targetTier: undefined,
+            startedAt: expect.any(Number)
+          },
+          attemptStartedAt: expect.any(Number)
+        }
+      )
     })
 
     it('falls back to the generic message when the transition is disallowed without a reason', async () => {
@@ -640,7 +645,7 @@ describe('useDowngradeToPersonal', () => {
       await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
         'subscription.downgrade.paymentPageBlocked'
       )
-      expect(mockStartOperation).not.toHaveBeenCalled()
+      expect(useBillingOperationStore().startOperation).not.toHaveBeenCalled()
     })
 
     it('throws when a payment method is needed but no url is provided', async () => {
@@ -654,7 +659,7 @@ describe('useDowngradeToPersonal', () => {
       await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
         'subscription.downgrade.paymentMethodRequired'
       )
-      expect(mockStartOperation).not.toHaveBeenCalled()
+      expect(useBillingOperationStore().startOperation).not.toHaveBeenCalled()
     })
 
     it('polls without opening a tab when the payment is pending', async () => {
@@ -668,18 +673,22 @@ describe('useDowngradeToPersonal', () => {
       await downgradeToPersonal('founder-monthly')
 
       expect(windowOpen).not.toHaveBeenCalled()
-      expect(mockStartOperation).toHaveBeenCalledWith('op-4', 'subscription', {
-        tier: undefined,
-        cycle: undefined,
-        checkoutType: 'change',
-        downgradeToPersonal: {
-          memberRemovalCount: 1,
-          memberRemovalFailures: 0,
-          targetTier: undefined,
-          startedAt: expect.any(Number)
-        },
-        attemptStartedAt: expect.any(Number)
-      })
+      expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
+        'op-4',
+        'subscription',
+        {
+          tier: undefined,
+          cycle: undefined,
+          checkoutType: 'change',
+          downgradeToPersonal: {
+            memberRemovalCount: 1,
+            memberRemovalFailures: 0,
+            targetTier: undefined,
+            startedAt: expect.any(Number)
+          },
+          attemptStartedAt: expect.any(Number)
+        }
+      )
       expect(mockTrackBillingEvent).not.toHaveBeenCalledWith(
         expect.objectContaining({ stage: 'succeeded' })
       )

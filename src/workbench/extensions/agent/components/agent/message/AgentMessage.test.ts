@@ -142,7 +142,7 @@ describe('AgentMessage thinking narration', () => {
     expect(screen.getByText('Thinking...')).toBeInTheDocument()
   })
 
-  it('retains separate thought and tool phases as they settle', async () => {
+  it('retains a thinking-only trace after the reply finishes', async () => {
     let message = createAssistantMessage('msg-0' as TurnId)
     const transport = createAgentEventTransport(message, (next) => {
       message = next
@@ -150,7 +150,7 @@ describe('AgentMessage thinking narration', () => {
     transport.ingest({
       type: 'agent_thinking',
       data: {
-        delta: 'Thinking...',
+        delta: 'Considering the request',
         message_id: 'msg-0',
         thread_id: 'thread-0'
       }
@@ -161,27 +161,28 @@ describe('AgentMessage thinking narration', () => {
       global: { plugins: [i18n] }
     })
 
-    expect(screen.getByText('Thinking...')).toBeInTheDocument()
+    expect(screen.getByRole('listitem')).toHaveTextContent(
+      'Considering the request'
+    )
+    expect(screen.getAllByText('Considering the request')).toHaveLength(1)
 
     transport.ingest({
-      type: 'agent_tool_call',
+      type: 'agent_message_delta',
       data: {
-        tool_call_id: 'call-set-widget',
-        tool_name: 'set_widget',
-        status: 'success',
+        delta: 'No graph edits are needed.',
         message_id: 'msg-0',
         thread_id: 'thread-0'
       }
     })
     await rerender({ message })
 
-    expect(screen.getByRole('button', { name: /thought/i })).toHaveAttribute(
-      'aria-expanded',
-      'false'
+    expect(screen.getByText('No graph edits are needed.')).toBeInTheDocument()
+    expect(screen.getByRole('listitem')).toHaveTextContent(
+      'Considering the request'
     )
     expect(
-      screen.getByRole('button', { name: /ran 1 tool call/i })
-    ).toHaveAttribute('aria-expanded', 'true')
+      screen.queryByRole('button', { name: /^worked/i })
+    ).not.toBeInTheDocument()
 
     transport.ingest({
       type: 'agent_message_done',
@@ -189,24 +190,138 @@ describe('AgentMessage thinking narration', () => {
     })
     await rerender({ message })
 
-    expect(screen.getByText('Ran 1 tool call')).toBeInTheDocument()
+    const summary = screen.getByRole('button', { name: /^worked/i })
+    expect(summary).toHaveAttribute('aria-expanded', 'false')
     expect(
-      screen.getByRole('button', { name: /ran 1 tool call/i })
-    ).toHaveAttribute('aria-expanded', 'false')
-    expect(screen.getByRole('button', { name: /thought/i })).toHaveAttribute(
-      'aria-expanded',
-      'false'
-    )
+      screen.queryByText('Considering the request')
+    ).not.toBeInTheDocument()
+    expect(screen.getByText('No graph edits are needed.')).toBeInTheDocument()
 
-    await userEvent.click(screen.getByRole('button', { name: /thought/i }))
-    expect(screen.getByText('Thinking...')).toBeInTheDocument()
-    await userEvent.click(
-      screen.getByRole('button', { name: /ran 1 tool call/i })
+    await userEvent.click(summary)
+    expect(screen.getByRole('listitem')).toHaveTextContent(
+      'Considering the request'
     )
-    expect(screen.getByText('Set widget')).toBeInTheDocument()
   })
 
-  it('shows resumed thinking after the completed tool group', async () => {
+  it('streams every step flat, then folds the finished turn into one summary', async () => {
+    const clock = vi.spyOn(Date, 'now').mockReturnValue(1000)
+    let message = createAssistantMessage('msg-0' as TurnId)
+    const transport = createAgentEventTransport(message, (next) => {
+      message = next
+    })
+    transport.ingest({
+      type: 'agent_thinking',
+      data: {
+        delta: 'Inspecting the graph',
+        message_id: 'msg-0',
+        thread_id: 'thread-0'
+      }
+    })
+
+    const { rerender } = render(AgentMessage, {
+      props: { message },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByText('Inspecting the graph')).toBeInTheDocument()
+
+    clock.mockReturnValue(2400)
+    transport.ingest({
+      type: 'agent_tool_call',
+      data: {
+        tool_call_id: 'call-set-widget',
+        tool_name: 'set_widget',
+        status: 'success',
+        duration_ms: 900,
+        message_id: 'msg-0',
+        thread_id: 'thread-0'
+      }
+    })
+    await rerender({ message })
+
+    expect(
+      screen
+        .getAllByRole('listitem')
+        .map((row) => row.textContent.replace(/\s+/g, ' ').trim())
+    ).toEqual(['Inspecting the graph1.4s', 'Set widget0.9s'])
+    expect(
+      screen.queryByRole('button', { name: /worked/i })
+    ).not.toBeInTheDocument()
+
+    transport.ingest({
+      type: 'agent_message_done',
+      data: { message_id: 'msg-0', thread_id: 'thread-0' }
+    })
+    await rerender({ message })
+
+    const summary = screen.getByRole('button', { name: /^worked for/i })
+    expect(summary).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByText('Set widget')).not.toBeInTheDocument()
+
+    await userEvent.click(summary)
+    expect(screen.getByText('Set widget')).toBeInTheDocument()
+    expect(screen.getByText('Inspecting the graph')).toBeInTheDocument()
+  })
+
+  it('marks the turn as still working between the last tool and the first reply token', async () => {
+    let message = createAssistantMessage('msg-0' as TurnId)
+    const transport = createAgentEventTransport(message, (next) => {
+      message = next
+    })
+    transport.ingest({
+      type: 'agent_tool_call',
+      data: {
+        tool_call_id: 'call-ls-nodes',
+        tool_name: 'ls_nodes',
+        status: 'running',
+        message_id: 'msg-0',
+        thread_id: 'thread-0'
+      }
+    })
+
+    const { rerender } = render(AgentMessage, {
+      props: { message },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.queryByText('Working...')).not.toBeInTheDocument()
+
+    transport.ingest({
+      type: 'agent_tool_call',
+      data: {
+        tool_call_id: 'call-ls-nodes',
+        tool_name: 'ls_nodes',
+        status: 'success',
+        message_id: 'msg-0',
+        thread_id: 'thread-0'
+      }
+    })
+    await rerender({ message })
+
+    expect(screen.getByText('Working...')).toBeInTheDocument()
+
+    transport.ingest({
+      type: 'agent_message_delta',
+      data: {
+        delta: 'Here is what I found.',
+        message_id: 'msg-0',
+        thread_id: 'thread-0'
+      }
+    })
+    await rerender({ message })
+
+    expect(screen.queryByText('Working...')).not.toBeInTheDocument()
+
+    transport.ingest({
+      type: 'agent_message_done',
+      data: { message_id: 'msg-0', thread_id: 'thread-0' }
+    })
+    await rerender({ message })
+
+    expect(screen.queryByText('Working...')).not.toBeInTheDocument()
+  })
+
+  it('keeps resumed thinking in the open trace alongside the earlier call', () => {
     const message = thinkingMessage('Planning the next step')
     message.parts = [
       { type: 'tool', callId: 'tool_0', name: 'set_widget', state: 'done' },
@@ -222,25 +337,18 @@ describe('AgentMessage thinking narration', () => {
       global: { plugins: [i18n] }
     })
 
-    const summary = screen.getByRole('button', { name: /thinking/i })
-    const thinking = screen.getByText('Planning the next step')
-
-    expect(summary).toBeInTheDocument()
-    expect(screen.getByText('The first edit is complete.')).toBeInTheDocument()
-    expect(thinking).not.toHaveClass('agent-shimmer-text')
-    expect(screen.getByText('Thinking...')).toHaveClass('agent-shimmer-text')
     expect(
-      screen.getByRole('button', { name: /ran 1 tool call/i })
-    ).toHaveAttribute('aria-expanded', 'false')
-    expect(summary).toHaveAttribute('aria-expanded', 'true')
-    expect(screen.queryByText('Set widget')).not.toBeInTheDocument()
-    await userEvent.click(
-      screen.getByRole('button', { name: /ran 1 tool call/i })
-    )
-    expect(screen.getByText('Set widget')).toBeInTheDocument()
+      screen
+        .getAllByRole('listitem')
+        .map((row) => row.textContent.replace(/\s+/g, ' ').trim())
+    ).toEqual(['Set widget', 'Planning the next step'])
+    expect(screen.getByText('The first edit is complete.')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /^worked/i })
+    ).not.toBeInTheDocument()
   })
 
-  it('keeps text-separated tool runs as separate completed phases', () => {
+  it('gathers text-separated tool runs into the one summary', async () => {
     const message = thinkingMessage()
     message.thinking = false
     message.streaming = false
@@ -254,23 +362,22 @@ describe('AgentMessage thinking narration', () => {
       global: { plugins: [i18n] }
     })
 
-    const summaries = screen.getAllByRole('button', {
-      name: /ran 1 tool call/i
-    })
+    const summary = screen.getByRole('button', { name: /^worked/i })
     const narration = screen.getByText('Between calls')
+    expect(
+      summary.compareDocumentPosition(narration) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
 
-    expect(summaries).toHaveLength(2)
+    await userEvent.click(summary)
     expect(
-      summaries[0].compareDocumentPosition(narration) &
-        Node.DOCUMENT_POSITION_FOLLOWING
-    ).toBeTruthy()
-    expect(
-      narration.compareDocumentPosition(summaries[1]) &
-        Node.DOCUMENT_POSITION_FOLLOWING
-    ).toBeTruthy()
+      screen
+        .getAllByRole('listitem')
+        .map((row) => row.textContent.replace(/\s+/g, ' ').trim())
+    ).toEqual(['Set widget', 'Add node'])
   })
 
-  it('matches the completed Figma sequence of separate expandable phases', async () => {
+  it('sums the whole turn into one accordion labelled with its duration', async () => {
     const message = thinkingMessage()
     message.thinking = false
     message.streaming = false
@@ -308,26 +415,22 @@ describe('AgentMessage thinking narration', () => {
       global: { plugins: [i18n] }
     })
 
-    const phases = screen.getAllByRole('button', {
-      name: /^(thought|ran)/i
-    })
-    expect(phases.map((phase) => phase.textContent)).toEqual([
-      'Thought for 1.3 seconds',
-      'Ran 2 tool calls for 1.3 seconds',
-      'Thought for 0.7 seconds'
-    ])
-    expect(
-      phases.every((phase) => phase.getAttribute('aria-expanded') === 'false')
-    ).toBe(true)
+    const summary = screen.getByRole('button', { name: /^worked/i })
+    expect(summary.textContent).toContain('Worked for 3.3 seconds')
+    expect(summary).toHaveAttribute('aria-expanded', 'false')
     expect(screen.getByText('The workflow is ready.')).toBeInTheDocument()
 
-    await userEvent.click(phases[0])
-    await userEvent.click(phases[1])
-    await userEvent.click(phases[2])
-    expect(screen.getByText('Inspecting the graph')).toBeInTheDocument()
-    expect(screen.getByText('List slots')).toBeInTheDocument()
-    expect(screen.getByText('Set widget')).toBeInTheDocument()
-    expect(screen.getByText('Checking the result')).toBeInTheDocument()
+    await userEvent.click(summary)
+    expect(
+      screen
+        .getAllByRole('listitem')
+        .map((row) => row.textContent.replace(/\s+/g, ' ').trim())
+    ).toEqual([
+      'Inspecting the graph1.3s',
+      'List slots0.5s',
+      'Set widget0.8s',
+      'Checking the result0.7s'
+    ])
   })
 })
 

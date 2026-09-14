@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { prefersReducedMotion } from '../../../composables/useReducedMotion'
 import EnterpriseHeroScene from './EnterpriseHeroScene.vue'
 
-vi.mock('../../../composables/useReducedMotion', () => ({
+vi.mock(import('../../../composables/useReducedMotion'), () => ({
   prefersReducedMotion: vi.fn(() => false)
 }))
 

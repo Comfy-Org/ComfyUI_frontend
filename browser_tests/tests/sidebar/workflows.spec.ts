@@ -7,12 +7,11 @@ import { openErrorsTab } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import type { UserDataFullInfo } from '@/schemas/apiSchema'
 
 test.describe('Workflows sidebar', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting(
-      'Comfy.Workflow.WorkflowTabsPosition',
-      'Sidebar'
-    )
+  test.use({
+    initialSettings: { 'Comfy.Workflow.WorkflowTabsPosition': 'Sidebar' }
+  })
 
+  test.beforeEach(async ({ comfyPage }) => {
     // Open the sidebar
     const tab = comfyPage.menu.workflowsTab
     await tab.open()
@@ -231,8 +230,9 @@ test.describe('Workflows sidebar', () => {
     })
 
     await comfyPage.settings.setSetting('Comfy.Locale', 'zh')
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup()
+    await expect(
+      comfyPage.page.getByRole('button', { name: '运行', exact: true })
+    ).toBeVisible()
 
     // Compare the exported workflow with the original
     delete downloadedContent.id

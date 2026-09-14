@@ -167,18 +167,15 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     this.syncVisibilityFromOptions()
   }
 
-  /**
-   * Re-applies visibility metadata carried on the raw options object after a
-   * wholesale `widget.options = {...}` replacement, matching the legacy read
-   * paths that consulted `options.hidden` / `options.hideInPanel` /
-   * `options.advanced` / `options.canvasOnly` live.
-   */
   private syncVisibilityFromOptions(): void {
-    const raw = this._rawOptions
-    this.applyLegacyVisibilityKey('hidden', raw.hidden)
-    this.applyLegacyVisibilityKey('hideInPanel', raw.hideInPanel)
-    this.applyLegacyVisibilityKey('advanced', raw.advanced)
-    this.applyLegacyVisibilityKey('canvasOnly', raw.canvasOnly)
+    const visibility = deriveWidgetVisibility({
+      type: this.type,
+      advanced: this._visibility.surfaces.canvas === 'advanced',
+      options: this._rawOptions
+    })
+    Object.assign(this._visibility.surfaces, visibility.surfaces)
+    this._visibility.suppression.byExtension =
+      visibility.suppression.byExtension
   }
 
   syncLiveVisibilityOptions(): void {
@@ -221,6 +218,9 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
           return this._visibility.suppression.byExtension
         if (property === 'hideInPanel') {
           return isWidgetHiddenInPanel(this._visibility)
+        }
+        if (property === 'canvasOnly') {
+          return this._visibility.surfaces.vueNode === 'never'
         }
         if (property === 'advanced') return isWidgetAdvanced(this._visibility)
         return Reflect.get(target, property, receiver)
@@ -608,8 +608,16 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     ctx: CanvasRenderingContext2D,
     { width }: DrawWidgetOptions
   ): void {
-    ctx.textAlign = 'left'
-    this.drawTruncatingText({ ctx, width })
+    const { margin } = BaseWidget
+    const x = margin * 2 + 5
+    const area = new Rectangle(
+      x,
+      this.y,
+      width - x - 2 * margin,
+      this.height * 0.7
+    )
+    ctx.fillStyle = this.secondary_text_color
+    drawTextInArea({ ctx, text: this.displayName, area, align: 'left' })
   }
 
   /**
