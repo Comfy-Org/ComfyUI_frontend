@@ -160,16 +160,57 @@ describe('SEO 404 redirects', () => {
       source: '/zh-CN/ja/',
       destination: '/zh-CN/'
     }
-  ])('sends $source to $destination permanently', ({ source, destination }) => {
-    const redirect = findRedirect(source)
+  ])(
+    'sends $source to $destination permanently in vercel.json',
+    ({ source, destination }) => {
+      const redirect = findRedirect(source)
 
-    if (!redirect) {
-      throw new Error(`${source} is missing from vercel.json`)
+      if (!redirect) {
+        throw new Error(`${source} is missing from vercel.json`)
+      }
+
+      expect(redirect.destination).toBe(destination)
+      expect(redirect.permanent).toBe(true)
     }
+  )
 
-    expect(redirect.destination).toBe(destination)
-    expect(redirect.permanent).toBe(true)
-  })
+  it.for([
+    {
+      source: '/zh-CN/p/supported-models',
+      destination: '/p/supported-models/'
+    },
+    {
+      source: '/zh-CN/p/supported-models/grok-imagine',
+      destination: '/p/supported-models/grok-imagine/'
+    },
+    {
+      source: '/zh-CN/platform/serverless-animation',
+      destination: '/platform/serverless-animation/'
+    },
+    {
+      source: '/zh-CN/pixal3d-trellis2',
+      destination: '/pixal3d-trellis2/'
+    },
+    {
+      source: '/zh-CN/ja',
+      destination: '/zh-CN/'
+    }
+  ])(
+    'maps $source to $destination in Astro redirect map',
+    ({ source, destination }) => {
+      const entry = (
+        astroRedirects as Record<string, string | { destination: string }>
+      )[source]
+
+      if (!entry) {
+        throw new Error(`${source} is missing from redirects.ts`)
+      }
+
+      const actualDestination =
+        typeof entry === 'string' ? entry : entry.destination
+      expect(actualDestination).toBe(destination)
+    }
+  )
 
   it('leaves canonical routes unredirected', () => {
     expect(findRedirect('/p/supported-models')).toBeUndefined()
@@ -182,3 +223,4 @@ describe('SEO 404 redirects', () => {
     expect(findRedirect('/zh-CN/')).toBeUndefined()
   })
 })
+
