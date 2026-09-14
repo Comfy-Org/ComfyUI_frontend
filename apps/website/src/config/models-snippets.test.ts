@@ -8,7 +8,6 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import type { Asset } from '@comfyorg/sdk/low'
 import { afterEach, describe, expect, it } from 'vitest'
 
@@ -22,16 +21,14 @@ const body = {
 }
 const directories: string[] = []
 const image = readFileSync(
-  fileURLToPath(
-    new URL('../../e2e/assets/placeholder-1x1.webp', import.meta.url)
-  )
+  join(process.cwd(), 'e2e/assets/placeholder-1x1.webp')
 )
 
 function directory() {
   const path = mkdtempSync(join(tmpdir(), 'models-sdk-snippets-'))
   directories.push(path)
   symlinkSync(
-    fileURLToPath(new URL('../../node_modules', import.meta.url)),
+    join(process.cwd(), 'node_modules'),
     join(path, 'node_modules'),
     'dir'
   )
