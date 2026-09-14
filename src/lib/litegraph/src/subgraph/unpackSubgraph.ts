@@ -22,6 +22,40 @@ export type UnpackedTargetInput =
     }
   | { kind: 'unresolved' }
 
+function inputSlotMarker(
+  input: Pick<INodeInputSlot, 'name' | 'type'>,
+  markerProperty: string
+) {
+  const marker: unknown = Object.getOwnPropertyDescriptor(
+    input,
+    markerProperty
+  )?.value
+  return typeof marker === 'number' ? marker : undefined
+}
+
+function recoveredInputSlotMarker(
+  input: Pick<INodeInputSlot, 'name' | 'type'>,
+  index: number,
+  sourceInputs: Pick<INodeInputSlot, 'name' | 'type'>[],
+  markerProperty: string,
+  claimed: Set<number>
+) {
+  const candidates = sourceInputs
+    .map((source, sourceIndex) => ({ source, sourceIndex }))
+    .filter(
+      ({ source }) => source.name === input.name && source.type === input.type
+    )
+    .filter(({ source }) => {
+      const marker = inputSlotMarker(source, markerProperty)
+      return marker !== undefined && !claimed.has(marker)
+    })
+  const match =
+    candidates.length === 1
+      ? candidates[0]
+      : candidates.find(({ sourceIndex }) => sourceIndex === index)
+  return match ? inputSlotMarker(match.source, markerProperty) : undefined
+}
+
 function inputSlotMarkers(
   inputs: Pick<INodeInputSlot, 'name' | 'type'>[],
   sourceInputs: Pick<INodeInputSlot, 'name' | 'type'>[],
@@ -31,37 +65,22 @@ function inputSlotMarkers(
   const claimed = new Set<number>()
 
   for (const [index, input] of inputs.entries()) {
-    const marker: unknown = Object.getOwnPropertyDescriptor(
-      input,
-      markerProperty
-    )?.value
-    if (typeof marker !== 'number') continue
+    const marker = inputSlotMarker(input, markerProperty)
+    if (marker === undefined) continue
     markers.set(index, marker)
     claimed.add(marker)
   }
 
   for (const [index, input] of inputs.entries()) {
     if (markers.has(index)) continue
-    const candidates = sourceInputs
-      .map((source, sourceIndex) => ({ source, sourceIndex }))
-      .filter(
-        ({ source }) => source.name === input.name && source.type === input.type
-      )
-      .filter(({ source }) => {
-        const marker: unknown = Object.getOwnPropertyDescriptor(
-          source,
-          markerProperty
-        )?.value
-        return typeof marker === 'number' && !claimed.has(marker)
-      })
-    const match =
-      candidates.length === 1
-        ? candidates[0]
-        : candidates.find(({ sourceIndex }) => sourceIndex === index)
-    const marker: unknown = match
-      ? Object.getOwnPropertyDescriptor(match.source, markerProperty)?.value
-      : undefined
-    if (typeof marker !== 'number') continue
+    const marker = recoveredInputSlotMarker(
+      input,
+      index,
+      sourceInputs,
+      markerProperty,
+      claimed
+    )
+    if (marker === undefined) continue
     markers.set(index, marker)
     claimed.add(marker)
   }
@@ -112,6 +131,56 @@ function cloneNodesForUnpack(
   return clonedNodes
 }
 
+function createNodeForUnpack(
+  nodeInfo: ISerialisedNode,
+  skipMissingNodes: boolean
+) {
+  const node = LiteGraph.createNode(nodeInfo.type, nodeInfo.title)
+  if (node) return node
+  if (!skipMissingNodes) {
+    throw new Error(
+      `Cannot unpack: node type "${nodeInfo.type}" is not registered`
+    )
+  }
+  console.warn(
+    `Cannot unpack node of type "${nodeInfo.type}" - node type not found. Creating placeholder node.`
+  )
+  const placeholder = new LGraphNode(
+    nodeInfo.title || nodeInfo.type || 'Missing Node',
+    nodeInfo.type
+  )
+  placeholder.last_serialization = nodeInfo
+  placeholder.has_errors = true
+  return placeholder
+}
+
+function stripSerializedLinks(nodeInfo: ISerialisedNode) {
+  for (const input of nodeInfo.inputs ?? []) input.link = null
+  for (const output of nodeInfo.outputs ?? []) output.links = []
+}
+
+function configuredInputSlots(
+  node: LGraphNode,
+  nodeInfo: ISerialisedNode,
+  markerProperty: string
+) {
+  const configuredSlots = new Map<number, INodeInputSlot>()
+  const markers = inputSlotMarkers(
+    node.inputs,
+    nodeInfo.inputs ?? [],
+    markerProperty
+  )
+  for (const [index, input] of node.inputs.entries()) {
+    Reflect.deleteProperty(input, markerProperty)
+    const marker = markers.get(index)
+    if (marker !== undefined) configuredSlots.set(marker, input)
+  }
+  for (const input of nodeInfo.inputs ?? []) {
+    Reflect.deleteProperty(input, markerProperty)
+  }
+  return configuredSlots
+}
+
 export function materializeSubgraphNodes({
   graph,
   nodes,
@@ -130,24 +199,7 @@ export function materializeSubgraphNodes({
   const materializedNodes: LGraphNode[] = []
 
   for (const nodeInfo of nodeInfos) {
-    let node = LiteGraph.createNode(nodeInfo.type, nodeInfo.title)
-    if (!node) {
-      if (!skipMissingNodes) {
-        throw new Error(
-          `Cannot unpack: node type "${nodeInfo.type}" is not registered`
-        )
-      }
-      console.warn(
-        `Cannot unpack node of type "${nodeInfo.type}" - node type not found. Creating placeholder node.`
-      )
-      node = new LGraphNode(
-        nodeInfo.title || nodeInfo.type || 'Missing Node',
-        nodeInfo.type
-      )
-      node.last_serialization = nodeInfo
-      node.has_errors = true
-    }
-
+    const node = createNodeForUnpack(nodeInfo, skipMissingNodes)
     const newNodeId = mintNodeId(graph.state)
     nodeIdMap.set(toNodeId(nodeInfo.id), newNodeId)
     node.id = newNodeId
@@ -155,27 +207,15 @@ export function materializeSubgraphNodes({
 
     // Strip links before configure so callbacks cannot resolve subgraph link
     // IDs against unrelated links in the parent graph.
-    for (const input of nodeInfo.inputs ?? []) input.link = null
-    for (const output of nodeInfo.outputs ?? []) output.links = []
+    stripSerializedLinks(nodeInfo)
 
     graph.add(node, true)
     node.configure(nodeInfo)
 
-    const configuredSlots = new Map<number, INodeInputSlot>()
-    const markers = inputSlotMarkers(
-      node.inputs,
-      nodeInfo.inputs ?? [],
-      inputSlotMarker
+    inputSlots.set(
+      newNodeId,
+      configuredInputSlots(node, nodeInfo, inputSlotMarker)
     )
-    for (const [index, input] of node.inputs.entries()) {
-      Reflect.deleteProperty(input, inputSlotMarker)
-      const marker = markers.get(index)
-      if (marker !== undefined) configuredSlots.set(marker, input)
-    }
-    for (const input of nodeInfo.inputs ?? []) {
-      Reflect.deleteProperty(input, inputSlotMarker)
-    }
-    inputSlots.set(newNodeId, configuredSlots)
 
     node.setPos(node.pos[0] + offset[0], node.pos[1] + offset[1])
     materializedNodes.push(node)
