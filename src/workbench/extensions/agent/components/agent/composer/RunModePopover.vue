@@ -125,7 +125,7 @@ const options: {
       "
     >
       <span>{{ triggerLabel }}</span>
-      <span class="icon-[lucide--chevron-down] size-3" />
+      <span class="icon-[lucide--chevron-down] size-4" />
     </PopoverTrigger>
     <PopoverPortal>
       <PopoverContent

@@ -167,7 +167,7 @@ describe('Composer', () => {
     })
     expect(addNodes).toBeVisible()
     expect(addNodes).toContainHTML(
-      '<span class="icon-[lucide--mouse-pointer-click] size-[14px] shrink-0"></span>'
+      '<span class="icon-[lucide--mouse-pointer-click] size-3.5 shrink-0"></span>'
     )
     expect(
       text.compareDocumentPosition(addNodes) & Node.DOCUMENT_POSITION_FOLLOWING

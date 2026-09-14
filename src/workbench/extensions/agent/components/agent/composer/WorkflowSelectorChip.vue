@@ -143,7 +143,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
                 <span
                   v-else
                   data-testid="workflow-selector-icon"
-                  class="text-agent-fg-subtle group-hover:text-agent-fg icon-[comfy--workflow] size-3.5 shrink-0"
+                  class="text-agent-fg-subtle group-hover:text-agent-fg icon-[comfy--workflow] size-4 shrink-0"
                 />
                 <span class="min-w-0 truncate">{{
                   current?.name ?? t('agent.selectWorkflowForAgent')
