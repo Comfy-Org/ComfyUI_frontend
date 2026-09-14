@@ -36,6 +36,32 @@ describe('modelSummary', () => {
     }
   )
 
+  it('drops a closing attribution to the model named above it', () => {
+    expect(
+      modelSummary(
+        'Edits one to three images with Qwen Image 3.0.',
+        'Qwen Image 3.0',
+        'Alibaba'
+      )
+    ).toBe('Edits one to three images.')
+  })
+
+  it.for([
+    'Generates an image from text with up to 9 reference images.',
+    'Generates a video from a prompt with optional driving audio.'
+  ] as const)(
+    'keeps a closing clause that qualifies the run: %s',
+    (summary) => {
+      expect(modelSummary(summary, 'Qwen Image 3.0', 'Alibaba')).toBe(summary)
+    }
+  )
+
+  it('leaves a name the sentence is built around rather than trailing', () => {
+    const summary =
+      'Generates an adaptive-ratio Seedance 2.5 MP4 from first and optional last frames.'
+    expect(modelSummary(summary, 'Seedance 2.5', 'ByteDance')).toBe(summary)
+  })
+
   it('leaves a description that is nothing but the name', () => {
     expect(
       modelSummary('(Flux 2 Pro)', 'FLUX 2 Pro', 'Black Forest Labs')
