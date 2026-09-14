@@ -24,7 +24,7 @@ function getMinimapColors() {
   const isLightTheme = colorPaletteStore.completedActivePalette.light_theme
 
   return {
-    nodeColor: isLightTheme ? '#31B9F4' : '#0B8CE9',
+    nodeColor: isLightTheme ? '#C77700' : '#8C6A38',
     nodeColorDefault: isLightTheme ? '#D9D9D9' : '#353535',
     linkColor: isLightTheme ? '#616161' : '#B3B3B3',
     slotColor: isLightTheme ? '#616161' : '#B3B3B3',
@@ -34,7 +34,7 @@ function getMinimapColors() {
     errorColor: '#FF0000',
     runningColor: '#00FF00',
     successColor: '#239B23',
-    agentColor: isLightTheme ? '#FD9903' : '#FDAB34',
+    agentColor: isLightTheme ? '#31B9F4' : '#0B8CE9',
     isLightTheme
   }
 }
