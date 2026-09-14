@@ -1,6 +1,16 @@
+import type {
+  GestureEffect,
+  GestureEvent,
+  GesturePoint,
+  GestureState
+} from './canvas/reduceGesture'
+import { idleGesture, reduceGesture } from './canvas/reduceGesture'
 import type { CompassCorners } from './interfaces'
-import { dist2 } from './measure'
 import type { CanvasPointerEvent } from './types/events'
+
+function positionOf(e: PointerEvent): GesturePoint {
+  return { x: e.clientX, y: e.clientY }
+}
 
 /**
  * Allows click and drag actions to be declared ahead of time during a pointerdown event.
@@ -23,36 +33,11 @@ import type { CanvasPointerEvent } from './types/events'
  * - {@link LGraphCanvas.processMouseUp}
  */
 export class CanvasPointer {
-  /**
-   * Maximum time in milliseconds to ignore click drift.
-   *
-   * This is the upper bound on how long after pointerdown the system will wait
-   * before deciding "this is a drag, not a click" when the pointer hasn't moved
-   * past {@link maxClickDrift}. Keep this short — drags should feel instant.
-   * Disambiguation between click and drag is primarily handled by distance
-   * ({@link maxClickDrift}); this time threshold only matters when the user
-   * holds the pointer still then releases. ~2 frames at 60fps is plenty.
-   *
-   * Overridden at runtime by the `Comfy.Pointer.ClickBufferTime` user setting.
-   */
-  static bufferTime = 32
-
   /** Maximum gap between pointerup and pointerdown events to be considered as a double click */
   static doubleClickTime = 300
 
   /** Maximum offset from click location */
-  static get maxClickDrift() {
-    return this._maxClickDrift
-  }
-
-  static set maxClickDrift(value) {
-    this._maxClickDrift = value
-    this._maxClickDrift2 = value * value
-  }
-
-  private static _maxClickDrift = 6
-  /** {@link maxClickDrift} squared.  Used to calculate click drift without `sqrt`. */
-  private static _maxClickDrift2 = this._maxClickDrift ** 2
+  static maxClickDrift = 6
 
   /** Assume that "wheel" events with both deltaX and deltaY less than this value are trackpad gestures. */
   static trackpadThreshold = 60
@@ -75,11 +60,12 @@ export class CanvasPointer {
   /** Pointer ID used by drag capture. */
   pointerId?: number
 
-  /** Set to true when if the pointer moves far enough after a down event, before the corresponding up event is fired. */
-  dragStarted: boolean = false
+  /** `true` once the pointer has moved far enough after a down event to be a drag, until the corresponding up event. */
+  get dragStarted(): boolean {
+    return this.#state.phase === 'dragging'
+  }
 
-  /** The {@link eUp} from the last successful click */
-  eLastDown?: CanvasPointerEvent
+  #state: GestureState = idleGesture
 
   /** Used downstream for touch event support. */
   isDouble: boolean = false
@@ -190,6 +176,10 @@ export class CanvasPointer {
     this.eDown = e
     this.pointerId = e.pointerId
     this.element.setPointerCapture(e.pointerId)
+    this.#dispatch(
+      { type: 'down', position: positionOf(e), timeStamp: e.timeStamp },
+      e
+    )
   }
 
   /**
@@ -208,98 +198,66 @@ export class CanvasPointer {
 
     // Primary button released - treat as pointerup.
     if (!(e.buttons & eDown.buttons)) {
-      this._completeClick(e)
+      this.#dispatch({ type: 'up', position: positionOf(e) }, e)
       this.reset()
       return
     }
     this.eMove = e
-    this.onDrag?.(e)
-
-    // Dragging, but no callback to run
-    if (this.dragStarted) return
-
-    const longerThanBufferTime =
-      e.timeStamp - eDown.timeStamp > CanvasPointer.bufferTime
-    if (longerThanBufferTime || !this._hasSamePosition(e, eDown)) {
-      this._setDragStarted(e)
-    }
+    this.#dispatch({ type: 'move', position: positionOf(e) }, e)
   }
 
   /**
    * Callback for `pointerup` events.  To be used as the event handler (or called by it).
    * @param e The `pointerup` event
+   * @returns `true` if the gesture ended as a click rather than a drag
    */
   up(e: CanvasPointerEvent): boolean {
     if (e.button !== this.eDown?.button) return false
 
-    this._completeClick(e)
-    const { dragStarted } = this
-    this.reset()
-    return !dragStarted
-  }
-
-  private _completeClick(e: CanvasPointerEvent): void {
-    const { eDown } = this
-    if (!eDown) return
-
     this.eUp = e
+    const effects = this.#dispatch({ type: 'up', position: positionOf(e) }, e)
+    this.reset()
+    return effects.includes('click') || effects.includes('doubleClick')
+  }
 
-    if (this.dragStarted) {
-      // A move event already started drag
-      this.onDragEnd?.(e)
-    } else if (!this._hasSamePosition(e, eDown)) {
-      // Teleport without a move event (e.g. tab out, move, tab back)
-      this._setDragStarted()
-      this.onDragEnd?.(e)
-    } else if (this.onDoubleClick && this._isDoubleClick()) {
-      // Double-click event
-      this.onDoubleClick(e)
-      this.eLastDown = undefined
-    } else {
-      // Normal click event
-      this.onClick?.(e)
-      this.eLastDown = eDown
+  #dispatch(event: GestureEvent, e: CanvasPointerEvent): GestureEffect[] {
+    const { state, effects } = reduceGesture(this.#state, event, {
+      clickDrift: CanvasPointer.maxClickDrift,
+      doubleClickTime: CanvasPointer.doubleClickTime
+    })
+    this.#state = state
+    const eMove = event.type === 'move' ? e : undefined
+    for (const effect of effects) this.#run(effect, e, eMove)
+    return effects
+  }
+
+  #run(
+    effect: GestureEffect,
+    e: CanvasPointerEvent,
+    eMove: CanvasPointerEvent | undefined
+  ): void {
+    switch (effect) {
+      case 'click':
+        this.onClick?.(e)
+        return
+      case 'doubleClick':
+        if (this.onDoubleClick) this.onDoubleClick(e)
+        else this.onClick?.(e)
+        return
+      case 'startDrag':
+        this.onDragStart?.(this, eMove)
+        delete this.onDragStart
+        return
+      case 'movePress':
+      case 'moveDrag':
+        this.onDrag?.(e)
+        return
+      case 'endDrag':
+        this.onDragEnd?.(e)
+        return
+      case 'cancelDrag':
+        return
     }
-  }
-
-  /**
-   * Checks if two events occurred near each other - not further apart than the maximum click drift.
-   * @param a The first event to compare
-   * @param b The second event to compare
-   * @param tolerance2 The maximum distance (squared) before the positions are considered different
-   * @returns `true` if the two events were no more than {@link maxClickDrift} apart, otherwise `false`
-   */
-  private _hasSamePosition(
-    a: PointerEvent,
-    b: PointerEvent,
-    tolerance2 = CanvasPointer._maxClickDrift2
-  ): boolean {
-    const drift = dist2(a.clientX, a.clientY, b.clientX, b.clientY)
-    return drift <= tolerance2
-  }
-
-  /**
-   * Checks whether the pointer is currently past the max click drift threshold.
-   * @returns `true` if the latest pointer event is past the the click drift threshold
-   */
-  private _isDoubleClick(): boolean {
-    const { eDown, eLastDown } = this
-    if (!eDown || !eLastDown) return false
-
-    // Use thrice the drift distance for double-click gap
-    const tolerance2 = (3 * CanvasPointer._maxClickDrift) ** 2
-    const diff = eDown.timeStamp - eLastDown.timeStamp
-    return (
-      diff > 0 &&
-      diff < CanvasPointer.doubleClickTime &&
-      this._hasSamePosition(eDown, eLastDown, tolerance2)
-    )
-  }
-
-  private _setDragStarted(eMove?: CanvasPointerEvent): void {
-    this.dragStarted = true
-    this.onDragStart?.(this, eMove)
-    delete this.onDragStart
   }
 
   /**
@@ -484,6 +442,8 @@ export class CanvasPointer {
    * state is cleared.
    */
   reset(): void {
+    if (this.eDown) this.#dispatch({ type: 'cancel' }, this.eDown)
+
     // The setter executes the callback before clearing it
     this.finally = undefined
     delete this.onClick
@@ -494,7 +454,6 @@ export class CanvasPointer {
 
     this.isDown = false
     this.isDouble = false
-    this.dragStarted = false
     this.resizeDirection = undefined
 
     if (this.clearEventsOnReset) {
