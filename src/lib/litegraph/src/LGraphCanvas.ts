@@ -18,7 +18,10 @@ import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMuta
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { SelectionCommand } from '@/core/selection/selectionState'
-import { selectableKeyOf } from '@/lib/litegraph/src/utils/selectableItems'
+import {
+  resolveSelectable,
+  selectableKeyOf
+} from '@/lib/litegraph/src/utils/selectableItems'
 import { useSelectionStore } from '@/renderer/core/canvas/selectionStore'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
@@ -4562,6 +4565,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   select<TPositionable extends Positionable = LGraphNode>(
     item: TPositionable
   ): void {
+    if (!this.#ownsSelectable(item)) return
     if (this.selectOnly && !(item instanceof LGraphNode)) return
     if (item.selected && this.selectedItems.has(item)) return
 
@@ -4616,6 +4620,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   deselect<TPositionable extends Positionable = LGraphNode>(
     item: TPositionable
   ): void {
+    if (!this.#ownsSelectable(item)) return
     if (!item.selected && !this.selectedItems.has(item)) return
 
     this.#setSelected(item, false)
@@ -4682,6 +4687,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     useSelectionStore().apply(graphScopeOf(graph), command)
   }
 
+  #ownsSelectable(item: Positionable): boolean {
+    const { graph } = this
+    return !!graph && resolveSelectable(graph, selectableKeyOf(item)) === item
+  }
+
   /**
    * Iterative traversal of a group's descendants.
    * Calls {@link groupAction} on nested groups and {@link leafAction} on
@@ -4742,7 +4752,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     items?: Positionable[],
     add_to_current_selection?: boolean
   ): void {
-    const itemsToSelect = items ?? this.positionableItems
+    const itemsToSelect = Array.from(items ?? this.positionableItems).filter(
+      (item) => this.#ownsSelectable(item)
+    )
+    if (itemsToSelect.length === 0) return
     if (!add_to_current_selection) this.deselectAll()
     for (const item of itemsToSelect) this.select(item)
     this.onSelectionChange?.(this.selected_nodes)

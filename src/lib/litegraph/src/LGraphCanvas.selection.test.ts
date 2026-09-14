@@ -297,6 +297,41 @@ describe('LGraphCanvas selection', () => {
       for (const scope of scopes) expect(store.selectedKeys(scope)).toEqual([])
     })
 
+    it('subgraph.clear() evicts only that graph scope', () => {
+      const store = useSelectionStore()
+      const subgraph = createTestSubgraph({ rootGraph: graph })
+      const scope = graphScopeOf(subgraph)
+      const selectedGroup = addGroup(subgraph, 'Selected', [0, 0, 100, 100])
+      store.apply(scope, {
+        type: 'selection.add',
+        keys: [selectableKeyOf(selectedGroup)]
+      })
+
+      subgraph.clear()
+      const replacement = new LGraphGroup('Replacement', selectedGroup.id)
+      subgraph.add(replacement)
+
+      expect(store.selectedKeys(scope)).toEqual([])
+      expect(
+        store.isSelected(graphScopeOf(subgraph), selectableKeyOf(replacement))
+      ).toBe(false)
+    })
+
+    it('ignores items owned by another graph', () => {
+      const foreignGraph = new LGraph()
+      const foreignNode = addNode(foreignGraph, 'Foreign', 20, 40)
+      foreignNode.id = a.id
+      canvas.select(a)
+
+      canvas.select(foreignNode)
+      canvas.deselect(foreignNode)
+      canvas.selectItems([foreignNode])
+
+      expect(canvas.selectedItems).toEqual(new Set([a]))
+      expect(foreignNode.selected).toBeFalsy()
+      expect(a.selected).toBe(true)
+    })
+
     it('setGraph() clears the selection of the graph being left', () => {
       canvas.select(a)
       const scope = graphScopeOf(graph)
