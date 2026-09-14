@@ -4,11 +4,13 @@ import * as Y from 'yjs'
 import { createDetachedTargetSession } from '@/core/graph/document/detachedTargetSession'
 import { createGraphMutations } from '@/core/graph/graphMutations'
 import type { SemanticLayoutMutationPort } from '@/core/graph/graphMutations'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
+import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import { createTargetFrameApplyPort } from '@/workbench/extensions/agent/crdt/targetFrameProjection'
@@ -65,8 +67,15 @@ function targetHost() {
   const doc = new Y.Doc()
   let delivered = Y.encodeStateVector(doc)
   let seq = 0
-  return function edit(mutate: (nodes: Y.Map<Y.Map<unknown>>) => void) {
-    doc.transact(() => mutate(doc.getMap<Y.Map<unknown>>('nodes')))
+  return function edit(
+    mutate: (nodes: Y.Map<Y.Map<unknown>>, links: Y.Map<unknown[]>) => void
+  ) {
+    doc.transact(() =>
+      mutate(
+        doc.getMap<Y.Map<unknown>>('nodes'),
+        doc.getMap<unknown[]>('links')
+      )
+    )
     const update = Y.encodeStateAsUpdate(doc, delivered)
     delivered = Y.encodeStateVector(doc)
     seq += 1
@@ -87,6 +96,16 @@ function putNode(
   node.set('type', type)
   node.set('pos', [x, 20])
   node.set('size', [200, 100])
+  if (!node.has('inputs')) {
+    const inputs = new Y.Array<unknown>()
+    inputs.push([{ name: 'in', type: 'IMAGE', link: null }])
+    node.set('inputs', inputs)
+  }
+  if (!node.has('outputs')) {
+    const outputs = new Y.Array<unknown>()
+    outputs.push([{ name: 'out', type: 'IMAGE', links: [] }])
+    node.set('outputs', outputs)
+  }
   node.set('widgets_values', { seed })
 }
 
@@ -185,21 +204,39 @@ describe('detached target commit atomicity', () => {
     )
     const edit = targetHost()
 
-    session.enqueue(edit((nodes) => putNode(nodes, '7', 'Type7', 42, 10)))
+    session.enqueue(
+      edit((nodes, links) => {
+        putNode(nodes, '7', 'Type7', 42, 10)
+        putNode(nodes, '8', 'Type8', 43, 30)
+        links.set('9', [9, '7', 0, '8', 0, 'IMAGE'])
+      })
+    )
     expect(session.commitNext(applyPort).status).toBe('committed')
+    useLinkPresentationStore().patch(scope, toLinkId(9), {
+      hidden: true,
+      label: 'Retained'
+    })
     const committed = ecsSnapshot()
+    const committedPresentation = useLinkPresentationStore().getPresentation(
+      scope,
+      toLinkId(9)
+    )
     const committedLayouts = JSON.stringify([...layouts.entries()])
 
     refused = toNodeId(9)
     session.enqueue(
-      edit((nodes) => {
+      edit((nodes, links) => {
         putNode(nodes, '7', 'Type7Replaced', 99, 500)
         putNode(nodes, '9', 'Type9', 7, 700)
+        links.delete('9')
       })
     )
 
     expect(session.commitNext(applyPort).status).toBe('failed')
     expect(ecsSnapshot()).toEqual(committed)
+    expect(
+      useLinkPresentationStore().getPresentation(scope, toLinkId(9))
+    ).toEqual(committedPresentation)
     expect(JSON.stringify([...layouts.entries()])).toEqual(committedLayouts)
     expect(session.snapshot()).toMatchObject({
       revision: 1,
