@@ -7,6 +7,7 @@ import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import cloneDeep from 'es-toolkit/compat/cloneDeep'
 import type { LGraph } from './LGraph'
+import type { LGraphNode } from './LGraphNode'
 import type { LinkId, LLink, SerialisedLLinkArray } from './LLink'
 import type {
   ExportedSubgraph,
@@ -174,6 +175,74 @@ export function detachSerialisedLinks(
   }
   for (const output of nodeData.outputs ?? []) output.links = []
   return linkByInputName
+}
+
+function groupNameOf(inputName: string): string | undefined {
+  const separator = inputName ? inputName.lastIndexOf('.') : -1
+  return separator < 1 ? undefined : inputName.slice(0, separator)
+}
+
+/**
+ * Whether a group widget on `node` owns `inputName`'s slot. Group widgets
+ * (dynamic combos) name their child inputs `<group widget name>.<key>` and
+ * replace the whole set whenever their own value changes.
+ */
+function isGroupWidgetChildInput(node: LGraphNode, inputName: string): boolean {
+  const groupName = groupNameOf(inputName)
+  if (groupName === undefined) return false
+
+  return node.widgets?.some((widget) => widget.name === groupName) ?? false
+}
+
+/**
+ * Whether a dynamic group that is not a widget owns `inputName`'s slot —
+ * autogrow names its children `<group>.<nested>.<ordinal>`, so their group is
+ * a nested input spec rather than a widget.
+ *
+ * Those groups grow and renumber their own slots while the graph configures,
+ * and realigning their links by name that early destroys them (see
+ * `browser_tests/tests/subgraph/subgraphConvertAutogrowInputs.spec.ts`, "loads
+ * with both reference images connected").
+ */
+function isNestedDynamicGroupInput(
+  node: LGraphNode,
+  inputName: string
+): boolean {
+  const groupName = groupNameOf(inputName)
+  return groupName !== undefined && !isGroupWidgetChildInput(node, inputName)
+}
+
+/**
+ * Realigns a node's input links by name before its group widget values are
+ * applied, for nodes that have a group widget child input.
+ *
+ * Applying a group widget's value rebuilds every child input of the group and
+ * hands each surviving link to the new input of the same name. A link sitting
+ * on the wrong slot — the node definition lays out the default option's
+ * children, while `target_slot` counts the serialized layout — is handed to an
+ * input that the selected option does not define, and is dropped. Through a
+ * subgraph boundary that demotes the promoted widget to a disconnected input
+ * slot.
+ *
+ * The node's ordinary inputs join the batch so that a link still occupying a
+ * child's destination slot is moved in the same atomic update instead of
+ * blocking it. Links owned by a nested dynamic group are left to
+ * {@link LGraph.configure}'s final pass.
+ */
+export function realignGroupWidgetChildLinks(
+  node: LGraphNode,
+  nodeData: Pick<ISerialisedNode, 'id' | 'inputs'>
+): void {
+  const { graph } = node
+  if (!graph) return
+
+  const inputs = nodeData.inputs?.filter(
+    (input) => !isNestedDynamicGroupInput(node, input.name)
+  )
+  if (!inputs?.some((input) => isGroupWidgetChildInput(node, input.name)))
+    return
+
+  realignInputLinkSlots(graph, [[node.id, { id: nodeData.id, inputs }]])
 }
 
 /**
