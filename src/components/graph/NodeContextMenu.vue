@@ -59,6 +59,7 @@ import type {
   MenuOption,
   SubMenuOption
 } from '@/composables/graph/useMoreOptionsMenu'
+import { useRaisedSurface } from '@/platform/keybindings/raisedSurfaceStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import SubmenuPopover from './selectionToolbox/SubmenuPopover.vue'
@@ -77,6 +78,8 @@ const isOpen = ref(false)
 
 const { menuOptions, bump } = useMoreOptionsMenu()
 const canvasStore = useCanvasStore()
+
+useRaisedSurface('context-menu', isOpen)
 
 // World position (canvas coordinates) where menu was opened
 const worldPosition = ref({ x: 0, y: 0 })
