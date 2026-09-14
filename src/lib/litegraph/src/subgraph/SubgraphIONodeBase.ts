@@ -1,3 +1,9 @@
+import { toSelectableKey } from '@/core/selection/selectionState'
+import {
+  isSelectedIn,
+  setSelectedIn
+} from '@/renderer/core/canvas/selectionStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { serializeNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
@@ -47,7 +53,21 @@ export abstract class SubgraphIONodeBase<
     return this._boundingRect
   }
 
-  selected: boolean = false
+  get selected(): boolean {
+    return isSelectedIn(
+      graphScopeOf(this.subgraph),
+      toSelectableKey('io', this.id)
+    )
+  }
+
+  set selected(value: boolean) {
+    setSelectedIn(
+      graphScopeOf(this.subgraph),
+      toSelectableKey('io', this.id),
+      value
+    )
+  }
+
   pinned: boolean = false
   readonly removable = false
 
