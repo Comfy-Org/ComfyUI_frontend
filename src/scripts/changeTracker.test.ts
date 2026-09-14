@@ -416,6 +416,32 @@ describe('ChangeTracker', () => {
         ])
       })
 
+      it('does not squash a late update while a compound operation is open', async () => {
+        const initial = createState(1)
+        const changed = structuredClone(initial)
+        changed.nodes[0].widgets_values = [2]
+        const midTransaction = structuredClone(changed)
+        midTransaction.nodes[0].widgets_values = [3]
+        const tracker = createTracker(initial)
+        mockCanvasState(changed)
+
+        tracker.captureCanvasState()
+        tracker.beforeChange()
+        mockCanvasState(midTransaction)
+        await vi.advanceTimersByTimeAsync(50)
+
+        expect(tracker.activeState).toEqual(changed)
+        expect(tracker.undoQueue).toEqual([initial])
+
+        const final = structuredClone(midTransaction)
+        final.nodes[0].widgets_values = [4]
+        mockCanvasState(final)
+        tracker.afterChange()
+
+        expect(tracker.activeState).toEqual(final)
+        expect(tracker.undoQueue).toEqual([initial, changed])
+      })
+
       it('does not emit an execution change for a late layout-only update', async () => {
         const initial = createState(1)
         const changed = structuredClone(initial)
