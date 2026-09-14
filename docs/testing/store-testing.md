@@ -20,9 +20,9 @@ Basic setup for testing Pinia stores:
 // Example from a colocated store unit test
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 
-import { useWorkflowStore } from '@/domains/workflow/ui/stores/workflowStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
 describe('useWorkflowStore', () => {
   let store: ReturnType<typeof useWorkflowStore>
@@ -33,9 +33,6 @@ describe('useWorkflowStore', () => {
 
     // Initialize the store
     store = useWorkflowStore()
-
-    // Clear any mocks
-    vi.clearAllMocks()
   })
 
   it('should initialize with default state', () => {
@@ -164,7 +161,7 @@ Mocking API and other dependencies:
 ```typescript
 // Example from a colocated store unit test
 // Add mock for api at the top of the file
-vi.mock('@/scripts/api', () => ({
+vi.mock(import('@/scripts/api'), () => ({
   api: {
     getUserData: vi.fn(),
     storeUserData: vi.fn(),
@@ -175,7 +172,7 @@ vi.mock('@/scripts/api', () => ({
 }))
 
 // Mock comfyApp globally for the store setup
-vi.mock('@/scripts/app', () => ({
+vi.mock(import('@/scripts/app'), () => ({
   app: {
     canvas: null // Start with canvas potentially undefined or null
   }
