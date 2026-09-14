@@ -58,15 +58,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 /**
- * Reads a node's doc entry as a semantic payload. A SubgraphNode host (a node
- * whose type names a definition) is stored opaquely by cmp: positional widget
- * values under `__widgets_opaque` and only the grown slots under `inputs`.
- * Both are re-keyed from the definition so `reconcileNode` registers the
- * host's widgets under their promoted names and keeps its full slot list;
- * otherwise a reconcile would wipe the promoted widgets and `setWidget` by
- * name could never find them again.
- */
-/**
  * Doc/live drift (an opaque widget array of the wrong length, a link onto an
  * undeclared promoted slot) persists in the doc, so every later frame that
  * re-reads the same entry would report it again. Report each distinct drift
@@ -83,6 +74,15 @@ function reportOnce(
   reportError(error, options)
 }
 
+/**
+ * Reads a node's doc entry as a semantic payload. A SubgraphNode host (a node
+ * whose type names a definition) is stored opaquely by cmp: positional widget
+ * values under `__widgets_opaque` and only the grown slots under `inputs`.
+ * Both are re-keyed from the definition so `reconcileNode` registers the
+ * host's widgets under their promoted names and keeps its full slot list;
+ * otherwise a reconcile would wipe the promoted widgets and `setWidget` by
+ * name could never find them again.
+ */
 function readSemanticNode(
   doc: Y.Doc,
   id: string,

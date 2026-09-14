@@ -375,6 +375,30 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     })
   })
 
+  it('ignores malformed host input entries without aborting reconciliation', () => {
+    const state = startFollower()
+
+    forwardRaw(
+      state,
+      (nodes) => {
+        const host = nodes.get('1')!.toJSON() as Record<string, unknown>
+        const replacement = new Y.Map<unknown>()
+        for (const [key, value] of Object.entries(host)) {
+          replacement.set(key, value)
+        }
+        replacement.set('inputs', [
+          null,
+          { name: 42 },
+          { name: 'value', type: 'NUMBER', link: null }
+        ])
+        nodes.set('1', replacement)
+      },
+      1
+    )
+
+    expect(state.instance.inputs.map((input) => input.name)).toEqual(['value'])
+  })
+
   it('S2e keeps a live host link when the doc host slot list omits that declared slot', () => {
     // cmp writes host slots only as `grow` claims them, so a doc host's slot
     // list can be a strict subset of the definition's declared inputs while a

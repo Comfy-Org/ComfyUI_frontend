@@ -97,6 +97,16 @@ interface DefinitionLookups {
   nodesById: ReadonlyMap<string, NonNullable<ExportedSubgraph['nodes']>[number]>
 }
 
+interface PromotionTarget {
+  definition: ExportedSubgraph
+  inputIndex: number
+}
+
+interface PromotionExpansion {
+  hasWidget: boolean
+  nested: PromotionTarget[]
+}
+
 function lookupsFor(
   definition: ExportedSubgraph,
   lookupsByDefinition: Map<ExportedSubgraph, DefinitionLookups>
@@ -113,47 +123,67 @@ function lookupsFor(
   return lookups
 }
 
+function promotionTargetForLink(
+  definition: ExportedSubgraph,
+  linkId: number,
+  index: SubgraphDefinitionIndex,
+  lookups: Map<ExportedSubgraph, DefinitionLookups>
+): PromotionExpansion | undefined {
+  const { linksById, nodesById } = lookupsFor(definition, lookups)
+  const link = linksById.get(linkId)
+  if (!link) return
+  const target = nodesById.get(String(link.target_id))
+  const targetInput = target?.inputs?.[link.target_slot]
+  if (!target || !targetInput) return
+  const nestedDefinition = index.get(target.type)
+  if (!nestedDefinition) {
+    return { hasWidget: targetInput.widget != null, nested: [] }
+  }
+  return {
+    hasWidget: false,
+    nested: (nestedDefinition.inputs ?? []).flatMap(
+      (nestedInput, inputIndex) =>
+        nestedInput.name === targetInput.name
+          ? [{ definition: nestedDefinition, inputIndex }]
+          : []
+    )
+  }
+}
+
+function expandPromotionTarget(
+  target: PromotionTarget,
+  index: SubgraphDefinitionIndex,
+  lookups: Map<ExportedSubgraph, DefinitionLookups>
+): PromotionExpansion {
+  const input = target.definition.inputs?.[target.inputIndex]
+  if (!input) return { hasWidget: false, nested: [] }
+  const expansion: PromotionExpansion = { hasWidget: false, nested: [] }
+  for (const linkId of input.linkIds ?? []) {
+    const linkTarget = promotionTargetForLink(
+      target.definition,
+      linkId,
+      index,
+      lookups
+    )
+    if (!linkTarget) continue
+    expansion.hasWidget ||= linkTarget.hasWidget
+    expansion.nested.push(...linkTarget.nested)
+  }
+  return expansion
+}
+
 function isPromoted(
   definition: ExportedSubgraph,
   inputIndex: number,
   index: SubgraphDefinitionIndex,
   lookups: Map<ExportedSubgraph, DefinitionLookups>
 ): boolean {
-  const root = { definition, inputIndex }
+  const root: PromotionTarget = { definition, inputIndex }
   return hasPromotedWidgetTarget(
     root,
     MAX_NESTED_PROMOTION_DEPTH,
     ({ definition, inputIndex }) => definition.inputs?.[inputIndex],
-    ({ definition, inputIndex }) => {
-      const input = definition.inputs?.[inputIndex]
-      if (!input) return { hasWidget: false, nested: [] }
-      const nested: Array<typeof root> = []
-      let hasWidget = false
-      const { linksById, nodesById } = lookupsFor(definition, lookups)
-      for (const linkId of input.linkIds ?? []) {
-        const link = linksById.get(linkId)
-        if (!link) continue
-        const target = nodesById.get(String(link.target_id))
-        const targetInput = target?.inputs?.[link.target_slot]
-        if (!target || !targetInput) continue
-        const nestedDefinition = index.get(target.type)
-        if (!nestedDefinition) {
-          hasWidget ||= targetInput.widget != null
-          continue
-        }
-        for (const [nestedIndex, nestedInput] of (
-          nestedDefinition.inputs ?? []
-        ).entries()) {
-          if (nestedInput.name === targetInput.name) {
-            nested.push({
-              definition: nestedDefinition,
-              inputIndex: nestedIndex
-            })
-          }
-        }
-      }
-      return { hasWidget, nested }
-    }
+    (target) => expandPromotionTarget(target, index, lookups)
   )
 }
 
@@ -173,10 +203,20 @@ function isPromoted(
  */
 export function hostInputs(
   definition: ExportedSubgraph,
-  docInputs: readonly ISerialisableNodeInput[]
+  docInputs: readonly unknown[]
 ): ISerialisableNodeInput[] {
   const ambiguous = ambiguousInputNames(definition)
-  const docByName = new Map(docInputs.map((input) => [input.name, input]))
+  const docByName = new Map(
+    docInputs
+      .filter(
+        (input): input is Record<string, unknown> & { name: string } =>
+          input !== null &&
+          typeof input === 'object' &&
+          'name' in input &&
+          typeof input.name === 'string'
+      )
+      .map((input) => [input.name, input])
+  )
   return (definition.inputs ?? []).map((input) => {
     const { id: _id, linkIds: _linkIds, ...declared } = input
     const fromDoc = ambiguous.has(input.name)
