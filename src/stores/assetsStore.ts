@@ -130,7 +130,6 @@ export const useAssetsStore = defineStore('assets', () => {
     isLoading: inputLoading,
     execute: executeUpdateInputs
   } = useAsyncState(fetchInputFiles, [], {
-    immediate: false,
     resetOnExecute: false,
     onError: (err) => {
       console.error('Error fetching input assets:', err)
@@ -304,6 +303,7 @@ export const useAssetsStore = defineStore('assets', () => {
         return [asset]
       })
     )
+    void loadMoreHistory()
     return [outputAssets, flatOutputs]
   }
 
