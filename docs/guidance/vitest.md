@@ -9,10 +9,10 @@ See `docs/testing/*.md` for detailed patterns.
 
 ## Test Quality
 
-Level-agnostic rules (behavioral assertions, tables over copied bodies, mock
-only what you own, no sleeps, typed fixtures) live in
-`docs/guidance/testing-principles.md`, loaded alongside this file. An ESLint
-rule enforces the Testing Library query rule; do not disable it.
+The rules that apply at every test level (behavioral assertions, tables over
+copied bodies, mock only what you own, no sleeps, typed fixtures) live in
+`docs/guidance/testing-principles.md`, which loads alongside this file. An
+ESLint rule enforces the Testing Library query rule. Do not disable it.
 
 ## Mocking
 

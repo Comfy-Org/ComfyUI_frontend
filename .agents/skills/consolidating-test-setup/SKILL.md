@@ -8,7 +8,7 @@ description: Consolidates repeated test setup and teardown into the narrowest sh
 Move repeated test plumbing to the narrowest shared owner that can provide it
 reliably. Keep test files focused on behavior. The isolation and readability
 rules this skill applies are stated once in
-`docs/guidance/testing-principles.md`; this skill is the procedure.
+`docs/guidance/testing-principles.md`. This skill is the procedure.
 
 ## Principles
 

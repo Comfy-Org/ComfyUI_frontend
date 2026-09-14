@@ -6,7 +6,7 @@ See @docs/guidance/\*.md for file-type-specific conventions (auto-loaded by glob
 - `docs/guidance/vue-components.md` — Vue 3 Composition API best practices
 - `docs/guidance/state-and-effects.md` — modelling a feature's state: one discriminated union, named events, a pure transition, effects reserved for synchronising outward
 - `docs/guidance/typescript.md` — TypeScript type-safety rules
-- `docs/guidance/testing-principles.md` — level-agnostic test design rules: behavioral assertions, lowest proving level, N + M + 1 composition and table-driven cases with sparse filters, isolation, classical doubles, coverage as a map, changing existing tests
+- `docs/guidance/testing-principles.md` — test design rules that hold at every level: behavioral assertions, lowest proving level, N + M + 1 composition and table-driven cases with sparse filters, isolation, classical doubles, coverage as a gap finder, changing existing tests
 - `docs/guidance/vitest.md` — Vitest unit/component test conventions
 - `docs/guidance/playwright.md` — Playwright E2E conventions and API-mock typing table
 - `docs/guidance/storybook.md` — Storybook story patterns

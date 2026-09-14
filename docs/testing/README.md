@@ -4,7 +4,7 @@ This guide provides an overview of testing approaches used in the ComfyUI Fronte
 
 ## Testing Documentation
 
-Level-agnostic design rules live in [`docs/guidance/testing-principles.md`](../guidance/testing-principles.md). The guides below cover mechanics.
+Design rules that apply at every test level live in [`docs/guidance/testing-principles.md`](../guidance/testing-principles.md). The guides below cover mechanics.
 
 Documentation for unit tests is organized into five guides:
 

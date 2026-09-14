@@ -5,9 +5,9 @@ description: 'Writes Playwright e2e tests for ComfyUI_frontend. Use when creatin
 
 # Writing Playwright Tests for ComfyUI_frontend
 
-Level-agnostic design rules (behavioral assertions, lowest proving level,
-table-driven variants, isolation, no sleeps) are in
-`docs/guidance/testing-principles.md`; this skill covers the Playwright and
+The design rules that apply at every test level (behavioral assertions,
+lowest proving level, table-driven variants, isolation, no sleeps) are in
+`docs/guidance/testing-principles.md`. This skill covers the Playwright and
 ComfyUI mechanics.
 
 ## Golden Rules
