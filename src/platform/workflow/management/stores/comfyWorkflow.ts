@@ -34,6 +34,26 @@ export interface PendingWarnings {
   missingMediaCandidates?: MissingMediaCandidate[]
 }
 
+function parseWorkflowContent(
+  path: string,
+  content: string | null
+): ComfyWorkflowJSON | undefined {
+  if (content == null) {
+    console.error(new Error(`Workflow content was not loaded for '${path}'`))
+    return
+  }
+  if (content.trim().length === 0) {
+    console.error(new Error(`Workflow content is empty for '${path}'`))
+    return
+  }
+
+  try {
+    return JSON.parse(content)
+  } catch (error) {
+    console.error(`Workflow content is invalid for '${path}'`, error)
+  }
+}
+
 export class ComfyWorkflow extends UserFile {
   static readonly basePath: string = 'workflows/'
   readonly tintCanvasBg?: string
@@ -143,24 +163,8 @@ export class ComfyWorkflow extends UserFile {
     const previousOriginalContent = this.originalContent
     if (!(await super.load({ force }))) return
 
-    if (this.originalContent == null) {
-      console.error(
-        new Error(`Workflow content was not loaded for '${this.path}'`)
-      )
-      return
-    }
-    if (this.originalContent.trim().length === 0) {
-      console.error(new Error(`Workflow content is empty for '${this.path}'`))
-      this.content = previousContent
-      this.originalContent = previousOriginalContent
-      return
-    }
-
-    let initialState: ComfyWorkflowJSON
-    try {
-      initialState = JSON.parse(this.originalContent)
-    } catch (error) {
-      console.error(`Workflow content is invalid for '${this.path}'`, error)
+    const initialState = parseWorkflowContent(this.path, this.originalContent)
+    if (!initialState) {
       this.content = previousContent
       this.originalContent = previousOriginalContent
       return
