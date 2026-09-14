@@ -11,7 +11,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger
 } from 'reka-ui'
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -30,6 +30,8 @@ const {
   balanceError,
   canTopUp,
   accountLabel,
+  accountName,
+  accountPhotoUrl,
   accountIdentity,
   locale = 'en'
 } = defineProps<{
@@ -42,6 +44,8 @@ const {
   balanceError: boolean
   canTopUp: boolean
   accountLabel: string
+  accountName?: string | null
+  accountPhotoUrl?: string | null
   accountIdentity?: string | null
   locale?: Locale
 }>()
@@ -77,6 +81,14 @@ function workspaceTier(workspace: WorkspaceWithRole): string {
 }
 
 const workspaceInitials = computed(() => initialsOf(session.workspace.name))
+const accountInitials = computed(() =>
+  initialsOf(accountName || accountIdentity || session.workspace.name)
+)
+const avatarFailed = ref(false)
+watch(
+  () => accountPhotoUrl,
+  () => (avatarFailed.value = false)
+)
 const roleLabel = computed(() =>
   t(session.role === 'member' ? 'nav.roleMember' : 'nav.roleOwner', locale)
 )
@@ -112,11 +124,21 @@ const surfaceClass =
         {{ formattedCredits }}
       </span>
 
+      <img
+        v-if="accountPhotoUrl && !avatarFailed"
+        :src="accountPhotoUrl"
+        alt=""
+        class="size-8 shrink-0 rounded-full object-cover"
+        data-testid="header-account-avatar"
+        referrerpolicy="no-referrer"
+        @error="avatarFailed = true"
+      />
       <span
+        v-else
         class="grid size-8 shrink-0 place-items-center rounded-full bg-transparency-white-t8 text-xs font-bold text-primary-warm-white"
         aria-hidden="true"
       >
-        {{ workspaceInitials }}
+        {{ accountInitials }}
       </span>
     </DropdownMenuTrigger>
 

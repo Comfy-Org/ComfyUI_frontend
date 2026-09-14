@@ -127,13 +127,21 @@ describe('HeaderAccount', () => {
   })
 
   it('shows the account control with the credits chip when signed in', () => {
-    h.user!.value = { email: 'a@b.co', displayName: 'Ada' }
+    h.user!.value = {
+      email: 'a@b.co',
+      displayName: 'Ada',
+      photoURL: 'https://example.com/ada.jpg'
+    }
     h.session!.value = { token: 'jwt', uid: 'user-1', workspace, role: 'owner' }
     h.balance!.value = { status: 'ok', credits: 1234 }
     render(HeaderAccount)
 
     expect(screen.getByRole('button', { name: /account/i })).toBeTruthy()
     expect(screen.getByText(/1,234/)).toBeTruthy()
+    expect(
+      screen.getByTestId('header-account-avatar').getAttribute('src')
+    ).toBe('https://example.com/ada.jpg')
+    expect(screen.queryByText('PW')).toBeNull()
   })
 
   it.for([0, 1234])(
