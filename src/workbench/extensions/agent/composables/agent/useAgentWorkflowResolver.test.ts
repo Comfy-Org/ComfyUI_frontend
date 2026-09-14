@@ -485,7 +485,7 @@ describe('Cloud listing completeness', () => {
     listCloudWorkflows.mockResolvedValueOnce(
       listing([{ id: 'cloud-a', name: 'A' }])
     )
-    await resolver.refreshCloudWorkflowIds()
+    await resolver.refreshCloudWorkflowIds({ force: true })
 
     expect(resolver.cloudListingOmits('cloud-b')).toBe(true)
   })
@@ -496,7 +496,7 @@ describe('Cloud listing completeness', () => {
     expect(resolver.cloudListingOmits('cloud-a')).toBe(true)
 
     listCloudWorkflows.mockRejectedValueOnce(new Error('offline'))
-    expect(await resolver.refreshCloudWorkflowIds()).toBe(false)
+    expect(await resolver.refreshCloudWorkflowIds({ force: true })).toBe(false)
 
     expect(resolver.cloudListingOmits('cloud-a')).toBe(true)
   })
@@ -571,6 +571,28 @@ describe('Cloud index refresh caching', () => {
     ])
     expect(first).toBe(true)
     expect(second).toBe(true)
+    expect(listCloudWorkflows).toHaveBeenCalledTimes(1)
+    expect(resolver.availableWorkflowReferences.value).toEqual([
+      { id: 'current', name: 'Current' }
+    ])
+  })
+
+  it('shares one cloud listing between concurrent forced refreshes', async () => {
+    const { resolver, listCloudWorkflows } = setup([
+      workflow('workflows/current.json', 'Current')
+    ])
+    let resolveListing: (listing: CloudWorkflowListing) => void = () => {}
+    listCloudWorkflows.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveListing = resolve
+      })
+    )
+
+    const first = resolver.refreshCloudWorkflowIds({ force: true })
+    const second = resolver.refreshCloudWorkflowIds({ force: true })
+    resolveListing(listing([{ id: 'current', name: 'Current' }]))
+
+    expect(await Promise.all([first, second])).toEqual([true, true])
     expect(listCloudWorkflows).toHaveBeenCalledTimes(1)
     expect(resolver.availableWorkflowReferences.value).toEqual([
       { id: 'current', name: 'Current' }
