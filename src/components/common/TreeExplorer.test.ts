@@ -74,4 +74,11 @@ describe('TreeExplorer', () => {
     await nextTick()
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
   })
+
+  it('closes the label editor when renaming returns no result', async () => {
+    await submitRename(vi.fn().mockResolvedValue(undefined))
+
+    await nextTick()
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+  })
 })

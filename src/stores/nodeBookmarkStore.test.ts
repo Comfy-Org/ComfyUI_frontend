@@ -89,10 +89,11 @@ describe('node bookmark folder commands', () => {
   })
 
   it('accepts an unchanged folder name without persisting', async () => {
+    const settingStore = useSettingStore()
     await expect(
       useNodeBookmarkStore().renameBookmarkFolder(folder('Folder/'), 'Folder')
     ).resolves.toBe(true)
-    expect(set).not.toHaveBeenCalled()
+    expect(settingStore.set).not.toHaveBeenCalled()
   })
 
   it('persists a successful folder rename', async () => {
