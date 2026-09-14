@@ -150,15 +150,6 @@ useEventListener(
             )
           "
         >
-          <video
-            v-if="step.videoUrl"
-            :src="step.videoUrl"
-            :aria-label="step.title"
-            controls
-            playsinline
-            preload="metadata"
-            class="h-[146px] w-full rounded-xl object-cover"
-          />
           <div class="flex flex-col gap-6">
             <div class="flex flex-col gap-2">
               <p class="m-0 text-xs/normal opacity-50">
