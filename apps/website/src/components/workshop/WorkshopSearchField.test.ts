@@ -1,4 +1,3 @@
-import '@testing-library/jest-dom/vitest'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
@@ -77,19 +76,17 @@ describe('WorkshopSearchField', () => {
     const trigger = screen.getByRole('button', {
       name: 'Search models, providers, categories...'
     })
-    await waitFor(() => expect(trigger.hasAttribute('disabled')).toBe(false))
+    await waitFor(() => expect(trigger).toBeEnabled())
     await user.click(trigger)
     const dialog = await screen.findByRole('dialog')
     const input = within(dialog).getByRole('searchbox')
-    await waitFor(() => expect(input.matches(':focus')).toBe(true))
+    await waitFor(() => expect(input).toHaveFocus())
     await user.tab({ shift: true })
     expect(
-      within(dialog)
-        .getByRole('button', { name: 'Show 0 models' })
-        .matches(':focus')
-    ).toBe(true)
+      within(dialog).getByRole('button', { name: 'Show 0 models' })
+    ).toHaveFocus()
     await user.keyboard('{Escape}')
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
-    await waitFor(() => expect(trigger.matches(':focus')).toBe(true))
+    await waitFor(() => expect(trigger).toHaveFocus())
   })
 })

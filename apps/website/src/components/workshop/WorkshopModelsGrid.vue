@@ -51,6 +51,9 @@ const { models, locale = 'en' } = defineProps<{
 const query = ref('')
 const useCase = ref<UseCase | 'all' | 'other'>('all')
 const selectedUseCases = ref<UseCase[]>([])
+const legacyModalities = ref<string[]>([])
+const legacyProviders = ref<string[]>([])
+const legacyCapabilities = ref<string[]>([])
 const sort = ref<SortOrder>('popular')
 let scrollReady = false
 
@@ -58,6 +61,9 @@ onMounted(() => {
   const initial = parseCatalogSearch(location.search)
   query.value = initial.query ?? ''
   useCase.value = initial.useCase ?? 'all'
+  legacyModalities.value = [...initial.modalities]
+  legacyProviders.value = [...initial.providers]
+  legacyCapabilities.value = [...initial.capabilities]
   void nextTick(() => {
     scrollReady = true
   })
@@ -87,7 +93,10 @@ const visible = computed(() =>
       filterWorkshopModels(models, {
         query: query.value,
         useCase: useCase.value,
-        useCases: selectedUseCases.value
+        useCases: selectedUseCases.value,
+        modalities: legacyModalities.value,
+        providers: legacyProviders.value,
+        capabilities: legacyCapabilities.value
       }),
       sort.value
     )
@@ -97,7 +106,10 @@ const isFiltered = computed(
   () =>
     query.value !== '' ||
     useCase.value !== 'all' ||
-    selectedUseCases.value.length > 0
+    selectedUseCases.value.length > 0 ||
+    legacyModalities.value.length > 0 ||
+    legacyProviders.value.length > 0 ||
+    legacyCapabilities.value.length > 0
 )
 
 // Willie's browseable listing: rows per use case until the visitor narrows
@@ -165,6 +177,9 @@ function resetFilters() {
   query.value = ''
   useCase.value = 'all'
   selectedUseCases.value = []
+  legacyModalities.value = []
+  legacyProviders.value = []
+  legacyCapabilities.value = []
 }
 
 function applyUseCases(values: UseCase[]) {

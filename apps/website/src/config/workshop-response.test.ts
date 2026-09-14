@@ -120,8 +120,13 @@ describe('native Router output handling', () => {
         'image',
         'video',
         'audio',
-        '3d'
+        '3d',
+        'text'
       ])
+      expect(outputs.at(-1)).toMatchObject({
+        purpose: 'response-metadata',
+        text: expect.stringContaining('"identifier": 17')
+      })
       const image = await fetch(outputs[0].url)
       expect(image.headers.get('Content-Type')).toBe('image/png')
       expect(new Uint8Array(await image.arrayBuffer())).toEqual(
@@ -132,13 +137,14 @@ describe('native Router output handling', () => {
     }
   })
 
-  it('does not expose response metadata beside remote media', async () => {
+  it('marks response metadata so the playground can hide it', async () => {
     const outputs = await parseRouterResponse(
       contract,
       Response.json({ image: 'https://assets.example/generated.png' })
     )
     try {
-      expect(outputs.map(({ kind }) => kind)).toEqual(['image'])
+      expect(outputs.map(({ kind }) => kind)).toEqual(['image', 'text'])
+      expect(outputs[1].purpose).toBe('response-metadata')
     } finally {
       releaseRouterOutputs(outputs)
     }

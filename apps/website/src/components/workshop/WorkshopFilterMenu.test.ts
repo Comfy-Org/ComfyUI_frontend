@@ -1,13 +1,13 @@
-import '@testing-library/jest-dom/vitest'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
 
 import type { UseCase } from '../../config/models-catalogue'
+import type { FacetMenuOption } from './WorkshopFilterMenu.vue'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
 
-const useCaseOptions: { value: UseCase; label: string; count: number }[] = [
+const useCaseOptions: FacetMenuOption[] = [
   { value: 'generate-images', label: 'Generate images', count: 4 },
   { value: '3d', label: '3D', count: 2 }
 ]
@@ -45,7 +45,7 @@ describe('WorkshopFilterMenu', () => {
     expect(useCase.getAttribute('aria-pressed')).toBe('true')
     await user.keyboard('{Escape}')
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
-    await waitFor(() => expect(trigger).toHaveFocus())
+    await waitFor(() => expect(trigger.matches(':focus')).toBe(true))
   })
 
   it('toggles a use case and counts it on the button and tab', async () => {

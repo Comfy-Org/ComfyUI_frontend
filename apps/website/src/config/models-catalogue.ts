@@ -331,6 +331,12 @@ function matchesFacet(
 
 type CatalogLocation = Pick<WorkshopFilter, 'query' | 'useCase'>
 
+interface ParsedCatalogLocation extends CatalogLocation {
+  readonly modalities: readonly string[]
+  readonly providers: readonly string[]
+  readonly capabilities: readonly string[]
+}
+
 // Deep links into the catalog: `?useCase=edit-images&q=upscale`.
 export function catalogSearch(filter: CatalogLocation): string {
   const params = new URLSearchParams()
@@ -341,14 +347,17 @@ export function catalogSearch(filter: CatalogLocation): string {
   return search ? `?${search}` : ''
 }
 
-export function parseCatalogSearch(search: string): CatalogLocation {
+export function parseCatalogSearch(search: string): ParsedCatalogLocation {
   const params = new URLSearchParams(search)
   const useCase = params.get('useCase')
   return {
     query: params.get('q') ?? '',
     useCase:
       USE_CASES.find((value) => value === useCase) ??
-      (useCase === 'other' ? 'other' : 'all')
+      (useCase === 'other' ? 'other' : 'all'),
+    modalities: params.getAll('modality').filter(Boolean),
+    providers: params.getAll('provider').filter(Boolean),
+    capabilities: params.getAll('capability').filter(Boolean)
   }
 }
 

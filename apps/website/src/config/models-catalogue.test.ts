@@ -166,12 +166,26 @@ describe('filterWorkshopModels facets', () => {
   })
 
   it('filters by any selected use case', () => {
+    const matches = filterWorkshopModels(fixture, {
+      query: '',
+      useCases: ['generate-videos', 'edit-images']
+    })
+    expect(matches).toHaveLength(2)
+    expect(new Set(matches.map((model) => model.slug))).toEqual(
+      new Set(['a', 'b'])
+    )
+  })
+
+  it('treats no selected use cases as unrestricted', () => {
+    expect(filterWorkshopModels(fixture, { query: '', useCases: [] })).toEqual(
+      fixture
+    )
+  })
+
+  it('returns no models when none match the selected use case', () => {
     expect(
-      filterWorkshopModels(fixture, {
-        query: '',
-        useCases: ['generate-videos', 'edit-images']
-      }).map((model) => model.slug)
-    ).toEqual(['a', 'b'])
+      filterWorkshopModels(fixture, { query: '', useCases: ['audio'] })
+    ).toEqual([])
   })
 })
 
@@ -462,14 +476,25 @@ describe('catalog deep links', () => {
     })
     expect(parseCatalogSearch(search)).toEqual({
       query: 'upscale',
-      useCase: 'edit-images'
+      useCase: 'edit-images',
+      modalities: [],
+      providers: [],
+      capabilities: []
     })
   })
 
-  it('ignores retired facets and yields no query string when empty', () => {
+  it('keeps retired facets working for existing links', () => {
     expect(
-      parseCatalogSearch('?useCase=nonsense&provider=Kling&capability=Upscale')
-    ).toEqual({ query: '', useCase: 'all' })
+      parseCatalogSearch(
+        '?useCase=nonsense&provider=Kling&capability=Upscale&modality=video'
+      )
+    ).toEqual({
+      query: '',
+      useCase: 'all',
+      modalities: ['video'],
+      providers: ['Kling'],
+      capabilities: ['Upscale']
+    })
     expect(catalogSearch({ useCase: 'all' })).toBe('')
   })
 })

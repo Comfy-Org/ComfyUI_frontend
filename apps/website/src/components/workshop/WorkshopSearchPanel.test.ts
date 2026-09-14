@@ -47,7 +47,7 @@ describe('WorkshopSearchPanel', () => {
     render(WorkshopSearchPanel, {
       props: { models, query: 'missing' }
     })
-    expect(screen.getByText('No matches')).toBeTruthy()
+    expect(screen.getByText(/no match/i)).toBeTruthy()
   })
 
   it.for(['{Enter}', ' '])('activates a model result with %s', async (key) => {

@@ -5,14 +5,14 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { FilterBadgeType } from '../../composables/useHubStore'
 import { useHubStore } from '../../composables/useHubStore'
-import type { UseCase } from '../../config/models-catalogue'
+import type { UseCase, WorkshopModel } from '../../config/models-catalogue'
 import {
   USE_CASES,
   filterWorkshopModels,
   sortWorkshopModels,
-  useCaseFor
+  useCasesFor
 } from '../../config/models-catalogue'
-import { workshopModels } from '../../config/workshop-browse-content'
+import { workshopModels as defaultWorkshopModels } from '../../config/workshop-browse-content'
 import { groupModels } from '../../config/model-family'
 import hubTemplates from '../../data/hubTemplates.json'
 import { hubWorkflowPath } from '../../lib/hub/workflow-detail'
@@ -37,13 +37,18 @@ import WorkshopHero from '../workshop/WorkshopHero.vue'
 import WorkshopModelCard from '../workshop/WorkshopModelCard.vue'
 import WorkshopSearchField from '../workshop/WorkshopSearchField.vue'
 
-const { locale = 'en', embedded = false } = defineProps<{
+const {
+  locale = 'en',
+  embedded = false,
+  models = defaultWorkshopModels
+} = defineProps<{
   locale?: Locale
   embedded?: boolean
+  models?: readonly WorkshopModel[]
 }>()
 
 const templates = (hubTemplates as HubTemplate[]).map((template) =>
-  withFacetFields(template, workshopModels)
+  withFacetFields(template, models)
 )
 const store = useHubStore()
 
@@ -71,11 +76,11 @@ const useCaseLabelKey: Record<UseCase | 'all', TranslationKey> = {
 }
 
 const inUseCase = (value: UseCase | 'all') => ({
-  models: workshopModels.filter(
-    (model) => value === 'all' || useCaseFor(model) === value
+  models: models.filter(
+    (model) => value === 'all' || useCasesFor(model).includes(value)
   ),
   templates: templates.filter(
-    (tmpl) => value === 'all' || useCaseForTemplate(tmpl, workshopModels) === value
+    (tmpl) => value === 'all' || useCaseForTemplate(tmpl, models) === value
   )
 })
 
@@ -188,8 +193,7 @@ const gridLabels: GridLabels = {
 // A Hub entry tagged as a partner node whose model matches a Workshop model
 // opens that model's playground; everything else stays on comfy.org.
 const hrefFor = (template: HubTemplate) =>
-  partnerModelFor(template, workshopModels)?.href ??
-  hubWorkflowPath(template.name)
+  partnerModelFor(template, models)?.href ?? hubWorkflowPath(template.name)
 
 const filteredModels = computed(() => {
   const matches = filterWorkshopModels(scoped.value.models, {
@@ -273,7 +277,7 @@ const filteredTemplates = computed(() => {
           <template #search>
             <WorkshopSearchField
               v-model="store.searchQuery.value"
-              :models="workshopModels"
+              :models
               :locale
               compact
               class="max-sm:size-10 max-sm:flex-none sm:w-64 lg:w-80"

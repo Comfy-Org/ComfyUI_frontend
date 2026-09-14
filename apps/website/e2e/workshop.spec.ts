@@ -55,6 +55,18 @@ test.describe('Models catalog', () => {
     await expect(sections).toBeVisible()
     const sort = page.getByTestId('workshop-sort')
     await expect(sort).toContainText('Most popular')
+    async function recommendedIn(section: string, count: number) {
+      return page
+        .getByTestId(`section-${section}`)
+        .getByTestId('workshop-model-card')
+        .evaluateAll(
+          (cards, limit) =>
+            cards
+              .slice(0, limit)
+              .map((card) => card.getAttribute('href') ?? ''),
+          count
+        )
+    }
     const leading = page
       .getByTestId('section-generate-images')
       .getByTestId('workshop-model-card')
@@ -68,6 +80,28 @@ test.describe('Models catalog', () => {
       '/models/byteplus--seedream-5-pro--generate-images/',
       '/models/openai--gpt-image-2--edit-images/',
       '/models/byteplus--seedream-4--generate-images/'
+    ])
+    expect(await recommendedIn('generate-videos', 7)).toEqual([
+      '/models/byteplus--seedance-2-5-reference--generate-videos/',
+      '/models/byteplus--seedance-2-5-text-to-video--generate-videos/',
+      '/models/kling--kling-3.0-turbo-text-to-video--generate-videos/',
+      '/models/xai--grok-imagine-video-1.5--generate-videos/',
+      '/models/xai--grok-imagine-video--generate-videos/',
+      '/models/byteplus--seedance-2-fast-reference--generate-videos/',
+      '/models/gemini--omni-1.1-flash--generate-videos/'
+    ])
+    expect(await recommendedIn('animate-images', 4)).toEqual([
+      '/models/byteplus--seedance-2-5-first-last-frame--animate-images/',
+      '/models/xai--grok-imagine-video--animate-images/',
+      '/models/wan--image-to-video-3.0--animate-images/',
+      '/models/wan--reference-to-video-3.0--animate-images/'
+    ])
+    expect(await recommendedIn('other-formats', 1)).toEqual([
+      '/models/byteplus--seed-audio-1.0--audio/'
+    ])
+    expect(await recommendedIn('edit-videos', 2)).toEqual([
+      '/models/gemini--omni-1.1-flash--edit-videos/',
+      '/models/runway--aleph2-video-to-video--edit-videos/'
     ])
 
     await sort.click()
@@ -275,8 +309,16 @@ test.describe('Models catalog', () => {
       .getByTestId('workshop-model-card')
     await expect(cards.first()).toBeVisible()
     expect(await cards.count()).toBeLessThan(all)
-    for (const card of await cards.all())
-      await expect(card).toContainText(/image/i)
+    await expect(
+      page.locator(
+        '[data-testid="workshop-model-card"][href="/models/vertexai--gemini-nano-banana-2--edit-images/"]'
+      )
+    ).toBeVisible()
+    await expect(
+      page.locator(
+        '[data-testid="workshop-model-card"][href="/models/bfl--flux-2-max--generate-images/"]'
+      )
+    ).toHaveCount(0)
     await expect(page.getByTestId('workshop-facet-useCase-count')).toHaveText(
       '1'
     )

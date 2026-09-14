@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 
 import { useHubStore } from '../../composables/useHubStore'
 import { groupModels } from '../../config/model-family'
-import { sortWorkshopModels, useCaseFor } from '../../config/models-catalogue'
+import { sortWorkshopModels, useCasesFor } from '../../config/models-catalogue'
 import { workshopModels } from '../../config/workshop-browse-content'
 import HubBrowse from './HubBrowse.vue'
 
@@ -72,15 +72,24 @@ describe('HubBrowse', () => {
 
   it('scopes both the models and the workflows to the chosen use case', async () => {
     const user = userEvent.setup()
-    render(HubBrowse)
+    const source = workshopModels.find((model) =>
+      model.useCases?.includes('audio')
+    )
+    if (!source) throw new Error('Expected an audio model fixture')
+    const secondaryAudio = {
+      ...source,
+      useCases: ['generate-videos', 'audio'] as const
+    }
+    const models = workshopModels.map((model) =>
+      model.slug === secondaryAudio.slug ? secondaryAudio : model
+    )
+    render(HubBrowse, { props: { models } })
 
     await user.click(screen.getByTestId('hub-use-case-audio'))
     const lead = screen.getAllByTestId('hub-models-lead')
-    // The lead card is whichever audio model the curated order puts first;
-    // the scoping is what matters here, not that order.
     const audioModelHrefs = groupModels(
       sortWorkshopModels(
-        workshopModels.filter((model) => useCaseFor(model) === 'audio'),
+        models.filter((model) => useCasesFor(model).includes('audio')),
         'popular'
       )
     ).map((family) => family.latest.href)
@@ -95,14 +104,11 @@ describe('HubBrowse', () => {
     const renderedModelHrefs = modelCards.map((card) =>
       card.getAttribute('href')
     )
-    expect(new Set(renderedModelHrefs)).toEqual(
-      new Set(
-        workshopModels
-          .filter((model) => model.modality === 'audio')
-          .map((model) => model.href)
-      )
-    )
+    expect(new Set(renderedModelHrefs)).toEqual(new Set(audioModelHrefs))
     expect(renderedModelHrefs).toEqual(audioModelHrefs)
+    expect(
+      modelCards.some((card) => card.textContent.includes(secondaryAudio.name))
+    ).toBe(true)
     expect(screen.queryByTestId('model-card-versions')).toBeNull()
   })
 

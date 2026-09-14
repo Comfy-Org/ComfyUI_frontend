@@ -1,5 +1,3 @@
-import '@testing-library/jest-dom/vitest'
-
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -70,6 +68,19 @@ describe('WorkshopModelsGrid', () => {
 
     await user.type(await search(), 'forest')
     expect(cardNames()).toEqual([expect.stringContaining('Flux')])
+  })
+
+  it.for([
+    ['provider=Kling', 'Kling AI'],
+    ['capability=Upscale', 'Flux'],
+    ['modality=video', 'Kling AI']
+  ])('honors the legacy %s deep link', async ([search, expected]) => {
+    history.replaceState(null, '', `/models/?${search}`)
+    render(WorkshopModelsGrid, { props: { models } })
+
+    await waitFor(() =>
+      expect(cardNames()).toEqual([expect.stringContaining(expected)])
+    )
   })
 
   it('does not show default search options', async () => {

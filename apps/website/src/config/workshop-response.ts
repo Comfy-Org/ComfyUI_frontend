@@ -121,8 +121,16 @@ async function automaticOutputs(
           fileName: fileName(id, mime, index)
         }
     }
-    if (outputs.length) return outputs
-    return [responseDocument(id, JSON.stringify(data, null, 2))]
+    const document = responseDocument(id, JSON.stringify(data, null, 2))
+    if (!outputs.length) return [document]
+    return [
+      ...outputs,
+      {
+        ...document,
+        purpose: 'response-metadata',
+        fileName: `${id.replaceAll('/', '-')}-metadata.json`
+      }
+    ]
   } catch (error) {
     releaseRouterOutputs(outputs)
     throw error
