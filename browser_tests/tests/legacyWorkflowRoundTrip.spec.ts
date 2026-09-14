@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   comfyExpect as expect,
@@ -56,6 +57,24 @@ async function exportedProjection(
   return projectWorkflow(await comfyPage.workflow.getExportedWorkflow())
 }
 
+async function persistedProjection(
+  comfyPage: ComfyPage,
+  path: string
+): Promise<WorkflowProjection> {
+  const contents = await comfyPage.page.evaluate(async (workflowPath) => {
+    const response = await window.app!.api.getUserData(workflowPath)
+    return response.text()
+  }, path)
+  return projectWorkflow(zComfyWorkflow.parse(JSON.parse(contents)))
+}
+
+async function persistedWorkflowPaths(comfyPage: ComfyPage): Promise<string[]> {
+  return comfyPage.page.evaluate(async () => {
+    const workflows = await window.app!.api.listUserDataFullInfo('workflows')
+    return workflows.map(({ path }) => path)
+  })
+}
+
 for (const vueNodesEnabled of [false, true]) {
   test.describe(
     `legacy workflow save and full reload with VueNodes=${vueNodesEnabled}`,
@@ -92,9 +111,31 @@ for (const vueNodesEnabled of [false, true]) {
         await comfyPage.workflow.loadWorkflow('legacy-v1.52.5-entity-roundtrip')
         expect(await exportedProjection(comfyPage)).toEqual(expected)
 
-        await comfyPage.menu.topbar.saveWorkflowAs('legacy-v1.52.5-resaved')
+        const savedName = 'legacy-v1.52.5-resaved'
+        const savedPath = `workflows/${savedName}.json`
+        await comfyPage.menu.topbar.saveWorkflowAs(savedName)
+
+        await expect
+          .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+          .toBe(savedPath)
+        await expect
+          .poll(() => persistedWorkflowPaths(comfyPage))
+          .toContain(savedPath)
+        expect(await persistedProjection(comfyPage, savedPath)).toEqual(
+          expected
+        )
+
         await comfyPage.workflow.reloadAndWaitForApp()
 
+        await expect
+          .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+          .toBe(savedPath)
+        await expect
+          .poll(() => persistedWorkflowPaths(comfyPage))
+          .toContain(savedPath)
+        expect(await persistedProjection(comfyPage, savedPath)).toEqual(
+          expected
+        )
         await expect.poll(() => exportedProjection(comfyPage)).toEqual(expected)
       })
     }
