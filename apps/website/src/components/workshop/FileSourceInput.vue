@@ -189,7 +189,7 @@ function remove(index: number) {
     >
       <Upload class="size-5" aria-hidden="true" />
       <span>{{ t(prompt, locale) }}</span>
-      <span>
+      <span class="text-2xs">
         <template v-if="acceptedTypes">{{ acceptedTypes }} · </template>
         {{ t('workshop.field.uploadLimit', locale) }}
       </span>
