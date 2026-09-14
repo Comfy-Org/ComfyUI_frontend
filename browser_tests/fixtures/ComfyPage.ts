@@ -725,9 +725,7 @@ export const comfyPageFixture = base.extend<{
         })
       }
 
-      if (isVueNodes && !isCustomNodes) {
-        await comfyPage.vueNodes.waitForNodes()
-      }
+      await waitForVueNodes(comfyPage, isVueNodes, isCustomNodes)
 
       if (needsPerf) {
         await comfyPage.perf.init()
@@ -748,5 +746,13 @@ export const comfyPageFixture = base.extend<{
     await comfyFiles.teardown()
   }
 })
+
+async function waitForVueNodes(
+  comfyPage: ComfyPage,
+  isVueNodes: boolean,
+  isCustomNodes: boolean
+): Promise<void> {
+  if (isVueNodes && !isCustomNodes) await comfyPage.vueNodes.waitForNodes()
+}
 
 export { comfyExpect }
