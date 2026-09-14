@@ -1,13 +1,18 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 vi.mock(import('firebase/auth'))
-vi.mock<unknown>(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
+vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { ComfyApp } from '@/scripts/app'
+import type { ComfyExtension } from '@/types/comfy'
+import type { useExtensionService } from '@/services/extensionService'
 import { registerAgentPanelExtension } from './agentPanel'
 
-const registered = vi.hoisted(() => ({
-  setup: null as (() => Promise<void> | void) | null
-}))
+const registered = vi.hoisted<{
+  setup: ComfyExtension['setup'] | null
+}>(() => ({ setup: null }))
 
 const reportErrorMock = vi.hoisted(() => vi.fn())
 
@@ -25,8 +30,8 @@ vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   getNodeByLocatorId: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
-  isLGraphNode: () => false
+vi.mock(import('@/utils/litegraphUtil'), () => ({
+  isLGraphNode: (_item: unknown): _item is LGraphNode => false
 }))
 
 vi.mock(
@@ -34,12 +39,13 @@ vi.mock(
   () => ({ registerWorkflowTabActivityTracker: vi.fn() })
 )
 
-vi.mock<unknown>(import('@/services/extensionService'), () => ({
-  useExtensionService: () => ({
-    registerExtension: (extension: { setup?: () => Promise<void> | void }) => {
-      registered.setup = extension.setup ?? null
-    }
-  })
+vi.mock(import('@/services/extensionService'), () => ({
+  useExtensionService: () =>
+    fromPartial<ReturnType<typeof useExtensionService>>({
+      registerExtension: (extension: ComfyExtension) => {
+        registered.setup = extension.setup ?? null
+      }
+    })
 }))
 
 describe('the agent panel gate under a dependency-chunk failure', () => {
@@ -57,7 +63,7 @@ describe('the agent panel gate under a dependency-chunk failure', () => {
     // The gate promise is HANDED BACK to the extension service - a
     // rejection there would be owned by its per-extension catch, so this
     // await doubles as the no-unhandled-rejection pin.
-    await registered.setup?.()
+    await registered.setup?.(fromPartial<ComfyApp>({}))
 
     const store = useAgentPanelStore()
     expect(store.gateSettled).toBe(true)

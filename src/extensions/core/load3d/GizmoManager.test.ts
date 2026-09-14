@@ -1,4 +1,6 @@
 import * as THREE from 'three'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { GizmoManager } from './GizmoManager'
@@ -21,58 +23,53 @@ const {
   omitGetPointer: { value: false }
 }))
 
-vi.mock<unknown>(
-  import('three/examples/jsm/controls/TransformControls'),
-  () => {
-    class TransformControls {
-      enabled = true
-      dragging = false
-      camera: THREE.Camera
-      _getPointer?: (event: PointerEvent) => {
-        x: number
-        y: number
-        button: number
-      }
-      private listeners = new Map<string, ((e: unknown) => void)[]>()
-
-      constructor(camera: THREE.Camera) {
-        this.camera = camera
-        if (!omitGetPointer.value) {
-          this._getPointer = (event) => ({ x: 0, y: 0, button: event.button })
-        }
-        transformControlsInstances.push(this)
-      }
-
-      addEventListener(event: string, cb: (e: unknown) => void) {
-        if (!this.listeners.has(event)) this.listeners.set(event, [])
-        this.listeners.get(event)!.push(cb)
-      }
-
-      setMode = mockSetMode
-      attach = mockAttach
-      detach = mockDetach
-      getHelper = mockGetHelper
-      dispose = mockDispose
-
-      emit(event: string, data: unknown) {
-        for (const cb of this.listeners.get(event) ?? []) cb(data)
-      }
+vi.mock(import('three/examples/jsm/controls/TransformControls'), () => {
+  class TransformControls {
+    enabled = true
+    dragging = false
+    camera: THREE.Camera
+    _getPointer?: (event: PointerEvent) => {
+      x: number
+      y: number
+      button: number
     }
-    return { TransformControls }
-  }
-)
+    private listeners = new Map<string, ((e: unknown) => void)[]>()
 
-vi.mock<unknown>(import('three/examples/jsm/controls/OrbitControls'), () => {
+    constructor(camera: THREE.Camera) {
+      this.camera = camera
+      if (!omitGetPointer.value) {
+        this._getPointer = (event) => ({ x: 0, y: 0, button: event.button })
+      }
+      transformControlsInstances.push(this)
+    }
+
+    addEventListener(event: string, cb: (e: unknown) => void) {
+      if (!this.listeners.has(event)) this.listeners.set(event, [])
+      this.listeners.get(event)!.push(cb)
+    }
+
+    setMode = mockSetMode
+    attach = mockAttach
+    detach = mockDetach
+    getHelper = mockGetHelper
+    dispose = mockDispose
+
+    emit(event: string, data: unknown) {
+      for (const cb of this.listeners.get(event) ?? []) cb(data)
+    }
+  }
+  return { TransformControls: fromAny(TransformControls) }
+})
+
+vi.mock(import('three/examples/jsm/controls/OrbitControls'), () => {
   class OrbitControls {
     enabled = true
   }
-  return { OrbitControls }
+  return { OrbitControls: fromAny(OrbitControls) }
 })
 
 function makeMockOrbitControls() {
-  return { enabled: true } as unknown as InstanceType<
-    typeof import('three/examples/jsm/controls/OrbitControls').OrbitControls
-  >
+  return fromPartial<OrbitControls>({ enabled: true })
 }
 
 describe('GizmoManager', () => {

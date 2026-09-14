@@ -1,8 +1,8 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fromPartial } from '@total-typescript/shoehorn'
 import { markRaw, ref } from 'vue'
 
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
@@ -17,6 +17,8 @@ import {
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyApi } from '@/scripts/api'
+import type { ComfyApp } from '@/scripts/app'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 
@@ -26,8 +28,8 @@ vi.mock(import('@/base/assert'), () => ({
   assert: mockAssert
 }))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
+vi.mock(import('@/scripts/app'), () => ({
+  app: fromPartial<ComfyApp>({
     nodeOutputs: {},
     nodePreviewImages: {},
     graph: {},
@@ -51,15 +53,15 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
       autoQueueEnabled: false,
       autoQueueMode: 'instant'
     }
-  }
+  })
 }))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
+vi.mock(import('@/scripts/api'), () => ({
+  api: fromPartial<ComfyApi>({
     dispatchCustomEvent: vi.fn(),
     addEventListener: vi.fn(),
     removeEventListener: vi.fn()
-  }
+  })
 }))
 
 import { app } from '@/scripts/app'

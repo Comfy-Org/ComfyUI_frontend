@@ -16,6 +16,7 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { LegacyWidget } from '@/lib/litegraph/src/widgets/LegacyWidget'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
+import type { ComfyApp } from '@/scripts/app'
 import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
@@ -31,14 +32,14 @@ const extensions = await vi.hoisted(async () => {
 /** `app.configuringGraph` is a getter on the real app, so route it via a ref. */
 const appState = vi.hoisted(() => ({ configuringGraph: false }))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
+vi.mock(import('@/scripts/app'), () => ({
+  app: fromPartial<ComfyApp>({
     canvas: { graph_mouse: [0, 0], graph: null },
     get configuringGraph() {
       return appState.configuringGraph
     },
     registerExtension: extensions.registerExtension
-  }
+  })
 }))
 
 import { app } from '@/scripts/app'

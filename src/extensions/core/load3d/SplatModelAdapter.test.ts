@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import * as ModelAdapterModule from './ModelAdapter'
@@ -15,27 +16,29 @@ const splatMeshSpies = {
   updateWorldMatrix: vi.fn()
 }
 
-vi.mock<unknown>(import('@sparkjsdev/spark'), async () => {
+vi.mock(import('@sparkjsdev/spark'), async () => {
   const three = await import('three')
   return {
-    SplatMesh: class extends three.Object3D {
-      initialized = Promise.resolve()
-      dispose = splatMeshSpies.dispose
-      getBoundingBox = splatMeshSpies.getBoundingBox
+    SplatMesh: fromAny(
+      class extends three.Object3D {
+        initialized = Promise.resolve()
+        dispose = splatMeshSpies.dispose
+        getBoundingBox = splatMeshSpies.getBoundingBox
 
-      constructor(opts: { fileBytes: ArrayBuffer; fileName?: string }) {
-        super()
-        splatMeshSpies.ctor(opts)
-      }
+        constructor(opts: { fileBytes: ArrayBuffer; fileName?: string }) {
+          super()
+          splatMeshSpies.ctor(opts)
+        }
 
-      override updateWorldMatrix(
-        force: boolean,
-        updateChildren: boolean
-      ): void {
-        splatMeshSpies.updateWorldMatrix(force, updateChildren)
-        super.updateWorldMatrix(force, updateChildren)
+        override updateWorldMatrix(
+          force: boolean,
+          updateChildren: boolean
+        ): void {
+          splatMeshSpies.updateWorldMatrix(force, updateChildren)
+          super.updateWorldMatrix(force, updateChildren)
+        }
       }
-    }
+    )
   }
 })
 

@@ -1,9 +1,11 @@
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MockInstance } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { ComfyExtension } from '@/types/comfy'
+import type { useExtensionService } from '@/services/extensionService'
 import { useExtensionStore } from '@/stores/extensionStore'
 
 const { registerExtensionMock } = vi.hoisted(() => ({
@@ -19,12 +21,15 @@ beforeEach(() => {
   )
 })
 
-vi.mock<unknown>(import('@/services/extensionService'), () => ({
-  useExtensionService: () => ({ registerExtension: registerExtensionMock })
+vi.mock(import('@/services/extensionService'), () => ({
+  useExtensionService: () =>
+    fromPartial<ReturnType<typeof useExtensionService>>({
+      registerExtension: registerExtensionMock
+    })
 }))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: { __mockApp: true }
+vi.mock(import('@/scripts/app'), () => ({
+  app: fromAny({ __mockApp: true })
 }))
 
 vi.mock(import('@/extensions/core/load3d'), () => ({}))

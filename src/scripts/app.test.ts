@@ -1,3 +1,4 @@
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -6,12 +7,12 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fromPartial } from '@total-typescript/shoehorn'
 import { ref } from 'vue'
 
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
 
 import type { CurveData } from '@/components/curve/types'
+import type { useExtensionService } from '@/services/extensionService'
 import { t } from '@/i18n'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
@@ -90,11 +91,11 @@ const {
   }
 }))
 
-vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
+vi.mock(import('@/utils/litegraphUtil'), () => ({
   createNode: vi.fn(),
-  isImageNode: vi.fn(),
-  isVideoNode: vi.fn(),
-  isAudioNode: vi.fn(),
+  isImageNode: fromAny(vi.fn()),
+  isVideoNode: fromAny(vi.fn()),
+  isAudioNode: fromAny(vi.fn()),
   executeWidgetsCallback: vi.fn()
 }))
 
@@ -121,14 +122,16 @@ vi.mock(import('@/platform/workflow/core/services/workflowService'), {
   spy: true
 })
 
-vi.mock<unknown>(import('@/extensions/core/load3d/Load3dUtils'), () => ({
-  default: {
+vi.mock(import('@/extensions/core/load3d/Load3dUtils'), () => ({
+  default: fromAny({
     uploadFile: vi.fn()
-  }
+  })
 }))
 
-vi.mock<unknown>(import('@/services/extensionService'), () => ({
-  useExtensionService: vi.fn(() => mockExtensionService)
+vi.mock(import('@/services/extensionService'), () => ({
+  useExtensionService: vi.fn(() =>
+    fromPartial<ReturnType<typeof useExtensionService>>(mockExtensionService)
+  )
 }))
 
 vi.mock(import('@/platform/missingModel/missingModelPipeline'), () => ({

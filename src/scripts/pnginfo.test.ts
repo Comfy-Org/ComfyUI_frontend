@@ -1,8 +1,10 @@
 import fs from 'fs'
 import path from 'path'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { ComfyApi } from './api'
 
 import { api } from './api'
 import { getFromAvifFile } from './metadata/avif'
@@ -17,10 +19,10 @@ import {
   importA1111
 } from './pnginfo'
 
-vi.mock<unknown>(import('./api'), () => ({
-  api: {
+vi.mock(import('./api'), () => ({
+  api: fromPartial<ComfyApi>({
     getEmbeddings: vi.fn()
-  }
+  })
 }))
 
 vi.mock(import('./metadata/png'), () => ({

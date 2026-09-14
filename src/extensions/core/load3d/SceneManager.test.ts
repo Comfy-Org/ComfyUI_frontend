@@ -1,4 +1,5 @@
 import { SparkRenderer } from '@sparkjsdev/spark'
+import { fromAny } from '@total-typescript/shoehorn'
 import * as THREE from 'three'
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -14,11 +15,11 @@ const { mockTextureLoad } = vi.hoisted(() => ({
   mockTextureLoad: vi.fn()
 }))
 
-vi.mock<unknown>(import('./Load3dUtils'), () => ({
-  default: {
+vi.mock(import('./Load3dUtils'), () => ({
+  default: fromAny({
     splitFilePath: vi.fn(),
     getResourceURL: vi.fn()
-  }
+  })
 }))
 
 vi.mock(import('three'), { spy: true })
@@ -30,9 +31,9 @@ beforeEach(() => {
   vi.spyOn(THREE, 'TextureLoader').mockImplementation(MockTextureLoader)
 })
 
-vi.mock<unknown>(import('three/examples/jsm/controls/OrbitControls'), () => {
+vi.mock(import('three/examples/jsm/controls/OrbitControls'), () => {
   class OrbitControls {}
-  return { OrbitControls }
+  return { OrbitControls: fromAny(OrbitControls) }
 })
 
 function makeMockRenderer(pixelRatio = 1): THREE.WebGLRenderer {

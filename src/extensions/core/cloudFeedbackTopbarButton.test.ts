@@ -1,7 +1,9 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ActionBarButton } from '@/types/comfy'
+import type { useExtensionService } from '@/services/extensionService'
 
 const registerExtension = vi.hoisted(() => vi.fn())
 const openFeedbackDialog = vi.hoisted(() => vi.fn())
@@ -10,10 +12,9 @@ vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
-vi.mock<unknown>(import('@/services/extensionService'), () => ({
-  useExtensionService: () => ({
-    registerExtension
-  })
+vi.mock(import('@/services/extensionService'), () => ({
+  useExtensionService: () =>
+    fromPartial<ReturnType<typeof useExtensionService>>({ registerExtension })
 }))
 
 vi.mock(import('@/platform/support/feedbackDialog'), () => ({

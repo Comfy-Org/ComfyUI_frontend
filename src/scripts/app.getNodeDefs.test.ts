@@ -1,18 +1,20 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import { mergeCustomNodesI18n, resolveNodeDefText } from '@/i18n'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { api } from '@/scripts/api'
+import type { ComfyApi } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
+vi.mock(import('@/scripts/api'), () => ({
+  api: fromPartial<ComfyApi>({
     getNodeDefs: vi.fn(),
     apiURL: vi.fn((path: string) => path),
     addEventListener: vi.fn(),
     getUserData: vi.fn(),
     storeUserData: vi.fn()
-  }
+  })
 }))
 
 function nodeDef(overrides: Partial<ComfyNodeDefV1>): ComfyNodeDefV1 {

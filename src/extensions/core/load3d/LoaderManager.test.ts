@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -68,38 +69,44 @@ const {
   isGaussianSplatPLYMock: vi.fn<(b: ArrayBuffer) => Promise<boolean>>()
 }))
 
-vi.mock<unknown>(import('./MeshModelAdapter'), () => ({
-  MeshModelAdapter: class {
-    readonly kind = 'mesh' as const
-    readonly extensions = ['stl', 'fbx', 'obj', 'gltf', 'glb'] as const
-    readonly capabilities = {}
-    load = meshLoad
-  }
-}))
-
-vi.mock<unknown>(import('./PointCloudModelAdapter'), () => ({
-  PointCloudModelAdapter: class {
-    readonly kind = 'pointCloud' as const
-    readonly extensions = ['ply'] as const
-    readonly capabilities = {}
-    load = pointCloudLoad
-  }
-}))
-
-vi.mock<unknown>(import('./SplatModelAdapter'), () => ({
-  SplatModelAdapter: class {
-    readonly kind = 'splat' as const
-    readonly extensions = ['spz', 'splat', 'ksplat', 'ply'] as const
-    readonly capabilities = {}
-    matches = async (
-      ext: string,
-      fetchBytes: () => Promise<ArrayBuffer>
-    ): Promise<boolean> => {
-      if (ext !== 'ply') return true
-      return isGaussianSplatPLYMock(await fetchBytes())
+vi.mock(import('./MeshModelAdapter'), () => ({
+  MeshModelAdapter: fromAny(
+    class {
+      readonly kind = 'mesh' as const
+      readonly extensions = ['stl', 'fbx', 'obj', 'gltf', 'glb'] as const
+      readonly capabilities = {}
+      load = meshLoad
     }
-    load = splatLoad
-  }
+  )
+}))
+
+vi.mock(import('./PointCloudModelAdapter'), () => ({
+  PointCloudModelAdapter: fromAny(
+    class {
+      readonly kind = 'pointCloud' as const
+      readonly extensions = ['ply'] as const
+      readonly capabilities = {}
+      load = pointCloudLoad
+    }
+  )
+}))
+
+vi.mock(import('./SplatModelAdapter'), () => ({
+  SplatModelAdapter: fromAny(
+    class {
+      readonly kind = 'splat' as const
+      readonly extensions = ['spz', 'splat', 'ksplat', 'ply'] as const
+      readonly capabilities = {}
+      matches = async (
+        ext: string,
+        fetchBytes: () => Promise<ArrayBuffer>
+      ): Promise<boolean> => {
+        if (ext !== 'ply') return true
+        return isGaussianSplatPLYMock(await fetchBytes())
+      }
+      load = splatLoad
+    }
+  )
 }))
 
 vi.mock(import('./ModelAdapter'), { spy: true })

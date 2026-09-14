@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Load3dDeps } from '@/extensions/core/load3d/Load3d'
@@ -31,15 +32,15 @@ vi.mock(import('three/examples/jsm/utils/SkeletonUtils.js'), () => ({
   clone: cloneSkinnedMock
 }))
 
-vi.mock<unknown>(import('@/extensions/core/load3d/ModelExporter'), () => ({
-  ModelExporter: {
+vi.mock(import('@/extensions/core/load3d/ModelExporter'), () => ({
+  ModelExporter: fromAny({
     exportGLB: exportGLBMock,
     exportOBJ: exportOBJMock,
     exportSTL: exportSTLMock,
     exportFBX: exportFBXMock,
     exportDirect: exportDirectMock,
     detectFormatFromURL: detectFormatFromURLMock
-  }
+  })
 }))
 
 type GizmoStub = {

@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -14,11 +15,13 @@ vi.mock(import('@/scripts/metadata/ply'), () => ({
 const plyLoaderParse = vi.fn(() => makePLYGeometry({ withFaces: true }))
 const fastPlyLoaderParse = vi.fn(() => makePLYGeometry({ withFaces: true }))
 
-vi.mock<unknown>(import('three/examples/jsm/loaders/PLYLoader'), () => ({
-  PLYLoader: class {
-    setPath = vi.fn()
-    parse = plyLoaderParse
-  }
+vi.mock(import('three/examples/jsm/loaders/PLYLoader'), () => ({
+  PLYLoader: fromAny(
+    class {
+      setPath = vi.fn()
+      parse = plyLoaderParse
+    }
+  )
 }))
 
 vi.mock(import('./loader/FastPLYLoader'), () => ({

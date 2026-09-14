@@ -1,6 +1,12 @@
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent } from 'vue'
 
+import type { useLoad3d } from '@/composables/useLoad3d'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { ComfyApp } from '@/scripts/app'
+import type { useExtensionService } from '@/services/extensionService'
+import type { useLoad3dService } from '@/services/load3dService'
 import type { ComfyExtension } from '@/types/comfy'
 
 const {
@@ -17,40 +23,44 @@ const {
   getNodeByLocatorIdMock: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/services/extensionService'), () => ({
-  useExtensionService: () => ({ registerExtension: registerExtensionMock })
+vi.mock(import('@/services/extensionService'), () => ({
+  useExtensionService: () =>
+    fromPartial<ReturnType<typeof useExtensionService>>({
+      registerExtension: registerExtensionMock
+    })
 }))
 
-vi.mock<unknown>(import('@/services/load3dService'), () => ({
-  useLoad3dService: () => ({ getLoad3d: vi.fn() })
+vi.mock(import('@/services/load3dService'), () => ({
+  useLoad3dService: () =>
+    fromPartial<ReturnType<typeof useLoad3dService>>({ getLoad3d: vi.fn() })
 }))
 
-vi.mock<unknown>(import('@/composables/useLoad3d'), () => ({
-  useLoad3d: () => ({
-    waitForLoad3d: waitForLoad3dMock,
-    onLoad3dReady: onLoad3dReadyMock
-  })
+vi.mock(import('@/composables/useLoad3d'), () => ({
+  useLoad3d: () =>
+    fromPartial<ReturnType<typeof useLoad3d>>({
+      waitForLoad3d: waitForLoad3dMock,
+      onLoad3dReady: onLoad3dReadyMock
+    })
 }))
 
-vi.mock<unknown>(
-  import('@/extensions/core/load3d/Load3DConfiguration'),
-  () => ({
-    default: class {
+vi.mock(import('@/extensions/core/load3d/Load3DConfiguration'), () => ({
+  default: fromAny(
+    class {
       configureForSaveMesh = configureForSaveMeshMock
     }
-  })
-)
+  )
+}))
 
 vi.mock(import('@/extensions/core/load3d/exportMenuHelper'), () => ({
   createExportMenuItems: vi.fn(() => [])
 }))
 
-vi.mock<unknown>(import('@/components/load3d/Load3D.vue'), () => ({
-  default: {}
+vi.mock(import('@/components/load3d/Load3D.vue'), () => ({
+  default: defineComponent({ render: () => null })
 }))
 
-vi.mock<unknown>(import('@/scripts/domWidget'), () => ({
-  ComponentWidgetImpl: vi.fn(),
+vi.mock(import('@/scripts/domWidget'), () => ({
+  ComponentWidgetImpl: fromAny(vi.fn()),
   addWidget: vi.fn()
 }))
 
@@ -59,8 +69,8 @@ vi.mock(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
   persistThumbnail: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: { rootGraph: {} }
+vi.mock(import('@/scripts/app'), () => ({
+  app: fromPartial<ComfyApp>({ rootGraph: {} })
 }))
 
 vi.mock(import('@/utils/graphTraversalUtil'), () => ({
