@@ -91,6 +91,10 @@ export async function bootAgentApp(
   agentFlag: boolean,
   options: BootAgentAppOptions = {}
 ): Promise<void> {
+  // The onboarding tour is a modal; pre-seed its dismissal so the panel is interactable.
+  await page.addInitScript(() => {
+    localStorage.setItem('Comfy.AgentPanel.onboarded', 'true')
+  })
   await mockAgentBoot(page, { agentFlag, ...options })
   await bootCloud(page)
   await page.goto(APP_URL)
