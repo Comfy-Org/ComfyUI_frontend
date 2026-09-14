@@ -106,13 +106,11 @@ export function useRemoteWidget(options: {
     const fallback = () =>
       queryClient.getQueryData<RemoteWidgetData>(queryKey) ?? defaultValue
     try {
-      const authHeaders = await getAuthHeaders()
-      if (!scopesMatch(scope, getAuthScope())) {
-        return { data: fallback(), scope }
-      }
       const data = await queryClient.fetchQuery({
         queryKey,
         queryFn: async ({ signal }) => {
+          const authHeaders = await getAuthHeaders()
+          if (!scopesMatch(scope, getAuthScope())) return fallback()
           const data = await fetchRemoteWidgetData(
             descriptor,
             signal,

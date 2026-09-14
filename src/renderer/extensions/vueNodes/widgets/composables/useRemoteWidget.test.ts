@@ -106,6 +106,42 @@ describe('useRemoteWidget', () => {
     expect(callback).not.toHaveBeenCalled()
   })
 
+  it('deduplicates concurrent requests while resolving auth headers', async () => {
+    const node = new LGraphNode('Test')
+    vi.spyOn(node, 'addWidget').mockReturnValue(
+      fromPartial<IWidget>({ type: 'toggle', options: {} })
+    )
+    const getAuthHeader = vi.mocked(useAuthStore().getAuthHeader)
+    let resolveAuthHeader!: (value: null) => void
+    getAuthHeader.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveAuthHeader = resolve
+      })
+    )
+    vi.spyOn(axios, 'get').mockResolvedValueOnce({ data: ['voice-a'] })
+    const createRemote = () =>
+      useRemoteWidget({
+        remoteConfig: { route: '/options' },
+        defaultValue: [],
+        node,
+        widget: fromPartial<IWidget>({
+          type: 'combo',
+          value: undefined,
+          options: {}
+        })
+      })
+    const remoteA = createRemote()
+    const remoteB = createRemote()
+    const fulfilledA = new Promise<void>((resolve) => remoteA.getValue(resolve))
+    const fulfilledB = new Promise<void>((resolve) => remoteB.getValue(resolve))
+
+    await vi.waitFor(() => expect(getAuthHeader).toHaveBeenCalledTimes(1))
+    resolveAuthHeader(null)
+    await Promise.all([fulfilledA, fulfilledB])
+
+    expect(axios.get).toHaveBeenCalledTimes(1)
+  })
+
   it.for([
     { response: ['voice-a', 7], expectedValue: 'voice-a' },
     { response: { value: 'voice-a' }, expectedValue: 'default' },
