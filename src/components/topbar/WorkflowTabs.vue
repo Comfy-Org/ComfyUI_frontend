@@ -109,7 +109,10 @@
       <CurrentUserButton v-if="showCurrentUser" compact class="shrink-0 p-1" />
       <LoginButton v-else class="p-1" />
       <template v-if="showAgentEntry">
-        <div class="h-5 w-px shrink-0 bg-border-default" />
+        <div
+          data-testid="agent-entry-separator"
+          class="h-5 w-px shrink-0 bg-border-default"
+        />
         <Button
           variant="muted-textonly"
           size="sm"
