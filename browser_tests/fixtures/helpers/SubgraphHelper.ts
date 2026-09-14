@@ -619,7 +619,7 @@ export class SubgraphHelper {
             String(link.target_id),
             link.target_slot
           ])
-          .sort()
+          .sort((a, b) => a.join(':').localeCompare(b.join(':')))
       }
     })
   }
