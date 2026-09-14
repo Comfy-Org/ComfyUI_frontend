@@ -5,6 +5,7 @@ import type {
   GestureState
 } from './canvas/reduceGesture'
 import { idleGesture, reduceGesture } from './canvas/reduceGesture'
+import { watchGestureInterrupts } from './canvas/watchGestureInterrupts'
 import type { CompassCorners } from './interfaces'
 import type { CanvasPointerEvent } from './types/events'
 
@@ -66,6 +67,7 @@ export class CanvasPointer {
   }
 
   #state: GestureState = idleGesture
+  #stopWatchingInterrupts?: () => void
 
   /** Used downstream for touch event support. */
   isDouble: boolean = false
@@ -176,6 +178,9 @@ export class CanvasPointer {
     this.eDown = e
     this.pointerId = e.pointerId
     this.element.setPointerCapture(e.pointerId)
+    this.#stopWatchingInterrupts = watchGestureInterrupts(this.element, () =>
+      this.reset()
+    )
     this.#dispatch(
       { type: 'down', position: positionOf(e), timeStamp: e.timeStamp },
       e
@@ -442,6 +447,8 @@ export class CanvasPointer {
    * state is cleared.
    */
   reset(): void {
+    this.#stopWatchingInterrupts?.()
+    this.#stopWatchingInterrupts = undefined
     if (this.eDown) this.#dispatch({ type: 'cancel' }, this.eDown)
 
     // The setter executes the callback before clearing it
