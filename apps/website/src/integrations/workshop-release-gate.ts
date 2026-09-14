@@ -16,14 +16,21 @@ import {
 } from '../config/workshop-release'
 
 export function modelsBuildRoutes(enabled: boolean) {
-  const entry = (name: string) =>
-    fileURLToPath(new URL(`../routes/models/${name}.astro`, import.meta.url))
+  const entry = (dir: string, name: string) =>
+    fileURLToPath(new URL(`../routes/${dir}/${name}.astro`, import.meta.url))
+  const model = (name: string) => entry('models', name)
+  const template = (name: string) => entry('templates', name)
   return [
-    { pattern: '/models', entrypoint: entry(enabled ? 'index' : 'showcase') },
+    {
+      pattern: '/models',
+      entrypoint: model(enabled ? 'index' : 'showcase')
+    },
     ...(enabled
       ? [
-          { pattern: '/models/[slug]', entrypoint: entry('[slug]') },
-          { pattern: '/models/showcase', entrypoint: entry('showcase') }
+          { pattern: '/models/[slug]', entrypoint: model('[slug]') },
+          { pattern: '/models/showcase', entrypoint: model('showcase') },
+          { pattern: '/templates', entrypoint: template('index') },
+          { pattern: '/templates/[name]', entrypoint: template('[name]') }
         ]
       : [])
   ]
@@ -91,6 +98,13 @@ export function workshopReleaseGate(): AstroIntegration {
         if (modelEntries.some((name) => name !== 'index.html')) {
           throw new Error(
             'workshop-release-gate found an ungated Models route; refusing to ship it.'
+          )
+        }
+        // Templates ship with Models or not at all: they are the same feature,
+        // and the tree has no marketing page to keep behind.
+        if (existsSync(join(root, 'templates'))) {
+          throw new Error(
+            'workshop-release-gate found an ungated Templates route; refusing to ship it.'
           )
         }
         logger.warn(

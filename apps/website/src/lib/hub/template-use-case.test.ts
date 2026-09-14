@@ -3,7 +3,11 @@ import { describe, expect, it } from 'vitest'
 import type { WorkshopModel } from '../../config/models-catalogue'
 import { workshopModels } from '../../config/workshop-browse-content'
 import hubTemplates from '../../data/hubTemplates.json'
-import { partnerModelFor, useCaseForTemplate } from './template-use-case'
+import {
+  partnerModelFor,
+  templatesUsingModel,
+  useCaseForTemplate
+} from './template-use-case'
 import type { HubTemplate } from './types'
 
 const templates = hubTemplates as HubTemplate[]
@@ -165,5 +169,23 @@ describe('useCaseForTemplate', () => {
       (tmpl) => useCaseForTemplate(tmpl, workshopModels) === undefined
     )
     expect(unplaced).toEqual([])
+  })
+})
+
+describe('templatesUsingModel', () => {
+  it('answers with the workflows that name the model, not the ones that rhyme', () => {
+    const model = { name: 'Nano Banana Pro' } as WorkshopModel
+    const using = templatesUsingModel(model, [
+      template([], ['Nano Banana Pro']),
+      template([], ['nano-banana-pro']),
+      template([], ['Nano Banana 2']),
+      template([], [])
+    ])
+    expect(using).toHaveLength(2)
+  })
+
+  it('finds the model the catalogue page would link to', () => {
+    const pro = workshopModels.find((m) => m.name === 'Nano Banana Pro')
+    expect(pro && templatesUsingModel(pro, templates).length).toBeGreaterThan(1)
   })
 })

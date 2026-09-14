@@ -46,7 +46,7 @@ export interface HubWorkflowPage {
   readonly related: readonly HubTemplate[]
 }
 
-export const hubWorkflowPath = (name: string) => `/models/workflows/${name}/`
+export const templatePath = (name: string) => `/templates/${name}/`
 
 const templates = hubTemplates as HubTemplate[]
 const details = hubTemplateDetails as Record<string, HubTemplateDetails>
@@ -257,7 +257,7 @@ export function getHubWorkflowPage(name: string): HubWorkflowPage | undefined {
     slug: template.name,
     name: template.title,
     workflowCount: 1,
-    href: hubWorkflowPath(template.name),
+    href: templatePath(template.name),
     routerId: `hub/${template.name}`,
     provider: template.username || 'ComfyUI',
     modality: MEDIA_TO_MODALITY[mediaType],

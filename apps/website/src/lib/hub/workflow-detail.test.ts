@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   getHubWorkflowPage,
-  hubWorkflowPath,
+  templatePath,
   listHubWorkflows
 } from './workflow-detail'
 
@@ -15,7 +15,7 @@ describe('getHubWorkflowPage', () => {
     const page = getHubWorkflowPage('video_minimax_h3_i2v')!
     expect(page.mediaType).toBe('video')
     expect(page.model.modality).toBe('video')
-    expect(page.model.href).toBe(hubWorkflowPath('video_minimax_h3_i2v'))
+    expect(page.model.href).toBe(templatePath('video_minimax_h3_i2v'))
     expect(page.model.fields.map((field) => field.name)).toEqual([
       'prompt',
       'image',
