@@ -8,7 +8,7 @@ describe('Live billing opt-in', () => {
     { enabled: '0', project: 'cloud-live', count: 0 },
     { enabled: '1', project: 'cloud-live', count: 3 },
     { enabled: '1', project: 'cloud-live-paid', count: 2 },
-    { enabled: '1', project: 'cloud-live-disposable', count: 4 }
+    { enabled: '1', project: 'cloud-live-disposable', count: 5 }
   ])(
     'collects $project only when explicitly enabled ($enabled)',
     { timeout: 90_000 },
