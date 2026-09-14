@@ -14,6 +14,7 @@ const importer = resolve(
   'src/workbench/extensions/agent/crdt/schemaGuard.ts'
 )
 const hmrPort = 6216
+let watchedFile: string | undefined
 let resolveHotUpdate: ((moduleIds: string[]) => void) | undefined
 const hotUpdate = new Promise<string[]>((resolveUpdate) => {
   resolveHotUpdate = resolveUpdate
@@ -27,7 +28,10 @@ const server = await createServer({
     {
       name: 'comfy-multi-player-hmr-proof',
       handleHotUpdate(context) {
-        if (normalizePath(context.file) === normalizePath(packageEntry)) {
+        if (
+          watchedFile !== undefined &&
+          normalizePath(context.file) === normalizePath(watchedFile)
+        ) {
           resolveHotUpdate?.(
             context.modules
               .map((module) => module.id)
@@ -72,6 +76,7 @@ try {
       `Vite resolved @comfyorg/comfy-multi-player to ${actualEntry}; expected workspace source ${expectedEntry}`
     )
   }
+  watchedFile = expectedEntry
 
   // Transform the real frontend importer, not just the package entry: a
   // registered package entry only proves Vite knows the file, while the
@@ -143,7 +148,11 @@ try {
     }
   )
   if (
-    !updatedModules.some((id) => id.replace(/[?#].*$/, '') === expectedEntry)
+    !updatedModules.some(
+      (id) =>
+        normalizePath(id.replace(/[?#].*$/, '')) ===
+        normalizePath(expectedEntry)
+    )
   ) {
     throw new Error(
       `Vite HMR update did not include workspace source: ${updatedModules.join(', ')}`
