@@ -11,6 +11,7 @@ import { checkDevServer } from '../checks/devServer'
 import { checkBackend } from '../checks/backend'
 import { checkModels } from '../checks/models'
 import type { Distribution } from '../devserver/distributions'
+import { hasAccessServiceToken } from '../devserver/cloudflareAccess'
 import { alert, header, pass, info } from '../ui/logger'
 import type { CheckResult } from '../checks/types'
 import { fetchEnvInfo } from '../devserver/envInfo'
@@ -24,6 +25,15 @@ export async function runChecks(
   allPassed: boolean
 }> {
   if (options.showHeader !== false) header('Environment Check')
+
+  if (distribution.id === 'custom' && !hasAccessServiceToken()) {
+    info([
+      'A backend behind Cloudflare Access bounces every request to its login ' +
+        'page, leaving the app on the loading screen. Export ' +
+        'DEV_SERVER_CF_ACCESS_CLIENT_ID and DEV_SERVER_CF_ACCESS_CLIENT_SECRET ' +
+        'to reach one.'
+    ])
+  }
 
   if (distribution.backendUrl && distribution.id !== 'local') {
     const env = await fetchEnvInfo(distribution.backendUrl)
