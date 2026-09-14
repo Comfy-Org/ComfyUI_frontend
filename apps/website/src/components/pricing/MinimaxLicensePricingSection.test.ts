@@ -50,6 +50,30 @@ describe('MinimaxLicensePricingSection', () => {
     }
   })
 
+  it('links every Contact sales cell to the contact page and leaves other cells plain', () => {
+    render(MinimaxLicensePricingSection, { props: { locale: 'en' } })
+
+    const contactLinks = screen.getAllByRole('link', { name: 'Contact sales' })
+    const expectedCount = rows.flatMap((row) =>
+      row.cells.filter((cell) => cell.en === 'Contact sales')
+    ).length
+    expect(contactLinks).toHaveLength(expectedCount)
+    for (const link of contactLinks) {
+      expect(link.getAttribute('href')).toBe('/contact')
+    }
+
+    const priceCell = screen.getByRole('cell', { name: 'From $5,000 / month' })
+    expect(within(priceCell).queryByRole('link')).toBeNull()
+  })
+
+  it('localizes the Contact sales links for zh-CN', () => {
+    render(MinimaxLicensePricingSection, { props: { locale: 'zh-CN' } })
+
+    for (const link of screen.getAllByRole('link', { name: '联系销售' })) {
+      expect(link.getAttribute('href')).toBe('/zh-CN/contact')
+    }
+  })
+
   it('points the CTA at the license page', () => {
     render(MinimaxLicensePricingSection, { props: { locale: 'en' } })
 
