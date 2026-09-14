@@ -808,6 +808,20 @@ describe('UnifiedPricingTable credit allotment copy', () => {
     expect(screen.getByText('147,700')).toBeTruthy()
     expect(screen.getByText('Generates ~13,405 5s videos*')).toBeTruthy()
   })
+
+  it('calls the team subscription by the cycle it is bought on', async () => {
+    const user = userEvent.setup()
+    renderWithCycleToggle({ initialPlanMode: 'team' })
+
+    expect(
+      screen.getByText(/Choose your own annual credit subscription/)
+    ).toBeTruthy()
+
+    await user.click(screen.getByTestId('cycle-monthly'))
+    await nextTick()
+
+    expect(screen.getByText(/Choose your own credit subscription/)).toBeTruthy()
+  })
 })
 
 // INC-128. The server answers per workspace, not per plan card, so the table

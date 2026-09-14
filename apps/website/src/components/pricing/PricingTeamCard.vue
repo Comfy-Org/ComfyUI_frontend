@@ -5,11 +5,10 @@ import { computed, ref } from 'vue'
 
 import { Coins as CreditsIcon } from '@lucide/vue'
 
+import { formatCreditsCompact } from '@comfyorg/shared-frontend-utils/creditsUtil'
+
 import { subscribeUrl } from '../../data/pricingPlans'
-import {
-  formatTeamCreditsShort,
-  teamCreditTiers
-} from '../../data/teamCreditTiers'
+import { teamCreditTiers } from '../../data/teamCreditTiers'
 import { t } from '../../i18n/translations'
 import Button from '../ui/button/Button.vue'
 import Slider from '../ui/slider/Slider.vue'
@@ -51,6 +50,20 @@ const teamCreditsLabel = computed(() =>
       ? 'pricing.creditsLabelYearly'
       : 'pricing.creditsLabel',
     locale
+  )
+)
+const teamSliderLabel = computed(() =>
+  t(
+    billingPeriod === 'yearly'
+      ? 'pricing.team.sliderLabelYearly'
+      : 'pricing.team.sliderLabel',
+    locale
+  )
+)
+
+const tickCreditLabels = computed(() =>
+  teamCreditTiers.map((tier) =>
+    formatCreditsCompact(amountForBillingPeriod(tier.credits))
   )
 )
 
@@ -131,7 +144,7 @@ const ctaHref = computed(() =>
             :max="teamCreditTiers.length - 1"
             :step="1"
             :ticks="teamCreditTiers.length"
-            :thumb-label="t('pricing.team.sliderLabel', locale)"
+            :thumb-label="teamSliderLabel"
             :thumb-value-text="`${teamCredits.toLocaleString('en-US')} ${teamCreditsLabel}, ${fmtPrice(selectedTeamPrice)} ${t('pricing.plan.period', locale)}`"
           >
             <template #tick="{ index, active }">
@@ -150,7 +163,7 @@ const ctaHref = computed(() =>
                   active ? 'text-primary-warm-white' : 'text-primary-warm-gray'
                 "
               >
-                {{ formatTeamCreditsShort(teamCreditTiers[index].credits) }}
+                {{ tickCreditLabels[index] }}
               </span>
             </template>
           </Slider>
