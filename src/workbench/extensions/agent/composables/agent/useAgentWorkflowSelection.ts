@@ -185,7 +185,11 @@ export function useAgentWorkflowSelection({
   }
 
   function onRequestWorkflowReferences(): void {
-    if (!workflowSelection.value) void refreshCloudWorkflowIds()
+    if (workflowSelection.value) return
+    const hasUnindexedOpenWorkflow = workflowStore.openWorkflows.some(
+      (workflow) => !workflow.isTemporary && cloudIdFor(workflow) === undefined
+    )
+    void refreshCloudWorkflowIds({ force: hasUnindexedOpenWorkflow })
   }
 
   async function onWorkflowRestored(
