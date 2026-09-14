@@ -161,8 +161,27 @@ describe('UnifiedStripePaymentSelector', () => {
       fireStripeElementEvent('ready')
 
       expect(mockTrackCheckoutJourneyEvent).toHaveBeenCalledWith(
-        expect.objectContaining({ phase: 'payment_element_ready' })
+        expect.objectContaining({
+          phase: 'payment_element_ready',
+          element: 'payment'
+        })
       )
+    })
+
+    it('distinguishes the address readiness from the payment element', async () => {
+      renderSelector()
+      await waitFor(() =>
+        expect(stripeMocks.addressMount).toHaveBeenCalledTimes(1)
+      )
+
+      fireStripeElementEvent('ready')
+      fireAddressElementEvent('ready')
+
+      const readyElements = mockTrackCheckoutJourneyEvent.mock.calls
+        .map(([event]) => event)
+        .filter((event) => event.phase === 'payment_element_ready')
+        .map((event) => event.element)
+      expect(readyElements).toStrictEqual(['payment', 'address'])
     })
 
     it('reports a mount failure with a safe code from loaderror', async () => {
@@ -177,6 +196,7 @@ describe('UnifiedStripePaymentSelector', () => {
         expect.objectContaining({
           checkout_journey_id: seededJourneyId,
           phase: 'payment_element_failed',
+          element: 'payment',
           element_phase: 'mount',
           error_code: 'invalid_request'
         })
@@ -193,9 +213,10 @@ describe('UnifiedStripePaymentSelector', () => {
         error: { code: 'invalid_request' }
       })
 
-      expect(mockCaptureCheckoutJourneyEvent).toHaveBeenCalledWith(
+      expect(mockTrackCheckoutJourneyEvent).toHaveBeenCalledWith(
         expect.objectContaining({
           phase: 'payment_element_failed',
+          element: 'address',
           element_phase: 'mount',
           error_code: 'invalid_request'
         })

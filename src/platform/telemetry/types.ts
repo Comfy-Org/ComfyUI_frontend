@@ -1017,6 +1017,8 @@ export type CheckoutEntrySource =
   | 'other'
   | 'unknown'
 type CheckoutElementPhase = 'init' | 'mount' | 'update'
+/** Which Stripe element in the shared group the observation came from. */
+type CheckoutElementKind = 'payment' | 'address'
 type CheckoutSubmitPhase = 'validation' | 'token_creation'
 
 /**
@@ -1054,9 +1056,13 @@ type CheckoutJourneyPreviewFailed = {
   error_code?: BillingErrorCode
   preview_revision?: string
 }
-type CheckoutJourneyPaymentElementReady = { phase: 'payment_element_ready' }
+type CheckoutJourneyPaymentElementReady = {
+  phase: 'payment_element_ready'
+  element: CheckoutElementKind
+}
 type CheckoutJourneyPaymentElementFailed = {
   phase: 'payment_element_failed'
+  element: CheckoutElementKind
   element_phase: CheckoutElementPhase
   error_code?: string
 }
@@ -1146,6 +1152,7 @@ export function getCheckoutJourneyTelemetryEventPayload(
     }),
     ...('error_code' in event &&
       event.error_code !== undefined && { error_code: event.error_code }),
+    ...('element' in event && { element: event.element }),
     ...('element_phase' in event && { element_phase: event.element_phase }),
     ...('submit_phase' in event && { submit_phase: event.submit_phase })
   }

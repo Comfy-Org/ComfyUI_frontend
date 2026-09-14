@@ -129,6 +129,7 @@ onMounted(async () => {
     configurationError.value = t('subscription.preview.stripeUnavailable')
     emitPaymentJourneyPhase({
       phase: 'payment_element_failed',
+      element: 'payment',
       element_phase: 'init'
     })
     return
@@ -137,6 +138,7 @@ onMounted(async () => {
     configurationError.value = t('subscription.preview.stripeUnavailable')
     emitPaymentJourneyPhase({
       phase: 'payment_element_failed',
+      element: 'payment',
       element_phase: 'init'
     })
     return
@@ -153,6 +155,7 @@ onMounted(async () => {
     configurationError.value = t('subscription.preview.stripeUnavailable')
     emitPaymentJourneyPhase({
       phase: 'payment_element_failed',
+      element: 'payment',
       element_phase: 'init'
     })
     return
@@ -162,6 +165,7 @@ onMounted(async () => {
     if (!isUnmounted) {
       emitPaymentJourneyPhase({
         phase: 'payment_element_failed',
+        element: 'payment',
         element_phase: 'init'
       })
     }
@@ -234,12 +238,16 @@ onMounted(async () => {
   paymentElement.mount(paymentElementTarget.value)
   paymentElement.on('ready', () => {
     if (isUnmounted) return
-    emitPaymentJourneyPhase({ phase: 'payment_element_ready' })
+    emitPaymentJourneyPhase({
+      phase: 'payment_element_ready',
+      element: 'payment'
+    })
   })
   paymentElement.on('loaderror', (event) => {
     if (isUnmounted) return
     emitPaymentJourneyPhase({
       phase: 'payment_element_failed',
+      element: 'payment',
       element_phase: 'mount',
       ...(event.error?.code && { error_code: event.error.code })
     })
@@ -258,12 +266,16 @@ onMounted(async () => {
   addressElement.mount(addressElementTarget.value)
   addressElement.on('ready', () => {
     if (isUnmounted) return
-    emitPaymentJourneyPhase({ phase: 'payment_element_ready' })
+    emitPaymentJourneyPhase({
+      phase: 'payment_element_ready',
+      element: 'address'
+    })
   })
   addressElement.on('loaderror', (event) => {
     if (isUnmounted) return
     emitPaymentJourneyPhase({
       phase: 'payment_element_failed',
+      element: 'address',
       element_phase: 'mount',
       ...(event.error?.code && { error_code: event.error.code })
     })
@@ -280,6 +292,7 @@ watch([() => amountCents, () => currency], ([amount, nextCurrency]) => {
       configurationError.value = t('g.error')
       emitPaymentJourneyPhase({
         phase: 'payment_element_failed',
+        element: 'payment',
         element_phase: 'update'
       })
     })

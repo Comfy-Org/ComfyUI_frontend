@@ -59,7 +59,11 @@ Every event carries a frozen `CheckoutJourneyContext`: `checkout_journey_id`,
 `checkout_entered_at` (UTC), `assignment_status`, optional `assigned_arm`,
 `entry_flow`, `entry_source`, and optional `ui_mode`/`billing_op_id`.
 `ui_mode` records the checkout UI the user actually saw (`embedded`/`hosted`),
-so a frozen arm can be reconciled against real experience. `schema_version` is
+so a frozen arm can be reconciled against real experience. The two
+`payment_element_*` phases additionally carry `element` (`payment`/`address`),
+because the shared Elements group mounts more than one element and a funnel
+that counts readiness or attributes a mount failure must know which one
+reported it. `schema_version` is
 stamped on every payload. Correlation rides on `checkout_journey_id` (all
 events) and `billing_op_id` (from `operation_linked` onward, the join to the
 terminal `billing.*` taxonomy), plus each provider's own native event id
