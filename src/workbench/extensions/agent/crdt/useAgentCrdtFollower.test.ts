@@ -14,6 +14,7 @@ import { render } from '@testing-library/vue'
 
 import type { GraphMutations } from '@/core/graph/graphMutations'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
+import type { reportError as reportErrorFn } from '@/platform/telemetry/reportError'
 import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
 
@@ -70,7 +71,7 @@ const definitionsState = vi.hoisted(() => ({
 }))
 
 const telemetryState = vi.hoisted(() => ({
-  reportError: vi.fn<(cause: unknown, options: { errorType: string }) => void>()
+  reportError: vi.fn<typeof reportErrorFn>()
 }))
 
 const apiState = vi.hoisted(() => {
@@ -131,7 +132,7 @@ vi.mock(import('./devPanelLog'), () => ({
   recordDevEvent: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: telemetryState.reportError
 }))
 
@@ -145,7 +146,7 @@ import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 
 const graphMutations = {} as GraphMutations
 const DOC_ID_KEY = 'Comfy.Agent.CrdtDocId'
-const TEARDOWN_ERROR_TYPE = 'agent_crdt_follower_teardown_failed'
+const TEARDOWN_ERROR_TYPE = 'failure_tearing_down_agent_crdt_follower'
 
 function persistedRecord(): {
   docId: string

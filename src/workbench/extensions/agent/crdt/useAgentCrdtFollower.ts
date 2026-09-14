@@ -82,7 +82,7 @@ function runFollowerTeardown(cleanups: readonly (() => void)[]): void {
       cleanup()
     } catch (error) {
       reportError(error, {
-        errorType: 'agent_crdt_follower_teardown_failed'
+        errorType: 'failure_tearing_down_agent_crdt_follower'
       })
     }
   }
