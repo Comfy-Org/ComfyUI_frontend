@@ -906,6 +906,67 @@ export const useLitegraphService = () => {
     }
   }
 
+  function getBlueprintItems(nodeType: string): object | null {
+    const blueprint = useSubgraphStore().getBlueprint(nodeType)
+    if (!blueprint) return null
+
+    const rootNode =
+      blueprint.nodes.length === 1 ? blueprint.nodes[0] : undefined
+    const subgraphs = blueprint.definitions?.subgraphs
+    if (!rootNode || !subgraphs?.some(({ id }) => id === rootNode.type)) {
+      console.error(new Error('Cannot add invalid subgraph blueprint'))
+      return null
+    }
+
+    return { nodes: blueprint.nodes, subgraphs }
+  }
+
+  function startGhostPlacement(
+    canvas: LGraphCanvas,
+    node: LGraphNode,
+    addOptions?: GraphAddOptions
+  ) {
+    if (!addOptions?.ghost) return
+
+    node.flags.ghost = true
+    canvas.graph?.trigger('node:property:changed', {
+      nodeId: node.id,
+      property: 'flags.ghost',
+      oldValue: false,
+      newValue: true
+    })
+    canvas.startGhostPlacement(node, addOptions.dragEvent)
+  }
+
+  function addBlueprintNodeOnGraph(
+    nodeType: string,
+    options: CreateNodeOptions,
+    addOptions?: GraphAddOptions
+  ): LGraphNode | null {
+    const items = getBlueprintItems(nodeType)
+    if (!items) return null
+
+    const canvas = canvasStore.getCanvas()
+    const results = canvas._deserializeItems(items, { position: options.pos })
+    if (!results) {
+      console.error(new Error('Failed to add subgraph blueprint'))
+      return null
+    }
+
+    const node = results.nodes.values().next().value
+    if (!node) {
+      console.error(
+        new Error(
+          'Subgraph blueprint was added, but failed to resolve a subgraph Node'
+        )
+      )
+      return null
+    }
+
+    startGhostPlacement(canvas, node, addOptions)
+    return node
+  }
+
   function addNodeOnGraph(
     nodeDef: ComfyNodeDefV1 | ComfyNodeDefV2,
     options: CreateNodeOptions = {},
@@ -914,51 +975,7 @@ export const useLitegraphService = () => {
     options.pos ??= getCanvasCenter()
 
     if (isBlueprintType(nodeDef.name)) {
-      const canvas = canvasStore.getCanvas()
-      const bp = useSubgraphStore().getBlueprint(nodeDef.name)
-      if (!bp) return null
-      const rootNode = bp.nodes.length === 1 ? bp.nodes[0] : undefined
-      const subgraph =
-        rootNode && bp.definitions
-          ? bp.definitions.subgraphs.find(
-              (definition) => definition.id === rootNode.type
-            )
-          : undefined
-      if (!rootNode || !subgraph) {
-        console.error(new Error('Cannot add invalid subgraph blueprint'))
-        return null
-      }
-      const items: object = {
-        nodes: bp.nodes,
-        subgraphs: bp.definitions?.subgraphs
-      }
-      const results = canvas._deserializeItems(items, {
-        position: options.pos
-      })
-      if (!results) {
-        console.error(new Error('Failed to add subgraph blueprint'))
-        return null
-      }
-      const node = results.nodes.values().next().value
-      if (!node) {
-        console.error(
-          new Error(
-            'Subgraph blueprint was added, but failed to resolve a subgraph Node'
-          )
-        )
-        return null
-      }
-      if (addOptions?.ghost) {
-        node.flags.ghost = true
-        canvas.graph?.trigger('node:property:changed', {
-          nodeId: node.id,
-          property: 'flags.ghost',
-          oldValue: false,
-          newValue: true
-        })
-        canvas.startGhostPlacement(node, addOptions.dragEvent)
-      }
-      return node
+      return addBlueprintNodeOnGraph(nodeDef.name, options, addOptions)
     }
 
     const node = LiteGraph.createNode(
