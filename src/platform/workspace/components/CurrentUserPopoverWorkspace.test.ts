@@ -341,7 +341,7 @@ describe('CurrentUserPopoverWorkspace', () => {
 
   it('opens hosted billing when its feature flag is enabled', async () => {
     const user = userEvent.setup()
-    const open = vi.spyOn(window, 'open').mockImplementation(() => null)
+    const open = vi.spyOn(window, 'open').mockReturnValue(window)
     state.canOpenPricingSurface = true
     state.hostedBillingWebEnabled = true
     renderComponent('team')
@@ -354,6 +354,21 @@ describe('CurrentUserPopoverWorkspace', () => {
       'noopener,noreferrer'
     )
     expect(state.showPricingTable).not.toHaveBeenCalled()
+  })
+
+  it('keeps Plans & pricing in-app when the hosted tab is blocked', async () => {
+    const user = userEvent.setup()
+    const open = vi.spyOn(window, 'open').mockReturnValue(null)
+    state.canOpenPricingSurface = true
+    state.hostedBillingWebEnabled = true
+    renderComponent('team')
+
+    await user.click(screen.getByTestId('plans-pricing-menu-item'))
+
+    expect(open).toHaveBeenCalledOnce()
+    expect(state.showPricingTable).toHaveBeenCalledWith({
+      reason: 'avatar_menu_plans'
+    })
   })
 
   it('keeps Plans & pricing in-app when the hosted URL is unavailable', async () => {
