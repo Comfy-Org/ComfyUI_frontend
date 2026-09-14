@@ -751,6 +751,24 @@ describe('useWorkflowStore', () => {
         'workflows/a.json'
       ])
     })
+
+    it('should drop the pruned path from the open paths, not just the projection', async () => {
+      await syncRemoteWorkflows(['a.json', 'b.json'])
+      vi.mocked(api.getUserData).mockResolvedValue({
+        status: 200,
+        text: () => Promise.resolve(defaultGraphJSON)
+      } as Response)
+      const removed = store.getWorkflowByPath('workflows/b.json')!
+      await store.openWorkflow(store.getWorkflowByPath('workflows/a.json')!)
+      await store.openWorkflow(removed)
+      expect(store.isOpen(removed)).toBe(true)
+
+      await syncRemoteWorkflows(['a.json'])
+
+      // Filtering only the projection would leave isOpen answering from a
+      // stale path that is no longer in the lookup.
+      expect(store.isOpen(removed)).toBe(false)
+    })
   })
 
   describe('save', () => {
