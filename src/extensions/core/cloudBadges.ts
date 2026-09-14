@@ -3,10 +3,8 @@ import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { t } from '@/i18n'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExtensionService } from '@/services/extensionService'
-import {
-  labelRepeatsMessage,
-  toTitleCase
-} from '@/extensions/core/serverHealthAlertText'
+import { labelRepeatsMessage } from '@/extensions/core/serverHealthAlertText'
+import { toTitleCase } from '@/utils/textCaseUtil'
 import type { TopbarBadge } from '@/types/comfy'
 
 const badges = computed<TopbarBadge[]>(() => {
