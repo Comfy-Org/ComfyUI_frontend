@@ -22,6 +22,7 @@ const { model } = page
   title={`${model.name} · ${t('workshop.title')} - Comfy`}
   description={t('workshop.model.meta.description').replace('{name}', model.name)}
   ogImage={model.thumbnailUrl}
+  clientRouter={false}
   noindex
 >
   <ModelsPage slug={model.slug} client:load>

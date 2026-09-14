@@ -57,6 +57,7 @@ const emit = defineEmits<{
   switchPersonal: []
   buyCredits: []
   download: [kind: RunOutput['kind']]
+  downloaded: [url: string]
 }>()
 
 const elapsed = computed(() =>
@@ -145,8 +146,8 @@ async function download(event: MouseEvent) {
   if (downloadNeedsLink.value) return
   event.preventDefault()
   const url = currentUrl.value
-  if (!(await downloadOutput(url, shown.value.fileName)))
-    failedDownloadUrl.value = url
+  if (await downloadOutput(url, shown.value.fileName)) emit('downloaded', url)
+  else failedDownloadUrl.value = url
 }
 watch(latest, () => {
   viewing.value = undefined
@@ -550,20 +551,22 @@ const earlierClass = (active: boolean) =>
         {{ t('workshop.output.truncated', locale) }}
       </p>
       <p
+        v-if="state.status === 'example'"
         class="border-t border-transparency-white-t8 px-5 py-2 text-xs text-primary-warm-gray"
-        :data-testid="
-          state.status === 'example' ? 'output-example-hint' : undefined
-        "
+        data-testid="output-example-hint"
       >
         {{
-          state.status === 'example'
-            ? t('workshop.output.exampleHint', locale).replace(
-                '{model}',
-                modelName
-              )
-            : t('workshop.output.expires', locale)
+          t('workshop.output.exampleHint', locale).replace('{model}', modelName)
         }}
       </p>
+      <div
+        v-else
+        class="bg-primary-comfy-yellow/5 text-primary-comfy-yellow flex items-start gap-2 border-t border-transparency-white-t8 px-5 py-3 text-xs"
+        data-testid="output-save-reminder"
+      >
+        <Download class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+        <p>{{ t('workshop.output.expires', locale) }}</p>
+      </div>
       <div
         v-if="state.status === 'succeeded'"
         class="flex flex-col gap-2 border-t border-transparency-white-t8 p-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end"

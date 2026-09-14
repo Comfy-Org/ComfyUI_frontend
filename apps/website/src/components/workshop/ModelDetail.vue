@@ -27,7 +27,7 @@ import {
   workshopPageSchema
 } from '../../config/workshop-page-state'
 import type { RunOutput, RunRecord, RunState } from '../../config/workshop-run'
-import { IDLE, transition } from '../../config/workshop-run'
+import { IDLE, isExpired, transition } from '../../config/workshop-run'
 import {
   refreshWorkshopCredits,
   useWorkshopCredits
@@ -216,77 +216,44 @@ const errors = computed<FieldErrors>(() =>
   runState.value.status === 'failed' ? runState.value.fieldErrors : {}
 )
 const isRunning = computed(() => runState.value.status === 'running')
-const protectedHistoryIndex = ref<number>()
-let approvedTraversal = false
-let restoringTraversal = false
-
-function historyIndex(state: unknown): number | undefined {
-  if (typeof state !== 'object' || state === null || !('index' in state))
-    return undefined
-  const index = Reflect.get(state, 'index')
-  return typeof index === 'number' && Number.isInteger(index)
-    ? index
-    : undefined
-}
-
-watch(
-  isRunning,
-  (running) => {
-    protectedHistoryIndex.value = running
-      ? historyIndex(globalThis.window?.history.state)
-      : undefined
-    approvedTraversal = false
-    restoringTraversal = false
-  },
-  { flush: 'sync' }
+const now = useTimestamp({ interval: 1000 })
+const downloadedOutputUrls = ref<ReadonlySet<string>>(new Set())
+const retainedGenerationUrls = computed<readonly string[]>(() =>
+  runs.value.flatMap((run) =>
+    [run.output, ...run.attachments].flatMap((output) =>
+      output.urls?.length ? output.urls : [output.url]
+    )
+  )
 )
+const hasUndownloadedOutput = computed(
+  () =>
+    !isExpired(runState.value, now.value) &&
+    retainedGenerationUrls.value.some(
+      (url) => !downloadedOutputUrls.value.has(url)
+    )
+)
+const navigationWarning = computed<'running' | 'output' | undefined>(() => {
+  if (isRunning.value) return 'running'
+  if (hasUndownloadedOutput.value) return 'output'
+  return undefined
+})
+const isNavigationGuarded = computed(
+  () => navigationWarning.value !== undefined
+)
+let skipNextUnloadWarning = false
 
-// A run in flight is money and minutes: leaving the page throws both away, so
-// the browser asks first. The listener only exists while the run does, since a
-// standing one costs the idle page its place in the back/forward cache.
-// globalThis.window, not window: on the server the island has neither.
 useEventListener(
-  () => (isRunning.value ? globalThis.window : undefined),
+  () => (isNavigationGuarded.value ? globalThis.window : undefined),
   'beforeunload',
-  (event: BeforeUnloadEvent) => event.preventDefault()
+  (event: BeforeUnloadEvent) => {
+    if (!skipNextUnloadWarning) event.preventDefault()
+    skipNextUnloadWarning = false
+  }
 )
 
-// Browser history moves before popstate. Intercept it ahead of Astro's bubble
-// listener: declining restores the prior entry without unmounting this island;
-// accepting lets Astro finish the traversal and cancel the run on unmount.
-useEventListener(
-  () => (isRunning.value ? globalThis.window : undefined),
-  'popstate',
-  (event: PopStateEvent) => {
-    if (restoringTraversal) {
-      restoringTraversal = false
-      event.stopImmediatePropagation()
-      return
-    }
-    const from = protectedHistoryIndex.value
-    const to = historyIndex(event.state)
-    if (from === undefined || to === undefined || from === to) return
-    if (globalThis.window.confirm(t('workshop.run.leavePage', locale))) {
-      protectedHistoryIndex.value = to
-      approvedTraversal = true
-      queueMicrotask(() => {
-        approvedTraversal = false
-      })
-      return
-    }
-    event.stopImmediatePropagation()
-    restoringTraversal = true
-    globalThis.window.history.go(from - to)
-  },
-  { capture: true }
-)
-
-// Caught before the client router sees the click, nothing has moved yet, so
-// this one route off the page can be asked in our own words. The rest still
-// reach the guards above.
 const leavingTo = ref<string>()
 useEventListener(
-  () => (isRunning.value ? globalThis.document : undefined),
+  () => (isNavigationGuarded.value ? globalThis.document : undefined),
   'click',
   (event: MouseEvent) => {
     const href = linkLeavingPage(event, location)
@@ -300,25 +267,10 @@ function leaveForLink() {
   const href = leavingTo.value
   leavingTo.value = undefined
   if (!href) return
-  cancelRun()
+  skipNextUnloadWarning = true
   location.assign(href)
 }
 
-// A push/replace has not moved history yet, so native fallback is safe and the
-// beforeunload guard owns its confirmation. An approved traversal is the one
-// exception: it was already confirmed in the capture-phase popstate handler.
-useEventListener(
-  () => (isRunning.value ? globalThis.document : undefined),
-  'astro:before-preparation',
-  (event: Event) => {
-    const navigationType = Reflect.get(event, 'navigationType')
-    if (navigationType === 'traverse' && approvedTraversal) {
-      approvedTraversal = false
-      return
-    }
-    event.preventDefault()
-  }
-)
 const requestId = ref<string | null>(null)
 let activeRun:
   | {
@@ -329,8 +281,6 @@ let activeRun:
   | undefined
 let pendingRequest: { fingerprint: string; key: string } | undefined
 const uploadUrl = createWorkshopUrlUploader()
-
-const now = useTimestamp({ interval: 1000 })
 
 function cancelRun() {
   if (activeRun) {
@@ -367,6 +317,15 @@ async function switchToPersonal() {
     personalSwitchPending.value = false
   }
 }
+
+useEventListener(
+  () => globalThis.window,
+  'pagehide',
+  () => {
+    skipNextUnloadWarning = false
+    cancelRun()
+  }
+)
 
 onUnmounted(() => {
   cancelRun()
@@ -529,6 +488,10 @@ function captureOutputDownload(kind: RunOutput['kind']) {
     name: 'output_download_clicked',
     properties: { ...modelAnalytics, output_kind: kind }
   })
+}
+
+function markOutputDownloaded(url: string) {
+  downloadedOutputUrls.value = new Set([...downloadedOutputUrls.value, url])
 }
 
 function reset() {
@@ -805,6 +768,7 @@ function useInCode() {
           @retry="gate === 'ready' ? run() : reset()"
           @use-in-code="useInCode"
           @download="captureOutputDownload"
+          @downloaded="markOutputDownloaded"
         />
         <p
           v-if="requestId"
@@ -865,6 +829,7 @@ function useInCode() {
     <RunLeaveDialog
       :open="leavingTo !== undefined"
       :locale
+      :reason="navigationWarning ?? 'output'"
       @update:open="(value: boolean) => !value && (leavingTo = undefined)"
       @leave="leaveForLink"
     />

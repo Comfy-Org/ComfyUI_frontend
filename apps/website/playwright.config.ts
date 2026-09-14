@@ -56,6 +56,16 @@ export default defineConfig({
       grep: /@mobile/
     },
     {
+      name: 'workshop-firefox',
+      testMatch: '**/workshop-navigation-warning.spec.ts',
+      use: { ...devices['Desktop Firefox'] }
+    },
+    {
+      name: 'workshop-webkit',
+      testMatch: '**/workshop-navigation-warning.spec.ts',
+      use: { ...devices['Desktop Safari'] }
+    },
+    {
       name: 'visual',
       use: { ...devices['Desktop Chrome'] },
       grep: /@visual/,

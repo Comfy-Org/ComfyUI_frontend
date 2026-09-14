@@ -17,6 +17,7 @@ import { workshopContract } from '../../config/workshop-contract-catalog'
 import { getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
 import { refreshWorkshopCredits } from '../../config/workshop-credits'
 import type { useWorkshopCredits } from '../../config/workshop-credits'
+import { downloadOutput } from '../../config/workshop-output-download'
 import * as draftStorage from '../../config/workshop-draft-storage'
 import { captureWorkshopEvent } from '../../scripts/posthog'
 import ModelDetail from './ModelDetail.vue'
@@ -217,6 +218,7 @@ describe('ModelDetail', () => {
     vi.useFakeTimers()
     vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', '1')
     vi.mocked(runWorkshopRouter).mockReset()
+    vi.mocked(downloadOutput).mockReset().mockResolvedValue(true)
     vi.mocked(refreshWorkshopCredits).mockClear()
     auth.ensureFresh
       .mockReset()
@@ -868,7 +870,7 @@ describe('ModelDetail', () => {
     await vi.waitFor(() => expect(refreshWorkshopCredits).toHaveBeenCalled())
   })
 
-  it('asks before native or Astro navigation during a run, and only then', async () => {
+  it('guards navigation until a generated output is downloaded', async () => {
     auth.session.value = credential
     const pending = Promise.withResolvers<typeof routerResult>()
     vi.mocked(runWorkshopRouter).mockReturnValue(pending.promise)
@@ -876,12 +878,7 @@ describe('ModelDetail', () => {
 
     const leaving = () =>
       window.dispatchEvent(new Event('beforeunload', { cancelable: true }))
-    const softLeaving = () =>
-      document.dispatchEvent(
-        new Event('astro:before-preparation', { cancelable: true })
-      )
     expect(leaving()).toBe(true)
-    expect(softLeaving()).toBe(true)
 
     await user().type(
       screen.getByRole('textbox', { name: 'Prompt' }),
@@ -890,7 +887,6 @@ describe('ModelDetail', () => {
     await user().click(screen.getByRole('button', { name: 'Run' }))
     await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledTimes(1))
     expect(leaving()).toBe(false)
-    expect(softLeaving()).toBe(false)
 
     pending.resolve(routerResult)
     await vi.waitFor(() =>
@@ -898,8 +894,11 @@ describe('ModelDetail', () => {
         screen.getByTestId('playground-output').getAttribute('data-state')
       ).toBe('succeeded')
     )
+    expect(leaving()).toBe(false)
+
+    await user().click(screen.getByTestId('output-download'))
+    await vi.waitFor(() => expect(downloadOutput).toHaveBeenCalledOnce())
     expect(leaving()).toBe(true)
-    expect(softLeaving()).toBe(true)
   })
 
   it('answers an in-site link in its own words, and lets the link go when told to', async () => {
@@ -940,6 +939,9 @@ describe('ModelDetail', () => {
       expect(screen.queryByTestId('run-leave-dialog')).toBeNull()
     )
     expect(assign).not.toHaveBeenCalled()
+    expect(
+      screen.getByTestId('playground-output').getAttribute('data-state')
+    ).toBe('running')
 
     follow()
     await user().click(await screen.findByTestId('run-leave-confirm'))
@@ -948,81 +950,121 @@ describe('ModelDetail', () => {
     )
     expect(
       screen.getByTestId('playground-output').getAttribute('data-state')
+    ).toBe('running')
+    expect(leaving()).toBe(true)
+    expect(leaving()).toBe(false)
+
+    window.dispatchEvent(new PageTransitionEvent('pagehide'))
+    await nextTick()
+    expect(
+      screen.getByTestId('playground-output').getAttribute('data-state')
     ).toBe('cancelled')
     expect(leaving()).toBe(true)
   })
 
-  it('restores a declined history traversal without letting Astro unmount the run', async () => {
-    history.replaceState({ index: 7 }, '', location.href)
+  it('guards every retained output until each one is downloaded', async () => {
     auth.session.value = credential
-    const pending = Promise.withResolvers<typeof routerResult>()
-    vi.mocked(runWorkshopRouter).mockReturnValue(pending.promise)
-    const confirm = vi.fn().mockReturnValue(false)
-    vi.stubGlobal('confirm', confirm)
-    const go = vi.spyOn(history, 'go').mockImplementation(() => undefined)
-    let astroPreparationCount = 0
-    const prepare = () => {
-      astroPreparationCount += 1
-    }
-    window.addEventListener('popstate', prepare)
-    onTestFinished(() => {
-      vi.unstubAllGlobals()
-      go.mockRestore()
-      window.removeEventListener('popstate', prepare)
-    })
+    vi.mocked(runWorkshopRouter)
+      .mockResolvedValueOnce(routerResult)
+      .mockResolvedValueOnce({
+        ...routerResult,
+        outputs: [
+          {
+            ...routerResult.outputs[0],
+            url: 'https://assets.example/second.jpg',
+            fileName: 'second.jpg'
+          }
+        ]
+      })
     mountDetail({ model: runnable })
-    await user().type(screen.getByTestId('field-prompt'), 'A teapot')
-    await user().click(screen.getByTestId('run-button'))
+    const visitor = user()
+    await visitor.type(screen.getByTestId('field-prompt'), 'A teapot')
+    await visitor.click(screen.getByTestId('run-button'))
     await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledOnce())
+    await visitor.click(screen.getByTestId('run-button'))
+    await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledTimes(2))
+    await vi.waitFor(() =>
+      expect(
+        screen.getByTestId('playground-output').getAttribute('data-state')
+      ).toBe('succeeded')
+    )
 
-    window.dispatchEvent(new PopStateEvent('popstate', { state: { index: 6 } }))
+    await visitor.click(screen.getByTestId('output-download'))
+    expect(
+      window.dispatchEvent(new Event('beforeunload', { cancelable: true }))
+    ).toBe(false)
 
-    expect(confirm).toHaveBeenCalledOnce()
-    expect(go).toHaveBeenCalledWith(1)
-    expect(astroPreparationCount).toBe(0)
-
-    window.dispatchEvent(new PopStateEvent('popstate', { state: { index: 7 } }))
-    expect(confirm).toHaveBeenCalledOnce()
-    expect(astroPreparationCount).toBe(0)
-    expect(screen.getByTestId('run-button').textContent).toContain('Cancel')
+    await visitor.click(screen.getByTestId('earlier-run-0'))
+    await visitor.click(screen.getByTestId('output-download'))
+    expect(
+      window.dispatchEvent(new Event('beforeunload', { cancelable: true }))
+    ).toBe(true)
   })
 
-  it('tracks an approved same-page traversal before guarding the next one', async () => {
-    history.replaceState({ index: 7 }, '', location.href)
+  it('still protects a retained output after a later run fails', async () => {
     auth.session.value = credential
-    const pending = Promise.withResolvers<typeof routerResult>()
-    vi.mocked(runWorkshopRouter).mockReturnValue(pending.promise)
-    const confirm = vi.fn().mockReturnValueOnce(true).mockReturnValueOnce(false)
-    vi.stubGlobal('confirm', confirm)
-    const go = vi.spyOn(history, 'go').mockImplementation(() => undefined)
-    let preparationWasAllowed = false
-    const prepare = () => {
-      const event = Object.assign(
-        new Event('astro:before-preparation', { cancelable: true }),
-        { navigationType: 'traverse' }
-      )
-      document.dispatchEvent(event)
-      preparationWasAllowed = !event.defaultPrevented
-    }
-    window.addEventListener('popstate', prepare)
-    onTestFinished(() => {
-      vi.unstubAllGlobals()
-      go.mockRestore()
-      window.removeEventListener('popstate', prepare)
-    })
+    vi.mocked(runWorkshopRouter)
+      .mockResolvedValueOnce(routerResult)
+      .mockRejectedValueOnce(new WorkshopRouterError('provider'))
     mountDetail({ model: runnable })
     await user().type(screen.getByTestId('field-prompt'), 'A teapot')
     await user().click(screen.getByTestId('run-button'))
-    await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledOnce())
+    await vi.waitFor(() =>
+      expect(
+        screen.getByTestId('playground-output').getAttribute('data-state')
+      ).toBe('succeeded')
+    )
 
-    window.dispatchEvent(new PopStateEvent('popstate', { state: { index: 6 } }))
+    await user().click(screen.getByTestId('run-button'))
+    await vi.waitFor(() =>
+      expect(
+        screen.getByTestId('playground-output').getAttribute('data-state')
+      ).toBe('failed')
+    )
+    expect(
+      window.dispatchEvent(new Event('beforeunload', { cancelable: true }))
+    ).toBe(false)
+  })
 
-    expect(confirm).toHaveBeenCalledOnce()
-    expect(preparationWasAllowed).toBe(true)
+  it('keeps an output when the in-site leave dialog is cancelled', async () => {
+    auth.session.value = credential
+    vi.mocked(runWorkshopRouter).mockResolvedValue(routerResult)
+    const assign = vi.spyOn(location, 'assign').mockImplementation(() => {})
+    onTestFinished(() => assign.mockRestore())
+    mountDetail({ model: runnable })
+    const visitor = user()
+    await visitor.type(screen.getByTestId('field-prompt'), 'A teapot')
+    await visitor.click(screen.getByTestId('run-button'))
+    await vi.waitFor(() =>
+      expect(
+        screen.getByTestId('playground-output').getAttribute('data-state')
+      ).toBe('succeeded')
+    )
+    const link = document.createElement('a')
+    link.href = '/models/another/'
+    document.body.append(link)
+    onTestFinished(() => link.remove())
 
-    window.dispatchEvent(new PopStateEvent('popstate', { state: { index: 5 } }))
-    expect(confirm).toHaveBeenCalledTimes(2)
-    expect(go).toHaveBeenCalledWith(1)
+    await visitor.click(link)
+    await screen.findByTestId('run-leave-dialog')
+    await visitor.click(screen.getByTestId('run-leave-stay'))
+    await vi.waitFor(() =>
+      expect(screen.queryByTestId('run-leave-dialog')).toBeNull()
+    )
+    expect(assign).not.toHaveBeenCalled()
+    expect(
+      screen.getByTestId('playground-output').getAttribute('data-state')
+    ).toBe('succeeded')
+    expect(
+      window.dispatchEvent(new Event('beforeunload', { cancelable: true }))
+    ).toBe(false)
+
+    await visitor.click(link)
+    await visitor.click(await screen.findByTestId('run-leave-confirm'))
+    expect(assign).toHaveBeenCalledWith(`${location.origin}/models/another/`)
+    expect(
+      window.dispatchEvent(new Event('beforeunload', { cancelable: true }))
+    ).toBe(true)
   })
 
   it('retries an unchanged failed request with its original key, but a deliberate new run gets a new key', async () => {

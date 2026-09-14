@@ -7,7 +7,10 @@ import DialogTitle from '../ui/dialog/DialogTitle.vue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale = 'en', reason = 'running' } = defineProps<{
+  locale?: Locale
+  reason?: 'running' | 'output'
+}>()
 const open = defineModel<boolean>('open', { default: false })
 const emit = defineEmits<{ leave: [] }>()
 </script>
@@ -21,10 +24,24 @@ const emit = defineEmits<{ leave: [] }>()
     >
       <div class="flex flex-col gap-2">
         <DialogTitle class="pr-16">
-          {{ t('workshop.run.leaveTitle', locale) }}
+          {{
+            t(
+              reason === 'output'
+                ? 'workshop.output.leaveTitle'
+                : 'workshop.run.leaveTitle',
+              locale
+            )
+          }}
         </DialogTitle>
         <DialogDescription class="text-base text-primary-comfy-canvas/70">
-          {{ t('workshop.run.leaveBody', locale) }}
+          {{
+            t(
+              reason === 'output'
+                ? 'workshop.output.leaveBody'
+                : 'workshop.run.leaveBody',
+              locale
+            )
+          }}
         </DialogDescription>
       </div>
 
@@ -44,7 +61,14 @@ const emit = defineEmits<{ leave: [] }>()
           data-testid="run-leave-confirm"
           @click="emit('leave')"
         >
-          {{ t('workshop.run.leaveAnyway', locale) }}
+          {{
+            t(
+              reason === 'output'
+                ? 'workshop.output.leaveAnyway'
+                : 'workshop.run.leaveAnyway',
+              locale
+            )
+          }}
         </Button>
       </div>
     </DialogContent>
