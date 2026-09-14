@@ -11,7 +11,6 @@ import {
   sortWorkshopModels,
   useCaseFor
 } from '../../config/models-catalogue'
-import { workshopModels } from '../../config/workshop-browse-content'
 import { groupModels } from '../../config/model-family'
 import hubTemplates from '../../data/hubTemplates.json'
 import { templatePath } from '../../lib/hub/workflow-detail'
@@ -34,10 +33,14 @@ import WorkshopModelCard from '../workshop/WorkshopModelCard.vue'
 import WorkshopSearchField from '../workshop/WorkshopSearchField.vue'
 
 const {
+  models,
   locale = 'en',
   embedded = false,
   withModels = true
 } = defineProps<{
+  /** Resolved on the server: the catalogue JSON must not reach a client
+   * bundle, so the page hands the island the models it needs. */
+  models: readonly WorkshopModel[]
   locale?: Locale
   embedded?: boolean
   /** Models have their own screen. A workflows-only browse drops the Models
@@ -47,7 +50,7 @@ const {
 }>()
 
 const templates = (hubTemplates as HubTemplate[]).map((template) =>
-  withFacetFields(template, workshopModels)
+  withFacetFields(template, models)
 )
 const store = useHubStore()
 
@@ -107,9 +110,7 @@ const matchesModel = (model: WorkshopModel) =>
 const matchingModelNames = computed(
   () =>
     new Set(
-      workshopModels
-        .filter(matchesModel)
-        .map((model) => model.name.toLowerCase())
+      models.filter(matchesModel).map((model) => model.name.toLowerCase())
     )
 )
 
@@ -119,7 +120,7 @@ const runsMatchingModel = (tmpl: HubTemplate) =>
 
 const inUseCase = (value: UseCase | 'all') => ({
   models: withModels
-    ? workshopModels.filter(
+    ? models.filter(
         (model) =>
           (value === 'all' || useCaseFor(model) === value) &&
           matchesModel(model)
@@ -127,7 +128,7 @@ const inUseCase = (value: UseCase | 'all') => ({
     : [],
   templates: templates.filter(
     (tmpl) =>
-      (value === 'all' || useCaseForTemplate(tmpl, workshopModels) === value) &&
+      (value === 'all' || useCaseForTemplate(tmpl, models) === value) &&
       runsMatchingModel(tmpl)
   )
 })
@@ -337,7 +338,7 @@ const filteredTemplates = computed(() => {
               v-model="store.searchQuery.value"
               v-model:providers="providers"
               v-model:capabilities="capabilities"
-              :models="workshopModels"
+              :models
               :locale
               compact
               class="max-sm:size-10 max-sm:flex-none sm:w-64 lg:w-80"
