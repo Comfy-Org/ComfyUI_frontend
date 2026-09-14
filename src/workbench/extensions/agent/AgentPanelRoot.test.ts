@@ -263,6 +263,7 @@ vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'), {
 // are exercised for real below, with only the socket itself faked.
 vi.mock(import('./services/agent/standaloneAgentEventSource'), { spy: true })
 vi.mock(import('@/platform/telemetry/reportError'), { spy: true })
+vi.mock(import('./crdt/devPanelLog'), { spy: true })
 vi.mock(import('@/composables/billing/useBillingContext'), { spy: true })
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'), {
   spy: true
@@ -278,10 +279,15 @@ import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import { SUBSCRIBE_RETRY_MAX_ATTEMPTS } from './crdt/agentCrdtDocLifecycle'
+import { recordDevEvent } from './crdt/devPanelLog'
 import { createStandaloneAgentEventSource } from './services/agent/standaloneAgentEventSource'
 import type { StandaloneAgentEventSource } from './services/agent/standaloneAgentEventSource'
 import { STANDALONE_IDENTITY_RETRY_BASE_MS } from './services/agent/standaloneIdentity'
 import { reportError } from '@/platform/telemetry/reportError'
+// eslint-disable-next-line import-x/no-restricted-paths
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+// eslint-disable-next-line import-x/no-restricted-paths
+import type { LayoutChange } from '@/renderer/core/layout/types'
 
 import AgentPanelRoot from './AgentPanelRoot.vue'
 
@@ -6423,5 +6429,76 @@ describe('AgentPanelRoot standalone agent (#17469)', () => {
 
     expect(identity).toHaveBeenCalledTimes(2)
     expect(subscribedWorkflowIds()).toEqual(['wf-42'])
+  })
+
+  it('does not mint a canvas edit before the standalone identity resolves, and mints it once it has', async () => {
+    let resolveIdentity!: (response: Response) => void
+    stubStandaloneFetch(
+      () =>
+        new Promise<Response>((resolve) => {
+          resolveIdentity = resolve
+        })
+    )
+    bindActiveTab('wf-42')
+    useAgentPanelStore().enabled = true
+    Object.assign(appMock, { isGraphReady: true })
+    appMock.graph.nodes.push({
+      id: 7,
+      serialize: () => ({ id: 7, type: 'EmptyLatentImage', pos: [0, 0] })
+    })
+    let deliverLayoutChange: ((change: LayoutChange) => void) | null = null
+    const onChange = vi
+      .spyOn(layoutStore, 'onChange')
+      .mockImplementation((listener) => {
+        deliverLayoutChange = listener
+        return () => {}
+      })
+    // A mint reaches the follower's inbox either way: unbound, it settles
+    // 'undeliverable' at once (human_ops_settled); bound, it goes out as a
+    // doc_ops frame. So "not minted" is neither, and "minted" is the frame.
+    const settledBatches = () =>
+      vi
+        .mocked(recordDevEvent)
+        .mock.calls.filter(([kind]) => kind === 'human_ops_settled')
+    const opsFrames = () =>
+      socket.send.mock.calls
+        .map(
+          ([frame]) =>
+            JSON.parse(frame) as {
+              type: string
+              data?: { ops?: { op: string; node_id?: string }[] }
+            }
+        )
+        .filter((frame) => frame.type === 'doc_ops')
+        .map((frame) => frame.data?.ops ?? [])
+    try {
+      await renderAndSend('first message')
+      const humanEdit = fromPartial<LayoutChange>({
+        operation: {
+          type: 'createNode',
+          actor: 'user-abc123',
+          nodeId: '7',
+          layout: { position: { x: 0, y: 0 } }
+        }
+      })
+
+      deliverLayoutChange!(humanEdit)
+      expect(settledBatches()).toEqual([])
+      expect(opsFrames()).toEqual([])
+
+      resolveIdentity(identityResponse())
+      await vi.waitFor(() => expect(subscribedWorkflowIds()).toEqual(['wf-42']))
+      socket.emit({
+        type: 'doc_subscribed',
+        data: { v: 1, workflow_id: 'wf-42', ok: true, seq: 1 }
+      })
+
+      deliverLayoutChange!(humanEdit)
+      expect(opsFrames()).toEqual([
+        [expect.objectContaining({ op: 'add_node', node_id: '7' })]
+      ])
+    } finally {
+      onChange.mockRestore()
+    }
   })
 })
