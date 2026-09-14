@@ -521,7 +521,8 @@ jobs:
           slug: custom-nodes-e2e
           title: Custom Nodes E2E
           icon: '🧪'
-          status: ${{ steps.gate.outcome == 'success' && 'pass' || 'fail' }}
+          # A skipped suite is not a measured pass, so it reports withheld.
+          status: ${{ steps.gate.outcome != 'success' && 'fail' || needs.changes.outputs.should-run == 'false' && 'withheld' || 'pass' }}
           headline: >-
             Curated real-pack regression suite. A red here means a specific pack
             stopped mounting, executing or round-tripping against this change.
