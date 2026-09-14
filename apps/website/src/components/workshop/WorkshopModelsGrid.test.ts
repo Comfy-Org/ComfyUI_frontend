@@ -1,9 +1,13 @@
 // @vitest-environment happy-dom
+import '@testing-library/jest-dom/vitest'
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
-import { afterEach, describe, expect, it } from 'vitest'
+import { render, screen, waitFor, within } from '@testing-library/vue'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+
+import { nextTick } from 'vue'
 
 import type { WorkshopModel } from '../../config/models-catalogue'
+import { lastShelf } from '../../lib/workshop/shelf-memory'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
 
 const models: WorkshopModel[] = [
@@ -45,15 +49,18 @@ function cardNames() {
   return screen.queryAllByRole('link').map((card) => card.textContent)
 }
 
-function search() {
-  return screen.getByRole('combobox', {
+async function search() {
+  const field = screen.getByRole('combobox', {
     name: 'Search models, providers, categories...'
   })
+  await waitFor(() => expect(field).toBeEnabled())
+  return field
 }
 
 describe('WorkshopModelsGrid', () => {
   afterEach(() => {
     history.replaceState(null, '', '/')
+    sessionStorage.clear()
   })
 
   it('searches by name and provider', async () => {
@@ -61,7 +68,7 @@ describe('WorkshopModelsGrid', () => {
     render(WorkshopModelsGrid, { props: { models } })
     expect(cardNames()).toHaveLength(3)
 
-    await user.type(search(), 'forest')
+    await user.type(await search(), 'forest')
     expect(cardNames()).toEqual([expect.stringContaining('Flux')])
   })
 
@@ -72,7 +79,7 @@ describe('WorkshopModelsGrid', () => {
       screen.queryByRole('button', { name: 'Flux Black Forest Labs' })
     ).toBeNull()
 
-    await user.click(search())
+    await user.click(await search())
     expect(
       screen.getAllByRole('button', {
         name: /^(?:Kling AI Kling|Flux Black Forest Labs|Mystery Partner node)$/i
@@ -87,7 +94,7 @@ describe('WorkshopModelsGrid', () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
 
-    await user.click(search())
+    await user.click(await search())
     await user.click(
       screen.getByRole('button', { name: 'Flux Black Forest Labs' })
     )
@@ -107,6 +114,26 @@ describe('WorkshopModelsGrid', () => {
     await user.click(screen.getByRole('button', { name: /Back to/ }))
     await user.click(screen.getByRole('button', { name: 'Generate videos 1' }))
     expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
+  })
+
+  it('returns the viewport to the top when a section or browse-all opens', async () => {
+    const scrollTo = vi
+      .spyOn(window, 'scrollTo')
+      .mockImplementation(() => undefined)
+    const user = userEvent.setup()
+    render(WorkshopModelsGrid, { props: { models } })
+
+    await user.click(screen.getByRole('button', { name: 'Edit images 1' }))
+    await nextTick()
+    await vi.waitFor(() => expect(scrollTo).toHaveBeenCalledWith({ top: 0 }))
+
+    scrollTo.mockClear()
+    await user.click(screen.getByRole('button', { name: /Back to/ }))
+    await vi.waitFor(() => expect(scrollTo).toHaveBeenCalledWith({ top: 0 }))
+    scrollTo.mockClear()
+    await user.click(screen.getByRole('button', { name: 'Browse all models' }))
+    await vi.waitFor(() => expect(scrollTo).toHaveBeenCalledWith({ top: 0 }))
+    scrollTo.mockRestore()
   })
 
   it('filters by capability from the filter menu', async () => {
@@ -141,10 +168,10 @@ describe('WorkshopModelsGrid', () => {
     expect(cardNames()).toEqual([expect.stringContaining('Flux')])
   })
 
-  it('sorts by example count by default and by name on request', async () => {
+  it('sorts by recommendation by default and by name on request', async () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
-    await user.type(search(), ' ')
+    await user.type(await search(), ' ')
     expect(cardNames()[0]).toContain('Kling AI')
 
     await user.click(screen.getByRole('button', { name: 'Sort' }))
@@ -154,13 +181,91 @@ describe('WorkshopModelsGrid', () => {
     expect(cardNames()[0]).toContain('Flux')
   })
 
+  it('orders the required featured models by the catalogue recommendation', () => {
+    const featured = [
+      {
+        slug: 'byteplus--seedance-2-fast-text-to-video--generate-videos',
+        name: 'Seedance 2 Fast',
+        rank: 32
+      },
+      {
+        slug: 'bfl--flux-3-text-to-video--generate-videos',
+        name: 'FLUX.3 Video',
+        rank: 63
+      },
+      {
+        slug: 'byteplus--seedream-5-pro--generate-images',
+        name: 'Seedream 5 Pro',
+        rank: 0
+      }
+    ].map(({ slug, name, rank }) => ({
+      ...models[0],
+      slug,
+      name,
+      href: `/models/${slug}/`,
+      recommendedRank: rank,
+      thumbnailUrl: `https://example.com/${rank}.webp`
+    }))
+
+    render(WorkshopModelsGrid, { props: { models: featured } })
+
+    const pagination = screen.getByTestId('featured-pagination')
+    expect(
+      within(pagination)
+        .getAllByRole('button')
+        .map((button) => button.getAttribute('aria-label'))
+    ).toEqual(['Seedream 5 Pro', 'Seedance 2 Fast', 'FLUX.3 Video'])
+  })
+
+  it('does not manufacture a return shelf before a model is opened', () => {
+    sessionStorage.setItem('comfy-models-shelf', 'generate-videos')
+    render(WorkshopModelsGrid, { props: { models } })
+
+    expect(lastShelf('/models/kling-ai/')).toBeUndefined()
+  })
+
   it('clears search and filters together from the empty state', async () => {
     const user = userEvent.setup()
     render(WorkshopModelsGrid, { props: { models } })
-    await user.type(search(), 'nothing')
+    await user.type(await search(), 'nothing')
     expect(screen.getByText('No models match')).toBeTruthy()
 
     await user.click(screen.getByRole('button', { name: 'Clear filters' }))
     expect(cardNames()).toHaveLength(3)
+  })
+
+  describe('browsing rows', () => {
+    it('leaves the rows for the whole catalogue and back', async () => {
+      const user = userEvent.setup()
+      render(WorkshopModelsGrid, { props: { models } })
+      expect(screen.getByTestId('workshop-sections')).toBeTruthy()
+
+      await user.click(screen.getByTestId('browse-all-end'))
+
+      expect(screen.queryByTestId('workshop-sections')).toBeNull()
+      expect(cardNames()).toHaveLength(models.length)
+      expect(screen.getByRole('heading', { level: 1 }).textContent).toContain(
+        'All models'
+      )
+
+      await user.click(screen.getByTestId('section-back'))
+      expect(screen.getByTestId('workshop-sections')).toBeTruthy()
+    })
+
+    it('clears active filters when returning to the category rows', async () => {
+      const user = userEvent.setup()
+      render(WorkshopModelsGrid, { props: { models } })
+      await user.click(
+        screen.getByRole('button', { name: 'Browse all models' })
+      )
+      const field = await search()
+      await user.type(field, 'forest')
+      expect(cardNames()).toEqual([expect.stringContaining('Flux')])
+
+      await user.click(screen.getByRole('button', { name: /Back to/ }))
+
+      expect(field).toHaveValue('')
+      expect(screen.getByTestId('workshop-sections')).toBeTruthy()
+    })
   })
 })

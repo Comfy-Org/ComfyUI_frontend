@@ -1,20 +1,31 @@
 // @vitest-environment happy-dom
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick, ref } from 'vue'
 
 import { getRoutes } from '../../config/routes'
 import { modelReleaseLinks } from '../../config/model-release-links'
 import ModelReleaseSection from './ModelReleaseSection.vue'
+
+const enabled = ref(true)
+vi.mock(import('../../scripts/posthog'), () => ({
+  useWorkshopEnabled: () => enabled
+}))
+
+beforeEach(() => {
+  enabled.value = true
+})
 
 const enabledLinks = await modelReleaseLinks(true)
 
 // Inactive slides are aria-hidden, so role queries only reach the first
 // slide and the pagination dots; the other slides are asserted by text.
 describe('ModelReleaseSection', () => {
-  it('renders the four model slides with enabled canonical CTAs', () => {
+  it('renders the four model slides with enabled canonical CTAs', async () => {
     render(ModelReleaseSection, {
       props: { modelLinks: enabledLinks }
     })
+    await nextTick()
 
     expect(screen.getByText('Seedance 2.5', { selector: 'h2' })).toBeTruthy()
     expect(screen.getByText('LTX 2.5', { selector: 'h2' })).toBeTruthy()
@@ -36,10 +47,11 @@ describe('ModelReleaseSection', () => {
     expect(screen.getAllByText('Open Weights').length).toBeGreaterThan(0)
   })
 
-  it('localizes copy and enabled routes for zh-CN', () => {
+  it('localizes copy and enabled routes for zh-CN', async () => {
     render(ModelReleaseSection, {
       props: { locale: 'zh-CN', modelLinks: enabledLinks }
     })
+    await nextTick()
 
     expect(screen.getAllByText('新模型发布').length).toBeGreaterThan(0)
 
@@ -69,4 +81,17 @@ describe('ModelReleaseSection', () => {
       expect(tryCta.getAttribute('target')).toBe('_blank')
     }
   )
+
+  it('keeps public links until enabled and restores them when disabled', async () => {
+    enabled.value = false
+    render(ModelReleaseSection, { props: { modelLinks: enabledLinks } })
+    const explore = screen.getByRole('link', { name: 'Explore Seedance 2.5' })
+    expect(explore.getAttribute('href')).toBe('/seedance-2.5')
+    enabled.value = true
+    await nextTick()
+    expect(explore.getAttribute('href')).toBe(enabledLinks['seedance-2-5'])
+    enabled.value = false
+    await nextTick()
+    expect(explore.getAttribute('href')).toBe('/seedance-2.5')
+  })
 })
