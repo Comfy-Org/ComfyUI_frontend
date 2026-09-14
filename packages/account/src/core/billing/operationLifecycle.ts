@@ -28,6 +28,7 @@ import type {
 import type { BillingScope, BillingScopeContext } from './billingScope.js'
 import { createBillingScopeTracker } from './billingScope.js'
 import type {
+  BillingOperationPointer,
   BillingOperationPointerStorage,
   OperationPointerStore
 } from './operationPointer.js'
@@ -191,6 +192,18 @@ interface ServerPendingOperation {
   readonly clientSecret?: string
 }
 
+function continuationOf(issued: {
+  readonly actionUrl?: string | undefined
+  readonly clientSecret?: string | undefined
+}): Pick<AdoptInput, 'actionUrl' | 'clientSecret'> {
+  return {
+    ...(issued.actionUrl === undefined ? {} : { actionUrl: issued.actionUrl }),
+    ...(issued.clientSecret === undefined
+      ? {}
+      : { clientSecret: issued.clientSecret })
+  }
+}
+
 function pendingFromStatus(
   status: BillingStatusData
 ): ServerPendingOperation | undefined {
@@ -198,12 +211,34 @@ function pendingFromStatus(
   return {
     id: status.pending_billing_op_id,
     kind: status.pending_billing_op_type === 'topup' ? 'topup' : 'subscription',
-    ...(status.action_url === undefined
-      ? {}
-      : { actionUrl: status.action_url }),
-    ...(status.payment_intent_client_secret === undefined
-      ? {}
-      : { clientSecret: status.payment_intent_client_secret })
+    ...continuationOf({
+      actionUrl: status.action_url,
+      clientSecret: status.payment_intent_client_secret
+    })
+  }
+}
+
+function initialPendingState(
+  input: AdoptInput,
+  observedAt: number
+): PendingBillingOperation {
+  const actionUrl = validateActionUrl(input.actionUrl)
+  const challenge =
+    input.clientSecret === undefined || input.presentation !== 'embedded'
+      ? undefined
+      : { clientSecret: input.clientSecret, status: 'required' as const }
+  return {
+    id: input.id,
+    kind: input.kind,
+    scope: input.context.scope,
+    presentation: input.presentation,
+    observedAt,
+    attemptStartedAt: input.attemptStartedAt,
+    phase: 'pending',
+    ...(actionUrl === undefined ? {} : { actionUrl }),
+    ...(challenge === undefined ? {} : { challenge }),
+    customerActionSeen:
+      actionUrl !== undefined || input.clientSecret !== undefined
   }
 }
 
@@ -381,24 +416,29 @@ export function createBillingOperationLifecycle(
       dispatch(record, { type: 'superseded' })
       return
     }
+    applyPollResponse(record, response)
+  }
 
-    if (response.status === 'error') {
-      if (
-        response.code === 'SUPERSEDED' ||
-        response.code === 'ACCESS_DENIED' ||
-        response.code === 'NOT_AUTHENTICATED'
-      ) {
-        dispatch(record, { type: 'superseded' })
-      } else if (response.code === 'NOT_FOUND') {
-        dispatch(record, { type: 'lost' })
-      } else {
-        continueOrExpire(record)
-      }
+  function applyPollResponse(
+    record: OperationRecord,
+    response: Awaited<ReturnType<typeof readOperation>>
+  ) {
+    if (response.status === 'ok') {
+      dispatch(record, { type: 'status_polled', status: response.value.data })
+      continueOrExpire(record)
       return
     }
-
-    dispatch(record, { type: 'status_polled', status: response.value.data })
-    continueOrExpire(record)
+    if (
+      response.code === 'SUPERSEDED' ||
+      response.code === 'ACCESS_DENIED' ||
+      response.code === 'NOT_AUTHENTICATED'
+    ) {
+      dispatch(record, { type: 'superseded' })
+    } else if (response.code === 'NOT_FOUND') {
+      dispatch(record, { type: 'lost' })
+    } else {
+      continueOrExpire(record)
+    }
   }
 
   function adopt(input: AdoptInput): OperationRecord {
@@ -411,24 +451,7 @@ export function createBillingOperationLifecycle(
       return existing
     }
 
-    const actionUrl = validateActionUrl(input.actionUrl)
-    const state: PendingBillingOperation = {
-      id: input.id,
-      kind: input.kind,
-      scope: input.context.scope,
-      presentation: input.presentation,
-      observedAt: now(),
-      attemptStartedAt: input.attemptStartedAt,
-      phase: 'pending',
-      ...(actionUrl === undefined ? {} : { actionUrl }),
-      ...(input.clientSecret === undefined || input.presentation !== 'embedded'
-        ? {}
-        : {
-            challenge: { clientSecret: input.clientSecret, status: 'required' }
-          }),
-      customerActionSeen:
-        actionUrl !== undefined || input.clientSecret !== undefined
-    }
+    const state = initialPendingState(input, now())
 
     let resolveSettled: (state: BillingOperationState) => void = () => {}
     const settled = new Promise<BillingOperationState>((resolve) => {
@@ -529,12 +552,7 @@ export function createBillingOperationLifecycle(
       kind,
       context,
       presentation,
-      ...(issued.value.actionUrl === undefined
-        ? {}
-        : { actionUrl: issued.value.actionUrl }),
-      ...(issued.value.clientSecret === undefined
-        ? {}
-        : { clientSecret: issued.value.clientSecret }),
+      ...continuationOf(issued.value),
       attemptStartedAt,
       resumed: false
     })
@@ -557,60 +575,57 @@ export function createBillingOperationLifecycle(
     return attempt
   }
 
-  async function recover(): Promise<
-    BillingResult<BillingOperationState | undefined>
-  > {
-    if (lifetime.disposed) return SUPERSEDED
-    const context = scopeTracker.capture()
-    if (context === undefined) return NOT_AUTHENTICATED
-    const { scope } = context
-
-    const status = await statusReader.read()
-    if (!isLive(context)) return SUPERSEDED
-    const pointer = pointers.read(scope)
-
-    if (status.status === 'error') {
-      // Unreachable is not "nothing pending": the pointer is the only evidence
-      // left, and observing it costs a poll while reissuing could cost a charge.
-      if (status.code !== 'REQUEST_FAILED' || pointer === undefined)
-        return status
-      const record = adopt({
-        id: pointer.operationId,
-        kind: pointer.kind,
-        context,
-        presentation: pointer.presentation,
-        attemptStartedAt: pointer.attemptStartedAt,
-        resumed: true
-      })
-      return { status: 'ok', value: record.state }
+  // Unreachable is not "nothing pending": the pointer is the only evidence
+  // left, and observing it costs a poll while reissuing could cost a charge.
+  function recoverFromPointer(
+    failure: BillingFailure,
+    pointer: BillingOperationPointer | undefined,
+    context: BillingScopeContext
+  ): BillingResult<BillingOperationState | undefined> {
+    if (failure.code !== 'REQUEST_FAILED' || pointer === undefined) {
+      return failure
     }
+    const record = adopt({
+      id: pointer.operationId,
+      kind: pointer.kind,
+      context,
+      presentation: pointer.presentation,
+      attemptStartedAt: pointer.attemptStartedAt,
+      resumed: true
+    })
+    return { status: 'ok', value: record.state }
+  }
 
-    const pending = pendingFromStatus(status.value.status)
-    if (pending !== undefined) {
-      const known = pointer?.operationId === pending.id ? pointer : undefined
-      const record = adopt({
-        ...pending,
-        context,
-        presentation:
-          known?.presentation ??
-          routeFor(status.value.status.billing_rail, pending),
-        attemptStartedAt: known?.attemptStartedAt ?? now(),
-        resumed: true
-      })
-      return { status: 'ok', value: record.state }
-    }
+  function resumeServerPending(
+    pending: ServerPendingOperation,
+    rail: BillingStatusData['billing_rail'],
+    pointer: BillingOperationPointer | undefined,
+    context: BillingScopeContext
+  ): BillingResult<BillingOperationState> {
+    const known = pointer?.operationId === pending.id ? pointer : undefined
+    const record = adopt({
+      ...pending,
+      context,
+      presentation: known?.presentation ?? routeFor(rail, pending),
+      attemptStartedAt: known?.attemptStartedAt ?? now(),
+      resumed: true
+    })
+    return { status: 'ok', value: record.state }
+  }
 
-    if (pointer === undefined) return { status: 'ok', value: undefined }
-
-    // The server reports nothing pending, so the pointed-at operation has
-    // either settled since this tab last saw it or never belonged to this
-    // scope. One read decides which; a stale pointer is dropped, never
-    // re-observed on a schedule.
+  // The server reports nothing pending, so the pointed-at operation has
+  // either settled since this tab last saw it or never belonged to this
+  // scope. One read decides which; a stale pointer is dropped, never
+  // re-observed on a schedule.
+  async function probePointer(
+    pointer: BillingOperationPointer,
+    context: BillingScopeContext
+  ): Promise<BillingResult<BillingOperationState | undefined>> {
     const probe = await readOperation(pointer.operationId)
     if (!isLive(context)) return SUPERSEDED
     if (probe.status === 'error') {
       if (probe.code !== 'NOT_FOUND') return probe
-      pointers.clear(scope, pointer.operationId)
+      pointers.clear(context.scope, pointer.operationId)
       return { status: 'ok', value: undefined }
     }
     const record = adopt({
@@ -623,6 +638,33 @@ export function createBillingOperationLifecycle(
       initialStatus: probe.value.data
     })
     return { status: 'ok', value: record.state }
+  }
+
+  async function recover(): Promise<
+    BillingResult<BillingOperationState | undefined>
+  > {
+    if (lifetime.disposed) return SUPERSEDED
+    const context = scopeTracker.capture()
+    if (context === undefined) return NOT_AUTHENTICATED
+
+    const status = await statusReader.read()
+    if (!isLive(context)) return SUPERSEDED
+    const pointer = pointers.read(context.scope)
+    if (status.status === 'error') {
+      return recoverFromPointer(status, pointer, context)
+    }
+
+    const pending = pendingFromStatus(status.value.status)
+    if (pending !== undefined) {
+      return resumeServerPending(
+        pending,
+        status.value.status.billing_rail,
+        pointer,
+        context
+      )
+    }
+    if (pointer === undefined) return { status: 'ok', value: undefined }
+    return probePointer(pointer, context)
   }
 
   function wake() {

@@ -181,11 +181,10 @@ function nextChallenge(
   return { clientSecret: secret, status: 'required' }
 }
 
-function reducePending(
+function terminalFromStatus(
   state: PendingBillingOperation,
   status: BillingOpStatus
-): BillingOperationState {
-  if (status.id !== state.id) return state
+): BillingOperationState | undefined {
   if (status.status === 'succeeded') return withPhase(state, 'succeeded')
   if (status.status === 'failed') {
     return {
@@ -204,19 +203,37 @@ function reducePending(
   ) {
     return withPhase(state, 'reconciliation_needed')
   }
+  return undefined
+}
 
-  const echoed = echoesSettledChallenge(state, status)
-  const authenticationState = echoed
+/**
+ * A link echoed while this tab's completed challenge is still processing
+ * points at that same challenge; surfacing it would ask the customer to
+ * redo a step they just finished.
+ */
+function nextActionUrl(
+  state: PendingBillingOperation,
+  status: BillingOpStatus,
+  authenticationState: BillingAuthenticationState | undefined
+): string | undefined {
+  return state.challenge?.status === 'completed' &&
+    authenticationState !== 'requires_action'
+    ? state.actionUrl
+    : validateActionUrl(status.action_url)
+}
+
+function reducePending(
+  state: PendingBillingOperation,
+  status: BillingOpStatus
+): BillingOperationState {
+  if (status.id !== state.id) return state
+  const terminal = terminalFromStatus(state, status)
+  if (terminal !== undefined) return terminal
+
+  const authenticationState = echoesSettledChallenge(state, status)
     ? state.authenticationState
     : status.authentication_state
-  // A link echoed while this tab's completed challenge is still processing
-  // points at that same challenge; surfacing it would ask the customer to
-  // redo a step they just finished.
-  const actionUrl =
-    state.challenge?.status === 'completed' &&
-    authenticationState !== 'requires_action'
-      ? state.actionUrl
-      : validateActionUrl(status.action_url)
+  const actionUrl = nextActionUrl(state, status, authenticationState)
   const declineReason =
     authenticationState === 'failed_retryable'
       ? (status.decline_reason ?? state.declineReason)
