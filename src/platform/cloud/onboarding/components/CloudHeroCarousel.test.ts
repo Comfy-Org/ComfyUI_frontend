@@ -7,12 +7,15 @@ import type { HeroSlide } from '@/platform/cloud/onboarding/constants/heroSlides
 
 const slides = vi.hoisted(() => ({ value: [] as HeroSlide[] }))
 
-vi.mock('@/platform/cloud/onboarding/constants/heroSlides', () => ({
-  get HERO_SLIDES() {
-    return slides.value
-  },
-  PROVIDER_ICON: { gemini: 'icon-mask-[comfy--gemini]' }
-}))
+vi.mock<unknown>(
+  import('@/platform/cloud/onboarding/constants/heroSlides'),
+  () => ({
+    get HERO_SLIDES() {
+      return slides.value
+    },
+    PROVIDER_ICON: { gemini: 'icon-mask-[comfy--gemini]' }
+  })
+)
 
 const buildSlide = (id: string, title: string): HeroSlide => ({
   id,

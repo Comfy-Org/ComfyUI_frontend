@@ -36,6 +36,7 @@ type OutputOverrides = Partial<{
   nodeId: SerializedNodeId
   url: string
   display_name: string
+  assetId: string
 }>
 
 function createOutput(overrides: OutputOverrides = {}): AugmentedResultItem {
@@ -167,6 +168,45 @@ describe('getTotalAssetOutputCount', () => {
 describe('resolveOutputAssetItems', () => {
   beforeEach(() => {
     mocks.isCloud = false
+  })
+
+  it('keeps the asset id an output already carries as the item id', async () => {
+    const output = createOutput({
+      filename: 'a.png',
+      nodeId: '1',
+      assetId: 'asset-a'
+    })
+    const metadata: OutputAssetMetadata = {
+      jobId: 'job-1',
+      nodeId: '1',
+      subfolder: 'sub',
+      outputCount: 1,
+      allOutputs: [output]
+    }
+
+    const results = await resolveOutputAssetItems(metadata)
+
+    expect(results).toHaveLength(1)
+    expect(results[0].id).toBe('asset-a')
+  })
+
+  it('synthesizes an item id when the output carries an empty asset id', async () => {
+    const output = createOutput({
+      filename: 'a.png',
+      nodeId: '1',
+      assetId: ''
+    })
+    const metadata: OutputAssetMetadata = {
+      jobId: 'job-1',
+      nodeId: '1',
+      subfolder: 'sub',
+      outputCount: 1,
+      allOutputs: [output]
+    }
+
+    const results = await resolveOutputAssetItems(metadata)
+
+    expect(results[0].id).toBe(`job-1-${getOutputKey(output)}`)
   })
 
   it('maps outputs and excludes a composite output key', async () => {

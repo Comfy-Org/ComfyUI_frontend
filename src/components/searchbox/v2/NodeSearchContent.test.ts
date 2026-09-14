@@ -6,7 +6,6 @@ import NodeSearchContent from '@/components/searchbox/v2/NodeSearchContent.vue'
 import {
   createMockNodeDef,
   setViewport,
-  setupTestPinia,
   testI18n
 } from '@/components/searchbox/v2/__test__/testUtils'
 
@@ -23,7 +22,6 @@ const MOBILE_VIEWPORT = { width: 360, height: 800 }
 describe('NodeSearchContent', () => {
   beforeEach(() => {
     vi.useRealTimers()
-    setupTestPinia()
     setViewport(DESKTOP_VIEWPORT)
     const settings = useSettingStore()
     settings.settingValues['Comfy.NodeLibrary.Bookmarks.V2'] = []

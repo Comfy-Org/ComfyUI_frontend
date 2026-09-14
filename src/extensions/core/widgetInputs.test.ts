@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -24,6 +22,12 @@ import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { serializeNodeId, toNodeId } from '@/types/nodeId'
 
+const extensions = await vi.hoisted(async () => {
+  const { createExtensionCapture } =
+    await import('@/utils/__tests__/extensionTestUtils')
+  return createExtensionCapture()
+})
+
 /** `app.configuringGraph` is a getter on the real app, so route it via a ref. */
 const appState = vi.hoisted(() => ({ configuringGraph: false }))
 
@@ -33,7 +37,7 @@ vi.mock('@/scripts/app', () => ({
     get configuringGraph() {
       return appState.configuringGraph
     },
-    registerExtension: vi.fn()
+    registerExtension: extensions.registerExtension
   }
 }))
 
@@ -52,21 +56,10 @@ beforeEach(() => {
   app.canvas.graph = null
 })
 
-/**
- * `registerExtension` is a mock, and `mockReset: true` clears its calls before
- * the first test runs — so the registered extension is captured at collection.
- */
-const widgetInputsExtension = vi.mocked(app.registerExtension).mock
-  .calls[0]?.[0]
-if (!widgetInputsExtension)
-  throw new Error('Comfy.WidgetInputs was not registered on import')
+const widgetInputsExtension = extensions.getExtension('Comfy.WidgetInputs')
 
 await import('./rerouteNode')
-const rerouteNodeExtension = vi
-  .mocked(app.registerExtension)
-  .mock.calls.find(([extension]) => extension.name === 'Comfy.RerouteNode')?.[0]
-if (!rerouteNodeExtension)
-  throw new Error('Comfy.RerouteNode was not registered on import')
+const rerouteNodeExtension = extensions.getExtension('Comfy.RerouteNode')
 
 /**
  * Applies the extension's `beforeRegisterNodeDef` to a throwaway node class.
@@ -99,7 +92,6 @@ function widgetSlot(
 
 describe('PrimitiveNode', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     LiteGraph.namedValuesRestore = false
   })
 
@@ -220,7 +212,7 @@ describe('PrimitiveNode', () => {
   })
 
   it('keeps its serialized value for an asset browser widget', () => {
-    vi.spyOn(assetService, 'shouldUseAssetBrowser').mockReturnValue(true)
+    vi.spyOn(assetService, 'shouldUseWidgetAssetPicker').mockReturnValue(true)
     const graph = new LGraph()
     const target = new LGraphNode('Target')
     target.comfyClass = 'CheckpointLoaderSimple'
@@ -504,7 +496,6 @@ describe('convertToInput', () => {
 
 describe('setWidgetConfig', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     widgetInputsExtension.registerCustomNodes?.(app)
   })
 
@@ -574,10 +565,6 @@ describe('setWidgetConfig', () => {
 })
 
 describe('Comfy.WidgetInputs node-def hooks', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   describe('onGraphConfigured', () => {
     it('resolves GET_CONFIG from the node definition, chaining the original hook', async () => {
       const original = vi.fn()

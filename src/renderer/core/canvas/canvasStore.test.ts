@@ -12,14 +12,14 @@ const { appModeState } = vi.hoisted(() => ({
   appModeState: {} as { isAppMode: Ref<boolean> }
 }))
 
-vi.mock('@/composables/useAppMode', () => ({
+vi.mock<unknown>(import('@/composables/useAppMode'), () => ({
   useAppMode: () => ({
     isAppMode: appModeState.isAppMode,
     setMode: vi.fn()
   })
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     canvas: {
       ds: {

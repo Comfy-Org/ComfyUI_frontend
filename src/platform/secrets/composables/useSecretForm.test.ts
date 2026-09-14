@@ -1,4 +1,6 @@
-import { nextTick, ref } from 'vue'
+import { render } from '@testing-library/vue'
+import { defineComponent, nextTick, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 import { describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -6,11 +8,7 @@ import type {
   FirstClassSecretProvider,
   SecretProviderInfo
 } from '../types'
-import { useSecretForm } from './useSecretForm'
-
-vi.mock<unknown>(import('vue-i18n'), () => ({
-  useI18n: () => ({ t: (key: string) => key })
-}))
+import { useSecretForm as useSecretFormComposable } from './useSecretForm'
 
 const mockCreate = vi.fn()
 const mockUpdate = vi.fn()
@@ -29,6 +27,27 @@ vi.mock<unknown>(import('../api/secretsApi'), () => ({
     }
   }
 }))
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  missingWarn: false,
+  fallbackWarn: false
+})
+
+function useSecretForm(
+  ...options: Parameters<typeof useSecretFormComposable>
+): ReturnType<typeof useSecretFormComposable> {
+  let result!: ReturnType<typeof useSecretFormComposable>
+  const Wrapper = defineComponent({
+    setup() {
+      result = useSecretFormComposable(...options)
+      return () => null
+    }
+  })
+  render(Wrapper, { global: { plugins: [i18n] } })
+  return result
+}
 
 function createMockSecret(
   overrides: Partial<SecretMetadata> = {}

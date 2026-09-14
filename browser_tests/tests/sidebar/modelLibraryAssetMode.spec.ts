@@ -49,7 +49,6 @@ const WALK_ASSETS: Asset[] = [
 
 test.use({
   initialSettings: {
-    'Comfy.Assets.UseAssetAPI': true,
     'Comfy.ModelLibrary.UseAssetBrowser': false
   }
 })
@@ -64,7 +63,8 @@ test.describe('Model library sidebar - asset mode', () => {
 
   test.beforeEach(async ({ assetApi: _, comfyPage }) => {
     await comfyPage.featureFlags.setServerFlagsPersistent({
-      supports_model_type_tags: true
+      supports_model_type_tags: true,
+      assets: true
     })
     const modelWalkResponse = comfyPage.page.waitForResponse(
       (response) =>
@@ -271,7 +271,8 @@ test.describe('Model library sidebar - asset mode when the walk fails', () => {
   test.beforeEach(async ({ comfyPage, assetApi }) => {
     await assetApi.mockError(500)
     await comfyPage.featureFlags.setServerFlagsPersistent({
-      supports_model_type_tags: true
+      supports_model_type_tags: true,
+      assets: true
     })
     await comfyPage.menu.modelLibraryTab.open()
   })
@@ -317,7 +318,8 @@ test.describe('Model library sidebar - asset mode before the loader_path cutover
 
   test.beforeEach(async ({ assetApi: _, comfyPage }) => {
     await comfyPage.featureFlags.setServerFlagsPersistent({
-      supports_model_type_tags: true
+      supports_model_type_tags: true,
+      assets: true
     })
   })
 
@@ -377,7 +379,8 @@ test.describe('Model library sidebar - asset mode with a legacy bare tag', () =>
 
   test.beforeEach(async ({ assetApi: _, comfyPage }) => {
     await comfyPage.featureFlags.setServerFlagsPersistent({
-      supports_model_type_tags: true
+      supports_model_type_tags: true,
+      assets: true
     })
   })
 
@@ -420,7 +423,8 @@ test.describe('Model library sidebar - asset mode with a mid-retag twin tag', ()
 
   test.beforeEach(async ({ assetApi: _, comfyPage }) => {
     await comfyPage.featureFlags.setServerFlagsPersistent({
-      supports_model_type_tags: true
+      supports_model_type_tags: true,
+      assets: true
     })
     await comfyPage.menu.modelLibraryTab.open()
   })
@@ -482,6 +486,7 @@ test.describe('Model library sidebar - asset mode on bare-tag backends', () => {
     // Force the capability off rather than omitting it: the real backend's
     // feature_flags handshake would otherwise decide which mode this tests.
     await comfyPage.featureFlags.setServerFlagsPersistent({
+      assets: true,
       supports_model_type_tags: false
     })
     await comfyPage.menu.modelLibraryTab.open()
@@ -498,6 +503,7 @@ test.describe('Model library sidebar - asset mode on bare-tag backends', () => {
   test('Defaults to bare-tag bucketing when the capability flag is absent', async ({
     comfyPage
   }) => {
+    await comfyPage.featureFlags.setServerFlagsPersistent({ assets: true })
     await comfyPage.featureFlags.clearServerFlagsPersistent([
       'supports_model_type_tags'
     ])

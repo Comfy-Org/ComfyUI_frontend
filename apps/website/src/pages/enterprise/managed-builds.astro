@@ -10,6 +10,7 @@ import HeroProduct01 from '../../components/blocks/HeroProduct01.vue'
 import StepsCards01 from '../../components/blocks/StepsCards01.vue'
 import IndustriesSection from '../../components/home/IndustriesSection.vue'
 import DistributionsScene from '../../components/product/enterprise/DistributionsScene.vue'
+import Button from '../../components/ui/button/Button.vue'
 import { t } from '../../i18n/translations'
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import ClosingCtaSection from '../../templates/platform/ClosingCtaSection.vue'
@@ -278,11 +279,23 @@ const faqPage = buildFaqPageNode(url, faqs)
   />
 
   <CompareTable01
-    heading="Builder vs. Managed Builds"
-    subtitle="Builder is self-serve for packaging and testing your own environment. Managed Builds adds team sharing and enterprise governance."
-    columns={['BUILDER', 'MANAGED BUILDS']}
+    heading="Builds vs. Managed Builds"
+    subtitle="Builds is self-serve for packaging and testing your own environment. Managed Builds adds team sharing and enterprise governance."
+    columns={['BUILDS', 'MANAGED BUILDS']}
     rows={compareRows}
   />
+
+  <div class="max-w-9xl mx-auto flex justify-center px-6 pb-16 lg:pb-24">
+    <Button
+      as="a"
+      href="/platform/builder"
+      variant="outline"
+      size="lg"
+      class="h-12 rounded-full text-sm"
+    >
+      EXPLORE BUILDS
+    </Button>
+  </div>
 
   <FAQSplit01
     id="faq"

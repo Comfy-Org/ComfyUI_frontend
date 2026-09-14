@@ -16,7 +16,7 @@ import { widgetId } from '@/types/widgetId'
 
 import TabSubgraphInputs from './TabSubgraphInputs.vue'
 
-vi.mock('@/services/litegraphService', () => ({
+vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: () => ({ updatePreviews: vi.fn() })
 }))
 

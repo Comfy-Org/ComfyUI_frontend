@@ -181,7 +181,6 @@ async function initialize(): Promise<void> {
     }
   } catch (error) {
     if (generation !== initializationGeneration) return
-    console.error('[WorkspaceAuthGate] Initialization failed:', error)
     reportError(error, {
       errorType: 'workspace_auth_gate_initialization_failure'
     })

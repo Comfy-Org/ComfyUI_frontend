@@ -1,15 +1,15 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
+import { fromPartial } from '@total-typescript/shoehorn'
 
-import {
-  getSettingInfo,
-  useSettingStore
-} from '@/platform/settings/settingStore'
+import { render } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
+
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingTreeNode } from '@/platform/settings/settingStore'
 
-import { useSettingUI } from './useSettingUI'
+import { useSettingUI as useSettingUIComposable } from './useSettingUI'
 
 const env = vi.hoisted(() => {
   const state = {
@@ -35,10 +35,6 @@ const env = vi.hoisted(() => {
   })
   return { state, fakeRef }
 })
-
-vi.mock<unknown>(import('vue-i18n'), () => ({
-  useI18n: () => ({ t: (_: string, fallback: string) => fallback })
-}))
 
 vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
   useCurrentUser: () => ({ isLoggedIn: env.fakeRef('isLoggedIn') })
@@ -70,30 +66,11 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/platform/settings/settingStore'), () => ({
-  useSettingStore: vi.fn(),
-  getSettingInfo: vi.fn()
-}))
-
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useWorkspaceUI'),
   () => ({
     useWorkspaceUI: () => ({
       workspaceRole: env.fakeRef('workspaceRole')
-    })
-  })
-)
-
-vi.mock<unknown>(
-  import('@/platform/workspace/stores/partnerNodeGovernanceStore'),
-  () => ({
-    usePartnerNodeGovernanceStore: () => ({
-      get status() {
-        return env.state.partnerNodeGovernanceStatus
-      },
-      get providers() {
-        return env.state.partnerNodeGovernanceProviders
-      }
     })
   })
 )
@@ -105,6 +82,46 @@ interface MockSettingParams {
   defaultValue: unknown
   category?: string[]
 }
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  missingWarn: false,
+  fallbackWarn: false
+})
+
+function useSettingUI(
+  ...options: Parameters<typeof useSettingUIComposable>
+): ReturnType<typeof useSettingUIComposable> {
+  let result!: ReturnType<typeof useSettingUIComposable>
+  const Wrapper = defineComponent({
+    setup() {
+      result = useSettingUIComposable(...options)
+      return () => null
+    }
+  })
+  render(Wrapper, { global: { plugins: [i18n] } })
+  return result
+}
+
+beforeEach(() => {
+  vi.spyOn(usePartnerNodeGovernanceStore(), 'status', 'get').mockImplementation(
+    () => {
+      return env.state.partnerNodeGovernanceStatus
+    }
+  )
+  vi.spyOn(
+    usePartnerNodeGovernanceStore(),
+    'providers',
+    'get'
+  ).mockImplementation(() => {
+    return env.state.partnerNodeGovernanceProviders.map((provider) =>
+      fromPartial<
+        ReturnType<typeof usePartnerNodeGovernanceStore>['providers'][number]
+      >(provider)
+    )
+  })
+})
 
 describe('useSettingUI', () => {
   const mockSettings: Record<string, MockSettingParams> = {
@@ -129,8 +146,6 @@ describe('useSettingUI', () => {
   }
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia())
-
     Object.assign(env.state, {
       isCloud: false,
       isDesktop: false,
@@ -142,17 +157,7 @@ describe('useSettingUI', () => {
       partnerNodeGovernanceProviders: []
     })
 
-    vi.mocked(useSettingStore).mockReturnValue({
-      settingsById: mockSettings
-    } as ReturnType<typeof useSettingStore>)
-
-    vi.mocked(getSettingInfo).mockImplementation((setting) => {
-      const parts = setting.category || setting.id.split('.')
-      return {
-        category: parts[0] ?? 'Other',
-        subCategory: parts[1] ?? 'Other'
-      }
-    })
+    Object.assign(useSettingStore(), { settingsById: mockSettings })
   })
 
   function findCategory(

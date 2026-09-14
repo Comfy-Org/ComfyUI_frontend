@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
 import type { BillingStatus } from '@/platform/workspace/api/workspaceApi'
+import { useDialogStore } from '@/stores/dialogStore'
 
 import CloudRunButtonWrapper from './CloudRunButtonWrapper.vue'
 
@@ -18,31 +19,34 @@ const state = vi.hoisted(() => ({
   fetchStatus: vi.fn(),
   fetchBalance: vi.fn(),
   toastErrorHandler: vi.fn(),
-  showLayoutDialog: vi.fn(),
-  closeDialog: vi.fn(),
-  updateDialog: vi.fn()
+  showLayoutDialog: vi.fn()
 }))
 
-vi.mock('@/composables/billing/useBillingContext', async () => {
-  const { computed } = await import('vue')
-  return {
-    useBillingContext: () => ({
-      canRunWorkflows: mockCanRunWorkflows,
-      showsSubscribeToRunPrompt: computed(
-        () => mockIsInitialized.value && !mockCanRunWorkflows.value
-      ),
-      billingStatus: mockBillingStatus,
-      subscription: computed(() =>
-        mockSubscriptionTier.value ? { tier: mockSubscriptionTier.value } : null
-      ),
-      manageSubscription: state.manageSubscription,
-      fetchStatus: state.fetchStatus,
-      fetchBalance: state.fetchBalance
-    })
+vi.mock<unknown>(
+  import('@/composables/billing/useBillingContext'),
+  async () => {
+    const { computed } = await import('vue')
+    return {
+      useBillingContext: () => ({
+        canRunWorkflows: mockCanRunWorkflows,
+        showsSubscribeToRunPrompt: computed(
+          () => mockIsInitialized.value && !mockCanRunWorkflows.value
+        ),
+        billingStatus: mockBillingStatus,
+        subscription: computed(() =>
+          mockSubscriptionTier.value
+            ? { tier: mockSubscriptionTier.value }
+            : null
+        ),
+        manageSubscription: state.manageSubscription,
+        fetchStatus: state.fetchStatus,
+        fetchBalance: state.fetchBalance
+      })
+    }
   }
-})
+)
 
-vi.mock('@/composables/useFeatureFlags', () => ({
+vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
     flags: {
       get v1PaymentRecovery() {
@@ -52,48 +56,50 @@ vi.mock('@/composables/useFeatureFlags', () => ({
   })
 }))
 
-vi.mock('@/composables/useErrorHandling', () => ({
+vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({ toastErrorHandler: state.toastErrorHandler })
 }))
 
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', async () => {
-  const { computed } = await import('vue')
-  return {
-    useWorkspaceUI: () => ({
-      permissions: computed(() => ({
-        canManageSubscription: state.canManageSubscription
-      }))
-    })
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceUI'),
+  async () => {
+    const { computed } = await import('vue')
+    return {
+      useWorkspaceUI: () => ({
+        permissions: computed(() => ({
+          canManageSubscription: state.canManageSubscription
+        }))
+      })
+    }
   }
-})
+)
 
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({ showLayoutDialog: state.showLayoutDialog })
 }))
 
-vi.mock('@/stores/dialogStore', () => ({
-  useDialogStore: () => ({
-    closeDialog: state.closeDialog,
-    updateDialog: state.updateDialog
+vi.mock<unknown>(
+  import('@/components/actionbar/ComfyRunButton/ComfyQueueButton.vue'),
+  () => ({
+    default: {
+      name: 'ComfyQueueButton',
+      props: ['paymentRecoveryLock'],
+      emits: ['paymentRecoveryClick'],
+      template:
+        '<div data-testid="queue-group"><div data-testid="batch-count"/><button data-testid="queue-button" @click="$emit(\'paymentRecoveryClick\')">{{ paymentRecoveryLock === \'owner\' ? \'Update payment to run\' : \'Run\' }}</button><div data-testid="queue-dropdown"/></div>'
+    }
   })
-}))
+)
 
-vi.mock('@/components/actionbar/ComfyRunButton/ComfyQueueButton.vue', () => ({
-  default: {
-    name: 'ComfyQueueButton',
-    props: ['paymentRecoveryLock'],
-    emits: ['paymentRecoveryClick'],
-    template:
-      '<div data-testid="queue-group"><div data-testid="batch-count"/><button data-testid="queue-button" @click="$emit(\'paymentRecoveryClick\')">{{ paymentRecoveryLock === \'owner\' ? \'Update payment to run\' : \'Run\' }}</button><div data-testid="queue-dropdown"/></div>'
-  }
-}))
-
-vi.mock('@/platform/cloud/subscription/components/SubscribeToRun.vue', () => ({
-  default: {
-    name: 'SubscribeToRun',
-    template: '<div data-testid="subscribe-to-run-button" />'
-  }
-}))
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/components/SubscribeToRun.vue'),
+  () => ({
+    default: {
+      name: 'SubscribeToRun',
+      template: '<div data-testid="subscribe-to-run-button" />'
+    }
+  })
+)
 
 function renderWrapper() {
   return render(CloudRunButtonWrapper)
@@ -314,7 +320,7 @@ describe('CloudRunButtonWrapper', () => {
     expect(dialogOptions.props.status).toBe('paused')
 
     await dialogOptions.props.onUpdatePayment()
-    expect(state.closeDialog).toHaveBeenCalledWith({
+    expect(vi.mocked(useDialogStore().closeDialog)).toHaveBeenCalledWith({
       key: 'subscription-paused'
     })
     expect(state.manageSubscription).toHaveBeenCalledOnce()
@@ -343,7 +349,7 @@ describe('CloudRunButtonWrapper', () => {
     await dialogOptions.props.onUpdatePayment()
 
     expect(state.toastErrorHandler).toHaveBeenCalledWith(error)
-    expect(state.closeDialog).not.toHaveBeenCalled()
+    expect(vi.mocked(useDialogStore().closeDialog)).not.toHaveBeenCalled()
   })
 
   it('refreshes billing once on focus after returning from the portal', async () => {
@@ -405,7 +411,7 @@ describe('CloudRunButtonWrapper', () => {
 
     resolvePortal()
     await firstRequest
-    expect(state.updateDialog).toHaveBeenLastCalledWith({
+    expect(vi.mocked(useDialogStore().updateDialog)).toHaveBeenLastCalledWith({
       key: 'subscription-paused',
       contentProps: { isUpdatingPayment: false }
     })
@@ -432,9 +438,9 @@ describe('CloudRunButtonWrapper', () => {
 
     resolvePortal()
     await portalRequest
-    expect(state.closeDialog).not.toHaveBeenCalled()
-    expect(state.updateDialog).toHaveBeenCalledTimes(1)
-    expect(state.updateDialog).toHaveBeenCalledWith({
+    expect(vi.mocked(useDialogStore().closeDialog)).not.toHaveBeenCalled()
+    expect(vi.mocked(useDialogStore().updateDialog)).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(useDialogStore().updateDialog)).toHaveBeenCalledWith({
       key: 'subscription-paused',
       contentProps: { isUpdatingPayment: true }
     })
@@ -453,7 +459,7 @@ describe('CloudRunButtonWrapper', () => {
     expect(dialogOptions.props.canManage).toBe(false)
     expect(dialogOptions.props.status).toBe('paused')
     dialogOptions.props.onClose()
-    expect(state.closeDialog).toHaveBeenCalledWith({
+    expect(vi.mocked(useDialogStore().closeDialog)).toHaveBeenCalledWith({
       key: 'subscription-paused'
     })
     expect(state.manageSubscription).not.toHaveBeenCalled()

@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { ISlotType } from '@/lib/litegraph/src/interfaces'
 import {
@@ -21,19 +19,9 @@ import { createUuidv4 } from '@/utils/uuid'
 
 import { workflowToClipboardItems } from './workflowToClipboardItems'
 
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/canvasStore'), // eslint-disable-line import-x/no-restricted-paths
-
-  () => ({
-    useCanvasStore: () => ({})
-  })
-)
-
 vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: () => ({ updatePreviews: () => ({}) })
 }))
-
-beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 
 describe('workflow clipboard insertion', () => {
   it('pastes reroutes at their source-relative position', () => {

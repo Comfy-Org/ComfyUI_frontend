@@ -180,7 +180,7 @@ test.describe('Enterprise pages @smoke', () => {
       'From one working setup to an approved fleet',
       'Govern the build, models, people, and usage.',
       'Ready for your security review',
-      'Builder vs. Managed Builds',
+      'Builds vs. Managed Builds',
       'Managed Builds, answered.',
       'Built with studios in the room',
       /Scale your custom nodes in your Comfy workflows/,
@@ -284,12 +284,12 @@ test.describe('Enterprise pages @smoke', () => {
     await expect(
       page.getByRole('heading', {
         level: 2,
-        name: 'Builder vs. Managed Builds'
+        name: 'Builds vs. Managed Builds'
       })
     ).toBeVisible()
     await expect(
       page.getByText(
-        /Builder is self-serve for packaging and testing your own environment\./
+        /Builds is self-serve for packaging and testing your own environment\./
       )
     ).toBeVisible()
     for (const feature of [

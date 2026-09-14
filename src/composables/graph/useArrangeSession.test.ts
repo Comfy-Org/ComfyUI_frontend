@@ -1,20 +1,22 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 
-import type * as ArrangeNodesModule from '@/composables/graph/useArrangeNodes'
+import { useArrangeNodes } from '@/composables/graph/useArrangeNodes'
 import { useArrangeSession } from '@/composables/graph/useArrangeSession'
 
 const mockArrangeNodes = vi.fn()
 
-vi.mock('@/composables/graph/useArrangeNodes', async (importOriginal) => ({
-  ...(await importOriginal<typeof ArrangeNodesModule>()),
-  useArrangeNodes: () => ({ arrangeNodes: mockArrangeNodes })
-}))
+vi.mock(import('@/composables/graph/useArrangeNodes'), { spy: true })
 
 describe('useArrangeSession', () => {
   let frameCallbacks: Array<FrameRequestCallback>
   let nextHandle: number
 
   beforeEach(() => {
+    vi.mocked(useArrangeNodes).mockImplementation(() => ({
+      arrangeNodes: mockArrangeNodes,
+      canArrange: computed(() => true)
+    }))
     frameCallbacks = []
     nextHandle = 1
     vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation(

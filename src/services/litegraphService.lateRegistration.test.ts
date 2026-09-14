@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -148,7 +146,6 @@ function layoutEntities(graph: LGraph) {
 }
 
 beforeEach(async () => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   layoutStore.resetForTests()
   await useLitegraphService().registerNodeDef(INSTALLED, nodeDef(INSTALLED))
 })

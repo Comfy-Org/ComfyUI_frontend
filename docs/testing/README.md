@@ -12,6 +12,10 @@ Documentation for unit tests is organized into five guides:
 - [LiteGraph Testing](./litegraph-testing.md) - How to test LiteGraph graph, node, link, and workflow behavior
 - [Vitest Patterns](./vitest-patterns.md) - Setup, mocking, and fake-timer patterns that apply across all of the above
 
+Playwright testing has a separate strategy guide:
+
+- [E2E Coverage Strategy](./e2e-coverage-strategy.md) - How Playwright coverage is measured, where the gaps are, and the plan to close them
+
 ## Testing Structure
 
 The ComfyUI Frontend project uses **colocated tests** - test files are placed alongside their source files:
@@ -23,7 +27,7 @@ The ComfyUI Frontend project uses **colocated tests** - test files are placed al
 
 ### Test File Naming
 
-- Use `.test.ts` extension for test files
+- Unit tests use the `.test.ts` extension; Playwright browser tests use `.spec.ts` (Playwright ignores `**/*.test.ts`)
 - Name tests after their source file: `sourceFile.test.ts`
 
 ## Test Frameworks and Libraries

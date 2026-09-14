@@ -1,8 +1,6 @@
 import { applyOps, mint, nodesMap } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { createGraphMutations } from '@/core/graph/graphMutations'
@@ -46,10 +44,6 @@ function op(id: string, baseVersion: number, payload: object) {
 }
 
 describe('EcsFollowerAdapter integration', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('reconciles a full seeded snapshot with existing and server-ahead entities', () => {
     const layouts = new Map<NodeId, TestLayout>()
     const createLayout = vi.fn(
@@ -1017,7 +1011,8 @@ describe('EcsFollowerAdapter integration', () => {
     ]
 
     const runScenario = (deliverAsSingleFrame: boolean) => {
-      setActivePinia(createTestingPinia({ stubActions: false }))
+      useNodeDataStore().clearGraph(scope.rootGraphId)
+      useLinkStore().clearGraph(scope.rootGraphId)
       const host = mint({ nodes: [], links: [] }, catalog)
       const follower = new FollowerDoc()
       const mutations = createGraphMutations({

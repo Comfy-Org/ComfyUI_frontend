@@ -10,7 +10,7 @@ const { processMouseDown, processMouseMove, processMouseUp } = vi.hoisted(
   })
 )
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     canvas: {
       processMouseDown,

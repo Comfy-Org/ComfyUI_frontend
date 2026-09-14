@@ -1,21 +1,16 @@
+import { useDialogStore } from '@/stores/dialogStore'
 /**
  * showTopUpCreditsDialog routes the paired server capabilities to purchase,
  * subscription, or read-only contact-admin UI.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const showDialog = vi.hoisted(() => vi.fn())
-const closeDialog = vi.hoisted(() => vi.fn())
 const state = vi.hoisted(() => ({
   type: 'workspace' as 'workspace' | 'legacy',
   canTopUp: true,
   canSubscribeSelfServe: false,
   isReady: true,
   initialize: vi.fn()
-}))
-
-vi.mock<unknown>(import('@/stores/dialogStore'), () => ({
-  useDialogStore: () => ({ showDialog, closeDialog })
 }))
 
 vi.mock(import('@/i18n'), () => ({
@@ -64,10 +59,6 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/platform/updates/common/toastStore'), () => ({
-  useToastStore: () => ({ add: vi.fn() })
-}))
-
 const showSubscriptionDialog = vi.hoisted(() => vi.fn())
 
 vi.mock<unknown>(
@@ -94,7 +85,7 @@ describe('showTopUpCreditsDialog', () => {
       isInsufficientCredits: true
     })
 
-    const [args] = showDialog.mock.calls[0]
+    const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
     expect(args.key).toBe('top-up-credits')
     expect(state.initialize).not.toHaveBeenCalled()
   })
@@ -107,15 +98,17 @@ describe('showTopUpCreditsDialog', () => {
       isInsufficientCredits: true
     })
 
-    const [args] = showDialog.mock.calls[0]
+    const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
     expect(args.key).toBe('insufficient-credits-member')
     // The member notice draws its own header + close button, so it must open
     // headless or Reka wraps it in duplicate chrome.
-    expect(args.dialogComponentProps.headless).toBe(true)
-    expect(args.dialogComponentProps.renderer).toBe('reka')
+    expect(args.dialogComponentProps?.headless).toBe(true)
+    expect(args.dialogComponentProps?.renderer).toBe('reka')
 
-    args.props.onClose()
-    expect(closeDialog).toHaveBeenCalledWith({
+    const props = args.props
+    assert(props && 'onClose' in props && typeof props.onClose === 'function')
+    props.onClose()
+    expect(vi.mocked(useDialogStore().closeDialog)).toHaveBeenCalledWith({
       key: 'insufficient-credits-member'
     })
   })
@@ -126,7 +119,7 @@ describe('showTopUpCreditsDialog', () => {
 
     await useDialogService().showTopUpCreditsDialog()
 
-    const [args] = showDialog.mock.calls[0]
+    const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
     expect(args.key).toBe('top-up-credits')
   })
 
@@ -136,7 +129,7 @@ describe('showTopUpCreditsDialog', () => {
 
     await useDialogService().showTopUpCreditsDialog()
 
-    expect(showDialog).not.toHaveBeenCalled()
+    expect(vi.mocked(useDialogStore().showDialog)).not.toHaveBeenCalled()
     expect(showSubscriptionDialog).not.toHaveBeenCalled()
   })
 
@@ -154,7 +147,7 @@ describe('showTopUpCreditsDialog', () => {
     })
 
     expect(state.initialize).toHaveBeenCalledOnce()
-    const [args] = showDialog.mock.calls[0]
+    const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
     expect(args.key).toBe('top-up-credits')
   })
 
@@ -165,7 +158,7 @@ describe('showTopUpCreditsDialog', () => {
     await useDialogService().showTopUpCreditsDialog()
 
     expect(state.initialize).toHaveBeenCalledOnce()
-    expect(showDialog).not.toHaveBeenCalled()
+    expect(vi.mocked(useDialogStore().showDialog)).not.toHaveBeenCalled()
     expect(showSubscriptionDialog).not.toHaveBeenCalled()
   })
 
@@ -178,7 +171,7 @@ describe('showTopUpCreditsDialog', () => {
     expect(showSubscriptionDialog).toHaveBeenCalledWith({
       reason: 'top_up_blocked'
     })
-    expect(showDialog).not.toHaveBeenCalled()
+    expect(vi.mocked(useDialogStore().showDialog)).not.toHaveBeenCalled()
   })
 
   describe('non-cloud distribution', () => {
@@ -191,7 +184,7 @@ describe('showTopUpCreditsDialog', () => {
       await useDialogService().showTopUpCreditsDialog()
 
       expect(showSubscriptionDialog).not.toHaveBeenCalled()
-      const [args] = showDialog.mock.calls[0]
+      const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
       expect(args.key).toBe('top-up-credits')
     })
   })
