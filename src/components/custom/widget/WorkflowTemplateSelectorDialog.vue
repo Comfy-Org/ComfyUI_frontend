@@ -499,6 +499,7 @@ const workflowTemplatesStore = useWorkflowTemplatesStore()
 const {
   loadTemplates,
   loadWorkflowTemplate,
+  loadingTemplateId: loadingTemplate,
   getTemplateThumbnailUrl,
   getTemplateTitle
 } = useTemplateWorkflows()
@@ -709,7 +710,6 @@ const hasActiveFilters = computed(
 
 // UI state
 const mobileFiltersOpen = ref(false)
-const loadingTemplate = ref<string | null>(null)
 const hoveredTemplate = ref<string | null>(null)
 const cardRefs = ref<HTMLElement[]>([])
 
@@ -887,25 +887,19 @@ watch(
   ],
   () => {
     resetPagination()
-    // Clear loading state and force re-render of template list
-    loadingTemplate.value = null
     templateListKey.value++
   }
 )
 
 // Methods
 const onLoadWorkflow = async (template: TemplateInfo) => {
-  loadingTemplate.value = template.name
-  try {
-    await loadWorkflowTemplate(
-      template.name,
-      getEffectiveSourceModule(template)
-    )
-    templateWasSelected.value = true
-    onClose()
-  } finally {
-    loadingTemplate.value = null
-  }
+  const loaded = await loadWorkflowTemplate(
+    template.name,
+    getEffectiveSourceModule(template)
+  )
+  if (!loaded) return
+  templateWasSelected.value = true
+  onClose()
 }
 
 const pageTitle = computed(() => {

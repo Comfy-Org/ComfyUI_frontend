@@ -46,6 +46,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | [TESTING-E2E-0027](TESTING-E2E-0027-coverage-measurement-and-test-selection.md)                                  | E2E Coverage Measurement and Test Selection                                        | Proposed   | 2026-09-01 |
 | [WEBSITE-REQUESTS-0030](WEBSITE-REQUESTS-0030-creator-widgets-and-router-request-composition.md)                 | Creator widgets and Router request composition                                     | Deprecated | 2026-09-09 |
 | [WIDGET-SERIALIZATION-0006](WIDGET-SERIALIZATION-0006-preserve-primitive-widget-values-across-copy-and-paste.md) | PrimitiveNode Widget Restoration Lifecycle                                         | Accepted   | 2026-02-22 |
+| [WORKFLOW-TEMPLATES-0001](WORKFLOW-TEMPLATES-0001-prepare-local-template-inputs.md)                              | Prepare local template inputs before opening                                       | Proposed   | 2026-09-14 |
 
 ## Creating a New ADR
 
