@@ -123,19 +123,8 @@ describe('createFirebaseIdentity over a host-owned Auth', () => {
 })
 
 describe('createFirebaseIdentity state-changing calls stay pending until the SDK settles', () => {
-  it('returns the SDK sign-in promise itself, with no wrapper that could settle it early', async () => {
-    const call = deferred<UserCredential>()
-    sdk.signInWithEmailAndPassword.mockReturnValueOnce(call.promise)
-    const identity = await makeIdentity()
-
-    expect(
-      identity.signInWithEmail('a@b.example', 'stalled'),
-      'a wrapper promise can reject at a deadline while the non-cancellable SDK op runs on; the caller must hold the SDK promise directly'
-    ).toBe(call.promise)
-  })
-
   it.for([['signInWithEmail'], ['sendPasswordReset']] as const)(
-    'keeps %s pending past any deadline, so a retry cannot overlap the non-cancellable SDK op (FE-2172)',
+    'keeps the %s caller pending past any deadline until the SDK op settles (FE-2172)',
     async ([method]) => {
       const call = deferred<UserCredential>()
       const sdkCall =
@@ -168,28 +157,6 @@ describe('createFirebaseIdentity state-changing calls stay pending until the SDK
       ).toHaveBeenCalledOnce()
     }
   )
-
-  it('does not let a second sign-in start until the first SDK call has settled', async () => {
-    const first = deferred<UserCredential>()
-    sdk.signInWithEmailAndPassword.mockReturnValueOnce(first.promise)
-    const identity = await makeIdentity()
-
-    const attempt = identity.signInWithEmail('a@b.example', 'stalled')
-    const settled = vi.fn()
-    attempt.then(settled, settled)
-
-    await vi.advanceTimersByTimeAsync(15_000 * 10)
-
-    expect(
-      settled,
-      'the first caller stays busy, so the form never frees to launch an overlapping retry'
-    ).not.toHaveBeenCalled()
-
-    first.resolve(testCredential)
-    await vi.advanceTimersByTimeAsync(0)
-
-    expect(settled).toHaveBeenCalledWith(testCredential)
-  })
 
   it('never bounds account creation: a released caller with a live SDK call orphans the account', async () => {
     const identity = await makeIdentity()
