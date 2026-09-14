@@ -2,10 +2,12 @@
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { requestWorkshopBuyCredits } from '../../../config/workshop-buy-credits'
 import HeaderMain from './HeaderMain.vue'
 
 const hoisted = vi.hoisted(() => ({
-  flag: undefined as { value: boolean } | undefined
+  flag: undefined as { value: boolean } | undefined,
+  announceReturn: vi.fn()
 }))
 
 vi.mock(import('../../../scripts/posthog.ts'), async () => {
@@ -14,6 +16,10 @@ vi.mock(import('../../../scripts/posthog.ts'), async () => {
   hoisted.flag = flag
   return { useWorkshopAuthFlag: () => flag }
 })
+
+vi.mock(import('../../../lib/workshop/topup-return.ts'), () => ({
+  announceTopUpReturnFromLocation: hoisted.announceReturn
+}))
 
 vi.mock<unknown>(import('../../workshop/HeaderAccount.vue'), async () => {
   const { defineComponent, h } = await import('vue')
@@ -26,8 +32,22 @@ vi.mock<unknown>(import('../../workshop/HeaderAccount.vue'), async () => {
   }
 })
 
+vi.mock<unknown>(import('../../workshop/BuyCreditsDialog.vue'), async () => {
+  const { defineComponent, h } = await import('vue')
+  return {
+    __esModule: true,
+    default: defineComponent({
+      name: 'BuyCreditsDialogStub',
+      props: { open: { type: Boolean, required: true } },
+      setup: (props) => () =>
+        props.open ? h('div', { 'data-testid': 'buy-credits-dialog' }) : null
+    })
+  }
+})
+
 beforeEach(() => {
   hoisted.flag!.value = false
+  hoisted.announceReturn.mockReset()
 })
 
 describe('HeaderMain workshop gating', () => {
@@ -49,6 +69,13 @@ describe('HeaderMain workshop gating', () => {
     render(HeaderMain)
 
     expect(screen.queryByTestId('header-account')).toBeNull()
+  })
+
+  it('relays a top-up return before the auth flag settles', () => {
+    render(HeaderMain)
+
+    expect(hoisted.announceReturn).toHaveBeenCalledOnce()
+    expect(screen.queryByTestId('buy-credits-dialog')).toBeNull()
   })
 
   it('mounts the account island when the flag turns on after mount', async () => {
@@ -82,5 +109,59 @@ describe('HeaderMain workshop gating', () => {
         'header-account'
       )
     ).toBeTruthy()
+  })
+
+  it('owns one credits dialog for both account placements and page requests', async () => {
+    hoisted.flag!.value = true
+    render(HeaderMain)
+    await waitFor(() =>
+      expect(screen.getAllByTestId('header-account')).toHaveLength(2)
+    )
+
+    requestWorkshopBuyCredits()
+
+    await waitFor(() =>
+      expect(screen.getAllByTestId('buy-credits-dialog')).toHaveLength(1)
+    )
+  })
+
+  it('replays a request made before the header island mounts', async () => {
+    hoisted.flag!.value = true
+    requestWorkshopBuyCredits()
+
+    render(HeaderMain)
+
+    expect(await screen.findByTestId('buy-credits-dialog')).toBeTruthy()
+  })
+
+  it('does not latch requests while auth is disabled', async () => {
+    render(HeaderMain)
+
+    requestWorkshopBuyCredits()
+    hoisted.flag!.value = true
+
+    await waitFor(() =>
+      expect(screen.getAllByTestId('header-account')).toHaveLength(2)
+    )
+    expect(screen.queryByTestId('buy-credits-dialog')).toBeNull()
+  })
+
+  it('keeps an active checkout mounted through a flag refresh', async () => {
+    hoisted.flag!.value = true
+    render(HeaderMain)
+    requestWorkshopBuyCredits()
+    expect(await screen.findByTestId('buy-credits-dialog')).toBeTruthy()
+
+    hoisted.flag!.value = false
+    await waitFor(() =>
+      expect(screen.queryByTestId('header-account')).toBeNull()
+    )
+    expect(screen.getByTestId('buy-credits-dialog')).toBeTruthy()
+    hoisted.flag!.value = true
+    await waitFor(() =>
+      expect(screen.getAllByTestId('header-account')).toHaveLength(2)
+    )
+
+    expect(screen.getByTestId('buy-credits-dialog')).toBeTruthy()
   })
 })

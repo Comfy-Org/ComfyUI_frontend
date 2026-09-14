@@ -6,12 +6,11 @@ import rawSnapshots from '../data/workshop-router-openapi.snapshot.json'
 import catalog from '../content/workshop-models.json'
 import display from '../content/workshop-display.json'
 import packedAliases from '../content/workshop-router-aliases.json'
+import { filterWorkshopModels, countByModality } from './models-catalogue'
 import {
   workshopModels,
-  filterWorkshopModels,
-  countByModality
-} from './models-catalogue'
-import { routerWorkshopModelPaths } from './workshop-browse-content'
+  routerWorkshopModelPaths
+} from './workshop-browse-content'
 import { getRouterWorkshopModelDetail } from './workshop-router-content'
 import { workshopContract } from './workshop-contract-catalog'
 import { workshopContentInputs } from './workshop-content-inputs'
