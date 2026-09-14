@@ -6216,6 +6216,40 @@
       }
     }
   },
+  "FluxVideoEditNode": {
+    "description": "Edita un clip a partir de una instrucción escrita: elimina, añade o reemplaza objetos, cambia el entorno, cambia el estilo del metraje, modifica el texto en pantalla o sustituye el diálogo hablado. La duración, el encuadre, el movimiento de cámara y el audio proceden del clip de origen.",
+    "display_name": "Edición de vídeo Flux",
+    "inputs": {
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "Reduce automáticamente la resolución de los orígenes con un área superior a 1280x704 píxeles antes de cargarlos. Se conserva la relación de aspecto; los vídeos más pequeños no se modifican."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Qué cambiar, en lenguaje natural, hasta 4096 caracteres. Todo lo que no menciones debe mantenerse como estaba. El diálogo de reemplazo debe ajustarse al tiempo que dura el habla original, y un clip silencioso sigue siendo silencioso."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "Tolerancia de moderación; 0 es el ajuste más estricto."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Semilla para determinar si el nodo debe volver a ejecutarse; FLUX elige su propia semilla, por lo que los resultados reales no son deterministas independientemente de este valor."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Clip de origen de 0.7 a 15 segundos, de al menos 160x160 píxeles. La salida se renderiza a 24 fps y se limita a unos 0.9 megapíxeles por fotograma, por lo que un origen más grande devuelve un resultado más pequeño."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "FluxVideoUpscaleNode": {
     "description": "Amplía un vídeo entre 1,5 y 3 veces con superresolución FLUX, preservando la fuente con precisión o mejorando creativamente sus detalles.",
     "display_name": "Ampliación de vídeo Flux",

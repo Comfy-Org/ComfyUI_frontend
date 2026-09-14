@@ -541,8 +541,11 @@ describe('curated model inputs', () => {
     },
     {
       id: 'heygen/starfish',
-      values: { text: 'Hello', voice_id: 'creator-voice' },
-      expected: { input_type: 'text', voice_id: 'creator-voice' },
+      values: { text: 'Hello' },
+      expected: {
+        input_type: 'text',
+        voice_id: 'd2f4f24783d04e22ab49ee8fdc3715e0'
+      },
       absent: ['language', 'locale']
     },
     {

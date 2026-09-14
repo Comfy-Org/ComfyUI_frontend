@@ -9,9 +9,9 @@ import type { UseCase, WorkshopModel } from '../../config/models-catalogue'
 import {
   USE_CASES,
   sortWorkshopModels,
-  useCaseFor,
-  workshopModels
+  useCaseFor
 } from '../../config/models-catalogue'
+import { workshopModels } from '../../config/workshop-browse-content'
 import { groupModels } from '../../config/model-family'
 import hubTemplates from '../../data/hubTemplates.json'
 import { hubWorkflowPath } from '../../lib/hub/workflow-detail'
@@ -163,7 +163,8 @@ const toolbarLabels: ToolbarLabels = {
   less: t('workshop.hub.facets.less', locale),
   selected: t('workshop.hub.facets.selected', locale),
   showResults: t('workshop.hub.facets.show', locale),
-  showModels: t('workshop.search.show', locale)
+  showModels: t('workshop.search.show', locale),
+  resize: t('workshop.filter.resize', locale)
 }
 // Workflows are dated and models are priced, so a tab offers what the things
 // it lists can actually be ordered by.

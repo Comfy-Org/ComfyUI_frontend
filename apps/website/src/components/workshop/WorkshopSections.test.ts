@@ -1,11 +1,16 @@
 // @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
-import { render, screen, within } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { fireEvent, render, screen, within } from '@testing-library/vue'
+import { afterEach, describe, expect, it } from 'vitest'
 
 import type { UseCase, WorkshopModel } from '../../config/models-catalogue'
 import type { TranslationKey } from '../../i18n/translations'
 import WorkshopSections from './WorkshopSections.vue'
+import { lastShelf } from '../../lib/workshop/shelf-memory'
+
+afterEach(() => {
+  sessionStorage.clear()
+})
 
 const labelKey: Record<UseCase | 'all', TranslationKey> = {
   all: 'workshop.useCase.all',
@@ -44,6 +49,35 @@ const models: WorkshopModel[] = [
 ]
 
 describe('WorkshopSections', () => {
+  it('remembers the row only when its model is opened in this tab', async () => {
+    const user = userEvent.setup()
+    render(WorkshopSections, { props: { models, labelKey } })
+
+    const row = within(screen.getByTestId('section-generate-videos'))
+    await user.click(row.getByRole('link', { name: /^a\b/i }))
+    expect(lastShelf('/models/a/')).toBe('generate-videos')
+  })
+
+  it.for([
+    ['middle-button', { button: 1 }],
+    ['Command-modified', { metaKey: true }],
+    ['Control-modified', { ctrlKey: true }],
+    ['Shift-modified', { shiftKey: true }],
+    ['Alt-modified', { altKey: true }]
+  ] satisfies [string, MouseEventInit][])(
+    '%s navigation does not remember the row',
+    async ([, event]) => {
+      render(WorkshopSections, { props: { models, labelKey } })
+      const row = within(screen.getByTestId('section-generate-videos'))
+
+      // userEvent.click cannot express a non-primary button or click modifier.
+      // eslint-disable-next-line testing-library/prefer-user-event
+      await fireEvent.click(row.getByRole('link', { name: /^a\b/i }), event)
+
+      expect(lastShelf('/models/a/')).toBeUndefined()
+    }
+  )
+
   it('deduplicates and limits the combined formats shelf while showing its full count', () => {
     const entries = Array.from({ length: 10 }, (_, index) => ({
       ...model(

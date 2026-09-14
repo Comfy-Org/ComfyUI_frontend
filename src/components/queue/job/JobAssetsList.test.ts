@@ -5,7 +5,6 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
-import type * as RekaUi from 'reka-ui'
 
 import './testUtils/mockTanstackVirtualizer'
 
@@ -33,13 +32,16 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('reka-ui'), async (importOriginal) => {
-  const actual = await importOriginal<typeof RekaUi>()
+vi.mock<unknown>(import('reka-ui'), async () => {
   const { computed, defineComponent, h, inject, provide } = await import('vue')
   const popoverOpenKey = Symbol('popoverOpen')
 
   return {
-    ...actual,
+    useForwardPropsEmits: (props: object) => props,
+    Primitive: defineComponent({
+      name: 'Primitive',
+      template: '<button><slot /></button>'
+    }),
     PopoverContent: defineComponent({
       name: 'PopoverContent',
       props: {

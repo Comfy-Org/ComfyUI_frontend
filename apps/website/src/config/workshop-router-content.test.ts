@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { workshopModels } from './models-catalogue'
+import {
+  workshopModels,
+  routerContentById,
+  routerContentBySlug
+} from './workshop-browse-content'
 import { deriveWorkshopFields } from './workshop-fields'
 import { getRouterWorkshopModelDetail } from './workshop-router-content'
 import {
@@ -10,10 +14,6 @@ import {
   validateForm
 } from './workshop-playground'
 import { prepareWorkshopRouterInput } from './workshop-request'
-import {
-  routerContentById,
-  routerContentBySlug
-} from './workshop-browse-content'
 import {
   fieldsForDefinition,
   usesRequestBodyEditor

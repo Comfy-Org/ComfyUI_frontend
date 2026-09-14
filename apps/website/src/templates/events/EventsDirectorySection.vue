@@ -5,6 +5,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { MapPinMarker } from '../../components/blocks/MapPins01.vue'
+import type { ComfyEvent } from '../../data/events'
 import type { Locale } from '../../i18n/translations'
 import type { EventsDirectoryView } from '../../utils/eventsDirectory'
 
@@ -23,7 +24,15 @@ import {
 } from '../../utils/eventsDirectory'
 import EventsDirectoryList from './EventsDirectoryList.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const {
+  locale = 'en',
+  events = directoryEvents,
+  derivedAt = eventsDerivedAt
+} = defineProps<{
+  locale?: Locale
+  events?: readonly ComfyEvent[]
+  derivedAt?: Date
+}>()
 
 // Search, type and organizer feed whichever view is active, so the whole
 // section is one reactive model: three filter fields plus the view. Everything
@@ -33,7 +42,7 @@ const view = ref<EventsDirectoryView>('map')
 const sort = ref<'latest' | 'oldest'>('latest')
 
 const visibleEvents = computed(() =>
-  filterDirectoryEvents(directoryEvents, filters, locale)
+  filterDirectoryEvents(events, filters, locale)
 )
 
 // `directoryEvents` is latest-first, so Oldest is a plain reversal of the
@@ -50,7 +59,7 @@ const sortedEvents = computed(() =>
 // clock that ordered `directoryEvents`, so a row's position and its CTA can
 // never straddle the upcoming/past boundary.
 const rows = computed(() =>
-  directoryRows(sortedEvents.value, locale, eventsDerivedAt)
+  directoryRows(sortedEvents.value, locale, derivedAt)
 )
 
 // Pins are the filtered events that have coordinates; virtual events stay in
