@@ -279,6 +279,43 @@ Visit our [homepage](https://example.com) to learn more.
       expect(attrOf(html, 'img', 'src')).toBe('https://e.com/i.png?a=1&b=2')
     })
 
+    it.for([
+      {
+        label: 'decimal entity in a link',
+        markdown: '[x](https://e.com/?a=1&#38;b=2)',
+        selector: 'a',
+        attribute: 'href',
+        expected: 'https://e.com/?a=1&b=2'
+      },
+      {
+        label: 'hex entity in a link',
+        markdown: '[x](https://e.com/?a=1&#x26;b=2)',
+        selector: 'a',
+        attribute: 'href',
+        expected: 'https://e.com/?a=1&b=2'
+      },
+      {
+        label: 'decimal entity in an image',
+        markdown: '![x](https://e.com/i.png?a=1&#38;b=2)',
+        selector: 'img',
+        attribute: 'src',
+        expected: 'https://e.com/i.png?a=1&b=2'
+      },
+      {
+        label: 'hex entity in an image',
+        markdown: '![x](https://e.com/i.png?a=1&#x26;b=2)',
+        selector: 'img',
+        attribute: 'src',
+        expected: 'https://e.com/i.png?a=1&b=2'
+      }
+    ])('decodes one numeric ampersand layer from $label', (testCase) => {
+      const html = renderMarkdownToHtml(testCase.markdown)
+
+      expect(attrOf(html, testCase.selector, testCase.attribute)).toBe(
+        testCase.expected
+      )
+    })
+
     it('leaves a bare ampersand in a URL intact', () => {
       const html = renderMarkdownToHtml('[x](https://e.com/?a=1&b=2)')
 
