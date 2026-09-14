@@ -604,12 +604,12 @@ describe('ModelDetail', () => {
     {
       signedIn: false,
       reason: 'missing-input-schema',
-      explanation: /input schema is not available/
+      explanation: /cannot be run or called from code/
     },
     {
       signedIn: true,
       reason: 'missing-input-schema',
-      explanation: /input schema is not available/
+      explanation: /cannot be run or called from code/
     }
   ] as const)(
     'explains $reason with signedIn=$signedIn without offering a paid run',
@@ -900,6 +900,56 @@ describe('ModelDetail', () => {
     )
     expect(leaving()).toBe(true)
     expect(softLeaving()).toBe(true)
+  })
+
+  it('answers an in-site link in its own words, and lets the link go when told to', async () => {
+    auth.session.value = credential
+    const pending = Promise.withResolvers<typeof routerResult>()
+    vi.mocked(runWorkshopRouter).mockReturnValue(pending.promise)
+    const assign = vi.spyOn(location, 'assign').mockImplementation(() => {})
+    const leaving = () =>
+      window.dispatchEvent(new Event('beforeunload', { cancelable: true }))
+    onTestFinished(() => assign.mockRestore())
+    mountDetail({ model: runnable })
+
+    const linkTo = (path: string) => {
+      const link = document.createElement('a')
+      link.href = `${location.origin}${path}`
+      document.body.append(link)
+      onTestFinished(() => link.remove())
+      return () =>
+        link.dispatchEvent(
+          new MouseEvent('click', { bubbles: true, cancelable: true })
+        )
+    }
+
+    expect(linkTo('/models/idle-model/')()).toBe(true)
+    expect(screen.queryByTestId('run-leave-dialog')).toBeNull()
+
+    await user().type(screen.getByTestId('field-prompt'), 'A teapot')
+    await user().click(screen.getByTestId('run-button'))
+    await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledOnce())
+
+    const follow = linkTo('/models/another-model/')
+    expect(follow()).toBe(false)
+    await screen.findByTestId('run-leave-dialog')
+    expect(assign).not.toHaveBeenCalled()
+
+    await user().click(screen.getByTestId('run-leave-stay'))
+    await vi.waitFor(() =>
+      expect(screen.queryByTestId('run-leave-dialog')).toBeNull()
+    )
+    expect(assign).not.toHaveBeenCalled()
+
+    follow()
+    await user().click(await screen.findByTestId('run-leave-confirm'))
+    expect(assign).toHaveBeenCalledWith(
+      `${location.origin}/models/another-model/`
+    )
+    expect(
+      screen.getByTestId('playground-output').getAttribute('data-state')
+    ).toBe('cancelled')
+    expect(leaving()).toBe(true)
   })
 
   it('restores a declined history traversal without letting Astro unmount the run', async () => {
@@ -1249,7 +1299,7 @@ describe('ModelDetail', () => {
     mountDetail({ model: runnable })
     expect(
       screen.getByRole('button', {
-        name: 'Comfy Router execution is not enabled for this model yet.'
+        name: 'This model cannot be run from the browser yet.'
       })
     ).toHaveProperty('disabled', true)
     expect(runWorkshopRouter).not.toHaveBeenCalled()
@@ -1349,7 +1399,7 @@ describe('ModelDetail', () => {
       expect(screen.queryByRole('link', { name: 'Sign in to run' })).toBeNull()
       expect(
         screen.getByRole('button', {
-          name: 'Comfy Router execution is not enabled for this model yet.'
+          name: 'This model cannot be run from the browser yet.'
         })
       ).toHaveProperty('disabled', true)
     }
@@ -1395,7 +1445,7 @@ describe('ModelDetail', () => {
     await visitor.click(screen.getByRole('button', { name: 'Run' }))
     expect(screen.queryByTestId('earlier-runs')).toBeNull()
     await visitor.click(
-      await screen.findByRole('button', { name: 'response.json' })
+      await screen.findByRole('button', { name: 'Raw response' })
     )
     expect(screen.getByText('{"id":"one"}')).toBeTruthy()
 
@@ -1415,7 +1465,7 @@ describe('ModelDetail', () => {
       within(screen.getByTestId('earlier-runs')).getAllByRole('button')
     ).toHaveLength(2)
     await visitor.click(screen.getByTestId('earlier-run-0'))
-    await visitor.click(screen.getByRole('button', { name: 'response.json' }))
+    await visitor.click(screen.getByRole('button', { name: 'Raw response' }))
     expect(screen.getByText('{"id":"one"}')).toBeTruthy()
   })
 
@@ -1479,7 +1529,7 @@ describe('ModelDetail', () => {
     expect(button.getAttribute('data-gate')).toBe('unavailable')
     expect(button.hasAttribute('disabled')).toBe(true)
     expect(button.textContent).toContain(
-      'Comfy Router execution is not enabled for this model yet'
+      'This model cannot be run from the browser yet'
     )
   })
 
@@ -1640,7 +1690,7 @@ describe('ModelDetail', () => {
       expect(
         screen.getByRole('heading', { name: 'Sample outputs' })
       ).toBeTruthy()
-      expect(screen.getByText(/without changing your inputs/)).toBeTruthy()
+      expect(screen.getByText(/without touching your inputs/)).toBeTruthy()
       if (nativeJson)
         await user().click(screen.getByRole('button', { name: 'Native JSON' }))
       const input = screen.getByTestId<HTMLTextAreaElement>(

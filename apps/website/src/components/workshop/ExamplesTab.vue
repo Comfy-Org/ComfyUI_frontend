@@ -56,17 +56,8 @@ function actionFor(example: PlaygroundExample, active = false) {
           )
         }}
       </h2>
-      <p class="text-sm text-primary-warm-gray">
-        {{
-          t(
-            samplesOnly
-              ? 'workshop.examples.samplesSubtitle'
-              : examples.length === 1
-                ? 'workshop.examples.subtitleOne'
-                : 'workshop.examples.subtitle',
-            locale
-          )
-        }}
+      <p v-if="samplesOnly" class="text-sm text-primary-warm-gray">
+        {{ t('workshop.examples.samplesSubtitle', locale) }}
       </p>
     </div>
 
@@ -149,32 +140,25 @@ function actionFor(example: PlaygroundExample, active = false) {
             </span>
             <span
               v-else
-              class="absolute inset-x-0 bottom-0 truncate bg-black/70 px-2 py-1 text-center text-[11px] font-medium text-primary-warm-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+              class="absolute top-1.5 left-1.5 rounded-full bg-black/70 px-2 py-0.5 text-[11px] font-medium text-primary-warm-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
               aria-hidden="true"
             >
               {{ actionFor(example) }}
             </span>
-          </span>
 
-          <span class="flex flex-col gap-0.5">
             <span
-              :class="
-                cn(
-                  'line-clamp-1 text-xs transition-colors',
-                  example.id === activeId
-                    ? 'text-primary-warm-white'
-                    : 'text-primary-comfy-canvas group-hover:text-primary-warm-white'
-                )
-              "
+              class="absolute inset-x-0 bottom-0 flex flex-col gap-0.5 bg-linear-to-t from-black/85 to-transparent px-2 pt-6 pb-1.5"
             >
-              {{ example.title }}
-            </span>
-            <span
-              v-if="specsOf(example)"
-              class="text-[11px] text-primary-warm-gray"
-              data-testid="example-specs"
-            >
-              {{ specsOf(example) }}
+              <span class="line-clamp-1 text-xs text-primary-warm-white">
+                {{ example.title }}
+              </span>
+              <span
+                v-if="specsOf(example)"
+                class="line-clamp-1 text-[11px] text-primary-comfy-canvas/70"
+                data-testid="example-specs"
+              >
+                {{ specsOf(example) }}
+              </span>
             </span>
           </span>
         </button>
