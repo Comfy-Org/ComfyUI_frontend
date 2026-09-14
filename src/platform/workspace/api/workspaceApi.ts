@@ -40,6 +40,7 @@ import type {
 } from '@comfyorg/ingest-types'
 import axios from 'axios'
 
+import { useTelemetry } from '@/platform/telemetry'
 import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
 import { churnkeyAuthResponseSchema } from '@/platform/cloud/churnkey/churnkeyAuthSchema'
 import {
@@ -555,6 +556,11 @@ export const workspaceApi = {
     const savedPaymentMethodId = options.savedPaymentMethodId || undefined
     const headers = await getAuthHeaderOrThrow()
     try {
+      useTelemetry()?.trackBillingEvent({
+        operation: 'subscription_checkout',
+        stage: 'request_sent',
+        outcome: 'pending'
+      })
       const response = await workspaceApiClient.post<SubscribeResponse>(
         workspaceApiUrl('/billing/subscribe'),
         {
@@ -663,6 +669,11 @@ export const workspaceApi = {
   ): Promise<CreateTopupResponse> {
     const headers = await getAuthHeaderOrThrow()
     try {
+      useTelemetry()?.trackBillingEvent({
+        operation: 'topup',
+        stage: 'request_sent',
+        outcome: 'pending'
+      })
       const response = await workspaceApiClient.post<CreateTopupResponse>(
         workspaceApiUrl('/billing/topup'),
         {

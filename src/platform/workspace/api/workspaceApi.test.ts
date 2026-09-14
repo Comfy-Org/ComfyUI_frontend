@@ -1,10 +1,12 @@
+import { setTelemetryRegistry } from '@/platform/telemetry'
+import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
 import { useAuthStore } from '@/stores/authStore'
 import {
   onAuthStateChanged,
   onIdTokenChanged,
   setPersistence
 } from 'firebase/auth'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
   BillingOpStatusResponse,
@@ -62,6 +64,46 @@ describe('workspaceApi', () => {
     )
     vi.mocked(useAuthStore().getFirebaseAuthHeaderOrThrow).mockResolvedValue(
       AUTH_HEADER
+    )
+  })
+
+  describe('billing request dispatch telemetry', () => {
+    const record = vi.fn()
+
+    beforeEach(() => {
+      const registry = new TelemetryRegistry()
+      registry.registerProvider({ trackBillingEvent: record })
+      setTelemetryRegistry(registry)
+    })
+    afterEach(() => setTelemetryRegistry(null))
+
+    it.for(['subscription_checkout', 'topup'] as const)(
+      'records %s dispatch before its response, but not when authentication fails',
+      async (operation) => {
+        const send = () =>
+          operation === 'topup'
+            ? workspaceApi.createTopup(5000)
+            : workspaceApi.subscribe('standard-monthly')
+        const error = new Error('request rejected')
+        mockAxiosInstance.post.mockImplementationOnce(() => {
+          expect(record).toHaveBeenCalledExactlyOnceWith({
+            operation,
+            stage: 'request_sent',
+            outcome: 'pending'
+          })
+          return Promise.reject(error)
+        })
+        await expect(send()).rejects.toBe(error)
+
+        record.mockClear()
+        mockAxiosInstance.post.mockClear()
+        vi.mocked(
+          useAuthStore().getWorkspaceAuthHeaderOrThrow
+        ).mockRejectedValueOnce(error)
+        await expect(send()).rejects.toBe(error)
+        expect(record).not.toHaveBeenCalled()
+        expect(mockAxiosInstance.post).not.toHaveBeenCalled()
+      }
     )
   })
 
