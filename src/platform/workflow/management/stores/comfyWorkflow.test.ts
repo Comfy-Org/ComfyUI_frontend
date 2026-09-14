@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
 import type { ComfyApi } from '@/scripts/api'
@@ -36,23 +37,44 @@ vi.mock(import('@/scripts/app'), async () => {
 await import('@/scripts/changeTracker')
 
 function mockLoadResponse(content: string) {
-  vi.mocked(api.getUserData).mockResolvedValue({
-    status: 200,
-    text: () => Promise.resolve(content)
-  } as never)
+  vi.mocked(api.getUserData).mockResolvedValue(
+    new Response(content, { status: 200 })
+  )
 }
 
 function mockSaveResponse() {
-  vi.mocked(api.storeUserData).mockResolvedValue({
-    json: () => Promise.resolve('workflows/test.json')
-  } as never)
+  vi.mocked(api.storeUserData).mockResolvedValue(
+    new Response(JSON.stringify('workflows/test.json'))
+  )
 }
 
-async function createLoadedWorkflow(path = 'workflows/test.json') {
+async function createLoadedWorkflow(
+  path = 'workflows/test.json'
+): Promise<LoadedComfyWorkflow> {
   const workflow = new ComfyWorkflow({ path, modified: 0, size: 10 })
   mockLoadResponse(JSON.stringify({ nodes: [], links: [] }))
-  await workflow.load()
-  return workflow
+  return workflow.load()
+}
+
+function documentIdOf(workflow: LoadedComfyWorkflow) {
+  const documentId = workflow.documentId
+  if (documentId === null) throw new Error('workflow has no document id')
+  return documentId
+}
+
+function deferred<T>() {
+  let resolvePromise: ((value: T) => void) | null = null
+  const promise = new Promise<T>((resolve) => {
+    resolvePromise = resolve
+  })
+  return {
+    promise,
+    resolve(value: T) {
+      if (resolvePromise === null)
+        throw new Error('deferred is not initialized')
+      resolvePromise(value)
+    }
+  }
 }
 
 describe('ComfyWorkflow document identity (ADR-GRAPH-DOCUMENT-0024)', () => {
@@ -61,10 +83,11 @@ describe('ComfyWorkflow document identity (ADR-GRAPH-DOCUMENT-0024)', () => {
     expect(workflow.documentId).not.toBeNull()
 
     const store = useGraphDocumentStore()
-    const entry = store.getDocument(workflow.documentId!)
+    const documentId = documentIdOf(workflow)
+    const entry = store.getDocument(documentId)
     expect(entry).not.toBeNull()
     expect(entry?.workflowId).toBeNull()
-    expect(store.persistenceStateOf(workflow.documentId!)).toBe('clean')
+    expect(store.persistenceStateOf(documentId)).toBe('clean')
   })
 
   it('reuses the same document id across a re-entrant load', async () => {
@@ -73,6 +96,19 @@ describe('ComfyWorkflow document identity (ADR-GRAPH-DOCUMENT-0024)', () => {
     mockLoadResponse(JSON.stringify({ nodes: [], links: [] }))
     await workflow.load({ force: true })
     expect(workflow.documentId).toBe(firstId)
+  })
+
+  it('rebaselines a dirty document after a forced remote reload', async () => {
+    const workflow = await createLoadedWorkflow()
+    const store = useGraphDocumentStore()
+    const documentId = documentIdOf(workflow)
+    expect(store.markMutated(documentId)).toBe(true)
+    expect(store.persistenceStateOf(documentId)).toBe('dirty')
+
+    mockLoadResponse(JSON.stringify({ nodes: [], links: [], version: 2 }))
+    await workflow.load({ force: true })
+
+    expect(store.persistenceStateOf(documentId)).toBe('clean')
   })
 
   it('keeps the same document id across unload (no closer exists yet)', async () => {
@@ -98,13 +134,13 @@ describe('ComfyWorkflow document identity (ADR-GRAPH-DOCUMENT-0024)', () => {
     const workflow = await createLoadedWorkflow()
     const store = useGraphDocumentStore()
 
-    expect(store.persistenceStateOf(workflow.documentId!)).toBe('dirty')
+    expect(store.persistenceStateOf(documentIdOf(workflow))).toBe('dirty')
   })
 
   it('keeps the persisted document clean when saving its current revision', async () => {
     const workflow = await createLoadedWorkflow()
     const store = useGraphDocumentStore()
-    const documentId = workflow.documentId!
+    const documentId = documentIdOf(workflow)
     expect(store.persistenceStateOf(documentId)).toBe('clean')
 
     mockSaveResponse()
@@ -116,7 +152,7 @@ describe('ComfyWorkflow document identity (ADR-GRAPH-DOCUMENT-0024)', () => {
   it('reports dirty for a mutation committed after the last save', async () => {
     const workflow = await createLoadedWorkflow()
     const store = useGraphDocumentStore()
-    const documentId = workflow.documentId!
+    const documentId = documentIdOf(workflow)
 
     mockSaveResponse()
     await workflow.save()
@@ -130,7 +166,7 @@ describe('ComfyWorkflow document identity (ADR-GRAPH-DOCUMENT-0024)', () => {
     const workflow = await createLoadedWorkflow()
     useWorkflowStore().attachWorkflow(workflow)
     const store = useGraphDocumentStore()
-    const documentId = workflow.documentId!
+    const documentId = documentIdOf(workflow)
 
     // Establish a saved baseline first so a later revision divergence can
     // actually be observed as 'dirty' rather than 'unsaved'.
@@ -140,16 +176,12 @@ describe('ComfyWorkflow document identity (ADR-GRAPH-DOCUMENT-0024)', () => {
     // storeUserData resolves only after a mutation commits against the
     // same document, simulating a concurrent edit racing the in-flight
     // save.
-    let resolveSave!: (value: { json: () => Promise<string> }) => void
-    vi.mocked(api.storeUserData).mockReturnValue(
-      new Promise((resolve) => {
-        resolveSave = resolve
-      }) as never
-    )
+    const save = deferred<Response>()
+    vi.mocked(api.storeUserData).mockReturnValue(save.promise)
 
     const savePromise = workflow.save()
-    const previousState = workflow.changeTracker!.activeState
-    workflow.changeTracker!.activeState = {
+    const previousState = workflow.changeTracker.activeState
+    workflow.changeTracker.activeState = {
       ...previousState,
       nodes: [
         {
@@ -166,8 +198,8 @@ describe('ComfyWorkflow document identity (ADR-GRAPH-DOCUMENT-0024)', () => {
         }
       ]
     }
-    workflow.changeTracker!.updateModified(previousState)
-    resolveSave({ json: () => Promise.resolve('workflows/test.json') })
+    workflow.changeTracker.updateModified(previousState)
+    save.resolve(new Response(JSON.stringify('workflows/test.json')))
     await savePromise
 
     expect(api.storeUserData).toHaveBeenCalledWith(

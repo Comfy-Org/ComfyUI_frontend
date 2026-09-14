@@ -169,11 +169,10 @@ export class ComfyWorkflow extends UserFile {
     const graphDocumentStore = useGraphDocumentStore()
     if (this.documentId === null) {
       this.documentId = graphDocumentStore.createDocument()
-      if (this.documentId !== null) {
-        const persistedBaseline = graphDocumentStore.beginSave(this.documentId)
-        if (persistedBaseline)
-          graphDocumentStore.completeSave(persistedBaseline)
-      }
+    }
+    if (this.documentId !== null) {
+      const persistedBaseline = graphDocumentStore.beginSave(this.documentId)
+      if (persistedBaseline) graphDocumentStore.completeSave(persistedBaseline)
     }
     if (draftState && draftContent) {
       this.changeTracker.activeState = draftState
