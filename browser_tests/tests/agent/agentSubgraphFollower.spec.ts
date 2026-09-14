@@ -1,4 +1,7 @@
 import { expect, mergeTests } from '@playwright/test'
+import type { WorkflowListResponse } from '@comfyorg/ingest-types'
+
+import type { UserDataFullInfo } from '@/schemas/apiSchema'
 
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
@@ -12,6 +15,7 @@ import {
   agentSubgraphNodeDefs,
   agentSubgraphUpdates
 } from '@e2e/fixtures/data/agentSubgraphFollower'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const test = mergeTests(agentTest, webSocketFixture)
 
@@ -38,6 +42,46 @@ test.describe(
           workflow_id: AGENT_SUBGRAPH_WORKFLOW_ID
         }
       })
+      let savedName: string | undefined
+      await page.route('**/api/userdata/*', (route) => {
+        const request = route.request()
+        const path = decodeURIComponent(
+          new URL(request.url()).pathname.split('/userdata/')[1]
+        )
+        if (request.method() !== 'POST' || !path.startsWith('workflows/'))
+          return route.fallback()
+        savedName = path.slice('workflows/'.length, -'.json'.length)
+        const saved: UserDataFullInfo = {
+          path,
+          modified: Date.now(),
+          size: request.postDataBuffer()?.length ?? 0
+        }
+        return route.fulfill(jsonRoute(saved))
+      })
+      await page.route('**/api/workflows?*', (route) => {
+        const workflows: WorkflowListResponse = {
+          data:
+            savedName === undefined
+              ? []
+              : [
+                  {
+                    id: AGENT_SUBGRAPH_WORKFLOW_ID,
+                    name: savedName,
+                    created_at: '2026-09-01T00:00:00Z',
+                    updated_at: '2026-09-01T00:00:00Z',
+                    created_by: 'test-user-e2e',
+                    latest_version: 1
+                  }
+                ],
+          pagination: {
+            has_more: false,
+            limit: 100,
+            offset: 0,
+            total: savedName === undefined ? 0 : 1
+          }
+        }
+        return route.fulfill(jsonRoute(workflows))
+      })
 
       const socket = await getWebSocket()
       const outboundFrames: string[] = []
@@ -45,6 +89,10 @@ test.describe(
 
       await page.getByRole('button', { name: 'Ask Comfy Agent' }).click()
       const panel = page.locator('#agent-panel-root')
+      await panel.getByRole('button', { name: 'Switch workflow' }).click()
+      await page
+        .getByRole('menuitemradio', { name: 'Unsaved Workflow' })
+        .click()
       const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
       await composer.fill('Build the subgraph')
       await panel.getByRole('button', { name: 'Send' }).click()
