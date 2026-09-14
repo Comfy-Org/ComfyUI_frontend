@@ -12,9 +12,12 @@
         <div
           class="flex h-full items-center border-b border-interface-stroke bg-comfy-menu-bg shadow-interface"
         >
-          <WorkflowTabs />
-          <TopbarBadges />
-          <TopbarSubscribeButton />
+          <WorkflowTabs>
+            <template #actions-leading>
+              <TopbarBadges />
+              <TopbarSubscribeButton />
+            </template>
+          </WorkflowTabs>
         </div>
       </div>
     </template>

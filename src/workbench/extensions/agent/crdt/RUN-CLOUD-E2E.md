@@ -32,7 +32,7 @@ flag on; it does not bypass consent.
 
 ## Verify
 
-- Click **Ask Comfy Agent**. On first use, choose **Start using Comfy Agent**
+- Click **Agent**. On first use, choose **Start using Comfy Agent**
   and wait for the preference save to succeed and the composer to appear.
   If consent cannot load or save, resolve the authentication/API error and
   retry before checking the follower. Skip leaves Agent closed. Consent from

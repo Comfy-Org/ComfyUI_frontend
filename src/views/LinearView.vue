@@ -112,9 +112,12 @@ function dragDrop(e: DragEvent) {
         class="workflow-tabs-container pointer-events-auto h-(--workflow-tabs-height) w-full border-b border-interface-stroke shadow-interface"
       >
         <div class="flex h-full items-center">
-          <WorkflowTabs />
-          <TopbarBadges />
-          <TopbarSubscribeButton />
+          <WorkflowTabs>
+            <template #actions-leading>
+              <TopbarBadges />
+              <TopbarSubscribeButton />
+            </template>
+          </WorkflowTabs>
         </div>
       </div>
       <div
