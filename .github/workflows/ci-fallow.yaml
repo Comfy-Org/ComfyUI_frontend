@@ -87,8 +87,11 @@ jobs:
           pr-number: ${{ github.event.pull_request.number }}
           token: ${{ github.token }}
 
-      # The artifact the audit already produces, which was previously discarded.
-      # SARIF additionally feeds the Security tab.
+      # The audit already writes these and they were previously discarded, so
+      # a failed gate left nothing to inspect after the fact. Note this only
+      # stores the SARIF; ingesting it into the Security tab would need a
+      # separate upload-sarif step with security-events: write, which a fork
+      # PR's token cannot carry.
       - name: Upload audit results
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
