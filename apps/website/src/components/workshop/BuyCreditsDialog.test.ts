@@ -166,7 +166,9 @@ describe('BuyCreditsDialog', () => {
     credits.balance!.value = { status: 'ok', credits: 100 }
     credits.topUp!.value = { status: 'idle' }
     credits.watchForTopUp.mockReset()
-    credits.clearTopUpWatch.mockReset()
+    credits.clearTopUpWatch.mockReset().mockImplementation(() => {
+      credits.topUp!.value = { status: 'idle' }
+    })
     credits.refresh.mockReset().mockResolvedValue(undefined)
     vi.spyOn(crypto, 'randomUUID').mockReturnValue(attemptId)
   })
@@ -197,7 +199,7 @@ describe('BuyCreditsDialog', () => {
     expect(screen.getByRole('dialog').textContent).not.toContain('Team B')
 
     await user.click(screen.getByTestId('buy-credits-resume'))
-    expect(credits.clearTopUpWatch).toHaveBeenCalled()
+    expect(credits.topUp!.value).toEqual({ status: 'idle' })
   })
 
   it('keeps the payment receipt open until the user resumes', async () => {
@@ -219,7 +221,7 @@ describe('BuyCreditsDialog', () => {
     await vi.advanceTimersByTimeAsync(60_000)
 
     expect(screen.getByTestId('buy-credits-done')).toBeTruthy()
-    expect(credits.clearTopUpWatch).not.toHaveBeenCalled()
+    expect(credits.topUp!.value.status).toBe('landed')
   })
 
   it('acknowledges a displayed receipt when the dialog is dismissed', async () => {
@@ -236,7 +238,7 @@ describe('BuyCreditsDialog', () => {
     await user.click(screen.getByRole('button', { name: 'Close' }))
 
     await vi.waitFor(() => expect(isOpen.value).toBe(false))
-    expect(credits.clearTopUpWatch).toHaveBeenCalledOnce()
+    expect(credits.topUp!.value).toEqual({ status: 'idle' })
     isOpen.value = true
     await nextTick()
     expect(screen.queryByTestId('buy-credits-done')).toBeNull()

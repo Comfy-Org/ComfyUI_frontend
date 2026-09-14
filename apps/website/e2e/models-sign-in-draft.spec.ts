@@ -204,4 +204,41 @@ test.describe('Narrow account menu', () => {
       })
       .toBe(true)
   })
+
+  test('opens one shared credits dialog and resets it after closing', async ({
+    page,
+    modelsAccount
+  }) => {
+    await page.goto('/login/')
+    await page.getByRole('button', { name: 'Use email instead' }).click()
+    await page.getByLabel('Email').fill(modelsAccount.email)
+    await page
+      .getByLabel('Password', { exact: true })
+      .fill(modelsAccount.password)
+    await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+    await expect(page).toHaveURL('/')
+
+    const account = page
+      .getByTestId('mobile-nav-cta')
+      .getByTestId('header-account')
+    await account.click()
+    await page.getByTestId('account-add-credits').click()
+
+    const dialog = page.getByTestId('buy-credits-dialog')
+    await expect(dialog).toHaveCount(1)
+    await page.getByTestId('buy-credits-pack-50').click()
+    await expect(page.getByTestId('buy-credits-custom')).toContainText(
+      '$50 · 10,550'
+    )
+    await page.getByTestId('buy-credits-cancel').click()
+    await expect(dialog).toHaveCount(0)
+
+    await account.click()
+    await page.getByTestId('account-add-credits').click()
+    await expect(dialog).toHaveCount(1)
+    await expect(page.getByTestId('buy-credits-pack-25')).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    )
+  })
 })
