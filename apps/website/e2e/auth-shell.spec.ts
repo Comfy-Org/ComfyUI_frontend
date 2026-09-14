@@ -14,6 +14,19 @@ const siteChrome = (page: Page) =>
   page.getByRole('navigation').or(page.getByRole('contentinfo'))
 
 test.describe('Auth shell', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.route('**/cdn-cgi/trace', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'text/plain',
+        body: 'loc=US\n'
+      })
+    )
+    await page.route(/https:\/\/www\.(google|baidu)\.com\/?/, (route) =>
+      route.fulfill({ status: 204, body: '' })
+    )
+  })
+
   for (const { path, termsNotice } of AUTH_PAGES) {
     test(`${path} renders the bare onboarding shell`, async ({ page }) => {
       await page.setViewportSize({ width: 1536, height: 864 })
@@ -50,7 +63,7 @@ test.describe('Auth shell', () => {
         ['Privacy Policy', 'https://comfy.org/privacy-policy/'],
         [termsNotice ? 'here' : 'Need Help?', 'https://support.comfy.org']
       ] as const) {
-        const link = page.getByRole('link', { name })
+        const link = page.getByRole('link', { name, exact: true })
         await expect(link).toHaveAttribute('href', href)
         await expect(link).toHaveAttribute('target', '_blank')
         await expect(link).toHaveAttribute('rel', 'noopener noreferrer')

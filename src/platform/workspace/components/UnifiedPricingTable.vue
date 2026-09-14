@@ -355,53 +355,73 @@
       </div>
     </div>
 
-    <!-- Footnote: template caveat + contact / pricing links -->
-    <I18nT
-      keypath="subscription.pricingBlurb"
-      tag="p"
-      class="m-0 mt-auto pt-4 text-center text-sm text-text-secondary"
-    >
-      <template #seeDetails>
-        <a
-          :href="VIDEO_TEMPLATE_URL"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
-        >
-          {{ t('subscription.pricingBlurbSeeDetails') }}
-        </a>
-      </template>
-      <template #questions>
-        <a
-          :href="QUESTIONS_URL"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
-        >
-          {{ t('subscription.pricingBlurbQuestions') }}
-        </a>
-      </template>
-      <template #enterpriseDiscussions>
-        <a
-          :href="ENTERPRISE_URL"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
-        >
-          {{ t('subscription.pricingBlurbEnterprise') }}
-        </a>
-      </template>
-      <template #clickHere>
-        <a
-          :href="PRICING_URL"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
-        >
-          {{ t('subscription.pricingBlurbClickHere') }}
-        </a>
-      </template>
-    </I18nT>
+    <div class="mt-auto flex min-h-14 items-center justify-center pt-4">
+      <div
+        v-if="showScheduledPlanChange"
+        role="status"
+        class="flex items-center gap-2 rounded-full bg-base-foreground px-3 py-1.5 text-sm text-base-background"
+      >
+        <i
+          class="icon-[lucide--info] size-4 shrink-0 bg-base-background"
+          aria-hidden="true"
+        />
+        <span>
+          {{
+            t('subscription.scheduledChangeNotice', {
+              plan: scheduledPlanChange.planName.value,
+              date: scheduledPlanChange.formattedDate.value
+            })
+          }}
+        </span>
+      </div>
+      <I18nT
+        v-else
+        keypath="subscription.pricingBlurb"
+        tag="p"
+        class="m-0 text-center text-sm text-text-secondary"
+      >
+        <template #seeDetails>
+          <a
+            :href="VIDEO_TEMPLATE_URL"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
+          >
+            {{ t('subscription.pricingBlurbSeeDetails') }}
+          </a>
+        </template>
+        <template #questions>
+          <a
+            :href="QUESTIONS_URL"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
+          >
+            {{ t('subscription.pricingBlurbQuestions') }}
+          </a>
+        </template>
+        <template #enterpriseDiscussions>
+          <a
+            :href="ENTERPRISE_URL"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
+          >
+            {{ t('subscription.pricingBlurbEnterprise') }}
+          </a>
+        </template>
+        <template #clickHere>
+          <a
+            :href="PRICING_URL"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
+          >
+            {{ t('subscription.pricingBlurbClickHere') }}
+          </a>
+        </template>
+      </I18nT>
+    </div>
   </div>
 </template>
 
@@ -438,6 +458,7 @@ import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscript
 import { isCloud } from '@/platform/distribution/types'
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useScheduledPlanChange } from '@/platform/workspace/composables/useScheduledPlanChange'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
@@ -671,6 +692,10 @@ watch(
 const { teamCreditStops } = useBillingPlans()
 
 const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
+const scheduledPlanChange = useScheduledPlanChange()
+const showScheduledPlanChange = computed(
+  () => scheduledPlanChange.isDisplayable.value && !isCancelled.value
+)
 
 // An ended subscription still reports its plan slug and tier, so the plan it
 // held must not read as current — it is buyable again.
@@ -874,6 +899,12 @@ const isCurrentPlan = (tierKey: CheckoutTierKey): boolean => {
   )
 }
 
+function isScheduledDestination(tierKey: CheckoutTierKey): boolean {
+  const slug = scheduledPlanChange.scheduledChange.value?.plan_slug
+  if (!slug) return false
+  return getApiPlanForTier(tierKey, currentBillingCycle.value)?.slug === slug
+}
+
 const getButtonLabel = (tier: PricingTierConfig): string => {
   const planName =
     currentBillingCycle.value === 'yearly'
@@ -884,6 +915,12 @@ const getButtonLabel = (tier: PricingTierConfig): string => {
     return isCancelled.value
       ? t('subscription.resubscribeTo', { plan: planName })
       : t('subscription.currentPlan')
+  }
+
+  if (showScheduledPlanChange.value && isScheduledDestination(tier.key)) {
+    return t('subscription.scheduledForDate', {
+      date: scheduledPlanChange.formattedDate.value
+    })
   }
 
   return hasActivePaidPlan(currentAccountTier.value)

@@ -2,6 +2,11 @@ import { useAuthStore } from '@/stores/authStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { User } from 'firebase/auth'
+import {
+  onAuthStateChanged,
+  onIdTokenChanged,
+  setPersistence
+} from 'firebase/auth'
 import { storeToRefs } from 'pinia'
 import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -16,6 +21,8 @@ import {
   StorageKeys
 } from '@/platform/workflow/persistence/base/storageKeys'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
+
+vi.mock(import('firebase/auth'), { spy: true })
 
 const mockTrackUnifiedAuthRefresh = vi.fn()
 
@@ -138,6 +145,10 @@ function expectedExpiresAtMs(expiresAt: string): string {
 }
 
 beforeEach(() => {
+  vi.mocked(setPersistence).mockResolvedValue(undefined)
+  vi.mocked(onAuthStateChanged).mockImplementation(vi.fn())
+  vi.mocked(onIdTokenChanged).mockImplementation(vi.fn())
+
   vi.mocked(useToastStore().add).mockImplementation(() => {})
 })
 
@@ -2900,6 +2911,44 @@ describe('useWorkspaceAuthStore', () => {
       expect(mockFetch).not.toHaveBeenCalled()
     })
 
+    it('destroy stops the flag watcher so a later flag flip cannot reattach or mint', async () => {
+      mockUnifiedCloudAuthEnabled.value = true
+      vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
+        'firebase-token-xyz'
+      )
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(personalTokenResponse)
+      })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      await store.mintAtLogin()
+      expect(portListeners.size).toBe(1)
+
+      store.destroy()
+      expect(portListeners.size, 'destroy must detach the identity port').toBe(
+        0
+      )
+
+      mockFetch.mockClear()
+      mockUnifiedCloudAuthEnabled.value = false
+      await nextTick()
+      mockUnifiedCloudAuthEnabled.value = true
+      await nextTick()
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(
+        portListeners.size,
+        'a destroyed store must not reattach identity when the flag flips'
+      ).toBe(0)
+      expect(
+        mockFetch,
+        'a destroyed store must not mint when the flag flips'
+      ).not.toHaveBeenCalled()
+      expect(store.getUnifiedToken()).toBeUndefined()
+    })
+
     it('turning the flag OFF detaches the identity, clears the slot, and stops refreshing', async () => {
       mockUnifiedCloudAuthEnabled.value = true
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
@@ -3506,10 +3555,3 @@ describe('useWorkspaceAuthStore', () => {
     })
   })
 })
-
-vi.mock(import('firebase/auth'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  setPersistence: vi.fn().mockResolvedValue(undefined),
-  onAuthStateChanged: vi.fn(() => vi.fn()),
-  onIdTokenChanged: vi.fn(() => vi.fn())
-}))
