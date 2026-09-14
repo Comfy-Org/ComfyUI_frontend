@@ -320,6 +320,37 @@ describe('createBillingOperationLifecycle', () => {
       expect(issue).toHaveBeenCalledTimes(1)
     })
 
+    it('does not let a superseded command stand in for the new scope', async () => {
+      const session = fakeSession()
+      const { lifecycle } = harness({ session })
+      const gate = deferred<BillingResult<IssuedBillingOperation>>()
+      const stale = vi.fn(() => gate.promise)
+      const fresh = vi.fn(issued({ operationId: 'op-2' }))
+
+      const first = lifecycle.begin('topup', stale)
+      await flush()
+      session.moveTo(
+        authenticated(
+          credential({
+            workspace: { id: 'ws-2', name: 'Team', type: 'team' }
+          })
+        )
+      )
+      const second = lifecycle.begin('topup', fresh)
+      gate.resolve({ status: 'ok', value: { operationId: 'op-1' } })
+      await flush()
+
+      await expect(first).resolves.toEqual({
+        status: 'error',
+        code: 'SUPERSEDED'
+      })
+      expect(fresh).toHaveBeenCalledTimes(1)
+      await expect(second).resolves.toMatchObject({
+        status: 'ok',
+        value: { id: 'op-2' }
+      })
+    })
+
     it('does not issue when the status read fails', async () => {
       const { lifecycle } = harness({
         status: { status: 'error', code: 'REQUEST_FAILED' }

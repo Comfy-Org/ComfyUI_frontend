@@ -161,6 +161,12 @@ const SUPERSEDED = {
   code: 'SUPERSEDED'
 } as const satisfies BillingFailure
 
+/** A command attempt still settling, kept with the scope that issued it. */
+interface InFlightCommand {
+  readonly context: BillingScopeContext
+  readonly promise: Promise<BillingResult<BillingOperationState>>
+}
+
 interface OperationRecord {
   state: BillingOperationState
   readonly context: BillingScopeContext
@@ -284,10 +290,7 @@ export function createBillingOperationLifecycle(
       : createOperationPointerStore(options.pointerStorage, now)
 
   const operations = new Map<string, OperationRecord>()
-  const inFlightCommands = new Map<
-    BillingOperationKind,
-    Promise<BillingResult<BillingOperationState>>
-  >()
+  const inFlightCommands = new Map<BillingOperationKind, InFlightCommand>()
   const listeners = new Set<(state: BillingOperationState) => void>()
   const lifetime = { disposed: false }
 
@@ -505,13 +508,11 @@ export function createBillingOperationLifecycle(
 
   async function beginOnce(
     kind: BillingOperationKind,
+    context: BillingScopeContext,
     issue: (
       scope: BillingScope
     ) => Promise<BillingResult<IssuedBillingOperation>>
   ): Promise<BillingResult<BillingOperationState>> {
-    const context = scopeTracker.capture()
-    if (context === undefined) return NOT_AUTHENTICATED
-
     // The backend's word on what is already pending comes first: a second
     // charge attempt is never issued over one the server is still settling.
     const status = await statusReader.read()
@@ -566,12 +567,21 @@ export function createBillingOperationLifecycle(
     ) => Promise<BillingResult<IssuedBillingOperation>>
   ): Promise<BillingResult<BillingOperationState>> {
     if (lifetime.disposed) return Promise.resolve(SUPERSEDED)
+    const context = scopeTracker.capture()
+    if (context === undefined) return Promise.resolve(NOT_AUTHENTICATED)
+
+    // Single-flight holds only within a scope: an attempt the scope change
+    // already doomed to SUPERSEDED must not stand in for this caller's.
     const inFlight = inFlightCommands.get(kind)
-    if (inFlight !== undefined) return inFlight
-    const attempt = beginOnce(kind, issue).finally(() => {
-      inFlightCommands.delete(kind)
+    if (inFlight !== undefined && isLive(inFlight.context)) {
+      return inFlight.promise
+    }
+    const attempt = beginOnce(kind, context, issue).finally(() => {
+      if (inFlightCommands.get(kind)?.promise === attempt) {
+        inFlightCommands.delete(kind)
+      }
     })
-    inFlightCommands.set(kind, attempt)
+    inFlightCommands.set(kind, { context, promise: attempt })
     return attempt
   }
 
