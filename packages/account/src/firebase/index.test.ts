@@ -61,9 +61,9 @@ async function makeIdentity() {
 
 const hostAuth = { name: 'host-auth' } as Partial<Auth> as Auth
 
-async function makeHostBoundIdentity(actionTimeoutMs?: number) {
+async function makeHostBoundIdentity() {
   const { createFirebaseIdentity } = await import('./index.js')
-  return createFirebaseIdentity({ auth: hostAuth, actionTimeoutMs })
+  return createFirebaseIdentity({ auth: hostAuth })
 }
 
 const testUser = { uid: 'user-1' } as Partial<User> as User
@@ -120,48 +120,85 @@ describe('createFirebaseIdentity over a host-owned Auth', () => {
       )
     }
   })
-
-  it('applies the ceiling the host asks for', async () => {
-    const identity = await makeHostBoundIdentity(2_000)
-    const outcome = vi.fn()
-    identity.sendPasswordReset('a@b.example').catch(outcome)
-
-    await vi.advanceTimersByTimeAsync(2_000 + 10)
-
-    expect(outcome).toHaveBeenCalledOnce()
-  })
 })
 
-describe('createFirebaseIdentity action ceilings', () => {
+describe('createFirebaseIdentity state-changing calls stay pending until the SDK settles', () => {
+  it('returns the SDK sign-in promise itself, with no wrapper that could settle it early', async () => {
+    const call = deferred<UserCredential>()
+    sdk.signInWithEmailAndPassword.mockReturnValueOnce(call.promise)
+    const identity = await makeIdentity()
+
+    expect(
+      identity.signInWithEmail('a@b.example', 'stalled'),
+      'a wrapper promise can reject at a deadline while the non-cancellable SDK op runs on; the caller must hold the SDK promise directly'
+    ).toBe(call.promise)
+  })
+
   it.for([['signInWithEmail'], ['sendPasswordReset']] as const)(
-    'leaves %s unbounded by default, as the cloud app runs it',
+    'keeps %s pending past any deadline, so a retry cannot overlap the non-cancellable SDK op (FE-2172)',
     async ([method]) => {
+      const call = deferred<UserCredential>()
+      const sdkCall =
+        method === 'sendPasswordReset'
+          ? sdk.sendPasswordResetEmail
+          : sdk.signInWithEmailAndPassword
+      sdkCall.mockReturnValueOnce(call.promise)
       const identity = await makeIdentity()
-      const pending =
+
+      const attempt =
         method === 'sendPasswordReset'
           ? identity.sendPasswordReset('a@b.example')
-          : identity[method]('a@b.example', 'hunter22!')
+          : identity.signInWithEmail('a@b.example', 'stalled')
       const settled = vi.fn()
-      pending.then(settled, settled)
+      attempt.then(settled, settled)
 
       await vi.advanceTimersByTimeAsync(15_000 * 10)
 
-      expect(settled).not.toHaveBeenCalled()
+      expect(
+        settled,
+        'the caller must not be released on any deadline while the SDK op is still running'
+      ).not.toHaveBeenCalled()
+
+      call.resolve(testCredential)
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(
+        settled,
+        'the caller settles only once the underlying SDK op does'
+      ).toHaveBeenCalledOnce()
     }
   )
 
-  it('never bounds account creation, even when a host asks for a ceiling', async () => {
-    const { createFirebaseIdentity } = await import('./index.js')
-    const identity = createFirebaseIdentity({
-      options: { apiKey: 'test' },
-      actionTimeoutMs: 2_000
-    })
+  it('does not let a second sign-in start until the first SDK call has settled', async () => {
+    const first = deferred<UserCredential>()
+    sdk.signInWithEmailAndPassword.mockReturnValueOnce(first.promise)
+    const identity = await makeIdentity()
+
+    const attempt = identity.signInWithEmail('a@b.example', 'stalled')
+    const settled = vi.fn()
+    attempt.then(settled, settled)
+
+    await vi.advanceTimersByTimeAsync(15_000 * 10)
+
+    expect(
+      settled,
+      'the first caller stays busy, so the form never frees to launch an overlapping retry'
+    ).not.toHaveBeenCalled()
+
+    first.resolve(testCredential)
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(settled).toHaveBeenCalledWith(testCredential)
+  })
+
+  it('never bounds account creation: a released caller with a live SDK call orphans the account', async () => {
+    const identity = await makeIdentity()
     const settled = vi.fn()
     identity
       .createUserWithEmail('a@b.example', 'hunter22!')
       .then(settled, settled)
 
-    await vi.advanceTimersByTimeAsync(2_000 * 10)
+    await vi.advanceTimersByTimeAsync(15_000 * 10)
 
     expect(
       settled,
@@ -169,21 +206,7 @@ describe('createFirebaseIdentity action ceilings', () => {
     ).not.toHaveBeenCalled()
   })
 
-  it('applies the ceiling a host asks for', async () => {
-    const { createFirebaseIdentity } = await import('./index.js')
-    const identity = createFirebaseIdentity({
-      options: { apiKey: 'test' },
-      actionTimeoutMs: 2_000
-    })
-    const outcome = vi.fn()
-    identity.signInWithEmail('a@b.example', 'hunter22!').catch(outcome)
-
-    await vi.advanceTimersByTimeAsync(2_000 + 10)
-
-    expect(outcome).toHaveBeenCalledOnce()
-  })
-
-  it('leaves the interactive popup unbounded', async () => {
+  it('leaves the interactive popup pending on the caller', async () => {
     const identity = await makeIdentity()
     const settled = vi.fn()
     identity.signInWithGoogle().then(settled, settled)
@@ -194,32 +217,6 @@ describe('createFirebaseIdentity action ceilings', () => {
       settled,
       'a user may legitimately take minutes in the popup; the SDK owns its cancellation errors'
     ).not.toHaveBeenCalled()
-  })
-})
-
-describe('createFirebaseIdentity late completion after the busy-state timeout', () => {
-  it('rejects the wrapper on the deadline and suppresses that attempt own late resolution', async () => {
-    const call = deferred<UserCredential>()
-    sdk.signInWithEmailAndPassword.mockReturnValueOnce(call.promise)
-    const identity = await makeHostBoundIdentity(5_000)
-
-    const attempt = identity.signInWithEmail('a@b.example', 'stalled')
-    const settled = vi.fn()
-    attempt.then(settled, settled)
-
-    await vi.advanceTimersByTimeAsync(5_000 + 10)
-    await expect(
-      attempt,
-      'a stalled state-changing call must reject on the deadline so the form can free its busy state'
-    ).rejects.toThrow(/timed out/)
-
-    call.resolve(testCredential)
-    await vi.advanceTimersByTimeAsync(0)
-
-    expect(
-      settled,
-      'the SDK call is non-cancellable; its late credential must not reach the caller who already timed out'
-    ).not.toHaveBeenCalledWith(testCredential)
   })
 })
 

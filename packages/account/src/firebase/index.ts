@@ -33,19 +33,7 @@ import type { AccountIdentity } from '../core/identity.js'
 import { identityBrand } from '../core/identity.js'
 import { isFirebaseAuthErrorLike } from '../firebaseAuthError.js'
 
-interface ActionCeiling {
-  /**
-   * Optional ceiling on email sign-in and password reset, which leave no
-   * state behind when abandoned. None by default, as the cloud app runs
-   * them. Never applied to account creation: a ceiling rejects the caller
-   * while the SDK call may still succeed, leaving an orphaned account whose
-   * every retry fails with email-already-in-use. Popup sign-in is never
-   * bounded either; the SDK raises its own cancellation errors.
-   */
-  readonly actionTimeoutMs?: number
-}
-
-export interface FirebaseIdentityAppConfig extends ActionCeiling {
+export interface FirebaseIdentityAppConfig {
   readonly options: FirebaseOptions
   /** Named app: never contend with a default app another script creates. */
   readonly appName?: string
@@ -59,7 +47,7 @@ export interface FirebaseIdentityAppConfig extends ActionCeiling {
  * A host that already holds an `Auth` (the cloud app's vuefire instance)
  * binds the entry to it: no second app, no second persistence store.
  */
-export interface FirebaseIdentityAuthConfig extends ActionCeiling {
+export interface FirebaseIdentityAuthConfig {
   readonly auth: Auth
   readonly options?: never
   readonly appName?: never
@@ -101,40 +89,6 @@ function githubProvider(): GithubAuthProvider {
   provider.addScope('user:email')
   provider.setCustomParameters({ prompt: 'select_account' })
   return provider
-}
-
-/**
- * A UI busy-state bound the caller can walk away from. These state-changing
- * Firebase calls are non-cancellable: the timeout does NOT cancel the SDK
- * operation and does NOT stop `Auth.currentUser` from transitioning. Firebase
- * may still complete the call and emit `onAuthStateChanged` after the deadline,
- * so these semantics are last-completing — a late completion wins regardless of
- * the wrapper. The timeout only releases the form's busy state: on deadline it
- * rejects the wrapper (freeing the form) and suppresses that same attempt's own
- * late resolution so it does not reach the caller. Each invocation races its
- * own deadline; no attempt reaches across to reject another.
- */
-function boundedRunner(
-  timeoutMs: number | undefined
-): <T>(run: Promise<T>) => Promise<T> {
-  if (timeoutMs === undefined) return (run) => run
-  return <T>(run: Promise<T>): Promise<T> =>
-    new Promise<T>((resolve, reject) => {
-      let timedOut = false
-      const timer = setTimeout(() => {
-        timedOut = true
-        reject(new Error('Firebase auth action timed out'))
-      }, timeoutMs)
-      const deliver = (settle: () => void): void => {
-        if (timedOut) return
-        clearTimeout(timer)
-        settle()
-      }
-      run.then(
-        (value) => deliver(() => resolve(value)),
-        (error: unknown) => deliver(() => reject(error))
-      )
-    })
 }
 
 /**
@@ -180,9 +134,7 @@ function authResolver(config: FirebaseIdentityConfig): () => Auth {
 export function createFirebaseIdentity(
   config: FirebaseIdentityConfig
 ): FirebaseIdentity {
-  const { actionTimeoutMs } = config
   const auth = authResolver(config)
-  const bounded = boundedRunner(actionTimeoutMs)
 
   return {
     [identityBrand]: true,
@@ -190,13 +142,11 @@ export function createFirebaseIdentity(
     signInWithGoogle: () => signInWithPopup(auth(), googleProvider()),
     signInWithGitHub: () => signInWithPopup(auth(), githubProvider()),
     signInWithEmail: (email, password) =>
-      bounded(signInWithEmailAndPassword(auth(), email, password)),
+      signInWithEmailAndPassword(auth(), email, password),
     createUserWithEmail: (email, password) =>
       createUserWithEmailAndPassword(auth(), email, password),
     sendPasswordReset: (email) =>
-      bounded(sendPasswordResetEmail(auth(), email)).catch(
-        resolveUnknownEmailAsSent
-      ),
+      sendPasswordResetEmail(auth(), email).catch(resolveUnknownEmailAsSent),
     updatePassword: (newPassword) => {
       const user = auth().currentUser
       return user
