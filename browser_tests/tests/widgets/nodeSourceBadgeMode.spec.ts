@@ -90,6 +90,21 @@ for (const vueEnabled of [false, true] as const) {
           { exact: true }
         )
 
+        const getLegacyBadgeTexts = async (attribute: string) => {
+          const serialized = await legacyProbe.getAttribute(attribute)
+          const parsed: unknown =
+            serialized === null ? null : JSON.parse(serialized)
+          if (
+            !Array.isArray(parsed) ||
+            !parsed.every((text): text is string => typeof text === 'string')
+          ) {
+            throw new Error(
+              `Invalid legacy badge probe attribute: ${attribute}`
+            )
+          }
+          return parsed
+        }
+
         const expectLegacyBadges = async (
           coreVisible: boolean,
           customVisible: boolean
@@ -105,12 +120,7 @@ for (const vueEnabled of [false, true] as const) {
               Number(await legacyProbe.getAttribute('data-frames'))
             )
             .toBeGreaterThan(frame)
-          const getCoreTexts = async () => {
-            const texts = JSON.parse(
-              (await legacyProbe.getAttribute('data-core-texts')) ?? '[]'
-            ) as string[]
-            return texts
-          }
+          const getCoreTexts = () => getLegacyBadgeTexts('data-core-texts')
           if (coreVisible) {
             await expect.poll(getCoreTexts).toContain('nodes')
           } else {
@@ -118,9 +128,7 @@ for (const vueEnabled of [false, true] as const) {
           }
           await expect
             .poll(async () => {
-              const texts = JSON.parse(
-                (await legacyProbe.getAttribute('data-custom-texts')) ?? '[]'
-              ) as string[]
+              const texts = await getLegacyBadgeTexts('data-custom-texts')
               return texts.some((text) => text.includes(CUSTOM_SOURCE_BADGE))
             })
             .toBe(customVisible)
