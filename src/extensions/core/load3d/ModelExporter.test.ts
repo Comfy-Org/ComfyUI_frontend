@@ -1,9 +1,7 @@
-import { beforeEach } from 'vitest'
 import { useToast } from '@/components/ui/toast'
 import * as THREE from 'three'
 import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
-
 
 import { ModelExporter } from './ModelExporter'
 

@@ -4,6 +4,7 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { BillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
 import { computed } from 'vue'
+import { useToast } from '@/components/ui/toast'
 import { billingOperation } from './billingOperationTestUtils'
 import type { BillingOperation } from './billingOperationTestUtils'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
@@ -402,12 +403,13 @@ vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
 }))
 
-vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
-  () => ({
-    useToast: () => ({ add: mockToastAdd })
-  })
-)
+beforeEach(() => {
+  for (const kind of ['success', 'error', 'warning'] as const) {
+    vi.mocked(useToast()[kind]).mockImplementation((...args) =>
+      mockToastAdd(kind, ...args)
+    )
+  }
+})
 
 vi.mock(import('@/platform/telemetry'))
 

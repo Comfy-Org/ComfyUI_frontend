@@ -5,7 +5,7 @@ import { computed, reactive, ref } from 'vue'
 import type { GlobalSetting } from '@comfyorg/ingest-types'
 import { useAuthStore } from '@/stores/authStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { setImmediate } from 'node:timers/promises'
 
@@ -27,6 +27,10 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 
 const fetchApi = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('@/scripts/api'), () => ({ api: { fetchApi } }))
+
+vi.mock<unknown>(import('@/scripts/app'), () => ({
+  app: { canvas: {}, rootGraph: {} }
+}))
 
 const fetchWithUnifiedRemint = vi.hoisted(() => vi.fn())
 vi.mock(import('@/platform/auth/unified/remintRetry'), () => ({
@@ -102,7 +106,6 @@ describe('useAgentConsent', () => {
     fetchWithUnifiedRemint.mockReset()
     fetchWithUnifiedRemint.mockResolvedValue(settingResponse(false))
     reportError.mockReset()
-    vi.mocked(useToastStore().add).mockReset()
   })
 
   it('waits for the account setting to load before deciding whether to ask', async () => {
@@ -142,9 +145,10 @@ describe('useAgentConsent', () => {
     expect(useDialogStore().dialogStack).toHaveLength(0)
     expect(onOpen).not.toHaveBeenCalled()
     expect(reportError).toHaveBeenCalledOnce()
-    expect(vi.mocked(useToastStore().add)).toHaveBeenCalledWith(
+    expect(useToast().error).toHaveBeenCalledWith(
+      i18n.global.t('g.error'),
       expect.objectContaining({
-        detail: i18n.global.t('agent.consent.loadError')
+        description: i18n.global.t('agent.consent.loadError')
       })
     )
   })
@@ -321,7 +325,7 @@ describe('useAgentConsent', () => {
     expect(fetchWithUnifiedRemint).not.toHaveBeenCalled()
     expect(onOpen).not.toHaveBeenCalled()
     expect(reportError).not.toHaveBeenCalled()
-    expect(useToastStore().add).not.toHaveBeenCalled()
+    expect(useToast().error).not.toHaveBeenCalled()
   })
 
   it('reports sign-in loading failure without saving or opening and allows another attempt', async () => {
@@ -348,9 +352,10 @@ describe('useAgentConsent', () => {
     expect(reportError).toHaveBeenCalledWith(error, {
       errorType: 'agent_consent_sign_in_failure'
     })
-    expect(useToastStore().add).toHaveBeenCalledWith(
+    expect(useToast().error).toHaveBeenCalledWith(
+      i18n.global.t('g.error'),
       expect.objectContaining({
-        detail: i18n.global.t('agent.consent.signInError')
+        description: i18n.global.t('agent.consent.signInError')
       })
     )
 

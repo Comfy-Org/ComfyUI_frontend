@@ -3,7 +3,6 @@ import * as THREE from 'three'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-
 import type {
   EventManagerInterface,
   MaterialMode,

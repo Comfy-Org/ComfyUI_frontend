@@ -44,7 +44,7 @@ test.describe('Toast Notifications', { tag: '@ui' }, () => {
     await triggerErrorToast(comfyPage)
 
     const graphToast = comfyPage.page
-      .locator('.graph-toast .p-toast-message')
+      .getByTestId('toast')
       .filter({ hasText: 'Test execution error' })
     await expect(graphToast).toBeVisible()
 

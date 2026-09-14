@@ -436,11 +436,7 @@ function onWorkflowAdopted(
 }
 
 function warnWorkflowUnavailable(): void {
-  toast.add({
-    severity: 'warn',
-    detail: t('agent.targetNavigationUnavailable'),
-    life: 5000
-  })
+  toast.warning(t('agent.targetNavigationUnavailable'), { duration: 5000 })
 }
 
 const {

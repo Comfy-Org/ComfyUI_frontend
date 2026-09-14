@@ -1,8 +1,8 @@
-import { useToast } from '@/components/ui/toast'
 import { fromPartial, fromAny } from '@total-typescript/shoehorn'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useToast } from '@/components/ui/toast'
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import {
@@ -46,8 +46,6 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   collectAllNodes: vi.fn()
 }))
-
-const { mockToastAdd } = vi.hoisted(() => ({ mockToastAdd: vi.fn() }))
 
 vi.mock<unknown>(import('@/i18n'), () => ({
   st: (_key: string, fallback: string) => fallback,
@@ -233,10 +231,6 @@ function seedMissingNodeTypes(types: MissingNodeType[]): void {
   getActiveWorkflowMock().pendingWarnings = { missingNodeTypes: types }
   useMissingNodesErrorStore().setMissingNodeTypes(types)
 }
-
-beforeEach(() => {
-  vi.mocked(useToast().add).mockImplementation(mockToastAdd)
-})
 
 describe('useNodeReplacement', () => {
   describe('replaceNodesInPlace', () => {
@@ -795,7 +789,7 @@ describe('useNodeReplacement', () => {
         expect(result).toEqual([])
         expect(graph._nodes[0]).toBe(placeholder)
         expect(placeholder.onRemoved).not.toHaveBeenCalled()
-        expect(mockToastAdd.mock.calls.map(([kind]) => kind)).toContain('error')
+        expect(useToast().error).toHaveBeenCalled()
       }
     )
 

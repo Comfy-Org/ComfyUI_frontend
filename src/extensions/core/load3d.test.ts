@@ -138,10 +138,6 @@ vi.mock(import('@/utils/litegraphUtil'), () => ({
   isLoad3dNode: vi.fn(() => true)
 }))
 
-vi.mock(import('@/lib/litegraph/src/litegraph'), () => ({
-  LiteGraph: fromPartial({ ContextMenu: fromAny(vi.fn()) })
-}))
-
 await import('@/extensions/core/load3d')
 const load3DExt = capture.getExtension('Comfy.Load3D')
 const preview3DExt = capture.getExtension('Comfy.Preview3D')

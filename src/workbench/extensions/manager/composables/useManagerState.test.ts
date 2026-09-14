@@ -293,7 +293,7 @@ describe('useManagerState', () => {
       useManagerState()
       useManagerState()
 
-      expect(useToast().add).toHaveBeenCalledTimes(1)
+      expect(useToast().warning).toHaveBeenCalledTimes(1)
       expect(useToast().warning).toHaveBeenCalledWith(
         'manager.incompatibleVersion.title',
         { description: 'manager.incompatibleVersion.message', duration: 15000 }
@@ -311,10 +311,10 @@ describe('useManagerState', () => {
       mockServerFeatures({ supports_v4: true, supports_csrf_post: false })
 
       const managerState = useManagerState()
-      expect(useToast().add).toHaveBeenCalledTimes(1)
+      expect(useToast().warning).toHaveBeenCalledTimes(1)
 
       await managerState.openManager()
-      expect(useToast().add).toHaveBeenCalledTimes(2)
+      expect(useToast().warning).toHaveBeenCalledTimes(2)
       // second call must still be the upgrade toast, not an error toast
       expect(useToast().warning).toHaveBeenLastCalledWith(
         'manager.incompatibleVersion.title',
@@ -333,7 +333,7 @@ describe('useManagerState', () => {
       mockServerFeatures({ supports_v4: true, supports_csrf_post: true })
 
       useManagerState()
-      expect(useToast().add).not.toHaveBeenCalled()
+      expect(useToast().warning).not.toHaveBeenCalled()
     })
   })
 

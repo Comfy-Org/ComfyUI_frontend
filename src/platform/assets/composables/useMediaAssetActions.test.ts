@@ -1586,12 +1586,17 @@ describe('useMediaAssetActions', () => {
       expect(mockInputAssets.items.map((item) => item.id)).toEqual([
         'asset-503'
       ])
-      expect(useToast().add).toHaveBeenCalledWith({
-        severity: 'error',
-        summary: i18n.global.t('mediaAsset.assetDelete.error'),
-        detail: i18n.global.t('mediaAsset.assetsDeleted', { total: 1 }, 0),
-        life: 5000
-      })
+      expect(useToast().error).toHaveBeenCalledWith(
+        i18n.global.t('mediaAsset.assetDelete.error'),
+        {
+          description: i18n.global.t(
+            'mediaAsset.assetsDeleted',
+            { total: 1 },
+            0
+          ),
+          duration: 5000
+        }
+      )
       expect(mockMarkMissingMedia).not.toHaveBeenCalled()
       expect(mockClearWidgetValues).not.toHaveBeenCalled()
 
@@ -1599,12 +1604,17 @@ describe('useMediaAssetActions', () => {
 
       expect(mockDeleteAsset).toHaveBeenCalledTimes(2)
       expect(mockInputAssets.items).toEqual([])
-      expect(useToast().add).toHaveBeenLastCalledWith({
-        severity: 'success',
-        summary: i18n.global.t('mediaAsset.assetDelete.success'),
-        detail: i18n.global.t('mediaAsset.assetsDeleted', { total: 1 }, 1),
-        life: 2000
-      })
+      expect(useToast().success).toHaveBeenLastCalledWith(
+        i18n.global.t('mediaAsset.assetDelete.success'),
+        {
+          description: i18n.global.t(
+            'mediaAsset.assetsDeleted',
+            { total: 1 },
+            1
+          ),
+          duration: 2000
+        }
+      )
     })
 
     it('cleans up only the succeeded assets and clears every overlay when part of a batch fails', async () => {
@@ -1648,12 +1658,17 @@ describe('useMediaAssetActions', () => {
         succeededVariants
       )
       expect(mockCaptureCanvasState).toHaveBeenCalledTimes(1)
-      expect(useToast().add).toHaveBeenCalledWith({
-        severity: 'warn',
-        summary: i18n.global.t('mediaAsset.assetDelete.warn'),
-        detail: i18n.global.t('mediaAsset.assetsDeleted', { total: 3 }, 2),
-        life: 5000
-      })
+      expect(useToast().warning).toHaveBeenCalledWith(
+        i18n.global.t('mediaAsset.assetDelete.warn'),
+        {
+          description: i18n.global.t(
+            'mediaAsset.assetsDeleted',
+            { total: 3 },
+            2
+          ),
+          duration: 5000
+        }
+      )
 
       const flagsById: Record<string, boolean[]> = {}
       for (const [id, flag] of mockSetAssetDeleting.mock.calls) {
