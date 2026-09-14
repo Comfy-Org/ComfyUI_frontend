@@ -34,7 +34,7 @@ the same flags.
 Record flags:
 
 - `--distribution <cloud|cloud-staging|cloud-prod|local>` selects the backend environment.
-- `--backend <url>` connects to a custom backend and implies a custom distribution. Use it for any host without a named distribution, such as `--backend https://nightly.engcomfy.com`. It cannot be combined with `--distribution` unless that value is `custom`.
+- `--backend <url>` connects to a custom backend and implies a custom distribution. Use it for any host without a named distribution, such as `--backend https://nightly.engcomfy.com`. For `record` it takes precedence when `--distribution` is also supplied; `check` rejects the combination instead. (`custom` is the internal id `--backend` produces — it is not a value you can pass to `--distribution`.)
 - `--workflow <name>`, `--tags <a,b>`, and `--feature-flags <key:value,...>` configure the recording.
 - `--use-case <reproduce-bug|verify-change|test-plan-step|contribute>`, `--description <text>`, and `--name <slug>` describe and name it.
 - `--pr <number>` checks whether the checkout matches a PR and offers to switch safely. It never switches a checkout with uncommitted changes.
