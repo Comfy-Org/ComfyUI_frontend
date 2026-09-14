@@ -102,12 +102,12 @@ interface LicenseDisplay {
   href?: string
 }
 
-const asLicenseLink = (filename: string, repoUrl: string): LicenseDisplay => {
+function asLicenseLink(filename: string, repoUrl: string): LicenseDisplay {
   const url = createLicenseUrl(filename, repoUrl)
   return { text: url, href: toSafeExternalHref(url) }
 }
 
-const parseLicenseObject = (licenseObj: LicenseObject): LicenseDisplay => {
+function parseLicenseObject(licenseObj: LicenseObject): LicenseDisplay {
   const licenseFile = licenseObj.file || licenseObj.text
 
   if (
@@ -125,7 +125,7 @@ const parseLicenseObject = (licenseObj: LicenseObject): LicenseDisplay => {
   return { text: JSON.stringify(licenseObj) }
 }
 
-const formatLicense = (license: string): LicenseDisplay | null => {
+function formatLicense(license: string): LicenseDisplay | null {
   // Treat "{}" JSON string as undefined
   if (license === '{}') return null
 

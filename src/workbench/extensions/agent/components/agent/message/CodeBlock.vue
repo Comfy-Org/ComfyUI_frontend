@@ -78,8 +78,6 @@ watchDebounced(
         {{ copied ? t('agent.copied') : t('agent.copy') }}
       </button>
     </div>
-    <!-- shiki emits every syntax colour as an inline style, with no class to
-         fall back on, so this markup needs them kept. -->
     <SanitizedHtml
       v-if="highlighted"
       class="overflow-x-auto p-4 font-mono text-sm [&_pre]:bg-transparent"

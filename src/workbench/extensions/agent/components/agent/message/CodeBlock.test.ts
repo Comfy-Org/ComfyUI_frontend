@@ -9,7 +9,7 @@ import CodeBlock from './CodeBlock.vue'
 vi.mock(import('shiki'), () => ({
   codeToHtml: vi.fn(async (code: string, options: { lang: string }) => {
     if (options.lang === 'nope') throw new Error('unknown language')
-    return `<pre class="shiki"><code><span>HL:${code}</span></code></pre>`
+    return `<pre class="shiki"><code><span style="color:#ff0000">HL:${code}</span></code></pre>`
   })
 }))
 
@@ -22,7 +22,9 @@ describe('CodeBlock', () => {
 
     expect(screen.getByText('print("hi")')).toBeInTheDocument()
 
-    expect(await screen.findByText('HL:print("hi")')).toBeInTheDocument()
+    expect(await screen.findByText('HL:print("hi")')).toHaveStyle({
+      color: '#ff0000'
+    })
     expect(screen.queryByText('print("hi")')).not.toBeInTheDocument()
   })
 
