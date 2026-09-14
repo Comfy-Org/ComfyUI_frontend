@@ -55,3 +55,57 @@ export type {
   BillingStatusSnapshot
 } from './status.js'
 export { BILLING_STATUS_ROUTE, createBillingStatusReader } from './status.js'
+export type {
+  BillingAuthenticationState,
+  BillingDeclineReason,
+  BillingOpStatus,
+  BillingOperationEvent,
+  BillingOperationIdentity,
+  BillingOperationKind,
+  BillingOperationPhase,
+  BillingOperationServerPhase,
+  BillingOperationState,
+  BillingPresentation,
+  BillingRecoveryAction,
+  EmbeddedChallenge,
+  FailedBillingOperation,
+  PendingBillingOperation
+} from './operationState.js'
+export {
+  isTerminal,
+  reduceBillingOperation,
+  validateActionUrl
+} from './operationState.js'
+export {
+  OPERATION_POLL_BUDGET,
+  OPERATION_POLL_TIMING,
+  hasExhaustedPollBudget,
+  isParkedOnCustomer,
+  nextPollDelayMs,
+  pollBudgetMs
+} from './operationPolicy.js'
+export type {
+  BillingOperationPointer,
+  BillingOperationPointerStorage,
+  OperationPointerStore
+} from './operationPointer.js'
+export {
+  OPERATION_POINTER_MAX_AGE_MS,
+  createOperationPointerStore,
+  operationPointerKey
+} from './operationPointer.js'
+export type { PresentationRoutingInput } from './presentation.js'
+export { selectBillingPresentation } from './presentation.js'
+export type {
+  BillingOperationFailureCategory,
+  BillingOperationLifecycle,
+  BillingOperationLifecycleOptions,
+  BillingOperationTelemetryEvent,
+  IssuedBillingOperation,
+  PresentationSwitchOutcome
+} from './operationLifecycle.js'
+export {
+  createBillingOperationLifecycle,
+  operationRoute
+} from './operationLifecycle.js'
+export { BILLING_OPERATION_TELEMETRY_EVENT } from '../../telemetry.js'
