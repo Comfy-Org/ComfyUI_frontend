@@ -164,6 +164,7 @@ LiteGraphGlobal {
   "namedValuesRestore": false,
   "nodeLightness": undefined,
   "nodeOpacity": 1,
+  "nodeTypeRegisteredListeners": Set {},
   "node_box_coloured_by_mode": false,
   "node_box_coloured_when_on": false,
   "node_images_path": "",
