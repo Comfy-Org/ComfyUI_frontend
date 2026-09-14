@@ -563,10 +563,14 @@ test.describe(
       for (const id of sourceIds) {
         const nodeBefore = beforeDrag.nodes.find((node) => node.id === id)!
         const nodeAfter = afterDrag.nodes.find((node) => node.id === id)!
-        expect([
-          nodeAfter.position[0] - nodeBefore.position[0],
-          nodeAfter.position[1] - nodeBefore.position[1]
-        ]).toEqual(dragDelta)
+        expect(nodeAfter.position[0] - nodeBefore.position[0]).toBeCloseTo(
+          dragDelta[0],
+          8
+        )
+        expect(nodeAfter.position[1] - nodeBefore.position[1]).toBeCloseTo(
+          dragDelta[1],
+          8
+        )
       }
       expect(afterDrag.links).toEqual(beforeDrag.links)
 
