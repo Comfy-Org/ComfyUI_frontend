@@ -1,4 +1,3 @@
-import type * as DistributionModule from '@/platform/distribution/types'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -19,11 +18,13 @@ const { fetchMock, mockIsDesktop, mockStartDownload } = vi.hoisted(() => ({
   mockStartDownload: vi.fn()
 }))
 
-vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
-  ...(await importOriginal<typeof DistributionModule>()),
+vi.mock<unknown>(import('@/platform/distribution/types'), () => ({
+  DISTRIBUTION: 'localhost',
+  isCloud: false,
   get isDesktop() {
     return mockIsDesktop.value
-  }
+  },
+  isNightly: false
 }))
 
 beforeEach(() => {

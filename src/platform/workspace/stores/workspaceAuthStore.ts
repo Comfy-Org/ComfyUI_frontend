@@ -323,6 +323,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
 
   function destroy(): void {
     stopRefreshTimer()
+    stopUnifiedFlagWatch()
     detachUnifiedIdentity?.()
     detachUnifiedIdentity = undefined
     clearUnifiedContext()
@@ -909,7 +910,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   // session starts sending no auth header; a rollback must stop the unified
   // scheduler and cross-tab lease, or they keep rotating the cookie and
   // refilling the slot the API callers no longer read.
-  watch(
+  const stopUnifiedFlagWatch = watch(
     () => flags.unifiedCloudAuthEnabled,
     (enabled) => {
       if (enabled) {
