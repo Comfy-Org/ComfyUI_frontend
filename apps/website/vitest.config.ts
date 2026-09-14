@@ -6,6 +6,9 @@ export default defineConfig({
   plugins: [vue()],
   resolve: {
     alias: {
+      'astro:env/client': fileURLToPath(
+        new URL('./src/test/astroEnv.ts', import.meta.url)
+      ),
       '@': fileURLToPath(new URL('./src', import.meta.url))
     }
   },
