@@ -117,24 +117,33 @@ describe('Workshop visibility', () => {
   it('identifies staff by UID and hides the feature while reevaluating another user or sign-out', async () => {
     const { initPostHog, identifyWorkshopUser, useWorkshopEnabled } =
       await import('./posthog')
-    identifyWorkshopUser('staff-uid')
+    identifyWorkshopUser({ uid: 'staff-uid' })
     initPostHog()
-    expect(hoisted.mockIdentify).toHaveBeenCalledWith('staff-uid')
+    expect(hoisted.mockIdentify).toHaveBeenCalledWith('staff-uid', undefined)
     hoisted.mockIsFeatureEnabled.mockReturnValue(true)
     emitFeatureFlags()
     expect(useWorkshopEnabled().value).toBe(true)
 
-    identifyWorkshopUser('staff-uid')
+    identifyWorkshopUser({ uid: 'staff-uid' })
     expect(hoisted.mockIdentify).toHaveBeenCalledOnce()
     expect(useWorkshopEnabled().value).toBe(true)
 
-    identifyWorkshopUser('another-uid')
+    identifyWorkshopUser({ uid: 'another-uid' })
     expect(useWorkshopEnabled().value).toBe(false)
     emitFeatureFlags()
     identifyWorkshopUser(null)
     expect(useWorkshopEnabled().value).toBe(false)
     expect(hoisted.mockReset).toHaveBeenCalledTimes(2)
     expect(hoisted.mockReloadFeatureFlags).toHaveBeenCalledTimes(3)
+  })
+
+  it('sends the email domain, not the email, so staff targeting works without PII', async () => {
+    const { initPostHog, identifyWorkshopUser } = await import('./posthog')
+    identifyWorkshopUser({ uid: 'staff-uid', email: 'Someone@Comfy.org' })
+    initPostHog()
+    expect(hoisted.mockIdentify).toHaveBeenCalledWith('staff-uid', {
+      email_domain: 'comfy.org'
+    })
   })
 
   it('keeps confirmed access when Firebase restores the same PostHog user', async () => {
@@ -144,7 +153,7 @@ describe('Workshop visibility', () => {
       await import('./posthog')
     initPostHog()
     emitFeatureFlags()
-    identifyWorkshopUser('staff-uid')
+    identifyWorkshopUser({ uid: 'staff-uid' })
     expect(useWorkshopEnabled().value).toBe(true)
     expect(hoisted.mockIdentify).not.toHaveBeenCalled()
     expect(hoisted.mockReloadFeatureFlags).not.toHaveBeenCalled()
@@ -156,7 +165,7 @@ describe('Workshop visibility', () => {
       const { initPostHog, identifyWorkshopUser, useWorkshopEnabled } =
         await import('./posthog')
       initPostHog()
-      identifyWorkshopUser('staff-uid')
+      identifyWorkshopUser({ uid: 'staff-uid' })
       hoisted.mockIsFeatureEnabled.mockReturnValue(true)
       emitFeatureFlags()
       vi.spyOn(console, 'error').mockImplementation(() => undefined)
@@ -165,11 +174,11 @@ describe('Workshop visibility', () => {
       call.mockImplementationOnce(() => {
         throw new Error('Unavailable')
       })
-      const uid = operation === 'identify' ? 'another-uid' : null
-      identifyWorkshopUser(uid)
+      const user = operation === 'identify' ? { uid: 'another-uid' } : null
+      identifyWorkshopUser(user)
       expect(useWorkshopEnabled().value).toBe(false)
       const attempts = call.mock.calls.length
-      identifyWorkshopUser(uid)
+      identifyWorkshopUser(user)
       expect(call).toHaveBeenCalledTimes(attempts + 1)
       emitFeatureFlags(true)
       expect(useWorkshopEnabled().value).toBe(false)
