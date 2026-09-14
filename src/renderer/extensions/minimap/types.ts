@@ -81,6 +81,8 @@ export interface MinimapNodeData {
   mode?: number
   hasErrors?: boolean
   executionState?: 'pending' | 'running' | 'finished' | 'error' | null
+  /** When the agent created this node, if it did. */
+  agentGeneratedAt?: number
 }
 
 /**
