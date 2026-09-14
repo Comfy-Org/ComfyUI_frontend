@@ -16,6 +16,13 @@ export function linkLeavingPage(
   if (link.hasAttribute('download')) return
   if (link.target && link.target !== '_self') return
   if (link.origin !== here.origin) return
+  const current = new URL(here.href)
+  if (
+    link.pathname === current.pathname &&
+    link.search === current.search &&
+    link.hash !== current.hash
+  )
+    return
   if (link.href === here.href) return
   return link.href
 }

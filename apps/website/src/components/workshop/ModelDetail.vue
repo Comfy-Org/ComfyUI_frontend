@@ -299,7 +299,9 @@ useEventListener(
 function leaveForLink() {
   const href = leavingTo.value
   leavingTo.value = undefined
-  if (href) location.assign(href)
+  if (!href) return
+  cancelRun()
+  location.assign(href)
 }
 
 // A push/replace has not moved history yet, so native fallback is safe and the

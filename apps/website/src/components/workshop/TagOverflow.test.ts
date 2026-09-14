@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 
 import TagOverflow from './TagOverflow.vue'
@@ -28,6 +29,18 @@ describe('TagOverflow', () => {
     expect(links.map((link) => link.getAttribute('href'))).toEqual(
       tags.map((tag) => tag.href)
     )
+  })
+
+  it('is a button that opens on click for touch input', async () => {
+    const user = userEvent.setup()
+    render(TagOverflow, { props: { tags } })
+
+    const trigger = screen.getByRole('button', {
+      name: 'Upscale, Inpainting'
+    })
+    await user.click(trigger)
+
+    expect(await screen.findByTestId('model-tags-rest-list')).toBeTruthy()
   })
 
   it('closes again on Escape', async () => {
