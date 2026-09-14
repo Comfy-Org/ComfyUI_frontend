@@ -93,13 +93,17 @@ function readNodeSlots<TKey extends 'inputs' | 'outputs'>(
     : 'originOutputs']
 }
 
-function frameContext(update: DocUpdate): RemoteMutationContext {
+function frameContext(
+  update: DocUpdate,
+  hydration: boolean
+): RemoteMutationContext {
   const opIds = update.opIds?.filter((id) => id.length > 0)
   return {
     source: 'agent-remote',
     actor: update.actor ?? 'agent-replay',
     opId: opIds?.at(-1) ?? 'replay',
-    ...(opIds && opIds.length > 0 && { opIds })
+    ...(opIds && opIds.length > 0 && { opIds }),
+    ...(hydration && { hydration: true })
   }
 }
 
@@ -114,6 +118,8 @@ interface TargetSession {
   readonly replacedWidgetMaps: Set<string>
   readonly changedLinks: Set<string>
   readonly frameQueue: DocUpdate[]
+  /** Cleared by the first frame this subscription receives: its catch-up. */
+  hydrating: boolean
   onNodesChanged: (events: Y.YEvent<Y.AbstractType<unknown>>[]) => void
   onLinksChanged: (event: Y.YMapEvent<unknown>) => void
   reconcileNextFrame: boolean
@@ -204,6 +210,7 @@ export class EcsFollowerAdapter {
       replacedWidgetMaps: new Set<string>(),
       changedLinks: new Set<string>(),
       frameQueue: [],
+      hydrating: true,
       reconcileNextFrame: true,
       applying: false,
       onNodesChanged: (_events): void => undefined,
@@ -223,6 +230,8 @@ export class EcsFollowerAdapter {
     const replacedWidgetMaps = new Set(session.replacedWidgetMaps)
     const changedLinkIds = new Set(session.changedLinks)
     const reconcile = session.reconcileNextFrame
+    const hydration = session.hydrating
+    session.hydrating = false
     this.discardSessionPending(session)
 
     const replacedNodeIds = new Set(
@@ -246,60 +255,63 @@ export class EcsFollowerAdapter {
     const removedLinkIds = [...changedLinkIds].flatMap((id) =>
       session.links.has(id) ? [] : [Number(id)]
     )
-    const committed = session.mutations.batch(frameContext(update), (batch) => {
-      if (reconcile) {
-        const nodes = [...session.nodes.keys()].flatMap((id) => {
-          const payload = readSemanticNode(session.follower.doc, id)
-          return payload ? [payload] : []
-        })
-        const links = [...session.links.keys()].flatMap((id) => {
-          const link = readSemanticLink(session.follower.doc, id)
-          return link ? [link] : []
-        })
-        batch.removeMissing(
-          nodes.map(({ id }) => toNodeId(id)),
-          links.map(({ id }) => id)
-        )
-        for (const payload of nodes) batch.reconcileNode(payload)
-        for (const link of links) batch.connect(link)
-        return
-      }
+    const committed = session.mutations.batch(
+      frameContext(update, hydration),
+      (batch) => {
+        if (reconcile) {
+          const nodes = [...session.nodes.keys()].flatMap((id) => {
+            const payload = readSemanticNode(session.follower.doc, id)
+            return payload ? [payload] : []
+          })
+          const links = [...session.links.keys()].flatMap((id) => {
+            const link = readSemanticLink(session.follower.doc, id)
+            return link ? [link] : []
+          })
+          batch.removeMissing(
+            nodes.map(({ id }) => toNodeId(id)),
+            links.map(({ id }) => id)
+          )
+          for (const payload of nodes) batch.reconcileNode(payload)
+          for (const link of links) batch.connect(link)
+          return
+        }
 
-      batch.removeLinks(removedLinkIds)
-      for (const [id, action] of nodeActions) {
-        if (action === 'delete' || action === 'update')
-          batch.deleteNode(toNodeId(id))
-      }
-      for (const [id, action] of nodeActions) {
-        if (action === 'delete') continue
-        const payload = readSemanticNode(session.follower.doc, id)
-        if (!payload) continue
-        batch.addNode(payload)
-      }
-      for (const id of replacedWidgetMaps) {
-        if (nodeActions.has(id)) continue
-        const payload = readSemanticNode(session.follower.doc, id)
-        if (payload) batch.reconcileNode(payload)
-      }
-      for (const [id, names] of changedWidgets) {
-        if (nodeActions.has(id) || replacedWidgetMaps.has(id)) continue
-        const node = session.nodes.get(id)
-        const widgets = node?.get('widgets')
-        if (!(widgets instanceof Y.Map)) continue
-        if ([...names].some((name) => !widgets.has(name))) {
+        batch.removeLinks(removedLinkIds)
+        for (const [id, action] of nodeActions) {
+          if (action === 'delete' || action === 'update')
+            batch.deleteNode(toNodeId(id))
+        }
+        for (const [id, action] of nodeActions) {
+          if (action === 'delete') continue
+          const payload = readSemanticNode(session.follower.doc, id)
+          if (!payload) continue
+          batch.addNode(payload)
+        }
+        for (const id of replacedWidgetMaps) {
+          if (nodeActions.has(id)) continue
           const payload = readSemanticNode(session.follower.doc, id)
           if (payload) batch.reconcileNode(payload)
-          continue
         }
-        for (const name of names) {
-          batch.setWidget(toNodeId(id), name, plain(widgets.get(name)))
+        for (const [id, names] of changedWidgets) {
+          if (nodeActions.has(id) || replacedWidgetMaps.has(id)) continue
+          const node = session.nodes.get(id)
+          const widgets = node?.get('widgets')
+          if (!(widgets instanceof Y.Map)) continue
+          if ([...names].some((name) => !widgets.has(name))) {
+            const payload = readSemanticNode(session.follower.doc, id)
+            if (payload) batch.reconcileNode(payload)
+            continue
+          }
+          for (const name of names) {
+            batch.setWidget(toNodeId(id), name, plain(widgets.get(name)))
+          }
+        }
+        for (const id of changedLinkIds) {
+          const link = readSemanticLink(session.follower.doc, id)
+          if (link) batch.connect(link)
         }
       }
-      for (const id of changedLinkIds) {
-        const link = readSemanticLink(session.follower.doc, id)
-        if (link) batch.connect(link)
-      }
-    })
+    )
 
     // Only clear the reconciliation flag once the batch actually commits.
     // A rejected batch (no scope, or validation failure) must leave
