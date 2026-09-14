@@ -52,18 +52,22 @@ echo "$*" >> "$CALLS"
     ) {
       const calls = join(root, 'calls')
       writeFileSync(calls, '')
-      const result = spawnSync('bash', [PREPARE_REPORT, reports, '4'], {
-        encoding: 'utf8',
-        env: {
-          ...process.env,
-          PATH: `${bin}:${process.env.PATH ?? ''}`,
-          BLOB_REPORTS_OUTCOME: options.download ?? 'success',
-          SHARDS_RESULT: options.shards ?? 'success',
-          MERGE_REPORTS_OK: options.mergeReports ?? 'true',
-          GITHUB_OUTPUT: output,
-          CALLS: calls
+      const result = spawnSync(
+        'bash',
+        [PREPARE_REPORT, reports, '4', '1.61.1'],
+        {
+          encoding: 'utf8',
+          env: {
+            ...process.env,
+            PATH: `${bin}:${process.env.PATH ?? ''}`,
+            BLOB_REPORTS_OUTCOME: options.download ?? 'success',
+            SHARDS_RESULT: options.shards ?? 'success',
+            MERGE_REPORTS_OK: options.mergeReports ?? 'true',
+            GITHUB_OUTPUT: output,
+            CALLS: calls
+          }
         }
-      })
+      )
       return {
         status: result.status,
         output: readFileSync(output, 'utf8'),
@@ -133,7 +137,7 @@ describe('website E2E workflow', () => {
 
     expect(workflow).toContain('shardTotal: [4]')
     expect(workflow).toContain(
-      'prepare-website-e2e-report.sh all-blob-reports 4'
+      'prepare-website-e2e-report.sh all-blob-reports 4 "$PLAYWRIGHT_VERSION"'
     )
   })
 

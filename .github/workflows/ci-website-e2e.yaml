@@ -107,7 +107,9 @@ jobs:
         env:
           SHARDS_RESULT: ${{ needs.website-e2e-shard.result }}
           BLOB_REPORTS_OUTCOME: ${{ steps.blob-reports.outcome }}
-        run: ../../scripts/cicd/prepare-website-e2e-report.sh all-blob-reports 4
+        run: |
+          PLAYWRIGHT_VERSION=$(pnpm list @playwright/test --depth 0 --json --lockfile-only | jq -r '.[0].devDependencies["@playwright/test"].version')
+          ../../scripts/cicd/prepare-website-e2e-report.sh all-blob-reports 4 "$PLAYWRIGHT_VERSION"
 
       - name: Upload test report
         uses: actions/upload-artifact@v6
