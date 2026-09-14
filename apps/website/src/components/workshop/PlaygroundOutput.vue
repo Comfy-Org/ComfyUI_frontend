@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
   Download,
+  ExternalLink,
   File as FileIcon,
   Image as ImageIcon,
   Loader2,
@@ -23,7 +24,7 @@ import type {
   RunState
 } from '../../config/workshop-run'
 import { formatElapsed, isExpired } from '../../config/workshop-run'
-import { WORKSHOP_CREDITS_URL } from '../../config/workshop-env'
+import { downloadOutput } from '../../config/workshop-output-download'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
@@ -51,6 +52,7 @@ const emit = defineEmits<{
   retry: []
   useInCode: []
   switchPersonal: []
+  buyCredits: []
 }>()
 
 const elapsed = computed(() =>
@@ -125,6 +127,18 @@ const outputs = computed(() =>
     : []
 )
 const currentUrl = computed(() => outputs.value[selected.value] ?? '')
+const failedDownloadUrl = ref<string>()
+const downloadNeedsLink = computed(
+  () => failedDownloadUrl.value === currentUrl.value
+)
+async function download(event: MouseEvent) {
+  if (downloadNeedsLink.value) return
+  event.preventDefault()
+  if (!shown.value) return
+  const url = currentUrl.value
+  if (!(await downloadOutput(url, shown.value.fileName)))
+    failedDownloadUrl.value = url
+}
 watch(latest, () => {
   viewing.value = undefined
 })
@@ -145,6 +159,37 @@ watch(shown, () => {
   revealed.value = false
   expanded.value = false
 })
+
+// Oldest first, so the strip reads in the order the runs happened and the
+// newest result is the last stop, selected by default.
+interface RunStop {
+  readonly record?: RunRecord
+  readonly output: RunOutput
+  readonly name: string
+  readonly testId: string
+}
+
+const runStops = computed<RunStop[]>(() =>
+  latest.value === undefined
+    ? []
+    : [
+        ...[...earlier].reverse().map((record, index) => ({
+          record,
+          output: record.output,
+          name: t('workshop.output.earlierRun', locale).replace(
+            '{number}',
+            String(index + 1)
+          ),
+          testId: `earlier-run-${index}`
+        })),
+        {
+          record: undefined,
+          output: latest.value,
+          name: t('workshop.output.latest', locale),
+          testId: 'earlier-latest'
+        }
+      ]
+)
 
 const earlierClass = (active: boolean) =>
   cn(
@@ -261,12 +306,9 @@ const earlierClass = (active: boolean) =>
       </Button>
       <Button
         v-else-if="state.reason === 'noCredits'"
-        as="a"
-        :href="WORKSHOP_CREDITS_URL"
-        target="_blank"
-        rel="noopener noreferrer"
         variant="outline"
         size="sm"
+        @click="emit('buyCredits')"
       >
         {{ t('nav.buyCredits', locale) }}
       </Button>
@@ -288,7 +330,7 @@ const earlierClass = (active: boolean) =>
         <div
           :key="currentUrl"
           :class="blurred ? 'blur-2xl select-none' : ''"
-          class="animate-soft-in size-full transition-[filter]"
+          class="animate-soft-in size-full transition-all"
         >
           <VideoPlayer
             v-if="currentUrl && shown.kind === 'video' && !blurred"
@@ -300,6 +342,7 @@ const earlierClass = (active: boolean) =>
             controls-on-hover
             autoplay
             loop
+            no-cors
           />
           <img
             v-else-if="currentUrl && shown.kind === 'image' && !blurred"
@@ -405,7 +448,7 @@ const earlierClass = (active: boolean) =>
           @click="selected = index"
         >
           <video
-            v-if="shown.kind === 'video'"
+            v-if="shown?.kind === 'video'"
             :src="url"
             class="size-full object-cover"
             muted
@@ -442,48 +485,40 @@ const earlierClass = (active: boolean) =>
 
       <div
         v-if="earlier.length && state.status === 'succeeded'"
+        role="group"
+        :aria-label="t('workshop.output.earlier', locale)"
         class="flex items-center gap-2 overflow-x-auto border-t border-transparency-white-t8 px-4 py-3"
         data-testid="earlier-runs"
       >
-        <span
-          class="shrink-0 text-2xs font-bold tracking-wider text-primary-warm-gray uppercase"
-        >
-          {{ t('workshop.output.earlier', locale) }}
-        </span>
         <button
+          v-for="stop in runStops"
+          :key="stop.testId"
           type="button"
-          :aria-pressed="!viewing"
-          :class="cn(earlierClass(!viewing), 'w-auto px-3')"
-          data-testid="earlier-latest"
-          @click="viewing = undefined"
-        >
-          {{ t('workshop.output.latest', locale) }}
-        </button>
-        <button
-          v-for="(run, index) in earlier"
-          :key="index"
-          type="button"
-          :aria-pressed="viewing === run"
-          :aria-label="`${t('workshop.output.earlier', locale)} ${index + 1}`"
-          :class="earlierClass(viewing === run)"
-          :data-testid="`earlier-run-${index}`"
-          @click="viewing = run"
+          :aria-pressed="viewing === stop.record"
+          :aria-label="stop.name"
+          :class="earlierClass(viewing === stop.record)"
+          :data-testid="stop.testId"
+          @click="viewing = stop.record"
         >
           <video
-            v-if="run.output.kind === 'video'"
-            :src="run.output.url"
-            :class="cn('size-full object-cover', run.output.nsfw && 'blur-md')"
+            v-if="stop.output.kind === 'video'"
+            :src="stop.output.url"
+            :class="cn('size-full object-cover', stop.output.nsfw && 'blur-md')"
             muted
             playsinline
             preload="metadata"
           />
           <img
-            v-else-if="run.output.kind === 'image'"
-            :src="run.output.url"
+            v-else-if="stop.output.kind === 'image'"
+            :src="stop.output.url"
             alt=""
-            :class="cn('size-full object-cover', run.output.nsfw && 'blur-md')"
+            :class="cn('size-full object-cover', stop.output.nsfw && 'blur-md')"
           />
-          <span v-else>{{ index + 2 }}</span>
+          <FileIcon
+            v-else
+            class="size-5 text-primary-warm-gray"
+            aria-hidden="true"
+          />
         </button>
       </div>
 
@@ -510,6 +545,13 @@ const earlierClass = (active: boolean) =>
         v-if="state.status === 'succeeded'"
         class="flex flex-col gap-2 border-t border-transparency-white-t8 p-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end"
       >
+        <p
+          v-if="downloadNeedsLink && !blurred"
+          role="status"
+          class="w-full text-xs text-primary-warm-gray"
+        >
+          {{ t('workshop.output.downloadFallback', locale) }}
+        </p>
         <Button
           variant="outline"
           size="sm"
@@ -523,13 +565,23 @@ const earlierClass = (active: boolean) =>
           v-if="currentUrl && !blurred"
           as="a"
           :href="currentUrl"
-          :download="shown.fileName"
-          :prepend-icon="Download"
+          :download="downloadNeedsLink ? undefined : shown.fileName"
+          :prepend-icon="downloadNeedsLink ? ExternalLink : Download"
+          target="_blank"
+          rel="noopener"
           size="sm"
           class="w-full sm:w-auto"
           data-testid="output-download"
+          @click="download"
         >
-          {{ t('workshop.output.download', locale) }}
+          {{
+            t(
+              downloadNeedsLink
+                ? 'workshop.output.openOriginal'
+                : 'workshop.output.download',
+              locale
+            )
+          }}
         </Button>
       </div>
     </template>

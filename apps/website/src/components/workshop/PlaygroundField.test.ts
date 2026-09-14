@@ -45,6 +45,61 @@ function mountField(
 }
 
 describe('PlaygroundField', () => {
+  it('disables a fixed single option while keeping its native value', () => {
+    const field: FieldSchema = {
+      kind: 'select',
+      name: 'resolution',
+      label: 'Resolution',
+      options: ['1024'],
+      defaultValue: '1024'
+    }
+    const values = mountField(field, defaultValues([field]))
+    expect(
+      screen
+        .getByRole('combobox', { name: 'Resolution' })
+        .hasAttribute('disabled')
+    ).toBe(true)
+    expect(values.value.resolution).toBe('1024')
+  })
+
+  it('keeps an optional single choice editable so it can be set and cleared', async () => {
+    const values = mountField({
+      kind: 'select',
+      name: 'mode',
+      label: 'Mode',
+      options: ['automatic']
+    })
+    const select = screen.getByRole('combobox', { name: 'Mode' })
+    expect(select.hasAttribute('disabled')).toBe(false)
+    await userEvent.setup().selectOptions(select, 'Automatic')
+    expect(values.value.mode).toBe('automatic')
+    expect(select.hasAttribute('disabled')).toBe(false)
+    await userEvent.setup().selectOptions(select, '')
+    expect(values.value.mode).toBeUndefined()
+  })
+
+  it('shows readable option labels without sending display text to Router', async () => {
+    const values = mountField({
+      kind: 'select',
+      name: 'mode',
+      label: 'Mode',
+      options: ['preserve_color', 'all'],
+      presentation: {
+        label: 'Mode',
+        help: '',
+        hidden: false,
+        advanced: false,
+        control: 'dropdown',
+        optionLabels: { all: 'All channels' }
+      }
+    })
+    const select = screen.getByRole('combobox', { name: 'Mode' })
+    await userEvent.setup().selectOptions(select, 'Preserve color')
+    expect(values.value.mode).toBe('preserve_color')
+    await userEvent.setup().selectOptions(select, 'All channels')
+    expect(values.value.mode).toBe('all')
+  })
+
   it.for<FieldSchema>([
     {
       kind: 'text',
@@ -191,7 +246,7 @@ describe('PlaygroundField', () => {
     }
   )
 
-  it('shows a playable source video when an example URL is prefilled', () => {
+  it('shows the source video frame when an example URL is prefilled', () => {
     mountField(
       {
         kind: 'text',
@@ -211,9 +266,9 @@ describe('PlaygroundField', () => {
       { video: 'https://example.com/source.mp4' }
     )
     const slot = within(screen.getByRole('group', { name: 'Source video' }))
-    const player = slot.getByLabelText('source.mp4', { selector: 'video' })
+    const trigger = slot.getByRole('button', { name: 'Expand source.mp4' })
+    const player = within(trigger).getByTestId('video-source-thumbnail')
     expect(player.getAttribute('src')).toBe('https://example.com/source.mp4')
-    expect(player.hasAttribute('controls')).toBe(true)
     expect(player.getAttribute('preload')).toBe('metadata')
     expect(
       screen

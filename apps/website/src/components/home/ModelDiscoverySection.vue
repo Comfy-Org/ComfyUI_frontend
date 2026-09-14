@@ -2,13 +2,16 @@
 import { ref } from 'vue'
 
 import { getRoutes } from '../../config/routes'
-import { discoveryProviders } from '../../data/modelDiscovery'
+import type { DiscoveryProvider } from '../../data/modelDiscovery'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import BrandButton from '../common/BrandButton.vue'
 import StaticFrame from '../workshop/StaticFrame.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale = 'en', providers } = defineProps<{
+  locale?: Locale
+  providers: readonly DiscoveryProvider[]
+}>()
 const routes = getRoutes(locale)
 
 // Thumbnails are fetched the first time a card is hovered or focused, so the
@@ -63,7 +66,7 @@ const cardClass =
             :aria-hidden="copy === 2 ? 'true' : undefined"
           >
             <a
-              v-for="provider in discoveryProviders"
+              v-for="provider in providers"
               :key="provider.name"
               :href="cardHref(provider.name)"
               :class="cardClass"

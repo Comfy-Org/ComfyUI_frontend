@@ -2,6 +2,9 @@ import type { Locator, Page, WebSocketRoute } from '@playwright/test'
 import { expect } from '@playwright/test'
 import { z } from 'zod'
 
+import type { WorkflowListResponse } from '@comfyorg/ingest-types'
+import type { UserDataFullInfo } from '@/schemas/apiSchema'
+
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -202,6 +205,58 @@ class AgentConversationHarness {
 
     await this.page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
     await expect(this.panel).toBeVisible({ timeout: PANEL_MOUNT_TIMEOUT })
+    await this.selectWorkflowTarget()
+  }
+
+  private async selectWorkflowTarget(): Promise<void> {
+    let savedName: string | undefined
+    await this.page.route('**/api/userdata/*', (route) => {
+      const request = route.request()
+      const path = decodeURIComponent(
+        new URL(request.url()).pathname.split('/userdata/')[1]
+      )
+      if (request.method() !== 'POST' || !path.startsWith('workflows/'))
+        return route.fallback()
+      savedName = path.slice('workflows/'.length, -'.json'.length)
+      const saved: UserDataFullInfo = {
+        path,
+        modified: Date.now(),
+        size: request.postDataBuffer()?.length ?? 0
+      }
+      return route.fulfill(jsonRoute(saved))
+    })
+    await this.page.route('**/api/workflows?*', (route) => {
+      const workflows: WorkflowListResponse = {
+        data:
+          savedName === undefined
+            ? []
+            : [
+                {
+                  id: this.conversation.workflow.id,
+                  name: savedName,
+                  created_at: '2026-09-01T00:00:00Z',
+                  updated_at: '2026-09-01T00:00:00Z',
+                  created_by: 'test-user-e2e',
+                  latest_version: 1
+                }
+              ],
+        pagination: {
+          has_more: false,
+          limit: 100,
+          offset: 0,
+          total: savedName === undefined ? 0 : 1
+        }
+      }
+      return route.fulfill(jsonRoute(workflows))
+    })
+    const picker = this.panel.getByRole('button', {
+      name: enMessages.agent.switchWorkflow
+    })
+    await picker.click()
+    await this.page
+      .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
+      .click()
+    await expect(picker).toHaveText('Unsaved Workflow')
   }
 
   async sendPrompt(turn = 0): Promise<void> {
@@ -358,13 +413,15 @@ class AgentConversationHarness {
     before: PanelCounts
   ): Promise<void> {
     const expected = this.expectations[turn]
+    const apiBase = new URL('/api', this.page.url()).href.replace(/\/+$/, '')
+    const text = expected.text.replaceAll('{apiBase}', apiBase)
     await expect
       .poll(async () =>
         collapse(
           (await this.streams.allInnerTexts()).slice(before.streams).join(' ')
         )
       )
-      .toBe(expected.text)
+      .toBe(text)
 
     // A finished turn folds its tool calls into one closed summary; the
     // thinking rows it lists between them are not part of the recording.

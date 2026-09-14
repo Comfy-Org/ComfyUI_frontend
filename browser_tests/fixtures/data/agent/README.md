@@ -25,6 +25,40 @@ instructions, then run the recorder command below with one `--prompt` per
 turn. Replay the new case with the command in `browser_tests/README.md` under
 "Replay coverage for agent bug fixes" plus `-g <case id>`.
 
+## Playbook: record a case
+
+Prerequisites: the cloud checkout beside this repo with its own local stack up
+(`cloud up` there: Postgres on 54331, Redis on 6379), a ComfyUI backend on
+8188, `ANTHROPIC_API_KEY`, `COMFY_BIN` pointing at a comfy-cli that works
+without a home directory.
+
+1. Bring the recording stack up (Temporal engine so a turn can be cancelled):
+
+   ```bash
+   AGENT_MODEL=claude-opus-5 COMFY_BIN=~/.local/bin/comfy pnpm exec tsx scripts/dev-agent-integration.ts --record --engine temporal --catalog browser_tests/fixtures/data/agent/conversations/agent-rec-set-widget-existing.json --cloud-repo ../cloud --agent-port 8087 --doc-host-port 8096 --temporal-port 7234
+   ```
+
+2. Paste the recorder command it prints, filling `AGENT_MODEL`, the case id,
+   the seed fixture and one `--prompt` per turn (`--cancel-turn` and
+   `--cancel-after-ms` for a cancelled turn).
+
+3. Replay the new case:
+
+   Start the cloud-distribution frontend in one terminal:
+
+   ```bash
+   DISTRIBUTION=cloud DEV_SERVER_COMFYUI_URL=http://127.0.0.1:8188 pnpm dev
+   ```
+
+   Replay on its port from a second terminal:
+
+   ```bash
+   PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://localhost:5173 DISTRIBUTION=cloud pnpm exec playwright test browser_tests/tests/agent/agentConversationReplay.spec.ts --project=cloud -g agent-rec-SLUG
+   ```
+
+Sidecars (raw frames, rows, receipt) land in `conversations/recordings/`;
+commit only the fixture.
+
 ## Recording a conversation
 
 One command records a whole thread against a running agent, applies the gates
@@ -104,6 +138,46 @@ PLAYWRIGHT_TEST_URL=http://localhost:5173 DISTRIBUTION=cloud \
   pnpm exec playwright test browser_tests/tests/agent/agentConversationReplay.spec.ts \
   --project=cloud -g '<case-id>'
 ```
+
+## Import a Langfuse session
+
+A conversation that already ran on a hosted agent becomes the same fixture
+from its Langfuse trace, without re-recording:
+
+```bash
+AGENT_CLOUD_SHA=<cloud sha> pnpm exec tsx scripts/agentConversationFromLangfuse.ts <caseId> <seedFixture.json> --trace <traceId> --workflow <cloudWorkflowId> --out browser_tests/fixtures/data/agent/conversations/<caseId>.json
+```
+
+`--session <sessionId>` takes every trace of a session. Credentials come from
+`~/.config/comfy-agent/langfuse.env` (`LANGFUSE_HOST`, `LANGFUSE_PUBLIC_KEY`,
+`LANGFUSE_SECRET_KEY`; `--env-file` points elsewhere) and never reach an
+artifact.
+
+The importer reads what the agent's instrumentation emits (cloud
+`harness/telemetry/attrs.go`, `loop/host.go`): the turn span, marked
+`gen_ai.operation.name: invoke_agent`, carries `comfy.thread_id` and
+`comfy.turn_id` (the launch span above it carries the ids but no text); a tool
+span carries `gen_ai.tool.call.id`, `gen_ai.tool.name` and `comfy.tool.ok` and
+reaches its turn through `parentObservationId`; the turn's input and output
+exist only with content capture on. A turn without recorded output is refused;
+`--prompt` supplies turn inputs positionally from turn 1 and replaces the
+captured input at those positions. It rebuilds
+the tool-call and message frames, reads the audit rows with the recorder's own
+query (`AGENT_PG_EXEC` must reach that environment's Postgres), and runs the
+same assembly gates as a recording. So it imports a session whose audit
+database is still reachable, not any Langfuse session.
+
+UNVERIFIED until the first real trace: that `comfy.turn_id` is the message id
+the audit rows carry; that attributes arrive under `metadata.attributes` (a
+flattened `metadata` key is the fallback); that the page meta carries
+`totalPages` (a short page ends the walk otherwise).
+
+An import keeps `response_side: recorded`: the replies and accepted ops are the
+agent's, only the socket framing was rebuilt, and the replay suite lists
+recorded fixtures only. Thinking frames are absent; the trace does not carry
+them. The trace carries no active-tab frame either, so the importer rebuilds
+one for the opening turn (the `--workflow` id and the seed's name) for assembly
+to bind the workflow through.
 
 ## Capture
 

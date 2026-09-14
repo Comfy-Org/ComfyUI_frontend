@@ -75,6 +75,8 @@ const describedBy = computed(
 )
 
 function formatValue(value: string | number | boolean): string {
+  const optionLabel = field.presentation?.optionLabels?.[String(value)]
+  if (optionLabel) return optionLabel
   if (typeof value === 'boolean')
     return t(value ? 'workshop.field.on' : 'workshop.field.off', locale)
   if (value === 'auto' || value === 'adaptive')
@@ -82,7 +84,11 @@ function formatValue(value: string | number | boolean): string {
   const label =
     typeof value === 'number'
       ? new Intl.NumberFormat(locale).format(value)
-      : value
+      : field.kind === 'select'
+        ? value
+            .replace(/_/g, ' ')
+            .replace(/^[a-z]/, (letter) => letter.toUpperCase())
+        : value
   if (field.presentation?.unit !== 'seconds') return label
   const seconds =
     typeof value === 'string' && /^\d+(?:\.\d+)?s$/.test(value)
@@ -309,7 +315,7 @@ function booleanValue(fallback = false): boolean {
       <select
         :id="`field-${field.name}`"
         :value="selectValue()"
-        :disabled
+        :disabled="disabled || (field.options.length === 1 && !hasEmptyOption)"
         :aria-required="field.required || undefined"
         :aria-invalid="invalid()"
         :aria-describedby="describedBy"

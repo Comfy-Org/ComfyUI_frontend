@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { Download } from '@lucide/vue'
-import { useMounted, useTimestamp } from '@vueuse/core'
-import { computed, onMounted, onUnmounted, ref, useSlots, watch } from 'vue'
+import { Download, ExternalLink, Play } from '@lucide/vue'
+import { useEventListener, useMounted, useTimestamp } from '@vueuse/core'
+import { computed, onUnmounted, ref, useSlots, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
+import { useWorkshopFormDraft } from '../../composables/useWorkshopFormDraft'
+import { leaveForSignIn } from '../../config/workshop-return'
 import { useSignInHref } from '../../composables/useSignInHref'
 import { useTablist } from '../../composables/useTablist'
 import type { WorkshopModelDetail } from '../../config/models-catalogue'
@@ -15,28 +17,28 @@ import type {
   PlaygroundExample
 } from '../../config/workshop-playground'
 import {
-  defaultValues,
-  exampleValues,
-  examplesForModel,
   isVideoUrl,
-  restoreFormValues,
   schemaForModel,
-  urlUploadField,
   validateForm
 } from '../../config/workshop-playground'
+import {
+  initialWorkshopPageState,
+  workshopExampleState,
+  workshopPageSchema
+} from '../../config/workshop-page-state'
 import type { RunOutput, RunRecord, RunState } from '../../config/workshop-run'
 import { IDLE, transition } from '../../config/workshop-run'
 import {
   refreshWorkshopCredits,
   useWorkshopCredits
 } from '../../config/workshop-credits'
-import { WORKSHOP_CREDITS_URL } from '../../config/workshop-env'
-import { runWorkshopRouter } from '../../config/workshop-router'
-import { prepareWorkshopRouterInput } from '../../config/workshop-request'
+import { requestWorkshopBuyCredits } from '../../config/workshop-buy-credits'
+import { router_render } from '../../config/router-render'
 import { createWorkshopUrlUploader } from '../../config/workshop-url-upload'
 import { WorkshopRouterError } from '../../config/workshop-router-errors'
 import { releaseRouterOutputs } from '../../config/workshop-response'
 import { retainRunHistory } from '../../config/workshop-run-history'
+import { modelDocsHref } from '../../lib/workshop/model-docs'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import { workshopIdempotencyKey } from '../../config/workshop-snippets'
 import type { Locale, TranslationKey } from '../../i18n/translations'
@@ -82,13 +84,14 @@ const { onKeydown: onTabKeydown } = useTablist(
   activeSection
 )
 
-const examples = examplesForModel(model)
+const initialPageState = initialWorkshopPageState(model)
+const examples = initialPageState.examples
 // A workflow page describes one workflow, so the model's other examples would
 // be beside the point there.
 const showsExamples = computed(() => !slots.details && examples.length > 0)
-const firstExample = examples[0]
+const firstExample = initialPageState.firstExample
 const activeExample = ref<PlaygroundExample | undefined>(
-  firstExample?.fields && !firstExample.sampleOnly ? firstExample : undefined
+  initialPageState.activeExample
 )
 const activeExampleId = ref(firstExample?.id)
 const nativeJson = ref(false)
@@ -104,12 +107,7 @@ const schema = computed(() =>
           advancedFields: []
         }
       })
-    : schemaForModel({
-        fields: activeExample.value?.fields ?? model.fields,
-        modality: model.modality,
-        incompleteReason: model.incompleteReason,
-        form: activeExample.value?.fields ? undefined : model.form
-      })
+    : workshopPageSchema(model, activeExample.value)
 )
 
 function exampleOutput(example: PlaygroundExample): RunOutput {
@@ -127,11 +125,7 @@ function exampleOutput(example: PlaygroundExample): RunOutput {
   }
 }
 
-const fieldValues = ref<FormValues>(
-  firstExample && !firstExample.sampleOnly
-    ? exampleValues(schema.value, firstExample)
-    : defaultValues(schema.value, model.defaults)
-)
+const fieldValues = ref<FormValues>(initialPageState.values)
 const jsonValues = ref<FormValues>({
   request_body: JSON.stringify(
     model.execution?.inputSchema.example ?? {},
@@ -146,6 +140,13 @@ const values = computed<FormValues>({
     else fieldValues.value = value
   }
 })
+const { pending: draftPending, restoreFailed } = useWorkshopFormDraft(
+  model.slug,
+  schema,
+  values,
+  nativeJson,
+  !!model.execution && model.execution.inputs === undefined
+)
 const runState = ref<RunState>(
   firstExample
     ? { status: 'example', output: exampleOutput(firstExample) }
@@ -167,6 +168,8 @@ const authEnabled = useWorkshopAuthFlag()
 const authFlagSettled = useWorkshopAuthFlagSettled()
 const mounted = useMounted()
 const signInHref = useSignInHref(locale)
+const docsHref = modelDocsHref(model)
+
 const gate = computed(() => {
   if (
     model.incompleteReason ||
@@ -176,7 +179,8 @@ const gate = computed(() => {
     clone
   )
     return 'unavailable'
-  if (!mounted.value || !authFlagSettled.value) return 'pending'
+  if (!mounted.value || draftPending.value || !authFlagSettled.value)
+    return 'pending'
   if (!authEnabled.value || sessionFailure.value) return 'unavailable'
   if (!settled.value || (user.value && !session.value)) return 'pending'
   if (!session.value) return 'signedOut'
@@ -192,8 +196,85 @@ const errors = computed<FieldErrors>(() =>
   runState.value.status === 'failed' ? runState.value.fieldErrors : {}
 )
 const isRunning = computed(() => runState.value.status === 'running')
-const hasFileInputs = computed(() =>
-  schema.value.some((field) => field.kind === 'file' || urlUploadField(field))
+const protectedHistoryIndex = ref<number>()
+let approvedTraversal = false
+let restoringTraversal = false
+
+function historyIndex(state: unknown): number | undefined {
+  if (typeof state !== 'object' || state === null || !('index' in state))
+    return undefined
+  const index = Reflect.get(state, 'index')
+  return typeof index === 'number' && Number.isInteger(index)
+    ? index
+    : undefined
+}
+
+watch(
+  isRunning,
+  (running) => {
+    protectedHistoryIndex.value = running
+      ? historyIndex(globalThis.window?.history.state)
+      : undefined
+    approvedTraversal = false
+    restoringTraversal = false
+  },
+  { flush: 'sync' }
+)
+
+// A run in flight is money and minutes: leaving the page throws both away, so
+// the browser asks first. The listener only exists while the run does, since a
+// standing one costs the idle page its place in the back/forward cache.
+// globalThis.window, not window: on the server the island has neither.
+useEventListener(
+  () => (isRunning.value ? globalThis.window : undefined),
+  'beforeunload',
+  (event: BeforeUnloadEvent) => event.preventDefault()
+)
+
+// Browser history moves before popstate. Intercept it ahead of Astro's bubble
+// listener: declining restores the prior entry without unmounting this island;
+// accepting lets Astro finish the traversal and cancel the run on unmount.
+useEventListener(
+  () => (isRunning.value ? globalThis.window : undefined),
+  'popstate',
+  (event: PopStateEvent) => {
+    if (restoringTraversal) {
+      restoringTraversal = false
+      event.stopImmediatePropagation()
+      return
+    }
+    const from = protectedHistoryIndex.value
+    const to = historyIndex(event.state)
+    if (from === undefined || to === undefined || from === to) return
+    if (globalThis.window.confirm(t('workshop.run.leavePage', locale))) {
+      protectedHistoryIndex.value = to
+      approvedTraversal = true
+      queueMicrotask(() => {
+        approvedTraversal = false
+      })
+      return
+    }
+    event.stopImmediatePropagation()
+    restoringTraversal = true
+    globalThis.window.history.go(from - to)
+  },
+  { capture: true }
+)
+
+// A push/replace has not moved history yet, so native fallback is safe and the
+// beforeunload guard owns its confirmation. An approved traversal is the one
+// exception: it was already confirmed in the capture-phase popstate handler.
+useEventListener(
+  () => (isRunning.value ? globalThis.document : undefined),
+  'astro:before-preparation',
+  (event: Event) => {
+    const navigationType = Reflect.get(event, 'navigationType')
+    if (navigationType === 'traverse' && approvedTraversal) {
+      approvedTraversal = false
+      return
+    }
+    event.preventDefault()
+  }
 )
 const requestId = ref<string | null>(null)
 let controller: AbortController | undefined
@@ -208,9 +289,23 @@ function cancelRun() {
   runState.value = transition(runState.value, { type: 'cancel' })
 }
 
+const personalSwitchPending = ref(false)
+const personalSwitchError = ref(false)
 async function switchToPersonal() {
-  const result = await remint()
-  if (result?.status === 'ok') await refreshWorkshopCredits({ force: true })
+  if (personalSwitchPending.value) return
+  personalSwitchPending.value = true
+  personalSwitchError.value = false
+  try {
+    const result = await remint(undefined, {
+      preserveCredentialOnTransientFailure: true
+    })
+    if (result?.status === 'ok') await refreshWorkshopCredits({ force: true })
+    else if (result?.status === 'error') personalSwitchError.value = true
+  } catch {
+    personalSwitchError.value = true
+  } finally {
+    personalSwitchPending.value = false
+  }
 }
 
 onUnmounted(() => {
@@ -266,38 +361,37 @@ async function run() {
     return credential.session
   }
   try {
-    const body = await prepareWorkshopRouterInput(
-      model.execution,
-      values.value,
-      active.signal,
-      undefined,
-      async (file, signal) => {
-        const credential = await freshCredential()
-        return uploadUrl(
-          file,
-          credential.token,
-          JSON.stringify([startedFor.uid, startedFor.workspace.id]),
-          signal
-        )
+    const result = await router_render(
+      model.slug,
+      {},
+      {
+        model,
+        form: { schema: schema.value, values: values.value },
+        signal: active.signal,
+        token: async () => (await freshCredential()).token,
+        uploadFile: async (file, signal) => {
+          const credential = await freshCredential()
+          return uploadUrl(
+            file,
+            credential.token,
+            JSON.stringify([startedFor.uid, startedFor.workspace.id]),
+            signal
+          )
+        },
+        idempotencyKey: (body) => {
+          const fingerprint = JSON.stringify([
+            startedFor.uid,
+            startedFor.workspace.id,
+            model.routerId,
+            body
+          ])
+          if (pendingRequest?.fingerprint !== fingerprint) {
+            pendingRequest = { fingerprint, key: workshopIdempotencyKey() }
+          }
+          return pendingRequest.key
+        }
       }
     )
-    const credential = await freshCredential()
-    const fingerprint = JSON.stringify([
-      startedFor.uid,
-      startedFor.workspace.id,
-      model.routerId,
-      body
-    ])
-    if (pendingRequest?.fingerprint !== fingerprint) {
-      pendingRequest = { fingerprint, key: workshopIdempotencyKey() }
-    }
-    const result = await runWorkshopRouter({
-      contract: model.execution,
-      body,
-      token: credential.token,
-      idempotencyKey: pendingRequest.key,
-      signal: active.signal
-    })
     if (controller !== active || active.signal.aborted) {
       releaseRouterOutputs(result.outputs)
       return
@@ -338,58 +432,17 @@ async function run() {
   }
 }
 
-// Keeps the form intact across a sign-in or a top-up round trip.
-const storageKey = `comfy-workshop-form:${model.slug}`
-onMounted(() => {
-  try {
-    nativeJson.value =
-      !!model.execution &&
-      model.execution.inputs === undefined &&
-      sessionStorage.getItem(`${storageKey}:mode`) === 'json'
-    const stored = sessionStorage.getItem(storageKey)
-    if (stored) {
-      const parsed: unknown = JSON.parse(stored)
-      values.value = {
-        ...values.value,
-        ...restoreFormValues(schema.value, parsed)
-      }
-    }
-  } catch {
-    /* storage unavailable */
-  }
-})
-watch(
-  values,
-  (next) => {
-    try {
-      const persistable = Object.fromEntries(
-        Object.entries(next)
-          .filter(([, value]) => typeof value !== 'object')
-          .map(([name, value]) => [name, value === undefined ? null : value])
-      )
-      sessionStorage.setItem(storageKey, JSON.stringify(persistable))
-      sessionStorage.setItem(
-        `${storageKey}:mode`,
-        nativeJson.value ? 'json' : 'form'
-      )
-    } catch {
-      /* storage unavailable */
-    }
-  },
-  { deep: true }
-)
-
 function reset() {
   cancelRun()
   runState.value = IDLE
 }
 
 function openExample(example: PlaygroundExample) {
-  if (isRunning.value) return
+  if (isRunning.value || draftPending.value) return
   if (!example.sampleOnly) {
     nativeJson.value = false
     activeExample.value = example.fields ? example : undefined
-    values.value = exampleValues(schema.value, example)
+    values.value = workshopExampleState(model, example).values
   }
   activeExampleId.value = example.id
   runState.value = { status: 'example', output: exampleOutput(example) }
@@ -404,34 +457,49 @@ function useInCode() {
 <template>
   <div class="flex flex-col gap-10" data-testid="model-detail">
     <div
-      role="tablist"
-      :aria-label="t('workshop.title', locale)"
-      class="flex scrollbar-hide gap-8 overflow-x-auto border-b border-transparency-white-t8 max-sm:gap-5"
-      data-testid="model-tabs"
-      @keydown="onTabKeydown"
+      class="flex items-center gap-8 border-b border-transparency-white-t8 max-sm:gap-5"
     >
-      <button
-        v-for="section in sections"
-        :id="`tab-${section}`"
-        :key="section"
-        type="button"
-        role="tab"
-        :aria-selected="section === activeSection"
-        :aria-controls="`panel-${section}`"
-        :tabindex="section === activeSection ? 0 : -1"
-        :data-testid="`tab-${section}`"
-        :class="
-          cn(
-            'cursor-pointer border-b-2 pb-3 text-sm font-bold tracking-wider uppercase transition-colors',
-            section === activeSection
-              ? 'border-primary-comfy-yellow text-primary-warm-white'
-              : 'border-transparent text-primary-warm-gray hover:text-primary-warm-white'
-          )
-        "
-        @click="activeSection = section"
+      <div
+        role="tablist"
+        :aria-label="t('workshop.title', locale)"
+        class="flex scrollbar-hide min-w-0 gap-8 overflow-x-auto max-sm:gap-5"
+        data-testid="model-tabs"
+        @keydown="onTabKeydown"
       >
-        {{ t(sectionLabel[section], locale) }}
-      </button>
+        <button
+          v-for="section in sections"
+          :id="`tab-${section}`"
+          :key="section"
+          type="button"
+          role="tab"
+          :aria-selected="section === activeSection"
+          :aria-controls="`panel-${section}`"
+          :tabindex="section === activeSection ? 0 : -1"
+          :data-testid="`tab-${section}`"
+          :class="
+            cn(
+              'cursor-pointer border-b-2 pb-3 text-sm font-bold tracking-wider uppercase transition-colors',
+              section === activeSection
+                ? 'border-primary-comfy-yellow text-primary-warm-white'
+                : 'border-transparent text-primary-warm-gray hover:text-primary-warm-white'
+            )
+          "
+          @click="activeSection = section"
+        >
+          {{ t(sectionLabel[section], locale) }}
+        </button>
+      </div>
+      <a
+        v-if="docsHref"
+        :href="docsHref"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="hover:text-primary-comfy-yellow ml-auto inline-flex shrink-0 items-center gap-1.5 pb-3 text-sm font-bold tracking-wider whitespace-nowrap text-primary-warm-white uppercase transition-colors"
+        data-testid="model-docs-link"
+      >
+        {{ t('workshop.hub.docs', locale) }}
+        <ExternalLink class="size-4" aria-hidden="true" />
+      </a>
     </div>
 
     <section
@@ -458,7 +526,7 @@ function useInCode() {
             "
             type="button"
             :aria-pressed="nativeJson"
-            :disabled="isRunning"
+            :disabled="isRunning || draftPending"
             class="cursor-pointer rounded-sm px-2 py-1 hover:bg-transparency-white-t8 disabled:cursor-not-allowed"
             @click="nativeJson = !nativeJson"
           >
@@ -483,14 +551,15 @@ function useInCode() {
             :schema
             :errors
             :locale
-            :disabled="isRunning"
-            :file-uploads-disabled="!mounted || !session"
+            :disabled="isRunning || draftPending"
+            :file-uploads-disabled="!mounted"
           />
           <p
-            v-if="hasFileInputs && gate === 'signedOut'"
+            v-if="restoreFailed"
+            role="status"
             class="text-sm text-primary-warm-gray"
           >
-            {{ t('workshop.form.signInBeforeUpload', locale) }}
+            {{ t('workshop.form.draftRestoreFailed', locale) }}
           </p>
         </div>
 
@@ -507,30 +576,78 @@ function useInCode() {
             class="w-full px-5"
             data-testid="run-button"
             data-gate="signedOut"
+            @click="leaveForSignIn($event, signInHref)"
           >
             {{ t('workshop.run.signIn', locale) }}
           </Button>
-          <Button
-            v-else-if="gate === 'noCredits'"
-            as="a"
-            :href="WORKSHOP_CREDITS_URL"
-            target="_blank"
-            rel="noopener noreferrer"
-            size="lg"
-            class="w-full px-5"
-            data-testid="run-button"
-            data-gate="noCredits"
-          >
-            {{ t('nav.buyCredits', locale) }}
-          </Button>
-          <Button
-            v-else-if="gate === 'memberNoCredits'"
-            size="lg"
-            class="w-full px-5"
-            @click="switchToPersonal"
-          >
-            {{ t('workshop.run.switchPersonal', locale) }}
-          </Button>
+          <!-- The MVP rail (DES-1015): buying happens on platform, in a new
+               tab, so this page and its inputs stay alive and the return is a
+               balance re-read. Naming the workspace is what makes topping up
+               the wrong wallet visible before it happens. -->
+          <template v-else-if="gate === 'noCredits'">
+            <div class="mb-2 flex flex-col gap-1" data-testid="gate-note">
+              <p class="text-sm font-bold text-primary-warm-white">
+                {{ t('workshop.error.creditsTitle', locale) }}
+              </p>
+              <p class="text-xs text-primary-warm-gray">
+                {{
+                  t('workshop.error.noCreditsCloud', locale).replace(
+                    '{workspace}',
+                    () => session?.workspace.name ?? ''
+                  )
+                }}
+              </p>
+            </div>
+            <Button
+              size="lg"
+              class="w-full px-5"
+              data-testid="run-button"
+              data-gate="noCredits"
+              @click="requestWorkshopBuyCredits"
+            >
+              {{ t('workshop.run.buyCredits', locale) }}
+            </Button>
+          </template>
+          <template v-else-if="gate === 'memberNoCredits'">
+            <div class="mb-2 flex flex-col gap-1" data-testid="gate-note">
+              <p class="text-sm font-bold text-primary-warm-white">
+                {{ t('workshop.error.creditsTitle', locale) }}
+              </p>
+              <p class="text-xs text-primary-warm-gray">
+                {{
+                  t('workshop.error.memberNoCredits', locale).replace(
+                    '{workspace}',
+                    () => session?.workspace.name ?? ''
+                  )
+                }}
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="lg"
+              class="w-full px-5"
+              :disabled="personalSwitchPending"
+              data-testid="run-button"
+              data-gate="memberNoCredits"
+              @click="switchToPersonal"
+            >
+              {{
+                t(
+                  personalSwitchPending
+                    ? 'workshop.run.preparingSession'
+                    : 'workshop.run.switchPersonal',
+                  locale
+                )
+              }}
+            </Button>
+            <p
+              v-if="personalSwitchError"
+              class="text-xs text-red-400"
+              role="alert"
+            >
+              {{ t('nav.workspaceSwitchError', locale) }}
+            </p>
+          </template>
           <Button
             v-else-if="gate === 'ready'"
             size="lg"
@@ -539,6 +656,9 @@ function useInCode() {
             data-gate="ready"
             @click="isRunning ? cancelRun() : run()"
           >
+            <template v-if="!isRunning" #prepend>
+              <Play class="size-5 fill-current" aria-hidden="true" />
+            </template>
             {{
               t(isRunning ? 'workshop.run.cancel' : 'workshop.run.run', locale)
             }}
@@ -562,20 +682,6 @@ function useInCode() {
               )
             }}
           </Button>
-          <p
-            v-if="gate === 'noCredits' || gate === 'memberNoCredits'"
-            role="status"
-            class="text-center text-sm text-primary-warm-gray"
-          >
-            {{
-              gate === 'memberNoCredits'
-                ? t('workshop.error.memberNoCredits', locale).replace(
-                    '{workspace}',
-                    session?.workspace.name ?? ''
-                  )
-                : t('workshop.error.noCredits', locale)
-            }}
-          </p>
         </div>
       </div>
 
@@ -594,6 +700,7 @@ function useInCode() {
             session?.role === 'member' ? session.workspace.name : undefined
           "
           @switch-personal="switchToPersonal"
+          @buy-credits="requestWorkshopBuyCredits"
           @retry="gate === 'ready' ? run() : reset()"
           @use-in-code="useInCode"
         />

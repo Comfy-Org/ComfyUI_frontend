@@ -1,4 +1,5 @@
-import type { AxiosStatic } from 'axios'
+import { fromPartial } from '@total-typescript/shoehorn'
+import axios from 'axios'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -36,37 +37,23 @@ function createMockAssetItem(overrides: Partial<AssetItem> = {}): AssetItem {
 }
 
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
-const mockRemoteGet = vi.hoisted(() => vi.fn())
-
-vi.mock<unknown>(import('axios'), async (importOriginal) => {
-  const actual = await importOriginal<{ default: AxiosStatic }>()
-  return { default: { ...actual.default, get: mockRemoteGet } }
-})
 
 vi.mock(import('@/scripts/widgets'), () => ({
   addValueControlWidgets: vi.fn()
 }))
 
-vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
-  ...(await importOriginal()),
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockDistributionState.isCloud
   }
 }))
 
-vi.mock(import('@/composables/useFeatureFlags'), async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    useFeatureFlags: () => {
-      const featureFlags = actual.useFeatureFlags()
-      return {
-        ...featureFlags,
-        flags: { ...featureFlags.flags, assetsEnabled: false }
-      }
-    }
-  }
-})
+vi.mock(import('@/composables/useFeatureFlags'), () => ({
+  useFeatureFlags: () =>
+    fromPartial({
+      flags: { assetsEnabled: false }
+    })
+}))
 
 vi.mock(import('@/i18n'), () => ({
   t: vi.fn((key: string) =>
@@ -185,7 +172,7 @@ describe('useComboWidget', () => {
   })
 
   it('settles the first-load lifecycle before judging a restored remote value', async () => {
-    mockRemoteGet.mockResolvedValue({ data: ['other.safetensors'] })
+    vi.spyOn(axios, 'get').mockResolvedValue({ data: ['other.safetensors'] })
     const graph = new LGraph()
     const node = createMockNode('RemoteFileNode')
     Object.defineProperty(node, 'type', { value: 'RemoteFileNode' })

@@ -1,15 +1,8 @@
-import { z } from 'astro/zod'
-
 import type { Model } from './models'
 import type { WorkshopFormDefinition } from './workshop-form-definition'
 import type { WorkshopContract } from './workshop-contract'
 import type { WorkshopInputDefinition } from './workshop-input-definition'
-import { workshopInputDefinitionSchema } from './workshop-input-definition'
 import { OTHER_FORMAT_USE_CASES } from './workshop-sections'
-import {
-  routerWorkshopModels,
-  routerModelSlugAliases
-} from './workshop-browse-content'
 
 export const MODALITIES = ['image', 'video', 'audio', '3d', 'text'] as const
 export type Modality = (typeof MODALITIES)[number]
@@ -110,7 +103,7 @@ export interface GeneratedExample {
   readonly values: WorkshopExampleValues
 }
 
-interface GeneratedModel {
+export interface GeneratedModel {
   readonly thumbnailUrl?: string
   readonly provider?: string
   readonly modality?: Modality
@@ -125,6 +118,7 @@ export interface WorkshopModel {
   readonly slug: string
   readonly name: string
   readonly workflowCount: number
+  readonly recommendedRank?: number
   readonly href: string
   readonly routerId: string
   readonly incompleteReason?: 'missing-input-schema'
@@ -156,92 +150,6 @@ export interface WorkshopModelDetail extends WorkshopModel {
   readonly examples: readonly GeneratedExample[]
 }
 
-const scalar = z.union([z.string(), z.number(), z.boolean()])
-const schemaObject = z.record(z.string(), z.json())
-const formValues = z.record(z.string(), z.union([scalar, z.array(z.string())]))
-const fieldBase = z.object({
-  name: z.string(),
-  label: z.string(),
-  hint: z.string().optional(),
-  advanced: z.boolean().optional(),
-  advancedIndex: z.number().int().nonnegative().optional(),
-  required: z.boolean().optional(),
-  inputSchema: schemaObject.optional(),
-  presentation: workshopInputDefinitionSchema.optional()
-})
-const generatedField = z.discriminatedUnion('kind', [
-  fieldBase.extend({
-    kind: z.literal('text'),
-    multiline: z.boolean(),
-    required: z.boolean(),
-    default: z.string().optional(),
-    valueType: z.enum(['string', 'json']).optional(),
-    jsonSchema: schemaObject.optional(),
-    suggestions: z.array(scalar).optional(),
-    minLength: z.number().int().nonnegative().optional(),
-    maxLength: z.number().int().nonnegative().optional()
-  }),
-  fieldBase.extend({
-    kind: z.literal('number'),
-    min: z.number().optional(),
-    max: z.number().optional(),
-    step: z.union([z.number().positive(), z.literal('any')]),
-    default: z.number().optional()
-  }),
-  fieldBase.extend({
-    kind: z.literal('select'),
-    options: z.array(scalar).min(1),
-    default: scalar.optional()
-  }),
-  fieldBase.extend({
-    kind: z.literal('toggle'),
-    default: z.boolean().optional()
-  }),
-  fieldBase.extend({
-    kind: z.literal('file'),
-    accept: z.enum(['image', 'video', 'audio', 'file']),
-    mimeTypes: z.array(z.string()).optional(),
-    required: z.boolean(),
-    multiple: z.boolean().optional(),
-    maxItems: z.number().int().positive().optional()
-  })
-])
-const node = z.object({ id: z.string(), displayName: z.string() })
-const generatedExample = z.object({
-  name: z.string(),
-  title: z.string(),
-  description: z.string(),
-  tags: z.array(z.string()),
-  thumbnailUrl: z.string(),
-  mediaKind: z.enum(['image', 'video', 'audio']).optional(),
-  sampleOnly: z.boolean().optional(),
-  node: node.optional(),
-  fields: z.array(generatedField).optional(),
-  values: formValues
-})
-const generatedModel = z.object({
-  thumbnailUrl: z.string().optional(),
-  provider: z.string().optional(),
-  modality: z.enum(MODALITIES).optional(),
-  priceUsdFrom: z.number().nonnegative().optional(),
-  node: node.extend({ template: z.string() }).optional(),
-  fields: z.array(generatedField),
-  defaults: formValues,
-  examples: z.array(generatedExample)
-})
-
-export function decodeGeneratedModels(
-  manifest: unknown
-): Record<string, GeneratedModel | undefined> {
-  const parsed = z.record(z.string(), z.unknown()).safeParse(manifest)
-  if (!parsed.success) return {}
-  return Object.fromEntries(
-    Object.entries(parsed.data).flatMap(([key, raw]) => {
-      const entry = generatedModel.safeParse(raw)
-      return entry.success ? [[key, entry.data]] : []
-    })
-  )
-}
 // makes it image/video/audio-to-X, anything else is text-to-X.
 export function taskFor(
   fields: readonly GeneratedField[],
@@ -271,8 +179,8 @@ export function splitTask(
 export const USE_CASES = [
   'generate-images',
   'edit-images',
-  'animate-images',
   'generate-videos',
+  'animate-images',
   'edit-videos',
   'text',
   '3d',
@@ -383,13 +291,6 @@ export function isRouterModel(model: Model): boolean {
   return (
     model.directory === 'partner_nodes' && model.canonicalSlug === undefined
   )
-}
-
-export const workshopModels: readonly WorkshopModel[] = routerWorkshopModels
-
-export function getWorkshopModel(slug: string): WorkshopModel | undefined {
-  const canonical = routerModelSlugAliases.get(slug) ?? slug
-  return workshopModels.find((model) => model.slug === canonical)
 }
 
 export function modalityOf(
@@ -506,11 +407,20 @@ export function sortWorkshopModels(
 ): WorkshopModel[] {
   const byName = (a: WorkshopModel, b: WorkshopModel) =>
     a.name.localeCompare(b.name)
+  const byExamples = (a: WorkshopModel, b: WorkshopModel) =>
+    b.workflowCount - a.workflowCount || byName(a, b)
+  const byRecommendation = (a: WorkshopModel, b: WorkshopModel) => {
+    if (a.recommendedRank !== undefined && b.recommendedRank !== undefined)
+      return a.recommendedRank - b.recommendedRank || byExamples(a, b)
+    if (a.recommendedRank !== undefined) return -1
+    if (b.recommendedRank !== undefined) return 1
+    return byExamples(a, b)
+  }
   const compare: Record<
     SortOrder,
     (a: WorkshopModel, b: WorkshopModel) => number
   > = {
-    popular: (a, b) => b.workflowCount - a.workflowCount || byName(a, b),
+    popular: byRecommendation,
     name: byName,
     priceAsc: (a, b) =>
       (a.creditsPerRun ?? Number.POSITIVE_INFINITY) -

@@ -7,6 +7,8 @@ import { readdir, rm } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
 
+import { workshopClientBoundary } from './workshop-client-boundary'
+
 import {
   assertWorkshopCloudEnvForBuild,
   isWorkshopInBuild,
@@ -40,7 +42,8 @@ export function modelsBuildRoutes(enabled: boolean) {
  * earlier attempt filtered the route list at `astro:routes:resolved`, which
  * does not work: that hook reports the resolved routes, and mutating the
  * array does not stop them being generated. Deleting the output is
- * unambiguous. These checks cover route output, not shared CSS or translations.
+ * unambiguous. The client build rejects bundled catalogue modules when disabled;
+ * shared CSS and translations are not covered by that catalogue boundary.
  *
  * Preview builds are release builds too — a preview answers "what goes out if
  * we release right now?", so it excludes Models detail routes for the same reason.
@@ -56,7 +59,8 @@ export function workshopReleaseGate(): AstroIntegration {
   return {
     name: 'workshop-release-gate',
     hooks: {
-      'astro:config:setup': ({ injectRoute }) => {
+      'astro:config:setup': ({ injectRoute, updateConfig }) => {
+        updateConfig({ vite: { plugins: [workshopClientBoundary()] } })
         for (const route of modelsBuildRoutes(isWorkshopInBuild()))
           injectRoute(route)
       },

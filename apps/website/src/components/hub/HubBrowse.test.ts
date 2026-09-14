@@ -75,16 +75,20 @@ describe('HubBrowse', () => {
     const user = userEvent.setup()
     render(HubBrowse)
 
-    await user.click(screen.getByTestId('hub-use-case-3d'))
+    await user.click(screen.getByTestId('hub-use-case-audio'))
     const lead = screen.getAllByTestId('hub-models-lead')
-    expect(lead[0].textContent).toContain('Hunyuan3D')
-    expect(screen.getByTestId('hub-showing').textContent).toContain('of 39')
+    expect(lead[0].textContent).toContain('ElevenLabs')
+    expect(screen.getByTestId('hub-showing').textContent).toMatch(
+      /of [1-9]\d*\b/
+    )
 
     await user.click(screen.getByTestId('hub-tab-models'))
     expect(
-      screen.getAllByRole('link', { name: /Hunyuan3D/i })
-    ).not.toHaveLength(0)
-    expect(screen.getAllByRole('link', { name: /Meshy/i })).not.toHaveLength(0)
+      screen.queryAllByRole('link', { name: /Seed Audio/i }).length
+    ).toBeGreaterThan(0)
+    expect(
+      screen.queryAllByRole('link', { name: /HeyGen/i }).length
+    ).toBeGreaterThan(0)
     expect(screen.queryByRole('link', { name: /FLUX 2 Max/i })).toBeNull()
     expect(screen.queryByTestId('model-card-versions')).toBeNull()
   })

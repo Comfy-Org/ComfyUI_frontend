@@ -5,7 +5,8 @@ import type {
   AccountUser,
   CredentialStorage,
   CrossTabRefreshPort,
-  SessionClientOptions
+  SessionClientOptions,
+  SessionSnapshot
 } from './session.js'
 import { createTestIdentity } from '../testing.js'
 import { createSessionClient } from './session.js'
@@ -507,6 +508,56 @@ describe('opt-in refresh scheduler', () => {
       fetchImpl,
       'valid-on-read hosts opted into no timers'
     ).toHaveBeenCalledOnce()
+  })
+
+  it('does not republish when a reactive caller joins a mint the scheduler already committed', async () => {
+    let releaseScheduled!: (response: Response) => void
+    let minted = 0
+    const fetchImpl = vi.fn<typeof fetch>(() => {
+      minted += 1
+      return minted === 1
+        ? Promise.resolve(mintResponse('jwt-1'))
+        : new Promise<Response>((resolve) => (releaseScheduled = resolve))
+    })
+    const client = makeClient({ fetchImpl })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+    identity.fire(testUser())
+    await vi.waitFor(() => {
+      expect(client.getToken()).toBe('jwt-1')
+    })
+
+    await vi.advanceTimersByTimeAsync(
+      NINETY_MINUTES_MS - DEFAULT_BUFFER_MS + 10
+    )
+    await vi.waitFor(() => {
+      expect(fetchImpl).toHaveBeenCalledTimes(2)
+    })
+
+    const joiner = client.ensureFresh(testUser(), {})
+
+    let authenticatedJwt2 = 0
+    const unsubscribe = client.subscribe((snapshot) => {
+      if (
+        snapshot.phase === 'authenticated' &&
+        snapshot.session.token === 'jwt-2'
+      ) {
+        authenticatedJwt2 += 1
+      }
+    })
+
+    releaseScheduled(mintResponse('jwt-2'))
+    const joined = await joiner
+    unsubscribe()
+
+    expect(
+      joined,
+      'a joiner resolves to the committed session, not undefined, after the scheduler mints it'
+    ).toMatchObject({ status: 'ok', session: { token: 'jwt-2' } })
+    expect(
+      authenticatedJwt2,
+      'one mint has a single commit owner; a joiner returns the committed result without republishing it'
+    ).toBe(1)
   })
 })
 
@@ -1067,5 +1118,165 @@ describe('cross-tab refresh coordination', () => {
       client.getToken(),
       'a late own mint resolving after an adoption must not overwrite it'
     ).toBe('jwt-from-leader')
+  })
+
+  it('never adopts a broadcast credential with a non-finite expiry', async () => {
+    const fetchImpl = vi.fn<typeof fetch>(async () => mintResponse('jwt-own'))
+    const tab = fakeCrossTabPort()
+    const client = makeClient({
+      fetchImpl,
+      refreshScheduler: { crossTab: { port: tab.port } }
+    })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port)
+
+    identity.fire(testUser())
+    await vi.waitFor(() => {
+      expect(client.getToken()).toBe('jwt-own')
+    })
+
+    tab.receive(
+      publishedCredential({
+        token: 'jwt-immortal',
+        expiresAt: Number.POSITIVE_INFINITY
+      })
+    )
+
+    expect(
+      client.getToken(),
+      'a non-finite expiry can never lapse; a broadcast carrying one must never replace a good credential'
+    ).toBe('jwt-own')
+  })
+
+  it('a committed mint survives a throwing credential publish and still reaches subscribers', async () => {
+    let minted = 0
+    const fetchImpl = vi.fn<typeof fetch>(async () =>
+      mintResponse(`jwt-${(minted += 1)}`)
+    )
+    const port: CrossTabRefreshPort = {
+      requestLeadership: (_key, onAcquired) => {
+        onAcquired()
+        return vi.fn()
+      },
+      publishCredential: () => {
+        throw new Error('postMessage failed')
+      },
+      onCredential: () => vi.fn()
+    }
+    const snapshots: SessionSnapshot[] = []
+    const client = makeClient({
+      fetchImpl,
+      refreshScheduler: { crossTab: { port } }
+    })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port, { autoMint: false })
+    client.subscribe((snapshot) => snapshots.push(snapshot))
+
+    identity.fire(testUser())
+
+    await expect(
+      client.ensureFresh(),
+      'a failing sibling publish must not reject a mint whose credential already committed'
+    ).resolves.toMatchObject({ status: 'ok' })
+    expect(
+      snapshots.at(-1),
+      'the committed credential must still reach subscribers after the publish throws'
+    ).toMatchObject({ phase: 'authenticated', session: { token: 'jwt-1' } })
+
+    await vi.advanceTimersByTimeAsync(
+      NINETY_MINUTES_MS - DEFAULT_BUFFER_MS + 10
+    )
+    expect(
+      client.getToken(),
+      'the scheduler keeps rotating despite the throwing publish port'
+    ).toBe('jwt-2')
+  })
+
+  it('a committed mint survives a throwing coordination setup and degrades to per-tab scheduling', async () => {
+    let minted = 0
+    const fetchImpl = vi.fn<typeof fetch>(async () =>
+      mintResponse(`jwt-${(minted += 1)}`)
+    )
+    const stopCredentialFeed = vi.fn()
+    const port: CrossTabRefreshPort = {
+      requestLeadership: () => {
+        throw new Error('locks.request threw')
+      },
+      publishCredential: vi.fn(),
+      onCredential: () => stopCredentialFeed
+    }
+    const snapshots: SessionSnapshot[] = []
+    const client = makeClient({
+      fetchImpl,
+      refreshScheduler: { crossTab: { port } }
+    })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port, { autoMint: false })
+    client.subscribe((snapshot) => snapshots.push(snapshot))
+
+    identity.fire(testUser())
+
+    await expect(
+      client.ensureFresh(),
+      'a throwing leadership request must not reject a mint whose credential already committed'
+    ).resolves.toMatchObject({ status: 'ok' })
+    expect(
+      stopCredentialFeed,
+      'setup-failure teardown must remove the listener it installed before the throw'
+    ).toHaveBeenCalled()
+    expect(
+      snapshots.at(-1),
+      'the committed credential must still reach subscribers after coordination setup throws'
+    ).toMatchObject({ phase: 'authenticated', session: { token: 'jwt-1' } })
+
+    await vi.advanceTimersByTimeAsync(
+      NINETY_MINUTES_MS - DEFAULT_BUFFER_MS + 10
+    )
+    expect(
+      client.getToken(),
+      'a failed coordination setup degrades this tab to per-tab scheduling and keeps rotating'
+    ).toBe('jwt-2')
+  })
+
+  it('a throwing cleanup callback during setup-failure teardown still degrades to per-tab scheduling', async () => {
+    let minted = 0
+    const fetchImpl = vi.fn<typeof fetch>(async () =>
+      mintResponse(`jwt-${(minted += 1)}`)
+    )
+    const stopCredentialFeed = vi.fn(() => {
+      throw new Error('removeEventListener threw')
+    })
+    const port: CrossTabRefreshPort = {
+      requestLeadership: () => {
+        throw new Error('locks.request threw')
+      },
+      publishCredential: vi.fn(),
+      onCredential: () => stopCredentialFeed
+    }
+    const client = makeClient({
+      fetchImpl,
+      refreshScheduler: { crossTab: { port } }
+    })
+    const identity = manualIdentity()
+    client.attachIdentity(identity.port, { autoMint: false })
+
+    identity.fire(testUser())
+
+    await expect(
+      client.ensureFresh(),
+      'a throwing cleanup callback must not abort the standalone fallback'
+    ).resolves.toMatchObject({ status: 'ok' })
+    expect(
+      stopCredentialFeed,
+      'setup-failure teardown still runs the listener disposer even when it throws'
+    ).toHaveBeenCalled()
+
+    await vi.advanceTimersByTimeAsync(
+      NINETY_MINUTES_MS - DEFAULT_BUFFER_MS + 10
+    )
+    expect(
+      client.getToken(),
+      'an isolated disposer throw still leaves this tab leading its own schedule'
+    ).toBe('jwt-2')
   })
 })

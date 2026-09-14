@@ -238,6 +238,7 @@ export function curateWorkshopInputs(
       control: controlFor(name, effective, rule.control),
       ...(defaultSource ? { defaultSource } : {}),
       ...(rule.unit ? { unit: rule.unit } : {}),
+      ...(rule.optionLabels ? { optionLabels: rule.optionLabels } : {}),
       ...(rule.imageSource ? { imageSource: rule.imageSource } : {}),
       ...(rule.urlUpload ? { urlUpload: rule.urlUpload } : {})
     })
