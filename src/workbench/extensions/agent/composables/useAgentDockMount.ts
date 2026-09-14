@@ -1,10 +1,16 @@
-import type { Component, ComputedRef } from 'vue'
-import { computed, defineAsyncComponent } from 'vue'
+import type { Component, ComputedRef, Ref } from 'vue'
+import { computed, defineAsyncComponent, ref, watch } from 'vue'
 
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 interface AgentDockMount {
   docked: ComputedRef<boolean>
+  /**
+   * Latches on the first dock and never clears, so the panel stays mounted
+   * across closes and can play its own leave transition. Before that first
+   * open it is false, which is what keeps the chunk unrequested.
+   */
+  everDocked: Ref<boolean>
   DockedAgentPanel: Component | null
 }
 
@@ -21,11 +27,26 @@ export function useAgentDockMount(): AgentDockMount {
     __DISTRIBUTION__ !== 'cloud' &&
     import.meta.env.VITE_AGENT_STANDALONE !== 'true'
   ) {
-    return { docked: computed(() => false), DockedAgentPanel: null }
+    return {
+      docked: computed(() => false),
+      everDocked: ref(false),
+      DockedAgentPanel: null
+    }
   }
   const agentPanelStore = useAgentPanelStore()
+  const docked = computed(() => agentPanelStore.isVisible)
+  const everDocked = ref(false)
+  watch(
+    docked,
+    (value) => {
+      if (value) everDocked.value = true
+    },
+    { immediate: true }
+  )
+
   return {
-    docked: computed(() => agentPanelStore.isVisible),
+    docked,
+    everDocked,
     DockedAgentPanel: defineAsyncComponent(
       () =>
         import('@/workbench/extensions/agent/components/agent/DockedAgentPanel.vue')

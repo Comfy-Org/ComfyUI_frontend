@@ -18,6 +18,19 @@
   --radius-agent: 0.75rem;
 }
 
+/* The orb reads as a top-lit sphere, so the gradient's inner stop has to stay
+   the lighter of the two. The same two surfaces therefore swap places between
+   the themes rather than flipping with them. */
+:root {
+  --agent-orb-highlight: var(--base-background);
+  --agent-orb-base: var(--tertiary-background);
+}
+
+.dark-theme {
+  --agent-orb-highlight: var(--tertiary-background);
+  --agent-orb-base: var(--base-background);
+}
+
 @theme {
   --animate-agent-collapsible-down: agent-collapsible-down 200ms ease-out;
   --animate-agent-collapsible-up: agent-collapsible-up 200ms ease-out;
@@ -47,5 +60,130 @@
   }
   to {
     background-position: -50% center;
+  }
+}
+
+/* The same sweep the thinking label uses, masked down to the orb's 1px rim so
+   the highlight travels across the ring instead of colouring a glyph. */
+.agent-orb-sheen {
+  border-radius: 9999px;
+  background: linear-gradient(
+    90deg,
+    transparent 35%,
+    var(--base-foreground) 50%,
+    transparent 65%
+  );
+  background-size: 200% auto;
+  animation: agent-shimmer 1.8s linear infinite;
+  mask: radial-gradient(
+    farthest-side,
+    transparent calc(100% - 1px),
+    #000 calc(100% - 1px)
+  );
+}
+
+.disable-animations .agent-orb-sheen {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-orb-sheen {
+    display: none;
+  }
+}
+
+/* Hover glow: a plum blob centred on the orb, blurred rather than painted as a
+   gradient inside a box. A filter spreads paint past the element's own bounds,
+   so the falloff has no rectangle to end against. */
+.agent-orb-halo {
+  position: absolute;
+  inset: -4rem;
+  z-index: -1;
+  border-radius: 9999px;
+  background: radial-gradient(
+    closest-side,
+    rgb(from var(--color-plum-600) r g b / 0.95) 0%,
+    rgb(from var(--color-plum-600) r g b / 0.4) 58%,
+    rgb(from var(--color-plum-600) r g b / 0) 100%
+  );
+  filter: blur(30px);
+}
+
+/* Clicking the orb hands the canvas over to the panel: the orb collapses into
+   itself, and the panel slides in as that collapse finishes rather than
+   appearing under the cursor. */
+.agent-orb-leave-active {
+  animation: agent-orb-collapse 220ms cubic-bezier(0.6, 0, 0.9, 0.3) forwards;
+}
+
+/* Delayed so the orb re-forms after the panel has slid away, mirroring the
+   handoff on the way in. */
+.agent-orb-enter-active {
+  animation: agent-orb-emerge 320ms cubic-bezier(0.34, 1.4, 0.64, 1) 170ms both;
+}
+
+@keyframes agent-orb-collapse {
+  from {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+  60% {
+    transform: scale(0.5) rotate(12deg);
+    opacity: 0.65;
+  }
+  to {
+    transform: scale(0.04) rotate(28deg);
+    opacity: 0;
+  }
+}
+
+@keyframes agent-orb-emerge {
+  from {
+    transform: scale(0.2);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.agent-panel-enter-active {
+  animation: agent-panel-slide-in 300ms cubic-bezier(0.22, 1, 0.36, 1) 130ms
+    both;
+}
+
+.agent-panel-leave-active {
+  animation: agent-panel-slide-out 200ms cubic-bezier(0.55, 0, 1, 0.45) both;
+}
+
+@keyframes agent-panel-slide-out {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(28px);
+    opacity: 0;
+  }
+}
+
+@keyframes agent-panel-slide-in {
+  from {
+    transform: translateX(28px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-orb-leave-active,
+  .agent-orb-enter-active,
+  .agent-panel-enter-active,
+  .agent-panel-leave-active {
+    animation: none;
   }
 }
