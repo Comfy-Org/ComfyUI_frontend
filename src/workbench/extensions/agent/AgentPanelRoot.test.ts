@@ -160,9 +160,8 @@ const workflowService = vi.hoisted(() => ({
       const replacement = workflowStore.openWorkflows.find(
         (candidate) => candidate.path !== tab.path
       )
-      workflowStore.activeWorkflow = replacement
-        ? await replacement.load()
-        : null
+      const loadedReplacement = await replacement?.load()
+      workflowStore.activeWorkflow = loadedReplacement ?? null
     }
     await workflowStore.closeWorkflow(tab)
     return true
@@ -422,7 +421,7 @@ function addTab(
       newPath.slice(newPath.lastIndexOf('/') + 1)
     )
     Object.assign(tab, { path: newPath, filename, suffix })
-    return tab
+    return true
   })
   workflowStore.attachWorkflow(tab, workflowStore.openWorkflows.length)
   workflowStore.openWorkflowsInBackground({ right: [tab.path] })
@@ -3649,7 +3648,8 @@ describe('AgentPanelRoot workflow binding', () => {
           finishOpen = resolve
         })
         const known = workflowStore.getWorkflowByPath(tab.path)
-        if (opened && known) workflowStore.activeWorkflow = await known.load()
+        const loaded = opened ? await known?.load() : undefined
+        if (loaded) workflowStore.activeWorkflow = loaded
         return opened
       })
 
