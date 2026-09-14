@@ -1,11 +1,20 @@
 <script setup lang="ts">
-import { useElementHover, useEventListener, useRafFn } from '@vueuse/core'
+import {
+  useDocumentVisibility,
+  useElementHover,
+  useElementVisibility,
+  useEventListener,
+  useRafFn
+} from '@vueuse/core'
 import { computed, ref, useTemplateRef, watch } from 'vue'
 
 import type { WorkshopModel } from '../../config/models-catalogue'
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
+import { usePreviewVideo } from '../../composables/usePreviewVideo'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import { bannerName } from '../../lib/workshop/banner-name'
+import { modelDocsHref } from '../../lib/workshop/model-docs'
 import { taskLabelFor } from '../../lib/workshop/task-label'
 import Badge from '../ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -19,11 +28,16 @@ const { models, locale = 'en' } = defineProps<{
 }>()
 
 const slides = computed(() =>
-  models.map((model) => ({
-    model,
-    task: taskLabelFor(model, locale),
-    capabilities: model.capabilities.slice(0, CAPABILITY_LIMIT)
-  }))
+  models.map((model) => {
+    const task = taskLabelFor(model, locale)
+    return {
+      model,
+      task,
+      name: bannerName(model.name, taskLabelFor(model, 'en')),
+      docsHref: modelDocsHref(model),
+      capabilities: model.capabilities.slice(0, CAPABILITY_LIMIT)
+    }
+  })
 )
 
 const activeIndex = ref(0)
@@ -37,6 +51,19 @@ function goTo(index: number) {
 
 const banner = useTemplateRef<HTMLElement>('banner')
 const hovered = useElementHover(banner)
+// Starts true so the server-rendered first slide carries its video source and
+// the browser requests the frame during parse; the observer corrects it once
+// hydrated. Rotation does not care: it runs on requestAnimationFrame, which
+// only exists in the browser.
+const onScreen = useElementVisibility(banner, { initialValue: true })
+const visibility = useDocumentVisibility()
+const video = useTemplateRef<HTMLVideoElement>('video')
+// The video fills the banner, so the banner's observer is its observer.
+const previewSrc = usePreviewVideo(
+  video,
+  () => active.value.model.thumbnail?.url,
+  { visible: () => onScreen.value }
+)
 
 // Clicking a bar leaves it focused, so pausing on any focus would stop the
 // rotation for good. Only a keyboard visitor, who needs the time, stops it.
@@ -51,6 +78,8 @@ useEventListener(banner, 'focusout', () => (readingByKeyboard.value = false))
 const rotating = computed(
   () =>
     slides.value.length > 1 &&
+    onScreen.value &&
+    visibility.value === 'visible' &&
     !hovered.value &&
     !readingByKeyboard.value &&
     !prefersReducedMotion()
@@ -83,22 +112,28 @@ const fill = computed(() =>
     class="rounded-4.5xl relative isolate overflow-hidden border border-transparency-white-t8"
     data-testid="section-featured"
   >
-    <a
-      :href="active.model.href"
-      class="short:h-76 group block h-84"
+    <div
+      class="group short:h-57 sm:short:h-60 relative block h-84"
       data-testid="featured-slide"
     >
+      <a
+        :href="active.model.href"
+        tabindex="-1"
+        aria-hidden="true"
+        class="absolute inset-0"
+        data-testid="featured-slide-link"
+      ></a>
       <video
         v-if="active.model.thumbnail?.kind === 'video'"
         :key="active.model.slug"
-        :src="active.model.thumbnail.url"
-        class="absolute inset-0 size-full object-cover"
+        ref="video"
+        :src="previewSrc"
+        class="pointer-events-none absolute inset-0 size-full object-cover"
         aria-hidden="true"
         muted
         loop
         playsinline
-        :autoplay="!prefersReducedMotion()"
-        preload="auto"
+        preload="metadata"
         data-testid="featured-video"
       />
       <img
@@ -106,19 +141,23 @@ const fill = computed(() =>
         :key="active.model.slug"
         :src="active.model.thumbnailUrl"
         alt=""
-        class="absolute inset-0 size-full object-cover"
+        class="pointer-events-none absolute inset-0 size-full object-cover"
         decoding="async"
       />
       <div
-        class="from-page via-page/85 to-page/20 sm:via-page/80 absolute inset-0 bg-linear-to-t sm:bg-linear-to-r sm:to-transparent"
+        class="from-page via-page/85 to-page/20 sm:via-page/80 pointer-events-none absolute inset-0 bg-linear-to-t sm:bg-linear-to-r sm:to-transparent"
         aria-hidden="true"
       />
 
       <div
-        class="sm:short:gap-3 relative flex h-full flex-col justify-end gap-4 p-6 pb-16 sm:max-w-2xl sm:justify-center lg:p-8 lg:pb-16"
+        class="short:gap-3 short:pt-5 short:pb-14 pointer-events-none relative flex h-full flex-col justify-end gap-4 p-8 pt-6 pb-16 max-sm:gap-3 max-sm:p-6 max-sm:pb-14 sm:max-w-2xl sm:justify-center lg:p-12 lg:pt-8 lg:pb-18"
       >
         <div class="flex flex-wrap items-center gap-2">
-          <Badge variant="subtle" size="md" class="text-primary-comfy-canvas">
+          <Badge
+            variant="subtle"
+            size="md"
+            class="text-primary-comfy-canvas backdrop-blur-md"
+          >
             {{ active.task }}
           </Badge>
           <Badge
@@ -126,28 +165,44 @@ const fill = computed(() =>
             :key="capability"
             variant="subtle"
             size="md"
-            class="text-content-secondary max-sm:hidden"
+            class="text-content-secondary backdrop-blur-md max-sm:hidden"
           >
             {{ capability }}
           </Badge>
         </div>
 
-        <h2 class="text-4xl font-bold text-primary-warm-white">
-          {{ active.model.name }}
+        <h2
+          class="mt-2 text-2xl font-bold text-balance text-primary-warm-white lg:text-3xl"
+        >
+          {{ active.name }}
         </h2>
 
         <p
           v-if="active.model.summary"
-          class="text-content-secondary line-clamp-2 max-w-prose"
+          class="text-content-secondary short:hidden line-clamp-2 max-w-prose shrink-0 max-sm:line-clamp-1"
         >
           {{ active.model.summary }}
         </p>
 
-        <Button as="span" class="w-fit">
-          {{ t('workshop.hub.tryNow', locale) }}
-        </Button>
+        <div class="pointer-events-auto flex w-fit items-center gap-3">
+          <Button as="a" :href="active.model.href" class="w-fit">
+            {{ t('workshop.hub.tryNow', locale) }}
+          </Button>
+          <Button
+            v-if="active.docsHref"
+            as="a"
+            variant="outline"
+            :href="active.docsHref"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="w-fit"
+            data-testid="featured-docs-link"
+          >
+            {{ t('workshop.hub.docs', locale) }}
+          </Button>
+        </div>
       </div>
-    </a>
+    </div>
 
     <div
       v-if="slides.length > 1"

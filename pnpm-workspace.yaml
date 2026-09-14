@@ -18,6 +18,7 @@ catalog:
   '@astrojs/vue': ^7.0.2
   '@comfyorg/comfyui-desktop-bridge-types': 0.2.0
   '@comfyorg/comfyui-electron-types': 0.6.2
+  '@comfyorg/sdk': 0.2.0
   '@customerio/cdp-analytics-browser': ^0.5.3
   '@datadog/browser-rum': ^6.33.0
   '@eslint/js': ^10.0.1
@@ -90,6 +91,7 @@ catalog:
   eslint-plugin-testing-library: ^7.16.2
   eslint-plugin-unused-imports: ^4.4.1
   eslint-plugin-vue: ^10.10.0
+  fake-indexeddb: 6.2.5
   fallow: 3.24.1
   fast-check: ^4.5.3
   firebase: ^11.6.0
@@ -109,6 +111,7 @@ catalog:
   markdown-table: ^3.0.4
   mediabunny: ^1.53.1
   minisearch: ^7.2.0
+  mime-types: 3.0.2
   mixpanel-browser: ^2.71.0
   monocart-coverage-reports: ^2.12.9
   openai: ^7.4.0
@@ -138,6 +141,7 @@ catalog:
   typegpu: ^0.8.2
   typescript: ^6.0.3
   typescript-eslint: ^8.69.0
+  undici: ^7.29.0
   unplugin-icons: ^23.0.1
   unplugin-typegpu: 0.8.0
   unplugin-vue-components: ^32.1.0
@@ -160,7 +164,6 @@ catalog:
   zod: ^3.23.8
   zod-to-json-schema: ^3.24.1
   zod-validation-error: ^3.3.0
-  undici: ^7.29.0
 
 cleanupUnusedCatalogs: true
 

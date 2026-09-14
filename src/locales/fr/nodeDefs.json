@@ -6216,6 +6216,40 @@
       }
     }
   },
+  "FluxVideoEditNode": {
+    "description": "Modifie un clip à partir d'une instruction écrite : supprime, ajoute ou remplace des objets, change le décor, modifie le style de la séquence, change le texte à l'écran ou remplace les dialogues parlés. La durée, le cadrage, le mouvement de caméra et l'audio proviennent du clip source.",
+    "display_name": "Édition vidéo Flux",
+    "inputs": {
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "Réduit automatiquement la taille des sources dont la surface dépasse 1280x704 pixels avant l'envoi. Le rapport d'aspect est préservé ; les vidéos plus petites ne sont pas modifiées."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Indiquez les modifications à effectuer en langage naturel, jusqu'à 4096 caractères. Tout ce que vous ne mentionnez pas est censé rester tel quel. Les dialogues de remplacement doivent tenir dans la durée des paroles originales, et un clip silencieux reste silencieux."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "Tolérance de modération ; 0 est le niveau le plus strict."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Graine permettant de déterminer si le nœud doit être réexécuté ; FLUX choisit sa propre graine, les résultats réels sont donc non déterministes quelle que soit cette valeur."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Clip source de 0,7 à 15 secondes, d'au moins 160x160 pixels. La sortie est rendue à 24 fps et limitée à environ 0,9 mégapixel par image ; une source plus grande est donc renvoyée dans une taille plus petite."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "FluxVideoUpscaleNode": {
     "description": "Met à l’échelle une vidéo de 1,5 à 3 fois avec la super-résolution FLUX, en préservant précisément la source ou en améliorant ses détails de manière créative.",
     "display_name": "Mise à l’échelle vidéo Flux",
