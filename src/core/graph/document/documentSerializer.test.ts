@@ -14,7 +14,11 @@ import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
 import { widgetId } from '@/types/widgetId'
-import { createNodeState } from '@/utils/__tests__/litegraphTestUtils'
+import {
+  createMockNodeInputSlot,
+  createMockNodeOutputSlot,
+  createNodeState
+} from '@/utils/__tests__/litegraphTestUtils'
 
 function scopeFor(graphId: string): GraphScope {
   return {
@@ -24,11 +28,11 @@ function scopeFor(graphId: string): GraphScope {
 }
 
 function inputSlot(overrides: Partial<INodeInputSlot> = {}): INodeInputSlot {
-  return { name: 'in', type: 'INT', ...overrides } as INodeInputSlot
+  return createMockNodeInputSlot({ name: 'in', type: 'INT', ...overrides })
 }
 
 function outputSlot(overrides: Partial<INodeOutputSlot> = {}): INodeOutputSlot {
-  return { name: 'out', type: 'INT', ...overrides } as INodeOutputSlot
+  return createMockNodeOutputSlot({ name: 'out', type: 'INT', ...overrides })
 }
 
 function decode(bytes: Uint8Array): {
@@ -80,13 +84,14 @@ describe('serializeDocumentScope', () => {
     // shape that would explode JSON.stringify if slots were spread as-is.
     const cyclicWidget: Record<string, unknown> = { name: 'w' }
     cyclicWidget.self = cyclicWidget
+    const malformedInput = inputSlot({
+      link: toLinkId(5),
+      hasErrors: true,
+      boundingRect: [0, 0, 10, 10]
+    })
+    Object.defineProperty(malformedInput, '_widget', { value: cyclicWidget })
     const scope = populateScope('root-junk', {
-      input: inputSlot({
-        link: toLinkId(5),
-        _widget: cyclicWidget as never,
-        hasErrors: true,
-        boundingRect: [0, 0, 10, 10]
-      }),
+      input: malformedInput,
       output: outputSlot({
         links: [toLinkId(5)],
         _data: { transient: true },
@@ -160,13 +165,13 @@ describe('serializeDocumentScope', () => {
   it('throws on pathologically deep semantic state instead of hanging', () => {
     vi.stubEnv('DEV', false)
     const scope = scopeFor('root-deep')
-    let deep: unknown = 0
+    let deep: NodeState['properties'][string] = 0
     for (let i = 0; i < 40; i++) deep = [deep]
     useNodeDataStore().registerNode(
       scope,
       createNodeState({
         id: toNodeId(1),
-        properties: { deep: deep as NodeState['properties'][string] }
+        properties: { deep }
       })
     )
 
