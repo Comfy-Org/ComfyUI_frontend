@@ -1227,7 +1227,7 @@ describe('ModelDetail', () => {
     await visitor.click(screen.getByRole('button', { name: 'Run' }))
     expect(screen.queryByTestId('earlier-runs')).toBeNull()
     await visitor.click(
-      await screen.findByRole('button', { name: 'response.json' })
+      await screen.findByRole('button', { name: 'Raw response' })
     )
     expect(screen.getByText('{"id":"one"}')).toBeTruthy()
 
@@ -1247,7 +1247,7 @@ describe('ModelDetail', () => {
       within(screen.getByTestId('earlier-runs')).getAllByRole('button')
     ).toHaveLength(2)
     await visitor.click(screen.getByTestId('earlier-run-0'))
-    await visitor.click(screen.getByRole('button', { name: 'response.json' }))
+    await visitor.click(screen.getByRole('button', { name: 'Raw response' }))
     expect(screen.getByText('{"id":"one"}')).toBeTruthy()
   })
 

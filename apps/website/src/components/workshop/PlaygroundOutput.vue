@@ -25,6 +25,7 @@ import type {
 } from '../../config/workshop-run'
 import { formatElapsed, isExpired } from '../../config/workshop-run'
 import { downloadOutput } from '../../config/workshop-output-download'
+import { outputLabels } from '../../lib/workshop/output-labels'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
@@ -113,6 +114,10 @@ const currentAttachments = computed(
   () => viewing.value?.attachments ?? attachments
 )
 const shown = computed(() => selectedAttachment.value ?? primary.value)
+const files = computed(() =>
+  primary.value ? [primary.value, ...currentAttachments.value] : []
+)
+const fileLabels = computed(() => outputLabels(files.value))
 
 // Only a result the visitor produced opens full screen; the example is a
 // sample of what the model makes, not their picture to inspect.
@@ -470,16 +475,18 @@ const earlierClass = (active: boolean) =>
         class="flex flex-wrap gap-2 border-t border-transparency-white-t8 px-4 py-3"
       >
         <button
-          v-for="output in [primary, ...currentAttachments]"
-          :key="output?.url"
+          v-for="(output, index) in files"
+          :key="output.url"
           type="button"
           :aria-pressed="shown === output"
-          :class="
-            cn(earlierClass(shown === output), 'size-auto px-3 py-2 break-all')
-          "
+          :title="output.fileName"
+          :class="cn(earlierClass(shown === output), 'size-auto px-3 py-2')"
           @click="selectedAttachment = output"
         >
-          {{ output?.fileName }}
+          {{ t(fileLabels[index].key, locale)
+          }}{{
+            fileLabels[index].ordinal ? ` ${fileLabels[index].ordinal}` : ''
+          }}
         </button>
       </div>
 

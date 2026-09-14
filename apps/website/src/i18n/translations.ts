@@ -9851,6 +9851,16 @@ Enterprise`
 
   // Workshop – output
   'workshop.output.title': { en: 'Output', 'zh-CN': '输出' },
+  'workshop.output.kindImage': { en: 'Image', 'zh-CN': '图片' },
+  'workshop.output.kindVideo': { en: 'Video', 'zh-CN': '视频' },
+  'workshop.output.kindAudio': { en: 'Audio', 'zh-CN': '音频' },
+  'workshop.output.kindModel': { en: '3D model', 'zh-CN': '3D 模型' },
+  'workshop.output.kindText': { en: 'Text', 'zh-CN': '文本' },
+  'workshop.output.kindFile': { en: 'File', 'zh-CN': '文件' },
+  'workshop.output.kindResponse': {
+    en: 'Raw response',
+    'zh-CN': '原始响应'
+  },
   'workshop.output.complete': {
     en: 'Generation complete.',
     'zh-CN': '生成完成。',
