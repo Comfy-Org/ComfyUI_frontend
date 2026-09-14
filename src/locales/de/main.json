@@ -403,9 +403,9 @@
       "contactSupport": "Um Ihr Konto zu löschen, kontaktieren Sie bitte {email}"
     },
     "errors": {
-      "auth/account-exists-with-different-credential": "Wir konnten Sie mit dieser Methode nicht anmelden. Versuchen Sie eine andere Anmeldemethode oder setzen Sie Ihr Passwort zurück, um fortzufahren.",
+      "auth/account-exists-with-different-credential": "Ein Konto mit dieser E-Mail-Adresse existiert bereits, verwendet jedoch eine andere Anmeldemethode. Bitte melden Sie sich so an, wie Sie es ursprünglich getan haben.",
       "auth/cancelled-popup-request": "Ein anderes Anmeldefenster war bereits geöffnet, daher wurde dieses abgebrochen. Bitte versuchen Sie es erneut.",
-      "auth/email-already-in-use": "Wir konnten mit dieser E-Mail-Adresse kein Konto erstellen. Falls Sie bereits eines haben, versuchen Sie, sich anzumelden oder Ihr Passwort zurückzusetzen.",
+      "auth/email-already-in-use": "Ein Konto mit dieser E-Mail-Adresse existiert bereits. Versuchen Sie stattdessen, sich anzumelden.",
       "auth/invalid-credential": "Ungültige Anmeldedaten. Bitte überprüfen Sie Ihre E-Mail-Adresse und Ihr Passwort.",
       "auth/invalid-email": "Bitte geben Sie eine gültige E-Mail-Adresse ein.",
       "auth/network-request-failed": "Netzwerkfehler. Bitte überprüfen Sie Ihre Verbindung und versuchen Sie es erneut.",

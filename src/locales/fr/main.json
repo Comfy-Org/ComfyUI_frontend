@@ -403,9 +403,9 @@
       "contactSupport": "Pour supprimer votre compte, veuillez contacter {email}"
     },
     "errors": {
-      "auth/account-exists-with-different-credential": "Nous n'avons pas pu vous connecter avec cette méthode. Essayez une autre option de connexion ou réinitialisez votre mot de passe pour continuer.",
+      "auth/account-exists-with-different-credential": "Un compte existe déjà avec cette adresse e-mail, mais utilise une autre méthode de connexion. Veuillez vous connecter de la même manière que lors de votre première connexion.",
       "auth/cancelled-popup-request": "Une autre fenêtre de connexion était déjà ouverte, celle-ci a donc été annulée. Veuillez réessayer.",
-      "auth/email-already-in-use": "Nous n'avons pas pu créer de compte avec cette adresse e-mail. Si vous en avez déjà un, essayez de vous connecter ou de réinitialiser votre mot de passe.",
+      "auth/email-already-in-use": "Un compte avec cette adresse e-mail existe déjà. Essayez plutôt de vous connecter.",
       "auth/invalid-credential": "Identifiants de connexion invalides. Veuillez vérifier votre e-mail et votre mot de passe.",
       "auth/invalid-email": "Veuillez entrer une adresse e-mail valide.",
       "auth/network-request-failed": "Erreur réseau. Veuillez vérifier votre connexion et réessayer.",
