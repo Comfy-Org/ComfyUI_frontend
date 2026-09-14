@@ -109,6 +109,9 @@ export function writeTarget(op: WireOp): unknown[] {
         }
         return ["input", String(op.to_node), "grow", String(op.grow.name).split(".", 1)[0]];
       }
+      if (op.path && op.path.length > 0) {
+        return ["input", op.path.map(String), String(op.to_node), op.to_slot];
+      }
       return ["input", String(op.to_node), op.to_slot];
     case "disconnect":
       return ["input", String(op.to_node), op.to_slot];

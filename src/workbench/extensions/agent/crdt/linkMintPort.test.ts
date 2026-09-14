@@ -41,6 +41,7 @@ describe('attachLinkMintPort', () => {
   let port: LinkMintPort
   let enabled: boolean
   let bound: boolean
+  let interiorPaths: Map<string, string[]>
   let session: MintSession
   let placedListeners: Set<
     (scope: LinkScopeView, topology: LinkTopologyView) => void
@@ -61,6 +62,7 @@ describe('attachLinkMintPort', () => {
     minted = []
     enabled = true
     bound = true
+    interiorPaths = new Map()
     session = createMintSession()
     placedListeners = new Set()
     deletedListeners = new Set()
@@ -78,6 +80,8 @@ describe('attachLinkMintPort', () => {
       session,
       isEnabled: () => enabled,
       isDocBound: () => bound,
+      resolveInteriorPath: (owningGraphId) =>
+        interiorPaths.get(owningGraphId) ?? null,
       enqueue: (operations) => minted.push(...operations)
     })
   })
@@ -120,7 +124,25 @@ describe('attachLinkMintPort', () => {
     expect(minted).toEqual([])
   })
 
-  it('surfaces a subgraph-interior placement observably instead of minting', () => {
+  it('mints a connect with the resolved path for a subgraph-interior placement', () => {
+    interiorPaths.set('subgraph-uuid', ['57'])
+    place(SUBGRAPH_SCOPE, topology(41))
+
+    expect(minted).toEqual([
+      {
+        op: 'connect',
+        path: ['57'],
+        link_id: 41,
+        from_node: 1,
+        from_slot: 0,
+        to_node: 2,
+        to_slot: 3,
+        link_type: 'IMAGE'
+      }
+    ])
+  })
+
+  it('surfaces an unresolvable subgraph-interior placement observably', () => {
     const consoleError = vi
       .spyOn(console, 'error')
       .mockImplementation(() => undefined)
