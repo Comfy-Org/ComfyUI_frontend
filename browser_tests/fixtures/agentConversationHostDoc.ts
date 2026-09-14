@@ -65,7 +65,8 @@ export class HostDoc {
         v: DOC_PROTOCOL_VERSION,
         workflow_id: this.workflowId,
         ok: true,
-        seq: this.seq
+        seq: this.seq,
+        lineage_seq: 1
       }
     }
   }
@@ -108,6 +109,7 @@ export class HostDoc {
         v: DOC_PROTOCOL_VERSION,
         workflow_id: this.workflowId,
         seq: this.seq,
+        lineage_seq: 1,
         update_b64: toBase64(update),
         actor,
         op_ids: opIds
