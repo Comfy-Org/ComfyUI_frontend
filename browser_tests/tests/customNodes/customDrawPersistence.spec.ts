@@ -183,6 +183,30 @@ test.describe(
         .getNodeLocator(nodeId)
         .locator('canvas')
       await expect(reloadedCanvas).toBeVisible()
+      await expect
+        .poll(() =>
+          reloadedCanvas.evaluate((canvas: HTMLCanvasElement) => {
+            const context = canvas.getContext('2d')
+            if (!context) throw new Error('rgthree comparer canvas is not 2D')
+            const pixels = context.getImageData(
+              0,
+              0,
+              canvas.width,
+              canvas.height
+            ).data
+            let red = 0
+            for (let index = 0; index < pixels.length; index += 4) {
+              if (
+                pixels[index] > 200 &&
+                pixels[index + 1] < 80 &&
+                pixels[index + 2] < 80
+              )
+                red++
+            }
+            return red
+          })
+        )
+        .toBeGreaterThan(100)
       await reloadedCanvas.hover({ position: { x: 315, y: 150 } })
       await comfyPage.nextFrame()
       const afterReload = testInfo.outputPath(

@@ -92,7 +92,11 @@ test.describe(
             comfyPage.page.evaluate(
               (targetId) =>
                 [...window.app!.canvas.renderedPaths].flatMap((path) =>
-                  'target_id' in path && String(path.target_id) === targetId
+                  'origin_id' in path &&
+                  'origin_slot' in path &&
+                  'target_id' in path &&
+                  'target_slot' in path &&
+                  String(path.target_id) === targetId
                     ? [
                         [
                           String(path.origin_id),
