@@ -18,6 +18,23 @@ describe('useGenerationGuard', () => {
     ).toBe(false)
   })
 
+  it('invalidates a handle when its scope disposes mid-await', async () => {
+    const scope = effectScope()
+    const guard = scope.run(() => useGenerationGuard())!
+    const handle = guard.capture()
+
+    const settled = (async () => {
+      await Promise.resolve()
+      return handle.live()
+    })()
+    scope.stop()
+
+    expect(
+      await settled,
+      'a continuation resuming after scope teardown must see a dead handle'
+    ).toBe(false)
+  })
+
   it('still abandons attempts explicitly before teardown', () => {
     const scope = effectScope()
     const guard = scope.run(() => useGenerationGuard())!

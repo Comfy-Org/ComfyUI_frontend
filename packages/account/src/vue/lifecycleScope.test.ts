@@ -35,7 +35,7 @@ describe('createLifecycleScope', () => {
     ).toEqual([1])
   })
 
-  it('reopens the latch after stop so a failed install can be retried', () => {
+  it('restarts after an explicit stop', () => {
     const lifecycle = createLifecycleScope()
     const setup = vi.fn()
 
@@ -43,7 +43,10 @@ describe('createLifecycleScope', () => {
     lifecycle.stop()
     lifecycle.start(setup)
 
-    expect(setup).toHaveBeenCalledTimes(2)
+    expect(
+      setup,
+      'stop reopens the latch, so a later start must run setup again'
+    ).toHaveBeenCalledTimes(2)
   })
 
   it('fires scope-disposal hooks registered by the setup on stop', () => {

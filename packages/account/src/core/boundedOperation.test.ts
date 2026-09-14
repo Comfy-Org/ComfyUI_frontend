@@ -40,14 +40,24 @@ describe('createBoundedOperation', () => {
     ).toBe(true)
   })
 
-  it('captures a fresh live handle after abandonment', () => {
+  it('keeps each prior cycle dead while the latest capture stays live', () => {
     const operation = createBoundedOperation()
-    operation.capture()
+
+    const first = operation.capture()
     operation.abandon()
+    const second = operation.capture()
 
-    const renewed = operation.capture()
+    expect(first.live()).toBe(false)
+    expect(second.live()).toBe(true)
 
-    expect(renewed.live()).toBe(true)
+    operation.abandon()
+    const third = operation.capture()
+
+    expect(
+      second.live(),
+      'each abandonment must end its own cycle, not only the first'
+    ).toBe(false)
+    expect(third.live()).toBe(true)
   })
 
   it('discards a result that resolves after the operation was abandoned mid-flight', async () => {
