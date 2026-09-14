@@ -28,6 +28,7 @@ const auth = vi.hoisted(() => ({
   settled: { value: true },
   enabled: { value: true },
   workshopEnabled: { value: true },
+  workshopEnabledSettled: { value: true },
   flagSettled: { value: true },
   ensureFresh: vi.fn()
 }))
@@ -57,6 +58,8 @@ vi.mock(import('../../config/workshop-session-state'), () => ({
 vi.mock(import('../../scripts/posthog'), () => ({
   captureWorkshopEvent: vi.fn(),
   useWorkshopEnabled: () => computed(() => auth.workshopEnabled.value),
+  useWorkshopEnabledSettled: () =>
+    computed(() => auth.workshopEnabledSettled.value),
   useWorkshopAuthFlag: () => computed(() => auth.enabled.value),
   useWorkshopAuthFlagSettled: () => computed(() => auth.flagSettled.value)
 }))
@@ -208,6 +211,7 @@ describe('ModelDetail', () => {
     auth.settled = ref(true)
     auth.enabled = ref(true)
     auth.workshopEnabled = ref(true)
+    auth.workshopEnabledSettled = ref(true)
     auth.flagSettled = ref(true)
     credits.balance = ref<
       ReturnType<typeof useWorkshopCredits>['balance']['value']
@@ -883,8 +887,11 @@ describe('ModelDetail', () => {
     expect(leaving()).toBe(true)
     expect(softLeaving()).toBe(true)
 
-    await user().type(screen.getByTestId('field-prompt'), 'A teapot')
-    await user().click(screen.getByTestId('run-button'))
+    await user().type(
+      screen.getByRole('textbox', { name: 'Prompt' }),
+      'A teapot'
+    )
+    await user().click(screen.getByRole('button', { name: 'Run' }))
     await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledTimes(1))
     expect(leaving()).toBe(false)
     expect(softLeaving()).toBe(false)
@@ -1198,6 +1205,9 @@ describe('ModelDetail', () => {
     auth.workshopEnabled.value = false
     await nextTick()
     expect(screen.queryByRole('button', { name: 'Run' })).toBeNull()
+    expect(
+      screen.getByTestId('playground-output').getAttribute('data-state')
+    ).toBe('running')
     expect(vi.mocked(runWorkshopRouter).mock.calls[0][0].signal.aborted).toBe(
       false
     )

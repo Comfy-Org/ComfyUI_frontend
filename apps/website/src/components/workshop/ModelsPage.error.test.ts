@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
+import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { beforeEach, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { expect, it, vi } from 'vitest'
 
 import './ModelPage.vue'
 import './ModelsCatalogue.vue'
@@ -12,16 +12,11 @@ import ModelsPage from './ModelsPage.vue'
 const modelSlug = 'bfl--flux-2-max--generate-images'
 const modelPage = await prepareModelPage(modelSlug)
 
-const { enabled, settled } = await vi.hoisted(async () => {
-  const { ref } = await import('vue')
-  return { enabled: ref(false), settled: ref(true) }
-})
-
 vi.mock(import('../../scripts/posthog'), async () => {
   const { ref } = await import('vue')
   return {
-    useWorkshopEnabled: () => enabled,
-    useWorkshopEnabledSettled: () => settled,
+    useWorkshopEnabled: () => ref(true),
+    useWorkshopEnabledSettled: () => ref(true),
     useWorkshopAuthFlag: () => ref(false),
     useWorkshopAuthFlagSettled: () => ref(true),
     captureWorkshopEvent: vi.fn(),
@@ -29,37 +24,36 @@ vi.mock(import('../../scripts/posthog'), async () => {
   }
 })
 
-beforeEach(() => {
-  enabled.value = false
-  settled.value = true
-})
+const failed = () => Response.json({ error: 'down' }, { status: 500 })
 
 it.for([
   { view: 'catalogue', slug: undefined, visible: 'workshop-search' },
   { view: 'detail', slug: modelSlug, visible: 'model-hero' }
 ] as const)(
-  'replaces public content with a neutral loading frame while the $view data loads',
+  'retries a failed $view load once, then offers a retry instead of the public page',
   async ({ slug, visible }) => {
-    const pending = Promise.withResolvers<Response>()
-    vi.stubGlobal(
-      'fetch',
-      vi.fn<typeof fetch>().mockReturnValue(pending.promise)
-    )
+    const user = userEvent.setup()
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(failed())
+      .mockResolvedValueOnce(failed())
+      .mockImplementation(async () =>
+        Response.json(slug ? modelPage : workshopModels)
+      )
+    vi.stubGlobal('fetch', fetchMock)
     render(ModelsPage, {
       props: { slug },
       slots: { fallback: '<h1>Public Models</h1>' }
     })
-    expect(screen.getByRole('heading', { name: 'Public Models' })).toBeTruthy()
 
-    enabled.value = true
-    await nextTick()
-    expect(await screen.findByTestId('models-loading')).toBeTruthy()
+    expect(await screen.findByTestId('models-load-error')).toBeTruthy()
+    expect(fetchMock).toHaveBeenCalledTimes(2)
     expect(screen.queryByRole('heading', { name: 'Public Models' })).toBeNull()
     expect(screen.queryByTestId(visible)).toBeNull()
 
-    pending.resolve(Response.json(slug ? modelPage : workshopModels))
+    await user.click(screen.getByRole('button', { name: 'Try again' }))
     expect(await screen.findByTestId(visible)).toBeTruthy()
-    expect(screen.queryByTestId('models-loading')).toBeNull()
+    expect(screen.queryByTestId('models-load-error')).toBeNull()
     expect(screen.queryByRole('heading', { name: 'Public Models' })).toBeNull()
   }
 )

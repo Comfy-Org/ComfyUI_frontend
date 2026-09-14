@@ -766,7 +766,7 @@ function useInCode() {
         class="flex min-w-0 flex-col gap-4 lg:sticky lg:top-26 lg:col-span-7 lg:self-start"
       >
         <PlaygroundOutput
-          v-if="workshopEnabled"
+          v-if="workshopEnabled || isRunning"
           v-model:revealed="revealed"
           :state="runState"
           :earlier

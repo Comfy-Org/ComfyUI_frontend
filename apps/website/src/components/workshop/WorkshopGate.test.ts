@@ -7,17 +7,19 @@ import { renderToString } from 'vue/server-renderer'
 import { htmlToTwin } from '../../lib/markdown-twin'
 import WorkshopGate from './WorkshopGate.vue'
 
-const { enabled } = await vi.hoisted(async () => {
+const { enabled, settled } = await vi.hoisted(async () => {
   const { ref } = await import('vue')
-  return { enabled: ref(false) }
+  return { enabled: ref(false), settled: ref(true) }
 })
 vi.mock(import('../../scripts/posthog'), () => ({
-  useWorkshopEnabled: () => enabled
+  useWorkshopEnabled: () => enabled,
+  useWorkshopEnabledSettled: () => settled
 }))
 
 describe('WorkshopGate', () => {
   beforeEach(() => {
     enabled.value = false
+    settled.value = true
   })
 
   it('keeps gated sections out of public HTML and Markdown exports', async () => {
@@ -62,6 +64,23 @@ describe('WorkshopGate', () => {
     await nextTick()
     expect(screen.getByRole('heading').textContent).toBe('Public models')
     expect(screen.queryByRole('heading', { name: 'Instant render' })).toBeNull()
+  })
+
+  it('shows neither branch while a staff visibility answer is pending', async () => {
+    settled.value = false
+    render(WorkshopGate, {
+      slots: {
+        default: '<h1>Instant render</h1>',
+        fallback: '<h1>Public models</h1>'
+      }
+    })
+    await nextTick()
+    expect(screen.queryByRole('heading')).toBeNull()
+
+    enabled.value = true
+    settled.value = true
+    await nextTick()
+    expect(screen.getByRole('heading').textContent).toBe('Instant render')
   })
 
   it('removes portalled catalogue controls when access is revoked', async () => {

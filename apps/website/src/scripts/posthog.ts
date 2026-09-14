@@ -108,10 +108,15 @@ const WORKSHOP_TURNSTILE_FLAG = 'workshop-signup-turnstile'
 const VISIBILITY_OVERRIDE =
   WORKSHOP_LOCAL_DEV && import.meta.env.PUBLIC_WORKSHOP_ENABLED === '1'
 const workshopEnabled = ref(VISIBILITY_OVERRIDE)
+const workshopEnabledSettled = ref(true)
 let workshopUser: WorkshopIdentity | null | undefined
 
 export function useWorkshopEnabled(): Readonly<Ref<boolean>> {
   return readonly(workshopEnabled)
+}
+
+export function useWorkshopEnabledSettled(): Readonly<Ref<boolean>> {
+  return readonly(workshopEnabledSettled)
 }
 
 export interface WorkshopIdentity {
@@ -140,18 +145,25 @@ export function identifyWorkshopUser(user: WorkshopIdentity | null): void {
   if (workshopUser !== undefined && workshopUser?.uid === user?.uid) return
   const previous = workshopUser
   workshopUser = user
-  if (!initialized) return
+  const waitForStaffAnswer =
+    !VISIBILITY_OVERRIDE && user !== null && isStaff(user)
+  if (!initialized) {
+    workshopEnabledSettled.value = !waitForStaffAnswer
+    return
+  }
   try {
     const uid = user?.uid ?? null
     const persistedUid = posthog.get_property('$user_id') ?? previous?.uid
     if (uid === persistedUid || (!uid && !persistedUid)) return
     workshopEnabled.value = VISIBILITY_OVERRIDE
+    workshopEnabledSettled.value = !waitForStaffAnswer
     if (persistedUid) posthog.reset()
     if (user) identifyInPostHog(user)
     posthog.reloadFeatureFlags()
   } catch (error) {
     workshopUser = previous
     workshopEnabled.value = VISIBILITY_OVERRIDE
+    workshopEnabledSettled.value = true
     console.error('PostHog identity failed', error)
   }
 }
@@ -192,11 +204,28 @@ export function initPostHog() {
       before_send: createPostHogBeforeSend()
     })
     initialized = true
+    const persistedAnswer = posthog.isFeatureEnabled(WORKSHOP_ENABLED_FLAG, {
+      send_event: false
+    })
+    const persistedUid = posthog.get_property('$user_id')
+    const expectedUid = workshopUser?.uid ?? null
+    const persistedIdentityMatches =
+      workshopUser === undefined ||
+      expectedUid === persistedUid ||
+      (!expectedUid && !persistedUid)
+    if (persistedAnswer !== undefined && persistedIdentityMatches) {
+      workshopEnabled.value = VISIBILITY_OVERRIDE || persistedAnswer
+      workshopEnabledSettled.value = true
+    }
     posthog.onFeatureFlags((_flags, _variants, context) => {
-      if (context?.errorsLoading) return
+      if (context?.errorsLoading) {
+        workshopEnabledSettled.value = true
+        return
+      }
       workshopEnabled.value =
         VISIBILITY_OVERRIDE ||
         posthog.isFeatureEnabled(WORKSHOP_ENABLED_FLAG) === true
+      workshopEnabledSettled.value = true
       if (!OVERRIDDEN_ON) {
         workshopAuthEnabled.value =
           posthog.isFeatureEnabled(WORKSHOP_AUTH_FLAG) !== false
@@ -214,6 +243,7 @@ export function initPostHog() {
       identifyWorkshopUser(user)
     }
   } catch (error) {
+    workshopEnabledSettled.value = true
     console.error('PostHog init failed', error)
   }
 }

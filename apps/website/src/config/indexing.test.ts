@@ -9,8 +9,10 @@ describe('indexing policy', () => {
       true
     )
     expect(isExcludedFromSitemap('https://comfy.org/models/showcase/')).toBe(
-      false
+      true
     )
+    expect(isNoindexPathname('/models/showcase/')).toBe(true)
+    expect(isNoindexPathname('/zh-CN/models/showcase')).toBe(true)
     vi.stubEnv('WORKSHOP_IN_BUILD', '0')
     expect(isExcludedFromSitemap('https://comfy.org/models/')).toBe(false)
   })

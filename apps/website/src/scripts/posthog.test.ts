@@ -161,6 +161,85 @@ describe('Workshop visibility', () => {
     expect(hoisted.mockIdentify).toHaveBeenCalledExactlyOnceWith(user.uid)
   })
 
+  it('seeds visibility from the persisted answer before flags reload', async () => {
+    hoisted.mockIsFeatureEnabled.mockReturnValue(true)
+    const { initPostHog, useWorkshopEnabled, useWorkshopEnabledSettled } =
+      await import('./posthog')
+    initPostHog()
+    expect(useWorkshopEnabled().value).toBe(true)
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+    expect(hoisted.mockIsFeatureEnabled).toHaveBeenCalledWith(
+      'workshop-enabled',
+      { send_event: false }
+    )
+  })
+
+  it('waits for a fresh flag answer when a verified staff identity changes', async () => {
+    const {
+      initPostHog,
+      identifyWorkshopUser,
+      useWorkshopEnabled,
+      useWorkshopEnabledSettled
+    } = await import('./posthog')
+    initPostHog()
+    identifyWorkshopUser({
+      uid: 'staff-uid',
+      email: 'someone@comfy.org',
+      emailVerified: true
+    })
+    expect(useWorkshopEnabled().value).toBe(false)
+    expect(useWorkshopEnabledSettled().value).toBe(false)
+
+    hoisted.mockIsFeatureEnabled.mockReturnValue(true)
+    emitFeatureFlags()
+    expect(useWorkshopEnabled().value).toBe(true)
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+  })
+
+  it('honors a public rollout answer for an external identity', async () => {
+    const {
+      initPostHog,
+      identifyWorkshopUser,
+      useWorkshopEnabled,
+      useWorkshopEnabledSettled
+    } = await import('./posthog')
+    initPostHog()
+    identifyWorkshopUser({
+      uid: 'external-uid',
+      email: 'someone@example.com',
+      emailVerified: true
+    })
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+
+    hoisted.mockIsFeatureEnabled.mockReturnValue(true)
+    emitFeatureFlags()
+    expect(useWorkshopEnabled().value).toBe(true)
+  })
+
+  it('never carries a grant across identities, even when the reload fails', async () => {
+    const {
+      initPostHog,
+      identifyWorkshopUser,
+      useWorkshopEnabled,
+      useWorkshopEnabledSettled
+    } = await import('./posthog')
+    initPostHog()
+    identifyWorkshopUser({ uid: 'staff-uid' })
+    hoisted.mockIsFeatureEnabled.mockReturnValue(true)
+    emitFeatureFlags()
+    expect(useWorkshopEnabled().value).toBe(true)
+
+    identifyWorkshopUser({
+      uid: 'another-uid',
+      email: 'another@comfy.org',
+      emailVerified: true
+    })
+    expect(useWorkshopEnabledSettled().value).toBe(false)
+    emitFeatureFlags(true)
+    expect(useWorkshopEnabled().value).toBe(false)
+    expect(useWorkshopEnabledSettled().value).toBe(true)
+  })
+
   it('keeps confirmed access when Firebase restores the same PostHog user', async () => {
     hoisted.mockGetProperty.mockReturnValue('staff-uid')
     hoisted.mockIsFeatureEnabled.mockReturnValue(true)
@@ -438,6 +517,7 @@ describe('useWorkshopAuthFlag', () => {
     } = await import('./posthog')
 
     initPostHog()
+    expect(useWorkshopAuthFlagSettled().value).toBe(true)
     emitFeatureFlags(true)
     expect(useWorkshopAuthFlagSettled().value).toBe(true)
     expect(useWorkshopAuthFlag().value).toBe(true)

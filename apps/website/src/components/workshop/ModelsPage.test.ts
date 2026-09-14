@@ -10,15 +10,16 @@ import ModelsPage from './ModelsPage.vue'
 import { prepareModelPage } from '../../routes/models/model-page'
 import { workshopModels } from '../../config/workshop-browse-content'
 
-const { enabled } = await vi.hoisted(async () => {
+const { enabled, settled } = await vi.hoisted(async () => {
   const { ref } = await import('vue')
-  return { enabled: ref(false) }
+  return { enabled: ref(false), settled: ref(true) }
 })
 
 vi.mock(import('../../scripts/posthog'), async () => {
   const { ref } = await import('vue')
   return {
     useWorkshopEnabled: () => enabled,
+    useWorkshopEnabledSettled: () => settled,
     useWorkshopAuthFlag: () => ref(false),
     useWorkshopAuthFlagSettled: () => ref(true),
     captureWorkshopEvent: vi.fn(),
@@ -31,6 +32,7 @@ const modelPage = await prepareModelPage(modelSlug)
 
 beforeEach(() => {
   enabled.value = false
+  settled.value = true
 })
 
 describe('Models page entry', () => {

@@ -166,8 +166,11 @@ with the refreshed snapshot.
 Models is included in production and preview builds by default. The boolean
 PostHog flag **`workshop-enabled`** controls visibility, independently of the
 build and authentication switches. It defaults off, including while flags are
-loading, missing, or unavailable. A failed refresh preserves the last confirmed
-answer for the same identity. Disabling it restores the public site:
+loading, missing, or unavailable, except that an identity PostHog has already
+answered for is seeded from the persisted answer before the refresh, so an
+enabled staff member never sees the public page while flags reload. A failed
+refresh preserves the last confirmed answer for the same identity; a new
+identity never inherits a grant. Disabling it restores the public site:
 
 - The header and homepage retain their existing navigation and model links.
 - `/models` shows the existing Models marketing page.
@@ -175,23 +178,29 @@ answer for the same identity. Disabling it restores the public site:
 - Catalogue and playground markup is absent from public HTML; their components
   and page data load after enablement. Homepage islands still serialize public
   model and provider summaries. `/models` remains indexable with its marketing content.
-- Render pages stay out of sitemaps and markdown exports.
+- Render pages stay out of sitemaps and markdown exports. `/models/showcase`
+  is the unlisted public copy of the marketing page: noindex and out of the
+  sitemap.
+- Once enabled, a neutral loading frame replaces the public content while a
+  page's data loads, and a failed load shows a retry; the public page only ever
+  renders when the flag is off.
 
-Create `workshop-enabled` in the website's PostHog project with a release
-condition on the person property `comfy_staff` equal to `true` at 100%, and
-leave everyone else excluded; do not add a general rollout condition. Expand
-that audience when ready for the public release. Do not target the email-based
-staff cohort: the frontend PII scrubber strips `email` from everything it
-sends, so people who sign in through the website never join that cohort.
+Create `workshop-enabled` in the website's PostHog project with two release
+condition groups: `comfy_staff` equal to `true` at 100%, and all users initially
+at 0%. PostHog combines the groups with OR. Raise only the all-users percentage
+to ramp external visitors independently from 0% to 100%; staff remain enabled
+through the first group. Do not target the email-based staff cohort: the
+frontend PII scrubber strips `email` from everything it sends, so people who
+sign in through the website never join that cohort.
 
 The website identifies signed-in people with their Firebase UID, matching
 Cloud's PostHog identity. For a verified `comfy.org` or `drip.art` email it
 also sets `comfy_staff: true`; every other account sends nothing beyond the
 UID. Give staff `/login/?returnTo=%2Fmodels%2F` so they can sign in before
 their Models flag is evaluated. Anyone who signed in before `comfy_staff`
-existed must sign out and back in once. Authentication is available
-before PostHog answers, including when flags are missing or unavailable; no
-separate auth flag needs to be created or enabled. The legacy `workshop-auth`
+existed must sign out and back in once. Authentication is available before
+PostHog answers, including when flags are missing or unavailable; no separate
+auth flag needs to be created or enabled. The legacy `workshop-auth`
 flag can still disable authentication explicitly with a `false` answer.
 The public header deliberately has no new sign-in entry point.
 Returning users retain access when Firebase confirms the same PostHog identity.

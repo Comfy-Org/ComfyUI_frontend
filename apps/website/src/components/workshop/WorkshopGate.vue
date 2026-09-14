@@ -2,10 +2,14 @@
 import { useMounted } from '@vueuse/core'
 import { ref, watch } from 'vue'
 
-import { useWorkshopEnabled } from '../../scripts/posthog'
+import {
+  useWorkshopEnabled,
+  useWorkshopEnabledSettled
+} from '../../scripts/posthog'
 
 const { keepMounted = false } = defineProps<{ keepMounted?: boolean }>()
 const enabled = useWorkshopEnabled()
+const settled = useWorkshopEnabledSettled()
 const mounted = useMounted()
 const activated = ref(false)
 
@@ -26,7 +30,7 @@ watch(
   >
     <slot />
   </div>
-  <div v-if="!mounted || !enabled">
+  <div v-if="!mounted || (settled && !enabled)">
     <slot name="fallback" />
   </div>
 </template>

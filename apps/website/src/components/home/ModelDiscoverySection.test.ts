@@ -8,17 +8,19 @@ import { discoveryProviders } from '../../data/modelDiscovery'
 import type { DiscoveryProvider } from '../../data/modelDiscovery'
 import ModelDiscoverySection from './ModelDiscoverySection.vue'
 
-const { enabled } = await vi.hoisted(async () => {
+const { enabled, settled } = await vi.hoisted(async () => {
   const { ref } = await import('vue')
-  return { enabled: ref(true) }
+  return { enabled: ref(true), settled: ref(true) }
 })
 
 vi.mock(import('../../scripts/posthog'), () => ({
-  useWorkshopEnabled: () => enabled
+  useWorkshopEnabled: () => enabled,
+  useWorkshopEnabledSettled: () => settled
 }))
 
 beforeEach(() => {
   enabled.value = true
+  settled.value = true
 })
 
 const providers: readonly DiscoveryProvider[] = [
