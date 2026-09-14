@@ -133,19 +133,11 @@ export function identifyWorkshopUser(uid: string | null): void {
   }
 }
 
-/**
- * The build-time override forces the flag on for dev and preview builds, which
- * have no PostHog to answer; without it no flag-gated surface is exercisable
- * anywhere. It is sticky: an override-on build ignores PostHog turning the flag
- * off. Otherwise the ref tracks PostHog's answer both ways, so disabling the
- * flag remotely actually takes the surfaces down.
- */
 const OVERRIDDEN_ON =
   WORKSHOP_DEPLOY_ENV !== 'production' &&
   import.meta.env.PUBLIC_WORKSHOP_AUTH_FLAG === '1'
-const workshopAuthEnabled = ref(OVERRIDDEN_ON)
-/** True once PostHog has answered (or the override stands in for it). */
-const workshopAuthFlagSettled = ref(OVERRIDDEN_ON)
+const workshopAuthEnabled = ref(true)
+const workshopAuthFlagSettled = ref(true)
 const TURNSTILE_OVERRIDE = import.meta.env.PUBLIC_WORKSHOP_TURNSTILE_MODE
 const TURNSTILE_OVERRIDDEN = Boolean(TURNSTILE_OVERRIDE)
 const workshopTurnstileMode = ref<TurnstileMode>(
@@ -182,10 +174,9 @@ export function initPostHog() {
       workshopEnabled.value =
         VISIBILITY_OVERRIDE ||
         posthog.isFeatureEnabled(WORKSHOP_ENABLED_FLAG) === true
-      workshopAuthFlagSettled.value = true
       if (!OVERRIDDEN_ON) {
         workshopAuthEnabled.value =
-          posthog.isFeatureEnabled(WORKSHOP_AUTH_FLAG) === true
+          posthog.isFeatureEnabled(WORKSHOP_AUTH_FLAG) !== false
       }
       if (!TURNSTILE_OVERRIDDEN) {
         const value = posthog.getFeatureFlag(WORKSHOP_TURNSTILE_FLAG)

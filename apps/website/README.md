@@ -183,9 +183,12 @@ condition targeting only the Comfy staff cohort. Enable that condition for
 rollout condition. Expand that audience when ready for the public release.
 
 The website identifies signed-in people with their Firebase UID, matching
-Cloud's PostHog identity. Enable the separate `workshop-auth` flag for the
-sign-in pages, then give staff the `/login/` link before sending them to
-`/models/`. The public header deliberately has no new sign-in entry point.
+Cloud's PostHog identity. Give staff `/login/?returnTo=%2Fmodels%2F` so they can
+sign in before their Models flag is evaluated. Authentication is available
+before PostHog answers, including when flags are missing or unavailable; no
+separate auth flag needs to be created or enabled. The legacy `workshop-auth`
+flag can still disable authentication explicitly with a `false` answer.
+The public header deliberately has no new sign-in entry point.
 Returning users retain access when Firebase confirms the same PostHog identity.
 Account changes and sign-out clear visibility and reevaluate the flag. Firebase
 starts only on auth pages or after Models becomes visible.
@@ -195,15 +198,15 @@ while a render already in progress finishes and reports its outcome. Sign-out,
 workspace changes, and leaving the page still cancel the browser's wait.
 
 Vercel CI always builds Models and enables Router execution, selecting production
-Cloud for production or staging Cloud for previews. Production authentication
-remains controlled by `workshop-auth`; the auth build override applies only
-outside production. The `workshop` PR label is no longer needed. `workshop-test` only
-selects test Cloud; neither label bypasses the PostHog visibility flag.
+Cloud for production or staging Cloud for previews. The auth build override
+applies only outside production. The `workshop` PR label is no longer needed.
+`workshop-test` only selects test Cloud; neither label bypasses the PostHog
+visibility flag.
 
 `WORKSHOP_IN_BUILD=0` remains an explicit build exclusion for diagnostics.
-`PUBLIC_WORKSHOP_AUTH_FLAG=1` enables sign-in outside production and
-`PUBLIC_WORKSHOP_ROUTER_RUN=1` enables execution; neither grants Models
-visibility. For local development without PostHog:
+`PUBLIC_WORKSHOP_AUTH_FLAG=1` overrides a remote auth disable outside production.
+`PUBLIC_WORKSHOP_ROUTER_RUN=1` enables execution; neither grants Models visibility.
+For local development without PostHog:
 
 ```sh
 PUBLIC_WORKSHOP_ENABLED=1 PUBLIC_WORKSHOP_AUTH_FLAG=1 PUBLIC_WORKSHOP_ROUTER_RUN=1 \

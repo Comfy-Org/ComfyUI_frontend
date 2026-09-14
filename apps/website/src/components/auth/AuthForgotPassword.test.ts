@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import '@testing-library/jest-dom/vitest'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -34,8 +35,11 @@ vi.mock<unknown>(import('../../config/workshop-firebase'), () => ({
 const { messages: toasts } = useAuthToasts()
 const assign = vi.fn<(url: string | URL) => void>()
 
-const typeEmail = (value: string) =>
-  userEvent.setup().type(screen.getByLabelText(/email/i), value)
+async function typeEmail(value: string) {
+  const input = screen.getByLabelText(/email/i)
+  await waitFor(() => expect(input).toBeEnabled())
+  await userEvent.setup().type(input, value)
+}
 const clickSend = () =>
   userEvent
     .setup()

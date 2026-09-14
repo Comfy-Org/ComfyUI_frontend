@@ -1,8 +1,6 @@
 /**
  * Shared signed-in state for the website's Vue islands, projected from the
- * @comfyorg/account session client. Firebase is loaded only after the
- * Workshop auth flag becomes true; a release-shape page does not download
- * or initialize it.
+ * @comfyorg/account session client.
  *
  * One `SessionSnapshot` ref is the single source of truth; the views below
  * derive from it, so the illegal combinations a set of parallel refs could

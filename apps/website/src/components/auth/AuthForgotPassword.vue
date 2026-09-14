@@ -6,6 +6,7 @@ import {
   severityForAuthError
 } from '@comfyorg/account/firebaseAuthError'
 import { cn } from '@comfyorg/tailwind-utils'
+import { useMounted } from '@vueuse/core'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { authSchemasFor } from '../../config/auth-schemas'
@@ -42,6 +43,7 @@ const RESET_TIMEOUT_MS = 16_000
 
 const enabled = useWorkshopAuthFlag()
 const flagSettled = useWorkshopAuthFlagSettled()
+const mounted = useMounted()
 const flagTimedOut = ref(false)
 const email = ref('')
 const errorMessage = ref('')
@@ -240,6 +242,7 @@ onBeforeUnmount(() => {
           name="email"
           autocomplete="email"
           required
+          :disabled="!mounted"
           :placeholder="t('auth.email.placeholder', locale)"
           :class="AUTH_FIELD_CLASS"
           :aria-invalid="Boolean(errorMessage) || undefined"

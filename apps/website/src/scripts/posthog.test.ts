@@ -384,43 +384,52 @@ describe('useWorkshopAuthFlag', () => {
     hoisted.mockIsFeatureEnabled.mockReset()
   })
 
-  it('is off until PostHog answers, then tracks the flag in both directions', async () => {
-    hoisted.mockIsFeatureEnabled.mockReturnValue(true)
-    const { initPostHog, useWorkshopAuthFlag } = await import('./posthog')
+  it('allows sign-in without an auth flag while Models stays disabled, and honors explicit auth changes', async () => {
+    hoisted.deployEnv = 'production'
+    hoisted.mockIsFeatureEnabled.mockImplementation((key) =>
+      key === 'workshop-enabled' ? false : undefined
+    )
+    const { initPostHog, useWorkshopAuthFlag, useWorkshopEnabled } =
+      await import('./posthog')
     const enabled = useWorkshopAuthFlag()
-
-    expect(enabled.value, 'off until PostHog answers').toBe(false)
-
     initPostHog()
     emitFeatureFlags()
     expect(enabled.value).toBe(true)
+    expect(useWorkshopEnabled().value).toBe(false)
 
-    // The flag being turned off remotely must actually take the surface down.
     hoisted.mockIsFeatureEnabled.mockReturnValue(false)
     emitFeatureFlags()
-    expect(enabled.value, 'a remote disable must not be a one-way latch').toBe(
-      false
-    )
+    expect(enabled.value).toBe(false)
+    hoisted.mockIsFeatureEnabled.mockReturnValue(true)
+    emitFeatureFlags()
+    expect(enabled.value).toBe(true)
   })
 
-  it('reports settled only once PostHog has answered, whichever way', async () => {
-    hoisted.mockIsFeatureEnabled.mockReturnValue(false)
-    const { initPostHog, useWorkshopAuthFlag, useWorkshopAuthFlagSettled } =
-      await import('./posthog')
-    const settled = useWorkshopAuthFlagSettled()
+  it('does not hold authentication pending when PostHog is unavailable', async () => {
+    const {
+      initPostHog,
+      useWorkshopAuthFlag,
+      useWorkshopAuthFlagSettled,
+      useWorkshopEnabled
+    } = await import('./posthog')
 
     initPostHog()
-    expect(settled.value, 'an unanswered flag is not a "no"').toBe(false)
-
-    emitFeatureFlags()
-    expect(settled.value).toBe(true)
-    expect(useWorkshopAuthFlag().value).toBe(false)
+    emitFeatureFlags(true)
+    expect(useWorkshopAuthFlagSettled().value).toBe(true)
+    expect(useWorkshopAuthFlag().value).toBe(true)
+    expect(useWorkshopEnabled().value).toBe(false)
   })
 
-  it('counts the build override as an answer', async () => {
-    vi.stubEnv('PUBLIC_WORKSHOP_AUTH_FLAG', '1')
-    const { useWorkshopAuthFlagSettled } = await import('./posthog')
+  it('allows authentication even if analytics initialization fails', async () => {
+    hoisted.mockInit.mockImplementationOnce(() => {
+      throw new Error('Analytics unavailable')
+    })
+    vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const { initPostHog, useWorkshopAuthFlag, useWorkshopAuthFlagSettled } =
+      await import('./posthog')
 
+    initPostHog()
+    expect(useWorkshopAuthFlag().value).toBe(true)
     expect(useWorkshopAuthFlagSettled().value).toBe(true)
   })
 
@@ -430,7 +439,6 @@ describe('useWorkshopAuthFlag', () => {
     const { initPostHog, useWorkshopAuthFlag } = await import('./posthog')
     initPostHog()
     const enabled = useWorkshopAuthFlag()
-    expect(enabled.value).toBe(false)
     hoisted.mockIsFeatureEnabled.mockReturnValue(true)
     emitFeatureFlags()
     expect(enabled.value).toBe(true)
