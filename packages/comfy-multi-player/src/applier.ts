@@ -122,6 +122,7 @@ import {
   type GrowConnectOp,
   type GrowSpec,
   type InteriorSetWidgetOp,
+  type CanonicalOpInspection,
   type Op,
   type SetWidgetOp,
   type StampKey,
@@ -349,6 +350,60 @@ export function canonicalOp(op: Op): string {
  */
 export function opDigest(op: Op): string {
   return sha256Hex(canonicalOp(op));
+}
+
+/**
+ * Validate and inspect stamped operations without reading or mutating a doc.
+ *
+ * This is the storage preflight boundary from ADR-022. Canonical bytes and
+ * their digest are produced together through the same canonicalizer and
+ * SHA-256 implementation as {@link applyOps}. Input order is preserved.
+ * Identical repeated ids remain inspectable; reuse with different canonical
+ * bytes is rejected before a storage caller can perform a lookup.
+ */
+export function inspectOps(ops: Op[]): CanonicalOpInspection[] {
+  if (ops.length > MAX_OPS_PER_BATCH) {
+    throw new OpRejectedError(
+      "malformed_op",
+      `batch of ${ops.length} ops exceeds the ${MAX_OPS_PER_BATCH}-op limit`,
+    );
+  }
+
+  const canonicalById = new Map<string, string>();
+  return ops.map((op, index) => {
+    validateEnvelope(op);
+    if (op.stamp === undefined) {
+      throw new OpRejectedError(
+        "malformed_op",
+        `${op.op}: stamp is required for canonical inspection`,
+      );
+    }
+
+    const canonical = canonicalOp(op);
+    const prior = canonicalById.get(op.op_id);
+    if (prior !== undefined && prior !== canonical) {
+      throw new OpRejectedError(
+        "op_id_reuse",
+        `op_id '${op.op_id}' is reused with a different payload at index ${index}`,
+      );
+    }
+    canonicalById.set(op.op_id, canonical);
+
+    const digestHex = sha256Hex(canonical);
+    const canonicalDigest = new Uint8Array(digestHex.length / 2);
+    for (let offset = 0; offset < digestHex.length; offset += 2) {
+      canonicalDigest[offset / 2] = Number.parseInt(digestHex.slice(offset, offset + 2), 16);
+    }
+
+    return {
+      index,
+      op_id: op.op_id,
+      canonical_op: new TextEncoder().encode(canonical),
+      canonical_digest: canonicalDigest,
+      creator_actor: op.stamp[1],
+      creator_lamport: op.stamp[0],
+    };
+  });
 }
 
 /**

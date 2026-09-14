@@ -18,6 +18,8 @@
  *    snapshot every replica forks from — schema §9);
  *  - `applyOps(doc, ops, catalog?)` — idempotent, LWW-gated, abort-remainder
  *    op application (schema §2–§4);
+ *  - `inspectOps(ops)` — pure validation and canonical bytes/digest/stamp
+ *    extraction for storage preflight (ADR-022);
  *  - `project(doc, catalog)` — canonical workflow JSON projection (schema §7),
  *    fail-closed on a schema this package cannot read (KA-11);
  *  - `migrate(doc, fromVersion)` — layout versioning, fail-closed (schema §10);
@@ -68,7 +70,7 @@ export {
   nodesMap,
   type EncodingLoss,
 } from "./doc.js";
-export { applyOps } from "./applier.js";
+export { applyOps, inspectOps } from "./applier.js";
 export { project } from "./project.js";
 export { mint } from "./mint.js";
 export { migrate } from "./migrate.js";

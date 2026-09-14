@@ -602,6 +602,20 @@ export interface ApplyResult {
   ops_seen: number;
 }
 
+/** Pure, ordered storage facts for one validated stamped semantic op. */
+export interface CanonicalOpInspection {
+  /** Original index in the inspected batch. */
+  index: number;
+  op_id: string;
+  /** Exact UTF-8 bytes of the canonical semantic-op envelope. */
+  canonical_op: Uint8Array;
+  /** Raw 32-byte SHA-256 of {@link canonical_op}. */
+  canonical_digest: Uint8Array;
+  /** Creator identity from the op's authoritative stamp, not host arrival metadata. */
+  creator_actor: string;
+  creator_lamport: number;
+}
+
 // ---------------------------------------------------------------------------
 // Errors
 // ---------------------------------------------------------------------------
