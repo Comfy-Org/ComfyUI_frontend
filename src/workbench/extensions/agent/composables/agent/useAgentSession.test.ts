@@ -23,7 +23,8 @@ import {
 import { AgentApiError } from '../../services/agent/agentRestClient'
 import type {
   AgentRestClient,
-  PostMessageInput
+  PostMessageInput,
+  AgentIdentity
 } from '../../services/agent/agentRestClient'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
@@ -43,6 +44,12 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
         thread_id: 'th-1',
         message_id: 'msg-1',
         workflow_id: 'wf-1'
+      })
+    ),
+    getIdentity: vi.fn(
+      async (): Promise<AgentIdentity> => ({
+        workspaceId: 'w-test',
+        userId: 'user-test'
       })
     ),
     getMessages: vi.fn(async (): Promise<AgentMessages> => []),
@@ -1087,6 +1094,64 @@ describe('useAgentSession (v1 composition root)', () => {
       workflowId: 'wf-a',
       tabs: { current_tab: 'wf-a' }
     })
+  })
+
+  it('tells the server the current tab is unbound when the turn context has no workflow id', async () => {
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
+      thread_id: 'th-1',
+      message_id: 'msg-1',
+      workflow_id: 'wf-minted'
+    }))
+    const rest = fakeRest({ postMessage })
+    const { source } = fakeEvents()
+    const session = useAgentSession({
+      rest,
+      events: source,
+      workflow: {
+        current: () => ({ tabPath: 'tab-new' }),
+        adopted: vi.fn(),
+        prepare: vi.fn(async () => undefined)
+      }
+    })
+    session.start()
+
+    await session.sendMessage('add a node')
+
+    expect(vi.mocked(postMessage).mock.calls[0][1]).toMatchObject({
+      currentTabUnbound: true
+    })
+    expect(vi.mocked(postMessage).mock.calls[0][1]).not.toHaveProperty(
+      'workflowId'
+    )
+  })
+
+  it('does not flag the current tab as unbound when the turn context names a workflow', async () => {
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
+      thread_id: 'th-1',
+      message_id: 'msg-1',
+      workflow_id: 'wf-a'
+    }))
+    const rest = fakeRest({ postMessage })
+    const { source } = fakeEvents()
+    const session = useAgentSession({
+      rest,
+      events: source,
+      workflow: {
+        current: () => ({ id: 'wf-a', tabPath: 'tab-a' }),
+        adopted: vi.fn(),
+        prepare: vi.fn(async () => undefined)
+      }
+    })
+    session.start()
+
+    await session.sendMessage('add a node')
+
+    expect(vi.mocked(postMessage).mock.calls[0][1]).toMatchObject({
+      workflowId: 'wf-a'
+    })
+    expect(vi.mocked(postMessage).mock.calls[0][1]).not.toHaveProperty(
+      'currentTabUnbound'
+    )
   })
 
   it('(h8) the draft snapshot follows the originating tab, not the tab switched to during prepare()', async () => {
