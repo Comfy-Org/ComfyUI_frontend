@@ -1,3 +1,9 @@
+import {
+  onAuthStateChanged,
+  onIdTokenChanged,
+  setPersistence
+} from 'firebase/auth'
+
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { clearCheckoutJourney } from '@/platform/workspace/utils/checkoutJourney'
@@ -94,12 +100,7 @@ vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   })
 }))
 
-vi.mock(import('firebase/auth'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  setPersistence: vi.fn().mockResolvedValue(undefined),
-  onAuthStateChanged: vi.fn(() => vi.fn()),
-  onIdTokenChanged: vi.fn(() => vi.fn())
-}))
+vi.mock(import('firebase/auth'), { spy: true })
 
 const mockClearPendingTopup = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
@@ -187,6 +188,12 @@ async function clickAddCredits() {
   const user = userEvent.setup()
   await user.click(screen.getByRole('button', { name: 'Add credits' }))
 }
+
+beforeEach(() => {
+  vi.mocked(setPersistence).mockResolvedValue(undefined)
+  vi.mocked(onAuthStateChanged).mockReturnValue(vi.fn())
+  vi.mocked(onIdTokenChanged).mockReturnValue(vi.fn())
+})
 
 beforeEach(() => {
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
