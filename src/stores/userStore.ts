@@ -13,17 +13,6 @@ export interface User {
 const USER_STYLESHEET_ID = 'user-stylesheet'
 const USER_STYLESHEET_ROUTE = '/userdata/user.css'
 
-function resolveStylesheetUrls(css: string, stylesheetUrl: string) {
-  const baseUrl = new URL(stylesheetUrl, location.href)
-  return css.replace(
-    /url\(\s*(["']?)(?!data:|blob:|https?:|\/\/|\/|#)([^"')]+)\1\s*\)/gi,
-    (_match, quote: string, url: string) => {
-      const resolved = new URL(url.trim(), baseUrl)
-      return `url(${quote}${resolved.pathname}${resolved.search}${resolved.hash}${quote})`
-    }
-  )
-}
-
 export const useUserStore = defineStore('user', () => {
   /**
    * The user config. null if not loaded.
@@ -64,10 +53,7 @@ export const useUserStore = defineStore('user', () => {
         document.querySelector<HTMLStyleElement>(`#${USER_STYLESHEET_ID}`) ??
         document.createElement('style')
       style.id = USER_STYLESHEET_ID
-      style.textContent = resolveStylesheetUrls(
-        await response.text(),
-        api.apiURL(USER_STYLESHEET_ROUTE)
-      )
+      style.textContent = await response.text()
       if (!style.isConnected) document.head.append(style)
     } catch {
       return
@@ -85,7 +71,7 @@ export const useUserStore = defineStore('user', () => {
         if (isMultiUserServer.value && currentUserId.value) {
           api.user = currentUserId.value
         }
-        await loadUserStylesheet()
+        if (!needsLogin.value) await loadUserStylesheet()
       } catch (err) {
         initializePromise = null
         throw err

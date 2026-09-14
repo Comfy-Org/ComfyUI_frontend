@@ -87,7 +87,7 @@ describe('userStore', () => {
       fetchApi.mockImplementation(async () => {
         expect(api.user).toBe('alice-id')
         return new Response(
-          'body { background: url("./background.png"); color: red; }',
+          '@import "theme.css"; body { background: url("background.png"), url("images/image (1).png"); }',
           {
             status: 200
           }
@@ -99,7 +99,7 @@ describe('userStore', () => {
 
       expect(fetchApi).toHaveBeenCalledWith('/userdata/user.css')
       expect(document.querySelector('#user-stylesheet')?.textContent).toBe(
-        'body { background: url("/api/userdata/background.png"); color: red; }'
+        '@import "theme.css"; body { background: url("background.png"), url("images/image (1).png"); }'
       )
     })
 
@@ -118,20 +118,21 @@ describe('userStore', () => {
     })
   })
 
-  it('reloads CSS after selecting a user', async () => {
+  it('waits to load CSS until a multi-user identity is selected', async () => {
     getUserConfig.mockResolvedValue({ users: { 'alice-id': 'Alice' } })
-    fetchApi
-      .mockResolvedValueOnce(new Response(null, { status: 500 }))
-      .mockImplementationOnce(async () => {
-        expect(api.user).toBe('alice-id')
-        return new Response('body { color: red; }')
-      })
+    fetchApi.mockImplementation(async () => {
+      expect(api.user).toBe('alice-id')
+      return new Response('body { color: red; }')
+    })
     const store = useUserStore()
     await store.initialize()
 
+    expect(store.needsLogin).toBe(true)
+    expect(fetchApi).not.toHaveBeenCalled()
+
     await store.login({ userId: 'alice-id', username: 'Alice' })
 
-    expect(fetchApi).toHaveBeenCalledTimes(2)
+    expect(fetchApi).toHaveBeenCalledOnce()
     expect(document.querySelector('#user-stylesheet')?.textContent).toBe(
       'body { color: red; }'
     )
