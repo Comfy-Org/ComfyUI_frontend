@@ -499,10 +499,7 @@ import type {
   TemplateModelSetupResult,
   TemplateModelSetupRow
 } from '@/platform/workflow/templates/utils/templateModelSetup'
-import {
-  resolveTemplateInputAssets,
-  startMissingTemplateInputDownloads
-} from '@/platform/workflow/templates/utils/templateInputAssets'
+import { resolveTemplateInputAssets } from '@/platform/workflow/templates/utils/templateInputAssets'
 import { api } from '@/scripts/api'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
@@ -1191,21 +1188,6 @@ async function openPreparedTemplate(
   }
 }
 
-function startTemplateInputDownloads(
-  templateId: string,
-  assets: readonly ComfyTemplateInputAsset[]
-): void {
-  startMissingTemplateInputDownloads(templateId, assets, {
-    getBridge: () => window.__comfyDesktop2,
-    reportError: (error) => {
-      reportError(error, {
-        errorType: 'workflow_template_input_download_failed',
-        level: 'warning'
-      })
-    }
-  })
-}
-
 const onLoadWorkflow = async (template: TemplateInfo, event: MouseEvent) => {
   if (openPending.value) return
 
@@ -1240,23 +1222,21 @@ const onLoadWorkflow = async (template: TemplateInfo, event: MouseEvent) => {
           )
         : Promise.resolve<readonly ComfyTemplateInputAsset[]>([])
     if (requirements.length === 0) {
-      const inputAssets = await inputAssetsPromise
-      if (generation !== detailGeneration) return
-      startTemplateInputDownloads(template.name, inputAssets)
       await openPreparedTemplate(prepared, generation)
       return
     }
 
-    const [availability, inputAssets] = await Promise.all([
-      resolveModelAvailability(requirements.map(({ model }) => model)),
-      inputAssetsPromise
-    ])
+    const availability = await resolveModelAvailability(
+      requirements.map(({ model }) => model)
+    )
     if (generation !== detailGeneration) return
     if (!availability.some(({ status }) => status === 'missing')) {
-      startTemplateInputDownloads(template.name, inputAssets)
       await openPreparedTemplate(prepared, generation)
       return
     }
+
+    const inputAssets = await inputAssetsPromise
+    if (generation !== detailGeneration) return
 
     const rowDownloads = useTemplateModelRowDownloads({
       loadFolderPaths: () => api.getFolderPaths()
@@ -1318,7 +1298,6 @@ const onOpenTemplate = async () => {
   const detail = activeDetail.value
   if (!detail || openPending.value) return
 
-  startTemplateInputDownloads(detail.template.name, detail.inputAssets)
   await openPreparedTemplate(detail.prepared, detailGeneration)
 }
 

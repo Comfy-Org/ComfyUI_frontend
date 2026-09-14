@@ -78,6 +78,7 @@ import DesktopCloudNotificationController from '@/platform/cloud/notification/co
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import { getShellLayoutSnapshot } from '@/platform/telemetry/utils/getShellLayoutSnapshot'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
@@ -133,23 +134,19 @@ const templateInputGraphSync = startTemplateInputDownloadGraphSync({
       scanAllMediaCandidates(app.rootGraph, isCloud).map(({ name }) => name)
     ),
   refreshGraphBindings: async (completedInputNames) => {
-    try {
-      await app.reloadNodeDefs()
-      refreshDownloadedTemplateInputBindings(
-        app.rootGraph,
-        scanAllMediaCandidates(app.rootGraph, isCloud),
-        new Set(completedInputNames)
-      )
-      await runMissingMediaPipeline({ rootGraph: app.rootGraph, silent: true })
-    } finally {
-      templateInputDownloadStore.completeGraphSync(completedInputNames)
-    }
+    await app.reloadNodeDefs()
+    refreshDownloadedTemplateInputBindings(
+      app.rootGraph,
+      scanAllMediaCandidates(app.rootGraph, isCloud),
+      new Set(completedInputNames)
+    )
+    await runMissingMediaPipeline({ rootGraph: app.rootGraph, silent: true })
+    templateInputDownloadStore.completeGraphSync(completedInputNames)
   },
   reportError: (error) => {
-    console.warn(
-      '[Template Input Download] Failed to refresh graph inputs:',
-      error
-    )
+    reportError(error, {
+      errorType: 'workflow_template_input_refresh_failed'
+    })
   }
 })
 const stopTemplateInputDownloadTracking =

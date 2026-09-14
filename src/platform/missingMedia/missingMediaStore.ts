@@ -174,7 +174,6 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
 
   return {
     missingMediaCandidates,
-    actionableMissingMediaCandidates,
     hasMissingMedia,
     missingMediaCount,
     missingMediaNodeIds,
