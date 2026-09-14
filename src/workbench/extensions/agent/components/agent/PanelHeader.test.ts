@@ -28,12 +28,12 @@ function mount(isMaximized = false) {
 }
 
 describe('PanelHeader', () => {
-  it('exposes the heading id the dock landmark labels', () => {
+  it('exposes the test id and the heading id the dock landmark labels', () => {
     mount()
 
-    expect(
-      screen.getByRole('heading', { name: 'Comfy Agent' })
-    ).toHaveAttribute('id', 'agent-panel-title')
+    const heading = screen.getByRole('heading', { name: 'Comfy Agent' })
+    expect(heading).toHaveAttribute('data-testid', 'agent-panel-title')
+    expect(heading).toHaveAttribute('id', 'agent-panel-title')
   })
 
   it('passes the full tooltip config to the button directive', () => {
