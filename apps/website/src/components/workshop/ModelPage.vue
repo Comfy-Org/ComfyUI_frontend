@@ -6,10 +6,9 @@ import { catalogSearch } from '../../config/models-catalogue'
 import { getRoutes } from '../../config/routes'
 import type { ModelsPageData } from '../../config/models-page-data'
 import { t } from '../../i18n/translations'
-import { splitPriceLabel } from '../../lib/workshop/price-label'
 import { useWorkshopEnabled } from '../../scripts/posthog'
-import InfoTooltip from '@/components/ui/tooltip/InfoTooltip.vue'
 import CatalogueBackLink from './CatalogueBackLink.vue'
+import ModelPrice from './ModelPrice.vue'
 import ModelDetail from './ModelDetail.vue'
 import ModelStatus from './ModelStatus.vue'
 import ModelSupport from './ModelSupport.vue'
@@ -22,7 +21,6 @@ const routes = getRoutes()
 const enabled = useWorkshopEnabled()
 const pillClass =
   'inline-flex h-7 items-center rounded-full border border-transparency-white-t20 px-3 text-xs leading-none text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow'
-const price = computed(() => splitPriceLabel(page.priceEstimate ?? ''))
 const restTags = computed(() =>
   page.restTags.map((tag) => ({
     label: tag.label,
@@ -72,23 +70,7 @@ const restTags = computed(() =>
         </div>
 
         <div class="flex flex-col gap-4 lg:items-end">
-          <p
-            class="flex items-baseline gap-2 text-lg text-primary-warm-white"
-            data-testid="model-price"
-          >
-            <span v-if="page.priceEstimate" class="flex items-baseline">
-              <span class="font-semibold">{{ price.amount }}</span
-              ><span v-if="price.per" class="text-sm text-primary-warm-gray">{{
-                price.per
-              }}</span>
-            </span>
-            <template v-else>{{ t('workshop.model.variablePrice') }}</template>
-            <InfoTooltip
-              v-if="page.priceEstimate"
-              :text="t('workshop.model.nodePriceDefaults')"
-              :label="t('workshop.model.priceNoteLabel')"
-            />
-          </p>
+          <ModelPrice :estimate="page.priceEstimate" />
           <ul
             v-if="page.shownTags.length > 0"
             class="flex scrollbar-hide items-center gap-2 max-sm:overflow-x-auto sm:flex-wrap lg:justify-end"
